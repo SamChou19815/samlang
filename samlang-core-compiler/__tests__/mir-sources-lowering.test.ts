@@ -19,7 +19,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_CLOSURE_INITIALIZATION,
 } from 'samlang-core-ast/hir-nodes';
-import { debugPrintMidIRSources, MIR_ZERO } from 'samlang-core-ast/mir-nodes';
+import { debugPrintMidIRSources } from 'samlang-core-ast/mir-nodes';
 
 import lowerHighIRSourcesToMidIRSources from '../mir-sources-lowering';
 
@@ -242,139 +242,139 @@ describe('mir-sources-lowering', () => {
   it('lowerHighIRSourcesToMidIRSources comprehensive test with reference counting', () => {
     assertLowered(
       commonComprehensiveSources,
-      `type CC = (int, (any) -> int, (any, int) -> int, any);
+      `type CC = (number, (t0: any) => number, (t0: any, t1: number) => number, any);
 
-type Object = (int, int, int);
+type Object = (number, number, number);
 
-type Variant = (int, int, any);
+type Variant = (number, number, any);
 
-function cc(): int {
-  let _mid_t0: (any, int) -> int = (cc: CC)[2];
-  let _mid_t1: any = (cc: CC)[3];
-  let _mid_t2: int = (_mid_t0: (any, int) -> int)((_mid_t1: any), 0);
-  let v1: int = (a: Object)[1];
-  let v2: int = (b: Variant)[1];
-  let _mid_t3: any = (b: Variant)[2];
-  let v3: int = (_mid_t3: any);
-  let v4: string = (b: Variant)[2];
+function cc(): number {
+  let _mid_t0: (t0: any, t1: number) => number = cc[2];
+  let _mid_t1: any = cc[3];
+  let _mid_t2: number = _mid_t0(_mid_t1, 0);
+  let v1: number = a[1];
+  let v2: number = b[1];
+  let _mid_t3: any = b[2];
+  let v3: number = _mid_t3;
+  let v4: Str = b[2];
   while (true) {
-    if 0 {
+    if (0) {
     }
   }
-  let _: int = 0;
+  let _: number = 0;
   let _: _;
   while (true) {
-    if !0 {
+    if (!0) {
       _ = 0;
       break;
     }
     _ = 0;
   }
-  __decRef__((_: _));
+  __decRef__(_);
   return 0;
 }
 
-function main(): int {
-  let v1: int = 0 + 0;
-  (obj: Obj)[0] += 1;
-  let O: Object = [1, 0, (obj: Obj)];
+function main(): number {
+  let v1: number = 0 + 0;
+  obj[0] += 1;
+  let O: Object = [1, 0, obj];
   let _mid_t0: any = 0;
-  let v1: Variant = [1, 0, (_mid_t0: any)];
-  let _mid_t1: int = G1[0];
-  let _mid_t2: bool = (_mid_t1: int) > 0;
-  if (_mid_t2: bool) {
+  let v1: Variant = [1, 0, _mid_t0];
+  let _mid_t1: number = G1[0];
+  let _mid_t2: boolean = _mid_t1 > 0;
+  if (_mid_t2) {
     G1[0] += 1;
   }
   let v2: Variant = [1, 0, G1];
-  let _mid_t3: int = G1[0];
-  let _mid_t4: bool = (_mid_t3: int) > 0;
-  if (_mid_t4: bool) {
+  let _mid_t3: number = G1[0];
+  let _mid_t4: boolean = _mid_t3 > 0;
+  if (_mid_t4) {
     G1[0] += 1;
   }
-  let _mid_t5: (any) -> int = __decRef_string;
-  let c1: CC = [1, (_mid_t5: (any) -> int), aaa, G1];
-  let _mid_t6: (any) -> int = bbb;
+  let _mid_t5: (t0: any) => number = __decRef_string;
+  let c1: CC = [1, _mid_t5, aaa, G1];
+  let _mid_t6: (t0: any) => number = bbb;
   let _mid_t7: any = 0;
-  let c2: CC = [1, __decRef_nothing, (_mid_t6: (any) -> int), (_mid_t7: any)];
-  __decRef_Object((O: Object));
-  __decRef_Variant((v1: Variant));
-  __decRef_Variant((v2: Variant));
-  __decRef_CC((c1: CC));
-  __decRef_CC((c2: CC));
+  let c2: CC = [1, __decRef_nothing, _mid_t6, _mid_t7];
+  __decRef_Object(O);
+  __decRef_Variant(v1);
+  __decRef_Variant(v2);
+  __decRef_CC(c1);
+  __decRef_CC(c2);
   return 0;
 }
 
-function _compiled_program_main(): int {
-  let finalV: int;
-  if 1 {
-    let _mid_t0: int = main(0);
-    let _mid_t1: int = cc(0);
-    finalV = (v1: int);
+function _compiled_program_main(): number {
+  let finalV: number;
+  if (true) {
+    let _mid_t0: number = main(0);
+    let _mid_t1: number = cc(0);
+    finalV = v1;
   } else {
-    let _mid_t2: (any, int) -> int = (cc: CC)[2];
-    let _mid_t3: any = (cc: CC)[3];
-    let _mid_t4: CC = (_mid_t2: (any, int) -> int)((_mid_t3: any), 0);
-    (G1: CC)[0] += 1;
-    let _mid_t5: any = (G1: CC);
-    let _mid_t6: (any) -> int = __decRef_CC;
-    let c3: CC = [1, (_mid_t6: (any) -> int), aaa, (_mid_t5: any)];
-    __decRef_CC((_mid_t4: CC));
-    __decRef_CC((c3: CC));
-    finalV = (v2: int);
+    let _mid_t2: (t0: any, t1: number) => number = cc[2];
+    let _mid_t3: any = cc[3];
+    let _mid_t4: CC = _mid_t2(_mid_t3, 0);
+    G1[0] += 1;
+    let _mid_t5: any = G1;
+    let _mid_t6: (t0: any) => number = __decRef_CC;
+    let c3: CC = [1, _mid_t6, aaa, _mid_t5];
+    __decRef_CC(_mid_t4);
+    __decRef_CC(c3);
+    finalV = v2;
   }
   return 0;
 }
 
-function __decRef_Object(o: Object): int {
-  let currentRefCount: int = (o: Object)[0];
-  (o: Object)[0] -= 1;
-  let dead: bool = (currentRefCount: int) <= 1;
-  if (dead: bool) {
-    let pointer_casted: any = (o: Object);
-    _builtin_free((pointer_casted: any));
+function __decRef_Object(o: Object): number {
+  let currentRefCount: number = o[0];
+  o[0] -= 1;
+  let dead: boolean = currentRefCount <= 1;
+  if (dead) {
+    let pointer_casted: any = o;
+    _builtin_free(pointer_casted);
   }
   return 0;
 }
 
-function __decRef_Variant(o: Variant): int {
-  let currentRefCount: int = (o: Variant)[0];
-  (o: Variant)[0] -= 1;
-  let dead: bool = (currentRefCount: int) <= 1;
-  if (dead: bool) {
-    let pointer_casted: any = (o: Variant);
-    _builtin_free((pointer_casted: any));
+function __decRef_Variant(o: Variant): number {
+  let currentRefCount: number = o[0];
+  o[0] -= 1;
+  let dead: boolean = currentRefCount <= 1;
+  if (dead) {
+    let pointer_casted: any = o;
+    _builtin_free(pointer_casted);
   }
   return 0;
 }
 
-function __decRef_CC(o: CC): int {
-  let currentRefCount: int = (o: CC)[0];
-  (o: CC)[0] -= 1;
-  let dead: bool = (currentRefCount: int) <= 1;
-  if (dead: bool) {
-    let destructor: (any) -> int = (o: CC)[1];
-    let context: any = (o: CC)[3];
-    (destructor: (any) -> int)((context: any));
-    let pointer_casted: any = (o: CC);
-    _builtin_free((pointer_casted: any));
+function __decRef_CC(o: CC): number {
+  let currentRefCount: number = o[0];
+  o[0] -= 1;
+  let dead: boolean = currentRefCount <= 1;
+  if (dead) {
+    let destructor: (t0: any) => number = o[1];
+    let context: any = o[3];
+    destructor(context);
+    let pointer_casted: any = o;
+    _builtin_free(pointer_casted);
   }
   return 0;
 }
 
-function __decRef_string(o: string): int {
-  let currentRefCount: int = (o: string)[0];
-  let performGC: bool = (currentRefCount: int) > 0;
-  if (performGC: bool) {
-    (o: string)[0] -= 1;
-    let dead: bool = (currentRefCount: int) <= 1;
-    if (dead: bool) {
-      _builtin_free((o: string));
+function __decRef_string(o: Str): number {
+  let currentRefCount: number = o[0];
+  let performGC: boolean = currentRefCount > 0;
+  if (performGC) {
+    o[0] -= 1;
+    let dead: boolean = currentRefCount <= 1;
+    if (dead) {
+      _builtin_free(o);
     }
   }
   return 0;
 }
 
-function __decRef_nothing(o: any): int {
+function __decRef_nothing(o: any): number {
   return 0;
 }
 `

@@ -36,19 +36,6 @@ export const MIR_FUNCTION_TYPE = (
 export function prettyPrintMidIRType(type: MidIRType): string {
   switch (type.__type__) {
     case 'PrimitiveType':
-      return type.type;
-    case 'IdentifierType':
-      return type.name;
-    case 'FunctionType':
-      return `(${type.argumentTypes
-        .map(prettyPrintMidIRType)
-        .join(', ')}) -> ${prettyPrintMidIRType(type.returnType)}`;
-  }
-}
-
-export function prettyPrintMidIRTypeAsTypeScriptType(type: MidIRType): string {
-  switch (type.__type__) {
-    case 'PrimitiveType':
       switch (type.type) {
         case 'int':
           return 'number';
@@ -63,8 +50,8 @@ export function prettyPrintMidIRTypeAsTypeScriptType(type: MidIRType): string {
       return type.name;
     case 'FunctionType':
       return `(${type.argumentTypes
-        .map((it, index) => `t${index}: ${prettyPrintMidIRTypeAsTypeScriptType(it)}`)
-        .join(', ')}) => ${prettyPrintMidIRTypeAsTypeScriptType(type.returnType)}`;
+        .map((it, index) => `t${index}: ${prettyPrintMidIRType(it)}`)
+        .join(', ')}) => ${prettyPrintMidIRType(type.returnType)}`;
   }
 }
 
@@ -399,18 +386,7 @@ export const MIR_DEC_REF = (expression: MidIRExpression): MidIRDecreaseReference
   expression,
 });
 
-export function debugPrintMidIRExpression(expression: MidIRExpression): string {
-  switch (expression.__type__) {
-    case 'MidIRIntLiteralExpression':
-      return expression.value.toString();
-    case 'MidIRVariableExpression':
-      return `(${expression.name}: ${prettyPrintMidIRType(expression.type)})`;
-    case 'MidIRNameExpression':
-      return expression.name;
-  }
-}
-
-export function prettyPrintMidIRExpressionAsJSExpression(expression: MidIRExpression): string {
+function prettyPrintMidIRExpression(expression: MidIRExpression): string {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
       if (expression.type.__type__ === 'PrimitiveType' && expression.type.type === 'bool') {
@@ -421,325 +397,6 @@ export function prettyPrintMidIRExpressionAsJSExpression(expression: MidIRExpres
     case 'MidIRNameExpression':
       return expression.name;
   }
-}
-
-export function debugPrintMidIRStatement(statement: MidIRStatement, startLevel = 0): string {
-  const collector: string[] = [];
-  let level = startLevel;
-  let breakCollector: string | undefined = undefined;
-
-  function printer(s: MidIRStatement) {
-    switch (s.__type__) {
-      case 'MidIRIndexAccessStatement': {
-        const type = prettyPrintMidIRType(s.type);
-        const pointerExpression = debugPrintMidIRExpression(s.pointerExpression);
-        collector.push(
-          '  '.repeat(level),
-          `let ${s.name}: ${type} = ${pointerExpression}[${s.index}];\n`
-        );
-        break;
-      }
-      case 'MidIRBinaryStatement': {
-        const type = prettyPrintMidIRType(s.type);
-        const e1 = debugPrintMidIRExpression(s.e1);
-        const e2 = debugPrintMidIRExpression(s.e2);
-        collector.push('  '.repeat(level), `let ${s.name}: ${type} = ${e1} ${s.operator} ${e2};\n`);
-        break;
-      }
-      case 'MidIRFunctionCallStatement': {
-        const functionString = debugPrintMidIRExpression(s.functionExpression);
-        const argumentString = s.functionArguments.map(debugPrintMidIRExpression).join(', ');
-        const collectorString =
-          s.returnCollector != null
-            ? `let ${s.returnCollector}: ${prettyPrintMidIRType(s.returnType)} = `
-            : '';
-        collector.push(
-          '  '.repeat(level),
-          `${collectorString}${functionString}(${argumentString});\n`
-        );
-        break;
-      }
-      case 'MidIRIfElseStatement':
-        s.finalAssignments.forEach((finalAssignment) => {
-          const type = prettyPrintMidIRType(finalAssignment.type);
-          collector.push('  '.repeat(level), `let ${finalAssignment.name}: ${type};\n`);
-        });
-        collector.push(
-          '  '.repeat(level),
-          `if ${debugPrintMidIRExpression(s.booleanExpression)} {\n`
-        );
-        level += 1;
-        s.s1.forEach(printer);
-        s.finalAssignments.forEach((finalAssignment) => {
-          const v1 = debugPrintMidIRExpression(finalAssignment.branch1Value);
-          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
-        });
-        level -= 1;
-        collector.push('  '.repeat(level), `} else {\n`);
-        level += 1;
-        s.s2.forEach(printer);
-        s.finalAssignments.forEach((finalAssignment) => {
-          const v2 = debugPrintMidIRExpression(finalAssignment.branch2Value);
-          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
-        });
-        level -= 1;
-        collector.push('  '.repeat(level), `}\n`);
-        break;
-      case 'MidIRSingleIfStatement':
-        collector.push(
-          '  '.repeat(level),
-          `if ${s.invertCondition ? '!' : ''}${debugPrintMidIRExpression(s.booleanExpression)} {\n`
-        );
-        level += 1;
-        s.statements.forEach(printer);
-        level -= 1;
-        collector.push('  '.repeat(level), `}\n`);
-        break;
-      case 'MidIRBreakStatement':
-        collector.push(
-          '  '.repeat(level),
-          `${breakCollector} = ${debugPrintMidIRExpression(s.breakValue)};\n`
-        );
-        collector.push('  '.repeat(level), 'break;\n');
-        break;
-      case 'MidIRWhileStatement': {
-        s.loopVariables.forEach((v) => {
-          const type = prettyPrintMidIRType(v.type);
-          collector.push(
-            '  '.repeat(level),
-            `let ${v.name}: ${type} = ${debugPrintMidIRExpression(v.initialValue)};\n`
-          );
-        });
-        const previousBreakCollector = breakCollector;
-        breakCollector = s.breakCollector?.name;
-        if (s.breakCollector != null) {
-          const { name, type } = s.breakCollector;
-          collector.push('  '.repeat(level), `let ${name}: ${prettyPrintMidIRType(type)};\n`);
-        }
-        collector.push('  '.repeat(level), `while (true) {\n`);
-        level += 1;
-        s.statements.forEach(printer);
-        s.loopVariables.forEach((v) => {
-          collector.push(
-            '  '.repeat(level),
-            `${v.name} = ${debugPrintMidIRExpression(v.loopValue)};\n`
-          );
-        });
-        level -= 1;
-        collector.push('  '.repeat(level), '}\n');
-        breakCollector = previousBreakCollector;
-        break;
-      }
-      case 'MidIRCastStatement':
-        collector.push(
-          '  '.repeat(level),
-          `let ${s.name}: ${prettyPrintMidIRType(s.type)} = ${debugPrintMidIRExpression(
-            s.assignedExpression
-          )};\n`
-        );
-        break;
-      case 'MidIRStructInitializationStatement': {
-        const expressionString = s.expressionList.map(debugPrintMidIRExpression).join(', ');
-        collector.push(
-          '  '.repeat(level),
-          `let ${s.structVariableName}: ${prettyPrintMidIRType(s.type)} = [${expressionString}];\n`
-        );
-        break;
-      }
-      case 'MidIRIncreaseReferenceCountStatement':
-        collector.push('  '.repeat(level), `${debugPrintMidIRExpression(s.expression)}[0] += 1;\n`);
-        break;
-      case 'MidIRDecreaseReferenceCountStatement':
-        collector.push('  '.repeat(level), `${debugPrintMidIRExpression(s.expression)}[0] -= 1;\n`);
-        break;
-    }
-  }
-
-  printer(statement);
-
-  return collector.join('').trimEnd();
-}
-
-export function prettyPrintMidIRStatementAsJSStatement(
-  statement: MidIRStatement,
-  startLevel = 0
-): string {
-  const collector: string[] = [];
-  let level = startLevel;
-  let breakCollector: string | undefined = undefined;
-
-  function printer(s: MidIRStatement) {
-    switch (s.__type__) {
-      case 'MidIRIndexAccessStatement': {
-        const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
-        const pointerString = prettyPrintMidIRExpressionAsJSExpression(s.pointerExpression);
-        collector.push(
-          '  '.repeat(level),
-          `/** @type {${type}} */\n`,
-          '  '.repeat(level),
-          `let ${s.name} = ${pointerString}[${s.index}];\n`
-        );
-        break;
-      }
-      case 'MidIRBinaryStatement': {
-        const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
-        const e1 = prettyPrintMidIRExpressionAsJSExpression(s.e1);
-        const e2 = prettyPrintMidIRExpressionAsJSExpression(s.e2);
-        const binaryExpressionString = `${e1} ${s.operator} ${e2}`;
-        const wrapped =
-          s.operator === '/' ? `Math.floor(${binaryExpressionString})` : binaryExpressionString;
-        collector.push(
-          '  '.repeat(level),
-          `/** @type {${type}} */\n`,
-          '  '.repeat(level),
-          `let ${s.name} = ${wrapped};\n`
-        );
-        break;
-      }
-      case 'MidIRFunctionCallStatement': {
-        const functionExpression = prettyPrintMidIRExpressionAsJSExpression(s.functionExpression);
-        const functionArguments = s.functionArguments
-          .map(prettyPrintMidIRExpressionAsJSExpression)
-          .join(', ');
-        const functionCallString = `${functionExpression}(${functionArguments});`;
-        if (s.returnCollector != null) {
-          const type = prettyPrintMidIRTypeAsTypeScriptType(s.returnType);
-          collector.push('  '.repeat(level), `/** @type {${type}} */\n`);
-        }
-        collector.push(
-          '  '.repeat(level),
-          s.returnCollector == null
-            ? functionCallString
-            : `let ${s.returnCollector} = ${functionCallString}`,
-          '\n'
-        );
-        break;
-      }
-      case 'MidIRIfElseStatement':
-        s.finalAssignments.forEach((final) => {
-          collector.push(
-            '  '.repeat(level),
-            `/** @type {${prettyPrintMidIRTypeAsTypeScriptType(final.type)}} */\n`,
-            '  '.repeat(level),
-            `let ${final.name};\n`
-          );
-        });
-        collector.push(
-          '  '.repeat(level),
-          `if (${prettyPrintMidIRExpressionAsJSExpression(s.booleanExpression)}) {\n`
-        );
-        level += 1;
-        s.s1.forEach(printer);
-        s.finalAssignments.forEach((finalAssignment) => {
-          const v1 = prettyPrintMidIRExpressionAsJSExpression(finalAssignment.branch1Value);
-          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
-        });
-        level -= 1;
-        collector.push('  '.repeat(level), `} else {\n`);
-        level += 1;
-        s.s2.forEach(printer);
-        s.finalAssignments.forEach((finalAssignment) => {
-          const v2 = prettyPrintMidIRExpressionAsJSExpression(finalAssignment.branch2Value);
-          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
-        });
-        level -= 1;
-        collector.push('  '.repeat(level), '}\n');
-        break;
-      case 'MidIRSingleIfStatement':
-        collector.push(
-          '  '.repeat(level),
-          `if (${s.invertCondition ? '!' : ''}${prettyPrintMidIRExpressionAsJSExpression(
-            s.booleanExpression
-          )}) {\n`
-        );
-        level += 1;
-        s.statements.forEach(printer);
-        level -= 1;
-        collector.push('  '.repeat(level), `}\n`);
-        break;
-      case 'MidIRBreakStatement':
-        if (breakCollector != null) {
-          collector.push(
-            '  '.repeat(level),
-            `${breakCollector} = ${prettyPrintMidIRExpressionAsJSExpression(s.breakValue)};\n`
-          );
-        }
-        collector.push('  '.repeat(level), 'break;\n');
-        break;
-      case 'MidIRWhileStatement': {
-        s.loopVariables.forEach((v) => {
-          collector.push(
-            '  '.repeat(level),
-            `/** @type {${prettyPrintMidIRTypeAsTypeScriptType(v.type)}} */\n`,
-            '  '.repeat(level),
-            `let ${v.name} = ${prettyPrintMidIRExpressionAsJSExpression(v.initialValue)};\n`
-          );
-        });
-        const previousBreakCollector = breakCollector;
-        breakCollector = s.breakCollector?.name;
-        if (s.breakCollector != null) {
-          collector.push(
-            '  '.repeat(level),
-            `/** @type {${prettyPrintMidIRTypeAsTypeScriptType(s.breakCollector.type)}} */\n`,
-            '  '.repeat(level),
-            `let ${s.breakCollector.name};\n`
-          );
-        }
-        collector.push('  '.repeat(level), `while (true) {\n`);
-        level += 1;
-        s.statements.forEach(printer);
-        s.loopVariables.forEach((v) => {
-          collector.push(
-            '  '.repeat(level),
-            `${v.name} = ${prettyPrintMidIRExpressionAsJSExpression(v.loopValue)};\n`
-          );
-        });
-        level -= 1;
-        collector.push('  '.repeat(level), '}\n');
-        breakCollector = previousBreakCollector;
-        break;
-      }
-      case 'MidIRCastStatement': {
-        const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
-        const expression = prettyPrintMidIRExpressionAsJSExpression(s.assignedExpression);
-        collector.push(
-          '  '.repeat(level),
-          `let ${s.name} = /** @type {${type}} */ (${expression});\n`
-        );
-        break;
-      }
-      case 'MidIRStructInitializationStatement': {
-        const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
-        const expressions = s.expressionList
-          .map(prettyPrintMidIRExpressionAsJSExpression)
-          .join(', ');
-        collector.push(
-          '  '.repeat(level),
-          `/** @type {${type}} */\n`,
-          '  '.repeat(level),
-          `let ${s.structVariableName} = [${expressions}];\n`
-        );
-        break;
-      }
-      case 'MidIRIncreaseReferenceCountStatement': {
-        collector.push(
-          '  '.repeat(level),
-          `${prettyPrintMidIRExpressionAsJSExpression(s.expression)}[0] += 1;\n`
-        );
-        break;
-      }
-      case 'MidIRDecreaseReferenceCountStatement':
-        collector.push(
-          '  '.repeat(level),
-          `${prettyPrintMidIRExpressionAsJSExpression(s.expression)}[0] -= 1;\n`
-        );
-        break;
-    }
-  }
-
-  printer(statement);
-
-  return collector.join('').trimEnd();
 }
 
 export interface MidIRTypeDefinition {
@@ -762,41 +419,383 @@ export interface MidIRSources {
   readonly functions: readonly MidIRFunction[];
 }
 
-export function debugPrintMidIRFunction({
-  name,
-  parameters,
-  type: { argumentTypes, returnType },
-  body: bodyStatements,
-  returnValue,
-}: MidIRFunction): string {
-  const typedParameters = zip(parameters, argumentTypes)
-    .map(([parameter, parameterType]) => `${parameter}: ${prettyPrintMidIRType(parameterType)}`)
-    .join(', ');
-  const header = `function ${name}(${typedParameters}): ${prettyPrintMidIRType(returnType)} {`;
-  const body = [
-    ...bodyStatements.map((it) => debugPrintMidIRStatement(it, 1)),
-    `  return ${debugPrintMidIRExpression(returnValue)};`,
-  ].join('\n');
-  return `${header}\n${body}\n}\n`;
-}
+// Thanks https://gist.github.com/getify/3667624
+const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
 
 export function debugPrintMidIRSources({
   globalVariables,
   typeDefinitions,
   functions,
 }: MidIRSources): string {
+  function debugPrintMidIRStatement(statement: MidIRStatement, startLevel: number): string {
+    const collector: string[] = [];
+    let level = startLevel;
+    let breakCollector: string | undefined = undefined;
+
+    function printer(s: MidIRStatement) {
+      switch (s.__type__) {
+        case 'MidIRIndexAccessStatement': {
+          const type = prettyPrintMidIRType(s.type);
+          const pointerExpression = prettyPrintMidIRExpression(s.pointerExpression);
+          collector.push(
+            '  '.repeat(level),
+            `let ${s.name}: ${type} = ${pointerExpression}[${s.index}];\n`
+          );
+          break;
+        }
+        case 'MidIRBinaryStatement': {
+          const type = prettyPrintMidIRType(s.type);
+          const e1 = prettyPrintMidIRExpression(s.e1);
+          const e2 = prettyPrintMidIRExpression(s.e2);
+          collector.push(
+            '  '.repeat(level),
+            `let ${s.name}: ${type} = ${e1} ${s.operator} ${e2};\n`
+          );
+          break;
+        }
+        case 'MidIRFunctionCallStatement': {
+          const functionString = prettyPrintMidIRExpression(s.functionExpression);
+          const argumentString = s.functionArguments.map(prettyPrintMidIRExpression).join(', ');
+          const collectorString =
+            s.returnCollector != null
+              ? `let ${s.returnCollector}: ${prettyPrintMidIRType(s.returnType)} = `
+              : '';
+          collector.push(
+            '  '.repeat(level),
+            `${collectorString}${functionString}(${argumentString});\n`
+          );
+          break;
+        }
+        case 'MidIRIfElseStatement':
+          s.finalAssignments.forEach((finalAssignment) => {
+            const type = prettyPrintMidIRType(finalAssignment.type);
+            collector.push('  '.repeat(level), `let ${finalAssignment.name}: ${type};\n`);
+          });
+          collector.push(
+            '  '.repeat(level),
+            `if (${prettyPrintMidIRExpression(s.booleanExpression)}) {\n`
+          );
+          level += 1;
+          s.s1.forEach(printer);
+          s.finalAssignments.forEach((finalAssignment) => {
+            const v1 = prettyPrintMidIRExpression(finalAssignment.branch1Value);
+            collector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
+          });
+          level -= 1;
+          collector.push('  '.repeat(level), `} else {\n`);
+          level += 1;
+          s.s2.forEach(printer);
+          s.finalAssignments.forEach((finalAssignment) => {
+            const v2 = prettyPrintMidIRExpression(finalAssignment.branch2Value);
+            collector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
+          });
+          level -= 1;
+          collector.push('  '.repeat(level), `}\n`);
+          break;
+        case 'MidIRSingleIfStatement':
+          collector.push(
+            '  '.repeat(level),
+            `if (${s.invertCondition ? '!' : ''}${prettyPrintMidIRExpression(
+              s.booleanExpression
+            )}) {\n`
+          );
+          level += 1;
+          s.statements.forEach(printer);
+          level -= 1;
+          collector.push('  '.repeat(level), `}\n`);
+          break;
+        case 'MidIRBreakStatement':
+          collector.push(
+            '  '.repeat(level),
+            `${breakCollector} = ${prettyPrintMidIRExpression(s.breakValue)};\n`
+          );
+          collector.push('  '.repeat(level), 'break;\n');
+          break;
+        case 'MidIRWhileStatement': {
+          s.loopVariables.forEach((v) => {
+            const type = prettyPrintMidIRType(v.type);
+            collector.push(
+              '  '.repeat(level),
+              `let ${v.name}: ${type} = ${prettyPrintMidIRExpression(v.initialValue)};\n`
+            );
+          });
+          const previousBreakCollector = breakCollector;
+          breakCollector = s.breakCollector?.name;
+          if (s.breakCollector != null) {
+            const { name, type } = s.breakCollector;
+            collector.push('  '.repeat(level), `let ${name}: ${prettyPrintMidIRType(type)};\n`);
+          }
+          collector.push('  '.repeat(level), `while (true) {\n`);
+          level += 1;
+          s.statements.forEach(printer);
+          s.loopVariables.forEach((v) => {
+            collector.push(
+              '  '.repeat(level),
+              `${v.name} = ${prettyPrintMidIRExpression(v.loopValue)};\n`
+            );
+          });
+          level -= 1;
+          collector.push('  '.repeat(level), '}\n');
+          breakCollector = previousBreakCollector;
+          break;
+        }
+        case 'MidIRCastStatement':
+          collector.push(
+            '  '.repeat(level),
+            `let ${s.name}: ${prettyPrintMidIRType(s.type)} = ${prettyPrintMidIRExpression(
+              s.assignedExpression
+            )};\n`
+          );
+          break;
+        case 'MidIRStructInitializationStatement': {
+          const expressionString = s.expressionList.map(prettyPrintMidIRExpression).join(', ');
+          collector.push(
+            '  '.repeat(level),
+            `let ${s.structVariableName}: ${prettyPrintMidIRType(
+              s.type
+            )} = [${expressionString}];\n`
+          );
+          break;
+        }
+        case 'MidIRIncreaseReferenceCountStatement':
+          collector.push(
+            '  '.repeat(level),
+            `${prettyPrintMidIRExpression(s.expression)}[0] += 1;\n`
+          );
+          break;
+        case 'MidIRDecreaseReferenceCountStatement':
+          collector.push(
+            '  '.repeat(level),
+            `${prettyPrintMidIRExpression(s.expression)}[0] -= 1;\n`
+          );
+          break;
+      }
+    }
+
+    printer(statement);
+
+    return collector.join('').trimEnd();
+  }
+
   return [
-    ...globalVariables.map(({ name, content }) => `const ${name} = [0, '${content}'];\n`),
+    ...globalVariables.map(
+      ({ name, content }) => `const ${name} = [0, "${escapeDoubleQuotes(content)}"];\n`
+    ),
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
         `type ${identifier} = (${mappings.map(prettyPrintMidIRType).join(', ')});\n`
     ),
-    ...functions.map((it) => debugPrintMidIRFunction(it)),
+    ...functions.map(
+      ({
+        name,
+        parameters,
+        type: { argumentTypes, returnType },
+        body: bodyStatements,
+        returnValue,
+      }) => {
+        const typedParameters = zip(parameters, argumentTypes)
+          .map(
+            ([parameter, parameterType]) => `${parameter}: ${prettyPrintMidIRType(parameterType)}`
+          )
+          .join(', ');
+        const header = `function ${name}(${typedParameters}): ${prettyPrintMidIRType(
+          returnType
+        )} {`;
+        const body = [
+          ...bodyStatements.map((it) => debugPrintMidIRStatement(it, 1)),
+          `  return ${prettyPrintMidIRExpression(returnValue)};`,
+        ].join('\n');
+        return `${header}\n${body}\n}\n`;
+      }
+    ),
   ].join('\n');
 }
 
-// Thanks https://gist.github.com/getify/3667624
-const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
+function prettyPrintMidIRFunction({
+  name,
+  parameters,
+  type: functionType,
+  body,
+  returnValue,
+}: MidIRFunction) {
+  const statementStringCollector: string[] = [];
+  let level = 1;
+  let breakCollector: string | undefined = undefined;
+
+  function prettyPrintMidIRStatementAsJSStatement(s: MidIRStatement): void {
+    switch (s.__type__) {
+      case 'MidIRIndexAccessStatement': {
+        const type = prettyPrintMidIRType(s.type);
+        const pointerString = prettyPrintMidIRExpression(s.pointerExpression);
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `/** @type {${type}} */\n`,
+          '  '.repeat(level),
+          `let ${s.name} = ${pointerString}[${s.index}];\n`
+        );
+        break;
+      }
+      case 'MidIRBinaryStatement': {
+        const type = prettyPrintMidIRType(s.type);
+        const e1 = prettyPrintMidIRExpression(s.e1);
+        const e2 = prettyPrintMidIRExpression(s.e2);
+        const binaryExpressionString = `${e1} ${s.operator} ${e2}`;
+        const wrapped =
+          s.operator === '/' ? `Math.floor(${binaryExpressionString})` : binaryExpressionString;
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `/** @type {${type}} */\n`,
+          '  '.repeat(level),
+          `let ${s.name} = ${wrapped};\n`
+        );
+        break;
+      }
+      case 'MidIRFunctionCallStatement': {
+        const functionExpression = prettyPrintMidIRExpression(s.functionExpression);
+        const functionArguments = s.functionArguments.map(prettyPrintMidIRExpression).join(', ');
+        const functionCallString = `${functionExpression}(${functionArguments});`;
+        if (s.returnCollector != null) {
+          const type = prettyPrintMidIRType(s.returnType);
+          statementStringCollector.push('  '.repeat(level), `/** @type {${type}} */\n`);
+        }
+        statementStringCollector.push(
+          '  '.repeat(level),
+          s.returnCollector == null
+            ? functionCallString
+            : `let ${s.returnCollector} = ${functionCallString}`,
+          '\n'
+        );
+        break;
+      }
+      case 'MidIRIfElseStatement':
+        s.finalAssignments.forEach((final) => {
+          statementStringCollector.push(
+            '  '.repeat(level),
+            `/** @type {${prettyPrintMidIRType(final.type)}} */\n`,
+            '  '.repeat(level),
+            `let ${final.name};\n`
+          );
+        });
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `if (${prettyPrintMidIRExpression(s.booleanExpression)}) {\n`
+        );
+        level += 1;
+        s.s1.forEach(prettyPrintMidIRStatementAsJSStatement);
+        s.finalAssignments.forEach((finalAssignment) => {
+          const v1 = prettyPrintMidIRExpression(finalAssignment.branch1Value);
+          statementStringCollector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
+        });
+        level -= 1;
+        statementStringCollector.push('  '.repeat(level), `} else {\n`);
+        level += 1;
+        s.s2.forEach(prettyPrintMidIRStatementAsJSStatement);
+        s.finalAssignments.forEach((finalAssignment) => {
+          const v2 = prettyPrintMidIRExpression(finalAssignment.branch2Value);
+          statementStringCollector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
+        });
+        level -= 1;
+        statementStringCollector.push('  '.repeat(level), '}\n');
+        break;
+      case 'MidIRSingleIfStatement':
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `if (${s.invertCondition ? '!' : ''}${prettyPrintMidIRExpression(
+            s.booleanExpression
+          )}) {\n`
+        );
+        level += 1;
+        s.statements.forEach(prettyPrintMidIRStatementAsJSStatement);
+        level -= 1;
+        statementStringCollector.push('  '.repeat(level), `}\n`);
+        break;
+      case 'MidIRBreakStatement':
+        if (breakCollector != null) {
+          statementStringCollector.push(
+            '  '.repeat(level),
+            `${breakCollector} = ${prettyPrintMidIRExpression(s.breakValue)};\n`
+          );
+        }
+        statementStringCollector.push('  '.repeat(level), 'break;\n');
+        break;
+      case 'MidIRWhileStatement': {
+        s.loopVariables.forEach((v) => {
+          statementStringCollector.push(
+            '  '.repeat(level),
+            `/** @type {${prettyPrintMidIRType(v.type)}} */\n`,
+            '  '.repeat(level),
+            `let ${v.name} = ${prettyPrintMidIRExpression(v.initialValue)};\n`
+          );
+        });
+        const previousBreakCollector = breakCollector;
+        breakCollector = s.breakCollector?.name;
+        if (s.breakCollector != null) {
+          statementStringCollector.push(
+            '  '.repeat(level),
+            `/** @type {${prettyPrintMidIRType(s.breakCollector.type)}} */\n`,
+            '  '.repeat(level),
+            `let ${s.breakCollector.name};\n`
+          );
+        }
+        statementStringCollector.push('  '.repeat(level), `while (true) {\n`);
+        level += 1;
+        s.statements.forEach(prettyPrintMidIRStatementAsJSStatement);
+        s.loopVariables.forEach((v) => {
+          statementStringCollector.push(
+            '  '.repeat(level),
+            `${v.name} = ${prettyPrintMidIRExpression(v.loopValue)};\n`
+          );
+        });
+        level -= 1;
+        statementStringCollector.push('  '.repeat(level), '}\n');
+        breakCollector = previousBreakCollector;
+        break;
+      }
+      case 'MidIRCastStatement': {
+        const type = prettyPrintMidIRType(s.type);
+        const expression = prettyPrintMidIRExpression(s.assignedExpression);
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `let ${s.name} = /** @type {${type}} */ (${expression});\n`
+        );
+        break;
+      }
+      case 'MidIRStructInitializationStatement': {
+        const type = prettyPrintMidIRType(s.type);
+        const expressions = s.expressionList.map(prettyPrintMidIRExpression).join(', ');
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `/** @type {${type}} */\n`,
+          '  '.repeat(level),
+          `let ${s.structVariableName} = [${expressions}];\n`
+        );
+        break;
+      }
+      case 'MidIRIncreaseReferenceCountStatement': {
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `${prettyPrintMidIRExpression(s.expression)}[0] += 1;\n`
+        );
+        break;
+      }
+      case 'MidIRDecreaseReferenceCountStatement':
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `${prettyPrintMidIRExpression(s.expression)}[0] -= 1;\n`
+        );
+        break;
+    }
+  }
+
+  const annotatedParameters = zip(parameters, functionType.argumentTypes)
+    .map(([n, t]) => `/** @type {${prettyPrintMidIRType(t)}} */ ${n}`)
+    .join(', ');
+  const returnType = prettyPrintMidIRType(functionType.returnType);
+  const header = `/** @returns {${returnType}} */\nfunction ${name}(${annotatedParameters}) {`;
+  body.forEach(prettyPrintMidIRStatementAsJSStatement);
+  statementStringCollector.push(`  return ${prettyPrintMidIRExpression(returnValue)};`);
+  return `${header}\n${statementStringCollector.join('')}\n}\n`;
+}
 
 export function prettyPrintMidIRSourcesAsJSSources(sources: MidIRSources): string {
   return [
@@ -806,21 +805,8 @@ export function prettyPrintMidIRSourcesAsJSSources(sources: MidIRSources): strin
     ),
     ...sources.typeDefinitions.map(
       ({ identifier, mappings }) =>
-        `/** @typedef {[${mappings
-          .map(prettyPrintMidIRTypeAsTypeScriptType)
-          .join(', ')}]} ${identifier}  */\n`
+        `/** @typedef {[${mappings.map(prettyPrintMidIRType).join(', ')}]} ${identifier}  */\n`
     ),
-    ...sources.functions.map(({ name, parameters, type, body, returnValue }) => {
-      const annotatedParameters = zip(parameters, type.argumentTypes)
-        .map(([n, t]) => `/** @type {${prettyPrintMidIRTypeAsTypeScriptType(t)}} */ ${n}`)
-        .join(', ');
-      const returnType = prettyPrintMidIRTypeAsTypeScriptType(type.returnType);
-      const header = `/** @returns {${returnType}} */\nfunction ${name}(${annotatedParameters}) {`;
-      const bodyString = [
-        ...body.map((it) => prettyPrintMidIRStatementAsJSStatement(it, 1)),
-        `  return ${prettyPrintMidIRExpressionAsJSExpression(returnValue)};`,
-      ].join('\n');
-      return `${header}\n${bodyString}\n}\n`;
-    }),
+    ...sources.functions.map(prettyPrintMidIRFunction),
   ].join('');
 }
