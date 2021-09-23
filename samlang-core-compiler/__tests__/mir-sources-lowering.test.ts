@@ -319,11 +319,11 @@ function __decRef_CC(o: CC): int {
     (o: CC)[0] -= 1;
     let dead: bool = (currentRefCount: int) <= 1;
     if (dead: bool) {
-      let pointer_casted: any = (o: CC);
-      _builtin_free((pointer_casted: any));
       let destructor: (any) -> int = (o: CC)[1];
       let context: any = (o: CC)[3];
       (destructor: (any) -> int)((context: any));
+      let pointer_casted: any = (o: CC);
+      _builtin_free((pointer_casted: any));
     }
   }
   return 0;

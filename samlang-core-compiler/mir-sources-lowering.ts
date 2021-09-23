@@ -107,30 +107,30 @@ function generateSingleDestructorFunction(
   ) => void
 ): MidIRFunction {
   const parameter = MIR_VARIABLE('o', defRefFunctionArgumentType(typeName));
-  const destructMemberStatements: MidIRStatement[] = isTheSameMidIRType(
-    parameter.type,
-    MIR_ANY_TYPE
-  )
-    ? [
-        MIR_FUNCTION_CALL({
-          functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
-          functionArguments: [parameter],
-          returnType: MIR_INT_TYPE,
-        }),
-      ]
-    : [
-        MIR_CAST({
-          name: `pointer_casted`,
-          type: MIR_ANY_TYPE,
-          assignedExpression: parameter,
-        }),
-        MIR_FUNCTION_CALL({
-          functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
-          functionArguments: [MIR_VARIABLE('pointer_casted', MIR_ANY_TYPE)],
-          returnType: MIR_INT_TYPE,
-        }),
-      ];
+  const destructMemberStatements: MidIRStatement[] = [];
   getDestructMemberStatements(parameter, destructMemberStatements);
+  destructMemberStatements.push(
+    ...(isTheSameMidIRType(parameter.type, MIR_ANY_TYPE)
+      ? [
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
+            functionArguments: [parameter],
+            returnType: MIR_INT_TYPE,
+          }),
+        ]
+      : [
+          MIR_CAST({
+            name: `pointer_casted`,
+            type: MIR_ANY_TYPE,
+            assignedExpression: parameter,
+          }),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
+            functionArguments: [MIR_VARIABLE('pointer_casted', MIR_ANY_TYPE)],
+            returnType: MIR_INT_TYPE,
+          }),
+        ])
+  );
   return {
     name: decRefFunctionName(typeName),
     parameters: [parameter.name],
