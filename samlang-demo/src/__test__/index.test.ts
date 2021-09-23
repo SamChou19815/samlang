@@ -8,9 +8,7 @@ describe('samlang-demo', () => {
       interpreterPrinted: 'hello world\n',
       prettyPrintedProgram: `class Main { function main(): unit = Builtins.println("hello world")  }\n`,
       jsString: `/** @type {Str} */ const GLOBAL_STRING_0 = [0, "hello world"];
-/** @returns {number} */
 function _Demo_Main_main() {
-  /** @type {number} */
   let _mid_t0 = __Builtins_println(GLOBAL_STRING_0);
   return 0;
 }
