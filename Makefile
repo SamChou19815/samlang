@@ -1,7 +1,7 @@
 all: samlang-runtime/runtime.bc samlang-runtime/example
 
-samlang-runtime/runtime.bc: samlang-runtime/libsam-base.bc samlang-runtime/libsam.bc samlang-runtime/gc.bc
-	llvm-link -o $@ samlang-runtime/libsam-base.bc samlang-runtime/libsam.bc samlang-runtime/gc.bc
+samlang-runtime/runtime.bc: samlang-runtime/libsam-base.bc samlang-runtime/libsam.bc
+	llvm-link -o $@ samlang-runtime/libsam-base.bc samlang-runtime/libsam.bc
 
 %.bc: %.c
 	clang -O3 -m64 -fno-stack-protector -fno-exceptions -emit-llvm $< -c -o $@
@@ -13,4 +13,3 @@ samlang-runtime/example: samlang-runtime/example.ll samlang-runtime/runtime.bc
 
 clean:
 	rm -f samlang-runtime/*.bc samlang-runtime/*.o samlang-runtime/example
-

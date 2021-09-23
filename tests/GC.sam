@@ -1,13 +1,13 @@
 import { ForTests } from tests.StdLib
 
 class GC {
-  private function mathTailRec(n: int, acc: int): int =
+  private function allocateStringALot(n: int, acc: int): int =
     // Forcing allocating a lot of objects, test gc
-    if (n == 0) then acc else GC.mathTailRec(
+    if (n == 0) then acc else GC.allocateStringALot(
       n - 1,
       acc + Builtins.stringToInt(Builtins.intToString(12))
     )
 
-  function run(): unit = ForTests.assertIntEquals(1200, GC.mathTailRec(100, 0))
+  function run(): unit = ForTests.assertIntEquals(1200, GC.allocateStringALot(100, 0))
 
 }

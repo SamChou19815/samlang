@@ -258,23 +258,26 @@ function _compiled_program_main(): int {
     let O: Object = [1, 0, (obj: Obj)];
     let _mid_t5: any = 0;
     let v1: Variant = [1, 0, (_mid_t5: any)];
+    G1[0] += 1;
     let v2: Variant = [1, 0, G1];
-    let c1: CC = [1, __decRef_nothing, aaa, G1];
-    let _mid_t6: (any) -> int = bbb;
-    let _mid_t7: any = 0;
-    let c2: CC = [1, __decRef_nothing, (_mid_t6: (any) -> int), (_mid_t7: any)];
-    let _mid_t8: (any, int) -> int = (cc: CC)[2];
-    let _mid_t9: any = (cc: CC)[3];
-    let _mid_t10: CC = (_mid_t8: (any, int) -> int)((_mid_t9: any), 0);
+    G1[0] += 1;
+    let _mid_t6: (any) -> int = __decRef_string;
+    let c1: CC = [1, (_mid_t6: (any) -> int), aaa, G1];
+    let _mid_t7: (any) -> int = bbb;
+    let _mid_t8: any = 0;
+    let c2: CC = [1, __decRef_nothing, (_mid_t7: (any) -> int), (_mid_t8: any)];
+    let _mid_t9: (any, int) -> int = (cc: CC)[2];
+    let _mid_t10: any = (cc: CC)[3];
+    let _mid_t11: CC = (_mid_t9: (any, int) -> int)((_mid_t10: any), 0);
     (G1: CC)[0] += 1;
-    let _mid_t11: any = (G1: CC);
-    let _mid_t12: (any) -> int = __decRef_CC;
-    let c3: CC = [1, (_mid_t12: (any) -> int), aaa, (_mid_t11: any)];
+    let _mid_t12: any = (G1: CC);
+    let _mid_t13: (any) -> int = __decRef_CC;
+    let c3: CC = [1, (_mid_t13: (any) -> int), aaa, (_mid_t12: any)];
     __decRef_Object((O: Object));
     __decRef_Variant((v1: Variant));
     __decRef_CC((c1: CC));
     __decRef_CC((c2: CC));
-    __decRef_CC((_mid_t10: CC));
+    __decRef_CC((_mid_t11: CC));
     __decRef_CC((c3: CC));
     finalV = (v2: int);
   }
@@ -282,37 +285,59 @@ function _compiled_program_main(): int {
 }
 
 function __decRef_Object(o: Object): int {
-  (o: Object)[0] -= 1;
   let currentRefCount: int = (o: Object)[0];
-  let dead: bool = (currentRefCount: int) <= 0;
-  if (dead: bool) {
-    let pointer_casted: any = (o: Object);
-    _builtin_free((pointer_casted: any));
+  let performGC: bool = (currentRefCount: int) > 0;
+  if (performGC: bool) {
+    (o: Object)[0] -= 1;
+    let dead: bool = (currentRefCount: int) <= 1;
+    if (dead: bool) {
+      let pointer_casted: any = (o: Object);
+      _builtin_free((pointer_casted: any));
+    }
   }
   return 0;
 }
 
 function __decRef_Variant(o: Variant): int {
-  (o: Variant)[0] -= 1;
   let currentRefCount: int = (o: Variant)[0];
-  let dead: bool = (currentRefCount: int) <= 0;
-  if (dead: bool) {
-    let pointer_casted: any = (o: Variant);
-    _builtin_free((pointer_casted: any));
+  let performGC: bool = (currentRefCount: int) > 0;
+  if (performGC: bool) {
+    (o: Variant)[0] -= 1;
+    let dead: bool = (currentRefCount: int) <= 1;
+    if (dead: bool) {
+      let pointer_casted: any = (o: Variant);
+      _builtin_free((pointer_casted: any));
+    }
   }
   return 0;
 }
 
 function __decRef_CC(o: CC): int {
-  (o: CC)[0] -= 1;
   let currentRefCount: int = (o: CC)[0];
-  let dead: bool = (currentRefCount: int) <= 0;
-  if (dead: bool) {
-    let pointer_casted: any = (o: CC);
-    _builtin_free((pointer_casted: any));
-    let destructor: (any) -> int = (o: CC)[1];
-    let context: any = (o: CC)[3];
-    (destructor: (any) -> int)((context: any));
+  let performGC: bool = (currentRefCount: int) > 0;
+  if (performGC: bool) {
+    (o: CC)[0] -= 1;
+    let dead: bool = (currentRefCount: int) <= 1;
+    if (dead: bool) {
+      let destructor: (any) -> int = (o: CC)[1];
+      let context: any = (o: CC)[3];
+      (destructor: (any) -> int)((context: any));
+      let pointer_casted: any = (o: CC);
+      _builtin_free((pointer_casted: any));
+    }
+  }
+  return 0;
+}
+
+function __decRef_string(o: string): int {
+  let currentRefCount: int = (o: string)[0];
+  let performGC: bool = (currentRefCount: int) > 0;
+  if (performGC: bool) {
+    (o: string)[0] -= 1;
+    let dead: bool = (currentRefCount: int) <= 1;
+    if (dead: bool) {
+      _builtin_free((o: string));
+    }
   }
   return 0;
 }

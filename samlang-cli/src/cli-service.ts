@@ -76,12 +76,34 @@ function compileToJS(
   writeFileSync(
     exportingJSFilePath,
     `// @ts-check
-const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (/** @type {string} */ a, /** @type {string} */ b) => a + b;
-const ${ENCODED_FUNCTION_NAME_PRINTLN} = (/** @type {string} */ line) => console.log(line);
-const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (/** @type {string} */ v) => parseInt(v, 10);
-const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (/** @type {number} */ v) => String(v);
-const ${ENCODED_FUNCTION_NAME_THROW} = (/** @type {string} */ v) => { throw Error(v); };
-const ${ENCODED_FUNCTION_NAME_FREE} = (/** @type {unknown} */ v) => { };
+/** @typedef {[number, string]} Str */
+/**
+ * @param {Str} a
+ * @param {Str} b
+ * @returns {Str}
+ */
+const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a], [, b]) => [1, a + b];
+/**
+ * @param {Str} line
+ * @returns {number}
+ */
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]) => {console.log(line); return 0;}
+/**
+ * @param {Str} v
+ * @returns {number}
+ */
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]) => parseInt(v, 10);
+/**
+ * @param {number} v
+ * @returns {Str}
+ */
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (/** @type {number} */ v) => [1, String(v)];
+/**
+ * @param {Str} v
+ * @returns {number}
+ */
+const ${ENCODED_FUNCTION_NAME_THROW} = (/** @type {Str} */ [, v]) => { throw Error(v); };
+const ${ENCODED_FUNCTION_NAME_FREE} = (/** @type {unknown} */ v) => 0;
 ${prettyPrintMidIRSourcesAsJSSources(midIRSources)}
 module.exports = { ${midIRSources.mainFunctionNames.join(', ')} };`
   );

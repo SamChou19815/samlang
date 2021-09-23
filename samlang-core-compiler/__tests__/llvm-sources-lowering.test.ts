@@ -626,8 +626,13 @@ l2_loop_end:
       [MIR_INC_REF(MIR_VARIABLE('obj', MIR_IDENTIFIER_TYPE('Obj')))],
       `  %_temp_0_ref_count_slot_ptr = getelementptr %Obj, %Obj* %obj, i32 0, i32 0
   %_temp_1_ref_count_old = load i64, i64* %_temp_0_ref_count_slot_ptr
+  %_temp_3_ref_count_is_zero = icmp eq i64 %_temp_1_ref_count_old, 0
+  br i1 %_temp_3_ref_count_is_zero, label %l2_branch_end, label %l1_branch_start
+l1_branch_start:
   %_temp_2_ref_count_new = add i64 %_temp_1_ref_count_old, 1
-  store i64 %_temp_2_ref_count_new, i64* %_temp_0_ref_count_slot_ptr`
+  store i64 %_temp_2_ref_count_new, i64* %_temp_0_ref_count_slot_ptr
+  br label %l2_branch_end
+l2_branch_end:`
     );
   });
 
@@ -681,13 +686,13 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 declare i64 @_builtin_free(i64*) nounwind
 
 ; @ss = 'S'
-@ss = private unnamed_addr constant [2 x i64] [i64 1, i64 83], align 8
+@ss = private unnamed_addr constant [3 x i64] [i64 0, i64 1, i64 83], align 8
 %A = type { i64, i64 }
 define i64 @___DUMMY___Main_main() local_unnamed_addr nounwind {
 l0_start:
-  %_temp_0_string_name_cast = bitcast [2 x i64]* @ss to i64*
+  %_temp_0_string_name_cast = bitcast [3 x i64]* @ss to i64*
   call i64 @println(i64* %_temp_0_string_name_cast) nounwind
-  %_temp_1_string_name_cast = bitcast [2 x i64]* @ss to i64*
+  %_temp_1_string_name_cast = bitcast [3 x i64]* @ss to i64*
   %r = call i64 @stringToInt(i64* %_temp_1_string_name_cast) nounwind
   ret i64 0
 }`

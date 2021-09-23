@@ -232,11 +232,9 @@ function interpretLLVMFunction(
       case 'LLVMLoadInstruction':
         stackFrame.setLocalValue(
           instructionToInterpret.resultVariable,
-          checkNotNull(
-            environment.heap.get(
-              stackFrame.getLocalValue(instructionToInterpret.sourceVariable).toString()
-            )
-          )
+          environment.heap.get(
+            stackFrame.getLocalValue(instructionToInterpret.sourceVariable).toString()
+          ) ?? 0
         );
         programCounter += 1;
         break;

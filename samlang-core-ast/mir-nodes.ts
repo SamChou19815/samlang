@@ -54,6 +54,8 @@ export function prettyPrintMidIRTypeAsTypeScriptType(type: MidIRType): string {
           return 'number';
         case 'bool':
           return 'boolean';
+        case 'string':
+          return 'Str';
         default:
           return type.type;
       }
@@ -719,12 +721,11 @@ export function prettyPrintMidIRStatementAsJSStatement(
         );
         break;
       }
-      case 'MidIRIncreaseReferenceCountStatement':
-        collector.push(
-          '  '.repeat(level),
-          `${prettyPrintMidIRExpressionAsJSExpression(s.expression)}[0] += 1;\n`
-        );
+      case 'MidIRIncreaseReferenceCountStatement': {
+        const expression = prettyPrintMidIRExpressionAsJSExpression(s.expression);
+        collector.push('  '.repeat(level), `if (${expression}[0]) ${expression}[0] += 1;\n`);
         break;
+      }
       case 'MidIRDecreaseReferenceCountStatement':
         collector.push(
           '  '.repeat(level),
@@ -783,7 +784,7 @@ export function debugPrintMidIRSources({
   functions,
 }: MidIRSources): string {
   return [
-    ...globalVariables.map(({ name, content }) => `const ${name} = '${content}';\n`),
+    ...globalVariables.map(({ name, content }) => `const ${name} = [0, '${content}'];\n`),
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
         `type ${identifier} = (${mappings.map(prettyPrintMidIRType).join(', ')});\n`
@@ -798,7 +799,8 @@ const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g,
 export function prettyPrintMidIRSourcesAsJSSources(sources: MidIRSources): string {
   return [
     ...sources.globalVariables.map(
-      ({ name, content }) => `const ${name} = "${escapeDoubleQuotes(content)}";\n`
+      ({ name, content }) =>
+        `/** @type {Str} */ const ${name} = [0, "${escapeDoubleQuotes(content)}"];\n`
     ),
     ...sources.typeDefinitions.map(
       ({ identifier, mappings }) =>

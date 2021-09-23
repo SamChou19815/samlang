@@ -339,6 +339,9 @@ export function prettyPrintLLVMInstruction(instruction: LLVMInstruction): string
       const value = prettyPrintLLVMValue(instruction.sourceValue, instruction.sourcePointerType);
       const sourceType = prettyPrintLLVMType(instruction.sourcePointerType);
       const sourceTypeWithoutStar = sourceType.substring(0, sourceType.length - 1);
+      if (sourceType === 'i64*') {
+        return `%${resultVariable} = getelementptr ${sourceTypeWithoutStar}, ${sourceType} ${value}, i32 ${offset}`;
+      }
       return `%${resultVariable} = getelementptr ${sourceTypeWithoutStar}, ${sourceType} ${value}, i32 0, i32 ${offset}`;
     }
     case 'LLVMBinaryInstruction': {
@@ -497,15 +500,15 @@ declare i64 @${ENCODED_FUNCTION_NAME_FREE}(i64*) nounwind
 `,
     ...globalVariables.flatMap(({ name, content }) => {
       const size = content.length;
-      const structLength = size + 1;
+      const structLength = size + 2;
       const ints = Array.from(content)
         .map((it) => `i64 ${it.charCodeAt(0)}`)
         .join(', ');
       return [
         `; @${name} = '${content}'`,
         size === 0
-          ? `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 ${size}], align 8`
-          : `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 ${size}, ${ints}], align 8`,
+          ? `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 0, i64 ${size}], align 8`
+          : `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 0, i64 ${size}, ${ints}], align 8`,
       ];
     }),
     ...typeDefinitions.map(
