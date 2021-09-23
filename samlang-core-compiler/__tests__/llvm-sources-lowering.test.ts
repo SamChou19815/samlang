@@ -626,13 +626,8 @@ l2_loop_end:
       [MIR_INC_REF(MIR_VARIABLE('obj', MIR_IDENTIFIER_TYPE('Obj')))],
       `  %_temp_0_ref_count_slot_ptr = getelementptr %Obj, %Obj* %obj, i32 0, i32 0
   %_temp_1_ref_count_old = load i64, i64* %_temp_0_ref_count_slot_ptr
-  %_temp_3_ref_count_is_zero = icmp eq i64 %_temp_1_ref_count_old, 0
-  br i1 %_temp_3_ref_count_is_zero, label %l2_branch_end, label %l1_branch_start
-l1_branch_start:
   %_temp_2_ref_count_new = add i64 %_temp_1_ref_count_old, 1
-  store i64 %_temp_2_ref_count_new, i64* %_temp_0_ref_count_slot_ptr
-  br label %l2_branch_end
-l2_branch_end:`
+  store i64 %_temp_2_ref_count_new, i64* %_temp_0_ref_count_slot_ptr`
     );
   });
 
