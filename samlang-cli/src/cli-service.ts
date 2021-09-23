@@ -21,7 +21,7 @@ import {
 } from 'samlang-core-ast/common-names';
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
-import { MidIRSources, prettyPrintMidIRSourcesAsJSSources } from 'samlang-core-ast/mir-nodes';
+import { MidIRSources, prettyPrintMidIRSourcesAsTSSources } from 'samlang-core-ast/mir-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -66,47 +66,25 @@ export function collectSources({
   return sources;
 }
 
-function compileToJS(
+function compileToTS(
   midIRSources: MidIRSources,
   moduleReferences: readonly ModuleReference[],
   outputDirectory: string
 ): void {
   mkdirSync(outputDirectory, { recursive: true });
-  const commonJSCode = `// @ts-check
-/** @typedef {[number, string]} Str */
-/**
- * @param {Str} a
- * @param {Str} b
- * @returns {Str}
- */
-const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a], [, b]) => [1, a + b];
-/**
- * @param {Str} line
- * @returns {number}
- */
-const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]) => {console.log(line); return 0;}
-/**
- * @param {Str} v
- * @returns {number}
- */
-const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]) => parseInt(v, 10);
-/**
- * @param {number} v
- * @returns {Str}
- */
-const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (/** @type {number} */ v) => [1, String(v)];
-/**
- * @param {Str} v
- * @returns {number}
- */
-const ${ENCODED_FUNCTION_NAME_THROW} = (/** @type {Str} */ [, v]) => { throw Error(v); };
-const ${ENCODED_FUNCTION_NAME_FREE} = (/** @type {unknown} */ v) => 0;
-${prettyPrintMidIRSourcesAsJSSources(midIRSources)}`;
+  const commonJSCode = `type Str = [number, string];
+const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.log(line); return 0; }
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(v, 10);
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)];
+const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
+const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
+${prettyPrintMidIRSourcesAsTSSources(midIRSources)}`;
   const mainFunctions = new Set(midIRSources.mainFunctionNames);
   moduleReferences.forEach((moduleReference) => {
     const mainFunctionName = encodeMainFunctionName(moduleReference);
     if (!mainFunctions.has(mainFunctionName)) return;
-    const outputJSFilePath = join(outputDirectory, `${moduleReference}.js`);
+    const outputJSFilePath = join(outputDirectory, `${moduleReference}.ts`);
     writeFileSync(outputJSFilePath, `${commonJSCode}\n${mainFunctionName}();\n`);
   });
 }
@@ -162,7 +140,7 @@ export function compileEverything(
   );
   const moduleReferences = sources.entries().map(([moduleReference]) => moduleReference);
 
-  compileToJS(midIRSources, moduleReferences, outputDirectory);
+  compileToTS(midIRSources, moduleReferences, outputDirectory);
 
   if (spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status !== 0) {
     // eslint-disable-next-line no-console

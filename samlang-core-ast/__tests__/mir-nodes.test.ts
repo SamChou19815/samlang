@@ -2,7 +2,7 @@ import {
   prettyPrintMidIRType,
   isTheSameMidIRType,
   prettyPrintMidIRSourcesAsJSSources,
-  debugPrintMidIRSources,
+  prettyPrintMidIRSourcesAsTSSources,
   MIR_FUNCTION_CALL,
   MIR_IF_ELSE,
   MIR_SINGLE_IF,
@@ -163,17 +163,13 @@ describe('mir-nodes', () => {
         ],
       })
     ).toBe(`/** @type {Str} */ const dev_meggo = [0, "vibez"];
-/** @returns {number} */
-function Bar(/** @type {Str} */ f) {
-  /** @type {number} */
+function Bar(f) {
   let bar;
   if (0) {
     0[0] += 1;
     0[0] -= 1;
     let foo = /** @type {Bar} */ (dev);
-    /** @type {number} */
     let n = _tail_rec_param_n;
-    /** @type {number} */
     let acc = _tail_rec_param_acc;
     while (true) {
       let foo = /** @type {Bar} */ (dev);
@@ -181,11 +177,8 @@ function Bar(/** @type {Str} */ f) {
       n = _t0_n;
       acc = _t1_acc;
     }
-    /** @type {number} */
     let n = _tail_rec_param_n;
-    /** @type {number} */
     let acc = _tail_rec_param_acc;
-    /** @type {number} */
     let v;
     while (true) {
       let foo = /** @type {Bar} */ (dev);
@@ -196,20 +189,13 @@ function Bar(/** @type {Str} */ f) {
     }
     bar = b1;
   } else {
-    /** @type {number} */
     let dd = 0 + 0;
-    /** @type {boolean} */
     let dd = 0 < 0;
-    /** @type {boolean} */
     let dd = 0 ^ 0;
-    /** @type {number} */
     let dd = Math.floor(0 / 0);
-    /** @type {FooBar} */
     let baz = [meggo];
-    /** @type {number} */
     let vibez = h(big);
     stresso(d);
-    /** @type {number} */
     let f = big[0];
     if (0) {
       break;
@@ -285,9 +271,9 @@ function Bar(/** @type {Str} */ f) {
     });
   });
 
-  it('debugPrintMidIRSources works', () => {
+  it('prettyPrintMidIRSourcesAsTSSources works', () => {
     expect(
-      debugPrintMidIRSources({
+      prettyPrintMidIRSourcesAsTSSources({
         globalVariables: [{ name: 'dev_meggo', content: 'vibez' }],
         typeDefinitions: [{ identifier: 'Foo', mappings: [MIR_INT_TYPE, MIR_ANY_TYPE] }],
         mainFunctionNames: [],
@@ -404,20 +390,18 @@ function Bar(/** @type {Str} */ f) {
           },
         ],
       })
-    ).toBe(`const dev_meggo = [0, "vibez"];
-
-type Foo = (number, any);
-
+    ).toBe(`const dev_meggo: Str = [0, "vibez"];
+type Foo = [number, any];
 function Bar(f: number): number {
   let bar: number;
   if (0) {
     0[0] += 1;
     0[0] -= 1;
-    let foo: Bar = dev;
+    let foo = dev as Bar;
     let n: number = _tail_rec_param_n;
     let acc: number = _tail_rec_param_acc;
     while (true) {
-      let foo: Bar = dev;
+      let foo = dev as Bar;
       n = _t0_n;
       acc = _t1_acc;
     }
@@ -425,7 +409,7 @@ function Bar(f: number): number {
     let acc: number = _tail_rec_param_acc;
     let v: number;
     while (true) {
-      let foo: Bar = dev;
+      let foo = dev as Bar;
       n = _t0_n;
       acc = _t1_acc;
     }
@@ -437,11 +421,9 @@ function Bar(f: number): number {
     stresso(d);
     let f: number = big[0];
     if (0) {
-      undefined = 0;
       break;
     }
     if (!0) {
-      undefined = 0;
       break;
     }
     bar = b2;

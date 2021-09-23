@@ -41,12 +41,13 @@ runWithErrorCheck('rm', ['-rf', basePath]);
 runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']);
 console.error('Compiled!');
 if (!process.env.NO_JS) {
-  console.error('Checking generated JS code...');
-  const { resultString, time } = runWithErrorCheck('node', [
-    path.join(basePath, 'tests.AllTests.js'),
+  console.error('Checking generated TS code...');
+  const { resultString, time } = runWithErrorCheck('yarn', [
+    'esr',
+    path.join(basePath, 'tests.AllTests.ts'),
   ]);
   if (!compare(read('./scripts/snapshot.txt'), resultString)) process.exit(1);
-  console.error(`Generated JS code is good and takes ${time}ms to run.`);
+  console.error(`Generated TS code is good and takes ${time}ms to run.`);
 }
 if (
   !process.env.NO_LLVM &&

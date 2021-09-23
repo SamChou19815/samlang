@@ -19,7 +19,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_CLOSURE_INITIALIZATION,
 } from 'samlang-core-ast/hir-nodes';
-import { debugPrintMidIRSources } from 'samlang-core-ast/mir-nodes';
+import { prettyPrintMidIRSourcesAsTSSources } from 'samlang-core-ast/mir-nodes';
 
 import lowerHighIRSourcesToMidIRSources from '../mir-sources-lowering';
 
@@ -27,7 +27,7 @@ type SimplifiedSources = Omit<HighIRSources, 'globalVariables' | 'mainFunctionNa
 
 const assertLowered = (sources: SimplifiedSources, expected: string) =>
   expect(
-    debugPrintMidIRSources(
+    prettyPrintMidIRSourcesAsTSSources(
       lowerHighIRSourcesToMidIRSources({
         ...sources,
         globalVariables: [],
@@ -242,12 +242,9 @@ describe('mir-sources-lowering', () => {
   it('lowerHighIRSourcesToMidIRSources comprehensive test with reference counting', () => {
     assertLowered(
       commonComprehensiveSources,
-      `type CC = (number, (t0: any) => number, (t0: any, t1: number) => number, any);
-
-type Object = (number, number, number);
-
-type Variant = (number, number, any);
-
+      `type CC = [number, (t0: any) => number, (t0: any, t1: number) => number, any];
+type Object = [number, number, number];
+type Variant = [number, number, any];
 function cc(): number {
   let _mid_t0: (t0: any, t1: number) => number = cc[2];
   let _mid_t1: any = cc[3];
@@ -255,7 +252,7 @@ function cc(): number {
   let v1: number = a[1];
   let v2: number = b[1];
   let _mid_t3: any = b[2];
-  let v3: number = _mid_t3;
+  let v3 = _mid_t3 as number;
   let v4: Str = b[2];
   while (true) {
     if (0) {
@@ -273,12 +270,11 @@ function cc(): number {
   __decRef__(_);
   return 0;
 }
-
 function main(): number {
   let v1: number = 0 + 0;
   obj[0] += 1;
   let O: Object = [1, 0, obj];
-  let _mid_t0: any = 0;
+  let _mid_t0 = 0 as any;
   let v1: Variant = [1, 0, _mid_t0];
   let _mid_t1: number = G1[0];
   let _mid_t2: boolean = _mid_t1 > 0;
@@ -291,10 +287,10 @@ function main(): number {
   if (_mid_t4) {
     G1[0] += 1;
   }
-  let _mid_t5: (t0: any) => number = __decRef_string;
+  let _mid_t5 = __decRef_string as (t0: any) => number;
   let c1: CC = [1, _mid_t5, aaa, G1];
-  let _mid_t6: (t0: any) => number = bbb;
-  let _mid_t7: any = 0;
+  let _mid_t6 = bbb as (t0: any) => number;
+  let _mid_t7 = 0 as any;
   let c2: CC = [1, __decRef_nothing, _mid_t6, _mid_t7];
   __decRef_Object(O);
   __decRef_Variant(v1);
@@ -303,7 +299,6 @@ function main(): number {
   __decRef_CC(c2);
   return 0;
 }
-
 function _compiled_program_main(): number {
   let finalV: number;
   if (true) {
@@ -315,8 +310,8 @@ function _compiled_program_main(): number {
     let _mid_t3: any = cc[3];
     let _mid_t4: CC = _mid_t2(_mid_t3, 0);
     G1[0] += 1;
-    let _mid_t5: any = G1;
-    let _mid_t6: (t0: any) => number = __decRef_CC;
+    let _mid_t5 = G1 as any;
+    let _mid_t6 = __decRef_CC as (t0: any) => number;
     let c3: CC = [1, _mid_t6, aaa, _mid_t5];
     __decRef_CC(_mid_t4);
     __decRef_CC(c3);
@@ -324,29 +319,26 @@ function _compiled_program_main(): number {
   }
   return 0;
 }
-
 function __decRef_Object(o: Object): number {
   let currentRefCount: number = o[0];
   o[0] -= 1;
   let dead: boolean = currentRefCount <= 1;
   if (dead) {
-    let pointer_casted: any = o;
+    let pointer_casted = o as any;
     _builtin_free(pointer_casted);
   }
   return 0;
 }
-
 function __decRef_Variant(o: Variant): number {
   let currentRefCount: number = o[0];
   o[0] -= 1;
   let dead: boolean = currentRefCount <= 1;
   if (dead) {
-    let pointer_casted: any = o;
+    let pointer_casted = o as any;
     _builtin_free(pointer_casted);
   }
   return 0;
 }
-
 function __decRef_CC(o: CC): number {
   let currentRefCount: number = o[0];
   o[0] -= 1;
@@ -355,12 +347,11 @@ function __decRef_CC(o: CC): number {
     let destructor: (t0: any) => number = o[1];
     let context: any = o[3];
     destructor(context);
-    let pointer_casted: any = o;
+    let pointer_casted = o as any;
     _builtin_free(pointer_casted);
   }
   return 0;
 }
-
 function __decRef_string(o: Str): number {
   let currentRefCount: number = o[0];
   let performGC: boolean = currentRefCount > 0;
@@ -373,7 +364,6 @@ function __decRef_string(o: Str): number {
   }
   return 0;
 }
-
 function __decRef_nothing(o: any): number {
   return 0;
 }
