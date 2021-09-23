@@ -66,13 +66,6 @@ const referenceTypeName = (type: MidIRType): string | null =>
     ? 'string'
     : null;
 
-function addReferenceCountingIfTypeAllowed(
-  collector: MidIRStatement[],
-  expression: MidIRExpression
-): void {
-  if (referenceTypeName(expression.type)) collector.push(MIR_INC_REF(expression));
-}
-
 const lowerHighIRFunctionType = (type: HighIRFunctionType): MidIRFunctionType =>
   MIR_FUNCTION_TYPE(type.argumentTypes.map(lowerHighIRType), lowerHighIRType(type.returnType));
 
@@ -131,6 +124,34 @@ function generateSingleDestructorFunction(
           }),
         ])
   );
+  if (typeName !== 'string') {
+    return {
+      name: decRefFunctionName(typeName),
+      parameters: [parameter.name],
+      type: MIR_FUNCTION_TYPE([parameter.type], MIR_INT_TYPE),
+      body: [
+        /* currentRefCount = parameter[0] */ MIR_INDEX_ACCESS({
+          name: 'currentRefCount',
+          type: MIR_INT_TYPE,
+          pointerExpression: parameter,
+          index: 0,
+        }),
+        /* parameter[0] -= 1 */ MIR_DEC_REF(parameter),
+        /* dead = currentRefCount <= 1 */ MIR_BINARY({
+          name: 'dead',
+          operator: '<=',
+          e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+          e2: MIR_ONE,
+        }),
+        /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
+          booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
+          invertCondition: false,
+          statements: destructMemberStatements,
+        }),
+      ],
+      returnValue: MIR_ZERO,
+    };
+  }
   return {
     name: decRefFunctionName(typeName),
     parameters: [parameter.name],
@@ -580,13 +601,13 @@ class HighIRToMidIRLoweringManager {
           typeDefinition.type === 'object'
             ? statement.expressionList.map((expression) => {
                 const lowered = lowerHighIRExpression(expression);
-                addReferenceCountingIfTypeAllowed(statements, lowered);
+                this.addReferenceCountingIfTypeAllowed(statements, lowered);
                 return lowered;
               })
             : statement.expressionList.map((expression, index) => {
                 const lowered = lowerHighIRExpression(expression);
                 assert(index === 0 || index === 1, `Invalid index for variant access: ${index}`);
-                addReferenceCountingIfTypeAllowed(statements, lowered);
+                this.addReferenceCountingIfTypeAllowed(statements, lowered);
                 if (index === 0) return lowered;
                 if (isTheSameMidIRType(lowered.type, MIR_ANY_TYPE)) return lowered;
                 const temp = this.tempAllocator();
@@ -609,7 +630,7 @@ class HighIRToMidIRLoweringManager {
         const functionName = MIR_NAME(statement.functionName, originalFunctionType);
         const context = lowerHighIRExpression(statement.context);
         const statements: MidIRStatement[] = [];
-        addReferenceCountingIfTypeAllowed(statements, context);
+        this.addReferenceCountingIfTypeAllowed(statements, context);
         let functionNameSlot: MidIRExpression;
         let contextSlot: MidIRExpression;
         let destructorFunctionSlot: MidIRExpression;
@@ -662,6 +683,39 @@ class HighIRToMidIRLoweringManager {
       }
     }
   };
+
+  private addReferenceCountingIfTypeAllowed(
+    collector: MidIRStatement[],
+    expression: MidIRExpression
+  ): void {
+    const typeName = referenceTypeName(expression.type);
+    if (typeName == null) return;
+    if (typeName !== 'string') {
+      collector.push(MIR_INC_REF(expression));
+      return;
+    }
+    const count = this.tempAllocator();
+    const notSpecial = this.tempAllocator();
+    collector.push(
+      MIR_INDEX_ACCESS({
+        name: count,
+        type: MIR_INT_TYPE,
+        pointerExpression: expression,
+        index: 0,
+      }),
+      MIR_BINARY({
+        name: notSpecial,
+        operator: '>',
+        e1: MIR_VARIABLE(count, MIR_INT_TYPE),
+        e2: MIR_ZERO,
+      }),
+      MIR_SINGLE_IF({
+        booleanExpression: MIR_VARIABLE(notSpecial, MIR_BOOL_TYPE),
+        invertCondition: false,
+        statements: [MIR_INC_REF(expression)],
+      })
+    );
+  }
 }
 
 export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources): MidIRSources {
@@ -696,14 +750,18 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
       return [it.identifier, it];
     })
   );
-  const loweringManager = new HighIRToMidIRLoweringManager(
-    closureTypeDefinitionMapForLowering,
-    typeDefinitionMapForLowering
-  );
   const functions = sources.functions.map((highIRFunction) =>
-    loweringManager.lowerHighIRFunction(highIRFunction)
+    new HighIRToMidIRLoweringManager(
+      closureTypeDefinitionMapForLowering,
+      typeDefinitionMapForLowering
+    ).lowerHighIRFunction(highIRFunction)
   );
-  functions.push(...loweringManager.generateDestructorFunctions());
+  functions.push(
+    ...new HighIRToMidIRLoweringManager(
+      closureTypeDefinitionMapForLowering,
+      typeDefinitionMapForLowering
+    ).generateDestructorFunctions()
+  );
   return optimizeMidIRSourcesByEliminatingUnusedOnes({
     globalVariables: sources.globalVariables,
     typeDefinitions,
