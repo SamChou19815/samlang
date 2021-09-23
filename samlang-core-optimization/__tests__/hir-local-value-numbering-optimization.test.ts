@@ -112,10 +112,7 @@ describe('mir-local-value-numbering-optimization', () => {
 let b0: int = (i0: int) + 3;
 let b3: int = (i0: int) + (b0: int);
 let s: S = [(i0: int), (b0: int), (b3: int)];
-let s: S = Closure {
-  fun: (a: () -> int),
-  context: 0,
-};
+let s: S = Closure { fun: (a: () -> int), context: 0 };
 fff((i0: int), (b0: int), (b3: int));
 return (ss: int);`
     );

@@ -770,10 +770,7 @@ function main(): int {
       ],
       `function fooBar(bar: int, baz: int): int {
   let ff: FF = [(bar: int), (baz: int)];
-  let s: SS = Closure {
-    fun: (aaa: () -> int),
-    context: 0,
-  };
+  let s: SS = Closure { fun: (aaa: () -> int), context: 0 };
   undefined = 0;
   break;
   return 0;
@@ -781,10 +778,7 @@ function main(): int {
 
 function main(): int {
   let _inline_0_ff: FF = [1, 0];
-  let _inline_0_s: SS = Closure {
-    fun: (aaa: () -> int),
-    context: 0,
-  };
+  let _inline_0_s: SS = Closure { fun: (aaa: () -> int), context: 0 };
   undefined = 0;
   break;
   return 0;

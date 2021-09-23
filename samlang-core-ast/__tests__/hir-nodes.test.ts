@@ -145,10 +145,7 @@ describe('hir-nodes', () => {
     ).toBe(`let bar: int;
 if 0 {
   let baz: FooBar = [meggo];
-  let closure: CCC = Closure {
-    fun: (foo: (int) -> int),
-    context: 0,
-  };
+  let closure: CCC = Closure { fun: (foo: (int) -> int), context: 0 };
   let dd: bool = 0 < 0;
   let dd: bool = 0 ^ 0;
   while (true) {
