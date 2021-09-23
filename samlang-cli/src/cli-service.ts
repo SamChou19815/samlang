@@ -71,11 +71,8 @@ function compileToJS(
   moduleReferences: readonly ModuleReference[],
   outputDirectory: string
 ): void {
-  const exportingJSFilePath = join(outputDirectory, 'exports.js');
   mkdirSync(outputDirectory, { recursive: true });
-  writeFileSync(
-    exportingJSFilePath,
-    `// @ts-check
+  const commonJSCode = `// @ts-check
 /** @typedef {[number, string]} Str */
 /**
  * @param {Str} a
@@ -104,15 +101,13 @@ const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (/** @type {number} */ v) => [1, 
  */
 const ${ENCODED_FUNCTION_NAME_THROW} = (/** @type {Str} */ [, v]) => { throw Error(v); };
 const ${ENCODED_FUNCTION_NAME_FREE} = (/** @type {unknown} */ v) => 0;
-${prettyPrintMidIRSourcesAsJSSources(midIRSources)}
-module.exports = { ${midIRSources.mainFunctionNames.join(', ')} };`
-  );
+${prettyPrintMidIRSourcesAsJSSources(midIRSources)}`;
   const mainFunctions = new Set(midIRSources.mainFunctionNames);
   moduleReferences.forEach((moduleReference) => {
     const mainFunctionName = encodeMainFunctionName(moduleReference);
     if (!mainFunctions.has(mainFunctionName)) return;
     const outputJSFilePath = join(outputDirectory, `${moduleReference}.js`);
-    writeFileSync(outputJSFilePath, `require('./exports').${mainFunctionName}();\n`);
+    writeFileSync(outputJSFilePath, `${commonJSCode}\n${mainFunctionName}();\n`);
   });
 }
 
@@ -126,7 +121,7 @@ function compileToLLVMSources(
 
   const outputLLVMExportingFilePath = join(outputDirectory, `_all_.ll`);
   mkdirSync(dirname(outputLLVMExportingFilePath), { recursive: true });
-  writeFileSync(outputLLVMExportingFilePath, prettyPrintLLVMSources(llvmSources));
+  const commonLLVMCode = prettyPrintLLVMSources(llvmSources);
 
   const mainFunctions = new Set(llvmSources.mainFunctionNames);
   moduleReferences.forEach((moduleReference) => {
@@ -136,7 +131,7 @@ function compileToLLVMSources(
     mkdirSync(dirname(outputLLVMFilePath), { recursive: true });
     writeFileSync(
       outputLLVMFilePath,
-      `declare i64 @${mainFunctionName}() nounwind
+      `${commonLLVMCode}
 define i64 @_compiled_program_main() local_unnamed_addr nounwind {
   call i64 @${mainFunctionName}() nounwind
   ret i64 0
@@ -175,24 +170,17 @@ export function compileEverything(
     return true;
   }
 
-  const outputLLVMExportingFilePath = join(outputDirectory, `_all_.ll`);
-  const modulePaths = compileToLLVMSources(midIRSources, moduleReferences, outputDirectory);
-  const assembleResults = modulePaths.map((modulePath) => {
-    const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
-    const bitcodePath = `${outputProgramPath}.bc`;
-    const success =
-      shellOut(
-        'llvm-link',
-        '-o',
-        bitcodePath,
-        modulePath,
-        outputLLVMExportingFilePath,
-        LLVM_LIBRARY_PATH
-      ) &&
-      shellOut('llc', '-O2', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
-      shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
-    unlinkIfExist(`${outputProgramPath}.o`);
-    return success;
-  });
+  const assembleResults = compileToLLVMSources(midIRSources, moduleReferences, outputDirectory).map(
+    (modulePath) => {
+      const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
+      const bitcodePath = `${outputProgramPath}.bc`;
+      const success =
+        shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
+        shellOut('llc', '-O2', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
+        shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
+      unlinkIfExist(`${outputProgramPath}.o`);
+      return success;
+    }
+  );
   return assembleResults.every((it) => it);
 }
