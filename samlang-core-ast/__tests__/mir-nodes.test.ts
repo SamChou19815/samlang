@@ -1,10 +1,7 @@
 import {
   prettyPrintMidIRType,
   isTheSameMidIRType,
-  prettyPrintMidIRExpressionAsJSExpression,
-  prettyPrintMidIRStatementAsJSStatement,
   prettyPrintMidIRSourcesAsJSSources,
-  debugPrintMidIRStatement,
   debugPrintMidIRSources,
   MIR_FUNCTION_CALL,
   MIR_IF_ELSE,
@@ -38,180 +35,7 @@ describe('mir-nodes', () => {
           MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE('Foo'), MIR_ANY_TYPE], MIR_STRING_TYPE)
         )
       )
-    ).toBe('(int, int) -> (Foo, any) -> string');
-  });
-
-  it('prettyPrintMidIRExpressionAsJSExpression works', () => {
-    expect(prettyPrintMidIRExpressionAsJSExpression(MIR_ZERO)).toBe('0');
-    expect(prettyPrintMidIRExpressionAsJSExpression(MIR_NAME('a', MIR_STRING_TYPE))).toBe('a');
-    expect(prettyPrintMidIRExpressionAsJSExpression(MIR_VARIABLE('a', MIR_STRING_TYPE))).toBe('a');
-  });
-
-  it('prettyPrintMidIRStatementAsJSStatement works', () => {
-    expect(
-      prettyPrintMidIRStatementAsJSStatement(
-        MIR_IF_ELSE({
-          booleanExpression: MIR_ZERO,
-          s1: [
-            MIR_INC_REF(MIR_ZERO),
-            MIR_DEC_REF(MIR_ZERO),
-            MIR_CAST({
-              name: 'foo',
-              type: MIR_IDENTIFIER_TYPE('Bar'),
-              assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
-            }),
-            MIR_WHILE({
-              loopVariables: [
-                {
-                  name: 'n',
-                  type: MIR_INT_TYPE,
-                  initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
-                  loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
-                },
-                {
-                  name: 'acc',
-                  type: MIR_INT_TYPE,
-                  initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
-                  loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
-                },
-              ],
-              statements: [
-                MIR_CAST({
-                  name: 'foo',
-                  type: MIR_IDENTIFIER_TYPE('Bar'),
-                  assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
-                }),
-                MIR_BREAK(MIR_ZERO),
-              ],
-            }),
-            MIR_WHILE({
-              loopVariables: [
-                {
-                  name: 'n',
-                  type: MIR_INT_TYPE,
-                  initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
-                  loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
-                },
-                {
-                  name: 'acc',
-                  type: MIR_INT_TYPE,
-                  initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
-                  loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
-                },
-              ],
-              statements: [
-                MIR_CAST({
-                  name: 'foo',
-                  type: MIR_IDENTIFIER_TYPE('Bar'),
-                  assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
-                }),
-                MIR_BREAK(MIR_ZERO),
-              ],
-              breakCollector: { name: 'v', type: MIR_INT_TYPE },
-            }),
-          ],
-          s2: [
-            MIR_BINARY({ name: 'dd', operator: '+', e1: MIR_INT(0), e2: MIR_INT(0) }),
-            MIR_BINARY({ name: 'dd', operator: '<', e1: MIR_INT(0), e2: MIR_INT(0) }),
-            MIR_BINARY({ name: 'dd', operator: '^', e1: MIR_INT(0), e2: MIR_INT(0) }),
-            MIR_BINARY({ name: 'dd', operator: '/', e1: MIR_INT(0), e2: MIR_INT(0) }),
-            MIR_STRUCT_INITIALIZATION({
-              structVariableName: 'baz',
-              type: MIR_IDENTIFIER_TYPE('FooBar'),
-              expressionList: [MIR_NAME('meggo', MIR_STRING_TYPE)],
-            }),
-            MIR_FUNCTION_CALL({
-              functionExpression: MIR_NAME('h', MIR_INT_TYPE),
-              functionArguments: [MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar'))],
-              returnType: MIR_INT_TYPE,
-              returnCollector: 'vibez',
-            }),
-            MIR_FUNCTION_CALL({
-              functionExpression: MIR_NAME('stresso', MIR_INT_TYPE),
-              functionArguments: [MIR_VARIABLE('d', MIR_INT_TYPE)],
-              returnType: MIR_INT_TYPE,
-            }),
-            MIR_INDEX_ACCESS({
-              name: 'f',
-              type: MIR_INT_TYPE,
-              pointerExpression: MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar')),
-              index: 0,
-            }),
-            MIR_SINGLE_IF({
-              booleanExpression: MIR_ZERO,
-              invertCondition: false,
-              statements: [MIR_BREAK(MIR_ZERO)],
-            }),
-            MIR_SINGLE_IF({
-              booleanExpression: MIR_ZERO,
-              invertCondition: true,
-              statements: [MIR_BREAK(MIR_ZERO)],
-            }),
-          ],
-          finalAssignments: [
-            {
-              name: 'bar',
-              type: MIR_INT_TYPE,
-              branch1Value: MIR_VARIABLE('b1', MIR_INT_TYPE),
-              branch2Value: MIR_VARIABLE('b2', MIR_INT_TYPE),
-            },
-          ],
-        })
-      )
-    ).toBe(`/** @type {number} */
-let bar;
-if (0) {
-  0[0] += 1;
-  0[0] -= 1;
-  let foo = /** @type {Bar} */ (dev);
-  /** @type {number} */
-  let n = _tail_rec_param_n;
-  /** @type {number} */
-  let acc = _tail_rec_param_acc;
-  while (true) {
-    let foo = /** @type {Bar} */ (dev);
-    break;
-    n = _t0_n;
-    acc = _t1_acc;
-  }
-  /** @type {number} */
-  let n = _tail_rec_param_n;
-  /** @type {number} */
-  let acc = _tail_rec_param_acc;
-  /** @type {number} */
-  let v;
-  while (true) {
-    let foo = /** @type {Bar} */ (dev);
-    v = 0;
-    break;
-    n = _t0_n;
-    acc = _t1_acc;
-  }
-  bar = b1;
-} else {
-  /** @type {number} */
-  let dd = 0 + 0;
-  /** @type {boolean} */
-  let dd = 0 < 0;
-  /** @type {boolean} */
-  let dd = 0 ^ 0;
-  /** @type {number} */
-  let dd = Math.floor(0 / 0);
-  /** @type {FooBar} */
-  let baz = [meggo];
-  /** @type {number} */
-  let vibez = h(big);
-  stresso(d);
-  /** @type {number} */
-  let f = big[0];
-  if (0) {
-    break;
-  }
-  if (!0) {
-    break;
-  }
-  bar = b2;
-}`);
+    ).toBe('(t0: number, t1: number) => (t0: Foo, t1: any) => Str');
   });
 
   it('prettyPrintMidIRSourcesAsJSSources works', () => {
@@ -225,7 +49,115 @@ if (0) {
             name: 'Bar',
             parameters: ['f'],
             type: MIR_FUNCTION_TYPE([MIR_STRING_TYPE], MIR_INT_TYPE),
-            body: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
+            body: [
+              MIR_IF_ELSE({
+                booleanExpression: MIR_ZERO,
+                s1: [
+                  MIR_INC_REF(MIR_ZERO),
+                  MIR_DEC_REF(MIR_ZERO),
+                  MIR_CAST({
+                    name: 'foo',
+                    type: MIR_IDENTIFIER_TYPE('Bar'),
+                    assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+                  }),
+                  MIR_WHILE({
+                    loopVariables: [
+                      {
+                        name: 'n',
+                        type: MIR_INT_TYPE,
+                        initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
+                        loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
+                      },
+                      {
+                        name: 'acc',
+                        type: MIR_INT_TYPE,
+                        initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
+                        loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
+                      },
+                    ],
+                    statements: [
+                      MIR_CAST({
+                        name: 'foo',
+                        type: MIR_IDENTIFIER_TYPE('Bar'),
+                        assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+                      }),
+                      MIR_BREAK(MIR_ZERO),
+                    ],
+                  }),
+                  MIR_WHILE({
+                    loopVariables: [
+                      {
+                        name: 'n',
+                        type: MIR_INT_TYPE,
+                        initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
+                        loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
+                      },
+                      {
+                        name: 'acc',
+                        type: MIR_INT_TYPE,
+                        initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
+                        loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
+                      },
+                    ],
+                    statements: [
+                      MIR_CAST({
+                        name: 'foo',
+                        type: MIR_IDENTIFIER_TYPE('Bar'),
+                        assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+                      }),
+                      MIR_BREAK(MIR_ZERO),
+                    ],
+                    breakCollector: { name: 'v', type: MIR_INT_TYPE },
+                  }),
+                ],
+                s2: [
+                  MIR_BINARY({ name: 'dd', operator: '+', e1: MIR_INT(0), e2: MIR_INT(0) }),
+                  MIR_BINARY({ name: 'dd', operator: '<', e1: MIR_INT(0), e2: MIR_INT(0) }),
+                  MIR_BINARY({ name: 'dd', operator: '^', e1: MIR_INT(0), e2: MIR_INT(0) }),
+                  MIR_BINARY({ name: 'dd', operator: '/', e1: MIR_INT(0), e2: MIR_INT(0) }),
+                  MIR_STRUCT_INITIALIZATION({
+                    structVariableName: 'baz',
+                    type: MIR_IDENTIFIER_TYPE('FooBar'),
+                    expressionList: [MIR_NAME('meggo', MIR_STRING_TYPE)],
+                  }),
+                  MIR_FUNCTION_CALL({
+                    functionExpression: MIR_NAME('h', MIR_INT_TYPE),
+                    functionArguments: [MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar'))],
+                    returnType: MIR_INT_TYPE,
+                    returnCollector: 'vibez',
+                  }),
+                  MIR_FUNCTION_CALL({
+                    functionExpression: MIR_NAME('stresso', MIR_INT_TYPE),
+                    functionArguments: [MIR_VARIABLE('d', MIR_INT_TYPE)],
+                    returnType: MIR_INT_TYPE,
+                  }),
+                  MIR_INDEX_ACCESS({
+                    name: 'f',
+                    type: MIR_INT_TYPE,
+                    pointerExpression: MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar')),
+                    index: 0,
+                  }),
+                  MIR_SINGLE_IF({
+                    booleanExpression: MIR_ZERO,
+                    invertCondition: false,
+                    statements: [MIR_BREAK(MIR_ZERO)],
+                  }),
+                  MIR_SINGLE_IF({
+                    booleanExpression: MIR_ZERO,
+                    invertCondition: true,
+                    statements: [MIR_BREAK(MIR_ZERO)],
+                  }),
+                ],
+                finalAssignments: [
+                  {
+                    name: 'bar',
+                    type: MIR_INT_TYPE,
+                    branch1Value: MIR_VARIABLE('b1', MIR_INT_TYPE),
+                    branch2Value: MIR_VARIABLE('b2', MIR_INT_TYPE),
+                  },
+                ],
+              }),
+            ],
             returnValue: MIR_ZERO,
           },
         ],
@@ -233,7 +165,60 @@ if (0) {
     ).toBe(`/** @type {Str} */ const dev_meggo = [0, "vibez"];
 /** @returns {number} */
 function Bar(/** @type {Str} */ f) {
-  let a = /** @type {number} */ (0);
+  /** @type {number} */
+  let bar;
+  if (0) {
+    0[0] += 1;
+    0[0] -= 1;
+    let foo = /** @type {Bar} */ (dev);
+    /** @type {number} */
+    let n = _tail_rec_param_n;
+    /** @type {number} */
+    let acc = _tail_rec_param_acc;
+    while (true) {
+      let foo = /** @type {Bar} */ (dev);
+      break;
+      n = _t0_n;
+      acc = _t1_acc;
+    }
+    /** @type {number} */
+    let n = _tail_rec_param_n;
+    /** @type {number} */
+    let acc = _tail_rec_param_acc;
+    /** @type {number} */
+    let v;
+    while (true) {
+      let foo = /** @type {Bar} */ (dev);
+      v = 0;
+      break;
+      n = _t0_n;
+      acc = _t1_acc;
+    }
+    bar = b1;
+  } else {
+    /** @type {number} */
+    let dd = 0 + 0;
+    /** @type {boolean} */
+    let dd = 0 < 0;
+    /** @type {boolean} */
+    let dd = 0 ^ 0;
+    /** @type {number} */
+    let dd = Math.floor(0 / 0);
+    /** @type {FooBar} */
+    let baz = [meggo];
+    /** @type {number} */
+    let vibez = h(big);
+    stresso(d);
+    /** @type {number} */
+    let f = big[0];
+    if (0) {
+      break;
+    }
+    if (!0) {
+      break;
+    }
+    bar = b2;
+  }
   return 0;
 }
 `);
@@ -300,151 +285,6 @@ function Bar(/** @type {Str} */ f) {
     });
   });
 
-  it('debugPrintMidIRStatement works', () => {
-    expect(
-      debugPrintMidIRStatement(
-        MIR_IF_ELSE({
-          booleanExpression: MIR_ZERO,
-          s1: [
-            MIR_INC_REF(MIR_ZERO),
-            MIR_DEC_REF(MIR_ZERO),
-            MIR_CAST({
-              name: 'foo',
-              type: MIR_IDENTIFIER_TYPE('Bar'),
-              assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
-            }),
-            MIR_WHILE({
-              loopVariables: [
-                {
-                  name: 'n',
-                  type: MIR_INT_TYPE,
-                  initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
-                  loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
-                },
-                {
-                  name: 'acc',
-                  type: MIR_INT_TYPE,
-                  initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
-                  loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
-                },
-              ],
-              statements: [
-                MIR_CAST({
-                  name: 'foo',
-                  type: MIR_IDENTIFIER_TYPE('Bar'),
-                  assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
-                }),
-              ],
-            }),
-            MIR_WHILE({
-              loopVariables: [
-                {
-                  name: 'n',
-                  type: MIR_INT_TYPE,
-                  initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
-                  loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
-                },
-                {
-                  name: 'acc',
-                  type: MIR_INT_TYPE,
-                  initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
-                  loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
-                },
-              ],
-              statements: [
-                MIR_CAST({
-                  name: 'foo',
-                  type: MIR_IDENTIFIER_TYPE('Bar'),
-                  assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
-                }),
-              ],
-              breakCollector: { name: 'v', type: MIR_INT_TYPE },
-            }),
-          ],
-          s2: [
-            MIR_BINARY({ name: 'dd', operator: '+', e1: MIR_INT(0), e2: MIR_INT(0) }),
-            MIR_STRUCT_INITIALIZATION({
-              structVariableName: 'baz',
-              type: MIR_IDENTIFIER_TYPE('FooBar'),
-              expressionList: [MIR_NAME('meggo', MIR_STRING_TYPE)],
-            }),
-            MIR_FUNCTION_CALL({
-              functionExpression: MIR_NAME('h', MIR_INT_TYPE),
-              functionArguments: [MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar'))],
-              returnType: MIR_INT_TYPE,
-              returnCollector: 'vibez',
-            }),
-            MIR_FUNCTION_CALL({
-              functionExpression: MIR_NAME('stresso', MIR_INT_TYPE),
-              functionArguments: [MIR_VARIABLE('d', MIR_INT_TYPE)],
-              returnType: MIR_INT_TYPE,
-            }),
-            MIR_INDEX_ACCESS({
-              name: 'f',
-              type: MIR_INT_TYPE,
-              pointerExpression: MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar')),
-              index: 0,
-            }),
-            MIR_SINGLE_IF({
-              booleanExpression: MIR_ZERO,
-              invertCondition: false,
-              statements: [MIR_BREAK(MIR_ZERO)],
-            }),
-            MIR_SINGLE_IF({
-              booleanExpression: MIR_ZERO,
-              invertCondition: true,
-              statements: [MIR_BREAK(MIR_ZERO)],
-            }),
-          ],
-          finalAssignments: [
-            {
-              name: 'bar',
-              type: MIR_INT_TYPE,
-              branch1Value: MIR_VARIABLE('b1', MIR_INT_TYPE),
-              branch2Value: MIR_VARIABLE('b2', MIR_INT_TYPE),
-            },
-          ],
-        })
-      )
-    ).toBe(`let bar: int;
-if 0 {
-  0[0] += 1;
-  0[0] -= 1;
-  let foo: Bar = (dev: Bar);
-  let n: int = (_tail_rec_param_n: int);
-  let acc: int = (_tail_rec_param_acc: int);
-  while (true) {
-    let foo: Bar = (dev: Bar);
-    n = (_t0_n: int);
-    acc = (_t1_acc: int);
-  }
-  let n: int = (_tail_rec_param_n: int);
-  let acc: int = (_tail_rec_param_acc: int);
-  let v: int;
-  while (true) {
-    let foo: Bar = (dev: Bar);
-    n = (_t0_n: int);
-    acc = (_t1_acc: int);
-  }
-  bar = (b1: int);
-} else {
-  let dd: int = 0 + 0;
-  let baz: FooBar = [meggo];
-  let vibez: int = h((big: FooBar));
-  stresso((d: int));
-  let f: int = (big: FooBar)[0];
-  if 0 {
-    undefined = 0;
-    break;
-  }
-  if !0 {
-    undefined = 0;
-    break;
-  }
-  bar = (b2: int);
-}`);
-  });
-
   it('debugPrintMidIRSources works', () => {
     expect(
       debugPrintMidIRSources({
@@ -456,17 +296,156 @@ if 0 {
             name: 'Bar',
             parameters: ['f'],
             type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
-            body: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
+            body: [
+              MIR_IF_ELSE({
+                booleanExpression: MIR_ZERO,
+                s1: [
+                  MIR_INC_REF(MIR_ZERO),
+                  MIR_DEC_REF(MIR_ZERO),
+                  MIR_CAST({
+                    name: 'foo',
+                    type: MIR_IDENTIFIER_TYPE('Bar'),
+                    assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+                  }),
+                  MIR_WHILE({
+                    loopVariables: [
+                      {
+                        name: 'n',
+                        type: MIR_INT_TYPE,
+                        initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
+                        loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
+                      },
+                      {
+                        name: 'acc',
+                        type: MIR_INT_TYPE,
+                        initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
+                        loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
+                      },
+                    ],
+                    statements: [
+                      MIR_CAST({
+                        name: 'foo',
+                        type: MIR_IDENTIFIER_TYPE('Bar'),
+                        assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+                      }),
+                    ],
+                  }),
+                  MIR_WHILE({
+                    loopVariables: [
+                      {
+                        name: 'n',
+                        type: MIR_INT_TYPE,
+                        initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
+                        loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
+                      },
+                      {
+                        name: 'acc',
+                        type: MIR_INT_TYPE,
+                        initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
+                        loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
+                      },
+                    ],
+                    statements: [
+                      MIR_CAST({
+                        name: 'foo',
+                        type: MIR_IDENTIFIER_TYPE('Bar'),
+                        assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+                      }),
+                    ],
+                    breakCollector: { name: 'v', type: MIR_INT_TYPE },
+                  }),
+                ],
+                s2: [
+                  MIR_BINARY({ name: 'dd', operator: '+', e1: MIR_INT(0), e2: MIR_INT(0) }),
+                  MIR_STRUCT_INITIALIZATION({
+                    structVariableName: 'baz',
+                    type: MIR_IDENTIFIER_TYPE('FooBar'),
+                    expressionList: [MIR_NAME('meggo', MIR_STRING_TYPE)],
+                  }),
+                  MIR_FUNCTION_CALL({
+                    functionExpression: MIR_NAME('h', MIR_INT_TYPE),
+                    functionArguments: [MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar'))],
+                    returnType: MIR_INT_TYPE,
+                    returnCollector: 'vibez',
+                  }),
+                  MIR_FUNCTION_CALL({
+                    functionExpression: MIR_NAME('stresso', MIR_INT_TYPE),
+                    functionArguments: [MIR_VARIABLE('d', MIR_INT_TYPE)],
+                    returnType: MIR_INT_TYPE,
+                  }),
+                  MIR_INDEX_ACCESS({
+                    name: 'f',
+                    type: MIR_INT_TYPE,
+                    pointerExpression: MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar')),
+                    index: 0,
+                  }),
+                  MIR_SINGLE_IF({
+                    booleanExpression: MIR_ZERO,
+                    invertCondition: false,
+                    statements: [MIR_BREAK(MIR_ZERO)],
+                  }),
+                  MIR_SINGLE_IF({
+                    booleanExpression: MIR_ZERO,
+                    invertCondition: true,
+                    statements: [MIR_BREAK(MIR_ZERO)],
+                  }),
+                ],
+                finalAssignments: [
+                  {
+                    name: 'bar',
+                    type: MIR_INT_TYPE,
+                    branch1Value: MIR_VARIABLE('b1', MIR_INT_TYPE),
+                    branch2Value: MIR_VARIABLE('b2', MIR_INT_TYPE),
+                  },
+                ],
+              }),
+            ],
             returnValue: MIR_ZERO,
           },
         ],
       })
-    ).toBe(`const dev_meggo = [0, 'vibez'];
+    ).toBe(`const dev_meggo = [0, "vibez"];
 
-type Foo = (int, any);
+type Foo = (number, any);
 
-function Bar(f: int): int {
-  let a: int = 0;
+function Bar(f: number): number {
+  let bar: number;
+  if (0) {
+    0[0] += 1;
+    0[0] -= 1;
+    let foo: Bar = dev;
+    let n: number = _tail_rec_param_n;
+    let acc: number = _tail_rec_param_acc;
+    while (true) {
+      let foo: Bar = dev;
+      n = _t0_n;
+      acc = _t1_acc;
+    }
+    let n: number = _tail_rec_param_n;
+    let acc: number = _tail_rec_param_acc;
+    let v: number;
+    while (true) {
+      let foo: Bar = dev;
+      n = _t0_n;
+      acc = _t1_acc;
+    }
+    bar = b1;
+  } else {
+    let dd: number = 0 + 0;
+    let baz: FooBar = [meggo];
+    let vibez: number = h(big);
+    stresso(d);
+    let f: number = big[0];
+    if (0) {
+      undefined = 0;
+      break;
+    }
+    if (!0) {
+      undefined = 0;
+      break;
+    }
+    bar = b2;
+  }
   return 0;
 }
 `);
