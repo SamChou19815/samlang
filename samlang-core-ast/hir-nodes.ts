@@ -521,18 +521,18 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         );
         break;
       }
-      case 'HighIRClosureInitializationStatement':
+      case 'HighIRClosureInitializationStatement': {
+        const closureType = prettyPrintHighIRType(s.closureType);
+        const closureNameType = `${s.closureVariableName}: ${closureType}`;
+        const functionType = prettyPrintHighIRType(s.functionType);
+        const functionNameType = `${s.functionName}: ${functionType}`;
+        const context = debugPrintHighIRExpression(s.context);
         collector.push(
           '  '.repeat(level),
-          `let ${s.closureVariableName}: ${prettyPrintHighIRType(s.closureType)} = Closure {\n`,
-          '  '.repeat(level),
-          `  fun: (${s.functionName}: ${prettyPrintHighIRType(s.functionType)}),\n`,
-          '  '.repeat(level),
-          `  context: ${debugPrintHighIRExpression(s.context)},\n`,
-          '  '.repeat(level),
-          `};\n`
+          `let ${closureNameType} = Closure { fun: (${functionNameType}), context: ${context} };\n`
         );
         return;
+      }
     }
   }
 

@@ -193,10 +193,7 @@ function main(): int {
     _ = 0;
   } else {
     let _: C = [0];
-    let _: C = Closure {
-      fun: (f: (E) -> int),
-      context: (v: int),
-    };
+    let _: C = Closure { fun: (f: (E) -> int), context: (v: int) };
     _ = 0;
   }
   return 0;

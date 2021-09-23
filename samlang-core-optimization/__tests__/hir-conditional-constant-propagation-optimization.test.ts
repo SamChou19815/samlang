@@ -255,10 +255,7 @@ describe('hir-conditional-constant-propagation', () => {
 let b8: int = (i0: int) * (i0: int);
 let a6: int = (i1: int) / 30;
 let s: Id = [0, (a6: int), 30];
-let s: Id = Closure {
-  fun: (closure: () -> int),
-  context: 0,
-};
+let s: Id = Closure { fun: (closure: () -> int), context: 0 };
 fff(1, 0, 0, 0, 0, 0, 1);
 let a9: int = 6 / 0;
 let a10: int = 6 % 0;

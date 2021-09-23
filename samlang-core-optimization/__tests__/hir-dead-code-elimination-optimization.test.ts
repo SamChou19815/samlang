@@ -132,10 +132,7 @@ return (ii: int);`
 let u2: int = 0 % 1;
 let p: int = 0 + 1;
 let i1: int = (p: int)[3];
-let s1: Id = Closure {
-  fun: (closure: () -> int),
-  context: (b2: int),
-};
+let s1: Id = Closure { fun: (closure: () -> int), context: (b2: int) };
 ff((i1: int), (s1: Id));
 return 0;`
     );

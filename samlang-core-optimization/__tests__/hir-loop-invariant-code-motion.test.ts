@@ -184,10 +184,7 @@ describe('hir-loop-invariant-code-motion', () => {
       .join('\n');
     expect(jointDebugPrint).toBe(`let c: int = (a: int) - (b: int);
 let d: int = (c: int)[0];
-let h: I = Closure {
-  fun: (f: () -> int),
-  context: (d: int),
-};
+let h: I = Closure { fun: (f: () -> int), context: (d: int) };
 let kk: I = [0];
 let i: int = 0;
 let j: int = 0;
@@ -210,10 +207,7 @@ while (true) {
   let tmp_z: int = (tmp_x: int) + (tmp_y: int);
   let e: int = (x: int)[0];
   let f: int = (x: int) + (b: int);
-  let g: I = Closure {
-    fun: (f: () -> int),
-    context: (x: int),
-  };
+  let g: I = Closure { fun: (f: () -> int), context: (x: int) };
   let kk2: I = [(g: int)];
   let bad: int;
   if 0 {

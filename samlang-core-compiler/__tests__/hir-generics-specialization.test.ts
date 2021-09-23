@@ -371,14 +371,8 @@ function main(): int {
     let v1: int = 0 + 0;
     let j: J = [0];
     let v2: int = (j: J)[0];
-    let c1: CC_string_string = Closure {
-      fun: (creatorIA_string: (string) -> I_string_string),
-      context: G1,
-    };
-    let c2: CC_int_string = Closure {
-      fun: (creatorIA_string: (string) -> I_string_string),
-      context: G1,
-    };
+    let c1: CC_string_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
+    let c2: CC_int_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
     finalV = (v2: int);
   }
   return 0;
