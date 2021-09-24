@@ -91,130 +91,11 @@ const defRefFunctionArgumentType = (typeName: string) =>
 const variableOfMidIRExpression = (expression: MidIRExpression): string | null =>
   expression.__type__ === 'MidIRVariableExpression' ? expression.name : null;
 
-function generateSingleDestructorFunction(
-  typeName: string,
-  getDestructMemberStatements: (
-    parameter: MidIRVariableExpression,
-    destructMemberStatements: MidIRStatement[]
-  ) => void
-): MidIRFunction {
-  const parameter = MIR_VARIABLE('o', defRefFunctionArgumentType(typeName));
-  const destructMemberStatements: MidIRStatement[] = [];
-  getDestructMemberStatements(parameter, destructMemberStatements);
-  destructMemberStatements.push(
-    ...(isTheSameMidIRType(parameter.type, MIR_ANY_TYPE)
-      ? [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
-            functionArguments: [parameter],
-            returnType: MIR_INT_TYPE,
-          }),
-        ]
-      : [
-          MIR_CAST({
-            name: `pointer_casted`,
-            type: MIR_ANY_TYPE,
-            assignedExpression: parameter,
-          }),
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
-            functionArguments: [MIR_VARIABLE('pointer_casted', MIR_ANY_TYPE)],
-            returnType: MIR_INT_TYPE,
-          }),
-        ])
-  );
-  if (typeName !== 'string') {
-    return {
-      name: decRefFunctionName(typeName),
-      parameters: [parameter.name],
-      type: MIR_FUNCTION_TYPE([parameter.type], MIR_INT_TYPE),
-      body: [
-        /* currentRefCount = parameter[0] */ MIR_INDEX_ACCESS({
-          name: 'currentRefCount',
-          type: MIR_INT_TYPE,
-          pointerExpression: parameter,
-          index: 0,
-        }),
-        /* decrementedRefCount = currentRefCount - 1 */ MIR_BINARY({
-          name: 'decrementedRefCount',
-          operator: '-',
-          e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
-          e2: MIR_ONE,
-        }),
-        /* parameter[0] = decrementedRefCount */ MIR_INDEX_ASSIGN({
-          assignedExpression: MIR_VARIABLE('decrementedRefCount', MIR_INT_TYPE),
-          pointerExpression: parameter,
-          index: 0,
-        }),
-        /* dead = currentRefCount <= 1 */ MIR_BINARY({
-          name: 'dead',
-          operator: '<=',
-          e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
-          e2: MIR_ONE,
-        }),
-        /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
-          booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
-          invertCondition: false,
-          statements: destructMemberStatements,
-        }),
-      ],
-      returnValue: MIR_ZERO,
-    };
-  }
-  return {
-    name: decRefFunctionName(typeName),
-    parameters: [parameter.name],
-    type: MIR_FUNCTION_TYPE([parameter.type], MIR_INT_TYPE),
-    body: [
-      /* currentRefCount = parameter[0] */ MIR_INDEX_ACCESS({
-        name: 'currentRefCount',
-        type: MIR_INT_TYPE,
-        pointerExpression: parameter,
-        index: 0,
-      }),
-      /* performGC = currentRefCount > 0 */ MIR_BINARY({
-        name: 'performGC',
-        operator: '>',
-        e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
-        e2: MIR_ZERO,
-      }),
-      MIR_SINGLE_IF({
-        booleanExpression: MIR_VARIABLE('performGC', MIR_BOOL_TYPE),
-        invertCondition: false,
-        statements: [
-          /* decrementedRefCount = currentRefCount - 1 */ MIR_BINARY({
-            name: 'decrementedRefCount',
-            operator: '-',
-            e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
-            e2: MIR_ONE,
-          }),
-          /* parameter[0] = decrementedRefCount */ MIR_INDEX_ASSIGN({
-            assignedExpression: MIR_VARIABLE('decrementedRefCount', MIR_INT_TYPE),
-            pointerExpression: parameter,
-            index: 0,
-          }),
-          /* dead = currentRefCount <= 1 */ MIR_BINARY({
-            name: 'dead',
-            operator: '<=',
-            e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
-            e2: MIR_ONE,
-          }),
-          /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
-            booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: destructMemberStatements,
-          }),
-        ],
-      }),
-    ],
-    returnValue: MIR_ZERO,
-  };
-}
-
 class HighIRToMidIRLoweringManager {
   constructor(
     private readonly closureTypeDefinitions: Readonly<Record<string, MidIRFunctionType>>,
-    private readonly typeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>
+    private readonly typeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>,
+    private readonly isSameAsAnyType: (type: MidIRType) => boolean
   ) {}
 
   private tempId = 0;
@@ -230,7 +111,7 @@ class HighIRToMidIRLoweringManager {
 
     Object.values(this.typeDefinitions).forEach((typeDefinition) => {
       functions.push(
-        generateSingleDestructorFunction(
+        this.generateSingleDestructorFunction(
           typeDefinition.identifier,
           (pointerExpression, destructMemberStatements) => {
             if (typeDefinition.type === 'object') {
@@ -267,7 +148,7 @@ class HighIRToMidIRLoweringManager {
                 const loweredType = lowerHighIRType(type);
                 const statements: MidIRStatement[] = [];
                 // Commented until runtime can deal with strings
-                if (isTheSameMidIRType(loweredType, MIR_ANY_TYPE)) {
+                if (this.isSameAsAnyType(loweredType)) {
                   statements.push(
                     MIR_INDEX_ACCESS({
                       name: `v${index}`,
@@ -324,7 +205,7 @@ class HighIRToMidIRLoweringManager {
 
     Object.keys(this.closureTypeDefinitions).forEach((typeName) => {
       functions.push(
-        generateSingleDestructorFunction(
+        this.generateSingleDestructorFunction(
           typeName,
           (pointerExpression, destructMemberStatements) => {
             destructMemberStatements.push(
@@ -351,7 +232,7 @@ class HighIRToMidIRLoweringManager {
       );
     });
 
-    functions.push(generateSingleDestructorFunction('string', () => {}));
+    functions.push(this.generateSingleDestructorFunction('string', () => {}));
 
     functions.push({
       name: decRefFunctionName('nothing'),
@@ -362,6 +243,126 @@ class HighIRToMidIRLoweringManager {
     });
 
     return functions;
+  }
+
+  private generateSingleDestructorFunction(
+    typeName: string,
+    getDestructMemberStatements: (
+      parameter: MidIRVariableExpression,
+      destructMemberStatements: MidIRStatement[]
+    ) => void
+  ): MidIRFunction {
+    const parameter = MIR_VARIABLE('o', defRefFunctionArgumentType(typeName));
+    const destructMemberStatements: MidIRStatement[] = [];
+    getDestructMemberStatements(parameter, destructMemberStatements);
+    destructMemberStatements.push(
+      ...(this.isSameAsAnyType(parameter.type)
+        ? [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
+              functionArguments: [parameter],
+              returnType: MIR_INT_TYPE,
+            }),
+          ]
+        : [
+            MIR_CAST({
+              name: `pointer_casted`,
+              type: MIR_ANY_TYPE,
+              assignedExpression: parameter,
+            }),
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
+              functionArguments: [MIR_VARIABLE('pointer_casted', MIR_ANY_TYPE)],
+              returnType: MIR_INT_TYPE,
+            }),
+          ])
+    );
+    if (typeName !== 'string') {
+      return {
+        name: decRefFunctionName(typeName),
+        parameters: [parameter.name],
+        type: MIR_FUNCTION_TYPE([parameter.type], MIR_INT_TYPE),
+        body: [
+          /* currentRefCount = parameter[0] */ MIR_INDEX_ACCESS({
+            name: 'currentRefCount',
+            type: MIR_INT_TYPE,
+            pointerExpression: parameter,
+            index: 0,
+          }),
+          /* decrementedRefCount = currentRefCount - 1 */ MIR_BINARY({
+            name: 'decrementedRefCount',
+            operator: '-',
+            e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+            e2: MIR_ONE,
+          }),
+          /* parameter[0] = decrementedRefCount */ MIR_INDEX_ASSIGN({
+            assignedExpression: MIR_VARIABLE('decrementedRefCount', MIR_INT_TYPE),
+            pointerExpression: parameter,
+            index: 0,
+          }),
+          /* dead = currentRefCount <= 1 */ MIR_BINARY({
+            name: 'dead',
+            operator: '<=',
+            e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+            e2: MIR_ONE,
+          }),
+          /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
+            booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
+            invertCondition: false,
+            statements: destructMemberStatements,
+          }),
+        ],
+        returnValue: MIR_ZERO,
+      };
+    }
+    return {
+      name: decRefFunctionName(typeName),
+      parameters: [parameter.name],
+      type: MIR_FUNCTION_TYPE([parameter.type], MIR_INT_TYPE),
+      body: [
+        /* currentRefCount = parameter[0] */ MIR_INDEX_ACCESS({
+          name: 'currentRefCount',
+          type: MIR_INT_TYPE,
+          pointerExpression: parameter,
+          index: 0,
+        }),
+        /* performGC = currentRefCount > 0 */ MIR_BINARY({
+          name: 'performGC',
+          operator: '>',
+          e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+          e2: MIR_ZERO,
+        }),
+        MIR_SINGLE_IF({
+          booleanExpression: MIR_VARIABLE('performGC', MIR_BOOL_TYPE),
+          invertCondition: false,
+          statements: [
+            /* decrementedRefCount = currentRefCount - 1 */ MIR_BINARY({
+              name: 'decrementedRefCount',
+              operator: '-',
+              e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+              e2: MIR_ONE,
+            }),
+            /* parameter[0] = decrementedRefCount */ MIR_INDEX_ASSIGN({
+              assignedExpression: MIR_VARIABLE('decrementedRefCount', MIR_INT_TYPE),
+              pointerExpression: parameter,
+              index: 0,
+            }),
+            /* dead = currentRefCount <= 1 */ MIR_BINARY({
+              name: 'dead',
+              operator: '<=',
+              e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+              e2: MIR_ONE,
+            }),
+            /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
+              booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
+              invertCondition: false,
+              statements: destructMemberStatements,
+            }),
+          ],
+        }),
+      ],
+      returnValue: MIR_ZERO,
+    };
   }
 
   public lowerHighIRFunction({
@@ -484,7 +485,7 @@ class HighIRToMidIRLoweringManager {
             return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: 1 })];
           case 1: {
             // Access the data case, might need cast
-            if (isTheSameMidIRType(variableType, MIR_ANY_TYPE)) {
+            if (this.isSameAsAnyType(variableType)) {
               return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: 2 })];
             }
             const temp = this.tempAllocator();
@@ -628,7 +629,7 @@ class HighIRToMidIRLoweringManager {
                 assert(index === 0 || index === 1, `Invalid index for variant access: ${index}`);
                 this.addReferenceCountingIfTypeAllowed(statements, lowered);
                 if (index === 0) return lowered;
-                if (isTheSameMidIRType(lowered.type, MIR_ANY_TYPE)) return lowered;
+                if (this.isSameAsAnyType(lowered.type)) return lowered;
                 const temp = this.tempAllocator();
                 statements.push(
                   MIR_CAST({ name: temp, type: MIR_ANY_TYPE, assignedExpression: lowered })
@@ -653,7 +654,7 @@ class HighIRToMidIRLoweringManager {
         let functionNameSlot: MidIRExpression;
         let contextSlot: MidIRExpression;
         let destructorFunctionSlot: MidIRExpression;
-        if (isTheSameMidIRType(originalFunctionType, typeErasedClosureType)) {
+        if (this.isSameAsAnyType(originalFunctionType)) {
           functionNameSlot = functionName;
         } else {
           const temp = this.tempAllocator();
@@ -662,7 +663,7 @@ class HighIRToMidIRLoweringManager {
           );
           functionNameSlot = MIR_VARIABLE(temp, typeErasedClosureType);
         }
-        if (isTheSameMidIRType(context.type, MIR_ANY_TYPE)) {
+        if (this.isSameAsAnyType(context.type)) {
           contextSlot = context;
         } else {
           const temp = this.tempAllocator();
@@ -800,16 +801,19 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
       return [it.identifier, it];
     })
   );
+  const isSameAsAnyType = (type: MidIRType) => isTheSameMidIRType(type, MIR_ANY_TYPE);
   const functions = sources.functions.map((highIRFunction) =>
     new HighIRToMidIRLoweringManager(
       closureTypeDefinitionMapForLowering,
-      typeDefinitionMapForLowering
+      typeDefinitionMapForLowering,
+      isSameAsAnyType
     ).lowerHighIRFunction(highIRFunction)
   );
   functions.push(
     ...new HighIRToMidIRLoweringManager(
       closureTypeDefinitionMapForLowering,
-      typeDefinitionMapForLowering
+      typeDefinitionMapForLowering,
+      isSameAsAnyType
     ).generateDestructorFunctions()
   );
   return optimizeMidIRSourcesByEliminatingUnusedOnes({
