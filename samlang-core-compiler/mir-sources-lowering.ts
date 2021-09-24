@@ -654,7 +654,7 @@ class HighIRToMidIRLoweringManager {
         let functionNameSlot: MidIRExpression;
         let contextSlot: MidIRExpression;
         let destructorFunctionSlot: MidIRExpression;
-        if (this.isSameAsAnyType(originalFunctionType)) {
+        if (isTheSameMidIRType(originalFunctionType, typeErasedClosureType)) {
           functionNameSlot = functionName;
         } else {
           const temp = this.tempAllocator();
