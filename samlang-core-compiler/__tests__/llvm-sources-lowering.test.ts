@@ -2,6 +2,11 @@ import { prettyPrintLLVMFunction, prettyPrintLLVMSources } from 'samlang-core-as
 import {
   MidIRExpression,
   MidIRStatement,
+  MIR_INT_TYPE as INT,
+  MIR_BOOL_TYPE,
+  MIR_FUNCTION_TYPE,
+  MIR_IDENTIFIER_TYPE,
+  MIR_STRING_TYPE,
   MIR_FALSE,
   MIR_TRUE,
   MIR_NAME,
@@ -14,16 +19,10 @@ import {
   MIR_BREAK,
   MIR_WHILE,
   MIR_INDEX_ACCESS,
+  MIR_INDEX_ASSIGN,
   MIR_INT,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
-  MIR_INC_REF,
-  MIR_DEC_REF,
-  MIR_INT_TYPE as INT,
-  MIR_FUNCTION_TYPE,
-  MIR_IDENTIFIER_TYPE,
-  MIR_STRING_TYPE,
-  MIR_BOOL_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 
@@ -121,9 +120,16 @@ l0_start:
           pointerExpression: MIR_VARIABLE('bar', MIR_IDENTIFIER_TYPE('Bar')),
           index: 3,
         }),
+        MIR_INDEX_ASSIGN({
+          assignedExpression: MIR_VARIABLE('foo', INT),
+          pointerExpression: MIR_VARIABLE('bar', MIR_IDENTIFIER_TYPE('Bar')),
+          index: 3,
+        }),
       ],
       `  %_temp_0_index_pointer_temp = getelementptr %Bar, %Bar* %bar, i32 0, i32 3
-  %foo = load i64, i64* %_temp_0_index_pointer_temp`
+  %foo = load i64, i64* %_temp_0_index_pointer_temp
+  %_temp_1_index_pointer_temp = getelementptr %Bar, %Bar* %bar, i32 0, i32 3
+  store i64 %foo, i64* %_temp_1_index_pointer_temp`
     );
   });
 
@@ -618,26 +624,6 @@ l2_loop_end:
     assertStatementLoweringWorks(
       [MIR_CAST({ name: 's', type: MIR_STRING_TYPE, assignedExpression: MIR_ZERO })],
       '  %s = inttoptr i64 0 to i64*'
-    );
-  });
-
-  it('LLVM lowering works for MIR_INC_REF', () => {
-    assertStatementLoweringWorks(
-      [MIR_INC_REF(MIR_VARIABLE('obj', MIR_IDENTIFIER_TYPE('Obj')))],
-      `  %_temp_0_ref_count_slot_ptr = getelementptr %Obj, %Obj* %obj, i32 0, i32 0
-  %_temp_1_ref_count_old = load i64, i64* %_temp_0_ref_count_slot_ptr
-  %_temp_2_ref_count_new = add i64 %_temp_1_ref_count_old, 1
-  store i64 %_temp_2_ref_count_new, i64* %_temp_0_ref_count_slot_ptr`
-    );
-  });
-
-  it('LLVM lowering works for MIR_DEC_REF', () => {
-    assertStatementLoweringWorks(
-      [MIR_DEC_REF(MIR_VARIABLE('obj', MIR_IDENTIFIER_TYPE('Obj')))],
-      `  %_temp_0_ref_count_slot_ptr = getelementptr %Obj, %Obj* %obj, i32 0, i32 0
-  %_temp_1_ref_count_old = load i64, i64* %_temp_0_ref_count_slot_ptr
-  %_temp_2_ref_count_new = sub i64 %_temp_1_ref_count_old, 1
-  store i64 %_temp_2_ref_count_new, i64* %_temp_0_ref_count_slot_ptr`
     );
   });
 

@@ -31,6 +31,7 @@ import {
   MIR_NAME,
   MIR_BINARY,
   MIR_INDEX_ACCESS,
+  MIR_INDEX_ASSIGN,
   MIR_FUNCTION_CALL,
   MIR_IF_ELSE,
   MIR_SINGLE_IF,
@@ -38,8 +39,6 @@ import {
   MIR_WHILE,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
-  MIR_INC_REF,
-  MIR_DEC_REF,
 } from 'samlang-core-ast/mir-nodes';
 import { assert, checkNotNull, filterMap } from 'samlang-core-utils';
 
@@ -136,7 +135,17 @@ function generateSingleDestructorFunction(
           pointerExpression: parameter,
           index: 0,
         }),
-        /* parameter[0] -= 1 */ MIR_DEC_REF(parameter),
+        /* decrementedRefCount = currentRefCount - 1 */ MIR_BINARY({
+          name: 'decrementedRefCount',
+          operator: '-',
+          e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+          e2: MIR_ONE,
+        }),
+        /* parameter[0] = decrementedRefCount */ MIR_INDEX_ASSIGN({
+          assignedExpression: MIR_VARIABLE('decrementedRefCount', MIR_INT_TYPE),
+          pointerExpression: parameter,
+          index: 0,
+        }),
         /* dead = currentRefCount <= 1 */ MIR_BINARY({
           name: 'dead',
           operator: '<=',
@@ -173,7 +182,17 @@ function generateSingleDestructorFunction(
         booleanExpression: MIR_VARIABLE('performGC', MIR_BOOL_TYPE),
         invertCondition: false,
         statements: [
-          /* parameter[0] -= 1 */ MIR_DEC_REF(parameter),
+          /* decrementedRefCount = currentRefCount - 1 */ MIR_BINARY({
+            name: 'decrementedRefCount',
+            operator: '-',
+            e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+            e2: MIR_ONE,
+          }),
+          /* parameter[0] = decrementedRefCount */ MIR_INDEX_ASSIGN({
+            assignedExpression: MIR_VARIABLE('decrementedRefCount', MIR_INT_TYPE),
+            pointerExpression: parameter,
+            index: 0,
+          }),
           /* dead = currentRefCount <= 1 */ MIR_BINARY({
             name: 'dead',
             operator: '<=',
@@ -690,11 +709,30 @@ class HighIRToMidIRLoweringManager {
   ): void {
     const typeName = referenceTypeName(expression.type);
     if (typeName == null) return;
+    const count = this.tempAllocator();
+    const newCount = this.tempAllocator();
     if (typeName !== 'string') {
-      collector.push(MIR_INC_REF(expression));
+      collector.push(
+        MIR_INDEX_ACCESS({
+          name: count,
+          type: MIR_INT_TYPE,
+          pointerExpression: expression,
+          index: 0,
+        }),
+        MIR_BINARY({
+          name: newCount,
+          operator: '+',
+          e1: MIR_VARIABLE(count, MIR_INT_TYPE),
+          e2: MIR_ONE,
+        }),
+        MIR_INDEX_ASSIGN({
+          assignedExpression: MIR_VARIABLE(newCount, MIR_INT_TYPE),
+          pointerExpression: expression,
+          index: 0,
+        })
+      );
       return;
     }
-    const count = this.tempAllocator();
     const notSpecial = this.tempAllocator();
     collector.push(
       MIR_INDEX_ACCESS({
@@ -712,7 +750,19 @@ class HighIRToMidIRLoweringManager {
       MIR_SINGLE_IF({
         booleanExpression: MIR_VARIABLE(notSpecial, MIR_BOOL_TYPE),
         invertCondition: false,
-        statements: [MIR_INC_REF(expression)],
+        statements: [
+          MIR_BINARY({
+            name: newCount,
+            operator: '+',
+            e1: MIR_VARIABLE(count, MIR_INT_TYPE),
+            e2: MIR_ONE,
+          }),
+          MIR_INDEX_ASSIGN({
+            assignedExpression: MIR_VARIABLE(newCount, MIR_INT_TYPE),
+            pointerExpression: expression,
+            index: 0,
+          }),
+        ],
       })
     );
   }

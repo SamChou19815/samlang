@@ -272,26 +272,30 @@ function cc(): number {
 }
 function main(): number {
   let v1: number = 0 + 0;
-  obj[0] += 1;
+  let _mid_t0: number = obj[0];
+  let _mid_t1: number = _mid_t0 + 1;
+  obj[0] = _mid_t1;
   let O: Object = [1, 0, obj];
-  let _mid_t0 = 0 as any;
-  let v1: Variant = [1, 0, _mid_t0];
-  let _mid_t1: number = G1[0];
-  let _mid_t2: boolean = _mid_t1 > 0;
-  if (_mid_t2) {
-    G1[0] += 1;
+  let _mid_t2 = 0 as any;
+  let v1: Variant = [1, 0, _mid_t2];
+  let _mid_t3: number = G1[0];
+  let _mid_t5: boolean = _mid_t3 > 0;
+  if (_mid_t5) {
+    let _mid_t4: number = _mid_t3 + 1;
+    G1[0] = _mid_t4;
   }
   let v2: Variant = [1, 0, G1];
-  let _mid_t3: number = G1[0];
-  let _mid_t4: boolean = _mid_t3 > 0;
-  if (_mid_t4) {
-    G1[0] += 1;
+  let _mid_t6: number = G1[0];
+  let _mid_t8: boolean = _mid_t6 > 0;
+  if (_mid_t8) {
+    let _mid_t7: number = _mid_t6 + 1;
+    G1[0] = _mid_t7;
   }
-  let _mid_t5 = __decRef_string as (t0: any) => number;
-  let c1: CC = [1, _mid_t5, aaa, G1];
-  let _mid_t6 = bbb as (t0: any) => number;
-  let _mid_t7 = 0 as any;
-  let c2: CC = [1, __decRef_nothing, _mid_t6, _mid_t7];
+  let _mid_t9 = __decRef_string as (t0: any) => number;
+  let c1: CC = [1, _mid_t9, aaa, G1];
+  let _mid_t10 = bbb as (t0: any) => number;
+  let _mid_t11 = 0 as any;
+  let c2: CC = [1, __decRef_nothing, _mid_t10, _mid_t11];
   __decRef_Object(O);
   __decRef_Variant(v1);
   __decRef_Variant(v2);
@@ -309,10 +313,12 @@ function _compiled_program_main(): number {
     let _mid_t2: (t0: any, t1: number) => number = cc[2];
     let _mid_t3: any = cc[3];
     let _mid_t4: CC = _mid_t2(_mid_t3, 0);
-    G1[0] += 1;
-    let _mid_t5 = G1 as any;
-    let _mid_t6 = __decRef_CC as (t0: any) => number;
-    let c3: CC = [1, _mid_t6, aaa, _mid_t5];
+    let _mid_t5: number = G1[0];
+    let _mid_t6: number = _mid_t5 + 1;
+    G1[0] = _mid_t6;
+    let _mid_t7 = G1 as any;
+    let _mid_t8 = __decRef_CC as (t0: any) => number;
+    let c3: CC = [1, _mid_t8, aaa, _mid_t7];
     __decRef_CC(_mid_t4);
     __decRef_CC(c3);
     finalV = v2;
@@ -321,7 +327,8 @@ function _compiled_program_main(): number {
 }
 function __decRef_Object(o: Object): number {
   let currentRefCount: number = o[0];
-  o[0] -= 1;
+  let decrementedRefCount: number = currentRefCount + -1;
+  o[0] = decrementedRefCount;
   let dead: boolean = currentRefCount <= 1;
   if (dead) {
     let pointer_casted = o as any;
@@ -331,7 +338,8 @@ function __decRef_Object(o: Object): number {
 }
 function __decRef_Variant(o: Variant): number {
   let currentRefCount: number = o[0];
-  o[0] -= 1;
+  let decrementedRefCount: number = currentRefCount + -1;
+  o[0] = decrementedRefCount;
   let dead: boolean = currentRefCount <= 1;
   if (dead) {
     let pointer_casted = o as any;
@@ -341,7 +349,8 @@ function __decRef_Variant(o: Variant): number {
 }
 function __decRef_CC(o: CC): number {
   let currentRefCount: number = o[0];
-  o[0] -= 1;
+  let decrementedRefCount: number = currentRefCount + -1;
+  o[0] = decrementedRefCount;
   let dead: boolean = currentRefCount <= 1;
   if (dead) {
     let destructor: (t0: any) => number = o[1];
@@ -356,7 +365,8 @@ function __decRef_string(o: Str): number {
   let currentRefCount: number = o[0];
   let performGC: boolean = currentRefCount > 0;
   if (performGC) {
-    o[0] -= 1;
+    let decrementedRefCount: number = currentRefCount + -1;
+    o[0] = decrementedRefCount;
     let dead: boolean = currentRefCount <= 1;
     if (dead) {
       _builtin_free(o);
