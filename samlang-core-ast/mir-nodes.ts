@@ -116,6 +116,13 @@ export interface MidIRIndexAccessStatement extends BaseMidIRStatement {
   readonly index: number;
 }
 
+export interface MidIRIndexAssignStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRIndexAssignStatement';
+  readonly assignedExpression: MidIRVariableExpression;
+  readonly pointerExpression: MidIRExpression;
+  readonly index: number;
+}
+
 export interface MidIRBinaryStatement extends BaseMidIRExpression {
   readonly __type__: 'MidIRBinaryStatement';
   readonly name: string;
@@ -186,28 +193,17 @@ export interface MidIRStructInitializationStatement extends BaseMidIRStatement {
   readonly expressionList: readonly MidIRExpression[];
 }
 
-export interface MidIRIncreaseReferenceCountStatement extends BaseMidIRStatement {
-  readonly __type__: 'MidIRIncreaseReferenceCountStatement';
-  readonly expression: MidIRExpression;
-}
-
-export interface MidIRDecreaseReferenceCountStatement extends BaseMidIRStatement {
-  readonly __type__: 'MidIRDecreaseReferenceCountStatement';
-  readonly expression: MidIRExpression;
-}
-
 export type MidIRStatement =
   | MidIRBinaryStatement
   | MidIRIndexAccessStatement
+  | MidIRIndexAssignStatement
   | MidIRFunctionCallStatement
   | MidIRIfElseStatement
   | MidIRSingleIfStatement
   | MidIRBreakStatement
   | MidIRWhileStatement
   | MidIRCastStatement
-  | MidIRStructInitializationStatement
-  | MidIRIncreaseReferenceCountStatement
-  | MidIRDecreaseReferenceCountStatement;
+  | MidIRStructInitializationStatement;
 
 type ConstructorArgumentObject<E extends BaseMidIRExpression | BaseMidIRStatement> = Omit<
   E,
@@ -301,6 +297,17 @@ export const MIR_INDEX_ACCESS = ({
   index,
 });
 
+export const MIR_INDEX_ASSIGN = ({
+  assignedExpression,
+  pointerExpression,
+  index,
+}: ConstructorArgumentObject<MidIRIndexAssignStatement>): MidIRIndexAssignStatement => ({
+  __type__: 'MidIRIndexAssignStatement',
+  assignedExpression,
+  pointerExpression,
+  index,
+});
+
 export const MIR_FUNCTION_CALL = ({
   functionExpression,
   functionArguments,
@@ -376,16 +383,6 @@ export const MIR_STRUCT_INITIALIZATION = ({
   expressionList,
 });
 
-export const MIR_INC_REF = (expression: MidIRExpression): MidIRIncreaseReferenceCountStatement => ({
-  __type__: 'MidIRIncreaseReferenceCountStatement',
-  expression,
-});
-
-export const MIR_DEC_REF = (expression: MidIRExpression): MidIRDecreaseReferenceCountStatement => ({
-  __type__: 'MidIRDecreaseReferenceCountStatement',
-  expression,
-});
-
 function prettyPrintMidIRExpression(expression: MidIRExpression): string {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
@@ -443,6 +440,15 @@ function prettyPrintMidIRFunction(
         statementStringCollector.push(
           '  '.repeat(level),
           `let ${s.name}${type} = ${pointerString}[${s.index}];\n`
+        );
+        break;
+      }
+      case 'MidIRIndexAssignStatement': {
+        const assignedString = prettyPrintMidIRExpression(s.assignedExpression);
+        const pointerString = prettyPrintMidIRExpression(s.pointerExpression);
+        statementStringCollector.push(
+          '  '.repeat(level),
+          `${pointerString}[${s.index}] = ${assignedString};\n`
         );
         break;
       }
@@ -571,19 +577,6 @@ function prettyPrintMidIRFunction(
         );
         break;
       }
-      case 'MidIRIncreaseReferenceCountStatement': {
-        statementStringCollector.push(
-          '  '.repeat(level),
-          `${prettyPrintMidIRExpression(s.expression)}[0] += 1;\n`
-        );
-        break;
-      }
-      case 'MidIRDecreaseReferenceCountStatement':
-        statementStringCollector.push(
-          '  '.repeat(level),
-          `${prettyPrintMidIRExpression(s.expression)}[0] -= 1;\n`
-        );
-        break;
     }
   }
 

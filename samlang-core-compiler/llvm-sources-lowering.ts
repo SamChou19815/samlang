@@ -30,12 +30,11 @@ import type {
   MidIRExpression,
   MidIRStatement,
   MidIRIndexAccessStatement,
+  MidIRIndexAssignStatement,
   MidIRIfElseStatement,
   MidIRSingleIfStatement,
   MidIRWhileStatement,
   MidIRStructInitializationStatement,
-  MidIRIncreaseReferenceCountStatement,
-  MidIRDecreaseReferenceCountStatement,
   MidIRFunction,
   MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
@@ -132,6 +131,9 @@ class LLVMLoweringManager {
       case 'MidIRIndexAccessStatement':
         this.lowerMidIRIndexAccessStatement(s);
         return;
+      case 'MidIRIndexAssignStatement':
+        this.lowerMidIRIndexAssignStatement(s);
+        return;
       case 'MidIRBinaryStatement': {
         const { name: resultVariable, operator, e1, e2 } = s;
         const { value: v1, type: operandType } = this.lowerMidIRExpression(e1);
@@ -184,12 +186,6 @@ class LLVMLoweringManager {
       case 'MidIRStructInitializationStatement':
         this.lowerMidIRStructInitializationStatement(s);
         return;
-      case 'MidIRIncreaseReferenceCountStatement':
-        this.lowerMidIRIncreaseReferenceCountStatement(s);
-        return;
-      case 'MidIRDecreaseReferenceCountStatement':
-        this.lowerMidIRDecreaseReferenceCountStatement(s);
-        return;
     }
   }
 
@@ -209,6 +205,31 @@ class LLVMLoweringManager {
     );
     this.emitInstruction(
       LLVM_LOAD({ resultVariable: s.name, sourceVariable: pointerTemp, valueType })
+    );
+  }
+
+  private lowerMidIRIndexAssignStatement(s: MidIRIndexAssignStatement): void {
+    const { value: loweredAssignedValue, type: loweredAssignedType } = this.lowerMidIRExpression(
+      s.assignedExpression
+    );
+    const { value: loweredPointerValue, type: loweredPointerType } = this.lowerMidIRExpression(
+      s.pointerExpression
+    );
+    const pointerTemp = this.allocator.allocateTemp('index_pointer_temp');
+    this.emitInstruction(
+      LLVM_GET_ELEMENT_PTR({
+        resultVariable: pointerTemp,
+        sourcePointerType: loweredPointerType,
+        sourceValue: loweredPointerValue,
+        offset: s.index,
+      })
+    );
+    this.emitInstruction(
+      LLVM_STORE({
+        targetVariable: pointerTemp,
+        sourceValue: loweredAssignedValue,
+        valueType: loweredAssignedType,
+      })
     );
   }
 
@@ -394,82 +415,6 @@ class LLVMLoweringManager {
         LLVM_STORE({ targetVariable: storePointerTemp, sourceValue: value, valueType: type })
       );
     });
-  }
-
-  private lowerMidIRIncreaseReferenceCountStatement(s: MidIRIncreaseReferenceCountStatement) {
-    const slotPointerTemp = this.allocator.allocateTemp('ref_count_slot_ptr');
-    const originalCountTemp = this.allocator.allocateTemp('ref_count_old');
-    const newCountTemp = this.allocator.allocateTemp('ref_count_new');
-    const { value, type } = this.lowerMidIRExpression(s.expression);
-    this.emitInstruction(
-      LLVM_GET_ELEMENT_PTR({
-        resultVariable: slotPointerTemp,
-        sourcePointerType: type,
-        sourceValue: value,
-        offset: 0,
-      })
-    );
-    this.emitInstruction(
-      LLVM_LOAD({
-        resultVariable: originalCountTemp,
-        sourceVariable: slotPointerTemp,
-        valueType: LLVM_INT_TYPE,
-      })
-    );
-    this.emitInstruction(
-      LLVM_BINARY({
-        resultVariable: newCountTemp,
-        operator: '+',
-        operandType: LLVM_INT_TYPE,
-        v1: LLVM_VARIABLE(originalCountTemp),
-        v2: LLVM_INT(1),
-      })
-    );
-    this.emitInstruction(
-      LLVM_STORE({
-        targetVariable: slotPointerTemp,
-        sourceValue: LLVM_VARIABLE(newCountTemp),
-        valueType: LLVM_INT_TYPE,
-      })
-    );
-  }
-
-  private lowerMidIRDecreaseReferenceCountStatement(s: MidIRDecreaseReferenceCountStatement) {
-    const slotPointerTemp = this.allocator.allocateTemp('ref_count_slot_ptr');
-    const originalCountTemp = this.allocator.allocateTemp('ref_count_old');
-    const newCountTemp = this.allocator.allocateTemp('ref_count_new');
-    const { value, type } = this.lowerMidIRExpression(s.expression);
-    this.emitInstruction(
-      LLVM_GET_ELEMENT_PTR({
-        resultVariable: slotPointerTemp,
-        sourcePointerType: type,
-        sourceValue: value,
-        offset: 0,
-      })
-    );
-    this.emitInstruction(
-      LLVM_LOAD({
-        resultVariable: originalCountTemp,
-        sourceVariable: slotPointerTemp,
-        valueType: LLVM_INT_TYPE,
-      })
-    );
-    this.emitInstruction(
-      LLVM_BINARY({
-        resultVariable: newCountTemp,
-        operator: '-',
-        operandType: LLVM_INT_TYPE,
-        v1: LLVM_VARIABLE(originalCountTemp),
-        v2: LLVM_INT(1),
-      })
-    );
-    this.emitInstruction(
-      LLVM_STORE({
-        targetVariable: slotPointerTemp,
-        sourceValue: LLVM_VARIABLE(newCountTemp),
-        valueType: LLVM_INT_TYPE,
-      })
-    );
   }
 
   lowerMidIRExpression(e: MidIRExpression): LLVMAnnotatedValue {

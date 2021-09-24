@@ -16,8 +16,6 @@ import {
   MIR_NAME,
   MIR_VARIABLE,
   MIR_BINARY,
-  MIR_INC_REF,
-  MIR_DEC_REF,
   MIR_INT_TYPE,
   MIR_BOOL_TYPE,
   MIR_ANY_TYPE,
@@ -53,8 +51,6 @@ describe('mir-nodes', () => {
               MIR_IF_ELSE({
                 booleanExpression: MIR_ZERO,
                 s1: [
-                  MIR_INC_REF(MIR_ZERO),
-                  MIR_DEC_REF(MIR_ZERO),
                   MIR_CAST({
                     name: 'foo',
                     type: MIR_IDENTIFIER_TYPE('Bar'),
@@ -166,8 +162,6 @@ describe('mir-nodes', () => {
 function Bar(f) {
   let bar;
   if (0) {
-    0[0] += 1;
-    0[0] -= 1;
     let foo = /** @type {Bar} */ (dev);
     let n = _tail_rec_param_n;
     let acc = _tail_rec_param_acc;
@@ -286,8 +280,6 @@ function Bar(f) {
               MIR_IF_ELSE({
                 booleanExpression: MIR_ZERO,
                 s1: [
-                  MIR_INC_REF(MIR_ZERO),
-                  MIR_DEC_REF(MIR_ZERO),
                   MIR_CAST({
                     name: 'foo',
                     type: MIR_IDENTIFIER_TYPE('Bar'),
@@ -395,8 +387,6 @@ type Foo = [number, any];
 function Bar(f: number): number {
   let bar: number;
   if (0) {
-    0[0] += 1;
-    0[0] -= 1;
     let foo = dev as Bar;
     let n: number = _tail_rec_param_n;
     let acc: number = _tail_rec_param_acc;
