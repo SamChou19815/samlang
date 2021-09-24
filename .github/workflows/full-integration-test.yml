@@ -22,7 +22,7 @@ jobs:
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@master
         with:
-          version: '11'
+          version: '12'
           directory: ${{ runner.temp }}/llvm
       - name: Compile Runtime
         run: make && cp samlang-runtime/runtime.bc samlang-cli/samlang-runtime/libsam-linux.bc
