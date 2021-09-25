@@ -45,7 +45,7 @@ import type {
   MatchExpression,
   LambdaExpression,
   StatementBlockExpression,
-} from 'samlang-core-ast/samlang-expressions';
+} from 'samlang-core-ast/samlang-nodes';
 import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core-utils';
 
 import type HighIRStringManager from './hir-string-manager';

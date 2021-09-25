@@ -31,7 +31,7 @@ import {
   SourceExpressionMatch,
   SourceExpressionLambda,
   SourceExpressionStatementBlock,
-} from 'samlang-core-ast/samlang-expressions';
+} from 'samlang-core-ast/samlang-nodes';
 
 import fixExpressionType from '../expression-type-fixer';
 import type { ReadOnlyTypeResolution } from '../type-resolution';

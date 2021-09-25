@@ -6,7 +6,7 @@ import type {
   Node,
   TypedComment,
 } from './common-nodes';
-import type { SamlangExpression } from './samlang-expressions';
+import type { SamlangExpression } from './samlang-nodes';
 
 export type AnnotatedVariable = {
   readonly name: string;

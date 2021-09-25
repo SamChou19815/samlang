@@ -3,7 +3,7 @@ import {
   SamlangExpression,
   SourceExpressionVariable,
   SourceExpressionLambda,
-} from 'samlang-core-ast/samlang-expressions';
+} from 'samlang-core-ast/samlang-nodes';
 import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { assert, checkNotNull, zip } from 'samlang-core-utils';
 

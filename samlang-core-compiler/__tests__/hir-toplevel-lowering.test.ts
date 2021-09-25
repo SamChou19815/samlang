@@ -18,7 +18,7 @@ import {
   SourceExpressionBinary,
   SourceExpressionIfElse,
   SourceExpressionClassMember,
-} from 'samlang-core-ast/samlang-expressions';
+} from 'samlang-core-ast/samlang-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
 

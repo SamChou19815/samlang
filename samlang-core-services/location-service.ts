@@ -5,7 +5,7 @@ import {
   ModuleReference,
   Location,
 } from 'samlang-core-ast/common-nodes';
-import { SamlangExpression, SourceExpressionVariable } from 'samlang-core-ast/samlang-expressions';
+import { SamlangExpression, SourceExpressionVariable } from 'samlang-core-ast/samlang-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { HashMap, hashMapOf } from 'samlang-core-utils';
 

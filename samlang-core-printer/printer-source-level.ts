@@ -1,5 +1,5 @@
 import { prettyPrintLiteral, prettyPrintType, TypedComment } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression, IfElseExpression } from 'samlang-core-ast/samlang-expressions';
+import type { SamlangExpression, IfElseExpression } from 'samlang-core-ast/samlang-nodes';
 import type {
   ClassMemberDefinition,
   ClassDefinition,

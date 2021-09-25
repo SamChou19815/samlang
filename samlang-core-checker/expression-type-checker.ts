@@ -37,7 +37,7 @@ import {
   SourceExpressionFunctionCall,
   SourceExpressionMatch,
   SourceExpressionLambda,
-} from 'samlang-core-ast/samlang-expressions';
+} from 'samlang-core-ast/samlang-nodes';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import {

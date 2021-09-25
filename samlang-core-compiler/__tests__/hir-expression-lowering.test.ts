@@ -40,7 +40,7 @@ import {
   SourceExpressionIfElse,
   SourceExpressionMatch,
   SourceExpressionStatementBlock,
-} from 'samlang-core-ast/samlang-expressions';
+} from 'samlang-core-ast/samlang-nodes';
 
 import lowerSamlangExpression from '../hir-expression-lowering';
 import HighIRStringManager from '../hir-string-manager';

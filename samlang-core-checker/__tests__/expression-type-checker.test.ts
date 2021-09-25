@@ -20,7 +20,7 @@ import {
   SourceExpressionIfElse,
   SourceExpressionStatementBlock,
   SourceExpressionLambda,
-} from 'samlang-core-ast/samlang-expressions';
+} from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
 import { checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core-utils';

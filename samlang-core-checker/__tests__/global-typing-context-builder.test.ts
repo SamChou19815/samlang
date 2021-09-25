@@ -1,5 +1,5 @@
 import { functionType, intType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
-import { SourceExpressionFalse } from 'samlang-core-ast/samlang-expressions';
+import { SourceExpressionFalse } from 'samlang-core-ast/samlang-nodes';
 import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
 
