@@ -95,7 +95,7 @@ class HighIRToMidIRLoweringManager {
   constructor(
     private readonly closureTypeDefinitions: Readonly<Record<string, MidIRFunctionType>>,
     private readonly typeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>,
-    private readonly isSameAsAnyType: (type: MidIRType) => boolean
+    private readonly isTheSameLoweredType: (t1: MidIRType, t2?: MidIRType) => boolean
   ) {}
 
   private tempId = 0;
@@ -148,7 +148,7 @@ class HighIRToMidIRLoweringManager {
                 const loweredType = lowerHighIRType(type);
                 const statements: MidIRStatement[] = [];
                 // Commented until runtime can deal with strings
-                if (this.isSameAsAnyType(loweredType)) {
+                if (this.isTheSameLoweredType(loweredType)) {
                   statements.push(
                     MIR_INDEX_ACCESS({
                       name: `v${index}`,
@@ -256,7 +256,7 @@ class HighIRToMidIRLoweringManager {
     const destructMemberStatements: MidIRStatement[] = [];
     getDestructMemberStatements(parameter, destructMemberStatements);
     destructMemberStatements.push(
-      ...(this.isSameAsAnyType(parameter.type)
+      ...(this.isTheSameLoweredType(parameter.type)
         ? [
             MIR_FUNCTION_CALL({
               functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
@@ -485,7 +485,7 @@ class HighIRToMidIRLoweringManager {
             return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: 1 })];
           case 1: {
             // Access the data case, might need cast
-            if (this.isSameAsAnyType(variableType)) {
+            if (this.isTheSameLoweredType(variableType)) {
               return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: 2 })];
             }
             const temp = this.tempAllocator();
@@ -629,7 +629,7 @@ class HighIRToMidIRLoweringManager {
                 assert(index === 0 || index === 1, `Invalid index for variant access: ${index}`);
                 this.addReferenceCountingIfTypeAllowed(statements, lowered);
                 if (index === 0) return lowered;
-                if (this.isSameAsAnyType(lowered.type)) return lowered;
+                if (this.isTheSameLoweredType(lowered.type)) return lowered;
                 const temp = this.tempAllocator();
                 statements.push(
                   MIR_CAST({ name: temp, type: MIR_ANY_TYPE, assignedExpression: lowered })
@@ -654,7 +654,7 @@ class HighIRToMidIRLoweringManager {
         let functionNameSlot: MidIRExpression;
         let contextSlot: MidIRExpression;
         let destructorFunctionSlot: MidIRExpression;
-        if (isTheSameMidIRType(originalFunctionType, typeErasedClosureType)) {
+        if (this.isTheSameLoweredType(originalFunctionType, typeErasedClosureType)) {
           functionNameSlot = functionName;
         } else {
           const temp = this.tempAllocator();
@@ -663,7 +663,7 @@ class HighIRToMidIRLoweringManager {
           );
           functionNameSlot = MIR_VARIABLE(temp, typeErasedClosureType);
         }
-        if (this.isSameAsAnyType(context.type)) {
+        if (this.isTheSameLoweredType(context.type)) {
           contextSlot = context;
         } else {
           const temp = this.tempAllocator();
@@ -679,18 +679,23 @@ class HighIRToMidIRLoweringManager {
             unknownMemberDestructorType
           );
         } else {
-          const temp = this.tempAllocator();
-          statements.push(
-            MIR_CAST({
-              name: temp,
-              type: unknownMemberDestructorType,
-              assignedExpression: MIR_NAME(
-                decRefFunctionName(contextTypeName),
-                MIR_FUNCTION_TYPE([context.type], MIR_INT_TYPE)
-              ),
-            })
+          const name = MIR_NAME(
+            decRefFunctionName(contextTypeName),
+            MIR_FUNCTION_TYPE([context.type], MIR_INT_TYPE)
           );
-          destructorFunctionSlot = MIR_VARIABLE(temp, unknownMemberDestructorType);
+          if (this.isTheSameLoweredType(context.type)) {
+            destructorFunctionSlot = name;
+          } else {
+            const temp = this.tempAllocator();
+            statements.push(
+              MIR_CAST({
+                name: temp,
+                type: unknownMemberDestructorType,
+                assignedExpression: name,
+              })
+            );
+            destructorFunctionSlot = MIR_VARIABLE(temp, unknownMemberDestructorType);
+          }
         }
         statements.push(
           MIR_STRUCT_INITIALIZATION({
@@ -769,12 +774,14 @@ class HighIRToMidIRLoweringManager {
   }
 }
 
-export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources): MidIRSources {
+function generalizedLowerHighIRSourcesToMidIRSources(
+  sources: HighIRSources,
+  isTheSameLoweredType: (t1: MidIRType, t2?: MidIRType) => boolean
+): MidIRSources {
   const typeDefinitions: MidIRTypeDefinition[] = [];
   const closureTypeDefinitionMapForLowering = Object.fromEntries(
     sources.closureTypes.map((it) => {
       assert(it.typeParameters.length === 0);
-      // TODO(ref-counting): add typedef for destructors
       const functionTypeWithoutContextArgument = lowerHighIRFunctionType(it.functionType);
       const functionType = MIR_FUNCTION_TYPE(
         [MIR_ANY_TYPE, ...functionTypeWithoutContextArgument.argumentTypes],
@@ -801,19 +808,18 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
       return [it.identifier, it];
     })
   );
-  const isSameAsAnyType = (type: MidIRType) => isTheSameMidIRType(type, MIR_ANY_TYPE);
   const functions = sources.functions.map((highIRFunction) =>
     new HighIRToMidIRLoweringManager(
       closureTypeDefinitionMapForLowering,
       typeDefinitionMapForLowering,
-      isSameAsAnyType
+      isTheSameLoweredType
     ).lowerHighIRFunction(highIRFunction)
   );
   functions.push(
     ...new HighIRToMidIRLoweringManager(
       closureTypeDefinitionMapForLowering,
       typeDefinitionMapForLowering,
-      isSameAsAnyType
+      isTheSameLoweredType
     ).generateDestructorFunctions()
   );
   return optimizeMidIRSourcesByEliminatingUnusedOnes({
@@ -822,4 +828,10 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
     mainFunctionNames: sources.mainFunctionNames,
     functions,
   });
+}
+
+export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources): MidIRSources {
+  return generalizedLowerHighIRSourcesToMidIRSources(sources, (t1, t2 = MIR_ANY_TYPE) =>
+    isTheSameMidIRType(t1, t2)
+  );
 }
