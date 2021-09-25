@@ -10,7 +10,7 @@ import {
   identifierType,
   functionType,
 } from 'samlang-core-ast/common-nodes';
-import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { SourceClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-nodes';
 import { hashMapOf } from 'samlang-core-utils';
 
 import type {
@@ -24,7 +24,7 @@ function buildClassTypingContext({
   typeParameters,
   typeDefinition,
   members,
-}: ClassDefinition): ClassTypingContext {
+}: SourceClassDefinition): ClassTypingContext {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {

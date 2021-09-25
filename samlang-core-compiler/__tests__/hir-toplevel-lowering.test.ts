@@ -18,8 +18,8 @@ import {
   SourceExpressionBinary,
   SourceExpressionIfElse,
   SourceExpressionClassMember,
+  SamlangModule,
 } from 'samlang-core-ast/samlang-nodes';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
 
 import compileSamlangSourcesToHighIRSources, {

@@ -6,8 +6,8 @@ import {
   SamlangValStatement,
   StatementBlock,
   SourceExpressionVariable,
+  SourceFieldType,
 } from 'samlang-core-ast/samlang-nodes';
-import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull, zip, LocalStackedContext, assert } from 'samlang-core-utils';
 
@@ -114,7 +114,7 @@ export default class StatementTypeChecker {
         );
         let fieldNamesMappings: {
           readonly fieldNames: readonly string[];
-          readonly fieldMappings: Readonly<Record<string, FieldType>>;
+          readonly fieldMappings: Readonly<Record<string, SourceFieldType>>;
         };
         assert(
           fieldMappingsOrError.type !== 'IllegalOtherClassMatch',

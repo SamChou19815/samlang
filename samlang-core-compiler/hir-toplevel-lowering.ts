@@ -12,7 +12,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
 } from 'samlang-core-ast/hir-nodes';
-import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { SourceClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-nodes';
 
 import lowerSamlangExpression from './hir-expression-lowering';
 import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
@@ -32,7 +32,7 @@ function compileSamlangFunctionToHighIRFunctions(
   classTypeParameters: readonly string[],
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
-  classMember: ClassMemberDefinition
+  classMember: SourceClassMemberDefinition
 ): readonly [readonly HighIRFunction[], HighIRFunction | null] {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
   const typeParametersSet = new Set(

@@ -1,9 +1,9 @@
 import type { ModuleReference, Range, Type } from 'samlang-core-ast/common-nodes';
 import type {
-  ClassMemberDefinition,
+  SourceClassMemberDefinition,
   TypeDefinition,
   SamlangModule,
-} from 'samlang-core-ast/samlang-toplevel';
+} from 'samlang-core-ast/samlang-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { error, filterMap, LocalStackedContext } from 'samlang-core-utils';
 
@@ -63,7 +63,7 @@ export default class ModuleTypeChecker {
   private checkClassTopLevelValidity(
     classTypeParameters: readonly string[],
     typeDefinition: TypeDefinition,
-    classMembers: readonly ClassMemberDefinition[],
+    classMembers: readonly SourceClassMemberDefinition[],
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
   ): void {
     this.checkNameCollisionForStringList(classTypeParameters, typeDefinition.range);
@@ -88,7 +88,7 @@ export default class ModuleTypeChecker {
   }
 
   private partiallyCheckMembers(
-    classMembers: readonly ClassMemberDefinition[],
+    classMembers: readonly SourceClassMemberDefinition[],
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
   ): void {
     classMembers.forEach((member) => {
@@ -105,9 +105,9 @@ export default class ModuleTypeChecker {
   }
 
   private typeCheckMemberDefinition(
-    memberDefinition: ClassMemberDefinition,
+    memberDefinition: SourceClassMemberDefinition,
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
-  ): ClassMemberDefinition | null {
+  ): SourceClassMemberDefinition | null {
     const localTypingContext = new LocalStackedContext<Type>();
     const { isMethod, typeParameters, type, parameters, body } = memberDefinition;
     if (isMethod) {

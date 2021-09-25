@@ -1,5 +1,5 @@
 import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { SamlangModule } from 'samlang-core-ast/samlang-nodes';
 import { typeCheckSources, GlobalTypingContext } from 'samlang-core-checker';
 // eslint-disable-next-line import/no-internal-modules
 import type { ModuleTypingContext } from 'samlang-core-checker/typing-context';

@@ -22,7 +22,7 @@ import {
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
 import { MidIRSources, prettyPrintMidIRSourcesAsTSSources } from 'samlang-core-ast/mir-nodes';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { SamlangModule } from 'samlang-core-ast/samlang-nodes';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,

@@ -52,14 +52,12 @@ import {
   SourceExpressionLambda,
   SourceExpressionMatch,
   SourceExpressionStatementBlock,
-} from 'samlang-core-ast/samlang-nodes';
-import type {
-  ClassDefinition,
-  ClassMemberDefinition,
-  ModuleMembersImport,
+  SourceClassDefinition,
+  SourceClassMemberDefinition,
+  SourceModuleMembersImport,
   SamlangModule,
   TypeDefinition,
-} from 'samlang-core-ast/samlang-toplevel';
+} from 'samlang-core-ast/samlang-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull } from 'samlang-core-utils';
 
@@ -223,7 +221,7 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   parseModule = (): SamlangModule => {
-    const imports: ModuleMembersImport[] = [];
+    const imports: SourceModuleMembersImport[] = [];
     while (this.peek().content === 'import') {
       const importStart = this.peek().range;
       this.consume();
@@ -265,7 +263,7 @@ export default class SamlangModuleParser extends BaseParser {
       });
     }
 
-    const classes: ClassDefinition[] = [];
+    const classes: SourceClassDefinition[] = [];
     ParseClasses: while (this.peek().content !== 'EOF') {
       let potentialGarbagePeeked = this.peek();
       while (potentialGarbagePeeked.content !== 'class') {
@@ -280,22 +278,22 @@ export default class SamlangModuleParser extends BaseParser {
     return { imports, classes };
   };
 
-  parseClass = (): ClassDefinition => {
+  parseClass = (): SourceClassDefinition => {
     const { startRange, ...header } = this.parseClassHeader();
     this.assertAndConsume('{');
-    const members: ClassMemberDefinition[] = [];
+    const members: SourceClassMemberDefinition[] = [];
     while (
       this.peek().content === 'private' ||
       this.peek().content === 'function' ||
       this.peek().content === 'method'
     ) {
-      members.push(this.parseClassMemberDefinition());
+      members.push(this.parseSourceClassMemberDefinition());
     }
     const endRange = this.assertAndConsume('}');
     return { range: startRange.union(endRange), ...header, members };
   };
 
-  private parseClassHeader = (): Omit<ClassDefinition, 'range' | 'members'> & {
+  private parseClassHeader = (): Omit<SourceClassDefinition, 'range' | 'members'> & {
     readonly startRange: Range;
   } => {
     const associatedComments = this.collectPrecedingComments();
@@ -368,7 +366,7 @@ export default class SamlangModuleParser extends BaseParser {
     }
   };
 
-  parseClassMemberDefinition = (): ClassMemberDefinition => {
+  parseSourceClassMemberDefinition = (): SourceClassMemberDefinition => {
     const associatedComments = this.collectPrecedingComments();
     let startRange: Range;
     let isPublic = true;

@@ -28,7 +28,7 @@ describe('samlang-parser', () => {
       new Set()
     );
     parser.parseClass();
-    parser.parseClassMemberDefinition();
+    parser.parseSourceClassMemberDefinition();
     parser.parseExpression();
     parser.parseModule();
     parser.parsePattern();
@@ -45,7 +45,7 @@ describe('samlang-parser', () => {
     );
 
     parser.parseClass();
-    parser.parseClassMemberDefinition();
+    parser.parseSourceClassMemberDefinition();
     parser.parseExpression();
     parser.parseModule();
     parser.parsePattern();

@@ -9,12 +9,12 @@ import {
   TypedComment,
   Sources,
 } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression } from 'samlang-core-ast/samlang-nodes';
 import type {
-  ClassDefinition,
-  ClassMemberDefinition,
+  SamlangExpression,
+  SourceClassDefinition,
+  SourceClassMemberDefinition,
   SamlangModule,
-} from 'samlang-core-ast/samlang-toplevel';
+} from 'samlang-core-ast/samlang-nodes';
 import {
   DependencyTracker,
   GlobalTypingContext,
@@ -62,7 +62,8 @@ export class LanguageServiceState {
 
   private _classLocationLookup: LocationLookup<string> = new LocationLookup();
 
-  private _classMemberLocationLookup: LocationLookup<ClassMemberDefinition> = new LocationLookup();
+  private _classMemberLocationLookup: LocationLookup<SourceClassMemberDefinition> =
+    new LocationLookup();
 
   private _variableDefinitionLookup: VariableDefinitionLookup = new VariableDefinitionLookup();
 
@@ -109,7 +110,7 @@ export class LanguageServiceState {
     return this._classLocationLookup;
   }
 
-  get classMemberLocationLookup(): ReadOnlyLocationLookup<ClassMemberDefinition> {
+  get classMemberLocationLookup(): ReadOnlyLocationLookup<SourceClassMemberDefinition> {
     return this._classMemberLocationLookup;
   }
 
@@ -400,7 +401,7 @@ export class LanguageServices {
   private getClassDefinition(
     moduleReference: ModuleReference,
     className: string
-  ): readonly [ModuleReference, ClassDefinition] | undefined {
+  ): readonly [ModuleReference, SourceClassDefinition] | undefined {
     const samlangModule = checkNotNull(
       this.state.getCheckedModule(moduleReference),
       `Missing ${moduleReference}`
