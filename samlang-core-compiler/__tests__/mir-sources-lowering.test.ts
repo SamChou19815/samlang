@@ -291,11 +291,10 @@ function main(): number {
     let _mid_t7: number = _mid_t6 + 1;
     G1[0] = _mid_t7;
   }
-  let _mid_t9 = __decRef_string as (t0: any) => number;
-  let c1: CC = [1, _mid_t9, aaa, G1];
-  let _mid_t10 = bbb as (t0: any) => number;
-  let _mid_t11 = 0 as any;
-  let c2: CC = [1, __decRef_nothing, _mid_t10, _mid_t11];
+  let c1: CC = [1, __decRef_string, aaa, G1];
+  let _mid_t9 = bbb as (t0: any) => number;
+  let _mid_t10 = 0 as any;
+  let c2: CC = [1, __decRef_nothing, _mid_t9, _mid_t10];
   __decRef_Object(O);
   __decRef_Variant(v1);
   __decRef_Variant(v2);
