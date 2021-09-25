@@ -1,11 +1,12 @@
 import { Type, unitType } from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
+  Pattern,
+  ObjectPatternDestucturedName,
   SamlangValStatement,
   StatementBlock,
   SourceExpressionVariable,
 } from 'samlang-core-ast/samlang-nodes';
-import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/samlang-pattern';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull, zip, LocalStackedContext, assert } from 'samlang-core-utils';

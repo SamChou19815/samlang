@@ -31,6 +31,7 @@ import {
 } from 'samlang-core-ast/common-operators';
 import {
   SamlangExpression,
+  Pattern,
   VariantPatternToExpression,
   SamlangValStatement,
   SourceExpressionTrue,
@@ -52,7 +53,6 @@ import {
   SourceExpressionMatch,
   SourceExpressionStatementBlock,
 } from 'samlang-core-ast/samlang-nodes';
-import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 import type {
   ClassDefinition,
   ClassMemberDefinition,
