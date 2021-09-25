@@ -9,7 +9,7 @@ describe('samlang-demo', () => {
       prettyPrintedProgram: `class Main { function main(): unit = Builtins.println("hello world")  }\n`,
       jsString: `/** @type {Str} */ const GLOBAL_STRING_0 = [0, "hello world"];
 function _Demo_Main_main() {
-  let _mid_t0 = __Builtins_println(GLOBAL_STRING_0);
+  __Builtins_println(GLOBAL_STRING_0);
   return 0;
 }
 `,
@@ -26,7 +26,7 @@ declare i64 @_builtin_free(i64*) nounwind
 define i64 @_Demo_Main_main() local_unnamed_addr nounwind {
 l0_start:
   %_temp_0_string_name_cast = bitcast [13 x i64]* @GLOBAL_STRING_0 to i64*
-  %_mid_t0 = call i64 @__Builtins_println(i64* %_temp_0_string_name_cast) nounwind
+  call i64 @__Builtins_println(i64* %_temp_0_string_name_cast) nounwind
   ret i64 0
 }`,
       errors: [],

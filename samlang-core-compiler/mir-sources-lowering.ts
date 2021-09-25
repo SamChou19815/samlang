@@ -502,6 +502,9 @@ class HighIRToMidIRLoweringManager {
       }
       case 'HighIRFunctionCallStatement': {
         const loweredReturnType = lowerHighIRType(statement.returnType);
+        const returnCollector =
+          statement.returnCollector ??
+          (referenceTypeName(loweredReturnType) ? this.tempAllocator() : undefined);
         const statements: MidIRStatement[] = [];
         if (statement.functionExpression.__type__ === 'HighIRNameExpression') {
           statements.push(
@@ -509,7 +512,7 @@ class HighIRToMidIRLoweringManager {
               functionExpression: lowerHighIRExpression(statement.functionExpression),
               functionArguments: statement.functionArguments.map(lowerHighIRExpression),
               returnType: loweredReturnType,
-              returnCollector: statement.returnCollector ?? this.tempAllocator(),
+              returnCollector,
             })
           );
         } else {
@@ -545,7 +548,7 @@ class HighIRToMidIRLoweringManager {
                 ...statement.functionArguments.map(lowerHighIRExpression),
               ],
               returnType: loweredReturnType,
-              returnCollector: statement.returnCollector ?? this.tempAllocator(),
+              returnCollector,
             })
           );
         }

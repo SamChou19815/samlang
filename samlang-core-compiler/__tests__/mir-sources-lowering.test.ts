@@ -248,11 +248,11 @@ type Variant = [number, number, any];
 function cc(): number {
   let _mid_t0: (t0: any, t1: number) => number = cc[2];
   let _mid_t1: any = cc[3];
-  let _mid_t2: number = _mid_t0(_mid_t1, 0);
+  _mid_t0(_mid_t1, 0);
   let v1: number = a[1];
   let v2: number = b[1];
-  let _mid_t3: any = b[2];
-  let v3 = _mid_t3 as number;
+  let _mid_t2: any = b[2];
+  let v3 = _mid_t2 as number;
   let v4: Str = b[2];
   while (true) {
     if (0) {
@@ -305,20 +305,20 @@ function main(): number {
 function _compiled_program_main(): number {
   let finalV: number;
   if (true) {
-    let _mid_t0: number = main(0);
-    let _mid_t1: number = cc(0);
+    main(0);
+    cc(0);
     finalV = v1;
   } else {
-    let _mid_t2: (t0: any, t1: number) => number = cc[2];
-    let _mid_t3: any = cc[3];
-    let _mid_t4: CC = _mid_t2(_mid_t3, 0);
-    let _mid_t5: number = G1[0];
-    let _mid_t6: number = _mid_t5 + 1;
-    G1[0] = _mid_t6;
-    let _mid_t7 = G1 as any;
-    let _mid_t8 = __decRef_CC as (t0: any) => number;
-    let c3: CC = [1, _mid_t8, aaa, _mid_t7];
-    __decRef_CC(_mid_t4);
+    let _mid_t1: (t0: any, t1: number) => number = cc[2];
+    let _mid_t2: any = cc[3];
+    let _mid_t0: CC = _mid_t1(_mid_t2, 0);
+    let _mid_t3: number = G1[0];
+    let _mid_t4: number = _mid_t3 + 1;
+    G1[0] = _mid_t4;
+    let _mid_t5 = G1 as any;
+    let _mid_t6 = __decRef_CC as (t0: any) => number;
+    let c3: CC = [1, _mid_t6, aaa, _mid_t5];
+    __decRef_CC(_mid_t0);
     __decRef_CC(c3);
     finalV = v2;
   }
