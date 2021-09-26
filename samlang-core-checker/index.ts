@@ -1,5 +1,5 @@
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { SamlangModule } from 'samlang-core-ast/samlang-nodes';
 import type { ReadonlyGlobalErrorCollector } from 'samlang-core-errors';
 import {
   HashMap,

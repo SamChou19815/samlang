@@ -1,5 +1,5 @@
 import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import type { SamlangExpression } from 'samlang-core-ast/samlang-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';

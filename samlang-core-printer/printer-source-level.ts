@@ -1,11 +1,12 @@
 import { prettyPrintLiteral, prettyPrintType, TypedComment } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression, IfElseExpression } from 'samlang-core-ast/samlang-expressions';
 import type {
-  ClassMemberDefinition,
-  ClassDefinition,
-  ModuleMembersImport,
+  SamlangExpression,
+  IfElseExpression,
+  SourceClassMemberDefinition,
+  SourceClassDefinition,
+  SourceModuleMembersImport,
   SamlangModule,
-} from 'samlang-core-ast/samlang-toplevel';
+} from 'samlang-core-ast/samlang-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 import {
@@ -332,7 +333,7 @@ export function prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
 }
 
 export function createPrettierDocumentsFromSamlangClassMember(
-  member: ClassMemberDefinition
+  member: SourceClassMemberDefinition
 ): readonly PrettierDocument[] {
   const bodyDocument = createPrettierDocumentFromSamlangExpression(member.body);
 
@@ -371,7 +372,7 @@ export function createPrettierDocumentsFromSamlangClassMember(
   ];
 }
 
-function createPrettierDocumentForImport(oneImport: ModuleMembersImport): PrettierDocument {
+function createPrettierDocumentForImport(oneImport: SourceModuleMembersImport): PrettierDocument {
   return PRETTIER_CONCAT(
     PRETTIER_TEXT('import '),
     createBracesSurroundedDocument(
@@ -383,7 +384,7 @@ function createPrettierDocumentForImport(oneImport: ModuleMembersImport): Pretti
 }
 
 function createPrettierDocumentsForClassDefinition(
-  classDefinition: ClassDefinition
+  classDefinition: SourceClassDefinition
 ): readonly PrettierDocument[] {
   const typeMappings = Object.entries(classDefinition.typeDefinition.mappings);
   const classMembersDocuments = classDefinition.members

@@ -12,13 +12,13 @@ import {
 import {
   StatementBlock,
   SamlangExpression,
+  Pattern,
   SamlangValStatement,
   SourceExpressionTrue,
   SourceExpressionInt,
   SourceExpressionVariable,
   SourceExpressionStatementBlock,
-} from 'samlang-core-ast/samlang-expressions';
-import type { Pattern } from 'samlang-core-ast/samlang-pattern';
+} from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { hashMapOf, LocalStackedContext } from 'samlang-core-utils';
 

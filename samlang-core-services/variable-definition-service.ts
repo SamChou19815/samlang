@@ -1,7 +1,10 @@
 import type { ModuleReference, Range, Sources } from 'samlang-core-ast/common-nodes';
-import { SourceExpressionVariable, SamlangExpression } from 'samlang-core-ast/samlang-expressions';
-import type { Pattern } from 'samlang-core-ast/samlang-pattern';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import {
+  SourceExpressionVariable,
+  SamlangExpression,
+  Pattern,
+  SamlangModule,
+} from 'samlang-core-ast/samlang-nodes';
 import { HashMap, LocalStackedContext, assert, error, hashMapOf } from 'samlang-core-utils';
 
 export type DefinitionAndUses = {

@@ -5,7 +5,7 @@ import {
   identifierType,
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
-import type { FieldType, TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
+import type { SourceFieldType, TypeDefinition } from 'samlang-core-ast/samlang-nodes';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from 'samlang-core-utils';
 
 import replaceTypeIdentifier from './type-identifier-replacer';
@@ -118,7 +118,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     | {
         readonly type: 'Resolved';
         readonly names: readonly string[];
-        readonly mappings: Readonly<Record<string, FieldType>>;
+        readonly mappings: Readonly<Record<string, SourceFieldType>>;
       }
     | { readonly type: 'IllegalOtherClassMatch' }
     | { readonly type: 'UnsupportedClassTypeDefinition' } {

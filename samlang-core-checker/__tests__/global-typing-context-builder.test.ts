@@ -1,6 +1,6 @@
 import { functionType, intType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
-import { SourceExpressionFalse } from 'samlang-core-ast/samlang-expressions';
-import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import { SourceExpressionFalse } from 'samlang-core-ast/samlang-nodes';
+import type { SourceClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-nodes';
 import { mapOf } from 'samlang-core-utils';
 
 import {
@@ -18,7 +18,7 @@ const typeDefinition = {
   mappings: {},
 } as const;
 
-const class0: ClassDefinition = {
+const class0: SourceClassDefinition = {
   range: Range.DUMMY,
   associatedComments: [],
   name: 'Class0',
@@ -27,7 +27,7 @@ const class0: ClassDefinition = {
   typeDefinition,
   members: [],
 };
-const class1: ClassDefinition = {
+const class1: SourceClassDefinition = {
   range: Range.DUMMY,
   associatedComments: [],
   name: 'Class1',
@@ -61,7 +61,7 @@ const class1: ClassDefinition = {
     },
   ],
 };
-const class2: ClassDefinition = {
+const class2: SourceClassDefinition = {
   range: Range.DUMMY,
   associatedComments: [],
   name: 'Class2',

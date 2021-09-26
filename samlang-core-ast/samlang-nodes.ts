@@ -16,7 +16,6 @@ import {
   TypedComment,
 } from './common-nodes';
 import type { BinaryOperator } from './common-operators';
-import type { Pattern } from './samlang-pattern';
 
 interface BaseExpression extends Node {
   /** Identity of the object used for pattern matching. */
@@ -148,6 +147,40 @@ export interface LambdaExpression extends BaseExpression {
   readonly captured: Record<string, Type>;
   readonly body: SamlangExpression;
 }
+
+export interface TuplePattern extends Node {
+  readonly type: 'TuplePattern';
+  readonly destructedNames: readonly {
+    readonly name?: string;
+    readonly type: Type;
+    readonly range: Range;
+  }[];
+}
+
+export interface ObjectPatternDestucturedName {
+  readonly fieldName: string;
+  readonly fieldNameRange: Range;
+  readonly fieldOrder: number;
+  readonly type: Type;
+  readonly alias?: readonly [string, Range];
+  readonly range: Range;
+}
+
+export interface ObjectPattern extends Node {
+  readonly type: 'ObjectPattern';
+  readonly destructedNames: readonly ObjectPatternDestucturedName[];
+}
+
+export interface VariablePattern extends Node {
+  readonly type: 'VariablePattern';
+  readonly name: string;
+}
+
+export interface WildCardPattern extends Node {
+  readonly type: 'WildCardPattern';
+}
+
+export type Pattern = TuplePattern | ObjectPattern | VariablePattern | WildCardPattern;
 
 export interface SamlangValStatement extends Node {
   readonly pattern: Pattern;
@@ -487,3 +520,54 @@ export const SourceExpressionStatementBlock = ({
   associatedComments,
   block,
 });
+
+interface SourceAnnotatedVariable {
+  readonly name: string;
+  readonly nameRange: Range;
+  readonly type: Type;
+  readonly typeRange: Range;
+}
+
+export interface SourceClassMemberDefinition extends Node {
+  readonly associatedComments: readonly TypedComment[];
+  readonly isPublic: boolean;
+  readonly isMethod: boolean;
+  readonly nameRange: Range;
+  readonly name: string;
+  readonly typeParameters: readonly string[];
+  readonly type: FunctionType;
+  readonly parameters: readonly SourceAnnotatedVariable[];
+  readonly body: SamlangExpression;
+}
+
+export interface SourceFieldType {
+  readonly type: Type;
+  readonly isPublic: boolean;
+}
+
+export interface TypeDefinition extends Node {
+  readonly type: 'object' | 'variant';
+  /** A list of fields. Used for ordering during codegen. */
+  readonly names: readonly string[];
+  readonly mappings: Readonly<Record<string, SourceFieldType>>;
+}
+
+export interface SourceClassDefinition extends Node {
+  readonly associatedComments: readonly TypedComment[];
+  readonly nameRange: Range;
+  readonly name: string;
+  readonly typeParameters: readonly string[];
+  readonly typeDefinition: TypeDefinition;
+  readonly members: readonly SourceClassMemberDefinition[];
+}
+
+export interface SourceModuleMembersImport extends Node {
+  readonly importedMembers: readonly (readonly [string, Range])[];
+  readonly importedModule: ModuleReference;
+  readonly importedModuleRange: Range;
+}
+
+export interface SamlangModule {
+  readonly imports: readonly SourceModuleMembersImport[];
+  readonly classes: readonly SourceClassDefinition[];
+}

@@ -37,8 +37,8 @@ import {
   SourceExpressionFunctionCall,
   SourceExpressionMatch,
   SourceExpressionLambda,
-} from 'samlang-core-ast/samlang-expressions';
-import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
+  SourceFieldType,
+} from 'samlang-core-ast/samlang-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import {
   listShallowEquals,
@@ -447,7 +447,7 @@ class ExpressionTypeChecker {
       'object'
     );
     let fieldNames: readonly string[];
-    let fieldMappings: Readonly<Record<string, FieldType>>;
+    let fieldMappings: Readonly<Record<string, SourceFieldType>>;
     assert(fieldMappingsOrError.type !== 'IllegalOtherClassMatch', 'Impossible!');
     switch (fieldMappingsOrError.type) {
       case 'Resolved':
@@ -622,7 +622,7 @@ class ExpressionTypeChecker {
       'variant'
     );
     let variantNames: readonly string[];
-    let variantMappings: Readonly<Record<string, FieldType>>;
+    let variantMappings: Readonly<Record<string, SourceFieldType>>;
     switch (variantTypeDefinition.type) {
       case 'Resolved':
         variantNames = variantTypeDefinition.names;

@@ -3,8 +3,9 @@ import {
   SamlangExpression,
   SourceExpressionVariable,
   SourceExpressionLambda,
-} from 'samlang-core-ast/samlang-expressions';
-import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
+  SourceClassDefinition,
+  SamlangModule,
+} from 'samlang-core-ast/samlang-nodes';
 import { assert, checkNotNull, zip } from 'samlang-core-utils';
 
 import PanicException from './panic-exception';
@@ -418,7 +419,7 @@ class ModuleInterpreter {
   };
 
   private evalContext = (
-    classDefinition: ClassDefinition,
+    classDefinition: SourceClassDefinition,
     context: InterpretationContext
   ): InterpretationContext => {
     const functions: Record<string, FunctionValue> = {};
