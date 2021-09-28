@@ -17,6 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-node@v2
+      - uses: actions/cache@v2
+        with:
+          path: ".yarn/cache\n.pnp.js"
+          key: "yarn-berry-${{ hashFiles('**/yarn.lock') }}"
+          restore-keys: 'yarn-berry-'
       - name: Yarn Install
         run: yarn
       - name: Install LLVM and Clang

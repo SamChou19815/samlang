@@ -10,9 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: '2'
       - uses: actions/setup-node@v2
+      - uses: actions/cache@v2
+        with:
+          path: ".yarn/cache\n.pnp.js"
+          key: "yarn-berry-${{ hashFiles('**/yarn.lock') }}"
+          restore-keys: 'yarn-berry-'
       - name: Yarn Install
         run: yarn install --immutable
       - name: Format Check
@@ -26,6 +29,11 @@ jobs:
         with:
           fetch-depth: '2'
       - uses: actions/setup-node@v2
+      - uses: actions/cache@v2
+        with:
+          path: ".yarn/cache\n.pnp.js"
+          key: "yarn-berry-${{ hashFiles('**/yarn.lock') }}"
+          restore-keys: 'yarn-berry-'
       - name: Yarn Install
         run: yarn install --immutable
       - name: Compile
@@ -35,8 +43,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
+      - uses: actions/cache@v2
         with:
-          cache: 'yarn'
+          path: ".yarn/cache\n.pnp.js"
+          key: "yarn-berry-${{ hashFiles('**/yarn.lock') }}"
+          restore-keys: 'yarn-berry-'
       - name: Yarn Install
         run: yarn install --immutable
       - name: Test
