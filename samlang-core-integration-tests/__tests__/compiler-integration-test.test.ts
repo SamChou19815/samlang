@@ -10,7 +10,7 @@ import {
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core-ast/mir-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
@@ -22,12 +22,11 @@ import {
 } from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
-import { checkSources } from 'samlang-core-services';
 
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 describe('compiler-integration-tests', () => {
-  const { checkedSources, compileTimeErrors } = checkSources(
+  const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
     runnableSamlangProgramTestCases.map((it) => [
       new ModuleReference([it.testCaseName]),
       it.sourceCode,

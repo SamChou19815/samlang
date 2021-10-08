@@ -1,13 +1,5 @@
 {
-  "typescript.tsdk": ".yarn/sdks/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
   "samlang.programPath": "samlang-cli/bin/index.js",
-  "prettier.prettierPath": ".yarn/sdks/prettier/index.js",
-  "eslint.nodePath": ".yarn/sdks",
-  "search.exclude": {
-    "**/.yarn": true,
-    "**/.pnp.*": true
-  },
   "files.associations": {
     "*.m": "matlab",
     "*.ml": "ocaml",

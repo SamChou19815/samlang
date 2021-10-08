@@ -244,17 +244,15 @@ export class LanguageServiceState {
   }
 }
 
-export type CompletionItemKind = 2 | 3 | 5;
+type CompletionItemKind = 2 | 3 | 5;
 
-export class CompletionItemKinds {
+class CompletionItemKinds {
   static readonly METHOD: CompletionItemKind = 2;
-
   static readonly FUNCTION: CompletionItemKind = 3;
-
   static readonly FIELD: CompletionItemKind = 5;
 }
 
-export type AutoCompletionItem = {
+type AutoCompletionItem = {
   readonly name: string;
   readonly text: string;
   readonly isSnippet: boolean;

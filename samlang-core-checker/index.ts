@@ -1,6 +1,11 @@
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-nodes';
-import type { ReadonlyGlobalErrorCollector } from 'samlang-core-errors';
+import {
+  CompileTimeError,
+  createGlobalErrorCollector,
+  ReadonlyGlobalErrorCollector,
+} from 'samlang-core-errors';
+import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import {
   HashMap,
   HashSet,
@@ -128,6 +133,39 @@ export function typeCheckSources(
     );
   });
   return [checkedSources, globalTypingContext];
+}
+
+type TypeCheckSourceHandlesResult = {
+  readonly checkedSources: Sources<SamlangModule>;
+  readonly globalTypingContext: GlobalTypingContext;
+  readonly compileTimeErrors: readonly CompileTimeError[];
+};
+
+export function typeCheckSourceHandles(
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
+  builtinModuleTypes: ModuleTypingContext
+): TypeCheckSourceHandlesResult {
+  const errorCollector = createGlobalErrorCollector();
+  const moduleMappings = hashMapOf(
+    ...sourceHandles.map(
+      ([moduleReference, text]) =>
+        [
+          moduleReference,
+          parseSamlangModuleFromText(
+            text,
+            moduleReference,
+            new Set(Object.keys(builtinModuleTypes)),
+            errorCollector.getModuleErrorCollector(moduleReference)
+          ),
+        ] as const
+    )
+  );
+  const [checkedSources, globalTypingContext] = typeCheckSources(
+    moduleMappings,
+    builtinModuleTypes,
+    errorCollector
+  );
+  return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
 }
 
 export function typeCheckSourcesIncrementally(

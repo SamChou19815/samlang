@@ -7,6 +7,7 @@ import { mapOf, hashMapOf } from 'samlang-core-utils';
 import {
   DependencyTracker,
   typeCheckSources,
+  typeCheckSourceHandles,
   typeCheckSourcesIncrementally,
   typeCheckSingleModuleSource,
   collectModuleReferenceFromSamlangModule,
@@ -372,5 +373,20 @@ describe('samlang-core-checker', () => {
     expect(checkedModule.classes.length).toBe(1);
     expect(checkedModule.classes[0]?.name).toBe('Main');
     expect(checkedModule.classes[0]?.members).toEqual([]);
+  });
+
+  it('typeCheckSourceHandles test', () => {
+    const moduleReference = new ModuleReference(['Test']);
+    const sourceCode = `
+  class Main {
+    function main(): unit = Builtins.println("Hello "::"World!")
+  }
+  `;
+
+    const { compileTimeErrors } = typeCheckSourceHandles(
+      [[moduleReference, sourceCode]],
+      DEFAULT_BUILTIN_TYPING_CONTEXT
+    );
+    expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
   });
 });

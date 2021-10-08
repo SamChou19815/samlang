@@ -28,9 +28,10 @@
     "eslint-import-resolver-node": "^0.3.6",
     "eslint-plugin-import": "^2.24.2",
     "husky": "^7.0.2",
-    "jest": "^27.2.4",
+    "jest": "^27.2.5",
     "lint-staged": "^11.2.0",
     "prettier": "^2.4.1",
+    "source-map-support": "^0.5.20",
     "typescript": "^4.4.3"
   },
   "eslintConfig": {
@@ -86,5 +87,5 @@
       "yarn prettier --write"
     ]
   },
-  "packageManager": "yarn@3.0.2"
+  "packageManager": "yarn@3.1.0-rc.8"
 }

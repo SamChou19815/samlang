@@ -2,7 +2,7 @@ import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 
-import { parseSamlangModuleFromText, parseSamlangExpressionFromText } from '..';
+import { parseSamlangModuleFromText, parseSamlangExpressionFromText, parseSources } from '..';
 
 describe('samlang-core-parser/index', () => {
   it('Can parse good expressions.', () => {
@@ -288,5 +288,18 @@ describe('samlang-core-parser/index', () => {
       '__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes.',
       '__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes.',
     ]);
+  });
+
+  it('parseSources test', () => {
+    expect(
+      parseSources(
+        [
+          [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
+          // with syntax error
+          [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
+        ],
+        new Set()
+      ).length
+    ).toBe(1);
   });
 });
