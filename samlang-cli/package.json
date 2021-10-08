@@ -14,14 +14,13 @@
     "samlang": "./bin/index.js"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.2",
     "@types/node": "^16.10.3",
-    "@yarnpkg/esbuild-plugin-pnp": "^1.0.1-rc.6",
     "esbuild": "^0.13.4",
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-checker": "workspace:0.0.1",
     "samlang-core-compiler": "workspace:0.0.1",
     "samlang-core-optimization": "workspace:0.0.1",
+    "samlang-core-parser": "workspace:0.0.1",
     "samlang-core-printer": "workspace:0.0.1",
     "samlang-core-services": "workspace:0.0.1",
     "typescript": "^4.4.3",

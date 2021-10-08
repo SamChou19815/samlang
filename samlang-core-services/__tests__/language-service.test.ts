@@ -2,7 +2,13 @@ import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes'
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import prettyPrintSamlangModule from 'samlang-core-printer';
 
-import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
+import { LanguageServiceState, LanguageServices } from '../language-service';
+
+class CompletionItemKinds {
+  static readonly METHOD = 2 as const;
+  static readonly FUNCTION = 3 as const;
+  static readonly FIELD = 5 as const;
+}
 
 describe('language-service', () => {
   it('Language server state can update.', () => {

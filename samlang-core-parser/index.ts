@@ -1,6 +1,7 @@
 import type { ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression, SamlangModule } from 'samlang-core-ast/samlang-nodes';
-import type { ModuleErrorCollector } from 'samlang-core-errors';
+import { ModuleErrorCollector, createGlobalErrorCollector } from 'samlang-core-errors';
+import { filterMap } from 'samlang-core-utils';
 
 import lexSamlangProgram from './samlang-lexer';
 import SamlangModuleParser from './samlang-parser';
@@ -33,4 +34,21 @@ export function parseSamlangExpressionFromText(
     builtInClasses
   );
   return parser.parseExpression();
+}
+
+export function parseSources(
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
+  builtInClasses: ReadonlySet<string>
+): readonly (readonly [ModuleReference, SamlangModule])[] {
+  const errorCollector = createGlobalErrorCollector();
+  return filterMap(sourceHandles, ([moduleReference, sourceString]) => {
+    const moduleErrorCollector = errorCollector.getModuleErrorCollector(moduleReference);
+    const parsed = parseSamlangModuleFromText(
+      sourceString,
+      moduleReference,
+      builtInClasses,
+      moduleErrorCollector
+    );
+    return moduleErrorCollector.hasErrors ? null : ([moduleReference, parsed] as const);
+  });
 }
