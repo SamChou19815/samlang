@@ -53,13 +53,12 @@
                 "**/samlang-core/checker",
                 "**/samlang-core/compiler",
                 "**/samlang-core/errors",
+                "**/samlang-core/interpreter/*",
                 "**/samlang-core/optimization",
                 "**/samlang-core/parser",
                 "**/samlang-core/printer",
                 "**/samlang-core/services",
-                "**/samlang-core/utils",
-                "**/samlang-core-interpreter/*",
-                "**/yarn-plugin-monorail/src/utils/*"
+                "**/samlang-core/utils"
               ]
             }
           ]

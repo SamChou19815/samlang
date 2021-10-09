@@ -8,16 +8,10 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_FREE,
-} from 'samlang-core/ast/common-names';
-import type { IROperator } from 'samlang-core/ast/common-operators';
-import type {
-  LLVMSources,
-  LLVMFunction,
-  LLVMValue,
-  LLVMLabelInstruction,
-} from 'samlang-core/ast/llvm-nodes';
-import { checkNotNull, zip, assert } from 'samlang-core/utils';
-
+} from '../ast/common-names';
+import type { IROperator } from '../ast/common-operators';
+import type { LLVMSources, LLVMFunction, LLVMValue, LLVMLabelInstruction } from '../ast/llvm-nodes';
+import { checkNotNull, zip, assert } from '../utils';
 import PanicException from './panic-exception';
 
 class StackFrame {

@@ -1,9 +1,4 @@
 import {
-  setupLLVMInterpretationEnvironment,
-  interpretLLVMSources,
-} from 'samlang-core-interpreter/llvm-ir-interpreter';
-import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
-import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
@@ -21,6 +16,11 @@ import {
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core/compiler';
+import {
+  setupLLVMInterpretationEnvironment,
+  interpretLLVMSources,
+} from 'samlang-core/interpreter/llvm-ir-interpreter';
+import interpretSamlangModule from 'samlang-core/interpreter/source-level-interpreter';
 import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core/optimization';
 
 import { runnableSamlangProgramTestCases } from '../test-programs';
