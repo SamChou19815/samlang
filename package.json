@@ -3,7 +3,6 @@
   "workspaces": [
     "samlang-cli",
     "samlang-core",
-    "samlang-core-*",
     "samlang-demo"
   ],
   "scripts": {
