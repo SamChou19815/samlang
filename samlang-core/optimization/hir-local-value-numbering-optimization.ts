@@ -10,9 +10,8 @@ import {
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core/ast/hir-nodes';
-import { error, filterMap, LocalStackedContext, zip, zip3 } from 'samlang-core/utils';
-
+} from '../ast/hir-nodes';
+import { error, filterMap, LocalStackedContext, zip, zip3 } from '../utils';
 import {
   IndexAccessBindedValue,
   BinaryBindedValue,

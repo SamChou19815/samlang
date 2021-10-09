@@ -462,7 +462,6 @@ __metadata:
     samlang-core: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
-    samlang-core-optimization: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
     typescript: ^4.4.3
     vscode-languageserver: ^7.0.0
@@ -5008,7 +5007,6 @@ fsevents@^2.3.2:
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
-    samlang-core-optimization: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5019,15 +5017,6 @@ fsevents@^2.3.2:
   dependencies:
     samlang-core: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
-    typescript: ^4.4.3
-  languageName: unknown
-  linkType: soft
-
-"samlang-core-optimization@workspace:0.0.1, samlang-core-optimization@workspace:samlang-core-optimization":
-  version: 0.0.0-use.local
-  resolution: "samlang-core-optimization@workspace:samlang-core-optimization"
-  dependencies:
-    samlang-core: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft

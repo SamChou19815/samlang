@@ -17,8 +17,7 @@ import {
   HIR_WHILE,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
-} from 'samlang-core/ast/hir-nodes';
-
+} from '../../ast/hir-nodes';
 import optimizeHighIRFunctionWithAllLoopOptimizations, {
   optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING,
 } from '../hir-loop-optimizations';

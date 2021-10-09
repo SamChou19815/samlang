@@ -1,4 +1,4 @@
-import createHighIRFlexibleOrderOperatorNode from 'samlang-core/ast/hir-flexible-op';
+import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
 import {
   HighIRStatement,
   HIR_ZERO,
@@ -6,8 +6,7 @@ import {
   HIR_VARIABLE,
   HIR_BINARY,
   HIR_INT_TYPE,
-} from 'samlang-core/ast/hir-nodes';
-
+} from '../ast/hir-nodes';
 import type { HighIROptimizableWhileLoop } from './hir-loop-induction-analysis';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 

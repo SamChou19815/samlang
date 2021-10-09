@@ -1,12 +1,6 @@
-import createHighIRFlexibleOrderOperatorNode from 'samlang-core/ast/hir-flexible-op';
-import {
-  HighIRStatement,
-  HIR_VARIABLE,
-  HIR_BINARY,
-  HIR_INT_TYPE,
-} from 'samlang-core/ast/hir-nodes';
-import { checkNotNull, filterMap } from 'samlang-core/utils';
-
+import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
+import { HighIRStatement, HIR_VARIABLE, HIR_BINARY, HIR_INT_TYPE } from '../ast/hir-nodes';
+import { checkNotNull, filterMap } from '../utils';
 import {
   GeneralBasicInductionVariable,
   HighIROptimizableWhileLoop,

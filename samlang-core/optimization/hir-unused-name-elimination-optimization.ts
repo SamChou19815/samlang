@@ -4,8 +4,8 @@ import type {
   HighIRFunction,
   HighIRType,
   HighIRSources,
-} from 'samlang-core/ast/hir-nodes';
-import { checkNotNull } from 'samlang-core/utils';
+} from '../ast/hir-nodes';
+import { checkNotNull } from '../utils';
 
 function collectForTypeSet(type: HighIRType, typeSet: Set<string>): void {
   if (type.__type__ === 'IdentifierType') typeSet.add(type.name);

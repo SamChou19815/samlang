@@ -1,5 +1,5 @@
-import type { IROperator } from 'samlang-core/ast/common-operators';
-import createHighIRFlexibleOrderOperatorNode from 'samlang-core/ast/hir-flexible-op';
+import type { IROperator } from '../ast/common-operators';
+import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
 import {
   HighIRNameExpression,
   HighIRExpression,
@@ -22,16 +22,8 @@ import {
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core/ast/hir-nodes';
-import {
-  LocalStackedContext,
-  assert,
-  checkNotNull,
-  filterMap,
-  ignore,
-  zip3,
-} from 'samlang-core/utils';
-
+} from '../ast/hir-nodes';
+import { LocalStackedContext, assert, checkNotNull, filterMap, ignore, zip3 } from '../utils';
 import {
   ifElseOrNull,
   singleIfOrNull,

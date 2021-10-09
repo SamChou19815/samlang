@@ -1,9 +1,8 @@
-import { HIR_INT_TYPE, HIR_FUNCTION_TYPE, HIR_ZERO } from 'samlang-core/ast/hir-nodes';
-import type { HighIRSources } from 'samlang-core/ast/hir-nodes';
-
 import { optimizeHighIRSourcesAccordingToConfiguration } from '..';
+import { HIR_INT_TYPE, HIR_FUNCTION_TYPE, HIR_ZERO } from '../../ast/hir-nodes';
+import type { HighIRSources } from '../../ast/hir-nodes';
 
-describe('samlang-core-optimization', () => {
+describe('samlang-core/optimization', () => {
   it('optimizeHighIRSourcesAccordingToConfiguration coverage tests', () => {
     const sources: HighIRSources = {
       globalVariables: [],

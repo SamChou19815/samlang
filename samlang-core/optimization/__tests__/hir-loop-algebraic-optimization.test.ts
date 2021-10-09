@@ -5,8 +5,7 @@ import {
   HIR_VARIABLE,
   HIR_BINARY,
   HIR_INT_TYPE,
-} from 'samlang-core/ast/hir-nodes';
-
+} from '../../ast/hir-nodes';
 import highIRLoopAlgebraicOptimization, {
   analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING,
 } from '../hir-loop-algebraic-optimization';

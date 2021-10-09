@@ -21,8 +21,7 @@ import {
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core/ast/hir-nodes';
-
+} from '../../ast/hir-nodes';
 import optimizeHighIRFunctionByDeadCodeElimination from '../hir-dead-code-elimination-optimization';
 
 function assertCorrectlyOptimized(

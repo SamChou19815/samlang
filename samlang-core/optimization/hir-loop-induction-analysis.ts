@@ -1,6 +1,6 @@
 /* eslint-disable no-param-reassign */
 
-import type { IROperator } from 'samlang-core/ast/common-operators';
+import type { IROperator } from '../ast/common-operators';
 import {
   HighIRType,
   HighIRStatement,
@@ -13,9 +13,8 @@ import {
   HIR_INT,
   HIR_ONE,
   HIR_ZERO,
-} from 'samlang-core/ast/hir-nodes';
-import { assert, checkNotNull, isNotNull, filterMap } from 'samlang-core/utils';
-
+} from '../ast/hir-nodes';
+import { assert, checkNotNull, isNotNull, filterMap } from '../utils';
 import { internalOptimizeHighIRStatementsByDCE } from './hir-dead-code-elimination-optimization';
 
 export type PotentialLoopInvariantExpression =

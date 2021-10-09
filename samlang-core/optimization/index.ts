@@ -1,5 +1,4 @@
-import type { HighIRFunction, HighIRSources } from 'samlang-core/ast/hir-nodes';
-
+import type { HighIRFunction, HighIRSources } from '../ast/hir-nodes';
 import optimizeHighIRFunctionByCommonSubExpressionElimination from './hir-common-subexpression-elimination-optimization';
 import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
 import optimizeHighIRFunctionByDeadCodeElimination from './hir-dead-code-elimination-optimization';

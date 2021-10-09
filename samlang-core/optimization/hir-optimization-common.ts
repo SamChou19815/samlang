@@ -1,4 +1,4 @@
-import type { IROperator } from 'samlang-core/ast/common-operators';
+import type { IROperator } from '../ast/common-operators';
 import {
   HighIRType,
   HighIRStatement,
@@ -6,8 +6,8 @@ import {
   debugPrintHighIRExpression as expressionToString,
   HighIRIfElseStatement,
   HighIRSingleIfStatement,
-} from 'samlang-core/ast/hir-nodes';
-import { error, LocalStackedContext } from 'samlang-core/utils';
+} from '../ast/hir-nodes';
+import { error, LocalStackedContext } from '../utils';
 
 export type IndexAccessBindedValue = {
   readonly __type__: 'IndexAccess';

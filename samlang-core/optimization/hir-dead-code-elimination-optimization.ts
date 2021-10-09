@@ -1,6 +1,5 @@
-import type { HighIRExpression, HighIRStatement, HighIRFunction } from 'samlang-core/ast/hir-nodes';
-import { filterMap } from 'samlang-core/utils';
-
+import type { HighIRExpression, HighIRStatement, HighIRFunction } from '../ast/hir-nodes';
+import { filterMap } from '../utils';
 import { ifElseOrNull } from './hir-optimization-common';
 
 export function collectUseFromHighIRExpression(

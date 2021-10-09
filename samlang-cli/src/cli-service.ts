@@ -15,7 +15,6 @@ import {
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core-compiler';
-import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
@@ -29,6 +28,7 @@ import { ModuleReference, Sources } from 'samlang-core/ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
 import { MidIRSources, prettyPrintMidIRSourcesAsTSSources } from 'samlang-core/ast/mir-nodes';
 import type { SamlangModule } from 'samlang-core/ast/samlang-nodes';
+import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core/optimization';
 
 import type { SamlangProjectConfiguration } from './configuration';
 
