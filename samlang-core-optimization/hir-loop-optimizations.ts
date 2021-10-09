@@ -1,4 +1,4 @@
-import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
+import createHighIRFlexibleOrderOperatorNode from 'samlang-core/ast/hir-flexible-op';
 import {
   HighIRStatement,
   HighIRWhileStatement,
@@ -11,7 +11,7 @@ import {
   HIR_WHILE,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 
 import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
 import {

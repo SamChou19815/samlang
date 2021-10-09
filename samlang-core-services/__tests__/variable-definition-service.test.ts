@@ -1,7 +1,7 @@
-import { ModuleReference, Position, Range } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import prettyPrintSamlangModule from 'samlang-core-printer';
+import { ModuleReference, Position, Range } from 'samlang-core/ast/common-nodes';
 import { checkNotNull, hashMapOf } from 'samlang-core/utils';
 
 import {

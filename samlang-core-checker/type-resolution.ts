@@ -1,4 +1,4 @@
-import type { UndecidedType, Type } from 'samlang-core-ast/common-nodes';
+import type { UndecidedType, Type } from 'samlang-core/ast/common-nodes';
 import { assert, checkNotNull, UnionFind } from 'samlang-core/utils';
 
 import typeResolver from './type-resolver';

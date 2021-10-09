@@ -16,7 +16,7 @@ import {
   HIR_IF_ELSE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 import { assert } from 'samlang-core/utils';
 
 class HighIRTypeDeduplicator {

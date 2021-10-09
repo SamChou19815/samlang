@@ -1,3 +1,4 @@
+import type { ModuleErrorCollector } from 'samlang-core-errors';
 import {
   Type,
   UndecidedTypes,
@@ -11,7 +12,7 @@ import {
   Range,
   ModuleReference,
   TypedComment,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 import {
   BinaryOperator,
   MUL,
@@ -28,7 +29,7 @@ import {
   AND,
   OR,
   CONCAT,
-} from 'samlang-core-ast/common-operators';
+} from 'samlang-core/ast/common-operators';
 import {
   SamlangExpression,
   Pattern,
@@ -57,8 +58,7 @@ import {
   SourceModuleMembersImport,
   SamlangModule,
   TypeDefinition,
-} from 'samlang-core-ast/samlang-nodes';
-import type { ModuleErrorCollector } from 'samlang-core-errors';
+} from 'samlang-core/ast/samlang-nodes';
 import { checkNotNull } from 'samlang-core/utils';
 
 import {

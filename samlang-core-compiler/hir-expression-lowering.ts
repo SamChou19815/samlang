@@ -1,8 +1,8 @@
 import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeFunctionNameGlobally,
-} from 'samlang-core-ast/common-names';
-import type { ModuleReference, Type, IdentifierType } from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-names';
+import type { ModuleReference, Type, IdentifierType } from 'samlang-core/ast/common-nodes';
 import {
   HighIRType,
   HighIRIdentifierType,
@@ -29,7 +29,7 @@ import {
   HIR_IF_ELSE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 import type {
   SamlangExpression,
   ClassMemberExpression,
@@ -45,7 +45,7 @@ import type {
   MatchExpression,
   LambdaExpression,
   StatementBlockExpression,
-} from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/samlang-nodes';
 import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core/utils';
 
 import type HighIRStringManager from './hir-string-manager';

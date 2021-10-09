@@ -1,5 +1,5 @@
-import type { ModuleReference, Type } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression } from 'samlang-core-ast/samlang-nodes';
+import type { ModuleReference, Type } from 'samlang-core/ast/common-nodes';
+import type { SamlangExpression } from 'samlang-core/ast/samlang-nodes';
 import type { HashSet } from 'samlang-core/utils';
 
 export function collectModuleReferenceFromType(

@@ -11,6 +11,12 @@ import {
 import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
 import {
+  compileSamlangSourcesToHighIRSources,
+  lowerHighIRSourcesToMidIRSources,
+  lowerMidIRSourcesToLLVMSources,
+} from 'samlang-core-compiler';
+import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
+import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
@@ -18,17 +24,11 @@ import {
   ENCODED_FUNCTION_NAME_THROW,
   ENCODED_FUNCTION_NAME_FREE,
   encodeMainFunctionName,
-} from 'samlang-core-ast/common-names';
-import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
-import { MidIRSources, prettyPrintMidIRSourcesAsTSSources } from 'samlang-core-ast/mir-nodes';
-import type { SamlangModule } from 'samlang-core-ast/samlang-nodes';
-import {
-  compileSamlangSourcesToHighIRSources,
-  lowerHighIRSourcesToMidIRSources,
-  lowerMidIRSourcesToLLVMSources,
-} from 'samlang-core-compiler';
-import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
+} from 'samlang-core/ast/common-names';
+import { ModuleReference, Sources } from 'samlang-core/ast/common-nodes';
+import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
+import { MidIRSources, prettyPrintMidIRSourcesAsTSSources } from 'samlang-core/ast/mir-nodes';
+import type { SamlangModule } from 'samlang-core/ast/samlang-nodes';
 
 import type { SamlangProjectConfiguration } from './configuration';
 

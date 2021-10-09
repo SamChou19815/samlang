@@ -1,5 +1,5 @@
-import { Position, Range } from 'samlang-core-ast/common-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
+import { Position, Range } from 'samlang-core/ast/common-nodes';
 import { assert, checkNotNull } from 'samlang-core/utils';
 
 const characterIsWhitespace = (character: string): boolean => /\s/.test(character);

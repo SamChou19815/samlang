@@ -1,3 +1,4 @@
+import { createGlobalErrorCollector } from 'samlang-core-errors';
 import {
   Type,
   boolType,
@@ -8,7 +9,7 @@ import {
   isTheSameType,
   Range,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 import {
   StatementBlock,
   SamlangExpression,
@@ -18,8 +19,7 @@ import {
   SourceExpressionInt,
   SourceExpressionVariable,
   SourceExpressionStatementBlock,
-} from 'samlang-core-ast/samlang-nodes';
-import { createGlobalErrorCollector } from 'samlang-core-errors';
+} from 'samlang-core/ast/samlang-nodes';
 import { hashMapOf, LocalStackedContext } from 'samlang-core/utils';
 
 import StatementTypeChecker from '../statement-type-checker';

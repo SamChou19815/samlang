@@ -1,4 +1,5 @@
-import { Type, unitType } from 'samlang-core-ast/common-nodes';
+import type { ModuleErrorCollector } from 'samlang-core-errors';
+import { Type, unitType } from 'samlang-core/ast/common-nodes';
 import {
   SamlangExpression,
   Pattern,
@@ -7,8 +8,7 @@ import {
   StatementBlock,
   SourceExpressionVariable,
   SourceFieldType,
-} from 'samlang-core-ast/samlang-nodes';
-import type { ModuleErrorCollector } from 'samlang-core-errors';
+} from 'samlang-core/ast/samlang-nodes';
 import { checkNotNull, zip, LocalStackedContext, assert } from 'samlang-core/utils';
 
 import type { AccessibleGlobalTypingContext } from './typing-context';

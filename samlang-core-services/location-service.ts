@@ -4,12 +4,12 @@ import {
   Range,
   ModuleReference,
   Location,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 import {
   SamlangExpression,
   SourceExpressionVariable,
   SamlangModule,
-} from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/samlang-nodes';
 import { HashMap, hashMapOf } from 'samlang-core/utils';
 
 export interface ReadOnlyLocationLookup<E> {

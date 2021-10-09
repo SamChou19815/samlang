@@ -7,7 +7,6 @@
   },
   "dependencies": {
     "samlang-core": "workspace:0.0.1",
-    "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-errors": "workspace:0.0.1",
     "samlang-core-parser": "workspace:0.0.1"
   },

@@ -4,7 +4,7 @@ import {
   tupleType,
   functionType,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 
 import replaceTypeIdentifier from '../type-identifier-replacer';
 

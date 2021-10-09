@@ -20,7 +20,7 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
   debugPrintHighIRFunction,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 
 import optimizeHighIRFunctionsByInlining, {
   estimateFunctionInlineCost_EXPOSED_FOR_TESTING,

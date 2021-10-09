@@ -1,4 +1,4 @@
-import { intType, boolType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
+import { intType, boolType, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
 
 import {
   CompileTimeError,

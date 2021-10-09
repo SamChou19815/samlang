@@ -8,7 +8,7 @@ import {
   stringType,
   tupleType,
   unitType,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 import {
   prettyPrintHighIRType,
   prettyPrintHighIRClosureTypeDefinition,
@@ -19,7 +19,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 
 import {
   collectUsedGenericTypes,

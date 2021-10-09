@@ -16,7 +16,7 @@ import {
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 
 import highIRLoopInductionVariableEliminationOptimization from '../hir-loop-induction-variable-elimination';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';

@@ -5,8 +5,8 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from 'samlang-core-ast/common-nodes';
-import type { SourceFieldType } from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/common-nodes';
+import type { SourceFieldType } from 'samlang-core/ast/samlang-nodes';
 import { assert, zip } from 'samlang-core/utils';
 
 /**

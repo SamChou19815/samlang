@@ -17,7 +17,7 @@ import {
   HIR_BREAK,
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 import { zip } from 'samlang-core/utils';
 
 import extractOptimizableWhileLoop, {

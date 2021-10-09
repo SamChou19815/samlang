@@ -1,11 +1,11 @@
-import type { IdentifierType } from 'samlang-core-ast/common-nodes';
+import type { IdentifierType } from 'samlang-core/ast/common-nodes';
 import {
   SamlangExpression,
   SourceExpressionVariable,
   SourceExpressionLambda,
   SourceClassDefinition,
   SamlangModule,
-} from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/samlang-nodes';
 import { assert, checkNotNull, zip } from 'samlang-core/utils';
 
 import PanicException from './panic-exception';

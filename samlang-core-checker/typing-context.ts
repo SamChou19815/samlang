@@ -4,8 +4,8 @@ import {
   Type,
   identifierType,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
-import type { SourceFieldType, TypeDefinition } from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/common-nodes';
+import type { SourceFieldType, TypeDefinition } from 'samlang-core/ast/samlang-nodes';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from 'samlang-core/utils';
 
 import replaceTypeIdentifier from './type-identifier-replacer';

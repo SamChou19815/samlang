@@ -5,7 +5,7 @@ import {
   identifierType,
   functionType,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 
 import collectUndecidedTypeIndices from '../undecided-type-collector';
 

@@ -3,7 +3,7 @@ import type {
   PrimitiveType,
   FunctionType,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 import {
   prettyPrintHighIRType,
   HighIRType,
@@ -18,8 +18,8 @@ import {
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
   HighIRIdentifierType,
-} from 'samlang-core-ast/hir-nodes';
-import type { TypeDefinition } from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/hir-nodes';
+import type { TypeDefinition } from 'samlang-core/ast/samlang-nodes';
 import { assert, checkNotNull, zip } from 'samlang-core/utils';
 
 /** A helper class to generate an identifier type for each struct type. */

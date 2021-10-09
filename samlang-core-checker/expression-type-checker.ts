@@ -1,3 +1,4 @@
+import type { ModuleErrorCollector } from 'samlang-core-errors';
 import {
   Range,
   Type,
@@ -11,7 +12,7 @@ import {
   tupleType,
   functionType,
   UndecidedTypes,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 import {
   SamlangExpression,
   LiteralExpression,
@@ -38,8 +39,7 @@ import {
   SourceExpressionMatch,
   SourceExpressionLambda,
   SourceFieldType,
-} from 'samlang-core-ast/samlang-nodes';
-import type { ModuleErrorCollector } from 'samlang-core-errors';
+} from 'samlang-core/ast/samlang-nodes';
 import {
   listShallowEquals,
   checkNotNull,

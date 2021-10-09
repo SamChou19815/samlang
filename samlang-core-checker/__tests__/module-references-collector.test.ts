@@ -7,8 +7,8 @@ import {
   functionType,
   Range,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
-import { MUL } from 'samlang-core-ast/common-operators';
+} from 'samlang-core/ast/common-nodes';
+import { MUL } from 'samlang-core/ast/common-operators';
 import {
   SamlangExpression,
   SourceExpressionTrue,
@@ -28,7 +28,7 @@ import {
   SourceExpressionMatch,
   SourceExpressionLambda,
   SourceExpressionStatementBlock,
-} from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/samlang-nodes';
 import { hashSetOf } from 'samlang-core/utils';
 
 import { collectModuleReferenceFromExpression } from '../module-references-collector';

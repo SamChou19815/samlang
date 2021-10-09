@@ -4,7 +4,7 @@ import {
   HIR_VARIABLE,
   HIR_BINARY,
   HIR_INT_TYPE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 
 import highIRLoopStrengthReductionOptimization from '../hir-loop-strength-reduction';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';

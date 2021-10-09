@@ -1,6 +1,6 @@
-import type { ModuleReference } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression, SamlangModule } from 'samlang-core-ast/samlang-nodes';
 import { ModuleErrorCollector, createGlobalErrorCollector } from 'samlang-core-errors';
+import type { ModuleReference } from 'samlang-core/ast/common-nodes';
+import type { SamlangExpression, SamlangModule } from 'samlang-core/ast/samlang-nodes';
 import { filterMap } from 'samlang-core/utils';
 
 import lexSamlangProgram from './samlang-lexer';

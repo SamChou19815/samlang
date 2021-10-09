@@ -1,11 +1,11 @@
-import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
+import createHighIRFlexibleOrderOperatorNode from 'samlang-core/ast/hir-flexible-op';
 import {
   HighIRExpression,
   HighIRStatement,
   HIR_VARIABLE,
   HIR_BINARY,
   HIR_INT_TYPE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 import { checkNotNull } from 'samlang-core/utils';
 
 import {

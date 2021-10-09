@@ -1,3 +1,5 @@
+import { createGlobalErrorCollector } from 'samlang-core-errors';
+import { parseSamlangExpressionFromText } from 'samlang-core-parser';
 import {
   Type,
   unitType as unit,
@@ -9,8 +11,8 @@ import {
   functionType,
   Range,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
-import { PLUS } from 'samlang-core-ast/common-operators';
+} from 'samlang-core/ast/common-nodes';
+import { PLUS } from 'samlang-core/ast/common-operators';
 import {
   SamlangExpression,
   SourceExpressionInt,
@@ -20,9 +22,7 @@ import {
   SourceExpressionIfElse,
   SourceExpressionStatementBlock,
   SourceExpressionLambda,
-} from 'samlang-core-ast/samlang-nodes';
-import { createGlobalErrorCollector } from 'samlang-core-errors';
-import { parseSamlangExpressionFromText } from 'samlang-core-parser';
+} from 'samlang-core/ast/samlang-nodes';
 import { checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core/utils';
 
 import typeCheckExpression from '../expression-type-checker';

@@ -1,21 +1,4 @@
 import {
-  IdentifierType,
-  FunctionType,
-  prettyPrintType,
-  Position,
-  Range,
-  ModuleReference,
-  Location,
-  TypedComment,
-  Sources,
-} from 'samlang-core-ast/common-nodes';
-import type {
-  SamlangExpression,
-  SourceClassDefinition,
-  SourceClassMemberDefinition,
-  SamlangModule,
-} from 'samlang-core-ast/samlang-nodes';
-import {
   DependencyTracker,
   GlobalTypingContext,
   MemberTypeInformation,
@@ -32,6 +15,23 @@ import {
   createGlobalErrorCollector,
 } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
+import {
+  IdentifierType,
+  FunctionType,
+  prettyPrintType,
+  Position,
+  Range,
+  ModuleReference,
+  Location,
+  TypedComment,
+  Sources,
+} from 'samlang-core/ast/common-nodes';
+import type {
+  SamlangExpression,
+  SourceClassDefinition,
+  SourceClassMemberDefinition,
+  SamlangModule,
+} from 'samlang-core/ast/samlang-nodes';
 import { HashMap, hashMapOf, hashSetOf, checkNotNull, filterMap, assert } from 'samlang-core/utils';
 
 import {

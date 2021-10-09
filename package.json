@@ -49,7 +49,8 @@
               "allow": [
                 "vscode-languageserver/node",
                 "**/samlang-core-analysis/*",
-                "**/samlang-core-ast/*",
+                "**/samlang-core/ast/*",
+                "**/samlang-core/utils",
                 "**/samlang-core-interpreter/*",
                 "**/samlang-core-optimization/control-flow-graph*",
                 "**/yarn-plugin-monorail/src/utils/*"

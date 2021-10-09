@@ -1,4 +1,4 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
+import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core/ast/common-names';
 import {
   HighIRSources,
   HIR_INT_TYPE,
@@ -18,8 +18,8 @@ import {
   HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core-ast/hir-nodes';
-import { prettyPrintMidIRSourcesAsTSSources } from 'samlang-core-ast/mir-nodes';
+} from 'samlang-core/ast/hir-nodes';
+import { prettyPrintMidIRSourcesAsTSSources } from 'samlang-core/ast/mir-nodes';
 
 import lowerHighIRSourcesToMidIRSources from '../mir-sources-lowering';
 

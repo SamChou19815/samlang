@@ -9,8 +9,8 @@ import {
   functionType,
   Range,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
-import { MUL, LT, AND, EQ, CONCAT } from 'samlang-core-ast/common-operators';
+} from 'samlang-core/ast/common-nodes';
+import { MUL, LT, AND, EQ, CONCAT } from 'samlang-core/ast/common-operators';
 import {
   SamlangExpression,
   SourceExpressionTrue,
@@ -31,7 +31,7 @@ import {
   SourceExpressionMatch,
   SourceExpressionLambda,
   SourceExpressionStatementBlock,
-} from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/samlang-nodes';
 
 import fixExpressionType from '../expression-type-fixer';
 import type { ReadOnlyTypeResolution } from '../type-resolution';

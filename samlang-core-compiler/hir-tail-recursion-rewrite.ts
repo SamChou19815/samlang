@@ -9,7 +9,7 @@ import {
   HIR_SINGLE_IF,
   HIR_BREAK,
   HIR_WHILE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 import { assert, zip3 } from 'samlang-core/utils';
 
 class OptimizationResourceAllocator {

@@ -4,7 +4,7 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 
 export default function resolveType(
   type: Type,

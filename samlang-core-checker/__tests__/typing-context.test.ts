@@ -4,7 +4,7 @@ import {
   functionType,
   Range,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 import { hashMapOf } from 'samlang-core/utils';
 
 import { AccessibleGlobalTypingContext } from '../typing-context';

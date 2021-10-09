@@ -11,7 +11,7 @@ import {
   HIR_IF_ELSE,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 
 import optimizeHighIRFunctionByCommonSubExpressionElimination from '../hir-common-subexpression-elimination-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';

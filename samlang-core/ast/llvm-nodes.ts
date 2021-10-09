@@ -1,5 +1,4 @@
-import { assert, zip } from 'samlang-core/utils';
-
+import { assert, zip } from '../utils';
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_MALLOC,

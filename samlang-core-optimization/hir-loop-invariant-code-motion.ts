@@ -3,7 +3,7 @@ import {
   HighIRStatement,
   HighIRWhileStatement,
   HIR_WHILE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 import { filterMap } from 'samlang-core/utils';
 
 type LoopInvariantCodeMotionOptimizationResult = {

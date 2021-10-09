@@ -1,6 +1,6 @@
-import { ModuleReference } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression } from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
+import { ModuleReference } from 'samlang-core/ast/common-nodes';
+import type { SamlangExpression } from 'samlang-core/ast/samlang-nodes';
 
 import { parseSamlangModuleFromText, parseSamlangExpressionFromText, parseSources } from '..';
 

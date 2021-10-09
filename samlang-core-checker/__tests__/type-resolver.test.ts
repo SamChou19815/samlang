@@ -9,7 +9,7 @@ import {
   tupleType,
   functionType,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
+} from 'samlang-core/ast/common-nodes';
 
 import typeResolver from '../type-resolver';
 

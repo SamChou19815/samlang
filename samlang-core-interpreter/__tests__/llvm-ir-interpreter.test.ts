@@ -6,7 +6,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_COMPILED_PROGRAM_MAIN,
-} from 'samlang-core-ast/common-names';
+} from 'samlang-core/ast/common-names';
 import {
   LLVMSources,
   LLVM_INT_TYPE,
@@ -25,7 +25,7 @@ import {
   LLVM_JUMP,
   LLVM_CJUMP,
   LLVM_RETURN,
-} from 'samlang-core-ast/llvm-nodes';
+} from 'samlang-core/ast/llvm-nodes';
 
 import { setupLLVMInterpretationEnvironment, interpretLLVMSources } from '../llvm-ir-interpreter';
 

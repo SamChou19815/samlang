@@ -1,5 +1,5 @@
-import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
+import { ModuleReference } from 'samlang-core/ast/common-nodes';
 
 import lexSamlangProgram, { samlangTokenToString } from '../samlang-lexer';
 

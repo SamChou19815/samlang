@@ -1,3 +1,4 @@
+import { createGlobalErrorCollector } from 'samlang-core-errors';
 import {
   IdentifierType,
   unitType,
@@ -9,8 +10,7 @@ import {
   functionType,
   Range,
   ModuleReference,
-} from 'samlang-core-ast/common-nodes';
-import { createGlobalErrorCollector } from 'samlang-core-errors';
+} from 'samlang-core/ast/common-nodes';
 
 import {
   IdentifierTypeValidator,

@@ -1,4 +1,4 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
+import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core/ast/common-names';
 import {
   MIR_ZERO,
   MIR_NAME,
@@ -14,7 +14,7 @@ import {
   MIR_INT_TYPE,
   MIR_FUNCTION_TYPE,
   MIR_IDENTIFIER_TYPE,
-} from 'samlang-core-ast/mir-nodes';
+} from 'samlang-core/ast/mir-nodes';
 
 import optimizeMidIRSourcesByEliminatingUnusedOnes from '../mir-unused-name-elimination';
 

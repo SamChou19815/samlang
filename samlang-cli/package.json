@@ -16,7 +16,7 @@
   "devDependencies": {
     "@types/node": "^16.10.3",
     "esbuild": "^0.13.4",
-    "samlang-core-ast": "workspace:0.0.1",
+    "samlang-core": "workspace:0.0.1",
     "samlang-core-checker": "workspace:0.0.1",
     "samlang-core-compiler": "workspace:0.0.1",
     "samlang-core-optimization": "workspace:0.0.1",

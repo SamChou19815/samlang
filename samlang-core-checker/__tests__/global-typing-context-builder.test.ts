@@ -1,6 +1,6 @@
-import { functionType, intType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
-import { SourceExpressionFalse } from 'samlang-core-ast/samlang-nodes';
-import type { SourceClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-nodes';
+import { functionType, intType, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
+import { SourceExpressionFalse } from 'samlang-core/ast/samlang-nodes';
+import type { SourceClassDefinition, SamlangModule } from 'samlang-core/ast/samlang-nodes';
 import { mapOf } from 'samlang-core/utils';
 
 import {

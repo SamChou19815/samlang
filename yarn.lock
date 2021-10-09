@@ -459,7 +459,7 @@ __metadata:
   dependencies:
     "@types/node": ^16.10.3
     esbuild: ^0.13.4
-    samlang-core-ast: "workspace:0.0.1"
+    samlang-core: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-optimization: "workspace:0.0.1"
@@ -478,7 +478,7 @@ __metadata:
   resolution: "@dev-sam/samlang-demo@workspace:samlang-demo"
   dependencies:
     esbuild: ^0.13.4
-    samlang-core-ast: "workspace:0.0.1"
+    samlang-core: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
@@ -4984,21 +4984,11 @@ fsevents@^2.3.2:
   languageName: node
   linkType: hard
 
-"samlang-core-ast@workspace:0.0.1, samlang-core-ast@workspace:samlang-core-ast":
-  version: 0.0.0-use.local
-  resolution: "samlang-core-ast@workspace:samlang-core-ast"
-  dependencies:
-    samlang-core: "workspace:0.0.1"
-    typescript: ^4.4.3
-  languageName: unknown
-  linkType: soft
-
 "samlang-core-checker@workspace:0.0.1, samlang-core-checker@workspace:samlang-core-checker":
   version: 0.0.0-use.local
   resolution: "samlang-core-checker@workspace:samlang-core-checker"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     typescript: ^4.4.3
@@ -5010,7 +5000,6 @@ fsevents@^2.3.2:
   resolution: "samlang-core-compiler@workspace:samlang-core-compiler"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
@@ -5020,7 +5009,7 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-errors@workspace:samlang-core-errors"
   dependencies:
-    samlang-core-ast: "workspace:0.0.1"
+    samlang-core: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5030,7 +5019,6 @@ fsevents@^2.3.2:
   resolution: "samlang-core-integration-tests@workspace:samlang-core-integration-tests"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
@@ -5046,7 +5034,6 @@ fsevents@^2.3.2:
   resolution: "samlang-core-interpreter@workspace:samlang-core-interpreter"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
@@ -5059,7 +5046,6 @@ fsevents@^2.3.2:
   resolution: "samlang-core-optimization@workspace:samlang-core-optimization"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-ast: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5069,7 +5055,6 @@ fsevents@^2.3.2:
   resolution: "samlang-core-parser@workspace:samlang-core-parser"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
@@ -5080,7 +5065,6 @@ fsevents@^2.3.2:
   resolution: "samlang-core-printer@workspace:samlang-core-printer"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     typescript: ^4.4.3
@@ -5092,7 +5076,6 @@ fsevents@^2.3.2:
   resolution: "samlang-core-services@workspace:samlang-core-services"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"

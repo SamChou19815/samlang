@@ -1,5 +1,5 @@
-import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from 'samlang-core-checker';
+import { ModuleReference } from 'samlang-core/ast/common-nodes';
 
 import { samlangProgramCheckerTestSources } from '../test-programs';
 

@@ -1,4 +1,4 @@
-import { prettyPrintLiteral, prettyPrintType, TypedComment } from 'samlang-core-ast/common-nodes';
+import { prettyPrintLiteral, prettyPrintType, TypedComment } from 'samlang-core/ast/common-nodes';
 import type {
   SamlangExpression,
   IfElseExpression,
@@ -6,7 +6,7 @@ import type {
   SourceClassDefinition,
   SourceModuleMembersImport,
   SamlangModule,
-} from 'samlang-core-ast/samlang-nodes';
+} from 'samlang-core/ast/samlang-nodes';
 import { checkNotNull } from 'samlang-core/utils';
 
 import {

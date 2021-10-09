@@ -4,7 +4,7 @@ import type {
   MidIRFunction,
   MidIRType,
   MidIRSources,
-} from 'samlang-core-ast/mir-nodes';
+} from 'samlang-core/ast/mir-nodes';
 import { checkNotNull } from 'samlang-core/utils';
 
 function collectForTypeSet(type: MidIRType, typeSet: Set<string>): void {

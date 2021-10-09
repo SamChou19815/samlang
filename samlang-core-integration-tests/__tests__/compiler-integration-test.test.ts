@@ -1,15 +1,3 @@
-import {
-  ENCODED_FUNCTION_NAME_INT_TO_STRING,
-  ENCODED_FUNCTION_NAME_PRINTLN,
-  ENCODED_FUNCTION_NAME_STRING_TO_INT,
-  ENCODED_FUNCTION_NAME_STRING_CONCAT,
-  ENCODED_FUNCTION_NAME_THROW,
-  ENCODED_FUNCTION_NAME_FREE,
-  encodeMainFunctionName,
-} from 'samlang-core-ast/common-names';
-import { ModuleReference } from 'samlang-core-ast/common-nodes';
-import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
-import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core-ast/mir-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -22,6 +10,18 @@ import {
 } from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
+import {
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_FUNCTION_NAME_FREE,
+  encodeMainFunctionName,
+} from 'samlang-core/ast/common-names';
+import { ModuleReference } from 'samlang-core/ast/common-nodes';
+import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
+import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core/ast/mir-nodes';
 
 import { runnableSamlangProgramTestCases } from '../test-programs';
 

@@ -1,4 +1,4 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
+import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core/ast/common-names';
 import {
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
@@ -15,7 +15,7 @@ import {
   HIR_SINGLE_IF,
   HIR_BREAK,
   HIR_WHILE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 
 import optimizeHighIRSourcesByEliminatingUnusedOnes from '../hir-unused-name-elimination-optimization';
 

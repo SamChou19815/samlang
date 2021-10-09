@@ -1,10 +1,10 @@
-import type { ModuleReference, Range, Type } from 'samlang-core-ast/common-nodes';
+import type { ModuleErrorCollector } from 'samlang-core-errors';
+import type { ModuleReference, Range, Type } from 'samlang-core/ast/common-nodes';
 import type {
   SourceClassMemberDefinition,
   TypeDefinition,
   SamlangModule,
-} from 'samlang-core-ast/samlang-nodes';
-import type { ModuleErrorCollector } from 'samlang-core-errors';
+} from 'samlang-core/ast/samlang-nodes';
 import { error, filterMap, LocalStackedContext } from 'samlang-core/utils';
 
 import typeCheckExpression from './expression-type-checker';

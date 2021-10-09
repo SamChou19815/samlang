@@ -18,7 +18,7 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
   HIR_IF_ELSE,
-} from 'samlang-core-ast/hir-nodes';
+} from 'samlang-core/ast/hir-nodes';
 
 import optimizeHighIRWhileStatementByLoopInvariantCodeMotion from '../hir-loop-invariant-code-motion';
 
