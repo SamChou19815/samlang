@@ -1,6 +1,6 @@
-import type { ModuleErrorCollector } from 'samlang-core-errors';
 import type { Sources } from 'samlang-core/ast/common-nodes';
 import type { SourceModuleMembersImport, SamlangModule } from 'samlang-core/ast/samlang-nodes';
+import type { ModuleErrorCollector } from 'samlang-core/errors';
 import { filterMap } from 'samlang-core/utils';
 
 class UndefinedImportChecker {

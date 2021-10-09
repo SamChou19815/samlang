@@ -1,4 +1,3 @@
-import { createGlobalErrorCollector } from 'samlang-core-errors';
 import {
   Type,
   boolType,
@@ -20,6 +19,7 @@ import {
   SourceExpressionVariable,
   SourceExpressionStatementBlock,
 } from 'samlang-core/ast/samlang-nodes';
+import { createGlobalErrorCollector } from 'samlang-core/errors';
 import { hashMapOf, LocalStackedContext } from 'samlang-core/utils';
 
 import StatementTypeChecker from '../statement-type-checker';

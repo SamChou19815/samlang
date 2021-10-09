@@ -1,11 +1,11 @@
+import { parseSamlangModuleFromText } from 'samlang-core-parser';
+import { ModuleReference, Sources } from 'samlang-core/ast/common-nodes';
+import type { SamlangModule } from 'samlang-core/ast/samlang-nodes';
 import {
   CompileTimeError,
   createGlobalErrorCollector,
   ReadonlyGlobalErrorCollector,
-} from 'samlang-core-errors';
-import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { ModuleReference, Sources } from 'samlang-core/ast/common-nodes';
-import type { SamlangModule } from 'samlang-core/ast/samlang-nodes';
+} from 'samlang-core/errors';
 import {
   HashMap,
   HashSet,

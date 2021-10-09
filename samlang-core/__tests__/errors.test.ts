@@ -1,5 +1,4 @@
-import { intType, boolType, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
-
+import { intType, boolType, Range, ModuleReference } from '../ast/common-nodes';
 import {
   CompileTimeError,
   SyntaxError,
@@ -16,7 +15,7 @@ import {
   InconsistentFieldsInObjectError,
   DuplicateFieldDeclarationError,
   NonExhausiveMatchError,
-} from '..';
+} from '../errors';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [
@@ -95,7 +94,7 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   ],
 ];
 
-describe('samlang-core-errors', () => {
+describe('samlang-core/errors', () => {
   testCases.forEach(([error, expectedErrorString], index) =>
     it(`error toString() test ${index + 1}`, () =>
       expect(error.toString()).toBe(expectedErrorString))

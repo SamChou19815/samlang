@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-empty-interface */
-
-import { Type, prettyPrintType, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
+import { Type, prettyPrintType, Range, ModuleReference } from './ast/common-nodes';
 
 export abstract class CompileTimeError<T = string> {
   constructor(

@@ -1,4 +1,3 @@
-import { createGlobalErrorCollector } from 'samlang-core-errors';
 import {
   unitType,
   boolType,
@@ -10,6 +9,7 @@ import {
   Range,
   ModuleReference,
 } from 'samlang-core/ast/common-nodes';
+import { createGlobalErrorCollector } from 'samlang-core/errors';
 
 import { checkAndInfer, ConstraintAwareChecker } from '../constraint-aware-checker';
 import TypeResolution from '../type-resolution';

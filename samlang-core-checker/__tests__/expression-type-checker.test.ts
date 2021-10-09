@@ -1,4 +1,3 @@
-import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
 import {
   Type,
@@ -23,6 +22,7 @@ import {
   SourceExpressionStatementBlock,
   SourceExpressionLambda,
 } from 'samlang-core/ast/samlang-nodes';
+import { createGlobalErrorCollector } from 'samlang-core/errors';
 import { checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core/utils';
 
 import typeCheckExpression from '../expression-type-checker';

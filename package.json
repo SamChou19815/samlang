@@ -50,6 +50,7 @@
                 "vscode-languageserver/node",
                 "**/samlang-core-analysis/*",
                 "**/samlang-core/ast/*",
+                "**/samlang-core/errors",
                 "**/samlang-core/utils",
                 "**/samlang-core-interpreter/*",
                 "**/samlang-core-optimization/control-flow-graph*",

@@ -1,10 +1,10 @@
-import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from 'samlang-core-parser';
 import { intType, ModuleReference } from 'samlang-core/ast/common-nodes';
 import {
   SourceExpressionMethodAccess,
   SourceExpressionVariable,
 } from 'samlang-core/ast/samlang-nodes';
+import { createGlobalErrorCollector } from 'samlang-core/errors';
 import { checkNotNull } from 'samlang-core/utils';
 
 import prettyPrintSamlangModule from '..';

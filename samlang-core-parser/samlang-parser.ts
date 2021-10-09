@@ -1,4 +1,3 @@
-import type { ModuleErrorCollector } from 'samlang-core-errors';
 import {
   Type,
   UndecidedTypes,
@@ -59,6 +58,7 @@ import {
   SamlangModule,
   TypeDefinition,
 } from 'samlang-core/ast/samlang-nodes';
+import type { ModuleErrorCollector } from 'samlang-core/errors';
 import { checkNotNull } from 'samlang-core/utils';
 
 import {

@@ -1,5 +1,5 @@
-import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { Type, UndecidedType, isTheSameType, Range } from 'samlang-core/ast/common-nodes';
+import type { ModuleErrorCollector } from 'samlang-core/errors';
 import { assert, zip } from 'samlang-core/utils';
 
 import type TypeResolution from './type-resolution';

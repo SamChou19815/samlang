@@ -1,4 +1,3 @@
-import type { ModuleErrorCollector } from 'samlang-core-errors';
 import {
   Range,
   Type,
@@ -40,6 +39,7 @@ import {
   SourceExpressionLambda,
   SourceFieldType,
 } from 'samlang-core/ast/samlang-nodes';
+import type { ModuleErrorCollector } from 'samlang-core/errors';
 import {
   listShallowEquals,
   checkNotNull,
