@@ -1,15 +1,4 @@
 import {
-  DependencyTracker,
-  GlobalTypingContext,
-  MemberTypeInformation,
-  collectModuleReferenceFromSamlangModule,
-  typeCheckSources,
-  typeCheckSourcesIncrementally,
-  typeCheckSingleModuleSource,
-} from 'samlang-core-checker';
-// eslint-disable-next-line import/no-internal-modules
-import type { ModuleTypingContext, ClassTypingContext } from 'samlang-core-checker/typing-context';
-import {
   IdentifierType,
   FunctionType,
   prettyPrintType,
@@ -26,6 +15,17 @@ import type {
   SourceClassMemberDefinition,
   SamlangModule,
 } from 'samlang-core/ast/samlang-nodes';
+import {
+  DependencyTracker,
+  GlobalTypingContext,
+  MemberTypeInformation,
+  collectModuleReferenceFromSamlangModule,
+  typeCheckSources,
+  typeCheckSourcesIncrementally,
+  typeCheckSingleModuleSource,
+} from 'samlang-core/checker';
+// eslint-disable-next-line import/no-internal-modules
+import type { ModuleTypingContext, ClassTypingContext } from 'samlang-core/checker/typing-context';
 import {
   ReadonlyGlobalErrorCollector,
   CompileTimeError,

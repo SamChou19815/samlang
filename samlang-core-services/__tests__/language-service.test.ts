@@ -1,5 +1,5 @@
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { Position, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core/checker';
 import prettyPrintSamlangModule from 'samlang-core/printer';
 
 import { LanguageServiceState, LanguageServices } from '../language-service';

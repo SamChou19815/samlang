@@ -1,8 +1,8 @@
 import { join, relative, resolve, sep } from 'path';
 
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { LanguageServiceState, LanguageServices } from 'samlang-core-services';
 import { Position, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core/checker';
 import prettyPrintSamlangModule from 'samlang-core/printer';
 import {
   createConnection,
