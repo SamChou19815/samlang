@@ -47,7 +47,6 @@
             {
               "allow": [
                 "vscode-languageserver/node",
-                "**/samlang-core-analysis/*",
                 "**/samlang-core/ast/*",
                 "**/samlang-core/checker",
                 "**/samlang-core/compiler",
