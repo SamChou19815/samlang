@@ -2,7 +2,7 @@
   "private": true,
   "workspaces": [
     "samlang-cli",
-    "samlang-core-*",
+    "samlang-core",
     "samlang-demo"
   ],
   "scripts": {
@@ -47,11 +47,16 @@
             {
               "allow": [
                 "vscode-languageserver/node",
-                "**/samlang-core-analysis/*",
-                "**/samlang-core-ast/*",
-                "**/samlang-core-interpreter/*",
-                "**/samlang-core-optimization/control-flow-graph*",
-                "**/yarn-plugin-monorail/src/utils/*"
+                "**/samlang-core/ast/*",
+                "**/samlang-core/checker",
+                "**/samlang-core/compiler",
+                "**/samlang-core/errors",
+                "**/samlang-core/interpreter/*",
+                "**/samlang-core/optimization",
+                "**/samlang-core/parser",
+                "**/samlang-core/printer",
+                "**/samlang-core/services",
+                "**/samlang-core/utils"
               ]
             }
           ]

@@ -1,0 +1,11 @@
+{
+  "name": "samlang-core",
+  "version": "0.0.1",
+  "license": "AGPLv3",
+  "scripts": {
+    "compile": "tsc --incremental --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^4.4.3"
+  }
+}
