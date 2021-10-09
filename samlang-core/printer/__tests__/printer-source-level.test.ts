@@ -1,13 +1,9 @@
-import { intType, ModuleReference } from 'samlang-core/ast/common-nodes';
-import {
-  SourceExpressionMethodAccess,
-  SourceExpressionVariable,
-} from 'samlang-core/ast/samlang-nodes';
-import { createGlobalErrorCollector } from 'samlang-core/errors';
-import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from 'samlang-core/parser';
-import { checkNotNull } from 'samlang-core/utils';
-
 import prettyPrintSamlangModule from '..';
+import { intType, ModuleReference } from '../../ast/common-nodes';
+import { SourceExpressionMethodAccess, SourceExpressionVariable } from '../../ast/samlang-nodes';
+import { createGlobalErrorCollector } from '../../errors';
+import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
+import { checkNotNull } from '../../utils';
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
 
 function reprintExpression(rawSourceWithTypeAnnotation: string, width = 40): string {

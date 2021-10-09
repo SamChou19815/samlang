@@ -5,10 +5,10 @@ import {
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core-compiler';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
-import prettyPrintSamlangModule from 'samlang-core-printer';
 import { ModuleReference } from 'samlang-core/ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core/ast/mir-nodes';
+import prettyPrintSamlangModule from 'samlang-core/printer';
 
 export type SamlangDemoResult = {
   readonly interpreterPrinted?: string;

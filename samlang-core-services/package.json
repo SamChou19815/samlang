@@ -10,7 +10,6 @@
     "samlang-core-checker": "workspace:0.0.1"
   },
   "devDependencies": {
-    "samlang-core-printer": "workspace:0.0.1",
     "typescript": "^4.4.3"
   }
 }

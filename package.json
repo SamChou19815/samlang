@@ -52,6 +52,7 @@
                 "**/samlang-core/ast/*",
                 "**/samlang-core/errors",
                 "**/samlang-core/parser",
+                "**/samlang-core/printer",
                 "**/samlang-core/utils",
                 "**/samlang-core-interpreter/*",
                 "**/samlang-core-optimization/control-flow-graph*",

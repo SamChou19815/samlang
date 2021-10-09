@@ -1,5 +1,4 @@
-import { checkNotNull } from 'samlang-core/utils';
-
+import { checkNotNull } from '../../utils';
 import {
   PrettierDocument,
   PRETTIER_NIL,

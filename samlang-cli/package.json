@@ -20,7 +20,6 @@
     "samlang-core-checker": "workspace:0.0.1",
     "samlang-core-compiler": "workspace:0.0.1",
     "samlang-core-optimization": "workspace:0.0.1",
-    "samlang-core-printer": "workspace:0.0.1",
     "samlang-core-services": "workspace:0.0.1",
     "typescript": "^4.4.3",
     "vscode-languageserver": "^7.0.0"

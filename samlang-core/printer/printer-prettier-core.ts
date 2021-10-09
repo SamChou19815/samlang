@@ -3,7 +3,7 @@
  * https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf
  */
 
-import { checkNotNull } from 'samlang-core/utils';
+import { checkNotNull } from '../utils';
 
 /**
  * This prettier document type is a little clumsy at the stage of pretty printing.
