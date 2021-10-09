@@ -4974,15 +4974,6 @@ fsevents@^2.3.2:
   languageName: node
   linkType: hard
 
-"samlang-core-integration-tests@workspace:samlang-core-integration-tests":
-  version: 0.0.0-use.local
-  resolution: "samlang-core-integration-tests@workspace:samlang-core-integration-tests"
-  dependencies:
-    samlang-core: "workspace:0.0.1"
-    typescript: ^4.4.3
-  languageName: unknown
-  linkType: soft
-
 "samlang-core@workspace:0.0.1, samlang-core@workspace:samlang-core":
   version: 0.0.0-use.local
   resolution: "samlang-core@workspace:samlang-core"

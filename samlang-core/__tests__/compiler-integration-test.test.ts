@@ -6,23 +6,22 @@ import {
   ENCODED_FUNCTION_NAME_THROW,
   ENCODED_FUNCTION_NAME_FREE,
   encodeMainFunctionName,
-} from 'samlang-core/ast/common-names';
-import { ModuleReference } from 'samlang-core/ast/common-nodes';
-import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
-import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core/ast/mir-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from 'samlang-core/checker';
+} from '../ast/common-names';
+import { ModuleReference } from '../ast/common-nodes';
+import { prettyPrintLLVMSources } from '../ast/llvm-nodes';
+import { prettyPrintMidIRSourcesAsJSSources } from '../ast/mir-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from '../checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
-} from 'samlang-core/compiler';
+} from '../compiler';
 import {
   setupLLVMInterpretationEnvironment,
   interpretLLVMSources,
-} from 'samlang-core/interpreter/llvm-ir-interpreter';
-import interpretSamlangModule from 'samlang-core/interpreter/source-level-interpreter';
-import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core/optimization';
-
+} from '../interpreter/llvm-ir-interpreter';
+import interpretSamlangModule from '../interpreter/source-level-interpreter';
+import { optimizeHighIRSourcesAccordingToConfiguration } from '../optimization';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 describe('compiler-integration-tests', () => {
