@@ -51,6 +51,7 @@
                 "**/samlang-core-analysis/*",
                 "**/samlang-core/ast/*",
                 "**/samlang-core/checker",
+                "**/samlang-core/compiler",
                 "**/samlang-core/errors",
                 "**/samlang-core/optimization",
                 "**/samlang-core/parser",

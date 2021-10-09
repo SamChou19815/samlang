@@ -1,4 +1,4 @@
-import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core/ast/common-names';
+import { ENCODED_FUNCTION_NAME_MALLOC } from '../ast/common-names';
 import {
   LLVMType,
   LLVMAnnotatedValue,
@@ -24,7 +24,7 @@ import {
   LLVM_RETURN,
   LLVMValue,
   LLVMSources,
-} from 'samlang-core/ast/llvm-nodes';
+} from '../ast/llvm-nodes';
 import type {
   MidIRType,
   MidIRExpression,
@@ -37,9 +37,8 @@ import type {
   MidIRStructInitializationStatement,
   MidIRFunction,
   MidIRSources,
-} from 'samlang-core/ast/mir-nodes';
-import { checkNotNull, zip, zip3 } from 'samlang-core/utils';
-
+} from '../ast/mir-nodes';
+import { checkNotNull, zip, zip3 } from '../utils';
 import { withoutUnreachableLLVMCode } from './llvm-control-flow-graph';
 
 function lowerMidIRTypeToLLVMType(type: MidIRType): LLVMType {

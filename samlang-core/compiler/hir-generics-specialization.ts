@@ -18,9 +18,8 @@ import {
   HIR_IF_ELSE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core/ast/hir-nodes';
-import { assert, checkNotNull, zip } from 'samlang-core/utils';
-
+} from '../ast/hir-nodes';
+import { assert, checkNotNull, zip } from '../utils';
 import {
   solveTypeArguments,
   highIRTypeApplication,

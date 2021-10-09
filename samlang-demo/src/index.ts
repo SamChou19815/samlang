@@ -1,13 +1,13 @@
-import {
-  compileSamlangSourcesToHighIRSources,
-  lowerHighIRSourcesToMidIRSources,
-  lowerMidIRSourcesToLLVMSources,
-} from 'samlang-core-compiler';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { ModuleReference } from 'samlang-core/ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core/ast/mir-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from 'samlang-core/checker';
+import {
+  compileSamlangSourcesToHighIRSources,
+  lowerHighIRSourcesToMidIRSources,
+  lowerMidIRSourcesToLLVMSources,
+} from 'samlang-core/compiler';
 import prettyPrintSamlangModule from 'samlang-core/printer';
 
 export type SamlangDemoResult = {

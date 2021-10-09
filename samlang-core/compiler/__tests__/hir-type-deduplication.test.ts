@@ -17,8 +17,7 @@ import {
   HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core/ast/hir-nodes';
-
+} from '../../ast/hir-nodes';
 import deduplicateHighIRTypes from '../hir-type-deduplication';
 
 describe('hir-type-deduplication', () => {

@@ -7,9 +7,9 @@ import {
   Range,
   ModuleReference,
   tupleType,
-} from 'samlang-core/ast/common-nodes';
-import { MUL, MINUS, EQ } from 'samlang-core/ast/common-operators';
-import { debugPrintHighIRSources } from 'samlang-core/ast/hir-nodes';
+} from '../../ast/common-nodes';
+import { MUL, MINUS, EQ } from '../../ast/common-operators';
+import { debugPrintHighIRSources } from '../../ast/hir-nodes';
 import {
   SourceExpressionInt,
   SourceExpressionVariable,
@@ -19,9 +19,8 @@ import {
   SourceExpressionIfElse,
   SourceExpressionClassMember,
   SamlangModule,
-} from 'samlang-core/ast/samlang-nodes';
-import { mapOf } from 'samlang-core/utils';
-
+} from '../../ast/samlang-nodes';
+import { mapOf } from '../../utils';
 import compileSamlangSourcesToHighIRSources, {
   compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,
 } from '../hir-toplevel-lowering';

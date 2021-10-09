@@ -460,7 +460,6 @@ __metadata:
     "@types/node": ^16.10.3
     esbuild: ^0.13.4
     samlang-core: "workspace:0.0.1"
-    samlang-core-compiler: "workspace:0.0.1"
     typescript: ^4.4.3
     vscode-languageserver: ^7.0.0
   bin:
@@ -474,7 +473,6 @@ __metadata:
   dependencies:
     esbuild: ^0.13.4
     samlang-core: "workspace:0.0.1"
-    samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
@@ -4977,21 +4975,11 @@ fsevents@^2.3.2:
   languageName: node
   linkType: hard
 
-"samlang-core-compiler@workspace:0.0.1, samlang-core-compiler@workspace:samlang-core-compiler":
-  version: 0.0.0-use.local
-  resolution: "samlang-core-compiler@workspace:samlang-core-compiler"
-  dependencies:
-    samlang-core: "workspace:0.0.1"
-    typescript: ^4.4.3
-  languageName: unknown
-  linkType: soft
-
 "samlang-core-integration-tests@workspace:samlang-core-integration-tests":
   version: 0.0.0-use.local
   resolution: "samlang-core-integration-tests@workspace:samlang-core-integration-tests"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown

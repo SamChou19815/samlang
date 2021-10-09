@@ -1,5 +1,5 @@
-import type { LLVMInstruction } from 'samlang-core/ast/llvm-nodes';
-import { checkNotNull } from 'samlang-core/utils';
+import type { LLVMInstruction } from '../ast/llvm-nodes';
+import { checkNotNull } from '../utils';
 
 export type ControlFlowGraphNode = { readonly id: number; readonly instruction: LLVMInstruction };
 

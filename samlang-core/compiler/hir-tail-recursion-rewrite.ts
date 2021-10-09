@@ -9,8 +9,8 @@ import {
   HIR_SINGLE_IF,
   HIR_BREAK,
   HIR_WHILE,
-} from 'samlang-core/ast/hir-nodes';
-import { assert, zip3 } from 'samlang-core/utils';
+} from '../ast/hir-nodes';
+import { assert, zip3 } from '../utils';
 
 class OptimizationResourceAllocator {
   private tailrecTemporaryID = 0;

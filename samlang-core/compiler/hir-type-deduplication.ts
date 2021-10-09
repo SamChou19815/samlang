@@ -16,8 +16,8 @@ import {
   HIR_IF_ELSE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core/ast/hir-nodes';
-import { assert } from 'samlang-core/utils';
+} from '../ast/hir-nodes';
+import { assert } from '../utils';
 
 class HighIRTypeDeduplicator {
   private readonly closureTypeDefinitionCanonicalNameMapping = new Map<string, string>();

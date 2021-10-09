@@ -8,8 +8,7 @@ import {
   LLVM_JUMP,
   LLVM_CJUMP,
   LLVM_RETURN,
-} from 'samlang-core/ast/llvm-nodes';
-
+} from '../../ast/llvm-nodes';
 import { ControlFlowGraph } from '../llvm-control-flow-graph';
 
 describe('control-flow-graph', () => {

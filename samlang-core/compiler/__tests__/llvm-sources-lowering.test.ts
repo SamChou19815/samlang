@@ -1,4 +1,4 @@
-import { prettyPrintLLVMFunction, prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
+import { prettyPrintLLVMFunction, prettyPrintLLVMSources } from '../../ast/llvm-nodes';
 import {
   MidIRExpression,
   MidIRStatement,
@@ -23,9 +23,8 @@ import {
   MIR_INT,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
-} from 'samlang-core/ast/mir-nodes';
-import type { MidIRFunction } from 'samlang-core/ast/mir-nodes';
-
+} from '../../ast/mir-nodes';
+import type { MidIRFunction } from '../../ast/mir-nodes';
 import lowerMidIRSourcesToLLVMSources, {
   lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
 } from '../llvm-sources-lowering';

@@ -1,4 +1,4 @@
-import { ENCODED_FUNCTION_NAME_FREE } from 'samlang-core/ast/common-names';
+import { ENCODED_FUNCTION_NAME_FREE } from '../ast/common-names';
 import type {
   HighIRType,
   HighIRFunctionType,
@@ -7,7 +7,7 @@ import type {
   HighIRStatement,
   HighIRFunction,
   HighIRSources,
-} from 'samlang-core/ast/hir-nodes';
+} from '../ast/hir-nodes';
 import {
   MidIRType,
   MidIRFunctionType,
@@ -39,9 +39,8 @@ import {
   MIR_WHILE,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
-} from 'samlang-core/ast/mir-nodes';
-import { assert, checkNotNull, filterMap } from 'samlang-core/utils';
-
+} from '../ast/mir-nodes';
+import { assert, checkNotNull, filterMap } from '../utils';
 import optimizeMidIRSourcesByEliminatingUnusedOnes from './mir-unused-name-elimination';
 
 function lowerHighIRType(type: HighIRType): MidIRType {

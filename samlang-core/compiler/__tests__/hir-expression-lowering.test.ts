@@ -8,8 +8,8 @@ import {
   Range,
   ModuleReference,
   boolType,
-} from 'samlang-core/ast/common-nodes';
-import { PLUS, MUL, AND, OR, CONCAT } from 'samlang-core/ast/common-operators';
+} from '../../ast/common-nodes';
+import { PLUS, MUL, AND, OR, CONCAT } from '../../ast/common-operators';
 import {
   debugPrintHighIRExpression,
   debugPrintHighIRStatement,
@@ -18,7 +18,7 @@ import {
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_INT_TYPE,
   HIR_BOOL_TYPE,
-} from 'samlang-core/ast/hir-nodes';
+} from '../../ast/hir-nodes';
 import {
   SamlangExpression,
   SourceExpressionFalse,
@@ -40,8 +40,7 @@ import {
   SourceExpressionIfElse,
   SourceExpressionMatch,
   SourceExpressionStatementBlock,
-} from 'samlang-core/ast/samlang-nodes';
-
+} from '../../ast/samlang-nodes';
 import lowerSamlangExpression from '../hir-expression-lowering';
 import HighIRStringManager from '../hir-string-manager';
 import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from '../hir-type-conversion';

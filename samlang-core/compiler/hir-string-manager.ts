@@ -1,4 +1,4 @@
-import type { GlobalVariable } from 'samlang-core/ast/common-nodes';
+import type { GlobalVariable } from '../ast/common-nodes';
 
 export default class HighIRStringManager {
   private nextGlobalVariableId = 0;

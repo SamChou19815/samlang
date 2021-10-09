@@ -20,8 +20,7 @@ import {
   HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_CLOSURE_INITIALIZATION,
-} from 'samlang-core/ast/hir-nodes';
-
+} from '../../ast/hir-nodes';
 import performGenericsSpecializationOnHighIRSources from '../hir-generics-specialization';
 
 const expectSpecialized = (sources: HighIRSources, expected: string) =>
