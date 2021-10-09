@@ -10,15 +10,7 @@ import {
 } from 'fs';
 import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
-import {
-  ENCODED_FUNCTION_NAME_INT_TO_STRING,
-  ENCODED_FUNCTION_NAME_PRINTLN,
-  ENCODED_FUNCTION_NAME_STRING_TO_INT,
-  ENCODED_FUNCTION_NAME_STRING_CONCAT,
-  ENCODED_FUNCTION_NAME_THROW,
-  ENCODED_FUNCTION_NAME_FREE,
-  encodeMainFunctionName,
-} from 'samlang-core/ast/common-names';
+import { encodeMainFunctionName } from 'samlang-core/ast/common-names';
 import { ModuleReference, Sources } from 'samlang-core/ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
 import { MidIRSources, prettyPrintMidIRSourcesAsTSSources } from 'samlang-core/ast/mir-nodes';
@@ -72,14 +64,7 @@ function compileToTS(
   outputDirectory: string
 ): void {
   mkdirSync(outputDirectory, { recursive: true });
-  const commonJSCode = `type Str = [number, string];
-const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.log(line); return 0; }
-const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(v, 10);
-const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)];
-const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
-const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
-${prettyPrintMidIRSourcesAsTSSources(midIRSources)}`;
+  const commonJSCode = prettyPrintMidIRSourcesAsTSSources(midIRSources);
   const mainFunctions = new Set(midIRSources.mainFunctionNames);
   moduleReferences.forEach((moduleReference) => {
     const mainFunctionName = encodeMainFunctionName(moduleReference);

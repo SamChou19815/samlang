@@ -1,4 +1,12 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from '../../ast/common-names';
+import {
+  ENCODED_COMPILED_PROGRAM_MAIN,
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_FUNCTION_NAME_FREE,
+} from '../../ast/common-names';
 import {
   HighIRSources,
   HIR_INT_TYPE,
@@ -37,7 +45,17 @@ const assertLowered = (sources: SimplifiedSources, expected: string) =>
 
 describe('mir-sources-lowering', () => {
   it('lowerHighIRSourcesToMidIRSources smoke test', () => {
-    assertLowered({ closureTypes: [], typeDefinitions: [], functions: [] }, '');
+    assertLowered(
+      { closureTypes: [], typeDefinitions: [], functions: [] },
+      `type Str = [number, string];
+const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.log(line); return 0; };
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(v, 10) };
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)] };
+const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
+const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
+`
+    );
   });
 
   const commonComprehensiveSources = ((): SimplifiedSources => {
@@ -241,7 +259,14 @@ describe('mir-sources-lowering', () => {
   it('lowerHighIRSourcesToMidIRSources comprehensive test with reference counting', () => {
     assertLowered(
       commonComprehensiveSources,
-      `type CC = [number, (t0: any) => number, (t0: any, t1: number) => number, any];
+      `type Str = [number, string];
+const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.log(line); return 0; };
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(v, 10) };
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)] };
+const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
+const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
+type CC = [number, (t0: any) => number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
 type Variant = [number, number, any];
 function cc(): number {
