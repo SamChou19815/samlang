@@ -19,7 +19,7 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
 } from 'samlang-core-ast/hir-nodes';
-import { assert, checkNotNull, zip } from 'samlang-core-utils';
+import { assert, checkNotNull, zip } from 'samlang-core/utils';
 
 import {
   solveTypeArguments,

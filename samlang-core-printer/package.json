@@ -6,8 +6,8 @@
     "compile": "tsc --incremental --noEmit"
   },
   "dependencies": {
-    "samlang-core-ast": "workspace:0.0.1",
-    "samlang-core-utils": "workspace:0.0.1"
+    "samlang-core": "workspace:0.0.1",
+    "samlang-core-ast": "workspace:0.0.1"
   },
   "devDependencies": {
     "samlang-core-errors": "workspace:0.0.1",

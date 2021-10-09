@@ -5,7 +5,7 @@ import {
 } from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from 'samlang-core-parser';
-import { checkNotNull } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core/utils';
 
 import prettyPrintSamlangModule from '..';
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';

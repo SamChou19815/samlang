@@ -7,7 +7,7 @@ import {
   functionType,
 } from 'samlang-core-ast/common-nodes';
 import type { SourceFieldType } from 'samlang-core-ast/samlang-nodes';
-import { assert, zip } from 'samlang-core-utils';
+import { assert, zip } from 'samlang-core/utils';
 
 /**
  * This modules is useful for doing type inference constraint solving on constructors/functions with

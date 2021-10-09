@@ -18,7 +18,7 @@ import {
   setEquals,
   UnionFind,
   LocalStackedContext,
-} from '..';
+} from '../utils';
 
 describe('samlang-utils', () => {
   it('error test', () => {

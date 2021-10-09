@@ -5,7 +5,7 @@ import type {
   MidIRType,
   MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
-import { checkNotNull } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core/utils';
 
 function collectForTypeSet(type: MidIRType, typeSet: Set<string>): void {
   if (type.__type__ === 'IdentifierType') typeSet.add(type.name);

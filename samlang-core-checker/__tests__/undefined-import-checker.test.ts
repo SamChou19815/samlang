@@ -1,7 +1,7 @@
 import { ModuleReference, Range, Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule, SourceClassDefinition } from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
-import { hashMapOf } from 'samlang-core-utils';
+import { hashMapOf } from 'samlang-core/utils';
 
 import checkUndefinedImportsError from '../undefined-imports-checker';
 

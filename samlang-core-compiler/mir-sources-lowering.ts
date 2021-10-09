@@ -40,7 +40,7 @@ import {
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
 } from 'samlang-core-ast/mir-nodes';
-import { assert, checkNotNull, filterMap } from 'samlang-core-utils';
+import { assert, checkNotNull, filterMap } from 'samlang-core/utils';
 
 import optimizeMidIRSourcesByEliminatingUnusedOnes from './mir-unused-name-elimination';
 

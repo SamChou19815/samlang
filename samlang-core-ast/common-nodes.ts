@@ -1,4 +1,4 @@
-import { zip, Hashable, ReadonlyHashMap } from 'samlang-core-utils';
+import { zip, Hashable, ReadonlyHashMap } from 'samlang-core/utils';
 
 /** SECTION 1: Literals */
 

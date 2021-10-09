@@ -14,7 +14,7 @@ import {
   HIR_ONE,
   HIR_ZERO,
 } from 'samlang-core-ast/hir-nodes';
-import { assert, checkNotNull, isNotNull, filterMap } from 'samlang-core-utils';
+import { assert, checkNotNull, isNotNull, filterMap } from 'samlang-core/utils';
 
 import { internalOptimizeHighIRStatementsByDCE } from './hir-dead-code-elimination-optimization';
 

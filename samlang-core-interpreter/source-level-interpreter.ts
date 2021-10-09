@@ -6,7 +6,7 @@ import {
   SourceClassDefinition,
   SamlangModule,
 } from 'samlang-core-ast/samlang-nodes';
-import { assert, checkNotNull, zip } from 'samlang-core-utils';
+import { assert, checkNotNull, zip } from 'samlang-core/utils';
 
 import PanicException from './panic-exception';
 

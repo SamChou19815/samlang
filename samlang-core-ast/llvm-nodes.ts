@@ -1,4 +1,4 @@
-import { assert, zip } from 'samlang-core-utils';
+import { assert, zip } from 'samlang-core/utils';
 
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,

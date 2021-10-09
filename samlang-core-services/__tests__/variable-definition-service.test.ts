@@ -2,7 +2,7 @@ import { ModuleReference, Position, Range } from 'samlang-core-ast/common-nodes'
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import prettyPrintSamlangModule from 'samlang-core-printer';
-import { checkNotNull, hashMapOf } from 'samlang-core-utils';
+import { checkNotNull, hashMapOf } from 'samlang-core/utils';
 
 import {
   ModuleScopedVariableDefinitionLookup,

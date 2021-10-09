@@ -11,7 +11,7 @@ import {
   HIR_FUNCTION_TYPE,
   HIR_INT_TYPE,
 } from 'samlang-core-ast/hir-nodes';
-import { checkNotNull } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core/utils';
 
 import optimizeHighIRFunctionByTailRecursionRewrite from '../hir-tail-recursion-rewrite';
 

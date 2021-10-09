@@ -29,7 +29,7 @@ import {
   SourceExpressionLambda,
   SourceExpressionStatementBlock,
 } from 'samlang-core-ast/samlang-nodes';
-import { hashSetOf } from 'samlang-core-utils';
+import { hashSetOf } from 'samlang-core/utils';
 
 import { collectModuleReferenceFromExpression } from '../module-references-collector';
 

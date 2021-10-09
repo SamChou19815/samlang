@@ -1,5 +1,5 @@
 import type { HighIRExpression, HighIRStatement, HighIRFunction } from 'samlang-core-ast/hir-nodes';
-import { filterMap } from 'samlang-core-utils';
+import { filterMap } from 'samlang-core/utils';
 
 import { ifElseOrNull } from './hir-optimization-common';
 

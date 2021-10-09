@@ -11,7 +11,7 @@ import {
   prettyPrintType,
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-nodes';
-import { assert, zip } from 'samlang-core-utils';
+import { assert, zip } from 'samlang-core/utils';
 
 import type { ReadOnlyTypeResolution } from './type-resolution';
 import resolveType from './type-resolver';

@@ -3,7 +3,7 @@
  * but commonly used enough that deserves its own file
  */
 
-import { checkNotNull } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core/utils';
 
 import {
   PrettierDocument,

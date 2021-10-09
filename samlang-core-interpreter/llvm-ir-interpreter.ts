@@ -16,7 +16,7 @@ import type {
   LLVMValue,
   LLVMLabelInstruction,
 } from 'samlang-core-ast/llvm-nodes';
-import { checkNotNull, zip, assert } from 'samlang-core-utils';
+import { checkNotNull, zip, assert } from 'samlang-core/utils';
 
 import PanicException from './panic-exception';
 

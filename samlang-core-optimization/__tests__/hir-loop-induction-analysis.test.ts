@@ -18,7 +18,7 @@ import {
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
 } from 'samlang-core-ast/hir-nodes';
-import { zip } from 'samlang-core-utils';
+import { zip } from 'samlang-core/utils';
 
 import extractOptimizableWhileLoop, {
   getGuardOperator_EXPOSED_FOR_TESTING,

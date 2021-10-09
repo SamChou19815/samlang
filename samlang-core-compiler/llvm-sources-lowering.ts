@@ -38,7 +38,7 @@ import type {
   MidIRFunction,
   MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
-import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
+import { checkNotNull, zip, zip3 } from 'samlang-core/utils';
 
 import { withoutUnreachableLLVMCode } from './llvm-control-flow-graph';
 

@@ -20,7 +20,7 @@ import {
   SourceExpressionStatementBlock,
 } from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
-import { hashMapOf, LocalStackedContext } from 'samlang-core-utils';
+import { hashMapOf, LocalStackedContext } from 'samlang-core/utils';
 
 import StatementTypeChecker from '../statement-type-checker';
 import { AccessibleGlobalTypingContext } from '../typing-context';

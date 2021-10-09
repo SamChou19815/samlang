@@ -20,7 +20,7 @@ import {
   SourceExpressionClassMember,
   SamlangModule,
 } from 'samlang-core-ast/samlang-nodes';
-import { mapOf } from 'samlang-core-utils';
+import { mapOf } from 'samlang-core/utils';
 
 import compileSamlangSourcesToHighIRSources, {
   compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,

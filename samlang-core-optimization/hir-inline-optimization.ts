@@ -7,7 +7,7 @@ import {
   HIR_ZERO,
   HIR_VARIABLE,
 } from 'samlang-core-ast/hir-nodes';
-import { checkNotNull, filterMap, zip, zip3 } from 'samlang-core-utils';
+import { checkNotNull, filterMap, zip, zip3 } from 'samlang-core/utils';
 
 import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
 import { LocalValueContextForOptimization } from './hir-optimization-common';

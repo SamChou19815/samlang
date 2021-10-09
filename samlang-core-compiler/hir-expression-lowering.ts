@@ -46,7 +46,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-nodes';
-import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core-utils';
+import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core/utils';
 
 import type HighIRStringManager from './hir-string-manager';
 import {

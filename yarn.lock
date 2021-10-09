@@ -4988,7 +4988,7 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-ast@workspace:samlang-core-ast"
   dependencies:
-    samlang-core-utils: "workspace:0.0.1"
+    samlang-core: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -4997,10 +4997,10 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-checker@workspace:samlang-core-checker"
   dependencies:
+    samlang-core: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
-    samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5009,9 +5009,9 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-compiler@workspace:samlang-core-compiler"
   dependencies:
+    samlang-core: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
-    samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5029,6 +5029,7 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-integration-tests@workspace:samlang-core-integration-tests"
   dependencies:
+    samlang-core: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
@@ -5036,7 +5037,6 @@ fsevents@^2.3.2:
     samlang-core-optimization: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
-    samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5045,11 +5045,11 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-interpreter@workspace:samlang-core-interpreter"
   dependencies:
+    samlang-core: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
-    samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5058,8 +5058,8 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-optimization@workspace:samlang-core-optimization"
   dependencies:
+    samlang-core: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
-    samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5068,9 +5068,9 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-parser@workspace:samlang-core-parser"
   dependencies:
+    samlang-core: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
-    samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5079,10 +5079,10 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-printer@workspace:samlang-core-printer"
   dependencies:
+    samlang-core: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
-    samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5091,19 +5091,19 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core-services@workspace:samlang-core-services"
   dependencies:
+    samlang-core: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
-    samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
-"samlang-core-utils@workspace:0.0.1, samlang-core-utils@workspace:samlang-core-utils":
+"samlang-core@workspace:0.0.1, samlang-core@workspace:samlang-core":
   version: 0.0.0-use.local
-  resolution: "samlang-core-utils@workspace:samlang-core-utils"
+  resolution: "samlang-core@workspace:samlang-core"
   dependencies:
     typescript: ^4.4.3
   languageName: unknown

@@ -47,7 +47,7 @@ import {
   LocalStackedContext,
   zip,
   assert,
-} from 'samlang-core-utils';
+} from 'samlang-core/utils';
 
 import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';

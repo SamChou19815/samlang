@@ -11,7 +11,7 @@ import {
   functionType,
 } from 'samlang-core-ast/common-nodes';
 import type { SourceClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-nodes';
-import { hashMapOf } from 'samlang-core-utils';
+import { hashMapOf } from 'samlang-core/utils';
 
 import type {
   MemberTypeInformation,

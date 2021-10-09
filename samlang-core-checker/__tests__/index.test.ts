@@ -2,7 +2,7 @@ import { Range, ModuleReference, functionType, intType } from 'samlang-core-ast/
 import { SourceExpressionInt } from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { mapOf, hashMapOf } from 'samlang-core-utils';
+import { mapOf, hashMapOf } from 'samlang-core/utils';
 
 import {
   DependencyTracker,

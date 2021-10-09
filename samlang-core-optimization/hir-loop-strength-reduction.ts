@@ -5,7 +5,7 @@ import {
   HIR_BINARY,
   HIR_INT_TYPE,
 } from 'samlang-core-ast/hir-nodes';
-import { checkNotNull, filterMap } from 'samlang-core-utils';
+import { checkNotNull, filterMap } from 'samlang-core/utils';
 
 import {
   GeneralBasicInductionVariable,

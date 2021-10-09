@@ -14,7 +14,7 @@ import {
   mapOf,
   setOf,
   hashSetOf,
-} from 'samlang-core-utils';
+} from 'samlang-core/utils';
 
 import {
   DEFAULT_BUILTIN_TYPING_CONTEXT,

@@ -7,7 +7,7 @@ import {
   functionType,
   Type,
 } from 'samlang-core-ast/common-nodes';
-import { assert } from 'samlang-core-utils';
+import { assert } from 'samlang-core/utils';
 
 import TypeResolution from '../type-resolution';
 

@@ -10,7 +10,7 @@ import {
   SourceExpressionVariable,
   SamlangModule,
 } from 'samlang-core-ast/samlang-nodes';
-import { HashMap, hashMapOf } from 'samlang-core-utils';
+import { HashMap, hashMapOf } from 'samlang-core/utils';
 
 export interface ReadOnlyLocationLookup<E> {
   get(moduleReference: ModuleReference, position: Position): E | null;

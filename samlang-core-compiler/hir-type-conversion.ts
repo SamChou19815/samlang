@@ -20,7 +20,7 @@ import {
   HighIRIdentifierType,
 } from 'samlang-core-ast/hir-nodes';
 import type { TypeDefinition } from 'samlang-core-ast/samlang-nodes';
-import { assert, checkNotNull, zip } from 'samlang-core-utils';
+import { assert, checkNotNull, zip } from 'samlang-core/utils';
 
 /** A helper class to generate an identifier type for each struct type. */
 export class HighIRTypeSynthesizer {

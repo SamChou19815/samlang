@@ -30,7 +30,7 @@ import {
   filterMap,
   ignore,
   zip3,
-} from 'samlang-core-utils';
+} from 'samlang-core/utils';
 
 import {
   ifElseOrNull,

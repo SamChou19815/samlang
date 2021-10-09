@@ -1,4 +1,4 @@
-import { zip } from 'samlang-core-utils';
+import { zip } from 'samlang-core/utils';
 
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';

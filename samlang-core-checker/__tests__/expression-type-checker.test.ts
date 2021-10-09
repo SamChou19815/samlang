@@ -23,7 +23,7 @@ import {
 } from 'samlang-core-ast/samlang-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
-import { checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core-utils';
+import { checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core/utils';
 
 import typeCheckExpression from '../expression-type-checker';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';

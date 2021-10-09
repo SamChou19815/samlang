@@ -5,7 +5,7 @@ import {
   Pattern,
   SamlangModule,
 } from 'samlang-core-ast/samlang-nodes';
-import { HashMap, LocalStackedContext, assert, error, hashMapOf } from 'samlang-core-utils';
+import { HashMap, LocalStackedContext, assert, error, hashMapOf } from 'samlang-core/utils';
 
 export type DefinitionAndUses = {
   readonly definitionRange: Range;

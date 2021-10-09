@@ -9,7 +9,7 @@ import {
   SourceFieldType,
 } from 'samlang-core-ast/samlang-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { checkNotNull, zip, LocalStackedContext, assert } from 'samlang-core-utils';
+import { checkNotNull, zip, LocalStackedContext, assert } from 'samlang-core/utils';
 
 import type { AccessibleGlobalTypingContext } from './typing-context';
 

@@ -5,7 +5,7 @@ import {
   Range,
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
-import { hashMapOf } from 'samlang-core-utils';
+import { hashMapOf } from 'samlang-core/utils';
 
 import { AccessibleGlobalTypingContext } from '../typing-context';
 

@@ -4,7 +4,7 @@ import {
   HighIRWhileStatement,
   HIR_WHILE,
 } from 'samlang-core-ast/hir-nodes';
-import { filterMap } from 'samlang-core-utils';
+import { filterMap } from 'samlang-core/utils';
 
 type LoopInvariantCodeMotionOptimizationResult = {
   readonly hoistedStatementsBeforeWhile: readonly HighIRStatement[];

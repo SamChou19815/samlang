@@ -32,7 +32,7 @@ import {
   createGlobalErrorCollector,
 } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { HashMap, hashMapOf, hashSetOf, checkNotNull, filterMap, assert } from 'samlang-core-utils';
+import { HashMap, hashMapOf, hashSetOf, checkNotNull, filterMap, assert } from 'samlang-core/utils';
 
 import {
   ReadOnlyLocationLookup,

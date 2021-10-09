@@ -5,7 +5,7 @@ import type {
   SamlangModule,
 } from 'samlang-core-ast/samlang-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { error, filterMap, LocalStackedContext } from 'samlang-core-utils';
+import { error, filterMap, LocalStackedContext } from 'samlang-core/utils';
 
 import typeCheckExpression from './expression-type-checker';
 import TypeResolution from './type-resolution';

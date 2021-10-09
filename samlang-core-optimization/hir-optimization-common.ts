@@ -7,7 +7,7 @@ import {
   HighIRIfElseStatement,
   HighIRSingleIfStatement,
 } from 'samlang-core-ast/hir-nodes';
-import { error, LocalStackedContext } from 'samlang-core-utils';
+import { error, LocalStackedContext } from 'samlang-core/utils';
 
 export type IndexAccessBindedValue = {
   readonly __type__: 'IndexAccess';
