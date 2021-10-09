@@ -9,7 +9,6 @@ import {
 } from 'samlang-core-checker';
 // eslint-disable-next-line import/no-internal-modules
 import type { ModuleTypingContext, ClassTypingContext } from 'samlang-core-checker/typing-context';
-import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import {
   IdentifierType,
   FunctionType,
@@ -32,6 +31,7 @@ import {
   CompileTimeError,
   createGlobalErrorCollector,
 } from 'samlang-core/errors';
+import { parseSamlangModuleFromText } from 'samlang-core/parser';
 import { HashMap, hashMapOf, hashSetOf, checkNotNull, filterMap, assert } from 'samlang-core/utils';
 
 import {

@@ -463,7 +463,6 @@ __metadata:
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-optimization: "workspace:0.0.1"
-    samlang-core-parser: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
     typescript: ^4.4.3
@@ -4989,7 +4988,6 @@ fsevents@^2.3.2:
   resolution: "samlang-core-checker@workspace:samlang-core-checker"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-parser: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5013,7 +5011,6 @@ fsevents@^2.3.2:
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
     samlang-core-optimization: "workspace:0.0.1"
-    samlang-core-parser: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
@@ -5025,7 +5022,6 @@ fsevents@^2.3.2:
   dependencies:
     samlang-core: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
-    samlang-core-parser: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5039,21 +5035,11 @@ fsevents@^2.3.2:
   languageName: unknown
   linkType: soft
 
-"samlang-core-parser@workspace:0.0.1, samlang-core-parser@workspace:samlang-core-parser":
-  version: 0.0.0-use.local
-  resolution: "samlang-core-parser@workspace:samlang-core-parser"
-  dependencies:
-    samlang-core: "workspace:0.0.1"
-    typescript: ^4.4.3
-  languageName: unknown
-  linkType: soft
-
 "samlang-core-printer@workspace:0.0.1, samlang-core-printer@workspace:samlang-core-printer":
   version: 0.0.0-use.local
   resolution: "samlang-core-printer@workspace:samlang-core-printer"
   dependencies:
     samlang-core: "workspace:0.0.1"
-    samlang-core-parser: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5064,7 +5050,6 @@ fsevents@^2.3.2:
   dependencies:
     samlang-core: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
-    samlang-core-parser: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     typescript: ^4.4.3
   languageName: unknown

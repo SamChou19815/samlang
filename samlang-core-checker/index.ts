@@ -1,4 +1,3 @@
-import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { ModuleReference, Sources } from 'samlang-core/ast/common-nodes';
 import type { SamlangModule } from 'samlang-core/ast/samlang-nodes';
 import {
@@ -6,6 +5,7 @@ import {
   createGlobalErrorCollector,
   ReadonlyGlobalErrorCollector,
 } from 'samlang-core/errors';
+import { parseSamlangModuleFromText } from 'samlang-core/parser';
 import {
   HashMap,
   HashSet,

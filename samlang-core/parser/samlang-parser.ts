@@ -11,7 +11,7 @@ import {
   Range,
   ModuleReference,
   TypedComment,
-} from 'samlang-core/ast/common-nodes';
+} from '../ast/common-nodes';
 import {
   BinaryOperator,
   MUL,
@@ -28,7 +28,7 @@ import {
   AND,
   OR,
   CONCAT,
-} from 'samlang-core/ast/common-operators';
+} from '../ast/common-operators';
 import {
   SamlangExpression,
   Pattern,
@@ -57,10 +57,9 @@ import {
   SourceModuleMembersImport,
   SamlangModule,
   TypeDefinition,
-} from 'samlang-core/ast/samlang-nodes';
-import type { ModuleErrorCollector } from 'samlang-core/errors';
-import { checkNotNull } from 'samlang-core/utils';
-
+} from '../ast/samlang-nodes';
+import type { ModuleErrorCollector } from '../errors';
+import { checkNotNull } from '../utils';
 import {
   SamlangKeywordString,
   SamlangOperatorString,

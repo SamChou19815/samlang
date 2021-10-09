@@ -1,6 +1,5 @@
-import { ModuleReference, Range } from 'samlang-core/ast/common-nodes';
-import { createGlobalErrorCollector } from 'samlang-core/errors';
-
+import { ModuleReference, Range } from '../../ast/common-nodes';
+import { createGlobalErrorCollector } from '../../errors';
 import SamlangParser, { BaseParser } from '../samlang-parser';
 
 describe('samlang-parser', () => {
