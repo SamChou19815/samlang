@@ -1,9 +1,8 @@
-import { ModuleReference, Position, Range } from 'samlang-core/ast/common-nodes';
-import { createGlobalErrorCollector } from 'samlang-core/errors';
-import { parseSamlangModuleFromText } from 'samlang-core/parser';
-import prettyPrintSamlangModule from 'samlang-core/printer';
-import { checkNotNull, hashMapOf } from 'samlang-core/utils';
-
+import { ModuleReference, Position, Range } from '../../ast/common-nodes';
+import { createGlobalErrorCollector } from '../../errors';
+import { parseSamlangModuleFromText } from '../../parser';
+import prettyPrintSamlangModule from '../../printer';
+import { checkNotNull, hashMapOf } from '../../utils';
 import {
   ModuleScopedVariableDefinitionLookup,
   VariableDefinitionLookup,

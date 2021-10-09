@@ -1,7 +1,6 @@
-import { Position, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
-import type { SamlangExpression } from 'samlang-core/ast/samlang-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from 'samlang-core/checker';
-
+import { Position, Range, ModuleReference } from '../../ast/common-nodes';
+import type { SamlangExpression } from '../../ast/samlang-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from '../../checker';
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
 
 describe('location-service', () => {

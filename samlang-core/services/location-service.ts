@@ -1,16 +1,6 @@
-import {
-  identifierType,
-  Position,
-  Range,
-  ModuleReference,
-  Location,
-} from 'samlang-core/ast/common-nodes';
-import {
-  SamlangExpression,
-  SourceExpressionVariable,
-  SamlangModule,
-} from 'samlang-core/ast/samlang-nodes';
-import { HashMap, hashMapOf } from 'samlang-core/utils';
+import { identifierType, Position, Range, ModuleReference, Location } from '../ast/common-nodes';
+import { SamlangExpression, SourceExpressionVariable, SamlangModule } from '../ast/samlang-nodes';
+import { HashMap, hashMapOf } from '../utils';
 
 export interface ReadOnlyLocationLookup<E> {
   get(moduleReference: ModuleReference, position: Position): E | null;

@@ -55,6 +55,7 @@
                 "**/samlang-core/optimization",
                 "**/samlang-core/parser",
                 "**/samlang-core/printer",
+                "**/samlang-core/services",
                 "**/samlang-core/utils",
                 "**/samlang-core-interpreter/*",
                 "**/yarn-plugin-monorail/src/utils/*"

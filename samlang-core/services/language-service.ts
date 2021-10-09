@@ -8,13 +8,13 @@ import {
   Location,
   TypedComment,
   Sources,
-} from 'samlang-core/ast/common-nodes';
+} from '../ast/common-nodes';
 import type {
   SamlangExpression,
   SourceClassDefinition,
   SourceClassMemberDefinition,
   SamlangModule,
-} from 'samlang-core/ast/samlang-nodes';
+} from '../ast/samlang-nodes';
 import {
   DependencyTracker,
   GlobalTypingContext,
@@ -23,17 +23,16 @@ import {
   typeCheckSources,
   typeCheckSourcesIncrementally,
   typeCheckSingleModuleSource,
-} from 'samlang-core/checker';
+} from '../checker';
 // eslint-disable-next-line import/no-internal-modules
-import type { ModuleTypingContext, ClassTypingContext } from 'samlang-core/checker/typing-context';
+import type { ModuleTypingContext, ClassTypingContext } from '../checker/typing-context';
 import {
   ReadonlyGlobalErrorCollector,
   CompileTimeError,
   createGlobalErrorCollector,
-} from 'samlang-core/errors';
-import { parseSamlangModuleFromText } from 'samlang-core/parser';
-import { HashMap, hashMapOf, hashSetOf, checkNotNull, filterMap, assert } from 'samlang-core/utils';
-
+} from '../errors';
+import { parseSamlangModuleFromText } from '../parser';
+import { HashMap, hashMapOf, hashSetOf, checkNotNull, filterMap, assert } from '../utils';
 import {
   ReadOnlyLocationLookup,
   LocationLookup,
