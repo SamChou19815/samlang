@@ -12,8 +12,7 @@ describe('samlang-core/parser', () => {
 
     function expectASTWithTheSameKind(text: string, expected: SamlangExpression['__type__']): void {
       expect(
-        parseSamlangExpressionFromText(text, ModuleReference.DUMMY, new Set(), moduleErrorCollector)
-          ?.__type__
+        parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector)?.__type__
       ).toBe(expected);
     }
 
@@ -86,7 +85,7 @@ describe('samlang-core/parser', () => {
       const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
         ModuleReference.DUMMY
       );
-      parseSamlangExpressionFromText(text, ModuleReference.DUMMY, new Set(), moduleErrorCollector);
+      parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector);
       expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
     }
 
@@ -181,7 +180,6 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      new Set(['List']),
       moduleErrorCollector
     );
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
@@ -226,7 +224,6 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      new Set(),
       moduleErrorCollector
     );
     if (parsed == null) throw new Error();
@@ -261,7 +258,6 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      new Set(),
       moduleErrorCollector
     );
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
@@ -276,7 +272,6 @@ describe('samlang-core/parser', () => {
     parseSamlangModuleFromText(
       'This is not a program.',
       ModuleReference.DUMMY,
-      new Set(),
       moduleErrorCollector
     );
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([
@@ -291,14 +286,11 @@ describe('samlang-core/parser', () => {
 
   it('parseSources test', () => {
     expect(
-      parseSources(
-        [
-          [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
-          // with syntax error
-          [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
-        ],
-        new Set()
-      ).length
+      parseSources([
+        [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
+        // with syntax error
+        [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
+      ]).length
     ).toBe(1);
   });
 });

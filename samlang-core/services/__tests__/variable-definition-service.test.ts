@@ -15,7 +15,6 @@ function prepareLookup(source: string): ModuleScopedVariableDefinitionLookup {
   const parsedModule = parseSamlangModuleFromText(
     source,
     moduleReference,
-    new Set(),
     errorCollector.getModuleErrorCollector(moduleReference)
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
@@ -111,7 +110,6 @@ class Main {
 }
 `,
       moduleReference,
-      new Set(),
       errorCollector.getModuleErrorCollector(moduleReference)
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
@@ -345,7 +343,6 @@ class Main {
 }
 `,
       moduleReference,
-      new Set(),
       errorCollector.getModuleErrorCollector(moduleReference)
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
