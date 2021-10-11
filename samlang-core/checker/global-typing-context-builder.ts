@@ -11,6 +11,7 @@ import {
   functionType,
 } from '../ast/common-nodes';
 import type { SourceClassDefinition, SamlangModule } from '../ast/samlang-nodes';
+import type { DefaultBuiltinClasses } from '../parser';
 import { hashMapOf } from '../utils';
 import type {
   MemberTypeInformation,
@@ -46,7 +47,9 @@ function buildModuleTypingContext(samlangModule: SamlangModule): ModuleTypingCon
   );
 }
 
-export const DEFAULT_BUILTIN_TYPING_CONTEXT: ModuleTypingContext = {
+export const DEFAULT_BUILTIN_TYPING_CONTEXT: Readonly<
+  Record<DefaultBuiltinClasses, ClassTypingContext>
+> = {
   Builtins: {
     typeParameters: [],
     typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },

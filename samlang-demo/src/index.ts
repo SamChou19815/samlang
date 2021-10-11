@@ -1,13 +1,14 @@
 import { ModuleReference } from 'samlang-core/ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core/ast/mir-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from 'samlang-core/checker';
+import { typeCheckSourceHandles } from 'samlang-core/checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core/compiler';
 import interpretSamlangModule from 'samlang-core/interpreter/source-level-interpreter';
+import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core/optimization';
 import prettyPrintSamlangModule from 'samlang-core/printer';
 
 export type SamlangDemoResult = {
@@ -25,10 +26,9 @@ export type SamlangDemoResult = {
 export default function runSamlangDemo(programString: string): SamlangDemoResult {
   const demoModuleReference = new ModuleReference(['Demo']);
 
-  const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
-    [[demoModuleReference, programString]],
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  );
+  const { checkedSources, compileTimeErrors } = typeCheckSourceHandles([
+    [demoModuleReference, programString],
+  ]);
 
   if (compileTimeErrors.length > 0) {
     return {
@@ -38,14 +38,15 @@ export default function runSamlangDemo(programString: string): SamlangDemoResult
 
   const demoSamlangModule = checkedSources.forceGet(demoModuleReference);
   const midIRSources = lowerHighIRSourcesToMidIRSources(
-    compileSamlangSourcesToHighIRSources(checkedSources)
+    optimizeHighIRSourcesAccordingToConfiguration(
+      compileSamlangSourcesToHighIRSources(checkedSources)
+    )
   );
-  const llvmSources = lowerMidIRSourcesToLLVMSources(midIRSources);
 
   const interpreterPrinted = interpretSamlangModule(demoSamlangModule);
   const prettyPrintedProgram = prettyPrintSamlangModule(100, demoSamlangModule);
   const jsString = prettyPrintMidIRSourcesAsJSSources(midIRSources);
-  const llvmString = prettyPrintLLVMSources(llvmSources);
+  const llvmString = prettyPrintLLVMSources(lowerMidIRSourcesToLLVMSources(midIRSources));
 
   return {
     interpreterPrinted,

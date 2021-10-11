@@ -10,7 +10,7 @@ import {
 import { ModuleReference } from '../ast/common-nodes';
 import { prettyPrintLLVMSources } from '../ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsJSSources } from '../ast/mir-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from '../checker';
+import { typeCheckSourceHandles } from '../checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
@@ -29,8 +29,7 @@ describe('compiler-integration-tests', () => {
     runnableSamlangProgramTestCases.map((it) => [
       new ModuleReference([it.testCaseName]),
       it.sourceCode,
-    ]),
-    DEFAULT_BUILTIN_TYPING_CONTEXT
+    ])
   );
 
   expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);

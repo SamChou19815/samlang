@@ -6,7 +6,6 @@ import {
   SourceExpressionMethodAccess,
   SourceExpressionMatch,
 } from '../../ast/samlang-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../../checker';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 import { checkNotNull } from '../../utils';
@@ -25,7 +24,6 @@ function getExpression(rawSourceWithTypeAnnotation: string): SamlangExpression {
     parseSamlangExpressionFromText(
       rawSourceWithTypeAnnotation,
       ModuleReference.DUMMY,
-      new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT)),
       errorCollector.getModuleErrorCollector(ModuleReference.DUMMY)
     )
   );
@@ -48,7 +46,6 @@ function interpretModule(rawSourceWithTypeAnnotation: string): string {
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
     ModuleReference.DUMMY,
-    new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT)),
     errorCollector.getModuleErrorCollector(ModuleReference.DUMMY)
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);

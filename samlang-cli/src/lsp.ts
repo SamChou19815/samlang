@@ -1,7 +1,6 @@
 import { join, relative, resolve, sep } from 'path';
 
 import { Position, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core/checker';
 import prettyPrintSamlangModule from 'samlang-core/printer';
 import { LanguageServiceState, LanguageServices } from 'samlang-core/services';
 import {
@@ -40,10 +39,7 @@ const samlangRangeToLspFoldingRange = (range: Range): LspFoldingRange => ({
 export default function startSamlangLanguageServer(
   configuration: SamlangProjectConfiguration
 ): void {
-  const state = new LanguageServiceState(
-    collectSources(configuration),
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  );
+  const state = new LanguageServiceState(collectSources(configuration));
   const service = new LanguageServices(state, (samlangModule) =>
     prettyPrintSamlangModule(100, samlangModule)
   );

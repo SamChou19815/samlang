@@ -25,7 +25,7 @@ import {
   typeCheckSingleModuleSource,
 } from '../checker';
 // eslint-disable-next-line import/no-internal-modules
-import type { ModuleTypingContext, ClassTypingContext } from '../checker/typing-context';
+import type { ClassTypingContext } from '../checker/typing-context';
 import {
   ReadonlyGlobalErrorCollector,
   CompileTimeError,
@@ -66,25 +66,17 @@ export class LanguageServiceState {
 
   private _variableDefinitionLookup: VariableDefinitionLookup = new VariableDefinitionLookup();
 
-  constructor(
-    sourceHandles: readonly (readonly [ModuleReference, string])[],
-    private readonly builtinModuleTypes: ModuleTypingContext
-  ) {
+  constructor(sourceHandles: readonly (readonly [ModuleReference, string])[]) {
     const errorCollector = createGlobalErrorCollector();
     sourceHandles.forEach(([moduleReference, sourceCode]) => {
       const rawModule = parseSamlangModuleFromText(
         sourceCode,
         moduleReference,
-        new Set(Object.keys(builtinModuleTypes)),
         errorCollector.getModuleErrorCollector(moduleReference)
       );
       this.rawModules.set(moduleReference, rawModule);
     });
-    const [checkedModules, globalTypingContext] = typeCheckSources(
-      this.rawModules,
-      builtinModuleTypes,
-      errorCollector
-    );
+    const [checkedModules, globalTypingContext] = typeCheckSources(this.rawModules, errorCollector);
     this.checkedModules = checkedModules as HashMap<ModuleReference, SamlangModule>;
     checkedModules.forEach((checkedModule, moduleReference) => {
       const dependencies = collectModuleReferenceFromSamlangModule(checkedModule);
@@ -145,7 +137,6 @@ export class LanguageServiceState {
     const rawModule = parseSamlangModuleFromText(
       sourceCode,
       moduleReference,
-      new Set(Object.keys(this.builtinModuleTypes)),
       errorCollector.getModuleErrorCollector(moduleReference)
     );
     this.rawModules.set(moduleReference, rawModule);
@@ -192,11 +183,7 @@ export class LanguageServiceState {
       this.dependencyTracker.update(moduleReference);
     } else {
       const dependencies = collectModuleReferenceFromSamlangModule(
-        typeCheckSingleModuleSource(
-          samlangModule,
-          this.builtinModuleTypes,
-          createGlobalErrorCollector()
-        )
+        typeCheckSingleModuleSource(samlangModule, createGlobalErrorCollector())
       );
       dependencies.delete(moduleReference);
       this.dependencyTracker.update(moduleReference, dependencies.toArray());

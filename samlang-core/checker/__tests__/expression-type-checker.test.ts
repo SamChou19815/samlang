@@ -27,7 +27,7 @@ import { checkNotNull, hashMapOf, LocalStackedContext } from '../../utils';
 import typeCheckExpression from '../expression-type-checker';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
 import TypeResolution from '../type-resolution';
-import { AccessibleGlobalTypingContext } from '../typing-context';
+import { AccessibleGlobalTypingContext, ModuleTypingContext } from '../typing-context';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 
@@ -42,7 +42,7 @@ function typeCheckInSandbox(
   const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
     new AccessibleGlobalTypingContext(
       dummyModuleReference,
-      hashMapOf(
+      hashMapOf<ModuleReference, ModuleTypingContext>(
         [ModuleReference.ROOT, DEFAULT_BUILTIN_TYPING_CONTEXT],
         [
           dummyModuleReference,
@@ -120,12 +120,7 @@ function typeCheckInSandbox(
 
   // Parse
   const parsedExpression = checkNotNull(
-    parseSamlangExpressionFromText(
-      source,
-      dummyModuleReference,
-      new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT)),
-      moduleErrorCollector
-    )
+    parseSamlangExpressionFromText(source, dummyModuleReference, moduleErrorCollector)
   );
   expect(globalErrorCollector.getErrors()).toEqual([]);
 

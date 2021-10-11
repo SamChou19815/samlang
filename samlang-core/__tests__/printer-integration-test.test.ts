@@ -1,15 +1,12 @@
 import { ModuleReference } from '../ast/common-nodes';
 import type { SamlangModule } from '../ast/samlang-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from '../checker';
+import { typeCheckSourceHandles } from '../checker';
 import prettyPrintSamlangModule from '../printer';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 function getTypeCheckedModule(code: string): SamlangModule {
   const moduleReference = new ModuleReference(['test']);
-  const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
-    [[moduleReference, code]],
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  );
+  const { checkedSources, compileTimeErrors } = typeCheckSourceHandles([[moduleReference, code]]);
   const errors = compileTimeErrors.map((it) => it.toString());
   if (errors.length > 0) throw new Error(`Source: ${code}. Errors:\n${errors.join('\n')}`);
   return checkedSources.forceGet(moduleReference);

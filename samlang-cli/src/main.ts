@@ -4,7 +4,7 @@ import { writeFileSync } from 'fs';
 
 import type { Sources } from 'samlang-core/ast/common-nodes';
 import type { SamlangModule } from 'samlang-core/ast/samlang-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from 'samlang-core/checker';
+import { typeCheckSourceHandles } from 'samlang-core/checker';
 import { parseSources } from 'samlang-core/parser';
 import prettyPrintSamlangModule from 'samlang-core/printer';
 
@@ -29,16 +29,14 @@ function getConfiguration(): SamlangProjectConfiguration {
 
 function format() {
   const sources = collectSources(getConfiguration());
-  parseSources(sources, new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT))).forEach(
-    ([moduleReference, samlangModule]) => {
-      const start = new Date().getTime();
-      const filename = moduleReference.toFilename();
-      const newCode = prettyPrintSamlangModule(100, samlangModule);
-      const duration = new Date().getTime() - start;
-      writeFileSync(filename, newCode);
-      console.error(`Formatted ${filename} in ${duration}ms.`);
-    }
-  );
+  parseSources(sources).forEach(([moduleReference, samlangModule]) => {
+    const start = new Date().getTime();
+    const filename = moduleReference.toFilename();
+    const newCode = prettyPrintSamlangModule(100, samlangModule);
+    const duration = new Date().getTime() - start;
+    writeFileSync(filename, newCode);
+    console.error(`Formatted ${filename} in ${duration}ms.`);
+  });
 }
 
 function typeCheck(): {
@@ -47,8 +45,7 @@ function typeCheck(): {
 } {
   const configuration = getConfiguration();
   const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
-    collectSources(configuration),
-    DEFAULT_BUILTIN_TYPING_CONTEXT
+    collectSources(configuration)
   );
   if (compileTimeErrors.length > 0) {
     console.error(`Found ${compileTimeErrors.length} error(s).`);

@@ -1,5 +1,5 @@
 import { ModuleReference } from '../ast/common-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from '../checker';
+import { typeCheckSourceHandles } from '../checker';
 import { samlangProgramCheckerTestSources } from '../test-programs';
 
 const expectedErrors: readonly string[] = [
@@ -48,8 +48,7 @@ describe('checker-integration-test', () => {
       samlangProgramCheckerTestSources.map((it) => [
         new ModuleReference([it.testName]),
         it.sourceCode,
-      ]),
-      DEFAULT_BUILTIN_TYPING_CONTEXT
+      ])
     );
 
     const actualErrors = compileTimeErrors

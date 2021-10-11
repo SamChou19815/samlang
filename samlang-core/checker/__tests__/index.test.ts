@@ -11,7 +11,6 @@ import { SourceExpressionInt } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
 import { mapOf, hashMapOf } from '../../utils';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
 
 describe('samlang-core/checker', () => {
   it('collectModuleReferenceFromSamlangModule works', () => {
@@ -147,7 +146,6 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceA,
           moduleReferenceA,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceA)
         ),
       ],
@@ -156,7 +154,6 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceB,
           moduleReferenceB,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceB)
         ),
       ],
@@ -165,7 +162,6 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceC,
           moduleReferenceC,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceC)
         ),
       ],
@@ -174,17 +170,12 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceD,
           moduleReferenceD,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceD)
         ),
       ]
     );
 
-    const [, globalTypingContext] = typeCheckSources(
-      sources,
-      DEFAULT_BUILTIN_TYPING_CONTEXT,
-      errorCollector
-    );
+    const [, globalTypingContext] = typeCheckSources(sources, errorCollector);
     expect(errorCollector.getErrors().map((e) => e.toString())).toEqual([]);
 
     sources.delete(moduleReferenceC);
@@ -244,7 +235,6 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceA,
           moduleReferenceA,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceA)
         ),
       ],
@@ -253,7 +243,6 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceB,
           moduleReferenceB,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceB)
         ),
       ],
@@ -262,7 +251,6 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceC,
           moduleReferenceC,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceC)
         ),
       ],
@@ -271,13 +259,12 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceD,
           moduleReferenceD,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceD)
         ),
       ]
     );
 
-    typeCheckSources(sources, DEFAULT_BUILTIN_TYPING_CONTEXT, errorCollector);
+    typeCheckSources(sources, errorCollector);
     expect(
       errorCollector
         .getErrors()
@@ -326,7 +313,6 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceA,
           moduleReferenceA,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceA)
         ),
       ],
@@ -335,7 +321,6 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceB,
           moduleReferenceB,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceB)
         ),
       ],
@@ -344,13 +329,12 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceC,
           moduleReferenceC,
-          new Set(),
           errorCollector.getModuleErrorCollector(moduleReferenceC)
         ),
       ]
     );
 
-    typeCheckSources(sources, DEFAULT_BUILTIN_TYPING_CONTEXT, errorCollector);
+    typeCheckSources(sources, errorCollector);
     expect(errorCollector.getErrors().map((e) => e.toString())).toEqual([]);
   });
 
@@ -360,10 +344,8 @@ describe('samlang-core/checker', () => {
       parseSamlangModuleFromText(
         'class Main {}',
         new ModuleReference(['Test']),
-        new Set(),
         errorCollector.getModuleErrorCollector(new ModuleReference(['Test']))
       ),
-      DEFAULT_BUILTIN_TYPING_CONTEXT,
       errorCollector
     );
 
@@ -382,10 +364,7 @@ describe('samlang-core/checker', () => {
   }
   `;
 
-    const { compileTimeErrors } = typeCheckSourceHandles(
-      [[moduleReference, sourceCode]],
-      DEFAULT_BUILTIN_TYPING_CONTEXT
-    );
+    const { compileTimeErrors } = typeCheckSourceHandles([[moduleReference, sourceCode]]);
     expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
   });
 });

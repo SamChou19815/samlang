@@ -112,8 +112,8 @@ function typeCheckModule(
 
 export function typeCheckSources(
   sources: Sources<SamlangModule>,
-  builtinModuleTypes: ModuleTypingContext,
-  errorCollector: ReadonlyGlobalErrorCollector
+  errorCollector: ReadonlyGlobalErrorCollector,
+  builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT
 ): readonly [Sources<SamlangModule>, GlobalTypingContext] {
   const globalTypingContext = buildGlobalTypingContext(sources, builtinModuleTypes);
   const checkedSources = hashMapOf<ModuleReference, SamlangModule>();
@@ -133,8 +133,7 @@ type TypeCheckSourceHandlesResult = {
 };
 
 export function typeCheckSourceHandles(
-  sourceHandles: readonly (readonly [ModuleReference, string])[],
-  builtinModuleTypes: ModuleTypingContext
+  sourceHandles: readonly (readonly [ModuleReference, string])[]
 ): TypeCheckSourceHandlesResult {
   const errorCollector = createGlobalErrorCollector();
   const moduleMappings = hashMapOf(
@@ -145,17 +144,12 @@ export function typeCheckSourceHandles(
           parseSamlangModuleFromText(
             text,
             moduleReference,
-            new Set(Object.keys(builtinModuleTypes)),
             errorCollector.getModuleErrorCollector(moduleReference)
           ),
         ] as const
     )
   );
-  const [checkedSources, globalTypingContext] = typeCheckSources(
-    moduleMappings,
-    builtinModuleTypes,
-    errorCollector
-  );
+  const [checkedSources, globalTypingContext] = typeCheckSources(moduleMappings, errorCollector);
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
 }
 
@@ -182,13 +176,11 @@ export function typeCheckSourcesIncrementally(
 
 export function typeCheckSingleModuleSource(
   samlangModule: SamlangModule,
-  builtinModuleTypes: ModuleTypingContext,
   errorCollector: ReadonlyGlobalErrorCollector
 ): SamlangModule {
   const moduleReference = new ModuleReference(['Test']);
   const checkedModule = typeCheckSources(
     mapOf([moduleReference, samlangModule]),
-    builtinModuleTypes,
     errorCollector
   )[0].forceGet(moduleReference);
   return checkedModule;

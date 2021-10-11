@@ -1,6 +1,6 @@
 import { Position, Range, ModuleReference } from '../../ast/common-nodes';
 import type { SamlangExpression } from '../../ast/samlang-nodes';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT, typeCheckSourceHandles } from '../../checker';
+import { typeCheckSourceHandles } from '../../checker';
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
 
 describe('location-service', () => {
@@ -39,11 +39,10 @@ describe('location-service', () => {
 
   it('SamlangExpressionLocationLookupBuilder test', () => {
     const moduleReference = new ModuleReference(['foo']);
-    const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
+    const { checkedSources, compileTimeErrors } = typeCheckSourceHandles([
       [
-        [
-          moduleReference,
-          `class Foo(val a: int) {
+        moduleReference,
+        `class Foo(val a: int) {
     function bar(): int = 3
   }
 
@@ -108,10 +107,8 @@ describe('location-service', () => {
       Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
     )))
   }`,
-        ],
       ],
-      DEFAULT_BUILTIN_TYPING_CONTEXT
-    );
+    ]);
     expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
 
     const lookup = new LocationLookup<SamlangExpression>();
