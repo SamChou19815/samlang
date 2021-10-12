@@ -78,11 +78,8 @@ const runners: CLIRunners = {
     if (needHelp) {
       console.log('samlang compile: Compile your codebase according to sconfig.json.');
     } else {
-      const {
-        checkedSources,
-        configuration: { outputDirectory },
-      } = typeCheck();
-      const successful = compileEverything(checkedSources, outputDirectory);
+      const { checkedSources, configuration } = typeCheck();
+      const successful = compileEverything(checkedSources, configuration);
       if (!successful) {
         console.error('Failed to compile some LLVM programs.');
         process.exit(3);

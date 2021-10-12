@@ -48,6 +48,7 @@ export default function loadSamlangProjectConfiguration({
         : {
             sourceDirectory: resolve(configurationDirectory, configuration.sourceDirectory),
             outputDirectory: resolve(configurationDirectory, configuration.outputDirectory),
+            entryPoints: configuration.entryPoints,
           };
     }
     configurationDirectory = dirname(configurationDirectory);

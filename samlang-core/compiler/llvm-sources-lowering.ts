@@ -479,7 +479,6 @@ export default function lowerMidIRSourcesToLLVMSources(midIRSources: MidIRSource
       identifier: it.identifier,
       mappings: it.mappings.map(lowerMidIRTypeToLLVMType),
     })),
-    mainFunctionNames: midIRSources.mainFunctionNames,
     functions: midIRSources.functions.map((it) =>
       lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(it, globalVariablesMapping)
     ),

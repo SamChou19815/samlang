@@ -83,6 +83,7 @@ describe('configuration-loader', () => {
     expect(loadSamlangProjectConfiguration()).toEqual({
       sourceDirectory: resolve(__dirname, '..', '..', '..', '..'),
       outputDirectory: resolve(__dirname, '..', '..', '..', '..', 'out'),
+      entryPoints: ['tests/AllTests'],
     });
   });
 });

@@ -444,7 +444,6 @@ start:
         typeDefinitions: [
           { identifier: 'Foo', mappings: [LLVM_INT_TYPE, LLVM_IDENTIFIER_TYPE('Bar')] },
         ],
-        mainFunctionNames: [],
         functions: [
           {
             name: 'fact',

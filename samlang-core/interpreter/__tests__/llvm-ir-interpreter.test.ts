@@ -32,12 +32,9 @@ const ZERO = LLVM_INT(0);
 const ONE = LLVM_INT(1);
 const EIGHT = LLVM_INT(8);
 
-const interpretLLVMSourcesWithMain = (llvmSources: Omit<LLVMSources, 'mainFunctionNames'>) =>
+const interpretLLVMSourcesWithMain = (llvmSources: LLVMSources) =>
   interpretLLVMSources(
-    setupLLVMInterpretationEnvironment({
-      ...llvmSources,
-      mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
-    }),
+    setupLLVMInterpretationEnvironment(llvmSources),
     ENCODED_COMPILED_PROGRAM_MAIN
   );
 
