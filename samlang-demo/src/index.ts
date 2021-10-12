@@ -7,12 +7,10 @@ import {
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core/compiler';
-import interpretSamlangModule from 'samlang-core/interpreter/source-level-interpreter';
 import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core/optimization';
 import prettyPrintSamlangModule from 'samlang-core/printer';
 
 export type SamlangDemoResult = {
-  readonly interpreterPrinted?: string;
   readonly prettyPrintedProgram?: string;
   readonly jsString?: string;
   readonly llvmString?: string;
@@ -31,9 +29,8 @@ export default function runSamlangDemo(programString: string): SamlangDemoResult
   ]);
 
   if (compileTimeErrors.length > 0) {
-    return {
-      errors: compileTimeErrors.map((it) => it.toString()).sort((a, b) => a.localeCompare(b)),
-    };
+    const errors = compileTimeErrors.map((it) => it.toString()).sort((a, b) => a.localeCompare(b));
+    return { errors };
   }
 
   const demoSamlangModule = checkedSources.forceGet(demoModuleReference);
@@ -43,16 +40,9 @@ export default function runSamlangDemo(programString: string): SamlangDemoResult
     )
   );
 
-  const interpreterPrinted = interpretSamlangModule(demoSamlangModule);
   const prettyPrintedProgram = prettyPrintSamlangModule(100, demoSamlangModule);
   const jsString = prettyPrintMidIRSourcesAsJSSources(midIRSources);
   const llvmString = prettyPrintLLVMSources(lowerMidIRSourcesToLLVMSources(midIRSources));
 
-  return {
-    interpreterPrinted,
-    prettyPrintedProgram,
-    jsString,
-    llvmString,
-    errors: [],
-  };
+  return { prettyPrintedProgram, jsString, llvmString, errors: [] };
 }

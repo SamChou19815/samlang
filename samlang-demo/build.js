@@ -1,3 +1,4 @@
+const { pnpPlugin } = require('@yarnpkg/esbuild-plugin-pnp');
 const { build } = require('esbuild');
 
 build({
@@ -8,6 +9,7 @@ build({
   target: 'es2017',
   platform: 'node',
   outfile: 'bin/index.js',
+  plugins: [pnpPlugin()],
 }).catch((err) => {
   // eslint-disable-next-line no-console
   console.log(err);

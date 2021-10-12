@@ -1,9 +1,9 @@
 {
   "samlang.programPath": "samlang-cli/bin/index.js",
-  "files.associations": {
-    "*.m": "matlab",
-    "*.ml": "ocaml",
-    "*.mli": "ocaml",
-    "*.h": "c"
-  }
+  "eslint.nodePath": ".yarn/sdks",
+  "files.associations": { "*.m": "matlab", "*.ml": "ocaml", "*.mli": "ocaml", "*.h": "c" },
+  "prettier.prettierPath": ".yarn/sdks/prettier/index.js",
+  "search.exclude": { "**/.yarn": true, "**/.pnp.*": true },
+  "typescript.tsdk": ".yarn/sdks/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }

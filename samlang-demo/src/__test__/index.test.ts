@@ -5,7 +5,6 @@ describe('samlang-demo', () => {
     expect(
       runSamlangDemo('class Main { function main(): unit = Builtins.println("hello world") }')
     ).toEqual({
-      interpreterPrinted: 'hello world\n',
       prettyPrintedProgram: `class Main { function main(): unit = Builtins.println("hello world")  }\n`,
       jsString: `/** @type {Str} */ const GLOBAL_STRING_0 = [0, "hello world"];
 function _Demo_Main_main() {
@@ -36,7 +35,6 @@ l0_start:
   it('runSamlangDemo works when given non-runnable program', () => {
     expect(runSamlangDemo('class Main {}')).toEqual({
       prettyPrintedProgram: 'class Main {  }\n',
-      interpreterPrinted: '',
       jsString: ``,
       llvmString: `declare i64* @_builtin_malloc(i64) nounwind
 declare i64 @__Builtins_println(i64*) nounwind

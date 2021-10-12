@@ -457,7 +457,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-cli@workspace:samlang-cli"
   dependencies:
+    "@types/jest": ^27.0.2
     "@types/node": ^16.10.3
+    "@yarnpkg/esbuild-plugin-pnp": ^2.0.0-rc.1
     esbuild: ^0.13.4
     samlang-core: "workspace:0.0.1"
     typescript: ^4.4.3
@@ -471,6 +473,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-demo@workspace:samlang-demo"
   dependencies:
+    "@types/jest": ^27.0.2
+    "@yarnpkg/esbuild-plugin-pnp": ^2.0.0-rc.1
     esbuild: ^0.13.4
     samlang-core: "workspace:0.0.1"
     typescript: ^4.4.3
@@ -1052,6 +1056,19 @@ __metadata:
     "@typescript-eslint/types": 4.33.0
     eslint-visitor-keys: ^2.0.0
   checksum: 59953e474ad4610c1aa23b2b1a964445e2c6201521da6367752f37939d854352bbfced5c04ea539274065e012b1337ba3ffa49c2647a240a4e87155378ba9873
+  languageName: node
+  linkType: hard
+
+"@yarnpkg/esbuild-plugin-pnp@npm:^2.0.0-rc.1":
+  version: 2.0.0-rc.1
+  resolution: "@yarnpkg/esbuild-plugin-pnp@npm:2.0.0-rc.1"
+  dependencies:
+    tslib: ^1.13.0
+  peerDependencies:
+    esbuild: ">=0.10.0"
+  bin:
+    esbuild-plugin-pnp: ./lib/cli.js
+  checksum: acdf505aace3c04172386f8a67c4eb066a74e74fd33adb78028b3aa490965d9fb737b7f76d154e3061a6457a3769ec80afe31101c16d8be354a3daf277da2f73
   languageName: node
   linkType: hard
 
@@ -4978,6 +4995,7 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "samlang-core@workspace:samlang-core"
   dependencies:
+    "@types/jest": ^27.0.2
     typescript: ^4.4.3
   languageName: unknown
   linkType: soft
@@ -5535,7 +5553,7 @@ fsevents@^2.3.2:
   languageName: node
   linkType: hard
 
-"tslib@npm:^1.8.1, tslib@npm:^1.9.0":
+"tslib@npm:^1.13.0, tslib@npm:^1.8.1, tslib@npm:^1.9.0":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd

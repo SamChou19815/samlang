@@ -20,7 +20,6 @@ import {
   setupLLVMInterpretationEnvironment,
   interpretLLVMSources,
 } from '../interpreter/llvm-ir-interpreter';
-import interpretSamlangModule from '../interpreter/source-level-interpreter';
 import { optimizeHighIRSourcesAccordingToConfiguration } from '../optimization';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
@@ -33,16 +32,6 @@ describe('compiler-integration-tests', () => {
   );
 
   expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
-
-  // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
-  if (process.env.CI) {
-    runnableSamlangProgramTestCases.forEach((testCase) => {
-      it(`source-level: ${testCase.testCaseName}`, () => {
-        const samlangModule = checkedSources.forceGet(new ModuleReference([testCase.testCaseName]));
-        expect(interpretSamlangModule(samlangModule)).toBe(testCase.expectedStandardOut);
-      });
-    });
-  }
 
   const midIROptimizedSingleSource = lowerHighIRSourcesToMidIRSources(
     optimizeHighIRSourcesAccordingToConfiguration(

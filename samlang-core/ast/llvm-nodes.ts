@@ -479,7 +479,6 @@ ${body
 export interface LLVMSources {
   readonly globalVariables: readonly GlobalVariable[];
   readonly typeDefinitions: readonly LLVMTypeDefinition[];
-  readonly mainFunctionNames: readonly string[];
   readonly functions: readonly LLVMFunction[];
 }
 

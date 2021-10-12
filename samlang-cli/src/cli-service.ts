@@ -21,6 +21,7 @@ import {
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core/compiler';
 import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core/optimization';
+import { filterMap } from 'samlang-core/utils';
 
 import type { SamlangProjectConfiguration } from './configuration';
 
@@ -39,6 +40,12 @@ function walk(startPath: string, visitor: (file: string) => void): void {
   return recursiveVisit(startPath);
 }
 
+function filePathToModuleReference(sourcePath: string, filePath: string): ModuleReference {
+  const relativeFile = normalize(relative(sourcePath, filePath));
+  const relativeFileWithoutExtension = relativeFile.substring(0, relativeFile.length - 4);
+  return new ModuleReference(relativeFileWithoutExtension.split(sep));
+}
+
 export function collectSources({
   sourceDirectory,
 }: SamlangProjectConfiguration): readonly (readonly [ModuleReference, string])[] {
@@ -47,49 +54,23 @@ export function collectSources({
 
   walk(sourcePath, (file) => {
     if (!file.endsWith('.sam')) return;
-    const relativeFile = normalize(relative(sourcePath, file));
-    const relativeFileWithoutExtension = relativeFile.substring(0, relativeFile.length - 4);
-    sources.push([
-      new ModuleReference(relativeFileWithoutExtension.split(sep)),
-      readFileSync(file).toString(),
-    ]);
+    sources.push([filePathToModuleReference(sourcePath, file), readFileSync(file).toString()]);
   });
 
   return sources;
 }
 
-function compileToTS(
-  midIRSources: MidIRSources,
-  moduleReferences: readonly ModuleReference[],
-  outputDirectory: string
-): void {
-  mkdirSync(outputDirectory, { recursive: true });
-  const commonJSCode = prettyPrintMidIRSourcesAsTSSources(midIRSources);
-  const mainFunctions = new Set(midIRSources.mainFunctionNames);
-  moduleReferences.forEach((moduleReference) => {
-    const mainFunctionName = encodeMainFunctionName(moduleReference);
-    if (!mainFunctions.has(mainFunctionName)) return;
-    const outputJSFilePath = join(outputDirectory, `${moduleReference}.ts`);
-    writeFileSync(outputJSFilePath, `${commonJSCode}\n${mainFunctionName}();\n`);
-  });
-}
-
 function compileToLLVMSources(
   midIRSources: MidIRSources,
-  moduleReferences: readonly ModuleReference[],
+  entryModuleReferences: readonly ModuleReference[],
   outputDirectory: string
 ): readonly string[] {
-  const paths: string[] = [];
-  const llvmSources = lowerMidIRSourcesToLLVMSources(midIRSources);
-
   const outputLLVMExportingFilePath = join(outputDirectory, `_all_.ll`);
   mkdirSync(dirname(outputLLVMExportingFilePath), { recursive: true });
-  const commonLLVMCode = prettyPrintLLVMSources(llvmSources);
+  const commonLLVMCode = prettyPrintLLVMSources(lowerMidIRSourcesToLLVMSources(midIRSources));
 
-  const mainFunctions = new Set(llvmSources.mainFunctionNames);
-  moduleReferences.forEach((moduleReference) => {
+  const paths = entryModuleReferences.map((moduleReference) => {
     const mainFunctionName = encodeMainFunctionName(moduleReference);
-    if (!mainFunctions.has(mainFunctionName)) return;
     const outputLLVMFilePath = join(outputDirectory, `${moduleReference}.ll`);
     mkdirSync(dirname(outputLLVMFilePath), { recursive: true });
     writeFileSync(
@@ -101,7 +82,7 @@ define i64 @_compiled_program_main() local_unnamed_addr nounwind {
 }
 `
     );
-    paths.push(outputLLVMFilePath);
+    return outputLLVMFilePath;
   });
   return paths;
 }
@@ -118,14 +99,24 @@ function unlinkIfExist(file: string): void {
 
 export function compileEverything(
   sources: Sources<SamlangModule>,
-  outputDirectory: string
+  { outputDirectory, entryPoints }: SamlangProjectConfiguration
 ): boolean {
   const midIRSources = lowerHighIRSourcesToMidIRSources(
     optimizeHighIRSourcesAccordingToConfiguration(compileSamlangSourcesToHighIRSources(sources))
   );
-  const moduleReferences = sources.entries().map(([moduleReference]) => moduleReference);
 
-  compileToTS(midIRSources, moduleReferences, outputDirectory);
+  mkdirSync(outputDirectory, { recursive: true });
+  const commonJSCode = prettyPrintMidIRSourcesAsTSSources(midIRSources);
+  const entryModuleReferences = filterMap(entryPoints, (entryPoint) => {
+    const entryModuleReference = new ModuleReference(entryPoint.split(sep));
+    return sources.has(entryModuleReference) ? entryModuleReference : null;
+  });
+
+  entryModuleReferences.forEach((moduleReference) => {
+    const mainFunctionName = encodeMainFunctionName(moduleReference);
+    const outputJSFilePath = join(outputDirectory, `${moduleReference}.ts`);
+    writeFileSync(outputJSFilePath, `${commonJSCode}\n${mainFunctionName}();\n`);
+  });
 
   if (spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status !== 0) {
     // eslint-disable-next-line no-console
@@ -133,17 +124,19 @@ export function compileEverything(
     return true;
   }
 
-  const assembleResults = compileToLLVMSources(midIRSources, moduleReferences, outputDirectory).map(
-    (modulePath) => {
-      const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
-      const bitcodePath = `${outputProgramPath}.bc`;
-      const success =
-        shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
-        shellOut('llc', '-O2', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
-        shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
-      unlinkIfExist(`${outputProgramPath}.o`);
-      return success;
-    }
-  );
+  const assembleResults = compileToLLVMSources(
+    midIRSources,
+    entryModuleReferences,
+    outputDirectory
+  ).map((modulePath) => {
+    const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
+    const bitcodePath = `${outputProgramPath}.bc`;
+    const success =
+      shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
+      shellOut('llc', '-O2', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
+      shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
+    unlinkIfExist(`${outputProgramPath}.o`);
+    return success;
+  });
   return assembleResults.every((it) => it);
 }
