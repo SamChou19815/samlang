@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@types/jest": "^27.0.2",
-    "@types/node": "^16.10.3",
+    "@types/node": "^16.10.4",
     "@yarnpkg/esbuild-plugin-pnp": "^2.0.0-rc.1",
     "esbuild": "^0.13.4",
     "samlang-core": "workspace:0.0.1",
