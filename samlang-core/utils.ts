@@ -312,7 +312,7 @@ export class LocalStackedContext<V> {
   }
 }
 
-/** An lazily allocated union find data structure. */
+/** A lazily allocated union find data structure. */
 export class UnionFind {
   private readonly parent: Map<number, number> = new Map();
 
