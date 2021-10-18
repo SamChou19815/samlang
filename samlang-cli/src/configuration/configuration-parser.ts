@@ -1,4 +1,4 @@
-import { filterMap } from 'samlang-core/utils';
+import { filterMap } from '@dev-sam/samlang-core/utils';
 
 import type { SamlangProjectConfiguration } from './configuration-type';
 

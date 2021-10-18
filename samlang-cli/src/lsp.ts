@@ -1,8 +1,8 @@
 import { join, relative, resolve, sep } from 'path';
 
-import { Position, Range, ModuleReference } from 'samlang-core/ast/common-nodes';
-import prettyPrintSamlangModule from 'samlang-core/printer';
-import { LanguageServiceState, LanguageServices } from 'samlang-core/services';
+import { Position, Range, ModuleReference } from '@dev-sam/samlang-core/ast/common-nodes';
+import prettyPrintSamlangModule from '@dev-sam/samlang-core/printer';
+import { LanguageServiceState, LanguageServices } from '@dev-sam/samlang-core/services';
 import {
   createConnection,
   ProposedFeatures,

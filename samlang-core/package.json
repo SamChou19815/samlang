@@ -1,6 +1,6 @@
 {
-  "name": "samlang-core",
-  "version": "0.0.1",
+  "name": "@dev-sam/samlang-core",
+  "version": "0.5.0",
   "license": "AGPLv3",
   "scripts": {
     "compile": "tsc --incremental --noEmit"

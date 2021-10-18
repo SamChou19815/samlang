@@ -10,18 +10,21 @@ import {
 } from 'fs';
 import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
-import { encodeMainFunctionName } from 'samlang-core/ast/common-names';
-import { ModuleReference, Sources } from 'samlang-core/ast/common-nodes';
-import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
-import { MidIRSources, prettyPrintMidIRSourcesAsTSSources } from 'samlang-core/ast/mir-nodes';
-import type { SamlangModule } from 'samlang-core/ast/samlang-nodes';
+import { encodeMainFunctionName } from '@dev-sam/samlang-core/ast/common-names';
+import { ModuleReference, Sources } from '@dev-sam/samlang-core/ast/common-nodes';
+import { prettyPrintLLVMSources } from '@dev-sam/samlang-core/ast/llvm-nodes';
+import {
+  MidIRSources,
+  prettyPrintMidIRSourcesAsTSSources,
+} from '@dev-sam/samlang-core/ast/mir-nodes';
+import type { SamlangModule } from '@dev-sam/samlang-core/ast/samlang-nodes';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
-} from 'samlang-core/compiler';
-import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core/optimization';
-import { filterMap } from 'samlang-core/utils';
+} from '@dev-sam/samlang-core/compiler';
+import { optimizeHighIRSourcesAccordingToConfiguration } from '@dev-sam/samlang-core/optimization';
+import { filterMap } from '@dev-sam/samlang-core/utils';
 
 import type { SamlangProjectConfiguration } from './configuration';
 
