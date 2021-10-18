@@ -1,14 +1,14 @@
-import { ModuleReference } from 'samlang-core/ast/common-nodes';
-import { prettyPrintLLVMSources } from 'samlang-core/ast/llvm-nodes';
-import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core/ast/mir-nodes';
-import { typeCheckSourceHandles } from 'samlang-core/checker';
+import { ModuleReference } from '@dev-sam/samlang-core/ast/common-nodes';
+import { prettyPrintLLVMSources } from '@dev-sam/samlang-core/ast/llvm-nodes';
+import { prettyPrintMidIRSourcesAsJSSources } from '@dev-sam/samlang-core/ast/mir-nodes';
+import { typeCheckSourceHandles } from '@dev-sam/samlang-core/checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
-} from 'samlang-core/compiler';
-import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core/optimization';
-import prettyPrintSamlangModule from 'samlang-core/printer';
+} from '@dev-sam/samlang-core/compiler';
+import { optimizeHighIRSourcesAccordingToConfiguration } from '@dev-sam/samlang-core/optimization';
+import prettyPrintSamlangModule from '@dev-sam/samlang-core/printer';
 
 export type SamlangDemoResult = {
   readonly prettyPrintedProgram?: string;
