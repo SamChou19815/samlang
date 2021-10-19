@@ -6,8 +6,8 @@ import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../locat
 describe('location-service', () => {
   it('LocationLookupTest self consistent test', () => {
     const lookup = new LocationLookup<string>();
-    const farPosition = new Position(100, 100);
-    const range = new Range(new Position(1, 1), new Position(2, 2));
+    const farPosition = Position(100, 100);
+    const range = new Range(Position(1, 1), Position(2, 2));
     const moduleReference = new ModuleReference(['foo']);
     const location = { moduleReference, range };
     lookup.set(location, 'exist');
@@ -23,18 +23,18 @@ describe('location-service', () => {
   it('LocationLookupTest favors small range test', () => {
     const lookup = new LocationLookup<number>();
     const moduleReference = new ModuleReference(['foo']);
-    const smallRange = new Range(new Position(2, 1), new Position(3, 2));
+    const smallRange = new Range(Position(2, 1), Position(3, 2));
     const smallLocation = { moduleReference, range: smallRange };
-    const bigRange = new Range(new Position(1, 1), new Position(30, 2));
+    const bigRange = new Range(Position(1, 1), Position(30, 2));
     const bigLocation = { moduleReference, range: bigRange };
     lookup.set(smallLocation, 1);
     lookup.set(bigLocation, 2);
-    expect(lookup.getBestLocation(moduleReference, new Position(3, 1))).toEqual(smallLocation);
-    expect(lookup.getBestLocation(moduleReference, new Position(10, 2))).toEqual(bigLocation);
-    expect(lookup.getBestLocation(moduleReference, new Position(100, 100))).toBeNull();
-    expect(lookup.get(moduleReference, new Position(3, 1))).toBe(1);
-    expect(lookup.get(moduleReference, new Position(10, 2))).toBe(2);
-    expect(lookup.get(moduleReference, new Position(100, 100))).toBeNull();
+    expect(lookup.getBestLocation(moduleReference, Position(3, 1))).toEqual(smallLocation);
+    expect(lookup.getBestLocation(moduleReference, Position(10, 2))).toEqual(bigLocation);
+    expect(lookup.getBestLocation(moduleReference, Position(100, 100))).toBeNull();
+    expect(lookup.get(moduleReference, Position(3, 1))).toBe(1);
+    expect(lookup.get(moduleReference, Position(10, 2))).toBe(2);
+    expect(lookup.get(moduleReference, Position(100, 100))).toBeNull();
   });
 
   it('SamlangExpressionLocationLookupBuilder test', () => {

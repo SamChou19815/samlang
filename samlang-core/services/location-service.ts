@@ -47,7 +47,7 @@ export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
       // https://github.com/facebook/pyre-check/blob/master/analysis/lookup.ml
       if (!range.containsPosition(position)) return;
       const weight =
-        (range.end.line - range.start.line) * 1000 + (range.end.column - range.start.column);
+        (range.end.line - range.start.line) * 1000 + (range.end.character - range.start.character);
       if (weight < bestWeight) {
         bestWeight = weight;
         bestLocation = { moduleReference, range };

@@ -32,7 +32,7 @@ class CharacterStream {
   }
 
   get currentPosition(): Position {
-    return new Position(this.lineNumber, this.columnNumber);
+    return { line: this.lineNumber, character: this.columnNumber };
   }
 
   consumeWhitespace(): void {

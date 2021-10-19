@@ -7,7 +7,6 @@ import {
   stringType,
   tupleType,
   functionType,
-  Position,
   Range,
   ModuleReference,
   TypedComment,
@@ -108,7 +107,7 @@ export class BaseParser {
   protected consume(): void {
     const tokens = this.tokens;
     if (this.position >= tokens.length) {
-      const position = tokens[tokens.length - 1]?.range.end ?? new Position(0, 0);
+      const position = tokens[tokens.length - 1]?.range.end ?? { line: 0, character: 0 };
       const range = new Range(position, position);
       this.report(range, 'Unexpected end of file.');
       return;

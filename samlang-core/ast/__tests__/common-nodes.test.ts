@@ -157,104 +157,69 @@ describe('common-nodes', () => {
     ).toBeTruthy();
   });
 
-  it('Correct toString() for display', () => {
-    expect(Position.DUMMY.toString()).toBe('0:0');
-    expect(new Position(42, 53).toString()).toBe('43:54');
-  });
-
-  it('Position comparison smoke test', () => {
-    expect(new Position(1, 4).compareTo(new Position(1, 4))).toBe(0);
-  });
-
-  it('Correct same line comparision test', () => {
-    expect(new Position(1, 2).compareTo(new Position(1, 3))).toBeLessThan(0);
-    expect(new Position(1, 3).compareTo(new Position(1, 2))).toBeGreaterThan(0);
-    expect(new Position(1, 2).compareTo(new Position(1, 3))).toBeLessThan(0);
-    expect(new Position(1, 3).compareTo(new Position(1, 2))).toBeGreaterThan(0);
-    expect(new Position(1, 4).compareTo(new Position(1, 3))).toBeGreaterThan(0);
-    expect(new Position(1, 3).compareTo(new Position(1, 4))).toBeLessThan(0);
-    expect(new Position(1, 4).compareTo(new Position(1, 3))).toBeGreaterThan(0);
-    expect(new Position(1, 3).compareTo(new Position(1, 4))).toBeLessThan(0);
-  });
-
-  it('Correct different lines comparision test', () => {
-    expect(new Position(1, 2).compareTo(new Position(2, 3))).toBeLessThan(0);
-    expect(new Position(1, 3).compareTo(new Position(2, 3))).toBeLessThan(0);
-    expect(new Position(1, 4).compareTo(new Position(2, 3))).toBeLessThan(0);
-    expect(new Position(2, 3).compareTo(new Position(1, 2))).toBeGreaterThan(0);
-    expect(new Position(2, 3).compareTo(new Position(1, 3))).toBeGreaterThan(0);
-    expect(new Position(2, 3).compareTo(new Position(1, 4))).toBeGreaterThan(0);
-  });
-
   it('Range.toString() works as expected', () => {
     expect(Range.DUMMY.toString()).toBe('0:0-0:0');
-    expect(new Range(new Position(1, 1), new Position(2, 4)).toString()).toBe('2:2-3:5');
+    expect(new Range(Position(1, 1), Position(2, 4)).toString()).toBe('2:2-3:5');
   });
 
   it('Range.containsPosition() works as expected', () => {
-    expect(
-      new Range(new Position(1, 3), new Position(3, 1)).containsPosition(new Position(2, 2))
-    ).toBeTruthy();
-    expect(
-      new Range(new Position(1, 3), new Position(3, 1)).containsPosition(new Position(1, 2))
-    ).toBeFalsy();
-    expect(
-      new Range(new Position(1, 3), new Position(3, 1)).containsPosition(new Position(3, 2))
-    ).toBeFalsy();
+    expect(new Range(Position(1, 3), Position(3, 1)).containsPosition(Position(2, 2))).toBeTruthy();
+    expect(new Range(Position(1, 3), Position(3, 1)).containsPosition(Position(1, 2))).toBeFalsy();
+    expect(new Range(Position(1, 3), Position(3, 1)).containsPosition(Position(3, 2))).toBeFalsy();
   });
 
   it('Range.containsRange() works as expected', () => {
     expect(
-      new Range(new Position(1, 3), new Position(3, 1)).containsRange(
-        new Range(new Position(1, 3), new Position(3, 1))
+      new Range(Position(1, 3), Position(3, 1)).containsRange(
+        new Range(Position(1, 3), Position(3, 1))
       )
     ).toBeTruthy();
     expect(
-      new Range(new Position(1, 3), new Position(3, 1)).containsRange(
-        new Range(new Position(1, 4), new Position(3, 0))
+      new Range(Position(1, 3), Position(3, 1)).containsRange(
+        new Range(Position(1, 4), Position(3, 0))
       )
     ).toBeTruthy();
     expect(
-      new Range(new Position(1, 3), new Position(3, 1)).containsRange(
-        new Range(new Position(1, 3), new Position(3, 2))
+      new Range(Position(1, 3), Position(3, 1)).containsRange(
+        new Range(Position(1, 3), Position(3, 2))
       )
     ).toBeFalsy();
     expect(
-      new Range(new Position(1, 3), new Position(3, 1)).containsRange(
-        new Range(new Position(1, 2), new Position(3, 1))
+      new Range(Position(1, 3), Position(3, 1)).containsRange(
+        new Range(Position(1, 2), Position(3, 1))
       )
     ).toBeFalsy();
     expect(
-      new Range(new Position(1, 3), new Position(3, 1)).containsRange(
-        new Range(new Position(1, 2), new Position(3, 2))
+      new Range(Position(1, 3), Position(3, 1)).containsRange(
+        new Range(Position(1, 2), Position(3, 2))
       )
     ).toBeFalsy();
   });
 
   it('Range.union() works as expected', () => {
     expect(
-      new Range(new Position(1, 3), new Position(3, 1))
-        .union(new Range(new Position(2, 3), new Position(4, 1)))
+      new Range(Position(1, 3), Position(3, 1))
+        .union(new Range(Position(2, 3), Position(4, 1)))
         .toString()
-    ).toBe(new Range(new Position(1, 3), new Position(4, 1)).toString());
+    ).toBe(new Range(Position(1, 3), Position(4, 1)).toString());
 
     expect(
-      new Range(new Position(2, 3), new Position(4, 1))
-        .union(new Range(new Position(1, 3), new Position(3, 1)))
+      new Range(Position(2, 3), Position(4, 1))
+        .union(new Range(Position(1, 3), Position(3, 1)))
         .toString()
-    ).toBe(new Range(new Position(1, 3), new Position(4, 1)).toString());
+    ).toBe(new Range(Position(1, 3), Position(4, 1)).toString());
 
     expect(
-      new Range(new Position(1, 3), new Position(2, 3))
-        .union(new Range(new Position(3, 1), new Position(4, 1)))
+      new Range(Position(1, 3), Position(2, 3))
+        .union(new Range(Position(3, 1), Position(4, 1)))
         .toString()
-    ).toBe(new Range(new Position(1, 3), new Position(4, 1)).toString());
+    ).toBe(new Range(Position(1, 3), Position(4, 1)).toString());
 
     expect(
-      new Range(new Position(3, 1), new Position(4, 1))
-        .union(new Range(new Position(1, 3), new Position(2, 3)))
+      new Range(Position(3, 1), Position(4, 1))
+        .union(new Range(Position(1, 3), Position(2, 3)))
         .toString()
-    ).toBe(new Range(new Position(1, 3), new Position(4, 1)).toString());
+    ).toBe(new Range(Position(1, 3), Position(4, 1)).toString());
   });
 
   it('ModuleReference.toString()', () => {
