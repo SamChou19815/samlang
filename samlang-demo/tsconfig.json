@@ -1,8 +1,0 @@
-{
-  "extends": "../configurations/tsconfig.base.json",
-  "compilerOptions": {
-    "emitDeclarationOnly": true,
-    "outDir": "bin"
-  },
-  "include": ["src"]
-}

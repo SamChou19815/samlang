@@ -8,11 +8,23 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_FREE,
-} from '../ast/common-names';
-import type { IROperator } from '../ast/common-operators';
-import type { LLVMSources, LLVMFunction, LLVMValue, LLVMLabelInstruction } from '../ast/llvm-nodes';
-import { checkNotNull, zip, assert } from '../utils';
-import PanicException from './panic-exception';
+} from './ast/common-names';
+import type { IROperator } from './ast/common-operators';
+import type { LLVMSources, LLVMFunction, LLVMValue, LLVMLabelInstruction } from './ast/llvm-nodes';
+import { checkNotNull, zip, assert } from './utils';
+
+/**
+ * The universal exception thrown by SAMLANG programs.
+ * The name `panic` is inspired by Go.
+ * The reason for panic is always required.
+ *
+ * @param reason the reason of this exception.
+ */
+class PanicException extends Error {
+  constructor(reason: string) {
+    super(reason);
+  }
+}
 
 class StackFrame {
   private variables = new Map<string, number>();

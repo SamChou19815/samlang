@@ -1,1 +1,1 @@
-{ "entryPoints": ["tests/AllTests"] }
+{ "entryPoints": ["tests.AllTests"] }

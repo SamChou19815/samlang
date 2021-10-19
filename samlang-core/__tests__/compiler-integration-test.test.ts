@@ -16,10 +16,7 @@ import {
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
 } from '../compiler';
-import {
-  setupLLVMInterpretationEnvironment,
-  interpretLLVMSources,
-} from '../interpreter/llvm-ir-interpreter';
+import { setupLLVMInterpretationEnvironment, interpretLLVMSources } from '../llvm-ir-interpreter';
 import { optimizeHighIRSourcesAccordingToConfiguration } from '../optimization';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 

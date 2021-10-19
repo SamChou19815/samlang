@@ -1,8 +1,12 @@
-import { join, relative, resolve, sep } from 'path';
+import { lstatSync, readdirSync, readFileSync } from 'fs';
+import { join, normalize, relative, resolve, sep } from 'path';
 
-import { Position, Range, ModuleReference } from '@dev-sam/samlang-core/ast/common-nodes';
-import prettyPrintSamlangModule from '@dev-sam/samlang-core/printer';
-import { LanguageServiceState, LanguageServices } from '@dev-sam/samlang-core/services';
+import {
+  Position,
+  Range,
+  ModuleReference,
+  createSamlangLanguageService,
+} from '@dev-sam/samlang-core';
 import {
   createConnection,
   ProposedFeatures,
@@ -16,13 +20,47 @@ import {
   ResponseError,
 } from 'vscode-languageserver/node';
 
-import { collectSources } from './cli-service';
 import type { SamlangProjectConfiguration } from './configuration';
 
 const ENTIRE_DOCUMENT_RANGE = new Range(
   new Position(0, 0),
   new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
 );
+
+function filePathToModuleReference(sourcePath: string, filePath: string): ModuleReference {
+  const relativeFile = normalize(relative(sourcePath, filePath));
+  const relativeFileWithoutExtension = relativeFile.substring(0, relativeFile.length - 4);
+  return new ModuleReference(relativeFileWithoutExtension.split(sep));
+}
+
+function walk(startPath: string, visitor: (file: string) => void): void {
+  function recursiveVisit(path: string): void {
+    if (lstatSync(path).isFile()) {
+      visitor(path);
+      return;
+    }
+
+    if (lstatSync(path).isDirectory()) {
+      readdirSync(path).some((relativeChildPath) => recursiveVisit(join(path, relativeChildPath)));
+    }
+  }
+
+  return recursiveVisit(startPath);
+}
+
+export function collectSources({
+  sourceDirectory,
+}: SamlangProjectConfiguration): readonly (readonly [ModuleReference, string])[] {
+  const sourcePath = resolve(sourceDirectory);
+  const sources: (readonly [ModuleReference, string])[] = [];
+
+  walk(sourcePath, (file) => {
+    if (!file.endsWith('.sam')) return;
+    sources.push([filePathToModuleReference(sourcePath, file), readFileSync(file).toString()]);
+  });
+
+  return sources;
+}
 
 const samlangRangeToLspRange = (range: Range): LspRange => ({
   start: { line: range.start.line, character: range.start.column },
@@ -39,10 +77,7 @@ const samlangRangeToLspFoldingRange = (range: Range): LspFoldingRange => ({
 export default function startSamlangLanguageServer(
   configuration: SamlangProjectConfiguration
 ): void {
-  const state = new LanguageServiceState(collectSources(configuration));
-  const service = new LanguageServices(state, (samlangModule) =>
-    prettyPrintSamlangModule(100, samlangModule)
-  );
+  const service = createSamlangLanguageService(collectSources(configuration));
 
   function uriToModuleReference(uri: string): ModuleReference {
     const relativePath = relative(
@@ -63,7 +98,7 @@ export default function startSamlangLanguageServer(
     affectedModules.forEach((affectedModule) => {
       connection.sendDiagnostics({
         uri: moduleReferenceToUri(affectedModule),
-        diagnostics: state.getErrors(affectedModule).map((error) => ({
+        diagnostics: service.state.getErrors(affectedModule).map((error) => ({
           range: samlangRangeToLspRange(error.range),
           severity: DiagnosticSeverity.Error,
           message: error.toString(),
@@ -74,17 +109,14 @@ export default function startSamlangLanguageServer(
   }
 
   connection.onInitialize((): InitializeResult => {
-    publishDiagnostics(state.allModulesWithError);
+    publishDiagnostics(service.state.allModulesWithError);
     return {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Full,
         hoverProvider: true,
         definitionProvider: {},
         foldingRangeProvider: true,
-        completionProvider: {
-          triggerCharacters: ['.'],
-          resolveProvider: false,
-        },
+        completionProvider: { triggerCharacters: ['.'], resolveProvider: false },
         renameProvider: true,
         documentFormattingProvider: {},
       },
@@ -95,7 +127,7 @@ export default function startSamlangLanguageServer(
     const moduleReference = uriToModuleReference(didChangeTextDocumentParameters.textDocument.uri);
     const sourceCode = didChangeTextDocumentParameters.contentChanges[0]?.text;
     if (sourceCode == null) return;
-    const affected = state.update(moduleReference, sourceCode);
+    const affected = service.state.update(moduleReference, sourceCode);
     publishDiagnostics(affected);
   });
 
