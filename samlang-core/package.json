@@ -5,6 +5,8 @@
   "scripts": {
     "compile": "tsc --incremental --noEmit"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "devDependencies": {
     "@types/jest": "^27.0.2",
     "typescript": "^4.4.3"

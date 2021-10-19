@@ -1,18 +1,19 @@
 /* eslint-disable no-console */
 
-import { writeFileSync } from 'fs';
+import { spawnSync } from 'child_process';
+import { mkdirSync, writeFileSync, existsSync, unlinkSync } from 'fs';
+import { join } from 'path';
 
-import type { Sources } from '@dev-sam/samlang-core/ast/common-nodes';
-import type { SamlangModule } from '@dev-sam/samlang-core/ast/samlang-nodes';
-import { typeCheckSourceHandles } from '@dev-sam/samlang-core/checker';
-import { parseSources } from '@dev-sam/samlang-core/parser';
-import prettyPrintSamlangModule from '@dev-sam/samlang-core/printer';
+import {
+  ModuleReference,
+  reformatSamlangSources,
+  compileSamlangSources,
+} from '@dev-sam/samlang-core';
 
 import cliMainRunner, { CLIRunners } from './cli';
-import { collectSources, compileEverything } from './cli-service';
-import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
+import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from './configuration';
 import ASCII_ART_SAMLANG_LOGO from './logo';
-import startSamlangLanguageServer from './lsp';
+import startSamlangLanguageServer, { collectSources } from './lsp';
 
 function getConfiguration(): SamlangProjectConfiguration {
   const configuration = loadSamlangProjectConfiguration();
@@ -27,35 +28,54 @@ function getConfiguration(): SamlangProjectConfiguration {
   return configuration;
 }
 
-function format() {
-  const sources = collectSources(getConfiguration());
-  parseSources(sources).forEach(([moduleReference, samlangModule]) => {
-    const start = new Date().getTime();
-    const filename = moduleReference.toFilename();
-    const newCode = prettyPrintSamlangModule(100, samlangModule);
-    const duration = new Date().getTime() - start;
-    writeFileSync(filename, newCode);
-    console.error(`Formatted ${filename} in ${duration}ms.`);
-  });
+const RUNTIME_PATH = join(__dirname, '..', 'samlang-runtime');
+const LLVM_LIBRARY_PATH = join(RUNTIME_PATH, `libsam-${process.platform}.bc`);
+
+const shellOut = (program: string, ...programArguments: readonly string[]): boolean =>
+  spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
+
+function unlinkIfExist(file: string): void {
+  if (existsSync(file)) unlinkSync(file);
 }
 
-function typeCheck(): {
-  readonly checkedSources: Sources<SamlangModule>;
-  readonly configuration: SamlangProjectConfiguration;
-} {
-  const configuration = getConfiguration();
-  const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
-    collectSources(configuration)
+export function compileEverything(configuration: SamlangProjectConfiguration): boolean {
+  const entryModuleReferences = configuration.entryPoints.map(
+    (entryPoint) => new ModuleReference(entryPoint.split('.'))
   );
-  if (compileTimeErrors.length > 0) {
-    console.error(`Found ${compileTimeErrors.length} error(s).`);
-    compileTimeErrors
-      .map((it) => it.toString())
-      .sort((a, b) => a.localeCompare(b))
-      .forEach((it) => console.error(it));
+  const result = compileSamlangSources(collectSources(configuration), entryModuleReferences);
+  if (result.__type__ === 'ERROR') {
+    // eslint-disable-next-line no-console
+    console.error(`Found ${result.errors.length} error(s).`);
+    // eslint-disable-next-line no-console
+    result.errors.forEach((it) => console.error(it));
     process.exit(1);
   }
-  return { checkedSources, configuration };
+
+  mkdirSync(configuration.outputDirectory, { recursive: true });
+  Object.entries(result.emittedTypeScriptCode).forEach(([filename, content]) => {
+    writeFileSync(join(configuration.outputDirectory, filename), content);
+  });
+
+  if (spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status !== 0) {
+    // eslint-disable-next-line no-console
+    console.error('You do not have LLVM toolchain installation. Skipping LLVM targets.');
+    return true;
+  }
+
+  const assembleResults = Object.entries(result.emittedLLVMCode).map(([filename, content]) => {
+    const modulePath = join(configuration.outputDirectory, filename);
+    writeFileSync(modulePath, content);
+
+    const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
+    const bitcodePath = `${outputProgramPath}.bc`;
+    const success =
+      shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
+      shellOut('llc', '-O2', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
+      shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
+    unlinkIfExist(`${outputProgramPath}.o`);
+    return success;
+  });
+  return assembleResults.every((it) => it);
 }
 
 const runners: CLIRunners = {
@@ -63,23 +83,18 @@ const runners: CLIRunners = {
     if (needHelp) {
       console.log('samlang format: Format your codebase according to sconfig.json.');
     } else {
-      format();
-    }
-  },
-  typeCheck(needHelp) {
-    if (needHelp) {
-      console.log('samlang check: Type checks your codebase according to sconfig.json.');
-    } else {
-      typeCheck();
-      console.log('No errors!');
+      reformatSamlangSources(collectSources(getConfiguration())).forEach(
+        ([moduleReference, newCode]) => {
+          writeFileSync(moduleReference.toFilename(), newCode);
+        }
+      );
     }
   },
   compile(needHelp) {
     if (needHelp) {
       console.log('samlang compile: Compile your codebase according to sconfig.json.');
     } else {
-      const { checkedSources, configuration } = typeCheck();
-      const successful = compileEverything(checkedSources, configuration);
+      const successful = compileEverything(getConfiguration());
       if (!successful) {
         console.error('Failed to compile some LLVM programs.');
         process.exit(3);
