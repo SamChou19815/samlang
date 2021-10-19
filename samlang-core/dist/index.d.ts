@@ -1,26 +1,9 @@
-import type { LanguageServices } from '../services';
+import { Position, Range, ModuleReference } from '../ast/types';
+import type { LanguageServices } from '../services/types';
 
 // PART 1: Supporting structures
 
-export interface Position {
-  readonly line: number;
-  readonly character: number;
-}
-
-export class Range {
-  constructor(public readonly start: Position, public readonly end: Position);
-  readonly containsPosition: (position: Position) => boolean;
-  readonly containsRange: (range: Range) => boolean;
-  readonly union: (range: Range) => Range;
-  uniqueHash(): string;
-}
-
-export class ModuleReference {
-  constructor(public readonly parts: readonly string[]) {}
-  readonly toString: () => string;
-  readonly toFilename: () => string;
-  uniqueHash(): string;
-}
+export { Position, Range, ModuleReference };
 
 // PART 2: Public APIs
 

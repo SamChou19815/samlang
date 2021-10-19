@@ -1,5 +1,10 @@
-import { LanguageServiceState, LanguageServices } from '..';
+import createSamlangLanguageService, { LanguageServiceStateImpl } from '..';
 import { Position, Range, ModuleReference } from '../../ast/common-nodes';
+
+class InsertTextFormats {
+  static readonly PlainText = 1 as const;
+  static readonly Snippet = 2 as const;
+}
 
 class CompletionItemKinds {
   static readonly METHOD = 2 as const;
@@ -9,7 +14,7 @@ class CompletionItemKinds {
 
 describe('language-service', () => {
   it('Language server state can update.', () => {
-    const state = new LanguageServiceState([]);
+    const state = new LanguageServiceStateImpl([]);
     state.update(
       new ModuleReference(['test']),
       `
@@ -19,7 +24,6 @@ class Test {
 `
     );
 
-    expect(state.allErrors.length).toBe(1);
     expect(state.allModulesWithError.length).toBe(1);
     expect(state.getErrors(new ModuleReference(['test-test']))).toEqual([]);
     expect(state.getErrors(new ModuleReference(['test'])).map((it) => it.toString())).toEqual([
@@ -33,7 +37,6 @@ class Test {
     expect(state.getCheckedModule(new ModuleReference(['test2']))).toBeUndefined();
 
     state.remove(new ModuleReference(['test']));
-    expect(state.allErrors.length).toBe(0);
     expect(state.allModulesWithError.length).toBe(0);
     expect(state.getErrors(new ModuleReference(['test']))).toEqual([]);
   });
@@ -41,7 +44,7 @@ class Test {
   it('Language server state can handle complex dependency patterns', () => {
     const test1ModuleReference = new ModuleReference(['Test1']);
     const test2ModuleReference = new ModuleReference(['Test2']);
-    const state = new LanguageServiceState([
+    const state = new LanguageServiceStateImpl([
       [
         test1ModuleReference,
         `
@@ -137,7 +140,7 @@ class Test2 {
     const testModuleReference = new ModuleReference(['Test']);
     const test2ModuleReference = new ModuleReference(['Test2']);
     const test3ModuleReference = new ModuleReference(['Test3']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `/** Test */
@@ -161,27 +164,26 @@ class Test1(val a: int) {
       ],
       [test3ModuleReference, 'class Test1 { function test(): int = NonExisting.test() }'],
     ]);
-    const service = new LanguageServices(state);
 
     expect(service.queryForHover(testModuleReference, Position(100, 100))).toBeNull();
-    expect(service.queryForHover(testModuleReference, Position(3, 27))?.[0]).toEqual([
+    expect(service.queryForHover(testModuleReference, Position(3, 27))?.contents).toEqual([
       { language: 'samlang', value: 'string' },
     ]);
-    expect(service.queryForHover(testModuleReference, Position(1, 9))?.[0]).toEqual([
+    expect(service.queryForHover(testModuleReference, Position(1, 9))?.contents).toEqual([
       { language: 'samlang', value: 'class Test1' },
       { language: 'markdown', value: 'Test' },
     ]);
-    expect(service.queryForHover(testModuleReference, Position(5, 34))?.[0]).toEqual([
+    expect(service.queryForHover(testModuleReference, Position(5, 34))?.contents).toEqual([
       { language: 'samlang', value: '() -> int' },
       { language: 'markdown', value: 'test' },
     ]);
-    expect(service.queryForHover(test2ModuleReference, Position(1, 9))?.[0]).toEqual([
+    expect(service.queryForHover(test2ModuleReference, Position(1, 9))?.contents).toEqual([
       { language: 'samlang', value: 'class Test1' },
     ]);
-    expect(service.queryForHover(test2ModuleReference, Position(4, 36))?.[0]).toEqual([
+    expect(service.queryForHover(test2ModuleReference, Position(4, 36))?.contents).toEqual([
       { language: 'samlang', value: '() -> int' },
     ]);
-    expect(service.queryForHover(test3ModuleReference, Position(0, 45))?.[0]).toEqual([
+    expect(service.queryForHover(test3ModuleReference, Position(0, 45))?.contents).toEqual([
       { language: 'samlang', value: 'class NonExisting' },
     ]);
   });
@@ -189,7 +191,7 @@ class Test1(val a: int) {
   it('LanguageServices type query test 2', () => {
     const testModuleReference = new ModuleReference(['Test']);
     const test2ModuleReference = new ModuleReference(['Test2']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `/** Test */
@@ -212,15 +214,13 @@ class Test2(val a: int) {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
-
-    expect(service.queryForHover(test2ModuleReference, Position(4, 36))?.[0]).toBeUndefined();
+    expect(service.queryForHover(test2ModuleReference, Position(4, 36))?.contents).toBeUndefined();
   });
 
   it('LanguageServices type query test 3', () => {
     const testModuleReference = new ModuleReference(['Test']);
     const test2ModuleReference = new ModuleReference(['Test2']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `/** Test */
@@ -243,7 +243,6 @@ class Test2(val a: int) {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
 
     expect(service.queryDefinitionLocation(testModuleReference, Position(4, 33))).toBeNull();
     expect(service.queryDefinitionLocation(test2ModuleReference, Position(2, 23))).toBeNull();
@@ -256,7 +255,7 @@ class Test2(val a: int) {
     const moduleReference1 = new ModuleReference(['Test1']);
     const moduleReference2 = new ModuleReference(['Test2']);
     const moduleReference3 = new ModuleReference(['Test3']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [moduleReference3, 'class ABC { function a(): unit = { val _ = [1,2]; } }'],
       [moduleReference2, 'class TTT { method test(): int = this.test() }'],
       [
@@ -278,9 +277,6 @@ class Test1(val a: int) {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
-
-    expect(state.allErrors.map((it) => it.toString())).toEqual([]);
 
     expect(service.queryDefinitionLocation(moduleReference1, Position(100, 100))).toBeNull();
     expect(service.queryDefinitionLocation(moduleReference1, Position(4, 46))).toBeNull();
@@ -338,7 +334,7 @@ class Test1(val a: int) {
 
   it('LanguageServices.queryDefinitionLocation test 2', () => {
     const moduleReference1 = new ModuleReference(['Test1']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         moduleReference1,
         `class Test1(val a: int) {
@@ -351,13 +347,12 @@ class Test1(val a: int) {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
     expect(service.queryDefinitionLocation(moduleReference1, Position(4, 4))).toBeNull();
   });
 
   it('LanguageServices.queryFoldingRanges test', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `
@@ -383,7 +378,6 @@ class Main {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
     expect(
       service.queryFoldingRanges(testModuleReference)?.map((module) => module.toString())
     ).toMatchObject([
@@ -400,7 +394,7 @@ class Main {
 
   it('LanguageServices autocompletion test 1', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `
@@ -426,64 +420,62 @@ class Main {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
-
     expect(service.autoComplete(testModuleReference, Position(3, 5))).toEqual([]);
     expect(service.autoComplete(testModuleReference, Position(12, 17))).toEqual([
       {
-        isSnippet: true,
+        insertTextFormat: InsertTextFormats.Snippet,
         kind: CompletionItemKinds.FUNCTION,
-        name: 'of(a0: T): List<T>',
-        text: 'of($0)$1',
-        type: '<T>((T) -> List<T>)',
+        label: 'of(a0: T): List<T>',
+        insertText: 'of($0)$1',
+        detail: '<T>((T) -> List<T>)',
       },
     ]);
     expect(service.autoComplete(testModuleReference, Position(12, 31))).toEqual([
       {
-        isSnippet: true,
+        insertTextFormat: InsertTextFormats.Snippet,
         kind: CompletionItemKinds.METHOD,
-        name: 'cons(a0: T): List<T>',
-        text: 'cons($0)$1',
-        type: '(T) -> List<T>',
+        label: 'cons(a0: T): List<T>',
+        insertText: 'cons($0)$1',
+        detail: '(T) -> List<T>',
       },
     ]);
     expect(service.autoComplete(testModuleReference, Position(14, 46))).toEqual([
       {
-        isSnippet: false,
+        insertTextFormat: InsertTextFormats.PlainText,
         kind: CompletionItemKinds.FIELD,
-        name: 'name',
-        text: 'name',
-        type: 'string',
+        label: 'name',
+        insertText: 'name',
+        detail: 'string',
       },
       {
-        isSnippet: false,
+        insertTextFormat: InsertTextFormats.PlainText,
         kind: CompletionItemKinds.FIELD,
-        name: 'github',
-        text: 'github',
-        type: 'string',
+        label: 'github',
+        insertText: 'github',
+        detail: 'string',
       },
       {
-        isSnippet: false,
+        insertTextFormat: InsertTextFormats.PlainText,
         kind: CompletionItemKinds.FIELD,
-        name: 'projects',
-        text: 'projects',
-        type: 'List<string>',
+        label: 'projects',
+        insertText: 'projects',
+        detail: 'List<string>',
       },
     ]);
     expect(service.autoComplete(testModuleReference, Position(18, 41))).toEqual([
       {
-        isSnippet: false,
+        insertTextFormat: InsertTextFormats.PlainText,
         kind: CompletionItemKinds.FUNCTION,
-        name: 'sam(): Developer',
-        text: 'sam()',
-        type: '() -> Developer',
+        label: 'sam(): Developer',
+        insertText: 'sam()',
+        detail: '() -> Developer',
       },
     ]);
   });
 
   it('LanguageServices autocompletion test 2', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `
@@ -510,30 +502,27 @@ class Main {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
 
     expect(service.autoComplete(testModuleReference, Position(13, 31))).toEqual([
       {
-        isSnippet: true,
+        insertTextFormat: InsertTextFormats.Snippet,
         kind: CompletionItemKinds.METHOD,
-        name: 'cons(a0: T): List<T>',
-        text: 'cons($0)$1',
-        type: '(T) -> List<T>',
+        label: 'cons(a0: T): List<T>',
+        insertText: 'cons($0)$1',
+        detail: '(T) -> List<T>',
       },
     ]);
   });
 
   it('LanguageServices autocompletion test 3', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([[testModuleReference, '.']]);
-    const service = new LanguageServices(state);
-
+    const service = createSamlangLanguageService([[testModuleReference, '.']]);
     expect(service.autoComplete(testModuleReference, Position(0, 1))).toEqual([]);
   });
 
   it('LanguageServices autocompletion test 4', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `
@@ -543,14 +532,12 @@ class Main {
   `,
       ],
     ]);
-    const service = new LanguageServices(state);
-
     expect(service.autoComplete(testModuleReference, Position(2, 41))).toEqual([]);
   });
 
   it('LanguageServices autocompletion test 5', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `
@@ -560,14 +547,11 @@ class Main {
   `,
       ],
     ]);
-    const service = new LanguageServices(state);
-
     expect(service.autoComplete(testModuleReference, Position(2, 45))).toEqual([]);
   });
 
   it('LanguageServices rename bad identifier tests', () => {
-    const state = new LanguageServiceState([]);
-    const service = new LanguageServices(state);
+    const service = createSamlangLanguageService([]);
     const testModuleReference = new ModuleReference(['Test']);
     expect(service.renameVariable(testModuleReference, Position(2, 45), '3')).toBe('Invalid');
     expect(service.renameVariable(testModuleReference, Position(2, 45), 'A3')).toBe('Invalid');
@@ -576,7 +560,7 @@ class Main {
 
   it('LanguageServices rename not-found tests', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `/** Test */
@@ -589,8 +573,6 @@ class Test1 {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
-
     expect(service.renameVariable(testModuleReference, Position(100, 100), 'a')).toBeNull();
     expect(service.renameVariable(testModuleReference, Position(3, 27), 'a')).toBeNull();
     expect(service.renameVariable(testModuleReference, Position(1, 9), 'a')).toBeNull();
@@ -598,7 +580,7 @@ class Test1 {
 
   it('LanguageServices failed to rename due to undefined variable tests', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `
@@ -608,7 +590,6 @@ class Test {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
     expect(service.renameVariable(testModuleReference, Position(2, 36), 'a')).toBeNull();
     expect(service.renameVariable(testModuleReference, Position(2, 32), 'a')).toBe(
       'class Test { function main(): unit = { val a = b; }  }\n'
@@ -620,7 +601,7 @@ class Test {
 
   it('LanguageServices format test with good programs', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `
@@ -630,7 +611,6 @@ class Main {
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
     expect(service.formatEntireDocument(testModuleReference)).toBe(
       'class Main { function main(): Developer = Developer.sam()  }\n'
     );
@@ -639,7 +619,7 @@ class Main {
 
   it('LanguageServices format test with bad programs', () => {
     const testModuleReference = new ModuleReference(['Test']);
-    const state = new LanguageServiceState([
+    const service = createSamlangLanguageService([
       [
         testModuleReference,
         `
@@ -654,7 +634,6 @@ class Developer(
 `,
       ],
     ]);
-    const service = new LanguageServices(state);
     expect(service.formatEntireDocument(testModuleReference)).toBe(null);
   });
 });

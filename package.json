@@ -2,15 +2,14 @@
   "private": true,
   "workspaces": [
     "samlang-cli",
-    "samlang-core",
-    "samlang-demo"
+    "samlang-core"
   ],
   "scripts": {
     "lint": "eslint . --cache",
     "format": "prettier --write '**/*.{ts,js,yml}'",
     "format:check": "prettier --check '**/*.{ts,js,yml}'",
-    "codegen": "yarn workspace @dev-sam/samlang-cli bundle && ./samlang-cli/bin/index.js format",
     "bundle": "yarn workspaces foreach run bundle",
+    "c": "yarn workspaces foreach -ptv run compile",
     "test": "jest --coverage",
     "test:single": "jest -t",
     "test:integration": "esr scripts/compile-repository.ts",

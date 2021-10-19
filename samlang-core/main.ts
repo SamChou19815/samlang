@@ -12,7 +12,6 @@ import type { SamlangSourcesCompilationResult, SamlangSingleSourceCompilationRes
 import { optimizeHighIRSourcesAccordingToConfiguration } from './optimization';
 import { parseSources } from './parser';
 import prettyPrintSamlangModule from './printer';
-import { LanguageServices, LanguageServiceState } from './services';
 import { checkNotNull } from './utils';
 
 export function reformatSamlangSources(
@@ -78,10 +77,4 @@ export function compileSingleSamlangSource(
   const emittedTypeScriptCode = checkNotNull(result.emittedTypeScriptCode['Demo.ts']);
   const emittedLLVMCode = checkNotNull(result.emittedLLVMCode['Demo.ll']);
   return { __type__: 'OK', emittedTypeScriptCode, emittedLLVMCode };
-}
-
-export function createSamlangLanguageService(
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
-): LanguageServices {
-  return new LanguageServices(new LanguageServiceState(sourceHandles));
 }
