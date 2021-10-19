@@ -2,9 +2,9 @@ import type { LanguageServices } from '../services';
 
 // PART 1: Supporting structures
 
-export class Position {
-  constructor(public readonly line: number, public readonly column: number);
-  readonly compareTo: (other: Position) => number;
+export interface Position {
+  readonly line: number;
+  readonly character: number;
 }
 
 export class Range {

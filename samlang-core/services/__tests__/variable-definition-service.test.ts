@@ -58,31 +58,31 @@ class Main {
 `;
     const lookup = prepareLookup(source);
 
-    expect(query(lookup, new Range(new Position(3, 12), new Position(3, 13)))).toEqual({
+    expect(query(lookup, new Range(Position(3, 12), Position(3, 13)))).toEqual({
       definition: '3:17-3:18',
       uses: ['4:13-4:14'],
     });
-    expect(query(lookup, new Range(new Position(3, 8), new Position(3, 9)))).toEqual({
+    expect(query(lookup, new Range(Position(3, 8), Position(3, 9)))).toEqual({
       definition: '4:9-4:10',
       uses: [],
     });
-    expect(query(lookup, new Range(new Position(4, 9), new Position(4, 10)))).toEqual({
+    expect(query(lookup, new Range(Position(4, 9), Position(4, 10)))).toEqual({
       definition: '5:10-5:11',
       uses: [],
     });
-    expect(query(lookup, new Range(new Position(8, 12), new Position(8, 13)))).toEqual({
+    expect(query(lookup, new Range(Position(8, 12), Position(8, 13)))).toEqual({
       definition: '7:10-7:11',
       uses: ['9:13-9:14', '10:59-10:60'],
     });
-    expect(query(lookup, new Range(new Position(8, 16), new Position(8, 17)))).toEqual({
+    expect(query(lookup, new Range(Position(8, 16), Position(8, 17)))).toEqual({
       definition: '7:18-7:19',
       uses: ['8:20-8:21', '9:17-9:18', '10:45-10:46', '10:75-10:76', '11:24-11:25'],
     });
-    expect(query(lookup, new Range(new Position(9, 22), new Position(9, 23)))).toEqual({
+    expect(query(lookup, new Range(Position(9, 22), Position(9, 23)))).toEqual({
       definition: '10:23-10:24',
       uses: ['10:37-10:38'],
     });
-    expect(query(lookup, new Range(new Position(12, 19), new Position(12, 21)))).toEqual({
+    expect(query(lookup, new Range(Position(12, 19), Position(12, 21)))).toEqual({
       definition: '13:14-13:16',
       uses: ['13:20-13:22'],
     });
@@ -132,7 +132,7 @@ class Main {
       ).toBe(expected);
 
     assertCorrectlyRewritten(
-      new Range(new Position(3, 12), new Position(3, 13)),
+      new Range(Position(3, 12), Position(3, 13)),
       `class Main {
   function test(renAmeD: int, b: bool): unit = {
     val c = renAmeD;
@@ -154,7 +154,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(new Position(3, 8), new Position(3, 9)),
+      new Range(Position(3, 8), Position(3, 9)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val renAmeD = a;
@@ -176,7 +176,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(new Position(4, 9), new Position(4, 10)),
+      new Range(Position(4, 9), Position(4, 10)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -198,7 +198,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(new Position(4, 18), new Position(4, 19)),
+      new Range(Position(4, 18), Position(4, 19)),
       `class Main {
   function test(a: int, renAmeD: bool): unit = {
     val c = a;
@@ -220,7 +220,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(new Position(6, 28), new Position(6, 29)),
+      new Range(Position(6, 28), Position(6, 29)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -242,7 +242,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(new Position(8, 12), new Position(8, 13)),
+      new Range(Position(8, 12), Position(8, 13)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -264,7 +264,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(new Position(8, 16), new Position(8, 17)),
+      new Range(Position(8, 16), Position(8, 17)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -286,7 +286,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(new Position(9, 22), new Position(9, 23)),
+      new Range(Position(9, 22), Position(9, 23)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -308,7 +308,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(new Position(12, 19), new Position(12, 21)),
+      new Range(Position(12, 19), Position(12, 21)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -357,7 +357,7 @@ class Main {
           checkNotNull(
             lookup.findAllDefinitionAndUses(
               new ModuleReference(['Test']),
-              new Range(new Position(3, 12), new Position(3, 13))
+              new Range(Position(3, 12), Position(3, 13))
             )
           ),
           'renAmeD'

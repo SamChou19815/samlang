@@ -165,6 +165,21 @@ export function isTheSameType(t1: Type, t2: Type): boolean {
 
 /** SECTION 3: Locations */
 
+export interface Position {
+  readonly line: number;
+  readonly character: number;
+}
+
+export const Position = (line: number, character: number): Position => ({ line, character });
+
+const DUMMY_POSITION: Position = { line: -1, character: -1 };
+
+function comparePosition(p1: Position, p2: Position): number {
+  const c = p1.line - p2.line;
+  return c !== 0 ? c : p1.character - p2.character;
+}
+
+/*
 export class Position {
   static readonly DUMMY: Position = new Position(-1, -1);
 
@@ -177,25 +192,29 @@ export class Position {
 
   readonly toString = (): string => `${this.line + 1}:${this.column + 1}`;
 }
+*/
 
 export class Range implements Hashable {
-  static readonly DUMMY: Range = new Range(Position.DUMMY, Position.DUMMY);
+  static readonly DUMMY: Range = new Range(DUMMY_POSITION, DUMMY_POSITION);
 
   constructor(public readonly start: Position, public readonly end: Position) {}
 
   readonly containsPosition = (position: Position): boolean =>
-    this.start.compareTo(position) <= 0 && this.end.compareTo(position) >= 0;
+    comparePosition(this.start, position) <= 0 && comparePosition(this.end, position) >= 0;
 
   readonly containsRange = (range: Range): boolean =>
     this.containsPosition(range.start) && this.containsPosition(range.end);
 
   readonly union = (range: Range): Range => {
-    const start = this.start.compareTo(range.start) < 0 ? this.start : range.start;
-    const end = this.end.compareTo(range.end) > 0 ? this.end : range.end;
+    const start = comparePosition(this.start, range.start) < 0 ? this.start : range.start;
+    const end = comparePosition(this.end, range.end) > 0 ? this.end : range.end;
     return new Range(start, end);
   };
 
-  readonly toString = (): string => `${this.start}-${this.end}`;
+  readonly toString = (): string =>
+    `${this.start.line + 1}:${this.start.character + 1}-${this.end.line + 1}:${
+      this.end.character + 1
+    }`;
 
   uniqueHash(): string {
     return this.toString();

@@ -1,12 +1,7 @@
 import { lstatSync, readdirSync, readFileSync } from 'fs';
 import { join, normalize, relative, resolve, sep } from 'path';
 
-import {
-  Position,
-  Range,
-  ModuleReference,
-  createSamlangLanguageService,
-} from '@dev-sam/samlang-core';
+import { Range, ModuleReference, createSamlangLanguageService } from '@dev-sam/samlang-core';
 import {
   createConnection,
   ProposedFeatures,
@@ -23,8 +18,8 @@ import {
 import type { SamlangProjectConfiguration } from './configuration';
 
 const ENTIRE_DOCUMENT_RANGE = new Range(
-  new Position(0, 0),
-  new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
+  { line: 0, character: 0 },
+  { line: Number.MAX_SAFE_INTEGER, character: Number.MAX_SAFE_INTEGER }
 );
 
 function filePathToModuleReference(sourcePath: string, filePath: string): ModuleReference {
@@ -63,15 +58,15 @@ export function collectSources({
 }
 
 const samlangRangeToLspRange = (range: Range): LspRange => ({
-  start: { line: range.start.line, character: range.start.column },
-  end: { line: range.end.line, character: range.end.column },
+  start: range.start,
+  end: range.end,
 });
 
 const samlangRangeToLspFoldingRange = (range: Range): LspFoldingRange => ({
   startLine: range.start.line,
-  startCharacter: range.start.column,
+  startCharacter: range.start.character,
   endLine: range.end.line,
-  endCharacter: range.end.column,
+  endCharacter: range.end.character,
 });
 
 export default function startSamlangLanguageServer(
@@ -133,9 +128,7 @@ export default function startSamlangLanguageServer(
 
   connection.onHover((hoverParameters) => {
     const moduleReference = uriToModuleReference(hoverParameters.textDocument.uri);
-    const lspPosition = hoverParameters.position;
-    const samlangPosition = new Position(lspPosition.line, lspPosition.character);
-    const hoverResult = service.queryForHover(moduleReference, samlangPosition);
+    const hoverResult = service.queryForHover(moduleReference, hoverParameters.position);
     if (hoverResult == null) return null;
     const [contents, range] = hoverResult;
     return { contents, range: samlangRangeToLspRange(range) };
@@ -143,9 +136,10 @@ export default function startSamlangLanguageServer(
 
   connection.onDefinition((gotoDefinitionParameters) => {
     const moduleReference = uriToModuleReference(gotoDefinitionParameters.textDocument.uri);
-    const lspPosition = gotoDefinitionParameters.position;
-    const samlangPosition = new Position(lspPosition.line, lspPosition.character);
-    const location = service.queryDefinitionLocation(moduleReference, samlangPosition);
+    const location = service.queryDefinitionLocation(
+      moduleReference,
+      gotoDefinitionParameters.position
+    );
     return location == null
       ? null
       : {
@@ -164,9 +158,7 @@ export default function startSamlangLanguageServer(
 
   connection.onCompletion((completionParameters) => {
     const moduleReference = uriToModuleReference(completionParameters.textDocument.uri);
-    const lspPosition = completionParameters.position;
-    const samlangPosition = new Position(lspPosition.line, lspPosition.character);
-    const completionItems = service.autoComplete(moduleReference, samlangPosition);
+    const completionItems = service.autoComplete(moduleReference, completionParameters.position);
     return completionItems.map((item) => ({
       kind: item.kind,
       label: item.name,
@@ -178,11 +170,9 @@ export default function startSamlangLanguageServer(
 
   connection.onRenameRequest((renameParameters) => {
     const moduleReference = uriToModuleReference(renameParameters.textDocument.uri);
-    const lspPosition = renameParameters.position;
-    const samlangPosition = new Position(lspPosition.line, lspPosition.character);
     const result = service.renameVariable(
       moduleReference,
-      samlangPosition,
+      renameParameters.position,
       renameParameters.newName
     );
     if (result == null) return null;
