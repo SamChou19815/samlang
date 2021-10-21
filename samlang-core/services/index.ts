@@ -39,13 +39,19 @@ import {
   LocationLookup,
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
+import type {
+  CompletionItemKind,
+  AutoCompletionItem,
+  LanguageServiceState,
+  LanguageServices,
+} from './types';
 import {
   ReadonlyVariableDefinitionLookup,
   VariableDefinitionLookup,
   applyRenamingWithDefinitionAndUse,
 } from './variable-definition-service';
 
-export class LanguageServiceState {
+export class LanguageServiceStateImpl implements LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
 
   private readonly rawSources: HashMap<ModuleReference, string> = hashMapOf();
@@ -112,13 +118,6 @@ export class LanguageServiceState {
 
   get allModulesWithError(): readonly ModuleReference[] {
     return this.errors.entries().map((it) => it[0]);
-  }
-
-  get allErrors(): readonly CompileTimeError[] {
-    return this.errors
-      .entries()
-      .map((it) => it[1])
-      .flat();
   }
 
   getRawModule(moduleReference: ModuleReference): SamlangModule | undefined {
@@ -231,32 +230,24 @@ export class LanguageServiceState {
   }
 }
 
-type CompletionItemKind = 2 | 3 | 5;
-
 class CompletionItemKinds {
-  static readonly METHOD: CompletionItemKind = 2;
-  static readonly FUNCTION: CompletionItemKind = 3;
-  static readonly FIELD: CompletionItemKind = 5;
+  static readonly METHOD = 2 as const;
+  static readonly FUNCTION = 3 as const;
+  static readonly FIELD = 5 as const;
 }
 
-type AutoCompletionItem = {
-  readonly name: string;
-  readonly text: string;
-  readonly isSnippet: boolean;
-  readonly kind: CompletionItemKind;
-  readonly type: string;
-};
+class InsertTextFormats {
+  static readonly PlainText = 1 as const;
+  static readonly Snippet = 2 as const;
+}
 
 const getLastDocComment = (associatedComments?: readonly TypedComment[]): string | undefined =>
   [...(associatedComments ?? [])].reverse().find((it) => it.type === 'doc')?.text;
 
-export class LanguageServices {
-  constructor(readonly state: LanguageServiceState) {}
+class LanguageServicesImpl implements LanguageServices {
+  constructor(public readonly state: LanguageServiceStateImpl) {}
 
-  queryForHover(
-    moduleReference: ModuleReference,
-    position: Position
-  ): readonly [Readonly<{ language: string; value: string }>[], Range] | null {
+  queryForHover(moduleReference: ModuleReference, position: Position) {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;
     let functionReference: readonly [ModuleReference, string, string] | undefined;
@@ -276,9 +267,13 @@ export class LanguageServices {
       if (relevantFunction == null) return null;
       const typeContent = { language: 'samlang', value: prettyPrintType(expression.type) };
       const document = getLastDocComment(relevantFunction.associatedComments);
-      return document == null
-        ? [[typeContent], expression.range]
-        : [[typeContent, { language: 'markdown', value: document }], expression.range];
+      return {
+        contents:
+          document == null
+            ? [typeContent]
+            : [typeContent, { language: 'markdown', value: document }],
+        range: expression.range,
+      };
     }
     const type = prettyPrintType(expression.type);
     if (type.startsWith('class ')) {
@@ -291,11 +286,15 @@ export class LanguageServices {
           ?.classes.find((it) => it.name === expressionClassName)?.associatedComments
       );
       const typeContent = { language: 'samlang', value: `class ${expressionClassName}` };
-      return document == null
-        ? [[typeContent], expression.range]
-        : [[typeContent, { language: 'markdown', value: document }], expression.range];
+      return {
+        contents:
+          document == null
+            ? [typeContent]
+            : [typeContent, { language: 'markdown', value: document }],
+        range: expression.range,
+      };
     }
-    return [[{ language: 'samlang', value: type }], expression.range];
+    return { contents: [{ language: 'samlang', value: type }], range: expression.range };
   }
 
   queryFoldingRanges(moduleReference: ModuleReference): readonly Range[] | null {
@@ -418,10 +417,7 @@ export class LanguageServices {
     return { moduleReference: moduleReferenceOfClass, range: matchingMember.range };
   }
 
-  autoComplete(
-    moduleReference: ModuleReference,
-    position: Position
-  ): readonly AutoCompletionItem[] {
+  autoComplete(moduleReference: ModuleReference, position: Position): AutoCompletionItem[] {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     const classOfExpression = this.state.classLocationLookup.get(moduleReference, position);
     if (expression == null || classOfExpression == null) return [];
@@ -429,7 +425,7 @@ export class LanguageServices {
       const relevantClassType = this.getClassType(expression.moduleReference, expression.className);
       if (relevantClassType == null) return [];
       return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
-        return LanguageServices.getCompletionResultFromTypeInformation(
+        return LanguageServicesImpl.getCompletionResultFromTypeInformation(
           name,
           typeInformation,
           CompletionItemKinds.FUNCTION
@@ -455,18 +451,18 @@ export class LanguageServices {
     if (isInsideClass && relevantClassType.typeDefinition?.type === 'object') {
       Object.entries(relevantClassType.typeDefinition.mappings).forEach(([name, fieldType]) => {
         completionResults.push({
-          name,
-          text: name,
-          isSnippet: false,
+          label: name,
+          insertText: name,
+          insertTextFormat: InsertTextFormats.PlainText,
           kind: CompletionItemKinds.FIELD,
-          type: prettyPrintType(fieldType.type),
+          detail: prettyPrintType(fieldType.type),
         });
       });
     }
     Object.entries(relevantClassType.methods).forEach(([name, typeInformation]) => {
       if (isInsideClass || typeInformation.isPublic) {
         completionResults.push(
-          LanguageServices.getCompletionResultFromTypeInformation(
+          LanguageServicesImpl.getCompletionResultFromTypeInformation(
             name,
             typeInformation,
             CompletionItemKinds.METHOD
@@ -490,19 +486,19 @@ export class LanguageServices {
     kind: CompletionItemKind
   ): AutoCompletionItem {
     const functionType = typeInformation.type;
-    const detailedName = `${name}${LanguageServices.prettyPrintFunctionTypeWithDummyParameters(
+    const detailedName = `${name}${LanguageServicesImpl.prettyPrintFunctionTypeWithDummyParameters(
       functionType
     )}`;
-    const [text, isSnippet] = LanguageServices.getInsertText(
+    const [insertText, isSnippet] = LanguageServicesImpl.getInsertText(
       name,
       functionType.argumentTypes.length
     );
     return {
-      name: detailedName,
-      text,
-      isSnippet,
+      label: detailedName,
+      insertText,
+      insertTextFormat: isSnippet ? InsertTextFormats.Snippet : InsertTextFormats.PlainText,
       kind,
-      type: LanguageServices.prettyPrintTypeInformation(typeInformation),
+      detail: LanguageServicesImpl.prettyPrintTypeInformation(typeInformation),
     };
   }
 
@@ -567,4 +563,10 @@ export class LanguageServices {
     }
     return prettyPrintSamlangModule(100, moduleToFormat);
   }
+}
+
+export default function createSamlangLanguageService(
+  sourceHandles: readonly (readonly [ModuleReference, string])[]
+): LanguageServices {
+  return new LanguageServicesImpl(new LanguageServiceStateImpl(sourceHandles));
 }

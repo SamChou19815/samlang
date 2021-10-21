@@ -1,4 +1,9 @@
-import { zip, Hashable, ReadonlyHashMap } from '../utils';
+import { zip, ReadonlyHashMap } from '../utils';
+import type {
+  Position as IPosition,
+  Range as IRange,
+  ModuleReference as IModuleReference,
+} from './types';
 
 /** SECTION 1: Literals */
 
@@ -165,11 +170,7 @@ export function isTheSameType(t1: Type, t2: Type): boolean {
 
 /** SECTION 3: Locations */
 
-export interface Position {
-  readonly line: number;
-  readonly character: number;
-}
-
+export type Position = IPosition;
 export const Position = (line: number, character: number): Position => ({ line, character });
 
 const DUMMY_POSITION: Position = { line: -1, character: -1 };
@@ -179,22 +180,7 @@ function comparePosition(p1: Position, p2: Position): number {
   return c !== 0 ? c : p1.character - p2.character;
 }
 
-/*
-export class Position {
-  static readonly DUMMY: Position = new Position(-1, -1);
-
-  constructor(public readonly line: number, public readonly column: number) {}
-
-  readonly compareTo = (other: Position): number => {
-    const c = this.line - other.line;
-    return c !== 0 ? c : this.column - other.column;
-  };
-
-  readonly toString = (): string => `${this.line + 1}:${this.column + 1}`;
-}
-*/
-
-export class Range implements Hashable {
+export class Range implements IRange {
   static readonly DUMMY: Range = new Range(DUMMY_POSITION, DUMMY_POSITION);
 
   constructor(public readonly start: Position, public readonly end: Position) {}
@@ -202,10 +188,10 @@ export class Range implements Hashable {
   readonly containsPosition = (position: Position): boolean =>
     comparePosition(this.start, position) <= 0 && comparePosition(this.end, position) >= 0;
 
-  readonly containsRange = (range: Range): boolean =>
+  readonly containsRange = (range: IRange): boolean =>
     this.containsPosition(range.start) && this.containsPosition(range.end);
 
-  readonly union = (range: Range): Range => {
+  readonly union = (range: IRange): IRange => {
     const start = comparePosition(this.start, range.start) < 0 ? this.start : range.start;
     const end = comparePosition(this.end, range.end) > 0 ? this.end : range.end;
     return new Range(start, end);
@@ -226,7 +212,7 @@ export class Range implements Hashable {
  * This class, instead of a filename string, should be used to point to a module during type checking
  * and code generation.
  */
-export class ModuleReference implements Hashable {
+export class ModuleReference implements IModuleReference {
   /**
    * The root module that can never be referenced in the source code.
    * It can be used as a starting point for cyclic dependency analysis,

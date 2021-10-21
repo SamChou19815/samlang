@@ -1,26 +1,23 @@
 import { lstatSync, readdirSync, readFileSync } from 'fs';
 import { join, normalize, relative, resolve, sep } from 'path';
 
-import { Range, ModuleReference, createSamlangLanguageService } from '@dev-sam/samlang-core';
+import { ModuleReference, createSamlangLanguageService } from '@dev-sam/samlang-core';
 import {
   createConnection,
   ProposedFeatures,
   InitializeResult,
   TextDocumentSyncKind,
-  InsertTextFormat,
   DiagnosticSeverity,
-  Range as LspRange,
-  FoldingRange as LspFoldingRange,
-  TextEdit,
+  Range,
   ResponseError,
 } from 'vscode-languageserver/node';
 
 import type { SamlangProjectConfiguration } from './configuration';
 
-const ENTIRE_DOCUMENT_RANGE = new Range(
-  { line: 0, character: 0 },
-  { line: Number.MAX_SAFE_INTEGER, character: Number.MAX_SAFE_INTEGER }
-);
+const ENTIRE_DOCUMENT_RANGE: Range = {
+  start: { line: 0, character: 0 },
+  end: { line: Number.MAX_SAFE_INTEGER, character: Number.MAX_SAFE_INTEGER },
+};
 
 function filePathToModuleReference(sourcePath: string, filePath: string): ModuleReference {
   const relativeFile = normalize(relative(sourcePath, filePath));
@@ -57,12 +54,7 @@ export function collectSources({
   return sources;
 }
 
-const samlangRangeToLspRange = (range: Range): LspRange => ({
-  start: range.start,
-  end: range.end,
-});
-
-const samlangRangeToLspFoldingRange = (range: Range): LspFoldingRange => ({
+const samlangRangeToLspFoldingRange = (range: Range) => ({
   startLine: range.start.line,
   startCharacter: range.start.character,
   endLine: range.end.line,
@@ -94,7 +86,7 @@ export default function startSamlangLanguageServer(
       connection.sendDiagnostics({
         uri: moduleReferenceToUri(affectedModule),
         diagnostics: service.state.getErrors(affectedModule).map((error) => ({
-          range: samlangRangeToLspRange(error.range),
+          range: error.range,
           severity: DiagnosticSeverity.Error,
           message: error.toString(),
           source: 'samlang',
@@ -118,81 +110,63 @@ export default function startSamlangLanguageServer(
     };
   });
 
-  connection.onDidChangeTextDocument((didChangeTextDocumentParameters) => {
-    const moduleReference = uriToModuleReference(didChangeTextDocumentParameters.textDocument.uri);
-    const sourceCode = didChangeTextDocumentParameters.contentChanges[0]?.text;
+  connection.onDidChangeTextDocument((parameters) => {
+    const moduleReference = uriToModuleReference(parameters.textDocument.uri);
+    const sourceCode = parameters.contentChanges[0]?.text;
     if (sourceCode == null) return;
-    const affected = service.state.update(moduleReference, sourceCode);
-    publishDiagnostics(affected);
+    publishDiagnostics(service.state.update(moduleReference, sourceCode));
   });
 
-  connection.onHover((hoverParameters) => {
-    const moduleReference = uriToModuleReference(hoverParameters.textDocument.uri);
-    const hoverResult = service.queryForHover(moduleReference, hoverParameters.position);
-    if (hoverResult == null) return null;
-    const [contents, range] = hoverResult;
-    return { contents, range: samlangRangeToLspRange(range) };
-  });
+  connection.onHover((parameters) =>
+    service.queryForHover(uriToModuleReference(parameters.textDocument.uri), parameters.position)
+  );
 
-  connection.onDefinition((gotoDefinitionParameters) => {
-    const moduleReference = uriToModuleReference(gotoDefinitionParameters.textDocument.uri);
+  connection.onDefinition((parameters) => {
     const location = service.queryDefinitionLocation(
-      moduleReference,
-      gotoDefinitionParameters.position
+      uriToModuleReference(parameters.textDocument.uri),
+      parameters.position
     );
     return location == null
       ? null
-      : {
-          uri: moduleReferenceToUri(location.moduleReference),
-          range: samlangRangeToLspRange(location.range),
-        };
+      : { uri: moduleReferenceToUri(location.moduleReference), range: location.range };
   });
 
-  connection.onFoldingRanges((foldingrangeParameters) => {
-    const moduleReference = uriToModuleReference(foldingrangeParameters.textDocument.uri);
-    if (moduleReference == null) return null;
-    const foldingRangeResult = service.queryFoldingRanges(moduleReference);
+  connection.onFoldingRanges((parameters) => {
+    const foldingRangeResult = service.queryFoldingRanges(
+      uriToModuleReference(parameters.textDocument.uri)
+    );
     if (foldingRangeResult == null) return null;
-    return foldingRangeResult.map((foldingRange) => samlangRangeToLspFoldingRange(foldingRange));
+    return foldingRangeResult.map(samlangRangeToLspFoldingRange);
   });
 
-  connection.onCompletion((completionParameters) => {
-    const moduleReference = uriToModuleReference(completionParameters.textDocument.uri);
-    const completionItems = service.autoComplete(moduleReference, completionParameters.position);
-    return completionItems.map((item) => ({
-      kind: item.kind,
-      label: item.name,
-      detail: item.type,
-      insertText: item.text,
-      insertTextFormat: item.isSnippet ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
-    }));
-  });
+  connection.onCompletion((parameters) =>
+    service.autoComplete(uriToModuleReference(parameters.textDocument.uri), parameters.position)
+  );
 
-  connection.onRenameRequest((renameParameters) => {
-    const moduleReference = uriToModuleReference(renameParameters.textDocument.uri);
+  connection.onRenameRequest((parameters) => {
     const result = service.renameVariable(
-      moduleReference,
-      renameParameters.position,
-      renameParameters.newName
+      uriToModuleReference(parameters.textDocument.uri),
+      parameters.position,
+      parameters.newName
     );
     if (result == null) return null;
     if (result === 'Invalid') return new ResponseError(1, 'Invalid identifier.');
     return {
       documentChanges: [
         {
-          textDocument: { uri: renameParameters.textDocument.uri, version: null },
-          edits: [TextEdit.replace(samlangRangeToLspRange(ENTIRE_DOCUMENT_RANGE), result)],
+          textDocument: { uri: parameters.textDocument.uri, version: null },
+          edits: [{ range: ENTIRE_DOCUMENT_RANGE, newText: result }],
         },
       ],
     };
   });
 
-  connection.onDocumentFormatting((formatParameters) => {
-    const moduleReference = uriToModuleReference(formatParameters.textDocument.uri);
-    if (moduleReference == null) return null;
-    const formattedString = service.formatEntireDocument(moduleReference);
+  connection.onDocumentFormatting((parameters) => {
+    const formattedString = service.formatEntireDocument(
+      uriToModuleReference(parameters.textDocument.uri)
+    );
     if (formattedString == null) return null;
-    return [TextEdit.replace(samlangRangeToLspRange(ENTIRE_DOCUMENT_RANGE), formattedString)];
+    return [{ range: ENTIRE_DOCUMENT_RANGE, newText: formattedString }];
   });
 
   connection.listen();

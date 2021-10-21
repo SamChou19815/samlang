@@ -1,10 +1,5 @@
 import { ModuleReference } from '../ast/common-nodes';
-import {
-  reformatSamlangSources,
-  compileSamlangSources,
-  compileSingleSamlangSource,
-  createSamlangLanguageService,
-} from '../main';
+import { reformatSamlangSources, compileSamlangSources, compileSingleSamlangSource } from '../main';
 
 describe('samlang-core/index', () => {
   it('reformatSamlangSources works', () => {
@@ -74,9 +69,5 @@ define i64 @_compiled_program_main() local_unnamed_addr nounwind {
         'Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.',
       ],
     });
-  });
-
-  it('createSamlangLanguageService works', () => {
-    expect(createSamlangLanguageService([]).state.allErrors).toEqual([]);
   });
 });

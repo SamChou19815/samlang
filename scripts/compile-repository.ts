@@ -33,13 +33,21 @@ function compare(expected: string, actual: string) {
   return false;
 }
 
+function timed(runner: () => void): number {
+  const start = new Date().getTime();
+  runner();
+  return new Date().getTime() - start;
+}
+
 console.error('Bundling...');
-runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle']);
-console.error('Bundled!');
+const bundleTime = timed(() =>
+  runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle'])
+);
+console.error(`Bundled in ${bundleTime}ms!`);
 console.error('Compiling...');
 runWithErrorCheck('rm', ['-rf', basePath]);
-runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']);
-console.error('Compiled!');
+const compileTime = timed(() => runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']));
+console.error(`Compiled in ${compileTime}ms!`);
 if (!process.env.NO_JS) {
   console.error('Checking generated TS code...');
   const { resultString, time } = runWithErrorCheck('yarn', [
