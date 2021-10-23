@@ -1,3 +1,12 @@
+export function intArrayToDataString(array: readonly number[]): string {
+  return Array.from(new Uint8Array(new Uint32Array(array).buffer).values())
+    .map((n) => {
+      const hex = n.toString(16);
+      return `\\\\${'0'.repeat(2 - hex.length)}${hex}`;
+    })
+    .join('');
+}
+
 export function error(message?: string): never {
   throw new Error(message);
 }
