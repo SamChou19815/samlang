@@ -12,6 +12,7 @@ export interface WebAssemblyConstInstruction extends WebAssemblyBaseInstruction 
 
 export interface WebAssemblyDropInstruction extends WebAssemblyBaseInstruction {
   readonly __type__: 'WebAssemblyDropInstruction';
+  readonly value: WebAssemblyInlineInstruction;
 }
 
 export interface WebAssemblyLocalGetInstruction extends WebAssemblyBaseInstruction {
@@ -22,35 +23,45 @@ export interface WebAssemblyLocalGetInstruction extends WebAssemblyBaseInstructi
 export interface WebAssemblyLocalSetInstruction extends WebAssemblyBaseInstruction {
   readonly __type__: 'WebAssemblyLocalSetInstruction';
   readonly name: string;
+  readonly assigned: WebAssemblyInlineInstruction;
 }
 
 export interface WebAssemblyBinaryInstruction extends WebAssemblyBaseInstruction {
   readonly __type__: 'WebAssemblyBinaryInstruction';
+  readonly v1: WebAssemblyInlineInstruction;
   readonly operator: IROperator;
+  readonly v2: WebAssemblyInlineInstruction;
 }
 
 export interface WebAssemblyLoadInstruction extends WebAssemblyBaseInstruction {
   readonly __type__: 'WebAssemblyLoadInstruction';
   readonly index: number;
+  readonly pointer: WebAssemblyInlineInstruction;
 }
 
 export interface WebAssemblyStoreInstruction extends WebAssemblyBaseInstruction {
   readonly __type__: 'WebAssemblyStoreInstruction';
   readonly index: number;
+  readonly pointer: WebAssemblyInlineInstruction;
+  readonly assigned: WebAssemblyInlineInstruction;
 }
 
 export interface WebAssemblyFunctionDirectCallInstruction extends WebAssemblyBaseInstruction {
   readonly __type__: 'WebAssemblyFunctionDirectCallInstruction';
   readonly functionName: string;
+  readonly functionArguments: readonly WebAssemblyInlineInstruction[];
 }
 
 export interface WebAssemblyFunctionIndirectCallInstruction extends WebAssemblyBaseInstruction {
   readonly __type__: 'WebAssemblyFunctionIndirectCallInstruction';
+  readonly functionIndex: WebAssemblyInlineInstruction;
   readonly functionTypeString: string;
+  readonly functionArguments: readonly WebAssemblyInlineInstruction[];
 }
 
 export interface WebAssemblyIfElseInstruction extends WebAssemblyBaseInstruction {
   readonly __type__: 'WebAssemblyIfElseInstruction';
+  readonly condition: WebAssemblyInlineInstruction;
   readonly s1: readonly WebAssemblyInstruction[];
   readonly s2: readonly WebAssemblyInstruction[];
 }
@@ -67,7 +78,7 @@ export interface WebAssemblyLoopInstruction extends WebAssemblyBaseInstruction {
   readonly instructions: readonly WebAssemblyInstruction[];
 }
 
-export type WebAssemblyInstruction =
+export type WebAssemblyInlineInstruction =
   | WebAssemblyConstInstruction
   | WebAssemblyDropInstruction
   | WebAssemblyLocalGetInstruction
@@ -76,7 +87,10 @@ export type WebAssemblyInstruction =
   | WebAssemblyLoadInstruction
   | WebAssemblyStoreInstruction
   | WebAssemblyFunctionDirectCallInstruction
-  | WebAssemblyFunctionIndirectCallInstruction
+  | WebAssemblyFunctionIndirectCallInstruction;
+
+export type WebAssemblyInstruction =
+  | WebAssemblyInlineInstruction
   | WebAssemblyIfElseInstruction
   | WebAssemblyUnconditionalJumpInstruction
   | WebAssemblyLoopInstruction;
@@ -105,52 +119,83 @@ export const WasmConst = (value: number): WebAssemblyConstInstruction => ({
   value,
 });
 
-export const WasmDrop: WebAssemblyDropInstruction = {
+export const WasmDrop = (value: WebAssemblyInlineInstruction): WebAssemblyDropInstruction => ({
   __type__: 'WebAssemblyDropInstruction',
-};
+  value,
+});
 
 export const WasmLocalGet = (name: string): WebAssemblyLocalGetInstruction => ({
   __type__: 'WebAssemblyLocalGetInstruction',
   name,
 });
 
-export const WasmLocalSet = (name: string): WebAssemblyLocalSetInstruction => ({
+export const WasmLocalSet = (
+  name: string,
+  assigned: WebAssemblyInlineInstruction
+): WebAssemblyLocalSetInstruction => ({
   __type__: 'WebAssemblyLocalSetInstruction',
   name,
+  assigned,
 });
 
-export const WasmBinary = (operator: IROperator): WebAssemblyBinaryInstruction => ({
+export const WasmBinary = (
+  v1: WebAssemblyInlineInstruction,
+  operator: IROperator,
+  v2: WebAssemblyInlineInstruction
+): WebAssemblyBinaryInstruction => ({
   __type__: 'WebAssemblyBinaryInstruction',
+  v1,
   operator,
+  v2,
 });
 
-export const WasmLoad = (index: number): WebAssemblyLoadInstruction => ({
+export const WasmLoad = (
+  pointer: WebAssemblyInlineInstruction,
+  index: number
+): WebAssemblyLoadInstruction => ({
   __type__: 'WebAssemblyLoadInstruction',
   index,
+  pointer,
 });
 
-export const WasmStore = (index: number): WebAssemblyStoreInstruction => ({
+export const WasmStore = (
+  pointer: WebAssemblyInlineInstruction,
+  index: number,
+  assigned: WebAssemblyInlineInstruction
+): WebAssemblyStoreInstruction => ({
   __type__: 'WebAssemblyStoreInstruction',
   index,
+  pointer,
+  assigned,
 });
 
-export const WasmDirectCall = (functionName: string): WebAssemblyFunctionDirectCallInstruction => ({
+export const WasmDirectCall = (
+  functionName: string,
+  functionArguments: readonly WebAssemblyInlineInstruction[]
+): WebAssemblyFunctionDirectCallInstruction => ({
   __type__: 'WebAssemblyFunctionDirectCallInstruction',
   functionName,
+  functionArguments,
 });
 
 export const WasmIndirectCall = (
-  functionTypeString: string
+  functionIndex: WebAssemblyInlineInstruction,
+  functionTypeString: string,
+  functionArguments: readonly WebAssemblyInlineInstruction[]
 ): WebAssemblyFunctionIndirectCallInstruction => ({
   __type__: 'WebAssemblyFunctionIndirectCallInstruction',
+  functionIndex,
   functionTypeString,
+  functionArguments,
 });
 
 export const WasmIfElse = (
+  condition: WebAssemblyInlineInstruction,
   s1: readonly WebAssemblyInstruction[],
   s2: readonly WebAssemblyInstruction[]
 ): WebAssemblyIfElseInstruction => ({
   __type__: 'WebAssemblyIfElseInstruction',
+  condition,
   s1,
   s2,
 });
@@ -210,57 +255,67 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
     }
   }
 
+  function i2s(s: WebAssemblyInlineInstruction): string {
+    switch (s.__type__) {
+      case 'WebAssemblyConstInstruction':
+        return `(i32.const ${s.value})`;
+      case 'WebAssemblyDropInstruction':
+        return `(drop ${i2s(s.value)})`;
+      case 'WebAssemblyLocalGetInstruction':
+        return `(local.get $${s.name})`;
+      case 'WebAssemblyLocalSetInstruction':
+        return `(local.set $${s.name} ${i2s(s.assigned)})`;
+      case 'WebAssemblyBinaryInstruction':
+        return `(i32.${getBinaryInstruction(s.operator)} ${i2s(s.v1)} ${i2s(s.v2)})`;
+      case 'WebAssemblyLoadInstruction':
+        return `(local.load offset=${s.index * 4} ${i2s(s.pointer)})`;
+      case 'WebAssemblyStoreInstruction':
+        return `(local.store offset=${s.index * 4} ${i2s(s.pointer)} ${i2s(s.assigned)})`;
+      case 'WebAssemblyFunctionDirectCallInstruction':
+        return `(call $${s.functionName} ${s.functionArguments.map(i2s).join(' ')})`;
+      case 'WebAssemblyFunctionIndirectCallInstruction': {
+        const argumentString = s.functionArguments.map(i2s).join(' ');
+        const indexString = i2s(s.functionIndex);
+        return `(call_indirect $0 (type $${s.functionTypeString}) ${argumentString} ${indexString})`;
+      }
+    }
+  }
+
   function printInstruction(s: WebAssemblyInstruction) {
     switch (s.__type__) {
       case 'WebAssemblyConstInstruction':
-        collector.push('  '.repeat(level), `i32.const ${s.value}\n`);
-        return;
       case 'WebAssemblyDropInstruction':
-        collector.push('  '.repeat(level), 'drop\n');
-        return;
       case 'WebAssemblyLocalGetInstruction':
-        collector.push('  '.repeat(level), `local.get $${s.name}\n`);
-        return;
       case 'WebAssemblyLocalSetInstruction':
-        collector.push('  '.repeat(level), `local.set $${s.name}\n`);
-        return;
       case 'WebAssemblyBinaryInstruction':
-        collector.push('  '.repeat(level), `i32.${getBinaryInstruction(s.operator)}\n`);
-        return;
       case 'WebAssemblyLoadInstruction':
-        collector.push('  '.repeat(level), `local.load offset=${s.index * 4}\n`);
-        return;
       case 'WebAssemblyStoreInstruction':
-        collector.push('  '.repeat(level), `local.store offset=${s.index * 4}\n`);
-        return;
       case 'WebAssemblyFunctionDirectCallInstruction':
-        collector.push('  '.repeat(level), `call $${s.functionName}\n`);
-        return;
       case 'WebAssemblyFunctionIndirectCallInstruction':
-        collector.push('  '.repeat(level), `call_indirect $0 (type $${s.functionTypeString})\n`);
+        collector.push('  '.repeat(level), `${i2s(s)}\n`);
         return;
       case 'WebAssemblyIfElseInstruction':
-        collector.push('  '.repeat(level), 'if\n');
+        collector.push('  '.repeat(level), `(if ${i2s(s.condition)} (then\n`);
         level += 1;
         s.s1.forEach(printInstruction);
         level -= 1;
-        collector.push('  '.repeat(level), 'else\n');
+        collector.push('  '.repeat(level), ') (else\n');
         level += 1;
         s.s2.forEach(printInstruction);
         level -= 1;
-        collector.push('  '.repeat(level), 'end\n');
+        collector.push('  '.repeat(level), '))\n');
         return;
       case 'WebAssemblyUnconditionalJumpInstruction':
-        collector.push('  '.repeat(level), `br $${s.label}\n`);
+        collector.push('  '.repeat(level), `(br $${s.label})\n`);
         return;
       case 'WebAssemblyLoopInstruction':
-        collector.push('  '.repeat(level), `loop $${s.continueLabel}\n`);
-        collector.push('  '.repeat(level + 1), `block $${s.exitLabel}\n`);
+        collector.push('  '.repeat(level), `(loop $${s.continueLabel}\n`);
+        collector.push('  '.repeat(level + 1), `(block $${s.exitLabel}\n`);
         level += 2;
         s.instructions.forEach(printInstruction);
         level -= 2;
-        collector.push('  '.repeat(level + 1), 'end\n');
-        collector.push('  '.repeat(level), 'end\n');
+        collector.push('  '.repeat(level + 1), ')\n');
+        collector.push('  '.repeat(level), ')\n');
         return;
     }
   }

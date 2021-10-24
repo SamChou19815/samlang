@@ -6,6 +6,7 @@ import type {
   MidIRSources,
 } from '../ast/mir-nodes';
 import {
+  WebAssemblyInlineInstruction,
   WebAssemblyInstruction,
   WebAssemblyFunction,
   WebAssemblyGlobalData,
@@ -55,14 +56,14 @@ class WasmFunctionLoweringManager {
     private readonly functionIndexMapping: Readonly<Record<string, number>>
   ) {}
 
-  private GET(n: string): WebAssemblyInstruction {
+  private GET(n: string): WebAssemblyInlineInstruction {
     this.localVariables.add(n);
     return WasmLocalGet(n);
   }
 
-  private SET(n: string): WebAssemblyInstruction {
+  private SET(n: string, v: WebAssemblyInlineInstruction): WebAssemblyInstruction {
     this.localVariables.add(n);
-    return WasmLocalSet(n);
+    return WasmLocalSet(n, v);
   }
 
   static lowerMidIRFunction(
@@ -88,69 +89,69 @@ class WasmFunctionLoweringManager {
     switch (s.__type__) {
       case 'MidIRIndexAccessStatement':
         return [
-          this.lowerMidIRExpression(s.pointerExpression),
-          WasmLoad(s.index),
-          this.SET(s.name),
+          this.SET(s.name, WasmLoad(this.lowerMidIRExpression(s.pointerExpression), s.index)),
         ];
       case 'MidIRIndexAssignStatement':
         return [
-          this.lowerMidIRExpression(s.pointerExpression),
-          this.lowerMidIRExpression(s.assignedExpression),
-          WasmStore(s.index),
+          WasmStore(
+            this.lowerMidIRExpression(s.pointerExpression),
+            s.index,
+            this.lowerMidIRExpression(s.assignedExpression)
+          ),
         ];
       case 'MidIRBinaryStatement':
         return [
-          this.lowerMidIRExpression(s.e1),
-          this.lowerMidIRExpression(s.e2),
-          WasmBinary(s.operator),
-          this.SET(s.name),
+          this.SET(
+            s.name,
+            WasmBinary(this.lowerMidIRExpression(s.e1), s.operator, this.lowerMidIRExpression(s.e2))
+          ),
         ];
       case 'MidIRFunctionCallStatement': {
-        const instructions = s.functionArguments.map((it) => this.lowerMidIRExpression(it));
-        if (s.functionExpression.__type__ === 'MidIRNameExpression') {
-          instructions.push(WasmDirectCall(s.functionExpression.name));
-        } else {
-          instructions.push(
-            this.lowerMidIRExpression(s.functionExpression),
-            WasmIndirectCall(WasmFunctionTypeString(s.functionArguments.length))
-          );
-        }
-        instructions.push(s.returnCollector == null ? WasmDrop : this.SET(s.returnCollector));
-        return instructions;
+        const argumentInstructions = s.functionArguments.map((it) => this.lowerMidIRExpression(it));
+        const functionCall =
+          s.functionExpression.__type__ === 'MidIRNameExpression'
+            ? WasmDirectCall(s.functionExpression.name, argumentInstructions)
+            : WasmIndirectCall(
+                this.lowerMidIRExpression(s.functionExpression),
+                WasmFunctionTypeString(s.functionArguments.length),
+                argumentInstructions
+              );
+        return [
+          s.returnCollector == null
+            ? WasmDrop(functionCall)
+            : this.SET(s.returnCollector, functionCall),
+        ];
       }
       case 'MidIRIfElseStatement':
         return [
-          this.lowerMidIRExpression(s.booleanExpression),
           WasmIfElse(
+            this.lowerMidIRExpression(s.booleanExpression),
             [
               ...s.s1.flatMap((it) => this.lowerMidIRStatement(it)),
-              ...s.finalAssignments.flatMap((it) => [
-                this.lowerMidIRExpression(it.branch1Value),
-                this.SET(it.name),
-              ]),
+              ...s.finalAssignments.map((it) =>
+                this.SET(it.name, this.lowerMidIRExpression(it.branch1Value))
+              ),
             ],
             [
               ...s.s2.flatMap((it) => this.lowerMidIRStatement(it)),
-              ...s.finalAssignments.flatMap((it) => [
-                this.lowerMidIRExpression(it.branch2Value),
-                this.SET(it.name),
-              ]),
+              ...s.finalAssignments.map((it) =>
+                this.SET(it.name, this.lowerMidIRExpression(it.branch2Value))
+              ),
             ]
           ),
         ];
       case 'MidIRSingleIfStatement': {
+        const condition = this.lowerMidIRExpression(s.booleanExpression);
         const block = s.statements.flatMap((it) => this.lowerMidIRStatement(it));
         return [
-          this.lowerMidIRExpression(s.booleanExpression),
-          s.invertCondition ? WasmIfElse([], block) : WasmIfElse(block, []),
+          s.invertCondition ? WasmIfElse(condition, [], block) : WasmIfElse(condition, block, []),
         ];
       }
       case 'MidIRBreakStatement': {
         const { breakCollector, exitLabel } = checkNotNull(this.currentLoopContext);
         if (breakCollector == null) return [WasmJump(exitLabel)];
         return [
-          this.lowerMidIRExpression(s.breakValue),
-          this.SET(breakCollector),
+          this.SET(breakCollector, this.lowerMidIRExpression(s.breakValue)),
           WasmJump(exitLabel),
         ];
       }
@@ -161,18 +162,16 @@ class WasmFunctionLoweringManager {
         this.currentLoopContext = { breakCollector: s.breakCollector?.name, exitLabel };
         const instructions = [
           ...s.loopVariables.flatMap((it) => [
-            this.lowerMidIRExpression(it.initialValue),
-            this.SET(it.name),
+            this.SET(it.name, this.lowerMidIRExpression(it.initialValue)),
           ]),
           WasmLoop({
             continueLabel,
             exitLabel,
             instructions: [
               ...s.statements.flatMap((it) => this.lowerMidIRStatement(it)),
-              ...s.loopVariables.flatMap((it) => [
-                this.lowerMidIRExpression(it.loopValue),
-                this.SET(it.name),
-              ]),
+              ...s.loopVariables.map((it) =>
+                this.SET(it.name, this.lowerMidIRExpression(it.loopValue))
+              ),
               WasmJump(continueLabel),
             ],
           }),
@@ -181,23 +180,24 @@ class WasmFunctionLoweringManager {
         return instructions;
       }
       case 'MidIRCastStatement':
-        return [this.lowerMidIRExpression(s.assignedExpression), this.SET(s.name)];
+        return [this.SET(s.name, this.lowerMidIRExpression(s.assignedExpression))];
       case 'MidIRStructInitializationStatement': {
         const rawPointerTemp = this.allocator.allocateTemp('struct_ptr_raw');
         const instructions: WebAssemblyInstruction[] = [
-          WasmConst(s.expressionList.length * 4),
-          WasmDirectCall(ENCODED_FUNCTION_NAME_MALLOC),
-          this.SET(rawPointerTemp),
+          this.SET(
+            rawPointerTemp,
+            WasmDirectCall(ENCODED_FUNCTION_NAME_MALLOC, [WasmConst(s.expressionList.length * 4)])
+          ),
         ];
         s.expressionList.forEach((e, i) => {
-          instructions.push(this.GET(rawPointerTemp), this.lowerMidIRExpression(e), WasmStore(i));
+          instructions.push(WasmStore(this.GET(rawPointerTemp), i, this.lowerMidIRExpression(e)));
         });
         return instructions;
       }
     }
   }
 
-  private lowerMidIRExpression(e: MidIRExpression): WebAssemblyInstruction {
+  private lowerMidIRExpression(e: MidIRExpression): WebAssemblyInlineInstruction {
     switch (e.__type__) {
       case 'MidIRIntLiteralExpression':
         return WasmConst(e.value);
