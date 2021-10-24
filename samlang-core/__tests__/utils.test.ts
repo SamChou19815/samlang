@@ -1,4 +1,5 @@
 import {
+  intArrayToDataString,
   error,
   isNotNull,
   checkNotNull,
@@ -21,6 +22,15 @@ import {
 } from '../utils';
 
 describe('samlang-utils', () => {
+  it('intArrayToDataString test', () => {
+    expect(intArrayToDataString([1, 2, 3, 4])).toBe(
+      '\\\\01\\\\00\\\\00\\\\00\\\\02\\\\00\\\\00\\\\00\\\\03\\\\00\\\\00\\\\00\\\\04\\\\00\\\\00\\\\00'
+    );
+    expect(intArrayToDataString([1, 124, 4531, 33])).toBe(
+      '\\\\01\\\\00\\\\00\\\\00\\\\7c\\\\00\\\\00\\\\00\\\\b3\\\\11\\\\00\\\\00\\\\21\\\\00\\\\00\\\\00'
+    );
+  });
+
   it('error test', () => {
     expect(error).toThrow();
   });
