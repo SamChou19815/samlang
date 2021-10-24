@@ -58,6 +58,21 @@ define i64 @_compiled_program_main() local_unnamed_addr nounwind {
   ret i64 0
 }
 `,
+      emittedWasmCode: `(module
+(type $none_=>_i32 (func (result i32)))
+(memory $0 1)
+(data (i32.const 1024) "\\\\00\\\\00\\\\00\\\\00\\\\0d\\\\00\\\\00\\\\00\\\\68\\\\00\\\\00\\\\00\\\\65\\\\00\\\\00\\\\00\\\\6c\\\\00\\\\00\\\\00\\\\6c\\\\00\\\\00\\\\00\\\\6f\\\\00\\\\00\\\\00\\\\20\\\\00\\\\00\\\\00\\\\77\\\\00\\\\00\\\\00\\\\6f\\\\00\\\\00\\\\00\\\\72\\\\00\\\\00\\\\00\\\\6c\\\\00\\\\00\\\\00\\\\64\\\\00\\\\00\\\\00")
+(table $0 1 funcref)
+(elem $0 (i32.const 0) $_Demo_Main_main)
+(export "_Demo_Main_main" (func _Demo_Main_main))
+(func $_Demo_Main_main  (result i32)
+  i32.const 1024
+  call $__Builtins_println
+  drop
+  i32.const 0
+)
+)
+`,
     });
   });
 

@@ -88,9 +88,14 @@ export interface WebAssemblyFunction {
   readonly instructions: readonly WebAssemblyInstruction[];
 }
 
+export interface WebAssemblyGlobalData {
+  readonly constantPointer: number;
+  readonly ints: readonly number[];
+}
+
 export interface WebAssemblyModule {
   readonly functionTypeParameterCounts: readonly number[];
-  readonly globalVariables: readonly string[];
+  readonly globalVariables: readonly WebAssemblyGlobalData[];
   readonly exportedFunctions: readonly string[];
   readonly functions: readonly WebAssemblyFunction[];
 }
@@ -270,13 +275,8 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
     }
   });
   collector.push('(memory $0 1)\n');
-  let dataStart = 1024;
-  wasmModule.globalVariables.flatMap((content) => {
-    const size = content.length + 2;
-    const ints = Array.from(content).map((it) => it.charCodeAt(0));
-    ints.unshift(0, size);
-    collector.push(`(data (i32.const ${dataStart}) "${intArrayToDataString(ints)}")\n`);
-    dataStart += size;
+  wasmModule.globalVariables.flatMap(({ constantPointer, ints }) => {
+    collector.push(`(data (i32.const ${constantPointer}) "${intArrayToDataString(ints)}")\n`);
   });
   collector.push(`(table $0 ${wasmModule.functions.length} funcref)\n`);
   collector.push(

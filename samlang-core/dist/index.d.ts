@@ -12,6 +12,7 @@ export type SamlangSourcesCompilationResult =
       readonly __type__: 'OK';
       readonly emittedTypeScriptCode: Readonly<Record<string, string>>;
       readonly emittedLLVMCode: Readonly<Record<string, string>>;
+      readonly emittedWasmCode: string;
     }
   | { readonly __type__: 'ERROR'; readonly errors: readonly string[] };
 
@@ -29,6 +30,7 @@ export type SamlangSingleSourceCompilationResult =
       readonly __type__: 'OK';
       readonly emittedTypeScriptCode: string;
       readonly emittedLLVMCode: string;
+      readonly emittedWasmCode: string;
     }
   | { readonly __type__: 'ERROR'; readonly errors: readonly string[] };
 
