@@ -125,74 +125,47 @@ describe('wasm-module-lowering', () => {
   (local $rc i32)
   (local $v i32)
   (local $_temp_0_struct_ptr_raw i32)
-  i32.const 0
-  if
-    i32.const 0
-    local.set $i
-    loop $l0_loop_continue
-      block $l1_loop_exit
-        i32.const 0
-        local.set $c
-        i32.const 0
-        local.set $i
-        br $l0_loop_continue
-      end
-    end
-    i32.const 1024
-    local.set $f
-  else
-    loop $l2_loop_continue
-      block $l3_loop_exit
-        i32.const 0
-        if
-          i32.const 0
-          local.set $b
-          br $l3_loop_exit
-        else
-        end
-        br $l2_loop_continue
-      end
-    end
-    loop $l4_loop_continue
-      block $l5_loop_exit
-        i32.const 0
-        if
-        else
-          br $l5_loop_exit
-        end
-        br $l4_loop_continue
-      end
-    end
-    i32.const 0
-    local.set $f
-  end
-  local.get $f
-  i32.const 0
-  i32.add
-  local.set $bin
-  i32.const 0
-  call $main
-  drop
-  i32.const 0
-  local.get $f
-  call_indirect $0 (type $i32_=>_i32)
-  local.set $rc
-  i32.const 0
-  local.load offset=12
-  local.set $v
-  i32.const 0
-  local.get $v
-  local.store offset=12
-  i32.const 8
-  call $_builtin_malloc
-  local.set $_temp_0_struct_ptr_raw
-  local.get $_temp_0_struct_ptr_raw
-  i32.const 0
-  local.store offset=0
-  local.get $_temp_0_struct_ptr_raw
-  local.get $v
-  local.store offset=4
-  i32.const 0
+  (if (i32.const 0) (then
+    (local.set $i (i32.const 0))
+    (loop $l0_loop_continue
+      (block $l1_loop_exit
+        (local.set $c (i32.const 0))
+        (local.set $i (i32.const 0))
+        (br $l0_loop_continue)
+      )
+    )
+    (local.set $f (i32.const 1024))
+  ) (else
+    (loop $l2_loop_continue
+      (block $l3_loop_exit
+        (if (i32.const 0) (then
+          (local.set $b (i32.const 0))
+          (br $l3_loop_exit)
+        ) (else
+        ))
+        (br $l2_loop_continue)
+      )
+    )
+    (loop $l4_loop_continue
+      (block $l5_loop_exit
+        (if (i32.const 0) (then
+        ) (else
+          (br $l5_loop_exit)
+        ))
+        (br $l4_loop_continue)
+      )
+    )
+    (local.set $f (i32.const 0))
+  ))
+  (local.set $bin (i32.add (local.get $f) (i32.const 0)))
+  (drop (call $main (i32.const 0)))
+  (local.set $rc (call_indirect $0 (type $i32_=>_i32) (i32.const 0) (local.get $f)))
+  (local.set $v (local.load offset=12 (i32.const 0)))
+  (local.store offset=12 (i32.const 0) (local.get $v))
+  (local.set $_temp_0_struct_ptr_raw (call $_builtin_malloc (i32.const 8)))
+  (local.store offset=0 (local.get $_temp_0_struct_ptr_raw) (i32.const 0))
+  (local.store offset=4 (local.get $_temp_0_struct_ptr_raw) (local.get $v))
+  (i32.const 0)
 )
 )
 `);

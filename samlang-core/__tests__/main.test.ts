@@ -66,10 +66,8 @@ define i64 @_compiled_program_main() local_unnamed_addr nounwind {
 (elem $0 (i32.const 0) $_Demo_Main_main)
 (export "_Demo_Main_main" (func _Demo_Main_main))
 (func $_Demo_Main_main  (result i32)
-  i32.const 1024
-  call $__Builtins_println
-  drop
-  i32.const 0
+  (drop (call $__Builtins_println (i32.const 1024)))
+  (i32.const 0)
 )
 )
 `,

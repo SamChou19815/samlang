@@ -31,20 +31,26 @@ describe('wasm-nodes', () => {
             localVariables: ['c', 'd'],
             instructions: [
               WasmIfElse(
-                [WasmConst(1), WasmDrop, WasmLocalGet('a'), WasmLocalSet('b')],
+                WasmConst(1),
                 [
-                  WasmBinary('+'),
-                  WasmBinary('-'),
-                  WasmBinary('*'),
-                  WasmBinary('/'),
-                  WasmBinary('%'),
-                  WasmBinary('^'),
-                  WasmBinary('<'),
-                  WasmBinary('<='),
-                  WasmBinary('>'),
-                  WasmBinary('>='),
-                  WasmBinary('=='),
-                  WasmBinary('!='),
+                  WasmConst(1),
+                  WasmDrop(WasmConst(0)),
+                  WasmLocalGet('a'),
+                  WasmLocalSet('b', WasmConst(0)),
+                ],
+                [
+                  WasmBinary(WasmConst(0), '+', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '-', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '*', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '/', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '%', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '^', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '<', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '<=', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '>', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '>=', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '==', WasmConst(0)),
+                  WasmBinary(WasmConst(0), '!=', WasmConst(0)),
                 ]
               ),
               WasmJump('aa'),
@@ -52,10 +58,10 @@ describe('wasm-nodes', () => {
                 continueLabel: 'cl',
                 exitLabel: 'el',
                 instructions: [
-                  WasmLoad(3),
-                  WasmStore(3),
-                  WasmDirectCall('main'),
-                  WasmIndirectCall('dff'),
+                  WasmLoad(WasmConst(0), 3),
+                  WasmStore(WasmConst(0), 3, WasmConst(0)),
+                  WasmDirectCall('main', [WasmConst(0)]),
+                  WasmIndirectCall(WasmConst(0), 'dff', [WasmConst(0)]),
                 ],
               }),
             ],
@@ -76,34 +82,34 @@ describe('wasm-nodes', () => {
 (func $main (param $a i32) (param $b i32) (result i32)
   (local $c i32)
   (local $d i32)
-  if
-    i32.const 1
-    drop
-    local.get $a
-    local.set $b
-  else
-    i32.add
-    i32.sub
-    i32.mul
-    i32.div_s
-    i32.rem_s
-    i32.xor
-    i32.lt_s
-    i32.le_s
-    i32.gt_s
-    i32.ge_s
-    i32.eq
-    i32.ne
-  end
-  br $aa
-  loop $cl
-    block $el
-      local.load offset=12
-      local.store offset=12
-      call $main
-      call_indirect $0 (type $dff)
-    end
-  end
+  (if (i32.const 1) (then
+    (i32.const 1)
+    (drop (i32.const 0))
+    (local.get $a)
+    (local.set $b (i32.const 0))
+  ) (else
+    (i32.add (i32.const 0) (i32.const 0))
+    (i32.sub (i32.const 0) (i32.const 0))
+    (i32.mul (i32.const 0) (i32.const 0))
+    (i32.div_s (i32.const 0) (i32.const 0))
+    (i32.rem_s (i32.const 0) (i32.const 0))
+    (i32.xor (i32.const 0) (i32.const 0))
+    (i32.lt_s (i32.const 0) (i32.const 0))
+    (i32.le_s (i32.const 0) (i32.const 0))
+    (i32.gt_s (i32.const 0) (i32.const 0))
+    (i32.ge_s (i32.const 0) (i32.const 0))
+    (i32.eq (i32.const 0) (i32.const 0))
+    (i32.ne (i32.const 0) (i32.const 0))
+  ))
+  (br $aa)
+  (loop $cl
+    (block $el
+      (local.load offset=12 (i32.const 0))
+      (local.store offset=12 (i32.const 0) (i32.const 0))
+      (call $main (i32.const 0))
+      (call_indirect $0 (type $dff) (i32.const 0) (i32.const 0))
+    )
+  )
 )
 )
 `);
