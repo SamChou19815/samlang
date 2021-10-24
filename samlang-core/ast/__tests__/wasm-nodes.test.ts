@@ -15,11 +15,14 @@ import {
 } from '../wasm-nodes';
 
 describe('wasm-nodes', () => {
-  it('prettyPrintWebAssemblyModule test 1', () => {
+  it('prettyPrintWebAssemblyModule test', () => {
     expect(
       prettyPrintWebAssemblyModule({
         functionTypeParameterCounts: [0, 1, 2, 3],
-        globalVariables: ['', 'hi'],
+        globalVariables: [
+          { constantPointer: 1024, ints: [0, 0] },
+          { constantPointer: 323, ints: [3, 2] },
+        ],
         exportedFunctions: ['main'],
         functions: [
           {
@@ -65,8 +68,8 @@ describe('wasm-nodes', () => {
 (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
 (type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
 (memory $0 1)
-(data (i32.const 1024) "\\\\00\\\\00\\\\00\\\\00\\\\02\\\\00\\\\00\\\\00")
-(data (i32.const 1026) "\\\\00\\\\00\\\\00\\\\00\\\\04\\\\00\\\\00\\\\00\\\\68\\\\00\\\\00\\\\00\\\\69\\\\00\\\\00\\\\00")
+(data (i32.const 1024) "\\\\00\\\\00\\\\00\\\\00\\\\00\\\\00\\\\00\\\\00")
+(data (i32.const 323) "\\\\03\\\\00\\\\00\\\\00\\\\02\\\\00\\\\00\\\\00")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $main)
 (export "main" (func main))

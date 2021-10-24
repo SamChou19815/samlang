@@ -2,11 +2,13 @@ import { encodeMainFunctionName } from './ast/common-names';
 import { ModuleReference } from './ast/common-nodes';
 import { prettyPrintLLVMSources } from './ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsTSSources } from './ast/mir-nodes';
+import { prettyPrintWebAssemblyModule } from './ast/wasm-nodes';
 import { typeCheckSourceHandles } from './checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
+  lowerMidIRSourcesToWasmModule,
 } from './compiler';
 import type { SamlangSourcesCompilationResult, SamlangSingleSourceCompilationResult } from './dist';
 import { optimizeHighIRSourcesAccordingToConfiguration } from './optimization';
@@ -62,7 +64,9 @@ define i64 @_compiled_program_main() local_unnamed_addr nounwind {
     ])
   );
 
-  return { __type__: 'OK', emittedTypeScriptCode, emittedLLVMCode };
+  const emittedWasmCode = prettyPrintWebAssemblyModule(lowerMidIRSourcesToWasmModule(midIRSources));
+
+  return { __type__: 'OK', emittedTypeScriptCode, emittedLLVMCode, emittedWasmCode };
 }
 
 export function compileSingleSamlangSource(
@@ -76,5 +80,10 @@ export function compileSingleSamlangSource(
   if (result.__type__ === 'ERROR') return result;
   const emittedTypeScriptCode = checkNotNull(result.emittedTypeScriptCode['Demo.ts']);
   const emittedLLVMCode = checkNotNull(result.emittedLLVMCode['Demo.ll']);
-  return { __type__: 'OK', emittedTypeScriptCode, emittedLLVMCode };
+  return {
+    __type__: 'OK',
+    emittedTypeScriptCode,
+    emittedLLVMCode,
+    emittedWasmCode: result.emittedWasmCode,
+  };
 }
