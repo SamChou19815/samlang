@@ -8,15 +8,12 @@ import {
   encodeMainFunctionName,
 } from '../ast/common-names';
 import { ModuleReference } from '../ast/common-nodes';
-import { prettyPrintLLVMSources } from '../ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsJSSources } from '../ast/mir-nodes';
 import { typeCheckSourceHandles } from '../checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
-  lowerMidIRSourcesToLLVMSources,
 } from '../compiler';
-import { setupLLVMInterpretationEnvironment, interpretLLVMSources } from '../llvm-ir-interpreter';
 import { optimizeHighIRSourcesAccordingToConfiguration } from '../optimization';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
@@ -65,23 +62,5 @@ result['${testCaseName}'] = printed;
     );
     // eslint-disable-next-line no-eval
     expect(eval(jsCode)).toEqual(expectedResult);
-  });
-
-  const llvmSources = lowerMidIRSourcesToLLVMSources(midIROptimizedSingleSource);
-  const llvmInterpretationEnvironment = setupLLVMInterpretationEnvironment(llvmSources);
-  runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
-    it(`LLVM: ${testCaseName}`, () => {
-      let result: string;
-      try {
-        result = interpretLLVMSources(
-          llvmInterpretationEnvironment,
-          encodeMainFunctionName(new ModuleReference([testCaseName]))
-        );
-        llvmInterpretationEnvironment.printed = '';
-      } catch {
-        throw new Error(prettyPrintLLVMSources(llvmSources));
-      }
-      expect(result).toBe(expectedStandardOut);
-    });
   });
 });

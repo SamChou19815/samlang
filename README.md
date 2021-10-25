@@ -17,20 +17,12 @@ If you want to use samlang as a user, it is better to read
 [the official documentation](https://samlang.io). If you want to develop on samlang, clone this
 repository and run `yarn install`.
 
-Most commands of samlang can be run with only Node.JS installed. However, `samlang compile`
-requires the LLVM toolchain to be installed. The repository's code is tested against LLVM 11,
-although it's very likely that it can work against any modern LLVM version.
-
-To test that your LLVM environment has been properly setup, you can run `yarn test:integration`
-at the root of the repo. After the integration tests pass, you can inspect the emitted LLVM `ll`
-code under the `out` directory.
-
-## Language Features
+## Features
 
 - Type Inference
 - First Class Functions
 - Pattern Matching
-- Produce Optimized LLVM IR
+- Produce Optimized WebAssembly Code
 
 ## Planned Language Features
 

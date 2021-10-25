@@ -1,13 +1,11 @@
 import { encodeMainFunctionName } from './ast/common-names';
 import { ModuleReference } from './ast/common-nodes';
-import { prettyPrintLLVMSources } from './ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsTSSources } from './ast/mir-nodes';
 import { prettyPrintWebAssemblyModule, wasmJSAdapter } from './ast/wasm-nodes';
 import { typeCheckSourceHandles } from './checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
-  lowerMidIRSourcesToLLVMSources,
   lowerMidIRSourcesToWasmModule,
 } from './compiler';
 import type { SamlangSourcesCompilationResult, SamlangSingleSourceCompilationResult } from './dist';
@@ -51,19 +49,6 @@ export function compileSamlangSources(
     ])
   );
 
-  const commonLLVMCode = prettyPrintLLVMSources(lowerMidIRSourcesToLLVMSources(midIRSources));
-  const emittedLLVMCode = Object.fromEntries(
-    entryModuleReferences.map((moduleReference) => [
-      `${moduleReference}.ll`,
-      `${commonLLVMCode}
-define i64 @_compiled_program_main() local_unnamed_addr nounwind {
-  call i64 @${encodeMainFunctionName(moduleReference)}() nounwind
-  ret i64 0
-}
-`,
-    ])
-  );
-
   const emittedWasmCode = prettyPrintWebAssemblyModule(lowerMidIRSourcesToWasmModule(midIRSources));
   const emittedWasmRunnerCode = Object.fromEntries(
     entryModuleReferences.map((moduleReference) => [
@@ -73,13 +58,7 @@ define i64 @_compiled_program_main() local_unnamed_addr nounwind {
   );
   emittedTypeScriptCode['__all__.js'] = wasmJSAdapter;
 
-  return {
-    __type__: 'OK',
-    emittedTypeScriptCode,
-    emittedLLVMCode,
-    emittedWasmCode,
-    emittedWasmRunnerCode,
-  };
+  return { __type__: 'OK', emittedTypeScriptCode, emittedWasmCode, emittedWasmRunnerCode };
 }
 
 export function compileSingleSamlangSource(
@@ -92,11 +71,9 @@ export function compileSingleSamlangSource(
   );
   if (result.__type__ === 'ERROR') return result;
   const emittedTypeScriptCode = checkNotNull(result.emittedTypeScriptCode['Demo.ts']);
-  const emittedLLVMCode = checkNotNull(result.emittedLLVMCode['Demo.ll']);
   return {
     __type__: 'OK',
     emittedTypeScriptCode,
-    emittedLLVMCode,
     emittedWasmCode: result.emittedWasmCode,
   };
 }

@@ -48,23 +48,12 @@ console.error('Compiling...');
 runWithErrorCheck('rm', ['-rf', basePath]);
 const compileTime = timed(() => runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']));
 console.error(`Compiled in ${compileTime}ms!`);
-if (!process.env.NO_JS) {
-  console.error('Checking generated TS code...');
-  const r1 = runWithErrorCheck('yarn', ['esr', path.join(basePath, 'tests.AllTests.ts')]);
-  if (!compare(read('./scripts/snapshot.txt'), r1.resultString)) process.exit(1);
-  console.error(`Generated TS code is good and takes ${r1.time}ms to run.`);
+console.error('Checking generated TS code...');
+const r1 = runWithErrorCheck('yarn', ['esr', path.join(basePath, 'tests.AllTests.ts')]);
+if (!compare(read('./scripts/snapshot.txt'), r1.resultString)) process.exit(1);
+console.error(`Generated TS code is good and takes ${r1.time}ms to run.`);
 
-  console.error('Checking generated WebAssembly code...');
-  const r2 = runWithErrorCheck('node', [path.join(basePath, 'tests.AllTests.js')]);
-  if (!compare(read('./scripts/snapshot.txt'), r2.resultString)) process.exit(1);
-  console.error(`Generated WebAssembly code is good and takes ${r2.time}ms to run.`);
-}
-if (
-  !process.env.NO_LLVM &&
-  spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status === 0
-) {
-  const { resultString, time } = runWithErrorCheck(path.join(basePath, 'tests.AllTests'));
-  console.error('Checking generated machine code...');
-  if (!compare(read('./scripts/snapshot.txt'), resultString)) process.exit(1);
-  console.error(`Generated machine code is good and takes ${time}ms to run.`);
-}
+console.error('Checking generated WebAssembly code...');
+const r2 = runWithErrorCheck('node', [path.join(basePath, 'tests.AllTests.js')]);
+if (!compare(read('./scripts/snapshot.txt'), r2.resultString)) process.exit(1);
+console.error(`Generated WebAssembly code is good and takes ${r2.time}ms to run.`);
