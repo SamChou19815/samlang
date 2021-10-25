@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 
-import { spawnSync } from 'child_process';
-import { mkdirSync, writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 import {
@@ -30,17 +29,9 @@ function getConfiguration(): SamlangProjectConfiguration {
 }
 
 const RUNTIME_PATH = join(__dirname, '..', 'samlang-runtime');
-const LLVM_LIBRARY_PATH = join(RUNTIME_PATH, `libsam-${process.platform}.bc`);
 const WASM_RUNTIME_PATH = join(RUNTIME_PATH, `libsam.wat`);
 
-const shellOut = (program: string, ...programArguments: readonly string[]): boolean =>
-  spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
-
-function unlinkIfExist(file: string): void {
-  if (existsSync(file)) unlinkSync(file);
-}
-
-export function compileEverything(configuration: SamlangProjectConfiguration): boolean {
+function compileEverything(configuration: SamlangProjectConfiguration): void {
   const entryModuleReferences = configuration.entryPoints.map(
     (entryPoint) => new ModuleReference(entryPoint.split('.'))
   );
@@ -54,47 +45,19 @@ export function compileEverything(configuration: SamlangProjectConfiguration): b
   }
 
   mkdirSync(configuration.outputDirectory, { recursive: true });
-  Object.entries(result.emittedTypeScriptCode).forEach(([filename, content]) => {
-    writeFileSync(join(configuration.outputDirectory, filename), content);
-  });
   const runtimeWatCode = readFileSync(WASM_RUNTIME_PATH).toString();
-  const wasmCode = `(module
-${runtimeWatCode}
-${result.emittedWasmCode}
-)
-`;
-  writeFileSync(join(configuration.outputDirectory, '__all__.unoptimized.wat'), wasmCode);
+  const wasmCode = `(module\n${runtimeWatCode}\n${result.emittedWasmCode}\n)\n`;
   const wasmModule = parseWasmText(wasmCode);
   wasmModule.optimize();
-  writeFileSync(
-    join(configuration.outputDirectory, '__all__.optimized.wat'),
-    wasmModule.emitText()
-  );
-  writeFileSync(join(configuration.outputDirectory, '__all__.wasm'), wasmModule.emitBinary());
-  Object.entries(result.emittedWasmRunnerCode).forEach(([filename, content]) => {
+  Object.entries({
+    ...result.emittedTypeScriptCode,
+    ...result.emittedWasmRunnerCode,
+    '__all__.unoptimized.wat': wasmCode,
+    '__all__.optimized.wat': wasmModule.emitText(),
+    '__all__.wasm': wasmModule.emitBinary(),
+  }).forEach(([filename, content]) => {
     writeFileSync(join(configuration.outputDirectory, filename), content);
   });
-
-  if (spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status !== 0) {
-    // eslint-disable-next-line no-console
-    console.error('You do not have LLVM toolchain installation. Skipping LLVM targets.');
-    return true;
-  }
-
-  const assembleResults = Object.entries(result.emittedLLVMCode).map(([filename, content]) => {
-    const modulePath = join(configuration.outputDirectory, filename);
-    writeFileSync(modulePath, content);
-
-    const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
-    const bitcodePath = `${outputProgramPath}.bc`;
-    const success =
-      shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
-      shellOut('llc', '-O2', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
-      shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
-    unlinkIfExist(`${outputProgramPath}.o`);
-    return success;
-  });
-  return assembleResults.every((it) => it);
 }
 
 const runners: CLIRunners = {
@@ -113,11 +76,7 @@ const runners: CLIRunners = {
     if (needHelp) {
       console.log('samlang compile: Compile your codebase according to sconfig.json.');
     } else {
-      const successful = compileEverything(getConfiguration());
-      if (!successful) {
-        console.error('Failed to compile some LLVM programs.');
-        process.exit(3);
-      }
+      compileEverything(getConfiguration());
     }
   },
   lsp(needHelp) {

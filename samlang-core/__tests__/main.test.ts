@@ -46,27 +46,6 @@ function _Demo_Main_main(): number {
 
 _Demo_Main_main();
 `,
-      emittedLLVMCode: `declare i64* @${ENCODED_FUNCTION_NAME_MALLOC}(i64) nounwind
-declare i64 @${ENCODED_FUNCTION_NAME_PRINTLN}(i64*) nounwind
-declare i64 @${ENCODED_FUNCTION_NAME_THROW}(i64*) nounwind
-declare i64* @${ENCODED_FUNCTION_NAME_INT_TO_STRING}(i64) nounwind
-declare i64 @${ENCODED_FUNCTION_NAME_STRING_TO_INT}(i64*) nounwind
-declare i64* @${ENCODED_FUNCTION_NAME_STRING_CONCAT}(i64*, i64*) nounwind
-declare i64 @${ENCODED_FUNCTION_NAME_FREE}(i64*) nounwind
-
-; @GLOBAL_STRING_0 = 'hello world'
-@GLOBAL_STRING_0 = private unnamed_addr constant [13 x i64] [i64 0, i64 11, i64 104, i64 101, i64 108, i64 108, i64 111, i64 32, i64 119, i64 111, i64 114, i64 108, i64 100], align 8
-define i64 @_Demo_Main_main() local_unnamed_addr nounwind {
-l0_start:
-  %_temp_0_string_name_cast = bitcast [13 x i64]* @GLOBAL_STRING_0 to i64*
-  call i64 @${ENCODED_FUNCTION_NAME_PRINTLN}(i64* %_temp_0_string_name_cast) nounwind
-  ret i64 0
-}
-define i64 @_compiled_program_main() local_unnamed_addr nounwind {
-  call i64 @_Demo_Main_main() nounwind
-  ret i64 0
-}
-`,
       emittedWasmCode: `(type $none_=>_i32 (func (result i32)))
 (import "builtins" "${ENCODED_FUNCTION_NAME_PRINTLN}" (func $${ENCODED_FUNCTION_NAME_PRINTLN} (param i32) (result i32)))
 (import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))
