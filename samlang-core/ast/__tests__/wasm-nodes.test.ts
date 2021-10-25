@@ -1,4 +1,13 @@
 import {
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_FUNCTION_NAME_FREE,
+  ENCODED_FUNCTION_NAME_MALLOC,
+} from '../common-names';
+import {
   WasmConst,
   WasmDrop,
   WasmLocalGet,
@@ -58,7 +67,9 @@ describe('wasm-nodes', () => {
                 continueLabel: 'cl',
                 exitLabel: 'el',
                 instructions: [
+                  WasmLoad(WasmConst(0), 0),
                   WasmLoad(WasmConst(0), 3),
+                  WasmStore(WasmConst(0), 0, WasmConst(0)),
                   WasmStore(WasmConst(0), 3, WasmConst(0)),
                   WasmDirectCall('main', [WasmConst(0)]),
                   WasmIndirectCall(WasmConst(0), 'dff', [WasmConst(0)]),
@@ -68,17 +79,17 @@ describe('wasm-nodes', () => {
           },
         ],
       })
-    ).toBe(`(module
-(type $none_=>_i32 (func (result i32)))
+    ).toBe(
+      `(type $none_=>_i32 (func (result i32)))
 (type $i32_=>_i32 (func (param i32) (result i32)))
 (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
 (type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
-(memory $0 1)
-(data (i32.const 1024) "\\\\00\\\\00\\\\00\\\\00\\\\00\\\\00\\\\00\\\\00")
-(data (i32.const 323) "\\\\03\\\\00\\\\00\\\\00\\\\02\\\\00\\\\00\\\\00")
+(import "builtins" "${ENCODED_FUNCTION_NAME_PRINTLN}" (func $${ENCODED_FUNCTION_NAME_PRINTLN} (param i32) (result i32)))
+(import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))
+(data (i32.const 1024) "\\00\\00\\00\\00\\00\\00\\00\\00")
+(data (i32.const 323) "\\03\\00\\00\\00\\02\\00\\00\\00")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $main)
-(export "main" (func main))
 (func $main (param $a i32) (param $b i32) (result i32)
   (local $c i32)
   (local $d i32)
@@ -104,14 +115,17 @@ describe('wasm-nodes', () => {
   (br $aa)
   (loop $cl
     (block $el
-      (local.load offset=12 (i32.const 0))
-      (local.store offset=12 (i32.const 0) (i32.const 0))
+      (i32.load (i32.const 0))
+      (i32.load offset=12 (i32.const 0))
+      (i32.store (i32.const 0) (i32.const 0))
+      (i32.store offset=12 (i32.const 0) (i32.const 0))
       (call $main (i32.const 0))
       (call_indirect $0 (type $dff) (i32.const 0) (i32.const 0))
     )
   )
 )
-)
-`);
+(export "main" (func $main))
+`
+    );
   });
 });

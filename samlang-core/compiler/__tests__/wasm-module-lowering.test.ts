@@ -1,3 +1,4 @@
+import { ENCODED_FUNCTION_NAME_PRINTLN, ENCODED_FUNCTION_NAME_THROW } from '../../ast/common-names';
 import {
   MIR_INT_TYPE as INT,
   MIR_FUNCTION_TYPE,
@@ -37,6 +38,13 @@ describe('wasm-module-lowering', () => {
               parameters: ['bar'],
               type: MIR_FUNCTION_TYPE([], INT),
               body: [
+                MIR_IF_ELSE({ booleanExpression: MIR_FALSE, s1: [], s2: [], finalAssignments: [] }),
+                MIR_IF_ELSE({
+                  booleanExpression: MIR_FALSE,
+                  s1: [],
+                  s2: [MIR_CAST({ name: 'c', type: INT, assignedExpression: ZERO })],
+                  finalAssignments: [],
+                }),
                 MIR_IF_ELSE({
                   booleanExpression: MIR_FALSE,
                   s1: [
@@ -108,23 +116,25 @@ describe('wasm-module-lowering', () => {
           ],
         })
       )
-    ).toBe(`(module
-(type $i32_=>_i32 (func (param i32) (result i32)))
-(memory $0 1)
-(data (i32.const 1024) "\\\\00\\\\00\\\\00\\\\00\\\\05\\\\00\\\\00\\\\00\\\\66\\\\00\\\\00\\\\00\\\\6f\\\\00\\\\00\\\\00\\\\6f\\\\00\\\\00\\\\00")
-(data (i32.const 1044) "\\\\00\\\\00\\\\00\\\\00\\\\05\\\\00\\\\00\\\\00\\\\62\\\\00\\\\00\\\\00\\\\61\\\\00\\\\00\\\\00\\\\72\\\\00\\\\00\\\\00")
+    ).toBe(`(type $i32_=>_i32 (func (param i32) (result i32)))
+(import "builtins" "${ENCODED_FUNCTION_NAME_PRINTLN}" (func $${ENCODED_FUNCTION_NAME_PRINTLN} (param i32) (result i32)))
+(import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))
+(data (i32.const 4096) "\\00\\00\\00\\00\\03\\00\\00\\00\\66\\00\\00\\00\\6f\\00\\00\\00\\6f\\00\\00\\00")
+(data (i32.const 4116) "\\00\\00\\00\\00\\03\\00\\00\\00\\62\\00\\00\\00\\61\\00\\00\\00\\72\\00\\00\\00")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $main)
-(export "main" (func main))
 (func $main (param $bar i32) (result i32)
-  (local $i i32)
   (local $c i32)
+  (local $i i32)
   (local $f i32)
   (local $b i32)
   (local $bin i32)
   (local $rc i32)
   (local $v i32)
-  (local $_temp_0_struct_ptr_raw i32)
+  (local $s i32)
+  (if (i32.xor (i32.const 0) (i32.const 1)) (then
+    (local.set $c (i32.const 0))
+  ))
   (if (i32.const 0) (then
     (local.set $i (i32.const 0))
     (loop $l0_loop_continue
@@ -134,22 +144,20 @@ describe('wasm-module-lowering', () => {
         (br $l0_loop_continue)
       )
     )
-    (local.set $f (i32.const 1024))
+    (local.set $f (i32.const 4096))
   ) (else
     (loop $l2_loop_continue
       (block $l3_loop_exit
         (if (i32.const 0) (then
           (local.set $b (i32.const 0))
           (br $l3_loop_exit)
-        ) (else
         ))
         (br $l2_loop_continue)
       )
     )
     (loop $l4_loop_continue
       (block $l5_loop_exit
-        (if (i32.const 0) (then
-        ) (else
+        (if (i32.xor (i32.const 0) (i32.const 1)) (then
           (br $l5_loop_exit)
         ))
         (br $l4_loop_continue)
@@ -160,14 +168,14 @@ describe('wasm-module-lowering', () => {
   (local.set $bin (i32.add (local.get $f) (i32.const 0)))
   (drop (call $main (i32.const 0)))
   (local.set $rc (call_indirect $0 (type $i32_=>_i32) (i32.const 0) (local.get $f)))
-  (local.set $v (local.load offset=12 (i32.const 0)))
-  (local.store offset=12 (i32.const 0) (local.get $v))
-  (local.set $_temp_0_struct_ptr_raw (call $_builtin_malloc (i32.const 8)))
-  (local.store offset=0 (local.get $_temp_0_struct_ptr_raw) (i32.const 0))
-  (local.store offset=4 (local.get $_temp_0_struct_ptr_raw) (local.get $v))
+  (local.set $v (i32.load offset=12 (i32.const 0)))
+  (i32.store offset=12 (i32.const 0) (local.get $v))
+  (local.set $s (call $_builtin_malloc (i32.const 8)))
+  (i32.store (local.get $s) (i32.const 0))
+  (i32.store offset=4 (local.get $s) (local.get $v))
   (i32.const 0)
 )
-)
+(export "main" (func $main))
 `);
   });
 });

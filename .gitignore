@@ -3,6 +3,7 @@
 samlang-runtime/*.a
 samlang-runtime/example
 samlang-runtime/*.bc
+samlang-runtime/*.wasm
 
 # Libraries
 samlang-runtime/compiled-wasi-libc

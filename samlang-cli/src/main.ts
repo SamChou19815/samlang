@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 import { spawnSync } from 'child_process';
-import { mkdirSync, writeFileSync, existsSync, unlinkSync } from 'fs';
+import { mkdirSync, writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 import {
@@ -9,6 +9,7 @@ import {
   reformatSamlangSources,
   compileSamlangSources,
 } from '@dev-sam/samlang-core';
+import { parseText as parseWasmText } from 'binaryen';
 
 import cliMainRunner, { CLIRunners } from './cli';
 import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from './configuration';
@@ -30,6 +31,7 @@ function getConfiguration(): SamlangProjectConfiguration {
 
 const RUNTIME_PATH = join(__dirname, '..', 'samlang-runtime');
 const LLVM_LIBRARY_PATH = join(RUNTIME_PATH, `libsam-${process.platform}.bc`);
+const WASM_RUNTIME_PATH = join(RUNTIME_PATH, `libsam.wat`);
 
 const shellOut = (program: string, ...programArguments: readonly string[]): boolean =>
   spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
@@ -53,6 +55,23 @@ export function compileEverything(configuration: SamlangProjectConfiguration): b
 
   mkdirSync(configuration.outputDirectory, { recursive: true });
   Object.entries(result.emittedTypeScriptCode).forEach(([filename, content]) => {
+    writeFileSync(join(configuration.outputDirectory, filename), content);
+  });
+  const runtimeWatCode = readFileSync(WASM_RUNTIME_PATH).toString();
+  const wasmCode = `(module
+${runtimeWatCode}
+${result.emittedWasmCode}
+)
+`;
+  writeFileSync(join(configuration.outputDirectory, '__all__.unoptimized.wat'), wasmCode);
+  const wasmModule = parseWasmText(wasmCode);
+  wasmModule.optimize();
+  writeFileSync(
+    join(configuration.outputDirectory, '__all__.optimized.wat'),
+    wasmModule.emitText()
+  );
+  writeFileSync(join(configuration.outputDirectory, '__all__.wasm'), wasmModule.emitBinary());
+  Object.entries(result.emittedWasmRunnerCode).forEach(([filename, content]) => {
     writeFileSync(join(configuration.outputDirectory, filename), content);
   });
 

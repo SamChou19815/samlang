@@ -13,6 +13,7 @@ export type SamlangSourcesCompilationResult =
       readonly emittedTypeScriptCode: Readonly<Record<string, string>>;
       readonly emittedLLVMCode: Readonly<Record<string, string>>;
       readonly emittedWasmCode: string;
+      readonly emittedWasmRunnerCode: Readonly<Record<string, string>>;
     }
   | { readonly __type__: 'ERROR'; readonly errors: readonly string[] };
 

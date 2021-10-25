@@ -2,7 +2,7 @@ import { encodeMainFunctionName } from './ast/common-names';
 import { ModuleReference } from './ast/common-nodes';
 import { prettyPrintLLVMSources } from './ast/llvm-nodes';
 import { prettyPrintMidIRSourcesAsTSSources } from './ast/mir-nodes';
-import { prettyPrintWebAssemblyModule } from './ast/wasm-nodes';
+import { prettyPrintWebAssemblyModule, wasmJSAdapter } from './ast/wasm-nodes';
 import { typeCheckSourceHandles } from './checker';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -65,8 +65,21 @@ define i64 @_compiled_program_main() local_unnamed_addr nounwind {
   );
 
   const emittedWasmCode = prettyPrintWebAssemblyModule(lowerMidIRSourcesToWasmModule(midIRSources));
+  const emittedWasmRunnerCode = Object.fromEntries(
+    entryModuleReferences.map((moduleReference) => [
+      `${moduleReference}.js`,
+      `require('./__all__').${encodeMainFunctionName(moduleReference)}();\n`,
+    ])
+  );
+  emittedTypeScriptCode['__all__.js'] = wasmJSAdapter;
 
-  return { __type__: 'OK', emittedTypeScriptCode, emittedLLVMCode, emittedWasmCode };
+  return {
+    __type__: 'OK',
+    emittedTypeScriptCode,
+    emittedLLVMCode,
+    emittedWasmCode,
+    emittedWasmRunnerCode,
+  };
 }
 
 export function compileSingleSamlangSource(
