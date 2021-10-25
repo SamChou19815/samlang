@@ -37,9 +37,7 @@ function compileEverything(configuration: SamlangProjectConfiguration): void {
   );
   const result = compileSamlangSources(collectSources(configuration), entryModuleReferences);
   if (result.__type__ === 'ERROR') {
-    // eslint-disable-next-line no-console
     console.error(`Found ${result.errors.length} error(s).`);
-    // eslint-disable-next-line no-console
     result.errors.forEach((it) => console.error(it));
     process.exit(1);
   }
