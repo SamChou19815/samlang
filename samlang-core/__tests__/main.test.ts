@@ -1,3 +1,12 @@
+import {
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_FUNCTION_NAME_FREE,
+  ENCODED_FUNCTION_NAME_MALLOC,
+} from '../ast/common-names';
 import { ModuleReference } from '../ast/common-nodes';
 import { reformatSamlangSources, compileSamlangSources, compileSingleSamlangSource } from '../main';
 
@@ -23,34 +32,34 @@ describe('samlang-core/index', () => {
     ).toEqual({
       __type__: 'OK',
       emittedTypeScriptCode: `type Str = [number, string];
-const _builtin_stringConcat = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const __Builtins_println = ([, line]: Str): number => { console.log(line); return 0; };
-const __Builtins_stringToInt = ([, v]: Str): number => parseInt(v, 10);
-const __Builtins_intToString = (v: number): Str => [1, String(v)];
-const __Builtins_panic = ([, v]: Str): number => { throw Error(v); };
-const _builtin_free = (v: unknown): number => 0;
+const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.log(line); return 0; };
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(v, 10);
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)];
+const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
+const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
 const GLOBAL_STRING_0: Str = [0, "hello world"];
 function _Demo_Main_main(): number {
-  __Builtins_println(GLOBAL_STRING_0);
+  ${ENCODED_FUNCTION_NAME_PRINTLN}(GLOBAL_STRING_0);
   return 0;
 }
 
 _Demo_Main_main();
 `,
-      emittedLLVMCode: `declare i64* @_builtin_malloc(i64) nounwind
-declare i64 @__Builtins_println(i64*) nounwind
-declare i64 @__Builtins_panic(i64*) nounwind
-declare i64* @__Builtins_intToString(i64) nounwind
-declare i64 @__Builtins_stringToInt(i64*) nounwind
-declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
-declare i64 @_builtin_free(i64*) nounwind
+      emittedLLVMCode: `declare i64* @${ENCODED_FUNCTION_NAME_MALLOC}(i64) nounwind
+declare i64 @${ENCODED_FUNCTION_NAME_PRINTLN}(i64*) nounwind
+declare i64 @${ENCODED_FUNCTION_NAME_THROW}(i64*) nounwind
+declare i64* @${ENCODED_FUNCTION_NAME_INT_TO_STRING}(i64) nounwind
+declare i64 @${ENCODED_FUNCTION_NAME_STRING_TO_INT}(i64*) nounwind
+declare i64* @${ENCODED_FUNCTION_NAME_STRING_CONCAT}(i64*, i64*) nounwind
+declare i64 @${ENCODED_FUNCTION_NAME_FREE}(i64*) nounwind
 
 ; @GLOBAL_STRING_0 = 'hello world'
 @GLOBAL_STRING_0 = private unnamed_addr constant [13 x i64] [i64 0, i64 11, i64 104, i64 101, i64 108, i64 108, i64 111, i64 32, i64 119, i64 111, i64 114, i64 108, i64 100], align 8
 define i64 @_Demo_Main_main() local_unnamed_addr nounwind {
 l0_start:
   %_temp_0_string_name_cast = bitcast [13 x i64]* @GLOBAL_STRING_0 to i64*
-  call i64 @__Builtins_println(i64* %_temp_0_string_name_cast) nounwind
+  call i64 @${ENCODED_FUNCTION_NAME_PRINTLN}(i64* %_temp_0_string_name_cast) nounwind
   ret i64 0
 }
 define i64 @_compiled_program_main() local_unnamed_addr nounwind {
@@ -58,18 +67,17 @@ define i64 @_compiled_program_main() local_unnamed_addr nounwind {
   ret i64 0
 }
 `,
-      emittedWasmCode: `(module
-(type $none_=>_i32 (func (result i32)))
-(memory $0 1)
-(data (i32.const 1024) "\\\\00\\\\00\\\\00\\\\00\\\\0d\\\\00\\\\00\\\\00\\\\68\\\\00\\\\00\\\\00\\\\65\\\\00\\\\00\\\\00\\\\6c\\\\00\\\\00\\\\00\\\\6c\\\\00\\\\00\\\\00\\\\6f\\\\00\\\\00\\\\00\\\\20\\\\00\\\\00\\\\00\\\\77\\\\00\\\\00\\\\00\\\\6f\\\\00\\\\00\\\\00\\\\72\\\\00\\\\00\\\\00\\\\6c\\\\00\\\\00\\\\00\\\\64\\\\00\\\\00\\\\00")
+      emittedWasmCode: `(type $none_=>_i32 (func (result i32)))
+(import "builtins" "${ENCODED_FUNCTION_NAME_PRINTLN}" (func $${ENCODED_FUNCTION_NAME_PRINTLN} (param i32) (result i32)))
+(import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))
+(data (i32.const 4096) "\\00\\00\\00\\00\\0b\\00\\00\\00\\68\\00\\00\\00\\65\\00\\00\\00\\6c\\00\\00\\00\\6c\\00\\00\\00\\6f\\00\\00\\00\\20\\00\\00\\00\\77\\00\\00\\00\\6f\\00\\00\\00\\72\\00\\00\\00\\6c\\00\\00\\00\\64\\00\\00\\00")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $_Demo_Main_main)
-(export "_Demo_Main_main" (func _Demo_Main_main))
 (func $_Demo_Main_main  (result i32)
-  (drop (call $__Builtins_println (i32.const 1024)))
+  (drop (call $__Builtins_println (i32.const 4096)))
   (i32.const 0)
 )
-)
+(export "_Demo_Main_main" (func $_Demo_Main_main))
 `,
     });
   });

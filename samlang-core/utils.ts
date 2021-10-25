@@ -1,8 +1,9 @@
 export function intArrayToDataString(array: readonly number[]): string {
   return Array.from(new Uint8Array(new Uint32Array(array).buffer).values())
     .map((n) => {
+      if (n === 0) return '\\00';
       const hex = n.toString(16);
-      return `\\\\${'0'.repeat(2 - hex.length)}${hex}`;
+      return `\\${'0'.repeat(2 - hex.length)}${hex}`;
     })
     .join('');
 }

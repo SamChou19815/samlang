@@ -1,4 +1,13 @@
 import { intArrayToDataString, assert } from '../utils';
+import {
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_FUNCTION_NAME_FREE,
+  ENCODED_FUNCTION_NAME_MALLOC,
+} from './common-names';
 import type { IROperator } from './common-operators';
 
 export interface WebAssemblyBaseInstruction {
@@ -268,9 +277,15 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
       case 'WebAssemblyBinaryInstruction':
         return `(i32.${getBinaryInstruction(s.operator)} ${i2s(s.v1)} ${i2s(s.v2)})`;
       case 'WebAssemblyLoadInstruction':
-        return `(local.load offset=${s.index * 4} ${i2s(s.pointer)})`;
+        if (s.index === 0) {
+          return `(i32.load ${i2s(s.pointer)})`;
+        }
+        return `(i32.load offset=${s.index * 4} ${i2s(s.pointer)})`;
       case 'WebAssemblyStoreInstruction':
-        return `(local.store offset=${s.index * 4} ${i2s(s.pointer)} ${i2s(s.assigned)})`;
+        if (s.index === 0) {
+          return `(i32.store ${i2s(s.pointer)} ${i2s(s.assigned)})`;
+        }
+        return `(i32.store offset=${s.index * 4} ${i2s(s.pointer)} ${i2s(s.assigned)})`;
       case 'WebAssemblyFunctionDirectCallInstruction':
         return `(call $${s.functionName} ${s.functionArguments.map(i2s).join(' ')})`;
       case 'WebAssemblyFunctionIndirectCallInstruction': {
@@ -299,10 +314,12 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
         level += 1;
         s.s1.forEach(printInstruction);
         level -= 1;
-        collector.push('  '.repeat(level), ') (else\n');
-        level += 1;
-        s.s2.forEach(printInstruction);
-        level -= 1;
+        if (s.s2.length > 0) {
+          collector.push('  '.repeat(level), ') (else\n');
+          level += 1;
+          s.s2.forEach(printInstruction);
+          level -= 1;
+        }
         collector.push('  '.repeat(level), '))\n');
         return;
       case 'WebAssemblyUnconditionalJumpInstruction':
@@ -320,7 +337,6 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
     }
   }
 
-  collector.push('(module\n');
   wasmModule.functionTypeParameterCounts.forEach((count) => {
     const typeString = WasmFunctionTypeString(count);
     if (count === 0) {
@@ -329,7 +345,10 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
       collector.push(`(type $${typeString} (func (param${' i32'.repeat(count)}) (result i32)))\n`);
     }
   });
-  collector.push('(memory $0 1)\n');
+  collector.push(
+    `(import "builtins" "${ENCODED_FUNCTION_NAME_PRINTLN}" (func $${ENCODED_FUNCTION_NAME_PRINTLN} (param i32) (result i32)))\n`,
+    `(import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))\n`
+  );
   wasmModule.globalVariables.flatMap(({ constantPointer, ints }) => {
     collector.push(`(data (i32.const ${constantPointer}) "${intArrayToDataString(ints)}")\n`);
   });
@@ -337,9 +356,6 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
   collector.push(
     `(elem $0 (i32.const 0) ${wasmModule.functions.map((it) => `$${it.name}`).join(' ')})\n`
   );
-  wasmModule.exportedFunctions.forEach((it) => {
-    collector.push(`(export "${it}" (func ${it}))\n`);
-  });
   wasmModule.functions.forEach(({ name, parameters, localVariables, instructions }) => {
     collector.push(
       `(func $${name} ${parameters.map((it) => `(param $${it} i32)`).join(' ')} (result i32)\n`
@@ -348,7 +364,40 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
     instructions.forEach(printInstruction);
     collector.push(')\n');
   });
-  collector.push(')\n');
+  wasmModule.exportedFunctions.forEach((it) => {
+    collector.push(`(export "${it}" (func $${it}))\n`);
+  });
 
   return collector.join('');
 }
+
+// eslint-disable-next-line @typescript-eslint/no-inferrable-types
+export const wasmJSAdapter: string = `// @ts-check
+
+const memory = new WebAssembly.Memory({ initial: 2, maximum: 65536 });
+const codeModule = new WebAssembly.Module(
+  require('fs').readFileSync(require('path').join(__dirname, '__all__.wasm'))
+);
+
+function pointerToString(p) {
+  const mem = new Uint32Array(memory.buffer);
+  const start = p / 4;
+  const length = mem[start + 1];
+  const characterCodes = Array.from(mem.subarray(start + 2, start + 2 + length).values());
+  return String.fromCharCode(...characterCodes);
+}
+
+module.exports = new WebAssembly.Instance(codeModule, {
+  env: { memory },
+  builtins: {
+    __Builtins_println(p) {
+      // eslint-disable-next-line no-console
+      console.log(pointerToString(p));
+      return 0;
+    },
+    __Builtins_panic(p) {
+      throw new Error(pointerToString(p));
+    },
+  },
+}).exports;
+`;

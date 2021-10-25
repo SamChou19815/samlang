@@ -452,6 +452,7 @@ __metadata:
     "@types/jest": ^27.0.2
     "@types/node": ^16.11.1
     "@yarnpkg/esbuild-plugin-pnp": ^2.0.0-rc.1
+    binaryen: ^102.0.0
     esbuild: ^0.13.8
     typescript: ^4.4.3
     vscode-languageserver: ^7.0.0
@@ -1398,6 +1399,15 @@ __metadata:
   version: 1.0.2
   resolution: "balanced-match@npm:1.0.2"
   checksum: 9706c088a283058a8a99e0bf91b0a2f75497f185980d9ffa8b304de1d9e58ebda7c72c07ebf01dadedaac5b2907b2c6f566f660d62bd336c3468e960403b9d65
+  languageName: node
+  linkType: hard
+
+"binaryen@npm:^102.0.0":
+  version: 102.0.0
+  resolution: "binaryen@npm:102.0.0"
+  bin:
+    wasm-opt: bin/wasm-opt
+  checksum: 70296b87cfcd171dde0d6bc54103e87692122760e47091cc45e80aa9d414b035a11288a0ed75bcab2dbd7ee606a4da09448a065ac1bb2ecb54c23f9e274c39ba
   languageName: node
   linkType: hard
 

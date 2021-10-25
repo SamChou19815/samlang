@@ -28,14 +28,7 @@ import {
 import { checkNotNull } from '../utils';
 
 class WasmResourceAllocator {
-  private nextTempId = 0;
   private nextLabelId = 0;
-
-  allocateTemp(purpose: string): string {
-    const tempID = this.nextTempId;
-    this.nextTempId += 1;
-    return `_temp_${tempID}_${purpose}`;
-  }
 
   allocateLabelWithAnnotation(annotation: string): string {
     const temp = this.nextLabelId;
@@ -77,6 +70,7 @@ class WasmFunctionLoweringManager {
     );
     const instructions = midIRFunction.body.flatMap((it) => instance.lowerMidIRStatement(it));
     instructions.push(instance.lowerMidIRExpression(midIRFunction.returnValue));
+    midIRFunction.parameters.forEach((it) => instance.localVariables.delete(it));
     return {
       name: midIRFunction.name,
       parameters: midIRFunction.parameters,
@@ -122,29 +116,37 @@ class WasmFunctionLoweringManager {
             : this.SET(s.returnCollector, functionCall),
         ];
       }
-      case 'MidIRIfElseStatement':
-        return [
-          WasmIfElse(
-            this.lowerMidIRExpression(s.booleanExpression),
-            [
-              ...s.s1.flatMap((it) => this.lowerMidIRStatement(it)),
-              ...s.finalAssignments.map((it) =>
-                this.SET(it.name, this.lowerMidIRExpression(it.branch1Value))
-              ),
-            ],
-            [
-              ...s.s2.flatMap((it) => this.lowerMidIRStatement(it)),
-              ...s.finalAssignments.map((it) =>
-                this.SET(it.name, this.lowerMidIRExpression(it.branch2Value))
-              ),
-            ]
+      case 'MidIRIfElseStatement': {
+        const condition = this.lowerMidIRExpression(s.booleanExpression);
+        const s1 = [
+          ...s.s1.flatMap((it) => this.lowerMidIRStatement(it)),
+          ...s.finalAssignments.map((it) =>
+            this.SET(it.name, this.lowerMidIRExpression(it.branch1Value))
           ),
         ];
+        const s2 = [
+          ...s.s2.flatMap((it) => this.lowerMidIRStatement(it)),
+          ...s.finalAssignments.map((it) =>
+            this.SET(it.name, this.lowerMidIRExpression(it.branch2Value))
+          ),
+        ];
+        if (s1.length === 0) {
+          if (s2.length === 0) return [];
+          return [WasmIfElse(WasmBinary(condition, '^', WasmConst(1)), s2, [])];
+        }
+        return [WasmIfElse(condition, s1, s2)];
+      }
       case 'MidIRSingleIfStatement': {
-        const condition = this.lowerMidIRExpression(s.booleanExpression);
-        const block = s.statements.flatMap((it) => this.lowerMidIRStatement(it));
+        let condition = this.lowerMidIRExpression(s.booleanExpression);
+        if (s.invertCondition) {
+          condition = WasmBinary(condition, '^', WasmConst(1));
+        }
         return [
-          s.invertCondition ? WasmIfElse(condition, [], block) : WasmIfElse(condition, block, []),
+          WasmIfElse(
+            condition,
+            s.statements.flatMap((it) => this.lowerMidIRStatement(it)),
+            []
+          ),
         ];
       }
       case 'MidIRBreakStatement': {
@@ -182,15 +184,16 @@ class WasmFunctionLoweringManager {
       case 'MidIRCastStatement':
         return [this.SET(s.name, this.lowerMidIRExpression(s.assignedExpression))];
       case 'MidIRStructInitializationStatement': {
-        const rawPointerTemp = this.allocator.allocateTemp('struct_ptr_raw');
         const instructions: WebAssemblyInstruction[] = [
           this.SET(
-            rawPointerTemp,
+            s.structVariableName,
             WasmDirectCall(ENCODED_FUNCTION_NAME_MALLOC, [WasmConst(s.expressionList.length * 4)])
           ),
         ];
         s.expressionList.forEach((e, i) => {
-          instructions.push(WasmStore(this.GET(rawPointerTemp), i, this.lowerMidIRExpression(e)));
+          instructions.push(
+            WasmStore(this.GET(s.structVariableName), i, this.lowerMidIRExpression(e))
+          );
         });
         return instructions;
       }
@@ -218,15 +221,14 @@ class WasmFunctionLoweringManager {
 export default function lowerMidIRSourcesToWasmModule(
   midIRSources: MidIRSources
 ): WebAssemblyModule {
-  let dataStart = 1024;
+  let dataStart = 4096;
   const globalVariablesToPointerMapping: Record<string, number> = {};
   const globalVariables = midIRSources.globalVariables.map(({ name, content }) => {
-    const size = content.length + 2;
     const ints = Array.from(content).map((it) => it.charCodeAt(0));
-    ints.unshift(0, size);
+    ints.unshift(0, content.length);
     const globalVariable: WebAssemblyGlobalData = { constantPointer: dataStart, ints };
     globalVariablesToPointerMapping[name] = dataStart;
-    dataStart += size * 4;
+    dataStart += (content.length + 2) * 4;
     return globalVariable;
   });
   const functionIndexMapping = Object.fromEntries(
