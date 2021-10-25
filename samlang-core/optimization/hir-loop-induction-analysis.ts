@@ -1,5 +1,3 @@
-/* eslint-disable no-param-reassign */
-
 import type { IROperator } from '../ast/common-operators';
 import {
   HighIRType,
