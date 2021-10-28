@@ -52,3 +52,5 @@ jobs:
         run: yarn install --immutable
       - name: Test
         run: yarn test
+      - name: Compile samlang Programs
+        run: yarn test:integration
