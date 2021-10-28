@@ -40,13 +40,11 @@ function timed(runner: () => void): number {
 }
 
 console.error('Bundling...');
-const bundleTime = timed(() =>
-  runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle'])
-);
+const bundleTime = timed(() => runWithErrorCheck('yarn', ['bundle']));
 console.error(`Bundled in ${bundleTime}ms!`);
 console.error('Compiling...');
 runWithErrorCheck('rm', ['-rf', basePath]);
-const compileTime = timed(() => runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']));
+const compileTime = timed(() => runWithErrorCheck('./samlang-dev'));
 console.error(`Compiled in ${compileTime}ms!`);
 console.error('Checking generated TS code...');
 const r1 = runWithErrorCheck('yarn', ['esr', path.join(basePath, 'tests.AllTests.ts')]);
@@ -54,6 +52,6 @@ if (!compare(read('./scripts/snapshot.txt'), r1.resultString)) process.exit(1);
 console.error(`Generated TS code is good and takes ${r1.time}ms to run.`);
 
 console.error('Checking generated WebAssembly code...');
-const r2 = runWithErrorCheck('node', [path.join(basePath, 'tests.AllTests.js')]);
+const r2 = runWithErrorCheck('node', [path.join(basePath, 'tests.AllTests.wasm.js')]);
 if (!compare(read('./scripts/snapshot.txt'), r2.resultString)) process.exit(1);
 console.error(`Generated WebAssembly code is good and takes ${r2.time}ms to run.`);

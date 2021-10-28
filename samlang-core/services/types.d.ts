@@ -1,4 +1,4 @@
-import { Position, Range, ModuleReference } from '../ast/types';
+import { Position, Range, Location, ModuleReference } from '../ast/types';
 
 export type CompletionItemKind = 2 | 3 | 5;
 export type InsertTextFormat = 1 | 2;

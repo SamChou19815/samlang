@@ -1,10 +1,10 @@
 {
   "name": "@dev-sam/samlang-cli",
-  "version": "0.4.4",
+  "version": "0.5.0",
   "license": "AGPLv3",
   "files": [
     "bin",
-    "samlang-runtime"
+    "loader.js"
   ],
   "scripts": {
     "compile": "tsc --incremental --noEmit",
@@ -13,14 +13,15 @@
   "bin": {
     "samlang": "./bin/index.js"
   },
+  "dependencies": {
+    "@dev-sam/samlang-core": "workspace:^0.5.0",
+    "vscode-languageserver": "^7.0.0"
+  },
   "devDependencies": {
-    "@dev-sam/samlang-core": "workspace:0.5.0",
     "@types/jest": "^27.0.2",
     "@types/node": "^16.11.6",
-    "@yarnpkg/esbuild-plugin-pnp": "^2.0.0-rc.1",
-    "binaryen": "^102.0.0",
-    "esbuild": "^0.13.9",
-    "typescript": "^4.4.3",
-    "vscode-languageserver": "^7.0.0"
+    "@yarnpkg/esbuild-plugin-pnp": "^2.0.0",
+    "esbuild": "^0.13.10",
+    "typescript": "^4.4.4"
   }
 }

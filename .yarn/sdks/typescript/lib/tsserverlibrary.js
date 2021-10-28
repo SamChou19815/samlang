@@ -177,7 +177,7 @@ const moduleWrapper = (tsserver) => {
         if (
           hostInfo === `vscode` &&
           process.env.VSCODE_IPC_HOOK &&
-          process.env.VSCODE_IPC_HOOK.match(/Code\/1\.[1-5][0-9]\./)
+          process.env.VSCODE_IPC_HOOK.match(/Code\/1\.([1-5][0-9]|60)\./)
         ) {
           hostInfo += ` <1.61`;
         }

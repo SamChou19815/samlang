@@ -13,7 +13,9 @@ import { typeCheckSourceHandles } from '../checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
+  lowerMidIRSourcesToWasmModule,
 } from '../compiler';
+import samlangGeneratedWebAssemblyLoader from '../loader';
 import { optimizeHighIRSourcesAccordingToConfiguration } from '../optimization';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
@@ -31,6 +33,12 @@ describe('compiler-integration-tests', () => {
     optimizeHighIRSourcesAccordingToConfiguration(
       compileSamlangSourcesToHighIRSources(checkedSources)
     )
+  );
+  const expectedResult = Object.fromEntries(
+    runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => [
+      testCaseName,
+      expectedStandardOut,
+    ])
   );
   it('MIR[all]', () => {
     let jsCode = `let printed;
@@ -54,13 +62,33 @@ result['${testCaseName}'] = printed;
     });
     jsCode += 'result';
 
-    const expectedResult = Object.fromEntries(
-      runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => [
-        testCaseName,
-        expectedStandardOut,
-      ])
-    );
     // eslint-disable-next-line no-eval
     expect(eval(jsCode)).toEqual(expectedResult);
+  });
+
+  it('WASM[all]', () => {
+    const wasmModule = lowerMidIRSourcesToWasmModule(midIROptimizedSingleSource);
+
+    let printed = '';
+    const mainFunctions = samlangGeneratedWebAssemblyLoader(
+      wasmModule.emitBinary(),
+      (pointerToString) => ({
+        __Builtins_println(p: number) {
+          printed += `${pointerToString(p)}\n`;
+          return 0;
+        },
+      })
+    );
+
+    const actualResult = Object.fromEntries(
+      runnableSamlangProgramTestCases.map(({ testCaseName }) => {
+        const mainFunctionName = encodeMainFunctionName(new ModuleReference([testCaseName]));
+        mainFunctions[mainFunctionName]?.();
+        const result = printed;
+        printed = '';
+        return [testCaseName, result];
+      })
+    );
+    expect(actualResult).toEqual(expectedResult);
   });
 });
