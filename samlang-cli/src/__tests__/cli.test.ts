@@ -4,7 +4,6 @@ function assertCalled(commandLineArguments: readonly string[], called: keyof CLI
   const runner: CLIRunners = {
     format: jest.fn(),
     compile: jest.fn(),
-    lsp: jest.fn(),
     version: jest.fn(),
     help: jest.fn(),
   };
@@ -21,12 +20,9 @@ describe('samlang-cli/cli', () => {
     expect(parseCLIArguments([])).toEqual({ type: 'compile', needHelp: false });
     expect(parseCLIArguments(['format'])).toEqual({ type: 'format', needHelp: false });
     expect(parseCLIArguments(['compile'])).toEqual({ type: 'compile', needHelp: false });
-    expect(parseCLIArguments(['lsp'])).toEqual({ type: 'lsp', needHelp: false });
     expect(parseCLIArguments(['format', '--help'])).toEqual({ type: 'format', needHelp: true });
     expect(parseCLIArguments(['compile', '--help'])).toEqual({ type: 'compile', needHelp: true });
-    expect(parseCLIArguments(['lsp', '--help'])).toEqual({ type: 'lsp', needHelp: true });
     expect(parseCLIArguments(['compile', '-h'])).toEqual({ type: 'compile', needHelp: true });
-    expect(parseCLIArguments(['lsp', '-h'])).toEqual({ type: 'lsp', needHelp: true });
     expect(parseCLIArguments(['version'])).toEqual({ type: 'version' });
     expect(parseCLIArguments(['dfasfsdf'])).toEqual({ type: 'help' });
     expect(parseCLIArguments(['help'])).toEqual({ type: 'help' });
@@ -36,12 +32,9 @@ describe('samlang-cli/cli', () => {
     assertCalled([], 'compile');
     assertCalled(['format'], 'format');
     assertCalled(['compile'], 'compile');
-    assertCalled(['lsp'], 'lsp');
     assertCalled(['format', '--help'], 'format');
     assertCalled(['compile', '--help'], 'compile');
-    assertCalled(['lsp', '--help'], 'lsp');
     assertCalled(['compile', '-h'], 'compile');
-    assertCalled(['lsp', '-h'], 'lsp');
     assertCalled(['version'], 'version');
     assertCalled(['dfasfsdf'], 'help');
     assertCalled(['help'], 'help');

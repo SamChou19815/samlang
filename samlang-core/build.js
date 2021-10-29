@@ -6,7 +6,7 @@ build({
   bundle: true,
   sourcemap: false,
   platform: 'node',
-  target: 'es2017',
+  target: 'es2019',
   logLevel: 'error',
   outfile: 'dist/index.js',
   loader: { '.wat': 'text' },

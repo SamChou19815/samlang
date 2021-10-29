@@ -10,28 +10,18 @@ import {
 } from '@dev-sam/samlang-core';
 
 import cliMainRunner, { CLIRunners } from './cli';
-import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from './configuration';
+import type { SamlangProjectConfiguration } from './configuration';
 import ASCII_ART_SAMLANG_LOGO from './logo';
-import startSamlangLanguageServer, { collectSources } from './lsp';
-
-function getConfiguration(): SamlangProjectConfiguration {
-  const configuration = loadSamlangProjectConfiguration();
-  if (
-    configuration === 'NO_CONFIGURATION' ||
-    configuration === 'UNPARSABLE_CONFIGURATION_FILE' ||
-    configuration === 'UNREADABLE_CONFIGURATION_FILE'
-  ) {
-    console.error(configuration);
-    process.exit(2);
-  }
-  return configuration;
-}
+import { getConfiguration, collectSources } from './utils';
 
 function compileEverything(configuration: SamlangProjectConfiguration): void {
   const entryModuleReferences = configuration.entryPoints.map(
     (entryPoint) => new ModuleReference(entryPoint.split('.'))
   );
-  const result = compileSamlangSources(collectSources(configuration), entryModuleReferences);
+  const result = compileSamlangSources(
+    collectSources(configuration, (parts) => new ModuleReference(parts)),
+    entryModuleReferences
+  );
   if (result.__type__ === 'ERROR') {
     console.error(`Found ${result.errors.length} error(s).`);
     result.errors.forEach((it) => console.error(it));
@@ -49,11 +39,11 @@ const runners: CLIRunners = {
     if (needHelp) {
       console.log('samlang format: Format your codebase according to sconfig.json.');
     } else {
-      reformatSamlangSources(collectSources(getConfiguration())).forEach(
-        ([moduleReference, newCode]) => {
-          writeFileSync(moduleReference.toFilename(), newCode);
-        }
-      );
+      reformatSamlangSources(
+        collectSources(getConfiguration(), (parts) => new ModuleReference(parts))
+      ).forEach(([moduleReference, newCode]) => {
+        writeFileSync(moduleReference.toFilename(), newCode);
+      });
     }
   },
   compile(needHelp) {
@@ -61,13 +51,6 @@ const runners: CLIRunners = {
       console.log('samlang compile: Compile your codebase according to sconfig.json.');
     } else {
       compileEverything(getConfiguration());
-    }
-  },
-  lsp(needHelp) {
-    if (needHelp) {
-      console.log('samlang lsp: Start an LSP process according to sconfig.json.');
-    } else {
-      startSamlangLanguageServer(getConfiguration());
     }
   },
   version() {

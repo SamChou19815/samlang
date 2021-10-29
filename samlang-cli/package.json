@@ -4,7 +4,8 @@
   "license": "AGPLv3",
   "files": [
     "bin",
-    "loader.js"
+    "loader.js",
+    "loader.d.ts"
   ],
   "scripts": {
     "compile": "tsc --incremental --noEmit",

@@ -64,13 +64,13 @@ export function activate(): void {
   const serverOptions = {
     run: {
       module: serverModule,
-      args: ['lsp'],
+      args: [],
       transport: TransportKind.ipc,
     },
     debug: {
       module: serverModule,
       transport: TransportKind.ipc,
-      args: ['lsp'],
+      args: [],
       options: { execArgv: ['--nolazy', '--inspect=6009'] },
     },
   };

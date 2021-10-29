@@ -6,10 +6,26 @@ build({
   bundle: true,
   sourcemap: false,
   platform: 'node',
-  target: 'es2017',
+  target: 'es2019',
   logLevel: 'error',
   outfile: 'bin/index.js',
-  external: ['@dev-sam/samlang-core', 'binaryen', 'vscode-languageserver/node'],
+  external: ['@dev-sam/samlang-core', 'binaryen'],
+  plugins: [pnpPlugin()],
+}).catch((err) => {
+  // eslint-disable-next-line no-console
+  console.log(err);
+  process.exit(1);
+});
+
+build({
+  entryPoints: ['src/lsp.ts'],
+  bundle: true,
+  minify: true,
+  sourcemap: false,
+  platform: 'node',
+  target: 'es2019',
+  logLevel: 'error',
+  outfile: 'bin/lsp.js',
   plugins: [pnpPlugin()],
 }).catch((err) => {
   // eslint-disable-next-line no-console
