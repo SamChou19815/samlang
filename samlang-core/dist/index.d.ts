@@ -21,7 +21,7 @@ export function compileSamlangSources(
 ): SamlangSourcesCompilationResult;
 
 export type SamlangSingleSourceCompilationResult =
-  | { readonly __type__: 'OK'; readonly emittedTSCode: string; readonly emittedWasmText: string }
+  | { readonly __type__: 'OK'; readonly emittedTSCode: string; readonly interpreterResult: string }
   | { readonly __type__: 'ERROR'; readonly errors: readonly string[] };
 
 export function compileSingleSamlangSource(

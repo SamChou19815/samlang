@@ -12,11 +12,10 @@ export function parseCLIArguments(commandLineArguments: readonly string[]): Pars
     return { type: 'compile', needHelp: false };
   }
 
-  let type: 'format' | 'compile' | 'lsp';
+  let type: 'format' | 'compile';
   switch (commandLineArguments[0]) {
     case 'format':
     case 'compile':
-    case 'lsp':
       type = commandLineArguments[0];
       break;
     case 'version':
@@ -31,7 +30,6 @@ export function parseCLIArguments(commandLineArguments: readonly string[]): Pars
 export interface CLIRunners {
   format(needHelp: boolean): void;
   compile(needHelp: boolean): void;
-  lsp(needHelp: boolean): void;
   version(): void;
   help(): void;
 }
@@ -47,9 +45,6 @@ export default function cliMainRunner(
       return;
     case 'compile':
       runners.compile(action.needHelp);
-      return;
-    case 'lsp':
-      runners.lsp(action.needHelp);
       return;
     case 'version':
       runners.version();

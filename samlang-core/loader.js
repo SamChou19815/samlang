@@ -1,8 +1,11 @@
-module.exports = function samlangGeneratedWebAssemblyLoader(bytes, builtinsPatch = () => ({})) {
+module.exports = function samlangGeneratedWebAssemblyLoader(
+  /** @type {ArrayBufferView | ArrayBuffer} */ bytes,
+  builtinsPatch = () => ({})
+) {
   const memory = new WebAssembly.Memory({ initial: 2, maximum: 65536 });
   const codeModule = new WebAssembly.Module(bytes);
 
-  function pointerToString(p) {
+  function pointerToString(/** @type {number} */ p) {
     const mem = new Uint32Array(memory.buffer);
     const start = p / 4;
     const length = mem[start + 1];

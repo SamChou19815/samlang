@@ -1,7 +1,9 @@
-import { lstatSync, readdirSync, readFileSync } from 'fs';
-import { join, normalize, relative, resolve, sep } from 'path';
+#!/usr/bin/env node
 
-import { ModuleReference, createSamlangLanguageService } from '@dev-sam/samlang-core';
+import { join, relative, resolve, sep } from 'path';
+
+import { ModuleReference } from '@dev-sam/samlang-core/ast/common-nodes';
+import createSamlangLanguageService from '@dev-sam/samlang-core/services';
 import {
   createConnection,
   ProposedFeatures,
@@ -12,47 +14,12 @@ import {
   ResponseError,
 } from 'vscode-languageserver/node';
 
-import type { SamlangProjectConfiguration } from './configuration';
+import { getConfiguration, collectSources } from './utils';
 
 const ENTIRE_DOCUMENT_RANGE: Range = {
   start: { line: 0, character: 0 },
   end: { line: Number.MAX_SAFE_INTEGER, character: Number.MAX_SAFE_INTEGER },
 };
-
-function filePathToModuleReference(sourcePath: string, filePath: string): ModuleReference {
-  const relativeFile = normalize(relative(sourcePath, filePath));
-  const relativeFileWithoutExtension = relativeFile.substring(0, relativeFile.length - 4);
-  return new ModuleReference(relativeFileWithoutExtension.split(sep));
-}
-
-function walk(startPath: string, visitor: (file: string) => void): void {
-  function recursiveVisit(path: string): void {
-    if (lstatSync(path).isFile()) {
-      visitor(path);
-      return;
-    }
-
-    if (lstatSync(path).isDirectory()) {
-      readdirSync(path).some((relativeChildPath) => recursiveVisit(join(path, relativeChildPath)));
-    }
-  }
-
-  return recursiveVisit(startPath);
-}
-
-export function collectSources({
-  sourceDirectory,
-}: SamlangProjectConfiguration): readonly (readonly [ModuleReference, string])[] {
-  const sourcePath = resolve(sourceDirectory);
-  const sources: (readonly [ModuleReference, string])[] = [];
-
-  walk(sourcePath, (file) => {
-    if (!file.endsWith('.sam')) return;
-    sources.push([filePathToModuleReference(sourcePath, file), readFileSync(file).toString()]);
-  });
-
-  return sources;
-}
 
 const samlangRangeToLspFoldingRange = (range: Range) => ({
   startLine: range.start.line,
@@ -61,10 +28,11 @@ const samlangRangeToLspFoldingRange = (range: Range) => ({
   endCharacter: range.end.character,
 });
 
-export default function startSamlangLanguageServer(
-  configuration: SamlangProjectConfiguration
-): void {
-  const service = createSamlangLanguageService(collectSources(configuration));
+function startSamlangLanguageServer(): void {
+  const configuration = getConfiguration();
+  const service = createSamlangLanguageService(
+    collectSources(configuration, (parts) => new ModuleReference(parts))
+  );
 
   function uriToModuleReference(uri: string): ModuleReference {
     const relativePath = relative(
@@ -171,3 +139,5 @@ export default function startSamlangLanguageServer(
 
   connection.listen();
 }
+
+startSamlangLanguageServer();

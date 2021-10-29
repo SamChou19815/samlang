@@ -55,5 +55,6 @@ function _Demo_Main_main(): number {
 
 _Demo_Main_main();
 `);
+    expect(result.interpreterResult).toBe('hello world\n');
   });
 });

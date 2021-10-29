@@ -8,6 +8,7 @@ import {
   lowerMidIRSourcesToWasmModule,
 } from './compiler';
 import type { SamlangSourcesCompilationResult, SamlangSingleSourceCompilationResult } from './dist';
+import samlangGeneratedWebAssemblyLoader from './loader';
 import { optimizeHighIRSourcesAccordingToConfiguration } from './optimization';
 import { parseSources } from './parser';
 import prettyPrintSamlangModule from './printer';
@@ -59,8 +60,25 @@ require('@dev-sam/samlang-cli/loader')(binary).${mainFunctionName}();
   });
   emittedCode[EMITTED_WASM_FILE] = wasmModule.emitBinary();
   emittedCode[EMITTED_WAT_FILE] = wasmModule.emitText();
+  wasmModule.dispose();
 
   return { __type__: 'OK', emittedCode };
+}
+
+function interpretWebAssemblyModule(
+  emittedWasmBinary: Uint8Array,
+  mainFunctionName: string
+): string {
+  let printed = '';
+  const functions = samlangGeneratedWebAssemblyLoader(emittedWasmBinary, (pointerToString) => ({
+    __Builtins_println(p: number) {
+      printed += pointerToString(p);
+      printed += '\n';
+      return 0;
+    },
+  }));
+  functions[mainFunctionName]?.();
+  return printed;
 }
 
 export function compileSingleSamlangSource(
@@ -73,10 +91,14 @@ export function compileSingleSamlangSource(
   );
   if (result.__type__ === 'ERROR') return result;
   const emittedTSCode = result.emittedCode['Demo.ts'];
-  const emittedWasmText = result.emittedCode[EMITTED_WAT_FILE];
-  assert(typeof emittedTSCode === 'string' && typeof emittedWasmText === 'string');
-  return { __type__: 'OK', emittedTSCode, emittedWasmText };
+  const emittedWasmBinary = result.emittedCode[EMITTED_WASM_FILE];
+  assert(typeof emittedTSCode === 'string' && emittedWasmBinary instanceof Uint8Array);
+  const interpreterResult = interpretWebAssemblyModule(
+    emittedWasmBinary,
+    encodeMainFunctionName(demoModuleReference)
+  );
+  return { __type__: 'OK', emittedTSCode, interpreterResult };
 }
 
-export { Position, Range, ModuleReference } from './ast/common-nodes';
+export { Range, ModuleReference } from './ast/common-nodes';
 export { default as createSamlangLanguageService } from './services';

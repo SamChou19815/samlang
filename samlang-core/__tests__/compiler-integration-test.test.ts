@@ -79,6 +79,7 @@ result['${testCaseName}'] = printed;
         },
       })
     );
+    wasmModule.dispose();
 
     const actualResult = Object.fromEntries(
       runnableSamlangProgramTestCases.map(({ testCaseName }) => {
