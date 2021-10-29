@@ -1,6 +1,7 @@
 {
   "private": true,
   "workspaces": [
+    "jest-raw-loader",
     "samlang-cli",
     "samlang-core"
   ],
@@ -8,8 +9,8 @@
     "lint": "eslint . --cache",
     "format": "prettier --write '**/*.{ts,js,yml}'",
     "format:check": "prettier --check '**/*.{ts,js,yml}'",
-    "bundle": "yarn workspaces foreach run bundle",
-    "c": "yarn workspaces foreach -ptv run compile",
+    "bundle": "yarn workspaces foreach -ptv run bundle",
+    "c": "yarn workspaces foreach -tv run compile",
     "test": "jest --coverage",
     "test:single": "jest -t",
     "test:integration": "esr scripts/compile-repository.ts",
@@ -18,11 +19,13 @@
   "devDependencies": {
     "@dev-sam/eslint-config-common": "0.22.0",
     "@dev-sam/jest-esbuild-transformer": "0.4.0",
+    "@dev-sam/jest-raw-loader": "workspace:0.0.1",
+    "@dev-sam/samlang-cli": "workspace:0.5.0",
     "@types/jest": "^27.0.2",
     "@types/node": "^16.11.6",
     "@typescript-eslint/eslint-plugin": "^5.2.0",
     "@typescript-eslint/parser": "^5.2.0",
-    "esbuild": "^0.13.9",
+    "esbuild": "^0.13.10",
     "eslint": "^8.1.0",
     "eslint-import-resolver-node": "^0.3.6",
     "eslint-plugin-import": "^2.25.2",
@@ -31,7 +34,7 @@
     "lint-staged": "^11.2.6",
     "prettier": "^2.4.1",
     "source-map-support": "^0.5.20",
-    "typescript": "^4.4.3"
+    "typescript": "^4.4.4"
   },
   "eslintConfig": {
     "extends": "@dev-sam/common",
@@ -69,7 +72,8 @@
   },
   "jest": {
     "transform": {
-      "\\.ts$": "@dev-sam/jest-esbuild-transformer"
+      "\\.ts$": "@dev-sam/jest-esbuild-transformer",
+      "\\.wat$": "@dev-sam/jest-raw-loader"
     },
     "clearMocks": true,
     "coverageThreshold": {
@@ -90,5 +94,5 @@
       "yarn prettier --write"
     ]
   },
-  "packageManager": "yarn@3.1.0-rc.11"
+  "packageManager": "yarn@3.1.0"
 }

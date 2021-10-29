@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-inferrable-types */
+
 import { intArrayToDataString, assert } from '../utils';
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
@@ -370,34 +372,3 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
 
   return collector.join('');
 }
-
-// eslint-disable-next-line @typescript-eslint/no-inferrable-types
-export const wasmJSAdapter: string = `// @ts-check
-
-const memory = new WebAssembly.Memory({ initial: 2, maximum: 65536 });
-const codeModule = new WebAssembly.Module(
-  require('fs').readFileSync(require('path').join(__dirname, '__all__.wasm'))
-);
-
-function pointerToString(p) {
-  const mem = new Uint32Array(memory.buffer);
-  const start = p / 4;
-  const length = mem[start + 1];
-  const characterCodes = Array.from(mem.subarray(start + 2, start + 2 + length).values());
-  return String.fromCharCode(...characterCodes);
-}
-
-module.exports = new WebAssembly.Instance(codeModule, {
-  env: { memory },
-  builtins: {
-    __Builtins_println(p) {
-      // eslint-disable-next-line no-console
-      console.log(pointerToString(p));
-      return 0;
-    },
-    __Builtins_panic(p) {
-      throw new Error(pointerToString(p));
-    },
-  },
-}).exports;
-`;

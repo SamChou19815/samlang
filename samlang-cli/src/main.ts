@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import { mkdirSync, writeFileSync, readFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 import {
@@ -8,7 +8,6 @@ import {
   reformatSamlangSources,
   compileSamlangSources,
 } from '@dev-sam/samlang-core';
-import { parseText as parseWasmText } from 'binaryen';
 
 import cliMainRunner, { CLIRunners } from './cli';
 import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from './configuration';
@@ -28,9 +27,6 @@ function getConfiguration(): SamlangProjectConfiguration {
   return configuration;
 }
 
-const RUNTIME_PATH = join(__dirname, '..', 'samlang-runtime');
-const WASM_RUNTIME_PATH = join(RUNTIME_PATH, `libsam.wat`);
-
 function compileEverything(configuration: SamlangProjectConfiguration): void {
   const entryModuleReferences = configuration.entryPoints.map(
     (entryPoint) => new ModuleReference(entryPoint.split('.'))
@@ -43,17 +39,7 @@ function compileEverything(configuration: SamlangProjectConfiguration): void {
   }
 
   mkdirSync(configuration.outputDirectory, { recursive: true });
-  const runtimeWatCode = readFileSync(WASM_RUNTIME_PATH).toString();
-  const wasmCode = `(module\n${runtimeWatCode}\n${result.emittedWasmCode}\n)\n`;
-  const wasmModule = parseWasmText(wasmCode);
-  wasmModule.optimize();
-  Object.entries({
-    ...result.emittedTypeScriptCode,
-    ...result.emittedWasmRunnerCode,
-    '__all__.unoptimized.wat': wasmCode,
-    '__all__.optimized.wat': wasmModule.emitText(),
-    '__all__.wasm': wasmModule.emitBinary(),
-  }).forEach(([filename, content]) => {
+  Object.entries(result.emittedCode).forEach(([filename, content]) => {
     writeFileSync(join(configuration.outputDirectory, filename), content);
   });
 }

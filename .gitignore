@@ -16,6 +16,8 @@ node_modules
 out
 bin
 build
+**/dist/index.js
+**/dist/index.js.map
 workspaces.json
 bundles
 
@@ -29,6 +31,7 @@ bundles
 **/.pnp
 **/.pnp.js
 **/.pnp.cjs
+**/.pnp.loader.mjs
 
 ## Cache
 .eslintcache

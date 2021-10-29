@@ -1,0 +1,3 @@
+#!/bin/bash
+
+node -r "./.pnp.cjs" ./samlang-cli/bin/index.js

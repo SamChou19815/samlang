@@ -9,6 +9,7 @@ import {
 } from '../ast/common-names';
 import { ModuleReference } from '../ast/common-nodes';
 import { reformatSamlangSources, compileSamlangSources, compileSingleSamlangSource } from '../main';
+import { assert } from '../utils';
 
 describe('samlang-core/index', () => {
   it('reformatSamlangSources works', () => {
@@ -24,14 +25,22 @@ describe('samlang-core/index', () => {
     });
   });
 
+  it('compileSingleSamlangSource works when program with type error.', () => {
+    expect(compileSingleSamlangSource('class Main { function main(): string = 42 + "" }')).toEqual({
+      __type__: 'ERROR',
+      errors: [
+        'Demo.sam:1:40-1:47: [UnexpectedType]: Expected: `string`, actual: `int`.',
+        'Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.',
+      ],
+    });
+  });
+
   it('compileSingleSamlangSource works when given good program.', () => {
-    expect(
-      compileSingleSamlangSource(
-        'class Main { function main(): unit = Builtins.println("hello world") }'
-      )
-    ).toEqual({
-      __type__: 'OK',
-      emittedTypeScriptCode: `type Str = [number, string];
+    const result = compileSingleSamlangSource(
+      'class Main { function main(): unit = Builtins.println("hello world") }'
+    );
+    assert(result.__type__ === 'OK');
+    expect(result.emittedTSCode).toBe(`type Str = [number, string];
 const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
 const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.log(line); return 0; };
 const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(v, 10);
@@ -45,29 +54,6 @@ function _Demo_Main_main(): number {
 }
 
 _Demo_Main_main();
-`,
-      emittedWasmCode: `(type $none_=>_i32 (func (result i32)))
-(import "builtins" "${ENCODED_FUNCTION_NAME_PRINTLN}" (func $${ENCODED_FUNCTION_NAME_PRINTLN} (param i32) (result i32)))
-(import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))
-(data (i32.const 4096) "\\00\\00\\00\\00\\0b\\00\\00\\00\\68\\00\\00\\00\\65\\00\\00\\00\\6c\\00\\00\\00\\6c\\00\\00\\00\\6f\\00\\00\\00\\20\\00\\00\\00\\77\\00\\00\\00\\6f\\00\\00\\00\\72\\00\\00\\00\\6c\\00\\00\\00\\64\\00\\00\\00")
-(table $0 1 funcref)
-(elem $0 (i32.const 0) $_Demo_Main_main)
-(func $_Demo_Main_main  (result i32)
-  (drop (call $__Builtins_println (i32.const 4096)))
-  (i32.const 0)
-)
-(export "_Demo_Main_main" (func $_Demo_Main_main))
-`,
-    });
-  });
-
-  it('compileSingleSamlangSource works when program with type error.', () => {
-    expect(compileSingleSamlangSource('class Main { function main(): string = 42 + "" }')).toEqual({
-      __type__: 'ERROR',
-      errors: [
-        'Demo.sam:1:40-1:47: [UnexpectedType]: Expected: `string`, actual: `int`.',
-        'Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.',
-      ],
-    });
+`);
   });
 });

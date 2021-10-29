@@ -8,12 +8,7 @@ export { Position, Range, ModuleReference };
 // PART 2: Public APIs
 
 export type SamlangSourcesCompilationResult =
-  | {
-      readonly __type__: 'OK';
-      readonly emittedTypeScriptCode: Readonly<Record<string, string>>;
-      readonly emittedWasmCode: string;
-      readonly emittedWasmRunnerCode: Readonly<Record<string, string>>;
-    }
+  | { readonly __type__: 'OK'; readonly emittedCode: Readonly<Record<string, string | Uint8Array>> }
   | { readonly __type__: 'ERROR'; readonly errors: readonly string[] };
 
 export function reformatSamlangSources(
@@ -26,11 +21,7 @@ export function compileSamlangSources(
 ): SamlangSourcesCompilationResult;
 
 export type SamlangSingleSourceCompilationResult =
-  | {
-      readonly __type__: 'OK';
-      readonly emittedTypeScriptCode: string;
-      readonly emittedWasmCode: string;
-    }
+  | { readonly __type__: 'OK'; readonly emittedTSCode: string; readonly emittedWasmText: string }
   | { readonly __type__: 'ERROR'; readonly errors: readonly string[] };
 
 export function compileSingleSamlangSource(

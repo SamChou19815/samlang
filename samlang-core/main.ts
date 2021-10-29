@@ -1,7 +1,6 @@
 import { encodeMainFunctionName } from './ast/common-names';
 import { ModuleReference } from './ast/common-nodes';
 import { prettyPrintMidIRSourcesAsTSSources } from './ast/mir-nodes';
-import { prettyPrintWebAssemblyModule, wasmJSAdapter } from './ast/wasm-nodes';
 import { typeCheckSourceHandles } from './checker';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -12,7 +11,7 @@ import type { SamlangSourcesCompilationResult, SamlangSingleSourceCompilationRes
 import { optimizeHighIRSourcesAccordingToConfiguration } from './optimization';
 import { parseSources } from './parser';
 import prettyPrintSamlangModule from './printer';
-import { checkNotNull } from './utils';
+import { assert } from './utils';
 
 export function reformatSamlangSources(
   sourceHandles: readonly (readonly [ModuleReference, string])[]
@@ -22,6 +21,9 @@ export function reformatSamlangSources(
     prettyPrintSamlangModule(100, samlangModule),
   ]);
 }
+
+const EMITTED_WASM_FILE = '__all__.wasm';
+const EMITTED_WAT_FILE = '__all__.wat';
 
 export function compileSamlangSources(
   sourceHandles: readonly (readonly [ModuleReference, string])[],
@@ -41,24 +43,24 @@ export function compileSamlangSources(
   const midIRSources = lowerHighIRSourcesToMidIRSources(
     optimizeHighIRSourcesAccordingToConfiguration(compileSamlangSourcesToHighIRSources(sources))
   );
-  const commonJSCode = prettyPrintMidIRSourcesAsTSSources(midIRSources);
-  const emittedTypeScriptCode = Object.fromEntries(
-    entryModuleReferences.map((moduleReference) => [
-      `${moduleReference}.ts`,
-      `${commonJSCode}\n${encodeMainFunctionName(moduleReference)}();\n`,
-    ])
-  );
+  const commonTSCode = prettyPrintMidIRSourcesAsTSSources(midIRSources);
+  const wasmModule = lowerMidIRSourcesToWasmModule(midIRSources);
 
-  const emittedWasmCode = prettyPrintWebAssemblyModule(lowerMidIRSourcesToWasmModule(midIRSources));
-  const emittedWasmRunnerCode = Object.fromEntries(
-    entryModuleReferences.map((moduleReference) => [
-      `${moduleReference}.js`,
-      `require('./__all__').${encodeMainFunctionName(moduleReference)}();\n`,
-    ])
-  );
-  emittedTypeScriptCode['__all__.js'] = wasmJSAdapter;
+  const emittedCode: Record<string, string | Uint8Array> = {};
+  entryModuleReferences.forEach((moduleReference) => {
+    const mainFunctionName = encodeMainFunctionName(moduleReference);
+    const tsCode = `${commonTSCode}\n${mainFunctionName}();\n`;
+    const wasmJSCode = `// @${'generated'}
+const binary = require('fs').readFileSync(require('path').join(__dirname, '${EMITTED_WASM_FILE}'));
+require('@dev-sam/samlang-cli/loader')(binary).${mainFunctionName}();
+`;
+    emittedCode[`${moduleReference}.ts`] = tsCode;
+    emittedCode[`${moduleReference}.wasm.js`] = wasmJSCode;
+  });
+  emittedCode[EMITTED_WASM_FILE] = wasmModule.emitBinary();
+  emittedCode[EMITTED_WAT_FILE] = wasmModule.emitText();
 
-  return { __type__: 'OK', emittedTypeScriptCode, emittedWasmCode, emittedWasmRunnerCode };
+  return { __type__: 'OK', emittedCode };
 }
 
 export function compileSingleSamlangSource(
@@ -70,10 +72,11 @@ export function compileSingleSamlangSource(
     [demoModuleReference]
   );
   if (result.__type__ === 'ERROR') return result;
-  const emittedTypeScriptCode = checkNotNull(result.emittedTypeScriptCode['Demo.ts']);
-  return {
-    __type__: 'OK',
-    emittedTypeScriptCode,
-    emittedWasmCode: result.emittedWasmCode,
-  };
+  const emittedTSCode = result.emittedCode['Demo.ts'];
+  const emittedWasmText = result.emittedCode[EMITTED_WAT_FILE];
+  assert(typeof emittedTSCode === 'string' && typeof emittedWasmText === 'string');
+  return { __type__: 'OK', emittedTSCode, emittedWasmText };
 }
+
+export { Position, Range, ModuleReference } from './ast/common-nodes';
+export { default as createSamlangLanguageService } from './services';

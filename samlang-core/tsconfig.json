@@ -1,3 +1,4 @@
 {
-  "extends": "../configurations/tsconfig.base.json"
+  "extends": "../configurations/tsconfig.base.json",
+  "exclude": ["build.js", "dist/index.js"]
 }

@@ -19,3 +19,8 @@ export class ModuleReference {
   readonly toFilename: () => string;
   uniqueHash(): string;
 }
+
+export interface Location {
+  readonly moduleReference: ModuleReference;
+  readonly range: Range;
+}
