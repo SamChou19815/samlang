@@ -56,82 +56,82 @@ describe('samlang-cli/configuration', () => {
   });
 
   describe('loader', () => {
-    it('When there is no configuration, say so.', () => {
+    it('When there is no configuration, say so.', async () => {
       expect(
-        loadSamlangProjectConfiguration({
+        await loadSamlangProjectConfiguration({
           startPath: '/Users/sam',
           pathExistanceTester() {
             return false;
           },
-          fileReader() {
+          async fileReader() {
             return null;
           },
         })
       ).toBe('NO_CONFIGURATION');
     });
 
-    it('When the configuration file is unreadable, say so.', () => {
+    it('When the configuration file is unreadable, say so.', async () => {
       expect(
-        loadSamlangProjectConfiguration({
+        await loadSamlangProjectConfiguration({
           startPath: '/Users/sam',
           pathExistanceTester() {
             return true;
           },
-          fileReader() {
+          async fileReader() {
             return null;
           },
         })
       ).toBe('UNREADABLE_CONFIGURATION_FILE');
     });
 
-    it('When the configuration file is unparsable, say so.', () => {
+    it('When the configuration file is unparsable, say so.', async () => {
       expect(
-        loadSamlangProjectConfiguration({
+        await loadSamlangProjectConfiguration({
           startPath: '/Users/sam',
           pathExistanceTester() {
             return true;
           },
-          fileReader() {
+          async fileReader() {
             return 'bad file haha';
           },
         })
       ).toBe('UNPARSABLE_CONFIGURATION_FILE');
     });
 
-    it('When the configuration file is good, say so', () => {
+    it('When the configuration file is good, say so', async () => {
       expect(
-        loadSamlangProjectConfiguration({
+        await loadSamlangProjectConfiguration({
           startPath: '/Users/sam',
           pathExistanceTester() {
             return true;
           },
-          fileReader() {
+          async fileReader() {
             return '{}';
           },
         })
       ).toBeTruthy();
     });
 
-    it('Real filesystem bad configuration file integration test.', () => {
+    it('Real filesystem bad configuration file integration test.', async () => {
       expect(
-        loadSamlangProjectConfiguration({
+        await loadSamlangProjectConfiguration({
           ...fileSystemLoader_EXPOSED_FOR_TESTING,
           startPath: resolve('./samlang-cli/fixtures/bad-configuration-file'),
         })
       ).toBe('UNREADABLE_CONFIGURATION_FILE');
     });
 
-    it('Real filesystem bad start path integration test.', () => {
+    it('Real filesystem bad start path integration test.', async () => {
       expect(
-        loadSamlangProjectConfiguration({
+        await loadSamlangProjectConfiguration({
           ...fileSystemLoader_EXPOSED_FOR_TESTING,
           startPath: '/',
         })
       ).toBe('NO_CONFIGURATION');
     });
 
-    it('Real filesystem integration test.', () => {
-      expect(loadSamlangProjectConfiguration()).toEqual({
+    it('Real filesystem integration test.', async () => {
+      expect(await loadSamlangProjectConfiguration()).toEqual({
         sourceDirectory: resolve(__dirname, '..', '..', '..'),
         outputDirectory: resolve(__dirname, '..', '..', '..', 'out'),
         entryPoints: ['tests.AllTests'],

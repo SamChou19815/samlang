@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import { mkdirSync, writeFileSync } from 'fs';
+import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
 import {
@@ -14,12 +14,12 @@ import type { SamlangProjectConfiguration } from './configuration';
 import ASCII_ART_SAMLANG_LOGO from './logo';
 import { getConfiguration, collectSources } from './utils';
 
-function compileEverything(configuration: SamlangProjectConfiguration): void {
+async function compileEverything(configuration: SamlangProjectConfiguration): Promise<void> {
   const entryModuleReferences = configuration.entryPoints.map(
     (entryPoint) => new ModuleReference(entryPoint.split('.'))
   );
   const result = compileSamlangSources(
-    collectSources(configuration, (parts) => new ModuleReference(parts)),
+    await collectSources(configuration, (parts) => new ModuleReference(parts)),
     entryModuleReferences
   );
   if (result.__type__ === 'ERROR') {
@@ -28,35 +28,37 @@ function compileEverything(configuration: SamlangProjectConfiguration): void {
     process.exit(1);
   }
 
-  mkdirSync(configuration.outputDirectory, { recursive: true });
-  Object.entries(result.emittedCode).forEach(([filename, content]) => {
-    writeFileSync(join(configuration.outputDirectory, filename), content);
-  });
+  await mkdir(configuration.outputDirectory, { recursive: true });
+  await Promise.all(
+    Object.entries(result.emittedCode).map(async ([filename, content]) => {
+      await writeFile(join(configuration.outputDirectory, filename), content);
+    })
+  );
 }
 
 const runners: CLIRunners = {
-  format(needHelp) {
+  async format(needHelp) {
     if (needHelp) {
       console.log('samlang format: Format your codebase according to sconfig.json.');
     } else {
-      reformatSamlangSources(
-        collectSources(getConfiguration(), (parts) => new ModuleReference(parts))
-      ).forEach(([moduleReference, newCode]) => {
-        writeFileSync(moduleReference.toFilename(), newCode);
-      });
+      await Promise.all(
+        reformatSamlangSources(
+          await collectSources(await getConfiguration(), (parts) => new ModuleReference(parts))
+        ).map(([moduleReference, newCode]) => writeFile(moduleReference.toFilename(), newCode))
+      );
     }
   },
-  compile(needHelp) {
+  async compile(needHelp) {
     if (needHelp) {
       console.log('samlang compile: Compile your codebase according to sconfig.json.');
     } else {
-      compileEverything(getConfiguration());
+      await compileEverything(await getConfiguration());
     }
   },
-  version() {
+  async version() {
     console.log('samlang version: unreleased.');
   },
-  help() {
+  async help() {
     console.log(`${ASCII_ART_SAMLANG_LOGO}
 Usage:
 samlang [command]
@@ -71,6 +73,6 @@ help: Show this message.`);
   },
 };
 
-export default function samlangCLIMainFunction(): void {
-  cliMainRunner(runners, process.argv.slice(2));
+export default function samlangCLIMainFunction(): Promise<void> {
+  return cliMainRunner(runners, process.argv.slice(2));
 }
