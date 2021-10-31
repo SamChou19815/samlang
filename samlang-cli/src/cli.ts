@@ -28,28 +28,29 @@ export function parseCLIArguments(commandLineArguments: readonly string[]): Pars
 }
 
 export interface CLIRunners {
-  format(needHelp: boolean): void;
-  compile(needHelp: boolean): void;
-  version(): void;
-  help(): void;
+  format(needHelp: boolean): Promise<void>;
+  compile(needHelp: boolean): Promise<void>;
+  version(): Promise<void>;
+  help(): Promise<void>;
 }
 
-export default function cliMainRunner(
+export default async function cliMainRunner(
   runners: CLIRunners,
   commandLineArguments: readonly string[]
-): void {
+): Promise<void> {
   const action = parseCLIArguments(commandLineArguments);
   switch (action.type) {
     case 'format':
-      runners.format(action.needHelp);
+      await runners.format(action.needHelp);
       return;
     case 'compile':
-      runners.compile(action.needHelp);
+      await runners.compile(action.needHelp);
       return;
     case 'version':
-      runners.version();
+      await runners.version();
       return;
     case 'help':
-      runners.help();
+      await runners.help();
+      return;
   }
 }

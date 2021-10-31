@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
+import { readFile } from 'fs/promises';
 import { dirname, join, resolve } from 'path';
 
 export type SamlangProjectConfiguration = {
@@ -35,15 +36,15 @@ export function parseSamlangProjectConfiguration(
 type ConfigurationLoader = {
   readonly startPath: string;
   readonly pathExistanceTester: (path: string) => boolean;
-  readonly fileReader: (path: string) => string | null;
+  readonly fileReader: (path: string) => Promise<string | null>;
 };
 
 export const fileSystemLoader_EXPOSED_FOR_TESTING: ConfigurationLoader = {
   startPath: resolve('.'),
   pathExistanceTester: existsSync,
-  fileReader: (path) => {
+  fileReader: async (path) => {
     try {
-      return readFileSync(path).toString();
+      return (await readFile(path)).toString();
     } catch {
       return null;
     }
@@ -56,16 +57,16 @@ type ConfigurationLoadingResult =
   | 'UNPARSABLE_CONFIGURATION_FILE'
   | 'NO_CONFIGURATION';
 
-export default function loadSamlangProjectConfiguration({
+export default async function loadSamlangProjectConfiguration({
   startPath,
   pathExistanceTester,
   fileReader,
-}: ConfigurationLoader = fileSystemLoader_EXPOSED_FOR_TESTING): ConfigurationLoadingResult {
+}: ConfigurationLoader = fileSystemLoader_EXPOSED_FOR_TESTING): Promise<ConfigurationLoadingResult> {
   let configurationDirectory = startPath;
   while (configurationDirectory !== '/') {
     const configurationPath = join(configurationDirectory, 'sconfig.json');
     if (pathExistanceTester(configurationPath)) {
-      const content = fileReader(configurationPath);
+      const content = await fileReader(configurationPath);
       if (content == null) {
         return 'UNREADABLE_CONFIGURATION_FILE';
       }

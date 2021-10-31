@@ -1,12 +1,12 @@
-import { lstatSync, readdirSync, readFileSync } from 'fs';
+import { lstat, readdir, readFile } from 'fs/promises';
 import { join, normalize, relative, resolve, sep } from 'path';
 
 import type { ModuleReference } from '@dev-sam/samlang-core';
 
 import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from './configuration';
 
-export function getConfiguration(): SamlangProjectConfiguration {
-  const configuration = loadSamlangProjectConfiguration();
+export async function getConfiguration(): Promise<SamlangProjectConfiguration> {
+  const configuration = await loadSamlangProjectConfiguration();
   if (
     configuration === 'NO_CONFIGURATION' ||
     configuration === 'UNPARSABLE_CONFIGURATION_FILE' ||
@@ -19,10 +19,10 @@ export function getConfiguration(): SamlangProjectConfiguration {
   return configuration;
 }
 
-export function collectSources(
+export async function collectSources(
   { sourceDirectory }: SamlangProjectConfiguration,
   moduleReferenceCreator: (parts: readonly string[]) => ModuleReference
-): readonly (readonly [ModuleReference, string])[] {
+): Promise<readonly (readonly [ModuleReference, string])[]> {
   const sourcePath = resolve(sourceDirectory);
   const sources: (readonly [ModuleReference, string])[] = [];
 
@@ -35,16 +35,18 @@ export function collectSources(
     return moduleReferenceCreator(relativeFileWithoutExtension.split(sep));
   }
 
-  function walk(startPath: string, visitor: (file: string) => void): void {
-    function recursiveVisit(path: string): void {
-      if (lstatSync(path).isFile()) {
-        visitor(path);
+  function walk(startPath: string, visitor: (file: string) => Promise<void>): Promise<void> {
+    async function recursiveVisit(path: string): Promise<void> {
+      if ((await lstat(path)).isFile()) {
+        await visitor(path);
         return;
       }
 
-      if (lstatSync(path).isDirectory()) {
-        readdirSync(path).some((relativeChildPath) =>
-          recursiveVisit(join(path, relativeChildPath))
+      if ((await lstat(path)).isDirectory()) {
+        await Promise.all(
+          (
+            await readdir(path)
+          ).map(async (relativeChildPath) => await recursiveVisit(join(path, relativeChildPath)))
         );
       }
     }
@@ -52,9 +54,9 @@ export function collectSources(
     return recursiveVisit(startPath);
   }
 
-  walk(sourcePath, (file) => {
+  await walk(sourcePath, async (file) => {
     if (!file.endsWith('.sam')) return;
-    sources.push([filePathToModuleReference(sourcePath, file), readFileSync(file).toString()]);
+    sources.push([filePathToModuleReference(sourcePath, file), (await readFile(file)).toString()]);
   });
 
   return sources;

@@ -28,10 +28,10 @@ const samlangRangeToLspFoldingRange = (range: Range) => ({
   endCharacter: range.end.character,
 });
 
-function startSamlangLanguageServer(): void {
-  const configuration = getConfiguration();
+async function startSamlangLanguageServer() {
+  const configuration = await getConfiguration();
   const service = createSamlangLanguageService(
-    collectSources(configuration, (parts) => new ModuleReference(parts))
+    await collectSources(configuration, (parts) => new ModuleReference(parts))
   );
 
   function uriToModuleReference(uri: string): ModuleReference {
