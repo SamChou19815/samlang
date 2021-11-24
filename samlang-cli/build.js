@@ -1,4 +1,3 @@
-const { pnpPlugin } = require('@yarnpkg/esbuild-plugin-pnp');
 const { build } = require('esbuild');
 
 build({
@@ -10,7 +9,6 @@ build({
   logLevel: 'error',
   outfile: 'bin/index.js',
   external: ['@dev-sam/samlang-core', 'binaryen'],
-  plugins: [pnpPlugin()],
 }).catch((err) => {
   // eslint-disable-next-line no-console
   console.log(err);
@@ -26,7 +24,6 @@ build({
   target: 'es2019',
   logLevel: 'error',
   outfile: 'bin/lsp.js',
-  plugins: [pnpPlugin()],
 }).catch((err) => {
   // eslint-disable-next-line no-console
   console.log(err);
