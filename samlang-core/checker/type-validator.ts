@@ -1,4 +1,4 @@
-import type { Type, Range, ModuleReference } from '../ast/common-nodes';
+import type { ModuleReference, Range, Type } from '../ast/common-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { checkNotNull } from '../utils';
 

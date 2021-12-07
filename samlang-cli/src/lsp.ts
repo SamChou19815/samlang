@@ -1,20 +1,18 @@
 #!/usr/bin/env node
 
-import { join, relative, resolve, sep } from 'path';
-
 import { ModuleReference } from '@dev-sam/samlang-core/ast/common-nodes';
 import createSamlangLanguageService from '@dev-sam/samlang-core/services';
+import { join, relative, resolve, sep } from 'path';
 import {
   createConnection,
-  ProposedFeatures,
-  InitializeResult,
-  TextDocumentSyncKind,
   DiagnosticSeverity,
+  InitializeResult,
+  ProposedFeatures,
   Range,
   ResponseError,
+  TextDocumentSyncKind,
 } from 'vscode-languageserver/node';
-
-import { getConfiguration, collectSources } from './utils';
+import { collectSources, getConfiguration } from './utils';
 
 const ENTIRE_DOCUMENT_RANGE: Range = {
   start: { line: 0, character: 0 },

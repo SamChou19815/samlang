@@ -1,16 +1,16 @@
 import {
-  HighIRStatement,
   debugPrintHighIRStatement,
-  HIR_ZERO,
-  HIR_ONE,
-  HIR_NAME,
-  HIR_VARIABLE,
-  HIR_INDEX_ACCESS,
+  HighIRStatement,
   HIR_BINARY,
+  HIR_BOOL_TYPE,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_BOOL_TYPE,
+  HIR_INDEX_ACCESS,
   HIR_INT_TYPE,
+  HIR_NAME,
+  HIR_ONE,
+  HIR_VARIABLE,
+  HIR_ZERO,
 } from '../../ast/hir-nodes';
 import optimizeHighIRFunctionByCommonSubExpressionElimination from '../hir-common-subexpression-elimination-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';

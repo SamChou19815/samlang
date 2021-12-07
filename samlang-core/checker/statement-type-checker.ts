@@ -1,15 +1,15 @@
 import { Type, unitType } from '../ast/common-nodes';
 import {
-  SamlangExpression,
-  Pattern,
   ObjectPatternDestucturedName,
+  Pattern,
+  SamlangExpression,
   SamlangValStatement,
-  StatementBlock,
   SourceExpressionVariable,
   SourceFieldType,
+  StatementBlock,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import { checkNotNull, zip, LocalStackedContext, assert } from '../utils';
+import { assert, checkNotNull, LocalStackedContext, zip } from '../utils';
 import type { AccessibleGlobalTypingContext } from './typing-context';
 
 export default class StatementTypeChecker {

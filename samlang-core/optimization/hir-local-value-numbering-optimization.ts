@@ -1,22 +1,22 @@
 import {
-  HighIRNameExpression,
   HighIRExpression,
-  HighIRStatement,
   HighIRFunction,
+  HighIRNameExpression,
+  HighIRStatement,
+  HIR_BREAK,
+  HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_SINGLE_IF,
-  HIR_BREAK,
-  HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
-  HIR_CLOSURE_INITIALIZATION,
+  HIR_WHILE,
 } from '../ast/hir-nodes';
 import { error, filterMap, LocalStackedContext, zip, zip3 } from '../utils';
 import {
-  IndexAccessBindedValue,
   BinaryBindedValue,
   BindedValue,
   bindedValueToString,
+  IndexAccessBindedValue,
 } from './hir-optimization-common';
 
 class LocalVariableContext extends LocalStackedContext<string> {

@@ -1,4 +1,4 @@
-import type { HighIRExpression, HighIRStatement, HighIRFunction } from '../ast/hir-nodes';
+import type { HighIRExpression, HighIRFunction, HighIRStatement } from '../ast/hir-nodes';
 import { filterMap } from '../utils';
 import { ifElseOrNull } from './hir-optimization-common';
 

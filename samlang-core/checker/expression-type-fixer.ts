@@ -1,14 +1,14 @@
 import {
-  Type,
-  IdentifierType,
-  TupleType,
-  FunctionType,
-  unitType,
   boolType,
+  FunctionType,
+  IdentifierType,
   intType,
-  stringType,
   isTheSameType,
   prettyPrintType,
+  stringType,
+  TupleType,
+  Type,
+  unitType,
 } from '../ast/common-nodes';
 import type { SamlangExpression } from '../ast/samlang-nodes';
 import { assert, zip } from '../utils';

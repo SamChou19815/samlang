@@ -1,19 +1,19 @@
 import { ENCODED_COMPILED_PROGRAM_MAIN } from '../../ast/common-names';
 import {
-  MIR_ZERO,
-  MIR_NAME,
-  MIR_FUNCTION_CALL,
-  MIR_CAST,
-  MIR_STRUCT_INITIALIZATION,
-  MIR_INDEX_ACCESS,
   MIR_BINARY,
-  MIR_IF_ELSE,
-  MIR_SINGLE_IF,
   MIR_BREAK,
-  MIR_WHILE,
-  MIR_INT_TYPE,
+  MIR_CAST,
+  MIR_FUNCTION_CALL,
   MIR_FUNCTION_TYPE,
   MIR_IDENTIFIER_TYPE,
+  MIR_IF_ELSE,
+  MIR_INDEX_ACCESS,
+  MIR_INT_TYPE,
+  MIR_NAME,
+  MIR_SINGLE_IF,
+  MIR_STRUCT_INITIALIZATION,
+  MIR_WHILE,
+  MIR_ZERO,
 } from '../../ast/mir-nodes';
 import optimizeMidIRSourcesByEliminatingUnusedOnes from '../mir-unused-name-elimination';
 

@@ -1,16 +1,16 @@
 import {
-  DependencyTracker,
-  typeCheckSources,
-  typeCheckSourceHandles,
-  typeCheckSourcesIncrementally,
-  typeCheckSingleModuleSource,
   collectModuleReferenceFromSamlangModule,
+  DependencyTracker,
+  typeCheckSingleModuleSource,
+  typeCheckSourceHandles,
+  typeCheckSources,
+  typeCheckSourcesIncrementally,
 } from '..';
-import { Range, ModuleReference, functionType, intType } from '../../ast/common-nodes';
+import { functionType, intType, ModuleReference, Range } from '../../ast/common-nodes';
 import { SourceExpressionInt } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
-import { mapOf, hashMapOf } from '../../utils';
+import { hashMapOf, mapOf } from '../../utils';
 
 describe('samlang-core/checker', () => {
   it('collectModuleReferenceFromSamlangModule works', () => {

@@ -1,10 +1,10 @@
 import {
-  unitType,
   boolType,
-  tupleType,
-  identifierType,
   functionType,
+  identifierType,
   ModuleReference,
+  tupleType,
+  unitType,
 } from '../../ast/common-nodes';
 import collectUndecidedTypeIndices from '../undecided-type-collector';
 

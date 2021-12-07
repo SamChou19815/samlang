@@ -1,5 +1,5 @@
 import createHighIRFlexibleOrderOperatorNode from '../hir-flexible-op';
-import { HIR_ZERO, HIR_ONE, HIR_NAME, HIR_VARIABLE, HIR_INT_TYPE } from '../hir-nodes';
+import { HIR_INT_TYPE, HIR_NAME, HIR_ONE, HIR_VARIABLE, HIR_ZERO } from '../hir-nodes';
 
 describe('hir-flexible-op', () => {
   it('createHighIRFlexibleOrderOperatorNode test', () => {

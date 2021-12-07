@@ -1,4 +1,4 @@
-import { binaryOperatorValues, binaryOperatorSymbolTable } from '../common-operators';
+import { binaryOperatorSymbolTable, binaryOperatorValues } from '../common-operators';
 
 describe('binary-operators', () => {
   it("BinaryOperator's symbol table is self consistent.", () => {

@@ -1,11 +1,11 @@
 import {
-  unitType,
   boolType,
+  functionType,
   intType,
   stringType,
   tupleType,
-  functionType,
   Type,
+  unitType,
 } from '../../ast/common-nodes';
 import { assert } from '../../utils';
 import TypeResolution from '../type-resolution';

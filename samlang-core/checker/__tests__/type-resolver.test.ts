@@ -1,18 +1,17 @@
 import {
+  boolType,
+  functionType,
+  identifierType,
+  intType,
+  ModuleReference,
+  stringType,
+  tupleType,
   Type,
   UndecidedType,
   unitType,
-  boolType,
-  intType,
-  stringType,
-  identifierType,
-  tupleType,
-  functionType,
-  ModuleReference,
 } from '../../ast/common-nodes';
 import typeResolver from '../type-resolver';
 
-// eslint-disable-next-line import/prefer-default-export
 export function undecidedTypeResolver({ index }: UndecidedType): Type {
   switch (index % 4) {
     case 0:

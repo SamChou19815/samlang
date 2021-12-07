@@ -1,8 +1,6 @@
+import type { ModuleReference } from '@dev-sam/samlang-core';
 import { lstat, readdir, readFile } from 'fs/promises';
 import { join, normalize, relative, resolve, sep } from 'path';
-
-import type { ModuleReference } from '@dev-sam/samlang-core';
-
 import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from './configuration';
 
 export async function getConfiguration(): Promise<SamlangProjectConfiguration> {

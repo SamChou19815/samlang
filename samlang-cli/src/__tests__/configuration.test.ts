@@ -1,8 +1,7 @@
 import { resolve } from 'path';
-
 import loadSamlangProjectConfiguration, {
-  parseSamlangProjectConfiguration,
   fileSystemLoader_EXPOSED_FOR_TESTING,
+  parseSamlangProjectConfiguration,
 } from '../configuration';
 
 describe('samlang-cli/configuration', () => {

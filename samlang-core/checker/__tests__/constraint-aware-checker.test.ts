@@ -1,13 +1,13 @@
 import {
-  unitType,
   boolType,
-  intType,
-  stringType,
-  identifierType,
-  tupleType,
   functionType,
-  Range,
+  identifierType,
+  intType,
   ModuleReference,
+  Range,
+  stringType,
+  tupleType,
+  unitType,
 } from '../../ast/common-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { checkAndInfer, ConstraintAwareChecker } from '../constraint-aware-checker';

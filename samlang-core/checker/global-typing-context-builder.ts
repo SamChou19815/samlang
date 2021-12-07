@@ -1,23 +1,23 @@
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 
 import {
+  functionType,
+  identifierType,
+  intType,
   ModuleReference,
   Range,
   Sources,
-  unitType,
-  intType,
   stringType,
-  identifierType,
-  functionType,
+  unitType,
 } from '../ast/common-nodes';
-import type { SourceClassDefinition, SamlangModule } from '../ast/samlang-nodes';
+import type { SamlangModule, SourceClassDefinition } from '../ast/samlang-nodes';
 import type { DefaultBuiltinClasses } from '../parser';
 import { hashMapOf } from '../utils';
 import type {
-  MemberTypeInformation,
   ClassTypingContext,
-  ModuleTypingContext,
   GlobalTypingContext,
+  MemberTypeInformation,
+  ModuleTypingContext,
 } from './typing-context';
 
 function buildClassTypingContext({

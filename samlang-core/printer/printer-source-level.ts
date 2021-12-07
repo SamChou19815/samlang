@@ -1,32 +1,32 @@
 import { prettyPrintLiteral, prettyPrintType, TypedComment } from '../ast/common-nodes';
 import type {
-  SamlangExpression,
   IfElseExpression,
-  SourceClassMemberDefinition,
-  SourceClassDefinition,
-  SourceModuleMembersImport,
+  SamlangExpression,
   SamlangModule,
+  SourceClassDefinition,
+  SourceClassMemberDefinition,
+  SourceModuleMembersImport,
 } from '../ast/samlang-nodes';
 import { checkNotNull } from '../utils';
 import {
   PrettierDocument,
-  PRETTIER_NIL,
   PRETTIER_CONCAT,
-  PRETTIER_NEST,
-  PRETTIER_TEXT,
-  PRETTIER_LINE,
   PRETTIER_EXTENSION_LINE_HARD,
   PRETTIER_GROUP,
+  PRETTIER_LINE,
   PRETTIER_LINE_COMMENT,
   PRETTIER_MULTILINE_COMMENT,
+  PRETTIER_NEST,
+  PRETTIER_NIL,
+  PRETTIER_TEXT,
   prettyPrintAccordingToPrettierAlgorithm,
 } from './printer-prettier-core';
 import {
+  createBracesSurroundedBlockDocument,
+  createBracesSurroundedDocument,
+  createBracketSurroundedDocument,
   createCommaSeparatedList,
   createParenthesisSurroundedDocument,
-  createBracketSurroundedDocument,
-  createBracesSurroundedDocument,
-  createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
 
 function createPrettierDocumentForAssociatedComments(

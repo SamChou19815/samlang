@@ -1,4 +1,4 @@
-import { intArrayToDataString, assert } from '../utils';
+import { assert, intArrayToDataString } from '../utils';
 import { ENCODED_FUNCTION_NAME_PRINTLN, ENCODED_FUNCTION_NAME_THROW } from './common-names';
 import type { IROperator } from './common-operators';
 

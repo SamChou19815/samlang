@@ -1,4 +1,4 @@
-import { Type, UndecidedType, isTheSameType, Range } from '../ast/common-nodes';
+import { isTheSameType, Range, Type, UndecidedType } from '../ast/common-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
 import type TypeResolution from './type-resolution';

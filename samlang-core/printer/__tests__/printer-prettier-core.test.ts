@@ -1,15 +1,15 @@
 import { checkNotNull } from '../../utils';
 import {
   PrettierDocument,
-  PRETTIER_NIL,
   PRETTIER_CONCAT,
-  PRETTIER_TEXT,
-  PRETTIER_NEST,
-  PRETTIER_LINE,
   PRETTIER_EXTENSION_LINE_HARD,
   PRETTIER_GROUP,
-  PRETTIER_NO_SPACE_BRACKET,
+  PRETTIER_LINE,
   PRETTIER_MULTILINE_COMMENT,
+  PRETTIER_NEST,
+  PRETTIER_NIL,
+  PRETTIER_NO_SPACE_BRACKET,
+  PRETTIER_TEXT,
   prettyPrintAccordingToPrettierAlgorithm,
 } from '../printer-prettier-core';
 

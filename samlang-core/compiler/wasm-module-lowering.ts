@@ -1,29 +1,29 @@
 import { ENCODED_FUNCTION_NAME_MALLOC } from '../ast/common-names';
 import type {
   MidIRExpression,
-  MidIRStatement,
   MidIRFunction,
   MidIRSources,
+  MidIRStatement,
 } from '../ast/mir-nodes';
 import {
-  WebAssemblyInlineInstruction,
-  WebAssemblyInstruction,
-  WebAssemblyFunction,
-  WebAssemblyGlobalData,
-  WebAssemblyModule,
+  WasmBinary,
   WasmConst,
+  WasmDirectCall,
   WasmDrop,
+  WasmFunctionTypeString,
+  WasmIfElse,
+  WasmIndirectCall,
+  WasmJump,
+  WasmLoad,
   WasmLocalGet,
   WasmLocalSet,
-  WasmBinary,
-  WasmLoad,
-  WasmStore,
-  WasmDirectCall,
-  WasmIndirectCall,
-  WasmIfElse,
-  WasmJump,
   WasmLoop,
-  WasmFunctionTypeString,
+  WasmStore,
+  WebAssemblyFunction,
+  WebAssemblyGlobalData,
+  WebAssemblyInlineInstruction,
+  WebAssemblyInstruction,
+  WebAssemblyModule,
 } from '../ast/wasm-nodes';
 import { checkNotNull } from '../utils';
 

@@ -1,20 +1,20 @@
-import { intType, boolType, Range, ModuleReference } from '../ast/common-nodes';
+import { boolType, intType, ModuleReference, Range } from '../ast/common-nodes';
 import {
-  CompileTimeError,
-  SyntaxError,
-  UnexpectedTypeError,
-  NotWellDefinedIdentifierError,
-  UnresolvedNameError,
-  UnsupportedClassTypeDefinitionError,
-  UnexpectedTypeKindError,
-  TupleSizeMismatchError,
-  InsufficientTypeInferenceContextError,
   CollisionError,
+  CompileTimeError,
+  DuplicateFieldDeclarationError,
   IllegalOtherClassMatch,
   IllegalThisError,
   InconsistentFieldsInObjectError,
-  DuplicateFieldDeclarationError,
+  InsufficientTypeInferenceContextError,
   NonExhausiveMatchError,
+  NotWellDefinedIdentifierError,
+  SyntaxError,
+  TupleSizeMismatchError,
+  UnexpectedTypeError,
+  UnexpectedTypeKindError,
+  UnresolvedNameError,
+  UnsupportedClassTypeDefinitionError,
 } from '../errors';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [

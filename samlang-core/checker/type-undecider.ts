@@ -1,10 +1,10 @@
 import {
-  Type,
-  UndecidedTypes,
-  UndecidedType,
+  functionType,
   identifierType,
   tupleType,
-  functionType,
+  Type,
+  UndecidedType,
+  UndecidedTypes,
 } from '../ast/common-nodes';
 import type { SourceFieldType } from '../ast/samlang-nodes';
 import { assert, zip } from '../utils';

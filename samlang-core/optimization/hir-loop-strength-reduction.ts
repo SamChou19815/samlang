@@ -1,5 +1,5 @@
 import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
-import { HighIRStatement, HIR_VARIABLE, HIR_BINARY, HIR_INT_TYPE } from '../ast/hir-nodes';
+import { HighIRStatement, HIR_BINARY, HIR_INT_TYPE, HIR_VARIABLE } from '../ast/hir-nodes';
 import { checkNotNull, filterMap } from '../utils';
 import {
   GeneralBasicInductionVariable,

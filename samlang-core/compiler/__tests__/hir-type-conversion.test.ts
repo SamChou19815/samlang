@@ -1,33 +1,33 @@
 import {
-  ModuleReference,
-  Range,
   boolType,
   functionType,
   identifierType,
   intType,
+  ModuleReference,
+  Range,
   stringType,
   tupleType,
   unitType,
 } from '../../ast/common-nodes';
 import {
-  prettyPrintHighIRType,
-  prettyPrintHighIRClosureTypeDefinition,
-  prettyPrintHighIRTypeDefinition,
   HIR_BOOL_TYPE,
-  HIR_INT_TYPE,
-  HIR_STRING_TYPE,
+  HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
-  HIR_FUNCTION_TYPE,
+  HIR_INT_TYPE,
+  HIR_STRING_TYPE,
+  prettyPrintHighIRClosureTypeDefinition,
+  prettyPrintHighIRType,
+  prettyPrintHighIRTypeDefinition,
 } from '../../ast/hir-nodes';
 import {
   collectUsedGenericTypes,
-  solveTypeArguments,
-  highIRTypeApplication,
-  resolveIdentifierTypeMappings,
-  HighIRTypeSynthesizer,
   encodeHighIRNameAfterGenericsSpecialization,
+  highIRTypeApplication,
+  HighIRTypeSynthesizer,
+  resolveIdentifierTypeMappings,
   SamlangTypeLoweringManager,
+  solveTypeArguments,
 } from '../hir-type-conversion';
 
 describe('hir-type-conversion', () => {

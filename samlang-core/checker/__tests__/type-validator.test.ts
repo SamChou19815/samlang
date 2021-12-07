@@ -1,19 +1,19 @@
 import {
-  IdentifierType,
-  unitType,
   boolType,
-  intType,
-  stringType,
-  identifierType,
-  tupleType,
   functionType,
-  Range,
+  IdentifierType,
+  identifierType,
+  intType,
   ModuleReference,
+  Range,
+  stringType,
+  tupleType,
+  unitType,
 } from '../../ast/common-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import {
-  IdentifierTypeValidator,
   findInvalidTypeIdentifier_EXPOSED_FOR_TESTING,
+  IdentifierTypeValidator,
   validateType,
 } from '../type-validator';
 

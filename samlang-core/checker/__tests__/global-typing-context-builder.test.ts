@@ -1,6 +1,6 @@
-import { functionType, intType, Range, ModuleReference } from '../../ast/common-nodes';
+import { functionType, intType, ModuleReference, Range } from '../../ast/common-nodes';
+import type { SamlangModule, SourceClassDefinition } from '../../ast/samlang-nodes';
 import { SourceExpressionFalse } from '../../ast/samlang-nodes';
-import type { SourceClassDefinition, SamlangModule } from '../../ast/samlang-nodes';
 import { mapOf } from '../../utils';
 import {
   buildGlobalTypingContext,

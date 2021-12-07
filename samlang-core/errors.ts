@@ -1,4 +1,4 @@
-import { Type, prettyPrintType, Range, ModuleReference } from './ast/common-nodes';
+import { ModuleReference, prettyPrintType, Range, Type } from './ast/common-nodes';
 
 export abstract class CompileTimeError<T = string> {
   constructor(

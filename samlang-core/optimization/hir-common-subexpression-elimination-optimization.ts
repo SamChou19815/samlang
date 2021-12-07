@@ -1,5 +1,5 @@
-import { HighIRStatement, HighIRFunction, HIR_INDEX_ACCESS, HIR_BINARY } from '../ast/hir-nodes';
-import { Hashable, ReadonlyHashSet, HashSet, hashSetOf, filterMap } from '../utils';
+import { HighIRFunction, HighIRStatement, HIR_BINARY, HIR_INDEX_ACCESS } from '../ast/hir-nodes';
+import { filterMap, Hashable, HashSet, hashSetOf, ReadonlyHashSet } from '../utils';
 import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
 import { BindedValue, bindedValueToString } from './hir-optimization-common';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';

@@ -1,24 +1,24 @@
 import {
-  unitType,
   boolType,
-  intType,
-  identifierType,
   functionType,
-  Range,
+  identifierType,
+  intType,
   ModuleReference,
+  Range,
   tupleType,
+  unitType,
 } from '../../ast/common-nodes';
-import { MUL, MINUS, EQ } from '../../ast/common-operators';
+import { EQ, MINUS, MUL } from '../../ast/common-operators';
 import { debugPrintHighIRSources } from '../../ast/hir-nodes';
 import {
-  SourceExpressionInt,
-  SourceExpressionVariable,
-  SourceExpressionThis,
-  SourceExpressionFunctionCall,
-  SourceExpressionBinary,
-  SourceExpressionIfElse,
-  SourceExpressionClassMember,
   SamlangModule,
+  SourceExpressionBinary,
+  SourceExpressionClassMember,
+  SourceExpressionFunctionCall,
+  SourceExpressionIfElse,
+  SourceExpressionInt,
+  SourceExpressionThis,
+  SourceExpressionVariable,
 } from '../../ast/samlang-nodes';
 import { mapOf } from '../../utils';
 import compileSamlangSourcesToHighIRSources, {

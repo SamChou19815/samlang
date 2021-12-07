@@ -6,25 +6,26 @@ import {
   ReadonlyGlobalErrorCollector,
 } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
-import { HashMap, HashSet, ReadonlyHashSet, hashMapOf, mapOf, setOf, hashSetOf } from '../utils';
+import { HashMap, hashMapOf, HashSet, hashSetOf, mapOf, ReadonlyHashSet, setOf } from '../utils';
 import {
-  DEFAULT_BUILTIN_TYPING_CONTEXT,
   buildGlobalTypingContext,
+  DEFAULT_BUILTIN_TYPING_CONTEXT,
   updateGlobalTypingContext,
 } from './global-typing-context-builder';
 import {
-  collectModuleReferenceFromType,
   collectModuleReferenceFromExpression,
+  collectModuleReferenceFromType,
 } from './module-references-collector';
 import ModuleTypeChecker from './module-type-checker';
 import type {
   GlobalTypingContext,
-  ModuleTypingContext,
   MemberTypeInformation,
+  ModuleTypingContext,
 } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
 
 export { DEFAULT_BUILTIN_TYPING_CONTEXT };
+export type { GlobalTypingContext, MemberTypeInformation };
 
 export function collectModuleReferenceFromSamlangModule(
   samlangModule: SamlangModule
@@ -185,5 +186,3 @@ export function typeCheckSingleModuleSource(
   )[0].forceGet(moduleReference);
   return checkedModule;
 }
-
-export type { GlobalTypingContext, MemberTypeInformation };

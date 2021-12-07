@@ -1,9 +1,9 @@
 import {
-  IdentifierType,
   FunctionType,
-  Type,
+  IdentifierType,
   identifierType,
   ModuleReference,
+  Type,
 } from '../ast/common-nodes';
 import type { SourceFieldType, TypeDefinition } from '../ast/samlang-nodes';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';

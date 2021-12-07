@@ -1,5 +1,5 @@
 import createSamlangLanguageService, { LanguageServiceStateImpl } from '..';
-import { Position, Range, ModuleReference } from '../../ast/common-nodes';
+import { ModuleReference, Position, Range } from '../../ast/common-nodes';
 
 class InsertTextFormats {
   static readonly PlainText = 1 as const;

@@ -1,10 +1,10 @@
 import {
-  HIR_ZERO,
-  HIR_ONE,
-  HIR_INT,
-  HIR_VARIABLE,
   HIR_BINARY,
+  HIR_INT,
   HIR_INT_TYPE,
+  HIR_ONE,
+  HIR_VARIABLE,
+  HIR_ZERO,
 } from '../../ast/hir-nodes';
 import highIRLoopAlgebraicOptimization, {
   analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING,

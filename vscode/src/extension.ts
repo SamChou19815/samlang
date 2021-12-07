@@ -53,7 +53,6 @@ function provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.T
   return edits;
 }
 
-// eslint-disable-next-line import/prefer-default-export
 export function activate(): void {
   vscode.languages.registerDocumentFormattingEditProvider('SAMLANG', {
     provideDocumentFormattingEdits,

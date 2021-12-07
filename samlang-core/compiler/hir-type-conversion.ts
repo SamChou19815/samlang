@@ -1,18 +1,18 @@
-import type { Type, PrimitiveType, FunctionType, ModuleReference } from '../ast/common-nodes';
+import type { FunctionType, ModuleReference, PrimitiveType, Type } from '../ast/common-nodes';
 import {
-  prettyPrintHighIRType,
-  HighIRType,
-  HighIRPrimitiveType,
-  HighIRFunctionType,
   HighIRClosureTypeDefinition,
+  HighIRFunctionType,
+  HighIRIdentifierType,
+  HighIRPrimitiveType,
+  HighIRType,
   HighIRTypeDefinition,
   HIR_BOOL_TYPE,
-  HIR_INT_TYPE,
-  HIR_STRING_TYPE,
+  HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
-  HIR_FUNCTION_TYPE,
-  HighIRIdentifierType,
+  HIR_INT_TYPE,
+  HIR_STRING_TYPE,
+  prettyPrintHighIRType,
 } from '../ast/hir-nodes';
 import type { TypeDefinition } from '../ast/samlang-nodes';
 import { assert, checkNotNull, zip } from '../utils';

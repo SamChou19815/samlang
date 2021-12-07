@@ -1,4 +1,4 @@
-import type { UndecidedType, Type } from '../ast/common-nodes';
+import type { Type, UndecidedType } from '../ast/common-nodes';
 import { assert, checkNotNull, UnionFind } from '../utils';
 import typeResolver from './type-resolver';
 

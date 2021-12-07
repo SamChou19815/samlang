@@ -1,4 +1,4 @@
-import { Type, identifierType, tupleType, functionType } from '../ast/common-nodes';
+import { functionType, identifierType, tupleType, Type } from '../ast/common-nodes';
 
 export default function replaceTypeIdentifier(
   type: Type,

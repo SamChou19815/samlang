@@ -1,16 +1,16 @@
 import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
 import {
+  HighIRFunction,
   HighIRStatement,
   HighIRWhileStatement,
-  HighIRFunction,
-  HIR_ZERO,
-  HIR_VARIABLE,
   HIR_BINARY,
-  HIR_SINGLE_IF,
-  HIR_BREAK,
-  HIR_WHILE,
   HIR_BOOL_TYPE,
+  HIR_BREAK,
   HIR_INT_TYPE,
+  HIR_SINGLE_IF,
+  HIR_VARIABLE,
+  HIR_WHILE,
+  HIR_ZERO,
 } from '../ast/hir-nodes';
 import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
 import {

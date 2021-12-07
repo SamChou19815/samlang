@@ -1,33 +1,33 @@
 import type { IROperator } from '../ast/common-operators';
 import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
 import {
-  HighIRNameExpression,
-  HighIRExpression,
+  debugPrintHighIRExpression,
   HighIRBinaryStatement,
+  HighIRExpression,
+  HighIRFunction,
+  HighIRIntLiteralExpression,
+  HighIRNameExpression,
   HighIRStatement,
   HighIRVariableExpression,
-  HighIRIntLiteralExpression,
   HighIRWhileStatement,
-  HighIRFunction,
-  debugPrintHighIRExpression,
-  HIR_ZERO,
-  HIR_ONE,
-  HIR_INT,
-  HIR_VARIABLE,
-  HIR_INDEX_ACCESS,
+  HIR_BREAK,
+  HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_INDEX_ACCESS,
+  HIR_INT,
+  HIR_ONE,
   HIR_SINGLE_IF,
-  HIR_BREAK,
-  HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
-  HIR_CLOSURE_INITIALIZATION,
+  HIR_VARIABLE,
+  HIR_WHILE,
+  HIR_ZERO,
 } from '../ast/hir-nodes';
-import { LocalStackedContext, assert, checkNotNull, filterMap, ignore, zip3 } from '../utils';
+import { assert, checkNotNull, filterMap, ignore, LocalStackedContext, zip3 } from '../utils';
 import {
   ifElseOrNull,
-  singleIfOrNull,
   LocalValueContextForOptimization,
+  singleIfOrNull,
 } from './hir-optimization-common';
 
 const longOfBool = (b: boolean) => (b ? 1 : 0);

@@ -1,14 +1,14 @@
 import {
-  HighIRType,
   HighIRExpression,
   HighIRFunction,
   HighIRStatement,
-  HIR_ZERO,
-  HIR_VARIABLE,
+  HighIRType,
   HIR_BINARY,
-  HIR_SINGLE_IF,
   HIR_BREAK,
+  HIR_SINGLE_IF,
+  HIR_VARIABLE,
   HIR_WHILE,
+  HIR_ZERO,
 } from '../ast/hir-nodes';
 import { assert, zip3 } from '../utils';
 

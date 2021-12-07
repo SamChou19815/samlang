@@ -1,18 +1,16 @@
 /* eslint-disable no-console */
 
-import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
-
 import {
+  compileSamlangSources,
   ModuleReference,
   reformatSamlangSources,
-  compileSamlangSources,
 } from '@dev-sam/samlang-core';
-
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
 import cliMainRunner, { CLIRunners } from './cli';
 import type { SamlangProjectConfiguration } from './configuration';
 import ASCII_ART_SAMLANG_LOGO from './logo';
-import { getConfiguration, collectSources } from './utils';
+import { collectSources, getConfiguration } from './utils';
 
 async function compileEverything(configuration: SamlangProjectConfiguration): Promise<void> {
   const entryModuleReferences = configuration.entryPoints.map(

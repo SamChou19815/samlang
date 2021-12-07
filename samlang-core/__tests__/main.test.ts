@@ -1,14 +1,13 @@
 import {
+  ENCODED_FUNCTION_NAME_FREE,
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
-  ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_THROW,
-  ENCODED_FUNCTION_NAME_FREE,
-  ENCODED_FUNCTION_NAME_MALLOC,
 } from '../ast/common-names';
 import { ModuleReference } from '../ast/common-nodes';
-import { reformatSamlangSources, compileSamlangSources, compileSingleSamlangSource } from '../main';
+import { compileSamlangSources, compileSingleSamlangSource, reformatSamlangSources } from '../main';
 import { assert } from '../utils';
 
 describe('samlang-core/index', () => {

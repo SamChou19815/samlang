@@ -1,11 +1,11 @@
 import {
-  HighIRFunction,
-  HighIRType,
-  HighIRStatement,
-  HighIRNameExpression,
   HighIRExpression,
-  HIR_ZERO,
+  HighIRFunction,
+  HighIRNameExpression,
+  HighIRStatement,
+  HighIRType,
   HIR_VARIABLE,
+  HIR_ZERO,
 } from '../ast/hir-nodes';
 import { checkNotNull, filterMap, zip, zip3 } from '../utils';
 import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';

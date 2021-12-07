@@ -1,4 +1,4 @@
-import { encodeMainFunctionName, ENCODED_FUNCTION_NAME_THROW } from '../common-names';
+import { ENCODED_FUNCTION_NAME_THROW, encodeMainFunctionName } from '../common-names';
 import { ModuleReference } from '../common-nodes';
 
 describe('common-names', () => {

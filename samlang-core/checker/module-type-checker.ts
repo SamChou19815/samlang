@@ -1,8 +1,8 @@
 import type { ModuleReference, Range, Type } from '../ast/common-nodes';
 import type {
+  SamlangModule,
   SourceClassMemberDefinition,
   TypeDefinition,
-  SamlangModule,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { error, filterMap, LocalStackedContext } from '../utils';

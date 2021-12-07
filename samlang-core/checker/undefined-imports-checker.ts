@@ -1,5 +1,5 @@
 import type { Sources } from '../ast/common-nodes';
-import type { SourceModuleMembersImport, SamlangModule } from '../ast/samlang-nodes';
+import type { SamlangModule, SourceModuleMembersImport } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { filterMap } from '../utils';
 
