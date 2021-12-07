@@ -1,4 +1,4 @@
-import { parseSamlangModuleFromText, parseSamlangExpressionFromText, parseSources } from '..';
+import { parseSamlangExpressionFromText, parseSamlangModuleFromText, parseSources } from '..';
 import { ModuleReference } from '../../ast/common-nodes';
 import type { SamlangExpression } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';

@@ -1,30 +1,30 @@
 import {
-  HighIRType,
-  HighIRIdentifierType,
-  HighIRFunctionType,
   HighIRClosureTypeDefinition,
-  HighIRTypeDefinition,
   HighIRExpression,
-  HighIRStatement,
   HighIRFunction,
+  HighIRFunctionType,
+  HighIRIdentifierType,
   HighIRSources,
+  HighIRStatement,
+  HighIRType,
+  HighIRTypeDefinition,
+  HIR_BINARY,
+  HIR_CLOSURE_INITIALIZATION,
+  HIR_FUNCTION_CALL,
+  HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
-  HIR_FUNCTION_TYPE,
-  HIR_NAME,
-  HIR_INDEX_ACCESS,
-  HIR_BINARY,
-  HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_INDEX_ACCESS,
+  HIR_NAME,
   HIR_STRUCT_INITIALIZATION,
-  HIR_CLOSURE_INITIALIZATION,
 } from '../ast/hir-nodes';
 import { assert, checkNotNull, zip } from '../utils';
 import {
-  solveTypeArguments,
+  encodeHighIRNameAfterGenericsSpecialization,
   highIRTypeApplication,
   resolveIdentifierTypeMappings,
-  encodeHighIRNameAfterGenericsSpecialization,
+  solveTypeArguments,
 } from './hir-type-conversion';
 
 class GenericsSpecializationRewriter {

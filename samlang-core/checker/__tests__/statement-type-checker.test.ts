@@ -1,23 +1,23 @@
 import {
-  Type,
   boolType,
-  intType,
-  tupleType,
-  unitType,
   identifierType,
+  intType,
   isTheSameType,
-  Range,
   ModuleReference,
+  Range,
+  tupleType,
+  Type,
+  unitType,
 } from '../../ast/common-nodes';
 import {
-  StatementBlock,
-  SamlangExpression,
   Pattern,
+  SamlangExpression,
   SamlangValStatement,
-  SourceExpressionTrue,
   SourceExpressionInt,
-  SourceExpressionVariable,
   SourceExpressionStatementBlock,
+  SourceExpressionTrue,
+  SourceExpressionVariable,
+  StatementBlock,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { hashMapOf, LocalStackedContext } from '../../utils';

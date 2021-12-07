@@ -1,8 +1,8 @@
-import { zip, ReadonlyHashMap } from '../utils';
+import { ReadonlyHashMap, zip } from '../utils';
 import type {
+  ModuleReference as IModuleReference,
   Position as IPosition,
   Range as IRange,
-  ModuleReference as IModuleReference,
 } from './types';
 
 /** SECTION 1: Literals */

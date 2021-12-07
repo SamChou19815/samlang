@@ -1,11 +1,11 @@
 import { zip } from '../utils';
 import {
+  ENCODED_FUNCTION_NAME_FREE,
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
-  ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_THROW,
-  ENCODED_FUNCTION_NAME_FREE,
 } from './common-names';
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';

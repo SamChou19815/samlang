@@ -1,5 +1,4 @@
 import { Module, parseText as parseWasmText } from 'binaryen';
-
 import type { MidIRSources } from '../ast/mir-nodes';
 import { prettyPrintWebAssemblyModule } from '../ast/wasm-nodes';
 import compileSamlangSourcesToHighIRSources from './hir-toplevel-lowering';

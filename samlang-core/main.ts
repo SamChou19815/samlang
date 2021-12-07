@@ -7,7 +7,7 @@ import {
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToWasmModule,
 } from './compiler';
-import type { SamlangSourcesCompilationResult, SamlangSingleSourceCompilationResult } from './dist';
+import type { SamlangSingleSourceCompilationResult, SamlangSourcesCompilationResult } from './dist';
 import samlangGeneratedWebAssemblyLoader from './loader';
 import { optimizeHighIRSourcesAccordingToConfiguration } from './optimization';
 import { parseSources } from './parser';
@@ -100,5 +100,5 @@ export function compileSingleSamlangSource(
   return { __type__: 'OK', emittedTSCode, interpreterResult };
 }
 
-export { Range, ModuleReference } from './ast/common-nodes';
+export { ModuleReference, Range } from './ast/common-nodes';
 export { default as createSamlangLanguageService } from './services';

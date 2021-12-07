@@ -1,15 +1,15 @@
 import {
-  HighIRFunction,
   debugPrintHighIRFunction,
-  HIR_ZERO,
-  HIR_ONE,
-  HIR_NAME,
-  HIR_VARIABLE,
+  HighIRFunction,
   HIR_BINARY,
   HIR_FUNCTION_CALL,
-  HIR_IF_ELSE,
   HIR_FUNCTION_TYPE,
+  HIR_IF_ELSE,
   HIR_INT_TYPE,
+  HIR_NAME,
+  HIR_ONE,
+  HIR_VARIABLE,
+  HIR_ZERO,
 } from '../../ast/hir-nodes';
 import { checkNotNull } from '../../utils';
 import optimizeHighIRFunctionByTailRecursionRewrite from '../hir-tail-recursion-rewrite';

@@ -1,9 +1,9 @@
 import {
-  intType,
-  identifierType,
-  tupleType,
   functionType,
+  identifierType,
+  intType,
   ModuleReference,
+  tupleType,
 } from '../../ast/common-nodes';
 import replaceTypeIdentifier from '../type-identifier-replacer';
 

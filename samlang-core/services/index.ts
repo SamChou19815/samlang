@@ -1,54 +1,53 @@
 import {
-  IdentifierType,
   FunctionType,
-  prettyPrintType,
-  Position,
-  Range,
-  ModuleReference,
+  IdentifierType,
   Location,
-  TypedComment,
+  ModuleReference,
+  Position,
+  prettyPrintType,
+  Range,
   Sources,
+  TypedComment,
 } from '../ast/common-nodes';
 import type {
   SamlangExpression,
+  SamlangModule,
   SourceClassDefinition,
   SourceClassMemberDefinition,
-  SamlangModule,
 } from '../ast/samlang-nodes';
 import {
+  collectModuleReferenceFromSamlangModule,
   DependencyTracker,
   GlobalTypingContext,
   MemberTypeInformation,
-  collectModuleReferenceFromSamlangModule,
+  typeCheckSingleModuleSource,
   typeCheckSources,
   typeCheckSourcesIncrementally,
-  typeCheckSingleModuleSource,
 } from '../checker';
-// eslint-disable-next-line import/no-internal-modules
 import type { ClassTypingContext } from '../checker/typing-context';
 import {
-  ReadonlyGlobalErrorCollector,
   CompileTimeError,
   createGlobalErrorCollector,
+  ReadonlyGlobalErrorCollector,
 } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
 import prettyPrintSamlangModule from '../printer';
-import { HashMap, hashMapOf, hashSetOf, checkNotNull, filterMap, assert } from '../utils';
+import { assert, checkNotNull, filterMap, HashMap, hashMapOf, hashSetOf } from '../utils';
 import {
-  ReadOnlyLocationLookup,
   LocationLookup,
+  ReadOnlyLocationLookup,
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
 import type {
-  CompletionItemKind,
   AutoCompletionItem,
-  LanguageServiceState,
+  CompletionItemKind,
   LanguageServices,
+  LanguageServiceState,
 } from './types';
 import {
+  applyRenamingWithDefinitionAndUse,
   ReadonlyVariableDefinitionLookup,
   VariableDefinitionLookup,
-  applyRenamingWithDefinitionAndUse,
 } from './variable-definition-service';
 
 export class LanguageServiceStateImpl implements LanguageServiceState {

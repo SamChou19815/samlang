@@ -1,26 +1,18 @@
+import { ENCODED_FUNCTION_NAME_PRINTLN, ENCODED_FUNCTION_NAME_THROW } from '../common-names';
 import {
-  ENCODED_FUNCTION_NAME_INT_TO_STRING,
-  ENCODED_FUNCTION_NAME_PRINTLN,
-  ENCODED_FUNCTION_NAME_STRING_TO_INT,
-  ENCODED_FUNCTION_NAME_STRING_CONCAT,
-  ENCODED_FUNCTION_NAME_THROW,
-  ENCODED_FUNCTION_NAME_FREE,
-  ENCODED_FUNCTION_NAME_MALLOC,
-} from '../common-names';
-import {
+  prettyPrintWebAssemblyModule,
+  WasmBinary,
   WasmConst,
+  WasmDirectCall,
   WasmDrop,
+  WasmIfElse,
+  WasmIndirectCall,
+  WasmJump,
+  WasmLoad,
   WasmLocalGet,
   WasmLocalSet,
-  WasmBinary,
-  WasmLoad,
-  WasmStore,
-  WasmDirectCall,
-  WasmIndirectCall,
-  WasmIfElse,
-  WasmJump,
   WasmLoop,
-  prettyPrintWebAssemblyModule,
+  WasmStore,
 } from '../wasm-nodes';
 
 describe('wasm-nodes', () => {

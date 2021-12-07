@@ -1,4 +1,4 @@
-import { Position, Range, ModuleReference } from '../../ast/common-nodes';
+import { ModuleReference, Position, Range } from '../../ast/common-nodes';
 import type { SamlangExpression } from '../../ast/samlang-nodes';
 import { typeCheckSourceHandles } from '../../checker';
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';

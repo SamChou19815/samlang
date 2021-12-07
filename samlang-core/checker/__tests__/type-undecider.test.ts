@@ -1,13 +1,13 @@
 import {
+  boolType,
+  functionType,
+  identifierType,
+  ModuleReference,
+  tupleType,
   UndecidedTypes,
   unitType,
-  boolType,
-  identifierType,
-  tupleType,
-  functionType,
-  ModuleReference,
 } from '../../ast/common-nodes';
-import { undecideTypeParameters, undecideFieldTypeParameters } from '../type-undecider';
+import { undecideFieldTypeParameters, undecideTypeParameters } from '../type-undecider';
 
 describe('type-undecider', () => {
   it('will throw on undecided type', () => {

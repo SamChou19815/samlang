@@ -1,4 +1,4 @@
-import { Type, UndecidedType, identifierType, tupleType, functionType } from '../ast/common-nodes';
+import { functionType, identifierType, tupleType, Type, UndecidedType } from '../ast/common-nodes';
 
 export default function resolveType(
   type: Type,

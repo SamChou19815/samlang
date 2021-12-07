@@ -1,18 +1,18 @@
-import { encodeMainFunctionName, encodeFunctionNameGlobally } from '../ast/common-names';
+import { encodeFunctionNameGlobally, encodeMainFunctionName } from '../ast/common-names';
 import type { ModuleReference, Sources } from '../ast/common-nodes';
 import {
-  HighIRTypeDefinition,
   HighIRFunction,
   HighIRSources,
-  HIR_INT_TYPE,
-  HIR_FUNCTION_TYPE,
-  HIR_NAME,
-  HIR_VARIABLE,
+  HighIRTypeDefinition,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
+  HIR_INT_TYPE,
+  HIR_NAME,
+  HIR_VARIABLE,
 } from '../ast/hir-nodes';
-import type { SourceClassMemberDefinition, SamlangModule } from '../ast/samlang-nodes';
+import type { SamlangModule, SourceClassMemberDefinition } from '../ast/samlang-nodes';
 import lowerSamlangExpression from './hir-expression-lowering';
 import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
 import HighIRStringManager from './hir-string-manager';

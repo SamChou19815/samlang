@@ -1,4 +1,4 @@
-import { HIR_ONE, HIR_INT, HIR_VARIABLE, HIR_BINARY, HIR_INT_TYPE } from '../../ast/hir-nodes';
+import { HIR_BINARY, HIR_INT, HIR_INT_TYPE, HIR_ONE, HIR_VARIABLE } from '../../ast/hir-nodes';
 import highIRLoopStrengthReductionOptimization from '../hir-loop-strength-reduction';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 

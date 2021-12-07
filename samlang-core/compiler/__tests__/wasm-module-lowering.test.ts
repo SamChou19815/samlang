@@ -1,22 +1,22 @@
 import { ENCODED_FUNCTION_NAME_PRINTLN, ENCODED_FUNCTION_NAME_THROW } from '../../ast/common-names';
 import {
-  MIR_INT_TYPE as INT,
-  MIR_FUNCTION_TYPE,
-  MIR_FALSE,
-  MIR_NAME,
-  MIR_VARIABLE,
-  MIR_ZERO as ZERO,
   MIR_BINARY,
-  MIR_FUNCTION_CALL,
-  MIR_IF_ELSE,
-  MIR_SINGLE_IF,
   MIR_BREAK,
-  MIR_WHILE,
+  MIR_CAST,
+  MIR_FALSE,
+  MIR_FUNCTION_CALL,
+  MIR_FUNCTION_TYPE,
+  MIR_IF_ELSE,
   MIR_INDEX_ACCESS,
   MIR_INDEX_ASSIGN,
-  MIR_CAST,
+  MIR_INT_TYPE as INT,
+  MIR_NAME,
+  MIR_SINGLE_IF,
   MIR_STRUCT_INITIALIZATION,
+  MIR_VARIABLE,
+  MIR_WHILE,
   MIR_ZERO,
+  MIR_ZERO as ZERO,
 } from '../../ast/mir-nodes';
 import { prettyPrintWebAssemblyModule } from '../../ast/wasm-nodes';
 import lowerMidIRSourcesToWasmModule from '../wasm-module-lowering';

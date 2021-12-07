@@ -1,9 +1,9 @@
 import {
-  intType,
-  identifierType,
   functionType,
-  Range,
+  identifierType,
+  intType,
   ModuleReference,
+  Range,
 } from '../../ast/common-nodes';
 import { hashMapOf } from '../../utils';
 import { AccessibleGlobalTypingContext } from '../typing-context';

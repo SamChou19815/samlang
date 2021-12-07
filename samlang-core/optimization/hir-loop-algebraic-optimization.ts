@@ -1,11 +1,11 @@
 import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
 import {
   HighIRStatement,
-  HIR_ZERO,
-  HIR_INT,
-  HIR_VARIABLE,
   HIR_BINARY,
+  HIR_INT,
   HIR_INT_TYPE,
+  HIR_VARIABLE,
+  HIR_ZERO,
 } from '../ast/hir-nodes';
 import type { HighIROptimizableWhileLoop } from './hir-loop-induction-analysis';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';

@@ -1,11 +1,11 @@
 import type { IROperator } from '../ast/common-operators';
 import {
-  HighIRType,
-  HighIRStatement,
-  HighIRExpression,
   debugPrintHighIRExpression as expressionToString,
+  HighIRExpression,
   HighIRIfElseStatement,
   HighIRSingleIfStatement,
+  HighIRStatement,
+  HighIRType,
 } from '../ast/hir-nodes';
 import { error, LocalStackedContext } from '../utils';
 

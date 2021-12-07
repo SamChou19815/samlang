@@ -1,11 +1,11 @@
 import type { ModuleReference, Range, Sources } from '../ast/common-nodes';
 import {
-  SourceExpressionVariable,
-  SamlangExpression,
   Pattern,
+  SamlangExpression,
   SamlangModule,
+  SourceExpressionVariable,
 } from '../ast/samlang-nodes';
-import { HashMap, LocalStackedContext, assert, error, hashMapOf } from '../utils';
+import { assert, error, HashMap, hashMapOf, LocalStackedContext } from '../utils';
 
 export type DefinitionAndUses = {
   readonly definitionRange: Range;

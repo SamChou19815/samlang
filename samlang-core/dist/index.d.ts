@@ -1,4 +1,4 @@
-import { Position, Range, ModuleReference } from '../ast/types';
+import { ModuleReference, Position, Range } from '../ast/types';
 import type { LanguageServices } from '../services/types';
 
 // PART 1: Supporting structures

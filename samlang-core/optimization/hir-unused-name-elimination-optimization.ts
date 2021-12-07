@@ -1,9 +1,9 @@
 import type {
   HighIRExpression,
-  HighIRStatement,
   HighIRFunction,
-  HighIRType,
   HighIRSources,
+  HighIRStatement,
+  HighIRType,
 } from '../ast/hir-nodes';
 import { checkNotNull } from '../utils';
 

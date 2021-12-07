@@ -1,25 +1,25 @@
 import {
+  boolType as bool,
+  functionType,
+  identifierType,
+  intType as int,
+  ModuleReference,
+  Range,
+  stringType as string,
+  tupleType,
   Type,
   unitType as unit,
-  boolType as bool,
-  intType as int,
-  stringType as string,
-  identifierType,
-  tupleType,
-  functionType,
-  Range,
-  ModuleReference,
 } from '../../ast/common-nodes';
 import { PLUS } from '../../ast/common-operators';
 import {
   SamlangExpression,
-  SourceExpressionInt,
-  SourceExpressionVariable,
-  SourceExpressionFunctionCall,
   SourceExpressionBinary,
+  SourceExpressionFunctionCall,
   SourceExpressionIfElse,
-  SourceExpressionStatementBlock,
+  SourceExpressionInt,
   SourceExpressionLambda,
+  SourceExpressionStatementBlock,
+  SourceExpressionVariable,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';

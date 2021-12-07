@@ -1,18 +1,18 @@
 import type { IROperator } from '../ast/common-operators';
 import {
-  HighIRType,
-  HighIRStatement,
   GeneralHighIRLoopVariables,
+  HighIRBinaryStatement,
   HighIRExpression,
   HighIRIntLiteralExpression,
+  HighIRStatement,
+  HighIRType,
   HighIRVariableExpression,
   HighIRWhileStatement,
-  HighIRBinaryStatement,
   HIR_INT,
   HIR_ONE,
   HIR_ZERO,
 } from '../ast/hir-nodes';
-import { assert, checkNotNull, isNotNull, filterMap } from '../utils';
+import { assert, checkNotNull, filterMap, isNotNull } from '../utils';
 import { internalOptimizeHighIRStatementsByDCE } from './hir-dead-code-elimination-optimization';
 
 export type PotentialLoopInvariantExpression =

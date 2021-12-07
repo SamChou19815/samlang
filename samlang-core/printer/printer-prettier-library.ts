@@ -6,13 +6,13 @@
 import { checkNotNull } from '../utils';
 import {
   PrettierDocument,
-  PRETTIER_NIL,
   PRETTIER_CONCAT,
-  PRETTIER_TEXT,
-  PRETTIER_NEST,
   PRETTIER_LINE,
+  PRETTIER_NEST,
+  PRETTIER_NIL,
   PRETTIER_NO_SPACE_BRACKET,
   PRETTIER_SPACED_BRACKET,
+  PRETTIER_TEXT,
 } from './printer-prettier-core';
 
 export const createCommaSeparatedList = <E>(

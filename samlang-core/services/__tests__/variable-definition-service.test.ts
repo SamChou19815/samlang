@@ -4,9 +4,9 @@ import { parseSamlangModuleFromText } from '../../parser';
 import prettyPrintSamlangModule from '../../printer';
 import { checkNotNull, hashMapOf } from '../../utils';
 import {
+  applyRenamingWithDefinitionAndUse,
   ModuleScopedVariableDefinitionLookup,
   VariableDefinitionLookup,
-  applyRenamingWithDefinitionAndUse,
 } from '../variable-definition-service';
 
 function prepareLookup(source: string): ModuleScopedVariableDefinitionLookup {

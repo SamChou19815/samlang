@@ -14,68 +14,42 @@
     "test": "jest --coverage",
     "test:single": "jest -t",
     "test:integration": "esr scripts/compile-repository.ts",
-    "bump": "yarn up @types/jest @types/node prettier jest esbuild husky lint-staged eslint \"@typescript-eslint/*\" \"eslint-*\""
+    "bump": "yarn up @types/jest @types/node prettier jest esbuild husky lint-staged eslint \"@typescript-eslint/*\""
   },
   "devDependencies": {
-    "@dev-sam/eslint-config-common": "0.22.0",
+    "@dev-sam/eslint-config-common": "0.23.0",
     "@dev-sam/jest-esbuild-transformer": "0.4.0",
     "@dev-sam/jest-raw-loader": "workspace:0.0.1",
     "@dev-sam/samlang-cli": "workspace:0.5.0",
     "@types/jest": "^27.0.3",
-    "@types/node": "^16.11.10",
-    "@typescript-eslint/eslint-plugin": "^5.4.0",
-    "@typescript-eslint/parser": "^5.4.0",
-    "esbuild": "^0.13.15",
-    "eslint": "^8.3.0",
-    "eslint-import-resolver-node": "^0.3.6",
-    "eslint-plugin-import": "^2.25.3",
+    "@types/node": "^16.11.11",
+    "@typescript-eslint/eslint-plugin": "^5.6.0",
+    "@typescript-eslint/parser": "^5.6.0",
+    "esbuild": "^0.14.2",
+    "eslint": "^8.4.0",
     "husky": "^7.0.4",
-    "jest": "^27.3.1",
+    "jest": "^27.4.3",
     "lint-staged": "^12.1.2",
-    "prettier": "^2.4.1",
-    "source-map-support": "^0.5.21",
-    "typescript": "^4.4.4"
+    "prettier": "^2.5.1",
+    "prettier-plugin-organize-imports": "^2.3.4",
+    "typescript": "^4.5.2"
   },
   "eslintConfig": {
-    "extends": "@dev-sam/common",
-    "overrides": [
-      {
-        "files": [
-          "*.ts"
-        ],
-        "rules": {
-          "import/no-internal-modules": [
-            "error",
-            {
-              "allow": [
-                "vscode-languageserver/node",
-                "**/samlang-core/ast/*",
-                "**/samlang-core/checker",
-                "**/samlang-core/compiler",
-                "**/samlang-core/errors",
-                "**/samlang-core/optimization",
-                "**/samlang-core/parser",
-                "**/samlang-core/printer",
-                "**/samlang-core/services",
-                "**/samlang-core/utils"
-              ]
-            }
-          ]
-        }
-      }
-    ]
+    "extends": "@dev-sam/common"
   },
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
-    "endOfLine": "lf"
+    "endOfLine": "lf",
+    "pluginSearchDirs": [
+      "."
+    ]
   },
   "jest": {
     "transform": {
       "\\.ts$": "@dev-sam/jest-esbuild-transformer",
       "\\.wat$": "@dev-sam/jest-raw-loader"
     },
-    "clearMocks": true,
     "coverageThreshold": {
       "global": {
         "branches": 100,
@@ -83,16 +57,12 @@
         "lines": 100,
         "statements": 0
       }
-    },
-    "coverageDirectory": "coverage",
-    "testPathIgnorePatterns": [
-      "/lib/"
-    ]
+    }
   },
   "lint-staged": {
-    "**/*.{ts,yml}": [
+    "**/*.{ts,js,yml}": [
       "yarn prettier --write"
     ]
   },
-  "packageManager": "yarn@3.2.0-rc.5"
+  "packageManager": "yarn@3.2.0-rc.7"
 }

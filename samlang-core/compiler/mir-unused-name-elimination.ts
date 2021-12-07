@@ -1,9 +1,9 @@
 import type {
   MidIRExpression,
-  MidIRStatement,
   MidIRFunction,
-  MidIRType,
   MidIRSources,
+  MidIRStatement,
+  MidIRType,
 } from '../ast/mir-nodes';
 import { checkNotNull } from '../utils';
 
