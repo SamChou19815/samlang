@@ -30,7 +30,6 @@ export function parseCLIArguments(commandLineArguments: readonly string[]): Pars
 export interface CLIRunners {
   format(needHelp: boolean): Promise<void>;
   compile(needHelp: boolean): Promise<void>;
-  version(): Promise<void>;
   help(): Promise<void>;
 }
 
@@ -45,9 +44,6 @@ export default async function cliMainRunner(
       return;
     case 'compile':
       await runners.compile(action.needHelp);
-      return;
-    case 'version':
-      await runners.version();
       return;
     case 'help':
       await runners.help();

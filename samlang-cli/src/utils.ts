@@ -1,10 +1,10 @@
 import type { ModuleReference } from '@dev-sam/samlang-core';
-import { lstat, readdir, readFile } from 'fs/promises';
-import { join, normalize, relative, resolve, sep } from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from './configuration';
 
-export async function getConfiguration(): Promise<SamlangProjectConfiguration> {
-  const configuration = await loadSamlangProjectConfiguration();
+export function getConfiguration(): SamlangProjectConfiguration {
+  const configuration = loadSamlangProjectConfiguration();
   if (
     configuration === 'NO_CONFIGURATION' ||
     configuration === 'UNPARSABLE_CONFIGURATION_FILE' ||
@@ -17,44 +17,43 @@ export async function getConfiguration(): Promise<SamlangProjectConfiguration> {
   return configuration;
 }
 
-export async function collectSources(
+export function collectSources(
   { sourceDirectory }: SamlangProjectConfiguration,
   moduleReferenceCreator: (parts: readonly string[]) => ModuleReference
-): Promise<readonly (readonly [ModuleReference, string])[]> {
-  const sourcePath = resolve(sourceDirectory);
+): readonly (readonly [ModuleReference, string])[] {
+  const sourcePath = path.resolve(sourceDirectory);
   const sources: (readonly [ModuleReference, string])[] = [];
 
   function filePathToModuleReference(
     absoluteSourcePath: string,
     filePath: string
   ): ModuleReference {
-    const relativeFile = normalize(relative(absoluteSourcePath, filePath));
+    const relativeFile = path.normalize(path.relative(absoluteSourcePath, filePath));
     const relativeFileWithoutExtension = relativeFile.substring(0, relativeFile.length - 4);
-    return moduleReferenceCreator(relativeFileWithoutExtension.split(sep));
+    return moduleReferenceCreator(relativeFileWithoutExtension.split(path.sep));
   }
 
-  function walk(startPath: string, visitor: (file: string) => Promise<void>): Promise<void> {
-    async function recursiveVisit(path: string): Promise<void> {
-      if ((await lstat(path)).isFile()) {
-        await visitor(path);
+  function walk(startPath: string, visitor: (file: string) => void): void {
+    function recursiveVisit(p: string): void {
+      const stats = fs.lstatSync(p);
+      if (stats.isFile()) {
+        visitor(p);
         return;
       }
 
-      if ((await lstat(path)).isDirectory()) {
-        await Promise.all(
-          (
-            await readdir(path)
-          ).map(async (relativeChildPath) => await recursiveVisit(join(path, relativeChildPath)))
+      if (stats.isDirectory()) {
+        fs.readdirSync(p).forEach((relativeChildPath) =>
+          recursiveVisit(path.join(p, relativeChildPath))
         );
       }
     }
 
-    return recursiveVisit(startPath);
+    recursiveVisit(startPath);
   }
 
-  await walk(sourcePath, async (file) => {
+  walk(sourcePath, (file) => {
     if (!file.endsWith('.sam')) return;
-    sources.push([filePathToModuleReference(sourcePath, file), (await readFile(file)).toString()]);
+    sources.push([filePathToModuleReference(sourcePath, file), fs.readFileSync(file).toString()]);
   });
 
   return sources;

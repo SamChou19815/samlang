@@ -452,11 +452,8 @@ __metadata:
   resolution: "@dev-sam/samlang-cli@workspace:samlang-cli"
   dependencies:
     "@dev-sam/samlang-core": "workspace:^0.5.0"
-    "@types/jest": ^27.0.3
-    "@types/node": ^16.11.11
-    esbuild: ^0.14.2
     typescript: ^4.5.2
-    vscode-languageserver: ^7.0.0
+    vscode-languageserver: ^8.0.0-next.5
   bin:
     samlang: ./bin/index.js
   languageName: unknown
@@ -466,9 +463,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-core@workspace:samlang-core"
   dependencies:
-    "@types/jest": ^27.0.3
     binaryen: ^102.0.0
-    esbuild: ^0.14.2
     typescript: ^4.5.2
   languageName: unknown
   linkType: soft
@@ -955,6 +950,13 @@ __metadata:
   version: 2.0.1
   resolution: "@types/stack-utils@npm:2.0.1"
   checksum: 205fdbe3326b7046d7eaf5e494d8084f2659086a266f3f9cf00bccc549c8e36e407f88168ad4383c8b07099957ad669f75f2532ed4bc70be2b037330f7bae019
+  languageName: node
+  linkType: hard
+
+"@types/vscode@npm:1.62.0":
+  version: 1.62.0
+  resolution: "@types/vscode@npm:1.62.0"
+  checksum: 101d583e95a55e0c5c756ffa18b708102abdbcc269d9706f55f934b627a2a3c7dc162ee95e5ef0654b43a9db52b291981a15f87045c072b6e6dc18ee3539823c
   languageName: node
   linkType: hard
 
@@ -5141,40 +5143,61 @@ resolve@^1.20.0:
   languageName: node
   linkType: hard
 
-"vscode-jsonrpc@npm:6.0.0":
-  version: 6.0.0
-  resolution: "vscode-jsonrpc@npm:6.0.0"
-  checksum: 3a67a56f287e8c449f2d9752eedf91e704dc7b9a326f47fb56ac07667631deb45ca52192e9bccb2ab108764e48409d70fa64b930d46fc3822f75270b111c5f53
+"vscode-jsonrpc@npm:8.0.0-next.4":
+  version: 8.0.0-next.4
+  resolution: "vscode-jsonrpc@npm:8.0.0-next.4"
+  checksum: 6d26f8e8c39375aebda2727787624fdf848a97e0a92ac65fcac7ac5096a4becb65e1f3126d35d0961fe3690bd697c10414d7b9fa13a30896a7f5ce51746d6e24
   languageName: node
   linkType: hard
 
-"vscode-languageserver-protocol@npm:3.16.0":
-  version: 3.16.0
-  resolution: "vscode-languageserver-protocol@npm:3.16.0"
+"vscode-languageclient@npm:^8.0.0-next.7":
+  version: 8.0.0-next.7
+  resolution: "vscode-languageclient@npm:8.0.0-next.7"
   dependencies:
-    vscode-jsonrpc: 6.0.0
-    vscode-languageserver-types: 3.16.0
-  checksum: ac30cbe4b778344f7b93defbaa1332dcb5a5a3a0afda6b88618a9ed44093c1ae1d2f11548bdcff42a73bb46943df025d4fe721559144dd7bf25ae60663aabe06
+    minimatch: ^3.0.4
+    semver: ^7.3.5
+    vscode-languageserver-protocol: 3.17.0-next.11
+  checksum: dd1dfdef2e8d69750cac35a3ee536cd0774575dbda5d2af30110fb441c97555b7f6b026136cd63acfdbc7c3ea4e298c3b3aac323ea3399c76ee38bf2c2b09f09
   languageName: node
   linkType: hard
 
-"vscode-languageserver-types@npm:3.16.0":
-  version: 3.16.0
-  resolution: "vscode-languageserver-types@npm:3.16.0"
-  checksum: 7a44fb10b9fbeb9529f832337b7f0430fc6275d62945b86851d425a950e22da3917ef5f6c552688191769dd1eae047c6ee9ec3d9f2280498353007c2dfe0725c
-  languageName: node
-  linkType: hard
-
-"vscode-languageserver@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "vscode-languageserver@npm:7.0.0"
+"vscode-languageserver-protocol@npm:3.17.0-next.11":
+  version: 3.17.0-next.11
+  resolution: "vscode-languageserver-protocol@npm:3.17.0-next.11"
   dependencies:
-    vscode-languageserver-protocol: 3.16.0
+    vscode-jsonrpc: 8.0.0-next.4
+    vscode-languageserver-types: 3.17.0-next.5
+  checksum: b1ce9fe04650995551cf5be0a72a990381b01ec483f3a2c4d5ddfd3363cf141844d011dbffefa96507e0d9fcb5ea0f14472648bf71480e95e3208297ed89ba21
+  languageName: node
+  linkType: hard
+
+"vscode-languageserver-types@npm:3.17.0-next.5":
+  version: 3.17.0-next.5
+  resolution: "vscode-languageserver-types@npm:3.17.0-next.5"
+  checksum: dd540a34990853987cd09a89ed569dce26ad8d49a0a73f7fdd2f5a02e053ebb6566cfce4b1832bbbc6dcf960748863d02df5719b7392358971085df72fdb0619
+  languageName: node
+  linkType: hard
+
+"vscode-languageserver@npm:^8.0.0-next.5":
+  version: 8.0.0-next.5
+  resolution: "vscode-languageserver@npm:8.0.0-next.5"
+  dependencies:
+    vscode-languageserver-protocol: 3.17.0-next.11
   bin:
     installServerIntoExtension: bin/installServerIntoExtension
-  checksum: 80cfbd5f8f0869c5369d1a61fe86b3210ee941cb646eb31b672045670ef3ce213dc1fd3bcd4cef6ef8bc7c5025f98e4a70dad645d97a0bd4708962bbd921683a
+  checksum: 44118d2f7231b777476284357bcaa15aa406f191267bc75235918b82ca4a249319d1e3fcff750dae3a12714ebf67e356e150ef7dba00d08b999e879c5c2f6876
   languageName: node
   linkType: hard
+
+"vscode-samlang@workspace:samlang-vscode":
+  version: 0.0.0-use.local
+  resolution: "vscode-samlang@workspace:samlang-vscode"
+  dependencies:
+    "@types/vscode": 1.62.0
+    typescript: ^4.5.2
+    vscode-languageclient: ^8.0.0-next.7
+  languageName: unknown
+  linkType: soft
 
 "w3c-hr-time@npm:^1.0.2":
   version: 1.0.2

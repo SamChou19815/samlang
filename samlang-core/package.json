@@ -17,8 +17,6 @@
     "binaryen": "^102.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.3",
-    "esbuild": "^0.14.2",
     "typescript": "^4.5.2"
   }
 }

@@ -1,12 +1,7 @@
 import cliMainRunner, { CLIRunners, parseCLIArguments } from '../cli';
 
 function assertCalled(commandLineArguments: readonly string[], called: keyof CLIRunners): void {
-  const runner: CLIRunners = {
-    format: jest.fn(),
-    compile: jest.fn(),
-    version: jest.fn(),
-    help: jest.fn(),
-  };
+  const runner: CLIRunners = { format: jest.fn(), compile: jest.fn(), help: jest.fn() };
   cliMainRunner(runner, commandLineArguments);
   // @ts-expect-error: expected
   Object.keys(runner).forEach((commandName: keyof CLIRunners) => {
@@ -35,7 +30,6 @@ describe('samlang-cli/cli', () => {
     assertCalled(['format', '--help'], 'format');
     assertCalled(['compile', '--help'], 'compile');
     assertCalled(['compile', '-h'], 'compile');
-    assertCalled(['version'], 'version');
     assertCalled(['dfasfsdf'], 'help');
     assertCalled(['help'], 'help');
   });

@@ -1,21 +1,21 @@
 {
   "name": "vscode-samlang",
   "displayName": "vscode-samlang",
-  "description": "SAMLANG for VSCode",
-  "version": "0.0.8",
+  "description": "samlang for VSCode",
+  "version": "0.0.9",
   "publisher": "dev-sam",
   "repository": {
     "url": "https://github.com/SamChou19815/samlang"
   },
   "engines": {
-    "vscode": "^1.41.0"
+    "vscode": "^1.62.0"
   },
   "categories": [
     "Programming Languages",
     "Snippets"
   ],
   "icon": "images/samlang.png",
-  "main": "./out/src/extension",
+  "main": "./out/extension.js",
   "activationEvents": [
     "onLanguage:samlang"
   ],
@@ -24,8 +24,8 @@
       {
         "id": "samlang",
         "aliases": [
-          "SAMLANG",
-          "samlang"
+          "samlang",
+          "SAMLANG"
         ],
         "extensions": [
           ".sam"
@@ -48,7 +48,7 @@
     ],
     "configuration": {
       "type": "object",
-      "title": "SAMLANG Language Service Configuration",
+      "title": "samlang Language Service Configuration",
       "properties": {
         "samlang.programPath": {
           "type": "string",
@@ -58,15 +58,12 @@
     }
   },
   "scripts": {
-    "postinstall": "tsc"
+    "compile": "exit 0",
+    "bundle": "node bundle.js"
   },
   "devDependencies": {
-    "@types/node": "^13.1.0",
-    "@types/vscode": "1.41.0",
-    "typescript": "3.7.4",
-    "vscode-test": "^1.3.0"
-  },
-  "dependencies": {
-    "vscode-languageclient": "^6.1.3"
+    "@types/vscode": "1.62.0",
+    "typescript": "^4.5.2",
+    "vscode-languageclient": "^8.0.0-next.7"
   }
 }

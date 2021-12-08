@@ -1,6 +1,5 @@
-import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
-import { dirname, join, resolve } from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export type SamlangProjectConfiguration = {
   readonly sourceDirectory: string;
@@ -35,16 +34,16 @@ export function parseSamlangProjectConfiguration(
 // Used for mock.
 type ConfigurationLoader = {
   readonly startPath: string;
-  readonly pathExistanceTester: (path: string) => boolean;
-  readonly fileReader: (path: string) => Promise<string | null>;
+  readonly pathExistanceTester: (p: string) => boolean;
+  readonly fileReader: (p: string) => string | null;
 };
 
 export const fileSystemLoader_EXPOSED_FOR_TESTING: ConfigurationLoader = {
-  startPath: resolve('.'),
-  pathExistanceTester: existsSync,
-  fileReader: async (path) => {
+  startPath: path.resolve('.'),
+  pathExistanceTester: fs.existsSync,
+  fileReader: (p) => {
     try {
-      return (await readFile(path)).toString();
+      return fs.readFileSync(p).toString();
     } catch {
       return null;
     }
@@ -57,16 +56,16 @@ type ConfigurationLoadingResult =
   | 'UNPARSABLE_CONFIGURATION_FILE'
   | 'NO_CONFIGURATION';
 
-export default async function loadSamlangProjectConfiguration({
+export default function loadSamlangProjectConfiguration({
   startPath,
   pathExistanceTester,
   fileReader,
-}: ConfigurationLoader = fileSystemLoader_EXPOSED_FOR_TESTING): Promise<ConfigurationLoadingResult> {
+}: ConfigurationLoader = fileSystemLoader_EXPOSED_FOR_TESTING): ConfigurationLoadingResult {
   let configurationDirectory = startPath;
   while (configurationDirectory !== '/') {
-    const configurationPath = join(configurationDirectory, 'sconfig.json');
+    const configurationPath = path.join(configurationDirectory, 'sconfig.json');
     if (pathExistanceTester(configurationPath)) {
-      const content = await fileReader(configurationPath);
+      const content = fileReader(configurationPath);
       if (content == null) {
         return 'UNREADABLE_CONFIGURATION_FILE';
       }
@@ -74,12 +73,12 @@ export default async function loadSamlangProjectConfiguration({
       return configuration === null
         ? 'UNPARSABLE_CONFIGURATION_FILE'
         : {
-            sourceDirectory: resolve(configurationDirectory, configuration.sourceDirectory),
-            outputDirectory: resolve(configurationDirectory, configuration.outputDirectory),
+            sourceDirectory: path.resolve(configurationDirectory, configuration.sourceDirectory),
+            outputDirectory: path.resolve(configurationDirectory, configuration.outputDirectory),
             entryPoints: configuration.entryPoints,
           };
     }
-    configurationDirectory = dirname(configurationDirectory);
+    configurationDirectory = path.dirname(configurationDirectory);
   }
   return 'NO_CONFIGURATION';
 }
