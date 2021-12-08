@@ -3,7 +3,8 @@
   "workspaces": [
     "jest-raw-loader",
     "samlang-cli",
-    "samlang-core"
+    "samlang-core",
+    "samlang-vscode"
   ],
   "scripts": {
     "lint": "eslint . --cache",

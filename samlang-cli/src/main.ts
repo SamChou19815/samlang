@@ -17,7 +17,7 @@ async function compileEverything(configuration: SamlangProjectConfiguration): Pr
     (entryPoint) => new ModuleReference(entryPoint.split('.'))
   );
   const result = compileSamlangSources(
-    await collectSources(configuration, (parts) => new ModuleReference(parts)),
+    collectSources(configuration, (parts) => new ModuleReference(parts)),
     entryModuleReferences
   );
   if (result.__type__ === 'ERROR') {
@@ -41,7 +41,7 @@ const runners: CLIRunners = {
     } else {
       await Promise.all(
         reformatSamlangSources(
-          await collectSources(await getConfiguration(), (parts) => new ModuleReference(parts))
+          collectSources(getConfiguration(), (parts) => new ModuleReference(parts))
         ).map(([moduleReference, newCode]) => writeFile(moduleReference.toFilename(), newCode))
       );
     }
@@ -50,11 +50,8 @@ const runners: CLIRunners = {
     if (needHelp) {
       console.log('samlang compile: Compile your codebase according to sconfig.json.');
     } else {
-      await compileEverything(await getConfiguration());
+      await compileEverything(getConfiguration());
     }
-  },
-  async version() {
-    console.log('samlang version: unreleased.');
   },
   async help() {
     console.log(`${ASCII_ART_SAMLANG_LOGO}
@@ -63,10 +60,7 @@ samlang [command]
 
 Commands:
 [no command]: defaults to check command specified below.
-check: Type checks your codebase according to sconfig.json.
 compile: Compile your codebase according to sconfig.json.
-lsp: Start an LSP process according to sconfig.json.
-version: Display samlang version.
 help: Show this message.`);
   },
 };

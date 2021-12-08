@@ -1,0 +1,12 @@
+{
+  "extends": "../configurations/tsconfig.base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2019",
+    "outDir": "out",
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": false
+  }
+}
