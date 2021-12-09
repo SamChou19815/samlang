@@ -477,6 +477,18 @@ export default class SamlangModuleParser extends BaseParser {
     return collector;
   };
 
+  private parseTypeArguments = (): readonly Type[] => {
+    this.assertAndConsume('<');
+    const collector: Type[] = [];
+    collector.push(this.parseType());
+    while (this.peek().content === ',') {
+      this.consume();
+      collector.push(this.parseType());
+    }
+    this.assertAndConsume('>');
+    return collector;
+  };
+
   private parseMatch = (): SamlangExpression => {
     const associatedComments = this.collectPrecedingComments();
     const peeked = this.peek();
@@ -839,13 +851,20 @@ export default class SamlangModuleParser extends BaseParser {
         if (nextPeeked.content === '.') {
           const memberPrecedingComments = this.collectPrecedingComments();
           this.consume();
+          let typeArguments: readonly Type[];
+          if (this.peek().content === '<') {
+            memberPrecedingComments.push(...this.collectPrecedingComments());
+            typeArguments = this.parseTypeArguments();
+          } else {
+            typeArguments = [];
+          }
           memberPrecedingComments.push(...this.collectPrecedingComments());
           const { range: memberNameRange, variable: memberName } = this.assertAndPeekLowerId();
           return SourceExpressionClassMember({
             range: peeked.range.union(memberNameRange),
             type: UndecidedTypes.next(),
             associatedComments,
-            typeArguments: [],
+            typeArguments,
             moduleReference: this.resolveClass(className),
             className,
             classNameRange: peeked.range,
