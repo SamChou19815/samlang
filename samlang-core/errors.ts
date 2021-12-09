@@ -101,6 +101,22 @@ export class TupleSizeMismatchError extends CompileTimeError<'TupleSizeMismatch'
   }
 }
 
+export class TypeArgumentsSizeMismatchError extends CompileTimeError<'TypeArgumentsSizeMismatch'> {
+  constructor(
+    moduleReference: ModuleReference,
+    range: Range,
+    expectedSize: number,
+    actualSize: number
+  ) {
+    super(
+      'TypeArgumentsSizeMismatch',
+      moduleReference,
+      range,
+      `Incorrect type arguments size. Expected: ${expectedSize}, actual: ${actualSize}.`
+    );
+  }
+}
+
 export class InsufficientTypeInferenceContextError extends CompileTimeError<'InsufficientTypeInferenceContext'> {
   constructor(moduleReference: ModuleReference, range: Range) {
     super(
@@ -249,6 +265,17 @@ export class ModuleErrorCollector {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
       new TupleSizeMismatchError(this.moduleReference, range, expectedSize, actualSize)
+    );
+  }
+
+  reportTypeArgumentsSizeMismatchError(
+    range: Range,
+    expectedSize: number,
+    actualSize: number
+  ): void {
+    this._hasErrors = true;
+    this.collectorDelegate.reportError(
+      new TypeArgumentsSizeMismatchError(this.moduleReference, range, expectedSize, actualSize)
     );
   }
 

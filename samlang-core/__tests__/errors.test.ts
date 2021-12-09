@@ -11,6 +11,7 @@ import {
   NotWellDefinedIdentifierError,
   SyntaxError,
   TupleSizeMismatchError,
+  TypeArgumentsSizeMismatchError,
   UnexpectedTypeError,
   UnexpectedTypeKindError,
   UnresolvedNameError,
@@ -58,6 +59,10 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [
     new TupleSizeMismatchError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 1, 2),
     'Foo/Bar.sam:0:0-0:0: [TupleSizeMismatch]: Incorrect tuple size. Expected: 1, actual: 2.',
+  ],
+  [
+    new TypeArgumentsSizeMismatchError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 1, 2),
+    'Foo/Bar.sam:0:0-0:0: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 1, actual: 2.',
   ],
   [
     new InsufficientTypeInferenceContextError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY),

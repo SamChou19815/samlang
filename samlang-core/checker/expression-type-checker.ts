@@ -52,7 +52,11 @@ import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';
 import StatementTypeChecker from './statement-type-checker';
 import type TypeResolution from './type-resolution';
-import { undecideFieldTypeParameters, undecideTypeParameters } from './type-undecider';
+import {
+  typeReplacement,
+  undecideFieldTypeParameters,
+  undecideTypeParameters,
+} from './type-undecider';
 import { validateType } from './type-validator';
 import type { AccessibleGlobalTypingContext } from './typing-context';
 
@@ -169,7 +173,26 @@ class ExpressionTypeChecker {
       );
       return { ...expression, type: expectedType };
     }
-    const [locallyInferredType, undecidedTypeArguments] = classFunctionTypeInformation;
+    if (expression.typeArguments.length !== 0) {
+      if (expression.typeArguments.length === classFunctionTypeInformation.typeParameters.length) {
+        const type = typeReplacement(
+          classFunctionTypeInformation.type,
+          Object.fromEntries(
+            zip(classFunctionTypeInformation.typeParameters, expression.typeArguments)
+          )
+        );
+        return { ...expression, type };
+      }
+      this.errorCollector.reportTypeArgumentsSizeMismatchError(
+        expression.range,
+        classFunctionTypeInformation.typeParameters.length,
+        expression.typeArguments.length
+      );
+    }
+    const [locallyInferredType, undecidedTypeArguments] = undecideTypeParameters(
+      classFunctionTypeInformation.type,
+      classFunctionTypeInformation.typeParameters
+    );
     const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
       expectedType,
       locallyInferredType,
