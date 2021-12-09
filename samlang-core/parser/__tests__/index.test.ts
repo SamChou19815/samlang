@@ -26,6 +26,8 @@ describe('samlang-core/parser', () => {
     expectASTWithTheSameKind('this', 'ThisExpression');
     expectASTWithTheSameKind('abc', 'VariableExpression');
     expectASTWithTheSameKind('SomeClass.foo', 'ClassMemberExpression');
+    expectASTWithTheSameKind('SomeClass.<A,B>foo', 'ClassMemberExpression');
+    expectASTWithTheSameKind('SomeClass.<A>foo', 'ClassMemberExpression');
     expectASTWithTheSameKind('[3, true]', 'TupleConstructorExpression');
     expectASTWithTheSameKind('[3, true, "Ah"]', 'TupleConstructorExpression');
     expectASTWithTheSameKind('{foo, bar: 3}', 'ObjectConstructorExpression');
@@ -95,6 +97,8 @@ describe('samlang-core/parser', () => {
     expectBadAST('9223372036854775808');
     expectBadAST('-9223372036854775889223372036854775808');
     expectBadAST('SomeClass.Foo');
+    expectBadAST('SomeClass.<>foo');
+    expectBadAST('SomeClass.<foo');
     expectBadAST('SomeClass.');
     expectBadAST('.');
     expectBadAST(',');
