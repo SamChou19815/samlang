@@ -47,7 +47,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     moduleReference: ModuleReference,
     className: string,
     member: string
-  ): readonly [Type, readonly Type[]] | null {
+  ): MemberTypeInformation | null {
     const typeInfo = this.getClassTypeInformation(moduleReference, className)?.functions?.[member];
     if (typeInfo == null) return null;
     if (
@@ -57,7 +57,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     ) {
       return null;
     }
-    return undecideTypeParameters(typeInfo.type, typeInfo.typeParameters);
+    return typeInfo;
   }
 
   getClassMethodType(

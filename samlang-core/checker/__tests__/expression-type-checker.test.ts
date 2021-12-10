@@ -64,6 +64,11 @@ function typeCheckInSandbox(
                   typeParameters: [],
                   type: functionType([string], unit),
                 },
+                helloWorldWithTypeParameters: {
+                  isPublic: false,
+                  typeParameters: ['A'],
+                  type: functionType([identifierType(dummyModuleReference, 'A')], unit),
+                },
               },
               methods: {
                 baz: { isPublic: false, typeParameters: [], type: functionType([int], bool) },
@@ -235,8 +240,12 @@ describe('expression-type-checker', () => {
   });
 
   it('ClassMember', () => {
+    assertTypeChecks('Test.<int>helloWorldWithTypeParameters', functionType([int], unit));
     assertTypeChecks('Test.helloWorld', functionType([string], unit));
 
+    assertTypeErrors('Test.<A>helloWorld', functionType([string], unit), [
+      'Test.sam:1:1-1:19: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 0, actual: 1.',
+    ]);
     assertTypeErrors('Test.helloWorld2', functionType([string], unit), [
       'Test.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved.',
     ]);
