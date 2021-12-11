@@ -46,6 +46,13 @@ describe('printer-source-level', () => {
     expect(reprintExpression('hi')).toBe('hi');
     expect(reprintExpression('this')).toBe('this');
     expect(reprintExpression('ClassName.classMember')).toBe('ClassName.classMember');
+    expect(reprintExpression('ClassName.<A,B>classMember')).toBe('ClassName.<A, B>classMember');
+    expect(reprintExpression('/* a */ ClassName./* b */ <A,B> /* c */ classMember')).toBe(
+      `/* a */
+ClassName
+/* b */ /* c */
+.<A, B>classMember`
+    );
     expect(reprintExpression('ClassName/* a */.classMember')).toBe(
       'ClassName /* a */ .classMember'
     );
@@ -133,12 +140,17 @@ describe('printer-source-level', () => {
 }`
     );
 
-    expect(reprintExpression('VariantName(42)')).toBe('VariantName(42)');
-    expect(reprintExpression('/* a */VariantName(/* b */42)')).toBe(
-      '/* a */ VariantName(/* b */ 42)'
+    expect(reprintExpression('Test.VariantName(42)')).toBe('Test.VariantName(42)');
+    expect(reprintExpression('Test.<T>VariantName(42)')).toBe('Test.<T>VariantName(42)');
+    expect(reprintExpression('/* a */ Test./* b */ <T>/* c */ VariantName(42)')).toBe(
+      `/* a */
+Test /* b */ /* c */ .<T>VariantName(42)`
     );
-    expect(reprintExpression('VariantName(aVariableNameThatIsVeryVeryVeryLong)')).toBe(
-      `VariantName(
+    expect(reprintExpression('/* a */Obj.VariantName(/* b */42)')).toBe(
+      '/* a */ Obj.VariantName(/* b */ 42)'
+    );
+    expect(reprintExpression('V.VariantName(aVariableNameThatIsVeryVeryVeryLong)')).toBe(
+      `V.VariantName(
   aVariableNameThatIsVeryVeryVeryLong
 )`
     );
@@ -372,7 +384,6 @@ class Option<T>(None(unit), Some(T)) {
   function c(): int = {
     val a: int = 3;
   }
-
 }
 
 class Obj(
@@ -384,11 +395,10 @@ class Obj(
     val a: int = 1;
     val b: int = 2;
   }
-
 }
 
 /** short line */
-class A(val a: int) {  }
+class A(val a: int)
 
 /**
  * some very very very very very very
@@ -396,6 +406,6 @@ class A(val a: int) {  }
  * very very very very very long
  * document string
  */
-class Main {  }`);
+class Main`);
   });
 });

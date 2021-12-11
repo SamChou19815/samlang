@@ -1,6 +1,8 @@
 import { ForTests } from tests.StdLib
 
-class Math { function plus(a: int, b: int): int = a + b  }
+class Math {
+  function plus(a: int, b: int): int = a + b
+}
 
 class Student(val name: string, val age: int) {
   method getName(): string = this.name
@@ -8,24 +10,24 @@ class Student(val name: string, val age: int) {
   method getAge(): int = this.age
 
   function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
-
 }
 
 class PrimitiveType(U(bool), I(int), S(string), B(bool)) {
-  function getUnit(): PrimitiveType = U(false)
+  function getUnit(): PrimitiveType = PrimitiveType.U(false)
 
-  function getInteger(): PrimitiveType = I(42)
+  function getInteger(): PrimitiveType = PrimitiveType.I(42)
 
-  function getString(): PrimitiveType = S("Answer to life, universe, and everything.")
+  function getString(): PrimitiveType = PrimitiveType.S("Answer to life, universe, and everything.")
 
-  function getBool(): PrimitiveType = B(false)
+  function getBool(): PrimitiveType = PrimitiveType.B(false)
 
   method isTruthy(): bool =
     match (this) { | U _ -> false | I i -> i != 0 | S s -> s != "" | B b -> b }
-
 }
 
-class FunctionExample { function <T> getIdentityFunction(): (T) -> T = (x: T) -> x  }
+class FunctionExample {
+  function <T> getIdentityFunction(): (T) -> T = (x: T) -> x
+}
 
 class Box<T>(val content: T) {
   function <T> init(content: T): Box<T> = { content }
@@ -34,13 +36,12 @@ class Box<T>(val content: T) {
     val { content }: Box<T> = this;
     content
   }
-
 }
 
 class Option<T>(None(unit), Some(T)) {
-  function <T> getNone(): Option<T> = None({  })
+  function <T> getNone(): Option<T> = Option.None({  })
 
-  function <T> getSome(d: T): Option<T> = Some(d)
+  function <T> getSome(d: T): Option<T> = Option.Some(d)
 
   method forceValue(): T =
     match (this) {
@@ -49,8 +50,7 @@ class Option<T>(None(unit), Some(T)) {
     }
 
   method <R> map(f: (T) -> R): Option<R> =
-    match (this) { | None _ -> None({  }) | Some d -> Some(f(d)) }
-
+    match (this) { | None _ -> Option.None({  }) | Some d -> Option.Some(f(d)) }
 }
 
 class DifferentModulesDemo {
@@ -71,5 +71,4 @@ class DifferentModulesDemo {
     val _ = DifferentModulesDemo.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
     val _ = DifferentModulesDemo.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
   }
-
 }

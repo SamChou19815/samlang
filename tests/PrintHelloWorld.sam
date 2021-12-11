@@ -15,5 +15,4 @@ class PrintHelloWorld {
     val _ = PrintHelloWorld.globalConstantTest();
     val _ = PrintHelloWorld.printTest();
   }
-
 }

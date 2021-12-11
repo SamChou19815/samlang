@@ -14,7 +14,10 @@
     "c": "yarn workspaces foreach -tv run compile",
     "test": "jest --coverage",
     "test:single": "jest -t",
-    "test:integration": "esr scripts/compile-repository.ts",
+    "test:integration": "esr compile-repository.ts",
+    "core": "yarn workspace @dev-sam/samlang-core",
+    "cli": "yarn workspace @dev-sam/samlang-cli",
+    "vscode": "yarn workspace samlang-vscode",
     "bump": "yarn up @types/jest @types/node prettier jest esbuild husky lint-staged eslint \"@typescript-eslint/*\""
   },
   "devDependencies": {
@@ -65,5 +68,5 @@
       "yarn prettier --write"
     ]
   },
-  "packageManager": "yarn@3.2.0-rc.7"
+  "packageManager": "yarn@3.2.0-rc.8"
 }

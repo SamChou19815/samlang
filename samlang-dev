@@ -1,3 +1,3 @@
 #!/bin/bash
 
-node ./samlang-cli/bin/index.js
+node ./samlang-cli/bin/index.js "$@"

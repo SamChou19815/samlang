@@ -120,7 +120,13 @@ describe('module-references-collector', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionVariantConstructor({
         type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
+        typeArguments: [intType],
+        moduleReference: ModuleReference.DUMMY,
+        className: 'CCC',
+        classNameRange: Range.DUMMY,
+        tagPrecedingComments: [],
         tag: 'Foo',
+        tagRange: Range.DUMMY,
         tagOrder: 0,
         data: intOf(1),
       }),

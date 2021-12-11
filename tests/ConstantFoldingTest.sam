@@ -42,5 +42,4 @@ class ConstantFoldingTest {
     val _ = ForTests.assertIntEquals(7000, ConstantFoldingTest.test2(0, 0));
     val _ = ForTests.assertIntEquals(1400, ConstantFoldingTest.test3(0, 0));
   }
-
 }

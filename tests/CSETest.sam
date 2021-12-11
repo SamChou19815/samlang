@@ -68,5 +68,4 @@ class CSETest {
     val _ = CSETest.test6(true, 3, 4, 12);
     val _ = CSETest.test6(false, 3, 4, 12);
   }
-
 }

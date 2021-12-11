@@ -10,5 +10,4 @@ class LoopOptimization {
   function run(): unit = {
     val _ = LoopOptimization.loopy(0);
   }
-
 }

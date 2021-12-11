@@ -35,6 +35,7 @@ export function collectModuleReferenceFromExpression(
     case 'VariableExpression':
       return;
     case 'ClassMemberExpression':
+      expression.typeArguments.forEach((it) => collectModuleReferenceFromType(it, collector));
       collector.add(expression.moduleReference);
       return;
     case 'TupleConstructorExpression':
@@ -49,6 +50,8 @@ export function collectModuleReferenceFromExpression(
       });
       return;
     case 'VariantConstructorExpression':
+      expression.typeArguments.forEach((it) => collectModuleReferenceFromType(it, collector));
+      collector.add(expression.moduleReference);
       collectModuleReferenceFromExpression(expression.data, collector);
       return;
     case 'FieldAccessExpression':

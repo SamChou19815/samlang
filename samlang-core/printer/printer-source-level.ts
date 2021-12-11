@@ -1,11 +1,8 @@
-import { prettyPrintLiteral, prettyPrintType, TypedComment } from '../ast/common-nodes';
+import { prettyPrintLiteral, prettyPrintType, Type, TypedComment } from '../ast/common-nodes';
 import type {
   IfElseExpression,
   SamlangExpression,
-  SamlangModule,
-  SourceClassDefinition,
   SourceClassMemberDefinition,
-  SourceModuleMembersImport,
 } from '../ast/samlang-nodes';
 import { checkNotNull } from '../utils';
 import {
@@ -29,7 +26,7 @@ import {
   createParenthesisSurroundedDocument,
 } from './printer-prettier-library';
 
-function createPrettierDocumentForAssociatedComments(
+export function createPrettierDocumentForAssociatedComments(
   associatedComments: readonly TypedComment[],
   addFinalLineBreak: boolean
 ): PrettierDocument | null {
@@ -51,6 +48,9 @@ function createPrettierDocumentForAssociatedComments(
     ? PRETTIER_CONCAT(finalMainDocument, PRETTIER_LINE)
     : finalMainDocument;
 }
+
+const optionalTypeArguments = (typeArguments: readonly Type[]) =>
+  typeArguments.length > 0 ? `<${typeArguments.map(prettyPrintType).join(', ')}>` : '';
 
 function createPrettierDocumentFromSamlangExpression(
   expression: SamlangExpression
@@ -120,12 +120,13 @@ function createPrettierDocumentFromSamlangExpression(
         return PRETTIER_TEXT(expression.name);
       case 'ThisExpression':
         return PRETTIER_TEXT('this');
-      case 'ClassMemberExpression':
+      case 'ClassMemberExpression': {
         return createDocumentDottedExpression(
           PRETTIER_TEXT(expression.className),
           expression.memberPrecedingComments,
-          expression.memberName
+          optionalTypeArguments(expression.typeArguments) + expression.memberName
         );
+      }
       case 'TupleConstructorExpression':
         return createBracketSurroundedDocument(
           createCommaSeparatedList(
@@ -152,7 +153,11 @@ function createPrettierDocumentFromSamlangExpression(
         );
       case 'VariantConstructorExpression':
         return PRETTIER_CONCAT(
-          PRETTIER_TEXT(expression.tag),
+          createDocumentDottedExpression(
+            PRETTIER_TEXT(expression.className),
+            expression.tagPrecedingComments,
+            optionalTypeArguments(expression.typeArguments) + expression.tag
+          ),
           createParenthesisSurroundedDocument(
             createPrettierDocumentFromSamlangExpression(expression.data)
           )
@@ -366,65 +371,5 @@ export function createPrettierDocumentsFromSamlangClassMember(
     ),
     PRETTIER_TEXT(`: ${prettyPrintType(member.type.returnType)} =`),
     bodyDocumentWithPotentialIndentation,
-    PRETTIER_LINE,
-    PRETTIER_LINE,
   ];
-}
-
-function createPrettierDocumentForImport(oneImport: SourceModuleMembersImport): PrettierDocument {
-  return PRETTIER_CONCAT(
-    PRETTIER_TEXT('import '),
-    createBracesSurroundedDocument(
-      createCommaSeparatedList(oneImport.importedMembers, ([name]) => PRETTIER_TEXT(name))
-    ),
-    PRETTIER_TEXT(` from ${oneImport.importedModule.parts.join('.')}`),
-    PRETTIER_LINE
-  );
-}
-
-function createPrettierDocumentsForClassDefinition(
-  classDefinition: SourceClassDefinition
-): readonly PrettierDocument[] {
-  const typeMappings = Object.entries(classDefinition.typeDefinition.mappings);
-  const classMembersDocuments = classDefinition.members
-    .map(createPrettierDocumentsFromSamlangClassMember)
-    .flat();
-  if (classMembersDocuments.length > 1) classMembersDocuments.pop();
-
-  return [
-    createPrettierDocumentForAssociatedComments(classDefinition.associatedComments, true) ??
-      PRETTIER_NIL,
-    PRETTIER_TEXT(`class ${classDefinition.name}`),
-    PRETTIER_TEXT(
-      classDefinition.typeParameters.length === 0
-        ? ''
-        : `<${classDefinition.typeParameters.join(', ')}>`
-    ),
-    typeMappings.length === 0
-      ? PRETTIER_NIL
-      : createParenthesisSurroundedDocument(
-          createCommaSeparatedList(typeMappings, ([name, type]) => {
-            if (classDefinition.typeDefinition.type === 'object') {
-              const modifier = type.isPublic ? '' : 'private ';
-              return PRETTIER_TEXT(`${modifier}val ${name}: ${prettyPrintType(type.type)}`);
-            }
-            return PRETTIER_TEXT(`${name}(${prettyPrintType(type.type)})`);
-          })
-        ),
-    PRETTIER_TEXT(' '),
-    createBracesSurroundedDocument(PRETTIER_CONCAT(...classMembersDocuments)),
-    PRETTIER_LINE,
-    PRETTIER_LINE,
-  ];
-}
-
-export default function createPrettierDocumentForSamlangModule({
-  imports,
-  classes,
-}: SamlangModule): PrettierDocument {
-  const importsDocuments = imports.map(createPrettierDocumentForImport);
-  const classDocuments = classes.map(createPrettierDocumentsForClassDefinition).flat();
-
-  if (importsDocuments.length === 0) return PRETTIER_CONCAT(...classDocuments);
-  return PRETTIER_CONCAT(...importsDocuments, PRETTIER_LINE, ...classDocuments);
 }

@@ -12,5 +12,4 @@ class IntToString {
     val _ = ForTests.printlnInt(-1234567);
     val _ = ForTests.printlnInt(-2147483648);
   }
-
 }

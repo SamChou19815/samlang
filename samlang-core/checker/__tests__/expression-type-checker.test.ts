@@ -303,37 +303,70 @@ describe('expression-type-checker', () => {
 
   it('VariantConstructor', () => {
     assertTypeChecks(
-      'Foo(true)',
+      'Test2.Foo(true)',
       identifierType(dummyModuleReference, 'Test2'),
       undefined,
       undefined,
       'Test2'
     );
     assertTypeChecks(
-      'Bar(42)',
+      'Test2.Bar(42)',
       identifierType(dummyModuleReference, 'Test2'),
       undefined,
       undefined,
       'Test2'
     );
     assertTypeChecks(
-      'Foo(true)}',
+      'Test4.Foo(true)}',
+      identifierType(dummyModuleReference, 'Test4', [bool]),
+      undefined,
+      undefined,
+      'Test4'
+    );
+    assertTypeChecks(
+      'Test4.<bool>Foo(true)}',
       identifierType(dummyModuleReference, 'Test4', [bool]),
       undefined,
       undefined,
       'Test4'
     );
 
-    assertTypeErrors('Foo(true)', identifierType(dummyModuleReference, 'Test2'), [
-      "Test.sam:1:1-1:10: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
+    assertTypeErrors('Test.Foo(true)', identifierType(dummyModuleReference, 'Test2'), [
+      "Test.sam:1:1-1:15: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
     ]);
-    assertTypeErrors('Bar(42)', identifierType(dummyModuleReference, 'Test2'), [
-      "Test.sam:1:1-1:8: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
+    assertTypeErrors('Test.Bar(42)', identifierType(dummyModuleReference, 'Test2'), [
+      "Test.sam:1:1-1:13: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
     ]);
     assertTypeErrors(
-      'Tars(42)',
+      'Test4.<int, bool>Foo(true)}',
+      identifierType(dummyModuleReference, 'Test4', [bool]),
+      [
+        'Test.sam:1:1-1:27: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 1, actual: 2.',
+      ],
+      undefined
+    );
+    assertTypeErrors(
+      'Test4.<int>Foo(true)}',
+      identifierType(dummyModuleReference, 'Test4', [int]),
+      ['Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
+      undefined
+    );
+    assertTypeErrors(
+      'Test4.<int>Foo(true)}',
+      identifierType(dummyModuleReference, 'Test4', [bool]),
+      [
+        'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.',
+        'Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      ],
+      undefined
+    );
+    assertTypeErrors('Test44.Bar(42)', identifierType(dummyModuleReference, 'Test2'), [
+      'Test.sam:1:1-1:15: [UnresolvedName]: Name `Test44.Bar` is not resolved.',
+    ]);
+    assertTypeErrors(
+      'Test2.Tars(42)',
       identifierType(dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Tars` is not resolved.'],
+      ['Test.sam:1:1-1:15: [UnresolvedName]: Name `Test2.Tars` is not resolved.'],
       undefined,
       'Test2'
     );
@@ -354,10 +387,10 @@ describe('expression-type-checker', () => {
       'Test.sam:1:32-1:38: [UnresolvedName]: Name `bar` is not resolved.',
     ]);
     assertTypeErrors(
-      'Foo(true).foo',
+      'Test2.Foo(true).foo',
       int,
       [
-        "Test.sam:1:1-1:10: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
+        "Test.sam:1:1-1:16: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       ],
       undefined,
       'Test2'

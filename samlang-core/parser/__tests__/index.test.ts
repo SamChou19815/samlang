@@ -31,8 +31,9 @@ describe('samlang-core/parser', () => {
     expectASTWithTheSameKind('[3, true]', 'TupleConstructorExpression');
     expectASTWithTheSameKind('[3, true, "Ah"]', 'TupleConstructorExpression');
     expectASTWithTheSameKind('{foo, bar: 3}', 'ObjectConstructorExpression');
-    expectASTWithTheSameKind('Variant({})', 'VariantConstructorExpression');
-    expectASTWithTheSameKind('Variant(3)', 'VariantConstructorExpression');
+    expectASTWithTheSameKind('V.Variant({})', 'VariantConstructorExpression');
+    expectASTWithTheSameKind('V.Variant(3)', 'VariantConstructorExpression');
+    expectASTWithTheSameKind('V.<T>Variant(3)', 'VariantConstructorExpression');
     expectASTWithTheSameKind('foo.bar', 'FieldAccessExpression');
     expectASTWithTheSameKind('!false', 'UnaryExpression');
     expectASTWithTheSameKind('-42', 'UnaryExpression');
@@ -149,13 +150,19 @@ describe('samlang-core/parser', () => {
       function main(): int = 2 * 21
     }
 
+    class Util {}
+
+    class Util
+
+    class A(val a: int)
+
     class Option<T>(None(unit), Some(T)) {
-      function <T> getNone(): Option<T> = None({})
-      function <T> getSome(d: T): Option<T> = Some(d)
+      function <T> getNone(): Option<T> = Option.None({})
+      function <T> getSome(d: T): Option<T> = Option.Some(d)
       method <R> map(f: (T) -> R): Option<R> =
         match (this) {
-          | None _ -> None({})
-          | Some d -> Some(f(d))
+          | None _ -> Option.None({})
+          | Some d -> Option.Some(f(d))
         }
     }
 
@@ -196,6 +203,9 @@ describe('samlang-core/parser', () => {
     expect(parsed.classes.map((it) => it.name)).toEqual([
       'Main',
       'Main',
+      'Util',
+      'Util',
+      'A',
       'Option',
       'TypeInference',
       'Developer',

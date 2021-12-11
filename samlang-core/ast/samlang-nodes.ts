@@ -79,7 +79,13 @@ export interface ObjectConstructorExpression extends BaseExpression {
 
 export interface VariantConstructorExpression extends BaseExpression {
   readonly __type__: 'VariantConstructorExpression';
+  readonly typeArguments: readonly Type[];
+  readonly moduleReference: ModuleReference;
+  readonly className: string;
+  readonly classNameRange: Range;
+  readonly tagPrecedingComments: readonly TypedComment[];
   readonly tag: string;
+  readonly tagRange: Range;
   readonly tagOrder: number;
   readonly data: SamlangExpression;
 }
@@ -351,7 +357,13 @@ export const SourceExpressionVariantConstructor = ({
   range = Range.DUMMY,
   type,
   associatedComments = [],
+  typeArguments,
+  moduleReference,
+  className,
+  classNameRange,
+  tagPrecedingComments,
   tag,
+  tagRange,
   tagOrder,
   data,
 }: ExpressionConstructorArgumentObject<VariantConstructorExpression>): VariantConstructorExpression => ({
@@ -360,7 +372,13 @@ export const SourceExpressionVariantConstructor = ({
   type,
   precedence: 1,
   associatedComments,
+  typeArguments,
+  moduleReference,
+  className,
+  classNameRange,
+  tagPrecedingComments,
   tag,
+  tagRange,
   tagOrder,
   data,
 });
