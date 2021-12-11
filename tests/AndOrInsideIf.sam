@@ -16,5 +16,4 @@ class AndOrInsideIf {
   }
 
   function run(): unit = ForTests.assertIntEquals(1, AndOrInsideIf.test())
-
 }

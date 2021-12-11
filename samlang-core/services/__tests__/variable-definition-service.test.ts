@@ -46,7 +46,7 @@ class Main {
     val [e, _] = [b, 2];
     val g = 3;
     val {f, g as h} = {f:3, g};
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(f) else println(h);
     match (lambda1(3, !h)) {
@@ -76,7 +76,7 @@ class Main {
     });
     expect(query(lookup, new Range(Position(8, 16), Position(8, 17)))).toEqual({
       definition: '7:18-7:19',
-      uses: ['8:20-8:21', '9:17-9:18', '10:45-10:46', '10:75-10:76', '11:24-11:25'],
+      uses: ['8:24-8:25', '9:17-9:18', '10:45-10:46', '10:75-10:76', '11:24-11:25'],
     });
     expect(query(lookup, new Range(Position(9, 22), Position(9, 23)))).toEqual({
       definition: '10:23-10:24',
@@ -99,7 +99,7 @@ class Main {
     val [e, _] = [b, 2];
     val g = 3;
     val {f, g as h} = {f:3, g};
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(f) else println(h);
     match (lambda1(3, !h)) {
@@ -139,7 +139,7 @@ class Main {
     val [e, _] = [b, 2];
     val g = 3;
     val { f, g as h } = { f: 3, g };
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
       f
@@ -149,7 +149,6 @@ class Main {
       | Some dd -> dd
     }
   }
-
 }
 `
     );
@@ -161,7 +160,7 @@ class Main {
     val [e, _] = [b, 2];
     val g = 3;
     val { f, g as h } = { f: 3, g };
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
       f
@@ -171,7 +170,6 @@ class Main {
       | Some dd -> dd
     }
   }
-
 }
 `
     );
@@ -183,7 +181,7 @@ class Main {
     val [renAmeD, _] = [b, 2];
     val g = 3;
     val { f, g as h } = { f: 3, g };
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
       f
@@ -193,7 +191,6 @@ class Main {
       | Some dd -> dd
     }
   }
-
 }
 `
     );
@@ -205,7 +202,7 @@ class Main {
     val [e, _] = [renAmeD, 2];
     val g = 3;
     val { f, g as h } = { f: 3, g };
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
       f
@@ -215,7 +212,6 @@ class Main {
       | Some dd -> dd
     }
   }
-
 }
 `
     );
@@ -227,7 +223,7 @@ class Main {
     val [e, _] = [b, 2];
     val renAmeD = 3;
     val { f, g as h } = { f: 3, g: renAmeD };
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
       f
@@ -237,7 +233,6 @@ class Main {
       | Some dd -> dd
     }
   }
-
 }
 `
     );
@@ -249,7 +244,7 @@ class Main {
     val [e, _] = [b, 2];
     val g = 3;
     val { f as renAmeD, g as h } = { f: 3, g };
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = renAmeD + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
       renAmeD
@@ -259,7 +254,6 @@ class Main {
       | Some dd -> dd
     }
   }
-
 }
 `
     );
@@ -271,7 +265,7 @@ class Main {
     val [e, _] = [b, 2];
     val g = 3;
     val { f, g as renAmeD } = { f: 3, g };
-    val _ = Tagged(renAmeD);
+    val _ = Obj.Tagged(renAmeD);
     val _ = f + renAmeD;
     val lambda1 = (x, y) -> if (
       x + y * 3 > renAmeD
@@ -281,7 +275,6 @@ class Main {
       | Some dd -> dd
     }
   }
-
 }
 `
     );
@@ -293,7 +286,7 @@ class Main {
     val [e, _] = [b, 2];
     val g = 3;
     val { f, g as h } = { f: 3, g };
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, renAmeD) -> if (
       x + renAmeD * 3 > h
@@ -303,7 +296,6 @@ class Main {
       | Some dd -> dd
     }
   }
-
 }
 `
     );
@@ -315,7 +307,7 @@ class Main {
     val [e, _] = [b, 2];
     val g = 3;
     val { f, g as h } = { f: 3, g };
-    val _ = Tagged(h);
+    val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
       f
@@ -325,7 +317,6 @@ class Main {
       | Some renAmeD -> renAmeD
     }
   }
-
 }
 `
     );
@@ -367,7 +358,6 @@ class Main {
   function test(renAmeD: int, b: bool): unit = {
     val c = renAmeD.foo;
   }
-
 }
 `);
   });

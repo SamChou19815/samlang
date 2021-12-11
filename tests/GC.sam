@@ -9,5 +9,4 @@ class GC {
     )
 
   function run(): unit = ForTests.assertIntEquals(1200, GC.allocateStringALot(100, 0))
-
 }

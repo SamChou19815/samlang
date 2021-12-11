@@ -1,16 +1,16 @@
 class List<T>(Nil(unit), Cons([T * List<T>])) {
-  function <T> nil(): List<T> = Nil({  })
+  function <T> nil(): List<T> = List.Nil({  })
 
-  function <T> of(t: T): List<T> = Cons([t, Nil({  })])
+  function <T> of(t: T): List<T> = List.Cons([t, List.Nil({  })])
 
-  method cons(t: T): List<T> = Cons([t, this])
+  method cons(t: T): List<T> = List.Cons([t, this])
 
   method <R> map(f: (T) -> R): List<R> =
     match (this) {
-      | Nil _ -> Nil({  })
+      | Nil _ -> List.Nil({  })
       | Cons tuple -> {
         val [v, rest] = tuple;
-        Cons([f(v), rest.map(f)])
+        List.Cons([f(v), rest.map(f)])
       }
     }
 
@@ -29,12 +29,11 @@ class List<T>(Nil(unit), Cons([T * List<T>])) {
       | Nil _ -> acc
       | Cons tuple -> {
         val [v, rest] = tuple;
-        rest.reverseWithAccumulator(Cons([v, acc]))
+        rest.reverseWithAccumulator(List.Cons([v, acc]))
       }
     }
 
-  method reverse(): List<T> = this.reverseWithAccumulator(Nil({  }))
-
+  method reverse(): List<T> = this.reverseWithAccumulator(List.Nil({  }))
 }
 
 class ForTests {
@@ -46,5 +45,4 @@ class ForTests {
     if (actual == expected) then {  } else Builtins.panic(
       "Actual: " :: Builtins.intToString(actual) :: ", expected: " :: Builtins.intToString(expected)
     )
-
 }

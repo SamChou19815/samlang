@@ -14,5 +14,4 @@ class BlockInIfElse {
     } else { 2 }
 
   private function main3(): unit = if (true) then { val _: int = 3; } else {  }
-
 }

@@ -36,7 +36,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     public readonly currentClass: string
   ) {}
 
-  private getClassTypeInformation(
+  getClassTypeInformation(
     moduleReference: ModuleReference,
     className: string
   ): ClassTypingContext | undefined {

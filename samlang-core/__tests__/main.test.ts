@@ -13,7 +13,7 @@ import { assert } from '../utils';
 describe('samlang-core/index', () => {
   it('reformatSamlangSources works', () => {
     expect(reformatSamlangSources([[new ModuleReference(['A']), 'class Main {}']])[0]?.[1]).toBe(
-      'class Main {  }\n'
+      'class Main\n'
     );
   });
 

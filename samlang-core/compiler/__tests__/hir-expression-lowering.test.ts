@@ -182,7 +182,13 @@ return (_t0: __DUMMY___Foo);`
       expectCorrectlyLowered(
         SourceExpressionVariantConstructor({
           type: identifierType(ModuleReference.DUMMY, 'Foo'),
+          typeArguments: [],
+          moduleReference: ModuleReference.DUMMY,
+          className: 'CCC',
+          classNameRange: Range.DUMMY,
+          tagPrecedingComments: [],
           tag: 'Foo',
+          tagRange: Range.DUMMY,
           tagOrder: 1,
           data: THIS,
         }),

@@ -10,5 +10,4 @@ class Benchmark {
     val expected = (1 + bigNum) % 10007 * (bigNum % 10007 / 2) % 10007;
     ForTests.assertIntEquals(expected, actual)
   }
-
 }

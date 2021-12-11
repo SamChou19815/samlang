@@ -122,8 +122,8 @@ describe('samlang-core/checker', () => {
   }`;
     const sourceC = `import { B } from B
   class C(Int(int), B(B)) {
-    function ofInt(value: int): C = Int(value)
-    function ofB(b: B): C = B(b)
+    function ofInt(value: int): C = C.Int(value)
+    function ofB(b: B): C = C.B(b)
     method intValue(): int = match (this) { | Int v -> v  | B b -> b.intValue()  }
   }`;
     const sourceD = `import { A } from A
@@ -211,8 +211,8 @@ describe('samlang-core/checker', () => {
   }`;
     const sourceC = `import { B } from B
   class C(Int(int), Int(bool), B(B)) {
-    function ofInt(value: int): C = Int(value)
-    function <T, F, T>ofB(b: B): C = B(b)
+    function ofInt(value: int): C = C.Int(value)
+    function <T, F, T>ofB(b: B): C = C.B(b)
     method intValue(): int = match (this) { | Int v -> v  | B b -> b.intValue()  }
   }`;
     const sourceD = `import { A } from A
@@ -274,10 +274,10 @@ describe('samlang-core/checker', () => {
       'A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.',
       'B.sam:2:10-2:32: [Collision]: Name `A` collides with a previously defined name.',
       'C.sam:2:10-2:37: [NotWellDefinedIdentifier]: `B` is not well defined.',
-      'C.sam:3:41-3:46: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      'C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.',
       'C.sam:4:30-4:31: [NotWellDefinedIdentifier]: `B` is not well defined.',
-      'C.sam:4:5-4:42: [Collision]: Name `T` collides with a previously defined name.',
-      'C.sam:4:5-4:42: [NotWellDefinedIdentifier]: `B` is not well defined.',
+      'C.sam:4:5-4:44: [Collision]: Name `T` collides with a previously defined name.',
+      'C.sam:4:5-4:44: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.',
       'C.sam:5:68-5:78: [UnresolvedName]: Name `intValue` is not resolved.',
       'D.sam:5:50-5:52: [Collision]: Name `c1` collides with a previously defined name.',

@@ -17,5 +17,4 @@ class MathFunctions {
     val _ = ForTests.assertIntEquals(55, MathFunctions.fib(10));
     val _ = MathFunctions.uselessRecursion(20);
   }
-
 }

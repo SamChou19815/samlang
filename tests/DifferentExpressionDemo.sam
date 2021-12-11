@@ -1,6 +1,8 @@
 import { List, ForTests } from tests.StdLib
 
-class Foo(val a: int) { function bar(): int = 3  }
+class Foo(val a: int) {
+  function bar(): int = 3
+}
 
 class Obj(val d: int, val e: int) {
   function valExample(): int = {
@@ -11,7 +13,6 @@ class Obj(val d: int, val e: int) {
     val _: int = 42;
     a + b * c / d
   }
-
 }
 
 class Clazz(val t: int) {
@@ -22,23 +23,21 @@ class Clazz(val t: int) {
     val { t as j }: Clazz = this;
     i + j
   }
-
 }
 
 class Option<T>(Some(T), None(bool)) {
-  function <T> none(): Option<T> = None(true)
+  function <T> none(): Option<T> = Option.None(true)
 
-  method toSome(t: T): Option<T> = Some(t)
+  method toSome(t: T): Option<T> = Option.Some(t)
 
   method isNone(): bool = match (this) { | None _ -> true | Some _ -> false }
 
   method <R> map(f: (T) -> R): Option<R> =
-    match (this) { | None _ -> None(true) | Some t -> Some(f(t)) }
+    match (this) { | None _ -> Option.None(true) | Some t -> Option.Some(f(t)) }
 
   function test(): unit = {
-    val _ = match (None(false)) { | None _ -> "" | Some f -> Builtins.intToString(f("")) };
+    val _ = match (Option.None(false)) { | None _ -> "" | Some f -> Builtins.intToString(f("")) };
   }
-
 }
 
 class DifferentExpressionDemo {
@@ -89,5 +88,4 @@ class DifferentExpressionDemo {
       )
     );
   }
-
 }

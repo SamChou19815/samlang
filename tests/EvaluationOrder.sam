@@ -19,5 +19,4 @@ class EvaluationOrder {
     val _ = EvaluationOrder.boolIdentity(true, 8) || EvaluationOrder.boolIdentity(false, 100);
     val _ = EvaluationOrder.boolIdentity(false, 9) && EvaluationOrder.boolIdentity(true, 100);
   }
-
 }

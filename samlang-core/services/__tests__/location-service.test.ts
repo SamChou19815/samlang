@@ -47,8 +47,8 @@ describe('location-service', () => {
   }
 
   class Option<T>(None(unit), Some(T)) {
-    function none(): Option<int> = None({})
-    function createSome(): (int) -> Option<int> = (n: int) -> Some(n)
+    function none(): Option<int> = Option.None({})
+    function createSome(): (int) -> Option<int> = (n: int) -> Option.Some(n)
 
     function run(): unit = Option.createSome()(1).matchExample()
 

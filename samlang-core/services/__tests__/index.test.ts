@@ -592,10 +592,18 @@ class Test {
     ]);
     expect(service.renameVariable(testModuleReference, Position(2, 36), 'a')).toBeNull();
     expect(service.renameVariable(testModuleReference, Position(2, 32), 'a')).toBe(
-      'class Test { function main(): unit = { val a = b; }  }\n'
+      `class Test {
+  function main(): unit = {
+    val a = b;
+  }
+}\n`
     );
     expect(service.renameVariable(testModuleReference, Position(2, 32), 'c')).toBe(
-      'class Test { function main(): unit = { val c = b; }  }\n'
+      `class Test {
+  function main(): unit = {
+    val c = b;
+  }
+}\n`
     );
   });
 
@@ -612,7 +620,10 @@ class Main {
       ],
     ]);
     expect(service.formatEntireDocument(testModuleReference)).toBe(
-      'class Main { function main(): Developer = Developer.sam()  }\n'
+      `class Main {
+  function main(): Developer = Developer.sam()
+}
+`
     );
     expect(service.formatEntireDocument(new ModuleReference(['dsafadfasd']))).toBe(null);
   });

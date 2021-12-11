@@ -23,7 +23,6 @@ class TestCase(val name: string, val runner: () -> unit) {
     val _ = Builtins.println("Test Name: " :: name);
     val _ = runner();
   }
-
 }
 
 class Main {
@@ -46,5 +45,4 @@ class Main {
     val _ = Main.getTests().iter((test) -> test.run());
     Builtins.println("========================================")
   }
-
 }

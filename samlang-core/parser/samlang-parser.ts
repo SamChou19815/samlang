@@ -278,6 +278,9 @@ export default class SamlangModuleParser extends BaseParser {
 
   parseClass = (): SourceClassDefinition => {
     const { startRange, ...header } = this.parseClassHeader();
+    if (this.peek().content === 'class') {
+      return { range: startRange, ...header, members: [] };
+    }
     this.assertAndConsume('{');
     const members: SourceClassMemberDefinition[] = [];
     while (
@@ -295,9 +298,10 @@ export default class SamlangModuleParser extends BaseParser {
     readonly startRange: Range;
   } => {
     const associatedComments = this.collectPrecedingComments();
-    const startRange = this.assertAndConsume('class');
+    let startRange = this.assertAndConsume('class');
     const { range: nameRange, variable: name } = this.assertAndPeekUpperId();
-    if (this.peek().content === '{') {
+    startRange = startRange.union(nameRange);
+    if (this.peek().content === '{' || this.peek().content === 'class') {
       // Util class. Now the class header has ended.
       return {
         startRange,
@@ -325,6 +329,7 @@ export default class SamlangModuleParser extends BaseParser {
       range: (typeParameterRangeStart || typeDefinitionRangeStart).union(typeDefinitionRangeEnd),
       ...innerTypeDefinition,
     };
+    startRange = startRange.union(typeDefinitionRangeEnd);
     return { startRange, associatedComments, nameRange, name, typeParameters, typeDefinition };
   };
 
@@ -859,6 +864,31 @@ export default class SamlangModuleParser extends BaseParser {
             typeArguments = [];
           }
           memberPrecedingComments.push(...this.collectPrecedingComments());
+          const nextPeekedAfterDot = this.peek();
+          if (
+            typeof nextPeekedAfterDot.content !== 'string' &&
+            nextPeekedAfterDot.content.__type__ === 'UpperId'
+          ) {
+            const { range: tagRange, variable: tag } = this.assertAndPeekUpperId();
+            memberPrecedingComments.push(...this.collectPrecedingComments());
+            this.assertAndConsume('(');
+            const child = this.parseExpressionWithEndingComments();
+            const endRange = this.assertAndConsume(')');
+            return SourceExpressionVariantConstructor({
+              range: peeked.range.union(endRange),
+              type: UndecidedTypes.next(),
+              associatedComments,
+              typeArguments,
+              moduleReference: this.resolveClass(className),
+              className,
+              classNameRange: peeked.range,
+              tagPrecedingComments: memberPrecedingComments,
+              tag,
+              tagRange,
+              tagOrder: -1,
+              data: child,
+            });
+          }
           const { range: memberNameRange, variable: memberName } = this.assertAndPeekLowerId();
           return SourceExpressionClassMember({
             range: peeked.range.union(memberNameRange),
@@ -871,20 +901,6 @@ export default class SamlangModuleParser extends BaseParser {
             memberPrecedingComments,
             memberName,
             memberNameRange,
-          });
-        }
-        if (nextPeeked.content === '(') {
-          associatedComments.push(...this.collectPrecedingComments());
-          this.consume();
-          const child = this.parseExpressionWithEndingComments();
-          const endRange = this.assertAndConsume(')');
-          return SourceExpressionVariantConstructor({
-            range: peeked.range.union(endRange),
-            type: UndecidedTypes.next(),
-            associatedComments,
-            tag: peeked.content.content,
-            tagOrder: -1,
-            data: child,
           });
         }
       }

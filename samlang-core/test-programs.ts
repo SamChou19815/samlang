@@ -199,8 +199,8 @@ class Main {
     testName: 'insufficient-type-info-none',
     sourceCode: `
 class Option<T>(Some(T), None(bool)) {
-  function <T> none(): Option<T> = None(true)
-  method toSome(t: T): Option<T> = Some(t)
+  function <T> none(): Option<T> = Option.None(true)
+  method toSome(t: T): Option<T> = Option.Some(t)
 }
 class Main {
   function main(): unit = {
@@ -301,8 +301,8 @@ class Main {
     testName: 'polymorphic-option',
     sourceCode: `
 class Option<T>(Some(T), None(bool)) {
-  function <T> none(): Option<T> = None(true)
-  method toSome(t: T): Option<T> = Some(t)
+  function <T> none(): Option<T> = Option.None(true)
+  method toSome(t: T): Option<T> = Option.Some(t)
 }
 
 class Main {
@@ -324,9 +324,9 @@ class Main {
     sourceCode: `
 class List<T>(Nil(unit), Cons([T * List<T>])) {
   function <T> of(t: T): List<T> =
-    Cons([t, Nil({})])
+    List.Cons([t, List.Nil({})])
   method cons(t: T): List<T> =
-    Cons([t, this])
+    List.Cons([t, this])
 }
 class Developer(
   val name: string, val github: string,
@@ -599,7 +599,7 @@ class Main {
     testCaseName: 'CreateVariants',
     expectedStandardOut: 'hello\n',
     sourceCode: `
-class List(Nil(unit), Cons([int * List])) { function of(i: int): List = Cons([i, Nil({  })])  }
+class List(Nil(unit), Cons([int * List])) { function of(i: int): List = List.Cons([i, List.Nil({  })])  }
 
 class Main { function main(): unit = { val _: List = List.of(1); Builtins.println("hello") }  }
 `,
@@ -762,10 +762,10 @@ class PrimitiveType(
   B(bool)
 ) {
   // some random functions
-  function getUnit(): PrimitiveType = U(false)
-  function getInteger(): PrimitiveType = I(42)
-  function getString(): PrimitiveType = S("Answer to life, universe, and everything.")
-  function getBool(): PrimitiveType = B(false)
+  function getUnit(): PrimitiveType = PrimitiveType.U(false)
+  function getInteger(): PrimitiveType = PrimitiveType.I(42)
+  function getString(): PrimitiveType = PrimitiveType.S("Answer to life, universe, and everything.")
+  function getBool(): PrimitiveType = PrimitiveType.B(false)
 
   // pattern matching!
   method isTruthy(): bool =
@@ -789,8 +789,8 @@ class Box<T>(val content: T) {
 }
 
 class Option<T>(None(unit), Some(T)) {
-  function <T> getNone(): Option<T> = None({})
-  function <T> getSome(d: T): Option<T> = Some(d)
+  function <T> getNone(): Option<T> = Option.None({})
+  function <T> getSome(d: T): Option<T> = Option.Some(d)
   method forceValue(): T =
     match (this) {
       | None _ -> Builtins.panic("Ah")
@@ -798,8 +798,8 @@ class Option<T>(None(unit), Some(T)) {
     }
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
-      | None _ -> None({})
-      | Some d -> Some(f(d))
+      | None _ -> Option.None({})
+      | Some d -> Option.Some(f(d))
     }
 }
 
@@ -1103,18 +1103,18 @@ class Option<T>(None(unit), Some(T)) {
   method <R> mapButIgnore(f: (T) -> R): unit = {
     val _ = match (this) {
       // Resolved to Option<UNDECIDED>
-      | None _ -> None({})
+      | None _ -> Option.None({})
       // Resolved to Option<R>
       // If the merge process does not go deeper,
       // we will complain that Option<UNDECIDED> != Option<R>,
       // which is bad!
-      | Some d -> Some(f(d))
+      | Some d -> Option.Some(f(d))
     };
   }
 
   function main(): unit = {
-    val none = None({});
-    val _ = Some(none.mapButIgnore((it) -> it)).mapButIgnore((it) -> it);
+    val none = Option.None({});
+    val _ = Option.Some(none.mapButIgnore((it) -> it)).mapButIgnore((it) -> it);
   }
 }
 
@@ -1374,27 +1374,27 @@ class Clazz(val t: int) {
 }
 
 class Option<T>(Some(T), None(bool)) {
-  function <T> none(): Option<T> = None(true)
-  method toSome(t: T): Option<T> = Some(t)
+  function <T> none(): Option<T> = Option.None(true)
+  method toSome(t: T): Option<T> = Option.Some(t)
   method isNone(): bool = match (this) {
     | None _ -> true
     | Some _ -> false
   }
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
-      | None _ -> None(true)
-      | Some t -> Some(f(t))
+      | None _ -> Option.None(true)
+      | Some t -> Option.Some(f(t))
     }
   function test(): unit = {
-    val _ = match (None(false)) { | None _ -> "" | Some f -> Builtins.intToString(f("")) };
+    val _ = match (Option.None(false)) { | None _ -> "" | Some f -> Builtins.intToString(f("")) };
   }
 }
 
 class List<T>(Nil(bool), Cons([T * List<T>])) {
   function <T> of(t: T): List<T> =
-    Cons([t, Nil(true)])
+    List.Cons([t, List.Nil(true)])
   method cons(t: T): List<T> =
-    Cons([t, this])
+    List.Cons([t, this])
 }
 
 class Main {
