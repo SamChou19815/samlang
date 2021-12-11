@@ -25,7 +25,7 @@ export function activate(): void {
       debug: {
         module: absoluteServerModule,
         transport: TransportKind.ipc,
-        options: { execArgv: ['--nolazy', '--inspect=6009'] },
+        options: { execArgv: ['--nolazy', '--inspect=6009', '--stack_size=1024'] },
       },
     },
     { documentSelector: [{ scheme: 'file', language: 'samlang' }] }
