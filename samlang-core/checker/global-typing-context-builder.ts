@@ -12,7 +12,7 @@ import {
 } from '../ast/common-nodes';
 import type { SamlangModule, SourceClassDefinition } from '../ast/samlang-nodes';
 import type { DefaultBuiltinClasses } from '../parser';
-import { hashMapOf } from '../utils';
+import { checkNotNull, hashMapOf } from '../utils';
 import type {
   ClassTypingContext,
   GlobalTypingContext,
@@ -20,11 +20,10 @@ import type {
   ModuleTypingContext,
 } from './typing-context';
 
-function buildClassTypingContext({
-  typeParameters,
-  typeDefinition,
-  members,
-}: SourceClassDefinition): ClassTypingContext {
+function buildClassTypingContext(
+  moduleReference: ModuleReference,
+  { name: className, typeParameters, typeDefinition, members }: SourceClassDefinition
+): ClassTypingContext {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
@@ -35,14 +34,40 @@ function buildClassTypingContext({
       functions[name] = typeInformation;
     }
   });
+  const classType = identifierType(
+    moduleReference,
+    className,
+    typeParameters.map((it) => identifierType(moduleReference, it, []))
+  );
+  if (typeDefinition.type === 'object') {
+    functions.init = {
+      isPublic: true,
+      typeParameters,
+      type: functionType(
+        typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it]).type),
+        classType
+      ),
+    };
+  } else {
+    Object.entries(typeDefinition.mappings).forEach(([tag, { type }]) => {
+      functions[tag] = {
+        isPublic: true,
+        typeParameters,
+        type: functionType([type], classType),
+      };
+    });
+  }
   return { typeParameters, typeDefinition, functions, methods };
 }
 
-function buildModuleTypingContext(samlangModule: SamlangModule): ModuleTypingContext {
+function buildModuleTypingContext(
+  moduleReference: ModuleReference,
+  samlangModule: SamlangModule
+): ModuleTypingContext {
   return Object.fromEntries(
     samlangModule.classes.map(
       (classDeclaration) =>
-        [classDeclaration.name, buildClassTypingContext(classDeclaration)] as const
+        [classDeclaration.name, buildClassTypingContext(moduleReference, classDeclaration)] as const
     )
   );
 }
@@ -92,7 +117,7 @@ export function buildGlobalTypingContext(
   const modules = hashMapOf<ModuleReference, ModuleTypingContext>();
   modules.set(ModuleReference.ROOT, builtinModuleTypes);
   sources.forEach((samlangModule, moduleReference) => {
-    modules.set(moduleReference, buildModuleTypingContext(samlangModule));
+    modules.set(moduleReference, buildModuleTypingContext(moduleReference, samlangModule));
   });
   return modules;
 }
@@ -115,7 +140,10 @@ export function updateGlobalTypingContext(
     if (samlangModule == null) {
       globalTypingContext.delete(moduleReference);
     } else {
-      globalTypingContext.set(moduleReference, buildModuleTypingContext(samlangModule));
+      globalTypingContext.set(
+        moduleReference,
+        buildModuleTypingContext(moduleReference, samlangModule)
+      );
     }
   });
 }

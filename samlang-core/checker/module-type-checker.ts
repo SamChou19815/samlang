@@ -154,6 +154,7 @@ export default class ModuleTypeChecker {
     nameWithRange: readonly (readonly [string, Range])[]
   ): void {
     const nameSet = new Set<string>();
+    nameSet.add('init');
     nameWithRange.forEach(([name, range]) => {
       if (nameSet.has(name)) {
         this.errorCollector.reportCollisionError(range, name);

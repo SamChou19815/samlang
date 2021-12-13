@@ -25,13 +25,13 @@ class A {
 }
 
 class C(val v: bool) {
-  function init(): C = { v: true }
+  function create(): C = { v: true }
 }
 
 class Main {
   function main(): unit = {
     val _ = A.b();
-    val _ = C.init();
+    val _ = C.create();
   }
 }
 `,
@@ -40,12 +40,12 @@ class Main {
     testName: 'add-panic-to-class',
     sourceCode: `
 class A(val a: int) {
-  function init(): A = { a: 42 }
+  function create(): A = { a: 42 }
 }
 
 class Main {
-  function main1(): int = Builtins.panic("Ah") + A.init()
-  function main2(): int = A.init() + Builtins.panic("Ah")
+  function main1(): int = Builtins.panic("Ah") + A.create()
+  function main2(): int = A.create() + Builtins.panic("Ah")
   private function main(): int = Main.main1() + Main.main2()
 }
 `,
@@ -54,11 +54,11 @@ class Main {
     testName: 'add-with-class',
     sourceCode: `
 class A(val a: int) {
-  function init(): A = { a: 42 }
+  function create(): A = { a: 42 }
 }
 
 class Main {
-  function main(): int = 3 + A.init()
+  function main(): int = 3 + A.create()
 }
 `,
   },
@@ -278,14 +278,14 @@ class Main {
     testName: 'overengineered-helloworld-2',
     sourceCode: `
 class NewYear2019<T>(val message: T) {
-  function init(): NewYear2019<string> = { message: "Hello World!" }
+  function create(): NewYear2019<string> = { message: "Hello World!" }
   method getMessage(): T = {
     val { message as msg } = this; msg
   }
 }
 
 class Main {
-  function main(): string = NewYear2019.init().getMessage()
+  function main(): string = NewYear2019.create().getMessage()
 }
 `,
   },
@@ -782,7 +782,7 @@ class FunctionExample {
 }
 
 class Box<T>(val content: T) {
-  function <T> init(content: T): Box<T> = { content } // object short hand syntax
+  function <T> create(content: T): Box<T> = { content } // object short hand syntax
   method getContent(): T = {
     val { content } = this; content
   }
@@ -816,7 +816,7 @@ class Main {
 
   private function consistencyTest(): unit = {
     val _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");
-    val _ = Main.assertEquals(Box.init(42).getContent(), 42, "Ah2");
+    val _ = Main.assertEquals(Box.create(42).getContent(), 42, "Ah2");
     val _ = Main.assertEquals(FunctionExample.getIdentityFunction()(42), 42, "Ah3");
     val _ = Main.assertEquals(Student.dummyStudent().getAge(), 0, "Ah4");
     val _ = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");

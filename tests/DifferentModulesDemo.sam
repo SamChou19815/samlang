@@ -30,7 +30,7 @@ class FunctionExample {
 }
 
 class Box<T>(val content: T) {
-  function <T> init(content: T): Box<T> = { content }
+  function <T> create(content: T): Box<T> = { content }
 
   method getContent(): T = {
     val { content }: Box<T> = this;
@@ -62,7 +62,7 @@ class DifferentModulesDemo {
 
   function run(): unit = {
     val _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);
-    val _ = ForTests.assertIntEquals(Box.init(42).getContent(), 42);
+    val _ = ForTests.assertIntEquals(Box.create(42).getContent(), 42);
     val _ = ForTests.assertIntEquals(FunctionExample.getIdentityFunction()(42), 42);
     val _ = ForTests.assertIntEquals(Student.dummyStudent().getAge(), 0);
     val _ = ForTests.assertIntEquals(Math.plus(2, 2), 4);
