@@ -429,6 +429,20 @@ class Main {
         insertText: 'of($0)$1',
         detail: '<T>((T) -> List<T>)',
       },
+      {
+        insertTextFormat: InsertTextFormats.Snippet,
+        kind: CompletionItemKinds.FUNCTION,
+        detail: '<T>((unit) -> List<T>)',
+        insertText: 'Nil($0)$1',
+        label: 'Nil(a0: unit): List<T>',
+      },
+      {
+        insertTextFormat: InsertTextFormats.Snippet,
+        kind: CompletionItemKinds.FUNCTION,
+        detail: '<T>(([T * List<T>]) -> List<T>)',
+        insertText: 'Cons($0)$1',
+        label: 'Cons(a0: [T * List<T>]): List<T>',
+      },
     ]);
     expect(service.autoComplete(testModuleReference, Position(12, 31))).toEqual([
       {
@@ -469,6 +483,13 @@ class Main {
         label: 'sam(): Developer',
         insertText: 'sam()',
         detail: '() -> Developer',
+      },
+      {
+        insertTextFormat: InsertTextFormats.Snippet,
+        kind: CompletionItemKinds.FUNCTION,
+        detail: '(string, string, List<string>) -> Developer',
+        insertText: 'init($0, $1, $2)$3',
+        label: 'init(a0: string, a1: string, a2: List<string>): Developer',
       },
     ]);
   });

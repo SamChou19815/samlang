@@ -4,9 +4,9 @@ import { samlangProgramCheckerTestSources } from '../test-programs';
 
 const expectedErrors: readonly string[] = [
   'access-private-member.sam:12:13-12:16: [UnresolvedName]: Name `A.b` is not resolved.',
-  'add-panic-to-class.sam:7:50-7:56: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.',
-  'add-panic-to-class.sam:8:27-8:33: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.',
-  'add-with-class.sam:7:30-7:36: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.',
+  'add-panic-to-class.sam:7:50-7:58: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.',
+  'add-panic-to-class.sam:8:27-8:35: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.',
+  'add-with-class.sam:7:30-7:38: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.',
   'complete-trash.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes.',
   'complete-trash.sam:1:11-1:14: [SyntaxError]: Unexpected token among the classes.',
   'complete-trash.sam:1:15-1:21: [SyntaxError]: Unexpected token among the classes.',

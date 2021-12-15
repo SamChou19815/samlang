@@ -1,4 +1,10 @@
-import { functionType, intType, ModuleReference, Range } from '../../ast/common-nodes';
+import {
+  functionType,
+  identifierType,
+  intType,
+  ModuleReference,
+  Range,
+} from '../../ast/common-nodes';
 import type { SamlangModule, SourceClassDefinition } from '../../ast/samlang-nodes';
 import { SourceExpressionFalse } from '../../ast/samlang-nodes';
 import { mapOf } from '../../utils';
@@ -94,7 +100,18 @@ describe('global-typing-context-builder', () => {
     expect(actualGlobalTypingContext.size).toBe(3);
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
+      Class0: {
+        typeParameters: [],
+        typeDefinition,
+        functions: {
+          init: {
+            isPublic: true,
+            type: functionType([], identifierType(module0Reference, 'Class0', [])),
+            typeParameters: [],
+          },
+        },
+        methods: {},
+      },
     });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
       Class1: {
@@ -102,6 +119,11 @@ describe('global-typing-context-builder', () => {
         typeDefinition,
         functions: {
           f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+          init: {
+            isPublic: true,
+            type: functionType([], identifierType(module1Reference, 'Class1', [])),
+            typeParameters: [],
+          },
         },
         methods: {
           m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
@@ -110,7 +132,13 @@ describe('global-typing-context-builder', () => {
       Class2: {
         typeParameters: [],
         typeDefinition,
-        functions: {},
+        functions: {
+          init: {
+            isPublic: true,
+            type: functionType([], identifierType(module1Reference, 'Class2', [])),
+            typeParameters: [],
+          },
+        },
         methods: {},
       },
     });
@@ -130,7 +158,18 @@ describe('global-typing-context-builder', () => {
     expect(actualGlobalTypingContext.size).toBe(3);
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
+      Class0: {
+        typeParameters: [],
+        typeDefinition,
+        functions: {
+          init: {
+            isPublic: true,
+            type: functionType([], identifierType(module0Reference, 'Class0', [])),
+            typeParameters: [],
+          },
+        },
+        methods: {},
+      },
     });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
       Class1: {
@@ -138,12 +177,28 @@ describe('global-typing-context-builder', () => {
         typeDefinition,
         functions: {
           f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+          init: {
+            isPublic: true,
+            type: functionType([], identifierType(module1Reference, 'Class1', [])),
+            typeParameters: [],
+          },
         },
         methods: {
           m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
         },
       },
-      Class2: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
+      Class2: {
+        typeParameters: [],
+        typeDefinition,
+        functions: {
+          init: {
+            isPublic: true,
+            type: functionType([], identifierType(module1Reference, 'Class2', [])),
+            typeParameters: [],
+          },
+        },
+        methods: {},
+      },
     });
   });
 
@@ -164,6 +219,11 @@ describe('global-typing-context-builder', () => {
         typeDefinition,
         functions: {
           f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+          init: {
+            isPublic: true,
+            type: functionType([], identifierType(module1Reference, 'Class1', [])),
+            typeParameters: [],
+          },
         },
         methods: {
           m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
@@ -172,7 +232,13 @@ describe('global-typing-context-builder', () => {
       Class2: {
         typeParameters: [],
         typeDefinition,
-        functions: {},
+        functions: {
+          init: {
+            isPublic: true,
+            type: functionType([], identifierType(module1Reference, 'Class2', [])),
+            typeParameters: [],
+          },
+        },
         methods: {},
       },
     });
