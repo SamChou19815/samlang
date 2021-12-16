@@ -151,7 +151,7 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
           member
         );
         if (withContext != null) compiledFunctionsWithAddedDummyContext.push(withContext);
-        compiledFunctionsToAdd.forEach((it) => compiledFunctions.push(it));
+        compiledFunctions.push(...compiledFunctionsToAdd);
       });
     });
   });
