@@ -1,5 +1,5 @@
 import { encodeFunctionNameGlobally, encodeMainFunctionName } from '../ast/common-names';
-import type { ModuleReference, Sources } from '../ast/common-nodes';
+import type { ModuleReference, Sources, Type } from '../ast/common-nodes';
 import {
   HighIRFunction,
   HighIRSources,
@@ -12,7 +12,11 @@ import {
   HIR_NAME,
   HIR_VARIABLE,
 } from '../ast/hir-nodes';
-import type { SamlangModule, SourceClassMemberDefinition } from '../ast/samlang-nodes';
+import type {
+  SamlangExpression,
+  SamlangModule,
+  SourceAnnotatedVariable,
+} from '../ast/samlang-nodes';
 import lowerSamlangExpression from './hir-expression-lowering';
 import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
 import HighIRStringManager from './hir-string-manager';
@@ -27,80 +31,120 @@ import deduplicateHighIRTypes from './hir-type-deduplication';
 function compileSamlangFunctionToHighIRFunctions(
   moduleReference: ModuleReference,
   className: string,
+  memberName: string,
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
-  classTypeParameters: readonly string[],
+  memberTypeParameters: readonly string[],
+  memberParameters: readonly SourceAnnotatedVariable[],
+  memberReturnType: Type,
+  memberBody: SamlangExpression,
   typeSynthesizer: HighIRTypeSynthesizer,
-  stringManager: HighIRStringManager,
-  classMember: SourceClassMemberDefinition
-): readonly [readonly HighIRFunction[], HighIRFunction | null] {
-  const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
-  const typeParametersSet = new Set(
-    classMember.isMethod
-      ? [...classTypeParameters, ...classMember.typeParameters]
-      : classMember.typeParameters
-  );
+  stringManager: HighIRStringManager
+) {
+  const encodedName = encodeFunctionNameGlobally(moduleReference, className, memberName);
+  const typeParametersSet = new Set(memberTypeParameters);
   const typeParameterArray = Array.from(typeParametersSet);
   const typeLoweringManager = new SamlangTypeLoweringManager(typeParametersSet, typeSynthesizer);
-  const mainFunctionParamterWithTypes = classMember.parameters.map(
+  const mainFunctionParameterWithTypes = memberParameters.map(
     ({ name, type }) => [name, typeLoweringManager.lowerSamlangType(type)] as const
   );
-  if (classMember.isMethod) {
-    mainFunctionParamterWithTypes.unshift([
+  const mainFunctionParameterNames = mainFunctionParameterWithTypes.map(([name]) => name);
+  const bodyLoweringResult = lowerSamlangExpression(
+    moduleReference,
+    encodedName,
+    mainFunctionParameterWithTypes,
+    typeDefinitionMapping,
+    typeLoweringManager,
+    stringManager,
+    memberBody
+  );
+  const compiledFunctionsToAdd = [...bodyLoweringResult.syntheticFunctions];
+  const mainFunctionType = HIR_FUNCTION_TYPE(
+    mainFunctionParameterWithTypes.map(([, type]) => type),
+    typeLoweringManager.lowerSamlangType(memberReturnType)
+  );
+  compiledFunctionsToAdd.push({
+    name: encodedName,
+    parameters: mainFunctionParameterNames,
+    typeParameters: typeParameterArray,
+    type: mainFunctionType,
+    body: bodyLoweringResult.statements,
+    returnValue: bodyLoweringResult.expression,
+  });
+  const functionWithContext: HighIRFunction = {
+    name: `${encodedName}_with_context`,
+    typeParameters: typeParameterArray,
+    parameters: ['_context', ...mainFunctionParameterNames],
+    type: HIR_FUNCTION_TYPE(
+      [HIR_INT_TYPE, ...mainFunctionType.argumentTypes],
+      mainFunctionType.returnType
+    ),
+    body: [
+      HIR_FUNCTION_CALL({
+        functionExpression: HIR_NAME(encodedName, mainFunctionType),
+        functionArguments: mainFunctionParameterWithTypes.map(([name, type]) =>
+          HIR_VARIABLE(name, type)
+        ),
+        returnType: mainFunctionType.returnType,
+        returnCollector: '_ret',
+      }),
+    ],
+    returnValue: HIR_VARIABLE('_ret', mainFunctionType.returnType),
+  };
+  return { compiledFunctionsToAdd, functionWithContext };
+}
+
+function compileSamlangMethodToHighIRFunctions(
+  moduleReference: ModuleReference,
+  className: string,
+  memberName: string,
+  typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
+  classTypeParameters: readonly string[],
+  memberTypeParameters: readonly string[],
+  memberParameters: readonly SourceAnnotatedVariable[],
+  memberReturnType: Type,
+  memberBody: SamlangExpression,
+  typeSynthesizer: HighIRTypeSynthesizer,
+  stringManager: HighIRStringManager
+) {
+  const encodedName = encodeFunctionNameGlobally(moduleReference, className, memberName);
+  const typeParametersSet = new Set([...classTypeParameters, ...memberTypeParameters]);
+  const typeParameterArray = Array.from(typeParametersSet);
+  const typeLoweringManager = new SamlangTypeLoweringManager(typeParametersSet, typeSynthesizer);
+  const mainFunctionParameterWithTypes = [
+    [
       '_this',
       HIR_IDENTIFIER_TYPE(
         encodeSamlangType(moduleReference, className),
         classTypeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
       ),
-    ]);
-  }
-  const mainFunctionParameterTypes = mainFunctionParamterWithTypes.map(([, type]) => type);
-  const mainFunctionParameterNames = mainFunctionParamterWithTypes.map(([name]) => name);
+    ] as const,
+    ...memberParameters.map(
+      ({ name, type }) => [name, typeLoweringManager.lowerSamlangType(type)] as const
+    ),
+  ];
   const bodyLoweringResult = lowerSamlangExpression(
     moduleReference,
     encodedName,
-    mainFunctionParamterWithTypes,
+    mainFunctionParameterWithTypes,
     typeDefinitionMapping,
     typeLoweringManager,
     stringManager,
-    classMember.body
+    memberBody
   );
-  const compiledFunctions = [...bodyLoweringResult.syntheticFunctions];
-  const mainFunctionReturnType = typeLoweringManager.lowerSamlangType(classMember.type.returnType);
-  compiledFunctions.push({
-    name: encodedName,
-    parameters: mainFunctionParameterNames,
-    typeParameters: typeParameterArray,
-    type: HIR_FUNCTION_TYPE(mainFunctionParameterTypes, mainFunctionReturnType),
-    body: bodyLoweringResult.statements,
-    returnValue: bodyLoweringResult.expression,
-  });
-  if (!classMember.isMethod) {
-    const functionWithContext: HighIRFunction = {
-      name: `${encodedName}_with_context`,
+  return [
+    ...bodyLoweringResult.syntheticFunctions,
+    {
+      name: encodedName,
+      parameters: mainFunctionParameterWithTypes.map(([name]) => name),
       typeParameters: typeParameterArray,
-      parameters: ['_context', ...mainFunctionParameterNames],
       type: HIR_FUNCTION_TYPE(
-        [HIR_INT_TYPE, ...mainFunctionParameterTypes],
-        mainFunctionReturnType
+        mainFunctionParameterWithTypes.map(([, type]) => type),
+        typeLoweringManager.lowerSamlangType(memberReturnType)
       ),
-      body: [
-        HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(
-            encodedName,
-            HIR_FUNCTION_TYPE(mainFunctionParameterTypes, mainFunctionReturnType)
-          ),
-          functionArguments: mainFunctionParamterWithTypes.map(([name, type]) =>
-            HIR_VARIABLE(name, type)
-          ),
-          returnType: mainFunctionReturnType,
-          returnCollector: '_ret',
-        }),
-      ],
-      returnValue: HIR_VARIABLE('_ret', mainFunctionReturnType),
-    };
-    return [compiledFunctions, functionWithContext];
-  }
-  return [compiledFunctions, null];
+      body: bodyLoweringResult.statements,
+      returnValue: bodyLoweringResult.expression,
+    },
+  ];
 }
 
 /** @internal */
@@ -141,17 +185,39 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
   sources.forEach((samlangModule, moduleReference) => {
     samlangModule.classes.map(({ name: className, typeParameters, members }) => {
       members.forEach((member) => {
-        const [compiledFunctionsToAdd, withContext] = compileSamlangFunctionToHighIRFunctions(
-          moduleReference,
-          className,
-          typeDefinitionMapping,
-          typeParameters,
-          typeSynthesizer,
-          stringManager,
-          member
-        );
-        if (withContext != null) compiledFunctionsWithAddedDummyContext.push(withContext);
-        compiledFunctions.push(...compiledFunctionsToAdd);
+        if (member.isMethod) {
+          compiledFunctions.push(
+            ...compileSamlangMethodToHighIRFunctions(
+              moduleReference,
+              className,
+              member.name,
+              typeDefinitionMapping,
+              typeParameters,
+              member.typeParameters,
+              member.parameters,
+              member.type.returnType,
+              member.body,
+              typeSynthesizer,
+              stringManager
+            )
+          );
+        } else {
+          const { compiledFunctionsToAdd, functionWithContext } =
+            compileSamlangFunctionToHighIRFunctions(
+              moduleReference,
+              className,
+              member.name,
+              typeDefinitionMapping,
+              member.typeParameters,
+              member.parameters,
+              member.type.returnType,
+              member.body,
+              typeSynthesizer,
+              stringManager
+            );
+          compiledFunctionsWithAddedDummyContext.push(functionWithContext);
+          compiledFunctions.push(...compiledFunctionsToAdd);
+        }
       });
     });
   });
