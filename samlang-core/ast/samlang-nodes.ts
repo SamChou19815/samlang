@@ -539,7 +539,7 @@ export const SourceExpressionStatementBlock = ({
   block,
 });
 
-interface SourceAnnotatedVariable {
+export interface SourceAnnotatedVariable {
   readonly name: string;
   readonly nameRange: Range;
   readonly type: Type;
