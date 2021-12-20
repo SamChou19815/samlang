@@ -134,34 +134,6 @@ function createPrettierDocumentFromSamlangExpression(
             createPrettierDocumentFromSamlangExpression
           )
         );
-      case 'ObjectConstructorExpression':
-        return createBracesSurroundedDocument(
-          createCommaSeparatedList(expression.fieldDeclarations, (fieldDeclaration) =>
-            PRETTIER_CONCAT(
-              createPrettierDocumentForAssociatedComments(
-                fieldDeclaration.associatedComments,
-                true
-              ) ?? PRETTIER_NIL,
-              fieldDeclaration.expression == null
-                ? PRETTIER_TEXT(fieldDeclaration.name)
-                : PRETTIER_CONCAT(
-                    PRETTIER_TEXT(`${fieldDeclaration.name}: `),
-                    createPrettierDocumentFromSamlangExpression(fieldDeclaration.expression)
-                  )
-            )
-          )
-        );
-      case 'VariantConstructorExpression':
-        return PRETTIER_CONCAT(
-          createDocumentDottedExpression(
-            PRETTIER_TEXT(expression.className),
-            expression.tagPrecedingComments,
-            optionalTypeArguments(expression.typeArguments) + expression.tag
-          ),
-          createParenthesisSurroundedDocument(
-            createPrettierDocumentFromSamlangExpression(expression.data)
-          )
-        );
       case 'FieldAccessExpression':
         return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),

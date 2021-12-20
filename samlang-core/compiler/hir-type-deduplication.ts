@@ -66,10 +66,11 @@ class HighIRTypeDeduplicator {
         })
       ),
       typeDefinitions: Array.from(this.typeDefinitionMapping.values()).map(
-        ({ identifier, type, typeParameters, mappings }) => ({
+        ({ identifier, type, typeParameters, names, mappings }) => ({
           identifier,
           type,
           typeParameters,
+          names,
           mappings: mappings.map(this.rewriteType),
         })
       ),

@@ -339,16 +339,6 @@ class LanguageServicesImpl implements LanguageServices {
           expression.className,
           expression.memberName
         );
-      case 'ObjectConstructorExpression':
-      case 'VariantConstructorExpression': {
-        const [moduleReferenceOfClass, classDefinition] = checkNotNull(
-          this.getClassDefinition(moduleReference, (expression.type as IdentifierType).identifier)
-        );
-        return {
-          moduleReference: moduleReferenceOfClass,
-          range: classDefinition.typeDefinition.range,
-        };
-      }
       case 'FieldAccessExpression': {
         const [moduleReferenceOfClass, classDefinition] = checkNotNull(
           this.getClassDefinition(
@@ -409,10 +399,8 @@ class LanguageServicesImpl implements LanguageServices {
     const nullableClassDefinition = this.getClassDefinition(moduleReference, className);
     if (nullableClassDefinition == null) return null;
     const [moduleReferenceOfClass, classDefinition] = nullableClassDefinition;
-    const matchingMember = checkNotNull(
-      classDefinition.members.find((it) => it.name === memberName),
-      `Missing ${memberName}`
-    );
+    const matchingMember = classDefinition.members.find((it) => it.name === memberName);
+    if (matchingMember == null) return null;
     return { moduleReference: moduleReferenceOfClass, range: matchingMember.range };
   }
 

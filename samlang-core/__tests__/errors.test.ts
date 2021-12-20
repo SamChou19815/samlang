@@ -2,10 +2,8 @@ import { boolType, intType, ModuleReference, Range } from '../ast/common-nodes';
 import {
   CollisionError,
   CompileTimeError,
-  DuplicateFieldDeclarationError,
   IllegalOtherClassMatch,
   IllegalThisError,
-  InconsistentFieldsInObjectError,
   InsufficientTypeInferenceContextError,
   NonExhausiveMatchError,
   NotWellDefinedIdentifierError,
@@ -79,19 +77,6 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [
     new IllegalThisError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY),
     'Foo/Bar.sam:0:0-0:0: [IllegalThis]: Keyword `this` cannot be used in this context.',
-  ],
-  [
-    new InconsistentFieldsInObjectError(
-      new ModuleReference(['Foo', 'Bar']),
-      Range.DUMMY,
-      ['a'],
-      ['b']
-    ),
-    'Foo/Bar.sam:0:0-0:0: [InconsistentFieldsInObject]: Inconsistent fields. Expected: `a`, actual: `b`.',
-  ],
-  [
-    new DuplicateFieldDeclarationError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'a'),
-    'Foo/Bar.sam:0:0-0:0: [DuplicateFieldDeclaration]: Field name `a` is declared twice.',
   ],
   [
     new NonExhausiveMatchError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, ['A', 'B']),

@@ -113,33 +113,6 @@ ClassName
 ]`
     );
 
-    expect(reprintExpression('{foo:bar,baz}')).toBe('{ foo: bar, baz }');
-    expect(reprintExpression('{/*d*/foo:bar,/*f */baz}')).toBe('{ /* d */ foo: bar, /* f */ baz }');
-    expect(reprintExpression('{foo:bar,baz0,baz1,baz2,baz3,baz4,baz5}')).toBe(
-      `{
-  foo: bar,
-  baz0,
-  baz1,
-  baz2,
-  baz3,
-  baz4,
-  baz5
-}`
-    );
-    expect(reprintExpression('{/*dsf*/foo:bar,baz0,baz1,//dd\nbaz2,baz3,baz4,baz5}')).toBe(
-      `{
-  /* dsf */
-  foo: bar,
-  baz0,
-  baz1,
-  // dd
-  baz2,
-  baz3,
-  baz4,
-  baz5
-}`
-    );
-
     expect(reprintExpression('Test.VariantName(42)')).toBe('Test.VariantName(42)');
     expect(reprintExpression('Test.<T>VariantName(42)')).toBe('Test.<T>VariantName(42)');
     expect(reprintExpression('/* a */ Test./* b */ <T>/* c */ VariantName(42)')).toBe(

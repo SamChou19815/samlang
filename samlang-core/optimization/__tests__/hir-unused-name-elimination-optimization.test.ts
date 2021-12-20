@@ -26,8 +26,20 @@ describe('hir-unused-name-elimination-optimization', () => {
         { name: 'fsdfsdf', content: '' },
       ],
       typeDefinitions: [
-        { identifier: 'Foo', type: 'object', typeParameters: [], mappings: [HIR_INT_TYPE] },
-        { identifier: 'Baz', type: 'object', typeParameters: [], mappings: [HIR_INT_TYPE] },
+        {
+          identifier: 'Foo',
+          type: 'object',
+          typeParameters: [],
+          names: [],
+          mappings: [HIR_INT_TYPE],
+        },
+        {
+          identifier: 'Baz',
+          type: 'object',
+          typeParameters: [],
+          names: [],
+          mappings: [HIR_INT_TYPE],
+        },
       ],
       closureTypes: [
         {

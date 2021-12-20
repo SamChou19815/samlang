@@ -45,7 +45,7 @@ class Main {
     val c = a;
     val [e, _] = [b, 2];
     val g = 3;
-    val {f, g as h} = {f:3, g};
+    val {f, g as h} = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(f) else println(h);
@@ -98,7 +98,7 @@ class Main {
     val c = a;
     val [e, _] = [b, 2];
     val g = 3;
-    val {f, g as h} = {f:3, g};
+    val {f, g as h} = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(f) else println(h);
@@ -138,7 +138,7 @@ class Main {
     val c = renAmeD;
     val [e, _] = [b, 2];
     val g = 3;
-    val { f, g as h } = { f: 3, g };
+    val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
@@ -159,7 +159,7 @@ class Main {
     val renAmeD = a;
     val [e, _] = [b, 2];
     val g = 3;
-    val { f, g as h } = { f: 3, g };
+    val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
@@ -180,7 +180,7 @@ class Main {
     val c = a;
     val [renAmeD, _] = [b, 2];
     val g = 3;
-    val { f, g as h } = { f: 3, g };
+    val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
@@ -201,7 +201,7 @@ class Main {
     val c = a;
     val [e, _] = [renAmeD, 2];
     val g = 3;
-    val { f, g as h } = { f: 3, g };
+    val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
@@ -216,13 +216,13 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(6, 28), Position(6, 29)),
+      new Range(Position(6, 35), Position(6, 36)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
     val [e, _] = [b, 2];
     val renAmeD = 3;
-    val { f, g as h } = { f: 3, g: renAmeD };
+    val { f, g as h } = Main.init(3, renAmeD);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
@@ -243,7 +243,7 @@ class Main {
     val c = a;
     val [e, _] = [b, 2];
     val g = 3;
-    val { f as renAmeD, g as h } = { f: 3, g };
+    val { f as renAmeD, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = renAmeD + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
@@ -264,7 +264,7 @@ class Main {
     val c = a;
     val [e, _] = [b, 2];
     val g = 3;
-    val { f, g as renAmeD } = { f: 3, g };
+    val { f, g as renAmeD } = Main.init(3, g);
     val _ = Obj.Tagged(renAmeD);
     val _ = f + renAmeD;
     val lambda1 = (x, y) -> if (
@@ -285,7 +285,7 @@ class Main {
     val c = a;
     val [e, _] = [b, 2];
     val g = 3;
-    val { f, g as h } = { f: 3, g };
+    val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, renAmeD) -> if (
@@ -306,7 +306,7 @@ class Main {
     val c = a;
     val [e, _] = [b, 2];
     val g = 3;
-    val { f, g as h } = { f: 3, g };
+    val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(

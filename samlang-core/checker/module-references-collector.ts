@@ -41,19 +41,6 @@ export function collectModuleReferenceFromExpression(
     case 'TupleConstructorExpression':
       expression.expressions.forEach((it) => collectModuleReferenceFromExpression(it, collector));
       return;
-    case 'ObjectConstructorExpression':
-      expression.fieldDeclarations.forEach((it) => {
-        collectModuleReferenceFromType(it.type, collector);
-        if (it.expression != null) {
-          collectModuleReferenceFromExpression(it.expression, collector);
-        }
-      });
-      return;
-    case 'VariantConstructorExpression':
-      expression.typeArguments.forEach((it) => collectModuleReferenceFromType(it, collector));
-      collector.add(expression.moduleReference);
-      collectModuleReferenceFromExpression(expression.data, collector);
-      return;
     case 'FieldAccessExpression':
     case 'MethodAccessExpression':
     case 'UnaryExpression':

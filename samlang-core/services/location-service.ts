@@ -109,25 +109,6 @@ export class SamlangExpressionLocationLookupBuilder {
         expression.expressions.forEach((it) => this.buildRecursively(moduleReference, it));
         this.buildSingleExpression(moduleReference, expression);
         return;
-      case 'ObjectConstructorExpression':
-        expression.fieldDeclarations.forEach((fieldDeclaration) =>
-          this.buildRecursively(
-            moduleReference,
-            fieldDeclaration.expression != null
-              ? fieldDeclaration.expression
-              : SourceExpressionVariable({
-                  range: fieldDeclaration.range,
-                  type: fieldDeclaration.type,
-                  name: fieldDeclaration.name,
-                })
-          )
-        );
-        this.buildSingleExpression(moduleReference, expression);
-        return;
-      case 'VariantConstructorExpression':
-        this.buildRecursively(moduleReference, expression.data);
-        this.buildSingleExpression(moduleReference, expression);
-        return;
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
       case 'UnaryExpression':

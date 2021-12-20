@@ -1,10 +1,5 @@
 import type { ModuleReference, Range, Sources } from '../ast/common-nodes';
-import {
-  Pattern,
-  SamlangExpression,
-  SamlangModule,
-  SourceExpressionVariable,
-} from '../ast/samlang-nodes';
+import type { Pattern, SamlangExpression, SamlangModule } from '../ast/samlang-nodes';
 import { assert, error, HashMap, hashMapOf, LocalStackedContext } from '../utils';
 
 export type DefinitionAndUses = {
@@ -55,21 +50,6 @@ export class ModuleScopedVariableDefinitionLookup {
         expression.expressions.map((it) =>
           this.collectDefinitionAndUseWithDefinitionManager(it, manager)
         );
-        return;
-      case 'ObjectConstructorExpression':
-        expression.fieldDeclarations.forEach((fieldDeclaration) => {
-          if (fieldDeclaration.expression == null) {
-            this.addDefinitionAndUse(
-              manager.getLocalValueType(fieldDeclaration.name),
-              fieldDeclaration.nameRange
-            );
-          } else {
-            this.collectDefinitionAndUseWithDefinitionManager(fieldDeclaration.expression, manager);
-          }
-        });
-        return;
-      case 'VariantConstructorExpression':
-        this.collectDefinitionAndUseWithDefinitionManager(expression.data, manager);
         return;
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
@@ -213,39 +193,6 @@ function applyExpressionRenamingWithDefinitionAndUse(
         ...expression,
         expressions: expression.expressions.map((it) =>
           applyExpressionRenamingWithDefinitionAndUse(it, definitionAndUses, newName)
-        ),
-      };
-    case 'ObjectConstructorExpression':
-      return {
-        ...expression,
-        fieldDeclarations: expression.fieldDeclarations.map((fieldDeclaration) => {
-          if (fieldDeclaration.expression != null) {
-            return {
-              ...fieldDeclaration,
-              expression: applyExpressionRenamingWithDefinitionAndUse(
-                fieldDeclaration.expression,
-                definitionAndUses,
-                newName
-              ),
-            };
-          }
-          return {
-            ...fieldDeclaration,
-            expression: SourceExpressionVariable({
-              range: fieldDeclaration.nameRange,
-              type: fieldDeclaration.type,
-              name: newName,
-            }),
-          };
-        }),
-      };
-    case 'VariantConstructorExpression':
-      return {
-        ...expression,
-        data: applyExpressionRenamingWithDefinitionAndUse(
-          expression.data,
-          definitionAndUses,
-          newName
         ),
       };
     case 'FieldAccessExpression':

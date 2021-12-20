@@ -64,32 +64,6 @@ export interface TupleConstructorExpression extends BaseExpression {
   readonly expressions: readonly SamlangExpression[];
 }
 
-export interface ObjectConstructorExpressionFieldConstructor extends Node {
-  readonly type: Type;
-  readonly associatedComments: readonly TypedComment[];
-  readonly name: string;
-  readonly nameRange: Range;
-  readonly expression?: SamlangExpression;
-}
-
-export interface ObjectConstructorExpression extends BaseExpression {
-  readonly __type__: 'ObjectConstructorExpression';
-  readonly fieldDeclarations: readonly ObjectConstructorExpressionFieldConstructor[];
-}
-
-export interface VariantConstructorExpression extends BaseExpression {
-  readonly __type__: 'VariantConstructorExpression';
-  readonly typeArguments: readonly Type[];
-  readonly moduleReference: ModuleReference;
-  readonly className: string;
-  readonly classNameRange: Range;
-  readonly tagPrecedingComments: readonly TypedComment[];
-  readonly tag: string;
-  readonly tagRange: Range;
-  readonly tagOrder: number;
-  readonly data: SamlangExpression;
-}
-
 export interface FieldAccessExpression extends BaseExpression {
   readonly __type__: 'FieldAccessExpression';
   readonly expression: SamlangExpression;
@@ -211,8 +185,6 @@ export type SamlangExpression =
   | VariableExpression
   | ClassMemberExpression
   | TupleConstructorExpression
-  | ObjectConstructorExpression
-  | VariantConstructorExpression
   | FieldAccessExpression
   | MethodAccessExpression
   | UnaryExpression
@@ -337,50 +309,6 @@ export const SourceExpressionTupleConstructor = ({
   precedence: 1,
   associatedComments,
   expressions,
-});
-
-export const SourceExpressionObjectConstructor = ({
-  range = Range.DUMMY,
-  type,
-  associatedComments = [],
-  fieldDeclarations,
-}: ExpressionConstructorArgumentObject<ObjectConstructorExpression>): ObjectConstructorExpression => ({
-  __type__: 'ObjectConstructorExpression',
-  range,
-  type,
-  precedence: 1,
-  associatedComments,
-  fieldDeclarations,
-});
-
-export const SourceExpressionVariantConstructor = ({
-  range = Range.DUMMY,
-  type,
-  associatedComments = [],
-  typeArguments,
-  moduleReference,
-  className,
-  classNameRange,
-  tagPrecedingComments,
-  tag,
-  tagRange,
-  tagOrder,
-  data,
-}: ExpressionConstructorArgumentObject<VariantConstructorExpression>): VariantConstructorExpression => ({
-  __type__: 'VariantConstructorExpression',
-  range,
-  type,
-  precedence: 1,
-  associatedComments,
-  typeArguments,
-  moduleReference,
-  className,
-  classNameRange,
-  tagPrecedingComments,
-  tag,
-  tagRange,
-  tagOrder,
-  data,
 });
 
 export const SourceExpressionFieldAccess = ({

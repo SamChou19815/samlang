@@ -72,26 +72,6 @@ export default function fixExpressionType(
         ),
       };
     }
-    case 'ObjectConstructorExpression': {
-      const newType = typeFixItself(expression.type, expectedType) as IdentifierType;
-      const newDeclarations = expression.fieldDeclarations.map((fieldDeclaration) => {
-        const betterType = typeFixItself(fieldDeclaration.type, null);
-        if (fieldDeclaration.expression == null) {
-          return { ...fieldDeclaration, type: betterType };
-        }
-        return {
-          ...fieldDeclaration,
-          type: betterType,
-          expression: tryFixExpressionType(fieldDeclaration.expression, betterType),
-        };
-      });
-      return { ...expression, type: newType, fieldDeclarations: newDeclarations };
-    }
-    case 'VariantConstructorExpression': {
-      const newType = getExpressionFixedType(expression, expectedType) as IdentifierType;
-      const data = tryFixExpressionType(expression.data, typeFixItself(expression.data.type, null));
-      return { ...expression, type: newType, data };
-    }
     case 'FieldAccessExpression':
     case 'MethodAccessExpression':
       return {

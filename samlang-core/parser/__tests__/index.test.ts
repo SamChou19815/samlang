@@ -30,10 +30,9 @@ describe('samlang-core/parser', () => {
     expectASTWithTheSameKind('SomeClass.<A>foo', 'ClassMemberExpression');
     expectASTWithTheSameKind('[3, true]', 'TupleConstructorExpression');
     expectASTWithTheSameKind('[3, true, "Ah"]', 'TupleConstructorExpression');
-    expectASTWithTheSameKind('{foo, bar: 3}', 'ObjectConstructorExpression');
-    expectASTWithTheSameKind('V.Variant({})', 'VariantConstructorExpression');
-    expectASTWithTheSameKind('V.Variant(3)', 'VariantConstructorExpression');
-    expectASTWithTheSameKind('V.<T>Variant(3)', 'VariantConstructorExpression');
+    expectASTWithTheSameKind('V.Variant({})', 'FunctionCallExpression');
+    expectASTWithTheSameKind('V.Variant(3)', 'FunctionCallExpression');
+    expectASTWithTheSameKind('V.<T>Variant(3)', 'FunctionCallExpression');
     expectASTWithTheSameKind('foo.bar', 'FieldAccessExpression');
     expectASTWithTheSameKind('!false', 'UnaryExpression');
     expectASTWithTheSameKind('-42', 'UnaryExpression');
@@ -97,7 +96,6 @@ describe('samlang-core/parser', () => {
     expectBadAST('_sdfsdfdsf');
     expectBadAST('9223372036854775808');
     expectBadAST('-9223372036854775889223372036854775808');
-    expectBadAST('SomeClass.Foo');
     expectBadAST('SomeClass.<>foo');
     expectBadAST('SomeClass.<foo');
     expectBadAST('SomeClass.');
@@ -186,7 +184,7 @@ describe('samlang-core/parser', () => {
       function sam(): Developer = {
         val l = List.of("SAMLANG").cons("...")
         val github = "SamChou19815"
-        { name: "Sam Zhou", github, projects: l }
+        Developer.init("Sam Zhou", github, l)
       }
     }
     `,

@@ -9,14 +9,14 @@ class Obj(val d: int, val e: int) {
     val a: int = 1;
     val b: int = 2;
     val [_, c]: [string * int] = ["dd", 3];
-    val { e as d }: Obj = { d: 5, e: 4 };
+    val { e as d }: Obj = Obj.init(5, 4);
     val _: int = 42;
     a + b * c / d
   }
 }
 
 class Clazz(val t: int) {
-  function of(): Clazz = { t: 42 }
+  function of(): Clazz = Clazz.init(42)
 
   method thisTest(): int = {
     val i: int = this.t;

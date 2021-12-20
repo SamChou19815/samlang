@@ -39,12 +39,10 @@ import type {
   LambdaExpression,
   MatchExpression,
   MethodAccessExpression,
-  ObjectConstructorExpression,
   SamlangExpression,
   StatementBlockExpression,
   TupleConstructorExpression,
   UnaryExpression,
-  VariantConstructorExpression,
 } from '../ast/samlang-nodes';
 import { assert, checkNotNull, LocalStackedContext, zip } from '../utils';
 import type HighIRStringManager from './hir-string-manager';
@@ -213,10 +211,6 @@ class HighIRExpressionLoweringManager {
         return this.lowerClassMember(expression, favoredTempVariable);
       case 'TupleConstructorExpression':
         return this.lowerTupleConstructor(expression, favoredTempVariable);
-      case 'ObjectConstructorExpression':
-        return this.lowerObjectConstructor(expression, favoredTempVariable);
-      case 'VariantConstructorExpression':
-        return this.lowerVariantConstructor(expression, favoredTempVariable);
       case 'FieldAccessExpression':
         return this.lowerFieldAccess(expression, favoredTempVariable);
       case 'MethodAccessExpression':
@@ -290,60 +284,6 @@ class HighIRExpressionLoweringManager {
     const finalVariableExpression = HIR_VARIABLE(tupleVariableName, loweredTupleIdentifierType);
     this.varibleContext.bind(tupleVariableName, finalVariableExpression);
     return { statements: loweredStatements, expression: finalVariableExpression };
-  }
-
-  private lowerObjectConstructor(
-    expression: ObjectConstructorExpression,
-    favoredTempVariable: string | null
-  ): HighIRExpressionLoweringResult {
-    const loweredStatements: HighIRStatement[] = [];
-    const loweredFields = expression.fieldDeclarations.map((fieldDeclaration) => {
-      const fieldExpression = fieldDeclaration.expression ?? {
-        __type__: 'VariableExpression',
-        range: fieldDeclaration.range,
-        precedence: 1,
-        associatedComments: [],
-        type: fieldDeclaration.type,
-        name: fieldDeclaration.name,
-      };
-      return this.loweredAndAddStatements(fieldExpression, null, loweredStatements);
-    });
-    const structVariableName = this.allocateTemporaryVariable(favoredTempVariable);
-    const loweredIdentifierType = this.typeLoweringManager.lowerSamlangType(
-      expression.type
-    ) as HighIRIdentifierType;
-    loweredStatements.push(
-      HIR_STRUCT_INITIALIZATION({
-        structVariableName,
-        type: loweredIdentifierType,
-        expressionList: loweredFields,
-      })
-    );
-    const finalVariable = HIR_VARIABLE(structVariableName, loweredIdentifierType);
-    this.varibleContext.bind(structVariableName, finalVariable);
-    return { statements: loweredStatements, expression: finalVariable };
-  }
-
-  private lowerVariantConstructor(
-    expression: VariantConstructorExpression,
-    favoredTempVariable: string | null
-  ): HighIRExpressionLoweringResult {
-    const structVariableName = this.allocateTemporaryVariable(favoredTempVariable);
-    const statements: HighIRStatement[] = [];
-    const variantType = this.typeLoweringManager.lowerSamlangType(
-      expression.type
-    ) as HighIRIdentifierType;
-    const dataExpression = this.loweredAndAddStatements(expression.data, null, statements);
-    statements.push(
-      HIR_STRUCT_INITIALIZATION({
-        structVariableName,
-        type: variantType,
-        expressionList: [HIR_INT(expression.tagOrder), dataExpression],
-      })
-    );
-    const finalVariable = HIR_VARIABLE(structVariableName, variantType);
-    this.varibleContext.bind(structVariableName, finalVariable);
-    return { statements, expression: finalVariable };
   }
 
   private lowerFieldAccess(

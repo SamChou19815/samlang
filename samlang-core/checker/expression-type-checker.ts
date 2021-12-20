@@ -2,8 +2,6 @@ import {
   boolType,
   FunctionType,
   functionType,
-  IdentifierType,
-  identifierType,
   intType,
   Range,
   stringType,
@@ -22,41 +20,25 @@ import {
   LiteralExpression,
   MatchExpression,
   MethodAccessExpression,
-  ObjectConstructorExpression,
-  ObjectConstructorExpressionFieldConstructor,
   SamlangExpression,
   SourceExpressionFunctionCall,
   SourceExpressionLambda,
   SourceExpressionMatch,
   SourceExpressionMethodAccess,
-  SourceExpressionObjectConstructor,
-  SourceExpressionVariable,
   SourceFieldType,
   StatementBlockExpression,
   ThisExpression,
   TupleConstructorExpression,
   UnaryExpression,
   VariableExpression,
-  VariantConstructorExpression,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import {
-  assert,
-  checkNotNull,
-  filterMap,
-  listShallowEquals,
-  LocalStackedContext,
-  zip,
-} from '../utils';
+import { assert, filterMap, LocalStackedContext, zip } from '../utils';
 import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';
 import StatementTypeChecker from './statement-type-checker';
 import type TypeResolution from './type-resolution';
-import {
-  typeReplacement,
-  undecideFieldTypeParameters,
-  undecideTypeParameters,
-} from './type-undecider';
+import { typeReplacement, undecideTypeParameters } from './type-undecider';
 import { validateType } from './type-validator';
 import type { AccessibleGlobalTypingContext } from './typing-context';
 
@@ -95,10 +77,6 @@ class ExpressionTypeChecker {
         return this.typeCheckClassMember(expression, expectedType);
       case 'TupleConstructorExpression':
         return this.typeCheckTupleConstructor(expression, expectedType);
-      case 'ObjectConstructorExpression':
-        return this.typeCheckObjectConstructor(expression, expectedType);
-      case 'VariantConstructorExpression':
-        return this.typeCheckVariantConstructor(expression, expectedType);
       case 'FieldAccessExpression':
         return this.typeCheckFieldAccess(expression, expectedType);
       case 'UnaryExpression':
@@ -225,221 +203,6 @@ class ExpressionTypeChecker {
       constraintInferredType
     );
     return { ...expression, expressions: checkedExpressions, type: locallyInferredType };
-  }
-
-  private typeCheckFieldDeclarations(
-    fieldDeclarations: readonly ObjectConstructorExpressionFieldConstructor[]
-  ): {
-    readonly declaredFieldTypes: Readonly<Record<string, Type>>;
-    readonly checkedDeclarations: readonly ObjectConstructorExpressionFieldConstructor[];
-  } {
-    const declaredFieldTypes: Record<string, Type> = {};
-    const checkedDeclarations: ObjectConstructorExpressionFieldConstructor[] = [];
-    fieldDeclarations.forEach(
-      ({ range, associatedComments, name, nameRange, type, expression }) => {
-        if (declaredFieldTypes[name] != null) {
-          this.errorCollector.reportDuplicateFieldDeclarationError(range, name);
-          return;
-        }
-        if (expression != null) {
-          const checkedExpression = this.basicTypeCheck(expression);
-          const checkedType = checkedExpression.type;
-          declaredFieldTypes[name] = checkedType;
-          checkedDeclarations.push({
-            range,
-            associatedComments,
-            name,
-            nameRange,
-            type: checkedType,
-            expression: checkedExpression,
-          });
-        } else {
-          const checkedExpression = this.basicTypeCheck(
-            SourceExpressionVariable({ range, type, associatedComments: [], name })
-          );
-          const checkedType = checkedExpression.type;
-          declaredFieldTypes[name] = checkedType;
-          checkedDeclarations.push({
-            range,
-            associatedComments,
-            name,
-            nameRange,
-            type: checkedType,
-          });
-        }
-      }
-    );
-    return { declaredFieldTypes, checkedDeclarations };
-  }
-
-  private typeCheckObjectConstructor(
-    expression: ObjectConstructorExpression,
-    expectedType: Type
-  ): SamlangExpression {
-    const {
-      classTypeParameters,
-      type: currentClassTypeDefinitionType,
-      names: fieldNames,
-      mappings: typeMappings,
-    } = this.accessibleGlobalTypingContext.getCurrentClassTypeDefinition();
-    if (currentClassTypeDefinitionType === 'variant') {
-      this.errorCollector.reportUnsupportedClassTypeDefinitionError(expression.range, 'object');
-      return { ...expression, type: expectedType };
-    }
-    const { declaredFieldTypes, checkedDeclarations } = this.typeCheckFieldDeclarations(
-      expression.fieldDeclarations
-    );
-    const checkedMappings: Record<string, Type> = {};
-    // used to quickly get the range where one declaration goes wrong
-    const nameRangeMap = Object.fromEntries(
-      expression.fieldDeclarations.map((it) => [it.name, it.range])
-    );
-    let locallyInferredType: IdentifierType;
-    {
-      // In this case, all keys must perfectly match because we have no fall back
-      const typeMappingsKeys = Object.keys(typeMappings).sort();
-      const declaredFieldKeys = Object.keys(declaredFieldTypes).sort();
-      if (!listShallowEquals(typeMappingsKeys, declaredFieldKeys)) {
-        this.errorCollector.reportInconsistentFieldsInObjectError(
-          expression.range,
-          typeMappingsKeys,
-          declaredFieldKeys
-        );
-        return { ...expression, type: expectedType };
-      }
-      const [genericsResolvedTypeMappings, autoGeneratedUndecidedTypes] =
-        undecideFieldTypeParameters(typeMappings, classTypeParameters);
-      Object.entries(declaredFieldTypes).forEach(([k, actualType]) => {
-        const fieldType = checkNotNull(genericsResolvedTypeMappings[k]);
-        const nameRange = checkNotNull(nameRangeMap[k]);
-        checkedMappings[k] = this.constraintAwareTypeChecker.checkAndInfer(
-          fieldType.type,
-          actualType,
-          nameRange
-        );
-      });
-      const constraintInferredTypeArguments = autoGeneratedUndecidedTypes.map((undecidedType) =>
-        this.resolution.getPartiallyResolvedType(undecidedType)
-      );
-      locallyInferredType = identifierType(
-        this.accessibleGlobalTypingContext.currentModuleReference,
-        this.accessibleGlobalTypingContext.currentClass,
-        constraintInferredTypeArguments
-      );
-    }
-    const enhancedFieldDeclarations = checkedDeclarations.map((declaration) => {
-      const betterType = checkNotNull(checkedMappings[declaration.name]);
-      return { ...declaration, type: betterType };
-    });
-    const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
-      expectedType,
-      locallyInferredType,
-      expression.range
-    );
-    if (constraintInferredType.type === 'IdentifierType') {
-      const fieldOrderMap = Object.fromEntries(fieldNames.map((name, index) => [name, index]));
-      const sortedFields = enhancedFieldDeclarations.sort(
-        (field1, field2) =>
-          checkNotNull(fieldOrderMap[field1.name]) - checkNotNull(fieldOrderMap[field2.name])
-      );
-      return SourceExpressionObjectConstructor({
-        range: expression.range,
-        type: constraintInferredType,
-        associatedComments: expression.associatedComments,
-        fieldDeclarations: sortedFields,
-      });
-    }
-    this.errorCollector.reportUnexpectedTypeKindError(
-      expression.range,
-      'identifier',
-      constraintInferredType
-    );
-    return { ...expression, type: expectedType };
-  }
-
-  private typeCheckVariantConstructor(
-    expression: VariantConstructorExpression,
-    expectedType: Type
-  ): SamlangExpression {
-    const classTypeInformation = this.accessibleGlobalTypingContext.getClassTypeInformation(
-      expression.moduleReference,
-      expression.className
-    );
-    if (classTypeInformation == null) {
-      this.errorCollector.reportUnresolvedNameError(
-        expression.range,
-        `${expression.className}.${expression.tag}`
-      );
-      return { ...expression, type: expectedType };
-    }
-    const classTypeParameters = classTypeInformation.typeParameters;
-    const {
-      type: currentClassTypeDefinitionType,
-      names: variantNames,
-      mappings: typeMappings,
-    } = classTypeInformation.typeDefinition;
-    if (currentClassTypeDefinitionType === 'object') {
-      this.errorCollector.reportUnsupportedClassTypeDefinitionError(expression.range, 'variant');
-      return { ...expression, type: expectedType };
-    }
-    const checkedData = this.basicTypeCheck(expression.data);
-    const associatedDataType = typeMappings[expression.tag]?.type;
-    if (associatedDataType == null) {
-      this.errorCollector.reportUnresolvedNameError(
-        expression.range,
-        `${expression.className}.${expression.tag}`
-      );
-      return { ...expression, type: expectedType };
-    }
-    const order = variantNames.findIndex((t) => t === expression.tag);
-    assert(order !== -1, `Bad tag: ${expression.tag}`);
-    if (expression.typeArguments.length !== 0) {
-      if (expression.typeArguments.length === classTypeParameters.length) {
-        const dataType = typeReplacement(
-          associatedDataType,
-          Object.fromEntries(zip(classTypeParameters, expression.typeArguments))
-        );
-        this.constraintAwareTypeChecker.checkAndInfer(
-          dataType,
-          checkedData.type,
-          checkedData.range
-        );
-        const type = this.constraintAwareTypeChecker.checkAndInfer(
-          expectedType,
-          identifierType(
-            expression.moduleReference,
-            expression.className,
-            expression.typeArguments
-          ),
-          expression.range
-        );
-        return { ...expression, type, tagOrder: order, data: checkedData };
-      }
-      this.errorCollector.reportTypeArgumentsSizeMismatchError(
-        expression.range,
-        classTypeParameters.length,
-        expression.typeArguments.length
-      );
-    }
-    const [genericsResolvedAssociatedDataType, autoGeneratedUndecidedTypes] =
-      undecideTypeParameters(associatedDataType, classTypeParameters);
-    this.constraintAwareTypeChecker.checkAndInfer(
-      genericsResolvedAssociatedDataType,
-      checkedData.type,
-      checkedData.range
-    );
-    const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
-      expectedType,
-      identifierType(
-        expression.moduleReference,
-        expression.className,
-        autoGeneratedUndecidedTypes.map((undecidedType) =>
-          this.resolution.getPartiallyResolvedType(undecidedType)
-        )
-      ),
-      expression.range
-    );
-    return { ...expression, type: constraintInferredType, tagOrder: order, data: checkedData };
   }
 
   private tryTypeCheckMethodAccess(

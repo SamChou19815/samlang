@@ -8,8 +8,10 @@ import {
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
+  HIR_INT,
   HIR_INT_TYPE,
   HIR_NAME,
+  HIR_STRUCT_INITIALIZATION,
   HIR_VARIABLE,
 } from '../ast/hir-nodes';
 import type {
@@ -17,6 +19,7 @@ import type {
   SamlangModule,
   SourceAnnotatedVariable,
 } from '../ast/samlang-nodes';
+import { checkNotNull, zip } from '../utils';
 import lowerSamlangExpression from './hir-expression-lowering';
 import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
 import HighIRStringManager from './hir-string-manager';
@@ -27,6 +30,86 @@ import {
   SamlangTypeLoweringManager,
 } from './hir-type-conversion';
 import deduplicateHighIRTypes from './hir-type-deduplication';
+
+function companionFunctionWithContext(originalFunction: HighIRFunction): HighIRFunction {
+  return {
+    name: `${originalFunction.name}_with_context`,
+    typeParameters: originalFunction.typeParameters,
+    parameters: ['_context', ...originalFunction.parameters],
+    type: HIR_FUNCTION_TYPE(
+      [HIR_INT_TYPE, ...originalFunction.type.argumentTypes],
+      originalFunction.type.returnType
+    ),
+    body: [
+      HIR_FUNCTION_CALL({
+        functionExpression: HIR_NAME(originalFunction.name, originalFunction.type),
+        functionArguments: zip(
+          originalFunction.parameters,
+          originalFunction.type.argumentTypes
+        ).map(([name, type]) => HIR_VARIABLE(name, type)),
+        returnType: originalFunction.type.returnType,
+        returnCollector: '_ret',
+      }),
+    ],
+    returnValue: HIR_VARIABLE('_ret', originalFunction.type.returnType),
+  };
+}
+
+function lowerSamlangConstructorsToHighIRFunctions(
+  moduleReference: ModuleReference,
+  className: string,
+  typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>
+) {
+  const typeName = encodeSamlangType(moduleReference, className);
+  const typeDefinition = checkNotNull(typeDefinitionMapping[typeName], `Missing ${typeName}`);
+  const structVariableName = '_struct';
+  const structType = HIR_IDENTIFIER_TYPE(
+    typeName,
+    typeDefinition.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
+  );
+  const originalConstructorFunctions: readonly HighIRFunction[] =
+    typeDefinition.type === 'object'
+      ? [
+          {
+            name: encodeFunctionNameGlobally(moduleReference, className, 'init'),
+            parameters: typeDefinition.mappings.map((_, order) => `_f${order}`),
+            typeParameters: typeDefinition.typeParameters,
+            type: HIR_FUNCTION_TYPE(typeDefinition.mappings, structType),
+            body: [
+              HIR_STRUCT_INITIALIZATION({
+                structVariableName,
+                type: structType,
+                expressionList: typeDefinition.mappings.map((type, order) =>
+                  HIR_VARIABLE(`_f${order}`, type)
+                ),
+              }),
+            ],
+            returnValue: HIR_VARIABLE(structVariableName, structType),
+          },
+        ]
+      : typeDefinition.mappings.map((dataType, tagOrder) => ({
+          name: encodeFunctionNameGlobally(
+            moduleReference,
+            className,
+            checkNotNull(typeDefinition.names[tagOrder])
+          ),
+          parameters: ['_data'],
+          typeParameters: typeDefinition.typeParameters,
+          type: HIR_FUNCTION_TYPE([dataType], structType),
+          body: [
+            HIR_STRUCT_INITIALIZATION({
+              structVariableName,
+              type: structType,
+              expressionList: [HIR_INT(tagOrder), HIR_VARIABLE('_data', dataType)],
+            }),
+          ],
+          returnValue: HIR_VARIABLE(structVariableName, structType),
+        }));
+  return originalConstructorFunctions.flatMap((originalFunction) => [
+    originalFunction,
+    companionFunctionWithContext(originalFunction),
+  ]);
+}
 
 function compileSamlangFunctionToHighIRFunctions(
   moduleReference: ModuleReference,
@@ -62,35 +145,19 @@ function compileSamlangFunctionToHighIRFunctions(
     mainFunctionParameterWithTypes.map(([, type]) => type),
     typeLoweringManager.lowerSamlangType(memberReturnType)
   );
-  compiledFunctionsToAdd.push({
+  const originalFunction: HighIRFunction = {
     name: encodedName,
     parameters: mainFunctionParameterNames,
     typeParameters: typeParameterArray,
     type: mainFunctionType,
     body: bodyLoweringResult.statements,
     returnValue: bodyLoweringResult.expression,
-  });
-  const functionWithContext: HighIRFunction = {
-    name: `${encodedName}_with_context`,
-    typeParameters: typeParameterArray,
-    parameters: ['_context', ...mainFunctionParameterNames],
-    type: HIR_FUNCTION_TYPE(
-      [HIR_INT_TYPE, ...mainFunctionType.argumentTypes],
-      mainFunctionType.returnType
-    ),
-    body: [
-      HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME(encodedName, mainFunctionType),
-        functionArguments: mainFunctionParameterWithTypes.map(([name, type]) =>
-          HIR_VARIABLE(name, type)
-        ),
-        returnType: mainFunctionType.returnType,
-        returnCollector: '_ret',
-      }),
-    ],
-    returnValue: HIR_VARIABLE('_ret', mainFunctionType.returnType),
   };
-  return { compiledFunctionsToAdd, functionWithContext };
+  compiledFunctionsToAdd.push(originalFunction);
+  return {
+    compiledFunctionsToAdd,
+    functionWithContext: companionFunctionWithContext(originalFunction),
+  };
 }
 
 function compileSamlangMethodToHighIRFunctions(
@@ -184,6 +251,13 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
   const compiledFunctions: HighIRFunction[] = [];
   sources.forEach((samlangModule, moduleReference) => {
     samlangModule.classes.map(({ name: className, typeParameters, members }) => {
+      compiledFunctions.push(
+        ...lowerSamlangConstructorsToHighIRFunctions(
+          moduleReference,
+          className,
+          typeDefinitionMapping
+        )
+      );
       members.forEach((member) => {
         if (member.isMethod) {
           compiledFunctions.push(

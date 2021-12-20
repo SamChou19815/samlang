@@ -31,7 +31,6 @@ import {
   SourceExpressionLambda,
   SourceExpressionMatch,
   SourceExpressionMethodAccess,
-  SourceExpressionObjectConstructor,
   SourceExpressionStatementBlock,
   SourceExpressionString,
   SourceExpressionThis,
@@ -39,7 +38,6 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
-  SourceExpressionVariantConstructor,
 } from '../../ast/samlang-nodes';
 import lowerSamlangExpression from '../hir-expression-lowering';
 import HighIRStringManager from '../hir-string-manager';
@@ -71,12 +69,14 @@ function expectCorrectlyLowered(
         identifier: '__DUMMY___Foo',
         type: 'object',
         typeParameters: [],
+        names: [],
         mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
       },
       __DUMMY___Dummy: {
         identifier: '__DUMMY___Dummy',
         type: 'object',
         typeParameters: [],
+        names: [],
         mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
       },
     },
@@ -138,64 +138,16 @@ return (_t0: $SyntheticIDType0);`
     );
   });
 
-  describe('Lowering to StructConstructor works', () => {
-    it('1/n.', () => {
-      expectCorrectlyLowered(
-        SourceExpressionTupleConstructor({
-          type: tupleType([DUMMY_IDENTIFIER_TYPE]),
-          expressions: [THIS],
-        }),
-        `object type $SyntheticIDType0 = [__DUMMY___Dummy]
+  it('Lowering to StructConstructor works', () => {
+    expectCorrectlyLowered(
+      SourceExpressionTupleConstructor({
+        type: tupleType([DUMMY_IDENTIFIER_TYPE]),
+        expressions: [THIS],
+      }),
+      `object type $SyntheticIDType0 = [__DUMMY___Dummy]
 let _t0: $SyntheticIDType0 = [(_this: __DUMMY___Dummy)];
 return (_t0: $SyntheticIDType0);`
-      );
-    });
-
-    it('2/n', () => {
-      expectCorrectlyLowered(
-        SourceExpressionObjectConstructor({
-          type: identifierType(ModuleReference.DUMMY, 'Foo'),
-          fieldDeclarations: [
-            {
-              range: Range.DUMMY,
-              associatedComments: [],
-              type: DUMMY_IDENTIFIER_TYPE,
-              name: 'foo',
-              nameRange: Range.DUMMY,
-              expression: THIS,
-            },
-            {
-              range: Range.DUMMY,
-              associatedComments: [],
-              type: boolType,
-              name: 'bar',
-              nameRange: Range.DUMMY,
-            },
-          ],
-        }),
-        `let _t0: __DUMMY___Foo = [(_this: __DUMMY___Dummy), (bar: bool)];
-return (_t0: __DUMMY___Foo);`
-      );
-    });
-
-    it('3/n', () => {
-      expectCorrectlyLowered(
-        SourceExpressionVariantConstructor({
-          type: identifierType(ModuleReference.DUMMY, 'Foo'),
-          typeArguments: [],
-          moduleReference: ModuleReference.DUMMY,
-          className: 'CCC',
-          classNameRange: Range.DUMMY,
-          tagPrecedingComments: [],
-          tag: 'Foo',
-          tagRange: Range.DUMMY,
-          tagOrder: 1,
-          data: THIS,
-        }),
-        `let _t0: __DUMMY___Foo = [1, (_this: __DUMMY___Dummy)];
-return (_t0: __DUMMY___Foo);`
-      );
-    });
+    );
   });
 
   it('FieldAccess lowering works.', () => {
