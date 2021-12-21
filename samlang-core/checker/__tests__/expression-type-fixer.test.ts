@@ -22,7 +22,6 @@ import {
   SourceExpressionLambda,
   SourceExpressionMatch,
   SourceExpressionMethodAccess,
-  SourceExpressionObjectConstructor,
   SourceExpressionStatementBlock,
   SourceExpressionString,
   SourceExpressionThis,
@@ -30,7 +29,6 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
-  SourceExpressionVariantConstructor,
 } from '../../ast/samlang-nodes';
 import fixExpressionType from '../expression-type-fixer';
 import type { ReadOnlyTypeResolution } from '../type-resolution';
@@ -165,174 +163,6 @@ describe('expression-type-fixer', () => {
         expressions: [TRUE, intOf(1)],
       }),
       tupleType([intType, boolType])
-    );
-  });
-
-  it('Object constructors are correctly resolved', () => {
-    assertCorrectlyFixed(
-      SourceExpressionObjectConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
-        fieldDeclarations: [
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'a',
-            nameRange: Range.DUMMY,
-            type: intType,
-          },
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'b',
-            nameRange: Range.DUMMY,
-            type: boolType,
-            expression: TRUE,
-          },
-        ],
-      }),
-      SourceExpressionObjectConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [
-          { type: 'UndecidedType', index: 2 },
-          { type: 'UndecidedType', index: 1 },
-        ]),
-        fieldDeclarations: [
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'a',
-            nameRange: Range.DUMMY,
-            type: { type: 'UndecidedType', index: 2 },
-          },
-          {
-            range: Range.DUMMY,
-            name: 'b',
-            nameRange: Range.DUMMY,
-            associatedComments: [],
-            type: { type: 'UndecidedType', index: 1 },
-            expression: TRUE,
-          },
-        ],
-      }),
-      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
-    );
-
-    assertThrows(
-      SourceExpressionObjectConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [{ type: 'UndecidedType', index: 2 }]),
-        fieldDeclarations: [
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'a',
-            nameRange: Range.DUMMY,
-            type: { type: 'UndecidedType', index: 2 },
-          },
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'b',
-            nameRange: Range.DUMMY,
-            type: { type: 'UndecidedType', index: 1 },
-            expression: TRUE,
-          },
-        ],
-      }),
-      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
-    );
-
-    assertThrows(
-      SourceExpressionObjectConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [
-          { type: 'UndecidedType', index: 2 },
-          { type: 'UndecidedType', index: 3 },
-        ]),
-        fieldDeclarations: [
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'a',
-            nameRange: Range.DUMMY,
-            type: { type: 'UndecidedType', index: 2 },
-          },
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'b',
-            nameRange: Range.DUMMY,
-            type: { type: 'UndecidedType', index: 1 },
-            expression: TRUE,
-          },
-        ],
-      }),
-      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
-    );
-  });
-
-  it('Variant constructors are correctly resolved.', () => {
-    assertCorrectlyFixed(
-      SourceExpressionVariantConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
-        typeArguments: [],
-        moduleReference: ModuleReference.DUMMY,
-        className: 'CCC',
-        classNameRange: Range.DUMMY,
-        tagPrecedingComments: [],
-        tag: 'Foo',
-        tagRange: Range.DUMMY,
-        tagOrder: 0,
-        data: intOf(1),
-      }),
-      SourceExpressionVariantConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [
-          { type: 'UndecidedType', index: 2 },
-          { type: 'UndecidedType', index: 1 },
-        ]),
-        typeArguments: [],
-        moduleReference: ModuleReference.DUMMY,
-        className: 'CCC',
-        classNameRange: Range.DUMMY,
-        tagPrecedingComments: [],
-        tag: 'Foo',
-        tagRange: Range.DUMMY,
-        tagOrder: 0,
-        data: intOf(1),
-      }),
-      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
-    );
-
-    assertThrows(
-      SourceExpressionVariantConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [{ type: 'UndecidedType', index: 2 }]),
-        typeArguments: [],
-        moduleReference: ModuleReference.DUMMY,
-        className: 'CCC',
-        classNameRange: Range.DUMMY,
-        tagPrecedingComments: [],
-        tag: 'Foo',
-        tagRange: Range.DUMMY,
-        tagOrder: 0,
-        data: intOf(1),
-      }),
-      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
-    );
-
-    assertThrows(
-      SourceExpressionVariantConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [
-          { type: 'UndecidedType', index: 1 },
-          { type: 'UndecidedType', index: 2 },
-        ]),
-        typeArguments: [],
-        moduleReference: ModuleReference.DUMMY,
-        className: 'CCC',
-        classNameRange: Range.DUMMY,
-        tagPrecedingComments: [],
-        tag: 'Foo',
-        tagRange: Range.DUMMY,
-        tagOrder: 0,
-        data: intOf(1),
-      }),
-      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
     );
   });
 

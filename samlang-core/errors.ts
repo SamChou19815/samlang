@@ -156,35 +156,6 @@ export class IllegalThisError extends CompileTimeError<'IllegalThis'> {
   }
 }
 
-export class InconsistentFieldsInObjectError extends CompileTimeError<'InconsistentFieldsInObject'> {
-  constructor(
-    moduleReference: ModuleReference,
-    range: Range,
-    expectedFields: Iterable<string>,
-    actualFields: Iterable<string>
-  ) {
-    super(
-      'InconsistentFieldsInObject',
-      moduleReference,
-      range,
-      `Inconsistent fields. Expected: \`${[...expectedFields].join(', ')}\`, actual: \`${[
-        ...actualFields,
-      ].join(', ')}\`.`
-    );
-  }
-}
-
-export class DuplicateFieldDeclarationError extends CompileTimeError<'DuplicateFieldDeclaration'> {
-  constructor(moduleReference: ModuleReference, range: Range, fieldName: string) {
-    super(
-      'DuplicateFieldDeclaration',
-      moduleReference,
-      range,
-      `Field name \`${fieldName}\` is declared twice.`
-    );
-  }
-}
-
 export class NonExhausiveMatchError extends CompileTimeError<'NonExhausiveMatch'> {
   constructor(moduleReference: ModuleReference, range: Range, missingTags: readonly string[]) {
     super(
@@ -301,24 +272,6 @@ export class ModuleErrorCollector {
   reportIllegalThisError(range: Range): void {
     this._hasErrors = true;
     this.collectorDelegate.reportError(new IllegalThisError(this.moduleReference, range));
-  }
-
-  reportInconsistentFieldsInObjectError(
-    range: Range,
-    expectedFields: Iterable<string>,
-    actualFields: Iterable<string>
-  ): void {
-    this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new InconsistentFieldsInObjectError(this.moduleReference, range, expectedFields, actualFields)
-    );
-  }
-
-  reportDuplicateFieldDeclarationError(range: Range, fieldName: string): void {
-    this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new DuplicateFieldDeclarationError(this.moduleReference, range, fieldName)
-    );
   }
 
   reportNonExhausiveMatchError(range: Range, missingTags: readonly string[]): void {

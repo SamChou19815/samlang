@@ -45,6 +45,7 @@ describe('hir-nodes', () => {
         identifier: 'A',
         type: 'object',
         typeParameters: [],
+        names: [],
         mappings: [HIR_INT_TYPE, HIR_BOOL_TYPE],
       })
     ).toBe('object type A = [int, bool]');
@@ -53,6 +54,7 @@ describe('hir-nodes', () => {
         identifier: 'B',
         type: 'variant',
         typeParameters: ['C'],
+        names: [],
         mappings: [HIR_INT_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('C')],
       })
     ).toBe('variant type B<C> = [int, C]');
@@ -192,6 +194,7 @@ if 0 {
             identifier: 'Foo',
             type: 'object',
             typeParameters: [],
+            names: [],
             mappings: [HIR_INT_TYPE, HIR_BOOL_TYPE],
           },
         ],

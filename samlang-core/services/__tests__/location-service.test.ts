@@ -64,9 +64,9 @@ describe('location-service', () => {
       val a: int = 1;
       val b = 2;
       val [_, c] = ["dd", 3]; // c = 3
-      val { e as d } = { d: 5, e: 4 }; // d = 4
-      val f = { d: 5, e: 4 }; // d = 4
-      val g = { d, e: 4 }; // d = 4
+      val { e as d } = Obj.init(5, 4); // d = 4
+      val f = Obj.init(5, 4); // d = 4
+      val g = Obj.init(d, 4); // d = 4
       val _ = f.d;
       // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
       a + b * c / d

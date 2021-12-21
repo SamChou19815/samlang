@@ -44,7 +44,6 @@ import {
   SourceExpressionInt,
   SourceExpressionLambda,
   SourceExpressionMatch,
-  SourceExpressionObjectConstructor,
   SourceExpressionStatementBlock,
   SourceExpressionString,
   SourceExpressionThis,
@@ -52,7 +51,6 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
-  SourceExpressionVariantConstructor,
   SourceModuleMembersImport,
   TypeDefinition,
   VariantPatternToExpression,
@@ -189,6 +187,25 @@ export class BaseParser {
 
   protected parseCommaSeparatedList = <T>(parser: () => T): T[] =>
     this.parsePunctuationSeparatedList(',', parser);
+
+  protected assertAndConsumeIdentifier() {
+    const peeked = this.peek();
+    this.consume();
+    if (typeof peeked.content !== 'string') {
+      switch (peeked.content.__type__) {
+        case 'UpperId':
+        case 'LowerId':
+          return { identifier: peeked.content.content, range: peeked.range };
+        default:
+          break;
+      }
+    }
+    this.report(
+      peeked.range,
+      `Expected: identifier, actual: ${samlangTokenContentToString(peeked.content)}.`
+    );
+    return { identifier: 'MISSING', range: peeked.range };
+  }
 }
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
@@ -232,24 +249,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.assertAndConsume('from');
       const importRangeStart = this.peek().range;
       const importedModule = new ModuleReference(
-        this.parsePunctuationSeparatedList('.', () => {
-          const peeked = this.peek();
-          this.consume();
-          if (typeof peeked.content !== 'string') {
-            switch (peeked.content.__type__) {
-              case 'UpperId':
-              case 'LowerId':
-                return peeked.content.content;
-              default:
-                break;
-            }
-          }
-          this.report(
-            peeked.range,
-            `Expected: identifier, actual: ${samlangTokenContentToString(peeked.content)}.`
-          );
-          return 'MISSING';
-        })
+        this.parsePunctuationSeparatedList('.', () => this.assertAndConsumeIdentifier().identifier)
       );
       const importedModuleRange = importRangeStart.union(this.lastRange());
       importedMembers.forEach(([variable]) => this.classSourceMap.set(variable, importedModule));
@@ -864,32 +864,8 @@ export default class SamlangModuleParser extends BaseParser {
             typeArguments = [];
           }
           memberPrecedingComments.push(...this.collectPrecedingComments());
-          const nextPeekedAfterDot = this.peek();
-          if (
-            typeof nextPeekedAfterDot.content !== 'string' &&
-            nextPeekedAfterDot.content.__type__ === 'UpperId'
-          ) {
-            const { range: tagRange, variable: tag } = this.assertAndPeekUpperId();
-            memberPrecedingComments.push(...this.collectPrecedingComments());
-            this.assertAndConsume('(');
-            const child = this.parseExpressionWithEndingComments();
-            const endRange = this.assertAndConsume(')');
-            return SourceExpressionVariantConstructor({
-              range: peeked.range.union(endRange),
-              type: UndecidedTypes.next(),
-              associatedComments,
-              typeArguments,
-              moduleReference: this.resolveClass(className),
-              className,
-              classNameRange: peeked.range,
-              tagPrecedingComments: memberPrecedingComments,
-              tag,
-              tagRange,
-              tagOrder: -1,
-              data: child,
-            });
-          }
-          const { range: memberNameRange, variable: memberName } = this.assertAndPeekLowerId();
+          const { range: memberNameRange, identifier: memberName } =
+            this.assertAndConsumeIdentifier();
           return SourceExpressionClassMember({
             range: peeked.range.union(memberNameRange),
             type: UndecidedTypes.next(),
@@ -1001,47 +977,6 @@ export default class SamlangModuleParser extends BaseParser {
 
     if (peeked.content === '{') {
       this.consume();
-      const lowerIdentifierForObjectFieldPeeked = this.peek();
-      if (
-        typeof lowerIdentifierForObjectFieldPeeked.content !== 'string' &&
-        lowerIdentifierForObjectFieldPeeked.content.__type__ === 'LowerId'
-      ) {
-        this.consume();
-        const next = this.peek();
-        if (next.content === ',' || next.content === ':' || next.content === '}') {
-          this.unconsume();
-          const fieldDeclarations = this.parseCommaSeparatedList(() => {
-            const declarationAssociatedComments = this.collectPrecedingComments();
-            const { range, variable } = this.assertAndPeekLowerId();
-            if (this.peek().content !== ':') {
-              return {
-                range,
-                type: UndecidedTypes.next(),
-                associatedComments: declarationAssociatedComments,
-                name: variable,
-                nameRange: range,
-              };
-            }
-            this.consume();
-            const expression = this.parseExpressionWithEndingComments();
-            return {
-              range: range.union(expression.range),
-              type: UndecidedTypes.next(),
-              associatedComments: declarationAssociatedComments,
-              name: variable,
-              nameRange: range,
-              expression,
-            };
-          });
-          const endRange = this.assertAndConsume('}');
-          return SourceExpressionObjectConstructor({
-            range: peeked.range.union(endRange),
-            type: UndecidedTypes.next(),
-            associatedComments,
-            fieldDeclarations,
-          });
-        }
-      }
 
       const statements: SamlangValStatement[] = [];
       while (this.peek().content === 'val') {

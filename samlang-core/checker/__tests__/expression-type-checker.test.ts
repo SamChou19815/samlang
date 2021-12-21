@@ -59,6 +59,11 @@ function typeCheckInSandbox(
                 },
               },
               functions: {
+                init: {
+                  isPublic: true,
+                  typeParameters: [],
+                  type: functionType([bool, int], identifierType(dummyModuleReference, 'Test')),
+                },
                 helloWorld: {
                   isPublic: false,
                   typeParameters: [],
@@ -85,7 +90,18 @@ function typeCheckInSandbox(
                   Bar: { isPublic: true, type: int },
                 },
               },
-              functions: {},
+              functions: {
+                Foo: {
+                  isPublic: true,
+                  typeParameters: [],
+                  type: functionType([bool], identifierType(dummyModuleReference, 'Test2')),
+                },
+                Bar: {
+                  isPublic: true,
+                  typeParameters: [],
+                  type: functionType([int], identifierType(dummyModuleReference, 'Test2')),
+                },
+              },
               methods: {},
             },
             Test3: {
@@ -113,7 +129,28 @@ function typeCheckInSandbox(
                   Bar: { isPublic: true, type: int },
                 },
               },
-              functions: {},
+              functions: {
+                Foo: {
+                  isPublic: true,
+                  typeParameters: ['E'],
+                  type: functionType(
+                    [identifierType(dummyModuleReference, 'E')],
+                    identifierType(dummyModuleReference, 'Test4', [
+                      identifierType(dummyModuleReference, 'E'),
+                    ])
+                  ),
+                },
+                Bar: {
+                  isPublic: true,
+                  typeParameters: ['E'],
+                  type: functionType(
+                    [int],
+                    identifierType(dummyModuleReference, 'Test4', [
+                      identifierType(dummyModuleReference, 'E'),
+                    ])
+                  ),
+                },
+              },
               methods: {},
             },
           },
@@ -127,7 +164,7 @@ function typeCheckInSandbox(
   const parsedExpression = checkNotNull(
     parseSamlangExpressionFromText(source, dummyModuleReference, moduleErrorCollector)
   );
-  expect(globalErrorCollector.getErrors()).toEqual([]);
+  expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
 
   // Type Check
   const checkedExpression = typeCheckExpression(
@@ -263,41 +300,11 @@ describe('expression-type-checker', () => {
     ]);
   });
 
-  it('FieldConstructor', () => {
-    assertTypeChecks('{foo:true,bar:3}', identifierType(dummyModuleReference, 'Test'));
-    assertTypeChecks('{ val foo=true; {foo,bar:3} }', identifierType(dummyModuleReference, 'Test'));
+  it('ObjectConstructor', () => {
+    assertTypeChecks('Test.init(true, 3)', identifierType(dummyModuleReference, 'Test'));
     assertTypeChecks(
-      '{ val foo=true; {foo,bar:3} }',
-      identifierType(dummyModuleReference, 'Test3', [bool]),
-      undefined,
-      undefined,
-      'Test3'
-    );
-
-    assertTypeErrors('{foo:true,bar:3,foo:true}', identifierType(dummyModuleReference, 'Test'), [
-      'Test.sam:1:17-1:25: [DuplicateFieldDeclaration]: Field name `foo` is declared twice.',
-    ]);
-    assertTypeErrors('{foo:true,bar:3,baz:true}', identifierType(dummyModuleReference, 'Test'), [
-      'Test.sam:1:1-1:26: [InconsistentFieldsInObject]: Inconsistent fields. Expected: `bar, foo`, actual: `bar, baz, foo`.',
-    ]);
-    assertTypeErrors('{foo:true,bar:false}', identifierType(dummyModuleReference, 'Test'), [
-      'Test.sam:1:11-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.',
-    ]);
-    assertTypeErrors('{ val foo=3; {foo,bar:3} }', identifierType(dummyModuleReference, 'Test'), [
-      'Test.sam:1:15-1:18: [UnexpectedType]: Expected: `bool`, actual: `int`.',
-    ]);
-    assertTypeErrors('{foo:true,bar:3}', int, [
-      'Test.sam:1:1-1:17: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
-      'Test.sam:1:1-1:17: [UnexpectedType]: Expected: `int`, actual: `Test`.',
-    ]);
-    assertTypeErrors(
-      '{ val foo=true; {foo,bar:3} }',
-      identifierType(dummyModuleReference, 'Test2', [bool]),
-      [
-        "Test.sam:1:17-1:28: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
-      ],
-      undefined,
-      'Test2'
+      '{ val foo=true; Test.init(foo, 3) }',
+      identifierType(dummyModuleReference, 'Test')
     );
   });
 
@@ -332,16 +339,16 @@ describe('expression-type-checker', () => {
     );
 
     assertTypeErrors('Test.Foo(true)', identifierType(dummyModuleReference, 'Test2'), [
-      "Test.sam:1:1-1:15: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
+      'Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved.',
     ]);
     assertTypeErrors('Test.Bar(42)', identifierType(dummyModuleReference, 'Test2'), [
-      "Test.sam:1:1-1:13: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
+      'Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved.',
     ]);
     assertTypeErrors(
       'Test4.<int, bool>Foo(true)}',
       identifierType(dummyModuleReference, 'Test4', [bool]),
       [
-        'Test.sam:1:1-1:27: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 1, actual: 2.',
+        'Test.sam:1:1-1:21: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 1, actual: 2.',
       ],
       undefined
     );
@@ -355,33 +362,32 @@ describe('expression-type-checker', () => {
       'Test4.<int>Foo(true)}',
       identifierType(dummyModuleReference, 'Test4', [bool]),
       [
-        'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.',
-        'Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+        'Test.sam:1:1-1:15: [UnexpectedType]: Expected: `(__UNDECIDED__) -> Test4<bool>`, actual: `(int) -> Test4<int>`.',
       ],
       undefined
     );
     assertTypeErrors('Test44.Bar(42)', identifierType(dummyModuleReference, 'Test2'), [
-      'Test.sam:1:1-1:15: [UnresolvedName]: Name `Test44.Bar` is not resolved.',
+      'Test.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved.',
     ]);
     assertTypeErrors(
       'Test2.Tars(42)',
       identifierType(dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:15: [UnresolvedName]: Name `Test2.Tars` is not resolved.'],
+      ['Test.sam:1:1-1:11: [UnresolvedName]: Name `Test2.Tars` is not resolved.'],
       undefined,
       'Test2'
     );
   });
 
   it('FieldAccess && MethodAccess', () => {
-    assertTypeChecks('{foo:true,bar:3}.foo', bool);
-    assertTypeChecks('{foo:true,bar:3}.bar', int);
-    assertTypeChecks('{foo:true,bar:3}.baz', functionType([int], bool));
+    assertTypeChecks('Test.init(true, 3).foo', bool);
+    assertTypeChecks('Test.init(true, 3).bar', int);
+    assertTypeChecks('Test.init(true, 3).baz', functionType([int], bool));
 
     assertTypeErrors('3.foo', int, [
       'Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
     ]);
-    assertTypeErrors('{foo:true,bar:3}.bazz', int, [
-      'Test.sam:1:1-1:22: [UnresolvedName]: Name `bazz` is not resolved.',
+    assertTypeErrors('Test.init(true, 3).bazz', int, [
+      'Test.sam:1:1-1:24: [UnresolvedName]: Name `bazz` is not resolved.',
     ]);
     assertTypeErrors('{ val _ = (t3: Test3<bool>) -> t3.bar }', unit, [
       'Test.sam:1:32-1:38: [UnresolvedName]: Name `bar` is not resolved.',
@@ -396,17 +402,17 @@ describe('expression-type-checker', () => {
       'Test2'
     );
 
-    assertTypeErrors('{foo:true,bar:3}.foo', int, [
-      'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+    assertTypeErrors('Test.init(true, 3).foo', int, [
+      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
-    assertTypeErrors('{foo:true,bar:3}.bar', bool, [
-      'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+    assertTypeErrors('Test.init(true, 3).bar', bool, [
+      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
-    assertTypeErrors('{foo:true,bar:3}.baz', int, [
-      'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
+    assertTypeErrors('Test.init(true, 3).baz', int, [
+      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
     ]);
-    assertTypeErrors('{foo:true,bar:3}.baz', functionType([bool], int), [
-      'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
+    assertTypeErrors('Test.init(true, 3).baz', functionType([bool], int), [
+      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
     ]);
 
     assertTypeErrors('{ val _ = (t) -> t.foo; }', unit, [
@@ -456,7 +462,6 @@ describe('expression-type-checker', () => {
 
   it('FunctionCall', () => {
     assertTypeChecks('Test.helloWorld("")', unit);
-    assertTypeChecks('{foo:true,bar:3}.baz(3)', bool);
     assertTypeChecks('((i) -> true)(3)', bool);
 
     assertTypeErrors('3(3)', unit, [
@@ -467,9 +472,6 @@ describe('expression-type-checker', () => {
     assertTypeErrors('Test.helloWorld(3)', unit, [
       'Test.sam:1:17-1:18: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
-    assertTypeErrors('{foo:true,bar:3}.baz({})', bool, [
-      'Test.sam:1:22-1:24: [UnexpectedType]: Expected: `int`, actual: `unit`.',
-    ]);
     assertTypeErrors('((i: int) -> true)({})', bool, [
       'Test.sam:1:20-1:22: [UnexpectedType]: Expected: `int`, actual: `unit`.',
     ]);
@@ -477,8 +479,8 @@ describe('expression-type-checker', () => {
     assertTypeErrors('Test.helloWorld("")', bool, [
       'Test.sam:1:1-1:16: [UnexpectedType]: Expected: `(__UNDECIDED__) -> bool`, actual: `(string) -> unit`.',
     ]);
-    assertTypeErrors('{foo:true,bar:3}.baz(3)', int, [
-      'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(int) -> bool`.',
+    assertTypeErrors('Test.init(true, 3).baz(3)', int, [
+      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(int) -> bool`.',
     ]);
     assertTypeErrors('((i) -> true)(3)', int, [
       'Test.sam:1:2-1:13: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(__UNDECIDED__) -> bool`.',
@@ -645,8 +647,8 @@ describe('expression-type-checker', () => {
     assertTypeErrors('match (3) { | Foo _ -> 1 | Bar s -> 2 }', unit, [
       'Test.sam:1:8-1:9: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
     ]);
-    assertTypeErrors('match ({foo:true,bar:3}) { | Foo _ -> 1 | Bar s -> 2 }', unit, [
-      "Test.sam:1:8-1:24: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
+    assertTypeErrors('match (Test.init(true, 3)) { | Foo _ -> 1 | Bar s -> 2 }', unit, [
+      "Test.sam:1:8-1:26: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
     ]);
     assertTypeErrors(
       '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Baz s -> 2 }; }',

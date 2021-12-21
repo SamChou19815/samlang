@@ -302,6 +302,7 @@ class GenericsSpecializationRewriter {
         identifier: encodedName,
         typeParameters: [],
         type: typeDefinition.type,
+        names: typeDefinition.names,
         mappings: typeDefinition.mappings.map((it) =>
           this.rewriteType(highIRTypeApplication(it, solvedTypeArgumentsReplacementMap), {})
         ),

@@ -117,7 +117,7 @@ describe('samlang-core/checker', () => {
     const sourceA = `class A { function a(): int = 42 }`;
     const sourceB = `import { A } from A
   class B(val value: int) {
-    function of(): B = { value: A.a() }
+    function of(): B = B.init(A.a())
     method intValue(): int = this.value
   }`;
     const sourceC = `import { B } from B
@@ -206,7 +206,7 @@ describe('samlang-core/checker', () => {
     const sourceA = `class A { function a(): int = 42 function a(): int = 42 }`;
     const sourceB = `import { A } from A
   class B<A, A>(val value: int) {
-    function of(): B<int, bool> = { value: A.a() }
+    function of(): B<int, bool> = B.init(A.a())
     method intValue(): int = this.value
   }`;
     const sourceC = `import { B } from B
@@ -273,6 +273,7 @@ describe('samlang-core/checker', () => {
     ).toEqual([
       'A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.',
       'B.sam:2:10-2:32: [Collision]: Name `A` collides with a previously defined name.',
+      'B.sam:3:35-3:41: [UnexpectedType]: Expected: `(__UNDECIDED__) -> B<int, bool>`, actual: `(int) -> B<__UNDECIDED__, __UNDECIDED__>`.',
       'C.sam:2:10-2:37: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.',
       'C.sam:4:30-4:31: [NotWellDefinedIdentifier]: `B` is not well defined.',
@@ -288,7 +289,7 @@ describe('samlang-core/checker', () => {
     // Test https://github.com/SamChou19815/samlang/issues/167 is resolved.
     const sourceA = `
   class SameName(val a: int) {
-    function create(): SameName = { a: 0 }
+    function create(): SameName = SameName.init(0)
   }`;
     const sourceB = `import { SameName } from A
   class Producer {
@@ -298,7 +299,7 @@ describe('samlang-core/checker', () => {
 
   class SameName(val b: int) {
     // Here, Producer.produce() produces a SameName class from module a, so the field a should exist.
-    function create(): SameName = { b: Producer.produce().a }
+    function create(): SameName = SameName.init(Producer.produce().a)
   }`;
 
     const moduleReferenceA = new ModuleReference(['A']);

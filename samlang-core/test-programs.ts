@@ -25,7 +25,7 @@ class A {
 }
 
 class C(val v: bool) {
-  function create(): C = { v: true }
+  function create(): C = C.init(true)
 }
 
 class Main {
@@ -40,7 +40,7 @@ class Main {
     testName: 'add-panic-to-class',
     sourceCode: `
 class A(val a: int) {
-  function create(): A = { a: 42 }
+  function create(): A = A.init(42)
 }
 
 class Main {
@@ -54,7 +54,7 @@ class Main {
     testName: 'add-with-class',
     sourceCode: `
 class A(val a: int) {
-  function create(): A = { a: 42 }
+  function create(): A = A.init(42)
 }
 
 class Main {
@@ -102,12 +102,12 @@ class Main {
     testName: 'illegal-binary-operations',
     sourceCode: `
 class Box<T>(val value: T) {
-  function <T> empty(): Box<T> = { value: Builtins.panic("PANIC") }
-  function <T> of(value: T): Box<T> = { value }
+  function <T> empty(): Box<T> = Box.init(Builtins.panic("PANIC"))
+  function <T> of(value: T): Box<T> = Box.init(value)
 }
 
 class AnotherBox<T>(val value: T) {
-  function <T> empty(): AnotherBox<T> = { value: Builtins.panic("PANIC") }
+  function <T> empty(): AnotherBox<T> = AnotherBox.init(Builtins.panic("PANIC"))
 }
 
 class Main {
@@ -135,7 +135,7 @@ class Main {
     sourceCode: `
 class Fields(val a: int, private val b: bool) {
   function get(): Fields = {
-    val f = { a: 3, b: true };
+    val f = Fields.init(3, true);
     val {a, b} = f;
     val _ = f.a;
     val _ = f.b;
@@ -221,12 +221,12 @@ class Main(a: int, val b: int) {
     testName: 'lots-of-fields-and-methods',
     sourceCode: `
 class SamObject<T>(val sam: T, val good: bool, val linesOfCode: int) {
-  function <T> create(sam: T): SamObject<T> = { sam, good: true, linesOfCode: 100000 }
+  function <T> create(sam: T): SamObject<T> = SamObject.init(sam, true, 100000)
   method getSam(): T = this.sam
   method isGood(): bool = true
   method getLinesOfCode(): int = 0 + this.linesOfCode
   method withDifferentLOC(linesOfCode: int): SamObject<T> =
-    { sam: this.sam, good: this.good, linesOfCode }
+    SamObject.init(this.sam, this.good, linesOfCode)
 }
 
 class Main {
@@ -264,7 +264,7 @@ class HelloWorld(val message: string) {
   }
 
   function getGlobalMessage(): string = {
-    val hw = { message: "Hello World!" };
+    val hw = HelloWorld.init("Hello World!");
     hw.getMessage()
   }
 }
@@ -278,7 +278,7 @@ class Main {
     testName: 'overengineered-helloworld-2',
     sourceCode: `
 class NewYear2019<T>(val message: T) {
-  function create(): NewYear2019<string> = { message: "Hello World!" }
+  function create(): NewYear2019<string> = NewYear2019.init("Hello World!")
   method getMessage(): T = {
     val { message as msg } = this; msg
   }
@@ -335,7 +335,7 @@ class Developer(
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...");
     val github = "SamChou19815";
-    { name: "Sam Zhou", github, projects: l }
+    Developer.init("Sam Zhou", github, l)
   }
 }
 class Main {
@@ -752,7 +752,7 @@ class Math {
 class Student(val name: string, val age: int) {
   method getName(): string = this.name
   method getAge(): int = this.age
-  function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
+  function dummyStudent(): Student = Student.init("RANDOM_BABY", 0)
 }
 
 class PrimitiveType(
@@ -782,7 +782,7 @@ class FunctionExample {
 }
 
 class Box<T>(val content: T) {
-  function <T> create(content: T): Box<T> = { content } // object short hand syntax
+  function <T> create(content: T): Box<T> = Box.init(content)
   method getContent(): T = {
     val { content } = this; content
   }
@@ -854,7 +854,7 @@ class Obj(private val d: int, val e: int) {
     val a: int = 1;
     val b = 2;
     val [_, c] = ["dd", 3]; // c = 3
-    val { e as d } = { d: 5, e: 4 }; // d = 4
+    val { e as d } = Obj.init(5, 4); // d = 4
     val _ = 42;
     // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
     a + b * c / d
@@ -1001,9 +1001,9 @@ class GenericObject<T1, T2>(val v1: T1, val v2: T2) {
   function main(): unit = {
     val f = (v2) -> (
       if (v2 + 1 == 3) then
-        { v1: 3, v2 }
+        GenericObject.init(3, v2)
       else
-        { v1: 3, v2: 42 }
+        GenericObject.init(3, 42)
     );
     val _ = Builtins.println(Builtins.intToString(f(2).v2)); // print 2
     val _ = Builtins.println(Builtins.intToString(f(3).v2)); // print 42
@@ -1169,7 +1169,7 @@ class Main(val a: int, val b: bool) {
     val d = c * 7
     val b = true;
     val [_, e] = [a, c]
-    val _ = { a: e, b }
+    val _ = Main.init(e, b)
     val finalValue = a + c + d + (if (b) then 0 else Builtins.panic("")) + e; // 2 + (-1) + (-7) + (-1) = -7
     Builtins.println(Builtins.intToString(finalValue))
   }
@@ -1364,7 +1364,7 @@ class Main {
     expectedStandardOut: '84\n',
     sourceCode: `
 class Clazz(val t: int) {
-    function of(): Clazz = { t: 42 }
+    function of(): Clazz = Clazz.init(42)
 
     method thisTest(): int = {
       val i: int = this.t;

@@ -9,7 +9,7 @@ class Student(val name: string, val age: int) {
 
   method getAge(): int = this.age
 
-  function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
+  function dummyStudent(): Student = Student.init("RANDOM_BABY", 0)
 }
 
 class PrimitiveType(U(bool), I(int), S(string), B(bool)) {
@@ -30,8 +30,6 @@ class FunctionExample {
 }
 
 class Box<T>(val content: T) {
-  function <T> create(content: T): Box<T> = { content }
-
   method getContent(): T = {
     val { content }: Box<T> = this;
     content
@@ -62,7 +60,7 @@ class DifferentModulesDemo {
 
   function run(): unit = {
     val _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);
-    val _ = ForTests.assertIntEquals(Box.create(42).getContent(), 42);
+    val _ = ForTests.assertIntEquals(Box.init(42).getContent(), 42);
     val _ = ForTests.assertIntEquals(FunctionExample.getIdentityFunction()(42), 42);
     val _ = ForTests.assertIntEquals(Student.dummyStudent().getAge(), 0);
     val _ = ForTests.assertIntEquals(Math.plus(2, 2), 4);

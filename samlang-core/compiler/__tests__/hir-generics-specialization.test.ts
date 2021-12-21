@@ -198,12 +198,19 @@ sources.mains = [main]
             identifier: 'I',
             type: 'variant',
             typeParameters: ['A', 'B'],
+            names: [],
             mappings: [
               HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
               HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
             ],
           },
-          { identifier: 'J', type: 'object', typeParameters: [], mappings: [HIR_INT_TYPE] },
+          {
+            identifier: 'J',
+            type: 'object',
+            typeParameters: [],
+            names: [],
+            mappings: [HIR_INT_TYPE],
+          },
         ],
         mainFunctionNames: ['main'],
         functions: [
@@ -394,12 +401,19 @@ sources.mains = [main]
             identifier: 'I',
             type: 'variant',
             typeParameters: ['A', 'B'],
+            names: [],
             mappings: [
               HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
               HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
             ],
           },
-          { identifier: 'J', type: 'object', typeParameters: [], mappings: [typeIConcrete] },
+          {
+            identifier: 'J',
+            type: 'object',
+            typeParameters: [],
+            names: [],
+            mappings: [typeIConcrete],
+          },
         ],
         mainFunctionNames: ['main'],
         functions: [

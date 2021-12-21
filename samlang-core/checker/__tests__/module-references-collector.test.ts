@@ -20,14 +20,12 @@ import {
   SourceExpressionLambda,
   SourceExpressionMatch,
   SourceExpressionMethodAccess,
-  SourceExpressionObjectConstructor,
   SourceExpressionStatementBlock,
   SourceExpressionThis,
   SourceExpressionTrue,
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
-  SourceExpressionVariantConstructor,
 } from '../../ast/samlang-nodes';
 import { hashSetOf } from '../../utils';
 import { collectModuleReferenceFromExpression } from '../module-references-collector';
@@ -85,50 +83,6 @@ describe('module-references-collector', () => {
           ]),
         ]),
         expressions: [intOf(1), TRUE],
-      }),
-      ['__DUMMY__']
-    );
-  });
-
-  it('collectModuleReferenceFromExpression works 4/n', () => {
-    assertFoundAllModuleReferencesFromExpression(
-      SourceExpressionObjectConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
-        fieldDeclarations: [
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'a',
-            nameRange: Range.DUMMY,
-            type: intType,
-          },
-          {
-            range: Range.DUMMY,
-            associatedComments: [],
-            name: 'b',
-            nameRange: Range.DUMMY,
-            type: boolType,
-            expression: TRUE,
-          },
-        ],
-      }),
-      ['__DUMMY__']
-    );
-  });
-
-  it('collectModuleReferenceFromExpression works 5/n', () => {
-    assertFoundAllModuleReferencesFromExpression(
-      SourceExpressionVariantConstructor({
-        type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
-        typeArguments: [intType],
-        moduleReference: ModuleReference.DUMMY,
-        className: 'CCC',
-        classNameRange: Range.DUMMY,
-        tagPrecedingComments: [],
-        tag: 'Foo',
-        tagRange: Range.DUMMY,
-        tagOrder: 0,
-        data: intOf(1),
       }),
       ['__DUMMY__']
     );

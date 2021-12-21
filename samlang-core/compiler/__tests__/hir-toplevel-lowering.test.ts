@@ -243,9 +243,29 @@ function ___DUMMY___Class1_factorial_with_context(_context: int, n: int, acc: in
   return (_ret: int);
 }
 
+function ___DUMMY___Main_init(): __DUMMY___Main {
+  let _struct: __DUMMY___Main = [];
+  return (_struct: __DUMMY___Main);
+}
+
+function ___DUMMY___Main_init_with_context(_context: int): __DUMMY___Main {
+  let _ret: __DUMMY___Main = ___DUMMY___Main_init();
+  return (_ret: __DUMMY___Main);
+}
+
 function ___DUMMY___Main_main(): int {
   ___DUMMY___Class1_infiniteLoop();
   return 0;
+}
+
+function ___DUMMY___Class1_init(_f0: int): __DUMMY___Class1 {
+  let _struct: __DUMMY___Class1 = [(_f0: int)];
+  return (_struct: __DUMMY___Class1);
+}
+
+function ___DUMMY___Class1_init_with_context(_context: int, _f0: int): __DUMMY___Class1 {
+  let _ret: __DUMMY___Class1 = ___DUMMY___Class1_init((_f0: int));
+  return (_ret: __DUMMY___Class1);
 }
 
 function ___DUMMY___Class1_foo(_this: __DUMMY___Class1, a: int): int {
@@ -269,6 +289,16 @@ function ___DUMMY___Class1_factorial(n: int, acc: int): int {
     _t4 = (_t1: int);
   }
   return (_t4: int);
+}
+
+function ___DUMMY___Class3_init<T>(_f0: $SyntheticIDType1<T>): __DUMMY___Class3<T> {
+  let _struct: __DUMMY___Class3<T> = [(_f0: $SyntheticIDType1<T>)];
+  return (_struct: __DUMMY___Class3<T>);
+}
+
+function ___DUMMY___Class3_init_with_context<T>(_context: int, _f0: $SyntheticIDType1<T>): __DUMMY___Class3<T> {
+  let _ret: __DUMMY___Class3<T> = ___DUMMY___Class3_init((_f0: $SyntheticIDType1<T>));
+  return (_ret: __DUMMY___Class3<T>);
 }
 
 sources.mains = [___DUMMY___Main_main]`

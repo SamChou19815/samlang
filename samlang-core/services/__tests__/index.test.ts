@@ -158,7 +158,7 @@ class Test1 {
 class Test1(val a: int) {
   method test(): int = 1
 
-  function test2(): int = {a: 3}.test()
+  function test2(): int = Test1.init(3).test()
 }
 `,
       ],
@@ -180,7 +180,7 @@ class Test1(val a: int) {
     expect(service.queryForHover(test2ModuleReference, Position(1, 9))?.contents).toEqual([
       { language: 'samlang', value: 'class Test1' },
     ]);
-    expect(service.queryForHover(test2ModuleReference, Position(4, 36))?.contents).toEqual([
+    expect(service.queryForHover(test2ModuleReference, Position(4, 44))?.contents).toEqual([
       { language: 'samlang', value: '() -> int' },
     ]);
     expect(service.queryForHover(test3ModuleReference, Position(0, 45))?.contents).toEqual([
@@ -266,7 +266,7 @@ class Test1(val a: int) {
   function test1(): int = 42
   function test(t: TTT): int = Test1.test(t) + t.test() + 1
   function test2(): unit = ABC.a()
-  function test3(): int = { a: 3 }.a
+  function test3(): int = Test1.init(3).a
   function test4(): unit = {
     val _ = {
       val b = 3;
@@ -277,6 +277,8 @@ class Test1(val a: int) {
 `,
       ],
     ]);
+
+    expect(service.state.allModulesWithError.map((it) => it.toString())).toEqual([]);
 
     expect(service.queryDefinitionLocation(moduleReference1, Position(100, 100))).toBeNull();
     expect(service.queryDefinitionLocation(moduleReference1, Position(4, 46))).toBeNull();
@@ -316,10 +318,12 @@ class Test1(val a: int) {
     const actualLocation4 = service.queryDefinitionLocation(moduleReference1, Position(6, 28));
     expect(actualLocation4?.moduleReference.toString()).toEqual(moduleReference1.toString());
     expect(actualLocation4?.range.toString()).toEqual(
-      new Range(Position(2, 11), Position(2, 23)).toString()
+      new Range(Position(2, 0), Position(13, 1)).toString()
     );
 
-    const actualLocation5 = service.queryDefinitionLocation(moduleReference1, Position(6, 36));
+    expect(service.queryDefinitionLocation(moduleReference1, Position(6, 35))).toBeNull();
+
+    const actualLocation5 = service.queryDefinitionLocation(moduleReference1, Position(6, 41));
     expect(actualLocation5?.moduleReference.toString()).toEqual(moduleReference1.toString());
     expect(actualLocation5?.range.toString()).toEqual(
       new Range(Position(2, 11), Position(2, 23)).toString()
@@ -369,7 +373,7 @@ class Developer(
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
     val github = "SamChou19815"
-    { name: "Sam Zhou", github, projects: l }
+    Developer.init("Sam Zhou", github, l)
   }
 }
 class Main {
@@ -411,7 +415,7 @@ class Developer(
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
     val github = "SamChou19815"
-    { name: "Sam Zhou", github, projects: l }.
+    Developer.init("Sam Zhou", github, l).
   }
 }
 class Main {

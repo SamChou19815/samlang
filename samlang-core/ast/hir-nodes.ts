@@ -84,6 +84,7 @@ export interface HighIRTypeDefinition {
   readonly identifier: string;
   readonly type: 'object' | 'variant';
   readonly typeParameters: readonly string[];
+  readonly names: readonly string[];
   readonly mappings: readonly HighIRType[];
 }
 

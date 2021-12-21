@@ -232,6 +232,7 @@ describe('hir-type-conversion', () => {
           identifier: 'A',
           type: 'object',
           typeParameters: ['B'],
+          names: [],
           mappings: [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')],
         })
       )

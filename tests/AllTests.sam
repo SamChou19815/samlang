@@ -15,8 +15,6 @@ import { MathFunctions } from tests.MathFunctions
 import { PrintHelloWorld } from tests.PrintHelloWorld
 
 class TestCase(val name: string, val runner: () -> unit) {
-  function of(name: string, runner: () -> unit): TestCase = { name, runner }
-
   method run(): unit = {
     val { name, runner } = this;
     val _ = Builtins.println("========================================");
@@ -27,18 +25,20 @@ class TestCase(val name: string, val runner: () -> unit) {
 
 class Main {
   private function getTests(): List<TestCase> =
-    List.of(TestCase.of("AndOrInsideIf", AndOrInsideIf.run)).cons(
-      TestCase.of("Benchmark", Benchmark.run)
-    ).cons(TestCase.of("BlockInIfElse", BlockInIfElse.run)).cons(
-      TestCase.of("ConstantFoldingTest", ConstantFoldingTest.run)
-    ).cons(TestCase.of("CSETest", CSETest.run)).cons(TestCase.of("DevMeggo", DevMeggo.run)).cons(
-      TestCase.of("DifferentExpressionDemo", DifferentExpressionDemo.run)
-    ).cons(TestCase.of("DifferentModulesDemo", DifferentModulesDemo.run)).cons(
-      TestCase.of("EvaluationOrder", EvaluationOrder.run)
-    ).cons(TestCase.of("GC", GC.run)).cons(TestCase.of("IntToString", IntToString.run)).cons(
-      TestCase.of("LoopOptimization", LoopOptimization.run)
-    ).cons(TestCase.of("MathFunctions", MathFunctions.run)).cons(
-      TestCase.of("PrintHelloWorld", PrintHelloWorld.run)
+    List.of(TestCase.init("AndOrInsideIf", AndOrInsideIf.run)).cons(
+      TestCase.init("Benchmark", Benchmark.run)
+    ).cons(TestCase.init("BlockInIfElse", BlockInIfElse.run)).cons(
+      TestCase.init("ConstantFoldingTest", ConstantFoldingTest.run)
+    ).cons(TestCase.init("CSETest", CSETest.run)).cons(
+      TestCase.init("DevMeggo", DevMeggo.run)
+    ).cons(TestCase.init("DifferentExpressionDemo", DifferentExpressionDemo.run)).cons(
+      TestCase.init("DifferentModulesDemo", DifferentModulesDemo.run)
+    ).cons(TestCase.init("EvaluationOrder", EvaluationOrder.run)).cons(
+      TestCase.init("GC", GC.run)
+    ).cons(TestCase.init("IntToString", IntToString.run)).cons(
+      TestCase.init("LoopOptimization", LoopOptimization.run)
+    ).cons(TestCase.init("MathFunctions", MathFunctions.run)).cons(
+      TestCase.init("PrintHelloWorld", PrintHelloWorld.run)
     ).reverse()
 
   function main(): unit = {
