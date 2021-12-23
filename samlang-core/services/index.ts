@@ -251,11 +251,19 @@ class LanguageServicesImpl implements LanguageServices {
     if (expression == null) return null;
     let functionReference: readonly [ModuleReference, string, string] | undefined;
     if (expression.__type__ === 'ClassMemberExpression') {
-      functionReference = [expression.moduleReference, expression.className, expression.memberName];
+      functionReference = [
+        expression.moduleReference,
+        expression.className.name,
+        expression.memberName.name,
+      ];
     } else if (expression.__type__ === 'MethodAccessExpression') {
       const thisType = expression.expression.type;
       assert(thisType.type === 'IdentifierType');
-      functionReference = [thisType.moduleReference, thisType.identifier, expression.methodName];
+      functionReference = [
+        thisType.moduleReference,
+        thisType.identifier,
+        expression.methodName.name,
+      ];
     }
     if (functionReference != null) {
       const [fetchedFunctionModuleReference, className, functionName] = functionReference;
@@ -336,8 +344,8 @@ class LanguageServicesImpl implements LanguageServices {
       case 'ClassMemberExpression':
         return this.findClassMemberLocation(
           moduleReference,
-          expression.className,
-          expression.memberName
+          expression.className.name,
+          expression.memberName.name
         );
       case 'FieldAccessExpression': {
         const [moduleReferenceOfClass, classDefinition] = checkNotNull(
@@ -355,7 +363,7 @@ class LanguageServicesImpl implements LanguageServices {
         return this.findClassMemberLocation(
           moduleReference,
           (expression.expression.type as IdentifierType).identifier,
-          expression.methodName
+          expression.methodName.name
         );
       case 'UnaryExpression':
       case 'FunctionCallExpression':
@@ -409,7 +417,10 @@ class LanguageServicesImpl implements LanguageServices {
     const classOfExpression = this.state.classLocationLookup.get(moduleReference, position);
     if (expression == null || classOfExpression == null) return [];
     if (expression.__type__ === 'ClassMemberExpression') {
-      const relevantClassType = this.getClassType(expression.moduleReference, expression.className);
+      const relevantClassType = this.getClassType(
+        expression.moduleReference,
+        expression.className.name
+      );
       if (relevantClassType == null) return [];
       return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
         return LanguageServicesImpl.getCompletionResultFromTypeInformation(

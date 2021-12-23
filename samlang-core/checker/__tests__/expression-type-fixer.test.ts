@@ -29,6 +29,7 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
+  SourceId,
 } from '../../ast/samlang-nodes';
 import fixExpressionType from '../expression-type-fixer';
 import type { ReadOnlyTypeResolution } from '../type-resolution';
@@ -93,21 +94,15 @@ describe('expression-type-fixer', () => {
         type: functionType([], unitType),
         typeArguments: [boolType],
         moduleReference: ModuleReference.DUMMY,
-        className: 'Foo',
-        classNameRange: Range.DUMMY,
-        memberPrecedingComments: [],
-        memberName: 'bar',
-        memberNameRange: Range.DUMMY,
+        className: SourceId('Foo'),
+        memberName: SourceId('bar'),
       }),
       SourceExpressionClassMember({
         type: functionType([], { type: 'UndecidedType', index: 0 }),
         typeArguments: [{ type: 'UndecidedType', index: 1 }],
         moduleReference: ModuleReference.DUMMY,
-        className: 'Foo',
-        classNameRange: Range.DUMMY,
-        memberPrecedingComments: [],
-        memberName: 'bar',
-        memberNameRange: Range.DUMMY,
+        className: SourceId('Foo'),
+        memberName: SourceId('bar'),
       }),
       functionType([], unitType)
     );
@@ -117,11 +112,8 @@ describe('expression-type-fixer', () => {
         type: functionType([], { type: 'UndecidedType', index: 0 }),
         typeArguments: [{ type: 'UndecidedType', index: 1 }],
         moduleReference: ModuleReference.DUMMY,
-        className: 'Foo',
-        classNameRange: Range.DUMMY,
-        memberPrecedingComments: [],
-        memberName: 'bar',
-        memberNameRange: Range.DUMMY,
+        className: SourceId('Foo'),
+        memberName: SourceId('bar'),
       }),
       functionType([], intType)
     );
@@ -171,15 +163,13 @@ describe('expression-type-fixer', () => {
       SourceExpressionFieldAccess({
         type: functionType([], intType),
         expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
-        fieldPrecedingComments: [],
-        fieldName: 'bar',
+        fieldName: SourceId('bar'),
         fieldOrder: 1,
       }),
       SourceExpressionFieldAccess({
         type: functionType([], { type: 'UndecidedType', index: 2 }),
         expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
-        fieldPrecedingComments: [],
-        fieldName: 'bar',
+        fieldName: SourceId('bar'),
         fieldOrder: 1,
       }),
       functionType([], intType)
@@ -189,8 +179,7 @@ describe('expression-type-fixer', () => {
       SourceExpressionMethodAccess({
         type: functionType([], { type: 'UndecidedType', index: 3 }),
         expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
-        methodPrecedingComments: [],
-        methodName: 'bar',
+        methodName: SourceId('bar'),
       }),
       functionType([], intType)
     );
@@ -201,14 +190,12 @@ describe('expression-type-fixer', () => {
       SourceExpressionMethodAccess({
         type: functionType([], intType),
         expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
-        methodPrecedingComments: [],
-        methodName: 'bar',
+        methodName: SourceId('bar'),
       }),
       SourceExpressionMethodAccess({
         type: functionType([], { type: 'UndecidedType', index: 2 }),
         expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
-        methodPrecedingComments: [],
-        methodName: 'bar',
+        methodName: SourceId('bar'),
       }),
       functionType([], intType)
     );
@@ -217,8 +204,7 @@ describe('expression-type-fixer', () => {
       SourceExpressionMethodAccess({
         type: functionType([], { type: 'UndecidedType', index: 3 }),
         expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
-        methodPrecedingComments: [],
-        methodName: 'bar',
+        methodName: SourceId('bar'),
       }),
       functionType([], intType)
     );
@@ -480,7 +466,7 @@ describe('expression-type-fixer', () => {
         matchingList: [
           {
             range: Range.DUMMY,
-            tag: 'A',
+            tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({ type: intType, name: '' }),
           },
@@ -494,7 +480,7 @@ describe('expression-type-fixer', () => {
         matchingList: [
           {
             range: Range.DUMMY,
-            tag: 'A',
+            tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
               type: { type: 'UndecidedType', index: 2 },
@@ -515,7 +501,7 @@ describe('expression-type-fixer', () => {
         matchingList: [
           {
             range: Range.DUMMY,
-            tag: 'A',
+            tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
               type: { type: 'UndecidedType', index: 2 },
@@ -536,7 +522,7 @@ describe('expression-type-fixer', () => {
         matchingList: [
           {
             range: Range.DUMMY,
-            tag: 'A',
+            tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
               type: { type: 'UndecidedType', index: 1 },
@@ -687,7 +673,7 @@ describe('expression-type-fixer', () => {
         type: boolType,
         functionExpression: SourceExpressionLambda({
           type: functionType([intType], boolType),
-          parameters: [['a', Range.DUMMY, intType]],
+          parameters: [[SourceId('a'), intType]],
           captured: { a: intType },
           body: TRUE,
         }),
@@ -702,7 +688,7 @@ describe('expression-type-fixer', () => {
         type: { type: 'UndecidedType', index: 5 },
         functionExpression: SourceExpressionLambda({
           type: functionType([intType], { type: 'UndecidedType', index: 9 }),
-          parameters: [['a', Range.DUMMY, intType]],
+          parameters: [[SourceId('a'), intType]],
           captured: { a: { type: 'UndecidedType', index: 2 } },
           body: TRUE,
         }),

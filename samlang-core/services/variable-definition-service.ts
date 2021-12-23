@@ -1,5 +1,5 @@
 import type { ModuleReference, Range, Sources } from '../ast/common-nodes';
-import type { Pattern, SamlangExpression, SamlangModule } from '../ast/samlang-nodes';
+import { Pattern, SamlangExpression, SamlangModule, SourceId } from '../ast/samlang-nodes';
 import { assert, error, HashMap, hashMapOf, LocalStackedContext } from '../utils';
 
 export type DefinitionAndUses = {
@@ -76,7 +76,7 @@ export class ModuleScopedVariableDefinitionLookup {
         expression.matchingList.forEach((matchItem) => {
           manager.withNestedScope(() => {
             if (matchItem.dataVariable != null) {
-              const [variable, range] = matchItem.dataVariable;
+              const [{ name: variable, range }] = matchItem.dataVariable;
               this.defineVariable(variable, range, manager);
             }
             this.collectDefinitionAndUseWithDefinitionManager(matchItem.expression, manager);
@@ -85,7 +85,7 @@ export class ModuleScopedVariableDefinitionLookup {
         return;
       case 'LambdaExpression':
         manager.withNestedScope(() => {
-          expression.parameters.forEach(([name, range]) =>
+          expression.parameters.forEach(([{ name, range }]) =>
             this.defineVariable(name, range, manager)
           );
           this.collectDefinitionAndUseWithDefinitionManager(expression.body, manager);
@@ -98,16 +98,16 @@ export class ModuleScopedVariableDefinitionLookup {
             this.collectDefinitionAndUseWithDefinitionManager(assignedExpression, manager);
             switch (pattern.type) {
               case 'TuplePattern':
-                pattern.destructedNames.forEach(({ name, range }) => {
-                  if (name != null) this.defineVariable(name, range, manager);
+                pattern.destructedNames.forEach(({ name }) => {
+                  if (name != null) this.defineVariable(name.name, name.range, manager);
                 });
                 return;
               case 'ObjectPattern':
                 pattern.destructedNames.forEach((name) => {
                   if (name.alias == null) {
-                    this.defineVariable(name.fieldName, name.fieldNameRange, manager);
+                    this.defineVariable(name.fieldName.name, name.fieldName.range, manager);
                   } else {
-                    const [alias, aliasRange] = name.alias;
+                    const { name: alias, range: aliasRange } = name.alias;
                     this.defineVariable(alias, aliasRange, manager);
                   }
                 });
@@ -256,7 +256,8 @@ function applyExpressionRenamingWithDefinitionAndUse(
             };
           }
           if (
-            definitionAndUses.definitionRange.toString() !== matchingItem.dataVariable[1].toString()
+            definitionAndUses.definitionRange.toString() !==
+            matchingItem.dataVariable[0].range.toString()
           ) {
             return {
               ...matchingItem,
@@ -265,7 +266,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
           }
           return {
             ...matchingItem,
-            dataVariable: [newName, matchingItem.dataVariable[1], matchingItem.dataVariable[2]],
+            dataVariable: [SourceId(newName), matchingItem.dataVariable[1]],
             expression: rewrittenExpression,
           };
         }),
@@ -273,11 +274,10 @@ function applyExpressionRenamingWithDefinitionAndUse(
     case 'LambdaExpression':
       return {
         ...expression,
-        parameters: expression.parameters.map(([parameterName, parameterRange, parameterType]) => [
-          parameterRange.toString() === definitionAndUses.definitionRange.toString()
-            ? newName
+        parameters: expression.parameters.map(([parameterName, parameterType]) => [
+          parameterName.range.toString() === definitionAndUses.definitionRange.toString()
+            ? SourceId(newName)
             : parameterName,
-          parameterRange,
           parameterType,
         ]),
         body: applyExpressionRenamingWithDefinitionAndUse(
@@ -302,51 +302,49 @@ function applyExpressionRenamingWithDefinitionAndUse(
               case 'TuplePattern':
                 pattern = {
                   ...statement.pattern,
-                  destructedNames: statement.pattern.destructedNames.map(
-                    ({ name, type, range }) => ({
-                      name:
-                        name == null
-                          ? undefined
-                          : range.toString() === definitionAndUses.definitionRange.toString()
-                          ? newName
-                          : name,
-                      type,
-                      range,
-                    })
-                  ),
+                  destructedNames: statement.pattern.destructedNames.map(({ name, type }) => ({
+                    name:
+                      name == null
+                        ? undefined
+                        : name.range.toString() === definitionAndUses.definitionRange.toString()
+                        ? { ...name, name: newName }
+                        : name,
+                    type,
+                  })),
                 };
                 break;
               case 'ObjectPattern':
                 pattern = {
                   ...statement.pattern,
                   destructedNames: statement.pattern.destructedNames.map(
-                    ({ fieldName, fieldNameRange, fieldOrder, type, alias, range }) => {
+                    ({ fieldName, fieldOrder, type, alias, range }) => {
                       if (alias == null) {
                         if (
-                          fieldNameRange.toString() === definitionAndUses.definitionRange.toString()
+                          fieldName.range.toString() ===
+                          definitionAndUses.definitionRange.toString()
                         ) {
                           return {
                             fieldName,
-                            fieldNameRange,
                             fieldOrder,
                             type,
-                            alias: [newName, fieldNameRange] as const,
+                            alias: SourceId(newName),
                             range,
                           };
                         }
                       } else {
-                        if (alias[1].toString() === definitionAndUses.definitionRange.toString()) {
+                        if (
+                          alias.range.toString() === definitionAndUses.definitionRange.toString()
+                        ) {
                           return {
                             fieldName,
-                            fieldNameRange,
                             fieldOrder,
                             type,
-                            alias: [newName, alias[1]] as const,
+                            alias: SourceId(newName),
                             range,
                           };
                         }
                       }
-                      return { fieldName, fieldNameRange, fieldOrder, type, alias, range };
+                      return { fieldName, fieldOrder, type, alias, range };
                     }
                   ),
                 };

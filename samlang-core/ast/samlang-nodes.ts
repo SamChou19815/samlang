@@ -17,6 +17,20 @@ import {
 } from './common-nodes';
 import type { BinaryOperator } from './common-operators';
 
+/** An identifier with attached comments. */
+export interface SourceIdentifier extends Node {
+  readonly associatedComments: readonly TypedComment[];
+  readonly name: string;
+}
+
+export const SourceId = (
+  name: string,
+  {
+    range = Range.DUMMY,
+    associatedComments = [],
+  }: { readonly range?: Range; readonly associatedComments?: readonly TypedComment[] } = {}
+): SourceIdentifier => ({ range, associatedComments, name });
+
 interface BaseExpression extends Node {
   /** Identity of the object used for pattern matching. */
   readonly __type__: string;
@@ -51,11 +65,8 @@ export interface ClassMemberExpression extends BaseExpression {
   readonly __type__: 'ClassMemberExpression';
   readonly typeArguments: readonly Type[];
   readonly moduleReference: ModuleReference;
-  readonly className: string;
-  readonly classNameRange: Range;
-  readonly memberPrecedingComments: readonly TypedComment[];
-  readonly memberName: string;
-  readonly memberNameRange: Range;
+  readonly className: SourceIdentifier;
+  readonly memberName: SourceIdentifier;
 }
 
 export interface TupleConstructorExpression extends BaseExpression {
@@ -67,16 +78,14 @@ export interface TupleConstructorExpression extends BaseExpression {
 export interface FieldAccessExpression extends BaseExpression {
   readonly __type__: 'FieldAccessExpression';
   readonly expression: SamlangExpression;
-  readonly fieldPrecedingComments: readonly TypedComment[];
-  readonly fieldName: string;
+  readonly fieldName: SourceIdentifier;
   readonly fieldOrder: number;
 }
 
 export interface MethodAccessExpression extends BaseExpression {
   readonly __type__: 'MethodAccessExpression';
   readonly expression: SamlangExpression;
-  readonly methodPrecedingComments: readonly TypedComment[];
-  readonly methodName: string;
+  readonly methodName: SourceIdentifier;
 }
 
 export interface UnaryExpression extends BaseExpression {
@@ -108,9 +117,9 @@ export interface IfElseExpression extends BaseExpression {
 
 export interface VariantPatternToExpression {
   readonly range: Range;
-  readonly tag: string;
+  readonly tag: SourceIdentifier;
   readonly tagOrder: number;
-  readonly dataVariable?: readonly [string, Range, Type];
+  readonly dataVariable?: readonly [SourceIdentifier, Type];
   readonly expression: SamlangExpression;
 }
 
@@ -123,7 +132,7 @@ export interface MatchExpression extends BaseExpression {
 export interface LambdaExpression extends BaseExpression {
   readonly __type__: 'LambdaExpression';
   readonly type: FunctionType;
-  readonly parameters: readonly (readonly [string, Range, Type])[];
+  readonly parameters: readonly (readonly [SourceIdentifier, Type])[];
   readonly captured: Record<string, Type>;
   readonly body: SamlangExpression;
 }
@@ -131,18 +140,16 @@ export interface LambdaExpression extends BaseExpression {
 export interface TuplePattern extends Node {
   readonly type: 'TuplePattern';
   readonly destructedNames: readonly {
-    readonly name?: string;
+    readonly name?: SourceIdentifier;
     readonly type: Type;
-    readonly range: Range;
   }[];
 }
 
 export interface ObjectPatternDestucturedName {
-  readonly fieldName: string;
-  readonly fieldNameRange: Range;
+  readonly fieldName: SourceIdentifier;
   readonly fieldOrder: number;
   readonly type: Type;
-  readonly alias?: readonly [string, Range];
+  readonly alias?: SourceIdentifier;
   readonly range: Range;
 }
 
@@ -278,10 +285,7 @@ export const SourceExpressionClassMember = ({
   typeArguments,
   moduleReference,
   className,
-  classNameRange,
-  memberPrecedingComments,
   memberName,
-  memberNameRange,
 }: ExpressionConstructorArgumentObject<ClassMemberExpression>): ClassMemberExpression => ({
   __type__: 'ClassMemberExpression',
   range,
@@ -291,10 +295,7 @@ export const SourceExpressionClassMember = ({
   typeArguments,
   moduleReference,
   className,
-  classNameRange,
-  memberPrecedingComments,
   memberName,
-  memberNameRange,
 });
 
 export const SourceExpressionTupleConstructor = ({
@@ -316,7 +317,6 @@ export const SourceExpressionFieldAccess = ({
   type,
   associatedComments = [],
   expression,
-  fieldPrecedingComments,
   fieldName,
   fieldOrder,
 }: ExpressionConstructorArgumentObject<FieldAccessExpression>): FieldAccessExpression => ({
@@ -326,7 +326,6 @@ export const SourceExpressionFieldAccess = ({
   precedence: 2,
   associatedComments,
   expression,
-  fieldPrecedingComments,
   fieldName,
   fieldOrder,
 });
@@ -336,7 +335,6 @@ export const SourceExpressionMethodAccess = ({
   type,
   associatedComments = [],
   expression,
-  methodPrecedingComments,
   methodName,
 }: ExpressionConstructorArgumentObject<MethodAccessExpression>): MethodAccessExpression => ({
   __type__: 'MethodAccessExpression',
@@ -345,7 +343,6 @@ export const SourceExpressionMethodAccess = ({
   precedence: 2,
   associatedComments,
   expression,
-  methodPrecedingComments,
   methodName,
 });
 

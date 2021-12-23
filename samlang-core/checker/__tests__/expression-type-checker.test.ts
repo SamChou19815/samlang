@@ -20,6 +20,7 @@ import {
   SourceExpressionLambda,
   SourceExpressionStatementBlock,
   SourceExpressionVariable,
+  SourceId,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
@@ -387,10 +388,10 @@ describe('expression-type-checker', () => {
       'Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
     ]);
     assertTypeErrors('Test.init(true, 3).bazz', int, [
-      'Test.sam:1:1-1:24: [UnresolvedName]: Name `bazz` is not resolved.',
+      'Test.sam:1:20-1:24: [UnresolvedName]: Name `bazz` is not resolved.',
     ]);
     assertTypeErrors('{ val _ = (t3: Test3<bool>) -> t3.bar }', unit, [
-      'Test.sam:1:32-1:38: [UnresolvedName]: Name `bar` is not resolved.',
+      'Test.sam:1:35-1:38: [UnresolvedName]: Name `bar` is not resolved.',
     ]);
     assertTypeErrors(
       'Test2.Foo(true).foo',
@@ -655,7 +656,7 @@ describe('expression-type-checker', () => {
       unit,
       [
         'Test.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].',
-        'Test.sam:1:50-1:62: [UnresolvedName]: Name `Baz` is not resolved.',
+        'Test.sam:1:52-1:55: [UnresolvedName]: Name `Baz` is not resolved.',
       ],
       undefined,
       'Test2'
@@ -673,7 +674,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('{val _ = (a, b, c) -> if a(b + 1) then b else c;}', unit);
 
     assertTypeErrors('(a, a) -> a', functionType([int, int], int), [
-      'Test.sam:1:1-1:12: [Collision]: Name `a` collides with a previously defined name.',
+      'Test.sam:1:5-1:6: [Collision]: Name `a` collides with a previously defined name.',
     ]);
   });
 
@@ -693,9 +694,9 @@ describe('expression-type-checker', () => {
               assignedExpression: SourceExpressionLambda({
                 type: functionType([bool, int, int], int),
                 parameters: [
-                  ['b', Range.DUMMY, bool],
-                  ['t', Range.DUMMY, int],
-                  ['f', Range.DUMMY, int],
+                  [SourceId('b'), bool],
+                  [SourceId('t'), int],
+                  [SourceId('f'), int],
                 ],
                 captured: {},
                 body: SourceExpressionIfElse({
@@ -734,9 +735,9 @@ describe('expression-type-checker', () => {
             assignedExpression: SourceExpressionLambda({
               type: functionType([int, int, int], int),
               parameters: [
-                ['a', Range.DUMMY, int],
-                ['b', Range.DUMMY, int],
-                ['c', Range.DUMMY, int],
+                [SourceId('a'), int],
+                [SourceId('b'), int],
+                [SourceId('c'), int],
               ],
               captured: {},
               body: SourceExpressionStatementBlock({
@@ -751,8 +752,8 @@ describe('expression-type-checker', () => {
                       assignedExpression: SourceExpressionLambda({
                         type: functionType([int, int], int),
                         parameters: [
-                          ['d', Range.DUMMY, int],
-                          ['e', Range.DUMMY, int],
+                          [SourceId('d'), int],
+                          [SourceId('e'), int],
                         ],
                         captured: { a: int, b: int, c: int },
                         body: SourceExpressionBinary({

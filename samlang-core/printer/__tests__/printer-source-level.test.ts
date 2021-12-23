@@ -1,6 +1,10 @@
 import prettyPrintSamlangModule from '..';
 import { intType, ModuleReference } from '../../ast/common-nodes';
-import { SourceExpressionMethodAccess, SourceExpressionVariable } from '../../ast/samlang-nodes';
+import {
+  SourceExpressionMethodAccess,
+  SourceExpressionVariable,
+  SourceId,
+} from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 import { checkNotNull } from '../../utils';
@@ -136,8 +140,7 @@ Test /* b */ /* c */ .<T>VariantName(42)`
         SourceExpressionMethodAccess({
           type: intType,
           expression: SourceExpressionVariable({ type: intType, name: 'foo' }),
-          methodPrecedingComments: [],
-          methodName: 'bar',
+          methodName: SourceId('bar'),
         })
       ).trimEnd()
     ).toBe('foo.bar');

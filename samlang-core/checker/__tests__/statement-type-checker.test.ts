@@ -17,6 +17,7 @@ import {
   SourceExpressionStatementBlock,
   SourceExpressionTrue,
   SourceExpressionVariable,
+  SourceId,
   StatementBlock,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
@@ -131,8 +132,8 @@ const passingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'TuplePattern',
           destructedNames: [
-            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
-            { type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
+            { name: SourceId('a'), type: { type: 'UndecidedType', index: 0 } },
+            { type: { type: 'UndecidedType', index: 0 } },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -146,8 +147,8 @@ const passingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'TuplePattern',
           destructedNames: [
-            { name: 'a', type: intType, range: Range.DUMMY },
-            { name: undefined, type: boolType, range: Range.DUMMY },
+            { name: SourceId('a'), type: intType },
+            { name: undefined, type: boolType },
           ],
         },
         tupleType([intType, boolType]),
@@ -166,18 +167,16 @@ const passingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [
             {
               range: Range.DUMMY,
-              fieldName: 'a',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('a'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 0,
             },
             {
               range: Range.DUMMY,
-              fieldName: 'b',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('b'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 1,
-              alias: ['c', Range.DUMMY],
+              alias: SourceId('c'),
             },
           ],
         },
@@ -194,18 +193,16 @@ const passingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [
             {
               range: Range.DUMMY,
-              fieldName: 'a',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('a'),
               type: intType,
               fieldOrder: 0,
             },
             {
               range: Range.DUMMY,
-              fieldName: 'b',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('b'),
               type: boolType,
               fieldOrder: 1,
-              alias: ['c', Range.DUMMY],
+              alias: SourceId('c'),
             },
           ],
         },
@@ -319,9 +316,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         {
           range: Range.DUMMY,
           type: 'TuplePattern',
-          destructedNames: [
-            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
-          ],
+          destructedNames: [{ name: SourceId('a'), type: { type: 'UndecidedType', index: 0 } }],
         },
         { type: 'UndecidedType', index: 0 },
         SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
@@ -337,9 +332,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         {
           range: Range.DUMMY,
           type: 'TuplePattern',
-          destructedNames: [
-            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
-          ],
+          destructedNames: [{ name: SourceId('a'), type: { type: 'UndecidedType', index: 0 } }],
         },
         { type: 'UndecidedType', index: 0 },
         SourceExpressionVariable({ type: intType, name: 'foo' })
@@ -356,8 +349,8 @@ const failingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'TuplePattern',
           destructedNames: [
-            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
-            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
+            { name: SourceId('a'), type: { type: 'UndecidedType', index: 0 } },
+            { name: SourceId('a'), type: { type: 'UndecidedType', index: 0 } },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -378,18 +371,16 @@ const failingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [
             {
               range: Range.DUMMY,
-              fieldName: 'a',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('a'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 0,
             },
             {
               range: Range.DUMMY,
-              fieldName: 'b',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('b'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 1,
-              alias: ['c', Range.DUMMY],
+              alias: SourceId('c'),
             },
           ],
         },
@@ -410,18 +401,16 @@ const failingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [
             {
               range: Range.DUMMY,
-              fieldName: 'a',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('a'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 0,
             },
             {
               range: Range.DUMMY,
-              fieldName: 'b',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('b'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 1,
-              alias: ['c', Range.DUMMY],
+              alias: SourceId('c'),
             },
           ],
         },
@@ -444,18 +433,16 @@ const failingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [
             {
               range: Range.DUMMY,
-              fieldName: 'a',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('a'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 0,
             },
             {
               range: Range.DUMMY,
-              fieldName: 'b',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('b'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 1,
-              alias: ['c', Range.DUMMY],
+              alias: SourceId('c'),
             },
           ],
         },
@@ -476,18 +463,16 @@ const failingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [
             {
               range: Range.DUMMY,
-              fieldName: 'a',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('a'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 0,
             },
             {
               range: Range.DUMMY,
-              fieldName: 'd',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('d'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 1,
-              alias: ['c', Range.DUMMY],
+              alias: SourceId('c'),
             },
           ],
         },
@@ -508,18 +493,16 @@ const failingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [
             {
               range: Range.DUMMY,
-              fieldName: 'a',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('a'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 0,
             },
             {
               range: Range.DUMMY,
-              fieldName: 'b',
-              fieldNameRange: Range.DUMMY,
+              fieldName: SourceId('b'),
               type: { type: 'UndecidedType', index: 0 },
               fieldOrder: 1,
-              alias: ['a', Range.DUMMY],
+              alias: SourceId('a'),
             },
           ],
         },

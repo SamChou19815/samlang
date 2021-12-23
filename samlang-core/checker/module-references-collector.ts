@@ -68,9 +68,7 @@ export function collectModuleReferenceFromExpression(
       );
       return;
     case 'LambdaExpression':
-      expression.parameters.forEach(([, , type]) =>
-        collectModuleReferenceFromType(type, collector)
-      );
+      expression.parameters.forEach(([, type]) => collectModuleReferenceFromType(type, collector));
       collectModuleReferenceFromExpression(expression.body, collector);
       return;
     case 'StatementBlockExpression': {

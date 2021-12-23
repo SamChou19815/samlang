@@ -3,7 +3,6 @@ import {
   FunctionType,
   functionType,
   intType,
-  Range,
   stringType,
   tupleType,
   Type,
@@ -26,6 +25,7 @@ import {
   SourceExpressionMatch,
   SourceExpressionMethodAccess,
   SourceFieldType,
+  SourceIdentifier,
   StatementBlockExpression,
   ThisExpression,
   TupleConstructorExpression,
@@ -141,13 +141,13 @@ class ExpressionTypeChecker {
   ): SamlangExpression {
     const classFunctionTypeInformation = this.accessibleGlobalTypingContext.getClassFunctionType(
       expression.moduleReference,
-      expression.className,
-      expression.memberName
+      expression.className.name,
+      expression.memberName.name
     );
     if (classFunctionTypeInformation == null) {
       this.errorCollector.reportUnresolvedNameError(
         expression.range,
-        `${expression.className}.${expression.memberName}`
+        `${expression.className.name}.${expression.memberName.name}`
       );
       return { ...expression, type: expectedType };
     }
@@ -219,7 +219,7 @@ class ExpressionTypeChecker {
     const methodTypeOrError = this.accessibleGlobalTypingContext.getClassMethodType(
       checkedExprTypeModuleReference,
       checkedExprTypeIdentifier,
-      expression.methodName,
+      expression.methodName.name,
       checkedExprTypeArguments
     );
     if (methodTypeOrError.type !== 'FunctionType') return null;
@@ -236,7 +236,6 @@ class ExpressionTypeChecker {
         type: expression.type,
         associatedComments: expression.associatedComments,
         expression: expression.expression,
-        methodPrecedingComments: expression.fieldPrecedingComments,
         methodName: expression.fieldName,
       })
     );
@@ -252,7 +251,6 @@ class ExpressionTypeChecker {
         type: constraintInferredType,
         associatedComments: expression.associatedComments,
         expression: checkedExpression,
-        methodPrecedingComments: expression.fieldPrecedingComments,
         methodName: expression.fieldName,
       });
     }
@@ -292,16 +290,22 @@ class ExpressionTypeChecker {
         );
         return { ...expression, type: expectedType, expression: checkedObjectExpression };
     }
-    const fieldType = fieldMappings[expression.fieldName];
+    const fieldType = fieldMappings[expression.fieldName.name];
     if (fieldType == null) {
-      this.errorCollector.reportUnresolvedNameError(expression.range, expression.fieldName);
+      this.errorCollector.reportUnresolvedNameError(
+        expression.fieldName.range,
+        expression.fieldName.name
+      );
       return { ...expression, type: expectedType, expression: checkedObjectExpression };
     }
     if (
       checkedObjectExpressionType.identifier !== this.accessibleGlobalTypingContext.currentClass &&
       !fieldType.isPublic
     ) {
-      this.errorCollector.reportUnresolvedNameError(expression.range, expression.fieldName);
+      this.errorCollector.reportUnresolvedNameError(
+        expression.fieldName.range,
+        expression.fieldName.name
+      );
       return { ...expression, type: expectedType, expression: checkedObjectExpression };
     }
     const constraintInferredFieldType = this.constraintAwareTypeChecker.checkAndInfer(
@@ -309,7 +313,7 @@ class ExpressionTypeChecker {
       fieldType.type,
       expression.range
     );
-    const order = fieldNames.findIndex((name) => name === expression.fieldName);
+    const order = fieldNames.findIndex((name) => name === expression.fieldName.name);
     assert(order !== -1, `Bad field: ${expression.fieldName}`);
     return {
       ...expression,
@@ -472,33 +476,49 @@ class ExpressionTypeChecker {
     const unusedMappings = { ...variantMappings };
     const checkedMatchingList = filterMap(
       expression.matchingList,
-      ({ range, tag, dataVariable, expression: correspondingExpression }) => {
+      ({
+        range,
+        tag: { name: tag, range: tagRange, associatedComments: tagAssociatedComments },
+        dataVariable,
+        expression: correspondingExpression,
+      }) => {
         const mappingDataType = unusedMappings[tag]?.type;
         if (mappingDataType == null) {
-          this.errorCollector.reportUnresolvedNameError(range, tag);
+          this.errorCollector.reportUnresolvedNameError(tagRange, tag);
           return null;
         }
         delete unusedMappings[tag];
         let checkedExpression: SamlangExpression;
-        let checkedDatadataVariable: readonly [string, Range, Type] | undefined = undefined;
+        let checkedDatadataVariable: readonly [SourceIdentifier, Type] | undefined = undefined;
         if (dataVariable == null) {
           checkedExpression = this.localTypingContext.withNestedScope(() =>
             this.typeCheck(correspondingExpression, expectedType)
           );
         } else {
-          const [dataVariableName, dataVariableRange] = dataVariable;
+          const {
+            name: dataVariableName,
+            range: dataVariableRange,
+            associatedComments: dataVariableAssociatedComments,
+          } = dataVariable[0];
           this.localTypingContext.addLocalValueType(dataVariableName, mappingDataType, () =>
             this.errorCollector.reportCollisionError(range, dataVariableName)
           );
           checkedExpression = this.typeCheck(correspondingExpression, expectedType);
           this.localTypingContext.removeLocalValue(dataVariableName);
-          checkedDatadataVariable = [dataVariableName, dataVariableRange, mappingDataType];
+          checkedDatadataVariable = [
+            {
+              name: dataVariableName,
+              range: dataVariableRange,
+              associatedComments: dataVariableAssociatedComments,
+            },
+            mappingDataType,
+          ];
         }
         const tagOrder = variantNames.findIndex((name) => name === tag);
         assert(tagOrder !== -1, `Bad tag: ${tag}`);
         return {
           range,
-          tag,
+          tag: { name: tag, range: tagRange, associatedComments: tagAssociatedComments },
           tagOrder,
           dataVariable: checkedDatadataVariable,
           expression: checkedExpression,
@@ -531,15 +551,15 @@ class ExpressionTypeChecker {
         expression.type,
         expression.range
       );
-      expression.parameters.forEach(([parameterName, , parameterType]) => {
+      expression.parameters.forEach(([parameterName, parameterType]) => {
         validateType(
           parameterType,
           this.accessibleGlobalTypingContext,
           this.errorCollector,
           expression.range
         );
-        this.localTypingContext.addLocalValueType(parameterName, parameterType, () =>
-          this.errorCollector.reportCollisionError(expression.range, parameterName)
+        this.localTypingContext.addLocalValueType(parameterName.name, parameterType, () =>
+          this.errorCollector.reportCollisionError(parameterName.range, parameterName.name)
         );
       });
       return this.typeCheck(expression.body, expression.type.returnType);

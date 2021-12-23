@@ -26,7 +26,7 @@ const expectedErrors: readonly string[] = [
   'illegal-binary-operations.sam:24:44-24:60: [UnexpectedType]: Expected: `() -> Box<__UNDECIDED__>`, actual: `() -> AnotherBox<__UNDECIDED__>`.',
   'illegal-binary-operations.sam:27:56-27:61: [UnexpectedType]: Expected: `int`, actual: `bool`.',
   'illegal-private-field-access.sam:15:13-15:14: [UnresolvedName]: Name `b` is not resolved.',
-  'illegal-private-field-access.sam:17:13-17:16: [UnresolvedName]: Name `b` is not resolved.',
+  'illegal-private-field-access.sam:17:15-17:16: [UnresolvedName]: Name `b` is not resolved.',
   'illegal-shadow.sam:12:12-12:16: [Collision]: Name `test` collides with a previously defined name.',
   'illegal-shadow.sam:16:28-16:32: [Collision]: Name `test` collides with a previously defined name.',
   'illegal-shadow.sam:22:9-22:10: [Collision]: Name `a` collides with a previously defined name.',
