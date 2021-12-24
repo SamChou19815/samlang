@@ -122,9 +122,9 @@ function createPrettierDocumentFromSamlangExpression(
         return PRETTIER_TEXT('this');
       case 'ClassMemberExpression': {
         return createDocumentDottedExpression(
-          PRETTIER_TEXT(expression.className),
-          expression.memberPrecedingComments,
-          optionalTypeArguments(expression.typeArguments) + expression.memberName
+          PRETTIER_TEXT(expression.className.name),
+          expression.memberName.associatedComments,
+          optionalTypeArguments(expression.typeArguments) + expression.memberName.name
         );
       }
       case 'TupleConstructorExpression':
@@ -137,14 +137,14 @@ function createPrettierDocumentFromSamlangExpression(
       case 'FieldAccessExpression':
         return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
-          expression.fieldPrecedingComments,
-          expression.fieldName
+          expression.fieldName.associatedComments,
+          expression.fieldName.name
         );
       case 'MethodAccessExpression':
         return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
-          expression.methodPrecedingComments,
-          expression.methodName
+          expression.methodName.associatedComments,
+          expression.methodName.name
         );
       case 'UnaryExpression':
         return PRETTIER_CONCAT(
@@ -207,7 +207,7 @@ function createPrettierDocumentFromSamlangExpression(
       case 'MatchExpression': {
         const list = expression.matchingList
           .map(({ tag, dataVariable, expression: finalExpression }) => [
-            PRETTIER_TEXT(`| ${tag} ${dataVariable?.[0] ?? '_'} -> `),
+            PRETTIER_TEXT(`| ${tag.name} ${dataVariable?.[0].name ?? '_'} -> `),
             createDocumentForSubExpressionConsideringPrecedenceLevel(finalExpression),
             PRETTIER_LINE,
           ])
@@ -224,7 +224,7 @@ function createPrettierDocumentFromSamlangExpression(
       case 'LambdaExpression':
         return PRETTIER_CONCAT(
           createParenthesisSurroundedDocument(
-            createCommaSeparatedList(expression.parameters, ([name, , type]) =>
+            createCommaSeparatedList(expression.parameters, ([{ name }, type]) =>
               PRETTIER_TEXT(
                 type.type === 'UndecidedType' ? name : `${name}: ${prettyPrintType(type)}`
               )
@@ -242,7 +242,7 @@ function createPrettierDocumentFromSamlangExpression(
               case 'TuplePattern':
                 patternDocument = createBracketSurroundedDocument(
                   createCommaSeparatedList(pattern.destructedNames, (it) =>
-                    PRETTIER_TEXT(it.name ?? '_')
+                    PRETTIER_TEXT(it.name?.name ?? '_')
                   )
                 );
                 break;
@@ -250,7 +250,9 @@ function createPrettierDocumentFromSamlangExpression(
                 patternDocument = createBracesSurroundedDocument(
                   createCommaSeparatedList(pattern.destructedNames, (it) =>
                     PRETTIER_TEXT(
-                      it.alias == null ? it.fieldName : `${it.fieldName} as ${it.alias[0]}`
+                      it.alias == null
+                        ? it.fieldName.name
+                        : `${it.fieldName.name} as ${it.alias.name}`
                     )
                   )
                 );

@@ -82,13 +82,13 @@ export default class StatementTypeChecker {
         const checkedDestructedNames = zip(
           pattern.destructedNames,
           checkedAssignedExpressionType.mappings
-        ).map(([{ name, range: nameRange }, elementType]) => {
+        ).map(([{ name }, elementType]) => {
           if (name != null) {
-            localContext.addLocalValueType(name, elementType, () =>
-              this.errorCollector.reportCollisionError(nameRange, name)
+            localContext.addLocalValueType(name.name, elementType, () =>
+              this.errorCollector.reportCollisionError(name.range, name.name)
             );
           }
-          return { name, type: elementType, range: nameRange };
+          return { name, type: elementType };
         });
         checkedPattern = { ...pattern, destructedNames: checkedDestructedNames };
         break;
@@ -146,10 +146,10 @@ export default class StatementTypeChecker {
           const destructedName: ObjectPatternDestucturedName = checkNotNull(
             pattern.destructedNames[i]
           );
-          const { fieldName: originalName, alias: renamedName, range: fieldRange } = destructedName;
-          const fieldInformation = fieldMappings[originalName];
+          const { fieldName: originalName, alias: renamedName } = destructedName;
+          const fieldInformation = fieldMappings[originalName.name];
           if (fieldInformation == null) {
-            this.errorCollector.reportUnresolvedNameError(fieldRange, originalName);
+            this.errorCollector.reportUnresolvedNameError(originalName.range, originalName.name);
             return {
               ...statement,
               typeAnnotation: assignedExpression.type,
@@ -162,18 +162,18 @@ export default class StatementTypeChecker {
               this.accessibleGlobalTypingContext.currentClass &&
             !isPublic
           ) {
-            this.errorCollector.reportUnresolvedNameError(fieldRange, originalName);
+            this.errorCollector.reportUnresolvedNameError(originalName.range, originalName.name);
             return {
               ...statement,
               typeAnnotation: assignedExpression.type,
               assignedExpression: checkedAssignedExpression,
             };
           }
-          const nameToBeUsed = renamedName?.[0] ?? originalName;
-          localContext.addLocalValueType(nameToBeUsed, fieldType, () =>
-            this.errorCollector.reportCollisionError(fieldRange, nameToBeUsed)
+          const nameToBeUsed = renamedName ?? originalName;
+          localContext.addLocalValueType(nameToBeUsed.name, fieldType, () =>
+            this.errorCollector.reportCollisionError(nameToBeUsed.range, nameToBeUsed.name)
           );
-          const fieldOrder = checkNotNull(fieldOrderMapping[originalName]);
+          const fieldOrder = checkNotNull(fieldOrderMapping[originalName.name]);
           destructedNames.push({ ...destructedName, type: fieldType, fieldOrder });
         }
         checkedPattern = { range, type: 'ObjectPattern', destructedNames };

@@ -26,6 +26,7 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
+  SourceId,
 } from '../../ast/samlang-nodes';
 import { hashSetOf } from '../../utils';
 import { collectModuleReferenceFromExpression } from '../module-references-collector';
@@ -63,11 +64,8 @@ describe('module-references-collector', () => {
         type: functionType([], unitType),
         typeArguments: [boolType],
         moduleReference: ModuleReference.DUMMY,
-        className: 'Foo',
-        classNameRange: Range.DUMMY,
-        memberPrecedingComments: [],
-        memberName: 'bar',
-        memberNameRange: Range.DUMMY,
+        className: SourceId('Foo'),
+        memberName: SourceId('bar'),
       }),
       ['__DUMMY__']
     );
@@ -93,8 +91,7 @@ describe('module-references-collector', () => {
       SourceExpressionFieldAccess({
         type: functionType([], intType),
         expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
-        fieldPrecedingComments: [],
-        fieldName: 'bar',
+        fieldName: SourceId('bar'),
         fieldOrder: 1,
       }),
       ['__DUMMY__']
@@ -104,8 +101,7 @@ describe('module-references-collector', () => {
       SourceExpressionMethodAccess({
         type: functionType([], intType),
         expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
-        methodPrecedingComments: [],
-        methodName: 'bar',
+        methodName: SourceId('bar'),
       }),
       ['__DUMMY__']
     );
@@ -139,7 +135,7 @@ describe('module-references-collector', () => {
         matchingList: [
           {
             range: Range.DUMMY,
-            tag: 'A',
+            tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({ type: intType, name: '' }),
           },
@@ -200,7 +196,7 @@ describe('module-references-collector', () => {
           type: boolType,
           functionExpression: SourceExpressionLambda({
             type: functionType([intType], boolType),
-            parameters: [['a', Range.DUMMY, intType]],
+            parameters: [[SourceId('a'), intType]],
             captured: { a: intType },
             body: TRUE,
           }),

@@ -280,7 +280,7 @@ describe('samlang-core/checker', () => {
       'C.sam:4:5-4:44: [Collision]: Name `T` collides with a previously defined name.',
       'C.sam:4:5-4:44: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.',
-      'C.sam:5:68-5:78: [UnresolvedName]: Name `intValue` is not resolved.',
+      'C.sam:5:70-5:78: [UnresolvedName]: Name `intValue` is not resolved.',
       'D.sam:5:50-5:52: [Collision]: Name `c1` collides with a previously defined name.',
     ]);
   });

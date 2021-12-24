@@ -238,8 +238,8 @@ class HighIRExpressionLoweringManager {
   ): HighIRExpressionLoweringResult {
     const encodedOriginalFunctionName = encodeFunctionNameGlobally(
       expression.moduleReference,
-      expression.className,
-      expression.memberName
+      expression.className.name,
+      expression.memberName.name
     );
     const originalFunctionType = this.getFunctionTypeWithoutContext(expression.type);
     const closureType = this.getSyntheticIdentifierTypeFromClosure(originalFunctionType);
@@ -319,7 +319,7 @@ class HighIRExpressionLoweringManager {
     const functionName = encodeFunctionNameGlobally(
       (expression.expression.type as IdentifierType).moduleReference,
       (expression.expression.type as IdentifierType).identifier,
-      expression.methodName
+      expression.methodName.name
     );
     const originalFunctionType = this.getFunctionTypeWithoutContext(expression.type);
     const closureType = this.getSyntheticIdentifierTypeFromClosure(originalFunctionType);
@@ -387,8 +387,8 @@ class HighIRExpressionLoweringManager {
       case 'ClassMemberExpression': {
         const functionName = encodeFunctionNameGlobally(
           functionExpression.moduleReference,
-          functionExpression.className,
-          functionExpression.memberName
+          functionExpression.className.name,
+          functionExpression.memberName.name
         );
         const functionTypeWithoutContext = this.getFunctionTypeWithoutContext(
           functionExpression.type
@@ -408,7 +408,7 @@ class HighIRExpressionLoweringManager {
         const functionName = encodeFunctionNameGlobally(
           (functionExpression.expression.type as IdentifierType).moduleReference,
           (functionExpression.expression.type as IdentifierType).identifier,
-          functionExpression.methodName
+          functionExpression.methodName.name
         );
         const functionTypeWithoutContext = this.getFunctionTypeWithoutContext(
           functionExpression.type
@@ -702,7 +702,7 @@ class HighIRExpressionLoweringManager {
         const localStatements: HighIRStatement[] = [];
         return this.varibleContext.withNestedScope(() => {
           if (dataVariable != null) {
-            const [dataVariableName] = dataVariable;
+            const [{ name: dataVariableName }] = dataVariable;
             const dataVariableType = checkNotNull(matchedExpressionTypeMapping[tagOrder]);
             localStatements.push(
               HIR_INDEX_ACCESS({
@@ -862,7 +862,7 @@ class HighIRExpressionLoweringManager {
     const [typeParameters, functionTypeWithoutContext] =
       this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel({
         type: 'FunctionType',
-        argumentTypes: expression.parameters.map(([, , type]) => type),
+        argumentTypes: expression.parameters.map(([, type]) => type),
         returnType: expression.type.returnType,
       });
     const functionName = this.allocateSyntheticFunctionName();
@@ -870,7 +870,10 @@ class HighIRExpressionLoweringManager {
       this.moduleReference,
       functionName,
       [
-        ...zip(parameters, functionTypeWithoutContext.argumentTypes),
+        ...zip(
+          parameters.map((it) => it.name),
+          functionTypeWithoutContext.argumentTypes
+        ),
         ...this.definedVariables,
         ...captured.map(([variableName, { type }]) => [variableName, type] as const),
       ],
@@ -882,7 +885,7 @@ class HighIRExpressionLoweringManager {
     return {
       name: functionName,
       typeParameters,
-      parameters: ['_context', ...expression.parameters.map(([name]) => name)],
+      parameters: ['_context', ...expression.parameters.map(([{ name }]) => name)],
       type: HIR_FUNCTION_TYPE(
         [contextType, ...functionTypeWithoutContext.argumentTypes],
         functionTypeWithoutContext.returnType
@@ -917,7 +920,7 @@ class HighIRExpressionLoweringManager {
               const fieldType = checkNotNull(
                 this.resolveTypeMappingOfIdentifierType(identifierType)[index]
               );
-              const mangledName = this.getRenamedVariableForNesting(name, fieldType);
+              const mangledName = this.getRenamedVariableForNesting(name.name, fieldType);
               loweredStatements.push(
                 HIR_INDEX_ACCESS({
                   name: mangledName,
@@ -943,7 +946,7 @@ class HighIRExpressionLoweringManager {
                 this.resolveTypeMappingOfIdentifierType(identifierType)[fieldOrder]
               );
               const mangledName = this.getRenamedVariableForNesting(
-                alias?.[0] ?? fieldName,
+                (alias ?? fieldName).name,
                 fieldType
               );
               loweredStatements.push(

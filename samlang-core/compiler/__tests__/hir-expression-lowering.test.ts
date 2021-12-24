@@ -38,6 +38,7 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
+  SourceId,
 } from '../../ast/samlang-nodes';
 import lowerSamlangExpression from '../hir-expression-lowering';
 import HighIRStringManager from '../hir-string-manager';
@@ -126,11 +127,8 @@ describe('hir-expression-lowering', () => {
         type: functionType([intType], intType),
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
-        className: 'A',
-        classNameRange: Range.DUMMY,
-        memberPrecedingComments: [],
-        memberName: 'b',
-        memberNameRange: Range.DUMMY,
+        className: SourceId('A'),
+        memberName: SourceId('b'),
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___A_b_with_context: (int, int) -> int), context: 0 };
@@ -155,8 +153,7 @@ return (_t0: $SyntheticIDType0);`
       SourceExpressionFieldAccess({
         type: unitType,
         expression: THIS,
-        fieldPrecedingComments: [],
-        fieldName: 'foo',
+        fieldName: SourceId('foo'),
         fieldOrder: 0,
       }),
       'let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);'
@@ -168,8 +165,7 @@ return (_t0: $SyntheticIDType0);`
       SourceExpressionMethodAccess({
         type: functionType([intType], intType),
         expression: THIS,
-        methodPrecedingComments: [],
-        methodName: 'foo',
+        methodName: SourceId('foo'),
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy_foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
@@ -198,11 +194,8 @@ return (_t0: $SyntheticIDType0);`
             type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
             typeArguments: [],
             moduleReference: new ModuleReference(['ModuleModule']),
-            className: 'ImportedClass',
-            classNameRange: Range.DUMMY,
-            memberPrecedingComments: [],
-            memberName: 'bar',
-            memberNameRange: Range.DUMMY,
+            className: SourceId('ImportedClass'),
+            memberName: SourceId('bar'),
           }),
           functionArguments: [THIS, THIS],
         }),
@@ -219,11 +212,8 @@ return (_t0: int);`
             type: functionType([intType], unitType),
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
-            className: 'C',
-            classNameRange: Range.DUMMY,
-            memberPrecedingComments: [],
-            memberName: 'm1',
-            memberNameRange: Range.DUMMY,
+            className: SourceId('C'),
+            memberName: SourceId('m1'),
           }),
           functionArguments: [SourceExpressionInt(0)],
         }),
@@ -240,11 +230,8 @@ return 0;`
             type: functionType([intType], DUMMY_IDENTIFIER_TYPE),
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
-            className: 'C',
-            classNameRange: Range.DUMMY,
-            memberPrecedingComments: [],
-            memberName: 'm2',
-            memberNameRange: Range.DUMMY,
+            className: SourceId('C'),
+            memberName: SourceId('m2'),
           }),
           functionArguments: [SourceExpressionInt(0)],
         }),
@@ -260,8 +247,7 @@ return (_t0: __DUMMY___Dummy);`
           functionExpression: SourceExpressionMethodAccess({
             type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
             expression: THIS,
-            methodPrecedingComments: [],
-            methodName: 'fooBar',
+            methodName: SourceId('fooBar'),
           }),
           functionArguments: [THIS, THIS],
         }),
@@ -443,7 +429,7 @@ return (_t0: string);`
       expectCorrectlyLowered(
         SourceExpressionLambda({
           type: functionType([], unitType),
-          parameters: [['a', Range.DUMMY, unitType]],
+          parameters: [[SourceId('a'), unitType]],
           captured: { captured_a: unitType },
           body: THIS,
         }),
@@ -464,7 +450,7 @@ return (_t0: $SyntheticIDType1);`
       expectCorrectlyLowered(
         SourceExpressionLambda({
           type: functionType([], intType),
-          parameters: [['a', Range.DUMMY, unitType]],
+          parameters: [[SourceId('a'), unitType]],
           captured: { captured_a: unitType },
           body: THIS,
         }),
@@ -485,7 +471,7 @@ return (_t0: $SyntheticIDType1);`
       expectCorrectlyLowered(
         SourceExpressionLambda({
           type: functionType([], DUMMY_IDENTIFIER_TYPE),
-          parameters: [['a', Range.DUMMY, unitType]],
+          parameters: [[SourceId('a'), unitType]],
           captured: { captured_a: unitType },
           body: THIS,
         }),
@@ -506,7 +492,7 @@ return (_t0: $SyntheticIDType1);`
       expectCorrectlyLowered(
         SourceExpressionLambda({
           type: functionType([], DUMMY_IDENTIFIER_TYPE),
-          parameters: [['a', Range.DUMMY, unitType]],
+          parameters: [[SourceId('a'), unitType]],
           captured: {},
           body: THIS,
         }),
@@ -560,14 +546,14 @@ return 0;`
           matchingList: [
             {
               range: Range.DUMMY,
-              tag: 'Foo',
+              tag: SourceId('Foo'),
               tagOrder: 0,
-              dataVariable: ['bar', Range.DUMMY, intType],
+              dataVariable: [SourceId('bar'), intType],
               expression: THIS,
             },
             {
               range: Range.DUMMY,
-              tag: 'Bar',
+              tag: SourceId('Bar'),
               tagOrder: 1,
               expression: THIS,
             },
@@ -594,20 +580,20 @@ return (_t2: __DUMMY___Dummy);`
           matchingList: [
             {
               range: Range.DUMMY,
-              tag: 'Foo',
+              tag: SourceId('Foo'),
               tagOrder: 0,
-              dataVariable: ['bar', Range.DUMMY, intType],
+              dataVariable: [SourceId('bar'), intType],
               expression: THIS,
             },
             {
               range: Range.DUMMY,
-              tag: 'Bar',
+              tag: SourceId('Bar'),
               tagOrder: 1,
               expression: THIS,
             },
             {
               range: Range.DUMMY,
-              tag: 'Baz',
+              tag: SourceId('Baz'),
               tagOrder: 2,
               expression: THIS,
             },
@@ -635,20 +621,20 @@ return 0;`
           matchingList: [
             {
               range: Range.DUMMY,
-              tag: 'Foo',
+              tag: SourceId('Foo'),
               tagOrder: 0,
               expression: THIS,
             },
             {
               range: Range.DUMMY,
-              tag: 'Bar',
+              tag: SourceId('Bar'),
               tagOrder: 1,
-              dataVariable: ['bar', Range.DUMMY, DUMMY_IDENTIFIER_TYPE],
+              dataVariable: [SourceId('bar'), DUMMY_IDENTIFIER_TYPE],
               expression: SourceExpressionVariable({ type: DUMMY_IDENTIFIER_TYPE, name: 'bar' }),
             },
             {
               range: Range.DUMMY,
-              tag: 'Baz',
+              tag: SourceId('Baz'),
               tagOrder: 2,
               expression: THIS,
             },
@@ -689,8 +675,8 @@ return (_t4: __DUMMY___Dummy);`
                   range: Range.DUMMY,
                   type: 'TuplePattern',
                   destructedNames: [
-                    { name: 'ignored', type: intType, range: Range.DUMMY },
-                    { type: intType, range: Range.DUMMY },
+                    { name: SourceId('ignored'), type: intType },
+                    { type: intType },
                   ],
                 },
                 typeAnnotation: tupleType([intType, intType]),
@@ -717,8 +703,8 @@ return (_t4: __DUMMY___Dummy);`
                           range: Range.DUMMY,
                           type: 'TuplePattern',
                           destructedNames: [
-                            { name: 'a', type: intType, range: Range.DUMMY },
-                            { type: intType, range: Range.DUMMY },
+                            { name: SourceId('a'), type: intType },
+                            { type: intType },
                           ],
                         },
                         typeAnnotation: tupleType([intType, intType]),
@@ -733,18 +719,16 @@ return (_t4: __DUMMY___Dummy);`
                           destructedNames: [
                             {
                               range: Range.DUMMY,
-                              fieldName: 'a',
-                              fieldNameRange: Range.DUMMY,
+                              fieldName: SourceId('a'),
                               type: intType,
                               fieldOrder: 0,
                             },
                             {
                               range: Range.DUMMY,
-                              fieldName: 'b',
-                              fieldNameRange: Range.DUMMY,
+                              fieldName: SourceId('b'),
                               type: intType,
                               fieldOrder: 1,
-                              alias: ['c', Range.DUMMY],
+                              alias: SourceId('c'),
                             },
                           ],
                         },

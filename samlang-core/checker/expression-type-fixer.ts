@@ -187,7 +187,7 @@ export default function fixExpressionType(
             tagOrder,
             dataVariable:
               dataVariable != null
-                ? [dataVariable[0], dataVariable[1], typeFixItself(dataVariable[2], null)]
+                ? [dataVariable[0], typeFixItself(dataVariable[1], null)]
                 : undefined,
             expression: tryFixExpressionType(body, expectedType),
           })
@@ -200,7 +200,7 @@ export default function fixExpressionType(
         ...expression,
         type: newType,
         parameters: checkedZip(expression.parameters, newType.argumentTypes).map(
-          ([[parameter, range, originalT], t]) => [parameter, range, typeFixItself(originalT, t)]
+          ([[parameter, originalT], t]) => [parameter, typeFixItself(originalT, t)]
         ),
         captured: Object.fromEntries(
           Object.entries(expression.captured).map(([name, t]) => [name, typeFixItself(t, null)])

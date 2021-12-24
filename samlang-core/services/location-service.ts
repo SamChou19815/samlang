@@ -93,7 +93,10 @@ export class SamlangExpressionLocationLookupBuilder {
         this.buildSingleExpression(moduleReference, expression);
         return;
       case 'ClassMemberExpression': {
-        const { moduleReference: modRef, className, classNameRange } = expression;
+        const {
+          moduleReference: modRef,
+          className: { name: className, range: classNameRange },
+        } = expression;
         this.buildSingleExpression(
           moduleReference,
           SourceExpressionVariable({
@@ -148,11 +151,13 @@ export class SamlangExpressionLocationLookupBuilder {
           const assignedExpressionType = assignedExpression.type;
           switch (pattern.type) {
             case 'TuplePattern': {
-              pattern.destructedNames.forEach(({ name, type, range }) => {
-                this.buildSingleExpression(
-                  moduleReference,
-                  SourceExpressionVariable({ range, name: name ?? '_', type })
-                );
+              pattern.destructedNames.forEach(({ name, type }) => {
+                if (name != null) {
+                  this.buildSingleExpression(
+                    moduleReference,
+                    SourceExpressionVariable({ ...name, type })
+                  );
+                }
               });
               return;
             }

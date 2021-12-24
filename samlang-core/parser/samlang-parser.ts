@@ -51,6 +51,8 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
+  SourceId,
+  SourceIdentifier,
   SourceModuleMembersImport,
   TypeDefinition,
   VariantPatternToExpression,
@@ -462,6 +464,18 @@ export default class SamlangModuleParser extends BaseParser {
     return comments;
   };
 
+  private parseUpperId = (): SourceIdentifier => {
+    const associatedComments = this.collectPrecedingComments();
+    const { variable, range } = this.assertAndPeekUpperId();
+    return SourceId(variable, { range, associatedComments });
+  };
+
+  private parseLowerId = (): SourceIdentifier => {
+    const associatedComments = this.collectPrecedingComments();
+    const { variable, range } = this.assertAndPeekLowerId();
+    return SourceId(variable, { range, associatedComments });
+  };
+
   parseExpression = (): SamlangExpression => this.parseMatch();
 
   private parseExpressionWithEndingComments = (): SamlangExpression => {
@@ -519,13 +533,12 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parsePatternToExpression = (): VariantPatternToExpression => {
     const startRange = this.assertAndConsume('|');
-    const { variable: tag } = this.assertAndPeekUpperId();
-    let dataVariable: readonly [string, Range, Type] | undefined;
+    const tag = this.parseUpperId();
+    let dataVariable: readonly [SourceIdentifier, Type] | undefined;
     if (this.peek().content === '_') {
       this.consume();
     } else {
-      const { variable, range } = this.assertAndPeekLowerId();
-      dataVariable = [variable, range, UndecidedTypes.next()];
+      dataVariable = [this.parseLowerId(), UndecidedTypes.next()];
     }
     this.assertAndConsume('->');
     const expression = this.parseExpression();
@@ -776,8 +789,7 @@ export default class SamlangModuleParser extends BaseParser {
           type: UndecidedTypes.next(),
           associatedComments: [],
           expression: functionExpression,
-          fieldPrecedingComments,
-          fieldName,
+          fieldName: SourceId(fieldName, { range, associatedComments: fieldPrecedingComments }),
           fieldOrder: -1,
         });
       } else {
@@ -872,11 +884,11 @@ export default class SamlangModuleParser extends BaseParser {
             associatedComments,
             typeArguments,
             moduleReference: this.resolveClass(className),
-            className,
-            classNameRange: peeked.range,
-            memberPrecedingComments,
-            memberName,
-            memberNameRange,
+            className: SourceId(className, { range: peeked.range }),
+            memberName: SourceId(memberName, {
+              range: memberNameRange,
+              associatedComments: memberPrecedingComments,
+            }),
           });
         }
       }
@@ -908,14 +920,14 @@ export default class SamlangModuleParser extends BaseParser {
         const next = this.peek();
         if (next.content === ',' || next.content === ':') {
           this.unconsume();
-          const parameters = this.parseCommaSeparatedList((): readonly [string, Range, Type] => {
-            const { variable, range } = this.assertAndPeekLowerId();
+          const parameters = this.parseCommaSeparatedList((): readonly [SourceIdentifier, Type] => {
+            const parameter = this.parseLowerId();
             if (this.peek().content === ':') {
               this.consume();
               const type = this.parseType();
-              return [variable, range, type];
+              return [parameter, type];
             }
-            return [variable, range, UndecidedTypes.next()];
+            return [parameter, UndecidedTypes.next()];
           });
           this.assertAndConsume(')');
           this.assertAndConsume('->');
@@ -923,7 +935,7 @@ export default class SamlangModuleParser extends BaseParser {
           return SourceExpressionLambda({
             range: peeked.range.union(body.range),
             type: functionType(
-              parameters.map((it) => it[2]),
+              parameters.map((it) => it[1]),
               body.type
             ),
             associatedComments,
@@ -944,8 +956,9 @@ export default class SamlangModuleParser extends BaseParser {
               associatedComments,
               parameters: [
                 [
-                  lowerIdentifierForLambdaPeeked.content.content,
-                  lowerIdentifierForLambdaPeeked.range,
+                  SourceId(lowerIdentifierForLambdaPeeked.content.content, {
+                    range: lowerIdentifierForLambdaPeeked.range,
+                  }),
                   parameterType,
                 ],
               ],
@@ -1038,16 +1051,11 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === '[') {
       this.consume();
       const destructedNames = this.parseCommaSeparatedList(() => {
-        const node = this.peek();
-        if (node.content === '_') {
+        if (this.peek().content === '_') {
           this.consume();
-          return { type: UndecidedTypes.next(), range: node.range };
+          return { type: UndecidedTypes.next() };
         }
-        return {
-          name: this.assertAndPeekLowerId().variable,
-          type: UndecidedTypes.next(),
-          range: node.range,
-        };
+        return { name: this.parseLowerId(), type: UndecidedTypes.next() };
       });
       const endRange = this.assertAndConsume(']');
       return {
@@ -1059,18 +1067,16 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === '{') {
       this.consume();
       const destructedNames = this.parseCommaSeparatedList(() => {
-        const { range: fieldRange, variable: fieldName } = this.assertAndPeekLowerId();
-        let range = fieldRange;
-        let alias: [string, Range] | undefined;
+        const fieldName = this.parseLowerId();
+        let range = fieldName.range;
+        let alias: SourceIdentifier | undefined;
         if (this.peek().content === 'as') {
           this.consume();
-          const peekedLower = this.assertAndPeekLowerId();
-          alias = [peekedLower.variable, peekedLower.range];
-          range = range.union(peekedLower.range);
+          alias = this.parseLowerId();
+          range = range.union(alias.range);
         }
         return {
           fieldName,
-          fieldNameRange: fieldRange,
           fieldOrder: -1,
           type: UndecidedTypes.next(),
           alias,
