@@ -1,14 +1,13 @@
+import { ModuleReference, Range } from '../../ast/common-nodes';
 import {
-  boolType,
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  Range,
-  stringType,
-  tupleType,
-  unitType,
-} from '../../ast/common-nodes';
+  SourceBoolType,
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceIntType,
+  SourceStringType,
+  SourceTupleType,
+  SourceUnitType,
+} from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { checkAndInfer, ConstraintAwareChecker } from '../constraint-aware-checker';
 import TypeResolution from '../type-resolution';
@@ -17,18 +16,19 @@ describe('constraint-aware-checker', () => {
   it('t1=primitive type', () => {
     const resolution = new TypeResolution();
 
-    expect(checkAndInfer(unitType, unitType, resolution)).toEqual(unitType);
-    expect(checkAndInfer(unitType, boolType, resolution).type).toBe('FAILED_MEET');
-    expect(checkAndInfer(unitType, intType, resolution).type).toBe('FAILED_MEET');
-    expect(checkAndInfer(unitType, stringType, resolution).type).toBe('FAILED_MEET');
+    expect(checkAndInfer(SourceUnitType, SourceUnitType, resolution)).toEqual(SourceUnitType);
+    expect(checkAndInfer(SourceUnitType, SourceBoolType, resolution).type).toBe('FAILED_MEET');
+    expect(checkAndInfer(SourceUnitType, SourceIntType, resolution).type).toBe('FAILED_MEET');
+    expect(checkAndInfer(SourceUnitType, SourceStringType, resolution).type).toBe('FAILED_MEET');
     expect(
-      checkAndInfer(unitType, identifierType(ModuleReference.DUMMY, 'A'), resolution).type
+      checkAndInfer(SourceUnitType, SourceIdentifierType(ModuleReference.DUMMY, 'A'), resolution)
+        .type
     ).toBe('FAILED_MEET');
 
-    expect(checkAndInfer(unitType, { type: 'UndecidedType', index: 0 }, resolution)).toEqual(
-      unitType
+    expect(checkAndInfer(SourceUnitType, { type: 'UndecidedType', index: 0 }, resolution)).toEqual(
+      SourceUnitType
     );
-    expect(checkAndInfer(intType, { type: 'UndecidedType', index: 0 }, resolution).type).toBe(
+    expect(checkAndInfer(SourceIntType, { type: 'UndecidedType', index: 0 }, resolution).type).toBe(
       'FAILED_MEET'
     );
   });
@@ -37,113 +37,147 @@ describe('constraint-aware-checker', () => {
     const resolution = new TypeResolution();
 
     expect(
-      checkAndInfer(identifierType(ModuleReference.DUMMY, 'A'), unitType, resolution).type
+      checkAndInfer(SourceIdentifierType(ModuleReference.DUMMY, 'A'), SourceUnitType, resolution)
+        .type
     ).toBe('FAILED_MEET');
     expect(
       checkAndInfer(
-        identifierType(ModuleReference.DUMMY, 'A'),
-        identifierType(ModuleReference.DUMMY, 'B'),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+        SourceIdentifierType(ModuleReference.DUMMY, 'B'),
         resolution
       ).type
     ).toBe('FAILED_MEET');
     expect(
       checkAndInfer(
-        identifierType(ModuleReference.DUMMY, 'A'),
-        identifierType(ModuleReference.DUMMY, 'A', [intType]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceIntType]),
         resolution
       ).type
     ).toBe('FAILED_MEET');
     expect(
       checkAndInfer(
-        identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')]),
-        identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+          SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+        ]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+          SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+        ]),
         resolution
       )
     ).toEqual(
-      identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')])
+      SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+        SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+      ])
     );
 
     expect(
       checkAndInfer(
-        identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')]),
-        identifierType(ModuleReference.DUMMY, 'A', [{ type: 'UndecidedType', index: 0 }]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+          SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+        ]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [{ type: 'UndecidedType', index: 0 }]),
         resolution
       )
     ).toEqual(
-      identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')])
+      SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+        SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+      ])
     );
     expect(
       checkAndInfer(
-        identifierType(ModuleReference.DUMMY, 'B'),
+        SourceIdentifierType(ModuleReference.DUMMY, 'B'),
         { type: 'UndecidedType', index: 0 },
         resolution
       )
-    ).toEqual(identifierType(ModuleReference.DUMMY, 'B'));
+    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'B'));
   });
 
   it('t1=tuple type', () => {
     const resolution = new TypeResolution();
 
-    expect(checkAndInfer(tupleType([]), unitType, resolution).type).toBe('FAILED_MEET');
+    expect(checkAndInfer(SourceTupleType([]), SourceUnitType, resolution).type).toBe('FAILED_MEET');
     expect(
-      checkAndInfer(tupleType([]), identifierType(ModuleReference.DUMMY, 'B'), resolution).type
+      checkAndInfer(
+        SourceTupleType([]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+        resolution
+      ).type
     ).toBe('FAILED_MEET');
-    expect(checkAndInfer(tupleType([]), tupleType([intType]), resolution).type).toBe('FAILED_MEET');
-    expect(checkAndInfer(tupleType([intType]), tupleType([intType]), resolution)).toEqual(
-      tupleType([intType])
-    );
+    expect(
+      checkAndInfer(SourceTupleType([]), SourceTupleType([SourceIntType]), resolution).type
+    ).toBe('FAILED_MEET');
+    expect(
+      checkAndInfer(SourceTupleType([SourceIntType]), SourceTupleType([SourceIntType]), resolution)
+    ).toEqual(SourceTupleType([SourceIntType]));
 
     expect(
-      checkAndInfer(tupleType([intType]), { type: 'UndecidedType', index: 0 }, resolution)
-    ).toEqual(tupleType([intType]));
+      checkAndInfer(
+        SourceTupleType([SourceIntType]),
+        { type: 'UndecidedType', index: 0 },
+        resolution
+      )
+    ).toEqual(SourceTupleType([SourceIntType]));
     expect(
       checkAndInfer(
         { type: 'UndecidedType', index: 0 },
-        tupleType([{ type: 'UndecidedType', index: 1 }]),
+        SourceTupleType([{ type: 'UndecidedType', index: 1 }]),
         resolution
       )
-    ).toEqual(tupleType([intType]));
-    expect(checkAndInfer(boolType, { type: 'UndecidedType', index: 1 }, resolution).type).toBe(
-      'FAILED_MEET'
-    );
+    ).toEqual(SourceTupleType([SourceIntType]));
+    expect(
+      checkAndInfer(SourceBoolType, { type: 'UndecidedType', index: 1 }, resolution).type
+    ).toBe('FAILED_MEET');
   });
 
   it('t1=function type', () => {
     const resolution = new TypeResolution();
 
-    expect(checkAndInfer(functionType([], intType), unitType, resolution).type).toBe('FAILED_MEET');
+    expect(
+      checkAndInfer(SourceFunctionType([], SourceIntType), SourceUnitType, resolution).type
+    ).toBe('FAILED_MEET');
     expect(
       checkAndInfer(
-        functionType([], intType),
-        identifierType(ModuleReference.DUMMY, 'B'),
+        SourceFunctionType([], SourceIntType),
+        SourceIdentifierType(ModuleReference.DUMMY, 'B'),
         resolution
       ).type
     ).toBe('FAILED_MEET');
     expect(
-      checkAndInfer(functionType([], intType), functionType([intType], intType), resolution).type
+      checkAndInfer(
+        SourceFunctionType([], SourceIntType),
+        SourceFunctionType([SourceIntType], SourceIntType),
+        resolution
+      ).type
     ).toBe('FAILED_MEET');
     expect(
-      checkAndInfer(functionType([intType], intType), functionType([intType], intType), resolution)
-    ).toEqual(functionType([intType], intType));
+      checkAndInfer(
+        SourceFunctionType([SourceIntType], SourceIntType),
+        SourceFunctionType([SourceIntType], SourceIntType),
+        resolution
+      )
+    ).toEqual(SourceFunctionType([SourceIntType], SourceIntType));
 
     expect(
       checkAndInfer(
-        functionType([intType], boolType),
+        SourceFunctionType([SourceIntType], SourceBoolType),
         { type: 'UndecidedType', index: 0 },
         resolution
       )
-    ).toEqual(functionType([intType], boolType));
+    ).toEqual(SourceFunctionType([SourceIntType], SourceBoolType));
     expect(
       checkAndInfer(
         { type: 'UndecidedType', index: 0 },
-        functionType([{ type: 'UndecidedType', index: 1 }], { type: 'UndecidedType', index: 2 }),
+        SourceFunctionType([{ type: 'UndecidedType', index: 1 }], {
+          type: 'UndecidedType',
+          index: 2,
+        }),
         resolution
       )
-    ).toEqual(functionType([intType], boolType));
-    expect(checkAndInfer(boolType, { type: 'UndecidedType', index: 1 }, resolution).type).toBe(
-      'FAILED_MEET'
-    );
-    expect(checkAndInfer(intType, { type: 'UndecidedType', index: 2 }, resolution).type).toBe(
+    ).toEqual(SourceFunctionType([SourceIntType], SourceBoolType));
+    expect(
+      checkAndInfer(SourceBoolType, { type: 'UndecidedType', index: 1 }, resolution).type
+    ).toBe('FAILED_MEET');
+    expect(checkAndInfer(SourceIntType, { type: 'UndecidedType', index: 2 }, resolution).type).toBe(
       'FAILED_MEET'
     );
   });
@@ -151,9 +185,9 @@ describe('constraint-aware-checker', () => {
   it('t1=undecided type', () => {
     const resolution = new TypeResolution();
 
-    expect(checkAndInfer({ type: 'UndecidedType', index: 10086 }, intType, resolution)).toEqual(
-      intType
-    );
+    expect(
+      checkAndInfer({ type: 'UndecidedType', index: 10086 }, SourceIntType, resolution)
+    ).toEqual(SourceIntType);
 
     expect(
       checkAndInfer(
@@ -163,14 +197,14 @@ describe('constraint-aware-checker', () => {
       )
     ).toEqual({ type: 'UndecidedType', index: 0 });
 
-    expect(checkAndInfer(boolType, { type: 'UndecidedType', index: 0 }, resolution)).toEqual(
-      boolType
+    expect(checkAndInfer(SourceBoolType, { type: 'UndecidedType', index: 0 }, resolution)).toEqual(
+      SourceBoolType
     );
-    expect(checkAndInfer({ type: 'UndecidedType', index: 0 }, intType, resolution).type).toBe(
+    expect(checkAndInfer({ type: 'UndecidedType', index: 0 }, SourceIntType, resolution).type).toBe(
       'FAILED_MEET'
     );
-    expect(checkAndInfer({ type: 'UndecidedType', index: 1 }, boolType, resolution)).toEqual(
-      boolType
+    expect(checkAndInfer({ type: 'UndecidedType', index: 1 }, SourceBoolType, resolution)).toEqual(
+      SourceBoolType
     );
 
     expect(
@@ -179,21 +213,21 @@ describe('constraint-aware-checker', () => {
         { type: 'UndecidedType', index: 2 },
         resolution
       )
-    ).toEqual(boolType);
+    ).toEqual(SourceBoolType);
     expect(
       checkAndInfer(
         { type: 'UndecidedType', index: 0 },
         { type: 'UndecidedType', index: 3 },
         resolution
       )
-    ).toEqual(boolType);
+    ).toEqual(SourceBoolType);
     expect(
       checkAndInfer(
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 3 },
         resolution
       )
-    ).toEqual(boolType);
+    ).toEqual(SourceBoolType);
 
     expect(
       checkAndInfer(
@@ -225,15 +259,15 @@ describe('constraint-aware-checker', () => {
 
     expect(
       new ConstraintAwareChecker(resolution, moduleCollector).checkAndInfer(
-        unitType,
-        unitType,
+        SourceUnitType,
+        SourceUnitType,
         Range.DUMMY
       )
-    ).toEqual(unitType);
+    ).toEqual(SourceUnitType);
     expect(globalCollector.getErrors()).toEqual([]);
     new ConstraintAwareChecker(resolution, moduleCollector).checkAndInfer(
-      unitType,
-      boolType,
+      SourceUnitType,
+      SourceBoolType,
       Range.DUMMY
     );
     expect(globalCollector.getErrors().map((it) => it.errorType)).toEqual(['UnexpectedType']);

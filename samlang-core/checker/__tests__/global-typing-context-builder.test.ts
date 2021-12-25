@@ -1,12 +1,11 @@
-import {
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  Range,
-} from '../../ast/common-nodes';
+import { ModuleReference, Range } from '../../ast/common-nodes';
 import type { SamlangModule, SourceClassDefinition } from '../../ast/samlang-nodes';
-import { SourceExpressionFalse } from '../../ast/samlang-nodes';
+import {
+  SourceExpressionFalse,
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceIntType,
+} from '../../ast/samlang-nodes';
 import { mapOf } from '../../utils';
 import {
   buildGlobalTypingContext,
@@ -48,7 +47,7 @@ const class1: SourceClassDefinition = {
       nameRange: Range.DUMMY,
       name: 'm1',
       typeParameters: [],
-      type: functionType([], intType),
+      type: SourceFunctionType([], SourceIntType),
       parameters: [],
       body: SourceExpressionFalse(),
     },
@@ -60,7 +59,7 @@ const class1: SourceClassDefinition = {
       nameRange: Range.DUMMY,
       name: 'f1',
       typeParameters: [],
-      type: functionType([], intType),
+      type: SourceFunctionType([], SourceIntType),
       parameters: [],
       body: SourceExpressionFalse(),
     },
@@ -106,7 +105,7 @@ describe('global-typing-context-builder', () => {
         functions: {
           init: {
             isPublic: true,
-            type: functionType([], identifierType(module0Reference, 'Class0', [])),
+            type: SourceFunctionType([], SourceIdentifierType(module0Reference, 'Class0', [])),
             typeParameters: [],
           },
         },
@@ -118,15 +117,15 @@ describe('global-typing-context-builder', () => {
         typeParameters: [],
         typeDefinition,
         functions: {
-          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+          f1: { isPublic: false, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
           init: {
             isPublic: true,
-            type: functionType([], identifierType(module1Reference, 'Class1', [])),
+            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
             typeParameters: [],
           },
         },
         methods: {
-          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
+          m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
         },
       },
       Class2: {
@@ -135,7 +134,7 @@ describe('global-typing-context-builder', () => {
         functions: {
           init: {
             isPublic: true,
-            type: functionType([], identifierType(module1Reference, 'Class2', [])),
+            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
             typeParameters: [],
           },
         },
@@ -164,7 +163,7 @@ describe('global-typing-context-builder', () => {
         functions: {
           init: {
             isPublic: true,
-            type: functionType([], identifierType(module0Reference, 'Class0', [])),
+            type: SourceFunctionType([], SourceIdentifierType(module0Reference, 'Class0', [])),
             typeParameters: [],
           },
         },
@@ -176,15 +175,15 @@ describe('global-typing-context-builder', () => {
         typeParameters: [],
         typeDefinition,
         functions: {
-          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+          f1: { isPublic: false, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
           init: {
             isPublic: true,
-            type: functionType([], identifierType(module1Reference, 'Class1', [])),
+            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
             typeParameters: [],
           },
         },
         methods: {
-          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
+          m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
         },
       },
       Class2: {
@@ -193,7 +192,7 @@ describe('global-typing-context-builder', () => {
         functions: {
           init: {
             isPublic: true,
-            type: functionType([], identifierType(module1Reference, 'Class2', [])),
+            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
             typeParameters: [],
           },
         },
@@ -218,15 +217,15 @@ describe('global-typing-context-builder', () => {
         typeParameters: [],
         typeDefinition,
         functions: {
-          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+          f1: { isPublic: false, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
           init: {
             isPublic: true,
-            type: functionType([], identifierType(module1Reference, 'Class1', [])),
+            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
             typeParameters: [],
           },
         },
         methods: {
-          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
+          m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
         },
       },
       Class2: {
@@ -235,7 +234,7 @@ describe('global-typing-context-builder', () => {
         functions: {
           init: {
             isPublic: true,
-            type: functionType([], identifierType(module1Reference, 'Class2', [])),
+            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
             typeParameters: [],
           },
         },

@@ -1,21 +1,156 @@
+import { zip } from '../utils';
 import {
-  boolType,
   FALSE,
-  FunctionType,
   intLiteralOf,
-  intType,
   Literal,
   ModuleReference,
   Node,
   Range,
   stringLiteralOf,
-  stringType,
   TRUE,
-  TupleType,
-  Type,
   TypedComment,
 } from './common-nodes';
 import type { BinaryOperator } from './common-operators';
+
+export type SamlangPrimitiveType = {
+  readonly type: 'PrimitiveType';
+  readonly name: 'unit' | 'bool' | 'int' | 'string';
+};
+
+export type SamlangIdentifierType = {
+  readonly type: 'IdentifierType';
+  readonly moduleReference: ModuleReference;
+  readonly identifier: string;
+  readonly typeArguments: readonly SamlangType[];
+};
+
+export type SamlangTupleType = {
+  readonly type: 'TupleType';
+  readonly mappings: readonly SamlangType[];
+};
+
+export type SamlangFunctionType = {
+  readonly type: 'FunctionType';
+  readonly argumentTypes: readonly SamlangType[];
+  readonly returnType: SamlangType;
+};
+
+export type SamlangUndecidedType = { readonly type: 'UndecidedType'; readonly index: number };
+
+export type SamlangType =
+  | SamlangPrimitiveType
+  | SamlangIdentifierType
+  | SamlangTupleType
+  | SamlangFunctionType
+  | SamlangUndecidedType;
+
+export const SourceUnitType: SamlangPrimitiveType = { type: 'PrimitiveType', name: 'unit' };
+export const SourceBoolType: SamlangPrimitiveType = { type: 'PrimitiveType', name: 'bool' };
+export const SourceIntType: SamlangPrimitiveType = { type: 'PrimitiveType', name: 'int' };
+export const SourceStringType: SamlangPrimitiveType = { type: 'PrimitiveType', name: 'string' };
+
+export const SourceIdentifierType = (
+  moduleReference: ModuleReference,
+  identifier: string,
+  typeArguments: readonly SamlangType[] = []
+): SamlangIdentifierType => ({
+  type: 'IdentifierType',
+  moduleReference,
+  identifier,
+  typeArguments,
+});
+
+export const SourceTupleType = (mappings: readonly SamlangType[]): SamlangTupleType => ({
+  type: 'TupleType',
+  mappings,
+});
+
+export const SourceFunctionType = (
+  argumentTypes: readonly SamlangType[],
+  returnType: SamlangType
+): SamlangFunctionType => ({
+  type: 'FunctionType',
+  argumentTypes,
+  returnType,
+});
+
+export class UndecidedTypes {
+  private static nextUndecidedTypeIndex = 0;
+
+  static next(): SamlangUndecidedType {
+    const type = { type: 'UndecidedType', index: UndecidedTypes.nextUndecidedTypeIndex } as const;
+    UndecidedTypes.nextUndecidedTypeIndex += 1;
+    return type;
+  }
+
+  static nextN(n: number): readonly SamlangUndecidedType[] {
+    const list: SamlangUndecidedType[] = [];
+    for (let i = 0; i < n; i += 1) {
+      list.push(UndecidedTypes.next());
+    }
+    return list;
+  }
+
+  static resetUndecidedTypeIndex_ONLY_FOR_TEST(): void {
+    UndecidedTypes.nextUndecidedTypeIndex = 0;
+  }
+}
+
+export function prettyPrintType(type: SamlangType): string {
+  switch (type.type) {
+    case 'PrimitiveType':
+      return type.name;
+    case 'IdentifierType':
+      if (type.typeArguments.length === 0) {
+        return type.identifier;
+      }
+      return `${type.identifier}<${type.typeArguments.map(prettyPrintType).join(', ')}>`;
+    case 'TupleType':
+      return `[${type.mappings.map(prettyPrintType).join(' * ')}]`;
+    case 'FunctionType':
+      return `(${type.argumentTypes.map(prettyPrintType).join(', ')}) -> ${prettyPrintType(
+        type.returnType
+      )}`;
+    case 'UndecidedType':
+      return '__UNDECIDED__';
+  }
+}
+
+export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
+  switch (t1.type) {
+    case 'PrimitiveType':
+      return t2.type === 'PrimitiveType' && t1.name === t2.name;
+    case 'IdentifierType':
+      return (
+        t2.type === 'IdentifierType' &&
+        t1.moduleReference.toString() === t2.moduleReference.toString() &&
+        t1.identifier === t2.identifier &&
+        t1.typeArguments.length === t2.typeArguments.length &&
+        zip(t1.typeArguments, t2.typeArguments).every(([t1Element, t2Element]) =>
+          isTheSameType(t1Element, t2Element)
+        )
+      );
+    case 'TupleType':
+      return (
+        t2.type === 'TupleType' &&
+        t1.mappings.length === t2.mappings.length &&
+        zip(t1.mappings, t2.mappings).every(([t1Element, t2Element]) =>
+          isTheSameType(t1Element, t2Element)
+        )
+      );
+    case 'FunctionType':
+      return (
+        t2.type === 'FunctionType' &&
+        isTheSameType(t1.returnType, t2.returnType) &&
+        t1.argumentTypes.length === t2.argumentTypes.length &&
+        zip(t1.argumentTypes, t2.argumentTypes).every(([t1Element, t2Element]) =>
+          isTheSameType(t1Element, t2Element)
+        )
+      );
+    case 'UndecidedType':
+      return t2.type === 'UndecidedType' && t1.index === t2.index;
+  }
+}
 
 /** An identifier with attached comments. */
 export interface SourceIdentifier extends Node {
@@ -35,7 +170,7 @@ interface BaseExpression extends Node {
   /** Identity of the object used for pattern matching. */
   readonly __type__: string;
   /** Static type of the expression. */
-  readonly type: Type;
+  readonly type: SamlangType;
   /** Precedence level. Lower the number, higher the precedence. */
   readonly precedence: number;
   /** A list of comments associated with the expression. */
@@ -63,7 +198,7 @@ export interface VariableExpression extends BaseExpression {
 
 export interface ClassMemberExpression extends BaseExpression {
   readonly __type__: 'ClassMemberExpression';
-  readonly typeArguments: readonly Type[];
+  readonly typeArguments: readonly SamlangType[];
   readonly moduleReference: ModuleReference;
   readonly className: SourceIdentifier;
   readonly memberName: SourceIdentifier;
@@ -71,7 +206,7 @@ export interface ClassMemberExpression extends BaseExpression {
 
 export interface TupleConstructorExpression extends BaseExpression {
   readonly __type__: 'TupleConstructorExpression';
-  readonly type: TupleType;
+  readonly type: SamlangTupleType;
   readonly expressions: readonly SamlangExpression[];
 }
 
@@ -119,7 +254,7 @@ export interface VariantPatternToExpression {
   readonly range: Range;
   readonly tag: SourceIdentifier;
   readonly tagOrder: number;
-  readonly dataVariable?: readonly [SourceIdentifier, Type];
+  readonly dataVariable?: readonly [SourceIdentifier, SamlangType];
   readonly expression: SamlangExpression;
 }
 
@@ -131,9 +266,9 @@ export interface MatchExpression extends BaseExpression {
 
 export interface LambdaExpression extends BaseExpression {
   readonly __type__: 'LambdaExpression';
-  readonly type: FunctionType;
-  readonly parameters: readonly (readonly [SourceIdentifier, Type])[];
-  readonly captured: Record<string, Type>;
+  readonly type: SamlangFunctionType;
+  readonly parameters: readonly (readonly [SourceIdentifier, SamlangType])[];
+  readonly captured: Record<string, SamlangType>;
   readonly body: SamlangExpression;
 }
 
@@ -141,14 +276,14 @@ export interface TuplePattern extends Node {
   readonly type: 'TuplePattern';
   readonly destructedNames: readonly {
     readonly name?: SourceIdentifier;
-    readonly type: Type;
+    readonly type: SamlangType;
   }[];
 }
 
 export interface ObjectPatternDestucturedName {
   readonly fieldName: SourceIdentifier;
   readonly fieldOrder: number;
-  readonly type: Type;
+  readonly type: SamlangType;
   readonly alias?: SourceIdentifier;
   readonly range: Range;
 }
@@ -171,7 +306,7 @@ export type Pattern = TuplePattern | ObjectPattern | VariablePattern | WildCardP
 
 export interface SamlangValStatement extends Node {
   readonly pattern: Pattern;
-  readonly typeAnnotation: Type;
+  readonly typeAnnotation: SamlangType;
   readonly assignedExpression: SamlangExpression;
   readonly associatedComments: readonly TypedComment[];
 }
@@ -208,7 +343,7 @@ export const SourceExpressionTrue = (
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
-  type: boolType,
+  type: SourceBoolType,
   precedence: 0,
   associatedComments,
   literal: TRUE,
@@ -220,7 +355,7 @@ export const SourceExpressionFalse = (
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
-  type: boolType,
+  type: SourceBoolType,
   precedence: 0,
   associatedComments,
   literal: FALSE,
@@ -233,7 +368,7 @@ export const SourceExpressionInt = (
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
-  type: intType,
+  type: SourceIntType,
   precedence: 0,
   associatedComments,
   literal: intLiteralOf(value),
@@ -246,7 +381,7 @@ export const SourceExpressionString = (
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
-  type: stringType,
+  type: SourceStringType,
   precedence: 0,
   associatedComments,
   literal: stringLiteralOf(value),
@@ -467,7 +602,7 @@ export const SourceExpressionStatementBlock = ({
 export interface SourceAnnotatedVariable {
   readonly name: string;
   readonly nameRange: Range;
-  readonly type: Type;
+  readonly type: SamlangType;
   readonly typeRange: Range;
 }
 
@@ -478,13 +613,13 @@ export interface SourceClassMemberDefinition extends Node {
   readonly nameRange: Range;
   readonly name: string;
   readonly typeParameters: readonly string[];
-  readonly type: FunctionType;
+  readonly type: SamlangFunctionType;
   readonly parameters: readonly SourceAnnotatedVariable[];
   readonly body: SamlangExpression;
 }
 
 export interface SourceFieldType {
-  readonly type: Type;
+  readonly type: SamlangType;
   readonly isPublic: boolean;
 }
 

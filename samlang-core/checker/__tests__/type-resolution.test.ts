@@ -1,57 +1,61 @@
 import {
-  boolType,
-  functionType,
-  intType,
-  stringType,
-  tupleType,
-  Type,
-  unitType,
-} from '../../ast/common-nodes';
+  SamlangType,
+  SourceBoolType,
+  SourceFunctionType,
+  SourceIntType,
+  SourceStringType,
+  SourceTupleType,
+  SourceUnitType,
+} from '../../ast/samlang-nodes';
 import { assert } from '../../utils';
 import TypeResolution from '../type-resolution';
 
 describe('type-resolution', () => {
   it('can resolve basic disjoint types with sufficient information', () => {
     const resolution = new TypeResolution();
-    expect(resolution.addTypeResolution(0, intType)).toEqual(intType);
-    expect(resolution.addTypeResolution(1, boolType)).toEqual(boolType);
-    expect(resolution.addTypeResolution(2, stringType)).toEqual(stringType);
-    expect(resolution.addTypeResolution(2, stringType)).toEqual(stringType);
-    expect(resolution.addTypeResolution(3, unitType)).toEqual(unitType);
+    expect(resolution.addTypeResolution(0, SourceIntType)).toEqual(SourceIntType);
+    expect(resolution.addTypeResolution(1, SourceBoolType)).toEqual(SourceBoolType);
+    expect(resolution.addTypeResolution(2, SourceStringType)).toEqual(SourceStringType);
+    expect(resolution.addTypeResolution(2, SourceStringType)).toEqual(SourceStringType);
+    expect(resolution.addTypeResolution(3, SourceUnitType)).toEqual(SourceUnitType);
 
     // Basic single element resolution.
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 0 })).toEqual(intType);
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 1 })).toEqual(boolType);
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 2 })).toEqual(stringType);
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 3 })).toEqual(unitType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 0 })).toEqual(SourceIntType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 1 })).toEqual(SourceBoolType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 2 })).toEqual(SourceStringType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 3 })).toEqual(SourceUnitType);
     // Recursive resolution.
     expect(
       resolution.resolveType(
-        functionType(
+        SourceFunctionType(
           [
-            tupleType([
+            SourceTupleType([
               { type: 'UndecidedType', index: 0 },
               { type: 'UndecidedType', index: 1 },
             ]),
             { type: 'UndecidedType', index: 2 },
-            functionType([], unitType),
+            SourceFunctionType([], SourceUnitType),
           ],
-          functionType([], { type: 'UndecidedType', index: 3 })
+          SourceFunctionType([], { type: 'UndecidedType', index: 3 })
         )
       )
     ).toEqual(
-      functionType(
-        [tupleType([intType, boolType]), stringType, functionType([], unitType)],
-        functionType([], unitType)
+      SourceFunctionType(
+        [
+          SourceTupleType([SourceIntType, SourceBoolType]),
+          SourceStringType,
+          SourceFunctionType([], SourceUnitType),
+        ],
+        SourceFunctionType([], SourceUnitType)
       )
     );
   });
 
-  it('can link together different type set', () => {
+  it('can link together diffSamlangTypet typeSamlangType', () => {
     const resolution = new TypeResolution();
-    expect(resolution.addTypeResolution(0, intType)).toEqual(intType);
+    expect(resolution.addTypeResolution(0, SourceIntType)).toEqual(SourceIntType);
 
-    function simpleMeet(t1: Type, t2: Type) {
+    function simpleMeet(t1: SamlangType, t2: SamlangType) {
       assert(t1 === t2, 'Inconsistency detected');
       return t1;
     }
@@ -62,9 +66,9 @@ describe('type-resolution', () => {
         { type: 'UndecidedType', index: 1 },
         simpleMeet
       )
-    ).toEqual(intType);
+    ).toEqual(SourceIntType);
 
-    expect(resolution.addTypeResolution(2, boolType)).toEqual(boolType);
+    expect(resolution.addTypeResolution(2, SourceBoolType)).toEqual(SourceBoolType);
     expect(() =>
       resolution.establishAliasing(
         { type: 'UndecidedType', index: 0 },
@@ -73,9 +77,9 @@ describe('type-resolution', () => {
       )
     ).toThrow();
 
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 0 })).toEqual(intType);
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 1 })).toEqual(intType);
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 2 })).toEqual(boolType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 0 })).toEqual(SourceIntType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 1 })).toEqual(SourceIntType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 2 })).toEqual(SourceBoolType);
 
     expect(
       resolution.establishAliasing(
@@ -90,9 +94,9 @@ describe('type-resolution', () => {
         { type: 'UndecidedType', index: 3 },
         simpleMeet
       )
-    ).toEqual(boolType);
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 2 })).toEqual(boolType);
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 3 })).toEqual(boolType);
-    expect(resolution.resolveType({ type: 'UndecidedType', index: 4 })).toEqual(boolType);
+    ).toEqual(SourceBoolType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 2 })).toEqual(SourceBoolType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 3 })).toEqual(SourceBoolType);
+    expect(resolution.resolveType({ type: 'UndecidedType', index: 4 })).toEqual(SourceBoolType);
   });
 });

@@ -1,4 +1,4 @@
-import type { Type, UndecidedType } from '../ast/common-nodes';
+import type { SamlangType, SamlangUndecidedType } from '../ast/samlang-nodes';
 import { assert, checkNotNull, UnionFind } from '../utils';
 import typeResolver from './type-resolver';
 
@@ -8,10 +8,10 @@ export interface ReadOnlyTypeResolution {
    * Given an undecided type, try to find the partially resolved type (which may still contain nested undecided
    * types) and return it. If it's not found in the resolution, return the original undecided type.
    */
-  getPartiallyResolvedType(undecidedType: UndecidedType): Type;
+  getPartiallyResolvedType(undecidedType: SamlangUndecidedType): SamlangType;
 
   /** Fully resolve an potentially [unresolvedType]. */
-  resolveType(unresolvedType: Type): Type;
+  resolveType(unresolvedType: SamlangType): SamlangType;
 }
 
 export default class TypeResolution implements ReadOnlyTypeResolution {
@@ -25,7 +25,7 @@ export default class TypeResolution implements ReadOnlyTypeResolution {
    * - the value of the map always represents the best knowledge of the type. i.e. we try to resolve as many undecided
    *   type as possible.
    */
-  private readonly knownResolutions: Map<number, Type> = new Map();
+  private readonly knownResolutions: Map<number, SamlangType> = new Map();
 
   /**
    * Refresh all the known mappings to ensure it represents the best knowledge we have.
@@ -42,12 +42,12 @@ export default class TypeResolution implements ReadOnlyTypeResolution {
     });
   }
 
-  getPartiallyResolvedType = (undecidedType: UndecidedType): Type => {
+  getPartiallyResolvedType = (undecidedType: SamlangUndecidedType): SamlangType => {
     const rootIndex = this.indexAliasingUnionFind.findRoot(undecidedType.index);
     return this.knownResolutions.get(rootIndex) ?? { type: 'UndecidedType', index: rootIndex };
   };
 
-  resolveType = (unresolvedType: Type): Type =>
+  resolveType = (unresolvedType: SamlangType): SamlangType =>
     typeResolver(unresolvedType, this.getPartiallyResolvedType);
 
   /**
@@ -56,10 +56,10 @@ export default class TypeResolution implements ReadOnlyTypeResolution {
    * It will either return the known type that both share or an error indicating there is an inconsistency.
    */
   establishAliasing(
-    undecidedType1: UndecidedType,
-    undecidedType2: UndecidedType,
-    meet: (t1: Type, t2: Type) => Type
-  ): Type {
+    undecidedType1: SamlangUndecidedType,
+    undecidedType2: SamlangUndecidedType,
+    meet: (t1: SamlangType, t2: SamlangType) => SamlangType
+  ): SamlangType {
     const t1 = this.getPartiallyResolvedType(undecidedType1);
     const t2 = this.getPartiallyResolvedType(undecidedType2);
     if (t1.type !== 'UndecidedType' && t2.type !== 'UndecidedType') {
@@ -76,7 +76,7 @@ export default class TypeResolution implements ReadOnlyTypeResolution {
    * It will either return an error indicating there is an inconsistency of knowledge or
    * the best knowledge of the known type.
    */
-  addTypeResolution(undecidedTypeIndex: number, decidedType: Type): Type {
+  addTypeResolution(undecidedTypeIndex: number, decidedType: SamlangType): SamlangType {
     assert(decidedType.type !== 'UndecidedType', 'Use establishAliasing() instead!');
 
     const rootOfUndecidedTypeIndex = this.indexAliasingUnionFind.findRoot(undecidedTypeIndex);

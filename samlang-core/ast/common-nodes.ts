@@ -1,4 +1,4 @@
-import { ReadonlyHashMap, zip } from '../utils';
+import type { ReadonlyHashMap } from '../utils';
 import type {
   ModuleReference as IModuleReference,
   Position as IPosition,
@@ -38,137 +38,7 @@ export function prettyPrintLiteral(literal: Literal): string {
   }
 }
 
-/** SECTION 2: Types */
-
-export type PrimitiveTypeName = 'unit' | 'bool' | 'int' | 'string';
-
-export type PrimitiveType = { readonly type: 'PrimitiveType'; readonly name: PrimitiveTypeName };
-
-export type IdentifierType = {
-  readonly type: 'IdentifierType';
-  readonly moduleReference: ModuleReference;
-  readonly identifier: string;
-  readonly typeArguments: readonly Type[];
-};
-
-export type TupleType = { readonly type: 'TupleType'; readonly mappings: readonly Type[] };
-
-export type FunctionType = {
-  readonly type: 'FunctionType';
-  readonly argumentTypes: readonly Type[];
-  readonly returnType: Type;
-};
-
-export type UndecidedType = { readonly type: 'UndecidedType'; readonly index: number };
-
-export type Type = PrimitiveType | IdentifierType | TupleType | FunctionType | UndecidedType;
-
-export const unitType: PrimitiveType = { type: 'PrimitiveType', name: 'unit' };
-export const boolType: PrimitiveType = { type: 'PrimitiveType', name: 'bool' };
-export const intType: PrimitiveType = { type: 'PrimitiveType', name: 'int' };
-export const stringType: PrimitiveType = { type: 'PrimitiveType', name: 'string' };
-
-export const identifierType = (
-  moduleReference: ModuleReference,
-  identifier: string,
-  typeArguments: readonly Type[] = []
-): IdentifierType => ({
-  type: 'IdentifierType',
-  moduleReference,
-  identifier,
-  typeArguments,
-});
-
-export const tupleType = (mappings: readonly Type[]): TupleType => ({
-  type: 'TupleType',
-  mappings,
-});
-
-export const functionType = (argumentTypes: readonly Type[], returnType: Type): FunctionType => ({
-  type: 'FunctionType',
-  argumentTypes,
-  returnType,
-});
-
-export class UndecidedTypes {
-  private static nextUndecidedTypeIndex = 0;
-
-  static next(): UndecidedType {
-    const type = { type: 'UndecidedType', index: UndecidedTypes.nextUndecidedTypeIndex } as const;
-    UndecidedTypes.nextUndecidedTypeIndex += 1;
-    return type;
-  }
-
-  static nextN(n: number): readonly UndecidedType[] {
-    const list: UndecidedType[] = [];
-    for (let i = 0; i < n; i += 1) {
-      list.push(UndecidedTypes.next());
-    }
-    return list;
-  }
-
-  static resetUndecidedTypeIndex_ONLY_FOR_TEST(): void {
-    UndecidedTypes.nextUndecidedTypeIndex = 0;
-  }
-}
-
-export function prettyPrintType(type: Type): string {
-  switch (type.type) {
-    case 'PrimitiveType':
-      return type.name;
-    case 'IdentifierType':
-      if (type.typeArguments.length === 0) {
-        return type.identifier;
-      }
-      return `${type.identifier}<${type.typeArguments.map(prettyPrintType).join(', ')}>`;
-    case 'TupleType':
-      return `[${type.mappings.map(prettyPrintType).join(' * ')}]`;
-    case 'FunctionType':
-      return `(${type.argumentTypes.map(prettyPrintType).join(', ')}) -> ${prettyPrintType(
-        type.returnType
-      )}`;
-    case 'UndecidedType':
-      return '__UNDECIDED__';
-  }
-}
-
-export function isTheSameType(t1: Type, t2: Type): boolean {
-  switch (t1.type) {
-    case 'PrimitiveType':
-      return t2.type === 'PrimitiveType' && t1.name === t2.name;
-    case 'IdentifierType':
-      return (
-        t2.type === 'IdentifierType' &&
-        t1.moduleReference.toString() === t2.moduleReference.toString() &&
-        t1.identifier === t2.identifier &&
-        t1.typeArguments.length === t2.typeArguments.length &&
-        zip(t1.typeArguments, t2.typeArguments).every(([t1Element, t2Element]) =>
-          isTheSameType(t1Element, t2Element)
-        )
-      );
-    case 'TupleType':
-      return (
-        t2.type === 'TupleType' &&
-        t1.mappings.length === t2.mappings.length &&
-        zip(t1.mappings, t2.mappings).every(([t1Element, t2Element]) =>
-          isTheSameType(t1Element, t2Element)
-        )
-      );
-    case 'FunctionType':
-      return (
-        t2.type === 'FunctionType' &&
-        isTheSameType(t1.returnType, t2.returnType) &&
-        t1.argumentTypes.length === t2.argumentTypes.length &&
-        zip(t1.argumentTypes, t2.argumentTypes).every(([t1Element, t2Element]) =>
-          isTheSameType(t1Element, t2Element)
-        )
-      );
-    case 'UndecidedType':
-      return t2.type === 'UndecidedType' && t1.index === t2.index;
-  }
-}
-
-/** SECTION 3: Locations */
+/** SECTION 2: Locations */
 
 export type Position = IPosition;
 export const Position = (line: number, character: number): Position => ({ line, character });
@@ -236,7 +106,7 @@ export interface Location {
   readonly range: Range;
 }
 
-/** SECTION 4: MISC */
+/** SECTION 3: MISC */
 
 export type TypedComment = {
   readonly type: 'line' | 'block' | 'doc';

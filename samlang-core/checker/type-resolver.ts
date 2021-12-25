@@ -1,22 +1,28 @@
-import { functionType, identifierType, tupleType, Type, UndecidedType } from '../ast/common-nodes';
+import {
+  SamlangType,
+  SamlangUndecidedType,
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceTupleType,
+} from '../ast/samlang-nodes';
 
 export default function resolveType(
-  type: Type,
-  undecidedTypeResolver: (undecidedType: UndecidedType) => Type
-): Type {
+  type: SamlangType,
+  undecidedTypeResolver: (undecidedType: SamlangUndecidedType) => SamlangType
+): SamlangType {
   switch (type.type) {
     case 'PrimitiveType':
       return type;
     case 'IdentifierType':
-      return identifierType(
+      return SourceIdentifierType(
         type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => resolveType(it, undecidedTypeResolver))
       );
     case 'TupleType':
-      return tupleType(type.mappings.map((it) => resolveType(it, undecidedTypeResolver)));
+      return SourceTupleType(type.mappings.map((it) => resolveType(it, undecidedTypeResolver)));
     case 'FunctionType':
-      return functionType(
+      return SourceFunctionType(
         type.argumentTypes.map((it) => resolveType(it, undecidedTypeResolver)),
         resolveType(type.returnType, undecidedTypeResolver)
       );

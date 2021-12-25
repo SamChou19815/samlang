@@ -1,16 +1,8 @@
-import {
-  boolType,
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  Range,
-  tupleType,
-  unitType,
-} from '../../ast/common-nodes';
+import { ModuleReference, Range } from '../../ast/common-nodes';
 import { MUL } from '../../ast/common-operators';
 import {
   SamlangExpression,
+  SourceBoolType,
   SourceExpressionBinary,
   SourceExpressionClassMember,
   SourceExpressionFieldAccess,
@@ -26,7 +18,12 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
+  SourceFunctionType,
   SourceId,
+  SourceIdentifierType,
+  SourceIntType,
+  SourceTupleType,
+  SourceUnitType,
 } from '../../ast/samlang-nodes';
 import { hashSetOf } from '../../utils';
 import { collectModuleReferenceFromExpression } from '../module-references-collector';
@@ -52,17 +49,20 @@ describe('module-references-collector', () => {
   it('collectModuleReferenceFromExpression works 1/n', () => {
     assertFoundAllModuleReferencesFromExpression(TRUE, []);
     assertFoundAllModuleReferencesFromExpression(
-      SourceExpressionVariable({ type: unitType, name: 'v' }),
+      SourceExpressionVariable({ type: SourceUnitType, name: 'v' }),
       []
     );
-    assertFoundAllModuleReferencesFromExpression(SourceExpressionThis({ type: unitType }), []);
+    assertFoundAllModuleReferencesFromExpression(
+      SourceExpressionThis({ type: SourceUnitType }),
+      []
+    );
   });
 
   it('collectModuleReferenceFromExpression works 2/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionClassMember({
-        type: functionType([], unitType),
-        typeArguments: [boolType],
+        type: SourceFunctionType([], SourceUnitType),
+        typeArguments: [SourceBoolType],
         moduleReference: ModuleReference.DUMMY,
         className: SourceId('Foo'),
         memberName: SourceId('bar'),
@@ -74,10 +74,10 @@ describe('module-references-collector', () => {
   it('collectModuleReferenceFromExpression works 3/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionTupleConstructor({
-        type: tupleType([
-          intType,
-          identifierType(ModuleReference.DUMMY, 'f', [
-            functionType([intType], tupleType([boolType])),
+        type: SourceTupleType([
+          SourceIntType,
+          SourceIdentifierType(ModuleReference.DUMMY, 'f', [
+            SourceFunctionType([SourceIntType], SourceTupleType([SourceBoolType])),
           ]),
         ]),
         expressions: [intOf(1), TRUE],
@@ -89,8 +89,10 @@ describe('module-references-collector', () => {
   it('collectModuleReferenceFromExpression works 6/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionFieldAccess({
-        type: functionType([], intType),
-        expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
+        type: SourceFunctionType([], SourceIntType),
+        expression: SourceExpressionThis({
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'Foo'),
+        }),
         fieldName: SourceId('bar'),
         fieldOrder: 1,
       }),
@@ -99,15 +101,17 @@ describe('module-references-collector', () => {
 
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionMethodAccess({
-        type: functionType([], intType),
-        expression: SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Foo') }),
+        type: SourceFunctionType([], SourceIntType),
+        expression: SourceExpressionThis({
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'Foo'),
+        }),
         methodName: SourceId('bar'),
       }),
       ['__DUMMY__']
     );
 
     assertFoundAllModuleReferencesFromExpression(
-      SourceExpressionUnary({ type: boolType, operator: '!', expression: TRUE }),
+      SourceExpressionUnary({ type: SourceBoolType, operator: '!', expression: TRUE }),
       []
     );
   });
@@ -115,7 +119,7 @@ describe('module-references-collector', () => {
   it('collectModuleReferenceFromExpression works 8/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionBinary({
-        type: intType,
+        type: SourceIntType,
         operatorPrecedingComments: [],
         operator: MUL,
         e1: intOf(1),
@@ -128,16 +132,16 @@ describe('module-references-collector', () => {
   it('collectModuleReferenceFromExpression works 9/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionMatch({
-        type: intType,
+        type: SourceIntType,
         matchedExpression: SourceExpressionThis({
-          type: identifierType(ModuleReference.DUMMY, 'A'),
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
         }),
         matchingList: [
           {
             range: Range.DUMMY,
             tag: SourceId('A'),
             tagOrder: 1,
-            expression: SourceExpressionVariable({ type: intType, name: '' }),
+            expression: SourceExpressionVariable({ type: SourceIntType, name: '' }),
           },
         ],
       }),
@@ -148,14 +152,14 @@ describe('module-references-collector', () => {
   it('collectModuleReferenceFromExpression works 10/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionStatementBlock({
-        type: unitType,
+        type: SourceUnitType,
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: intType,
+              typeAnnotation: SourceIntType,
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -167,14 +171,14 @@ describe('module-references-collector', () => {
 
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionStatementBlock({
-        type: intType,
+        type: SourceIntType,
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: intType,
+              typeAnnotation: SourceIntType,
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -189,18 +193,18 @@ describe('module-references-collector', () => {
   it('collectModuleReferenceFromExpression works 11/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionIfElse({
-        type: boolType,
+        type: SourceBoolType,
         boolExpression: TRUE,
         e1: TRUE,
         e2: SourceExpressionFunctionCall({
-          type: boolType,
+          type: SourceBoolType,
           functionExpression: SourceExpressionLambda({
-            type: functionType([intType], boolType),
-            parameters: [[SourceId('a'), intType]],
-            captured: { a: intType },
+            type: SourceFunctionType([SourceIntType], SourceBoolType),
+            parameters: [[SourceId('a'), SourceIntType]],
+            captured: { a: SourceIntType },
             body: TRUE,
           }),
-          functionArguments: [SourceExpressionVariable({ type: intType, name: 'v' })],
+          functionArguments: [SourceExpressionVariable({ type: SourceIntType, name: 'v' })],
         }),
       }),
       []

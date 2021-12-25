@@ -1,11 +1,12 @@
-import { Type, unitType } from '../ast/common-nodes';
 import {
   ObjectPatternDestucturedName,
   Pattern,
   SamlangExpression,
+  SamlangType,
   SamlangValStatement,
   SourceExpressionVariable,
   SourceFieldType,
+  SourceUnitType,
   StatementBlock,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
@@ -18,14 +19,14 @@ export default class StatementTypeChecker {
     private readonly errorCollector: ModuleErrorCollector,
     private readonly typeCheckExpression: (
       expression: SamlangExpression,
-      expectedType: Type
+      expectedType: SamlangType
     ) => SamlangExpression
   ) {}
 
   readonly typeCheck = (
     { range, statements, expression }: StatementBlock,
-    expectedType: Type,
-    localContext: LocalStackedContext<Type>
+    expectedType: SamlangType,
+    localContext: LocalStackedContext<SamlangType>
   ): StatementBlock =>
     localContext.withNestedScope(() => {
       const checkedStatements = statements.map((statement) =>
@@ -39,7 +40,7 @@ export default class StatementTypeChecker {
       this.typeCheckExpression(
         SourceExpressionVariable({
           range,
-          type: unitType,
+          type: SourceUnitType,
           associatedComments: [],
           name: '_',
         }),
@@ -50,7 +51,7 @@ export default class StatementTypeChecker {
 
   private typeCheckValStatement(
     statement: SamlangValStatement,
-    localContext: LocalStackedContext<Type>
+    localContext: LocalStackedContext<SamlangType>
   ): SamlangValStatement {
     const { range, pattern, typeAnnotation, assignedExpression } = statement;
     const checkedAssignedExpression = this.typeCheckExpression(assignedExpression, typeAnnotation);

@@ -1,14 +1,4 @@
-import {
-  boolType,
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  Range,
-  stringType,
-  tupleType,
-  unitType,
-} from '../../ast/common-nodes';
+import { ModuleReference, Range } from '../../ast/common-nodes';
 import {
   HIR_BOOL_TYPE,
   HIR_FUNCTION_TYPE,
@@ -20,6 +10,15 @@ import {
   prettyPrintHighIRType,
   prettyPrintHighIRTypeDefinition,
 } from '../../ast/hir-nodes';
+import {
+  SourceBoolType,
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceIntType,
+  SourceStringType,
+  SourceTupleType,
+  SourceUnitType,
+} from '../../ast/samlang-nodes';
 import {
   collectUsedGenericTypes,
   encodeHighIRNameAfterGenericsSpecialization,
@@ -258,28 +257,28 @@ describe('hir-type-conversion', () => {
     const typeSynthesizer = new HighIRTypeSynthesizer();
     const manager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
 
-    expect(manager.lowerSamlangType(boolType)).toEqual(HIR_BOOL_TYPE);
-    expect(manager.lowerSamlangType(intType)).toEqual(HIR_INT_TYPE);
-    expect(manager.lowerSamlangType(unitType)).toEqual(HIR_INT_TYPE);
-    expect(manager.lowerSamlangType(stringType)).toEqual(HIR_STRING_TYPE);
+    expect(manager.lowerSamlangType(SourceBoolType)).toEqual(HIR_BOOL_TYPE);
+    expect(manager.lowerSamlangType(SourceIntType)).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangType(SourceUnitType)).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangType(SourceStringType)).toEqual(HIR_STRING_TYPE);
 
     expect(
       prettyPrintHighIRType(
-        manager.lowerSamlangType(identifierType(ModuleReference.DUMMY, 'A', [intType]))
+        manager.lowerSamlangType(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceIntType]))
       )
     ).toBe('__DUMMY___A<int>');
 
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          tupleType([intType, boolType])
+          SourceTupleType([SourceIntType, SourceBoolType])
         )
       )
     ).toBe('$SyntheticIDType0');
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          tupleType([intType, identifierType(ModuleReference.DUMMY, 'T')])
+          SourceTupleType([SourceIntType, SourceIdentifierType(ModuleReference.DUMMY, 'T')])
         )
       )
     ).toBe('$SyntheticIDType1<T>');
@@ -287,7 +286,10 @@ describe('hir-type-conversion', () => {
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType)
+          SourceFunctionType(
+            [SourceIdentifierType(ModuleReference.DUMMY, 'T'), SourceBoolType],
+            SourceIntType
+          )
         )
       )
     ).toBe('$SyntheticIDType2<T>');
@@ -315,16 +317,16 @@ describe('hir-type-conversion', () => {
       names: ['a', 'b'],
       mappings: {
         a: {
-          type: functionType(
-            [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
-            boolType
+          type: SourceFunctionType(
+            [SourceFunctionType([SourceIdentifierType(ModuleReference.ROOT, 'A')], SourceBoolType)],
+            SourceBoolType
           ),
           isPublic: true,
         },
         b: {
-          type: functionType(
-            [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
-            boolType
+          type: SourceFunctionType(
+            [SourceFunctionType([SourceIdentifierType(ModuleReference.ROOT, 'A')], SourceBoolType)],
+            SourceBoolType
           ),
           isPublic: false,
         },
@@ -345,14 +347,15 @@ describe('hir-type-conversion', () => {
 
   it('SamlangTypeLoweringManager.lowerSamlangFunctionTypeForTopLevel() works', () => {
     const manager = new SamlangTypeLoweringManager(new Set(['A']), new HighIRTypeSynthesizer());
-    expect(manager.lowerSamlangFunctionTypeForTopLevel(functionType([intType], boolType))).toEqual([
-      [],
-      HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE),
-    ]);
+    expect(
+      manager.lowerSamlangFunctionTypeForTopLevel(
+        SourceFunctionType([SourceIntType], SourceBoolType)
+      )
+    ).toEqual([[], HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)]);
 
     expect(
       manager.lowerSamlangFunctionTypeForTopLevel(
-        functionType([functionType([intType], boolType)], boolType)
+        SourceFunctionType([SourceFunctionType([SourceIntType], SourceBoolType)], SourceBoolType)
       )
     ).toEqual([
       [],

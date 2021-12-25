@@ -1,5 +1,5 @@
 import { encodeFunctionNameGlobally, encodeMainFunctionName } from '../ast/common-names';
-import type { ModuleReference, Sources, Type } from '../ast/common-nodes';
+import type { ModuleReference, Sources } from '../ast/common-nodes';
 import {
   HighIRFunction,
   HighIRSources,
@@ -17,6 +17,7 @@ import {
 import type {
   SamlangExpression,
   SamlangModule,
+  SamlangType,
   SourceAnnotatedVariable,
 } from '../ast/samlang-nodes';
 import { checkNotNull, zip } from '../utils';
@@ -118,7 +119,7 @@ function compileSamlangFunctionToHighIRFunctions(
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
   memberTypeParameters: readonly string[],
   memberParameters: readonly SourceAnnotatedVariable[],
-  memberReturnType: Type,
+  memberReturnType: SamlangType,
   memberBody: SamlangExpression,
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager
@@ -168,7 +169,7 @@ function compileSamlangMethodToHighIRFunctions(
   classTypeParameters: readonly string[],
   memberTypeParameters: readonly string[],
   memberParameters: readonly SourceAnnotatedVariable[],
-  memberReturnType: Type,
+  memberReturnType: SamlangType,
   memberBody: SamlangExpression,
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager

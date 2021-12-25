@@ -1,4 +1,5 @@
-import type { ModuleReference, Range, Type } from '../ast/common-nodes';
+import type { ModuleReference, Range } from '../ast/common-nodes';
+import type { SamlangType } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { checkNotNull } from '../utils';
 
@@ -18,7 +19,7 @@ export interface IdentifierTypeValidator {
  * @returns an invalidid string identifier, null if there is none.
  */
 export function findInvalidTypeIdentifier_EXPOSED_FOR_TESTING(
-  type: Type,
+  type: SamlangType,
   identifierTypeValidator: IdentifierTypeValidator
 ): string | null {
   switch (type.type) {
@@ -48,7 +49,7 @@ export function findInvalidTypeIdentifier_EXPOSED_FOR_TESTING(
 }
 
 function findInvalidTypeIdentifierForList(
-  types: readonly Type[],
+  types: readonly SamlangType[],
   identifierTypeValidator: IdentifierTypeValidator
 ): string | null {
   for (let i = 0; i < types.length; i += 1) {
@@ -62,7 +63,7 @@ function findInvalidTypeIdentifierForList(
 }
 
 export function validateType(
-  type: Type,
+  type: SamlangType,
   identifierTypeValidator: IdentifierTypeValidator,
   errorCollector: ModuleErrorCollector,
   errorRange: Range

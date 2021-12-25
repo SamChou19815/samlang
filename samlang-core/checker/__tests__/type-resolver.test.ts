@@ -1,40 +1,40 @@
+import { ModuleReference } from '../../ast/common-nodes';
 import {
-  boolType,
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  stringType,
-  tupleType,
-  Type,
-  UndecidedType,
-  unitType,
-} from '../../ast/common-nodes';
+  SamlangType,
+  SamlangUndecidedType,
+  SourceBoolType,
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceIntType,
+  SourceStringType,
+  SourceTupleType,
+  SourceUnitType,
+} from '../../ast/samlang-nodes';
 import typeResolver from '../type-resolver';
 
-export function undecidedTypeResolver({ index }: UndecidedType): Type {
+export function undecidedTypeResolver({ index }: SamlangUndecidedType): SamlangType {
   switch (index % 4) {
     case 0:
-      return unitType;
+      return SourceUnitType;
     case 1:
-      return boolType;
+      return SourceBoolType;
     case 2:
-      return intType;
+      return SourceIntType;
     case 3:
-      return stringType;
+      return SourceStringType;
     default:
       throw new Error('');
   }
 }
 
-const resolve = (type: Type): Type => typeResolver(type, undecidedTypeResolver);
+const resolve = (type: SamlangType): SamlangType => typeResolver(type, undecidedTypeResolver);
 
 describe('type-resolver', () => {
   it("won't affect primitive types", () => {
-    expect(resolve(unitType)).toEqual(unitType);
-    expect(resolve(boolType)).toEqual(boolType);
-    expect(resolve(intType)).toEqual(intType);
-    expect(resolve(stringType)).toEqual(stringType);
+    expect(resolve(SourceUnitType)).toEqual(SourceUnitType);
+    expect(resolve(SourceBoolType)).toEqual(SourceBoolType);
+    expect(resolve(SourceIntType)).toEqual(SourceIntType);
+    expect(resolve(SourceStringType)).toEqual(SourceStringType);
   });
 
   it('Undecided types will always be resolved', () => {
@@ -48,25 +48,25 @@ describe('type-resolver', () => {
   it('Recursive types will be resolved', () => {
     expect(
       resolve(
-        identifierType(ModuleReference.DUMMY, 'A', [
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [
           { type: 'UndecidedType', index: 0 },
           { type: 'UndecidedType', index: 1 },
         ])
       )
-    ).toEqual(identifierType(ModuleReference.DUMMY, 'A', [unitType, boolType]));
+    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceUnitType, SourceBoolType]));
 
     expect(
       resolve(
-        tupleType([
+        SourceTupleType([
           { type: 'UndecidedType', index: 0 },
           { type: 'UndecidedType', index: 1 },
         ])
       )
-    ).toEqual(tupleType([unitType, boolType]));
+    ).toEqual(SourceTupleType([SourceUnitType, SourceBoolType]));
 
     expect(
       resolve(
-        functionType(
+        SourceFunctionType(
           [
             { type: 'UndecidedType', index: 0 },
             { type: 'UndecidedType', index: 1 },
@@ -74,6 +74,6 @@ describe('type-resolver', () => {
           { type: 'UndecidedType', index: 2 }
         )
       )
-    ).toEqual(functionType([unitType, boolType], intType));
+    ).toEqual(SourceFunctionType([SourceUnitType, SourceBoolType], SourceIntType));
   });
 });

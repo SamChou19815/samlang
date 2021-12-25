@@ -6,8 +6,8 @@ import {
   typeCheckSources,
   typeCheckSourcesIncrementally,
 } from '..';
-import { functionType, intType, ModuleReference, Range } from '../../ast/common-nodes';
-import { SourceExpressionInt } from '../../ast/samlang-nodes';
+import { ModuleReference, Range } from '../../ast/common-nodes';
+import { SourceExpressionInt, SourceFunctionType, SourceIntType } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
 import { hashMapOf, mapOf } from '../../utils';
@@ -35,7 +35,7 @@ describe('samlang-core/checker', () => {
               type: 'object',
               names: [''],
               range: Range.DUMMY,
-              mappings: { d: { isPublic: true, type: intType } },
+              mappings: { d: { isPublic: true, type: SourceIntType } },
             },
             members: [
               {
@@ -47,7 +47,7 @@ describe('samlang-core/checker', () => {
                 isPublic: true,
                 typeParameters: [],
                 parameters: [],
-                type: functionType([], intType),
+                type: SourceFunctionType([], SourceIntType),
                 body: SourceExpressionInt(3),
               },
             ],

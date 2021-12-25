@@ -1,16 +1,16 @@
 import {
-  FunctionType,
-  IdentifierType,
   Location,
   ModuleReference,
   Position,
-  prettyPrintType,
   Range,
   Sources,
   TypedComment,
 } from '../ast/common-nodes';
-import type {
+import {
+  prettyPrintType,
   SamlangExpression,
+  SamlangFunctionType,
+  SamlangIdentifierType,
   SamlangModule,
   SourceClassDefinition,
   SourceClassMemberDefinition,
@@ -351,7 +351,7 @@ class LanguageServicesImpl implements LanguageServices {
         const [moduleReferenceOfClass, classDefinition] = checkNotNull(
           this.getClassDefinition(
             moduleReference,
-            (expression.expression.type as IdentifierType).identifier
+            (expression.expression.type as SamlangIdentifierType).identifier
           )
         );
         return {
@@ -362,7 +362,7 @@ class LanguageServicesImpl implements LanguageServices {
       case 'MethodAccessExpression':
         return this.findClassMemberLocation(
           moduleReference,
-          (expression.expression.type as IdentifierType).identifier,
+          (expression.expression.type as SamlangIdentifierType).identifier,
           expression.methodName.name
         );
       case 'UnaryExpression':
@@ -430,7 +430,7 @@ class LanguageServicesImpl implements LanguageServices {
         );
       });
     }
-    let type: IdentifierType;
+    let type: SamlangIdentifierType;
     switch (expression.__type__) {
       case 'FieldAccessExpression':
       case 'MethodAccessExpression': {
@@ -509,7 +509,7 @@ class LanguageServicesImpl implements LanguageServices {
   private static prettyPrintFunctionTypeWithDummyParameters({
     argumentTypes,
     returnType,
-  }: FunctionType) {
+  }: SamlangFunctionType) {
     const argumentPart = argumentTypes.map((it, id) => `a${id}: ${prettyPrintType(it)}`).join(', ');
     return `(${argumentPart}): ${prettyPrintType(returnType)}`;
   }

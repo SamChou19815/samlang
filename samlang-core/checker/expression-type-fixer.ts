@@ -1,16 +1,16 @@
 import {
-  boolType,
-  FunctionType,
-  IdentifierType,
-  intType,
   isTheSameType,
   prettyPrintType,
-  stringType,
-  TupleType,
-  Type,
-  unitType,
-} from '../ast/common-nodes';
-import type { SamlangExpression } from '../ast/samlang-nodes';
+  SamlangExpression,
+  SamlangFunctionType,
+  SamlangIdentifierType,
+  SamlangTupleType,
+  SamlangType,
+  SourceBoolType,
+  SourceIntType,
+  SourceStringType,
+  SourceUnitType,
+} from '../ast/samlang-nodes';
 import { assert, zip } from '../utils';
 import type { ReadOnlyTypeResolution } from './type-resolution';
 import resolveType from './type-resolver';
@@ -25,12 +25,12 @@ function checkedZip<E1, E2>(
 
 export default function fixExpressionType(
   expression: SamlangExpression,
-  expectedType: Type,
+  expectedType: SamlangType,
   resolution: ReadOnlyTypeResolution
 ): SamlangExpression {
-  function typeFixItself(type: Type, expected: Type | null): Type {
+  function typeFixItself(type: SamlangType, expected: SamlangType | null): SamlangType {
     const resolvedPotentiallyUndecidedType = resolution.resolveType(type);
-    const resolvedType = resolveType(resolvedPotentiallyUndecidedType, () => unitType);
+    const resolvedType = resolveType(resolvedPotentiallyUndecidedType, () => SourceUnitType);
     const resolvedTypePrettyPrinted = prettyPrintType(resolvedType);
     assert(resolvedType.type !== 'UndecidedType', `Bad type: ${resolvedTypePrettyPrinted}`);
     if (expected === null) return resolvedType;
@@ -43,10 +43,10 @@ export default function fixExpressionType(
     return resolvedType;
   }
 
-  const getExpressionFixedType = (e: SamlangExpression, t: Type | null): Type =>
+  const getExpressionFixedType = (e: SamlangExpression, t: SamlangType | null): SamlangType =>
     typeFixItself(e.type, t);
 
-  const tryFixExpressionType = (e: SamlangExpression, t: Type): SamlangExpression =>
+  const tryFixExpressionType = (e: SamlangExpression, t: SamlangType): SamlangExpression =>
     fixExpressionType(e, t, resolution);
 
   switch (expression.__type__) {
@@ -63,7 +63,7 @@ export default function fixExpressionType(
         ),
       };
     case 'TupleConstructorExpression': {
-      const newType = typeFixItself(expression.type, expectedType) as TupleType;
+      const newType = typeFixItself(expression.type, expectedType) as SamlangTupleType;
       return {
         ...expression,
         type: newType,
@@ -86,10 +86,10 @@ export default function fixExpressionType(
       let fixedExpression: SamlangExpression;
       switch (expression.operator) {
         case '!':
-          fixedExpression = tryFixExpressionType(expression.expression, boolType);
+          fixedExpression = tryFixExpressionType(expression.expression, SourceBoolType);
           break;
         case '-':
-          fixedExpression = tryFixExpressionType(expression.expression, intType);
+          fixedExpression = tryFixExpressionType(expression.expression, SourceIntType);
           break;
       }
       return {
@@ -102,7 +102,7 @@ export default function fixExpressionType(
       const functionFixedType = getExpressionFixedType(
         expression.functionExpression,
         null
-      ) as FunctionType;
+      ) as SamlangFunctionType;
       assert(
         isTheSameType(functionFixedType.returnType, expectedType),
         `Return type (${prettyPrintType(
@@ -132,17 +132,17 @@ export default function fixExpressionType(
         case '<=':
         case '>':
         case '>=':
-          e1 = tryFixExpressionType(expression.e1, intType);
-          e2 = tryFixExpressionType(expression.e2, intType);
+          e1 = tryFixExpressionType(expression.e1, SourceIntType);
+          e2 = tryFixExpressionType(expression.e2, SourceIntType);
           break;
         case '&&':
         case '||':
-          e1 = tryFixExpressionType(expression.e1, boolType);
-          e2 = tryFixExpressionType(expression.e2, boolType);
+          e1 = tryFixExpressionType(expression.e1, SourceBoolType);
+          e2 = tryFixExpressionType(expression.e2, SourceBoolType);
           break;
         case '::':
-          e1 = tryFixExpressionType(expression.e1, stringType);
-          e2 = tryFixExpressionType(expression.e2, stringType);
+          e1 = tryFixExpressionType(expression.e1, SourceStringType);
+          e2 = tryFixExpressionType(expression.e2, SourceStringType);
           break;
         case '==':
         case '!=': {
@@ -168,7 +168,7 @@ export default function fixExpressionType(
       return {
         ...expression,
         type: getExpressionFixedType(expression, expectedType),
-        boolExpression: tryFixExpressionType(expression.boolExpression, boolType),
+        boolExpression: tryFixExpressionType(expression.boolExpression, SourceBoolType),
         e1: tryFixExpressionType(expression.e1, expectedType),
         e2: tryFixExpressionType(expression.e2, expectedType),
       };
@@ -178,7 +178,7 @@ export default function fixExpressionType(
         type: getExpressionFixedType(expression, expectedType),
         matchedExpression: tryFixExpressionType(
           expression.matchedExpression,
-          getExpressionFixedType(expression.matchedExpression, null) as IdentifierType
+          getExpressionFixedType(expression.matchedExpression, null) as SamlangIdentifierType
         ),
         matchingList: expression.matchingList.map(
           ({ range, tag, tagOrder, dataVariable, expression: body }) => ({
@@ -195,7 +195,7 @@ export default function fixExpressionType(
       };
     }
     case 'LambdaExpression': {
-      const newType = getExpressionFixedType(expression, expectedType) as FunctionType;
+      const newType = getExpressionFixedType(expression, expectedType) as SamlangFunctionType;
       return {
         ...expression,
         type: newType,
@@ -211,7 +211,7 @@ export default function fixExpressionType(
     case 'StatementBlockExpression': {
       const { block } = expression;
       assert(
-        block.expression != null || isTheSameType(expectedType, unitType),
+        block.expression != null || isTheSameType(expectedType, SourceUnitType),
         `block.expression == null && expectedType == ${prettyPrintType(expectedType)}`
       );
       const fixedStatements = block.statements.map((statement) => {

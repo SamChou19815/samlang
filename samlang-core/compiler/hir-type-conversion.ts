@@ -1,4 +1,4 @@
-import type { FunctionType, ModuleReference, PrimitiveType, Type } from '../ast/common-nodes';
+import type { ModuleReference } from '../ast/common-nodes';
 import {
   HighIRClosureTypeDefinition,
   HighIRFunctionType,
@@ -14,7 +14,12 @@ import {
   HIR_STRING_TYPE,
   prettyPrintHighIRType,
 } from '../ast/hir-nodes';
-import type { TypeDefinition } from '../ast/samlang-nodes';
+import type {
+  SamlangFunctionType,
+  SamlangPrimitiveType,
+  SamlangType,
+  TypeDefinition,
+} from '../ast/samlang-nodes';
 import { assert, checkNotNull, zip } from '../utils';
 
 /** A helper class to generate an identifier type for each struct type. */
@@ -240,7 +245,7 @@ export const encodeHighIRNameAfterGenericsSpecialization = (
     ? name
     : `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join('_')}`;
 
-function lowerSamlangPrimitiveType(type: PrimitiveType): HighIRPrimitiveType {
+function lowerSamlangPrimitiveType(type: SamlangPrimitiveType): HighIRPrimitiveType {
   switch (type.name) {
     case 'bool':
       return HIR_BOOL_TYPE;
@@ -258,7 +263,7 @@ export class SamlangTypeLoweringManager {
     public readonly typeSynthesizer: HighIRTypeSynthesizer
   ) {}
 
-  lowerSamlangType = (type: Type): HighIRType => {
+  lowerSamlangType = (type: SamlangType): HighIRType => {
     assert(type.type !== 'UndecidedType', 'Unreachable!');
     switch (type.type) {
       case 'PrimitiveType':
@@ -317,7 +322,9 @@ export class SamlangTypeLoweringManager {
     mappings: names.map((it) => this.lowerSamlangType(checkNotNull(sourceLevelMappings[it]).type)),
   });
 
-  lowerSamlangFunctionTypeForTopLevel(type: FunctionType): [readonly string[], HighIRFunctionType] {
+  lowerSamlangFunctionTypeForTopLevel(
+    type: SamlangFunctionType
+  ): [readonly string[], HighIRFunctionType] {
     const hirFunctionType = HIR_FUNCTION_TYPE(
       type.argumentTypes.map(this.lowerSamlangType),
       this.lowerSamlangType(type.returnType)

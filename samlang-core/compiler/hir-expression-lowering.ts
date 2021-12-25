@@ -2,7 +2,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeFunctionNameGlobally,
 } from '../ast/common-names';
-import type { IdentifierType, ModuleReference, Type } from '../ast/common-nodes';
+import type { ModuleReference } from '../ast/common-nodes';
 import {
   HighIRExpression,
   HighIRFunction,
@@ -40,6 +40,8 @@ import type {
   MatchExpression,
   MethodAccessExpression,
   SamlangExpression,
+  SamlangIdentifierType,
+  SamlangType,
   StatementBlockExpression,
   TupleConstructorExpression,
   UnaryExpression,
@@ -177,7 +179,7 @@ class HighIRExpressionLoweringManager {
     return typeDefinition.mappings.map((type) => highIRTypeApplication(type, replacementMap));
   }
 
-  private getFunctionTypeWithoutContext(type: Type): HighIRFunctionType {
+  private getFunctionTypeWithoutContext(type: SamlangType): HighIRFunctionType {
     assert(type.type === 'FunctionType');
     return this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel(type)[1];
   }
@@ -317,8 +319,8 @@ class HighIRExpressionLoweringManager {
     favoredTempVariable: string | null
   ): HighIRExpressionLoweringResult {
     const functionName = encodeFunctionNameGlobally(
-      (expression.expression.type as IdentifierType).moduleReference,
-      (expression.expression.type as IdentifierType).identifier,
+      (expression.expression.type as SamlangIdentifierType).moduleReference,
+      (expression.expression.type as SamlangIdentifierType).identifier,
       expression.methodName.name
     );
     const originalFunctionType = this.getFunctionTypeWithoutContext(expression.type);
@@ -406,8 +408,8 @@ class HighIRExpressionLoweringManager {
       }
       case 'MethodAccessExpression': {
         const functionName = encodeFunctionNameGlobally(
-          (functionExpression.expression.type as IdentifierType).moduleReference,
-          (functionExpression.expression.type as IdentifierType).identifier,
+          (functionExpression.expression.type as SamlangIdentifierType).moduleReference,
+          (functionExpression.expression.type as SamlangIdentifierType).identifier,
           functionExpression.methodName.name
         );
         const functionTypeWithoutContext = this.getFunctionTypeWithoutContext(

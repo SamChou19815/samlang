@@ -1,12 +1,12 @@
+import { ModuleReference } from '../../ast/common-nodes';
 import {
-  boolType,
-  functionType,
-  identifierType,
-  ModuleReference,
-  tupleType,
+  SourceBoolType,
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceTupleType,
+  SourceUnitType,
   UndecidedTypes,
-  unitType,
-} from '../../ast/common-nodes';
+} from '../../ast/samlang-nodes';
 import { undecideFieldTypeParameters, undecideTypeParameters } from '../type-undecider';
 
 describe('type-undecider', () => {
@@ -14,7 +14,7 @@ describe('type-undecider', () => {
     expect(() => undecideTypeParameters(UndecidedTypes.next(), [])).toThrow();
     expect(() =>
       undecideTypeParameters(
-        identifierType(ModuleReference.DUMMY, 'A', [UndecidedTypes.next()]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [UndecidedTypes.next()]),
         []
       )
     ).toThrow();
@@ -25,35 +25,35 @@ describe('type-undecider', () => {
 
     expect(
       undecideTypeParameters(
-        functionType(
+        SourceFunctionType(
           [
-            identifierType(ModuleReference.DUMMY, 'A', [
-              boolType,
-              identifierType(ModuleReference.DUMMY, 'T1'),
+            SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+              SourceBoolType,
+              SourceIdentifierType(ModuleReference.DUMMY, 'T1'),
             ]),
-            unitType,
-            unitType,
-            tupleType([identifierType(ModuleReference.DUMMY, 'T2')]),
+            SourceUnitType,
+            SourceUnitType,
+            SourceTupleType([SourceIdentifierType(ModuleReference.DUMMY, 'T2')]),
           ],
-          tupleType([
-            identifierType(ModuleReference.DUMMY, 'T3'),
-            identifierType(ModuleReference.DUMMY, 'T4'),
+          SourceTupleType([
+            SourceIdentifierType(ModuleReference.DUMMY, 'T3'),
+            SourceIdentifierType(ModuleReference.DUMMY, 'T4'),
           ])
         ),
         ['T1', 'T2', 'T3', 'T4']
       )[0]
     ).toEqual(
-      functionType(
+      SourceFunctionType(
         [
-          identifierType(ModuleReference.DUMMY, 'A', [
-            boolType,
+          SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+            SourceBoolType,
             { type: 'UndecidedType', index: 0 },
           ]),
-          unitType,
-          unitType,
-          tupleType([{ type: 'UndecidedType', index: 1 }]),
+          SourceUnitType,
+          SourceUnitType,
+          SourceTupleType([{ type: 'UndecidedType', index: 1 }]),
         ],
-        tupleType([
+        SourceTupleType([
           { type: 'UndecidedType', index: 2 },
           { type: 'UndecidedType', index: 3 },
         ])
@@ -65,16 +65,20 @@ describe('type-undecider', () => {
     UndecidedTypes.resetUndecidedTypeIndex_ONLY_FOR_TEST();
 
     expect(
-      undecideTypeParameters(identifierType(ModuleReference.DUMMY, 'A', [boolType]), ['A'])[0]
-    ).toEqual(identifierType(ModuleReference.DUMMY, 'A', [boolType]));
-
-    expect(undecideTypeParameters(identifierType(ModuleReference.DUMMY, 'A', []), [])[0]).toEqual(
-      identifierType(ModuleReference.DUMMY, 'A', [])
-    );
+      undecideTypeParameters(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceBoolType]), [
+        'A',
+      ])[0]
+    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceBoolType]));
 
     expect(
-      undecideTypeParameters(identifierType(ModuleReference.DUMMY, 'A', [boolType]), ['B'])[0]
-    ).toEqual(identifierType(ModuleReference.DUMMY, 'A', [boolType]));
+      undecideTypeParameters(SourceIdentifierType(ModuleReference.DUMMY, 'A', []), [])[0]
+    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'A', []));
+
+    expect(
+      undecideTypeParameters(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceBoolType]), [
+        'B',
+      ])[0]
+    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceBoolType]));
   });
 
   it('can undecide field types', () => {
@@ -83,8 +87,8 @@ describe('type-undecider', () => {
     expect(
       undecideFieldTypeParameters(
         {
-          a: { isPublic: true, type: identifierType(ModuleReference.DUMMY, 'A') },
-          b: { isPublic: false, type: identifierType(ModuleReference.DUMMY, 'B') },
+          a: { isPublic: true, type: SourceIdentifierType(ModuleReference.DUMMY, 'A') },
+          b: { isPublic: false, type: SourceIdentifierType(ModuleReference.DUMMY, 'B') },
         },
         ['A', 'B']
       )[0]

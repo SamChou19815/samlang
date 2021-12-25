@@ -1,4 +1,5 @@
-import { boolType, intType, ModuleReference, Range } from '../ast/common-nodes';
+import { ModuleReference, Range } from '../ast/common-nodes';
+import { SourceBoolType, SourceIntType } from '../ast/samlang-nodes';
 import {
   CollisionError,
   CompileTimeError,
@@ -22,7 +23,12 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
     'Foo/Bar.sam:0:0-0:0: [SyntaxError]: bad code',
   ],
   [
-    new UnexpectedTypeError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, intType, boolType),
+    new UnexpectedTypeError(
+      new ModuleReference(['Foo', 'Bar']),
+      Range.DUMMY,
+      SourceIntType,
+      SourceBoolType
+    ),
     'Foo/Bar.sam:0:0-0:0: [UnexpectedType]: Expected: `int`, actual: `bool`.',
   ],
   [
@@ -51,7 +57,12 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
     'Foo/Bar.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `array`, actual: `object`.',
   ],
   [
-    new UnexpectedTypeKindError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'array', intType),
+    new UnexpectedTypeKindError(
+      new ModuleReference(['Foo', 'Bar']),
+      Range.DUMMY,
+      'array',
+      SourceIntType
+    ),
     'Foo/Bar.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',
   ],
   [

@@ -1,16 +1,15 @@
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 
+import { ModuleReference, Range, Sources } from '../ast/common-nodes';
 import {
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  Range,
-  Sources,
-  stringType,
-  unitType,
-} from '../ast/common-nodes';
-import type { SamlangModule, SourceClassDefinition } from '../ast/samlang-nodes';
+  SamlangModule,
+  SourceClassDefinition,
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceIntType,
+  SourceStringType,
+  SourceUnitType,
+} from '../ast/samlang-nodes';
 import type { DefaultBuiltinClasses } from '../parser';
 import { checkNotNull, hashMapOf } from '../utils';
 import type {
@@ -34,16 +33,16 @@ function buildClassTypingContext(
       functions[name] = typeInformation;
     }
   });
-  const classType = identifierType(
+  const classType = SourceIdentifierType(
     moduleReference,
     className,
-    typeParameters.map((it) => identifierType(moduleReference, it, []))
+    typeParameters.map((it) => SourceIdentifierType(moduleReference, it, []))
   );
   if (typeDefinition.type === 'object') {
     functions.init = {
       isPublic: true,
       typeParameters,
-      type: functionType(
+      type: SourceFunctionType(
         typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it]).type),
         classType
       ),
@@ -53,7 +52,7 @@ function buildClassTypingContext(
       functions[tag] = {
         isPublic: true,
         typeParameters,
-        type: functionType([type], classType),
+        type: SourceFunctionType([type], classType),
       };
     });
   }
@@ -82,22 +81,25 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: Readonly<
       stringToInt: {
         isPublic: true,
         typeParameters: [],
-        type: functionType([stringType], intType),
+        type: SourceFunctionType([SourceStringType], SourceIntType),
       },
       intToString: {
         isPublic: true,
         typeParameters: [],
-        type: functionType([intType], stringType),
+        type: SourceFunctionType([SourceIntType], SourceStringType),
       },
       println: {
         isPublic: true,
         typeParameters: [],
-        type: functionType([stringType], unitType),
+        type: SourceFunctionType([SourceStringType], SourceUnitType),
       },
       panic: {
         isPublic: true,
         typeParameters: ['T'],
-        type: functionType([stringType], identifierType(ModuleReference.ROOT, 'T')),
+        type: SourceFunctionType(
+          [SourceStringType],
+          SourceIdentifierType(ModuleReference.ROOT, 'T')
+        ),
       },
     },
     methods: {},

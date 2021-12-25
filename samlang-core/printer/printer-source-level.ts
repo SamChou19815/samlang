@@ -1,7 +1,9 @@
-import { prettyPrintLiteral, prettyPrintType, Type, TypedComment } from '../ast/common-nodes';
-import type {
+import { prettyPrintLiteral, TypedComment } from '../ast/common-nodes';
+import {
   IfElseExpression,
+  prettyPrintType,
   SamlangExpression,
+  SamlangType,
   SourceClassMemberDefinition,
 } from '../ast/samlang-nodes';
 import { checkNotNull } from '../utils';
@@ -49,7 +51,7 @@ export function createPrettierDocumentForAssociatedComments(
     : finalMainDocument;
 }
 
-const optionalTypeArguments = (typeArguments: readonly Type[]) =>
+const optionalTypeArguments = (typeArguments: readonly SamlangType[]) =>
   typeArguments.length > 0 ? `<${typeArguments.map(prettyPrintType).join(', ')}>` : '';
 
 function createPrettierDocumentFromSamlangExpression(

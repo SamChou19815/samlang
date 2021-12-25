@@ -1,11 +1,12 @@
+import type { ModuleReference } from '../ast/common-nodes';
 import {
-  FunctionType,
-  IdentifierType,
-  identifierType,
-  ModuleReference,
-  Type,
-} from '../ast/common-nodes';
-import type { SourceFieldType, TypeDefinition } from '../ast/samlang-nodes';
+  SamlangFunctionType,
+  SamlangIdentifierType,
+  SamlangType,
+  SourceFieldType,
+  SourceIdentifierType,
+  TypeDefinition,
+} from '../ast/samlang-nodes';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
 import replaceTypeIdentifier from './type-identifier-replacer';
 import { undecideTypeParameters } from './type-undecider';
@@ -14,7 +15,7 @@ import type { IdentifierTypeValidator } from './type-validator';
 export interface MemberTypeInformation {
   readonly isPublic: boolean;
   readonly typeParameters: readonly string[];
-  readonly type: FunctionType;
+  readonly type: SamlangFunctionType;
 }
 
 export interface ClassTypingContext {
@@ -64,9 +65,9 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     moduleReference: ModuleReference,
     className: string,
     methodName: string,
-    classTypeArguments: readonly Type[]
+    classTypeArguments: readonly SamlangType[]
   ):
-    | FunctionType
+    | SamlangFunctionType
     | Readonly<{ type: 'UnresolvedName'; unresolvedName: string }>
     | Readonly<{ type: 'TypeParameterSizeMismatch'; expected: number; actual: number }> {
     const relaventClass = this.getClassTypeInformation(moduleReference, className);
@@ -90,7 +91,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       partiallyFixedType,
       Object.fromEntries(zip(classTypeParameters, classTypeArguments))
     );
-    return fullyFixedType as FunctionType;
+    return fullyFixedType as SamlangFunctionType;
   }
 
   getCurrentClassTypeDefinition(): TypeDefinition & {
@@ -111,7 +112,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
    * according to type checking rules.
    */
   resolveTypeDefinition(
-    { moduleReference, identifier, typeArguments }: IdentifierType,
+    { moduleReference, identifier, typeArguments }: SamlangIdentifierType,
     typeDefinitionType: 'object' | 'variant'
   ):
     | {
@@ -164,15 +165,15 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     };
   }
 
-  get thisType(): IdentifierType {
+  get thisType(): SamlangIdentifierType {
     const currentClassTypingContext = checkNotNull(
       this.getClassTypeInformation(this.currentModuleReference, this.currentClass)
     );
-    return identifierType(
+    return SourceIdentifierType(
       this.currentModuleReference,
       this.currentClass,
       currentClassTypingContext.typeParameters.map((it) =>
-        identifierType(this.currentModuleReference, it)
+        SourceIdentifierType(this.currentModuleReference, it)
       )
     );
   }
