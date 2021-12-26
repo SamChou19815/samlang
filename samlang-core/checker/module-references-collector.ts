@@ -1,9 +1,9 @@
-import type { ModuleReference, Type } from '../ast/common-nodes';
-import type { SamlangExpression } from '../ast/samlang-nodes';
+import type { ModuleReference } from '../ast/common-nodes';
+import type { SamlangExpression, SamlangType } from '../ast/samlang-nodes';
 import type { HashSet } from '../utils';
 
 export function collectModuleReferenceFromType(
-  type: Type,
+  type: SamlangType,
   collector: HashSet<ModuleReference>
 ): void {
   switch (type.type) {

@@ -1,23 +1,20 @@
+import { ModuleReference, Range } from '../../ast/common-nodes';
 import {
-  boolType,
-  identifierType,
-  intType,
   isTheSameType,
-  ModuleReference,
-  Range,
-  tupleType,
-  Type,
-  unitType,
-} from '../../ast/common-nodes';
-import {
   Pattern,
   SamlangExpression,
+  SamlangType,
   SamlangValStatement,
+  SourceBoolType,
   SourceExpressionInt,
   SourceExpressionStatementBlock,
   SourceExpressionTrue,
   SourceExpressionVariable,
   SourceId,
+  SourceIdentifierType,
+  SourceIntType,
+  SourceTupleType,
+  SourceUnitType,
   StatementBlock,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
@@ -27,7 +24,7 @@ import { AccessibleGlobalTypingContext } from '../typing-context';
 
 const STATEMENT = (
   pattern: Pattern,
-  typeAnnotation: Type,
+  typeAnnotation: SamlangType,
   assignedExpression: SamlangExpression
 ): SamlangValStatement => ({
   range: Range.DUMMY,
@@ -44,12 +41,15 @@ const BLOCK = (
 
 function typeCheckInSandbox(
   block: StatementBlock,
-  expectedType: Type
+  expectedType: SamlangType
 ): readonly [StatementBlock, readonly string[]] {
   const globalErrorCollector = createGlobalErrorCollector();
   const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
-  function dummyExpressionTypeChecker(expression: SamlangExpression, et: Type): SamlangExpression {
+  function dummyExpressionTypeChecker(
+    expression: SamlangExpression,
+    et: SamlangType
+  ): SamlangExpression {
     if (et.type !== 'UndecidedType' && !isTheSameType(expression.type, et)) {
       moduleErrorCollector.reportUnexpectedTypeError(Range.DUMMY, et, expression.type);
     }
@@ -69,8 +69,8 @@ function typeCheckInSandbox(
               type: 'object',
               names: ['a', 'b'],
               mappings: {
-                a: { isPublic: true, type: intType },
-                b: { isPublic: false, type: boolType },
+                a: { isPublic: true, type: SourceIntType },
+                b: { isPublic: false, type: SourceBoolType },
               },
             },
             functions: {},
@@ -83,8 +83,8 @@ function typeCheckInSandbox(
               type: 'object',
               names: ['a', 'b'],
               mappings: {
-                a: { isPublic: true, type: intType },
-                b: { isPublic: false, type: boolType },
+                a: { isPublic: true, type: SourceIntType },
+                b: { isPublic: false, type: SourceBoolType },
               },
             },
             functions: {},
@@ -97,8 +97,8 @@ function typeCheckInSandbox(
               type: 'variant',
               names: ['a', 'b'],
               mappings: {
-                a: { isPublic: true, type: intType },
-                b: { isPublic: true, type: boolType },
+                a: { isPublic: true, type: SourceIntType },
+                b: { isPublic: true, type: SourceBoolType },
               },
             },
             functions: {},
@@ -113,7 +113,7 @@ function typeCheckInSandbox(
     dummyExpressionTypeChecker
   );
   return [
-    checker.typeCheck(block, expectedType, new LocalStackedContext<Type>()),
+    checker.typeCheck(block, expectedType, new LocalStackedContext<SamlangType>()),
     globalErrorCollector.getErrors().map((it) => it.toString()),
   ];
 }
@@ -121,7 +121,7 @@ function typeCheckInSandbox(
 const passingTypeCheckerTestCases: readonly (readonly [
   string,
   StatementBlock,
-  Type,
+  SamlangType,
   StatementBlock
 ])[] = [
   [
@@ -137,22 +137,28 @@ const passingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
+        SourceExpressionVariable({
+          type: SourceTupleType([SourceIntType, SourceBoolType]),
+          name: 'foo',
+        })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     BLOCK([
       STATEMENT(
         {
           range: Range.DUMMY,
           type: 'TuplePattern',
           destructedNames: [
-            { name: SourceId('a'), type: intType },
-            { name: undefined, type: boolType },
+            { name: SourceId('a'), type: SourceIntType },
+            { name: undefined, type: SourceBoolType },
           ],
         },
-        tupleType([intType, boolType]),
-        SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
+        SourceTupleType([SourceIntType, SourceBoolType]),
+        SourceExpressionVariable({
+          type: SourceTupleType([SourceIntType, SourceBoolType]),
+          name: 'foo',
+        })
       ),
     ]),
   ],
@@ -181,10 +187,13 @@ const passingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'A'), name: 'foo' })
+        SourceExpressionVariable({
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+          name: 'foo',
+        })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     BLOCK([
       STATEMENT(
         {
@@ -194,20 +203,23 @@ const passingTypeCheckerTestCases: readonly (readonly [
             {
               range: Range.DUMMY,
               fieldName: SourceId('a'),
-              type: intType,
+              type: SourceIntType,
               fieldOrder: 0,
             },
             {
               range: Range.DUMMY,
               fieldName: SourceId('b'),
-              type: boolType,
+              type: SourceBoolType,
               fieldOrder: 1,
               alias: SourceId('c'),
             },
           ],
         },
-        identifierType(ModuleReference.DUMMY, 'A'),
-        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'A'), name: 'foo' })
+        SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+        SourceExpressionVariable({
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+          name: 'foo',
+        })
       ),
     ]),
   ],
@@ -217,15 +229,15 @@ const passingTypeCheckerTestCases: readonly (readonly [
     BLOCK([
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-        intType,
+        SourceIntType,
         SourceExpressionInt(1)
       ),
     ]),
-    unitType,
+    SourceUnitType,
     BLOCK([
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-        intType,
+        SourceIntType,
         SourceExpressionInt(1)
       ),
     ]),
@@ -235,25 +247,25 @@ const passingTypeCheckerTestCases: readonly (readonly [
     BLOCK([
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-        intType,
+        SourceIntType,
         SourceExpressionInt(1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
-        boolType,
+        SourceBoolType,
         SourceExpressionTrue()
       ),
     ]),
-    unitType,
+    SourceUnitType,
     BLOCK([
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-        intType,
+        SourceIntType,
         SourceExpressionInt(1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
-        boolType,
+        SourceBoolType,
         SourceExpressionTrue()
       ),
     ]),
@@ -264,49 +276,57 @@ const passingTypeCheckerTestCases: readonly (readonly [
       [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-          intType,
+          SourceIntType,
           SourceExpressionInt(1)
         ),
       ],
-      SourceExpressionVariable({ type: intType, name: 'a' })
+      SourceExpressionVariable({ type: SourceIntType, name: 'a' })
     ),
-    intType,
+    SourceIntType,
     BLOCK(
       [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-          intType,
+          SourceIntType,
           SourceExpressionInt(1)
         ),
       ],
-      SourceExpressionVariable({ type: intType, name: 'a' })
+      SourceExpressionVariable({ type: SourceIntType, name: 'a' })
     ),
   ],
 
   [
     'wildcard pattern',
     BLOCK([
-      STATEMENT({ range: Range.DUMMY, type: 'WildCardPattern' }, intType, SourceExpressionInt(1)),
+      STATEMENT(
+        { range: Range.DUMMY, type: 'WildCardPattern' },
+        SourceIntType,
+        SourceExpressionInt(1)
+      ),
     ]),
-    unitType,
+    SourceUnitType,
     BLOCK([
-      STATEMENT({ range: Range.DUMMY, type: 'WildCardPattern' }, intType, SourceExpressionInt(1)),
+      STATEMENT(
+        { range: Range.DUMMY, type: 'WildCardPattern' },
+        SourceIntType,
+        SourceExpressionInt(1)
+      ),
     ]),
   ],
 
-  ['de-facto unit literal', BLOCK([]), unitType, BLOCK([])],
+  ['de-facto unit literal', BLOCK([]), SourceUnitType, BLOCK([])],
   [
     'nested de-facto unit literal',
-    BLOCK([], SourceExpressionStatementBlock({ type: unitType, block: BLOCK([]) })),
-    unitType,
-    BLOCK([], SourceExpressionStatementBlock({ type: unitType, block: BLOCK([]) })),
+    BLOCK([], SourceExpressionStatementBlock({ type: SourceUnitType, block: BLOCK([]) })),
+    SourceUnitType,
+    BLOCK([], SourceExpressionStatementBlock({ type: SourceUnitType, block: BLOCK([]) })),
   ],
 ];
 
 const failingTypeCheckerTestCases: readonly (readonly [
   string,
   StatementBlock,
-  Type,
+  SamlangType,
   readonly string[]
 ])[] = [
   [
@@ -319,10 +339,13 @@ const failingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [{ name: SourceId('a'), type: { type: 'UndecidedType', index: 0 } }],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
+        SourceExpressionVariable({
+          type: SourceTupleType([SourceIntType, SourceBoolType]),
+          name: 'foo',
+        })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     ['__DUMMY__.sam:0:0-0:0: [TupleSizeMismatch]: Incorrect tuple size. Expected: 2, actual: 1.'],
   ],
   [
@@ -335,10 +358,10 @@ const failingTypeCheckerTestCases: readonly (readonly [
           destructedNames: [{ name: SourceId('a'), type: { type: 'UndecidedType', index: 0 } }],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: intType, name: 'foo' })
+        SourceExpressionVariable({ type: SourceIntType, name: 'foo' })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     ['__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `tuple`, actual: `int`.'],
   ],
   [
@@ -354,10 +377,13 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
+        SourceExpressionVariable({
+          type: SourceTupleType([SourceIntType, SourceBoolType]),
+          name: 'foo',
+        })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
   ],
 
@@ -385,10 +411,13 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'B'), name: 'foo' })
+        SourceExpressionVariable({
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+          name: 'foo',
+        })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     ['__DUMMY__.sam:0:0-0:0: [UnresolvedName]: Name `b` is not resolved.'],
   ],
   [
@@ -415,10 +444,13 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'C'), name: 'foo' })
+        SourceExpressionVariable({
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'C'),
+          name: 'foo',
+        })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     [
       "__DUMMY__.sam:0:0-0:0: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
     ],
@@ -447,10 +479,10 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: tupleType([]), name: 'foo' })
+        SourceExpressionVariable({ type: SourceTupleType([]), name: 'foo' })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     ['__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `[]`.'],
   ],
   [
@@ -477,10 +509,13 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'A'), name: 'foo' })
+        SourceExpressionVariable({
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+          name: 'foo',
+        })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     ['__DUMMY__.sam:0:0-0:0: [UnresolvedName]: Name `d` is not resolved.'],
   ],
   [
@@ -507,10 +542,13 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'A'), name: 'foo' })
+        SourceExpressionVariable({
+          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+          name: 'foo',
+        })
       ),
     ]),
-    unitType,
+    SourceUnitType,
     ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
   ],
 
@@ -519,16 +557,16 @@ const failingTypeCheckerTestCases: readonly (readonly [
     BLOCK([
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-        intType,
+        SourceIntType,
         SourceExpressionInt(1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-        boolType,
+        SourceBoolType,
         SourceExpressionTrue()
       ),
     ]),
-    unitType,
+    SourceUnitType,
     ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
   ],
   [
@@ -537,13 +575,13 @@ const failingTypeCheckerTestCases: readonly (readonly [
       [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-          intType,
+          SourceIntType,
           SourceExpressionInt(1)
         ),
       ],
-      SourceExpressionVariable({ type: boolType, name: 'a' })
+      SourceExpressionVariable({ type: SourceBoolType, name: 'a' })
     ),
-    intType,
+    SourceIntType,
     ['__DUMMY__.sam:0:0-0:0: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
   ],
 ];

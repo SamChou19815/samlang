@@ -1,9 +1,14 @@
-import { functionType, identifierType, tupleType, Type } from '../ast/common-nodes';
+import {
+  SamlangType,
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceTupleType,
+} from '../ast/samlang-nodes';
 
 export default function replaceTypeIdentifier(
-  type: Type,
-  replacementMap: Readonly<Record<string, Type>>
-): Type {
+  type: SamlangType,
+  replacementMap: Readonly<Record<string, SamlangType>>
+): SamlangType {
   switch (type.type) {
     case 'PrimitiveType':
       return type;
@@ -11,15 +16,15 @@ export default function replaceTypeIdentifier(
       if (type.typeArguments.length === 0) {
         return replacementMap[type.identifier] ?? type;
       }
-      return identifierType(
+      return SourceIdentifierType(
         type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => replaceTypeIdentifier(it, replacementMap))
       );
     case 'TupleType':
-      return tupleType(type.mappings.map((it) => replaceTypeIdentifier(it, replacementMap)));
+      return SourceTupleType(type.mappings.map((it) => replaceTypeIdentifier(it, replacementMap)));
     case 'FunctionType':
-      return functionType(
+      return SourceFunctionType(
         type.argumentTypes.map((it) => replaceTypeIdentifier(it, replacementMap)),
         replaceTypeIdentifier(type.returnType, replacementMap)
       );

@@ -1,16 +1,4 @@
-import {
-  boolType,
-  functionType,
-  intType,
-  ModuleReference,
-  Range,
-  stringType,
-  tupleType,
-  Type,
-  TypedComment,
-  UndecidedTypes,
-  unitType,
-} from '../ast/common-nodes';
+import { ModuleReference, Range, TypedComment } from '../ast/common-nodes';
 import {
   AND,
   BinaryOperator,
@@ -32,7 +20,9 @@ import {
   Pattern,
   SamlangExpression,
   SamlangModule,
+  SamlangType,
   SamlangValStatement,
+  SourceBoolType,
   SourceClassDefinition,
   SourceClassMemberDefinition,
   SourceExpressionBinary,
@@ -51,10 +41,16 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
+  SourceFunctionType,
   SourceId,
   SourceIdentifier,
+  SourceIntType,
   SourceModuleMembersImport,
+  SourceStringType,
+  SourceTupleType,
+  SourceUnitType,
   TypeDefinition,
+  UndecidedTypes,
   VariantPatternToExpression,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
@@ -428,7 +424,7 @@ export default class SamlangModuleParser extends BaseParser {
       nameRange,
       name,
       typeParameters,
-      type: functionType(
+      type: SourceFunctionType(
         parameters.map((it) => it.type),
         returnType
       ),
@@ -496,9 +492,9 @@ export default class SamlangModuleParser extends BaseParser {
     return collector;
   };
 
-  private parseTypeArguments = (): readonly Type[] => {
+  private parseTypeArguments = (): readonly SamlangType[] => {
     this.assertAndConsume('<');
-    const collector: Type[] = [];
+    const collector: SamlangType[] = [];
     collector.push(this.parseType());
     while (this.peek().content === ',') {
       this.consume();
@@ -534,7 +530,7 @@ export default class SamlangModuleParser extends BaseParser {
   private parsePatternToExpression = (): VariantPatternToExpression => {
     const startRange = this.assertAndConsume('|');
     const tag = this.parseUpperId();
-    let dataVariable: readonly [SourceIdentifier, Type] | undefined;
+    let dataVariable: readonly [SourceIdentifier, SamlangType] | undefined;
     if (this.peek().content === '_') {
       this.consume();
     } else {
@@ -579,7 +575,7 @@ export default class SamlangModuleParser extends BaseParser {
       const e2 = this.parseConjunction();
       e = SourceExpressionBinary({
         range: e.range.union(e2.range),
-        type: boolType,
+        type: SourceBoolType,
         associatedComments: [],
         operatorPrecedingComments,
         operator: OR,
@@ -598,7 +594,7 @@ export default class SamlangModuleParser extends BaseParser {
       const e2 = this.parseComparison();
       e = SourceExpressionBinary({
         range: e.range.union(e2.range),
-        type: boolType,
+        type: SourceBoolType,
         associatedComments: [],
         operatorPrecedingComments,
         operator: AND,
@@ -649,7 +645,7 @@ export default class SamlangModuleParser extends BaseParser {
       const e2 = this.parseTerm();
       e = SourceExpressionBinary({
         range: e.range.union(e2.range),
-        type: boolType,
+        type: SourceBoolType,
         associatedComments: [],
         operatorPrecedingComments,
         operator,
@@ -679,7 +675,7 @@ export default class SamlangModuleParser extends BaseParser {
       const e2 = this.parseFactor();
       e = SourceExpressionBinary({
         range: e.range.union(e2.range),
-        type: intType,
+        type: SourceIntType,
         associatedComments: [],
         operatorPrecedingComments,
         operator,
@@ -712,7 +708,7 @@ export default class SamlangModuleParser extends BaseParser {
       const e2 = this.parseConcat();
       e = SourceExpressionBinary({
         range: e.range.union(e2.range),
-        type: intType,
+        type: SourceIntType,
         associatedComments: [],
         operatorPrecedingComments,
         operator,
@@ -731,7 +727,7 @@ export default class SamlangModuleParser extends BaseParser {
       const e2 = this.parseUnaryExpression();
       e = SourceExpressionBinary({
         range: e.range.union(e2.range),
-        type: stringType,
+        type: SourceStringType,
         operator: CONCAT,
         associatedComments: [],
         operatorPrecedingComments,
@@ -751,7 +747,7 @@ export default class SamlangModuleParser extends BaseParser {
       const expression = this.parseFunctionCallOrFieldAccess();
       return SourceExpressionUnary({
         range: peeked.range.union(expression.range),
-        type: boolType,
+        type: SourceBoolType,
         associatedComments,
         operator: '!',
         expression,
@@ -762,7 +758,7 @@ export default class SamlangModuleParser extends BaseParser {
       const expression = this.parseFunctionCallOrFieldAccess();
       return SourceExpressionUnary({
         range: peeked.range.union(expression.range),
-        type: intType,
+        type: SourceIntType,
         associatedComments,
         operator: '-',
         expression,
@@ -868,7 +864,7 @@ export default class SamlangModuleParser extends BaseParser {
         if (nextPeeked.content === '.') {
           const memberPrecedingComments = this.collectPrecedingComments();
           this.consume();
-          let typeArguments: readonly Type[];
+          let typeArguments: readonly SamlangType[];
           if (this.peek().content === '<') {
             memberPrecedingComments.push(...this.collectPrecedingComments());
             typeArguments = this.parseTypeArguments();
@@ -904,7 +900,7 @@ export default class SamlangModuleParser extends BaseParser {
         const body = this.parseExpression();
         return SourceExpressionLambda({
           range: peeked.range.union(body.range),
-          type: functionType([], body.type),
+          type: SourceFunctionType([], body.type),
           associatedComments,
           parameters: [],
           captured: {},
@@ -920,21 +916,23 @@ export default class SamlangModuleParser extends BaseParser {
         const next = this.peek();
         if (next.content === ',' || next.content === ':') {
           this.unconsume();
-          const parameters = this.parseCommaSeparatedList((): readonly [SourceIdentifier, Type] => {
-            const parameter = this.parseLowerId();
-            if (this.peek().content === ':') {
-              this.consume();
-              const type = this.parseType();
-              return [parameter, type];
+          const parameters = this.parseCommaSeparatedList(
+            (): readonly [SourceIdentifier, SamlangType] => {
+              const parameter = this.parseLowerId();
+              if (this.peek().content === ':') {
+                this.consume();
+                const type = this.parseType();
+                return [parameter, type];
+              }
+              return [parameter, UndecidedTypes.next()];
             }
-            return [parameter, UndecidedTypes.next()];
-          });
+          );
           this.assertAndConsume(')');
           this.assertAndConsume('->');
           const body = this.parseExpression();
           return SourceExpressionLambda({
             range: peeked.range.union(body.range),
-            type: functionType(
+            type: SourceFunctionType(
               parameters.map((it) => it[1]),
               body.type
             ),
@@ -952,7 +950,7 @@ export default class SamlangModuleParser extends BaseParser {
             const parameterType = UndecidedTypes.next();
             return SourceExpressionLambda({
               range: peeked.range.union(body.range),
-              type: functionType([parameterType], body.type),
+              type: SourceFunctionType([parameterType], body.type),
               associatedComments,
               parameters: [
                 [
@@ -982,7 +980,7 @@ export default class SamlangModuleParser extends BaseParser {
       const endRange = this.assertAndConsume(']');
       return SourceExpressionTupleConstructor({
         range: peeked.range.union(endRange),
-        type: tupleType(UndecidedTypes.nextN(expressions.length)),
+        type: SourceTupleType(UndecidedTypes.nextN(expressions.length)),
         associatedComments,
         expressions,
       });
@@ -1000,7 +998,7 @@ export default class SamlangModuleParser extends BaseParser {
         this.consume();
         return SourceExpressionStatementBlock({
           range,
-          type: unitType,
+          type: SourceUnitType,
           associatedComments,
           block: { range, statements },
         });
@@ -1027,7 +1025,7 @@ export default class SamlangModuleParser extends BaseParser {
     const associatedComments = this.collectPrecedingComments();
     const startRange = this.assertAndConsume('val');
     const pattern = this.parsePattern();
-    let typeAnnotation: Type;
+    let typeAnnotation: SamlangType;
     if (this.peek().content === ':') {
       this.consume();
       typeAnnotation = this.parseType();
@@ -1101,7 +1099,7 @@ export default class SamlangModuleParser extends BaseParser {
     };
   };
 
-  parseType = (): Type => {
+  parseType = (): SamlangType => {
     const peeked = this.peek();
 
     if (
@@ -1116,7 +1114,7 @@ export default class SamlangModuleParser extends BaseParser {
     if (typeof peeked.content !== 'string' && peeked.content.__type__ === 'UpperId') {
       const identifier = peeked.content.content;
       this.consume();
-      let typeArguments: readonly Type[];
+      let typeArguments: readonly SamlangType[];
       if (this.peek().content === '<') {
         this.consume();
         typeArguments = this.parseCommaSeparatedList(this.parseType);
@@ -1139,7 +1137,7 @@ export default class SamlangModuleParser extends BaseParser {
     }
     if (peeked.content === '(') {
       this.consume();
-      let argumentTypes: readonly Type[];
+      let argumentTypes: readonly SamlangType[];
       if (this.peek().content === ')') {
         this.consume();
         argumentTypes = [];

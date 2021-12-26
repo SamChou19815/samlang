@@ -1,15 +1,4 @@
 import {
-  boolType,
-  FunctionType,
-  functionType,
-  intType,
-  stringType,
-  tupleType,
-  Type,
-  UndecidedTypes,
-  unitType,
-} from '../ast/common-nodes';
-import {
   BinaryExpression,
   ClassMemberExpression,
   FieldAccessExpression,
@@ -20,16 +9,25 @@ import {
   MatchExpression,
   MethodAccessExpression,
   SamlangExpression,
+  SamlangFunctionType,
+  SamlangType,
+  SourceBoolType,
   SourceExpressionFunctionCall,
   SourceExpressionLambda,
   SourceExpressionMatch,
   SourceExpressionMethodAccess,
   SourceFieldType,
+  SourceFunctionType,
   SourceIdentifier,
+  SourceIntType,
+  SourceStringType,
+  SourceTupleType,
+  SourceUnitType,
   StatementBlockExpression,
   ThisExpression,
   TupleConstructorExpression,
   UnaryExpression,
+  UndecidedTypes,
   VariableExpression,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
@@ -49,7 +47,7 @@ class ExpressionTypeChecker {
 
   constructor(
     private readonly accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-    private readonly localTypingContext: LocalStackedContext<Type>,
+    private readonly localTypingContext: LocalStackedContext<SamlangType>,
     private readonly resolution: TypeResolution,
     public readonly errorCollector: ModuleErrorCollector
   ) {
@@ -61,7 +59,10 @@ class ExpressionTypeChecker {
     );
   }
 
-  readonly typeCheck = (expression: SamlangExpression, expectedType: Type): SamlangExpression => {
+  readonly typeCheck = (
+    expression: SamlangExpression,
+    expectedType: SamlangType
+  ): SamlangExpression => {
     assert(
       expression.__type__ !== 'MethodAccessExpression',
       'Raw parsed expression does not contain this!'
@@ -100,13 +101,16 @@ class ExpressionTypeChecker {
   private readonly basicTypeCheck = (expression: SamlangExpression): SamlangExpression =>
     this.typeCheck(expression, expression.type);
 
-  private typeCheckLiteral(expression: LiteralExpression, expectedType: Type): SamlangExpression {
+  private typeCheckLiteral(
+    expression: LiteralExpression,
+    expectedType: SamlangType
+  ): SamlangExpression {
     this.constraintAwareTypeChecker.checkAndInfer(expectedType, expression.type, expression.range);
     // Literals are already well typed if it passed the previous check.
     return expression;
   }
 
-  private typeCheckThis(expression: ThisExpression, expectedType: Type): SamlangExpression {
+  private typeCheckThis(expression: ThisExpression, expectedType: SamlangType): SamlangExpression {
     const type = this.localTypingContext.getLocalValueType('this');
     if (type == null) {
       this.errorCollector.reportIllegalThisError(expression.range);
@@ -118,10 +122,13 @@ class ExpressionTypeChecker {
     };
   }
 
-  private typeCheckVariable(expression: VariableExpression, expectedType: Type): SamlangExpression {
+  private typeCheckVariable(
+    expression: VariableExpression,
+    expectedType: SamlangType
+  ): SamlangExpression {
     const locallyInferredType =
       expression.name === '_'
-        ? unitType
+        ? SourceUnitType
         : this.localTypingContext.getLocalValueType(expression.name);
     if (locallyInferredType == null) {
       this.errorCollector.reportUnresolvedNameError(expression.range, expression.name);
@@ -137,7 +144,7 @@ class ExpressionTypeChecker {
 
   private typeCheckClassMember(
     expression: ClassMemberExpression,
-    expectedType: Type
+    expectedType: SamlangType
   ): SamlangExpression {
     const classFunctionTypeInformation = this.accessibleGlobalTypingContext.getClassFunctionType(
       expression.moduleReference,
@@ -185,10 +192,10 @@ class ExpressionTypeChecker {
 
   private typeCheckTupleConstructor(
     expression: TupleConstructorExpression,
-    expectedType: Type
+    expectedType: SamlangType
   ): SamlangExpression {
     const checkedExpressions = expression.expressions.map(this.basicTypeCheck);
-    const locallyInferredType = tupleType(checkedExpressions.map((it) => it.type));
+    const locallyInferredType = SourceTupleType(checkedExpressions.map((it) => it.type));
     const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
       expectedType,
       locallyInferredType,
@@ -207,7 +214,7 @@ class ExpressionTypeChecker {
 
   private tryTypeCheckMethodAccess(
     expression: MethodAccessExpression
-  ): Readonly<{ checkedExpression: SamlangExpression; methodType: FunctionType }> | null {
+  ): Readonly<{ checkedExpression: SamlangExpression; methodType: SamlangFunctionType }> | null {
     const checkedExpression = this.basicTypeCheck(expression.expression);
     const checkedExpressionType = checkedExpression.type;
     if (checkedExpressionType.type !== 'IdentifierType') return null;
@@ -228,7 +235,7 @@ class ExpressionTypeChecker {
 
   private typeCheckFieldAccess(
     expression: FieldAccessExpression,
-    expectedType: Type
+    expectedType: SamlangType
   ): SamlangExpression {
     const tryTypeCheckMethodAccessResult = this.tryTypeCheckMethodAccess(
       SourceExpressionMethodAccess({
@@ -323,7 +330,10 @@ class ExpressionTypeChecker {
     };
   }
 
-  private typeCheckUnary(expression: UnaryExpression, expectedType: Type): SamlangExpression {
+  private typeCheckUnary(
+    expression: UnaryExpression,
+    expectedType: SamlangType
+  ): SamlangExpression {
     // Type of unary expression can be decided at parse time.
     this.constraintAwareTypeChecker.checkAndInfer(expectedType, expression.type, expression.range);
     const checkedSubExpression = this.typeCheck(expression.expression, expression.type);
@@ -332,9 +342,9 @@ class ExpressionTypeChecker {
 
   private typeCheckFunctionCall(
     expression: FunctionCallExpression,
-    expectedType: Type
+    expectedType: SamlangType
   ): SamlangExpression {
-    const expectedTypeForFunction = functionType(
+    const expectedTypeForFunction = SourceFunctionType(
       UndecidedTypes.nextN(expression.functionArguments.length),
       expectedType
     );
@@ -373,7 +383,10 @@ class ExpressionTypeChecker {
     });
   }
 
-  private typeCheckBinary(expression: BinaryExpression, expectedType: Type): SamlangExpression {
+  private typeCheckBinary(
+    expression: BinaryExpression,
+    expectedType: SamlangType
+  ): SamlangExpression {
     let checkedExpression: SamlangExpression;
     switch (expression.operator.symbol) {
       case '*':
@@ -387,23 +400,23 @@ class ExpressionTypeChecker {
       case '>=':
         checkedExpression = {
           ...expression,
-          e1: this.typeCheck(expression.e1, intType),
-          e2: this.typeCheck(expression.e2, intType),
+          e1: this.typeCheck(expression.e1, SourceIntType),
+          e2: this.typeCheck(expression.e2, SourceIntType),
         };
         break;
       case '&&':
       case '||':
         checkedExpression = {
           ...expression,
-          e1: this.typeCheck(expression.e1, boolType),
-          e2: this.typeCheck(expression.e2, boolType),
+          e1: this.typeCheck(expression.e1, SourceBoolType),
+          e2: this.typeCheck(expression.e2, SourceBoolType),
         };
         break;
       case '::':
         checkedExpression = {
           ...expression,
-          e1: this.typeCheck(expression.e1, stringType),
-          e2: this.typeCheck(expression.e2, stringType),
+          e1: this.typeCheck(expression.e1, SourceStringType),
+          e2: this.typeCheck(expression.e2, SourceStringType),
         };
         break;
       case '==':
@@ -422,8 +435,11 @@ class ExpressionTypeChecker {
     return checkedExpression;
   }
 
-  private typeCheckIfElse(expression: IfElseExpression, expectedType: Type): SamlangExpression {
-    const boolExpression = this.typeCheck(expression.boolExpression, boolType);
+  private typeCheckIfElse(
+    expression: IfElseExpression,
+    expectedType: SamlangType
+  ): SamlangExpression {
+    const boolExpression = this.typeCheck(expression.boolExpression, SourceBoolType);
     const e1 = this.typeCheck(expression.e1, expectedType);
     const e2 = this.typeCheck(expression.e2, expectedType);
     const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
@@ -435,7 +451,10 @@ class ExpressionTypeChecker {
     return { ...expression, type: constraintInferredType, boolExpression, e1, e2 };
   }
 
-  private typeCheckMatch(expression: MatchExpression, expectedType: Type): SamlangExpression {
+  private typeCheckMatch(
+    expression: MatchExpression,
+    expectedType: SamlangType
+  ): SamlangExpression {
     const checkedMatchedExpression = this.basicTypeCheck(expression.matchedExpression);
     const checkedMatchedExpressionType = checkedMatchedExpression.type;
     if (checkedMatchedExpressionType.type === 'UndecidedType') {
@@ -489,7 +508,8 @@ class ExpressionTypeChecker {
         }
         delete unusedMappings[tag];
         let checkedExpression: SamlangExpression;
-        let checkedDatadataVariable: readonly [SourceIdentifier, Type] | undefined = undefined;
+        let checkedDatadataVariable: readonly [SourceIdentifier, SamlangType] | undefined =
+          undefined;
         if (dataVariable == null) {
           checkedExpression = this.localTypingContext.withNestedScope(() =>
             this.typeCheck(correspondingExpression, expectedType)
@@ -543,7 +563,10 @@ class ExpressionTypeChecker {
     });
   }
 
-  private typeCheckLambda(expression: LambdaExpression, expectedType: Type): SamlangExpression {
+  private typeCheckLambda(
+    expression: LambdaExpression,
+    expectedType: SamlangType
+  ): SamlangExpression {
     const [checkedBody, captured] = this.localTypingContext.withNestedScopeReturnCaptured(() => {
       // Validate parameters and add them to local context.
       this.constraintAwareTypeChecker.checkAndInfer(
@@ -564,7 +587,7 @@ class ExpressionTypeChecker {
       });
       return this.typeCheck(expression.body, expression.type.returnType);
     });
-    const locallyInferredType = functionType(expression.type.argumentTypes, checkedBody.type);
+    const locallyInferredType = SourceFunctionType(expression.type.argumentTypes, checkedBody.type);
     const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
       expectedType,
       locallyInferredType,
@@ -586,7 +609,7 @@ class ExpressionTypeChecker {
 
   private typeCheckStatementBlock(
     expression: StatementBlockExpression,
-    expectedType: Type
+    expectedType: SamlangType
   ): SamlangExpression {
     const checkedStatementBlock = this.statementTypeChecker.typeCheck(
       expression.block,
@@ -595,7 +618,7 @@ class ExpressionTypeChecker {
     );
     return {
       ...expression,
-      type: checkedStatementBlock.expression?.type ?? unitType,
+      type: checkedStatementBlock.expression?.type ?? SourceUnitType,
       block: checkedStatementBlock,
     };
   }
@@ -605,9 +628,9 @@ export default function typeCheckExpression(
   expression: SamlangExpression,
   errorCollector: ModuleErrorCollector,
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-  localTypingContext: LocalStackedContext<Type>,
+  localTypingContext: LocalStackedContext<SamlangType>,
   resolution: TypeResolution,
-  expectedType: Type
+  expectedType: SamlangType
 ): SamlangExpression {
   const checker = new ExpressionTypeChecker(
     accessibleGlobalTypingContext,

@@ -1,10 +1,12 @@
-import { isTheSameType, Range, Type, UndecidedType } from '../ast/common-nodes';
+import type { Range } from '../ast/common-nodes';
+import { isTheSameType, SamlangType, SamlangUndecidedType } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
 import type TypeResolution from './type-resolution';
 
-function meet(t1: Type, t2: Type, resolution: TypeResolution): Type {
-  const meetWithResolution = (type1: Type, type2: Type): Type => meet(type1, type2, resolution);
+function meet(t1: SamlangType, t2: SamlangType, resolution: TypeResolution): SamlangType {
+  const meetWithResolution = (type1: SamlangType, type2: SamlangType): SamlangType =>
+    meet(type1, type2, resolution);
 
   switch (t1.type) {
     case 'PrimitiveType':
@@ -82,19 +84,21 @@ function meet(t1: Type, t2: Type, resolution: TypeResolution): Type {
 }
 
 function meetWithUndecidedType(
-  type: Type,
-  undecidedType: UndecidedType,
+  type: SamlangType,
+  undecidedType: SamlangUndecidedType,
   resolution: TypeResolution
-): Type {
+): SamlangType {
   const resolvedType = resolution.addTypeResolution(undecidedType.index, type);
   return resolvedType === type ? type : meet(type, resolvedType, resolution);
 }
 
 export function checkAndInfer(
-  expectedType: Type,
-  actualType: Type,
+  expectedType: SamlangType,
+  actualType: SamlangType,
   resolution: TypeResolution
-): Type | { readonly type: 'FAILED_MEET'; readonly expected: Type; readonly actual: Type } {
+):
+  | SamlangType
+  | { readonly type: 'FAILED_MEET'; readonly expected: SamlangType; readonly actual: SamlangType } {
   const partiallyResolvedActualType = resolution.resolveType(actualType);
   const partiallyResolvedExpectedType = resolution.resolveType(expectedType);
   try {
@@ -114,7 +118,11 @@ export class ConstraintAwareChecker {
     private readonly errorCollector: ModuleErrorCollector
   ) {}
 
-  readonly checkAndInfer = (expectedType: Type, actualType: Type, errorRange: Range): Type => {
+  readonly checkAndInfer = (
+    expectedType: SamlangType,
+    actualType: SamlangType,
+    errorRange: Range
+  ): SamlangType => {
     const result = checkAndInfer(expectedType, actualType, this.resolution);
     if (result.type === 'FAILED_MEET') {
       this.errorCollector.reportUnexpectedTypeError(errorRange, result.expected, result.actual);

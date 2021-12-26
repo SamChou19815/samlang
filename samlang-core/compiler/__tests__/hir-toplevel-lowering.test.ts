@@ -1,17 +1,9 @@
-import {
-  boolType,
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  Range,
-  tupleType,
-  unitType,
-} from '../../ast/common-nodes';
+import { ModuleReference, Range } from '../../ast/common-nodes';
 import { EQ, MINUS, MUL } from '../../ast/common-operators';
 import { debugPrintHighIRSources } from '../../ast/hir-nodes';
 import {
   SamlangModule,
+  SourceBoolType,
   SourceExpressionBinary,
   SourceExpressionClassMember,
   SourceExpressionFunctionCall,
@@ -19,14 +11,19 @@ import {
   SourceExpressionInt,
   SourceExpressionThis,
   SourceExpressionVariable,
+  SourceFunctionType,
   SourceId,
+  SourceIdentifierType,
+  SourceIntType,
+  SourceTupleType,
+  SourceUnitType,
 } from '../../ast/samlang-nodes';
 import { mapOf } from '../../utils';
 import compileSamlangSourcesToHighIRSources, {
   compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,
 } from '../hir-toplevel-lowering';
 
-const THIS = SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Dummy') });
+const THIS = SourceExpressionThis({ type: SourceIdentifierType(ModuleReference.DUMMY, 'Dummy') });
 
 describe('mir-toplevel-lowering', () => {
   it('compileSamlangSourcesToHighIRSourcesWithGenericsPreserved integration test', () => {
@@ -50,11 +47,11 @@ describe('mir-toplevel-lowering', () => {
               name: 'main',
               typeParameters: [],
               parameters: [],
-              type: functionType([], unitType),
+              type: SourceFunctionType([], SourceUnitType),
               body: SourceExpressionFunctionCall({
-                type: unitType,
+                type: SourceUnitType,
                 functionExpression: SourceExpressionClassMember({
-                  type: functionType([], intType),
+                  type: SourceFunctionType([], SourceIntType),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
                   className: SourceId('Class1'),
@@ -75,7 +72,7 @@ describe('mir-toplevel-lowering', () => {
             range: Range.DUMMY,
             type: 'object',
             names: ['a'],
-            mappings: { a: { isPublic: true, type: intType } },
+            mappings: { a: { isPublic: true, type: SourceIntType } },
           },
           members: [
             {
@@ -87,9 +84,9 @@ describe('mir-toplevel-lowering', () => {
               name: 'foo',
               typeParameters: [],
               parameters: [
-                { name: 'a', nameRange: Range.DUMMY, type: intType, typeRange: Range.DUMMY },
+                { name: 'a', nameRange: Range.DUMMY, type: SourceIntType, typeRange: Range.DUMMY },
               ],
-              type: functionType([intType], intType),
+              type: SourceFunctionType([SourceIntType], SourceIntType),
               body: THIS,
             },
             {
@@ -101,11 +98,11 @@ describe('mir-toplevel-lowering', () => {
               name: 'infiniteLoop',
               typeParameters: [],
               parameters: [],
-              type: functionType([], unitType),
+              type: SourceFunctionType([], SourceUnitType),
               body: SourceExpressionFunctionCall({
-                type: unitType,
+                type: SourceUnitType,
                 functionExpression: SourceExpressionClassMember({
-                  type: functionType([], intType),
+                  type: SourceFunctionType([], SourceIntType),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
                   className: SourceId('Class1'),
@@ -123,24 +120,29 @@ describe('mir-toplevel-lowering', () => {
               name: 'factorial',
               typeParameters: [],
               parameters: [
-                { name: 'n', nameRange: Range.DUMMY, type: intType, typeRange: Range.DUMMY },
-                { name: 'acc', nameRange: Range.DUMMY, type: intType, typeRange: Range.DUMMY },
+                { name: 'n', nameRange: Range.DUMMY, type: SourceIntType, typeRange: Range.DUMMY },
+                {
+                  name: 'acc',
+                  nameRange: Range.DUMMY,
+                  type: SourceIntType,
+                  typeRange: Range.DUMMY,
+                },
               ],
-              type: functionType([intType, intType], intType),
+              type: SourceFunctionType([SourceIntType, SourceIntType], SourceIntType),
               body: SourceExpressionIfElse({
-                type: intType,
+                type: SourceIntType,
                 boolExpression: SourceExpressionBinary({
-                  type: boolType,
+                  type: SourceBoolType,
                   operatorPrecedingComments: [],
                   operator: EQ,
-                  e1: SourceExpressionVariable({ type: intType, name: 'n' }),
+                  e1: SourceExpressionVariable({ type: SourceIntType, name: 'n' }),
                   e2: SourceExpressionInt(0),
                 }),
                 e1: SourceExpressionInt(1),
                 e2: SourceExpressionFunctionCall({
-                  type: intType,
+                  type: SourceIntType,
                   functionExpression: SourceExpressionClassMember({
-                    type: functionType([intType, intType], intType),
+                    type: SourceFunctionType([SourceIntType, SourceIntType], SourceIntType),
                     typeArguments: [],
                     moduleReference: ModuleReference.DUMMY,
                     className: SourceId('Class1'),
@@ -148,18 +150,18 @@ describe('mir-toplevel-lowering', () => {
                   }),
                   functionArguments: [
                     SourceExpressionBinary({
-                      type: intType,
+                      type: SourceIntType,
                       operatorPrecedingComments: [],
                       operator: MINUS,
-                      e1: SourceExpressionVariable({ type: intType, name: 'n' }),
+                      e1: SourceExpressionVariable({ type: SourceIntType, name: 'n' }),
                       e2: SourceExpressionInt(1),
                     }),
                     SourceExpressionBinary({
-                      type: intType,
+                      type: SourceIntType,
                       operatorPrecedingComments: [],
                       operator: MUL,
-                      e1: SourceExpressionVariable({ type: intType, name: 'n' }),
-                      e2: SourceExpressionVariable({ type: intType, name: 'acc' }),
+                      e1: SourceExpressionVariable({ type: SourceIntType, name: 'n' }),
+                      e2: SourceExpressionVariable({ type: SourceIntType, name: 'acc' }),
                     }),
                   ],
                 }),
@@ -189,14 +191,14 @@ describe('mir-toplevel-lowering', () => {
             mappings: {
               a: {
                 isPublic: true,
-                type: functionType(
+                type: SourceFunctionType(
                   [
-                    tupleType([
-                      identifierType(ModuleReference.DUMMY, 'A', [intType]),
-                      identifierType(ModuleReference.DUMMY, 'T'),
+                    SourceTupleType([
+                      SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceIntType]),
+                      SourceIdentifierType(ModuleReference.DUMMY, 'T'),
                     ]),
                   ],
-                  intType
+                  SourceIntType
                 ),
               },
             },

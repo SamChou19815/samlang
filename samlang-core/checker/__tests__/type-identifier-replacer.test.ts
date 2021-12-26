@@ -1,50 +1,50 @@
+import { ModuleReference } from '../../ast/common-nodes';
 import {
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  tupleType,
-} from '../../ast/common-nodes';
+  SourceFunctionType,
+  SourceIdentifierType,
+  SourceIntType,
+  SourceTupleType,
+} from '../../ast/samlang-nodes';
 import replaceTypeIdentifier from '../type-identifier-replacer';
 
 describe('type-identifier-replacer', () => {
   it('can replace deeply nested identifiers', () => {
     expect(
       replaceTypeIdentifier(
-        functionType(
+        SourceFunctionType(
           [
-            identifierType(ModuleReference.DUMMY, 'A', [
-              identifierType(ModuleReference.DUMMY, 'B'),
-              identifierType(ModuleReference.DUMMY, 'C', [intType]),
+            SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+              SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+              SourceIdentifierType(ModuleReference.DUMMY, 'C', [SourceIntType]),
             ]),
-            tupleType([
-              identifierType(ModuleReference.DUMMY, 'D'),
-              identifierType(ModuleReference.DUMMY, 'E', [
-                identifierType(ModuleReference.DUMMY, 'F'),
+            SourceTupleType([
+              SourceIdentifierType(ModuleReference.DUMMY, 'D'),
+              SourceIdentifierType(ModuleReference.DUMMY, 'E', [
+                SourceIdentifierType(ModuleReference.DUMMY, 'F'),
               ]),
             ]),
             { type: 'UndecidedType', index: 0 },
           ],
-          intType
+          SourceIntType
         ),
-        { A: intType, B: intType, C: intType, D: intType, E: intType }
+        { A: SourceIntType, B: SourceIntType, C: SourceIntType, D: SourceIntType, E: SourceIntType }
       )
     ).toEqual(
-      functionType(
+      SourceFunctionType(
         [
-          identifierType(ModuleReference.DUMMY, 'A', [
-            intType,
-            identifierType(ModuleReference.DUMMY, 'C', [intType]),
+          SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+            SourceIntType,
+            SourceIdentifierType(ModuleReference.DUMMY, 'C', [SourceIntType]),
           ]),
-          tupleType([
-            intType,
-            identifierType(ModuleReference.DUMMY, 'E', [
-              identifierType(ModuleReference.DUMMY, 'F'),
+          SourceTupleType([
+            SourceIntType,
+            SourceIdentifierType(ModuleReference.DUMMY, 'E', [
+              SourceIdentifierType(ModuleReference.DUMMY, 'F'),
             ]),
           ]),
           { type: 'UndecidedType', index: 0 },
         ],
-        intType
+        SourceIntType
       )
     );
   });

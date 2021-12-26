@@ -1,10 +1,5 @@
-import {
-  functionType,
-  identifierType,
-  intType,
-  ModuleReference,
-  Range,
-} from '../../ast/common-nodes';
+import { ModuleReference, Range } from '../../ast/common-nodes';
+import { SourceFunctionType, SourceIdentifierType, SourceIntType } from '../../ast/samlang-nodes';
 import { hashMapOf } from '../../utils';
 import { AccessibleGlobalTypingContext } from '../typing-context';
 
@@ -22,38 +17,38 @@ describe('typing-context', () => {
               type: 'variant',
               names: ['a', 'b'],
               mappings: {
-                a: { isPublic: true, type: identifierType(ModuleReference.DUMMY, 'A') },
-                b: { isPublic: false, type: identifierType(ModuleReference.DUMMY, 'B') },
+                a: { isPublic: true, type: SourceIdentifierType(ModuleReference.DUMMY, 'A') },
+                b: { isPublic: false, type: SourceIdentifierType(ModuleReference.DUMMY, 'B') },
               },
             },
             functions: {
               f1: {
                 isPublic: true,
                 typeParameters: ['C'],
-                type: functionType([], intType),
+                type: SourceFunctionType([], SourceIntType),
               },
               f2: {
                 isPublic: false,
                 typeParameters: ['C'],
-                type: functionType([], intType),
+                type: SourceFunctionType([], SourceIntType),
               },
             },
             methods: {
               m1: {
                 isPublic: true,
                 typeParameters: ['C'],
-                type: functionType(
+                type: SourceFunctionType(
                   [
-                    identifierType(ModuleReference.DUMMY, 'A'),
-                    identifierType(ModuleReference.DUMMY, 'B'),
+                    SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+                    SourceIdentifierType(ModuleReference.DUMMY, 'B'),
                   ],
-                  intType
+                  SourceIntType
                 ),
               },
               m2: {
                 isPublic: false,
                 typeParameters: ['C'],
-                type: functionType([], intType),
+                type: SourceFunctionType([], SourceIntType),
               },
             },
           },
@@ -69,24 +64,24 @@ describe('typing-context', () => {
               f1: {
                 isPublic: true,
                 typeParameters: ['C'],
-                type: functionType([], intType),
+                type: SourceFunctionType([], SourceIntType),
               },
               f2: {
                 isPublic: false,
                 typeParameters: ['C'],
-                type: functionType([], intType),
+                type: SourceFunctionType([], SourceIntType),
               },
             },
             methods: {
               m1: {
                 isPublic: true,
                 typeParameters: ['C'],
-                type: functionType([], intType),
+                type: SourceFunctionType([], SourceIntType),
               },
               m2: {
                 isPublic: false,
                 typeParameters: ['C'],
-                type: functionType([], intType),
+                type: SourceFunctionType([], SourceIntType),
               },
             },
           },
@@ -122,14 +117,15 @@ describe('typing-context', () => {
     expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'f3', []).type).toBe(
       'UnresolvedName'
     );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm1', [intType]).type).toBe(
+    expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm1', [SourceIntType]).type).toBe(
       'TypeParameterSizeMismatch'
     );
     expect(
-      context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm1', [intType, intType])
-    ).toEqual(functionType([intType, intType], intType));
+      context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm1', [SourceIntType, SourceIntType])
+    ).toEqual(SourceFunctionType([SourceIntType, SourceIntType], SourceIntType));
     expect(
-      context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm2', [intType, intType]).type
+      context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm2', [SourceIntType, SourceIntType])
+        .type
     ).toBe('FunctionType');
     expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm3', []).type).toBe(
       'UnresolvedName'
@@ -144,7 +140,8 @@ describe('typing-context', () => {
       'UnresolvedName'
     );
     expect(
-      context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm1', [intType, intType]).type
+      context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm1', [SourceIntType, SourceIntType])
+        .type
     ).toBe('FunctionType');
     expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm2', []).type).toBe(
       'UnresolvedName'
@@ -160,13 +157,13 @@ describe('typing-context', () => {
 
     expect(
       context.resolveTypeDefinition(
-        identifierType(ModuleReference.DUMMY, 'A', [intType, intType]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceIntType, SourceIntType]),
         'object'
       ).type
     ).toBe('UnsupportedClassTypeDefinition');
     expect(
       context.resolveTypeDefinition(
-        identifierType(ModuleReference.DUMMY, 'B', [intType, intType]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'B', [SourceIntType, SourceIntType]),
         'object'
       )
     ).toEqual({
@@ -176,25 +173,28 @@ describe('typing-context', () => {
     });
     expect(
       context.resolveTypeDefinition(
-        identifierType(ModuleReference.DUMMY, 'B', [intType, intType]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'B', [SourceIntType, SourceIntType]),
         'variant'
       ).type
     ).toBe('IllegalOtherClassMatch');
     expect(
       context.resolveTypeDefinition(
-        identifierType(ModuleReference.DUMMY, 'A', [intType, intType]),
+        SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceIntType, SourceIntType]),
         'variant'
       )
     ).toEqual({
       type: 'Resolved',
       names: ['a', 'b'],
-      mappings: { a: { isPublic: true, type: intType }, b: { isPublic: false, type: intType } },
+      mappings: {
+        a: { isPublic: true, type: SourceIntType },
+        b: { isPublic: false, type: SourceIntType },
+      },
     });
 
     expect(context.thisType).toEqual(
-      identifierType(ModuleReference.DUMMY, 'A', [
-        identifierType(ModuleReference.DUMMY, 'A'),
-        identifierType(ModuleReference.DUMMY, 'B'),
+      SourceIdentifierType(ModuleReference.DUMMY, 'A', [
+        SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+        SourceIdentifierType(ModuleReference.DUMMY, 'B'),
       ])
     );
 

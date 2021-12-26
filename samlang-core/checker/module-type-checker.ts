@@ -1,6 +1,7 @@
-import type { ModuleReference, Range, Type } from '../ast/common-nodes';
+import type { ModuleReference, Range } from '../ast/common-nodes';
 import type {
   SamlangModule,
+  SamlangType,
   SourceClassMemberDefinition,
   TypeDefinition,
 } from '../ast/samlang-nodes';
@@ -107,7 +108,7 @@ export default class ModuleTypeChecker {
     memberDefinition: SourceClassMemberDefinition,
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
   ): SourceClassMemberDefinition | null {
-    const localTypingContext = new LocalStackedContext<Type>();
+    const localTypingContext = new LocalStackedContext<SamlangType>();
     const { isMethod, typeParameters, type, parameters, body } = memberDefinition;
     if (isMethod) {
       localTypingContext.addLocalValueType('this', accessibleGlobalTypingContext.thisType, error);

@@ -1,4 +1,5 @@
-import { ModuleReference, prettyPrintType, Range, Type } from './ast/common-nodes';
+import type { ModuleReference, Range } from './ast/common-nodes';
+import { prettyPrintType, SamlangType } from './ast/samlang-nodes';
 
 export abstract class CompileTimeError<T = string> {
   constructor(
@@ -21,7 +22,12 @@ export class SyntaxError extends CompileTimeError<'SyntaxError'> {
 }
 
 export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType'> {
-  constructor(moduleReference: ModuleReference, range: Range, expected: Type, actual: Type) {
+  constructor(
+    moduleReference: ModuleReference,
+    range: Range,
+    expected: SamlangType,
+    actual: SamlangType
+  ) {
     super(
       'UnexpectedType',
       moduleReference,
@@ -72,7 +78,7 @@ export class UnexpectedTypeKindError extends CompileTimeError<'UnexpectedTypeKin
     moduleReference: ModuleReference,
     range: Range,
     expectedTypeKind: string,
-    actualType: string | Type
+    actualType: string | SamlangType
   ) {
     super(
       'UnexpectedTypeKind',
@@ -194,7 +200,7 @@ export class ModuleErrorCollector {
     this.collectorDelegate.reportError(new SyntaxError(this.moduleReference, range, reason));
   }
 
-  reportUnexpectedTypeError(range: Range, expected: Type, actual: Type): void {
+  reportUnexpectedTypeError(range: Range, expected: SamlangType, actual: SamlangType): void {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
       new UnexpectedTypeError(this.moduleReference, range, expected, actual)
@@ -225,7 +231,11 @@ export class ModuleErrorCollector {
     );
   }
 
-  reportUnexpectedTypeKindError(range: Range, expected: string, actual: string | Type): void {
+  reportUnexpectedTypeKindError(
+    range: Range,
+    expected: string,
+    actual: string | SamlangType
+  ): void {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
       new UnexpectedTypeKindError(this.moduleReference, range, expected, actual)

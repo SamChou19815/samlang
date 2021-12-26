@@ -1,5 +1,4 @@
-import { prettyPrintType } from '../ast/common-nodes';
-import type { SamlangModule } from '../ast/samlang-nodes';
+import { prettyPrintType, SamlangModule } from '../ast/samlang-nodes';
 import {
   PRETTIER_CONCAT,
   PRETTIER_LINE,

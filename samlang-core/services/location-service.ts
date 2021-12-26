@@ -1,5 +1,10 @@
-import { identifierType, Location, ModuleReference, Position, Range } from '../ast/common-nodes';
-import { SamlangExpression, SamlangModule, SourceExpressionVariable } from '../ast/samlang-nodes';
+import type { Location, ModuleReference, Position, Range } from '../ast/common-nodes';
+import {
+  SamlangExpression,
+  SamlangModule,
+  SourceExpressionVariable,
+  SourceIdentifierType,
+} from '../ast/samlang-nodes';
 import { HashMap, hashMapOf } from '../utils';
 
 export interface ReadOnlyLocationLookup<E> {
@@ -67,7 +72,10 @@ export class SamlangExpressionLocationLookupBuilder {
         moduleReference,
         SourceExpressionVariable({
           range: nameRange,
-          type: identifierType(moduleReference, `class ${moduleReference.toString()}.${name}`),
+          type: SourceIdentifierType(
+            moduleReference,
+            `class ${moduleReference.toString()}.${name}`
+          ),
           name,
         })
       );
@@ -101,7 +109,7 @@ export class SamlangExpressionLocationLookupBuilder {
           moduleReference,
           SourceExpressionVariable({
             range: classNameRange,
-            type: identifierType(moduleReference, `class ${modRef.toString()}.${className}`),
+            type: SourceIdentifierType(moduleReference, `class ${modRef.toString()}.${className}`),
             name: className,
           })
         );
