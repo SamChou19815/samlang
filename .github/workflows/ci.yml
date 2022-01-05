@@ -37,7 +37,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Compile
-        run: pnpm compile -- --since=HEAD^
+        run: pnpm compile
   test:
     runs-on: ubuntu-latest
     steps:
