@@ -101,4 +101,3 @@ export function compileSingleSamlangSource(
 }
 
 export { ModuleReference, Range } from './ast/common-nodes';
-export { default as createSamlangLanguageService } from './services';

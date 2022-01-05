@@ -18,22 +18,10 @@ bin
 build
 **/dist/index.js
 **/dist/index.js.map
-workspaces.json
 bundles
 
-## Yarn
-.yarn/*
-!.yarn/releases
-!.yarn/plugins
-!.yarn/sdks
-!.yarn/versions
-**/node_modules
-**/.pnp
-**/.pnp.js
-**/.pnp.cjs
-**/.pnp.loader.mjs
-
 ## Cache
+.turbo
 .eslintcache
 tsconfig.tsbuildinfo
 

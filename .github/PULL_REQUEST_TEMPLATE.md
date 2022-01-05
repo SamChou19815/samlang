@@ -5,6 +5,6 @@ Title
 ## Test Plan
 
 ```
-yarn test
-yarn test:integration
+pnpm test
+pnpm test:integration
 ```
