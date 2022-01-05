@@ -10,33 +10,54 @@
     "lint": "eslint . --cache",
     "format": "prettier --write '**/*.{ts,js,yml}'",
     "format:check": "prettier --check '**/*.{ts,js,yml}'",
-    "bundle": "yarn workspaces foreach -ptv run bundle",
-    "c": "yarn workspaces foreach -tv run compile",
+    "bundle": "turbo run bundle",
+    "compile": "turbo run compile",
     "test": "jest --coverage",
     "test:single": "jest -t",
     "test:integration": "esr compile-repository.ts",
-    "core": "yarn workspace @dev-sam/samlang-core",
-    "cli": "yarn workspace @dev-sam/samlang-cli",
-    "vscode": "yarn workspace samlang-vscode",
-    "bump": "yarn up @types/jest @types/node prettier jest esbuild husky lint-staged eslint \"@typescript-eslint/*\""
+    "core": "pnpm --filter @dev-sam/samlang-core",
+    "cli": "pnpm --filter @dev-sam/samlang-cli",
+    "vscode": "pnpm --filter samlang-vscode",
+    "bump": "pnpm up -r @types/jest @types/node prettier jest esbuild husky lint-staged eslint \"@typescript-eslint/*\""
   },
   "devDependencies": {
     "@dev-sam/eslint-config-common": "0.23.0",
     "@dev-sam/jest-esbuild-transformer": "0.4.0",
     "@dev-sam/jest-raw-loader": "workspace:0.0.1",
     "@dev-sam/samlang-cli": "workspace:0.5.0",
-    "@types/jest": "^27.0.3",
-    "@types/node": "^17.0.5",
-    "@typescript-eslint/eslint-plugin": "^5.8.1",
-    "@typescript-eslint/parser": "^5.8.1",
-    "esbuild": "^0.14.8",
-    "eslint": "^8.5.0",
+    "@types/jest": "^27.4.0",
+    "@types/node": "^17.0.7",
+    "@typescript-eslint/eslint-plugin": "^5.9.0",
+    "@typescript-eslint/parser": "^5.9.0",
+    "esbuild": "^0.14.10",
+    "eslint": "^8.6.0",
     "husky": "^7.0.4",
     "jest": "^27.4.5",
-    "lint-staged": "^12.1.4",
+    "lint-staged": "^12.1.5",
     "prettier": "^2.5.1",
     "prettier-plugin-organize-imports": "^2.3.4",
     "typescript": "^4.5.2"
+  },
+  "turbo": {
+    "baseBranch": "origin/main",
+    "npmClient": "pnpm",
+    "globalDependencies": [
+      "configurations/*"
+    ],
+    "pipeline": {
+      "compile": {
+        "outputs": [
+          "tsconfig.tsbuildinfo"
+        ]
+      },
+      "bundle": {
+        "outputs": [
+          "dist/index.js",
+          "out/**",
+          "bin/index.js"
+        ]
+      }
+    }
   },
   "eslintConfig": {
     "extends": "@dev-sam/common"
@@ -65,8 +86,10 @@
   },
   "lint-staged": {
     "**/*.{ts,js,yml}": [
-      "yarn prettier --write"
+      "pnpm prettier --write"
     ]
   },
-  "packageManager": "yarn@3.2.0-rc.8"
+  "dependencies": {
+    "turbo": "^1.0.24"
+  }
 }

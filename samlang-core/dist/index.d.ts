@@ -1,5 +1,4 @@
 import { ModuleReference, Position, Range } from '../ast/types';
-import type { LanguageServices } from '../services/types';
 
 // PART 1: Supporting structures
 
@@ -27,7 +26,3 @@ export type SamlangSingleSourceCompilationResult =
 export function compileSingleSamlangSource(
   programString: string
 ): SamlangSingleSourceCompilationResult;
-
-export function createSamlangLanguageService(
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
-): LanguageServices;

@@ -58,12 +58,10 @@
     }
   },
   "scripts": {
-    "compile": "exit 0",
     "bundle": "node bundle.js"
   },
   "devDependencies": {
     "@types/vscode": "1.62.0",
-    "typescript": "^4.5.2",
     "vscode-languageclient": "^8.0.0-next.7"
   }
 }

@@ -13,10 +13,8 @@
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
   "dependencies": {
     "binaryen": "^102.0.0"
-  },
-  "devDependencies": {
-    "typescript": "^4.5.2"
   }
 }

@@ -40,14 +40,14 @@ function timed(runner: () => void): number {
 }
 
 console.error('Bundling...');
-const bundleTime = timed(() => runWithErrorCheck('yarn', ['bundle']));
+const bundleTime = timed(() => runWithErrorCheck('pnpm', ['bundle']));
 console.error(`Bundled in ${bundleTime}ms!`);
 console.error('Compiling...');
 runWithErrorCheck('rm', ['-rf', basePath]);
 const compileTime = timed(() => runWithErrorCheck('./samlang-dev'));
 console.error(`Compiled in ${compileTime}ms!`);
 console.error('Checking generated TS code...');
-const r1 = runWithErrorCheck('yarn', ['esr', path.join(basePath, 'tests.AllTests.ts')]);
+const r1 = runWithErrorCheck('pnpm', ['esr', path.join(basePath, 'tests.AllTests.ts')]);
 if (!compare(read('./tests/snapshot.txt'), r1.resultString)) process.exit(1);
 console.error(`Generated TS code is good and takes ${r1.time}ms to run.`);
 
