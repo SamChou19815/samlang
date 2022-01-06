@@ -9,16 +9,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: pnpm/action-setup@v2.0.1
-        with:
-          version: latest
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
+      - uses: SamChou19815/infra/actions/setup-node-project@main
       - name: Format Check
         run: pnpm format:check
       - name: Lint
@@ -26,31 +17,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: pnpm/action-setup@v2.0.1
+      - uses: SamChou19815/infra/actions/setup-node-project@main
         with:
-          version: latest
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
+          historyForDiff: true
       - name: Compile
-        run: pnpm compile
+        run: pnpm compile -- --since=${{ github.event.pull_request.base.sha }}
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: pnpm/action-setup@v2.0.1
-        with:
-          version: latest
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
+      - uses: SamChou19815/infra/actions/setup-node-project@main
       - name: Test
         run: pnpm test
       - name: Compile samlang Programs
