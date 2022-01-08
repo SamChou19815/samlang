@@ -21,7 +21,7 @@ jobs:
         with:
           historyForDiff: true
       - name: Compile
-        run: pnpm compile -- --since=${{ github.event.pull_request.base.sha }}
+        run: pnpm compile --filter "..[${{ github.event.pull_request.base.sha }}]"
   test:
     runs-on: ubuntu-latest
     steps:
