@@ -11,7 +11,7 @@
     "format": "prettier --write '**/*.{ts,js,yml}'",
     "format:check": "prettier --check '**/*.{ts,js,yml}'",
     "bundle": "turbo run bundle",
-    "compile": "turbo run compile",
+    "check": "turbo run compile",
     "test": "jest --coverage",
     "test:single": "jest -t",
     "test:integration": "esr compile-repository.ts",

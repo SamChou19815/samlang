@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node';
 
-let languageClient: LanguageClient | null = null;
+let languageClient: LanguageClient | undefined;
 
 export function activate(): void {
   const serverModule = vscode.workspace.getConfiguration().get('samlang.programPath');
