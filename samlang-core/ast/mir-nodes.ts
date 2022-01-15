@@ -426,7 +426,7 @@ export interface MidIRSources {
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
 
-function prettyPrintMidIRFunction(
+export function prettyPrintMidIRFunction(
   { name, parameters, type: functionType, body, returnValue }: MidIRFunction,
   typed: boolean
 ) {
@@ -569,9 +569,7 @@ function prettyPrintMidIRFunction(
         const expression = prettyPrintMidIRExpression(s.assignedExpression);
         statementStringCollector.push(
           '  '.repeat(level),
-          typed
-            ? `let ${s.name} = ${expression} as ${type};\n`
-            : `let ${s.name} = /** @type {${type}} */ (${expression});\n`
+          typed ? `let ${s.name} = ${expression} as ${type};\n` : `let ${s.name} = ${expression};\n`
         );
         break;
       }
@@ -625,7 +623,7 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
 export function prettyPrintMidIRSourcesAsJSSources(sources: MidIRSources): string {
   const collector: string[] = [];
   sources.globalVariables.forEach(({ name, content }) =>
-    collector.push(`/** @type {Str} */ const ${name} = [0, "${escapeDoubleQuotes(content)}"];\n`)
+    collector.push(`const ${name} = [0, "${escapeDoubleQuotes(content)}"];\n`)
   );
   sources.typeDefinitions.forEach(({ identifier, mappings }) =>
     collector.push(
