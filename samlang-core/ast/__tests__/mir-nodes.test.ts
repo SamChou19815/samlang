@@ -166,15 +166,15 @@ describe('mir-nodes', () => {
           },
         ],
       })
-    ).toBe(`/** @type {Str} */ const dev_meggo = [0, "vibez"];
+    ).toBe(`const dev_meggo = [0, "vibez"];
 function Bar(f) {
   let bar;
   if (0) {
-    let foo = /** @type {Bar} */ (dev);
+    let foo = dev;
     let n = _tail_rec_param_n;
     let acc = _tail_rec_param_acc;
     while (true) {
-      let foo = /** @type {Bar} */ (dev);
+      let foo = dev;
       break;
       n = _t0_n;
       acc = _t1_acc;
@@ -183,7 +183,7 @@ function Bar(f) {
     let acc = _tail_rec_param_acc;
     let v;
     while (true) {
-      let foo = /** @type {Bar} */ (dev);
+      let foo = dev;
       v = 0;
       break;
       n = _t0_n;
