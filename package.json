@@ -24,7 +24,7 @@
     "@dev-sam/eslint-config-common": "0.23.0",
     "@dev-sam/jest-esbuild-transformer": "0.4.0",
     "@dev-sam/jest-raw-loader": "workspace:0.0.1",
-    "@dev-sam/samlang-cli": "workspace:0.5.0",
+    "@dev-sam/samlang-cli": "workspace:0.6.0",
     "@types/jest": "^27.4.0",
     "@types/node": "^17.0.12",
     "@typescript-eslint/eslint-plugin": "^5.10.1",
