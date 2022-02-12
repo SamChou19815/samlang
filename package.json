@@ -18,7 +18,7 @@
     "core": "pnpm --filter @dev-sam/samlang-core",
     "cli": "pnpm --filter @dev-sam/samlang-cli",
     "vscode": "pnpm --filter samlang-vscode",
-    "bump": "pnpm up -r @types/jest @types/node prettier jest esbuild husky lint-staged eslint \"@typescript-eslint/*\""
+    "bump": "pnpm up -r @types/jest @types/node prettier jest esbuild husky lint-staged turbo eslint \"@typescript-eslint/*\""
   },
   "devDependencies": {
     "@dev-sam/eslint-config-common": "0.23.0",
@@ -26,38 +26,18 @@
     "@dev-sam/jest-raw-loader": "workspace:0.0.1",
     "@dev-sam/samlang-cli": "workspace:0.6.0",
     "@types/jest": "^27.4.0",
-    "@types/node": "^17.0.12",
-    "@typescript-eslint/eslint-plugin": "^5.10.1",
-    "@typescript-eslint/parser": "^5.10.1",
-    "esbuild": "^0.14.14",
-    "eslint": "^8.7.0",
+    "@types/node": "^17.0.17",
+    "@typescript-eslint/eslint-plugin": "^5.11.0",
+    "@typescript-eslint/parser": "^5.11.0",
+    "esbuild": "^0.14.21",
+    "eslint": "^8.9.0",
     "husky": "^7.0.4",
-    "jest": "^27.4.7",
-    "lint-staged": "^12.3.1",
+    "jest": "^27.5.1",
+    "lint-staged": "^12.3.3",
     "prettier": "^2.5.1",
     "prettier-plugin-organize-imports": "^2.3.4",
-    "typescript": "^4.5.2"
-  },
-  "turbo": {
-    "baseBranch": "origin/main",
-    "npmClient": "pnpm",
-    "globalDependencies": [
-      "configurations/*"
-    ],
-    "pipeline": {
-      "compile": {
-        "outputs": [
-          "tsconfig.tsbuildinfo"
-        ]
-      },
-      "bundle": {
-        "outputs": [
-          "dist/index.js",
-          "out/**",
-          "bin/index.js"
-        ]
-      }
-    }
+    "turbo": "^1.1.2",
+    "typescript": "^4.5.5"
   },
   "eslintConfig": {
     "extends": "@dev-sam/common"
@@ -89,7 +69,5 @@
       "pnpm prettier --write"
     ]
   },
-  "dependencies": {
-    "turbo": "^1.0.24"
-  }
+  "packageManager": "pnpm@6.29.2"
 }

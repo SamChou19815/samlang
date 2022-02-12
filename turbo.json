@@ -1,0 +1,13 @@
+{
+  "baseBranch": "origin/main",
+  "npmClient": "pnpm",
+  "globalDependencies": ["configurations/*"],
+  "pipeline": {
+    "compile": {
+      "outputs": ["tsconfig.tsbuildinfo"]
+    },
+    "bundle": {
+      "outputs": ["dist/index.js", "out/**", "bin/index.js"]
+    }
+  }
+}
