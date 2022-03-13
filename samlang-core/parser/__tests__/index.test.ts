@@ -140,6 +140,15 @@ describe('samlang-core/parser', () => {
     // Adapted from website
     import { Foo, Bar } from Path.To
 
+    interface Foo {}
+
+    interface Bar<T> {}
+
+    interface Baz {
+      function foo(): string
+      method bar(baz: bool): int
+    }
+
     class Main {
       function main(): string = "Hello World"
     }
@@ -229,6 +238,10 @@ describe('samlang-core/parser', () => {
       function main(): int =
     }
 
+    interface {
+      function main: string =
+    }
+
     class TypeInference(val : string, val foo: ) {
       function notAnnotated(bad: ):  = {
         val _ = (a, b, c) -> if a(b + 1) then b else c;
@@ -287,12 +300,12 @@ describe('samlang-core/parser', () => {
       moduleErrorCollector
     );
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([
-      '__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes.',
-      '__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes.',
-      '__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes.',
-      '__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes.',
-      '__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes.',
-      '__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes.',
+      '__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces.',
+      '__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces.',
+      '__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes and interfaces.',
+      '__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes and interfaces.',
+      '__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes and interfaces.',
+      '__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes and interfaces.',
     ]);
   });
 

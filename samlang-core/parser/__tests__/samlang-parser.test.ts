@@ -26,6 +26,8 @@ describe('samlang-parser', () => {
       ModuleReference.DUMMY,
       new Set()
     );
+
+    parser.parseInterface();
     parser.parseClass();
     parser.parseSourceClassMemberDefinition();
     parser.parseExpression();
@@ -43,6 +45,7 @@ describe('samlang-parser', () => {
       new Set()
     );
 
+    parser.parseInterface();
     parser.parseClass();
     parser.parseSourceClassMemberDefinition();
     parser.parseExpression();
