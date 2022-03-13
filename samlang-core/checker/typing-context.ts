@@ -147,7 +147,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     }
     return {
       type: 'Resolved',
-      names,
+      names: names.map((it) => it.name),
       mappings: Object.fromEntries(
         Object.entries(nameMappings).map(([name, fieldType]) => {
           return [

@@ -318,8 +318,10 @@ export class SamlangTypeLoweringManager {
     identifier: encodeSamlangType(moduleReference, identifier),
     type,
     typeParameters: Array.from(this.genericTypes),
-    names,
-    mappings: names.map((it) => this.lowerSamlangType(checkNotNull(sourceLevelMappings[it]).type)),
+    names: names.map((it) => it.name),
+    mappings: names.map((it) =>
+      this.lowerSamlangType(checkNotNull(sourceLevelMappings[it.name]).type)
+    ),
   });
 
   lowerSamlangFunctionTypeForTopLevel(

@@ -218,7 +218,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
       checkedModule.classes.forEach((classDefinition) => {
         this._classLocationLookup.set(
           { moduleReference, range: classDefinition.range },
-          classDefinition.name
+          classDefinition.name.name
         );
         classDefinition.members.forEach((member) => {
           this._classMemberLocationLookup.set({ moduleReference, range: member.range }, member);
@@ -269,8 +269,8 @@ class LanguageServicesImpl implements LanguageServices {
       const [fetchedFunctionModuleReference, className, functionName] = functionReference;
       const relevantFunction = this.state
         .getCheckedModule(fetchedFunctionModuleReference)
-        ?.classes?.find((it) => it.name === className)
-        ?.members?.find((it) => it.name === functionName);
+        ?.classes?.find((it) => it.name.name === className)
+        ?.members?.find((it) => it.name.name === functionName);
       if (relevantFunction == null) return null;
       const typeContent = { language: 'samlang', value: prettyPrintType(expression.type) };
       const document = getLastDocComment(relevantFunction.associatedComments);
@@ -290,7 +290,7 @@ class LanguageServicesImpl implements LanguageServices {
       const document = getLastDocComment(
         this.state
           .getRawModule(expressionModuleReference)
-          ?.classes.find((it) => it.name === expressionClassName)?.associatedComments
+          ?.classes.find((it) => it.name.name === expressionClassName)?.associatedComments
       );
       const typeContent = { language: 'samlang', value: `class ${expressionClassName}` };
       return {
@@ -387,12 +387,12 @@ class LanguageServicesImpl implements LanguageServices {
     const { imports, classes } = samlangModule;
     for (let i = 0; i < classes.length; i += 1) {
       const samlangClass = checkNotNull(classes[i]);
-      if (samlangClass.name === className) {
+      if (samlangClass.name.name === className) {
         return [moduleReference, samlangClass];
       }
     }
     return filterMap(imports, ({ importedMembers, importedModule }) => {
-      if (importedMembers.some((it) => it[0] === className)) {
+      if (importedMembers.some((it) => it.name === className)) {
         return this.getClassDefinition(importedModule, className);
       }
       return undefined;
@@ -407,7 +407,7 @@ class LanguageServicesImpl implements LanguageServices {
     const nullableClassDefinition = this.getClassDefinition(moduleReference, className);
     if (nullableClassDefinition == null) return null;
     const [moduleReferenceOfClass, classDefinition] = nullableClassDefinition;
-    const matchingMember = classDefinition.members.find((it) => it.name === memberName);
+    const matchingMember = classDefinition.members.find((it) => it.name.name === memberName);
     if (matchingMember == null) return null;
     return { moduleReference: moduleReferenceOfClass, range: matchingMember.range };
   }

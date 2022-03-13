@@ -13,6 +13,7 @@ import {
 import {
   SourceBoolType,
   SourceFunctionType,
+  SourceId,
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
@@ -314,7 +315,7 @@ describe('hir-type-conversion', () => {
     ).lowerSamlangTypeDefinition(ModuleReference.ROOT, 'Foo', {
       range: Range.DUMMY,
       type: 'object',
-      names: ['a', 'b'],
+      names: [SourceId('a'), SourceId('b')],
       mappings: {
         a: {
           type: SourceFunctionType(

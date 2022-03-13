@@ -194,11 +194,11 @@ describe('samlang-core/parser', () => {
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     expect(
       parsed.imports.map((it) => ({
-        members: it.importedMembers.map(([m]) => m),
+        members: it.importedMembers.map(({ name }) => name),
         importedModule: it.importedModule.toString(),
       }))
     ).toEqual([{ importedModule: 'Path.To', members: ['Foo', 'Bar'] }]);
-    expect(parsed.classes.map((it) => it.name)).toEqual([
+    expect(parsed.classes.map((it) => it.name.name)).toEqual([
       'Main',
       'Main',
       'Util',

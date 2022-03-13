@@ -1,8 +1,9 @@
-import type { ModuleReference, Range } from '../ast/common-nodes';
+import type { ModuleReference } from '../ast/common-nodes';
 import type {
   SamlangModule,
   SamlangType,
   SourceClassMemberDefinition,
+  SourceIdentifier,
   TypeDefinition,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
@@ -22,16 +23,14 @@ export default class ModuleTypeChecker {
     samlangmodule: SamlangModule,
     globalTypingContext: ReadonlyGlobalTypingContext
   ): SamlangModule {
-    this.checkNameCollisionForCompoundList(
-      samlangmodule.classes.map(({ name, nameRange }) => [name, nameRange])
-    );
+    this.checkNameCollisionForCompoundList(samlangmodule.classes.map((it) => it.name));
 
     const checkedClasses = samlangmodule.classes.map((classDefinition) => {
-      const currentClass = classDefinition.name;
+      const currentClass = classDefinition.name.name;
       const accessibleGlobalTypingContext = new AccessibleGlobalTypingContext(
         this.moduleReference,
         globalTypingContext,
-        new Set(classDefinition.typeParameters),
+        new Set(classDefinition.typeParameters.map((it) => it.name)),
         currentClass
       );
       // First pass: validating module's top level properties, excluding whether member's types are well-defined.
@@ -61,16 +60,13 @@ export default class ModuleTypeChecker {
    * - whether `classMembers`'s types are well defined.
    */
   private checkClassTopLevelValidity(
-    classTypeParameters: readonly string[],
+    classTypeParameters: readonly SourceIdentifier[],
     typeDefinition: TypeDefinition,
     classMembers: readonly SourceClassMemberDefinition[],
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
   ): void {
-    this.checkNameCollisionForStringList(classTypeParameters, typeDefinition.range);
-    this.checkNameCollisionForStringList(
-      Object.keys(typeDefinition.mappings),
-      typeDefinition.range
-    );
+    this.checkNameCollisionForCompoundList(classTypeParameters);
+    this.checkNameCollisionForCompoundList(typeDefinition.names);
     Object.values(typeDefinition.mappings).forEach((type) => {
       validateType(
         type.type,
@@ -79,11 +75,9 @@ export default class ModuleTypeChecker {
         typeDefinition.range
       );
     });
-    this.checkNameCollisionForCompoundList(
-      classMembers.map(({ name, nameRange }) => [name, nameRange])
-    );
+    this.checkNameCollisionForCompoundList(classMembers.map((it) => it.name));
     classMembers.forEach((classMember) =>
-      this.checkNameCollisionForStringList(classMember.typeParameters, classMember.range)
+      this.checkNameCollisionForCompoundList(classMember.typeParameters)
     );
   }
 
@@ -93,8 +87,9 @@ export default class ModuleTypeChecker {
   ): void {
     classMembers.forEach((member) => {
       const typeParameters = member.typeParameters;
-      let patchedContext =
-        accessibleGlobalTypingContext.withAdditionalTypeParameters(typeParameters);
+      let patchedContext = accessibleGlobalTypingContext.withAdditionalTypeParameters(
+        typeParameters.map((it) => it.name)
+      );
       if (member.isMethod) {
         patchedContext = patchedContext.withAdditionalTypeParameters(
           patchedContext.getCurrentClassTypeDefinition().classTypeParameters
@@ -114,7 +109,9 @@ export default class ModuleTypeChecker {
       localTypingContext.addLocalValueType('this', accessibleGlobalTypingContext.thisType, error);
     }
     const contextWithAdditionalTypeParameters =
-      accessibleGlobalTypingContext.withAdditionalTypeParameters(typeParameters);
+      accessibleGlobalTypingContext.withAdditionalTypeParameters(
+        typeParameters.map((it) => it.name)
+      );
     parameters.forEach((parameter) => {
       const parameterType = parameter.type;
       validateType(
@@ -140,23 +137,10 @@ export default class ModuleTypeChecker {
     };
   }
 
-  private checkNameCollisionForStringList(names: readonly string[], range: Range): void {
-    const nameSet = new Set<string>();
-    names.forEach((name) => {
-      if (nameSet.has(name)) {
-        this.errorCollector.reportCollisionError(range, name);
-      } else {
-        nameSet.add(name);
-      }
-    });
-  }
-
-  private checkNameCollisionForCompoundList(
-    nameWithRange: readonly (readonly [string, Range])[]
-  ): void {
+  private checkNameCollisionForCompoundList(ids: readonly SourceIdentifier[]): void {
     const nameSet = new Set<string>();
     nameSet.add('init');
-    nameWithRange.forEach(([name, range]) => {
+    ids.forEach(({ name, range }) => {
       if (nameSet.has(name)) {
         this.errorCollector.reportCollisionError(range, name);
       } else {

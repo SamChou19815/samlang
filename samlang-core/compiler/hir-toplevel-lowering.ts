@@ -226,15 +226,15 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
     samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
       compiledTypeDefinitions.push(
         new SamlangTypeLoweringManager(
-          new Set(typeParameters),
+          new Set(typeParameters.map((it) => it.name)),
           typeSynthesizer
-        ).lowerSamlangTypeDefinition(moduleReference, className, typeDefinition)
+        ).lowerSamlangTypeDefinition(moduleReference, className.name, typeDefinition)
       );
       if (
-        className === 'Main' &&
+        className.name === 'Main' &&
         members.some(
           (member) =>
-            member.name === 'main' &&
+            member.name.name === 'main' &&
             member.parameters.length === 0 &&
             member.typeParameters.length === 0
         )
@@ -255,7 +255,7 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
       compiledFunctions.push(
         ...lowerSamlangConstructorsToHighIRFunctions(
           moduleReference,
-          className,
+          className.name,
           typeDefinitionMapping
         )
       );
@@ -264,11 +264,11 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
           compiledFunctions.push(
             ...compileSamlangMethodToHighIRFunctions(
               moduleReference,
-              className,
-              member.name,
+              className.name,
+              member.name.name,
               typeDefinitionMapping,
-              typeParameters,
-              member.typeParameters,
+              typeParameters.map((it) => it.name),
+              member.typeParameters.map((it) => it.name),
               member.parameters,
               member.type.returnType,
               member.body,
@@ -280,10 +280,10 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
           const { compiledFunctionsToAdd, functionWithContext } =
             compileSamlangFunctionToHighIRFunctions(
               moduleReference,
-              className,
-              member.name,
+              className.name,
+              member.name.name,
               typeDefinitionMapping,
-              member.typeParameters,
+              member.typeParameters.map((it) => it.name),
               member.parameters,
               member.type.returnType,
               member.body,

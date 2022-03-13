@@ -610,9 +610,8 @@ export interface SourceClassMemberDefinition extends Node {
   readonly associatedComments: readonly TypedComment[];
   readonly isPublic: boolean;
   readonly isMethod: boolean;
-  readonly nameRange: Range;
-  readonly name: string;
-  readonly typeParameters: readonly string[];
+  readonly name: SourceIdentifier;
+  readonly typeParameters: readonly SourceIdentifier[];
   readonly type: SamlangFunctionType;
   readonly parameters: readonly SourceAnnotatedVariable[];
   readonly body: SamlangExpression;
@@ -626,21 +625,20 @@ export interface SourceFieldType {
 export interface TypeDefinition extends Node {
   readonly type: 'object' | 'variant';
   /** A list of fields. Used for ordering during codegen. */
-  readonly names: readonly string[];
+  readonly names: readonly SourceIdentifier[];
   readonly mappings: Readonly<Record<string, SourceFieldType>>;
 }
 
 export interface SourceClassDefinition extends Node {
   readonly associatedComments: readonly TypedComment[];
-  readonly nameRange: Range;
-  readonly name: string;
-  readonly typeParameters: readonly string[];
+  readonly name: SourceIdentifier;
+  readonly typeParameters: readonly SourceIdentifier[];
   readonly typeDefinition: TypeDefinition;
   readonly members: readonly SourceClassMemberDefinition[];
 }
 
 export interface SourceModuleMembersImport extends Node {
-  readonly importedMembers: readonly (readonly [string, Range])[];
+  readonly importedMembers: readonly SourceIdentifier[];
   readonly importedModule: ModuleReference;
   readonly importedModuleRange: Range;
 }

@@ -26,24 +26,28 @@ function buildClassTypingContext(
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
-    const typeInformation = { isPublic, typeParameters: memberTypeParameters, type };
+    const typeInformation = {
+      isPublic,
+      typeParameters: memberTypeParameters.map((it) => it.name),
+      type,
+    };
     if (isMethod) {
-      methods[name] = typeInformation;
+      methods[name.name] = typeInformation;
     } else {
-      functions[name] = typeInformation;
+      functions[name.name] = typeInformation;
     }
   });
   const classType = SourceIdentifierType(
     moduleReference,
-    className,
-    typeParameters.map((it) => SourceIdentifierType(moduleReference, it, []))
+    className.name,
+    typeParameters.map((it) => SourceIdentifierType(moduleReference, it.name, []))
   );
   if (typeDefinition.type === 'object') {
     functions.init = {
       isPublic: true,
-      typeParameters,
+      typeParameters: typeParameters.map((it) => it.name),
       type: SourceFunctionType(
-        typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it]).type),
+        typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it.name]).type),
         classType
       ),
     };
@@ -51,12 +55,17 @@ function buildClassTypingContext(
     Object.entries(typeDefinition.mappings).forEach(([tag, { type }]) => {
       functions[tag] = {
         isPublic: true,
-        typeParameters,
+        typeParameters: typeParameters.map((it) => it.name),
         type: SourceFunctionType([type], classType),
       };
     });
   }
-  return { typeParameters, typeDefinition, functions, methods };
+  return {
+    typeParameters: typeParameters.map((it) => it.name),
+    typeDefinition,
+    functions,
+    methods,
+  };
 }
 
 function buildModuleTypingContext(
@@ -66,7 +75,10 @@ function buildModuleTypingContext(
   return Object.fromEntries(
     samlangModule.classes.map(
       (classDeclaration) =>
-        [classDeclaration.name, buildClassTypingContext(moduleReference, classDeclaration)] as const
+        [
+          classDeclaration.name.name,
+          buildClassTypingContext(moduleReference, classDeclaration),
+        ] as const
     )
   );
 }

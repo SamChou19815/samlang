@@ -7,7 +7,12 @@ import {
   typeCheckSourcesIncrementally,
 } from '..';
 import { ModuleReference, Range } from '../../ast/common-nodes';
-import { SourceExpressionInt, SourceFunctionType, SourceIntType } from '../../ast/samlang-nodes';
+import {
+  SourceExpressionInt,
+  SourceFunctionType,
+  SourceId,
+  SourceIntType,
+} from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
 import { hashMapOf, mapOf } from '../../utils';
@@ -28,21 +33,19 @@ describe('samlang-core/checker', () => {
           {
             range: Range.DUMMY,
             associatedComments: [],
-            name: 'aa',
-            nameRange: Range.DUMMY,
+            name: SourceId('aa'),
             typeParameters: [],
             typeDefinition: {
               type: 'object',
-              names: [''],
+              names: [SourceId('')],
               range: Range.DUMMY,
               mappings: { d: { isPublic: true, type: SourceIntType } },
             },
             members: [
               {
                 associatedComments: [],
-                name: '',
+                name: SourceId(''),
                 range: Range.DUMMY,
-                nameRange: Range.DUMMY,
                 isMethod: true,
                 isPublic: true,
                 typeParameters: [],
@@ -272,12 +275,13 @@ describe('samlang-core/checker', () => {
         .sort()
     ).toEqual([
       'A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.',
-      'B.sam:2:10-2:32: [Collision]: Name `A` collides with a previously defined name.',
+      'B.sam:2:14-2:15: [Collision]: Name `A` collides with a previously defined name.',
       'B.sam:3:35-3:41: [UnexpectedType]: Expected: `(__UNDECIDED__) -> B<int, bool>`, actual: `(int) -> B<__UNDECIDED__, __UNDECIDED__>`.',
       'C.sam:2:10-2:37: [NotWellDefinedIdentifier]: `B` is not well defined.',
+      'C.sam:2:21-2:24: [Collision]: Name `Int` collides with a previously defined name.',
       'C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      'C.sam:4:21-4:22: [Collision]: Name `T` collides with a previously defined name.',
       'C.sam:4:30-4:31: [NotWellDefinedIdentifier]: `B` is not well defined.',
-      'C.sam:4:5-4:44: [Collision]: Name `T` collides with a previously defined name.',
       'C.sam:4:5-4:44: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.',
       'C.sam:5:70-5:78: [UnresolvedName]: Name `intValue` is not resolved.',
@@ -353,7 +357,7 @@ describe('samlang-core/checker', () => {
     expect(errorCollector.getErrors()).toEqual([]);
     expect(checkedModule.imports).toEqual([]);
     expect(checkedModule.classes.length).toBe(1);
-    expect(checkedModule.classes[0]?.name).toBe('Main');
+    expect(checkedModule.classes[0]?.name.name).toBe('Main');
     expect(checkedModule.classes[0]?.members).toEqual([]);
   });
 

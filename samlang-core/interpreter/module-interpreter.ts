@@ -92,9 +92,9 @@ export default class ModuleInterpreter {
       });
       const value = this.expressionInterpreter.eval(lambda, context) as FunctionValue;
       if (member.isMethod) {
-        methods[member.name] = value;
+        methods[member.name.name] = value;
       } else {
-        functions[member.name] = value;
+        functions[member.name.name] = value;
       }
     });
     const newModule: ClassValue = {
@@ -105,7 +105,7 @@ export default class ModuleInterpreter {
       ...context,
       classes: {
         ...context.classes,
-        [classDefinition.name]: newModule,
+        [classDefinition.name.name]: newModule,
       },
     };
     // patch the functions and methods with correct context.
@@ -118,10 +118,10 @@ export default class ModuleInterpreter {
     if (classDefinition.typeDefinition.type === 'object') {
       functions.init = {
         type: 'functionValue',
-        arguments: [...classDefinition.typeDefinition.names],
+        arguments: [...classDefinition.typeDefinition.names.map((it) => it.name)],
         body: (localContext) => {
           const objectContent = new Map<string, Value>();
-          classDefinition.typeDefinition.names.forEach((name) => {
+          classDefinition.typeDefinition.names.forEach(({ name }) => {
             objectContent.set(name, checkNotNull(localContext.localValues[name]));
           });
           return { type: 'object', objectContent };
@@ -129,7 +129,7 @@ export default class ModuleInterpreter {
         context: EMPTY,
       };
     } else {
-      classDefinition.typeDefinition.names.forEach((tag) => {
+      classDefinition.typeDefinition.names.forEach(({ name: tag }) => {
         functions[tag] = {
           type: 'functionValue',
           arguments: ['data'],
