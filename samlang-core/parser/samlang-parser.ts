@@ -24,6 +24,7 @@ import {
   SamlangValStatement,
   SourceBoolType,
   SourceClassDefinition,
+  SourceClassMemberDeclaration,
   SourceClassMemberDefinition,
   SourceExpressionBinary,
   SourceExpressionClassMember,
@@ -45,6 +46,7 @@ import {
   SourceFunctionType,
   SourceId,
   SourceIdentifier,
+  SourceInterfaceDeclaration,
   SourceIntType,
   SourceModuleMembersImport,
   SourceStringType,
@@ -260,23 +262,64 @@ export default class SamlangModuleParser extends BaseParser {
     }
 
     const classes: SourceClassDefinition[] = [];
-    ParseClasses: while (this.peek().content !== 'EOF') {
+    const interfaces: SourceInterfaceDeclaration[] = [];
+    ParseClassesAndInterfaces: while (this.peek().content !== 'EOF') {
       let potentialGarbagePeeked = this.peek();
-      while (potentialGarbagePeeked.content !== 'class') {
-        if (potentialGarbagePeeked.content === 'EOF') break ParseClasses;
-        this.report(potentialGarbagePeeked.range, 'Unexpected token among the classes.');
+      while (
+        potentialGarbagePeeked.content !== 'class' &&
+        potentialGarbagePeeked.content !== 'interface'
+      ) {
+        if (potentialGarbagePeeked.content === 'EOF') break ParseClassesAndInterfaces;
+        this.report(
+          potentialGarbagePeeked.range,
+          'Unexpected token among the classes and interfaces.'
+        );
         this.consume();
         potentialGarbagePeeked = this.peek();
       }
-      classes.push(this.parseClass());
+      this.parseClassOrInterface(classes, interfaces);
     }
 
-    return { imports, classes };
+    return { imports, /* interfaces,*/ classes };
   };
 
-  parseClass = (): SourceClassDefinition => {
+  private parseClassOrInterface(
+    classes: SourceClassDefinition[],
+    interfaces: SourceInterfaceDeclaration[]
+  ) {
+    const peeked = this.peek().content;
+    this.unconsumeComments();
+    if (peeked === 'class') {
+      classes.push(this.parseClass());
+    } else {
+      interfaces.push(this.parseInterface());
+    }
+  }
+
+  parseInterface(): SourceInterfaceDeclaration {
+    const associatedComments = this.collectPrecedingComments();
+    let startRange = this.assertAndConsume('interface');
+    const name = this.parseUpperId();
+    let typeParameters: readonly SourceIdentifier[];
+    if (this.peek().content === '<') {
+      this.consume();
+      typeParameters = this.parseCommaSeparatedList(this.parseUpperId);
+      startRange = startRange.union(this.assertAndConsume('>'));
+    } else {
+      typeParameters = [];
+    }
+    this.assertAndConsume('{');
+    const members: SourceClassMemberDeclaration[] = [];
+    while (this.peek().content === 'function' || this.peek().content === 'method') {
+      members.push(this.parseSourceClassMemberDeclaration());
+    }
+    const endRange = this.assertAndConsume('}');
+    return { associatedComments, range: startRange.union(endRange), name, typeParameters, members };
+  }
+
+  parseClass(): SourceClassDefinition {
     const { startRange, ...header } = this.parseClassHeader();
-    if (this.peek().content === 'class') {
+    if (this.peekedClassedOrInterfaceStart()) {
       return { range: startRange, ...header, members: [] };
     }
     this.assertAndConsume('{');
@@ -290,16 +333,16 @@ export default class SamlangModuleParser extends BaseParser {
     }
     const endRange = this.assertAndConsume('}');
     return { range: startRange.union(endRange), ...header, members };
-  };
+  }
 
-  private parseClassHeader = (): Omit<SourceClassDefinition, 'range' | 'members'> & {
+  private parseClassHeader(): Omit<SourceClassDefinition, 'range' | 'members'> & {
     readonly startRange: Range;
-  } => {
+  } {
     const associatedComments = this.collectPrecedingComments();
     let startRange = this.assertAndConsume('class');
     const name = this.parseUpperId();
     startRange = startRange.union(name.range);
-    if (this.peek().content === '{' || this.peek().content === 'class') {
+    if (this.peek().content === '{' || this.peekedClassedOrInterfaceStart()) {
       // Util class. Now the class header has ended.
       return {
         startRange,
@@ -328,7 +371,7 @@ export default class SamlangModuleParser extends BaseParser {
     };
     startRange = startRange.union(typeDefinitionRangeEnd);
     return { startRange, associatedComments, name, typeParameters, typeDefinition };
-  };
+  }
 
   private parseTypeDefinitionInner = (): Omit<TypeDefinition, 'range'> => {
     const firstPeeked = this.peek().content;
@@ -362,13 +405,37 @@ export default class SamlangModuleParser extends BaseParser {
     }
   };
 
+  private peekedClassedOrInterfaceStart(): boolean {
+    return this.peek().content === 'class' || this.peek().content === 'interface';
+  }
+
+  parseSourceClassMemberDeclaration = (): SourceClassMemberDeclaration => {
+    const { isPublic: _, ...declaration } = this.parseSourceClassMemberDeclarationCommon(
+      /* allowPrivate */ false
+    );
+    return declaration;
+  };
+
   parseSourceClassMemberDefinition = (): SourceClassMemberDefinition => {
+    const { range, ...common } = this.parseSourceClassMemberDeclarationCommon(
+      /* allowPrivate */ true
+    );
+    this.assertAndConsume('=');
+    const body = this.parseExpression();
+    return { ...common, range: range.union(body.range), body };
+  };
+
+  private parseSourceClassMemberDeclarationCommon(
+    allowPrivate: boolean
+  ): SourceClassMemberDeclaration & {
+    isPublic: boolean;
+  } {
     const associatedComments = this.collectPrecedingComments();
     let startRange: Range;
     let isPublic = true;
     let isMethod = true;
     let peeked: SamlangToken;
-    if (this.peek().content === 'private') {
+    if (allowPrivate && this.peek().content === 'private') {
       isPublic = false;
       startRange = this.peek().range;
       this.consume();
@@ -407,10 +474,8 @@ export default class SamlangModuleParser extends BaseParser {
     this.assertAndConsume(')');
     this.assertAndConsume(':');
     const returnType = this.parseType();
-    this.assertAndConsume('=');
-    const body = this.parseExpression();
     return {
-      range: startRange.union(body.range),
+      range: startRange,
       associatedComments,
       isPublic,
       isMethod,
@@ -421,9 +486,8 @@ export default class SamlangModuleParser extends BaseParser {
         returnType
       ),
       parameters,
-      body,
     };
-  };
+  }
 
   private collectPrecedingComments = (): TypedComment[] => {
     this.unconsumeComments();

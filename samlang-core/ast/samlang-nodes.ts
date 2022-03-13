@@ -606,15 +606,25 @@ export interface SourceAnnotatedVariable {
   readonly typeRange: Range;
 }
 
-export interface SourceClassMemberDefinition extends Node {
+export interface SourceClassMemberDeclaration extends Node {
   readonly associatedComments: readonly TypedComment[];
-  readonly isPublic: boolean;
   readonly isMethod: boolean;
   readonly name: SourceIdentifier;
   readonly typeParameters: readonly SourceIdentifier[];
   readonly type: SamlangFunctionType;
   readonly parameters: readonly SourceAnnotatedVariable[];
+}
+
+export interface SourceClassMemberDefinition extends SourceClassMemberDeclaration {
+  readonly isPublic: boolean;
   readonly body: SamlangExpression;
+}
+
+export interface SourceInterfaceDeclaration extends Node {
+  readonly associatedComments: readonly TypedComment[];
+  readonly name: SourceIdentifier;
+  readonly typeParameters: readonly SourceIdentifier[];
+  readonly members: readonly SourceClassMemberDeclaration[];
 }
 
 export interface SourceFieldType {
@@ -629,10 +639,7 @@ export interface TypeDefinition extends Node {
   readonly mappings: Readonly<Record<string, SourceFieldType>>;
 }
 
-export interface SourceClassDefinition extends Node {
-  readonly associatedComments: readonly TypedComment[];
-  readonly name: SourceIdentifier;
-  readonly typeParameters: readonly SourceIdentifier[];
+export interface SourceClassDefinition extends SourceInterfaceDeclaration {
   readonly typeDefinition: TypeDefinition;
   readonly members: readonly SourceClassMemberDefinition[];
 }
@@ -645,5 +652,6 @@ export interface SourceModuleMembersImport extends Node {
 
 export interface SamlangModule {
   readonly imports: readonly SourceModuleMembersImport[];
+  // readonly interfaces: readonly SourceInterfaceDeclaration[];
   readonly classes: readonly SourceClassDefinition[];
 }
