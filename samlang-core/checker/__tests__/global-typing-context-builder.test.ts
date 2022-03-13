@@ -3,6 +3,7 @@ import type { SamlangModule, SourceClassDefinition } from '../../ast/samlang-nod
 import {
   SourceExpressionFalse,
   SourceFunctionType,
+  SourceId,
   SourceIdentifierType,
   SourceIntType,
 } from '../../ast/samlang-nodes';
@@ -25,8 +26,7 @@ const typeDefinition = {
 const class0: SourceClassDefinition = {
   range: Range.DUMMY,
   associatedComments: [],
-  name: 'Class0',
-  nameRange: Range.DUMMY,
+  name: SourceId('Class0'),
   typeParameters: [],
   typeDefinition,
   members: [],
@@ -34,8 +34,7 @@ const class0: SourceClassDefinition = {
 const class1: SourceClassDefinition = {
   range: Range.DUMMY,
   associatedComments: [],
-  name: 'Class1',
-  nameRange: Range.DUMMY,
+  name: SourceId('Class1'),
   typeParameters: [],
   typeDefinition,
   members: [
@@ -44,8 +43,7 @@ const class1: SourceClassDefinition = {
       range: Range.DUMMY,
       isPublic: true,
       isMethod: true,
-      nameRange: Range.DUMMY,
-      name: 'm1',
+      name: SourceId('m1'),
       typeParameters: [],
       type: SourceFunctionType([], SourceIntType),
       parameters: [],
@@ -56,8 +54,7 @@ const class1: SourceClassDefinition = {
       range: Range.DUMMY,
       isPublic: false,
       isMethod: false,
-      nameRange: Range.DUMMY,
-      name: 'f1',
+      name: SourceId('f1'),
       typeParameters: [],
       type: SourceFunctionType([], SourceIntType),
       parameters: [],
@@ -68,8 +65,7 @@ const class1: SourceClassDefinition = {
 const class2: SourceClassDefinition = {
   range: Range.DUMMY,
   associatedComments: [],
-  name: 'Class2',
-  nameRange: Range.DUMMY,
+  name: SourceId('Class2'),
   typeParameters: [],
   typeDefinition,
   members: [],
@@ -82,10 +78,7 @@ const module1: SamlangModule = {
       range: Range.DUMMY,
       importedModule: module0Reference,
       importedModuleRange: Range.DUMMY,
-      importedMembers: [
-        ['Class0', Range.DUMMY],
-        ['BAD_CLASS_THAT_DOESNT_EXIST', Range.DUMMY],
-      ],
+      importedMembers: [SourceId('Class0'), SourceId('BAD_CLASS_THAT_DOESNT_EXIST')],
     },
   ],
   classes: [class1, class2],

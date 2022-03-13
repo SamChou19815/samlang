@@ -1,5 +1,5 @@
 import { ModuleReference, Range, Sources } from '../../ast/common-nodes';
-import type { SamlangModule, SourceClassDefinition } from '../../ast/samlang-nodes';
+import { SamlangModule, SourceClassDefinition, SourceId } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { hashMapOf } from '../../utils';
 import checkUndefinedImportsError from '../undefined-imports-checker';
@@ -7,8 +7,7 @@ import checkUndefinedImportsError from '../undefined-imports-checker';
 const createMockClass = (name: string): SourceClassDefinition => ({
   range: Range.DUMMY,
   associatedComments: [],
-  name,
-  nameRange: Range.DUMMY,
+  name: SourceId(name),
   typeParameters: [],
   members: [],
   typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
@@ -23,7 +22,7 @@ const createMockModule = (
   {
     imports: imports.map(([importedModuleName, importedMembers]) => ({
       range: Range.DUMMY,
-      importedMembers: importedMembers.map((it) => [it, Range.DUMMY]),
+      importedMembers: importedMembers.map((it) => SourceId(it)),
       importedModule: new ModuleReference([importedModuleName]),
       importedModuleRange: Range.DUMMY,
     })),

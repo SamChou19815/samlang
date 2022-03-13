@@ -41,6 +41,7 @@ import {
   SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
+  SourceFieldType,
   SourceFunctionType,
   SourceId,
   SourceIdentifier,
@@ -239,10 +240,7 @@ export default class SamlangModuleParser extends BaseParser {
       const importStart = this.peek().range;
       this.consume();
       this.assertAndConsume('{');
-      const importedMembers = this.parseCommaSeparatedList(() => {
-        const { range, variable } = this.assertAndPeekUpperId();
-        return [variable, range] as const;
-      });
+      const importedMembers = this.parseCommaSeparatedList(this.parseUpperId);
       this.assertAndConsume('}');
       this.assertAndConsume('from');
       const importRangeStart = this.peek().range;
@@ -250,7 +248,9 @@ export default class SamlangModuleParser extends BaseParser {
         this.parsePunctuationSeparatedList('.', () => this.assertAndConsumeIdentifier().identifier)
       );
       const importedModuleRange = importRangeStart.union(this.lastRange());
-      importedMembers.forEach(([variable]) => this.classSourceMap.set(variable, importedModule));
+      importedMembers.forEach(({ name: variable }) =>
+        this.classSourceMap.set(variable, importedModule)
+      );
       imports.push({
         range: importStart.union(importedModuleRange),
         importedMembers,
@@ -297,25 +297,24 @@ export default class SamlangModuleParser extends BaseParser {
   } => {
     const associatedComments = this.collectPrecedingComments();
     let startRange = this.assertAndConsume('class');
-    const { range: nameRange, variable: name } = this.assertAndPeekUpperId();
-    startRange = startRange.union(nameRange);
+    const name = this.parseUpperId();
+    startRange = startRange.union(name.range);
     if (this.peek().content === '{' || this.peek().content === 'class') {
       // Util class. Now the class header has ended.
       return {
         startRange,
         associatedComments,
-        nameRange,
         name,
         typeParameters: [],
         typeDefinition: { range: this.peek().range, type: 'object', names: [], mappings: {} },
       };
     }
-    let typeParameters: readonly string[];
+    let typeParameters: readonly SourceIdentifier[];
     let typeParameterRangeStart: Range | undefined;
     if (this.peek().content === '<') {
       typeParameterRangeStart = this.peek().range;
       this.consume();
-      typeParameters = this.parseCommaSeparatedList(() => this.assertAndPeekUpperId().variable);
+      typeParameters = this.parseCommaSeparatedList(() => this.parseUpperId());
       this.assertAndConsume('>');
     } else {
       typeParameters = [];
@@ -328,42 +327,38 @@ export default class SamlangModuleParser extends BaseParser {
       ...innerTypeDefinition,
     };
     startRange = startRange.union(typeDefinitionRangeEnd);
-    return { startRange, associatedComments, nameRange, name, typeParameters, typeDefinition };
+    return { startRange, associatedComments, name, typeParameters, typeDefinition };
   };
 
   private parseTypeDefinitionInner = (): Omit<TypeDefinition, 'range'> => {
     const firstPeeked = this.peek().content;
     if (typeof firstPeeked !== 'string' && firstPeeked.__type__ === 'UpperId') {
-      const mappings = this.parseCommaSeparatedList(() => {
-        const name = this.assertAndPeekUpperId().variable;
+      const mappings: Record<string, SourceFieldType> = {};
+      const names = this.parseCommaSeparatedList(() => {
+        const name = this.parseUpperId();
         this.assertAndConsume('(');
         const type = this.parseType();
         this.assertAndConsume(')');
-        return [name, { type, isPublic: false }] as const;
+        mappings[name.name] = { type, isPublic: false };
+        return name;
       });
-      return {
-        type: 'variant',
-        names: mappings.map(([name]) => name),
-        mappings: Object.fromEntries(mappings),
-      };
+      return { type: 'variant', names, mappings };
     } else {
-      const mappings = this.parseCommaSeparatedList(() => {
+      const mappings: Record<string, SourceFieldType> = {};
+      const names = this.parseCommaSeparatedList(() => {
         let isPublic = true;
         if (this.peek().content === 'private') {
           isPublic = false;
           this.consume();
         }
         this.assertAndConsume('val');
-        const name = this.assertAndPeekLowerId().variable;
+        const name = this.parseLowerId();
         this.assertAndConsume(':');
         const type = this.parseType();
-        return [name, { type, isPublic }] as const;
+        mappings[name.name] = { type, isPublic };
+        return name;
       });
-      return {
-        type: 'object',
-        names: mappings.map(([name]) => name),
-        mappings: Object.fromEntries(mappings),
-      };
+      return { type: 'object', names, mappings };
     }
   };
 
@@ -388,17 +383,15 @@ export default class SamlangModuleParser extends BaseParser {
     } else {
       this.assertAndConsume('method');
     }
-    let typeParameters: string[];
+    let typeParameters: SourceIdentifier[];
     if (this.peek().content === '<') {
       this.consume();
-      typeParameters = this.parseCommaSeparatedList(() => this.assertAndPeekUpperId()).map(
-        (it) => it.variable
-      );
+      typeParameters = this.parseCommaSeparatedList(() => this.parseUpperId());
       this.assertAndConsume('>');
     } else {
       typeParameters = [];
     }
-    const { range: nameRange, variable: name } = this.assertAndPeekLowerId();
+    const name = this.parseLowerId();
     this.assertAndConsume('(');
     const parameters =
       this.peek().content === ')'
@@ -421,7 +414,6 @@ export default class SamlangModuleParser extends BaseParser {
       associatedComments,
       isPublic,
       isMethod,
-      nameRange,
       name,
       typeParameters,
       type: SourceFunctionType(

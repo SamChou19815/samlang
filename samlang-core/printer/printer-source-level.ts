@@ -337,9 +337,9 @@ export function createPrettierDocumentsFromSamlangClassMember(
     member.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
     PRETTIER_TEXT(member.isMethod ? 'method ' : 'function '),
     member.typeParameters.length > 0
-      ? PRETTIER_TEXT(`<${member.typeParameters.join(', ')}> `)
+      ? PRETTIER_TEXT(`<${member.typeParameters.map((it) => it.name).join(', ')}> `)
       : PRETTIER_NIL,
-    PRETTIER_TEXT(member.name),
+    PRETTIER_TEXT(member.name.name),
     createParenthesisSurroundedDocument(
       createCommaSeparatedList(member.parameters, (annotated) =>
         PRETTIER_TEXT(`${annotated.name}: ${prettyPrintType(annotated.type)}`)

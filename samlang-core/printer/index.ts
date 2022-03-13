@@ -28,7 +28,7 @@ export default function prettyPrintSamlangModule(
         PRETTIER_CONCAT(
           PRETTIER_TEXT('import '),
           createBracesSurroundedDocument(
-            createCommaSeparatedList(oneImport.importedMembers, ([name]) => PRETTIER_TEXT(name))
+            createCommaSeparatedList(oneImport.importedMembers, ({ name }) => PRETTIER_TEXT(name))
           ),
           PRETTIER_TEXT(` from ${oneImport.importedModule.parts.join('.')}`)
         )
@@ -51,11 +51,11 @@ export default function prettyPrintSamlangModule(
       const documents = [
         createPrettierDocumentForAssociatedComments(classDefinition.associatedComments, true) ??
           PRETTIER_NIL,
-        PRETTIER_TEXT(`class ${classDefinition.name}`),
+        PRETTIER_TEXT(`class ${classDefinition.name.name}`),
         PRETTIER_TEXT(
           classDefinition.typeParameters.length === 0
             ? ''
-            : `<${classDefinition.typeParameters.join(', ')}>`
+            : `<${classDefinition.typeParameters.map((it) => it.name).join(', ')}>`
         ),
         typeMappingItems.length === 0
           ? PRETTIER_NIL

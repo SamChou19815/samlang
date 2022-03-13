@@ -67,7 +67,7 @@ function typeCheckInSandbox(
             typeDefinition: {
               range: Range.DUMMY,
               type: 'object',
-              names: ['a', 'b'],
+              names: [SourceId('a'), SourceId('b')],
               mappings: {
                 a: { isPublic: true, type: SourceIntType },
                 b: { isPublic: false, type: SourceBoolType },
@@ -81,7 +81,7 @@ function typeCheckInSandbox(
             typeDefinition: {
               range: Range.DUMMY,
               type: 'object',
-              names: ['a', 'b'],
+              names: [SourceId('a'), SourceId('b')],
               mappings: {
                 a: { isPublic: true, type: SourceIntType },
                 b: { isPublic: false, type: SourceBoolType },
@@ -95,7 +95,7 @@ function typeCheckInSandbox(
             typeDefinition: {
               range: Range.DUMMY,
               type: 'variant',
-              names: ['a', 'b'],
+              names: [SourceId('a'), SourceId('b')],
               mappings: {
                 a: { isPublic: true, type: SourceIntType },
                 b: { isPublic: true, type: SourceBoolType },

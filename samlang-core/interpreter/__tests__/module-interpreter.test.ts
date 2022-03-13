@@ -26,15 +26,14 @@ describe('module-interpreter', () => {
 
   const exampleClassDef: SourceClassDefinition = {
     associatedComments: [],
-    name: 'class',
-    nameRange: new Range(Position(5, 2), Position(7, 6)),
-    typeParameters: ['param'],
+    name: SourceId('class', { range: new Range(Position(5, 2), Position(7, 6)) }),
+    typeParameters: [SourceId('param')],
     members: [],
     range: new Range(Position(1, 10), Position(3, 4)),
     typeDefinition: {
       range: new Range(Position(1, 2), Position(3, 4)),
       type: 'object',
-      names: ['types'],
+      names: [SourceId('types')],
       mappings: {
         types: {
           type: SourceIntType,
@@ -46,15 +45,14 @@ describe('module-interpreter', () => {
 
   const mainClassDef: SourceClassDefinition = {
     associatedComments: [],
-    name: 'Main',
-    nameRange: new Range(Position(5, 2), Position(7, 6)),
-    typeParameters: ['main'],
+    name: SourceId('Main', { range: new Range(Position(5, 2), Position(7, 6)) }),
+    typeParameters: [SourceId('main')],
     members: [],
     range: new Range(Position(1, 10), Position(3, 4)),
     typeDefinition: {
       range: new Range(Position(1, 2), Position(3, 4)),
       type: 'object',
-      names: ['types'],
+      names: [SourceId('types')],
       mappings: {
         types: {
           type: SourceIntType,
@@ -65,15 +63,14 @@ describe('module-interpreter', () => {
   };
   const mainVariantDef: SourceClassDefinition = {
     associatedComments: [],
-    name: 'Main',
-    nameRange: new Range(Position(5, 2), Position(7, 6)),
-    typeParameters: ['main'],
+    name: SourceId('Main', { range: new Range(Position(5, 2), Position(7, 6)) }),
+    typeParameters: [SourceId('main')],
     members: [],
     range: new Range(Position(1, 10), Position(3, 4)),
     typeDefinition: {
       range: new Range(Position(1, 2), Position(3, 4)),
       type: 'variant',
-      names: ['types'],
+      names: [SourceId('types')],
       mappings: {
         types: {
           type: SourceIntType,
@@ -88,9 +85,8 @@ describe('module-interpreter', () => {
     range: new Range(Position(1, 10), Position(3, 4)),
     isPublic: true,
     isMethod: false,
-    nameRange: new Range(Position(12, 34), Position(34, 45)),
-    name: 'main',
-    typeParameters: ['param'],
+    name: SourceId('main', { range: new Range(Position(12, 34), Position(34, 45)) }),
+    typeParameters: [SourceId('param')],
     type: {
       type: 'FunctionType',
       argumentTypes: [SourceIntType],

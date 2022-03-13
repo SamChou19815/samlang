@@ -33,8 +33,7 @@ describe('mir-toplevel-lowering', () => {
         {
           range: Range.DUMMY,
           associatedComments: [],
-          name: 'Main',
-          nameRange: Range.DUMMY,
+          name: SourceId('Main'),
           typeParameters: [],
           typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
           members: [
@@ -43,8 +42,7 @@ describe('mir-toplevel-lowering', () => {
               range: Range.DUMMY,
               isPublic: true,
               isMethod: false,
-              nameRange: Range.DUMMY,
-              name: 'main',
+              name: SourceId('main'),
               typeParameters: [],
               parameters: [],
               type: SourceFunctionType([], SourceUnitType),
@@ -65,13 +63,12 @@ describe('mir-toplevel-lowering', () => {
         {
           range: Range.DUMMY,
           associatedComments: [],
-          name: 'Class1',
-          nameRange: Range.DUMMY,
+          name: SourceId('Class1'),
           typeParameters: [],
           typeDefinition: {
             range: Range.DUMMY,
             type: 'object',
-            names: ['a'],
+            names: [SourceId('a')],
             mappings: { a: { isPublic: true, type: SourceIntType } },
           },
           members: [
@@ -80,8 +77,7 @@ describe('mir-toplevel-lowering', () => {
               range: Range.DUMMY,
               isPublic: true,
               isMethod: true,
-              nameRange: Range.DUMMY,
-              name: 'foo',
+              name: SourceId('foo'),
               typeParameters: [],
               parameters: [
                 { name: 'a', nameRange: Range.DUMMY, type: SourceIntType, typeRange: Range.DUMMY },
@@ -94,8 +90,7 @@ describe('mir-toplevel-lowering', () => {
               range: Range.DUMMY,
               isPublic: true,
               isMethod: false,
-              nameRange: Range.DUMMY,
-              name: 'infiniteLoop',
+              name: SourceId('infiniteLoop'),
               typeParameters: [],
               parameters: [],
               type: SourceFunctionType([], SourceUnitType),
@@ -116,8 +111,7 @@ describe('mir-toplevel-lowering', () => {
               range: Range.DUMMY,
               isPublic: true,
               isMethod: false,
-              nameRange: Range.DUMMY,
-              name: 'factorial',
+              name: SourceId('factorial'),
               typeParameters: [],
               parameters: [
                 { name: 'n', nameRange: Range.DUMMY, type: SourceIntType, typeRange: Range.DUMMY },
@@ -172,8 +166,7 @@ describe('mir-toplevel-lowering', () => {
         {
           range: Range.DUMMY,
           associatedComments: [],
-          name: 'Class2',
-          nameRange: Range.DUMMY,
+          name: SourceId('Class2'),
           typeParameters: [],
           typeDefinition: { range: Range.DUMMY, type: 'variant', names: [], mappings: {} },
           members: [],
@@ -181,13 +174,12 @@ describe('mir-toplevel-lowering', () => {
         {
           range: Range.DUMMY,
           associatedComments: [],
-          name: 'Class3',
-          nameRange: Range.DUMMY,
-          typeParameters: ['T'],
+          name: SourceId('Class3'),
+          typeParameters: [SourceId('T')],
           typeDefinition: {
             range: Range.DUMMY,
             type: 'object',
-            names: ['a'],
+            names: [SourceId('a')],
             mappings: {
               a: {
                 isPublic: true,

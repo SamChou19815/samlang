@@ -67,25 +67,25 @@ export class SamlangExpressionLocationLookupBuilder {
 
   rebuild(moduleReference: ModuleReference, { classes }: SamlangModule): void {
     this.locationLookup.purge(moduleReference);
-    classes.forEach(({ name, nameRange, members }) => {
+    classes.forEach(({ name, members }) => {
       this.buildSingleExpression(
         moduleReference,
         SourceExpressionVariable({
-          range: nameRange,
+          range: name.range,
           type: SourceIdentifierType(
             moduleReference,
-            `class ${moduleReference.toString()}.${name}`
+            `class ${moduleReference.toString()}.${name.name}`
           ),
-          name,
+          name: name.name,
         })
       );
       members.forEach((member) => {
         this.buildSingleExpression(
           moduleReference,
           SourceExpressionVariable({
-            range: member.nameRange,
+            range: member.name.range,
             type: member.type,
-            name: member.name,
+            name: member.name.name,
           })
         );
         this.buildRecursively(moduleReference, member.body);

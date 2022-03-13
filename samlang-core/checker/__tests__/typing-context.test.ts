@@ -1,5 +1,10 @@
 import { ModuleReference, Range } from '../../ast/common-nodes';
-import { SourceFunctionType, SourceIdentifierType, SourceIntType } from '../../ast/samlang-nodes';
+import {
+  SourceFunctionType,
+  SourceId,
+  SourceIdentifierType,
+  SourceIntType,
+} from '../../ast/samlang-nodes';
 import { hashMapOf } from '../../utils';
 import { AccessibleGlobalTypingContext } from '../typing-context';
 
@@ -15,7 +20,7 @@ describe('typing-context', () => {
             typeDefinition: {
               range: Range.DUMMY,
               type: 'variant',
-              names: ['a', 'b'],
+              names: [SourceId('a'), SourceId('b')],
               mappings: {
                 a: { isPublic: true, type: SourceIdentifierType(ModuleReference.DUMMY, 'A') },
                 b: { isPublic: false, type: SourceIdentifierType(ModuleReference.DUMMY, 'B') },
