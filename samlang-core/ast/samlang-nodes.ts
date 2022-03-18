@@ -652,6 +652,6 @@ export interface SourceModuleMembersImport extends Node {
 
 export interface SamlangModule {
   readonly imports: readonly SourceModuleMembersImport[];
-  // readonly interfaces: readonly SourceInterfaceDeclaration[];
+  readonly interfaces: readonly SourceInterfaceDeclaration[];
   readonly classes: readonly SourceClassDefinition[];
 }

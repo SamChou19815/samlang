@@ -22,6 +22,7 @@ describe('module-interpreter', () => {
   const moduleEmpty: SamlangModule = {
     imports: [],
     classes: [],
+    interfaces: [],
   };
 
   const exampleClassDef: SourceClassDefinition = {
@@ -150,11 +151,13 @@ describe('module-interpreter', () => {
   const moduleNoMainClass: SamlangModule = {
     imports: [],
     classes: [exampleClassDef],
+    interfaces: [],
   };
 
   const moduleWithMainClassNoMainFunction: SamlangModule = {
     imports: [],
     classes: [mainClassDef],
+    interfaces: [],
   };
 
   const moduleWithMainClassAndMainFunctionNoArgs: SamlangModule = {
@@ -165,6 +168,7 @@ describe('module-interpreter', () => {
         members: [memberMainFunctionNoArgs],
       },
     ],
+    interfaces: [],
   };
 
   const modulePanic: SamlangModule = {
@@ -175,6 +179,7 @@ describe('module-interpreter', () => {
         members: [memberMainMethodPanic],
       },
     ],
+    interfaces: [],
   };
 
   const modulePrint: SamlangModule = {
@@ -185,6 +190,7 @@ describe('module-interpreter', () => {
         members: [memberMainFunctionNoArgsPrint],
       },
     ],
+    interfaces: [],
   };
 
   const moduleWithMainClassAndMainMethodNoArgs: SamlangModule = {
@@ -195,6 +201,7 @@ describe('module-interpreter', () => {
         members: [memberMainMethodNoArgs],
       },
     ],
+    interfaces: [],
   };
 
   const moduleWithMainClassAndMainFunctionWithArgs: SamlangModule = {
@@ -205,6 +212,7 @@ describe('module-interpreter', () => {
         members: [memberMainFunctionWithArgs],
       },
     ],
+    interfaces: [],
   };
 
   it('module evaluates correctly', () => {
