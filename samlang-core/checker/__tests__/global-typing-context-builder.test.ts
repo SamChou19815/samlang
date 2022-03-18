@@ -71,7 +71,7 @@ const class2: SourceClassDefinition = {
   members: [],
 };
 
-const module0: SamlangModule = { imports: [], classes: [class0] };
+const module0: SamlangModule = { imports: [], classes: [class0], interfaces: [] };
 const module1: SamlangModule = {
   imports: [
     {
@@ -82,6 +82,7 @@ const module1: SamlangModule = {
     },
   ],
   classes: [class1, class2],
+  interfaces: [],
 };
 
 const testSources = mapOf([module0Reference, module0], [module1Reference, module1]);
@@ -198,7 +199,10 @@ describe('global-typing-context-builder', () => {
     const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
     updateGlobalTypingContext(
       actualGlobalTypingContext,
-      mapOf([module0Reference, { imports: [], classes: [] }], [module1Reference, module1]),
+      mapOf(
+        [module0Reference, { imports: [], classes: [], interfaces: [] }],
+        [module1Reference, module1]
+      ),
       [module0Reference, module1Reference]
     );
 

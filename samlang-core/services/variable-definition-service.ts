@@ -397,4 +397,5 @@ export const applyRenamingWithDefinitionAndUse = (
       body: applyExpressionRenamingWithDefinitionAndUse(member.body, definitionAndUses, newName),
     })),
   })),
+  interfaces: samlangModule.interfaces,
 });

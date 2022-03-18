@@ -280,7 +280,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.parseClassOrInterface(classes, interfaces);
     }
 
-    return { imports, /* interfaces,*/ classes };
+    return { imports, interfaces, classes };
   };
 
   private parseClassOrInterface(

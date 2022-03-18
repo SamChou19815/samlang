@@ -56,6 +56,7 @@ describe('samlang-core/checker', () => {
             ],
           },
         ],
+        interfaces: [],
       })
         .toArray()
         .map((it) => it.toString())

@@ -27,6 +27,7 @@ const createMockModule = (
       importedModuleRange: Range.DUMMY,
     })),
     classes: members.map((className) => createMockClass(className)),
+    interfaces: [],
   },
 ];
 

@@ -11,7 +11,11 @@ class UndefinedImportChecker {
 
   checkModuleImports(samlangModule: SamlangModule): SamlangModule {
     const checkedImports = filterMap(samlangModule.imports, this.checkModuleMembersImport);
-    return { classes: samlangModule.classes, imports: checkedImports };
+    return {
+      classes: samlangModule.classes,
+      interfaces: samlangModule.interfaces,
+      imports: checkedImports,
+    };
   }
 
   private checkModuleMembersImport = (
@@ -26,7 +30,9 @@ class UndefinedImportChecker {
       return null;
     }
     const availableMembersSet = new Set(
-      availableMembers.classes.map((oneClass) => oneClass.name.name)
+      [...availableMembers.classes, ...availableMembers.interfaces].map(
+        (oneClass) => oneClass.name.name
+      )
     );
     const checkedMemberImports = oneImport.importedMembers.filter(
       ({ name: importedMember, range }) => {
