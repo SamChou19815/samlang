@@ -5,6 +5,7 @@ import {
   SamlangType,
   SourceFieldType,
   SourceIdentifierType,
+  SourceInterfaceDeclaration,
   TypeDefinition,
 } from '../ast/samlang-nodes';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
@@ -36,6 +37,19 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     public readonly typeParameters: ReadonlySet<string>,
     public readonly currentClass: string
   ) {}
+
+  static fromInterface(
+    currentModuleReference: ModuleReference,
+    globalTypingContext: ReadonlyGlobalTypingContext,
+    interfaceDeclaration: SourceInterfaceDeclaration
+  ): AccessibleGlobalTypingContext {
+    return new AccessibleGlobalTypingContext(
+      currentModuleReference,
+      globalTypingContext,
+      new Set(interfaceDeclaration.typeParameters.map((it) => it.name)),
+      interfaceDeclaration.name.name
+    );
+  }
 
   getClassTypeInformation(
     moduleReference: ModuleReference,
