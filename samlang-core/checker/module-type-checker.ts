@@ -2,6 +2,7 @@ import type { ModuleReference } from '../ast/common-nodes';
 import type {
   SamlangModule,
   SamlangType,
+  SourceClassMemberDeclaration,
   SourceClassMemberDefinition,
   SourceIdentifier,
   TypeDefinition,
@@ -23,24 +24,45 @@ export default class ModuleTypeChecker {
     samlangmodule: SamlangModule,
     globalTypingContext: ReadonlyGlobalTypingContext
   ): SamlangModule {
-    this.checkNameCollisionForCompoundList(samlangmodule.classes.map((it) => it.name));
+    this.checkNameCollisionForCompoundList([
+      ...samlangmodule.imports.flatMap((oneImport) => oneImport.importedMembers),
+      ...samlangmodule.interfaces.map((it) => it.name),
+      ...samlangmodule.classes.map((it) => it.name),
+    ]);
 
+    samlangmodule.interfaces.forEach((interfaceDeclaration) => {
+      const accessibleGlobalTypingContext = new AccessibleGlobalTypingContext(
+        this.moduleReference,
+        globalTypingContext,
+        new Set(interfaceDeclaration.typeParameters.map((it) => it.name)),
+        interfaceDeclaration.name.name
+      );
+      // First pass: validating module's top level properties, excluding whether member's types are well-defined.
+      this.checkClassOrInterfaceValidity(
+        interfaceDeclaration.typeParameters,
+        null,
+        interfaceDeclaration.members,
+        accessibleGlobalTypingContext
+      );
+      // Second pass: type check all members' function body
+      interfaceDeclaration.members.forEach((member) =>
+        this.typeCheckMemberDeclaration(member, accessibleGlobalTypingContext)
+      );
+    });
     const checkedClasses = samlangmodule.classes.map((classDefinition) => {
-      const currentClass = classDefinition.name.name;
       const accessibleGlobalTypingContext = new AccessibleGlobalTypingContext(
         this.moduleReference,
         globalTypingContext,
         new Set(classDefinition.typeParameters.map((it) => it.name)),
-        currentClass
+        classDefinition.name.name
       );
       // First pass: validating module's top level properties, excluding whether member's types are well-defined.
-      this.checkClassTopLevelValidity(
+      this.checkClassOrInterfaceValidity(
         classDefinition.typeParameters,
         classDefinition.typeDefinition,
         classDefinition.members,
         accessibleGlobalTypingContext
       );
-      this.partiallyCheckMembers(classDefinition.members, accessibleGlobalTypingContext);
       // Second pass: type check all members' function body
       const checkedMembers = filterMap(classDefinition.members, (member) =>
         this.typeCheckMemberDefinition(member, accessibleGlobalTypingContext)
@@ -59,30 +81,33 @@ export default class ModuleTypeChecker {
    * - whether `classMembers` have methods when we are in a util module.
    * - whether `classMembers`'s types are well defined.
    */
-  private checkClassTopLevelValidity(
+  private checkClassOrInterfaceValidity(
     classTypeParameters: readonly SourceIdentifier[],
-    typeDefinition: TypeDefinition,
-    classMembers: readonly SourceClassMemberDefinition[],
+    typeDefinition: TypeDefinition | null,
+    classMembers: readonly SourceClassMemberDeclaration[],
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
   ): void {
     this.checkNameCollisionForCompoundList(classTypeParameters);
-    this.checkNameCollisionForCompoundList(typeDefinition.names);
-    Object.values(typeDefinition.mappings).forEach((type) => {
-      validateType(
-        type.type,
-        accessibleGlobalTypingContext,
-        this.errorCollector,
-        typeDefinition.range
-      );
-    });
+    if (typeDefinition != null) {
+      this.checkNameCollisionForCompoundList(typeDefinition.names);
+      Object.values(typeDefinition.mappings).forEach((type) => {
+        validateType(
+          type.type,
+          accessibleGlobalTypingContext,
+          this.errorCollector,
+          typeDefinition.range
+        );
+      });
+    }
     this.checkNameCollisionForCompoundList(classMembers.map((it) => it.name));
     classMembers.forEach((classMember) =>
       this.checkNameCollisionForCompoundList(classMember.typeParameters)
     );
+    this.partiallyCheckMembers(classMembers, accessibleGlobalTypingContext);
   }
 
   private partiallyCheckMembers(
-    classMembers: readonly SourceClassMemberDefinition[],
+    classMembers: readonly SourceClassMemberDeclaration[],
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
   ): void {
     classMembers.forEach((member) => {
@@ -99,40 +124,41 @@ export default class ModuleTypeChecker {
     });
   }
 
-  private typeCheckMemberDefinition(
-    memberDefinition: SourceClassMemberDefinition,
+  private typeCheckMemberDeclaration(
+    memberDeclaration: SourceClassMemberDeclaration,
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
-  ): SourceClassMemberDefinition | null {
+  ) {
     const localTypingContext = new LocalStackedContext<SamlangType>();
-    const { isMethod, typeParameters, type, parameters, body } = memberDefinition;
-    if (isMethod) {
+    if (memberDeclaration.isMethod) {
       localTypingContext.addLocalValueType('this', accessibleGlobalTypingContext.thisType, error);
     }
     const contextWithAdditionalTypeParameters =
       accessibleGlobalTypingContext.withAdditionalTypeParameters(
-        typeParameters.map((it) => it.name)
+        memberDeclaration.typeParameters.map((it) => it.name)
       );
-    parameters.forEach((parameter) => {
-      const parameterType = parameter.type;
-      validateType(
-        parameterType,
-        contextWithAdditionalTypeParameters,
-        this.errorCollector,
-        parameter.typeRange
-      );
-      localTypingContext.addLocalValueType(parameter.name, parameterType, () =>
+    memberDeclaration.parameters.forEach((parameter) => {
+      localTypingContext.addLocalValueType(parameter.name, parameter.type, () =>
         this.errorCollector.reportCollisionError(parameter.nameRange, parameter.name)
       );
     });
+    return { contextWithAdditionalTypeParameters, localTypingContext };
+  }
+
+  private typeCheckMemberDefinition(
+    memberDefinition: SourceClassMemberDefinition,
+    accessibleGlobalTypingContext: AccessibleGlobalTypingContext
+  ): SourceClassMemberDefinition | null {
+    const { contextWithAdditionalTypeParameters, localTypingContext } =
+      this.typeCheckMemberDeclaration(memberDefinition, accessibleGlobalTypingContext);
     return {
       ...memberDefinition,
       body: typeCheckExpression(
-        body,
+        memberDefinition.body,
         this.errorCollector,
         contextWithAdditionalTypeParameters,
         localTypingContext,
         new TypeResolution(),
-        type.returnType
+        memberDefinition.type.returnType
       ),
     };
   }

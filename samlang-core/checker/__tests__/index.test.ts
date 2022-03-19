@@ -197,8 +197,6 @@ describe('samlang-core/checker', () => {
     ).toEqual([
       'D.sam:3:3-3:22: [UnresolvedName]: Name `C` is not resolved.',
       'D.sam:5:27-5:95: [NotWellDefinedIdentifier]: `C` is not well defined.',
-      'D.sam:5:47-5:48: [NotWellDefinedIdentifier]: `C` is not well defined.',
-      'D.sam:5:54-5:55: [NotWellDefinedIdentifier]: `C` is not well defined.',
       "D.sam:5:65-5:67: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       "D.sam:5:82-5:84: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       'D.sam:6:64-6:71: [UnresolvedName]: Name `C.ofInt` is not resolved.',
@@ -282,7 +280,6 @@ describe('samlang-core/checker', () => {
       'C.sam:2:21-2:24: [Collision]: Name `Int` collides with a previously defined name.',
       'C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.',
       'C.sam:4:21-4:22: [Collision]: Name `T` collides with a previously defined name.',
-      'C.sam:4:30-4:31: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:4:5-4:44: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.',
       'C.sam:5:70-5:78: [UnresolvedName]: Name `intValue` is not resolved.',
@@ -365,6 +362,7 @@ describe('samlang-core/checker', () => {
   it('typeCheckSourceHandles test', () => {
     const moduleReference = new ModuleReference(['Test']);
     const sourceCode = `
+  interface UnusedInterface<T> { function main(): unit }
   class Main {
     function main(): unit = Builtins.println("Hello "::"World!")
   }

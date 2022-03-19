@@ -70,6 +70,7 @@ class Test2 {
     ]);
     expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
       'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
+      'Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name.',
       'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
 
@@ -87,6 +88,7 @@ class Test2 {}
       'Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
     ]);
     expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
+      'Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name.',
       'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
 
@@ -102,6 +104,7 @@ class Test1 {
     expect(state.getErrors(test1ModuleReference)).toEqual([]);
     expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
       'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
+      'Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name.',
       'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
 
@@ -119,6 +122,7 @@ class Test2 {
     expect(state.getErrors(test1ModuleReference)).toEqual([]);
     expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
       'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
+      'Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name.',
     ]);
 
     // Clearing all errors of Test2
