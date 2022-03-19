@@ -9,7 +9,7 @@ import type {
   TypeDefinition,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import { error, filterMap, LocalStackedContext } from '../utils';
+import { error, filterMap, ignore, LocalStackedContext } from '../utils';
 import typeCheckExpression from './expression-type-checker';
 import TypeResolution from './type-resolution';
 import { validateType } from './type-validator';
@@ -20,137 +20,143 @@ class VariableCollisionCheckerStackedContext extends LocalStackedContext<void> {
     super();
   }
 
-  add = ({ name, range }: SourceIdentifier) =>
+  private add = ({ name, range }: Omit<SourceIdentifier, 'associatedComments'>) =>
     this.addLocalValueType(name, undefined, () =>
       this.errorCollector.reportCollisionError(range, name)
     );
 
-  addAll = (ids: readonly SourceIdentifier[]) => ids.forEach(this.add);
+  private addAll = (ids: readonly SourceIdentifier[]) => ids.forEach(this.add);
+
+  checkNameCollision(samlangModule: SamlangModule) {
+    samlangModule.imports.forEach((oneImport) => this.addAll(oneImport.importedMembers));
+
+    type InterfaceWithOptionalTypeDefinition = SourceInterfaceDeclaration & {
+      readonly typeDefinition?: TypeDefinition;
+    };
+    const interfaces: InterfaceWithOptionalTypeDefinition[] = [
+      ...samlangModule.interfaces,
+      ...samlangModule.classes,
+    ];
+    interfaces.forEach((interfaceDeclaration) => {
+      this.add(interfaceDeclaration.name);
+
+      this.withNestedScope(() => {
+        this.addAll(interfaceDeclaration.typeParameters);
+        if (interfaceDeclaration.typeDefinition != null) {
+          this.addAll(interfaceDeclaration.typeDefinition.names);
+        }
+
+        interfaceDeclaration.members.map((member) => {
+          this.add(member.name);
+          this.withNestedScope(() => {
+            this.addAll(member.typeParameters);
+            member.parameters.forEach(({ name, nameRange: range }) => this.add({ name, range }));
+          });
+        });
+      });
+    });
+  }
+}
+
+function typeCheckMemberDeclaration(
+  memberDeclaration: SourceClassMemberDeclaration,
+  accessibleGlobalTypingContext: AccessibleGlobalTypingContext
+) {
+  const localTypingContext = new LocalStackedContext<SamlangType>();
+  if (memberDeclaration.isMethod) {
+    localTypingContext.addLocalValueType('this', accessibleGlobalTypingContext.thisType, error);
+  }
+  const contextWithAdditionalTypeParameters =
+    accessibleGlobalTypingContext.withAdditionalTypeParameters(
+      memberDeclaration.typeParameters.map((it) => it.name)
+    );
+  memberDeclaration.parameters.forEach((parameter) => {
+    localTypingContext.addLocalValueType(parameter.name, parameter.type, ignore);
+  });
+  return { contextWithAdditionalTypeParameters, localTypingContext };
 }
 
 export default class ModuleTypeChecker {
-  private variableCollisionCheckerStackedContext: VariableCollisionCheckerStackedContext;
-
   constructor(
     private readonly moduleReference: ModuleReference,
     private readonly errorCollector: ModuleErrorCollector
-  ) {
-    this.variableCollisionCheckerStackedContext = new VariableCollisionCheckerStackedContext(
-      errorCollector
-    );
-  }
+  ) {}
 
   typeCheck(
-    samlangmodule: SamlangModule,
+    samlangModule: SamlangModule,
     globalTypingContext: ReadonlyGlobalTypingContext
   ): SamlangModule {
-    samlangmodule.imports.forEach((oneImport) =>
-      this.variableCollisionCheckerStackedContext.addAll(oneImport.importedMembers)
+    new VariableCollisionCheckerStackedContext(this.errorCollector).checkNameCollision(
+      samlangModule
     );
-    samlangmodule.interfaces.forEach((it) =>
-      this.variableCollisionCheckerStackedContext.add(it.name)
-    );
-    samlangmodule.classes.forEach((it) => this.variableCollisionCheckerStackedContext.add(it.name));
 
-    samlangmodule.interfaces.forEach((interfaceDeclaration) => {
+    samlangModule.interfaces.forEach((interfaceDeclaration) => {
       const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
         this.moduleReference,
         globalTypingContext,
         interfaceDeclaration
       );
-      this.checkClassOrInterfaceNameValidity(accessibleGlobalTypingContext, interfaceDeclaration);
+      this.checkClassOrInterfaceTypeValidity(accessibleGlobalTypingContext, interfaceDeclaration);
       interfaceDeclaration.members.forEach((member) =>
-        this.typeCheckMemberDeclaration(member, accessibleGlobalTypingContext)
+        typeCheckMemberDeclaration(member, accessibleGlobalTypingContext)
       );
     });
-    const checkedClasses = samlangmodule.classes.map((classDefinition) => {
+    const checkedClasses = samlangModule.classes.map((classDefinition) => {
       const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
         this.moduleReference,
         globalTypingContext,
         classDefinition
       );
-      this.checkClassOrInterfaceNameValidity(accessibleGlobalTypingContext, classDefinition);
+      this.checkClassOrInterfaceTypeValidity(accessibleGlobalTypingContext, classDefinition);
       const checkedMembers = filterMap(classDefinition.members, (member) =>
         this.typeCheckMemberDefinition(member, accessibleGlobalTypingContext)
       );
       return { ...classDefinition, members: checkedMembers };
     });
-    return { ...samlangmodule, classes: checkedClasses };
+    return { ...samlangModule, classes: checkedClasses };
   }
 
   /**
    * Check the validity of various toplevel properties of the given module's information, including
-   * - whether `classTypeParameters` and `typeDefinition`'s mappings have no name collision.
    * - whether `typeDefinition` is well defined.
-   * - whether `classMembers` have no name collision.
-   * - whether `classMembers`'s type parameters have no name collision.
-   * - whether `classMembers` have methods when we are in a util module.
    * - whether `classMembers`'s types are well defined.
    */
-  private checkClassOrInterfaceNameValidity(
+  private checkClassOrInterfaceTypeValidity(
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     interfaceDeclaration: SourceInterfaceDeclaration & { readonly typeDefinition?: TypeDefinition }
   ): void {
-    this.variableCollisionCheckerStackedContext.withNestedScope(() => {
-      this.variableCollisionCheckerStackedContext.addAll(interfaceDeclaration.typeParameters);
-      this.variableCollisionCheckerStackedContext.addAll(
-        interfaceDeclaration.members.map((it) => it.name)
-      );
-      const { typeDefinition } = interfaceDeclaration;
-      if (typeDefinition != null) {
-        this.variableCollisionCheckerStackedContext.addAll(typeDefinition.names);
-        Object.values(typeDefinition.mappings).forEach((type) => {
-          validateType(
-            type.type,
-            accessibleGlobalTypingContext,
-            this.errorCollector,
-            typeDefinition.range
-          );
-        });
-      }
-      interfaceDeclaration.members.forEach((member) => {
-        this.variableCollisionCheckerStackedContext.withNestedScope(() => {
-          this.variableCollisionCheckerStackedContext.addAll(member.typeParameters);
-          let patchedContext = accessibleGlobalTypingContext.withAdditionalTypeParameters(
-            member.typeParameters.map((it) => it.name)
-          );
-          if (member.isMethod) {
-            patchedContext = patchedContext.withAdditionalTypeParameters(
-              patchedContext.getCurrentClassTypeDefinition().classTypeParameters
-            );
-          }
-          validateType(member.type, patchedContext, this.errorCollector, member.range);
-        });
+    const { typeDefinition } = interfaceDeclaration;
+    if (typeDefinition != null) {
+      Object.values(typeDefinition.mappings).forEach((type) => {
+        validateType(
+          type.type,
+          accessibleGlobalTypingContext,
+          this.errorCollector,
+          typeDefinition.range
+        );
       });
-    });
-  }
-
-  private typeCheckMemberDeclaration(
-    memberDeclaration: SourceClassMemberDeclaration,
-    accessibleGlobalTypingContext: AccessibleGlobalTypingContext
-  ) {
-    const localTypingContext = new LocalStackedContext<SamlangType>();
-    if (memberDeclaration.isMethod) {
-      localTypingContext.addLocalValueType('this', accessibleGlobalTypingContext.thisType, error);
     }
-    const contextWithAdditionalTypeParameters =
-      accessibleGlobalTypingContext.withAdditionalTypeParameters(
-        memberDeclaration.typeParameters.map((it) => it.name)
+    interfaceDeclaration.members.forEach((member) => {
+      let patchedContext = accessibleGlobalTypingContext.withAdditionalTypeParameters(
+        member.typeParameters.map((it) => it.name)
       );
-    memberDeclaration.parameters.forEach((parameter) => {
-      localTypingContext.addLocalValueType(parameter.name, parameter.type, () =>
-        this.errorCollector.reportCollisionError(parameter.nameRange, parameter.name)
-      );
+      if (member.isMethod) {
+        patchedContext = patchedContext.withAdditionalTypeParameters(
+          patchedContext.getCurrentClassTypeDefinition().classTypeParameters
+        );
+      }
+      validateType(member.type, patchedContext, this.errorCollector, member.range);
     });
-    return { contextWithAdditionalTypeParameters, localTypingContext };
   }
 
   private typeCheckMemberDefinition(
     memberDefinition: SourceClassMemberDefinition,
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
   ): SourceClassMemberDefinition | null {
-    const { contextWithAdditionalTypeParameters, localTypingContext } =
-      this.typeCheckMemberDeclaration(memberDefinition, accessibleGlobalTypingContext);
+    const { contextWithAdditionalTypeParameters, localTypingContext } = typeCheckMemberDeclaration(
+      memberDefinition,
+      accessibleGlobalTypingContext
+    );
     return {
       ...memberDefinition,
       body: typeCheckExpression(
