@@ -16,7 +16,7 @@ import {
   collectModuleReferenceFromExpression,
   collectModuleReferenceFromType,
 } from './module-references-collector';
-import ModuleTypeChecker from './module-type-checker';
+import typeCheckSamlangModule from './module-type-checker';
 import type {
   GlobalTypingContext,
   MemberTypeInformation,
@@ -104,9 +104,11 @@ function typeCheckModule(
 ): SamlangModule {
   const moduleErrorCollector = errorCollector.getModuleErrorCollector(moduleReference);
   checkUndefinedImportsError(sources, samlangModule, moduleErrorCollector);
-  const checkedModule = new ModuleTypeChecker(moduleReference, moduleErrorCollector).typeCheck(
+  const checkedModule = typeCheckSamlangModule(
+    moduleReference,
     samlangModule,
-    globalTypingContext
+    globalTypingContext,
+    moduleErrorCollector
   );
   return checkedModule;
 }
