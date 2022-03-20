@@ -3,7 +3,6 @@ import type {
   SamlangModule,
   SamlangType,
   SourceClassMemberDeclaration,
-  SourceClassMemberDefinition,
   SourceIdentifier,
   SourceInterfaceDeclaration,
   TypeDefinition,
@@ -27,8 +26,9 @@ class VariableCollisionCheckerStackedContext extends LocalStackedContext<void> {
 
   private addAll = (ids: readonly SourceIdentifier[]) => ids.forEach(this.add);
 
-  checkNameCollision(samlangModule: SamlangModule) {
-    samlangModule.imports.forEach((oneImport) => this.addAll(oneImport.importedMembers));
+  static checkNameCollision(errorCollector: ModuleErrorCollector, samlangModule: SamlangModule) {
+    const checker = new VariableCollisionCheckerStackedContext(errorCollector);
+    samlangModule.imports.forEach((oneImport) => checker.addAll(oneImport.importedMembers));
 
     type InterfaceWithOptionalTypeDefinition = SourceInterfaceDeclaration & {
       readonly typeDefinition?: TypeDefinition;
@@ -38,24 +38,48 @@ class VariableCollisionCheckerStackedContext extends LocalStackedContext<void> {
       ...samlangModule.classes,
     ];
     interfaces.forEach((interfaceDeclaration) => {
-      this.add(interfaceDeclaration.name);
+      checker.add(interfaceDeclaration.name);
 
-      this.withNestedScope(() => {
-        this.addAll(interfaceDeclaration.typeParameters);
+      checker.withNestedScope(() => {
+        checker.addAll(interfaceDeclaration.typeParameters);
         if (interfaceDeclaration.typeDefinition != null) {
-          this.addAll(interfaceDeclaration.typeDefinition.names);
+          checker.addAll(interfaceDeclaration.typeDefinition.names);
         }
 
         interfaceDeclaration.members.map((member) => {
-          this.add(member.name);
-          this.withNestedScope(() => {
-            this.addAll(member.typeParameters);
-            member.parameters.forEach(({ name, nameRange: range }) => this.add({ name, range }));
+          checker.add(member.name);
+          checker.withNestedScope(() => {
+            checker.addAll(member.typeParameters);
+            member.parameters.forEach(({ name, nameRange: range }) => checker.add({ name, range }));
           });
         });
       });
     });
   }
+}
+
+function checkClassOrInterfaceTypeValidity(
+  accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
+  errorCollector: ModuleErrorCollector,
+  interfaceDeclaration: SourceInterfaceDeclaration & { readonly typeDefinition?: TypeDefinition }
+) {
+  const { typeDefinition } = interfaceDeclaration;
+  if (typeDefinition != null) {
+    Object.values(typeDefinition.mappings).forEach((type) => {
+      validateType(type.type, accessibleGlobalTypingContext, errorCollector, typeDefinition.range);
+    });
+  }
+  interfaceDeclaration.members.forEach((member) => {
+    let patchedContext = accessibleGlobalTypingContext.withAdditionalTypeParameters(
+      member.typeParameters.map((it) => it.name)
+    );
+    if (member.isMethod) {
+      patchedContext = patchedContext.withAdditionalTypeParameters(
+        patchedContext.getCurrentClassTypeDefinition().classTypeParameters
+      );
+    }
+    validateType(member.type, patchedContext, errorCollector, member.range);
+  });
 }
 
 function typeCheckMemberDeclaration(
@@ -76,97 +100,57 @@ function typeCheckMemberDeclaration(
   return { contextWithAdditionalTypeParameters, localTypingContext };
 }
 
-export default class ModuleTypeChecker {
-  constructor(
-    private readonly moduleReference: ModuleReference,
-    private readonly errorCollector: ModuleErrorCollector
-  ) {}
+export default function typeCheckSamlangModule(
+  moduleReference: ModuleReference,
+  samlangModule: SamlangModule,
+  globalTypingContext: ReadonlyGlobalTypingContext,
+  errorCollector: ModuleErrorCollector
+): SamlangModule {
+  VariableCollisionCheckerStackedContext.checkNameCollision(errorCollector, samlangModule);
 
-  typeCheck(
-    samlangModule: SamlangModule,
-    globalTypingContext: ReadonlyGlobalTypingContext
-  ): SamlangModule {
-    new VariableCollisionCheckerStackedContext(this.errorCollector).checkNameCollision(
-      samlangModule
+  samlangModule.interfaces.forEach((interfaceDeclaration) => {
+    const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
+      moduleReference,
+      globalTypingContext,
+      interfaceDeclaration
     );
-
-    samlangModule.interfaces.forEach((interfaceDeclaration) => {
-      const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
-        this.moduleReference,
-        globalTypingContext,
-        interfaceDeclaration
-      );
-      this.checkClassOrInterfaceTypeValidity(accessibleGlobalTypingContext, interfaceDeclaration);
-      interfaceDeclaration.members.forEach((member) =>
-        typeCheckMemberDeclaration(member, accessibleGlobalTypingContext)
-      );
-    });
-    const checkedClasses = samlangModule.classes.map((classDefinition) => {
-      const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
-        this.moduleReference,
-        globalTypingContext,
-        classDefinition
-      );
-      this.checkClassOrInterfaceTypeValidity(accessibleGlobalTypingContext, classDefinition);
-      const checkedMembers = filterMap(classDefinition.members, (member) =>
-        this.typeCheckMemberDefinition(member, accessibleGlobalTypingContext)
-      );
-      return { ...classDefinition, members: checkedMembers };
-    });
-    return { ...samlangModule, classes: checkedClasses };
-  }
-
-  /**
-   * Check the validity of various toplevel properties of the given module's information, including
-   * - whether `typeDefinition` is well defined.
-   * - whether `classMembers`'s types are well defined.
-   */
-  private checkClassOrInterfaceTypeValidity(
-    accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-    interfaceDeclaration: SourceInterfaceDeclaration & { readonly typeDefinition?: TypeDefinition }
-  ): void {
-    const { typeDefinition } = interfaceDeclaration;
-    if (typeDefinition != null) {
-      Object.values(typeDefinition.mappings).forEach((type) => {
-        validateType(
-          type.type,
-          accessibleGlobalTypingContext,
-          this.errorCollector,
-          typeDefinition.range
-        );
-      });
-    }
-    interfaceDeclaration.members.forEach((member) => {
-      let patchedContext = accessibleGlobalTypingContext.withAdditionalTypeParameters(
-        member.typeParameters.map((it) => it.name)
-      );
-      if (member.isMethod) {
-        patchedContext = patchedContext.withAdditionalTypeParameters(
-          patchedContext.getCurrentClassTypeDefinition().classTypeParameters
-        );
-      }
-      validateType(member.type, patchedContext, this.errorCollector, member.range);
-    });
-  }
-
-  private typeCheckMemberDefinition(
-    memberDefinition: SourceClassMemberDefinition,
-    accessibleGlobalTypingContext: AccessibleGlobalTypingContext
-  ): SourceClassMemberDefinition | null {
-    const { contextWithAdditionalTypeParameters, localTypingContext } = typeCheckMemberDeclaration(
-      memberDefinition,
-      accessibleGlobalTypingContext
+    checkClassOrInterfaceTypeValidity(
+      accessibleGlobalTypingContext,
+      errorCollector,
+      interfaceDeclaration
     );
-    return {
-      ...memberDefinition,
-      body: typeCheckExpression(
-        memberDefinition.body,
-        this.errorCollector,
-        contextWithAdditionalTypeParameters,
-        localTypingContext,
-        new TypeResolution(),
-        memberDefinition.type.returnType
-      ),
-    };
-  }
+    interfaceDeclaration.members.forEach((member) =>
+      typeCheckMemberDeclaration(member, accessibleGlobalTypingContext)
+    );
+  });
+
+  const checkedClasses = samlangModule.classes.map((classDefinition) => {
+    const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
+      moduleReference,
+      globalTypingContext,
+      classDefinition
+    );
+    checkClassOrInterfaceTypeValidity(
+      accessibleGlobalTypingContext,
+      errorCollector,
+      classDefinition
+    );
+    const checkedMembers = filterMap(classDefinition.members, (member) => {
+      const { contextWithAdditionalTypeParameters, localTypingContext } =
+        typeCheckMemberDeclaration(member, accessibleGlobalTypingContext);
+      return {
+        ...member,
+        body: typeCheckExpression(
+          member.body,
+          errorCollector,
+          contextWithAdditionalTypeParameters,
+          localTypingContext,
+          new TypeResolution(),
+          member.type.returnType
+        ),
+      };
+    });
+    return { ...classDefinition, members: checkedMembers };
+  });
+  return { ...samlangModule, classes: checkedClasses };
 }
