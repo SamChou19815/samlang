@@ -32,6 +32,11 @@ export function collectModuleReferenceFromSamlangModule(
 ): HashSet<ModuleReference> {
   const collector = hashSetOf<ModuleReference>();
   samlangModule.imports.forEach((it) => collector.add(it.importedModule));
+  samlangModule.interfaces.forEach((samlangInterface) => {
+    samlangInterface.members.forEach((member) => {
+      collectModuleReferenceFromType(member.type, collector);
+    });
+  });
   samlangModule.classes.forEach((samlangClass) => {
     Object.values(samlangClass.typeDefinition.mappings).forEach((it) =>
       collectModuleReferenceFromType(it.type, collector)

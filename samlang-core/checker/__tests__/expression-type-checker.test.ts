@@ -45,120 +45,130 @@ function typeCheckInSandbox(
         [
           dummyModuleReference,
           {
-            Test: {
-              typeParameters: [],
-              typeDefinition: {
-                range: Range.DUMMY,
-                type: 'object',
-                names: [SourceId('foo'), SourceId('bar')],
-                mappings: {
-                  foo: { isPublic: true, type: bool },
-                  bar: { isPublic: false, type: int },
+            interfaces: {},
+            classes: {
+              Test: {
+                typeParameters: [],
+                typeDefinition: {
+                  range: Range.DUMMY,
+                  type: 'object',
+                  names: [SourceId('foo'), SourceId('bar')],
+                  mappings: {
+                    foo: { isPublic: true, type: bool },
+                    bar: { isPublic: false, type: int },
+                  },
+                },
+                functions: {
+                  init: {
+                    isPublic: true,
+                    typeParameters: [],
+                    type: SourceFunctionType(
+                      [bool, int],
+                      SourceIdentifierType(dummyModuleReference, 'Test')
+                    ),
+                  },
+                  helloWorld: {
+                    isPublic: false,
+                    typeParameters: [],
+                    type: SourceFunctionType([string], unit),
+                  },
+                  helloWorldWithTypeParameters: {
+                    isPublic: false,
+                    typeParameters: ['A'],
+                    type: SourceFunctionType(
+                      [SourceIdentifierType(dummyModuleReference, 'A')],
+                      unit
+                    ),
+                  },
+                },
+                methods: {
+                  baz: {
+                    isPublic: false,
+                    typeParameters: [],
+                    type: SourceFunctionType([int], bool),
+                  },
                 },
               },
-              functions: {
-                init: {
-                  isPublic: true,
-                  typeParameters: [],
-                  type: SourceFunctionType(
-                    [bool, int],
-                    SourceIdentifierType(dummyModuleReference, 'Test')
-                  ),
+              Test2: {
+                typeParameters: [],
+                typeDefinition: {
+                  range: Range.DUMMY,
+                  type: 'variant',
+                  names: [SourceId('Foo'), SourceId('Bar')],
+                  mappings: {
+                    Foo: { isPublic: true, type: bool },
+                    Bar: { isPublic: true, type: int },
+                  },
                 },
-                helloWorld: {
-                  isPublic: false,
-                  typeParameters: [],
-                  type: SourceFunctionType([string], unit),
+                functions: {
+                  Foo: {
+                    isPublic: true,
+                    typeParameters: [],
+                    type: SourceFunctionType(
+                      [bool],
+                      SourceIdentifierType(dummyModuleReference, 'Test2')
+                    ),
+                  },
+                  Bar: {
+                    isPublic: true,
+                    typeParameters: [],
+                    type: SourceFunctionType(
+                      [int],
+                      SourceIdentifierType(dummyModuleReference, 'Test2')
+                    ),
+                  },
                 },
-                helloWorldWithTypeParameters: {
-                  isPublic: false,
-                  typeParameters: ['A'],
-                  type: SourceFunctionType([SourceIdentifierType(dummyModuleReference, 'A')], unit),
-                },
+                methods: {},
               },
-              methods: {
-                baz: { isPublic: false, typeParameters: [], type: SourceFunctionType([int], bool) },
+              Test3: {
+                typeParameters: ['E'],
+                typeDefinition: {
+                  range: Range.DUMMY,
+                  type: 'object',
+                  names: [SourceId('foo'), SourceId('bar')],
+                  mappings: {
+                    foo: { isPublic: true, type: SourceIdentifierType(dummyModuleReference, 'E') },
+                    bar: { isPublic: false, type: int },
+                  },
+                },
+                functions: {},
+                methods: {},
               },
-            },
-            Test2: {
-              typeParameters: [],
-              typeDefinition: {
-                range: Range.DUMMY,
-                type: 'variant',
-                names: [SourceId('Foo'), SourceId('Bar')],
-                mappings: {
-                  Foo: { isPublic: true, type: bool },
-                  Bar: { isPublic: true, type: int },
+              Test4: {
+                typeParameters: ['E'],
+                typeDefinition: {
+                  range: Range.DUMMY,
+                  type: 'variant',
+                  names: [SourceId('Foo'), SourceId('Bar')],
+                  mappings: {
+                    Foo: { isPublic: true, type: SourceIdentifierType(dummyModuleReference, 'E') },
+                    Bar: { isPublic: true, type: int },
+                  },
                 },
+                functions: {
+                  Foo: {
+                    isPublic: true,
+                    typeParameters: ['E'],
+                    type: SourceFunctionType(
+                      [SourceIdentifierType(dummyModuleReference, 'E')],
+                      SourceIdentifierType(dummyModuleReference, 'Test4', [
+                        SourceIdentifierType(dummyModuleReference, 'E'),
+                      ])
+                    ),
+                  },
+                  Bar: {
+                    isPublic: true,
+                    typeParameters: ['E'],
+                    type: SourceFunctionType(
+                      [int],
+                      SourceIdentifierType(dummyModuleReference, 'Test4', [
+                        SourceIdentifierType(dummyModuleReference, 'E'),
+                      ])
+                    ),
+                  },
+                },
+                methods: {},
               },
-              functions: {
-                Foo: {
-                  isPublic: true,
-                  typeParameters: [],
-                  type: SourceFunctionType(
-                    [bool],
-                    SourceIdentifierType(dummyModuleReference, 'Test2')
-                  ),
-                },
-                Bar: {
-                  isPublic: true,
-                  typeParameters: [],
-                  type: SourceFunctionType(
-                    [int],
-                    SourceIdentifierType(dummyModuleReference, 'Test2')
-                  ),
-                },
-              },
-              methods: {},
-            },
-            Test3: {
-              typeParameters: ['E'],
-              typeDefinition: {
-                range: Range.DUMMY,
-                type: 'object',
-                names: [SourceId('foo'), SourceId('bar')],
-                mappings: {
-                  foo: { isPublic: true, type: SourceIdentifierType(dummyModuleReference, 'E') },
-                  bar: { isPublic: false, type: int },
-                },
-              },
-              functions: {},
-              methods: {},
-            },
-            Test4: {
-              typeParameters: ['E'],
-              typeDefinition: {
-                range: Range.DUMMY,
-                type: 'variant',
-                names: [SourceId('Foo'), SourceId('Bar')],
-                mappings: {
-                  Foo: { isPublic: true, type: SourceIdentifierType(dummyModuleReference, 'E') },
-                  Bar: { isPublic: true, type: int },
-                },
-              },
-              functions: {
-                Foo: {
-                  isPublic: true,
-                  typeParameters: ['E'],
-                  type: SourceFunctionType(
-                    [SourceIdentifierType(dummyModuleReference, 'E')],
-                    SourceIdentifierType(dummyModuleReference, 'Test4', [
-                      SourceIdentifierType(dummyModuleReference, 'E'),
-                    ])
-                  ),
-                },
-                Bar: {
-                  isPublic: true,
-                  typeParameters: ['E'],
-                  type: SourceFunctionType(
-                    [int],
-                    SourceIdentifierType(dummyModuleReference, 'Test4', [
-                      SourceIdentifierType(dummyModuleReference, 'E'),
-                    ])
-                  ),
-                },
-              },
-              methods: {},
             },
           },
         ]

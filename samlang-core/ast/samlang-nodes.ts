@@ -608,6 +608,7 @@ export interface SourceAnnotatedVariable {
 
 export interface SourceClassMemberDeclaration extends Node {
   readonly associatedComments: readonly TypedComment[];
+  readonly isPublic: boolean;
   readonly isMethod: boolean;
   readonly name: SourceIdentifier;
   readonly typeParameters: readonly SourceIdentifier[];
@@ -616,7 +617,6 @@ export interface SourceClassMemberDeclaration extends Node {
 }
 
 export interface SourceClassMemberDefinition extends SourceClassMemberDeclaration {
-  readonly isPublic: boolean;
   readonly body: SamlangExpression;
 }
 
@@ -624,6 +624,7 @@ export interface SourceInterfaceDeclaration extends Node {
   readonly associatedComments: readonly TypedComment[];
   readonly name: SourceIdentifier;
   readonly typeParameters: readonly SourceIdentifier[];
+  readonly typeDefinition?: TypeDefinition;
   readonly members: readonly SourceClassMemberDeclaration[];
 }
 

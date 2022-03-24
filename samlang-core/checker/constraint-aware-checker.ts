@@ -4,9 +4,9 @@ import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
 import type TypeResolution from './type-resolution';
 
-function meet(t1: SamlangType, t2: SamlangType, resolution: TypeResolution): SamlangType {
+function typeMeet(t1: SamlangType, t2: SamlangType, resolution: TypeResolution): SamlangType {
   const meetWithResolution = (type1: SamlangType, type2: SamlangType): SamlangType =>
-    meet(type1, type2, resolution);
+    typeMeet(type1, type2, resolution);
 
   switch (t1.type) {
     case 'PrimitiveType':
@@ -64,7 +64,7 @@ function meet(t1: SamlangType, t2: SamlangType, resolution: TypeResolution): Sam
         case 'UndecidedType':
           return meetWithUndecidedType(t1, t2, resolution);
         case 'FunctionType': {
-          const returnType = meet(t1.returnType, t2.returnType, resolution);
+          const returnType = typeMeet(t1.returnType, t2.returnType, resolution);
           if (t1.argumentTypes.length !== t2.argumentTypes.length) {
             throw new Error();
           }
@@ -89,7 +89,7 @@ function meetWithUndecidedType(
   resolution: TypeResolution
 ): SamlangType {
   const resolvedType = resolution.addTypeResolution(undecidedType.index, type);
-  return resolvedType === type ? type : meet(type, resolvedType, resolution);
+  return resolvedType === type ? type : typeMeet(type, resolvedType, resolution);
 }
 
 export function checkAndInfer(
@@ -102,7 +102,7 @@ export function checkAndInfer(
   const partiallyResolvedActualType = resolution.resolveType(actualType);
   const partiallyResolvedExpectedType = resolution.resolveType(expectedType);
   try {
-    return meet(partiallyResolvedExpectedType, partiallyResolvedActualType, resolution);
+    return typeMeet(partiallyResolvedExpectedType, partiallyResolvedActualType, resolution);
   } catch {
     return {
       type: 'FAILED_MEET',

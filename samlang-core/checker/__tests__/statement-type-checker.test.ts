@@ -62,47 +62,50 @@ function typeCheckInSandbox(
       hashMapOf([
         ModuleReference.DUMMY,
         {
-          A: {
-            typeParameters: [],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'object',
-              names: [SourceId('a'), SourceId('b')],
-              mappings: {
-                a: { isPublic: true, type: SourceIntType },
-                b: { isPublic: false, type: SourceBoolType },
+          interfaces: {},
+          classes: {
+            A: {
+              typeParameters: [],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'object',
+                names: [SourceId('a'), SourceId('b')],
+                mappings: {
+                  a: { isPublic: true, type: SourceIntType },
+                  b: { isPublic: false, type: SourceBoolType },
+                },
               },
+              functions: {},
+              methods: {},
             },
-            functions: {},
-            methods: {},
-          },
-          B: {
-            typeParameters: [],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'object',
-              names: [SourceId('a'), SourceId('b')],
-              mappings: {
-                a: { isPublic: true, type: SourceIntType },
-                b: { isPublic: false, type: SourceBoolType },
+            B: {
+              typeParameters: [],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'object',
+                names: [SourceId('a'), SourceId('b')],
+                mappings: {
+                  a: { isPublic: true, type: SourceIntType },
+                  b: { isPublic: false, type: SourceBoolType },
+                },
               },
+              functions: {},
+              methods: {},
             },
-            functions: {},
-            methods: {},
-          },
-          C: {
-            typeParameters: [],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'variant',
-              names: [SourceId('a'), SourceId('b')],
-              mappings: {
-                a: { isPublic: true, type: SourceIntType },
-                b: { isPublic: true, type: SourceBoolType },
+            C: {
+              typeParameters: [],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'variant',
+                names: [SourceId('a'), SourceId('b')],
+                mappings: {
+                  a: { isPublic: true, type: SourceIntType },
+                  b: { isPublic: true, type: SourceBoolType },
+                },
               },
+              functions: {},
+              methods: {},
             },
-            functions: {},
-            methods: {},
           },
         },
       ]),

@@ -6,6 +6,7 @@ import {
   SourceClassDefinition,
   SourceFunctionType,
   SourceIdentifierType,
+  SourceInterfaceDeclaration,
   SourceIntType,
   SourceStringType,
   SourceUnitType,
@@ -19,10 +20,7 @@ import type {
   ModuleTypingContext,
 } from './typing-context';
 
-function buildClassTypingContext(
-  moduleReference: ModuleReference,
-  { name: className, typeParameters, typeDefinition, members }: SourceClassDefinition
-): ClassTypingContext {
+function buildInterfaceTypingContext({ typeParameters, members }: SourceInterfaceDeclaration) {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
@@ -37,15 +35,28 @@ function buildClassTypingContext(
       functions[name.name] = typeInformation;
     }
   });
+  return {
+    typeParameters: typeParameters.map((it) => it.name),
+    functions,
+    methods,
+  };
+}
+
+function buildClassTypingContext(
+  moduleReference: ModuleReference,
+  classDefinition: SourceClassDefinition
+): ClassTypingContext {
+  const { typeParameters, functions, methods } = buildInterfaceTypingContext(classDefinition);
   const classType = SourceIdentifierType(
     moduleReference,
-    className.name,
-    typeParameters.map((it) => SourceIdentifierType(moduleReference, it.name, []))
+    classDefinition.name.name,
+    typeParameters.map((it) => SourceIdentifierType(moduleReference, it, []))
   );
+  const { typeDefinition } = classDefinition;
   if (typeDefinition.type === 'object') {
     functions.init = {
       isPublic: true,
-      typeParameters: typeParameters.map((it) => it.name),
+      typeParameters,
       type: SourceFunctionType(
         typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it.name]).type),
         classType
@@ -55,66 +66,70 @@ function buildClassTypingContext(
     Object.entries(typeDefinition.mappings).forEach(([tag, { type }]) => {
       functions[tag] = {
         isPublic: true,
-        typeParameters: typeParameters.map((it) => it.name),
+        typeParameters,
         type: SourceFunctionType([type], classType),
       };
     });
   }
-  return {
-    typeParameters: typeParameters.map((it) => it.name),
-    typeDefinition,
-    functions,
-    methods,
-  };
+  return { typeParameters, typeDefinition, functions, methods };
 }
 
 function buildModuleTypingContext(
   moduleReference: ModuleReference,
   samlangModule: SamlangModule
 ): ModuleTypingContext {
-  return Object.fromEntries(
-    samlangModule.classes.map(
-      (classDeclaration) =>
-        [
-          classDeclaration.name.name,
-          buildClassTypingContext(moduleReference, classDeclaration),
-        ] as const
-    )
-  );
+  return {
+    interfaces: Object.fromEntries(
+      samlangModule.interfaces.map((declaration) => [
+        declaration.name.name,
+        buildInterfaceTypingContext(declaration),
+      ])
+    ),
+    classes: Object.fromEntries(
+      samlangModule.classes.map((declaration) => [
+        declaration.name.name,
+        buildClassTypingContext(moduleReference, declaration),
+      ])
+    ),
+  };
 }
 
-export const DEFAULT_BUILTIN_TYPING_CONTEXT: Readonly<
-  Record<DefaultBuiltinClasses, ClassTypingContext>
-> = {
-  Builtins: {
-    typeParameters: [],
-    typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
-    functions: {
-      stringToInt: {
-        isPublic: true,
-        typeParameters: [],
-        type: SourceFunctionType([SourceStringType], SourceIntType),
+export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
+  readonly interfaces: Readonly<Record<never, ClassTypingContext>>;
+  readonly classes: Readonly<Record<DefaultBuiltinClasses, ClassTypingContext>>;
+} = {
+  interfaces: {},
+  classes: {
+    Builtins: {
+      typeParameters: [],
+      typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
+      functions: {
+        stringToInt: {
+          isPublic: true,
+          typeParameters: [],
+          type: SourceFunctionType([SourceStringType], SourceIntType),
+        },
+        intToString: {
+          isPublic: true,
+          typeParameters: [],
+          type: SourceFunctionType([SourceIntType], SourceStringType),
+        },
+        println: {
+          isPublic: true,
+          typeParameters: [],
+          type: SourceFunctionType([SourceStringType], SourceUnitType),
+        },
+        panic: {
+          isPublic: true,
+          typeParameters: ['T'],
+          type: SourceFunctionType(
+            [SourceStringType],
+            SourceIdentifierType(ModuleReference.ROOT, 'T')
+          ),
+        },
       },
-      intToString: {
-        isPublic: true,
-        typeParameters: [],
-        type: SourceFunctionType([SourceIntType], SourceStringType),
-      },
-      println: {
-        isPublic: true,
-        typeParameters: [],
-        type: SourceFunctionType([SourceStringType], SourceUnitType),
-      },
-      panic: {
-        isPublic: true,
-        typeParameters: ['T'],
-        type: SourceFunctionType(
-          [SourceStringType],
-          SourceIdentifierType(ModuleReference.ROOT, 'T')
-        ),
-      },
+      methods: {},
     },
-    methods: {},
   },
 };
 

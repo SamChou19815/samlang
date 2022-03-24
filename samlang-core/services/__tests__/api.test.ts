@@ -21,6 +21,7 @@ describe('language-service', () => {
 class Test {
   function test(): int = "haha"
 }
+interface I { function test(): int }
 `
     );
 

@@ -19,14 +19,21 @@ export interface MemberTypeInformation {
   readonly type: SamlangFunctionType;
 }
 
-export interface ClassTypingContext {
+export interface InterfaceTypingContext {
   readonly typeParameters: readonly string[];
-  readonly typeDefinition: TypeDefinition;
   readonly functions: Readonly<Record<string, MemberTypeInformation>>;
   readonly methods: Readonly<Record<string, MemberTypeInformation>>;
 }
 
-export type ModuleTypingContext = Readonly<Record<string, ClassTypingContext>>;
+export interface ClassTypingContext extends InterfaceTypingContext {
+  readonly typeDefinition: TypeDefinition;
+}
+
+export interface ModuleTypingContext {
+  readonly interfaces: Readonly<Record<string, InterfaceTypingContext>>;
+  readonly classes: Readonly<Record<string, ClassTypingContext>>;
+}
+
 export type GlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
 export type ReadonlyGlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
 
@@ -51,11 +58,18 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     );
   }
 
+  getInterfaceInformation(
+    moduleReference: ModuleReference,
+    className: string
+  ): InterfaceTypingContext | undefined {
+    return this.globalTypingContext.get(moduleReference)?.interfaces[className];
+  }
+
   getClassTypeInformation(
     moduleReference: ModuleReference,
     className: string
   ): ClassTypingContext | undefined {
-    return this.globalTypingContext.get(moduleReference)?.[className];
+    return this.globalTypingContext.get(moduleReference)?.classes[className];
   }
 
   getClassFunctionType(
