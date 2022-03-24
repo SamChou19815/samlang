@@ -5,7 +5,6 @@ import type {
   SourceClassMemberDeclaration,
   SourceIdentifier,
   SourceInterfaceDeclaration,
-  TypeDefinition,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { error, filterMap, ignore, LocalStackedContext } from '../utils';
@@ -30,10 +29,7 @@ class VariableCollisionCheckerStackedContext extends LocalStackedContext<void> {
     const checker = new VariableCollisionCheckerStackedContext(errorCollector);
     samlangModule.imports.forEach((oneImport) => checker.addAll(oneImport.importedMembers));
 
-    type InterfaceWithOptionalTypeDefinition = SourceInterfaceDeclaration & {
-      readonly typeDefinition?: TypeDefinition;
-    };
-    const interfaces: InterfaceWithOptionalTypeDefinition[] = [
+    const interfaces: SourceInterfaceDeclaration[] = [
       ...samlangModule.interfaces,
       ...samlangModule.classes,
     ];
@@ -61,7 +57,7 @@ class VariableCollisionCheckerStackedContext extends LocalStackedContext<void> {
 function checkClassOrInterfaceTypeValidity(
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
   errorCollector: ModuleErrorCollector,
-  interfaceDeclaration: SourceInterfaceDeclaration & { readonly typeDefinition?: TypeDefinition }
+  interfaceDeclaration: SourceInterfaceDeclaration
 ) {
   const { typeDefinition } = interfaceDeclaration;
   if (typeDefinition != null) {

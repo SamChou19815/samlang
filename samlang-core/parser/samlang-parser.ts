@@ -410,10 +410,7 @@ export default class SamlangModuleParser extends BaseParser {
   }
 
   parseSourceClassMemberDeclaration = (): SourceClassMemberDeclaration => {
-    const { isPublic: _, ...declaration } = this.parseSourceClassMemberDeclarationCommon(
-      /* allowPrivate */ false
-    );
-    return declaration;
+    return this.parseSourceClassMemberDeclarationCommon(/* allowPrivate */ false);
   };
 
   parseSourceClassMemberDefinition = (): SourceClassMemberDefinition => {

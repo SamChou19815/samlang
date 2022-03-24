@@ -475,7 +475,7 @@ class LanguageServicesImpl implements LanguageServices {
     moduleReference: ModuleReference,
     className: string
   ): ClassTypingContext | undefined {
-    return this.state.globalTypingContext.get(moduleReference)?.[className];
+    return this.state.globalTypingContext.get(moduleReference)?.classes[className];
   }
 
   private static getCompletionResultFromTypeInformation(

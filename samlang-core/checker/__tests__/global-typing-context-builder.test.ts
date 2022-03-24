@@ -89,56 +89,72 @@ const testSources = mapOf([module0Reference, module0], [module1Reference, module
 
 describe('global-typing-context-builder', () => {
   it('can handle imports and definitions', () => {
-    const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
+    const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {
+      classes: {},
+      interfaces: {},
+    });
     expect(actualGlobalTypingContext.size).toBe(3);
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-      Class0: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          init: {
-            isPublic: true,
-            type: SourceFunctionType([], SourceIdentifierType(module0Reference, 'Class0', [])),
-            typeParameters: [],
+      interfaces: {},
+      classes: {
+        Class0: {
+          typeParameters: [],
+          typeDefinition,
+          functions: {
+            init: {
+              isPublic: true,
+              type: SourceFunctionType([], SourceIdentifierType(module0Reference, 'Class0', [])),
+              typeParameters: [],
+            },
           },
+          methods: {},
         },
-        methods: {},
       },
     });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-      Class1: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          f1: { isPublic: false, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
-          init: {
-            isPublic: true,
-            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
-            typeParameters: [],
+      interfaces: {},
+      classes: {
+        Class1: {
+          typeParameters: [],
+          typeDefinition,
+          functions: {
+            f1: {
+              isPublic: false,
+              type: SourceFunctionType([], SourceIntType),
+              typeParameters: [],
+            },
+            init: {
+              isPublic: true,
+              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
+              typeParameters: [],
+            },
+          },
+          methods: {
+            m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
           },
         },
-        methods: {
-          m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
-        },
-      },
-      Class2: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          init: {
-            isPublic: true,
-            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
-            typeParameters: [],
+        Class2: {
+          typeParameters: [],
+          typeDefinition,
+          functions: {
+            init: {
+              isPublic: true,
+              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
+              typeParameters: [],
+            },
           },
+          methods: {},
         },
-        methods: {},
       },
     });
   });
 
   it('can handle incremental add', () => {
-    const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
+    const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {
+      classes: {},
+      interfaces: {},
+    });
     updateGlobalTypingContext(
       actualGlobalTypingContext,
       mapOf(
@@ -151,52 +167,65 @@ describe('global-typing-context-builder', () => {
     expect(actualGlobalTypingContext.size).toBe(3);
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-      Class0: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          init: {
-            isPublic: true,
-            type: SourceFunctionType([], SourceIdentifierType(module0Reference, 'Class0', [])),
-            typeParameters: [],
+      interfaces: {},
+      classes: {
+        Class0: {
+          typeParameters: [],
+          typeDefinition,
+          functions: {
+            init: {
+              isPublic: true,
+              type: SourceFunctionType([], SourceIdentifierType(module0Reference, 'Class0', [])),
+              typeParameters: [],
+            },
           },
+          methods: {},
         },
-        methods: {},
       },
     });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-      Class1: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          f1: { isPublic: false, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
-          init: {
-            isPublic: true,
-            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
-            typeParameters: [],
+      interfaces: {},
+      classes: {
+        Class1: {
+          typeParameters: [],
+          typeDefinition,
+          functions: {
+            f1: {
+              isPublic: false,
+              type: SourceFunctionType([], SourceIntType),
+              typeParameters: [],
+            },
+            init: {
+              isPublic: true,
+              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
+              typeParameters: [],
+            },
+          },
+          methods: {
+            m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
           },
         },
-        methods: {
-          m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
-        },
-      },
-      Class2: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          init: {
-            isPublic: true,
-            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
-            typeParameters: [],
+        Class2: {
+          typeParameters: [],
+          typeDefinition,
+          functions: {
+            init: {
+              isPublic: true,
+              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
+              typeParameters: [],
+            },
           },
+          methods: {},
         },
-        methods: {},
       },
     });
   });
 
   it('can handle incremental update', () => {
-    const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
+    const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {
+      classes: {},
+      interfaces: {},
+    });
     updateGlobalTypingContext(
       actualGlobalTypingContext,
       mapOf(
@@ -208,40 +237,53 @@ describe('global-typing-context-builder', () => {
 
     expect(actualGlobalTypingContext.size).toBe(3);
 
-    expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({});
+    expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
+      interfaces: {},
+      classes: {},
+    });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-      Class1: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          f1: { isPublic: false, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
-          init: {
-            isPublic: true,
-            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
-            typeParameters: [],
+      interfaces: {},
+      classes: {
+        Class1: {
+          typeParameters: [],
+          typeDefinition,
+          functions: {
+            f1: {
+              isPublic: false,
+              type: SourceFunctionType([], SourceIntType),
+              typeParameters: [],
+            },
+            init: {
+              isPublic: true,
+              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
+              typeParameters: [],
+            },
+          },
+          methods: {
+            m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
           },
         },
-        methods: {
-          m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
-        },
-      },
-      Class2: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          init: {
-            isPublic: true,
-            type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
-            typeParameters: [],
+        Class2: {
+          typeParameters: [],
+          typeDefinition,
+          functions: {
+            init: {
+              isPublic: true,
+              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
+              typeParameters: [],
+            },
           },
+          methods: {},
         },
-        methods: {},
       },
     });
   });
 
   it('can handle incremental removal', () => {
-    const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
+    const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {
+      classes: {},
+      interfaces: {},
+    });
     updateGlobalTypingContext(actualGlobalTypingContext, mapOf([module1Reference, module1]), [
       module0Reference,
       module1Reference,

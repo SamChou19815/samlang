@@ -48,7 +48,7 @@ class ExpressionTypeChecker {
   constructor(
     private readonly accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     private readonly localTypingContext: LocalStackedContext<SamlangType>,
-    private readonly resolution: TypeResolution,
+    resolution: TypeResolution,
     public readonly errorCollector: ModuleErrorCollector
   ) {
     this.constraintAwareTypeChecker = new ConstraintAwareChecker(resolution, errorCollector);

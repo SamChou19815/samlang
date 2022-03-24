@@ -15,78 +15,87 @@ describe('typing-context', () => {
       hashMapOf([
         ModuleReference.DUMMY,
         {
-          A: {
-            typeParameters: ['A', 'B'],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'variant',
-              names: [SourceId('a'), SourceId('b')],
-              mappings: {
-                a: { isPublic: true, type: SourceIdentifierType(ModuleReference.DUMMY, 'A') },
-                b: { isPublic: false, type: SourceIdentifierType(ModuleReference.DUMMY, 'B') },
-              },
-            },
-            functions: {
-              f1: {
-                isPublic: true,
-                typeParameters: ['C'],
-                type: SourceFunctionType([], SourceIntType),
-              },
-              f2: {
-                isPublic: false,
-                typeParameters: ['C'],
-                type: SourceFunctionType([], SourceIntType),
-              },
-            },
-            methods: {
-              m1: {
-                isPublic: true,
-                typeParameters: ['C'],
-                type: SourceFunctionType(
-                  [
-                    SourceIdentifierType(ModuleReference.DUMMY, 'A'),
-                    SourceIdentifierType(ModuleReference.DUMMY, 'B'),
-                  ],
-                  SourceIntType
-                ),
-              },
-              m2: {
-                isPublic: false,
-                typeParameters: ['C'],
-                type: SourceFunctionType([], SourceIntType),
-              },
+          interfaces: {
+            I: {
+              typeParameters: ['A', 'B'],
+              functions: {},
+              methods: {},
             },
           },
-          B: {
-            typeParameters: ['E', 'F'],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'object',
-              names: [],
-              mappings: {},
+          classes: {
+            A: {
+              typeParameters: ['A', 'B'],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'variant',
+                names: [SourceId('a'), SourceId('b')],
+                mappings: {
+                  a: { isPublic: true, type: SourceIdentifierType(ModuleReference.DUMMY, 'A') },
+                  b: { isPublic: false, type: SourceIdentifierType(ModuleReference.DUMMY, 'B') },
+                },
+              },
+              functions: {
+                f1: {
+                  isPublic: true,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType([], SourceIntType),
+                },
+                f2: {
+                  isPublic: false,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType([], SourceIntType),
+                },
+              },
+              methods: {
+                m1: {
+                  isPublic: true,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType(
+                    [
+                      SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+                      SourceIdentifierType(ModuleReference.DUMMY, 'B'),
+                    ],
+                    SourceIntType
+                  ),
+                },
+                m2: {
+                  isPublic: false,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType([], SourceIntType),
+                },
+              },
             },
-            functions: {
-              f1: {
-                isPublic: true,
-                typeParameters: ['C'],
-                type: SourceFunctionType([], SourceIntType),
+            B: {
+              typeParameters: ['E', 'F'],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'object',
+                names: [],
+                mappings: {},
               },
-              f2: {
-                isPublic: false,
-                typeParameters: ['C'],
-                type: SourceFunctionType([], SourceIntType),
+              functions: {
+                f1: {
+                  isPublic: true,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType([], SourceIntType),
+                },
+                f2: {
+                  isPublic: false,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType([], SourceIntType),
+                },
               },
-            },
-            methods: {
-              m1: {
-                isPublic: true,
-                typeParameters: ['C'],
-                type: SourceFunctionType([], SourceIntType),
-              },
-              m2: {
-                isPublic: false,
-                typeParameters: ['C'],
-                type: SourceFunctionType([], SourceIntType),
+              methods: {
+                m1: {
+                  isPublic: true,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType([], SourceIntType),
+                },
+                m2: {
+                  isPublic: false,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType([], SourceIntType),
+                },
               },
             },
           },
@@ -96,6 +105,7 @@ describe('typing-context', () => {
       'A'
     );
 
+    expect(context.getInterfaceInformation(ModuleReference.DUMMY, 'I')).toBeTruthy();
     expect(context.getClassFunctionType(new ModuleReference(['A']), 'A', 'f1')).toBeFalsy();
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f1')).toBeTruthy();
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f2')).toBeTruthy();
