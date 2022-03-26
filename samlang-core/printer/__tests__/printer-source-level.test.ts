@@ -291,6 +291,26 @@ Test /* b */ /* c */ .<T>VariantName(42)`
 
     expect(
       reprintModule(`
+interface Foo {}
+class Empty
+interface Bar<A> { function baz(): int }
+class Main { function main(): unit = {} }
+    `)
+    ).toBe(`
+interface Foo
+
+interface Bar<A> {
+  function baz(): int
+}
+
+class Empty
+
+class Main {
+  function main(): unit = {  }
+}`);
+
+    expect(
+      reprintModule(`
 import {Foo} from Bar.Baz
 import {F1,F2,F3,F4,F5,F6,F7,F8,F9,F10} from Bar.Baz
 

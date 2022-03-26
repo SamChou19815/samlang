@@ -308,6 +308,9 @@ export default class SamlangModuleParser extends BaseParser {
     } else {
       typeParameters = [];
     }
+    if (this.peek().content !== '{') {
+      return { associatedComments, range: startRange, name, typeParameters, members: [] };
+    }
     this.assertAndConsume('{');
     const members: SourceClassMemberDeclaration[] = [];
     while (this.peek().content === 'function' || this.peek().content === 'method') {
