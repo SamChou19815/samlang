@@ -4,7 +4,7 @@ import {
   prettyPrintType,
   SamlangExpression,
   SamlangType,
-  SourceClassMemberDefinition,
+  SourceClassMemberDeclaration,
 } from '../ast/samlang-nodes';
 import { checkNotNull } from '../utils';
 import {
@@ -312,10 +312,11 @@ export function prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
   );
 }
 
-export function createPrettierDocumentsFromSamlangClassMember(
-  member: SourceClassMemberDefinition
+export function createPrettierDocumentsFromSamlangInterfaceMember(
+  member: SourceClassMemberDeclaration & { readonly body?: SamlangExpression }
 ): readonly PrettierDocument[] {
-  const bodyDocument = createPrettierDocumentFromSamlangExpression(member.body);
+  const bodyDocument =
+    member.body == null ? PRETTIER_NIL : createPrettierDocumentFromSamlangExpression(member.body);
 
   // Special case for statement block as body for prettier result.
   // We want to lift the leading `{` to the same line as `=`.
@@ -345,7 +346,7 @@ export function createPrettierDocumentsFromSamlangClassMember(
         PRETTIER_TEXT(`${annotated.name}: ${prettyPrintType(annotated.type)}`)
       )
     ),
-    PRETTIER_TEXT(`: ${prettyPrintType(member.type.returnType)} =`),
+    PRETTIER_TEXT(`: ${prettyPrintType(member.type.returnType)}${member.body == null ? '' : ' ='}`),
     bodyDocumentWithPotentialIndentation,
   ];
 }
