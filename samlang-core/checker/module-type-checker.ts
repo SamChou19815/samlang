@@ -3,56 +3,15 @@ import type {
   SamlangModule,
   SamlangType,
   SourceClassMemberDeclaration,
-  SourceIdentifier,
   SourceInterfaceDeclaration,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { error, filterMap, ignore, LocalStackedContext } from '../utils';
 import typeCheckExpression from './expression-type-checker';
+import checkToplevelNameCollision from './toplevel-name-collision-checker';
 import TypeResolution from './type-resolution';
 import { validateType } from './type-validator';
 import { AccessibleGlobalTypingContext, ReadonlyGlobalTypingContext } from './typing-context';
-
-class VariableCollisionCheckerStackedContext extends LocalStackedContext<void> {
-  constructor(private readonly errorCollector: ModuleErrorCollector) {
-    super();
-  }
-
-  private add = ({ name, range }: Omit<SourceIdentifier, 'associatedComments'>) =>
-    this.addLocalValueType(name, undefined, () =>
-      this.errorCollector.reportCollisionError(range, name)
-    );
-
-  private addAll = (ids: readonly SourceIdentifier[]) => ids.forEach(this.add);
-
-  static checkNameCollision(errorCollector: ModuleErrorCollector, samlangModule: SamlangModule) {
-    const checker = new VariableCollisionCheckerStackedContext(errorCollector);
-    samlangModule.imports.forEach((oneImport) => checker.addAll(oneImport.importedMembers));
-
-    const interfaces: SourceInterfaceDeclaration[] = [
-      ...samlangModule.interfaces,
-      ...samlangModule.classes,
-    ];
-    interfaces.forEach((interfaceDeclaration) => {
-      checker.add(interfaceDeclaration.name);
-
-      checker.withNestedScope(() => {
-        checker.addAll(interfaceDeclaration.typeParameters);
-        if (interfaceDeclaration.typeDefinition != null) {
-          checker.addAll(interfaceDeclaration.typeDefinition.names);
-        }
-
-        interfaceDeclaration.members.map((member) => {
-          checker.add(member.name);
-          checker.withNestedScope(() => {
-            checker.addAll(member.typeParameters);
-            member.parameters.forEach(({ name, nameRange: range }) => checker.add({ name, range }));
-          });
-        });
-      });
-    });
-  }
-}
 
 function checkClassOrInterfaceTypeValidity(
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
@@ -102,7 +61,7 @@ export default function typeCheckSamlangModule(
   globalTypingContext: ReadonlyGlobalTypingContext,
   errorCollector: ModuleErrorCollector
 ): SamlangModule {
-  VariableCollisionCheckerStackedContext.checkNameCollision(errorCollector, samlangModule);
+  checkToplevelNameCollision(errorCollector, samlangModule);
 
   samlangModule.interfaces.forEach((interfaceDeclaration) => {
     const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
