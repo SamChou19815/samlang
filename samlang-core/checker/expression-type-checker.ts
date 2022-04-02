@@ -31,7 +31,7 @@ import {
   VariableExpression,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import { assert, filterMap, LocalStackedContext, zip } from '../utils';
+import { assert, filterMap, ignore, LocalStackedContext, zip } from '../utils';
 import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';
 import StatementTypeChecker from './statement-type-checker';
@@ -132,7 +132,6 @@ class ExpressionTypeChecker {
         ? SourceUnitType
         : this.localTypingContext.getLocalValueType(expression.name);
     if (locallyInferredType == null) {
-      this.errorCollector.reportUnresolvedNameError(expression.range, expression.name);
       return { ...expression, type: expectedType };
     }
     const inferredType = this.constraintAwareTypeChecker.checkAndInfer(
@@ -521,9 +520,7 @@ class ExpressionTypeChecker {
             range: dataVariableRange,
             associatedComments: dataVariableAssociatedComments,
           } = dataVariable[0];
-          this.localTypingContext.addLocalValueType(dataVariableName, mappingDataType, () =>
-            this.errorCollector.reportCollisionError(range, dataVariableName)
-          );
+          this.localTypingContext.addLocalValueType(dataVariableName, mappingDataType, ignore);
           checkedExpression = this.typeCheck(correspondingExpression, expectedType);
           this.localTypingContext.removeLocalValue(dataVariableName);
           checkedDatadataVariable = [
@@ -582,9 +579,7 @@ class ExpressionTypeChecker {
           this.errorCollector,
           expression.range
         );
-        this.localTypingContext.addLocalValueType(parameterName.name, parameterType, () =>
-          this.errorCollector.reportCollisionError(parameterName.range, parameterName.name)
-        );
+        this.localTypingContext.addLocalValueType(parameterName.name, parameterType, ignore);
       });
       return this.typeCheck(expression.body, expression.type.returnType);
     });

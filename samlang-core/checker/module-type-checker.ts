@@ -8,7 +8,7 @@ import type {
 import type { ModuleErrorCollector } from '../errors';
 import { error, filterMap, ignore, LocalStackedContext } from '../utils';
 import typeCheckExpression from './expression-type-checker';
-import checkToplevelNameCollision from './toplevel-name-collision-checker';
+import performSSAAnalysisOnSamlangModule from './ssa-analysis';
 import TypeResolution from './type-resolution';
 import { validateType } from './type-validator';
 import { AccessibleGlobalTypingContext, ReadonlyGlobalTypingContext } from './typing-context';
@@ -61,7 +61,7 @@ export default function typeCheckSamlangModule(
   globalTypingContext: ReadonlyGlobalTypingContext,
   errorCollector: ModuleErrorCollector
 ): SamlangModule {
-  checkToplevelNameCollision(errorCollector, samlangModule);
+  performSSAAnalysisOnSamlangModule(samlangModule, errorCollector);
 
   samlangModule.interfaces.forEach((interfaceDeclaration) => {
     const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
