@@ -5,12 +5,12 @@ import {
   SourceIntType,
   SourceTupleType,
 } from '../../ast/samlang-nodes';
-import replaceTypeIdentifier from '../type-identifier-replacer';
+import performTypeSubstitution from '../type-substitution';
 
-describe('type-identifier-replacer', () => {
+describe('type-substitution', () => {
   it('can replace deeply nested identifiers', () => {
     expect(
-      replaceTypeIdentifier(
+      performTypeSubstitution(
         SourceFunctionType(
           [
             SourceIdentifierType(ModuleReference.DUMMY, 'A', [

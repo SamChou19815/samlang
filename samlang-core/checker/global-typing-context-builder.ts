@@ -13,6 +13,7 @@ import {
 } from '../ast/samlang-nodes';
 import type { DefaultBuiltinClasses } from '../parser';
 import { checkNotNull, hashMapOf } from '../utils';
+import { normalizeTypeInformation } from './type-substitution';
 import type {
   ClassTypingContext,
   GlobalTypingContext,
@@ -20,15 +21,18 @@ import type {
   ModuleTypingContext,
 } from './typing-context';
 
-function buildInterfaceTypingContext({ typeParameters, members }: SourceInterfaceDeclaration) {
+function buildInterfaceTypingContext(
+  moduleReference: ModuleReference,
+  { typeParameters, members }: SourceInterfaceDeclaration
+) {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
-    const typeInformation = {
+    const typeInformation = normalizeTypeInformation(moduleReference, {
       isPublic,
       typeParameters: memberTypeParameters.map((it) => it.name),
       type,
-    };
+    });
     if (isMethod) {
       methods[name.name] = typeInformation;
     } else {
@@ -46,7 +50,10 @@ function buildClassTypingContext(
   moduleReference: ModuleReference,
   classDefinition: SourceClassDefinition
 ): ClassTypingContext {
-  const { typeParameters, functions, methods } = buildInterfaceTypingContext(classDefinition);
+  const { typeParameters, functions, methods } = buildInterfaceTypingContext(
+    moduleReference,
+    classDefinition
+  );
   const classType = SourceIdentifierType(
     moduleReference,
     classDefinition.name.name,
@@ -54,21 +61,21 @@ function buildClassTypingContext(
   );
   const { typeDefinition } = classDefinition;
   if (typeDefinition.type === 'object') {
-    functions.init = {
+    functions.init = normalizeTypeInformation(moduleReference, {
       isPublic: true,
       typeParameters,
       type: SourceFunctionType(
         typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it.name]).type),
         classType
       ),
-    };
+    });
   } else {
     Object.entries(typeDefinition.mappings).forEach(([tag, { type }]) => {
-      functions[tag] = {
+      functions[tag] = normalizeTypeInformation(moduleReference, {
         isPublic: true,
         typeParameters,
         type: SourceFunctionType([type], classType),
-      };
+      });
     });
   }
   return { typeParameters, typeDefinition, functions, methods };
@@ -82,7 +89,7 @@ function buildModuleTypingContext(
     interfaces: Object.fromEntries(
       samlangModule.interfaces.map((declaration) => [
         declaration.name.name,
-        buildInterfaceTypingContext(declaration),
+        buildInterfaceTypingContext(moduleReference, declaration),
       ])
     ),
     classes: Object.fromEntries(
