@@ -10,16 +10,6 @@ import {
 import { undecideFieldTypeParameters, undecideTypeParameters } from '../type-undecider';
 
 describe('type-undecider', () => {
-  it('will throw on undecided type', () => {
-    expect(() => undecideTypeParameters(UndecidedTypes.next(), [])).toThrow();
-    expect(() =>
-      undecideTypeParameters(
-        SourceIdentifierType(ModuleReference.DUMMY, 'A', [UndecidedTypes.next()]),
-        []
-      )
-    ).toThrow();
-  });
-
   it('can undecide big nested type', () => {
     UndecidedTypes.resetUndecidedTypeIndex_ONLY_FOR_TEST();
 

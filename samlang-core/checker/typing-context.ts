@@ -9,7 +9,7 @@ import {
   TypeDefinition,
 } from '../ast/samlang-nodes';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
-import replaceTypeIdentifier from './type-identifier-replacer';
+import performTypeSubstitution from './type-substitution';
 import { undecideTypeParameters } from './type-undecider';
 import type { IdentifierTypeValidator } from './type-validator';
 
@@ -115,7 +115,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
         actual: classTypeArguments.length,
       };
     }
-    const fullyFixedType = replaceTypeIdentifier(
+    const fullyFixedType = performTypeSubstitution(
       partiallyFixedType,
       Object.fromEntries(zip(classTypeParameters, classTypeArguments))
     );
@@ -182,7 +182,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
             name,
             {
               isPublic: fieldType.isPublic,
-              type: replaceTypeIdentifier(
+              type: performTypeSubstitution(
                 fieldType.type,
                 Object.fromEntries(zip(classTypeParameters, typeArguments))
               ),

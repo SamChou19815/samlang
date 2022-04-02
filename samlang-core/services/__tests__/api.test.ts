@@ -434,23 +434,23 @@ class Main {
       {
         insertTextFormat: InsertTextFormats.Snippet,
         kind: CompletionItemKinds.FUNCTION,
-        label: 'of(a0: T): List<T>',
+        label: 'of(a0: _T0): List<_T0>',
         insertText: 'of($0)$1',
-        detail: '<T>((T) -> List<T>)',
+        detail: '<_T0>((_T0) -> List<_T0>)',
       },
       {
         insertTextFormat: InsertTextFormats.Snippet,
         kind: CompletionItemKinds.FUNCTION,
-        detail: '<T>((unit) -> List<T>)',
+        detail: '<_T0>((unit) -> List<_T0>)',
         insertText: 'Nil($0)$1',
-        label: 'Nil(a0: unit): List<T>',
+        label: 'Nil(a0: unit): List<_T0>',
       },
       {
         insertTextFormat: InsertTextFormats.Snippet,
         kind: CompletionItemKinds.FUNCTION,
-        detail: '<T>(([T * List<T>]) -> List<T>)',
+        detail: '<_T0>(([_T0 * List<_T0>]) -> List<_T0>)',
         insertText: 'Cons($0)$1',
-        label: 'Cons(a0: [T * List<T>]): List<T>',
+        label: 'Cons(a0: [_T0 * List<_T0>]): List<_T0>',
       },
     ]);
     expect(service.autoComplete(testModuleReference, Position(12, 31))).toEqual([

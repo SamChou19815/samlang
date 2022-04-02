@@ -36,7 +36,8 @@ import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';
 import StatementTypeChecker from './statement-type-checker';
 import type TypeResolution from './type-resolution';
-import { typeReplacement, undecideTypeParameters } from './type-undecider';
+import performTypeSubstitution from './type-substitution';
+import { undecideTypeParameters } from './type-undecider';
 import { validateType } from './type-validator';
 import type { AccessibleGlobalTypingContext } from './typing-context';
 
@@ -162,7 +163,7 @@ class ExpressionTypeChecker {
       if (expression.typeArguments.length === classFunctionTypeInformation.typeParameters.length) {
         const type = this.constraintAwareTypeChecker.checkAndInfer(
           expectedType,
-          typeReplacement(
+          performTypeSubstitution(
             classFunctionTypeInformation.type,
             Object.fromEntries(
               zip(classFunctionTypeInformation.typeParameters, expression.typeArguments)
