@@ -1,6 +1,7 @@
 import {
   Location,
   ModuleReference,
+  ModuleReferenceCollections,
   Position,
   Range,
   Sources,
@@ -32,7 +33,7 @@ import {
 } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
 import prettyPrintSamlangModule from '../printer';
-import { assert, checkNotNull, filterMap, HashMap, hashMapOf, hashSetOf } from '../utils';
+import { assert, checkNotNull, filterMap, HashMap } from '../utils';
 import {
   LocationLookup,
   ReadOnlyLocationLookup,
@@ -53,13 +54,16 @@ import {
 export class LanguageServiceStateImpl implements LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
 
-  private readonly rawSources: HashMap<ModuleReference, string> = hashMapOf();
+  private readonly rawSources: HashMap<ModuleReference, string> =
+    ModuleReferenceCollections.hashMapOf();
 
-  private readonly rawModules: HashMap<ModuleReference, SamlangModule> = hashMapOf();
+  private readonly rawModules: HashMap<ModuleReference, SamlangModule> =
+    ModuleReferenceCollections.hashMapOf();
 
   private readonly checkedModules: HashMap<ModuleReference, SamlangModule>;
 
-  private readonly errors: HashMap<ModuleReference, readonly CompileTimeError[]> = hashMapOf();
+  private readonly errors: HashMap<ModuleReference, readonly CompileTimeError[]> =
+    ModuleReferenceCollections.hashMapOf();
 
   private _globalTypingContext: GlobalTypingContext;
 
@@ -157,7 +161,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
   }
 
   private updateErrors(updatedErrors: readonly CompileTimeError[]): void {
-    const grouped = hashMapOf<ModuleReference, CompileTimeError[]>();
+    const grouped = ModuleReferenceCollections.hashMapOf<CompileTimeError[]>();
     updatedErrors.forEach((error) => {
       const group = grouped.get(error.moduleReference);
       if (group == null) {
@@ -173,7 +177,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
     moduleReference: ModuleReference,
     samlangModule: SamlangModule | null
   ): readonly ModuleReference[] {
-    const affected = hashSetOf(moduleReference);
+    const affected = ModuleReferenceCollections.hashSetOf(moduleReference);
 
     this.dependencyTracker
       .getReverseDependencies(moduleReference)

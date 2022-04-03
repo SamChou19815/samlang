@@ -1,4 +1,9 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import {
+  DummySourceReason,
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+} from '../../ast/common-nodes';
 import {
   SamlangExpression,
   SamlangType,
@@ -13,7 +18,7 @@ import {
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
-import { checkNotNull, hashMapOf } from '../../utils';
+import { checkNotNull } from '../../utils';
 import typeCheckExpression from '../expression-type-checker';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
 import { performSSAAnalysisOnSamlangExpression } from '../ssa-analysis';
@@ -41,7 +46,7 @@ function typeCheckInSandbox(
   const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
     new AccessibleGlobalTypingContext(
       dummyModuleReference,
-      hashMapOf<ModuleReference, ModuleTypingContext>(
+      ModuleReferenceCollections.hashMapOf<ModuleTypingContext>(
         [ModuleReference.ROOT, DEFAULT_BUILTIN_TYPING_CONTEXT],
         [
           dummyModuleReference,

@@ -1,7 +1,11 @@
-import { ModuleReference, Range, Sources } from '../../ast/common-nodes';
+import {
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+  Sources,
+} from '../../ast/common-nodes';
 import { SamlangModule, SourceClassDefinition, SourceId } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
-import { hashMapOf } from '../../utils';
 import checkUndefinedImportsError from '../undefined-imports-checker';
 
 const createMockClass = (name: string): SourceClassDefinition => ({
@@ -34,7 +38,7 @@ const createMockModule = (
 const createMockSources = (
   modules: readonly (readonly [string, SamlangModule])[]
 ): Sources<SamlangModule> =>
-  hashMapOf(
+  ModuleReferenceCollections.hashMapOf(
     ...modules.map(([name, samlangModule]) => [new ModuleReference([name]), samlangModule] as const)
   );
 

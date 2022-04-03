@@ -1,8 +1,13 @@
-import { ModuleReference, Position, Range } from '../../ast/common-nodes';
+import {
+  ModuleReference,
+  ModuleReferenceCollections,
+  Position,
+  Range,
+} from '../../ast/common-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
 import prettyPrintSamlangModule from '../../printer';
-import { checkNotNull, hashMapOf } from '../../utils';
+import { checkNotNull } from '../../utils';
 import {
   applyRenamingWithDefinitionAndUse,
   ModuleScopedVariableDefinitionLookup,
@@ -114,7 +119,7 @@ class Main {
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     const lookup = new VariableDefinitionLookup();
-    lookup.rebuild(hashMapOf([moduleReference, parsedModule]));
+    lookup.rebuild(ModuleReferenceCollections.hashMapOf([moduleReference, parsedModule]));
 
     expect(lookup.findAllDefinitionAndUses(new ModuleReference(['Test1']), Range.DUMMY)).toBeNull();
     expect(lookup.findAllDefinitionAndUses(new ModuleReference(['Test']), Range.DUMMY)).toBeNull();
@@ -338,7 +343,7 @@ class Main {
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     const lookup = new VariableDefinitionLookup();
-    lookup.rebuild(hashMapOf([moduleReference, parsedModule]));
+    lookup.rebuild(ModuleReferenceCollections.hashMapOf([moduleReference, parsedModule]));
 
     expect(
       prettyPrintSamlangModule(

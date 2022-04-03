@@ -1,4 +1,9 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import {
+  DummySourceReason,
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+} from '../../ast/common-nodes';
 import { MUL } from '../../ast/common-operators';
 import {
   SamlangExpression,
@@ -25,14 +30,13 @@ import {
   SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
-import { hashSetOf } from '../../utils';
 import { collectModuleReferenceFromExpression } from '../module-references-collector';
 
 function assertFoundAllModuleReferencesFromExpression(
   expression: SamlangExpression,
   expected: readonly string[]
 ): void {
-  const collector = hashSetOf<ModuleReference>();
+  const collector = ModuleReferenceCollections.hashSetOf();
   collectModuleReferenceFromExpression(expression, collector);
   expect(
     collector

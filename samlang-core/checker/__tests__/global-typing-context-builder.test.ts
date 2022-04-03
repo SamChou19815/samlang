@@ -1,4 +1,9 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import {
+  DummySourceReason,
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+} from '../../ast/common-nodes';
 import type { SamlangModule, SourceClassDefinition } from '../../ast/samlang-nodes';
 import {
   SourceExpressionFalse,
@@ -7,7 +12,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
 } from '../../ast/samlang-nodes';
-import { mapOf } from '../../utils';
 import {
   buildGlobalTypingContext,
   updateGlobalTypingContext,
@@ -85,7 +89,10 @@ const module1: SamlangModule = {
   interfaces: [],
 };
 
-const testSources = mapOf([module0Reference, module0], [module1Reference, module1]);
+const testSources = ModuleReferenceCollections.mapOf(
+  [module0Reference, module0],
+  [module1Reference, module1]
+);
 
 describe('global-typing-context-builder', () => {
   it('can handle imports and definitions', () => {
@@ -173,7 +180,7 @@ describe('global-typing-context-builder', () => {
     });
     updateGlobalTypingContext(
       actualGlobalTypingContext,
-      mapOf(
+      ModuleReferenceCollections.mapOf(
         [module0Reference, module0],
         [module1Reference, { ...module1, classes: [class1, class2] }]
       ),
@@ -260,7 +267,7 @@ describe('global-typing-context-builder', () => {
     });
     updateGlobalTypingContext(
       actualGlobalTypingContext,
-      mapOf(
+      ModuleReferenceCollections.mapOf(
         [module0Reference, { imports: [], classes: [], interfaces: [] }],
         [module1Reference, module1]
       ),
@@ -328,10 +335,11 @@ describe('global-typing-context-builder', () => {
       classes: {},
       interfaces: {},
     });
-    updateGlobalTypingContext(actualGlobalTypingContext, mapOf([module1Reference, module1]), [
-      module0Reference,
-      module1Reference,
-    ]);
+    updateGlobalTypingContext(
+      actualGlobalTypingContext,
+      ModuleReferenceCollections.mapOf([module1Reference, module1]),
+      [module0Reference, module1Reference]
+    );
     expect(actualGlobalTypingContext.size).toBe(2);
   });
 });

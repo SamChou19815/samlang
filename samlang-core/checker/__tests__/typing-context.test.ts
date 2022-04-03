@@ -1,18 +1,22 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import {
+  DummySourceReason,
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+} from '../../ast/common-nodes';
 import {
   SourceFunctionType,
   SourceId,
   SourceIdentifierType,
   SourceIntType,
 } from '../../ast/samlang-nodes';
-import { hashMapOf } from '../../utils';
 import { AccessibleGlobalTypingContext } from '../typing-context';
 
 describe('typing-context', () => {
   it('AccessibleGlobalTypingContext tests', () => {
     const context = new AccessibleGlobalTypingContext(
       ModuleReference.DUMMY,
-      hashMapOf([
+      ModuleReferenceCollections.hashMapOf([
         ModuleReference.DUMMY,
         {
           interfaces: {

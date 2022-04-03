@@ -1,4 +1,4 @@
-import type { ReadonlyHashMap } from '../utils';
+import { CollectionsConstructors, createCollectionConstructors, ReadonlyHashMap } from '../utils';
 import type {
   ModuleReference as IModuleReference,
   Position as IPosition,
@@ -71,11 +71,11 @@ export class Range implements IRange {
     `${this.start.line + 1}:${this.start.character + 1}-${this.end.line + 1}:${
       this.end.character + 1
     }`;
-
-  uniqueHash(): string {
-    return this.toString();
-  }
 }
+
+export const RangeCollections: CollectionsConstructors<Range> = createCollectionConstructors(
+  (range) => range.toString()
+);
 
 /**
  * Reference to a samlang module.
@@ -97,9 +97,10 @@ export class ModuleReference implements IModuleReference {
   readonly toString = (): string => this.parts.join('.');
 
   readonly toFilename = (): string => `${this.parts.join('/')}.sam`;
-
-  readonly uniqueHash = (): string => this.toString();
 }
+
+export const ModuleReferenceCollections: CollectionsConstructors<ModuleReference> =
+  createCollectionConstructors((moduleReference) => moduleReference.toString());
 
 export interface Location {
   readonly moduleReference: ModuleReference;

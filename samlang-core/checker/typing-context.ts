@@ -1,4 +1,10 @@
-import { DummySourceReason, ModuleReference, Range, SourceReason } from '../ast/common-nodes';
+import {
+  DummySourceReason,
+  ModuleReference,
+  Range,
+  RangeCollections,
+  SourceReason,
+} from '../ast/common-nodes';
 import {
   SamlangFunctionType,
   SamlangIdentifierType,
@@ -9,7 +15,7 @@ import {
   TypeDefinition,
   UndecidedTypes,
 } from '../ast/samlang-nodes';
-import { checkNotNull, HashMap, hashMapOf, ReadonlyHashMap, zip } from '../utils';
+import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
 import { undecideTypeParameters } from './type-undecider';
@@ -219,7 +225,7 @@ export class AccessibleGlobalTypingContext {
 }
 
 export class LocationBasedLocalTypingContext {
-  private typeMap = hashMapOf<Range, SamlangType>();
+  private typeMap = RangeCollections.hashMapOf<SamlangType>();
 
   constructor(
     private readonly ssaAnalysisResult: SsaAnalysisResult,

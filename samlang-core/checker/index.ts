@@ -1,4 +1,4 @@
-import { ModuleReference, Sources } from '../ast/common-nodes';
+import { ModuleReference, ModuleReferenceCollections, Sources } from '../ast/common-nodes';
 import type { SamlangModule } from '../ast/samlang-nodes';
 import {
   CompileTimeError,
@@ -6,7 +6,7 @@ import {
   ReadonlyGlobalErrorCollector,
 } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
-import { HashMap, hashMapOf, HashSet, hashSetOf, mapOf, ReadonlyHashSet, setOf } from '../utils';
+import type { HashSet, ReadonlyHashSet } from '../utils';
 import {
   buildGlobalTypingContext,
   DEFAULT_BUILTIN_TYPING_CONTEXT,
@@ -30,7 +30,7 @@ export type { GlobalTypingContext, MemberTypeInformation };
 export function collectModuleReferenceFromSamlangModule(
   samlangModule: SamlangModule
 ): HashSet<ModuleReference> {
-  const collector = hashSetOf<ModuleReference>();
+  const collector = ModuleReferenceCollections.hashSetOf();
   samlangModule.imports.forEach((it) => collector.add(it.importedModule));
   samlangModule.interfaces.forEach((samlangInterface) => {
     samlangInterface.members.forEach((member) => {
@@ -55,19 +55,19 @@ export function collectModuleReferenceFromSamlangModule(
  */
 export class DependencyTracker {
   /** [module] => what this module depends on */
-  private readonly forwardDependency: HashMap<ModuleReference, ReadonlyHashSet<ModuleReference>> =
-    hashMapOf();
+  private readonly forwardDependency =
+    ModuleReferenceCollections.hashMapOf<ReadonlyHashSet<ModuleReference>>();
 
   /** [module] => other modules depends on this module */
-  private readonly reverseDependency: HashMap<ModuleReference, HashSet<ModuleReference>> =
-    hashMapOf();
+  private readonly reverseDependency =
+    ModuleReferenceCollections.hashMapOf<HashSet<ModuleReference>>();
 
   getForwardDependencies(moduleReference: ModuleReference): ReadonlyHashSet<ModuleReference> {
-    return this.forwardDependency.get(moduleReference) ?? setOf();
+    return this.forwardDependency.get(moduleReference) ?? ModuleReferenceCollections.setOf();
   }
 
   getReverseDependencies(moduleReference: ModuleReference): ReadonlyHashSet<ModuleReference> {
-    return this.reverseDependency.get(moduleReference) ?? setOf();
+    return this.reverseDependency.get(moduleReference) ?? ModuleReferenceCollections.setOf();
   }
 
   /**
@@ -88,11 +88,14 @@ export class DependencyTracker {
       this.forwardDependency.delete(moduleReference);
       return;
     }
-    this.forwardDependency.set(moduleReference, setOf(...usedModules));
+    this.forwardDependency.set(moduleReference, ModuleReferenceCollections.setOf(...usedModules));
     usedModules.forEach((newUsedModule) => {
       const reverseDependencies = this.reverseDependency.get(newUsedModule);
       if (reverseDependencies == null) {
-        this.reverseDependency.set(newUsedModule, hashSetOf(moduleReference));
+        this.reverseDependency.set(
+          newUsedModule,
+          ModuleReferenceCollections.hashSetOf(moduleReference)
+        );
       } else {
         reverseDependencies?.add(moduleReference);
       }
@@ -124,7 +127,7 @@ export function typeCheckSources(
   builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT
 ): readonly [Sources<SamlangModule>, GlobalTypingContext] {
   const globalTypingContext = buildGlobalTypingContext(sources, builtinModuleTypes);
-  const checkedSources = hashMapOf<ModuleReference, SamlangModule>();
+  const checkedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();
   sources.forEach((samlangModule, moduleReference) => {
     checkedSources.set(
       moduleReference,
@@ -144,7 +147,7 @@ export function typeCheckSourceHandles(
   sourceHandles: readonly (readonly [ModuleReference, string])[]
 ): TypeCheckSourceHandlesResult {
   const errorCollector = createGlobalErrorCollector();
-  const moduleMappings = hashMapOf(
+  const moduleMappings = ModuleReferenceCollections.hashMapOf(
     ...sourceHandles.map(
       ([moduleReference, text]) =>
         [
@@ -168,7 +171,7 @@ export function typeCheckSourcesIncrementally(
   errorCollector: ReadonlyGlobalErrorCollector
 ): Sources<SamlangModule> {
   updateGlobalTypingContext(globalTypingContext, sources, affectedSourceList);
-  const updatedSources = hashMapOf<ModuleReference, SamlangModule>();
+  const updatedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();
   affectedSourceList.forEach((moduleReference) => {
     const samlangModule = sources.get(moduleReference);
     if (samlangModule == null) {
@@ -188,7 +191,7 @@ export function typeCheckSingleModuleSource(
 ): SamlangModule {
   const moduleReference = new ModuleReference(['Test']);
   const checkedModule = typeCheckSources(
-    mapOf([moduleReference, samlangModule]),
+    ModuleReferenceCollections.mapOf([moduleReference, samlangModule]),
     errorCollector
   )[0].forceGet(moduleReference);
   return checkedModule;

@@ -1,21 +1,17 @@
 import {
   assert,
   checkNotNull,
+  createCollectionConstructors,
   error,
   filterMap,
-  Hashable,
   hashMapEquals,
-  hashMapOf,
-  hashSetOf,
   ignore,
   intArrayToDataString,
   isNotNull,
   listShallowEquals,
   LocalStackedContext,
   mapEquals,
-  mapOf,
   setEquals,
-  setOf,
   UnionFind,
   zip,
   zip3,
@@ -74,66 +70,60 @@ describe('samlang-utils', () => {
   });
 
   it('ReadOnly map and set tests', () => {
-    expect(mapOf().size).toBe(0);
-    expect(setOf().size).toBe(0);
+    expect(createCollectionConstructors(() => 1).mapOf().size).toBe(0);
+    expect(createCollectionConstructors(() => 1).setOf().size).toBe(0);
     expect(
-      mapOf(
-        [{ uniqueHash: () => 3 }, 3],
-        [{ uniqueHash: () => 4 }, 4],
-        [{ uniqueHash: () => 3 }, 4]
+      createCollectionConstructors((s: string) => s.toLowerCase()).mapOf(
+        ['a', 3],
+        ['b', 4],
+        ['A', 4]
       ).size
     ).toBe(2);
     expect(
-      setOf({ uniqueHash: () => 3 }, { uniqueHash: () => 4 }, { uniqueHash: () => 3 }).size
+      createCollectionConstructors((s: string) => s.toLowerCase()).setOf('a', 'B', 'A').size
     ).toBe(2);
   });
 
-  class HashableClass implements Hashable {
-    constructor(public readonly n: number) {}
-
-    uniqueHash = (): number => this.n;
-  }
-
-  const N = (n: number): HashableClass => new HashableClass(n);
+  const { hashMapOf, hashSetOf } = createCollectionConstructors((n: number) => n);
 
   it('map tests', () => {
-    const map = hashMapOf([N(1), 1], [N(2), 2]);
+    const map = hashMapOf([1, 1], [2, 2]);
 
     map.forEach(() => {});
 
-    expect(map.get(N(1))).toBe(1);
-    expect(map.get(N(2))).toBe(2);
-    expect(map.get(N(3))).toBeUndefined();
-    expect(map.has(N(1))).toBeTruthy();
-    expect(map.has(N(2))).toBeTruthy();
-    expect(map.has(N(3))).toBeFalsy();
+    expect(map.get(1)).toBe(1);
+    expect(map.get(2)).toBe(2);
+    expect(map.get(3)).toBeUndefined();
+    expect(map.has(1)).toBeTruthy();
+    expect(map.has(2)).toBeTruthy();
+    expect(map.has(3)).toBeFalsy();
     expect(map.size).toBe(2);
 
-    map.set(N(1), 3);
-    expect(map.get(N(1))).toBe(3);
-    expect(map.get(N(2))).toBe(2);
-    expect(map.get(N(3))).toBeUndefined();
-    expect(map.has(N(1))).toBeTruthy();
-    expect(map.has(N(2))).toBeTruthy();
-    expect(map.has(N(3))).toBeFalsy();
+    map.set(1, 3);
+    expect(map.get(1)).toBe(3);
+    expect(map.get(2)).toBe(2);
+    expect(map.get(3)).toBeUndefined();
+    expect(map.has(1)).toBeTruthy();
+    expect(map.has(2)).toBeTruthy();
+    expect(map.has(3)).toBeFalsy();
     expect(map.size).toBe(2);
 
-    map.delete(N(1));
-    expect(map.get(N(1))).toBeUndefined();
-    expect(map.get(N(2))).toBe(2);
-    expect(map.get(N(3))).toBeUndefined();
-    expect(map.has(N(1))).toBeFalsy();
-    expect(map.has(N(2))).toBeTruthy();
-    expect(map.has(N(3))).toBeFalsy();
+    map.delete(1);
+    expect(map.get(1)).toBeUndefined();
+    expect(map.get(2)).toBe(2);
+    expect(map.get(3)).toBeUndefined();
+    expect(map.has(1)).toBeFalsy();
+    expect(map.has(2)).toBeTruthy();
+    expect(map.has(3)).toBeFalsy();
     expect(map.size).toBe(1);
 
     map.clear();
-    expect(map.get(N(1))).toBeUndefined();
-    expect(map.get(N(2))).toBeUndefined();
-    expect(map.get(N(3))).toBeUndefined();
-    expect(map.has(N(1))).toBeFalsy();
-    expect(map.has(N(2))).toBeFalsy();
-    expect(map.has(N(3))).toBeFalsy();
+    expect(map.get(1)).toBeUndefined();
+    expect(map.get(2)).toBeUndefined();
+    expect(map.get(3)).toBeUndefined();
+    expect(map.has(1)).toBeFalsy();
+    expect(map.has(2)).toBeFalsy();
+    expect(map.has(3)).toBeFalsy();
     expect(map.size).toBe(0);
     map.forEach(() => {
       throw new Error();
@@ -141,31 +131,31 @@ describe('samlang-utils', () => {
   });
 
   it('set tests', () => {
-    const set = hashSetOf(N(1), N(2));
+    const set = hashSetOf(1, 2);
 
     set.forEach(() => {});
 
-    expect(set.has(N(1))).toBeTruthy();
-    expect(set.has(N(2))).toBeTruthy();
-    expect(set.has(N(3))).toBeFalsy();
+    expect(set.has(1)).toBeTruthy();
+    expect(set.has(2)).toBeTruthy();
+    expect(set.has(3)).toBeFalsy();
     expect(set.size).toBe(2);
 
-    set.add(N(1));
-    expect(set.has(N(1))).toBeTruthy();
-    expect(set.has(N(2))).toBeTruthy();
-    expect(set.has(N(3))).toBeFalsy();
+    set.add(1);
+    expect(set.has(1)).toBeTruthy();
+    expect(set.has(2)).toBeTruthy();
+    expect(set.has(3)).toBeFalsy();
     expect(set.size).toBe(2);
 
-    set.delete(N(1));
-    expect(set.has(N(1))).toBeFalsy();
-    expect(set.has(N(2))).toBeTruthy();
-    expect(set.has(N(3))).toBeFalsy();
+    set.delete(1);
+    expect(set.has(1)).toBeFalsy();
+    expect(set.has(2)).toBeTruthy();
+    expect(set.has(3)).toBeFalsy();
     expect(set.size).toBe(1);
 
     set.clear();
-    expect(set.has(N(1))).toBeFalsy();
-    expect(set.has(N(2))).toBeFalsy();
-    expect(set.has(N(3))).toBeFalsy();
+    expect(set.has(1)).toBeFalsy();
+    expect(set.has(2)).toBeFalsy();
+    expect(set.has(3)).toBeFalsy();
     expect(set.size).toBe(0);
     set.forEach(() => {
       throw new Error();
@@ -188,9 +178,9 @@ describe('samlang-utils', () => {
   });
 
   it('hashMapEquals tests', () => {
-    expect(hashMapEquals(hashMapOf<HashableClass, number>(), hashMapOf([N(1), 1]))).toBeFalsy();
-    expect(hashMapEquals(hashMapOf([N(2), 1]), hashMapOf([N(1), 1]))).toBeFalsy();
-    expect(hashMapEquals(hashMapOf([N(1), 1]), hashMapOf([N(1), 1]))).toBeTruthy();
+    expect(hashMapEquals(hashMapOf(), hashMapOf([1, 1]))).toBeFalsy();
+    expect(hashMapEquals(hashMapOf([2, 1]), hashMapOf([1, 1]))).toBeFalsy();
+    expect(hashMapEquals(hashMapOf([1, 1]), hashMapOf([1, 1]))).toBeTruthy();
   });
 
   it('setEquals tests', () => {
