@@ -5,7 +5,7 @@ import lexSamlangProgram, { samlangTokenToString } from '../samlang-lexer';
 const lex = (source: string): readonly string[] =>
   lexSamlangProgram(
     source,
-    createGlobalErrorCollector().getModuleErrorCollector(new ModuleReference([]))
+    createGlobalErrorCollector().getModuleErrorCollector(ModuleReference([]))
   ).map(samlangTokenToString);
 
 describe('samlang-lexer', () => {

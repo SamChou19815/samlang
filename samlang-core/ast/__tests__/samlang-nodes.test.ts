@@ -194,7 +194,7 @@ describe('samlang-nodes', () => {
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
         ]),
-        SourceIdentifierType(DummySourceReason, new ModuleReference(['AAA']), 'A', [
+        SourceIdentifierType(DummySourceReason, ModuleReference(['AAA']), 'A', [
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
         ])

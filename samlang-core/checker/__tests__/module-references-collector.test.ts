@@ -2,6 +2,7 @@ import {
   DummySourceReason,
   ModuleReference,
   ModuleReferenceCollections,
+  moduleReferenceToString,
   Range,
 } from '../../ast/common-nodes';
 import { MUL } from '../../ast/common-operators';
@@ -41,7 +42,7 @@ function assertFoundAllModuleReferencesFromExpression(
   expect(
     collector
       .toArray()
-      .map((it) => it.toString())
+      .map(moduleReferenceToString)
       .sort((a, b) => a.localeCompare(b))
   ).toEqual(expected);
 }

@@ -1,4 +1,4 @@
-import type { Range } from '../ast/common-nodes';
+import { moduleReferenceToString, Range } from '../ast/common-nodes';
 import { isTheSameType, SamlangType, SamlangUndecidedType } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
@@ -25,7 +25,8 @@ function typeMeet(hint: SamlangType, actual: SamlangType, resolution: TypeResolu
           return meetWithUndecidedType(hint, actual, resolution);
         case 'IdentifierType':
           if (
-            hint.moduleReference.toString() !== actual.moduleReference.toString() ||
+            moduleReferenceToString(hint.moduleReference) !==
+              moduleReferenceToString(actual.moduleReference) ||
             hint.identifier !== actual.identifier ||
             hint.typeArguments.length !== actual.typeArguments.length
           ) {

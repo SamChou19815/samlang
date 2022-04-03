@@ -7,11 +7,11 @@ describe('common-names', () => {
   });
 
   it('Nested module has correct name', () => {
-    expect(encodeMainFunctionName(new ModuleReference(['Foo', 'Bar']))).toBe('_Foo$Bar_Main_main');
+    expect(encodeMainFunctionName(ModuleReference(['Foo', 'Bar']))).toBe('_Foo$Bar_Main_main');
   });
 
   it('Dashed module has correct name', () => {
-    expect(encodeMainFunctionName(new ModuleReference(['Foo-Bar-Derp', 'Baz']))).toBe(
+    expect(encodeMainFunctionName(ModuleReference(['Foo-Bar-Derp', 'Baz']))).toBe(
       '_Foo_Bar_Derp$Baz_Main_main'
     );
   });

@@ -5,6 +5,7 @@ import {
   intLiteralOf,
   Literal,
   ModuleReference,
+  moduleReferenceToString,
   Node,
   Range,
   SamlangReason,
@@ -162,7 +163,8 @@ export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
     case 'IdentifierType':
       return (
         t2.type === 'IdentifierType' &&
-        t1.moduleReference.toString() === t2.moduleReference.toString() &&
+        moduleReferenceToString(t1.moduleReference) ===
+          moduleReferenceToString(t2.moduleReference) &&
         t1.identifier === t2.identifier &&
         t1.typeArguments.length === t2.typeArguments.length &&
         zip(t1.typeArguments, t2.typeArguments).every(([t1Element, t2Element]) =>

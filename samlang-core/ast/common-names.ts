@@ -5,7 +5,7 @@ export function encodeFunctionNameGlobally(
   className: string,
   functionName: string
 ): string {
-  const encodedModuleReference = moduleReference.parts.map((it) => it.replace(/-/g, '_')).join('$');
+  const encodedModuleReference = moduleReference.map((it) => it.replace(/-/g, '_')).join('$');
   return `_${encodedModuleReference}_${className}_${functionName}`;
 }
 

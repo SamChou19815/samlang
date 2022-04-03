@@ -2,6 +2,7 @@ import {
   Location,
   ModuleReference,
   ModuleReferenceCollections,
+  moduleReferenceToString,
   Position,
   Range,
   RangeCollections,
@@ -86,7 +87,7 @@ export class SamlangExpressionLocationLookupBuilder {
           type: SourceIdentifierType(
             SourceReason(name.range, name.range),
             moduleReference,
-            `class ${moduleReference.toString()}.${name.name}`
+            `class ${moduleReferenceToString(moduleReference)}.${name.name}`
           ),
           name: name.name,
         })
@@ -124,7 +125,7 @@ export class SamlangExpressionLocationLookupBuilder {
             type: SourceIdentifierType(
               SourceReason(classNameRange, classNameRange),
               moduleReference,
-              `class ${modRef.toString()}.${className}`
+              `class ${moduleReferenceToString(modRef)}.${className}`
             ),
             name: className,
           })

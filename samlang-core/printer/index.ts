@@ -30,7 +30,7 @@ export default function prettyPrintSamlangModule(
           createBracesSurroundedDocument(
             createCommaSeparatedList(oneImport.importedMembers, ({ name }) => PRETTIER_TEXT(name))
           ),
-          PRETTIER_TEXT(` from ${oneImport.importedModule.parts.join('.')}`)
+          PRETTIER_TEXT(` from ${oneImport.importedModule.join('.')}`)
         )
       )
     )

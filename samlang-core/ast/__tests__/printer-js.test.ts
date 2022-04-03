@@ -38,7 +38,7 @@ import {
 
 describe('printer-js', () => {
   it('compile hello world to JS integration test', () => {
-    const moduleReference = new ModuleReference(['Test']);
+    const moduleReference = ModuleReference(['Test']);
     const sourceCode = `
     class Main {
         function main(): unit = Builtins.println("Hello "::"World!")
@@ -168,7 +168,7 @@ function baz(d, t, i) {
   });
 
   const setupIntegration = (sourceCode: string): string => {
-    const moduleReference = new ModuleReference(['Test']);
+    const moduleReference = ModuleReference(['Test']);
     const { checkedSources, compileTimeErrors } = typeCheckSourceHandles([
       [moduleReference, sourceCode],
     ]);

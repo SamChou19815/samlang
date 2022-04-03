@@ -3,6 +3,9 @@ export interface Position {
   readonly character: number;
 }
 
+export type ModuleReference = readonly string[] & { __BRAND__: 'ModuleReference' };
+export function ModuleReference(parts: readonly string[]): ModuleReference;
+
 export class Range {
   static readonly DUMMY: Range;
   constructor(public readonly start: Position, public readonly end: Position);
@@ -10,12 +13,6 @@ export class Range {
   readonly containsRange: (range: Range) => boolean;
   readonly union: (range: Range) => Range;
   readonly toString: () => string;
-}
-
-export class ModuleReference {
-  constructor(public readonly parts: readonly string[]) {}
-  readonly toString: () => string;
-  readonly toFilename: () => string;
 }
 
 export interface Location {

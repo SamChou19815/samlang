@@ -8,13 +8,13 @@ describe('location-service', () => {
     const lookup = new LocationLookup<string>();
     const farPosition = Position(100, 100);
     const range = new Range(Position(1, 1), Position(2, 2));
-    const moduleReference = new ModuleReference(['foo']);
+    const moduleReference = ModuleReference(['foo']);
     const location = { moduleReference, range };
     lookup.set(location, 'exist');
     expect(lookup.getBestLocation(moduleReference, range.start)).toEqual(location);
     expect(lookup.getBestLocation(moduleReference, range.end)).toEqual(location);
     expect(lookup.getBestLocation(moduleReference, farPosition)).toBeNull();
-    expect(lookup.getBestLocation(new ModuleReference(['oof']), farPosition)).toBeNull();
+    expect(lookup.getBestLocation(ModuleReference(['oof']), farPosition)).toBeNull();
     expect(lookup.get(moduleReference, range.start)).toBe('exist');
     expect(lookup.get(moduleReference, range.end)).toBe('exist');
     expect(lookup.get(moduleReference, farPosition)).toBeNull();
@@ -22,7 +22,7 @@ describe('location-service', () => {
 
   it('LocationLookupTest favors small range test', () => {
     const lookup = new LocationLookup<number>();
-    const moduleReference = new ModuleReference(['foo']);
+    const moduleReference = ModuleReference(['foo']);
     const smallRange = new Range(Position(2, 1), Position(3, 2));
     const smallLocation = { moduleReference, range: smallRange };
     const bigRange = new Range(Position(1, 1), Position(30, 2));
@@ -38,7 +38,7 @@ describe('location-service', () => {
   });
 
   it('SamlangExpressionLocationLookupBuilder test', () => {
-    const moduleReference = new ModuleReference(['foo']);
+    const moduleReference = ModuleReference(['foo']);
     const { checkedSources, compileTimeErrors } = typeCheckSourceHandles([
       [
         moduleReference,

@@ -117,7 +117,7 @@ describe('typing-context', () => {
     );
 
     expect(context.getInterfaceInformation(ModuleReference.DUMMY, 'I')).toBeTruthy();
-    expect(context.getClassFunctionType(new ModuleReference(['A']), 'A', 'f1')).toBeFalsy();
+    expect(context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1')).toBeFalsy();
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f1')).toBeTruthy();
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f2')).toBeTruthy();
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f3')).toBeNull();
@@ -131,7 +131,7 @@ describe('typing-context', () => {
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm2')).toBeNull();
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm3')).toBeNull();
 
-    expect(context.getClassMethodType(new ModuleReference(['A']), 'A', 'f1', []).type).toBe(
+    expect(context.getClassMethodType(ModuleReference(['A']), 'A', 'f1', []).type).toBe(
       'UnresolvedName'
     );
     expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'f1', []).type).toBe(

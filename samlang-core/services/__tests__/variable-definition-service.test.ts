@@ -94,7 +94,7 @@ class Main {
   });
 
   it('VariableDefinitionLookup and applyRenamingWithDefinitionAndUse integration test 1', () => {
-    const moduleReference = new ModuleReference(['Test']);
+    const moduleReference = ModuleReference(['Test']);
     const errorCollector = createGlobalErrorCollector();
     const parsedModule = parseSamlangModuleFromText(
       `
@@ -121,8 +121,8 @@ class Main {
     const lookup = new VariableDefinitionLookup();
     lookup.rebuild(ModuleReferenceCollections.hashMapOf([moduleReference, parsedModule]));
 
-    expect(lookup.findAllDefinitionAndUses(new ModuleReference(['Test1']), Range.DUMMY)).toBeNull();
-    expect(lookup.findAllDefinitionAndUses(new ModuleReference(['Test']), Range.DUMMY)).toBeNull();
+    expect(lookup.findAllDefinitionAndUses(ModuleReference(['Test1']), Range.DUMMY)).toBeNull();
+    expect(lookup.findAllDefinitionAndUses(ModuleReference(['Test']), Range.DUMMY)).toBeNull();
 
     const assertCorrectlyRewritten = (range: Range, expected: string) =>
       expect(
@@ -130,7 +130,7 @@ class Main {
           60,
           applyRenamingWithDefinitionAndUse(
             parsedModule,
-            checkNotNull(lookup.findAllDefinitionAndUses(new ModuleReference(['Test']), range)),
+            checkNotNull(lookup.findAllDefinitionAndUses(ModuleReference(['Test']), range)),
             'renAmeD'
           )
         )
@@ -328,7 +328,7 @@ class Main {
   });
 
   it('VariableDefinitionLookup and applyRenamingWithDefinitionAndUse integration test 2', () => {
-    const moduleReference = new ModuleReference(['Test']);
+    const moduleReference = ModuleReference(['Test']);
     const errorCollector = createGlobalErrorCollector();
     const parsedModule = parseSamlangModuleFromText(
       `
@@ -352,7 +352,7 @@ class Main {
           parsedModule,
           checkNotNull(
             lookup.findAllDefinitionAndUses(
-              new ModuleReference(['Test']),
+              ModuleReference(['Test']),
               new Range(Position(3, 12), Position(3, 13))
             )
           ),

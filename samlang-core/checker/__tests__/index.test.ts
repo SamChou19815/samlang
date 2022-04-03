@@ -10,6 +10,7 @@ import {
   DummySourceReason,
   ModuleReference,
   ModuleReferenceCollections,
+  moduleReferenceToString,
   Range,
 } from '../../ast/common-nodes';
 import {
@@ -29,7 +30,7 @@ describe('samlang-core/checker', () => {
           {
             range: Range.DUMMY,
             importedMembers: [],
-            importedModule: new ModuleReference(['A']),
+            importedModule: ModuleReference(['A']),
             importedModuleRange: Range.DUMMY,
           },
         ],
@@ -63,18 +64,18 @@ describe('samlang-core/checker', () => {
         interfaces: [],
       })
         .toArray()
-        .map((it) => it.toString())
+        .map(moduleReferenceToString)
         .sort((a, b) => a.localeCompare(b))
     ).toEqual(['A']);
   });
 
   it('can track and update dependencies', () => {
     const tracker = new DependencyTracker();
-    const moduleA = new ModuleReference(['A']);
-    const moduleB = new ModuleReference(['B']);
-    const moduleC = new ModuleReference(['C']);
-    const moduleD = new ModuleReference(['D']);
-    const moduleE = new ModuleReference(['E']);
+    const moduleA = ModuleReference(['A']);
+    const moduleB = ModuleReference(['B']);
+    const moduleC = ModuleReference(['C']);
+    const moduleD = ModuleReference(['D']);
+    const moduleE = ModuleReference(['E']);
 
     // Wave 1
     tracker.update(moduleA, [moduleB, moduleC]);
@@ -141,10 +142,10 @@ describe('samlang-core/checker', () => {
   class IdentifyChecker { function equals(c1: C, c2: C): bool = c1.intValue() == c2.intValue() }
   class Main { function main(): bool = IdentifyChecker.equals(C.ofInt(A.a()), C.ofB(B.of())) }`;
 
-    const moduleReferenceA = new ModuleReference(['A']);
-    const moduleReferenceB = new ModuleReference(['B']);
-    const moduleReferenceC = new ModuleReference(['C']);
-    const moduleReferenceD = new ModuleReference(['D']);
+    const moduleReferenceA = ModuleReference(['A']);
+    const moduleReferenceB = ModuleReference(['B']);
+    const moduleReferenceC = ModuleReference(['C']);
+    const moduleReferenceD = ModuleReference(['D']);
 
     const errorCollector = createGlobalErrorCollector();
 
@@ -232,10 +233,10 @@ describe('samlang-core/checker', () => {
     }
   }`;
 
-    const moduleReferenceA = new ModuleReference(['A']);
-    const moduleReferenceB = new ModuleReference(['B']);
-    const moduleReferenceC = new ModuleReference(['C']);
-    const moduleReferenceD = new ModuleReference(['D']);
+    const moduleReferenceA = ModuleReference(['A']);
+    const moduleReferenceB = ModuleReference(['B']);
+    const moduleReferenceC = ModuleReference(['C']);
+    const moduleReferenceD = ModuleReference(['D']);
 
     const errorCollector = createGlobalErrorCollector();
 
@@ -311,9 +312,9 @@ describe('samlang-core/checker', () => {
     function create(): SameName = SameName.init(Producer.produce().a)
   }`;
 
-    const moduleReferenceA = new ModuleReference(['A']);
-    const moduleReferenceB = new ModuleReference(['B']);
-    const moduleReferenceC = new ModuleReference(['C']);
+    const moduleReferenceA = ModuleReference(['A']);
+    const moduleReferenceB = ModuleReference(['B']);
+    const moduleReferenceC = ModuleReference(['C']);
 
     const errorCollector = createGlobalErrorCollector();
 
@@ -353,8 +354,8 @@ describe('samlang-core/checker', () => {
     const checkedModule = typeCheckSingleModuleSource(
       parseSamlangModuleFromText(
         'class Main {}',
-        new ModuleReference(['Test']),
-        errorCollector.getModuleErrorCollector(new ModuleReference(['Test']))
+        ModuleReference(['Test']),
+        errorCollector.getModuleErrorCollector(ModuleReference(['Test']))
       ),
       errorCollector
     );
@@ -367,7 +368,7 @@ describe('samlang-core/checker', () => {
   });
 
   it('typeCheckSourceHandles test', () => {
-    const moduleReference = new ModuleReference(['Test']);
+    const moduleReference = ModuleReference(['Test']);
     const sourceCode = `
   interface UnusedInterface<T> { function main(): unit }
   class Main {

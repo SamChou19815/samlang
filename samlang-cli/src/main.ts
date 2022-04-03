@@ -6,18 +6,18 @@ import {
   reformatSamlangSources,
 } from '@dev-sam/samlang-core';
 import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { join, sep } from 'path';
 import cliMainRunner, { CLIRunners } from './cli';
 import type { SamlangProjectConfiguration } from './configuration';
 import ASCII_ART_SAMLANG_LOGO from './logo';
 import { collectSources, getConfiguration } from './utils';
 
 async function compileEverything(configuration: SamlangProjectConfiguration): Promise<void> {
-  const entryModuleReferences = configuration.entryPoints.map(
-    (entryPoint) => new ModuleReference(entryPoint.split('.'))
+  const entryModuleReferences = configuration.entryPoints.map((entryPoint) =>
+    ModuleReference(entryPoint.split('.'))
   );
   const result = compileSamlangSources(
-    collectSources(configuration, (parts) => new ModuleReference(parts)),
+    collectSources(configuration, (parts) => ModuleReference(parts)),
     entryModuleReferences
   );
   if (result.__type__ === 'ERROR') {
@@ -41,8 +41,10 @@ const runners: CLIRunners = {
     } else {
       await Promise.all(
         reformatSamlangSources(
-          collectSources(getConfiguration(), (parts) => new ModuleReference(parts))
-        ).map(([moduleReference, newCode]) => writeFile(moduleReference.toFilename(), newCode))
+          collectSources(getConfiguration(), (parts) => ModuleReference(parts))
+        ).map(([moduleReference, newCode]) =>
+          writeFile(`${moduleReference.join(sep)}.sam`, newCode)
+        )
       );
     }
   },

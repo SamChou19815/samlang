@@ -214,7 +214,7 @@ return (_t0: $SyntheticIDType0);`
               SourceIntType(DummySourceReason)
             ),
             typeArguments: [],
-            moduleReference: new ModuleReference(['ModuleModule']),
+            moduleReference: ModuleReference(['ModuleModule']),
             className: SourceId('ImportedClass'),
             memberName: SourceId('bar'),
           }),
