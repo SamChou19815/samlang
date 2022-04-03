@@ -614,6 +614,7 @@ export interface SourceClassMemberDeclaration extends Node {
   readonly typeParameters: readonly SourceIdentifier[];
   readonly type: SamlangFunctionType;
   readonly parameters: readonly SourceAnnotatedVariable[];
+  readonly body?: SamlangExpression;
 }
 
 export interface SourceClassMemberDefinition extends SourceClassMemberDeclaration {

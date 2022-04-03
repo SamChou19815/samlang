@@ -125,10 +125,10 @@ describe('samlang-core/checker', () => {
     method intValue(): int = this.value
   }`;
     const sourceC = `import { B } from B
-  class C(Int(int), B(B)) {
+  class C(Int(int), Boo(B)) {
     function ofInt(value: int): C = C.Int(value)
-    function ofB(b: B): C = C.B(b)
-    method intValue(): int = match (this) { | Int v -> v  | B b -> b.intValue()  }
+    function ofB(b: B): C = C.Boo(b)
+    method intValue(): int = match (this) { | Int v -> v  | Boo b -> b.intValue()  }
   }`;
     const sourceD = `import { A } from A
   import { B } from B
@@ -212,10 +212,10 @@ describe('samlang-core/checker', () => {
     method intValue(): int = this.value
   }`;
     const sourceC = `import { B } from B
-  class C(Int(int), Int(bool), B(B)) {
+  class C(Int(int), Int(bool), Boo(B)) {
     function ofInt(value: int): C = C.Int(value)
-    function <T, F, T>ofB(b: B): C = C.B(b)
-    method intValue(): int = match (this) { | Int v -> v  | B b -> b.intValue()  }
+    function <T, F, T>ofB(b: B): C = C.Boo(b)
+    method intValue(): int = match (this) { | Int v -> v  | Boo b -> b.intValue()  }
   }`;
     const sourceD = `import { A } from A
   import { B } from B
@@ -274,15 +274,16 @@ describe('samlang-core/checker', () => {
         .sort()
     ).toEqual([
       'A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.',
+      'B.sam:2:11-2:12: [Collision]: Name `A` collides with a previously defined name.',
       'B.sam:2:14-2:15: [Collision]: Name `A` collides with a previously defined name.',
       'B.sam:3:35-3:41: [UnexpectedType]: Expected: `(__UNDECIDED__) -> B<int, bool>`, actual: `(int) -> B<__UNDECIDED__, __UNDECIDED__>`.',
-      'C.sam:2:10-2:37: [NotWellDefinedIdentifier]: `B` is not well defined.',
+      'C.sam:2:10-2:39: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:2:21-2:24: [Collision]: Name `Int` collides with a previously defined name.',
       'C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.',
       'C.sam:4:21-4:22: [Collision]: Name `T` collides with a previously defined name.',
-      'C.sam:4:5-4:44: [NotWellDefinedIdentifier]: `B` is not well defined.',
+      'C.sam:4:5-4:46: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.',
-      'C.sam:5:70-5:78: [UnresolvedName]: Name `intValue` is not resolved.',
+      'C.sam:5:72-5:80: [UnresolvedName]: Name `intValue` is not resolved.',
       'D.sam:5:50-5:52: [Collision]: Name `c1` collides with a previously defined name.',
     ]);
   });

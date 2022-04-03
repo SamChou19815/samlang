@@ -10,7 +10,7 @@ import {
   StatementBlock,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import { assert, checkNotNull, LocalStackedContext, zip } from '../utils';
+import { assert, checkNotNull, ignore, LocalStackedContext, zip } from '../utils';
 import type { AccessibleGlobalTypingContext } from './typing-context';
 
 export default class StatementTypeChecker {
@@ -85,9 +85,7 @@ export default class StatementTypeChecker {
           checkedAssignedExpressionType.mappings
         ).map(([{ name }, elementType]) => {
           if (name != null) {
-            localContext.addLocalValueType(name.name, elementType, () =>
-              this.errorCollector.reportCollisionError(name.range, name.name)
-            );
+            localContext.addLocalValueType(name.name, elementType, ignore);
           }
           return { name, type: elementType };
         });
@@ -171,9 +169,7 @@ export default class StatementTypeChecker {
             };
           }
           const nameToBeUsed = renamedName ?? originalName;
-          localContext.addLocalValueType(nameToBeUsed.name, fieldType, () =>
-            this.errorCollector.reportCollisionError(nameToBeUsed.range, nameToBeUsed.name)
-          );
+          localContext.addLocalValueType(nameToBeUsed.name, fieldType, ignore);
           const fieldOrder = checkNotNull(fieldOrderMapping[originalName.name]);
           destructedNames.push({ ...destructedName, type: fieldType, fieldOrder });
         }
@@ -182,9 +178,7 @@ export default class StatementTypeChecker {
       }
 
       case 'VariablePattern':
-        localContext.addLocalValueType(pattern.name, checkedAssignedExpressionType, () =>
-          this.errorCollector.reportCollisionError(pattern.range, pattern.name)
-        );
+        localContext.addLocalValueType(pattern.name, checkedAssignedExpressionType, ignore);
         checkedPattern = pattern;
         break;
 

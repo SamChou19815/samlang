@@ -285,9 +285,6 @@ describe('expression-type-checker', () => {
     assertTypeChecks('foo', int, undefined, [['foo', int]]);
     assertTypeChecks('{ val foo = 3; foo }', int);
 
-    assertTypeErrors('foo', int, [
-      'Test.sam:1:1-1:4: [UnresolvedName]: Name `foo` is not resolved.',
-    ]);
     assertTypeErrors('{ val foo = true; foo }', int, [
       'Test.sam:1:19-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
@@ -680,7 +677,7 @@ describe('expression-type-checker', () => {
     assertTypeErrors(
       '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar t -> 2 }; }',
       unit,
-      ['Test.sam:1:50-1:62: [Collision]: Name `t` collides with a previously defined name.'],
+      [],
       undefined,
       'Test2'
     );
@@ -688,10 +685,7 @@ describe('expression-type-checker', () => {
 
   it('Lambda', () => {
     assertTypeChecks('{val _ = (a, b, c) -> if a(b + 1) then b else c;}', unit);
-
-    assertTypeErrors('(a, a) -> a', SourceFunctionType([int, int], int), [
-      'Test.sam:1:5-1:6: [Collision]: Name `a` collides with a previously defined name.',
-    ]);
+    assertTypeChecks('(a) -> a', SourceFunctionType([int], int));
   });
 
   it('IfElse integration test', () => {

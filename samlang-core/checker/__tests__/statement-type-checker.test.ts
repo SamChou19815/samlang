@@ -387,7 +387,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       ),
     ]),
     SourceUnitType,
-    ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
+    [],
   ],
 
   [
@@ -552,7 +552,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       ),
     ]),
     SourceUnitType,
-    ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
+    [],
   ],
 
   [
@@ -570,7 +570,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       ),
     ]),
     SourceUnitType,
-    ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
+    [],
   ],
   [
     'variable pattern 5',
