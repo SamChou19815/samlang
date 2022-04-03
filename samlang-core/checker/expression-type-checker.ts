@@ -8,9 +8,12 @@ import {
   LiteralExpression,
   MatchExpression,
   MethodAccessExpression,
+  ObjectPatternDestucturedName,
+  Pattern,
   SamlangExpression,
   SamlangFunctionType,
   SamlangType,
+  SamlangValStatement,
   SourceBoolType,
   SourceExpressionFunctionCall,
   SourceExpressionLambda,
@@ -31,10 +34,9 @@ import {
   VariableExpression,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import { assert, filterMap, ignore, LocalStackedContext, zip } from '../utils';
+import { assert, checkNotNull, filterMap, ignore, LocalStackedContext, zip } from '../utils';
 import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';
-import StatementTypeChecker from './statement-type-checker';
 import type TypeResolution from './type-resolution';
 import performTypeSubstitution from './type-substitution';
 import { undecideTypeParameters } from './type-undecider';
@@ -44,8 +46,6 @@ import type { AccessibleGlobalTypingContext } from './typing-context';
 class ExpressionTypeChecker {
   private readonly constraintAwareTypeChecker: ConstraintAwareChecker;
 
-  private readonly statementTypeChecker: StatementTypeChecker;
-
   constructor(
     private readonly accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     private readonly localTypingContext: LocalStackedContext<SamlangType>,
@@ -53,11 +53,6 @@ class ExpressionTypeChecker {
     public readonly errorCollector: ModuleErrorCollector
   ) {
     this.constraintAwareTypeChecker = new ConstraintAwareChecker(resolution, errorCollector);
-    this.statementTypeChecker = new StatementTypeChecker(
-      accessibleGlobalTypingContext,
-      errorCollector,
-      this.typeCheck
-    );
   }
 
   readonly typeCheck = (
@@ -612,15 +607,170 @@ class ExpressionTypeChecker {
     if (expression.block.expression == null) {
       this.constraintAwareTypeChecker.checkAndInfer(expectedType, SourceUnitType, expression.range);
     }
-    const checkedStatementBlock = this.statementTypeChecker.typeCheck(
-      expression.block,
-      expectedType,
-      this.localTypingContext
-    );
+    const checkedStatementBlock = this.localTypingContext.withNestedScope(() => {
+      const checkedStatements = expression.block.statements.map((statement) =>
+        this.typeCheckValStatement(statement)
+      );
+      if (expression.block.expression != null) {
+        const checkedExpression = this.typeCheck(expression.block.expression, expectedType);
+        return {
+          range: expression.block.range,
+          statements: checkedStatements,
+          expression: checkedExpression,
+        };
+      }
+      return { range: expression.block.range, statements: checkedStatements };
+    });
     return {
       ...expression,
       type: checkedStatementBlock.expression?.type ?? SourceUnitType,
       block: checkedStatementBlock,
+    };
+  }
+
+  private typeCheckValStatement(statement: SamlangValStatement): SamlangValStatement {
+    const { range, pattern, typeAnnotation, assignedExpression } = statement;
+    const checkedAssignedExpression = this.typeCheck(assignedExpression, typeAnnotation);
+    const checkedAssignedExpressionType = checkedAssignedExpression.type;
+    let checkedPattern: Pattern;
+    switch (pattern.type) {
+      case 'TuplePattern': {
+        if (checkedAssignedExpressionType.type !== 'TupleType') {
+          this.errorCollector.reportUnexpectedTypeKindError(
+            assignedExpression.range,
+            'tuple',
+            checkedAssignedExpressionType
+          );
+          return {
+            ...statement,
+            typeAnnotation: assignedExpression.type,
+            assignedExpression: checkedAssignedExpression,
+          };
+        }
+        const expectedSize = checkedAssignedExpressionType.mappings.length;
+        const actualSize = pattern.destructedNames.length;
+        if (expectedSize !== actualSize) {
+          this.errorCollector.reportTupleSizeMismatchError(
+            assignedExpression.range,
+            expectedSize,
+            actualSize
+          );
+        }
+        const checkedDestructedNames = zip(
+          pattern.destructedNames,
+          checkedAssignedExpressionType.mappings
+        ).map(([{ name }, elementType]) => {
+          if (name != null) {
+            this.localTypingContext.addLocalValueType(name.name, elementType, ignore);
+          }
+          return { name, type: elementType };
+        });
+        checkedPattern = { ...pattern, destructedNames: checkedDestructedNames };
+        break;
+      }
+
+      case 'ObjectPattern': {
+        if (checkedAssignedExpressionType.type !== 'IdentifierType') {
+          this.errorCollector.reportUnexpectedTypeKindError(
+            assignedExpression.range,
+            'identifier',
+            checkedAssignedExpressionType
+          );
+          return {
+            ...statement,
+            typeAnnotation: assignedExpression.type,
+            assignedExpression: checkedAssignedExpression,
+          };
+        }
+        const fieldMappingsOrError = this.accessibleGlobalTypingContext.resolveTypeDefinition(
+          checkedAssignedExpressionType,
+          'object'
+        );
+        let fieldNamesMappings: {
+          readonly fieldNames: readonly string[];
+          readonly fieldMappings: Readonly<Record<string, SourceFieldType>>;
+        };
+        assert(
+          fieldMappingsOrError.type !== 'IllegalOtherClassMatch',
+          'We match on objects here, so this case is impossible.'
+        );
+        switch (fieldMappingsOrError.type) {
+          case 'Resolved':
+            fieldNamesMappings = {
+              fieldNames: fieldMappingsOrError.names,
+              fieldMappings: fieldMappingsOrError.mappings,
+            };
+            break;
+          case 'UnsupportedClassTypeDefinition':
+            this.errorCollector.reportUnsupportedClassTypeDefinitionError(
+              assignedExpression.range,
+              'object'
+            );
+            return {
+              ...statement,
+              typeAnnotation: assignedExpression.type,
+              assignedExpression: checkedAssignedExpression,
+            };
+        }
+        const { fieldNames, fieldMappings } = fieldNamesMappings;
+        const fieldOrderMapping = Object.fromEntries(
+          fieldNames.map((name, index) => [name, index])
+        );
+        const destructedNames: ObjectPatternDestucturedName[] = [];
+        for (let i = 0; i < pattern.destructedNames.length; i += 1) {
+          const destructedName: ObjectPatternDestucturedName = checkNotNull(
+            pattern.destructedNames[i]
+          );
+          const { fieldName: originalName, alias: renamedName } = destructedName;
+          const fieldInformation = fieldMappings[originalName.name];
+          if (fieldInformation == null) {
+            this.errorCollector.reportUnresolvedNameError(originalName.range, originalName.name);
+            return {
+              ...statement,
+              typeAnnotation: assignedExpression.type,
+              assignedExpression: checkedAssignedExpression,
+            };
+          }
+          const { isPublic, type: fieldType } = fieldInformation;
+          if (
+            checkedAssignedExpressionType.identifier !==
+              this.accessibleGlobalTypingContext.currentClass &&
+            !isPublic
+          ) {
+            this.errorCollector.reportUnresolvedNameError(originalName.range, originalName.name);
+            return {
+              ...statement,
+              typeAnnotation: assignedExpression.type,
+              assignedExpression: checkedAssignedExpression,
+            };
+          }
+          const nameToBeUsed = renamedName ?? originalName;
+          this.localTypingContext.addLocalValueType(nameToBeUsed.name, fieldType, ignore);
+          const fieldOrder = checkNotNull(fieldOrderMapping[originalName.name]);
+          destructedNames.push({ ...destructedName, type: fieldType, fieldOrder });
+        }
+        checkedPattern = { range, type: 'ObjectPattern', destructedNames };
+        break;
+      }
+
+      case 'VariablePattern':
+        this.localTypingContext.addLocalValueType(
+          pattern.name,
+          checkedAssignedExpressionType,
+          ignore
+        );
+        checkedPattern = pattern;
+        break;
+
+      case 'WildCardPattern':
+        checkedPattern = pattern;
+        break;
+    }
+    return {
+      ...statement,
+      typeAnnotation: assignedExpression.type,
+      assignedExpression: checkedAssignedExpression,
+      pattern: checkedPattern,
     };
   }
 }

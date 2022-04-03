@@ -4,6 +4,7 @@ import {
   SamlangExpression,
   SamlangType,
   SourceBoolType as bool,
+  SourceBoolType,
   SourceExpressionBinary,
   SourceExpressionFunctionCall,
   SourceExpressionIfElse,
@@ -15,6 +16,7 @@ import {
   SourceId,
   SourceIdentifierType,
   SourceIntType as int,
+  SourceIntType,
   SourceStringType as string,
   SourceTupleType,
   SourceUnitType as unit,
@@ -164,6 +166,75 @@ function typeCheckInSandbox(
                       SourceIdentifierType(dummyModuleReference, 'Test4', [
                         SourceIdentifierType(dummyModuleReference, 'E'),
                       ])
+                    ),
+                  },
+                },
+                methods: {},
+              },
+              A: {
+                typeParameters: [],
+                typeDefinition: {
+                  range: Range.DUMMY,
+                  type: 'object',
+                  names: [SourceId('a'), SourceId('b')],
+                  mappings: {
+                    a: { isPublic: true, type: SourceIntType },
+                    b: { isPublic: false, type: SourceBoolType },
+                  },
+                },
+                functions: {
+                  init: {
+                    isPublic: true,
+                    typeParameters: [],
+                    type: SourceFunctionType(
+                      [],
+                      SourceIdentifierType(dummyModuleReference, 'A', [])
+                    ),
+                  },
+                },
+                methods: {},
+              },
+              B: {
+                typeParameters: [],
+                typeDefinition: {
+                  range: Range.DUMMY,
+                  type: 'object',
+                  names: [SourceId('a'), SourceId('b')],
+                  mappings: {
+                    a: { isPublic: true, type: SourceIntType },
+                    b: { isPublic: false, type: SourceBoolType },
+                  },
+                },
+                functions: {
+                  init: {
+                    isPublic: true,
+                    typeParameters: [],
+                    type: SourceFunctionType(
+                      [],
+                      SourceIdentifierType(dummyModuleReference, 'B', [])
+                    ),
+                  },
+                },
+                methods: {},
+              },
+              C: {
+                typeParameters: [],
+                typeDefinition: {
+                  range: Range.DUMMY,
+                  type: 'variant',
+                  names: [SourceId('a'), SourceId('b')],
+                  mappings: {
+                    a: { isPublic: true, type: SourceIntType },
+                    b: { isPublic: true, type: SourceBoolType },
+                  },
+                },
+                functions: {
+                  init: {
+                    isPublic: true,
+                    typeParameters: [],
+                    type: SourceFunctionType(
+                      [],
+                      SourceIdentifierType(dummyModuleReference, 'C', [])
                     ),
                   },
                 },
@@ -686,6 +757,45 @@ describe('expression-type-checker', () => {
   it('Lambda', () => {
     assertTypeChecks('{val _ = (a, b, c) -> if a(b + 1) then b else c;}', unit);
     assertTypeChecks('(a) -> a', SourceFunctionType([int], int));
+  });
+
+  describe('StatementBlocks', () => {
+    it('Tuple destructuring 1', () => assertTypeChecks('{val [a, _] = [3, 2];}', unit));
+    it('Tuple destructuring 2', () =>
+      assertTypeErrors('{val [a, b] = [1,2,3];}', unit, [
+        'Test.sam:1:15-1:22: [TupleSizeMismatch]: Incorrect tuple size. Expected: 3, actual: 2.',
+      ]));
+    it('Tuple destructuring 3', () =>
+      assertTypeErrors('{val [a, b] = 1;}', unit, [
+        'Test.sam:1:15-1:16: [UnexpectedTypeKind]: Expected kind: `tuple`, actual: `int`.',
+      ]));
+
+    it('Object destructuring 1', () =>
+      assertTypeChecks('{val {a, b as c} = A.init();}', unit, undefined, undefined, 'A'));
+    it('Object destructuring 2', () =>
+      assertTypeErrors('{val {a, b as c} = A.init();}', unit, [
+        'Test.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.',
+      ]));
+    it('Object destructuring 3', () =>
+      assertTypeErrors('{val {a, b as c} = C.init();}', unit, [
+        "Test.sam:1:20-1:28: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
+      ]));
+    it('Object destructuring 4', () =>
+      assertTypeErrors('{val {a, b as c} = [1,2];}', unit, [
+        'Test.sam:1:20-1:25: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `[int * int]`.',
+      ]));
+    it('Object destructuring 5', () =>
+      assertTypeErrors('{val {a, d as c} = A.init();}', unit, [
+        'Test.sam:1:10-1:11: [UnresolvedName]: Name `d` is not resolved.',
+      ]));
+
+    it('Variable pattern 1', () => assertTypeChecks('{val a = 1;}', unit));
+    it('Variable pattern 2', () => assertTypeChecks('{val a = 1; val b = true;}', unit));
+    it('Variable pattern 3', () => assertTypeChecks('{val a = 1; a}', int));
+
+    it('Wildcard pattern', () => assertTypeChecks('{1}', int));
+    it('De-facto unit literal', () => assertTypeChecks('{}', unit));
+    it('Nested de-facto unit literal', () => assertTypeChecks('{{{{}}}}', unit));
   });
 
   it('IfElse integration test', () => {
