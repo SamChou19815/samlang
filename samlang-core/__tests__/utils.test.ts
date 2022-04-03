@@ -204,8 +204,6 @@ describe('samlang-utils', () => {
     expect(context.getLocalValueType('b')).toBeUndefined();
     context.addLocalValueType('a', 3, error);
     expect(context.getLocalValueType('a')).toBe(3);
-    context.removeLocalValue('a');
-    expect(() => context.removeLocalValue('a')).toThrow();
     context.withNestedScope(() => {});
   });
 

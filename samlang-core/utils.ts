@@ -253,10 +253,6 @@ class ContextLayer<V> {
     }
     this.localValues.set(name, value);
   }
-
-  removeLocalValue(name: string): void {
-    assert(this.localValues.delete(name), `${name} is not found in this layer!`);
-  }
 }
 
 export class LocalStackedContext<V> {
@@ -292,10 +288,6 @@ export class LocalStackedContext<V> {
       }
     }
     checkNotNull(this.stacks[this.stacks.length - 1]).addLocalValue(name, value, onCollision);
-  }
-
-  removeLocalValue(name: string): void {
-    checkNotNull(this.stacks[this.stacks.length - 1]).removeLocalValue(name);
   }
 
   withNestedScope<T>(block: () => T): T {

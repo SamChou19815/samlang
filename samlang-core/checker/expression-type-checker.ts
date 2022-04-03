@@ -515,22 +515,27 @@ class ExpressionTypeChecker {
             this.typeCheck(correspondingExpression, expectedType)
           );
         } else {
-          const {
-            name: dataVariableName,
-            range: dataVariableRange,
-            associatedComments: dataVariableAssociatedComments,
-          } = dataVariable[0];
-          this.localTypingContext.addLocalValueType(dataVariableName, mappingDataType, ignore);
-          checkedExpression = this.typeCheck(correspondingExpression, expectedType);
-          this.localTypingContext.removeLocalValue(dataVariableName);
-          checkedDatadataVariable = [
-            {
-              name: dataVariableName,
-              range: dataVariableRange,
-              associatedComments: dataVariableAssociatedComments,
-            },
-            mappingDataType,
-          ];
+          [checkedExpression, checkedDatadataVariable] = this.localTypingContext.withNestedScope(
+            () => {
+              const {
+                name: dataVariableName,
+                range: dataVariableRange,
+                associatedComments: dataVariableAssociatedComments,
+              } = dataVariable[0];
+              this.localTypingContext.addLocalValueType(dataVariableName, mappingDataType, ignore);
+              return [
+                this.typeCheck(correspondingExpression, expectedType),
+                [
+                  {
+                    name: dataVariableName,
+                    range: dataVariableRange,
+                    associatedComments: dataVariableAssociatedComments,
+                  },
+                  mappingDataType,
+                ],
+              ];
+            }
+          );
         }
         const tagOrder = variantNames.findIndex((name) => name === tag);
         assert(tagOrder !== -1, `Bad tag: ${tag}`);
