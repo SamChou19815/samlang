@@ -1,4 +1,4 @@
-import { ModuleReference } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
 import {
   SourceFunctionType,
   SourceIdentifierType,
@@ -12,39 +12,51 @@ describe('type-substitution', () => {
     expect(
       performTypeSubstitution(
         SourceFunctionType(
+          DummySourceReason,
           [
-            SourceIdentifierType(ModuleReference.DUMMY, 'A', [
-              SourceIdentifierType(ModuleReference.DUMMY, 'B'),
-              SourceIdentifierType(ModuleReference.DUMMY, 'C', [SourceIntType]),
-            ]),
-            SourceTupleType([
-              SourceIdentifierType(ModuleReference.DUMMY, 'D'),
-              SourceIdentifierType(ModuleReference.DUMMY, 'E', [
-                SourceIdentifierType(ModuleReference.DUMMY, 'F'),
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C', [
+                SourceIntType(DummySourceReason),
               ]),
             ]),
-            { type: 'UndecidedType', index: 0 },
+            SourceTupleType(DummySourceReason, [
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'D'),
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'E', [
+                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'F'),
+              ]),
+            ]),
+            { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
           ],
-          SourceIntType
+          SourceIntType(DummySourceReason)
         ),
-        { A: SourceIntType, B: SourceIntType, C: SourceIntType, D: SourceIntType, E: SourceIntType }
+        {
+          A: SourceIntType(DummySourceReason),
+          B: SourceIntType(DummySourceReason),
+          C: SourceIntType(DummySourceReason),
+          D: SourceIntType(DummySourceReason),
+          E: SourceIntType(DummySourceReason),
+        }
       )
     ).toEqual(
       SourceFunctionType(
+        DummySourceReason,
         [
-          SourceIdentifierType(ModuleReference.DUMMY, 'A', [
-            SourceIntType,
-            SourceIdentifierType(ModuleReference.DUMMY, 'C', [SourceIntType]),
-          ]),
-          SourceTupleType([
-            SourceIntType,
-            SourceIdentifierType(ModuleReference.DUMMY, 'E', [
-              SourceIdentifierType(ModuleReference.DUMMY, 'F'),
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+            SourceIntType(DummySourceReason),
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C', [
+              SourceIntType(DummySourceReason),
             ]),
           ]),
-          { type: 'UndecidedType', index: 0 },
+          SourceTupleType(DummySourceReason, [
+            SourceIntType(DummySourceReason),
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'E', [
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'F'),
+            ]),
+          ]),
+          { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
         ],
-        SourceIntType
+        SourceIntType(DummySourceReason)
       )
     );
   });

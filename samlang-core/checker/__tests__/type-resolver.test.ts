@@ -1,4 +1,4 @@
-import { ModuleReference } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
 import {
   SamlangType,
   SamlangUndecidedType,
@@ -15,13 +15,13 @@ import typeResolver from '../type-resolver';
 export function undecidedTypeResolver({ index }: SamlangUndecidedType): SamlangType {
   switch (index % 4) {
     case 0:
-      return SourceUnitType;
+      return SourceUnitType(DummySourceReason);
     case 1:
-      return SourceBoolType;
+      return SourceBoolType(DummySourceReason);
     case 2:
-      return SourceIntType;
+      return SourceIntType(DummySourceReason);
     case 3:
-      return SourceStringType;
+      return SourceStringType(DummySourceReason);
     default:
       throw new Error('');
   }
@@ -31,16 +31,18 @@ const resolve = (type: SamlangType): SamlangType => typeResolver(type, undecided
 
 describe('type-resolver', () => {
   it("won't affect primitive types", () => {
-    expect(resolve(SourceUnitType)).toEqual(SourceUnitType);
-    expect(resolve(SourceBoolType)).toEqual(SourceBoolType);
-    expect(resolve(SourceIntType)).toEqual(SourceIntType);
-    expect(resolve(SourceStringType)).toEqual(SourceStringType);
+    expect(resolve(SourceUnitType(DummySourceReason))).toEqual(SourceUnitType(DummySourceReason));
+    expect(resolve(SourceBoolType(DummySourceReason))).toEqual(SourceBoolType(DummySourceReason));
+    expect(resolve(SourceIntType(DummySourceReason))).toEqual(SourceIntType(DummySourceReason));
+    expect(resolve(SourceStringType(DummySourceReason))).toEqual(
+      SourceStringType(DummySourceReason)
+    );
   });
 
   it('Undecided types will always be resolved', () => {
     for (let index = 0; index < 1000; index += 1) {
-      expect(resolve({ type: 'UndecidedType', index })).toEqual(
-        undecidedTypeResolver({ type: 'UndecidedType', index })
+      expect(resolve({ type: 'UndecidedType', reason: DummySourceReason, index })).toEqual(
+        undecidedTypeResolver({ type: 'UndecidedType', reason: DummySourceReason, index })
       );
     }
   });
@@ -48,32 +50,49 @@ describe('type-resolver', () => {
   it('Recursive types will be resolved', () => {
     expect(
       resolve(
-        SourceIdentifierType(ModuleReference.DUMMY, 'A', [
-          { type: 'UndecidedType', index: 0 },
-          { type: 'UndecidedType', index: 1 },
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+          { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         ])
       )
-    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceUnitType, SourceBoolType]));
+    ).toEqual(
+      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+        SourceUnitType(DummySourceReason),
+        SourceBoolType(DummySourceReason),
+      ])
+    );
 
     expect(
       resolve(
-        SourceTupleType([
-          { type: 'UndecidedType', index: 0 },
-          { type: 'UndecidedType', index: 1 },
+        SourceTupleType(DummySourceReason, [
+          { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         ])
       )
-    ).toEqual(SourceTupleType([SourceUnitType, SourceBoolType]));
+    ).toEqual(
+      SourceTupleType(DummySourceReason, [
+        SourceUnitType(DummySourceReason),
+        SourceBoolType(DummySourceReason),
+      ])
+    );
 
     expect(
       resolve(
         SourceFunctionType(
+          DummySourceReason,
           [
-            { type: 'UndecidedType', index: 0 },
-            { type: 'UndecidedType', index: 1 },
+            { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+            { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
           ],
-          { type: 'UndecidedType', index: 2 }
+          { type: 'UndecidedType', reason: DummySourceReason, index: 2 }
         )
       )
-    ).toEqual(SourceFunctionType([SourceUnitType, SourceBoolType], SourceIntType));
+    ).toEqual(
+      SourceFunctionType(
+        DummySourceReason,
+        [SourceUnitType(DummySourceReason), SourceBoolType(DummySourceReason)],
+        SourceIntType(DummySourceReason)
+      )
+    );
   });
 });

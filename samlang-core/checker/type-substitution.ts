@@ -1,4 +1,4 @@
-import type { ModuleReference } from '../ast/common-nodes';
+import { DummySourceReason, ModuleReference } from '../ast/common-nodes';
 import {
   SamlangType,
   SourceFunctionType,
@@ -20,14 +20,19 @@ export default function performTypeSubstitution(
         return mapping[type.identifier] ?? type;
       }
       return SourceIdentifierType(
+        type.reason,
         type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => performTypeSubstitution(it, mapping))
       );
     case 'TupleType':
-      return SourceTupleType(type.mappings.map((it) => performTypeSubstitution(it, mapping)));
+      return SourceTupleType(
+        type.reason,
+        type.mappings.map((it) => performTypeSubstitution(it, mapping))
+      );
     case 'FunctionType':
       return SourceFunctionType(
+        type.reason,
         type.argumentTypes.map((it) => performTypeSubstitution(it, mapping)),
         performTypeSubstitution(type.returnType, mapping)
       );
@@ -42,7 +47,10 @@ export function normalizeTypeInformation(
 ): MemberTypeInformation {
   const mappings = typeParameters.map(
     (typeParameter, i) =>
-      [typeParameter, SourceIdentifierType(currentModuleReference, `_T${i}`)] as const
+      [
+        typeParameter,
+        SourceIdentifierType(DummySourceReason, currentModuleReference, `_T${i}`),
+      ] as const
   );
   const newType = performTypeSubstitution(type, Object.fromEntries(mappings));
   assert(newType.type === 'FunctionType');

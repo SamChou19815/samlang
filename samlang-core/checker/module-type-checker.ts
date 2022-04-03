@@ -1,44 +1,15 @@
 import type { ModuleReference } from '../ast/common-nodes';
-import type {
-  SamlangModule,
-  SourceClassMemberDeclaration,
-  SourceInterfaceDeclaration,
-} from '../ast/samlang-nodes';
+import type { SamlangModule, SourceClassMemberDeclaration } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { filterMap } from '../utils';
 import typeCheckExpression from './expression-type-checker';
 import performSSAAnalysisOnSamlangModule, { SsaAnalysisResult } from './ssa-analysis';
 import TypeResolution from './type-resolution';
-import { validateType } from './type-validator';
 import {
   AccessibleGlobalTypingContext,
   LocationBasedLocalTypingContext,
   ReadonlyGlobalTypingContext,
 } from './typing-context';
-
-function checkClassOrInterfaceTypeValidity(
-  accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-  errorCollector: ModuleErrorCollector,
-  interfaceDeclaration: SourceInterfaceDeclaration
-) {
-  const { typeDefinition } = interfaceDeclaration;
-  if (typeDefinition != null) {
-    Object.values(typeDefinition.mappings).forEach((type) => {
-      validateType(type.type, accessibleGlobalTypingContext, errorCollector, typeDefinition.range);
-    });
-  }
-  interfaceDeclaration.members.forEach((member) => {
-    let patchedContext = accessibleGlobalTypingContext.withAdditionalTypeParameters(
-      member.typeParameters.map((it) => it.name)
-    );
-    if (member.isMethod) {
-      patchedContext = patchedContext.withAdditionalTypeParameters(
-        patchedContext.getCurrentClassTypeDefinition().classTypeParameters
-      );
-    }
-    validateType(member.type, patchedContext, errorCollector, member.range);
-  });
-}
 
 function typeCheckMemberDeclaration(
   memberDeclaration: SourceClassMemberDeclaration,
@@ -71,11 +42,6 @@ export default function typeCheckSamlangModule(
       globalTypingContext,
       interfaceDeclaration
     );
-    checkClassOrInterfaceTypeValidity(
-      accessibleGlobalTypingContext,
-      errorCollector,
-      interfaceDeclaration
-    );
     interfaceDeclaration.members.forEach((member) =>
       typeCheckMemberDeclaration(member, accessibleGlobalTypingContext, ssaResult)
     );
@@ -85,11 +51,6 @@ export default function typeCheckSamlangModule(
     const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
       moduleReference,
       globalTypingContext,
-      classDefinition
-    );
-    checkClassOrInterfaceTypeValidity(
-      accessibleGlobalTypingContext,
-      errorCollector,
       classDefinition
     );
     const checkedMembers = filterMap(classDefinition.members, (member) => {

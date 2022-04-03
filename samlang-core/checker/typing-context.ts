@@ -1,4 +1,4 @@
-import type { ModuleReference, Range } from '../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range, SourceReason } from '../ast/common-nodes';
 import {
   SamlangFunctionType,
   SamlangIdentifierType,
@@ -7,12 +7,12 @@ import {
   SourceIdentifierType,
   SourceInterfaceDeclaration,
   TypeDefinition,
+  UndecidedTypes,
 } from '../ast/samlang-nodes';
 import { checkNotNull, HashMap, hashMapOf, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
 import { undecideTypeParameters } from './type-undecider';
-import type { IdentifierTypeValidator } from './type-validator';
 
 export interface MemberTypeInformation {
   readonly isPublic: boolean;
@@ -38,7 +38,7 @@ export interface ModuleTypingContext {
 export type GlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
 export type ReadonlyGlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
 
-export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
+export class AccessibleGlobalTypingContext {
   constructor(
     public readonly currentModuleReference: ModuleReference,
     private readonly globalTypingContext: ReadonlyGlobalTypingContext,
@@ -199,24 +199,13 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       this.getClassTypeInformation(this.currentModuleReference, this.currentClass)
     );
     return SourceIdentifierType(
+      DummySourceReason,
       this.currentModuleReference,
       this.currentClass,
       currentClassTypingContext.typeParameters.map((it) =>
-        SourceIdentifierType(this.currentModuleReference, it)
+        SourceIdentifierType(DummySourceReason, this.currentModuleReference, it)
       )
     );
-  }
-
-  identifierTypeIsWellDefined(
-    moduleReference: ModuleReference,
-    className: string,
-    typeArgumentLength: number
-  ): boolean {
-    if (this.typeParameters.has(className)) {
-      return typeArgumentLength === 0;
-    }
-    const typeParameters = this.getClassTypeInformation(moduleReference, className)?.typeParameters;
-    return typeParameters != null && typeParameters.length === typeArgumentLength;
   }
 
   withAdditionalTypeParameters(typeParameters: Iterable<string>): AccessibleGlobalTypingContext {
@@ -241,9 +230,12 @@ export class LocationBasedLocalTypingContext {
     return this.thisType;
   }
 
-  read(range: Range): SamlangType | null {
+  read(range: Range): SamlangType {
     const definitionRange = this.ssaAnalysisResult.useDefineMap.get(range);
-    if (definitionRange == null) return null;
+    if (definitionRange == null) {
+      // When the name is unbound, we treat itself as definition.
+      return UndecidedTypes.next(SourceReason(range, null));
+    }
     return this.typeMap.forceGet(definitionRange);
   }
 
@@ -252,10 +244,15 @@ export class LocationBasedLocalTypingContext {
   }
 
   getCaptured(lambdaLocation: Range): ReadonlyMap<string, SamlangType> {
-    return new Map(
-      Array.from(this.ssaAnalysisResult.lambdaCaptures.forceGet(lambdaLocation).entries()).map(
-        ([name, range]) => [name, this.typeMap.forceGet(range)]
-      )
-    );
+    const map = new Map<string, SamlangType>();
+    const capturedEntries = this.ssaAnalysisResult.lambdaCaptures
+      .forceGet(lambdaLocation)
+      .entries();
+    for (const [name, range] of capturedEntries) {
+      const firstLetter = name.charAt(0);
+      if ('A' <= firstLetter && firstLetter <= 'Z') continue;
+      map.set(name, this.typeMap.forceGet(range));
+    }
+    return map;
   }
 }

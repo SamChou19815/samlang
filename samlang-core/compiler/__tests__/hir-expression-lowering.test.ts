@@ -1,4 +1,4 @@
-import { ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
 import { AND, CONCAT, MUL, OR, PLUS } from '../../ast/common-operators';
 import {
   debugPrintHighIRExpression,
@@ -41,7 +41,11 @@ import lowerSamlangExpression from '../hir-expression-lowering';
 import HighIRStringManager from '../hir-string-manager';
 import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from '../hir-type-conversion';
 
-const DUMMY_IDENTIFIER_TYPE = SourceIdentifierType(ModuleReference.DUMMY, 'Dummy');
+const DUMMY_IDENTIFIER_TYPE = SourceIdentifierType(
+  DummySourceReason,
+  ModuleReference.DUMMY,
+  'Dummy'
+);
 const THIS = SourceExpressionThis({ type: DUMMY_IDENTIFIER_TYPE });
 
 function expectCorrectlyLowered(
@@ -113,7 +117,7 @@ describe('hir-expression-lowering', () => {
 
   it('Variable lowering works.', () => {
     expectCorrectlyLowered(
-      SourceExpressionVariable({ type: SourceUnitType, name: 'foo' }),
+      SourceExpressionVariable({ type: SourceUnitType(DummySourceReason), name: 'foo' }),
       'return (foo: int);'
     );
   });
@@ -121,7 +125,11 @@ describe('hir-expression-lowering', () => {
   it('ClassMember lowering works.', () => {
     expectCorrectlyLowered(
       SourceExpressionClassMember({
-        type: SourceFunctionType([SourceIntType], SourceIntType),
+        type: SourceFunctionType(
+          DummySourceReason,
+          [SourceIntType(DummySourceReason)],
+          SourceIntType(DummySourceReason)
+        ),
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
         className: SourceId('A'),
@@ -136,7 +144,7 @@ return (_t0: $SyntheticIDType0);`
   it('Lowering to StructConstructor works', () => {
     expectCorrectlyLowered(
       SourceExpressionTupleConstructor({
-        type: SourceTupleType([DUMMY_IDENTIFIER_TYPE]),
+        type: SourceTupleType(DummySourceReason, [DUMMY_IDENTIFIER_TYPE]),
         expressions: [THIS],
       }),
       `object type $SyntheticIDType0 = [__DUMMY___Dummy]
@@ -148,7 +156,7 @@ return (_t0: $SyntheticIDType0);`
   it('FieldAccess lowering works.', () => {
     expectCorrectlyLowered(
       SourceExpressionFieldAccess({
-        type: SourceUnitType,
+        type: SourceUnitType(DummySourceReason),
         expression: THIS,
         fieldName: SourceId('foo'),
         fieldOrder: 0,
@@ -160,7 +168,11 @@ return (_t0: $SyntheticIDType0);`
   it('MethodAccess lowering works.', () => {
     expectCorrectlyLowered(
       SourceExpressionMethodAccess({
-        type: SourceFunctionType([SourceIntType], SourceIntType),
+        type: SourceFunctionType(
+          DummySourceReason,
+          [SourceIntType(DummySourceReason)],
+          SourceIntType(DummySourceReason)
+        ),
         expression: THIS,
         methodName: SourceId('foo'),
       }),
@@ -172,12 +184,20 @@ return (_t0: $SyntheticIDType0);`
 
   it('Unary lowering works.', () => {
     expectCorrectlyLowered(
-      SourceExpressionUnary({ type: SourceUnitType, operator: '!', expression: THIS }),
+      SourceExpressionUnary({
+        type: SourceUnitType(DummySourceReason),
+        operator: '!',
+        expression: THIS,
+      }),
       'let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);'
     );
 
     expectCorrectlyLowered(
-      SourceExpressionUnary({ type: SourceUnitType, operator: '-', expression: THIS }),
+      SourceExpressionUnary({
+        type: SourceUnitType(DummySourceReason),
+        operator: '-',
+        expression: THIS,
+      }),
       'let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);'
     );
   });
@@ -186,9 +206,13 @@ return (_t0: $SyntheticIDType0);`
     it('1/n: class member call with return', () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
-          type: SourceIntType,
+          type: SourceIntType(DummySourceReason),
           functionExpression: SourceExpressionClassMember({
-            type: SourceFunctionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], SourceIntType),
+            type: SourceFunctionType(
+              DummySourceReason,
+              [DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE],
+              SourceIntType(DummySourceReason)
+            ),
             typeArguments: [],
             moduleReference: new ModuleReference(['ModuleModule']),
             className: SourceId('ImportedClass'),
@@ -204,9 +228,13 @@ return (_t0: int);`
     it('2/n class member call without return', () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
-          type: SourceUnitType,
+          type: SourceUnitType(DummySourceReason),
           functionExpression: SourceExpressionClassMember({
-            type: SourceFunctionType([SourceIntType], SourceUnitType),
+            type: SourceFunctionType(
+              DummySourceReason,
+              [SourceIntType(DummySourceReason)],
+              SourceUnitType(DummySourceReason)
+            ),
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
             className: SourceId('C'),
@@ -224,7 +252,11 @@ return 0;`
         SourceExpressionFunctionCall({
           type: DUMMY_IDENTIFIER_TYPE,
           functionExpression: SourceExpressionClassMember({
-            type: SourceFunctionType([SourceIntType], DUMMY_IDENTIFIER_TYPE),
+            type: SourceFunctionType(
+              DummySourceReason,
+              [SourceIntType(DummySourceReason)],
+              DUMMY_IDENTIFIER_TYPE
+            ),
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
             className: SourceId('C'),
@@ -240,9 +272,13 @@ return (_t0: __DUMMY___Dummy);`
     it('4/n method call with return', () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
-          type: SourceIntType,
+          type: SourceIntType(DummySourceReason),
           functionExpression: SourceExpressionMethodAccess({
-            type: SourceFunctionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], SourceIntType),
+            type: SourceFunctionType(
+              DummySourceReason,
+              [DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE],
+              SourceIntType(DummySourceReason)
+            ),
             expression: THIS,
             methodName: SourceId('fooBar'),
           }),
@@ -256,9 +292,13 @@ return (_t0: int);`
     it('5/n closure call with return', () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
-          type: SourceIntType,
+          type: SourceIntType(DummySourceReason),
           functionExpression: SourceExpressionVariable({
-            type: SourceFunctionType([SourceBoolType], SourceIntType),
+            type: SourceFunctionType(
+              DummySourceReason,
+              [SourceBoolType(DummySourceReason)],
+              SourceIntType(DummySourceReason)
+            ),
             name: 'closure',
           }),
           functionArguments: [SourceExpressionTrue(Range.DUMMY, [])],
@@ -271,9 +311,13 @@ return (_t0: int);`
     it('6/n closure call without return', () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
-          type: SourceUnitType,
+          type: SourceUnitType(DummySourceReason),
           functionExpression: SourceExpressionVariable({
-            type: SourceFunctionType([SourceBoolType], SourceUnitType),
+            type: SourceFunctionType(
+              DummySourceReason,
+              [SourceBoolType(DummySourceReason)],
+              SourceUnitType(DummySourceReason)
+            ),
             name: 'closure_unit_return',
           }),
           functionArguments: [SourceExpressionTrue(Range.DUMMY, [])],
@@ -288,7 +332,7 @@ return 0;`
     it('Normal +', () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceIntType,
+          type: SourceIntType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: PLUS,
           e1: THIS,
@@ -301,7 +345,7 @@ return 0;`
     it('Normal *', () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceIntType,
+          type: SourceIntType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: MUL,
           e1: THIS,
@@ -314,11 +358,11 @@ return 0;`
     it('Short circuiting &&', () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceBoolType,
+          type: SourceBoolType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: AND,
-          e1: SourceExpressionVariable({ type: SourceBoolType, name: 'foo' }),
-          e2: SourceExpressionVariable({ type: SourceBoolType, name: 'bar' }),
+          e1: SourceExpressionVariable({ type: SourceBoolType(DummySourceReason), name: 'foo' }),
+          e2: SourceExpressionVariable({ type: SourceBoolType(DummySourceReason), name: 'bar' }),
         }),
         `let _t0: bool;
 if (foo: int) {
@@ -331,22 +375,22 @@ return (_t0: bool);`
 
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceBoolType,
+          type: SourceBoolType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: AND,
           e1: SourceExpressionTrue(),
-          e2: SourceExpressionVariable({ type: SourceIntType, name: 'foo' }),
+          e2: SourceExpressionVariable({ type: SourceIntType(DummySourceReason), name: 'foo' }),
         }),
         'return (foo: int);'
       );
 
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceBoolType,
+          type: SourceBoolType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: AND,
           e1: SourceExpressionFalse(),
-          e2: SourceExpressionVariable({ type: SourceIntType, name: 'foo' }),
+          e2: SourceExpressionVariable({ type: SourceIntType(DummySourceReason), name: 'foo' }),
         }),
         'return 0;'
       );
@@ -355,7 +399,7 @@ return (_t0: bool);`
     it('Short circuiting ||', () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceBoolType,
+          type: SourceBoolType(DummySourceReason),
           operator: OR,
           operatorPrecedingComments: [],
           e1: SourceExpressionTrue(),
@@ -366,7 +410,7 @@ return (_t0: bool);`
 
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceBoolType,
+          type: SourceBoolType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: OR,
           e1: SourceExpressionFalse(),
@@ -377,11 +421,11 @@ return (_t0: bool);`
 
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceBoolType,
+          type: SourceBoolType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: OR,
-          e1: SourceExpressionVariable({ type: SourceBoolType, name: 'foo' }),
-          e2: SourceExpressionVariable({ type: SourceBoolType, name: 'bar' }),
+          e1: SourceExpressionVariable({ type: SourceBoolType(DummySourceReason), name: 'foo' }),
+          e2: SourceExpressionVariable({ type: SourceBoolType(DummySourceReason), name: 'bar' }),
         }),
         `let _t0: bool;
 if (foo: int) {
@@ -396,7 +440,7 @@ return (_t0: bool);`
     it('Normal string concat', () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceStringType,
+          type: SourceStringType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: CONCAT,
           e1: THIS,
@@ -410,7 +454,7 @@ return (_t0: string);`
     it('Optimizing string concat', () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
-          type: SourceStringType,
+          type: SourceStringType(DummySourceReason),
           operatorPrecedingComments: [],
           operator: CONCAT,
           e1: SourceExpressionString('hello '),
@@ -425,9 +469,9 @@ return (_t0: string);`
     it('1/n', () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
-          type: SourceFunctionType([], SourceUnitType),
-          parameters: [[SourceId('a'), SourceUnitType]],
-          captured: { captured_a: SourceUnitType },
+          type: SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
+          parameters: [[SourceId('a'), SourceUnitType(DummySourceReason)]],
+          captured: { captured_a: SourceUnitType(DummySourceReason) },
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> int
@@ -446,9 +490,9 @@ return (_t0: $SyntheticIDType1);`
     it('2/n', () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
-          type: SourceFunctionType([], SourceIntType),
-          parameters: [[SourceId('a'), SourceUnitType]],
-          captured: { captured_a: SourceUnitType },
+          type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+          parameters: [[SourceId('a'), SourceUnitType(DummySourceReason)]],
+          captured: { captured_a: SourceUnitType(DummySourceReason) },
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> int
@@ -467,9 +511,9 @@ return (_t0: $SyntheticIDType1);`
     it('3/n', () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
-          type: SourceFunctionType([], DUMMY_IDENTIFIER_TYPE),
-          parameters: [[SourceId('a'), SourceUnitType]],
-          captured: { captured_a: SourceUnitType },
+          type: SourceFunctionType(DummySourceReason, [], DUMMY_IDENTIFIER_TYPE),
+          parameters: [[SourceId('a'), SourceUnitType(DummySourceReason)]],
+          captured: { captured_a: SourceUnitType(DummySourceReason) },
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> __DUMMY___Dummy
@@ -488,8 +532,8 @@ return (_t0: $SyntheticIDType1);`
     it('4/n', () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
-          type: SourceFunctionType([], DUMMY_IDENTIFIER_TYPE),
-          parameters: [[SourceId('a'), SourceUnitType]],
+          type: SourceFunctionType(DummySourceReason, [], DUMMY_IDENTIFIER_TYPE),
+          parameters: [[SourceId('a'), SourceUnitType(DummySourceReason)]],
           captured: {},
           body: THIS,
         }),
@@ -525,7 +569,12 @@ return (_t0: __DUMMY___Dummy);`
 
     it('2/n', () => {
       expectCorrectlyLowered(
-        SourceExpressionIfElse({ type: SourceUnitType, boolExpression: THIS, e1: THIS, e2: THIS }),
+        SourceExpressionIfElse({
+          type: SourceUnitType(DummySourceReason),
+          boolExpression: THIS,
+          e1: THIS,
+          e2: THIS,
+        }),
         `if (_this: __DUMMY___Dummy) {
 } else {
 }
@@ -545,7 +594,7 @@ return 0;`
               range: Range.DUMMY,
               tag: SourceId('Foo'),
               tagOrder: 0,
-              dataVariable: [SourceId('bar'), SourceIntType],
+              dataVariable: [SourceId('bar'), SourceIntType(DummySourceReason)],
               expression: THIS,
             },
             {
@@ -572,14 +621,14 @@ return (_t2: __DUMMY___Dummy);`
     it('2/n', () => {
       expectCorrectlyLowered(
         SourceExpressionMatch({
-          type: SourceUnitType,
+          type: SourceUnitType(DummySourceReason),
           matchedExpression: THIS,
           matchingList: [
             {
               range: Range.DUMMY,
               tag: SourceId('Foo'),
               tagOrder: 0,
-              dataVariable: [SourceId('bar'), SourceIntType],
+              dataVariable: [SourceId('bar'), SourceIntType(DummySourceReason)],
               expression: THIS,
             },
             {
@@ -662,7 +711,7 @@ return (_t4: __DUMMY___Dummy);`
     it('All syntax forms', () => {
       expectCorrectlyLowered(
         SourceExpressionStatementBlock({
-          type: SourceUnitType,
+          type: SourceUnitType(DummySourceReason),
           block: {
             range: Range.DUMMY,
             statements: [
@@ -672,14 +721,20 @@ return (_t4: __DUMMY___Dummy);`
                   range: Range.DUMMY,
                   type: 'TuplePattern',
                   destructedNames: [
-                    { name: SourceId('ignored'), type: SourceIntType },
-                    { type: SourceIntType },
+                    { name: SourceId('ignored'), type: SourceIntType(DummySourceReason) },
+                    { type: SourceIntType(DummySourceReason) },
                   ],
                 },
-                typeAnnotation: SourceTupleType([SourceIntType, SourceIntType]),
+                typeAnnotation: SourceTupleType(DummySourceReason, [
+                  SourceIntType(DummySourceReason),
+                  SourceIntType(DummySourceReason),
+                ]),
                 assignedExpression: SourceExpressionTupleConstructor({
                   range: Range.DUMMY,
-                  type: SourceTupleType([SourceIntType, SourceIntType]),
+                  type: SourceTupleType(DummySourceReason, [
+                    SourceIntType(DummySourceReason),
+                    SourceIntType(DummySourceReason),
+                  ]),
                   associatedComments: [],
                   expressions: [SourceExpressionInt(1), SourceExpressionInt(2)],
                 }),
@@ -688,9 +743,9 @@ return (_t4: __DUMMY___Dummy);`
               {
                 range: Range.DUMMY,
                 pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-                typeAnnotation: SourceUnitType,
+                typeAnnotation: SourceUnitType(DummySourceReason),
                 assignedExpression: SourceExpressionStatementBlock({
-                  type: SourceUnitType,
+                  type: SourceUnitType(DummySourceReason),
                   block: {
                     range: Range.DUMMY,
                     statements: [
@@ -700,14 +755,20 @@ return (_t4: __DUMMY___Dummy);`
                           range: Range.DUMMY,
                           type: 'TuplePattern',
                           destructedNames: [
-                            { name: SourceId('a'), type: SourceIntType },
-                            { type: SourceIntType },
+                            { name: SourceId('a'), type: SourceIntType(DummySourceReason) },
+                            { type: SourceIntType(DummySourceReason) },
                           ],
                         },
-                        typeAnnotation: SourceTupleType([SourceIntType, SourceIntType]),
+                        typeAnnotation: SourceTupleType(DummySourceReason, [
+                          SourceIntType(DummySourceReason),
+                          SourceIntType(DummySourceReason),
+                        ]),
                         assignedExpression: {
                           ...THIS,
-                          type: SourceTupleType([SourceIntType, SourceIntType]),
+                          type: SourceTupleType(DummySourceReason, [
+                            SourceIntType(DummySourceReason),
+                            SourceIntType(DummySourceReason),
+                          ]),
                         },
                         associatedComments: [],
                       },
@@ -720,13 +781,13 @@ return (_t4: __DUMMY___Dummy);`
                             {
                               range: Range.DUMMY,
                               fieldName: SourceId('a'),
-                              type: SourceIntType,
+                              type: SourceIntType(DummySourceReason),
                               fieldOrder: 0,
                             },
                             {
                               range: Range.DUMMY,
                               fieldName: SourceId('b'),
-                              type: SourceIntType,
+                              type: SourceIntType(DummySourceReason),
                               fieldOrder: 1,
                               alias: SourceId('c'),
                             },
@@ -744,7 +805,10 @@ return (_t4: __DUMMY___Dummy);`
                         associatedComments: [],
                       },
                     ],
-                    expression: SourceExpressionVariable({ type: SourceUnitType, name: 'a' }),
+                    expression: SourceExpressionVariable({
+                      type: SourceUnitType(DummySourceReason),
+                      name: 'a',
+                    }),
                   },
                 }),
                 associatedComments: [],
@@ -765,26 +829,32 @@ return 0;`
     it('Copy propagation', () => {
       expectCorrectlyLowered(
         SourceExpressionStatementBlock({
-          type: SourceUnitType,
+          type: SourceUnitType(DummySourceReason),
           block: {
             range: Range.DUMMY,
             statements: [
               {
                 range: Range.DUMMY,
                 pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-                typeAnnotation: SourceUnitType,
+                typeAnnotation: SourceUnitType(DummySourceReason),
                 assignedExpression: SourceExpressionString('foo'),
                 associatedComments: [],
               },
               {
                 range: Range.DUMMY,
                 pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
-                typeAnnotation: SourceUnitType,
-                assignedExpression: SourceExpressionVariable({ type: SourceStringType, name: 'a' }),
+                typeAnnotation: SourceUnitType(DummySourceReason),
+                assignedExpression: SourceExpressionVariable({
+                  type: SourceStringType(DummySourceReason),
+                  name: 'a',
+                }),
                 associatedComments: [],
               },
             ],
-            expression: SourceExpressionVariable({ type: SourceStringType, name: 'b' }),
+            expression: SourceExpressionVariable({
+              type: SourceStringType(DummySourceReason),
+              name: 'b',
+            }),
           },
         }),
         "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;"
@@ -794,34 +864,40 @@ return 0;`
     it('Shadowing', () => {
       expectCorrectlyLowered(
         SourceExpressionStatementBlock({
-          type: SourceStringType,
+          type: SourceStringType(DummySourceReason),
           block: {
             range: Range.DUMMY,
             statements: [
               {
                 range: Range.DUMMY,
-                typeAnnotation: SourceStringType,
+                typeAnnotation: SourceStringType(DummySourceReason),
                 pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
                 assignedExpression: SourceExpressionStatementBlock({
-                  type: SourceUnitType,
+                  type: SourceUnitType(DummySourceReason),
                   block: {
                     range: Range.DUMMY,
                     statements: [
                       {
                         range: Range.DUMMY,
-                        typeAnnotation: SourceIntType,
+                        typeAnnotation: SourceIntType(DummySourceReason),
                         pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
                         assignedExpression: THIS,
                         associatedComments: [],
                       },
                     ],
-                    expression: SourceExpressionVariable({ type: SourceStringType, name: 'a' }),
+                    expression: SourceExpressionVariable({
+                      type: SourceStringType(DummySourceReason),
+                      name: 'a',
+                    }),
                   },
                 }),
                 associatedComments: [],
               },
             ],
-            expression: SourceExpressionVariable({ type: SourceStringType, name: 'a' }),
+            expression: SourceExpressionVariable({
+              type: SourceStringType(DummySourceReason),
+              name: 'a',
+            }),
           },
         }),
         'return (_this: __DUMMY___Dummy);'

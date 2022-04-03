@@ -41,17 +41,6 @@ export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType'> {
   }
 }
 
-export class NotWellDefinedIdentifierError extends CompileTimeError<'NotWellDefinedIdentifier'> {
-  constructor(moduleReference: ModuleReference, range: Range, badIdentifier: string) {
-    super(
-      'NotWellDefinedIdentifier',
-      moduleReference,
-      range,
-      `\`${badIdentifier}\` is not well defined.`
-    );
-  }
-}
-
 export class UnresolvedNameError extends CompileTimeError<'UnresolvedName'> {
   constructor(moduleReference: ModuleReference, range: Range, unresolvedName: string) {
     super('UnresolvedName', moduleReference, range, `Name \`${unresolvedName}\` is not resolved.`);
@@ -204,13 +193,6 @@ export class ModuleErrorCollector {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
       new UnexpectedTypeError(this.moduleReference, range, expected, actual)
-    );
-  }
-
-  reportNotWellDefinedIdentifierError(range: Range, badIdentifier: string): void {
-    this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new NotWellDefinedIdentifierError(this.moduleReference, range, badIdentifier)
     );
   }
 

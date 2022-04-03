@@ -1,41 +1,52 @@
 import { zip } from '../utils';
 import {
+  DummySourceReason,
   FALSE,
   intLiteralOf,
   Literal,
   ModuleReference,
   Node,
   Range,
+  SamlangReason,
+  SourceReason,
   stringLiteralOf,
   TRUE,
   TypedComment,
 } from './common-nodes';
 import type { BinaryOperator } from './common-operators';
 
-export type SamlangPrimitiveType = {
+interface SamlangBaseType {
+  readonly type: string;
+  readonly reason: SamlangReason;
+}
+
+export interface SamlangPrimitiveType extends SamlangBaseType {
   readonly type: 'PrimitiveType';
   readonly name: 'unit' | 'bool' | 'int' | 'string';
-};
+}
 
-export type SamlangIdentifierType = {
+export interface SamlangIdentifierType extends SamlangBaseType {
   readonly type: 'IdentifierType';
   readonly moduleReference: ModuleReference;
   readonly identifier: string;
   readonly typeArguments: readonly SamlangType[];
-};
+}
 
-export type SamlangTupleType = {
+export interface SamlangTupleType extends SamlangBaseType {
   readonly type: 'TupleType';
   readonly mappings: readonly SamlangType[];
-};
+}
 
-export type SamlangFunctionType = {
+export interface SamlangFunctionType extends SamlangBaseType {
   readonly type: 'FunctionType';
   readonly argumentTypes: readonly SamlangType[];
   readonly returnType: SamlangType;
-};
+}
 
-export type SamlangUndecidedType = { readonly type: 'UndecidedType'; readonly index: number };
+export interface SamlangUndecidedType extends SamlangBaseType {
+  readonly type: 'UndecidedType';
+  readonly index: number;
+}
 
 export type SamlangType =
   | SamlangPrimitiveType
@@ -44,32 +55,56 @@ export type SamlangType =
   | SamlangFunctionType
   | SamlangUndecidedType;
 
-export const SourceUnitType: SamlangPrimitiveType = { type: 'PrimitiveType', name: 'unit' };
-export const SourceBoolType: SamlangPrimitiveType = { type: 'PrimitiveType', name: 'bool' };
-export const SourceIntType: SamlangPrimitiveType = { type: 'PrimitiveType', name: 'int' };
-export const SourceStringType: SamlangPrimitiveType = { type: 'PrimitiveType', name: 'string' };
+export const SourceUnitType = (reason: SamlangReason): SamlangPrimitiveType => ({
+  type: 'PrimitiveType',
+  reason,
+  name: 'unit',
+});
+export const SourceBoolType = (reason: SamlangReason): SamlangPrimitiveType => ({
+  type: 'PrimitiveType',
+  reason,
+  name: 'bool',
+});
+export const SourceIntType = (reason: SamlangReason): SamlangPrimitiveType => ({
+  type: 'PrimitiveType',
+  reason,
+  name: 'int',
+});
+export const SourceStringType = (reason: SamlangReason): SamlangPrimitiveType => ({
+  type: 'PrimitiveType',
+  reason,
+  name: 'string',
+});
 
 export const SourceIdentifierType = (
+  reason: SamlangReason,
   moduleReference: ModuleReference,
   identifier: string,
   typeArguments: readonly SamlangType[] = []
 ): SamlangIdentifierType => ({
   type: 'IdentifierType',
+  reason,
   moduleReference,
   identifier,
   typeArguments,
 });
 
-export const SourceTupleType = (mappings: readonly SamlangType[]): SamlangTupleType => ({
+export const SourceTupleType = (
+  reason: SamlangReason,
+  mappings: readonly SamlangType[]
+): SamlangTupleType => ({
   type: 'TupleType',
+  reason,
   mappings,
 });
 
 export const SourceFunctionType = (
+  reason: SamlangReason,
   argumentTypes: readonly SamlangType[],
   returnType: SamlangType
 ): SamlangFunctionType => ({
   type: 'FunctionType',
+  reason,
   argumentTypes,
   returnType,
 });
@@ -77,8 +112,12 @@ export const SourceFunctionType = (
 export class UndecidedTypes {
   private static nextUndecidedTypeIndex = 0;
 
-  static next(): SamlangUndecidedType {
-    const type = { type: 'UndecidedType', index: UndecidedTypes.nextUndecidedTypeIndex } as const;
+  static next(reason: SamlangReason): SamlangUndecidedType {
+    const type = {
+      type: 'UndecidedType',
+      reason,
+      index: UndecidedTypes.nextUndecidedTypeIndex,
+    } as const;
     UndecidedTypes.nextUndecidedTypeIndex += 1;
     return type;
   }
@@ -86,7 +125,7 @@ export class UndecidedTypes {
   static nextN(n: number): readonly SamlangUndecidedType[] {
     const list: SamlangUndecidedType[] = [];
     for (let i = 0; i < n; i += 1) {
-      list.push(UndecidedTypes.next());
+      list.push(UndecidedTypes.next(DummySourceReason));
     }
     return list;
   }
@@ -343,7 +382,7 @@ export const SourceExpressionTrue = (
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
-  type: SourceBoolType,
+  type: SourceBoolType(SourceReason(range, null)),
   precedence: 0,
   associatedComments,
   literal: TRUE,
@@ -355,7 +394,7 @@ export const SourceExpressionFalse = (
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
-  type: SourceBoolType,
+  type: SourceBoolType(SourceReason(range, null)),
   precedence: 0,
   associatedComments,
   literal: FALSE,
@@ -368,7 +407,7 @@ export const SourceExpressionInt = (
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
-  type: SourceIntType,
+  type: SourceIntType(SourceReason(range, null)),
   precedence: 0,
   associatedComments,
   literal: intLiteralOf(value),
@@ -381,7 +420,7 @@ export const SourceExpressionString = (
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
-  type: SourceStringType,
+  type: SourceStringType(SourceReason(range, null)),
   precedence: 0,
   associatedComments,
   literal: stringLiteralOf(value),

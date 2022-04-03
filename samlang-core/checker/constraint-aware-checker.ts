@@ -4,38 +4,39 @@ import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
 import type TypeResolution from './type-resolution';
 
-function typeMeet(t1: SamlangType, t2: SamlangType, resolution: TypeResolution): SamlangType {
+function typeMeet(hint: SamlangType, actual: SamlangType, resolution: TypeResolution): SamlangType {
   const meetWithResolution = (type1: SamlangType, type2: SamlangType): SamlangType =>
     typeMeet(type1, type2, resolution);
 
-  switch (t1.type) {
+  switch (hint.type) {
     case 'PrimitiveType':
-      switch (t2.type) {
+      switch (actual.type) {
         case 'UndecidedType':
-          return meetWithUndecidedType(t1, t2, resolution);
+          return meetWithUndecidedType(hint, actual, resolution);
         case 'PrimitiveType':
-          assert(isTheSameType(t1, t2));
-          return t1;
+          assert(isTheSameType(hint, actual));
+          return hint;
         default:
           throw new Error();
       }
     case 'IdentifierType':
-      switch (t2.type) {
+      switch (actual.type) {
         case 'UndecidedType':
-          return meetWithUndecidedType(t1, t2, resolution);
+          return meetWithUndecidedType(hint, actual, resolution);
         case 'IdentifierType':
           if (
-            t1.moduleReference.toString() !== t2.moduleReference.toString() ||
-            t1.identifier !== t2.identifier ||
-            t1.typeArguments.length !== t2.typeArguments.length
+            hint.moduleReference.toString() !== actual.moduleReference.toString() ||
+            hint.identifier !== actual.identifier ||
+            hint.typeArguments.length !== actual.typeArguments.length
           ) {
             throw new Error();
           }
           return {
             type: 'IdentifierType',
-            moduleReference: t1.moduleReference,
-            identifier: t1.identifier,
-            typeArguments: zip(t1.typeArguments, t2.typeArguments).map(([type1, type2]) =>
+            reason: actual.reason,
+            moduleReference: hint.moduleReference,
+            identifier: hint.identifier,
+            typeArguments: zip(hint.typeArguments, actual.typeArguments).map(([type1, type2]) =>
               meetWithResolution(type1, type2)
             ),
           };
@@ -43,16 +44,17 @@ function typeMeet(t1: SamlangType, t2: SamlangType, resolution: TypeResolution):
           throw new Error();
       }
     case 'TupleType':
-      switch (t2.type) {
+      switch (actual.type) {
         case 'UndecidedType':
-          return meetWithUndecidedType(t1, t2, resolution);
+          return meetWithUndecidedType(hint, actual, resolution);
         case 'TupleType':
-          if (t1.mappings.length !== t2.mappings.length) {
+          if (hint.mappings.length !== actual.mappings.length) {
             throw new Error();
           }
           return {
             type: 'TupleType',
-            mappings: zip(t1.mappings, t2.mappings).map(([type1, type2]) =>
+            reason: actual.reason,
+            mappings: zip(hint.mappings, actual.mappings).map(([type1, type2]) =>
               meetWithResolution(type1, type2)
             ),
           };
@@ -60,26 +62,26 @@ function typeMeet(t1: SamlangType, t2: SamlangType, resolution: TypeResolution):
           throw new Error();
       }
     case 'FunctionType':
-      switch (t2.type) {
+      switch (actual.type) {
         case 'UndecidedType':
-          return meetWithUndecidedType(t1, t2, resolution);
+          return meetWithUndecidedType(hint, actual, resolution);
         case 'FunctionType': {
-          const returnType = typeMeet(t1.returnType, t2.returnType, resolution);
-          if (t1.argumentTypes.length !== t2.argumentTypes.length) {
+          const returnType = typeMeet(hint.returnType, actual.returnType, resolution);
+          if (hint.argumentTypes.length !== actual.argumentTypes.length) {
             throw new Error();
           }
-          const argumentTypes = zip(t1.argumentTypes, t2.argumentTypes).map(([type1, type2]) =>
-            meetWithResolution(type1, type2)
+          const argumentTypes = zip(hint.argumentTypes, actual.argumentTypes).map(
+            ([type1, type2]) => meetWithResolution(type1, type2)
           );
-          return { type: 'FunctionType', argumentTypes, returnType };
+          return { type: 'FunctionType', reason: actual.reason, argumentTypes, returnType };
         }
         default:
           throw new Error();
       }
     case 'UndecidedType':
-      return t2.type === 'UndecidedType'
-        ? resolution.establishAliasing(t1, t2, meetWithResolution)
-        : meetWithUndecidedType(t2, t1, resolution);
+      return actual.type === 'UndecidedType'
+        ? resolution.establishAliasing(hint, actual, meetWithResolution)
+        : meetWithUndecidedType(actual, hint, resolution);
   }
 }
 
@@ -119,11 +121,11 @@ export class ConstraintAwareChecker {
   ) {}
 
   readonly checkAndInfer = (
-    expectedType: SamlangType,
-    actualType: SamlangType,
+    hint: SamlangType,
+    actual: SamlangType,
     errorRange: Range
   ): SamlangType => {
-    const result = checkAndInfer(expectedType, actualType, this.resolution);
+    const result = checkAndInfer(hint, actual, this.resolution);
     if (result.type === 'FAILED_MEET') {
       this.errorCollector.reportUnexpectedTypeError(errorRange, result.expected, result.actual);
       return result.expected;

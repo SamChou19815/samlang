@@ -1,4 +1,4 @@
-import { ModuleReference } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
 import {
   SourceBoolType,
   SourceFunctionType,
@@ -14,18 +14,21 @@ describe('undecided-type-collector', () => {
       Array.from(
         collectUndecidedTypeIndices(
           SourceFunctionType(
+            DummySourceReason,
             [
-              SourceIdentifierType(ModuleReference.DUMMY, 'A', [
-                SourceBoolType,
-                { type: 'UndecidedType', index: 0 },
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+                SourceBoolType(DummySourceReason),
+                { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
               ]),
-              SourceUnitType,
-              SourceUnitType,
-              SourceTupleType([{ type: 'UndecidedType', index: 1 }]),
+              SourceUnitType(DummySourceReason),
+              SourceUnitType(DummySourceReason),
+              SourceTupleType(DummySourceReason, [
+                { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
+              ]),
             ],
-            SourceTupleType([
-              { type: 'UndecidedType', index: 2 },
-              { type: 'UndecidedType', index: 3 },
+            SourceTupleType(DummySourceReason, [
+              { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+              { type: 'UndecidedType', reason: DummySourceReason, index: 3 },
             ])
           )
         ).values()

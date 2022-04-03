@@ -2,11 +2,13 @@ import type { Range } from '../ast/common-nodes';
 import type {
   SamlangExpression,
   SamlangModule,
+  SamlangType,
   SourceIdentifier,
   SourceInterfaceDeclaration,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import {
+  checkNotNull,
   hashMapOf,
   hashSetOf,
   LocalStackedContext,
@@ -71,6 +73,9 @@ class SsaBuilder extends LocalStackedContext<Range> {
           this.withNestedScope(() => {
             this.defineAll(interfaceDeclaration.typeParameters);
             this.defineAll(typeDefinition.names);
+            typeDefinition.names.forEach((it) =>
+              this.visitType(checkNotNull(typeDefinition.mappings[it.name]).type)
+            );
           });
         }
 
@@ -83,7 +88,11 @@ class SsaBuilder extends LocalStackedContext<Range> {
           this.withNestedScope(() => {
             if (member.isMethod) this.defineAll(interfaceDeclaration.typeParameters);
             this.defineAll(member.typeParameters);
-            member.parameters.forEach(({ name, nameRange: range }) => this.define({ name, range }));
+            member.parameters.forEach(({ name, nameRange: range, type }) => {
+              this.define({ name, range });
+              this.visitType(type);
+            });
+            this.visitType(member.type.returnType);
             if (member.body != null) {
               this.visitExpression(member.body);
             }
@@ -137,7 +146,10 @@ class SsaBuilder extends LocalStackedContext<Range> {
         return;
       case 'LambdaExpression': {
         const [, captured] = this.withNestedScopeReturnCaptured(() => {
-          expression.parameters.forEach(([id]) => this.define(id));
+          expression.parameters.forEach(([id, type]) => {
+            this.define(id);
+            this.visitType(type);
+          });
           this.visitExpression(expression.body);
         });
         this.lambdaCaptures.set(expression.range, captured);
@@ -170,6 +182,26 @@ class SsaBuilder extends LocalStackedContext<Range> {
             this.visitExpression(finalExpression);
           }
         });
+        return;
+    }
+  };
+
+  visitType = (type: SamlangType) => {
+    switch (type.type) {
+      case 'PrimitiveType':
+        return;
+      case 'IdentifierType':
+        this.use({ name: type.identifier, range: type.reason.definitionLocation });
+        type.typeArguments.forEach(this.visitType);
+        return;
+      case 'TupleType':
+        type.mappings.forEach(this.visitType);
+        return;
+      case 'FunctionType':
+        type.argumentTypes.forEach(this.visitType);
+        this.visitType(type.returnType);
+        return;
+      case 'UndecidedType':
         return;
     }
   };

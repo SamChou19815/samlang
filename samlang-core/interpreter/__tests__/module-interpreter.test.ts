@@ -1,7 +1,7 @@
 // @author meganyin13
 // @origin https://github.com/SamChou19815/samlang/pull/35
 
-import { ModuleReference, Position, Range } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Position, Range } from '../../ast/common-nodes';
 import {
   SamlangModule,
   SourceClassDefinition,
@@ -37,7 +37,7 @@ describe('module-interpreter', () => {
       names: [SourceId('types')],
       mappings: {
         types: {
-          type: SourceIntType,
+          type: SourceIntType(DummySourceReason),
           isPublic: true,
         },
       },
@@ -56,7 +56,7 @@ describe('module-interpreter', () => {
       names: [SourceId('types')],
       mappings: {
         types: {
-          type: SourceIntType,
+          type: SourceIntType(DummySourceReason),
           isPublic: true,
         },
       },
@@ -74,7 +74,7 @@ describe('module-interpreter', () => {
       names: [SourceId('types')],
       mappings: {
         types: {
-          type: SourceIntType,
+          type: SourceIntType(DummySourceReason),
           isPublic: true,
         },
       },
@@ -90,8 +90,9 @@ describe('module-interpreter', () => {
     typeParameters: [SourceId('param')],
     type: {
       type: 'FunctionType',
-      argumentTypes: [SourceIntType],
-      returnType: SourceIntType,
+      reason: DummySourceReason,
+      argumentTypes: [SourceIntType(DummySourceReason)],
+      returnType: SourceIntType(DummySourceReason),
     },
     parameters: [],
     body: SourceExpressionInt(2, new Range(Position(123, 45), Position(145, 89))),
@@ -101,9 +102,9 @@ describe('module-interpreter', () => {
     ...memberMainFunctionNoArgs,
     body: SourceExpressionFunctionCall({
       range: new Range(Position(12, 34), Position(34, 45)),
-      type: SourceIntType,
+      type: SourceIntType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
-        type: SourceIntType,
+        type: SourceIntType(DummySourceReason),
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
         className: SourceId('Builtins'),
@@ -124,9 +125,9 @@ describe('module-interpreter', () => {
     ...memberMainFunctionNoArgs,
     body: SourceExpressionFunctionCall({
       range: new Range(Position(12, 34), Position(34, 45)),
-      type: SourceIntType,
+      type: SourceIntType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
-        type: SourceIntType,
+        type: SourceIntType(DummySourceReason),
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
         className: SourceId('Builtins'),
@@ -142,7 +143,7 @@ describe('module-interpreter', () => {
       {
         name: 'param',
         nameRange: new Range(Position(231, 34), Position(88, 78)),
-        type: SourceIntType,
+        type: SourceIntType(DummySourceReason),
         typeRange: new Range(Position(123, 98), Position(124, 78)),
       },
     ],

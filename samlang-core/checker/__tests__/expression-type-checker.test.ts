@@ -1,25 +1,15 @@
-import { ModuleReference, Range } from '../../ast/common-nodes';
-import { PLUS } from '../../ast/common-operators';
+import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
 import {
   SamlangExpression,
   SamlangType,
-  SourceBoolType as bool,
   SourceBoolType,
-  SourceExpressionBinary,
-  SourceExpressionFunctionCall,
-  SourceExpressionIfElse,
-  SourceExpressionInt,
-  SourceExpressionLambda,
-  SourceExpressionStatementBlock,
-  SourceExpressionVariable,
   SourceFunctionType,
   SourceId,
   SourceIdentifierType,
-  SourceIntType as int,
   SourceIntType,
-  SourceStringType as string,
+  SourceStringType,
   SourceTupleType,
-  SourceUnitType as unit,
+  SourceUnitType,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
@@ -35,6 +25,11 @@ import {
 } from '../typing-context';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
+
+const int = SourceIntType(DummySourceReason);
+const string = SourceStringType(DummySourceReason);
+const unit = SourceUnitType(DummySourceReason);
+const bool = SourceBoolType(DummySourceReason);
 
 function typeCheckInSandbox(
   source: string,
@@ -69,20 +64,22 @@ function typeCheckInSandbox(
                     isPublic: true,
                     typeParameters: [],
                     type: SourceFunctionType(
+                      DummySourceReason,
                       [bool, int],
-                      SourceIdentifierType(dummyModuleReference, 'Test')
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test')
                     ),
                   },
                   helloWorld: {
                     isPublic: false,
                     typeParameters: [],
-                    type: SourceFunctionType([string], unit),
+                    type: SourceFunctionType(DummySourceReason, [string], unit),
                   },
                   helloWorldWithTypeParameters: {
                     isPublic: false,
                     typeParameters: ['A'],
                     type: SourceFunctionType(
-                      [SourceIdentifierType(dummyModuleReference, 'A')],
+                      DummySourceReason,
+                      [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A')],
                       unit
                     ),
                   },
@@ -91,7 +88,7 @@ function typeCheckInSandbox(
                   baz: {
                     isPublic: false,
                     typeParameters: [],
-                    type: SourceFunctionType([int], bool),
+                    type: SourceFunctionType(DummySourceReason, [int], bool),
                   },
                 },
               },
@@ -111,16 +108,18 @@ function typeCheckInSandbox(
                     isPublic: true,
                     typeParameters: [],
                     type: SourceFunctionType(
+                      DummySourceReason,
                       [bool],
-                      SourceIdentifierType(dummyModuleReference, 'Test2')
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2')
                     ),
                   },
                   Bar: {
                     isPublic: true,
                     typeParameters: [],
                     type: SourceFunctionType(
+                      DummySourceReason,
                       [int],
-                      SourceIdentifierType(dummyModuleReference, 'Test2')
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2')
                     ),
                   },
                 },
@@ -133,7 +132,10 @@ function typeCheckInSandbox(
                   type: 'object',
                   names: [SourceId('foo'), SourceId('bar')],
                   mappings: {
-                    foo: { isPublic: true, type: SourceIdentifierType(dummyModuleReference, 'E') },
+                    foo: {
+                      isPublic: true,
+                      type: SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
+                    },
                     bar: { isPublic: false, type: int },
                   },
                 },
@@ -147,7 +149,10 @@ function typeCheckInSandbox(
                   type: 'variant',
                   names: [SourceId('Foo'), SourceId('Bar')],
                   mappings: {
-                    Foo: { isPublic: true, type: SourceIdentifierType(dummyModuleReference, 'E') },
+                    Foo: {
+                      isPublic: true,
+                      type: SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
+                    },
                     Bar: { isPublic: true, type: int },
                   },
                 },
@@ -156,9 +161,10 @@ function typeCheckInSandbox(
                     isPublic: true,
                     typeParameters: ['E'],
                     type: SourceFunctionType(
-                      [SourceIdentifierType(dummyModuleReference, 'E')],
-                      SourceIdentifierType(dummyModuleReference, 'Test4', [
-                        SourceIdentifierType(dummyModuleReference, 'E'),
+                      DummySourceReason,
+                      [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E')],
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [
+                        SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
                       ])
                     ),
                   },
@@ -166,9 +172,10 @@ function typeCheckInSandbox(
                     isPublic: true,
                     typeParameters: ['E'],
                     type: SourceFunctionType(
+                      DummySourceReason,
                       [int],
-                      SourceIdentifierType(dummyModuleReference, 'Test4', [
-                        SourceIdentifierType(dummyModuleReference, 'E'),
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [
+                        SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
                       ])
                     ),
                   },
@@ -182,8 +189,8 @@ function typeCheckInSandbox(
                   type: 'object',
                   names: [SourceId('a'), SourceId('b')],
                   mappings: {
-                    a: { isPublic: true, type: SourceIntType },
-                    b: { isPublic: false, type: SourceBoolType },
+                    a: { isPublic: true, type: int },
+                    b: { isPublic: false, type: bool },
                   },
                 },
                 functions: {
@@ -191,8 +198,9 @@ function typeCheckInSandbox(
                     isPublic: true,
                     typeParameters: [],
                     type: SourceFunctionType(
+                      DummySourceReason,
                       [],
-                      SourceIdentifierType(dummyModuleReference, 'A', [])
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A', [])
                     ),
                   },
                 },
@@ -205,8 +213,8 @@ function typeCheckInSandbox(
                   type: 'object',
                   names: [SourceId('a'), SourceId('b')],
                   mappings: {
-                    a: { isPublic: true, type: SourceIntType },
-                    b: { isPublic: false, type: SourceBoolType },
+                    a: { isPublic: true, type: int },
+                    b: { isPublic: false, type: bool },
                   },
                 },
                 functions: {
@@ -214,8 +222,9 @@ function typeCheckInSandbox(
                     isPublic: true,
                     typeParameters: [],
                     type: SourceFunctionType(
+                      DummySourceReason,
                       [],
-                      SourceIdentifierType(dummyModuleReference, 'B', [])
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'B', [])
                     ),
                   },
                 },
@@ -228,8 +237,8 @@ function typeCheckInSandbox(
                   type: 'variant',
                   names: [SourceId('a'), SourceId('b')],
                   mappings: {
-                    a: { isPublic: true, type: SourceIntType },
-                    b: { isPublic: true, type: SourceBoolType },
+                    a: { isPublic: true, type: int },
+                    b: { isPublic: true, type: bool },
                   },
                 },
                 functions: {
@@ -237,8 +246,9 @@ function typeCheckInSandbox(
                     isPublic: true,
                     typeParameters: [],
                     type: SourceFunctionType(
+                      DummySourceReason,
                       [],
-                      SourceIdentifierType(dummyModuleReference, 'C', [])
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'C', [])
                     ),
                   },
                 },
@@ -259,10 +269,7 @@ function typeCheckInSandbox(
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
 
   // Type Check
-  const ssaAnalysisResult = performSSAAnalysisOnSamlangExpression(
-    parsedExpression,
-    moduleErrorCollector
-  );
+  const ssaAnalysisResult = performSSAAnalysisOnSamlangExpression(parsedExpression);
   const localTypingContext = new LocationBasedLocalTypingContext(ssaAnalysisResult, null);
   const checkedExpression = typeCheckExpression(
     parsedExpression,
@@ -312,7 +319,6 @@ function assertTypeErrors(
   source: string,
   expectedType: SamlangType,
   expectedErrors: readonly string[],
-  additionalBindings?: readonly (readonly [string, SamlangType])[],
   currentClass?: string
 ): void {
   expect(typeCheckInSandbox(source, expectedType, currentClass)[1]).toEqual(expectedErrors);
@@ -354,21 +360,24 @@ describe('expression-type-checker', () => {
   });
 
   it('ClassMember', () => {
-    assertTypeChecks('Test.<int>helloWorldWithTypeParameters', SourceFunctionType([int], unit));
-    assertTypeChecks('Test.helloWorld', SourceFunctionType([string], unit));
+    assertTypeChecks(
+      'Test.<int>helloWorldWithTypeParameters',
+      SourceFunctionType(DummySourceReason, [int], unit)
+    );
+    assertTypeChecks('Test.helloWorld', SourceFunctionType(DummySourceReason, [string], unit));
 
-    assertTypeErrors('Test.<A>helloWorld', SourceFunctionType([string], unit), [
+    assertTypeErrors('Test.<A>helloWorld', SourceFunctionType(DummySourceReason, [string], unit), [
       'Test.sam:1:1-1:19: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 0, actual: 1.',
     ]);
-    assertTypeErrors('Test.helloWorld2', SourceFunctionType([string], unit), [
+    assertTypeErrors('Test.helloWorld2', SourceFunctionType(DummySourceReason, [string], unit), [
       'Test.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved.',
     ]);
   });
 
   it('TupleConstructor', () => {
-    assertTypeChecks('[1, 2, 3]', SourceTupleType([int, int, int]));
+    assertTypeChecks('[1, 2, 3]', SourceTupleType(DummySourceReason, [int, int, int]));
 
-    assertTypeErrors('[1, 2, 3]', SourceTupleType([int, int, bool]), [
+    assertTypeErrors('[1, 2, 3]', SourceTupleType(DummySourceReason, [int, int, bool]), [
       'Test.sam:1:1-1:10: [UnexpectedType]: Expected: `[int * int * bool]`, actual: `[int * int * int]`.',
     ]);
     assertTypeErrors('[1, 2, 3]', int, [
@@ -378,48 +387,55 @@ describe('expression-type-checker', () => {
   });
 
   it('ObjectConstructor', () => {
-    assertTypeChecks('Test.init(true, 3)', SourceIdentifierType(dummyModuleReference, 'Test'));
+    assertTypeChecks(
+      'Test.init(true, 3)',
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test')
+    );
     assertTypeChecks(
       '{ val foo=true; Test.init(foo, 3) }',
-      SourceIdentifierType(dummyModuleReference, 'Test')
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test')
     );
   });
 
   it('VariantConstructor', () => {
     assertTypeChecks(
       'Test2.Foo(true)',
-      SourceIdentifierType(dummyModuleReference, 'Test2'),
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
       undefined,
       'Test2'
     );
     assertTypeChecks(
       'Test2.Bar(42)',
-      SourceIdentifierType(dummyModuleReference, 'Test2'),
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
       undefined,
       'Test2'
     );
     assertTypeChecks(
       'Test4.Foo(true)}',
-      SourceIdentifierType(dummyModuleReference, 'Test4', [bool]),
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       undefined,
       'Test4'
     );
     assertTypeChecks(
       'Test4.<bool>Foo(true)}',
-      SourceIdentifierType(dummyModuleReference, 'Test4', [bool]),
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       undefined,
       'Test4'
     );
 
-    assertTypeErrors('Test.Foo(true)', SourceIdentifierType(dummyModuleReference, 'Test2'), [
-      'Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved.',
-    ]);
-    assertTypeErrors('Test.Bar(42)', SourceIdentifierType(dummyModuleReference, 'Test2'), [
-      'Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved.',
-    ]);
+    assertTypeErrors(
+      'Test.Foo(true)',
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
+      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved.']
+    );
+    assertTypeErrors(
+      'Test.Bar(42)',
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
+      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved.']
+    );
     assertTypeErrors(
       'Test4.<int, bool>Foo(true)}',
-      SourceIdentifierType(dummyModuleReference, 'Test4', [bool]),
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       [
         'Test.sam:1:1-1:21: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 1, actual: 2.',
       ],
@@ -427,26 +443,27 @@ describe('expression-type-checker', () => {
     );
     assertTypeErrors(
       'Test4.<int>Foo(true)}',
-      SourceIdentifierType(dummyModuleReference, 'Test4', [int]),
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [int]),
       ['Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
       undefined
     );
     assertTypeErrors(
       'Test4.<int>Foo(true)}',
-      SourceIdentifierType(dummyModuleReference, 'Test4', [bool]),
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       [
         'Test.sam:1:1-1:15: [UnexpectedType]: Expected: `(__UNDECIDED__) -> Test4<bool>`, actual: `(int) -> Test4<int>`.',
       ],
       undefined
     );
-    assertTypeErrors('Test44.Bar(42)', SourceIdentifierType(dummyModuleReference, 'Test2'), [
-      'Test.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved.',
-    ]);
+    assertTypeErrors(
+      'Test44.Bar(42)',
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
+      ['Test.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved.']
+    );
     assertTypeErrors(
       'Test2.Tars(42)',
-      SourceIdentifierType(dummyModuleReference, 'Test2'),
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
       ['Test.sam:1:1-1:11: [UnresolvedName]: Name `Test2.Tars` is not resolved.'],
-      undefined,
       'Test2'
     );
   });
@@ -454,7 +471,7 @@ describe('expression-type-checker', () => {
   it('FieldAccess && MethodAccess', () => {
     assertTypeChecks('Test.init(true, 3).foo', bool);
     assertTypeChecks('Test.init(true, 3).bar', int);
-    assertTypeChecks('Test.init(true, 3).baz', SourceFunctionType([int], bool));
+    assertTypeChecks('Test.init(true, 3).baz', SourceFunctionType(DummySourceReason, [int], bool));
 
     assertTypeErrors('3.foo', int, [
       'Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
@@ -471,7 +488,6 @@ describe('expression-type-checker', () => {
       [
         "Test.sam:1:1-1:16: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       ],
-      undefined,
       'Test2'
     );
 
@@ -484,7 +500,7 @@ describe('expression-type-checker', () => {
     assertTypeErrors('Test.init(true, 3).baz', int, [
       'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
     ]);
-    assertTypeErrors('Test.init(true, 3).baz', SourceFunctionType([bool], int), [
+    assertTypeErrors('Test.init(true, 3).baz', SourceFunctionType(DummySourceReason, [bool], int), [
       'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
     ]);
 
@@ -526,7 +542,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Builtins.panic("")', bool);
     assertTypeChecks('Builtins.panic("")', int);
     assertTypeChecks('Builtins.panic("")', string);
-    assertTypeChecks('Builtins.panic("")', SourceTupleType([int, bool]));
+    assertTypeChecks('Builtins.panic("")', SourceTupleType(DummySourceReason, [int, bool]));
 
     assertTypeErrors('Builtins.panic(3)', unit, [
       'Test.sam:1:16-1:17: [UnexpectedType]: Expected: `string`, actual: `int`.',
@@ -729,21 +745,19 @@ describe('expression-type-checker', () => {
         'Test.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].',
         'Test.sam:1:52-1:55: [UnresolvedName]: Name `Baz` is not resolved.',
       ],
-      undefined,
       'Test2'
     );
     assertTypeErrors(
       '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar d -> 2 }; }',
       unit,
       [],
-      undefined,
       'Test2'
     );
   });
 
   it('Lambda', () => {
     assertTypeChecks('{val _ = (a, b, c) -> if a(b + 1) then b else c;}', unit);
-    assertTypeChecks('(a) -> a', SourceFunctionType([int], int));
+    assertTypeChecks('(a) -> a', SourceFunctionType(DummySourceReason, [int], int));
   });
 
   describe('StatementBlocks', () => {
@@ -786,39 +800,7 @@ describe('expression-type-checker', () => {
   });
 
   it('IfElse integration test', () => {
-    assertTypeChecks(
-      '{ val _ = (b, t, f: int) -> if b then t else f }',
-      unit,
-      SourceExpressionStatementBlock({
-        type: unit,
-        block: {
-          range: Range.DUMMY,
-          statements: [
-            {
-              range: Range.DUMMY,
-              pattern: { type: 'WildCardPattern', range: Range.DUMMY },
-              typeAnnotation: SourceFunctionType([bool, int, int], int),
-              assignedExpression: SourceExpressionLambda({
-                type: SourceFunctionType([bool, int, int], int),
-                parameters: [
-                  [SourceId('b'), bool],
-                  [SourceId('t'), int],
-                  [SourceId('f'), int],
-                ],
-                captured: {},
-                body: SourceExpressionIfElse({
-                  type: int,
-                  boolExpression: SourceExpressionVariable({ type: bool, name: 'b' }),
-                  e1: SourceExpressionVariable({ type: int, name: 't' }),
-                  e2: SourceExpressionVariable({ type: int, name: 'f' }),
-                }),
-              }),
-              associatedComments: [],
-            },
-          ],
-        },
-      })
-    );
+    assertTypeChecks('{ val _ = (b, t, f: int) -> if b then t else f }', unit);
   });
 
   it('Lambda integration test', () => {
@@ -830,96 +812,6 @@ describe('expression-type-checker', () => {
     f(3, 4, 5)
 }
 `;
-    const expectedExpression = SourceExpressionStatementBlock({
-      type: int,
-      block: {
-        range: Range.DUMMY,
-        statements: [
-          {
-            range: Range.DUMMY,
-            pattern: { type: 'VariablePattern', range: Range.DUMMY, name: 'f' },
-            typeAnnotation: SourceFunctionType([int, int, int], int),
-            assignedExpression: SourceExpressionLambda({
-              type: SourceFunctionType([int, int, int], int),
-              parameters: [
-                [SourceId('a'), int],
-                [SourceId('b'), int],
-                [SourceId('c'), int],
-              ],
-              captured: {},
-              body: SourceExpressionStatementBlock({
-                type: int,
-                block: {
-                  range: Range.DUMMY,
-                  statements: [
-                    {
-                      range: Range.DUMMY,
-                      pattern: { type: 'VariablePattern', range: Range.DUMMY, name: 'f' },
-                      typeAnnotation: SourceFunctionType([int, int], int),
-                      assignedExpression: SourceExpressionLambda({
-                        type: SourceFunctionType([int, int], int),
-                        parameters: [
-                          [SourceId('d'), int],
-                          [SourceId('e'), int],
-                        ],
-                        captured: { a: int, b: int, c: int },
-                        body: SourceExpressionBinary({
-                          type: int,
-                          operatorPrecedingComments: [],
-                          operator: PLUS,
-                          e1: SourceExpressionBinary({
-                            type: int,
-                            operatorPrecedingComments: [],
-                            operator: PLUS,
-                            e1: SourceExpressionBinary({
-                              type: int,
-                              operatorPrecedingComments: [],
-                              operator: PLUS,
-                              e1: SourceExpressionBinary({
-                                type: int,
-                                operatorPrecedingComments: [],
-                                operator: PLUS,
-                                e1: SourceExpressionVariable({ type: int, name: 'a' }),
-                                e2: SourceExpressionVariable({ type: int, name: 'b' }),
-                              }),
-                              e2: SourceExpressionVariable({ type: int, name: 'c' }),
-                            }),
-                            e2: SourceExpressionVariable({ type: int, name: 'd' }),
-                          }),
-                          e2: SourceExpressionVariable({ type: int, name: 'e' }),
-                        }),
-                      }),
-                      associatedComments: [],
-                    },
-                  ],
-                  expression: SourceExpressionFunctionCall({
-                    type: int,
-                    functionExpression: SourceExpressionVariable({
-                      type: SourceFunctionType([int, int], int),
-                      name: 'f',
-                    }),
-                    functionArguments: [SourceExpressionInt(1), SourceExpressionInt(2)],
-                  }),
-                },
-              }),
-            }),
-            associatedComments: [],
-          },
-        ],
-        expression: SourceExpressionFunctionCall({
-          type: int,
-          functionExpression: SourceExpressionVariable({
-            type: SourceFunctionType([int, int, int], int),
-            name: 'f',
-          }),
-          functionArguments: [
-            SourceExpressionInt(3),
-            SourceExpressionInt(4),
-            SourceExpressionInt(5),
-          ],
-        }),
-      },
-    });
-    assertTypeChecks(source, int, expectedExpression);
+    assertTypeChecks(source, int);
   });
 });

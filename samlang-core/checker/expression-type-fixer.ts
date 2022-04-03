@@ -1,3 +1,4 @@
+import { DummySourceReason } from '../ast/common-nodes';
 import {
   isTheSameType,
   prettyPrintType,
@@ -30,7 +31,9 @@ export default function fixExpressionType(
 ): SamlangExpression {
   function typeFixItself(type: SamlangType, expected: SamlangType | null): SamlangType {
     const resolvedPotentiallyUndecidedType = resolution.resolveType(type);
-    const resolvedType = resolveType(resolvedPotentiallyUndecidedType, () => SourceUnitType);
+    const resolvedType = resolveType(resolvedPotentiallyUndecidedType, () =>
+      SourceUnitType(DummySourceReason)
+    );
     const resolvedTypePrettyPrinted = prettyPrintType(resolvedType);
     assert(resolvedType.type !== 'UndecidedType', `Bad type: ${resolvedTypePrettyPrinted}`);
     if (expected === null) return resolvedType;
@@ -86,10 +89,16 @@ export default function fixExpressionType(
       let fixedExpression: SamlangExpression;
       switch (expression.operator) {
         case '!':
-          fixedExpression = tryFixExpressionType(expression.expression, SourceBoolType);
+          fixedExpression = tryFixExpressionType(
+            expression.expression,
+            SourceBoolType(DummySourceReason)
+          );
           break;
         case '-':
-          fixedExpression = tryFixExpressionType(expression.expression, SourceIntType);
+          fixedExpression = tryFixExpressionType(
+            expression.expression,
+            SourceIntType(DummySourceReason)
+          );
           break;
       }
       return {
@@ -132,17 +141,17 @@ export default function fixExpressionType(
         case '<=':
         case '>':
         case '>=':
-          e1 = tryFixExpressionType(expression.e1, SourceIntType);
-          e2 = tryFixExpressionType(expression.e2, SourceIntType);
+          e1 = tryFixExpressionType(expression.e1, SourceIntType(DummySourceReason));
+          e2 = tryFixExpressionType(expression.e2, SourceIntType(DummySourceReason));
           break;
         case '&&':
         case '||':
-          e1 = tryFixExpressionType(expression.e1, SourceBoolType);
-          e2 = tryFixExpressionType(expression.e2, SourceBoolType);
+          e1 = tryFixExpressionType(expression.e1, SourceBoolType(DummySourceReason));
+          e2 = tryFixExpressionType(expression.e2, SourceBoolType(DummySourceReason));
           break;
         case '::':
-          e1 = tryFixExpressionType(expression.e1, SourceStringType);
-          e2 = tryFixExpressionType(expression.e2, SourceStringType);
+          e1 = tryFixExpressionType(expression.e1, SourceStringType(DummySourceReason));
+          e2 = tryFixExpressionType(expression.e2, SourceStringType(DummySourceReason));
           break;
         case '==':
         case '!=': {
@@ -168,7 +177,10 @@ export default function fixExpressionType(
       return {
         ...expression,
         type: getExpressionFixedType(expression, expectedType),
-        boolExpression: tryFixExpressionType(expression.boolExpression, SourceBoolType),
+        boolExpression: tryFixExpressionType(
+          expression.boolExpression,
+          SourceBoolType(DummySourceReason)
+        ),
         e1: tryFixExpressionType(expression.e1, expectedType),
         e2: tryFixExpressionType(expression.e2, expectedType),
       };
@@ -211,7 +223,7 @@ export default function fixExpressionType(
     case 'StatementBlockExpression': {
       const { block } = expression;
       assert(
-        block.expression != null || isTheSameType(expectedType, SourceUnitType),
+        block.expression != null || isTheSameType(expectedType, SourceUnitType(DummySourceReason)),
         `block.expression == null && expectedType == ${prettyPrintType(expectedType)}`
       );
       const fixedStatements = block.statements.map((statement) => {

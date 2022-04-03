@@ -1,4 +1,4 @@
-import { ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
 import { AND, CONCAT, EQ, LT, MUL } from '../../ast/common-operators';
 import {
   SamlangExpression,
@@ -55,439 +55,479 @@ const assertThrows = (unfixed: SamlangExpression, type: SamlangType): void =>
 
 describe('expression-type-fixer', () => {
   it('Literal types are unchanged', () => {
-    assertThrows(TRUE, SourceIntType);
-    assertCorrectlyFixed(intOf(1), intOf(1), SourceIntType);
-    assertThrows(intOf(1), SourceUnitType);
-    assertCorrectlyFixed(TRUE, TRUE, SourceBoolType);
-    assertThrows(TRUE, SourceUnitType);
-    assertCorrectlyFixed(stringOf('foo'), stringOf('foo'), SourceStringType);
-    assertThrows(stringOf('foo'), SourceUnitType);
+    assertThrows(TRUE, SourceIntType(DummySourceReason));
+    assertCorrectlyFixed(intOf(1), intOf(1), SourceIntType(DummySourceReason));
+    assertThrows(intOf(1), SourceUnitType(DummySourceReason));
+    assertCorrectlyFixed(TRUE, TRUE, SourceBoolType(DummySourceReason));
+    assertThrows(TRUE, SourceUnitType(DummySourceReason));
+    assertCorrectlyFixed(stringOf('foo'), stringOf('foo'), SourceStringType(DummySourceReason));
+    assertThrows(stringOf('foo'), SourceUnitType(DummySourceReason));
   });
 
   it('This expressions are correctly resolved.', () => {
     assertCorrectlyFixed(
-      SourceExpressionThis({ type: SourceUnitType }),
-      SourceExpressionThis({ type: { type: 'UndecidedType', index: 0 } }),
-      SourceUnitType
+      SourceExpressionThis({ type: SourceUnitType(DummySourceReason) }),
+      SourceExpressionThis({
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+      }),
+      SourceUnitType(DummySourceReason)
     );
     assertThrows(
-      SourceExpressionThis({ type: { type: 'UndecidedType', index: 0 } }),
-      SourceBoolType
+      SourceExpressionThis({
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+      }),
+      SourceBoolType(DummySourceReason)
     );
   });
 
   it('Variable types are correctly resolved.', () => {
     assertCorrectlyFixed(
-      SourceExpressionVariable({ type: SourceUnitType, name: 'v' }),
-      SourceExpressionVariable({ type: { type: 'UndecidedType', index: 0 }, name: 'v' }),
-      SourceUnitType
+      SourceExpressionVariable({ type: SourceUnitType(DummySourceReason), name: 'v' }),
+      SourceExpressionVariable({
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+        name: 'v',
+      }),
+      SourceUnitType(DummySourceReason)
     );
     assertThrows(
-      SourceExpressionVariable({ type: { type: 'UndecidedType', index: 0 }, name: 'v' }),
-      SourceBoolType
+      SourceExpressionVariable({
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+        name: 'v',
+      }),
+      SourceBoolType(DummySourceReason)
     );
   });
 
   it('Class members are correctly resolved.', () => {
     assertCorrectlyFixed(
       SourceExpressionClassMember({
-        type: SourceFunctionType([], SourceUnitType),
-        typeArguments: [SourceBoolType],
+        type: SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
+        typeArguments: [SourceBoolType(DummySourceReason)],
         moduleReference: ModuleReference.DUMMY,
         className: SourceId('Foo'),
         memberName: SourceId('bar'),
       }),
       SourceExpressionClassMember({
-        type: SourceFunctionType([], { type: 'UndecidedType', index: 0 }),
-        typeArguments: [{ type: 'UndecidedType', index: 1 }],
+        type: SourceFunctionType(DummySourceReason, [], {
+          type: 'UndecidedType',
+          reason: DummySourceReason,
+          index: 0,
+        }),
+        typeArguments: [{ type: 'UndecidedType', reason: DummySourceReason, index: 1 }],
         moduleReference: ModuleReference.DUMMY,
         className: SourceId('Foo'),
         memberName: SourceId('bar'),
       }),
-      SourceFunctionType([], SourceUnitType)
+      SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason))
     );
 
     assertThrows(
       SourceExpressionClassMember({
-        type: SourceFunctionType([], { type: 'UndecidedType', index: 0 }),
-        typeArguments: [{ type: 'UndecidedType', index: 1 }],
+        type: SourceFunctionType(DummySourceReason, [], {
+          type: 'UndecidedType',
+          reason: DummySourceReason,
+          index: 0,
+        }),
+        typeArguments: [{ type: 'UndecidedType', reason: DummySourceReason, index: 1 }],
         moduleReference: ModuleReference.DUMMY,
         className: SourceId('Foo'),
         memberName: SourceId('bar'),
       }),
-      SourceFunctionType([], SourceIntType)
+      SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason))
     );
   });
 
   it('Tuple constructors are correctly resolved.', () => {
     assertCorrectlyFixed(
       SourceExpressionTupleConstructor({
-        type: SourceTupleType([SourceIntType, SourceBoolType]),
-        expressions: [intOf(1), TRUE],
-      }),
-      SourceExpressionTupleConstructor({
-        type: SourceTupleType([
-          { type: 'UndecidedType', index: 2 },
-          { type: 'UndecidedType', index: 1 },
+        type: SourceTupleType(DummySourceReason, [
+          SourceIntType(DummySourceReason),
+          SourceBoolType(DummySourceReason),
         ]),
         expressions: [intOf(1), TRUE],
       }),
-      SourceTupleType([SourceIntType, SourceBoolType])
+      SourceExpressionTupleConstructor({
+        type: SourceTupleType(DummySourceReason, [
+          { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
+        ]),
+        expressions: [intOf(1), TRUE],
+      }),
+      SourceTupleType(DummySourceReason, [
+        SourceIntType(DummySourceReason),
+        SourceBoolType(DummySourceReason),
+      ])
     );
 
     assertThrows(
       SourceExpressionTupleConstructor({
-        type: SourceTupleType([
-          { type: 'UndecidedType', index: 2 },
-          { type: 'UndecidedType', index: 1 },
+        type: SourceTupleType(DummySourceReason, [
+          { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         ]),
         expressions: [intOf(1), TRUE],
       }),
-      SourceTupleType([SourceBoolType, SourceIntType])
+      SourceTupleType(DummySourceReason, [
+        SourceBoolType(DummySourceReason),
+        SourceIntType(DummySourceReason),
+      ])
     );
 
     assertThrows(
       SourceExpressionTupleConstructor({
-        type: SourceTupleType([
-          { type: 'UndecidedType', index: 2 },
-          { type: 'UndecidedType', index: 1 },
+        type: SourceTupleType(DummySourceReason, [
+          { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         ]),
         expressions: [TRUE, intOf(1)],
       }),
-      SourceTupleType([SourceIntType, SourceBoolType])
+      SourceTupleType(DummySourceReason, [
+        SourceIntType(DummySourceReason),
+        SourceBoolType(DummySourceReason),
+      ])
     );
   });
 
   it('Field accesses are correctly resolved.', () => {
     assertCorrectlyFixed(
       SourceExpressionFieldAccess({
-        type: SourceFunctionType([], SourceIntType),
+        type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
         expression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'Foo'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo'),
         }),
         fieldName: SourceId('bar'),
         fieldOrder: 1,
       }),
       SourceExpressionFieldAccess({
-        type: SourceFunctionType([], { type: 'UndecidedType', index: 2 }),
+        type: SourceFunctionType(DummySourceReason, [], {
+          type: 'UndecidedType',
+          reason: DummySourceReason,
+          index: 2,
+        }),
         expression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'Foo'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo'),
         }),
         fieldName: SourceId('bar'),
         fieldOrder: 1,
       }),
-      SourceFunctionType([], SourceIntType)
+      SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason))
     );
 
     assertThrows(
       SourceExpressionMethodAccess({
-        type: SourceFunctionType([], { type: 'UndecidedType', index: 3 }),
+        type: SourceFunctionType(DummySourceReason, [], {
+          type: 'UndecidedType',
+          reason: DummySourceReason,
+          index: 3,
+        }),
         expression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'Foo'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo'),
         }),
         methodName: SourceId('bar'),
       }),
-      SourceFunctionType([], SourceIntType)
+      SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason))
     );
   });
 
   it('Method accesses are correctly resolved.', () => {
     assertCorrectlyFixed(
       SourceExpressionMethodAccess({
-        type: SourceFunctionType([], SourceIntType),
+        type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
         expression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'Foo'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo'),
         }),
         methodName: SourceId('bar'),
       }),
       SourceExpressionMethodAccess({
-        type: SourceFunctionType([], { type: 'UndecidedType', index: 2 }),
+        type: SourceFunctionType(DummySourceReason, [], {
+          type: 'UndecidedType',
+          reason: DummySourceReason,
+          index: 2,
+        }),
         expression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'Foo'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo'),
         }),
         methodName: SourceId('bar'),
       }),
-      SourceFunctionType([], SourceIntType)
+      SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason))
     );
 
     assertThrows(
       SourceExpressionMethodAccess({
-        type: SourceFunctionType([], { type: 'UndecidedType', index: 3 }),
+        type: SourceFunctionType(DummySourceReason, [], {
+          type: 'UndecidedType',
+          reason: DummySourceReason,
+          index: 3,
+        }),
         expression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'Foo'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo'),
         }),
         methodName: SourceId('bar'),
       }),
-      SourceFunctionType([], SourceIntType)
+      SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason))
     );
   });
 
   it('Unary expressions are correctly resolved', () => {
     assertCorrectlyFixed(
-      SourceExpressionUnary({ type: SourceBoolType, operator: '!', expression: TRUE }),
       SourceExpressionUnary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: SourceBoolType(DummySourceReason),
         operator: '!',
         expression: TRUE,
       }),
-      SourceBoolType
+      SourceExpressionUnary({
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
+        operator: '!',
+        expression: TRUE,
+      }),
+      SourceBoolType(DummySourceReason)
     );
     assertCorrectlyFixed(
-      SourceExpressionUnary({ type: SourceIntType, operator: '-', expression: intOf(1) }),
       SourceExpressionUnary({
-        type: { type: 'UndecidedType', index: 2 },
+        type: SourceIntType(DummySourceReason),
         operator: '-',
         expression: intOf(1),
       }),
-      SourceIntType
+      SourceExpressionUnary({
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+        operator: '-',
+        expression: intOf(1),
+      }),
+      SourceIntType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionUnary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operator: '!',
         expression: TRUE,
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionUnary({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         operator: '-',
         expression: intOf(1),
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionUnary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operator: '!',
         expression: intOf(1),
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionUnary({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         operator: '-',
         expression: TRUE,
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
   });
 
   it('Binary expressions are correctly resolved.', () => {
     assertCorrectlyFixed(
       SourceExpressionBinary({
-        type: SourceIntType,
+        type: SourceIntType(DummySourceReason),
         operatorPrecedingComments: [],
         operator: MUL,
         e1: intOf(1),
         e2: intOf(1),
       }),
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         operatorPrecedingComments: [],
         operator: MUL,
         e1: intOf(1),
         e2: intOf(1),
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
     assertCorrectlyFixed(
       SourceExpressionBinary({
-        type: SourceBoolType,
+        type: SourceBoolType(DummySourceReason),
         operatorPrecedingComments: [],
         operator: LT,
         e1: intOf(1),
         e2: intOf(1),
       }),
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operatorPrecedingComments: [],
         operator: LT,
         e1: intOf(1),
         e2: intOf(1),
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
     assertCorrectlyFixed(
       SourceExpressionBinary({
-        type: SourceBoolType,
+        type: SourceBoolType(DummySourceReason),
         operatorPrecedingComments: [],
         operator: AND,
         e1: TRUE,
         e2: TRUE,
       }),
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operatorPrecedingComments: [],
         operator: AND,
         e1: TRUE,
         e2: TRUE,
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
     assertCorrectlyFixed(
       SourceExpressionBinary({
-        type: SourceStringType,
+        type: SourceStringType(DummySourceReason),
         operatorPrecedingComments: [],
         operator: CONCAT,
         e1: stringOf(''),
         e2: stringOf(''),
       }),
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 3 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 3 },
         operatorPrecedingComments: [],
         operator: CONCAT,
         e1: stringOf(''),
         e2: stringOf(''),
       }),
-      SourceStringType
+      SourceStringType(DummySourceReason)
     );
     assertCorrectlyFixed(
       SourceExpressionBinary({
-        type: SourceBoolType,
+        type: SourceBoolType(DummySourceReason),
         operatorPrecedingComments: [],
         operator: EQ,
         e1: stringOf(''),
         e2: stringOf(''),
       }),
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operatorPrecedingComments: [],
         operator: EQ,
         e1: stringOf(''),
         e2: stringOf(''),
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         operatorPrecedingComments: [],
         operator: MUL,
         e1: intOf(1),
         e2: intOf(1),
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operatorPrecedingComments: [],
         operator: LT,
         e1: intOf(1),
         e2: intOf(1),
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operatorPrecedingComments: [],
         operator: AND,
         e1: TRUE,
         e2: TRUE,
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 3 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 3 },
         operatorPrecedingComments: [],
         operator: CONCAT,
         e1: stringOf(''),
         e2: stringOf(''),
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         associatedComments: [],
         operatorPrecedingComments: [],
         operator: EQ,
         e1: stringOf(''),
         e2: stringOf(''),
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         operatorPrecedingComments: [],
         operator: MUL,
         e1: stringOf(''),
         e2: intOf(1),
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operatorPrecedingComments: [],
         operator: LT,
         e1: intOf(1),
         e2: stringOf(''),
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operatorPrecedingComments: [],
         operator: AND,
         e1: stringOf(''),
         e2: TRUE,
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 3 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 3 },
         operatorPrecedingComments: [],
         operator: CONCAT,
         e1: stringOf(''),
         e2: TRUE,
       }),
-      SourceStringType
+      SourceStringType(DummySourceReason)
     );
     assertThrows(
       SourceExpressionBinary({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         operatorPrecedingComments: [],
         operator: EQ,
         e1: TRUE,
         e2: stringOf(''),
       }),
-      SourceBoolType
+      SourceBoolType(DummySourceReason)
     );
   });
 
   it('Match expressions are correctly resolved.', () => {
     assertCorrectlyFixed(
       SourceExpressionMatch({
-        type: SourceIntType,
+        type: SourceIntType(DummySourceReason),
         matchedExpression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
-        }),
-        matchingList: [
-          {
-            range: Range.DUMMY,
-            tag: SourceId('A'),
-            tagOrder: 1,
-            expression: SourceExpressionVariable({ type: SourceIntType, name: '' }),
-          },
-        ],
-      }),
-      SourceExpressionMatch({
-        type: { type: 'UndecidedType', index: 2 },
-        matchedExpression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
         }),
         matchingList: [
           {
@@ -495,20 +535,37 @@ describe('expression-type-fixer', () => {
             tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
-              type: { type: 'UndecidedType', index: 2 },
+              type: SourceIntType(DummySourceReason),
               name: '',
             }),
           },
         ],
       }),
-      SourceIntType
+      SourceExpressionMatch({
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+        matchedExpression: SourceExpressionThis({
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+        }),
+        matchingList: [
+          {
+            range: Range.DUMMY,
+            tag: SourceId('A'),
+            tagOrder: 1,
+            expression: SourceExpressionVariable({
+              type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+              name: '',
+            }),
+          },
+        ],
+      }),
+      SourceIntType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionMatch({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         matchedExpression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
         }),
         matchingList: [
           {
@@ -516,20 +573,20 @@ describe('expression-type-fixer', () => {
             tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
-              type: { type: 'UndecidedType', index: 2 },
+              type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
               name: '',
             }),
           },
         ],
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionMatch({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         matchedExpression: SourceExpressionThis({
-          type: SourceIdentifierType(ModuleReference.DUMMY, 'A'),
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
         }),
         matchingList: [
           {
@@ -537,27 +594,27 @@ describe('expression-type-fixer', () => {
             tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
-              type: { type: 'UndecidedType', index: 1 },
+              type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
               name: '',
             }),
           },
         ],
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
   });
 
   it('Statement block expressions are correctly resolved.', () => {
     assertCorrectlyFixed(
       SourceExpressionStatementBlock({
-        type: SourceUnitType,
+        type: SourceUnitType(DummySourceReason),
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType,
+              typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -565,32 +622,32 @@ describe('expression-type-fixer', () => {
         },
       }),
       SourceExpressionStatementBlock({
-        type: { type: 'UndecidedType', index: 0 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType,
+              typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
           ],
         },
       }),
-      SourceUnitType
+      SourceUnitType(DummySourceReason)
     );
     assertCorrectlyFixed(
       SourceExpressionStatementBlock({
-        type: SourceIntType,
+        type: SourceIntType(DummySourceReason),
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType,
+              typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -599,14 +656,14 @@ describe('expression-type-fixer', () => {
         },
       }),
       SourceExpressionStatementBlock({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType,
+              typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -614,19 +671,19 @@ describe('expression-type-fixer', () => {
           expression: intOf(1),
         },
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionStatementBlock({
-        type: { type: 'UndecidedType', index: 1 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType,
+              typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -634,82 +691,95 @@ describe('expression-type-fixer', () => {
           expression: intOf(1),
         },
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionStatementBlock({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType,
+              typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
           ],
         },
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
 
     assertThrows(
       SourceExpressionStatementBlock({
-        type: { type: 'UndecidedType', index: 2 },
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         block: {
           range: Range.DUMMY,
           statements: [
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType,
+              typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
           ],
         },
       }),
-      SourceIntType
+      SourceIntType(DummySourceReason)
     );
   });
 
   it('Deep expression integration test', () => {
     const expected = SourceExpressionIfElse({
-      type: SourceBoolType,
+      type: SourceBoolType(DummySourceReason),
       boolExpression: TRUE,
       e1: TRUE,
       e2: SourceExpressionFunctionCall({
-        type: SourceBoolType,
+        type: SourceBoolType(DummySourceReason),
         functionExpression: SourceExpressionLambda({
-          type: SourceFunctionType([SourceIntType], SourceBoolType),
-          parameters: [[SourceId('a'), SourceIntType]],
-          captured: { a: SourceIntType },
-          body: TRUE,
-        }),
-        functionArguments: [SourceExpressionVariable({ type: SourceIntType, name: 'v' })],
-      }),
-    });
-    const unfixed = SourceExpressionIfElse({
-      type: { type: 'UndecidedType', index: 1 },
-      boolExpression: TRUE,
-      e1: TRUE,
-      e2: SourceExpressionFunctionCall({
-        type: { type: 'UndecidedType', index: 5 },
-        functionExpression: SourceExpressionLambda({
-          type: SourceFunctionType([SourceIntType], { type: 'UndecidedType', index: 9 }),
-          parameters: [[SourceId('a'), SourceIntType]],
-          captured: { a: { type: 'UndecidedType', index: 2 } },
+          type: SourceFunctionType(
+            DummySourceReason,
+            [SourceIntType(DummySourceReason)],
+            SourceBoolType(DummySourceReason)
+          ),
+          parameters: [[SourceId('a'), SourceIntType(DummySourceReason)]],
+          captured: { a: SourceIntType(DummySourceReason) },
           body: TRUE,
         }),
         functionArguments: [
-          SourceExpressionVariable({ type: { type: 'UndecidedType', index: 2 }, name: 'v' }),
+          SourceExpressionVariable({ type: SourceIntType(DummySourceReason), name: 'v' }),
         ],
       }),
     });
-    assertCorrectlyFixed(expected, unfixed, SourceBoolType);
-    assertThrows(unfixed, SourceIntType);
+    const unfixed = SourceExpressionIfElse({
+      type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
+      boolExpression: TRUE,
+      e1: TRUE,
+      e2: SourceExpressionFunctionCall({
+        type: { type: 'UndecidedType', reason: DummySourceReason, index: 5 },
+        functionExpression: SourceExpressionLambda({
+          type: SourceFunctionType(DummySourceReason, [SourceIntType(DummySourceReason)], {
+            type: 'UndecidedType',
+            reason: DummySourceReason,
+            index: 9,
+          }),
+          parameters: [[SourceId('a'), SourceIntType(DummySourceReason)]],
+          captured: { a: { type: 'UndecidedType', reason: DummySourceReason, index: 2 } },
+          body: TRUE,
+        }),
+        functionArguments: [
+          SourceExpressionVariable({
+            type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+            name: 'v',
+          }),
+        ],
+      }),
+    });
+    assertCorrectlyFixed(expected, unfixed, SourceBoolType(DummySourceReason));
+    assertThrows(unfixed, SourceIntType(DummySourceReason));
   });
 });

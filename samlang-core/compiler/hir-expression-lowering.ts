@@ -2,7 +2,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeFunctionNameGlobally,
 } from '../ast/common-names';
-import type { ModuleReference } from '../ast/common-nodes';
+import { DummySourceReason, ModuleReference } from '../ast/common-nodes';
 import {
   HighIRExpression,
   HighIRFunction,
@@ -864,6 +864,7 @@ class HighIRExpressionLoweringManager {
     const [typeParameters, functionTypeWithoutContext] =
       this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel({
         type: 'FunctionType',
+        reason: DummySourceReason,
         argumentTypes: expression.parameters.map(([, type]) => type),
         returnType: expression.type.returnType,
       });
