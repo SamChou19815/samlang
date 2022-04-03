@@ -1,12 +1,10 @@
-import {
+import type {
   ObjectPatternDestucturedName,
   Pattern,
   SamlangExpression,
   SamlangType,
   SamlangValStatement,
-  SourceExpressionVariable,
   SourceFieldType,
-  SourceUnitType,
   StatementBlock,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
@@ -36,16 +34,6 @@ export default class StatementTypeChecker {
         const checkedExpression = this.typeCheckExpression(expression, expectedType);
         return { range, statements: checkedStatements, expression: checkedExpression };
       }
-      // Force the type checker to resolve expected type to unit.
-      this.typeCheckExpression(
-        SourceExpressionVariable({
-          range,
-          type: SourceUnitType,
-          associatedComments: [],
-          name: '_',
-        }),
-        expectedType
-      );
       return { range, statements: checkedStatements };
     });
 

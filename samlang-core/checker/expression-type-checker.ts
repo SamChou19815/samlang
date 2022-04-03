@@ -127,10 +127,7 @@ class ExpressionTypeChecker {
     expression: VariableExpression,
     expectedType: SamlangType
   ): SamlangExpression {
-    const locallyInferredType =
-      expression.name === '_'
-        ? SourceUnitType
-        : this.localTypingContext.getLocalValueType(expression.name);
+    const locallyInferredType = this.localTypingContext.getLocalValueType(expression.name);
     if (locallyInferredType == null) {
       return { ...expression, type: expectedType };
     }
@@ -612,6 +609,9 @@ class ExpressionTypeChecker {
     expression: StatementBlockExpression,
     expectedType: SamlangType
   ): SamlangExpression {
+    if (expression.block.expression == null) {
+      this.constraintAwareTypeChecker.checkAndInfer(expectedType, SourceUnitType, expression.range);
+    }
     const checkedStatementBlock = this.statementTypeChecker.typeCheck(
       expression.block,
       expectedType,
