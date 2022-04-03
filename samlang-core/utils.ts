@@ -297,14 +297,6 @@ export class LocalStackedContext<V> {
     return result;
   }
 
-  withNestedScopeReturnScoped<T>(block: () => T): readonly [T, ReadonlyMap<string, V>] {
-    const layer = new ContextLayer<V>();
-    this.stacks.push(layer);
-    const result = block();
-    this.stacks.pop();
-    return [result, layer.localValues];
-  }
-
   withNestedScopeReturnCaptured<T>(block: () => T): readonly [T, ReadonlyMap<string, V>] {
     const layer = new ContextLayer<V>();
     this.stacks.push(layer);

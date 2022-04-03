@@ -217,17 +217,6 @@ describe('samlang-utils', () => {
     expect(hasConflict).toBe(true);
   });
 
-  it('LocalStackedContext can compute local values.', () => {
-    const context = new LocalStackedContext();
-    context.addLocalValueType('a', 3, error);
-    context.addLocalValueType('b', 3, error);
-    const [, local] = context.withNestedScopeReturnScoped(() => {
-      context.addLocalValueType('c', 3, error);
-      context.addLocalValueType('d', 3, error);
-    });
-    expect(Array.from(local.keys())).toEqual(['c', 'd']);
-  });
-
   it('LocalStackedContext can compute captured values.', () => {
     const context = new LocalStackedContext();
     context.addLocalValueType('a', 3, error);
