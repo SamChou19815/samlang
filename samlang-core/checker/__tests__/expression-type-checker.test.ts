@@ -23,18 +23,22 @@ import {
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
-import { checkNotNull, hashMapOf, LocalStackedContext } from '../../utils';
+import { checkNotNull, hashMapOf } from '../../utils';
 import typeCheckExpression from '../expression-type-checker';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
+import { performSSAAnalysisOnSamlangExpression } from '../ssa-analysis';
 import TypeResolution from '../type-resolution';
-import { AccessibleGlobalTypingContext, ModuleTypingContext } from '../typing-context';
+import {
+  AccessibleGlobalTypingContext,
+  LocationBasedLocalTypingContext,
+  ModuleTypingContext,
+} from '../typing-context';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 
 function typeCheckInSandbox(
   source: string,
   expectedType: SamlangType,
-  additionalBindings: readonly (readonly [string, SamlangType])[] = [],
   currentClass?: string
 ): readonly [SamlangExpression, readonly string[]] {
   const globalErrorCollector = createGlobalErrorCollector();
@@ -255,15 +259,16 @@ function typeCheckInSandbox(
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
 
   // Type Check
+  const ssaAnalysisResult = performSSAAnalysisOnSamlangExpression(
+    parsedExpression,
+    moduleErrorCollector
+  );
+  const localTypingContext = new LocationBasedLocalTypingContext(ssaAnalysisResult, null);
   const checkedExpression = typeCheckExpression(
     parsedExpression,
     moduleErrorCollector,
     accessibleGlobalTypingContext,
-    (() => {
-      const context = new LocalStackedContext<SamlangType>();
-      additionalBindings.forEach(([name, type]) => context.addLocalValueType(name, type, () => {}));
-      return context;
-    })(),
+    localTypingContext,
     new TypeResolution(),
     expectedType
   );
@@ -280,15 +285,9 @@ function assertTypeChecks(
   source: string,
   expectedType: SamlangType,
   expectedExpression?: SamlangExpression,
-  additionalBindings?: readonly (readonly [string, SamlangType])[],
   currentClass?: string
 ): void {
-  const [actualExpression, errors] = typeCheckInSandbox(
-    source,
-    expectedType,
-    additionalBindings,
-    currentClass
-  );
+  const [actualExpression, errors] = typeCheckInSandbox(source, expectedType, currentClass);
   if (expectedExpression) {
     const standardize = (json: unknown): unknown =>
       JSON.parse(
@@ -316,9 +315,7 @@ function assertTypeErrors(
   additionalBindings?: readonly (readonly [string, SamlangType])[],
   currentClass?: string
 ): void {
-  expect(typeCheckInSandbox(source, expectedType, additionalBindings, currentClass)[1]).toEqual(
-    expectedErrors
-  );
+  expect(typeCheckInSandbox(source, expectedType, currentClass)[1]).toEqual(expectedErrors);
 }
 
 describe('expression-type-checker', () => {
@@ -343,17 +340,12 @@ describe('expression-type-checker', () => {
   });
 
   it('This', () => {
-    assertTypeChecks('this', SourceIdentifierType(dummyModuleReference, 'Test'), undefined, [
-      ['this', SourceIdentifierType(dummyModuleReference, 'Test')],
-    ]);
-
     assertTypeErrors('this', int, [
       'Test.sam:1:1-1:5: [IllegalThis]: Keyword `this` cannot be used in this context.',
     ]);
   });
 
   it('Variable', () => {
-    assertTypeChecks('foo', int, undefined, [['foo', int]]);
     assertTypeChecks('{ val foo = 3; foo }', int);
 
     assertTypeErrors('{ val foo = true; foo }', int, [
@@ -398,13 +390,11 @@ describe('expression-type-checker', () => {
       'Test2.Foo(true)',
       SourceIdentifierType(dummyModuleReference, 'Test2'),
       undefined,
-      undefined,
       'Test2'
     );
     assertTypeChecks(
       'Test2.Bar(42)',
       SourceIdentifierType(dummyModuleReference, 'Test2'),
-      undefined,
       undefined,
       'Test2'
     );
@@ -412,13 +402,11 @@ describe('expression-type-checker', () => {
       'Test4.Foo(true)}',
       SourceIdentifierType(dummyModuleReference, 'Test4', [bool]),
       undefined,
-      undefined,
       'Test4'
     );
     assertTypeChecks(
       'Test4.<bool>Foo(true)}',
       SourceIdentifierType(dummyModuleReference, 'Test4', [bool]),
-      undefined,
       undefined,
       'Test4'
     );
@@ -719,7 +707,6 @@ describe('expression-type-checker', () => {
       '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }',
       unit,
       undefined,
-      undefined,
       'Test2'
     );
 
@@ -746,7 +733,7 @@ describe('expression-type-checker', () => {
       'Test2'
     );
     assertTypeErrors(
-      '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar t -> 2 }; }',
+      '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar d -> 2 }; }',
       unit,
       [],
       undefined,
@@ -771,7 +758,7 @@ describe('expression-type-checker', () => {
       ]));
 
     it('Object destructuring 1', () =>
-      assertTypeChecks('{val {a, b as c} = A.init();}', unit, undefined, undefined, 'A'));
+      assertTypeChecks('{val {a, b as c} = A.init();}', unit, undefined, 'A'));
     it('Object destructuring 2', () =>
       assertTypeErrors('{val {a, b as c} = A.init();}', unit, [
         'Test.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.',

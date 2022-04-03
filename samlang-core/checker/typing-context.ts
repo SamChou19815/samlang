@@ -1,4 +1,4 @@
-import type { ModuleReference } from '../ast/common-nodes';
+import type { ModuleReference, Range } from '../ast/common-nodes';
 import {
   SamlangFunctionType,
   SamlangIdentifierType,
@@ -8,7 +8,8 @@ import {
   SourceInterfaceDeclaration,
   TypeDefinition,
 } from '../ast/samlang-nodes';
-import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
+import { checkNotNull, HashMap, hashMapOf, ReadonlyHashMap, zip } from '../utils';
+import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
 import { undecideTypeParameters } from './type-undecider';
 import type { IdentifierTypeValidator } from './type-validator';
@@ -224,6 +225,37 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       this.globalTypingContext,
       new Set([...this.typeParameters, ...typeParameters]),
       this.currentClass
+    );
+  }
+}
+
+export class LocationBasedLocalTypingContext {
+  private typeMap = hashMapOf<Range, SamlangType>();
+
+  constructor(
+    private readonly ssaAnalysisResult: SsaAnalysisResult,
+    private readonly thisType: SamlangType | null
+  ) {}
+
+  getThisType(): SamlangType | null {
+    return this.thisType;
+  }
+
+  read(range: Range): SamlangType | null {
+    const definitionRange = this.ssaAnalysisResult.useDefineMap.get(range);
+    if (definitionRange == null) return null;
+    return this.typeMap.forceGet(definitionRange);
+  }
+
+  write(range: Range, type: SamlangType): void {
+    this.typeMap.set(range, type);
+  }
+
+  getCaptured(lambdaLocation: Range): ReadonlyMap<string, SamlangType> {
+    return new Map(
+      Array.from(this.ssaAnalysisResult.lambdaCaptures.forceGet(lambdaLocation).entries()).map(
+        ([name, range]) => [name, this.typeMap.forceGet(range)]
+      )
     );
   }
 }

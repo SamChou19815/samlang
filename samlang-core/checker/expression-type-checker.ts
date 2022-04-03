@@ -37,21 +37,24 @@ import {
   VariableExpression,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import { assert, checkNotNull, filterMap, ignore, LocalStackedContext, zip } from '../utils';
+import { assert, checkNotNull, filterMap, zip } from '../utils';
 import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';
 import type TypeResolution from './type-resolution';
 import performTypeSubstitution from './type-substitution';
 import { undecideTypeParameters } from './type-undecider';
 import { validateType } from './type-validator';
-import type { AccessibleGlobalTypingContext } from './typing-context';
+import type {
+  AccessibleGlobalTypingContext,
+  LocationBasedLocalTypingContext,
+} from './typing-context';
 
 class ExpressionTypeChecker {
   private readonly constraintAwareTypeChecker: ConstraintAwareChecker;
 
   constructor(
     private readonly accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-    private readonly localTypingContext: LocalStackedContext<SamlangType>,
+    private readonly localTypingContext: LocationBasedLocalTypingContext,
     resolution: TypeResolution,
     public readonly errorCollector: ModuleErrorCollector
   ) {
@@ -110,7 +113,7 @@ class ExpressionTypeChecker {
   }
 
   private typeCheckThis(expression: ThisExpression, expectedType: SamlangType): SamlangExpression {
-    const typeFromContext = this.localTypingContext.getLocalValueType('this');
+    const typeFromContext = this.localTypingContext.getThisType();
     let type: SamlangType;
     if (typeFromContext == null) {
       this.errorCollector.reportIllegalThisError(expression.range);
@@ -133,7 +136,7 @@ class ExpressionTypeChecker {
     expression: VariableExpression,
     expectedType: SamlangType
   ): SamlangExpression {
-    const locallyInferredType = this.localTypingContext.getLocalValueType(expression.name);
+    const locallyInferredType = this.localTypingContext.read(expression.range);
     const type =
       locallyInferredType == null
         ? expectedType
@@ -519,31 +522,24 @@ class ExpressionTypeChecker {
         let checkedDatadataVariable: readonly [SourceIdentifier, SamlangType] | undefined =
           undefined;
         if (dataVariable == null) {
-          checkedExpression = this.localTypingContext.withNestedScope(() =>
-            this.typeCheck(correspondingExpression, expectedType)
-          );
+          checkedExpression = this.typeCheck(correspondingExpression, expectedType);
         } else {
-          [checkedExpression, checkedDatadataVariable] = this.localTypingContext.withNestedScope(
-            () => {
-              const {
-                name: dataVariableName,
-                range: dataVariableRange,
-                associatedComments: dataVariableAssociatedComments,
-              } = dataVariable[0];
-              this.localTypingContext.addLocalValueType(dataVariableName, mappingDataType, ignore);
-              return [
-                this.typeCheck(correspondingExpression, expectedType),
-                [
-                  {
-                    name: dataVariableName,
-                    range: dataVariableRange,
-                    associatedComments: dataVariableAssociatedComments,
-                  },
-                  mappingDataType,
-                ],
-              ];
-            }
-          );
+          const {
+            name: dataVariableName,
+            range: dataVariableRange,
+            associatedComments: dataVariableAssociatedComments,
+          } = dataVariable[0];
+          this.localTypingContext.write(dataVariableRange, mappingDataType);
+
+          checkedExpression = this.typeCheck(correspondingExpression, expectedType);
+          checkedDatadataVariable = [
+            {
+              name: dataVariableName,
+              range: dataVariableRange,
+              associatedComments: dataVariableAssociatedComments,
+            },
+            mappingDataType,
+          ];
         }
         const tagOrder = variantNames.findIndex((name) => name === tag);
         assert(tagOrder !== -1, `Bad tag: ${tag}`);
@@ -578,24 +574,19 @@ class ExpressionTypeChecker {
     expression: LambdaExpression,
     expectedType: SamlangType
   ): SamlangExpression {
-    const [checkedBody, captured] = this.localTypingContext.withNestedScopeReturnCaptured(() => {
-      // Validate parameters and add them to local context.
-      this.constraintAwareTypeChecker.checkAndInfer(
-        expectedType,
-        expression.type,
+    // Validate parameters and add them to local context.
+    this.constraintAwareTypeChecker.checkAndInfer(expectedType, expression.type, expression.range);
+    expression.parameters.forEach(([parameterName, parameterType]) => {
+      validateType(
+        parameterType,
+        this.accessibleGlobalTypingContext,
+        this.errorCollector,
         expression.range
       );
-      expression.parameters.forEach(([parameterName, parameterType]) => {
-        validateType(
-          parameterType,
-          this.accessibleGlobalTypingContext,
-          this.errorCollector,
-          expression.range
-        );
-        this.localTypingContext.addLocalValueType(parameterName.name, parameterType, ignore);
-      });
-      return this.typeCheck(expression.body, expression.type.returnType);
+      this.localTypingContext.write(parameterName.range, parameterType);
     });
+    const checkedBody = this.typeCheck(expression.body, expression.type.returnType);
+    const captured = this.localTypingContext.getCaptured(expression.range);
     const locallyInferredType = SourceFunctionType(expression.type.argumentTypes, checkedBody.type);
     const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
       expectedType,
@@ -623,20 +614,17 @@ class ExpressionTypeChecker {
     if (expression.block.expression == null) {
       this.constraintAwareTypeChecker.checkAndInfer(expectedType, SourceUnitType, expression.range);
     }
-    const checkedStatementBlock = this.localTypingContext.withNestedScope(() => {
-      const checkedStatements = expression.block.statements.map((statement) =>
-        this.typeCheckValStatement(statement)
-      );
-      if (expression.block.expression != null) {
-        const checkedExpression = this.typeCheck(expression.block.expression, expectedType);
-        return {
-          range: expression.block.range,
-          statements: checkedStatements,
-          expression: checkedExpression,
-        };
-      }
-      return { range: expression.block.range, statements: checkedStatements };
-    });
+    const checkedStatements = expression.block.statements.map((statement) =>
+      this.typeCheckValStatement(statement)
+    );
+    const checkedStatementBlock =
+      expression.block.expression != null
+        ? {
+            range: expression.block.range,
+            statements: checkedStatements,
+            expression: this.typeCheck(expression.block.expression, expectedType),
+          }
+        : { range: expression.block.range, statements: checkedStatements };
     return SourceExpressionStatementBlock({
       range: expression.range,
       associatedComments: expression.associatedComments,
@@ -679,9 +667,7 @@ class ExpressionTypeChecker {
           pattern.destructedNames,
           checkedAssignedExpressionType.mappings
         ).map(([{ name }, elementType]) => {
-          if (name != null) {
-            this.localTypingContext.addLocalValueType(name.name, elementType, ignore);
-          }
+          if (name != null) this.localTypingContext.write(name.range, elementType);
           return { name, type: elementType };
         });
         checkedPattern = { ...pattern, destructedNames: checkedDestructedNames };
@@ -772,7 +758,7 @@ class ExpressionTypeChecker {
             };
           }
           const nameToBeUsed = renamedName ?? originalName;
-          this.localTypingContext.addLocalValueType(nameToBeUsed.name, fieldType, ignore);
+          this.localTypingContext.write(nameToBeUsed.range, fieldType);
           const fieldOrder = checkNotNull(fieldOrderMapping[originalName.name]);
           destructedNames.push({ ...destructedName, type: fieldType, fieldOrder });
         }
@@ -781,11 +767,7 @@ class ExpressionTypeChecker {
       }
 
       case 'VariablePattern':
-        this.localTypingContext.addLocalValueType(
-          pattern.name,
-          checkedAssignedExpressionType,
-          ignore
-        );
+        this.localTypingContext.write(pattern.range, checkedAssignedExpressionType);
         checkedPattern = pattern;
         break;
 
@@ -807,7 +789,7 @@ export default function typeCheckExpression(
   expression: SamlangExpression,
   errorCollector: ModuleErrorCollector,
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-  localTypingContext: LocalStackedContext<SamlangType>,
+  localTypingContext: LocationBasedLocalTypingContext,
   resolution: TypeResolution,
   expectedType: SamlangType
 ): SamlangExpression {
