@@ -1,4 +1,9 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import {
+  DummySourceReason,
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+} from '../../ast/common-nodes';
 import { EQ, MINUS, MUL } from '../../ast/common-operators';
 import { debugPrintHighIRSources } from '../../ast/hir-nodes';
 import {
@@ -18,7 +23,6 @@ import {
   SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
-import { mapOf } from '../../utils';
 import compileSamlangSourcesToHighIRSources, {
   compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,
 } from '../hir-toplevel-lowering';
@@ -240,7 +244,7 @@ describe('mir-toplevel-lowering', () => {
       interfaces: [],
     };
 
-    const sources = mapOf(
+    const sources = ModuleReferenceCollections.mapOf(
       [ModuleReference.DUMMY, sourceModule],
       [new ModuleReference(['Foo']), { imports: [], classes: [], interfaces: [] }]
     );

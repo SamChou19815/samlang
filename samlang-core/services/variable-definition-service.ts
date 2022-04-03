@@ -1,6 +1,12 @@
-import type { ModuleReference, Range, Sources } from '../ast/common-nodes';
+import {
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+  RangeCollections,
+  Sources,
+} from '../ast/common-nodes';
 import { Pattern, SamlangExpression, SamlangModule, SourceId } from '../ast/samlang-nodes';
-import { assert, error, HashMap, hashMapOf, LocalStackedContext } from '../utils';
+import { assert, error, LocalStackedContext } from '../utils';
 
 export type DefinitionAndUses = {
   readonly definitionRange: Range;
@@ -11,9 +17,9 @@ class ScopedDefinitionManager extends LocalStackedContext<Range> {}
 
 export class ModuleScopedVariableDefinitionLookup {
   /** Mapping from definition's range to all the uses' range. */
-  private readonly definitionToUsesTable: HashMap<Range, Range[]> = hashMapOf();
+  private readonly definitionToUsesTable = RangeCollections.hashMapOf<Range[]>();
   /** Mapping from a use to its definition. Here for faster lookup. */
-  private readonly useToDefinitionTable: HashMap<Range, Range> = hashMapOf();
+  private readonly useToDefinitionTable = RangeCollections.hashMapOf<Range>();
 
   constructor(samlangModule: SamlangModule) {
     samlangModule.classes.forEach((samlangClass) => {
@@ -147,8 +153,8 @@ export interface ReadonlyVariableDefinitionLookup {
 }
 
 export class VariableDefinitionLookup implements ReadonlyVariableDefinitionLookup {
-  private readonly moduleTable: HashMap<ModuleReference, ModuleScopedVariableDefinitionLookup> =
-    hashMapOf();
+  private readonly moduleTable =
+    ModuleReferenceCollections.hashMapOf<ModuleScopedVariableDefinitionLookup>();
 
   rebuild(sources: Sources<SamlangModule>): void {
     this.moduleTable.clear();

@@ -1,6 +1,13 @@
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 
-import { BuiltinReason, ModuleReference, Range, SourceReason, Sources } from '../ast/common-nodes';
+import {
+  BuiltinReason,
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+  SourceReason,
+  Sources,
+} from '../ast/common-nodes';
 import {
   SamlangModule,
   SourceClassDefinition,
@@ -12,7 +19,7 @@ import {
   SourceUnitType,
 } from '../ast/samlang-nodes';
 import type { DefaultBuiltinClasses } from '../parser';
-import { checkNotNull, hashMapOf } from '../utils';
+import { checkNotNull } from '../utils';
 import { normalizeTypeInformation } from './type-substitution';
 import type {
   ClassTypingContext,
@@ -168,7 +175,7 @@ export function buildGlobalTypingContext(
   sources: Sources<SamlangModule>,
   builtinModuleTypes: ModuleTypingContext
 ): GlobalTypingContext {
-  const modules = hashMapOf<ModuleReference, ModuleTypingContext>();
+  const modules = ModuleReferenceCollections.hashMapOf<ModuleTypingContext>();
   modules.set(ModuleReference.ROOT, builtinModuleTypes);
   sources.forEach((samlangModule, moduleReference) => {
     modules.set(moduleReference, buildModuleTypingContext(moduleReference, samlangModule));

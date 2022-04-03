@@ -1,13 +1,13 @@
 import { HighIRFunction, HighIRStatement, HIR_BINARY, HIR_INDEX_ACCESS } from '../ast/hir-nodes';
-import { filterMap, Hashable, HashSet, hashSetOf, ReadonlyHashSet } from '../utils';
+import { createCollectionConstructors, filterMap, HashSet, ReadonlyHashSet } from '../utils';
 import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
 import { BindedValue, bindedValueToString } from './hir-optimization-common';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
-class ExpressionWrapper implements Hashable {
+class ExpressionWrapper {
   constructor(readonly value: BindedValue) {}
 
-  uniqueHash() {
+  toString() {
     return bindedValueToString(this.value);
   }
 }
@@ -97,11 +97,15 @@ function optimizeHighIRStatement(
   }
 }
 
+const expressionWrapperHashsetOf = createCollectionConstructors((it: ExpressionWrapper) =>
+  it.toString()
+).hashSetOf;
+
 function optimizeHighIRStatementsWithSet(
   statements: readonly HighIRStatement[],
   allocator: OptimizationResourceAllocator
 ): { statements: readonly HighIRStatement[]; set: ReadonlyHashSet<ExpressionWrapper> } {
-  const set = hashSetOf<ExpressionWrapper>();
+  const set = expressionWrapperHashsetOf();
   const optimizedStatements = [...statements]
     .reverse()
     .flatMap((it) => optimizeHighIRStatement(it, allocator, set))

@@ -6,7 +6,12 @@ import {
   typeCheckSources,
   typeCheckSourcesIncrementally,
 } from '..';
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import {
+  DummySourceReason,
+  ModuleReference,
+  ModuleReferenceCollections,
+  Range,
+} from '../../ast/common-nodes';
 import {
   SourceExpressionInt,
   SourceFunctionType,
@@ -15,7 +20,6 @@ import {
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
-import { hashMapOf, mapOf } from '../../utils';
 
 describe('samlang-core/checker', () => {
   it('collectModuleReferenceFromSamlangModule works', () => {
@@ -144,7 +148,7 @@ describe('samlang-core/checker', () => {
 
     const errorCollector = createGlobalErrorCollector();
 
-    const sources = hashMapOf(
+    const sources = ModuleReferenceCollections.hashMapOf(
       [
         moduleReferenceA,
         parseSamlangModuleFromText(
@@ -235,7 +239,7 @@ describe('samlang-core/checker', () => {
 
     const errorCollector = createGlobalErrorCollector();
 
-    const sources = mapOf(
+    const sources = ModuleReferenceCollections.mapOf(
       [
         moduleReferenceA,
         parseSamlangModuleFromText(
@@ -313,7 +317,7 @@ describe('samlang-core/checker', () => {
 
     const errorCollector = createGlobalErrorCollector();
 
-    const sources = mapOf(
+    const sources = ModuleReferenceCollections.mapOf(
       [
         moduleReferenceA,
         parseSamlangModuleFromText(

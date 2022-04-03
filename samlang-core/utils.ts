@@ -50,11 +50,7 @@ export function filterMap<T, R>(
   return result;
 }
 
-export interface Hashable {
-  readonly uniqueHash: () => string | number;
-}
-
-export interface ReadonlyHashMap<K extends Hashable, V> {
+export interface ReadonlyHashMap<K, V> {
   readonly get: (key: K) => V | undefined;
   readonly forceGet: (key: K) => V;
   readonly has: (key: K) => boolean;
@@ -63,30 +59,33 @@ export interface ReadonlyHashMap<K extends Hashable, V> {
   readonly entries: () => readonly (readonly [K, V])[];
 }
 
-export interface HashMap<K extends Hashable, V> extends ReadonlyHashMap<K, V> {
+export interface HashMap<K, V> extends ReadonlyHashMap<K, V> {
   readonly clear: () => void;
   readonly delete: (key: K) => boolean;
   readonly set: (key: K, value: V) => this;
 }
 
-export interface ReadonlyHashSet<T extends Hashable> {
+export interface ReadonlyHashSet<T> {
   readonly forEach: (callbackFunction: (value: T) => void) => void;
   readonly toArray: () => T[];
   readonly has: (value: T) => boolean;
   readonly size: number;
 }
 
-export interface HashSet<T extends Hashable> extends ReadonlyHashSet<T> {
+export interface HashSet<T> extends ReadonlyHashSet<T> {
   readonly add: (value: T) => this;
   readonly clear: () => void;
   readonly delete: (value: T) => boolean;
 }
 
-class HashMapImpl<K extends Hashable, V> implements HashMap<K, V> {
+class HashMapImpl<K, V> implements HashMap<K, V> {
   private backingMap: Map<string | number, readonly [K, V]>;
 
-  constructor(keyValuePairs: readonly (readonly [K, V])[]) {
-    this.backingMap = new Map(keyValuePairs.map((pair) => [pair[0].uniqueHash(), pair] as const));
+  constructor(
+    private readonly uniqueHash: (key: K) => string | number,
+    keyValuePairs: readonly (readonly [K, V])[]
+  ) {
+    this.backingMap = new Map(keyValuePairs.map((pair) => [uniqueHash(pair[0]), pair] as const));
   }
 
   clear(): void {
@@ -94,16 +93,16 @@ class HashMapImpl<K extends Hashable, V> implements HashMap<K, V> {
   }
 
   delete(key: K): boolean {
-    return this.backingMap.delete(key.uniqueHash());
+    return this.backingMap.delete(this.uniqueHash(key));
   }
 
   set(key: K, value: V): this {
-    this.backingMap.set(key.uniqueHash(), [key, value]);
+    this.backingMap.set(this.uniqueHash(key), [key, value]);
     return this;
   }
 
   get(key: K): V | undefined {
-    return this.backingMap.get(key.uniqueHash())?.[1];
+    return this.backingMap.get(this.uniqueHash(key))?.[1];
   }
 
   forceGet(key: K): V {
@@ -111,7 +110,7 @@ class HashMapImpl<K extends Hashable, V> implements HashMap<K, V> {
   }
 
   has(key: K): boolean {
-    return this.backingMap.has(key.uniqueHash());
+    return this.backingMap.has(this.uniqueHash(key));
   }
 
   get size(): number {
@@ -129,15 +128,15 @@ class HashMapImpl<K extends Hashable, V> implements HashMap<K, V> {
   }
 }
 
-class HashSetImpl<T extends Hashable> implements HashSet<T> {
+class HashSetImpl<T> implements HashSet<T> {
   private backingMap: Map<string | number, T>;
 
-  constructor(values: readonly T[]) {
-    this.backingMap = new Map(values.map((value) => [value.uniqueHash(), value] as const));
+  constructor(private readonly uniqueHash: (key: T) => string | number, values: readonly T[]) {
+    this.backingMap = new Map(values.map((value) => [uniqueHash(value), value] as const));
   }
 
   add(value: T): this {
-    this.backingMap.set(value.uniqueHash(), value);
+    this.backingMap.set(this.uniqueHash(value), value);
     return this;
   }
 
@@ -146,7 +145,7 @@ class HashSetImpl<T extends Hashable> implements HashSet<T> {
   }
 
   delete(value: T): boolean {
-    return this.backingMap.delete(value.uniqueHash());
+    return this.backingMap.delete(this.uniqueHash(value));
   }
 
   forEach(callbackFunction: (value: T) => void): void {
@@ -160,7 +159,7 @@ class HashSetImpl<T extends Hashable> implements HashSet<T> {
   }
 
   has(value: T): boolean {
-    return this.backingMap.has(value.uniqueHash());
+    return this.backingMap.has(this.uniqueHash(value));
   }
 
   get size(): number {
@@ -168,19 +167,23 @@ class HashSetImpl<T extends Hashable> implements HashSet<T> {
   }
 }
 
-export const hashMapOf = <K extends Hashable, V>(
-  ...keyValuePairs: readonly (readonly [K, V])[]
-): HashMap<K, V> => new HashMapImpl(keyValuePairs);
+export interface CollectionsConstructors<K> {
+  hashMapOf<V>(...keyValuePairs: readonly (readonly [K, V])[]): HashMap<K, V>;
+  mapOf<V>(...keyValuePairs: readonly (readonly [K, V])[]): ReadonlyHashMap<K, V>;
+  hashSetOf(...values: readonly K[]): HashSet<K>;
+  setOf(...values: readonly K[]): ReadonlyHashSet<K>;
+}
 
-export const mapOf = <K extends Hashable, V>(
-  ...keyValuePairs: readonly (readonly [K, V])[]
-): ReadonlyHashMap<K, V> => new HashMapImpl(keyValuePairs);
-
-export const hashSetOf = <T extends Hashable>(...values: readonly T[]): HashSet<T> =>
-  new HashSetImpl(values);
-
-export const setOf = <T extends Hashable>(...values: readonly T[]): ReadonlyHashSet<T> =>
-  new HashSetImpl(values);
+export function createCollectionConstructors<K>(
+  uniqueHash: (key: K) => string | number
+): CollectionsConstructors<K> {
+  return {
+    hashMapOf: (...keyValuePairs) => new HashMapImpl(uniqueHash, keyValuePairs),
+    mapOf: (...keyValuePairs) => new HashMapImpl(uniqueHash, keyValuePairs),
+    hashSetOf: (...values) => new HashSetImpl(uniqueHash, values),
+    setOf: (...values) => new HashSetImpl(uniqueHash, values),
+  };
+}
 
 export const listShallowEquals = <T>(list1: readonly T[], list2: readonly T[]): boolean => {
   const length = list1.length;
@@ -212,7 +215,7 @@ export const mapEquals = <K, V>(
   });
 };
 
-export const hashMapEquals = <K extends Hashable, V>(
+export const hashMapEquals = <K, V>(
   map1: ReadonlyHashMap<K, V>,
   map2: ReadonlyHashMap<K, V>,
   valueEqualityTester: (v1: V, v2: V) => boolean = (v1, v2) => v1 === v2

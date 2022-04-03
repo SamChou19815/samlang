@@ -10,14 +10,12 @@ export class Range {
   readonly containsRange: (range: Range) => boolean;
   readonly union: (range: Range) => Range;
   readonly toString: () => string;
-  uniqueHash(): string;
 }
 
 export class ModuleReference {
   constructor(public readonly parts: readonly string[]) {}
   readonly toString: () => string;
   readonly toFilename: () => string;
-  uniqueHash(): string;
 }
 
 export interface Location {

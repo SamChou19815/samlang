@@ -1,4 +1,4 @@
-import type { Range } from '../ast/common-nodes';
+import { Range, RangeCollections } from '../ast/common-nodes';
 import type {
   SamlangExpression,
   SamlangModule,
@@ -7,23 +7,16 @@ import type {
   SourceInterfaceDeclaration,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import {
-  checkNotNull,
-  hashMapOf,
-  hashSetOf,
-  LocalStackedContext,
-  ReadonlyHashMap,
-  ReadonlyHashSet,
-} from '../utils';
+import { checkNotNull, LocalStackedContext, ReadonlyHashMap, ReadonlyHashSet } from '../utils';
 
 type SimplifiedSourceIdentifier = Omit<SourceIdentifier, 'associatedComments'>;
 
 class SsaBuilder extends LocalStackedContext<Range> {
   unboundNames = new Set<string>();
-  invalidDefines = hashSetOf<Range>();
-  definitionToUsesMap = hashMapOf<Range, Range[]>();
-  useDefineMap = hashMapOf<Range, Range>();
-  lambdaCaptures = hashMapOf<Range, ReadonlyMap<string, Range>>();
+  invalidDefines = RangeCollections.hashSetOf();
+  definitionToUsesMap = RangeCollections.hashMapOf<Range[]>();
+  useDefineMap = RangeCollections.hashMapOf<Range>();
+  lambdaCaptures = RangeCollections.hashMapOf<ReadonlyMap<string, Range>>();
 
   constructor(private readonly errorCollector?: ModuleErrorCollector) {
     super();

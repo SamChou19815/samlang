@@ -1,11 +1,19 @@
-import { Location, ModuleReference, Position, Range, SourceReason } from '../ast/common-nodes';
+import {
+  Location,
+  ModuleReference,
+  ModuleReferenceCollections,
+  Position,
+  Range,
+  RangeCollections,
+  SourceReason,
+} from '../ast/common-nodes';
 import {
   SamlangExpression,
   SamlangModule,
   SourceExpressionVariable,
   SourceIdentifierType,
 } from '../ast/samlang-nodes';
-import { HashMap, hashMapOf } from '../utils';
+import type { HashMap } from '../utils';
 
 export interface ReadOnlyLocationLookup<E> {
   get(moduleReference: ModuleReference, position: Position): E | null;
@@ -13,7 +21,7 @@ export interface ReadOnlyLocationLookup<E> {
 
 export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
   /** Mapping from module reference to a list of (entity, position range of entity) */
-  private readonly locationTable: HashMap<ModuleReference, HashMap<Range, E>> = hashMapOf();
+  private readonly locationTable = ModuleReferenceCollections.hashMapOf<HashMap<Range, E>>();
 
   get(moduleReference: ModuleReference, position: Position): E | null {
     const location = this.getBestLocation(moduleReference, position);
@@ -26,7 +34,10 @@ export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
   set(location: Location, entity: E): void {
     const localMap = this.locationTable.get(location.moduleReference);
     if (localMap == null) {
-      this.locationTable.set(location.moduleReference, hashMapOf([location.range, entity]));
+      this.locationTable.set(
+        location.moduleReference,
+        RangeCollections.hashMapOf([location.range, entity])
+      );
     } else {
       localMap.set(location.range, entity);
     }
