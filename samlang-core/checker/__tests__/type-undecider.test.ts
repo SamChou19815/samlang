@@ -1,4 +1,4 @@
-import { ModuleReference } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
 import {
   SourceBoolType,
   SourceFunctionType,
@@ -16,36 +16,42 @@ describe('type-undecider', () => {
     expect(
       undecideTypeParameters(
         SourceFunctionType(
+          DummySourceReason,
           [
-            SourceIdentifierType(ModuleReference.DUMMY, 'A', [
-              SourceBoolType,
-              SourceIdentifierType(ModuleReference.DUMMY, 'T1'),
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+              SourceBoolType(DummySourceReason),
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T1'),
             ]),
-            SourceUnitType,
-            SourceUnitType,
-            SourceTupleType([SourceIdentifierType(ModuleReference.DUMMY, 'T2')]),
+            SourceUnitType(DummySourceReason),
+            SourceUnitType(DummySourceReason),
+            SourceTupleType(DummySourceReason, [
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T2'),
+            ]),
           ],
-          SourceTupleType([
-            SourceIdentifierType(ModuleReference.DUMMY, 'T3'),
-            SourceIdentifierType(ModuleReference.DUMMY, 'T4'),
+          SourceTupleType(DummySourceReason, [
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T3'),
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T4'),
           ])
         ),
         ['T1', 'T2', 'T3', 'T4']
       )[0]
     ).toEqual(
       SourceFunctionType(
+        DummySourceReason,
         [
-          SourceIdentifierType(ModuleReference.DUMMY, 'A', [
-            SourceBoolType,
-            { type: 'UndecidedType', index: 0 },
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+            SourceBoolType(DummySourceReason),
+            { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
           ]),
-          SourceUnitType,
-          SourceUnitType,
-          SourceTupleType([{ type: 'UndecidedType', index: 1 }]),
+          SourceUnitType(DummySourceReason),
+          SourceUnitType(DummySourceReason),
+          SourceTupleType(DummySourceReason, [
+            { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
+          ]),
         ],
-        SourceTupleType([
-          { type: 'UndecidedType', index: 2 },
-          { type: 'UndecidedType', index: 3 },
+        SourceTupleType(DummySourceReason, [
+          { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
+          { type: 'UndecidedType', reason: DummySourceReason, index: 3 },
         ])
       )
     );
@@ -55,20 +61,37 @@ describe('type-undecider', () => {
     UndecidedTypes.resetUndecidedTypeIndex_ONLY_FOR_TEST();
 
     expect(
-      undecideTypeParameters(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceBoolType]), [
-        'A',
-      ])[0]
-    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceBoolType]));
+      undecideTypeParameters(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+          SourceBoolType(DummySourceReason),
+        ]),
+        ['A']
+      )[0]
+    ).toEqual(
+      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+        SourceBoolType(DummySourceReason),
+      ])
+    );
 
     expect(
-      undecideTypeParameters(SourceIdentifierType(ModuleReference.DUMMY, 'A', []), [])[0]
-    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'A', []));
+      undecideTypeParameters(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', []),
+        []
+      )[0]
+    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', []));
 
     expect(
-      undecideTypeParameters(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceBoolType]), [
-        'B',
-      ])[0]
-    ).toEqual(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceBoolType]));
+      undecideTypeParameters(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+          SourceBoolType(DummySourceReason),
+        ]),
+        ['B']
+      )[0]
+    ).toEqual(
+      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+        SourceBoolType(DummySourceReason),
+      ])
+    );
   });
 
   it('can undecide field types', () => {
@@ -77,14 +100,20 @@ describe('type-undecider', () => {
     expect(
       undecideFieldTypeParameters(
         {
-          a: { isPublic: true, type: SourceIdentifierType(ModuleReference.DUMMY, 'A') },
-          b: { isPublic: false, type: SourceIdentifierType(ModuleReference.DUMMY, 'B') },
+          a: {
+            isPublic: true,
+            type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+          },
+          b: {
+            isPublic: false,
+            type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+          },
         },
         ['A', 'B']
       )[0]
     ).toEqual({
-      a: { isPublic: true, type: { type: 'UndecidedType', index: 0 } },
-      b: { isPublic: false, type: { type: 'UndecidedType', index: 1 } },
+      a: { isPublic: true, type: { type: 'UndecidedType', reason: DummySourceReason, index: 0 } },
+      b: { isPublic: false, type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 } },
     });
   });
 });

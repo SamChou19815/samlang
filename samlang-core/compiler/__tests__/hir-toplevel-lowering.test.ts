@@ -1,4 +1,4 @@
-import { ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
 import { EQ, MINUS, MUL } from '../../ast/common-operators';
 import { debugPrintHighIRSources } from '../../ast/hir-nodes';
 import {
@@ -23,7 +23,9 @@ import compileSamlangSourcesToHighIRSources, {
   compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,
 } from '../hir-toplevel-lowering';
 
-const THIS = SourceExpressionThis({ type: SourceIdentifierType(ModuleReference.DUMMY, 'Dummy') });
+const THIS = SourceExpressionThis({
+  type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Dummy'),
+});
 
 describe('mir-toplevel-lowering', () => {
   it('compileSamlangSourcesToHighIRSourcesWithGenericsPreserved integration test', () => {
@@ -45,11 +47,11 @@ describe('mir-toplevel-lowering', () => {
               name: SourceId('main'),
               typeParameters: [],
               parameters: [],
-              type: SourceFunctionType([], SourceUnitType),
+              type: SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
               body: SourceExpressionFunctionCall({
-                type: SourceUnitType,
+                type: SourceUnitType(DummySourceReason),
                 functionExpression: SourceExpressionClassMember({
-                  type: SourceFunctionType([], SourceIntType),
+                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
                   className: SourceId('Class1'),
@@ -69,7 +71,7 @@ describe('mir-toplevel-lowering', () => {
             range: Range.DUMMY,
             type: 'object',
             names: [SourceId('a')],
-            mappings: { a: { isPublic: true, type: SourceIntType } },
+            mappings: { a: { isPublic: true, type: SourceIntType(DummySourceReason) } },
           },
           members: [
             {
@@ -80,9 +82,18 @@ describe('mir-toplevel-lowering', () => {
               name: SourceId('foo'),
               typeParameters: [],
               parameters: [
-                { name: 'a', nameRange: Range.DUMMY, type: SourceIntType, typeRange: Range.DUMMY },
+                {
+                  name: 'a',
+                  nameRange: Range.DUMMY,
+                  type: SourceIntType(DummySourceReason),
+                  typeRange: Range.DUMMY,
+                },
               ],
-              type: SourceFunctionType([SourceIntType], SourceIntType),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [SourceIntType(DummySourceReason)],
+                SourceIntType(DummySourceReason)
+              ),
               body: THIS,
             },
             {
@@ -93,11 +104,11 @@ describe('mir-toplevel-lowering', () => {
               name: SourceId('infiniteLoop'),
               typeParameters: [],
               parameters: [],
-              type: SourceFunctionType([], SourceUnitType),
+              type: SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
               body: SourceExpressionFunctionCall({
-                type: SourceUnitType,
+                type: SourceUnitType(DummySourceReason),
                 functionExpression: SourceExpressionClassMember({
-                  type: SourceFunctionType([], SourceIntType),
+                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
                   className: SourceId('Class1'),
@@ -114,29 +125,45 @@ describe('mir-toplevel-lowering', () => {
               name: SourceId('factorial'),
               typeParameters: [],
               parameters: [
-                { name: 'n', nameRange: Range.DUMMY, type: SourceIntType, typeRange: Range.DUMMY },
+                {
+                  name: 'n',
+                  nameRange: Range.DUMMY,
+                  type: SourceIntType(DummySourceReason),
+                  typeRange: Range.DUMMY,
+                },
                 {
                   name: 'acc',
                   nameRange: Range.DUMMY,
-                  type: SourceIntType,
+                  type: SourceIntType(DummySourceReason),
                   typeRange: Range.DUMMY,
                 },
               ],
-              type: SourceFunctionType([SourceIntType, SourceIntType], SourceIntType),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
+                SourceIntType(DummySourceReason)
+              ),
               body: SourceExpressionIfElse({
-                type: SourceIntType,
+                type: SourceIntType(DummySourceReason),
                 boolExpression: SourceExpressionBinary({
-                  type: SourceBoolType,
+                  type: SourceBoolType(DummySourceReason),
                   operatorPrecedingComments: [],
                   operator: EQ,
-                  e1: SourceExpressionVariable({ type: SourceIntType, name: 'n' }),
+                  e1: SourceExpressionVariable({
+                    type: SourceIntType(DummySourceReason),
+                    name: 'n',
+                  }),
                   e2: SourceExpressionInt(0),
                 }),
                 e1: SourceExpressionInt(1),
                 e2: SourceExpressionFunctionCall({
-                  type: SourceIntType,
+                  type: SourceIntType(DummySourceReason),
                   functionExpression: SourceExpressionClassMember({
-                    type: SourceFunctionType([SourceIntType, SourceIntType], SourceIntType),
+                    type: SourceFunctionType(
+                      DummySourceReason,
+                      [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
+                      SourceIntType(DummySourceReason)
+                    ),
                     typeArguments: [],
                     moduleReference: ModuleReference.DUMMY,
                     className: SourceId('Class1'),
@@ -144,18 +171,27 @@ describe('mir-toplevel-lowering', () => {
                   }),
                   functionArguments: [
                     SourceExpressionBinary({
-                      type: SourceIntType,
+                      type: SourceIntType(DummySourceReason),
                       operatorPrecedingComments: [],
                       operator: MINUS,
-                      e1: SourceExpressionVariable({ type: SourceIntType, name: 'n' }),
+                      e1: SourceExpressionVariable({
+                        type: SourceIntType(DummySourceReason),
+                        name: 'n',
+                      }),
                       e2: SourceExpressionInt(1),
                     }),
                     SourceExpressionBinary({
-                      type: SourceIntType,
+                      type: SourceIntType(DummySourceReason),
                       operatorPrecedingComments: [],
                       operator: MUL,
-                      e1: SourceExpressionVariable({ type: SourceIntType, name: 'n' }),
-                      e2: SourceExpressionVariable({ type: SourceIntType, name: 'acc' }),
+                      e1: SourceExpressionVariable({
+                        type: SourceIntType(DummySourceReason),
+                        name: 'n',
+                      }),
+                      e2: SourceExpressionVariable({
+                        type: SourceIntType(DummySourceReason),
+                        name: 'acc',
+                      }),
                     }),
                   ],
                 }),
@@ -184,13 +220,16 @@ describe('mir-toplevel-lowering', () => {
               a: {
                 isPublic: true,
                 type: SourceFunctionType(
+                  DummySourceReason,
                   [
-                    SourceTupleType([
-                      SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceIntType]),
-                      SourceIdentifierType(ModuleReference.DUMMY, 'T'),
+                    SourceTupleType(DummySourceReason, [
+                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+                        SourceIntType(DummySourceReason),
+                      ]),
+                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
                     ]),
                   ],
-                  SourceIntType
+                  SourceIntType(DummySourceReason)
                 ),
               },
             },

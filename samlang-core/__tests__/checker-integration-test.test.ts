@@ -37,7 +37,7 @@ const expectedErrors: readonly string[] = [
   'multiple-type-errors.sam:3:43-3:48: [UnexpectedType]: Expected: `int`, actual: `string`.',
   'overflow-int.sam:3:26-3:56: [SyntaxError]: Not a 32-bit integer.',
   'simple-mismatch.sam:4:26-4:30: [UnexpectedType]: Expected: `int`, actual: `bool`.',
-  'undefined-type.sam:3:3-3:34: [NotWellDefinedIdentifier]: `HelloWorld` is not well defined.',
+  'undefined-type.sam:3:20-3:30: [UnresolvedName]: Name `HelloWorld` is not resolved.',
   'undefined-type.sam:3:33-3:34: [UnexpectedType]: Expected: `HelloWorld`, actual: `int`.',
   'undefined-variable.sam:3:29-3:39: [UnresolvedName]: Name `helloWorld` is not resolved.',
 ];

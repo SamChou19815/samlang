@@ -1,5 +1,5 @@
 import prettyPrintSamlangModule from '..';
-import { ModuleReference } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
 import {
   SourceExpressionMethodAccess,
   SourceExpressionVariable,
@@ -139,8 +139,11 @@ Test /* b */ /* c */ .<T>VariantName(42)`
       prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
         40,
         SourceExpressionMethodAccess({
-          type: SourceIntType,
-          expression: SourceExpressionVariable({ type: SourceIntType, name: 'foo' }),
+          type: SourceIntType(DummySourceReason),
+          expression: SourceExpressionVariable({
+            type: SourceIntType(DummySourceReason),
+            name: 'foo',
+          }),
           methodName: SourceId('bar'),
         })
       ).trimEnd()

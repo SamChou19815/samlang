@@ -15,14 +15,19 @@ export default function resolveType(
       return type;
     case 'IdentifierType':
       return SourceIdentifierType(
+        type.reason,
         type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => resolveType(it, undecidedTypeResolver))
       );
     case 'TupleType':
-      return SourceTupleType(type.mappings.map((it) => resolveType(it, undecidedTypeResolver)));
+      return SourceTupleType(
+        type.reason,
+        type.mappings.map((it) => resolveType(it, undecidedTypeResolver))
+      );
     case 'FunctionType':
       return SourceFunctionType(
+        type.reason,
         type.argumentTypes.map((it) => resolveType(it, undecidedTypeResolver)),
         resolveType(type.returnType, undecidedTypeResolver)
       );

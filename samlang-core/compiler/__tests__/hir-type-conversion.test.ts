@@ -1,4 +1,4 @@
-import { ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
 import {
   HIR_BOOL_TYPE,
   HIR_FUNCTION_TYPE,
@@ -258,28 +258,38 @@ describe('hir-type-conversion', () => {
     const typeSynthesizer = new HighIRTypeSynthesizer();
     const manager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
 
-    expect(manager.lowerSamlangType(SourceBoolType)).toEqual(HIR_BOOL_TYPE);
-    expect(manager.lowerSamlangType(SourceIntType)).toEqual(HIR_INT_TYPE);
-    expect(manager.lowerSamlangType(SourceUnitType)).toEqual(HIR_INT_TYPE);
-    expect(manager.lowerSamlangType(SourceStringType)).toEqual(HIR_STRING_TYPE);
+    expect(manager.lowerSamlangType(SourceBoolType(DummySourceReason))).toEqual(HIR_BOOL_TYPE);
+    expect(manager.lowerSamlangType(SourceIntType(DummySourceReason))).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangType(SourceUnitType(DummySourceReason))).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangType(SourceStringType(DummySourceReason))).toEqual(HIR_STRING_TYPE);
 
     expect(
       prettyPrintHighIRType(
-        manager.lowerSamlangType(SourceIdentifierType(ModuleReference.DUMMY, 'A', [SourceIntType]))
+        manager.lowerSamlangType(
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+            SourceIntType(DummySourceReason),
+          ])
+        )
       )
     ).toBe('__DUMMY___A<int>');
 
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          SourceTupleType([SourceIntType, SourceBoolType])
+          SourceTupleType(DummySourceReason, [
+            SourceIntType(DummySourceReason),
+            SourceBoolType(DummySourceReason),
+          ])
         )
       )
     ).toBe('$SyntheticIDType0');
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          SourceTupleType([SourceIntType, SourceIdentifierType(ModuleReference.DUMMY, 'T')])
+          SourceTupleType(DummySourceReason, [
+            SourceIntType(DummySourceReason),
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
+          ])
         )
       )
     ).toBe('$SyntheticIDType1<T>');
@@ -288,14 +298,20 @@ describe('hir-type-conversion', () => {
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
           SourceFunctionType(
-            [SourceIdentifierType(ModuleReference.DUMMY, 'T'), SourceBoolType],
-            SourceIntType
+            DummySourceReason,
+            [
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
+              SourceBoolType(DummySourceReason),
+            ],
+            SourceIntType(DummySourceReason)
           )
         )
       )
     ).toBe('$SyntheticIDType2<T>');
 
-    expect(() => manager.lowerSamlangType({ type: 'UndecidedType', index: 0 })).toThrow();
+    expect(() =>
+      manager.lowerSamlangType({ type: 'UndecidedType', reason: DummySourceReason, index: 0 })
+    ).toThrow();
 
     expect(typeSynthesizer.synthesizedTupleTypes.map(prettyPrintHighIRTypeDefinition)).toEqual([
       'object type $SyntheticIDType0 = [int, bool]',
@@ -319,15 +335,29 @@ describe('hir-type-conversion', () => {
       mappings: {
         a: {
           type: SourceFunctionType(
-            [SourceFunctionType([SourceIdentifierType(ModuleReference.ROOT, 'A')], SourceBoolType)],
-            SourceBoolType
+            DummySourceReason,
+            [
+              SourceFunctionType(
+                DummySourceReason,
+                [SourceIdentifierType(DummySourceReason, ModuleReference.ROOT, 'A')],
+                SourceBoolType(DummySourceReason)
+              ),
+            ],
+            SourceBoolType(DummySourceReason)
           ),
           isPublic: true,
         },
         b: {
           type: SourceFunctionType(
-            [SourceFunctionType([SourceIdentifierType(ModuleReference.ROOT, 'A')], SourceBoolType)],
-            SourceBoolType
+            DummySourceReason,
+            [
+              SourceFunctionType(
+                DummySourceReason,
+                [SourceIdentifierType(DummySourceReason, ModuleReference.ROOT, 'A')],
+                SourceBoolType(DummySourceReason)
+              ),
+            ],
+            SourceBoolType(DummySourceReason)
           ),
           isPublic: false,
         },
@@ -350,13 +380,27 @@ describe('hir-type-conversion', () => {
     const manager = new SamlangTypeLoweringManager(new Set(['A']), new HighIRTypeSynthesizer());
     expect(
       manager.lowerSamlangFunctionTypeForTopLevel(
-        SourceFunctionType([SourceIntType], SourceBoolType)
+        SourceFunctionType(
+          DummySourceReason,
+          [SourceIntType(DummySourceReason)],
+          SourceBoolType(DummySourceReason)
+        )
       )
     ).toEqual([[], HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)]);
 
     expect(
       manager.lowerSamlangFunctionTypeForTopLevel(
-        SourceFunctionType([SourceFunctionType([SourceIntType], SourceBoolType)], SourceBoolType)
+        SourceFunctionType(
+          DummySourceReason,
+          [
+            SourceFunctionType(
+              DummySourceReason,
+              [SourceIntType(DummySourceReason)],
+              SourceBoolType(DummySourceReason)
+            ),
+          ],
+          SourceBoolType(DummySourceReason)
+        )
       )
     ).toEqual([
       [],

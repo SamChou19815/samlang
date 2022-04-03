@@ -106,7 +106,21 @@ export interface Location {
   readonly range: Range;
 }
 
-/** SECTION 3: MISC */
+/** SECTION 3: REASON */
+
+export interface SamlangReason {
+  readonly definitionLocation: Range;
+  readonly annotationLocation: Range | null;
+}
+
+export const SourceReason = (
+  definitionLocation: Range,
+  annotationLocation: Range | null
+): SamlangReason => ({ definitionLocation, annotationLocation });
+
+export const DummySourceReason: SamlangReason = SourceReason(Range.DUMMY, null);
+
+/** SECTION 4: MISC */
 
 export type TypedComment = {
   readonly type: 'line' | 'block' | 'doc';

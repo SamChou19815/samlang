@@ -1,3 +1,4 @@
+import { DummySourceReason } from '../ast/common-nodes';
 import type { SamlangType, SamlangUndecidedType } from '../ast/samlang-nodes';
 import { assert, checkNotNull, UnionFind } from '../utils';
 import typeResolver from './type-resolver';
@@ -44,7 +45,13 @@ export default class TypeResolution implements ReadOnlyTypeResolution {
 
   getPartiallyResolvedType = (undecidedType: SamlangUndecidedType): SamlangType => {
     const rootIndex = this.indexAliasingUnionFind.findRoot(undecidedType.index);
-    return this.knownResolutions.get(rootIndex) ?? { type: 'UndecidedType', index: rootIndex };
+    return (
+      this.knownResolutions.get(rootIndex) ?? {
+        type: 'UndecidedType',
+        reason: DummySourceReason,
+        index: rootIndex,
+      }
+    );
   };
 
   resolveType = (unresolvedType: SamlangType): SamlangType =>

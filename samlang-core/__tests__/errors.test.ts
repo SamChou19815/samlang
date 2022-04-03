@@ -1,4 +1,4 @@
-import { ModuleReference, Range } from '../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range } from '../ast/common-nodes';
 import { SourceBoolType, SourceIntType } from '../ast/samlang-nodes';
 import {
   CollisionError,
@@ -7,7 +7,6 @@ import {
   IllegalThisError,
   InsufficientTypeInferenceContextError,
   NonExhausiveMatchError,
-  NotWellDefinedIdentifierError,
   SyntaxError,
   TupleSizeMismatchError,
   TypeArgumentsSizeMismatchError,
@@ -26,14 +25,10 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
     new UnexpectedTypeError(
       new ModuleReference(['Foo', 'Bar']),
       Range.DUMMY,
-      SourceIntType,
-      SourceBoolType
+      SourceIntType(DummySourceReason),
+      SourceBoolType(DummySourceReason)
     ),
     'Foo/Bar.sam:0:0-0:0: [UnexpectedType]: Expected: `int`, actual: `bool`.',
-  ],
-  [
-    new NotWellDefinedIdentifierError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'BadType'),
-    'Foo/Bar.sam:0:0-0:0: [NotWellDefinedIdentifier]: `BadType` is not well defined.',
   ],
   [
     new UnresolvedNameError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'unresolvedName'),
@@ -61,7 +56,7 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
       new ModuleReference(['Foo', 'Bar']),
       Range.DUMMY,
       'array',
-      SourceIntType
+      SourceIntType(DummySourceReason)
     ),
     'Foo/Bar.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',
   ],

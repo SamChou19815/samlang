@@ -6,7 +6,7 @@ import {
   typeCheckSources,
   typeCheckSourcesIncrementally,
 } from '..';
-import { ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
 import {
   SourceExpressionInt,
   SourceFunctionType,
@@ -39,7 +39,7 @@ describe('samlang-core/checker', () => {
               type: 'object',
               names: [SourceId('')],
               range: Range.DUMMY,
-              mappings: { d: { isPublic: true, type: SourceIntType } },
+              mappings: { d: { isPublic: true, type: SourceIntType(DummySourceReason) } },
             },
             members: [
               {
@@ -50,7 +50,7 @@ describe('samlang-core/checker', () => {
                 isPublic: true,
                 typeParameters: [],
                 parameters: [],
-                type: SourceFunctionType([], SourceIntType),
+                type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                 body: SourceExpressionInt(3),
               },
             ],
@@ -135,7 +135,7 @@ describe('samlang-core/checker', () => {
   import { C } from C
 
   class IdentifyChecker { function equals(c1: C, c2: C): bool = c1.intValue() == c2.intValue() }
-  class Main { function main(): bool =  IdentifyChecker.equals(C.ofInt(A.a()), C.ofB(B.of())) }`;
+  class Main { function main(): bool = IdentifyChecker.equals(C.ofInt(A.a()), C.ofB(B.of())) }`;
 
     const moduleReferenceA = new ModuleReference(['A']);
     const moduleReferenceB = new ModuleReference(['B']);
@@ -196,11 +196,10 @@ describe('samlang-core/checker', () => {
         .sort()
     ).toEqual([
       'D.sam:3:3-3:22: [UnresolvedName]: Name `C` is not resolved.',
-      'D.sam:5:27-5:95: [NotWellDefinedIdentifier]: `C` is not well defined.',
       "D.sam:5:65-5:67: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       "D.sam:5:82-5:84: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
-      'D.sam:6:64-6:71: [UnresolvedName]: Name `C.ofInt` is not resolved.',
-      'D.sam:6:80-6:85: [UnresolvedName]: Name `C.ofB` is not resolved.',
+      'D.sam:6:63-6:70: [UnresolvedName]: Name `C.ofInt` is not resolved.',
+      'D.sam:6:79-6:84: [UnresolvedName]: Name `C.ofB` is not resolved.',
     ]);
   });
 
@@ -222,7 +221,12 @@ describe('samlang-core/checker', () => {
   import { C } from C
 
   class IdentifyChecker { function equals(c1: C, c1: C): bool = c1.intValue() == c1.intValue() }
-  class Main { function main(): bool = true }`;
+  class Main { function main(): bool = true }
+  class Useless {
+    function main(): unit = {
+      val _ = (foo: Useless) -> {};
+    }
+  }`;
 
     const moduleReferenceA = new ModuleReference(['A']);
     const moduleReferenceB = new ModuleReference(['B']);
@@ -277,11 +281,9 @@ describe('samlang-core/checker', () => {
       'B.sam:2:11-2:12: [Collision]: Name `A` collides with a previously defined name.',
       'B.sam:2:14-2:15: [Collision]: Name `A` collides with a previously defined name.',
       'B.sam:3:35-3:41: [UnexpectedType]: Expected: `(__UNDECIDED__) -> B<int, bool>`, actual: `(int) -> B<__UNDECIDED__, __UNDECIDED__>`.',
-      'C.sam:2:10-2:39: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:2:21-2:24: [Collision]: Name `Int` collides with a previously defined name.',
       'C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.',
       'C.sam:4:21-4:22: [Collision]: Name `T` collides with a previously defined name.',
-      'C.sam:4:5-4:46: [NotWellDefinedIdentifier]: `B` is not well defined.',
       'C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.',
       'C.sam:5:72-5:80: [UnresolvedName]: Name `intValue` is not resolved.',
       'D.sam:5:50-5:52: [Collision]: Name `c1` collides with a previously defined name.',

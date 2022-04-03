@@ -1,4 +1,4 @@
-import type { Location, ModuleReference, Position, Range } from '../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference, Position, Range } from '../ast/common-nodes';
 import {
   SamlangExpression,
   SamlangModule,
@@ -73,6 +73,7 @@ export class SamlangExpressionLocationLookupBuilder {
         SourceExpressionVariable({
           range: name.range,
           type: SourceIdentifierType(
+            DummySourceReason,
             moduleReference,
             `class ${moduleReference.toString()}.${name.name}`
           ),
@@ -109,7 +110,11 @@ export class SamlangExpressionLocationLookupBuilder {
           moduleReference,
           SourceExpressionVariable({
             range: classNameRange,
-            type: SourceIdentifierType(moduleReference, `class ${modRef.toString()}.${className}`),
+            type: SourceIdentifierType(
+              DummySourceReason,
+              moduleReference,
+              `class ${modRef.toString()}.${className}`
+            ),
             name: className,
           })
         );

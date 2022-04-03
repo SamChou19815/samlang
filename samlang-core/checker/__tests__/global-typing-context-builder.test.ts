@@ -1,4 +1,4 @@
-import { ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
 import type { SamlangModule, SourceClassDefinition } from '../../ast/samlang-nodes';
 import {
   SourceExpressionFalse,
@@ -45,7 +45,7 @@ const class1: SourceClassDefinition = {
       isMethod: true,
       name: SourceId('m1'),
       typeParameters: [],
-      type: SourceFunctionType([], SourceIntType),
+      type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
       parameters: [],
       body: SourceExpressionFalse(),
     },
@@ -56,7 +56,7 @@ const class1: SourceClassDefinition = {
       isMethod: false,
       name: SourceId('f1'),
       typeParameters: [],
-      type: SourceFunctionType([], SourceIntType),
+      type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
       parameters: [],
       body: SourceExpressionFalse(),
     },
@@ -104,7 +104,11 @@ describe('global-typing-context-builder', () => {
           functions: {
             init: {
               isPublic: true,
-              type: SourceFunctionType([], SourceIdentifierType(module0Reference, 'Class0', [])),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [],
+                SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', [])
+              ),
               typeParameters: [],
             },
           },
@@ -121,17 +125,25 @@ describe('global-typing-context-builder', () => {
           functions: {
             f1: {
               isPublic: false,
-              type: SourceFunctionType([], SourceIntType),
+              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
               typeParameters: [],
             },
             init: {
               isPublic: true,
-              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [],
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', [])
+              ),
               typeParameters: [],
             },
           },
           methods: {
-            m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
+            m1: {
+              isPublic: true,
+              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+              typeParameters: [],
+            },
           },
         },
         Class2: {
@@ -140,7 +152,11 @@ describe('global-typing-context-builder', () => {
           functions: {
             init: {
               isPublic: true,
-              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [],
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', [])
+              ),
               typeParameters: [],
             },
           },
@@ -175,7 +191,11 @@ describe('global-typing-context-builder', () => {
           functions: {
             init: {
               isPublic: true,
-              type: SourceFunctionType([], SourceIdentifierType(module0Reference, 'Class0', [])),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [],
+                SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', [])
+              ),
               typeParameters: [],
             },
           },
@@ -192,17 +212,25 @@ describe('global-typing-context-builder', () => {
           functions: {
             f1: {
               isPublic: false,
-              type: SourceFunctionType([], SourceIntType),
+              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
               typeParameters: [],
             },
             init: {
               isPublic: true,
-              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [],
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', [])
+              ),
               typeParameters: [],
             },
           },
           methods: {
-            m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
+            m1: {
+              isPublic: true,
+              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+              typeParameters: [],
+            },
           },
         },
         Class2: {
@@ -211,7 +239,11 @@ describe('global-typing-context-builder', () => {
           functions: {
             init: {
               isPublic: true,
-              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [],
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', [])
+              ),
               typeParameters: [],
             },
           },
@@ -250,17 +282,25 @@ describe('global-typing-context-builder', () => {
           functions: {
             f1: {
               isPublic: false,
-              type: SourceFunctionType([], SourceIntType),
+              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
               typeParameters: [],
             },
             init: {
               isPublic: true,
-              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class1', [])),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [],
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', [])
+              ),
               typeParameters: [],
             },
           },
           methods: {
-            m1: { isPublic: true, type: SourceFunctionType([], SourceIntType), typeParameters: [] },
+            m1: {
+              isPublic: true,
+              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+              typeParameters: [],
+            },
           },
         },
         Class2: {
@@ -269,7 +309,11 @@ describe('global-typing-context-builder', () => {
           functions: {
             init: {
               isPublic: true,
-              type: SourceFunctionType([], SourceIdentifierType(module1Reference, 'Class2', [])),
+              type: SourceFunctionType(
+                DummySourceReason,
+                [],
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', [])
+              ),
               typeParameters: [],
             },
           },
