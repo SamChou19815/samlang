@@ -1,4 +1,4 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Range, SourceReason } from '../../ast/common-nodes';
 import { AND, CONCAT, EQ, LT, MUL } from '../../ast/common-operators';
 import {
   SamlangExpression,
@@ -614,7 +614,7 @@ describe('expression-type-fixer', () => {
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType(DummySourceReason),
+              typeAnnotation: SourceIntType(SourceReason(Range.DUMMY, null)),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -647,7 +647,7 @@ describe('expression-type-fixer', () => {
             {
               range: Range.DUMMY,
               pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType(DummySourceReason),
+              typeAnnotation: SourceIntType(SourceReason(Range.DUMMY, null)),
               assignedExpression: intOf(1),
               associatedComments: [],
             },

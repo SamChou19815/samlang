@@ -118,7 +118,9 @@ export const SourceReason = (
   annotationLocation: Range | null
 ): SamlangReason => ({ definitionLocation, annotationLocation });
 
-export const DummySourceReason: SamlangReason = SourceReason(Range.DUMMY, null);
+export const DummySourceReason: SamlangReason = SourceReason(Range.DUMMY, Range.DUMMY);
+// TODO(reason): Wait until we migrate to location only.
+export const BuiltinReason: SamlangReason = DummySourceReason;
 
 /** SECTION 4: MISC */
 

@@ -1,4 +1,4 @@
-import { DummySourceReason } from '../ast/common-nodes';
+import { DummySourceReason, SourceReason } from '../ast/common-nodes';
 import {
   isTheSameType,
   prettyPrintType,
@@ -141,17 +141,35 @@ export default function fixExpressionType(
         case '<=':
         case '>':
         case '>=':
-          e1 = tryFixExpressionType(expression.e1, SourceIntType(DummySourceReason));
-          e2 = tryFixExpressionType(expression.e2, SourceIntType(DummySourceReason));
+          e1 = tryFixExpressionType(
+            expression.e1,
+            SourceIntType(SourceReason(expression.e1.range, null))
+          );
+          e2 = tryFixExpressionType(
+            expression.e2,
+            SourceIntType(SourceReason(expression.e2.range, null))
+          );
           break;
         case '&&':
         case '||':
-          e1 = tryFixExpressionType(expression.e1, SourceBoolType(DummySourceReason));
-          e2 = tryFixExpressionType(expression.e2, SourceBoolType(DummySourceReason));
+          e1 = tryFixExpressionType(
+            expression.e1,
+            SourceBoolType(SourceReason(expression.e1.range, null))
+          );
+          e2 = tryFixExpressionType(
+            expression.e2,
+            SourceBoolType(SourceReason(expression.e2.range, null))
+          );
           break;
         case '::':
-          e1 = tryFixExpressionType(expression.e1, SourceStringType(DummySourceReason));
-          e2 = tryFixExpressionType(expression.e2, SourceStringType(DummySourceReason));
+          e1 = tryFixExpressionType(
+            expression.e1,
+            SourceStringType(SourceReason(expression.e1.range, null))
+          );
+          e2 = tryFixExpressionType(
+            expression.e2,
+            SourceStringType(SourceReason(expression.e2.range, null))
+          );
           break;
         case '==':
         case '!=': {
@@ -179,7 +197,7 @@ export default function fixExpressionType(
         type: getExpressionFixedType(expression, expectedType),
         boolExpression: tryFixExpressionType(
           expression.boolExpression,
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(SourceReason(expression.boolExpression.range, null))
         ),
         e1: tryFixExpressionType(expression.e1, expectedType),
         e2: tryFixExpressionType(expression.e2, expectedType),
