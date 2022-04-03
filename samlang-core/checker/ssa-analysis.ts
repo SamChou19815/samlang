@@ -21,6 +21,7 @@ class SsaBuilder extends LocalStackedContext<Range> {
   invalidDefines = hashSetOf<Range>();
   definitionToUsesMap = hashMapOf<Range, Range[]>();
   useDefineMap = hashMapOf<Range, Range>();
+  lambdaCaptures = hashMapOf<Range, ReadonlyMap<string, Range>>();
 
   constructor(private readonly errorCollector?: ModuleErrorCollector) {
     super();
@@ -134,12 +135,14 @@ class SsaBuilder extends LocalStackedContext<Range> {
           });
         });
         return;
-      case 'LambdaExpression':
-        this.withNestedScope(() => {
+      case 'LambdaExpression': {
+        const [, captured] = this.withNestedScopeReturnCaptured(() => {
           expression.parameters.forEach(([id]) => this.define(id));
           this.visitExpression(expression.body);
         });
+        this.lambdaCaptures.set(expression.range, captured);
         return;
+      }
       case 'StatementBlockExpression':
         this.withNestedScope(() => {
           const { statements, expression: finalExpression } = expression.block;
@@ -172,12 +175,13 @@ class SsaBuilder extends LocalStackedContext<Range> {
   };
 }
 
-type SsaAnalysisResult = {
+export interface SsaAnalysisResult {
   readonly unboundNames: ReadonlySet<string>;
   readonly invalidDefines: ReadonlyHashSet<Range>;
-  readonly definitionToUsesTable: ReadonlyHashMap<Range, readonly Range[]>;
+  readonly definitionToUsesMap: ReadonlyHashMap<Range, readonly Range[]>;
   readonly useDefineMap: ReadonlyHashMap<Range, Range>;
-};
+  readonly lambdaCaptures: ReadonlyHashMap<Range, ReadonlyMap<string, Range>>;
+}
 
 export default function performSSAAnalysisOnSamlangModule(
   samlangModule: SamlangModule,
@@ -188,7 +192,8 @@ export default function performSSAAnalysisOnSamlangModule(
   return {
     unboundNames: builder.unboundNames,
     invalidDefines: builder.invalidDefines,
-    definitionToUsesTable: builder.definitionToUsesMap,
+    definitionToUsesMap: builder.definitionToUsesMap,
     useDefineMap: builder.useDefineMap,
+    lambdaCaptures: builder.lambdaCaptures,
   };
 }
