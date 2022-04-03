@@ -1,6 +1,6 @@
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 
-import { DummySourceReason, ModuleReference, Range, Sources } from '../ast/common-nodes';
+import { BuiltinReason, ModuleReference, Range, SourceReason, Sources } from '../ast/common-nodes';
 import {
   SamlangModule,
   SourceClassDefinition,
@@ -55,18 +55,21 @@ function buildClassTypingContext(
     classDefinition
   );
   const classType = SourceIdentifierType(
-    DummySourceReason,
+    SourceReason(classDefinition.name.range, classDefinition.name.range),
     moduleReference,
     classDefinition.name.name,
-    typeParameters.map((it) => SourceIdentifierType(DummySourceReason, moduleReference, it, []))
+    classDefinition.typeParameters.map((it) =>
+      SourceIdentifierType(SourceReason(it.range, it.range), moduleReference, it.name, [])
+    )
   );
   const { typeDefinition } = classDefinition;
+  const typeDefinitionReason = SourceReason(typeDefinition.range, typeDefinition.range);
   if (typeDefinition.type === 'object') {
     functions.init = normalizeTypeInformation(moduleReference, {
       isPublic: true,
       typeParameters,
       type: SourceFunctionType(
-        DummySourceReason,
+        typeDefinitionReason,
         typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it.name]).type),
         classType
       ),
@@ -76,7 +79,7 @@ function buildClassTypingContext(
       functions[tag] = normalizeTypeInformation(moduleReference, {
         isPublic: true,
         typeParameters,
-        type: SourceFunctionType(DummySourceReason, [type], classType),
+        type: SourceFunctionType(typeDefinitionReason, [type], classType),
       });
     });
   }
@@ -117,36 +120,36 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
           isPublic: true,
           typeParameters: [],
           type: SourceFunctionType(
-            DummySourceReason,
-            [SourceStringType(DummySourceReason)],
-            SourceIntType(DummySourceReason)
+            BuiltinReason,
+            [SourceStringType(BuiltinReason)],
+            SourceIntType(BuiltinReason)
           ),
         },
         intToString: {
           isPublic: true,
           typeParameters: [],
           type: SourceFunctionType(
-            DummySourceReason,
-            [SourceIntType(DummySourceReason)],
-            SourceStringType(DummySourceReason)
+            BuiltinReason,
+            [SourceIntType(BuiltinReason)],
+            SourceStringType(BuiltinReason)
           ),
         },
         println: {
           isPublic: true,
           typeParameters: [],
           type: SourceFunctionType(
-            DummySourceReason,
-            [SourceStringType(DummySourceReason)],
-            SourceUnitType(DummySourceReason)
+            BuiltinReason,
+            [SourceStringType(BuiltinReason)],
+            SourceUnitType(BuiltinReason)
           ),
         },
         panic: {
           isPublic: true,
           typeParameters: ['T'],
           type: SourceFunctionType(
-            DummySourceReason,
-            [SourceStringType(DummySourceReason)],
-            SourceIdentifierType(DummySourceReason, ModuleReference.ROOT, 'T')
+            BuiltinReason,
+            [SourceStringType(BuiltinReason)],
+            SourceIdentifierType(BuiltinReason, ModuleReference.ROOT, 'T')
           ),
         },
       },

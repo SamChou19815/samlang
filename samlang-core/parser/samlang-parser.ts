@@ -1,10 +1,4 @@
-import {
-  DummySourceReason,
-  ModuleReference,
-  Range,
-  SourceReason,
-  TypedComment,
-} from '../ast/common-nodes';
+import { ModuleReference, Range, SourceReason, TypedComment } from '../ast/common-nodes';
 import {
   AND,
   BinaryOperator,
@@ -585,7 +579,7 @@ export default class SamlangModuleParser extends BaseParser {
     const range = peeked.range.union(endRange);
     return SourceExpressionMatch({
       range,
-      type: UndecidedTypes.next(DummySourceReason),
+      type: UndecidedTypes.next(SourceReason(range, null)),
       associatedComments,
       matchedExpression,
       matchingList,
@@ -599,7 +593,8 @@ export default class SamlangModuleParser extends BaseParser {
     if (this.peek().content === '_') {
       this.consume();
     } else {
-      dataVariable = [this.parseLowerId(), UndecidedTypes.next(DummySourceReason)];
+      const name = this.parseLowerId();
+      dataVariable = [name, UndecidedTypes.next(SourceReason(name.range, null))];
     }
     this.assertAndConsume('->');
     const expression = this.parseExpression();
@@ -622,9 +617,10 @@ export default class SamlangModuleParser extends BaseParser {
     const e1 = this.parseExpression();
     this.assertAndConsume('else');
     const e2 = this.parseExpression();
+    const range = peeked.range.union(e2.range);
     return SourceExpressionIfElse({
-      range: peeked.range.union(e2.range),
-      type: UndecidedTypes.next(DummySourceReason),
+      range,
+      type: UndecidedTypes.next(SourceReason(range, null)),
       associatedComments,
       boolExpression,
       e1,
@@ -638,9 +634,10 @@ export default class SamlangModuleParser extends BaseParser {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseConjunction();
+      const range = e.range.union(e2.range);
       e = SourceExpressionBinary({
-        range: e.range.union(e2.range),
-        type: SourceBoolType(DummySourceReason),
+        range,
+        type: SourceBoolType(SourceReason(range, null)),
         associatedComments: [],
         operatorPrecedingComments,
         operator: OR,
@@ -657,9 +654,10 @@ export default class SamlangModuleParser extends BaseParser {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseComparison();
+      const range = e.range.union(e2.range);
       e = SourceExpressionBinary({
-        range: e.range.union(e2.range),
-        type: SourceBoolType(DummySourceReason),
+        range,
+        type: SourceBoolType(SourceReason(range, null)),
         associatedComments: [],
         operatorPrecedingComments,
         operator: AND,
@@ -708,9 +706,10 @@ export default class SamlangModuleParser extends BaseParser {
           break;
       }
       const e2 = this.parseTerm();
+      const range = e.range.union(e2.range);
       e = SourceExpressionBinary({
-        range: e.range.union(e2.range),
-        type: SourceBoolType(DummySourceReason),
+        range,
+        type: SourceBoolType(SourceReason(range, null)),
         associatedComments: [],
         operatorPrecedingComments,
         operator,
@@ -738,9 +737,10 @@ export default class SamlangModuleParser extends BaseParser {
           break;
       }
       const e2 = this.parseFactor();
+      const range = e.range.union(e2.range);
       e = SourceExpressionBinary({
-        range: e.range.union(e2.range),
-        type: SourceIntType(DummySourceReason),
+        range,
+        type: SourceIntType(SourceReason(range, null)),
         associatedComments: [],
         operatorPrecedingComments,
         operator,
@@ -771,9 +771,10 @@ export default class SamlangModuleParser extends BaseParser {
           break;
       }
       const e2 = this.parseConcat();
+      const range = e.range.union(e2.range);
       e = SourceExpressionBinary({
-        range: e.range.union(e2.range),
-        type: SourceIntType(DummySourceReason),
+        range,
+        type: SourceIntType(SourceReason(range, null)),
         associatedComments: [],
         operatorPrecedingComments,
         operator,
@@ -790,9 +791,10 @@ export default class SamlangModuleParser extends BaseParser {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseUnaryExpression();
+      const range = e.range.union(e2.range);
       e = SourceExpressionBinary({
-        range: e.range.union(e2.range),
-        type: SourceStringType(DummySourceReason),
+        range,
+        type: SourceStringType(SourceReason(range, null)),
         operator: CONCAT,
         associatedComments: [],
         operatorPrecedingComments,
@@ -810,9 +812,10 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === '!') {
       this.consume();
       const expression = this.parseFunctionCallOrFieldAccess();
+      const range = peeked.range.union(expression.range);
       return SourceExpressionUnary({
-        range: peeked.range.union(expression.range),
-        type: SourceBoolType(DummySourceReason),
+        range,
+        type: SourceBoolType(SourceReason(range, null)),
         associatedComments,
         operator: '!',
         expression,
@@ -821,9 +824,10 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === '-') {
       this.consume();
       const expression = this.parseFunctionCallOrFieldAccess();
+      const range = peeked.range.union(expression.range);
       return SourceExpressionUnary({
-        range: peeked.range.union(expression.range),
-        type: SourceIntType(DummySourceReason),
+        range,
+        type: SourceIntType(SourceReason(range, null)),
         associatedComments,
         operator: '-',
         expression,
@@ -844,13 +848,17 @@ export default class SamlangModuleParser extends BaseParser {
         const fieldPrecedingComments = this.collectPrecedingComments();
         this.consume();
         fieldPrecedingComments.push(...this.collectPrecedingComments());
-        const { range, variable: fieldName } = this.assertAndPeekLowerId();
+        const { range: fieldRange, variable: fieldName } = this.assertAndPeekLowerId();
+        const range = functionExpression.range.union(fieldRange);
         functionExpression = SourceExpressionFieldAccess({
-          range: functionExpression.range.union(range),
-          type: UndecidedTypes.next(DummySourceReason),
+          range,
+          type: UndecidedTypes.next(SourceReason(range, null)),
           associatedComments: [],
           expression: functionExpression,
-          fieldName: SourceId(fieldName, { range, associatedComments: fieldPrecedingComments }),
+          fieldName: SourceId(fieldName, {
+            range: fieldRange,
+            associatedComments: fieldPrecedingComments,
+          }),
           fieldOrder: -1,
         });
       } else {
@@ -858,9 +866,10 @@ export default class SamlangModuleParser extends BaseParser {
         const functionArguments =
           this.peek().content === ')' ? [] : this.parseCommaSeparatedExpressions();
         const endRange = this.assertAndConsume(')');
+        const range = startRange.union(endRange);
         functionExpression = SourceExpressionFunctionCall({
-          range: startRange.union(endRange),
-          type: UndecidedTypes.next(DummySourceReason),
+          range,
+          type: UndecidedTypes.next(SourceReason(range, null)),
           associatedComments: [],
           functionExpression,
           functionArguments,
@@ -887,7 +896,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.consume();
       return SourceExpressionThis({
         range: peeked.range,
-        type: UndecidedTypes.next(DummySourceReason),
+        type: UndecidedTypes.next(SourceReason(peeked.range, null)),
         associatedComments,
       });
     }
@@ -916,7 +925,7 @@ export default class SamlangModuleParser extends BaseParser {
         this.consume();
         return SourceExpressionVariable({
           range: peeked.range,
-          type: UndecidedTypes.next(DummySourceReason),
+          type: UndecidedTypes.next(SourceReason(peeked.range, null)),
           associatedComments,
           name: peeked.content.content,
         });
@@ -939,9 +948,10 @@ export default class SamlangModuleParser extends BaseParser {
           memberPrecedingComments.push(...this.collectPrecedingComments());
           const { range: memberNameRange, identifier: memberName } =
             this.assertAndConsumeIdentifier();
+          const range = peeked.range.union(memberNameRange);
           return SourceExpressionClassMember({
-            range: peeked.range.union(memberNameRange),
-            type: UndecidedTypes.next(DummySourceReason),
+            range,
+            type: UndecidedTypes.next(SourceReason(range, null)),
             associatedComments,
             typeArguments,
             moduleReference: this.resolveClass(className),
@@ -963,9 +973,10 @@ export default class SamlangModuleParser extends BaseParser {
         associatedComments.push(...this.collectPrecedingComments());
         this.assertAndConsume('->');
         const body = this.parseExpression();
+        const range = peeked.range.union(body.range);
         return SourceExpressionLambda({
-          range: peeked.range.union(body.range),
-          type: SourceFunctionType(DummySourceReason, [], body.type),
+          range,
+          type: SourceFunctionType(SourceReason(range, range), [], body.type),
           associatedComments,
           parameters: [],
           captured: {},
@@ -989,16 +1000,17 @@ export default class SamlangModuleParser extends BaseParser {
                 const type = this.parseType();
                 return [parameter, type];
               }
-              return [parameter, UndecidedTypes.next(DummySourceReason)];
+              return [parameter, UndecidedTypes.next(SourceReason(parameter.range, null))];
             }
           );
           this.assertAndConsume(')');
           this.assertAndConsume('->');
           const body = this.parseExpression();
+          const range = peeked.range.union(body.range);
           return SourceExpressionLambda({
-            range: peeked.range.union(body.range),
+            range,
             type: SourceFunctionType(
-              DummySourceReason,
+              SourceReason(range, range),
               parameters.map((it) => it[1]),
               body.type
             ),
@@ -1013,10 +1025,13 @@ export default class SamlangModuleParser extends BaseParser {
             associatedComments.push(...this.collectPrecedingComments());
             this.consume();
             const body = this.parseExpression();
-            const parameterType = UndecidedTypes.next(DummySourceReason);
+            const parameterType = UndecidedTypes.next(
+              SourceReason(lowerIdentifierForLambdaPeeked.range, null)
+            );
+            const range = peeked.range.union(body.range);
             return SourceExpressionLambda({
-              range: peeked.range.union(body.range),
-              type: SourceFunctionType(DummySourceReason, [parameterType], body.type),
+              range,
+              type: SourceFunctionType(SourceReason(range, range), [parameterType], body.type),
               associatedComments,
               parameters: [
                 [
@@ -1044,9 +1059,13 @@ export default class SamlangModuleParser extends BaseParser {
       this.consume();
       const expressions = this.parseCommaSeparatedExpressions();
       const endRange = this.assertAndConsume(']');
+      const range = peeked.range.union(endRange);
       return SourceExpressionTupleConstructor({
-        range: peeked.range.union(endRange),
-        type: SourceTupleType(DummySourceReason, UndecidedTypes.nextN(expressions.length)),
+        range,
+        type: SourceTupleType(
+          SourceReason(range, null),
+          expressions.map((it) => it.type)
+        ),
         associatedComments,
         expressions,
       });
@@ -1064,7 +1083,7 @@ export default class SamlangModuleParser extends BaseParser {
         this.consume();
         return SourceExpressionStatementBlock({
           range,
-          type: SourceUnitType(DummySourceReason),
+          type: SourceUnitType(SourceReason(range, null)),
           associatedComments,
           block: { range, statements },
         });
@@ -1073,7 +1092,7 @@ export default class SamlangModuleParser extends BaseParser {
       const range = peeked.range.union(this.assertAndConsume('}'));
       return SourceExpressionStatementBlock({
         range,
-        type: UndecidedTypes.next(DummySourceReason),
+        type: UndecidedTypes.next(SourceReason(range, null)),
         associatedComments,
         block: { range, statements, expression },
       });
@@ -1096,7 +1115,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.consume();
       typeAnnotation = this.parseType();
     } else {
-      typeAnnotation = UndecidedTypes.next(DummySourceReason);
+      typeAnnotation = UndecidedTypes.next(SourceReason(pattern.range, null));
     }
     this.assertAndConsume('=');
     const assignedExpression = this.parseExpression();
@@ -1115,11 +1134,13 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === '[') {
       this.consume();
       const destructedNames = this.parseCommaSeparatedList(() => {
-        if (this.peek().content === '_') {
+        const wildcardPeek = this.peek();
+        if (wildcardPeek.content === '_') {
           this.consume();
-          return { type: UndecidedTypes.next(DummySourceReason) };
+          return { type: UndecidedTypes.next(SourceReason(wildcardPeek.range, null)) };
         }
-        return { name: this.parseLowerId(), type: UndecidedTypes.next(DummySourceReason) };
+        const name = this.parseLowerId();
+        return { name, type: UndecidedTypes.next(SourceReason(name.range, null)) };
       });
       const endRange = this.assertAndConsume(']');
       return {
@@ -1142,7 +1163,7 @@ export default class SamlangModuleParser extends BaseParser {
         return {
           fieldName,
           fieldOrder: -1,
-          type: UndecidedTypes.next(DummySourceReason),
+          type: UndecidedTypes.next(SourceReason(fieldName.range, null)),
           alias,
           range,
         };
@@ -1230,6 +1251,6 @@ export default class SamlangModuleParser extends BaseParser {
       peeked.range,
       `Expecting: type, actual: ${samlangTokenContentToString(peeked.content)}`
     );
-    return UndecidedTypes.next(DummySourceReason);
+    return UndecidedTypes.next(SourceReason(peeked.range, peeked.range));
   };
 }

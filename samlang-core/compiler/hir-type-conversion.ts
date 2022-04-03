@@ -325,7 +325,7 @@ export class SamlangTypeLoweringManager {
   });
 
   lowerSamlangFunctionTypeForTopLevel(
-    type: SamlangFunctionType
+    type: Omit<SamlangFunctionType, 'reason'>
   ): [readonly string[], HighIRFunctionType] {
     const hirFunctionType = HIR_FUNCTION_TYPE(
       type.argumentTypes.map(this.lowerSamlangType),

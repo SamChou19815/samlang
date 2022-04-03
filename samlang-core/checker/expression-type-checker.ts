@@ -1,4 +1,4 @@
-import { DummySourceReason, SourceReason } from '../ast/common-nodes';
+import { SourceReason } from '../ast/common-nodes';
 import {
   BinaryExpression,
   ClassMemberExpression,
@@ -340,7 +340,7 @@ class ExpressionTypeChecker {
     hint: SamlangType
   ): SamlangExpression {
     const expectedTypeForFunction = SourceFunctionType(
-      DummySourceReason,
+      SourceReason(expression.functionExpression.range, null),
       UndecidedTypes.nextN(expression.functionArguments.length),
       hint
     );
@@ -393,23 +393,35 @@ class ExpressionTypeChecker {
       case '>=':
         checkedExpression = {
           ...expression,
-          e1: this.typeCheck(expression.e1, SourceIntType(DummySourceReason)),
-          e2: this.typeCheck(expression.e2, SourceIntType(DummySourceReason)),
+          e1: this.typeCheck(expression.e1, SourceIntType(SourceReason(expression.e1.range, null))),
+          e2: this.typeCheck(expression.e2, SourceIntType(SourceReason(expression.e2.range, null))),
         };
         break;
       case '&&':
       case '||':
         checkedExpression = {
           ...expression,
-          e1: this.typeCheck(expression.e1, SourceBoolType(DummySourceReason)),
-          e2: this.typeCheck(expression.e2, SourceBoolType(DummySourceReason)),
+          e1: this.typeCheck(
+            expression.e1,
+            SourceBoolType(SourceReason(expression.e1.range, null))
+          ),
+          e2: this.typeCheck(
+            expression.e2,
+            SourceBoolType(SourceReason(expression.e2.range, null))
+          ),
         };
         break;
       case '::':
         checkedExpression = {
           ...expression,
-          e1: this.typeCheck(expression.e1, SourceStringType(DummySourceReason)),
-          e2: this.typeCheck(expression.e2, SourceStringType(DummySourceReason)),
+          e1: this.typeCheck(
+            expression.e1,
+            SourceStringType(SourceReason(expression.e1.range, null))
+          ),
+          e2: this.typeCheck(
+            expression.e2,
+            SourceStringType(SourceReason(expression.e2.range, null))
+          ),
         };
         break;
       case '==':
@@ -424,22 +436,19 @@ class ExpressionTypeChecker {
     return checkedExpression;
   }
 
-  private typeCheckIfElse(
-    expression: IfElseExpression,
-    expectedType: SamlangType
-  ): SamlangExpression {
+  private typeCheckIfElse(expression: IfElseExpression, hint: SamlangType): SamlangExpression {
     const boolExpression = this.typeCheck(
       expression.boolExpression,
-      SourceBoolType(DummySourceReason)
+      SourceBoolType(SourceReason(expression.boolExpression.range, null))
     );
-    const e1 = this.typeCheck(expression.e1, expectedType);
-    const e2 = this.typeCheck(expression.e2, expectedType);
+    const e1 = this.typeCheck(expression.e1, hint);
+    const e2 = this.typeCheck(expression.e2, hint);
     const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
-      expectedType,
+      hint,
       e1.type,
       e1.range
     );
-    this.constraintAwareTypeChecker.checkAndInfer(expectedType, e2.type, e2.range);
+    this.constraintAwareTypeChecker.checkAndInfer(hint, e2.type, e2.range);
     return { ...expression, type: constraintInferredType, boolExpression, e1, e2 };
   }
 
@@ -765,7 +774,7 @@ export default function typeCheckExpression(
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
   localTypingContext: LocationBasedLocalTypingContext,
   resolution: TypeResolution,
-  expectedType: SamlangType
+  hint: SamlangType
 ): SamlangExpression {
   const checker = new ExpressionTypeChecker(
     accessibleGlobalTypingContext,
@@ -773,9 +782,9 @@ export default function typeCheckExpression(
     resolution,
     errorCollector
   );
-  const checkedExpression = checker.typeCheck(expression, expectedType);
+  const checkedExpression = checker.typeCheck(expression, hint);
   if (errorCollector.hasErrors) {
     return checkedExpression;
   }
-  return fixExpressionType(checkedExpression, expectedType, resolution);
+  return fixExpressionType(checkedExpression, hint, resolution);
 }
