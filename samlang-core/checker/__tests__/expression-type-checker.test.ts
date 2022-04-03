@@ -29,7 +29,7 @@ import {
   ModuleTypingContext,
 } from '../typing-context';
 
-const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
+const dummyModuleReference: ModuleReference = ModuleReference(['Test']);
 
 const int = SourceIntType(DummySourceReason);
 const string = SourceStringType(DummySourceReason);

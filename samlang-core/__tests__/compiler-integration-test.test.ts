@@ -21,10 +21,7 @@ import { runnableSamlangProgramTestCases } from '../test-programs';
 
 describe('compiler-integration-tests', () => {
   const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
-    runnableSamlangProgramTestCases.map((it) => [
-      new ModuleReference([it.testCaseName]),
-      it.sourceCode,
-    ])
+    runnableSamlangProgramTestCases.map((it) => [ModuleReference([it.testCaseName]), it.sourceCode])
   );
 
   expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
@@ -55,7 +52,7 @@ const result = {};
 
     runnableSamlangProgramTestCases.forEach(({ testCaseName }) => {
       jsCode += `printed = ''
-${encodeMainFunctionName(new ModuleReference([testCaseName]))}();
+${encodeMainFunctionName(ModuleReference([testCaseName]))}();
 result['${testCaseName}'] = printed;
 
 `;
@@ -83,7 +80,7 @@ result['${testCaseName}'] = printed;
 
     const actualResult = Object.fromEntries(
       runnableSamlangProgramTestCases.map(({ testCaseName }) => {
-        const mainFunctionName = encodeMainFunctionName(new ModuleReference([testCaseName]));
+        const mainFunctionName = encodeMainFunctionName(ModuleReference([testCaseName]));
         mainFunctions[mainFunctionName]?.();
         const result = printed;
         printed = '';

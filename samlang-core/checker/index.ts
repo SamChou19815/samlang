@@ -189,7 +189,7 @@ export function typeCheckSingleModuleSource(
   samlangModule: SamlangModule,
   errorCollector: ReadonlyGlobalErrorCollector
 ): SamlangModule {
-  const moduleReference = new ModuleReference(['Test']);
+  const moduleReference = ModuleReference(['Test']);
   const checkedModule = typeCheckSources(
     ModuleReferenceCollections.mapOf([moduleReference, samlangModule]),
     errorCollector

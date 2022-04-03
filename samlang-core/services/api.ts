@@ -290,7 +290,7 @@ class LanguageServicesImpl implements LanguageServices {
     if (type.startsWith('class ')) {
       const moduleParts = type.substring(6).split('.');
       const expressionClassName = checkNotNull(moduleParts.pop());
-      const expressionModuleReference = new ModuleReference(moduleParts);
+      const expressionModuleReference = ModuleReference(moduleParts);
       const document = getLastDocComment(
         this.state
           .getRawModule(expressionModuleReference)

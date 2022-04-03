@@ -1,4 +1,4 @@
-import type { Sources } from '../ast/common-nodes';
+import { moduleReferenceToString, Sources } from '../ast/common-nodes';
 import type { SamlangModule, SourceModuleMembersImport } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { filterMap } from '../utils';
@@ -25,7 +25,7 @@ class UndefinedImportChecker {
     if (availableMembers == null) {
       this.errorCollector.reportUnresolvedNameError(
         oneImport.range,
-        oneImport.importedModule.toString()
+        moduleReferenceToString(oneImport.importedModule)
       );
       return null;
     }

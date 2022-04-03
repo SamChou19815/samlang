@@ -50,6 +50,34 @@ function comparePosition(p1: Position, p2: Position): number {
   return c !== 0 ? c : p1.character - p2.character;
 }
 
+/**
+ * Reference to a samlang module.
+ * This class, instead of a filename string, should be used to point to a module during type checking
+ * and code generation.
+ */
+export type ModuleReference = IModuleReference;
+
+export function ModuleReference(parts: readonly string[]): ModuleReference {
+  return parts as ModuleReference;
+}
+/**
+ * The root module that can never be referenced in the source code.
+ * It can be used as a starting point for cyclic dependency analysis,
+ * since it cannot be named according to the syntax so no module can depend on it.
+ */
+ModuleReference.ROOT = ModuleReference([]);
+/** A dummy module reference for testing. */
+ModuleReference.DUMMY = ModuleReference(['__DUMMY__']);
+
+export const moduleReferenceToString = (moduleReference: ModuleReference): string =>
+  moduleReference.join('.');
+
+export const moduleReferenceToFileName = (moduleReference: ModuleReference): string =>
+  `${moduleReference.join('/')}.sam`;
+
+export const ModuleReferenceCollections: CollectionsConstructors<ModuleReference> =
+  createCollectionConstructors(moduleReferenceToString);
+
 export class Range implements IRange {
   static readonly DUMMY: Range = new Range(DUMMY_POSITION, DUMMY_POSITION);
 
@@ -76,31 +104,6 @@ export class Range implements IRange {
 export const RangeCollections: CollectionsConstructors<Range> = createCollectionConstructors(
   (range) => range.toString()
 );
-
-/**
- * Reference to a samlang module.
- * This class, instead of a filename string, should be used to point to a module during type checking
- * and code generation.
- */
-export class ModuleReference implements IModuleReference {
-  /**
-   * The root module that can never be referenced in the source code.
-   * It can be used as a starting point for cyclic dependency analysis,
-   * since it cannot be named according to the syntax so no module can depend on it.
-   */
-  static readonly ROOT: ModuleReference = new ModuleReference([]);
-  /** A dummy module reference for testing. */
-  static readonly DUMMY: ModuleReference = new ModuleReference(['__DUMMY__']);
-
-  constructor(public readonly parts: readonly string[]) {}
-
-  readonly toString = (): string => this.parts.join('.');
-
-  readonly toFilename = (): string => `${this.parts.join('/')}.sam`;
-}
-
-export const ModuleReferenceCollections: CollectionsConstructors<ModuleReference> =
-  createCollectionConstructors((moduleReference) => moduleReference.toString());
 
 export interface Location {
   readonly moduleReference: ModuleReference;

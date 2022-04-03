@@ -5,7 +5,7 @@ import prettyPrintSamlangModule from '../printer';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 function getTypeCheckedModule(code: string): SamlangModule {
-  const moduleReference = new ModuleReference(['test']);
+  const moduleReference = ModuleReference(['test']);
   const { checkedSources, compileTimeErrors } = typeCheckSourceHandles([[moduleReference, code]]);
   const errors = compileTimeErrors.map((it) => it.toString());
   if (errors.length > 0) throw new Error(`Source: ${code}. Errors:\n${errors.join('\n')}`);

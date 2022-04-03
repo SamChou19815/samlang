@@ -1,5 +1,5 @@
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText, parseSources } from '..';
-import { ModuleReference } from '../../ast/common-nodes';
+import { ModuleReference, moduleReferenceToString } from '../../ast/common-nodes';
 import type { SamlangExpression } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 
@@ -204,7 +204,7 @@ describe('samlang-core/parser', () => {
     expect(
       parsed.imports.map((it) => ({
         members: it.importedMembers.map(({ name }) => name),
-        importedModule: it.importedModule.toString(),
+        importedModule: moduleReferenceToString(it.importedModule),
       }))
     ).toEqual([{ importedModule: 'Path.To', members: ['Foo', 'Bar'] }]);
     expect(parsed.classes.map((it) => it.name.name)).toEqual([
@@ -312,9 +312,9 @@ describe('samlang-core/parser', () => {
   it('parseSources test', () => {
     expect(
       parseSources([
-        [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
+        [ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
         // with syntax error
-        [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
+        [ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
       ]).length
     ).toBe(1);
   });

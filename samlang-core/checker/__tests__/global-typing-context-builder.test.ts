@@ -17,8 +17,8 @@ import {
   updateGlobalTypingContext,
 } from '../global-typing-context-builder';
 
-const module0Reference = new ModuleReference(['Module0']);
-const module1Reference = new ModuleReference(['Module1']);
+const module0Reference = ModuleReference(['Module0']);
+const module1Reference = ModuleReference(['Module1']);
 
 const typeDefinition = {
   range: Range.DUMMY,

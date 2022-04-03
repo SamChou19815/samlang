@@ -246,7 +246,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.assertAndConsume('}');
       this.assertAndConsume('from');
       const importRangeStart = this.peek().range;
-      const importedModule = new ModuleReference(
+      const importedModule = ModuleReference(
         this.parsePunctuationSeparatedList('.', () => this.assertAndConsumeIdentifier().identifier)
       );
       const importedModuleRange = importRangeStart.union(this.lastRange());

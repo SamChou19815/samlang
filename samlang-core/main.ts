@@ -1,5 +1,5 @@
 import { encodeMainFunctionName } from './ast/common-names';
-import { ModuleReference } from './ast/common-nodes';
+import { ModuleReference, moduleReferenceToString } from './ast/common-nodes';
 import { prettyPrintMidIRSourcesAsTSSources } from './ast/mir-nodes';
 import { typeCheckSourceHandles } from './checker';
 import {
@@ -34,7 +34,9 @@ export function compileSamlangSources(
   const errors = compileTimeErrors.map((it) => it.toString()).sort((a, b) => a.localeCompare(b));
   entryModuleReferences.forEach((moduleReference) => {
     if (!sources.has(moduleReference)) {
-      errors.unshift(`Invalid entry point: ${moduleReference} does not exist.`);
+      errors.unshift(
+        `Invalid entry point: ${moduleReferenceToString(moduleReference)} does not exist.`
+      );
     }
   });
   if (errors.length > 0) {
@@ -55,8 +57,8 @@ export function compileSamlangSources(
 const binary = require('fs').readFileSync(require('path').join(__dirname, '${EMITTED_WASM_FILE}'));
 require('@dev-sam/samlang-cli/loader')(binary).${mainFunctionName}();
 `;
-    emittedCode[`${moduleReference}.ts`] = tsCode;
-    emittedCode[`${moduleReference}.wasm.js`] = wasmJSCode;
+    emittedCode[`${moduleReferenceToString(moduleReference)}.ts`] = tsCode;
+    emittedCode[`${moduleReferenceToString(moduleReference)}.wasm.js`] = wasmJSCode;
   });
   emittedCode[EMITTED_WASM_FILE] = wasmModule.emitBinary();
   emittedCode[EMITTED_WAT_FILE] = wasmModule.emitText();
@@ -84,7 +86,7 @@ function interpretWebAssemblyModule(
 export function compileSingleSamlangSource(
   programString: string
 ): SamlangSingleSourceCompilationResult {
-  const demoModuleReference = new ModuleReference(['Demo']);
+  const demoModuleReference = ModuleReference(['Demo']);
   const result = compileSamlangSources(
     [[demoModuleReference, programString]],
     [demoModuleReference]
@@ -92,7 +94,8 @@ export function compileSingleSamlangSource(
   if (result.__type__ === 'ERROR') return result;
   const emittedTSCode = result.emittedCode['Demo.ts'];
   const emittedWasmBinary = result.emittedCode[EMITTED_WASM_FILE];
-  assert(typeof emittedTSCode === 'string' && emittedWasmBinary instanceof Uint8Array);
+  assert(typeof emittedTSCode === 'string', typeof emittedTSCode);
+  assert(emittedWasmBinary instanceof Uint8Array);
   const interpreterResult = interpretWebAssemblyModule(
     emittedWasmBinary,
     encodeMainFunctionName(demoModuleReference)

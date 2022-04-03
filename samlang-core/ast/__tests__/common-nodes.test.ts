@@ -2,6 +2,8 @@ import {
   FALSE,
   intLiteralOf,
   ModuleReference,
+  moduleReferenceToFileName,
+  moduleReferenceToString,
   Position,
   prettyPrintLiteral,
   Range,
@@ -82,15 +84,15 @@ describe('common-nodes', () => {
     ).toBe(new Range(Position(1, 3), Position(4, 1)).toString());
   });
 
-  it('ModuleReference.toString()', () => {
-    expect(ModuleReference.DUMMY.toString()).toBe('__DUMMY__');
-    expect(new ModuleReference(['Foo']).toString()).toBe('Foo');
-    expect(new ModuleReference(['Foo', 'Bar']).toString()).toBe('Foo.Bar');
+  it('moduleReferenceToString', () => {
+    expect(moduleReferenceToString(ModuleReference.DUMMY)).toBe('__DUMMY__');
+    expect(moduleReferenceToString(ModuleReference(['Foo']))).toBe('Foo');
+    expect(moduleReferenceToString(ModuleReference(['Foo', 'Bar']))).toBe('Foo.Bar');
   });
 
-  it('ModuleReference.toFilename', () => {
-    expect(ModuleReference.DUMMY.toFilename()).toBe('__DUMMY__.sam');
-    expect(new ModuleReference(['Foo']).toFilename()).toBe('Foo.sam');
-    expect(new ModuleReference(['Foo', 'Bar']).toFilename()).toBe('Foo/Bar.sam');
+  it('moduleReferenceToFilename', () => {
+    expect(moduleReferenceToFileName(ModuleReference.DUMMY)).toBe('__DUMMY__.sam');
+    expect(moduleReferenceToFileName(ModuleReference(['Foo']))).toBe('Foo.sam');
+    expect(moduleReferenceToFileName(ModuleReference(['Foo', 'Bar']))).toBe('Foo/Bar.sam');
   });
 });

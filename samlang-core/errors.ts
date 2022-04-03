@@ -1,4 +1,4 @@
-import type { ModuleReference, Range } from './ast/common-nodes';
+import { ModuleReference, moduleReferenceToFileName, Range } from './ast/common-nodes';
 import { prettyPrintType, SamlangType } from './ast/samlang-nodes';
 
 export abstract class CompileTimeError<T = string> {
@@ -10,7 +10,7 @@ export abstract class CompileTimeError<T = string> {
   ) {}
 
   toString(): string {
-    const filename = this.moduleReference.toFilename();
+    const filename = moduleReferenceToFileName(this.moduleReference);
     return `${filename}:${this.range}: [${this.errorType}]: ${this.reason}`;
   }
 }

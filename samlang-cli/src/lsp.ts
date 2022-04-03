@@ -1,4 +1,4 @@
-import { ModuleReference } from '@dev-sam/samlang-core/ast/common-nodes';
+import { ModuleReference, moduleReferenceToFileName } from '@dev-sam/samlang-core/ast/common-nodes';
 import createSamlangLanguageService from '@dev-sam/samlang-core/services';
 import { join, relative, resolve, sep } from 'path';
 import {
@@ -25,7 +25,7 @@ const samlangRangeToLspFoldingRange = (range: Range) => ({
 
 function startSamlangLanguageServer() {
   const configuration = getConfiguration();
-  const collectedSources = collectSources(configuration, (parts) => new ModuleReference(parts));
+  const collectedSources = collectSources(configuration, (parts) => ModuleReference(parts));
   const service = createSamlangLanguageService(collectedSources);
 
   function uriToModuleReference(uri: string): ModuleReference {
@@ -33,11 +33,11 @@ function startSamlangLanguageServer() {
       configuration.sourceDirectory,
       uri.startsWith('file://') ? uri.substring('file://'.length) : uri
     );
-    return new ModuleReference(relativePath.substring(0, relativePath.length - 4).split(sep));
+    return ModuleReference(relativePath.substring(0, relativePath.length - 4).split(sep));
   }
 
   const moduleReferenceToUri = (moduleReference: ModuleReference): string =>
-    resolve(join(configuration.sourceDirectory, moduleReference.toFilename()));
+    resolve(join(configuration.sourceDirectory, moduleReferenceToFileName(moduleReference)));
 
   // Create a connection for the server. The connection uses Node's IPC as a transport.
   const connection = createConnection();

@@ -27,7 +27,7 @@ const createMockModule = (
     imports: imports.map(([importedModuleName, importedMembers]) => ({
       range: Range.DUMMY,
       importedMembers: importedMembers.map((it) => SourceId(it)),
-      importedModule: new ModuleReference([importedModuleName]),
+      importedModule: ModuleReference([importedModuleName]),
       importedModuleRange: Range.DUMMY,
     })),
     classes: members.map((className) => createMockClass(className)),
@@ -39,7 +39,7 @@ const createMockSources = (
   modules: readonly (readonly [string, SamlangModule])[]
 ): Sources<SamlangModule> =>
   ModuleReferenceCollections.hashMapOf(
-    ...modules.map(([name, samlangModule]) => [new ModuleReference([name]), samlangModule] as const)
+    ...modules.map(([name, samlangModule]) => [ModuleReference([name]), samlangModule] as const)
   );
 
 function checkErrors(

@@ -1,6 +1,7 @@
 import {
   DummySourceReason,
   ModuleReference,
+  moduleReferenceToString,
   Range,
   RangeCollections,
   SourceReason,
@@ -88,7 +89,8 @@ export class AccessibleGlobalTypingContext {
     if (typeInfo == null) return null;
     if (
       !typeInfo.isPublic &&
-      (moduleReference.toString() !== this.currentModuleReference.toString() ||
+      (moduleReferenceToString(moduleReference) !==
+        moduleReferenceToString(this.currentModuleReference) ||
         className !== this.currentClass)
     ) {
       return null;
@@ -158,7 +160,8 @@ export class AccessibleGlobalTypingContext {
     | { readonly type: 'IllegalOtherClassMatch' }
     | { readonly type: 'UnsupportedClassTypeDefinition' } {
     if (
-      (moduleReference.toString() !== this.currentModuleReference.toString() ||
+      (moduleReferenceToString(moduleReference) !==
+        moduleReferenceToString(this.currentModuleReference) ||
         identifier !== this.currentClass) &&
       typeDefinitionType === 'variant'
     ) {

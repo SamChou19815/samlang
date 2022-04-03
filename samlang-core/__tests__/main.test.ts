@@ -8,17 +8,16 @@ import {
 } from '../ast/common-names';
 import { ModuleReference } from '../ast/common-nodes';
 import { compileSamlangSources, compileSingleSamlangSource, reformatSamlangSources } from '../main';
-import { assert } from '../utils';
 
 describe('samlang-core/index', () => {
   it('reformatSamlangSources works', () => {
-    expect(reformatSamlangSources([[new ModuleReference(['A']), 'class Main {}']])[0]?.[1]).toBe(
+    expect(reformatSamlangSources([[ModuleReference(['A']), 'class Main {}']])[0]?.[1]).toBe(
       'class Main\n'
     );
   });
 
   it('compileSamlangSources fails when there are no valid entry point.', () => {
-    expect(compileSamlangSources([], [new ModuleReference(['A'])])).toEqual({
+    expect(compileSamlangSources([], [ModuleReference(['A'])])).toEqual({
       __type__: 'ERROR',
       errors: ['Invalid entry point: A does not exist.'],
     });
@@ -38,7 +37,9 @@ describe('samlang-core/index', () => {
     const result = compileSingleSamlangSource(
       'class Main { function main(): unit = Builtins.println("hello world") }'
     );
-    assert(result.__type__ === 'OK');
+    if (result.__type__ === 'ERROR') {
+      throw new Error(result.errors.join('\n'));
+    }
     expect(result.emittedTSCode).toBe(`type Str = [number, string];
 const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
 const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.log(line); return 0; };

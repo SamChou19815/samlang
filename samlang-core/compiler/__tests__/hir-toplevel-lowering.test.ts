@@ -246,7 +246,7 @@ describe('mir-toplevel-lowering', () => {
 
     const sources = ModuleReferenceCollections.mapOf(
       [ModuleReference.DUMMY, sourceModule],
-      [new ModuleReference(['Foo']), { imports: [], classes: [], interfaces: [] }]
+      [ModuleReference(['Foo']), { imports: [], classes: [], interfaces: [] }]
     );
 
     expect(

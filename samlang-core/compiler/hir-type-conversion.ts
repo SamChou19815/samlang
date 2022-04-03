@@ -219,7 +219,7 @@ export function resolveIdentifierTypeMappings(
 }
 
 export const encodeSamlangType = (moduleReference: ModuleReference, identifier: string): string =>
-  `${moduleReference.parts.join('_')}_${identifier}`;
+  `${moduleReference.join('_')}_${identifier}`;
 
 /** A encoder ensures that all the characters are good for function names. */
 function encodeHighIRTypeForGenericsSpecialization(type: HighIRType): string {
