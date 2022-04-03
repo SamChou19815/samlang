@@ -183,6 +183,21 @@ export interface SsaAnalysisResult {
   readonly lambdaCaptures: ReadonlyHashMap<Range, ReadonlyMap<string, Range>>;
 }
 
+export function performSSAAnalysisOnSamlangExpression(
+  expression: SamlangExpression,
+  errorCollector?: ModuleErrorCollector
+): SsaAnalysisResult {
+  const builder = new SsaBuilder(errorCollector);
+  builder.visitExpression(expression);
+  return {
+    unboundNames: builder.unboundNames,
+    invalidDefines: builder.invalidDefines,
+    definitionToUsesMap: builder.definitionToUsesMap,
+    useDefineMap: builder.useDefineMap,
+    lambdaCaptures: builder.lambdaCaptures,
+  };
+}
+
 export default function performSSAAnalysisOnSamlangModule(
   samlangModule: SamlangModule,
   errorCollector?: ModuleErrorCollector
