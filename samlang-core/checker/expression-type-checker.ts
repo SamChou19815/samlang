@@ -19,6 +19,9 @@ import {
   SourceExpressionLambda,
   SourceExpressionMatch,
   SourceExpressionMethodAccess,
+  SourceExpressionStatementBlock,
+  SourceExpressionThis,
+  SourceExpressionVariable,
   SourceFieldType,
   SourceFunctionType,
   SourceIdentifier,
@@ -107,15 +110,23 @@ class ExpressionTypeChecker {
   }
 
   private typeCheckThis(expression: ThisExpression, expectedType: SamlangType): SamlangExpression {
-    const type = this.localTypingContext.getLocalValueType('this');
-    if (type == null) {
+    const typeFromContext = this.localTypingContext.getLocalValueType('this');
+    let type: SamlangType;
+    if (typeFromContext == null) {
       this.errorCollector.reportIllegalThisError(expression.range);
-      return { ...expression, type: expectedType };
+      type = expectedType;
+    } else {
+      type = this.constraintAwareTypeChecker.checkAndInfer(
+        expectedType,
+        typeFromContext,
+        expression.range
+      );
     }
-    return {
-      ...expression,
-      type: this.constraintAwareTypeChecker.checkAndInfer(expectedType, type, expression.range),
-    };
+    return SourceExpressionThis({
+      range: expression.range,
+      type,
+      associatedComments: expression.associatedComments,
+    });
   }
 
   private typeCheckVariable(
@@ -123,15 +134,20 @@ class ExpressionTypeChecker {
     expectedType: SamlangType
   ): SamlangExpression {
     const locallyInferredType = this.localTypingContext.getLocalValueType(expression.name);
-    if (locallyInferredType == null) {
-      return { ...expression, type: expectedType };
-    }
-    const inferredType = this.constraintAwareTypeChecker.checkAndInfer(
-      expectedType,
-      locallyInferredType,
-      expression.range
-    );
-    return { ...expression, type: inferredType };
+    const type =
+      locallyInferredType == null
+        ? expectedType
+        : this.constraintAwareTypeChecker.checkAndInfer(
+            expectedType,
+            locallyInferredType,
+            expression.range
+          );
+    return SourceExpressionVariable({
+      range: expression.range,
+      type,
+      associatedComments: expression.associatedComments,
+      name: expression.name,
+    });
   }
 
   private typeCheckClassMember(
@@ -621,11 +637,12 @@ class ExpressionTypeChecker {
       }
       return { range: expression.block.range, statements: checkedStatements };
     });
-    return {
-      ...expression,
+    return SourceExpressionStatementBlock({
+      range: expression.range,
+      associatedComments: expression.associatedComments,
       type: checkedStatementBlock.expression?.type ?? SourceUnitType,
       block: checkedStatementBlock,
-    };
+    });
   }
 
   private typeCheckValStatement(statement: SamlangValStatement): SamlangValStatement {
@@ -642,7 +659,9 @@ class ExpressionTypeChecker {
             checkedAssignedExpressionType
           );
           return {
-            ...statement,
+            range: statement.range,
+            associatedComments: statement.associatedComments,
+            pattern: statement.pattern,
             typeAnnotation: assignedExpression.type,
             assignedExpression: checkedAssignedExpression,
           };
@@ -677,7 +696,9 @@ class ExpressionTypeChecker {
             checkedAssignedExpressionType
           );
           return {
-            ...statement,
+            range: statement.range,
+            associatedComments: statement.associatedComments,
+            pattern: statement.pattern,
             typeAnnotation: assignedExpression.type,
             assignedExpression: checkedAssignedExpression,
           };
@@ -707,7 +728,9 @@ class ExpressionTypeChecker {
               'object'
             );
             return {
-              ...statement,
+              range: statement.range,
+              associatedComments: statement.associatedComments,
+              pattern: statement.pattern,
               typeAnnotation: assignedExpression.type,
               assignedExpression: checkedAssignedExpression,
             };
@@ -726,7 +749,9 @@ class ExpressionTypeChecker {
           if (fieldInformation == null) {
             this.errorCollector.reportUnresolvedNameError(originalName.range, originalName.name);
             return {
-              ...statement,
+              range: statement.range,
+              associatedComments: statement.associatedComments,
+              pattern: statement.pattern,
               typeAnnotation: assignedExpression.type,
               assignedExpression: checkedAssignedExpression,
             };
@@ -739,7 +764,9 @@ class ExpressionTypeChecker {
           ) {
             this.errorCollector.reportUnresolvedNameError(originalName.range, originalName.name);
             return {
-              ...statement,
+              range: statement.range,
+              associatedComments: statement.associatedComments,
+              pattern: statement.pattern,
               typeAnnotation: assignedExpression.type,
               assignedExpression: checkedAssignedExpression,
             };
@@ -767,10 +794,11 @@ class ExpressionTypeChecker {
         break;
     }
     return {
-      ...statement,
+      range: statement.range,
+      pattern: checkedPattern,
       typeAnnotation: assignedExpression.type,
       assignedExpression: checkedAssignedExpression,
-      pattern: checkedPattern,
+      associatedComments: statement.associatedComments,
     };
   }
 }
