@@ -1,8 +1,13 @@
-import { CollectionsConstructors, createCollectionConstructors, ReadonlyHashMap } from '../utils';
+import {
+  assert,
+  CollectionsConstructors,
+  createCollectionConstructors,
+  ReadonlyHashMap,
+} from '../utils';
 import type {
+  Location as ILocation,
   ModuleReference as IModuleReference,
   Position as IPosition,
-  Range as IRange,
 } from './types';
 
 /** SECTION 1: Literals */
@@ -78,51 +83,60 @@ export const moduleReferenceToFileName = (moduleReference: ModuleReference): str
 export const ModuleReferenceCollections: CollectionsConstructors<ModuleReference> =
   createCollectionConstructors(moduleReferenceToString);
 
-export class Range implements IRange {
-  static readonly DUMMY: Range = new Range(DUMMY_POSITION, DUMMY_POSITION);
+export class Location implements ILocation {
+  static readonly DUMMY: Location = new Location(
+    ModuleReference.DUMMY,
+    DUMMY_POSITION,
+    DUMMY_POSITION
+  );
 
-  constructor(public readonly start: Position, public readonly end: Position) {}
+  constructor(
+    public readonly moduleReference: ModuleReference,
+    public readonly start: Position,
+    public readonly end: Position
+  ) {}
 
   readonly containsPosition = (position: Position): boolean =>
     comparePosition(this.start, position) <= 0 && comparePosition(this.end, position) >= 0;
 
-  readonly containsRange = (range: IRange): boolean =>
-    this.containsPosition(range.start) && this.containsPosition(range.end);
+  readonly contains = (other: ILocation): boolean =>
+    this.containsPosition(other.start) && this.containsPosition(other.end);
 
-  readonly union = (range: IRange): IRange => {
-    const start = comparePosition(this.start, range.start) < 0 ? this.start : range.start;
-    const end = comparePosition(this.end, range.end) > 0 ? this.end : range.end;
-    return new Range(start, end);
+  readonly union = (other: ILocation): ILocation => {
+    assert(
+      moduleReferenceToString(this.moduleReference) ===
+        moduleReferenceToString(other.moduleReference)
+    );
+    const start = comparePosition(this.start, other.start) < 0 ? this.start : other.start;
+    const end = comparePosition(this.end, other.end) > 0 ? this.end : other.end;
+    return new Location(this.moduleReference, start, end);
   };
 
-  readonly toString = (): string =>
-    `${this.start.line + 1}:${this.start.character + 1}-${this.end.line + 1}:${
-      this.end.character + 1
-    }`;
+  readonly toString = (): string => {
+    const file = moduleReferenceToFileName(this.moduleReference);
+    const start = `${this.start.line + 1}:${this.start.character + 1}`;
+    const end = `${this.end.line + 1}:${this.end.character + 1}`;
+    return `${file}:${start}-${end}`;
+  };
 }
 
-export const RangeCollections: CollectionsConstructors<Range> = createCollectionConstructors(
-  (range) => range.toString()
+export const LocationCollections: CollectionsConstructors<Location> = createCollectionConstructors(
+  (location) => location.toString()
 );
-
-export interface Location {
-  readonly moduleReference: ModuleReference;
-  readonly range: Range;
-}
 
 /** SECTION 3: REASON */
 
 export interface SamlangReason {
-  readonly definitionLocation: Range;
-  readonly annotationLocation: Range | null;
+  readonly definitionLocation: Location;
+  readonly annotationLocation: Location | null;
 }
 
 export const SourceReason = (
-  definitionLocation: Range,
-  annotationLocation: Range | null
+  definitionLocation: Location,
+  annotationLocation: Location | null
 ): SamlangReason => ({ definitionLocation, annotationLocation });
 
-export const DummySourceReason: SamlangReason = SourceReason(Range.DUMMY, Range.DUMMY);
+export const DummySourceReason: SamlangReason = SourceReason(Location.DUMMY, Location.DUMMY);
 // TODO(reason): Wait until we migrate to location only.
 export const BuiltinReason: SamlangReason = DummySourceReason;
 
@@ -136,8 +150,7 @@ export type TypedComment = {
 
 /** A common interface for all AST nodes. */
 export interface Node {
-  /** The range of the entire node. */
-  readonly range: Range;
+  readonly location: Location;
 }
 
 export interface GlobalVariable {

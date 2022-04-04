@@ -2,7 +2,7 @@
 // @origin https://github.com/SamChou19815/samlang/pull/32
 // @origin https://github.com/SamChou19815/samlang/pull/34
 
-import { DummySourceReason, ModuleReference, Position, Range } from '../../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference, Position } from '../../ast/common-nodes';
 import {
   AND,
   CONCAT,
@@ -148,7 +148,9 @@ describe('expression-interpreter', () => {
       data: { type: 'int', value: 1 },
     });
 
-    const samlangExpression = SourceExpressionTrue(new Range(Position(1, 2), Position(3, 4)));
+    const samlangExpression = SourceExpressionTrue(
+      new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4))
+    );
     expect({
       type: 'functionValue',
       arguments: [],
@@ -180,7 +182,9 @@ describe('expression-interpreter', () => {
   it('non-empty context equality check', () => {
     const testFunctions: Record<string, FunctionValue> = {};
     const testMethods: Record<string, FunctionValue> = {};
-    const samlangExpression = SourceExpressionTrue(new Range(Position(1, 2), Position(3, 4)));
+    const samlangExpression = SourceExpressionTrue(
+      new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4))
+    );
     const functionValue: FunctionValue = {
       type: 'functionValue',
       arguments: [],
@@ -201,17 +205,24 @@ describe('expression-interpreter', () => {
 
   const interpreter = new ExpressionInterpreter();
 
-  const exampleRange: Range = new Range(Position(1, 2), Position(3, 4));
-  const intLiteralExpression: SamlangExpression = SourceExpressionInt(5, exampleRange);
+  const exampleLocation: Location = new Location(
+    ModuleReference.DUMMY,
+    Position(1, 2),
+    Position(3, 4)
+  );
+  const intLiteralExpression: SamlangExpression = SourceExpressionInt(5, exampleLocation);
   const intLiteralValue: Value = 5;
-  const stringLiteralExpression: SamlangExpression = SourceExpressionString('value', exampleRange);
+  const stringLiteralExpression: SamlangExpression = SourceExpressionString(
+    'value',
+    exampleLocation
+  );
   const stringLiteralValue: Value = 'value';
-  const boolLiteralExpression: SamlangExpression = SourceExpressionTrue(exampleRange);
+  const boolLiteralExpression: SamlangExpression = SourceExpressionTrue(exampleLocation);
   const boolLiteralValue: Value = true;
   const classMemberFunction: Value = {
     type: 'functionValue',
     arguments: [],
-    body: SourceExpressionInt(5, exampleRange),
+    body: SourceExpressionInt(5, exampleLocation),
     context: EMPTY,
   };
   const functionType: SamlangFunctionType = {
@@ -232,7 +243,7 @@ describe('expression-interpreter', () => {
     functionArguments: [intLiteralExpression],
   });
   const functionExpression = SourceExpressionLambda({
-    range: exampleRange,
+    location: exampleLocation,
     type: functionType,
     parameters: [],
     captured: {},
@@ -247,7 +258,7 @@ describe('expression-interpreter', () => {
 
   it('this expressions evaluate correctly', () => {
     const thisExpression = SourceExpressionThis({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceBoolType(DummySourceReason),
     });
     const thisLocalValues: Record<string, Value> = {};
@@ -259,7 +270,7 @@ describe('expression-interpreter', () => {
 
   it('variable expressions evaluate correctly', () => {
     const variableExpression = SourceExpressionVariable({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceBoolType(DummySourceReason),
       name: 'test',
     });
@@ -274,7 +285,7 @@ describe('expression-interpreter', () => {
 
   it('class member expressions evaluate correctly', () => {
     const classMemberExpression = SourceExpressionClassMember({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceBoolType(DummySourceReason),
       typeArguments: [SourceBoolType(DummySourceReason)],
       moduleReference: ModuleReference.DUMMY,
@@ -295,7 +306,7 @@ describe('expression-interpreter', () => {
 
   it('tuple expression evaluates correctly', () => {
     const tupleExpression = SourceExpressionTupleConstructor({
-      range: exampleRange,
+      location: exampleLocation,
       type: {
         type: 'TupleType',
         reason: DummySourceReason,
@@ -304,7 +315,7 @@ describe('expression-interpreter', () => {
       expressions: [intLiteralExpression],
     });
     const tupleExpressionMultiple = SourceExpressionTupleConstructor({
-      range: exampleRange,
+      location: exampleLocation,
       type: {
         type: 'TupleType',
         reason: DummySourceReason,
@@ -403,14 +414,14 @@ describe('expression-interpreter', () => {
 
   it('field access expression evaluates correctly', () => {
     const fieldAccessExpression = SourceExpressionFieldAccess({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       expression: objectConstructorExpressionNonEmpty,
       fieldName: SourceId('test'),
       fieldOrder: 0,
     });
     const fieldAccessExpressionFail = SourceExpressionFieldAccess({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       expression: stringLiteralExpression,
       fieldName: SourceId('test'),
@@ -453,7 +464,7 @@ describe('expression-interpreter', () => {
       functionArguments: [intLiteralExpression],
     });
     const methodAccessExpression = SourceExpressionMethodAccess({
-      range: exampleRange,
+      location: exampleLocation,
       type: identifier,
       expression: identifierExpression,
       methodName: SourceId('method'),
@@ -496,13 +507,13 @@ describe('expression-interpreter', () => {
 
   it('unary expression evaluates correctly', () => {
     const unaryExpressionNeg = SourceExpressionUnary({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       operator: '-',
       expression: intLiteralExpression,
     });
     const unaryExpressionNot = SourceExpressionUnary({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       operator: '!',
       expression: boolLiteralExpression,
@@ -513,7 +524,7 @@ describe('expression-interpreter', () => {
 
   it('panic expression evaluates correctly', () => {
     const panicExpression = SourceExpressionFunctionCall({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
         type: functionType,
@@ -530,7 +541,7 @@ describe('expression-interpreter', () => {
 
   it('built in function call expression evaluates correctly', () => {
     const stringToIntFunctionCall = SourceExpressionFunctionCall({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
         type: functionType,
@@ -542,7 +553,7 @@ describe('expression-interpreter', () => {
       functionArguments: [intLiteralExpression],
     });
     const stringToIntFunctionCallFail = SourceExpressionFunctionCall({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
         type: functionType,
@@ -554,7 +565,7 @@ describe('expression-interpreter', () => {
       functionArguments: [stringLiteralExpression],
     });
     const intToStringFunctionCall = SourceExpressionFunctionCall({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
         type: functionType,
@@ -563,10 +574,10 @@ describe('expression-interpreter', () => {
         className: SourceId('Builtins'),
         memberName: SourceId('intToString'),
       }),
-      functionArguments: [SourceExpressionString('5', exampleRange)],
+      functionArguments: [SourceExpressionString('5', exampleLocation)],
     });
     const printlnFunctionCall = SourceExpressionFunctionCall({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
         type: functionType,
@@ -588,20 +599,20 @@ describe('expression-interpreter', () => {
 
   it('function expression evaluates correctly', () => {
     const functionExpressionWithArgs = SourceExpressionLambda({
-      range: exampleRange,
+      location: exampleLocation,
       type: functionType,
       parameters: [[SourceId('arg1'), SourceStringType(DummySourceReason)]],
       captured: {},
       body: stringLiteralExpression,
     });
     const functionCallExpressionNoArgs = SourceExpressionFunctionCall({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       functionExpression,
       functionArguments: [],
     });
     const functionCallExpressionWithArgs = SourceExpressionFunctionCall({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       functionExpression: functionExpressionWithArgs,
       functionArguments: [stringLiteralExpression],
@@ -613,7 +624,7 @@ describe('expression-interpreter', () => {
   it('binary expression evaluates correctly', () => {
     const binExpressionMul = SourceExpressionBinary({
       type: SourceIntType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: MUL,
       e1: intLiteralExpression,
@@ -621,7 +632,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionDiv = SourceExpressionBinary({
       type: SourceIntType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: DIV,
       e1: intLiteralExpression,
@@ -629,15 +640,15 @@ describe('expression-interpreter', () => {
     });
     const binExpressionDiv0 = SourceExpressionBinary({
       type: SourceIntType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: DIV,
       e1: intLiteralExpression,
-      e2: SourceExpressionInt(0, exampleRange),
+      e2: SourceExpressionInt(0, exampleLocation),
     });
     const binExpressionMod = SourceExpressionBinary({
       type: SourceIntType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: MOD,
       e1: intLiteralExpression,
@@ -645,15 +656,15 @@ describe('expression-interpreter', () => {
     });
     const binExpressionMod0 = SourceExpressionBinary({
       type: SourceIntType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: MOD,
       e1: intLiteralExpression,
-      e2: SourceExpressionInt(0, exampleRange),
+      e2: SourceExpressionInt(0, exampleLocation),
     });
     const binExpressionAdd = SourceExpressionBinary({
       type: SourceIntType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: PLUS,
       e1: intLiteralExpression,
@@ -661,7 +672,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionSub = SourceExpressionBinary({
       type: SourceIntType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: MINUS,
       e1: intLiteralExpression,
@@ -669,7 +680,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionLt = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: LT,
       e1: intLiteralExpression,
@@ -677,7 +688,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionLe = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: LE,
       e1: intLiteralExpression,
@@ -685,7 +696,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionGt = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: GT,
       e1: intLiteralExpression,
@@ -693,7 +704,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionGe = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: GE,
       e1: intLiteralExpression,
@@ -701,7 +712,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionEq = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: EQ,
       e1: intLiteralExpression,
@@ -709,7 +720,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionEqfn = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: EQ,
       e1: functionExpression,
@@ -717,7 +728,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionNe = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: NE,
       e1: intLiteralExpression,
@@ -725,7 +736,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionNefn = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: NE,
       e1: functionExpression,
@@ -733,7 +744,7 @@ describe('expression-interpreter', () => {
     });
     const binExpressionAnd = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: AND,
       e1: boolLiteralExpression,
@@ -741,15 +752,15 @@ describe('expression-interpreter', () => {
     });
     const binExpressionAndFalse = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: AND,
-      e1: SourceExpressionFalse(exampleRange),
+      e1: SourceExpressionFalse(exampleLocation),
       e2: boolLiteralExpression,
     });
     const binExpressionOr = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: OR,
       e1: boolLiteralExpression,
@@ -757,15 +768,15 @@ describe('expression-interpreter', () => {
     });
     const binExpressionOrFalse = SourceExpressionBinary({
       type: SourceBoolType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: OR,
-      e1: SourceExpressionFalse(exampleRange),
+      e1: SourceExpressionFalse(exampleLocation),
       e2: boolLiteralExpression,
     });
     const binExpressionConcat = SourceExpressionBinary({
       type: SourceStringType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       operatorPrecedingComments: [],
       operator: CONCAT,
       e1: stringLiteralExpression,
@@ -796,17 +807,17 @@ describe('expression-interpreter', () => {
   it('if else expression evaluates correctly', () => {
     const ifElseExpressionTrue = SourceExpressionIfElse({
       type: SourceStringType(DummySourceReason),
-      range: exampleRange,
+      location: exampleLocation,
       boolExpression: boolLiteralExpression,
-      e1: SourceExpressionString('true branch', exampleRange),
-      e2: SourceExpressionString('false branch', exampleRange),
+      e1: SourceExpressionString('true branch', exampleLocation),
+      e2: SourceExpressionString('false branch', exampleLocation),
     });
     const ifElseExpressionFalse = SourceExpressionIfElse({
       type: SourceStringType(DummySourceReason),
-      range: exampleRange,
-      boolExpression: SourceExpressionFalse(exampleRange),
-      e1: SourceExpressionString('true branch', exampleRange),
-      e2: SourceExpressionString('false branch', exampleRange),
+      location: exampleLocation,
+      boolExpression: SourceExpressionFalse(exampleLocation),
+      e1: SourceExpressionString('true branch', exampleLocation),
+      e2: SourceExpressionString('false branch', exampleLocation),
     });
     expect(interpreter.eval(ifElseExpressionTrue)).toEqual('true branch');
     expect(interpreter.eval(ifElseExpressionFalse)).toEqual('false branch');
@@ -815,7 +826,7 @@ describe('expression-interpreter', () => {
   it('matching list evaluates correctly', () => {
     const matchingList: VariantPatternToExpression[] = [
       {
-        range: exampleRange,
+        location: exampleLocation,
         tag: SourceId('tag'),
         tagOrder: 0,
         expression: stringLiteralExpression,
@@ -824,7 +835,7 @@ describe('expression-interpreter', () => {
     ];
     const matchingListNoData: VariantPatternToExpression[] = [
       {
-        range: exampleRange,
+        location: exampleLocation,
         tag: SourceId('tag'),
         tagOrder: 0,
         expression: stringLiteralExpression,
@@ -842,19 +853,19 @@ describe('expression-interpreter', () => {
       functionArguments: [intLiteralExpression],
     });
     const matchExpression = SourceExpressionMatch({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       matchedExpression,
       matchingList,
     });
     const matchExpressionNoData = SourceExpressionMatch({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       matchedExpression,
       matchingList: matchingListNoData,
     });
     const matchExpressionFail = SourceExpressionMatch({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceStringType(DummySourceReason),
       matchedExpression,
       matchingList: [],
@@ -892,7 +903,7 @@ describe('expression-interpreter', () => {
       returnType: SourceIntType(DummySourceReason),
     };
     const lambdaExpression = SourceExpressionLambda({
-      range: exampleRange,
+      location: exampleLocation,
       type: lambdaFunctionType,
       parameters: [],
       captured: {},
@@ -908,12 +919,12 @@ describe('expression-interpreter', () => {
 
   it('statement block expression evalutes correctly', () => {
     const tuplePattern: TuplePattern = {
-      range: exampleRange,
+      location: exampleLocation,
       type: 'TuplePattern',
       destructedNames: [{ name: SourceId('tuple'), type: SourceIntType(DummySourceReason) }],
     };
     const tuplePatternNull: TuplePattern = {
-      range: exampleRange,
+      location: exampleLocation,
       type: 'TuplePattern',
       destructedNames: [{ type: SourceIntType(DummySourceReason) }],
     };
@@ -923,21 +934,21 @@ describe('expression-interpreter', () => {
       mappings: [SourceIntType(DummySourceReason)],
     };
     const tupleExpression: SamlangExpression = SourceExpressionTupleConstructor({
-      range: exampleRange,
+      location: exampleLocation,
       type: tupleType,
       expressions: [intLiteralExpression],
     });
     const tupleStatement: SamlangValStatement = {
       associatedComments: [],
       pattern: tuplePattern,
-      range: exampleRange,
+      location: exampleLocation,
       typeAnnotation: SourceIntType(DummySourceReason),
       assignedExpression: tupleExpression,
     };
     const tupleStatementNull: SamlangValStatement = {
       associatedComments: [],
       pattern: tuplePatternNull,
-      range: exampleRange,
+      location: exampleLocation,
       typeAnnotation: SourceIntType(DummySourceReason),
       assignedExpression: tupleExpression,
     };
@@ -946,28 +957,28 @@ describe('expression-interpreter', () => {
       type: SourceIntType(DummySourceReason),
       fieldOrder: 0,
       alias: SourceId('f'),
-      range: exampleRange,
+      location: exampleLocation,
     };
     const objectDestructedNamesNoAlias: ObjectPatternDestucturedName = {
       fieldName: SourceId('test'),
       type: SourceIntType(DummySourceReason),
       fieldOrder: 0,
-      range: exampleRange,
+      location: exampleLocation,
     };
     const objectDestructedNamesFail: ObjectPatternDestucturedName = {
       fieldName: SourceId('test'),
       type: SourceIntType(DummySourceReason),
       fieldOrder: 0,
       alias: SourceId('f'),
-      range: exampleRange,
+      location: exampleLocation,
     };
     const objectPattern: ObjectPattern = {
-      range: exampleRange,
+      location: exampleLocation,
       type: 'ObjectPattern',
       destructedNames: [objectDestructedNames, objectDestructedNamesNoAlias],
     };
     const objectPatternFail: ObjectPattern = {
-      range: exampleRange,
+      location: exampleLocation,
       type: 'ObjectPattern',
       destructedNames: [objectDestructedNamesFail],
     };
@@ -985,14 +996,14 @@ describe('expression-interpreter', () => {
     const objectStatement: SamlangValStatement = {
       associatedComments: [],
       pattern: objectPattern,
-      range: exampleRange,
+      location: exampleLocation,
       typeAnnotation: SourceIntType(DummySourceReason),
       assignedExpression: objectExpression,
     };
     const objectStatementFail: SamlangValStatement = {
       associatedComments: [],
       pattern: objectPatternFail,
-      range: exampleRange,
+      location: exampleLocation,
       typeAnnotation: SourceIntType(DummySourceReason),
       assignedExpression: objectExpression,
     };
@@ -1028,32 +1039,32 @@ describe('expression-interpreter', () => {
       localValues: variableLocalValues,
     };
     const variablePattern: VariablePattern = {
-      range: exampleRange,
+      location: exampleLocation,
       type: 'VariablePattern',
       name: 'var',
     };
     const variableExpression: SamlangExpression = SourceExpressionVariable({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       name: 'var',
     });
     const variableStatement: SamlangValStatement = {
       associatedComments: [],
       pattern: variablePattern,
-      range: exampleRange,
+      location: exampleLocation,
       typeAnnotation: SourceIntType(DummySourceReason),
       assignedExpression: variableExpression,
     };
-    const wildCardPattern: WildCardPattern = { type: 'WildCardPattern', range: exampleRange };
+    const wildCardPattern: WildCardPattern = { type: 'WildCardPattern', location: exampleLocation };
     const wildCardStatement: SamlangValStatement = {
       associatedComments: [],
       pattern: wildCardPattern,
-      range: exampleRange,
+      location: exampleLocation,
       typeAnnotation: SourceIntType(DummySourceReason),
       assignedExpression: intLiteralExpression,
     };
     const statementBlock: StatementBlock = {
-      range: exampleRange,
+      location: exampleLocation,
       statements: [
         tupleStatement,
         tupleStatementNull,
@@ -1063,53 +1074,53 @@ describe('expression-interpreter', () => {
       ],
     };
     const statementBlockWithExpression: StatementBlock = {
-      range: exampleRange,
+      location: exampleLocation,
       statements: [],
       expression: intLiteralExpression,
     };
     const statementBlockFail: StatementBlock = {
-      range: exampleRange,
+      location: exampleLocation,
       statements: [objectStatementFail],
     };
     const statementBlockExpression = SourceExpressionStatementBlock({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       block: statementBlock,
     });
     const statementBlockExpressionWithBlockExpression = SourceExpressionStatementBlock({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       block: statementBlockWithExpression,
     });
     const statementBlockExpressionFail = SourceExpressionStatementBlock({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       block: statementBlockFail,
     });
     const nestedBlockExpressionFail = SourceExpressionStatementBlock({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       block: {
-        range: exampleRange,
+        location: exampleLocation,
         statements: [
           {
             associatedComments: [],
             pattern: {
               type: 'VariablePattern',
               name: 'diffVar',
-              range: exampleRange,
+              location: exampleLocation,
             },
             typeAnnotation: SourceIntType(DummySourceReason),
             assignedExpression: SourceExpressionStatementBlock({
-              range: exampleRange,
+              location: exampleLocation,
               type: SourceIntType(DummySourceReason),
               block: {
-                range: exampleRange,
+                location: exampleLocation,
                 statements: [
                   {
                     associatedComments: [],
                     pattern: variablePattern,
-                    range: exampleRange,
+                    location: exampleLocation,
                     typeAnnotation: SourceIntType(DummySourceReason),
                     assignedExpression: intLiteralExpression,
                   },
@@ -1117,24 +1128,24 @@ describe('expression-interpreter', () => {
                 expression: variableExpression,
               },
             }),
-            range: exampleRange,
+            location: exampleLocation,
           },
           variableStatement,
         ],
       },
     });
     const nestedBlockExpressionPass = SourceExpressionStatementBlock({
-      range: exampleRange,
+      location: exampleLocation,
       type: SourceIntType(DummySourceReason),
       block: {
-        range: exampleRange,
+        location: exampleLocation,
         statements: [
           {
             associatedComments: [],
             pattern: variablePattern,
             typeAnnotation: SourceIntType(DummySourceReason),
             assignedExpression: intLiteralExpression,
-            range: exampleRange,
+            location: exampleLocation,
           },
         ],
         expression: variableExpression,

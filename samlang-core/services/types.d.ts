@@ -1,4 +1,4 @@
-import { Location, ModuleReference, Position, Range } from '../ast/types';
+import { Location, ModuleReference, Position } from '../ast/types';
 
 export type CompletionItemKind = 2 | 3 | 5;
 export type InsertTextFormat = 1 | 2;
@@ -13,7 +13,7 @@ export type AutoCompletionItem = {
 
 export interface LanguageServiceState {
   get allModulesWithError(): readonly ModuleReference[];
-  getErrors(moduleReference: ModuleReference): readonly { readonly range: Range }[];
+  getErrors(moduleReference: ModuleReference): readonly { readonly location: Location }[];
   update(moduleReference: ModuleReference, sourceCode: string): readonly ModuleReference[];
   remove(moduleReference: ModuleReference): readonly ModuleReference[];
 }
@@ -24,9 +24,9 @@ export interface LanguageServices {
   queryForHover(
     moduleReference: ModuleReference,
     position: Position
-  ): { contents: Readonly<{ language: string; value: string }>[]; range: Range } | null;
+  ): { contents: Readonly<{ language: string; value: string }>[]; location: Location } | null;
 
-  queryFoldingRanges(moduleReference: ModuleReference): readonly Range[] | null;
+  queryFoldingRanges(moduleReference: ModuleReference): readonly Location[] | null;
 
   queryDefinitionLocation(moduleReference: ModuleReference, position: Position): Location | null;
 

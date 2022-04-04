@@ -15,7 +15,7 @@ export function parseSamlangModuleFromText(
   moduleErrorCollector: ModuleErrorCollector
 ): SamlangModule {
   const parser = new SamlangModuleParser(
-    lexSamlangProgram(text, moduleErrorCollector),
+    lexSamlangProgram(text, moduleReference, moduleErrorCollector),
     moduleErrorCollector,
     moduleReference,
     builtinClassesSet
@@ -29,7 +29,7 @@ export function parseSamlangExpressionFromText(
   moduleErrorCollector: ModuleErrorCollector
 ): SamlangExpression {
   const parser = new SamlangModuleParser(
-    lexSamlangProgram(text, moduleErrorCollector),
+    lexSamlangProgram(text, moduleReference, moduleErrorCollector),
     moduleErrorCollector,
     moduleReference,
     builtinClassesSet
@@ -42,7 +42,7 @@ export function parseSources(
 ): readonly (readonly [ModuleReference, SamlangModule])[] {
   const errorCollector = createGlobalErrorCollector();
   return filterMap(sourceHandles, ([moduleReference, sourceString]) => {
-    const moduleErrorCollector = errorCollector.getModuleErrorCollector(moduleReference);
+    const moduleErrorCollector = errorCollector.getModuleErrorCollector();
     const parsed = parseSamlangModuleFromText(sourceString, moduleReference, moduleErrorCollector);
     return moduleErrorCollector.hasErrors ? null : ([moduleReference, parsed] as const);
   });

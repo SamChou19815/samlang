@@ -1,8 +1,8 @@
-import { ModuleReference, Position, Range } from '../ast/types';
+import { Location, ModuleReference, Position } from '../ast/types';
 
 // PART 1: Supporting structures
 
-export { Position, Range, ModuleReference };
+export { Position, Location, ModuleReference };
 
 // PART 2: Public APIs
 

@@ -84,7 +84,7 @@ export default class ModuleInterpreter {
     const methods: Record<string, FunctionValue> = {};
     classDefinition.members.forEach((member) => {
       const lambda = SourceExpressionLambda({
-        range: member.range,
+        location: member.location,
         type: member.type,
         parameters: member.parameters.map(({ name, type }) => [SourceId(name), type]),
         captured: {},

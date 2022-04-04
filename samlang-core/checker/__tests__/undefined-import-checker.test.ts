@@ -1,7 +1,7 @@
 import {
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
-  Range,
   Sources,
 } from '../../ast/common-nodes';
 import { SamlangModule, SourceClassDefinition, SourceId } from '../../ast/samlang-nodes';
@@ -9,12 +9,12 @@ import { createGlobalErrorCollector } from '../../errors';
 import checkUndefinedImportsError from '../undefined-imports-checker';
 
 const createMockClass = (name: string): SourceClassDefinition => ({
-  range: Range.DUMMY,
+  location: Location.DUMMY,
   associatedComments: [],
   name: SourceId(name),
   typeParameters: [],
   members: [],
-  typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
+  typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
 });
 
 const createMockModule = (
@@ -25,10 +25,18 @@ const createMockModule = (
   name,
   {
     imports: imports.map(([importedModuleName, importedMembers]) => ({
-      range: Range.DUMMY,
-      importedMembers: importedMembers.map((it) => SourceId(it)),
+      location: new Location(ModuleReference([name]), Location.DUMMY.start, Location.DUMMY.end),
+      importedMembers: importedMembers.map((it) =>
+        SourceId(it, {
+          location: new Location(ModuleReference([name]), Location.DUMMY.start, Location.DUMMY.end),
+        })
+      ),
       importedModule: ModuleReference([importedModuleName]),
-      importedModuleRange: Range.DUMMY,
+      importedModuleLocation: new Location(
+        ModuleReference([name]),
+        Location.DUMMY.start,
+        Location.DUMMY.end
+      ),
     })),
     classes: members.map((className) => createMockClass(className)),
     interfaces: [],
@@ -48,14 +56,14 @@ function checkErrors(
 ): void {
   const sources = createMockSources(modules);
   const globalErrorCollector = createGlobalErrorCollector();
-  sources.forEach((samlangModule, moduleReference) => {
+  sources.forEach((samlangModule) => {
     checkUndefinedImportsError(
       sources,
       samlangModule,
-      globalErrorCollector.getModuleErrorCollector(moduleReference)
+      globalErrorCollector.getModuleErrorCollector()
     );
   });
-  expect(errors).toEqual(globalErrorCollector.getErrors().map((it) => it.toString()));
+  expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual(errors);
 }
 
 describe('undefined-import-checker', () => {

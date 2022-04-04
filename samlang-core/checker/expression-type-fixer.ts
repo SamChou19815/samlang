@@ -143,32 +143,32 @@ export default function fixExpressionType(
         case '>=':
           e1 = tryFixExpressionType(
             expression.e1,
-            SourceIntType(SourceReason(expression.e1.range, null))
+            SourceIntType(SourceReason(expression.e1.location, null))
           );
           e2 = tryFixExpressionType(
             expression.e2,
-            SourceIntType(SourceReason(expression.e2.range, null))
+            SourceIntType(SourceReason(expression.e2.location, null))
           );
           break;
         case '&&':
         case '||':
           e1 = tryFixExpressionType(
             expression.e1,
-            SourceBoolType(SourceReason(expression.e1.range, null))
+            SourceBoolType(SourceReason(expression.e1.location, null))
           );
           e2 = tryFixExpressionType(
             expression.e2,
-            SourceBoolType(SourceReason(expression.e2.range, null))
+            SourceBoolType(SourceReason(expression.e2.location, null))
           );
           break;
         case '::':
           e1 = tryFixExpressionType(
             expression.e1,
-            SourceStringType(SourceReason(expression.e1.range, null))
+            SourceStringType(SourceReason(expression.e1.location, null))
           );
           e2 = tryFixExpressionType(
             expression.e2,
-            SourceStringType(SourceReason(expression.e2.range, null))
+            SourceStringType(SourceReason(expression.e2.location, null))
           );
           break;
         case '==':
@@ -197,7 +197,7 @@ export default function fixExpressionType(
         type: getExpressionFixedType(expression, expectedType),
         boolExpression: tryFixExpressionType(
           expression.boolExpression,
-          SourceBoolType(SourceReason(expression.boolExpression.range, null))
+          SourceBoolType(SourceReason(expression.boolExpression.location, null))
         ),
         e1: tryFixExpressionType(expression.e1, expectedType),
         e2: tryFixExpressionType(expression.e2, expectedType),
@@ -211,8 +211,8 @@ export default function fixExpressionType(
           getExpressionFixedType(expression.matchedExpression, null) as SamlangIdentifierType
         ),
         matchingList: expression.matchingList.map(
-          ({ range, tag, tagOrder, dataVariable, expression: body }) => ({
-            range,
+          ({ location, tag, tagOrder, dataVariable, expression: body }) => ({
+            location,
             tag,
             tagOrder,
             dataVariable:

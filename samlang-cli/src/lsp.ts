@@ -47,7 +47,7 @@ function startSamlangLanguageServer() {
       connection.sendDiagnostics({
         uri: moduleReferenceToUri(affectedModule),
         diagnostics: service.state.getErrors(affectedModule).map((error) => ({
-          range: error.range,
+          range: error.location,
           severity: DiagnosticSeverity.Error,
           message: error.toString(),
           source: 'samlang',
@@ -100,7 +100,10 @@ function startSamlangLanguageServer() {
     );
     return location == null
       ? null
-      : { uri: moduleReferenceToUri(location.moduleReference), range: location.range };
+      : {
+          uri: moduleReferenceToUri(location.moduleReference),
+          range: { start: location.start, end: location.end },
+        };
   });
 
   connection.onFoldingRanges((parameters) => {

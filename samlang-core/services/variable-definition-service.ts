@@ -1,43 +1,42 @@
 import {
-  ModuleReference,
+  Location,
+  LocationCollections,
   ModuleReferenceCollections,
-  Range,
-  RangeCollections,
   Sources,
 } from '../ast/common-nodes';
 import { Pattern, SamlangExpression, SamlangModule, SourceId } from '../ast/samlang-nodes';
 import { assert, error, LocalStackedContext } from '../utils';
 
 export type DefinitionAndUses = {
-  readonly definitionRange: Range;
-  readonly useRanges: readonly Range[];
+  readonly definitionLocation: Location;
+  readonly useLocations: readonly Location[];
 };
 
-class ScopedDefinitionManager extends LocalStackedContext<Range> {}
+class ScopedDefinitionManager extends LocalStackedContext<Location> {}
 
 export class ModuleScopedVariableDefinitionLookup {
   /** Mapping from definition's range to all the uses' range. */
-  private readonly definitionToUsesTable = RangeCollections.hashMapOf<Range[]>();
+  private readonly definitionToUsesTable = LocationCollections.hashMapOf<Location[]>();
   /** Mapping from a use to its definition. Here for faster lookup. */
-  private readonly useToDefinitionTable = RangeCollections.hashMapOf<Range>();
+  private readonly useToDefinitionTable = LocationCollections.hashMapOf<Location>();
 
   constructor(samlangModule: SamlangModule) {
     samlangModule.classes.forEach((samlangClass) => {
       samlangClass.members.forEach((classMember) => {
         const manager = new ScopedDefinitionManager();
-        classMember.parameters.forEach(({ name, nameRange }) => {
-          this.defineVariable(name, nameRange, manager);
+        classMember.parameters.forEach(({ name, nameLocation }) => {
+          this.defineVariable(name, nameLocation, manager);
         });
         this.collectDefinitionAndUseWithDefinitionManager(classMember.body, manager);
       });
     });
   }
 
-  public findAllDefinitionAndUses(range: Range): DefinitionAndUses | null {
-    const definitionRange = this.useToDefinitionTable.get(range) ?? range;
-    const useRanges = this.definitionToUsesTable.get(definitionRange);
-    if (useRanges == null) return null;
-    return { definitionRange, useRanges };
+  public findAllDefinitionAndUses(location: Location): DefinitionAndUses | null {
+    const definitionLocation = this.useToDefinitionTable.get(location) ?? location;
+    const useLocations = this.definitionToUsesTable.get(definitionLocation);
+    if (useLocations == null) return null;
+    return { definitionLocation, useLocations };
   }
 
   private collectDefinitionAndUseWithDefinitionManager(
@@ -50,7 +49,7 @@ export class ModuleScopedVariableDefinitionLookup {
       case 'ClassMemberExpression':
         return;
       case 'VariableExpression':
-        this.addDefinitionAndUse(manager.getLocalValueType(expression.name), expression.range);
+        this.addDefinitionAndUse(manager.getLocalValueType(expression.name), expression.location);
         return;
       case 'TupleConstructorExpression':
         expression.expressions.map((it) =>
@@ -82,8 +81,8 @@ export class ModuleScopedVariableDefinitionLookup {
         expression.matchingList.forEach((matchItem) => {
           manager.withNestedScope(() => {
             if (matchItem.dataVariable != null) {
-              const [{ name: variable, range }] = matchItem.dataVariable;
-              this.defineVariable(variable, range, manager);
+              const [{ name: variable, location }] = matchItem.dataVariable;
+              this.defineVariable(variable, location, manager);
             }
             this.collectDefinitionAndUseWithDefinitionManager(matchItem.expression, manager);
           });
@@ -91,8 +90,8 @@ export class ModuleScopedVariableDefinitionLookup {
         return;
       case 'LambdaExpression':
         manager.withNestedScope(() => {
-          expression.parameters.forEach(([{ name, range }]) =>
-            this.defineVariable(name, range, manager)
+          expression.parameters.forEach(([{ name, location }]) =>
+            this.defineVariable(name, location, manager)
           );
           this.collectDefinitionAndUseWithDefinitionManager(expression.body, manager);
         });
@@ -105,21 +104,21 @@ export class ModuleScopedVariableDefinitionLookup {
             switch (pattern.type) {
               case 'TuplePattern':
                 pattern.destructedNames.forEach(({ name }) => {
-                  if (name != null) this.defineVariable(name.name, name.range, manager);
+                  if (name != null) this.defineVariable(name.name, name.location, manager);
                 });
                 return;
               case 'ObjectPattern':
                 pattern.destructedNames.forEach((name) => {
                   if (name.alias == null) {
-                    this.defineVariable(name.fieldName.name, name.fieldName.range, manager);
+                    this.defineVariable(name.fieldName.name, name.fieldName.location, manager);
                   } else {
-                    const { name: alias, range: aliasRange } = name.alias;
-                    this.defineVariable(alias, aliasRange, manager);
+                    const { name: alias, location: aliasLocation } = name.alias;
+                    this.defineVariable(alias, aliasLocation, manager);
                   }
                 });
                 return;
               case 'VariablePattern':
-                this.defineVariable(pattern.name, pattern.range, manager);
+                this.defineVariable(pattern.name, pattern.location, manager);
                 return;
               case 'WildCardPattern':
                 return;
@@ -133,12 +132,12 @@ export class ModuleScopedVariableDefinitionLookup {
     }
   }
 
-  private defineVariable(variable: string, range: Range, manager: ScopedDefinitionManager) {
-    manager.addLocalValueType(variable, range, error);
-    this.definitionToUsesTable.set(range, []);
+  private defineVariable(variable: string, location: Location, manager: ScopedDefinitionManager) {
+    manager.addLocalValueType(variable, location, error);
+    this.definitionToUsesTable.set(location, []);
   }
 
-  private addDefinitionAndUse(definition: Range | undefined, use: Range) {
+  private addDefinitionAndUse(definition: Location | undefined, use: Location) {
     if (definition == null) return;
     this.definitionToUsesTable.forceGet(definition).push(use);
     this.useToDefinitionTable.set(use, definition);
@@ -146,10 +145,7 @@ export class ModuleScopedVariableDefinitionLookup {
 }
 
 export interface ReadonlyVariableDefinitionLookup {
-  findAllDefinitionAndUses(
-    moduleReference: ModuleReference,
-    range: Range
-  ): DefinitionAndUses | null;
+  findAllDefinitionAndUses(location: Location): DefinitionAndUses | null;
 }
 
 export class VariableDefinitionLookup implements ReadonlyVariableDefinitionLookup {
@@ -166,19 +162,21 @@ export class VariableDefinitionLookup implements ReadonlyVariableDefinitionLooku
     });
   }
 
-  findAllDefinitionAndUses(
-    moduleReference: ModuleReference,
-    range: Range
-  ): DefinitionAndUses | null {
-    return this.moduleTable.get(moduleReference)?.findAllDefinitionAndUses(range) ?? null;
+  findAllDefinitionAndUses(location: Location): DefinitionAndUses | null {
+    return (
+      this.moduleTable.get(location.moduleReference)?.findAllDefinitionAndUses(location) ?? null
+    );
   }
 }
 
-function getRelevantInRanges(range: Range, { definitionRange, useRanges }: DefinitionAndUses) {
-  const ranges: Range[] = [];
-  if (range.containsRange(definitionRange)) ranges.push(definitionRange);
-  ranges.push(...useRanges.filter((it) => range.containsRange(it)));
-  return ranges;
+function getRelevantInRanges(
+  location: Location,
+  { definitionLocation, useLocations }: DefinitionAndUses
+) {
+  const locations: Location[] = [];
+  if (location.contains(definitionLocation)) locations.push(definitionLocation);
+  locations.push(...useLocations.filter((it) => location.contains(it)));
+  return locations;
 }
 
 function applyExpressionRenamingWithDefinitionAndUse(
@@ -186,7 +184,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
   definitionAndUses: DefinitionAndUses,
   newName: string
 ): SamlangExpression {
-  const relevantInRange = getRelevantInRanges(expression.range, definitionAndUses);
+  const relevantInRange = getRelevantInRanges(expression.location, definitionAndUses);
   if (relevantInRange.length === 0) return expression;
   assert(expression.__type__ !== 'LiteralExpression');
   assert(expression.__type__ !== 'ThisExpression');
@@ -262,8 +260,8 @@ function applyExpressionRenamingWithDefinitionAndUse(
             };
           }
           if (
-            definitionAndUses.definitionRange.toString() !==
-            matchingItem.dataVariable[0].range.toString()
+            definitionAndUses.definitionLocation.toString() !==
+            matchingItem.dataVariable[0].location.toString()
           ) {
             return {
               ...matchingItem,
@@ -281,7 +279,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
       return {
         ...expression,
         parameters: expression.parameters.map(([parameterName, parameterType]) => [
-          parameterName.range.toString() === definitionAndUses.definitionRange.toString()
+          parameterName.location.toString() === definitionAndUses.definitionLocation.toString()
             ? SourceId(newName)
             : parameterName,
           parameterType,
@@ -296,7 +294,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
       return {
         ...expression,
         block: {
-          range: expression.block.range,
+          location: expression.block.location,
           statements: expression.block.statements.map((statement) => {
             const assignedExpression = applyExpressionRenamingWithDefinitionAndUse(
               statement.assignedExpression,
@@ -312,7 +310,8 @@ function applyExpressionRenamingWithDefinitionAndUse(
                     name:
                       name == null
                         ? undefined
-                        : name.range.toString() === definitionAndUses.definitionRange.toString()
+                        : name.location.toString() ===
+                          definitionAndUses.definitionLocation.toString()
                         ? { ...name, name: newName }
                         : name,
                     type,
@@ -323,42 +322,43 @@ function applyExpressionRenamingWithDefinitionAndUse(
                 pattern = {
                   ...statement.pattern,
                   destructedNames: statement.pattern.destructedNames.map(
-                    ({ fieldName, fieldOrder, type, alias, range }) => {
+                    ({ fieldName, fieldOrder, type, alias, location }) => {
                       if (alias == null) {
                         if (
-                          fieldName.range.toString() ===
-                          definitionAndUses.definitionRange.toString()
+                          fieldName.location.toString() ===
+                          definitionAndUses.definitionLocation.toString()
                         ) {
                           return {
                             fieldName,
                             fieldOrder,
                             type,
                             alias: SourceId(newName),
-                            range,
+                            location,
                           };
                         }
                       } else {
                         if (
-                          alias.range.toString() === definitionAndUses.definitionRange.toString()
+                          alias.location.toString() ===
+                          definitionAndUses.definitionLocation.toString()
                         ) {
                           return {
                             fieldName,
                             fieldOrder,
                             type,
                             alias: SourceId(newName),
-                            range,
+                            location,
                           };
                         }
                       }
-                      return { fieldName, fieldOrder, type, alias, range };
+                      return { fieldName, fieldOrder, type, alias, location };
                     }
                   ),
                 };
                 break;
               case 'VariablePattern':
                 pattern =
-                  statement.pattern.range.toString() ===
-                  definitionAndUses.definitionRange.toString()
+                  statement.pattern.location.toString() ===
+                  definitionAndUses.definitionLocation.toString()
                     ? { ...statement.pattern, name: newName }
                     : statement.pattern;
                 break;
@@ -396,7 +396,7 @@ export const applyRenamingWithDefinitionAndUse = (
     members: classDefinition.members.map((member) => ({
       ...member,
       parameters: member.parameters.map((variable) =>
-        variable.nameRange.toString() === definitionAndUses.definitionRange.toString()
+        variable.nameLocation.toString() === definitionAndUses.definitionLocation.toString()
           ? { ...variable, name: newName }
           : variable
       ),

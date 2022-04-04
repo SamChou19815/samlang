@@ -103,4 +103,4 @@ export function compileSingleSamlangSource(
   return { __type__: 'OK', emittedTSCode, interpreterResult };
 }
 
-export { ModuleReference, Range } from './ast/common-nodes';
+export { Location, ModuleReference } from './ast/common-nodes';

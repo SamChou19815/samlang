@@ -1,7 +1,7 @@
 // @author meganyin13
 // @origin https://github.com/SamChou19815/samlang/pull/35
 
-import { DummySourceReason, ModuleReference, Position, Range } from '../../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference, Position } from '../../ast/common-nodes';
 import {
   SamlangModule,
   SourceClassDefinition,
@@ -27,12 +27,14 @@ describe('module-interpreter', () => {
 
   const exampleClassDef: SourceClassDefinition = {
     associatedComments: [],
-    name: SourceId('class', { range: new Range(Position(5, 2), Position(7, 6)) }),
+    name: SourceId('class', {
+      location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
+    }),
     typeParameters: [SourceId('param')],
     members: [],
-    range: new Range(Position(1, 10), Position(3, 4)),
+    location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
-      range: new Range(Position(1, 2), Position(3, 4)),
+      location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
       type: 'object',
       names: [SourceId('types')],
       mappings: {
@@ -46,12 +48,14 @@ describe('module-interpreter', () => {
 
   const mainClassDef: SourceClassDefinition = {
     associatedComments: [],
-    name: SourceId('Main', { range: new Range(Position(5, 2), Position(7, 6)) }),
+    name: SourceId('Main', {
+      location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
+    }),
     typeParameters: [SourceId('main')],
     members: [],
-    range: new Range(Position(1, 10), Position(3, 4)),
+    location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
-      range: new Range(Position(1, 2), Position(3, 4)),
+      location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
       type: 'object',
       names: [SourceId('types')],
       mappings: {
@@ -64,12 +68,14 @@ describe('module-interpreter', () => {
   };
   const mainVariantDef: SourceClassDefinition = {
     associatedComments: [],
-    name: SourceId('Main', { range: new Range(Position(5, 2), Position(7, 6)) }),
+    name: SourceId('Main', {
+      location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
+    }),
     typeParameters: [SourceId('main')],
     members: [],
-    range: new Range(Position(1, 10), Position(3, 4)),
+    location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
-      range: new Range(Position(1, 2), Position(3, 4)),
+      location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
       type: 'variant',
       names: [SourceId('types')],
       mappings: {
@@ -83,10 +89,12 @@ describe('module-interpreter', () => {
 
   const memberMainFunctionNoArgs: SourceClassMemberDefinition = {
     associatedComments: [],
-    range: new Range(Position(1, 10), Position(3, 4)),
+    location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     isPublic: true,
     isMethod: false,
-    name: SourceId('main', { range: new Range(Position(12, 34), Position(34, 45)) }),
+    name: SourceId('main', {
+      location: new Location(ModuleReference.DUMMY, Position(12, 34), Position(34, 45)),
+    }),
     typeParameters: [SourceId('param')],
     type: {
       type: 'FunctionType',
@@ -95,13 +103,16 @@ describe('module-interpreter', () => {
       returnType: SourceIntType(DummySourceReason),
     },
     parameters: [],
-    body: SourceExpressionInt(2, new Range(Position(123, 45), Position(145, 89))),
+    body: SourceExpressionInt(
+      2,
+      new Location(ModuleReference.DUMMY, Position(123, 45), Position(145, 89))
+    ),
   };
 
   const memberMainFunctionNoArgsPrint: SourceClassMemberDefinition = {
     ...memberMainFunctionNoArgs,
     body: SourceExpressionFunctionCall({
-      range: new Range(Position(12, 34), Position(34, 45)),
+      location: new Location(ModuleReference.DUMMY, Position(12, 34), Position(34, 45)),
       type: SourceIntType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
         type: SourceIntType(DummySourceReason),
@@ -111,7 +122,10 @@ describe('module-interpreter', () => {
         memberName: SourceId('println'),
       }),
       functionArguments: [
-        SourceExpressionString('Hello world', new Range(Position(183, 23), Position(203, 21))),
+        SourceExpressionString(
+          'Hello world',
+          new Location(ModuleReference.DUMMY, Position(183, 23), Position(203, 21))
+        ),
       ],
     }),
   };
@@ -124,7 +138,7 @@ describe('module-interpreter', () => {
   const memberMainMethodPanic: SourceClassMemberDefinition = {
     ...memberMainFunctionNoArgs,
     body: SourceExpressionFunctionCall({
-      range: new Range(Position(12, 34), Position(34, 45)),
+      location: new Location(ModuleReference.DUMMY, Position(12, 34), Position(34, 45)),
       type: SourceIntType(DummySourceReason),
       functionExpression: SourceExpressionClassMember({
         type: SourceIntType(DummySourceReason),
@@ -133,7 +147,12 @@ describe('module-interpreter', () => {
         className: SourceId('Builtins'),
         memberName: SourceId('panic'),
       }),
-      functionArguments: [SourceExpressionInt(2, new Range(Position(123, 45), Position(145, 89)))],
+      functionArguments: [
+        SourceExpressionInt(
+          2,
+          new Location(ModuleReference.DUMMY, Position(123, 45), Position(145, 89))
+        ),
+      ],
     }),
   };
 
@@ -142,9 +161,9 @@ describe('module-interpreter', () => {
     parameters: [
       {
         name: 'param',
-        nameRange: new Range(Position(231, 34), Position(88, 78)),
+        nameLocation: new Location(ModuleReference.DUMMY, Position(231, 34), Position(88, 78)),
         type: SourceIntType(DummySourceReason),
-        typeRange: new Range(Position(123, 98), Position(124, 78)),
+        typeLocation: new Location(ModuleReference.DUMMY, Position(123, 98), Position(124, 78)),
       },
     ],
   };

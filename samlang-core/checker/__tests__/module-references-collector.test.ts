@@ -1,9 +1,9 @@
 import {
   DummySourceReason,
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
   moduleReferenceToString,
-  Range,
 } from '../../ast/common-nodes';
 import { MUL } from '../../ast/common-operators';
 import {
@@ -151,7 +151,7 @@ describe('module-references-collector', () => {
         }),
         matchingList: [
           {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
@@ -170,11 +170,11 @@ describe('module-references-collector', () => {
       SourceExpressionStatementBlock({
         type: SourceUnitType(DummySourceReason),
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
               typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
@@ -189,11 +189,11 @@ describe('module-references-collector', () => {
       SourceExpressionStatementBlock({
         type: SourceIntType(DummySourceReason),
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
               typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],

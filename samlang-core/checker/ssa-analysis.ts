@@ -1,4 +1,4 @@
-import { Range, RangeCollections } from '../ast/common-nodes';
+import { Location, LocationCollections } from '../ast/common-nodes';
 import type {
   SamlangExpression,
   SamlangModule,
@@ -11,40 +11,40 @@ import { checkNotNull, LocalStackedContext, ReadonlyHashMap, ReadonlyHashSet } f
 
 type SimplifiedSourceIdentifier = Omit<SourceIdentifier, 'associatedComments'>;
 
-class SsaBuilder extends LocalStackedContext<Range> {
+class SsaBuilder extends LocalStackedContext<Location> {
   unboundNames = new Set<string>();
-  invalidDefines = RangeCollections.hashSetOf();
-  definitionToUsesMap = RangeCollections.hashMapOf<Range[]>();
-  useDefineMap = RangeCollections.hashMapOf<Range>();
-  lambdaCaptures = RangeCollections.hashMapOf<ReadonlyMap<string, Range>>();
+  invalidDefines = LocationCollections.hashSetOf();
+  definitionToUsesMap = LocationCollections.hashMapOf<Location[]>();
+  useDefineMap = LocationCollections.hashMapOf<Location>();
+  lambdaCaptures = LocationCollections.hashMapOf<ReadonlyMap<string, Location>>();
 
   constructor(private readonly errorCollector?: ModuleErrorCollector) {
     super();
   }
 
-  define = ({ name, range }: SimplifiedSourceIdentifier) =>
-    this.addLocalValueType(name, range, () => {
-      if (!this.invalidDefines.has(range)) {
+  define = ({ name, location }: SimplifiedSourceIdentifier) =>
+    this.addLocalValueType(name, location, () => {
+      if (!this.invalidDefines.has(location)) {
         // Never error on an illegal define twice, since they might be visited multiple times.
-        this.errorCollector?.reportCollisionError(range, name);
+        this.errorCollector?.reportCollisionError(location, name);
       }
-      this.invalidDefines.add(range);
+      this.invalidDefines.add(location);
     });
 
   defineAll = (ids: readonly SimplifiedSourceIdentifier[]) => ids.forEach(this.define);
 
-  use = ({ name, range }: SimplifiedSourceIdentifier) => {
+  use = ({ name, location }: SimplifiedSourceIdentifier) => {
     const definition = this.getLocalValueType(name);
     if (definition == null) {
       this.unboundNames.add(name);
-      this.errorCollector?.reportUnresolvedNameError(range, name);
+      this.errorCollector?.reportUnresolvedNameError(location, name);
     } else {
-      this.useDefineMap.set(range, definition);
+      this.useDefineMap.set(location, definition);
       const uses = this.definitionToUsesMap.get(definition);
       if (uses == null) {
-        this.definitionToUsesMap.set(definition, [range]);
+        this.definitionToUsesMap.set(definition, [location]);
       } else {
-        uses.push(range);
+        uses.push(location);
       }
     }
   };
@@ -81,8 +81,8 @@ class SsaBuilder extends LocalStackedContext<Range> {
           this.withNestedScope(() => {
             if (member.isMethod) this.defineAll(interfaceDeclaration.typeParameters);
             this.defineAll(member.typeParameters);
-            member.parameters.forEach(({ name, nameRange: range, type }) => {
-              this.define({ name, range });
+            member.parameters.forEach(({ name, nameLocation: location, type }) => {
+              this.define({ name, location });
               this.visitType(type);
             });
             this.visitType(member.type.returnType);
@@ -102,7 +102,7 @@ class SsaBuilder extends LocalStackedContext<Range> {
       case 'ClassMemberExpression':
         return;
       case 'VariableExpression':
-        this.use({ name: expression.name, range: expression.range });
+        this.use({ name: expression.name, location: expression.location });
         return;
       case 'TupleConstructorExpression':
         expression.expressions.forEach(this.visitExpression);
@@ -145,7 +145,7 @@ class SsaBuilder extends LocalStackedContext<Range> {
           });
           this.visitExpression(expression.body);
         });
-        this.lambdaCaptures.set(expression.range, captured);
+        this.lambdaCaptures.set(expression.location, captured);
         return;
       }
       case 'StatementBlockExpression':
@@ -184,7 +184,7 @@ class SsaBuilder extends LocalStackedContext<Range> {
       case 'PrimitiveType':
         return;
       case 'IdentifierType':
-        this.use({ name: type.identifier, range: type.reason.definitionLocation });
+        this.use({ name: type.identifier, location: type.reason.definitionLocation });
         type.typeArguments.forEach(this.visitType);
         return;
       case 'TupleType':
@@ -202,10 +202,10 @@ class SsaBuilder extends LocalStackedContext<Range> {
 
 export interface SsaAnalysisResult {
   readonly unboundNames: ReadonlySet<string>;
-  readonly invalidDefines: ReadonlyHashSet<Range>;
-  readonly definitionToUsesMap: ReadonlyHashMap<Range, readonly Range[]>;
-  readonly useDefineMap: ReadonlyHashMap<Range, Range>;
-  readonly lambdaCaptures: ReadonlyHashMap<Range, ReadonlyMap<string, Range>>;
+  readonly invalidDefines: ReadonlyHashSet<Location>;
+  readonly definitionToUsesMap: ReadonlyHashMap<Location, readonly Location[]>;
+  readonly useDefineMap: ReadonlyHashMap<Location, Location>;
+  readonly lambdaCaptures: ReadonlyHashMap<Location, ReadonlyMap<string, Location>>;
 }
 
 export function performSSAAnalysisOnSamlangExpression(

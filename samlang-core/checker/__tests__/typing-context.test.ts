@@ -1,8 +1,8 @@
 import {
   DummySourceReason,
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
-  Range,
 } from '../../ast/common-nodes';
 import {
   SourceFunctionType,
@@ -30,7 +30,7 @@ describe('typing-context', () => {
             A: {
               typeParameters: ['A', 'B'],
               typeDefinition: {
-                range: Range.DUMMY,
+                location: Location.DUMMY,
                 type: 'variant',
                 names: [SourceId('a'), SourceId('b')],
                 mappings: {
@@ -79,7 +79,7 @@ describe('typing-context', () => {
             B: {
               typeParameters: ['E', 'F'],
               typeDefinition: {
-                range: Range.DUMMY,
+                location: Location.DUMMY,
                 type: 'object',
                 names: [],
                 mappings: {},

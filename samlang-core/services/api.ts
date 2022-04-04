@@ -3,7 +3,6 @@ import {
   ModuleReference,
   ModuleReferenceCollections,
   Position,
-  Range,
   Sources,
   TypedComment,
 } from '../ast/common-nodes';
@@ -82,7 +81,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
       const rawModule = parseSamlangModuleFromText(
         sourceCode,
         moduleReference,
-        errorCollector.getModuleErrorCollector(moduleReference)
+        errorCollector.getModuleErrorCollector()
       );
       this.rawModules.set(moduleReference, rawModule);
     });
@@ -140,7 +139,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
     const rawModule = parseSamlangModuleFromText(
       sourceCode,
       moduleReference,
-      errorCollector.getModuleErrorCollector(moduleReference)
+      errorCollector.getModuleErrorCollector()
     );
     this.rawModules.set(moduleReference, rawModule);
     const affected = this.reportChanges(moduleReference, rawModule);
@@ -163,9 +162,9 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
   private updateErrors(updatedErrors: readonly CompileTimeError[]): void {
     const grouped = ModuleReferenceCollections.hashMapOf<CompileTimeError[]>();
     updatedErrors.forEach((error) => {
-      const group = grouped.get(error.moduleReference);
+      const group = grouped.get(error.location.moduleReference);
       if (group == null) {
-        grouped.set(error.moduleReference, [error]);
+        grouped.set(error.location.moduleReference, [error]);
       } else {
         group.push(error);
       }
@@ -220,12 +219,9 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
     checkedModules.forEach((checkedModule, moduleReference) => {
       locationLookupBuilder.rebuild(moduleReference, checkedModule);
       checkedModule.classes.forEach((classDefinition) => {
-        this._classLocationLookup.set(
-          { moduleReference, range: classDefinition.range },
-          classDefinition.name.name
-        );
+        this._classLocationLookup.set(classDefinition.location, classDefinition.name.name);
         classDefinition.members.forEach((member) => {
-          this._classMemberLocationLookup.set({ moduleReference, range: member.range }, member);
+          this._classMemberLocationLookup.set(member.location, member);
         });
       });
     });
@@ -283,7 +279,7 @@ class LanguageServicesImpl implements LanguageServices {
           document == null
             ? [typeContent]
             : [typeContent, { language: 'markdown', value: document }],
-        range: expression.range,
+        location: expression.location,
       };
     }
     const type = prettyPrintType(expression.type);
@@ -302,19 +298,19 @@ class LanguageServicesImpl implements LanguageServices {
           document == null
             ? [typeContent]
             : [typeContent, { language: 'markdown', value: document }],
-        range: expression.range,
+        location: expression.location,
       };
     }
-    return { contents: [{ language: 'samlang', value: type }], range: expression.range };
+    return { contents: [{ language: 'samlang', value: type }], location: expression.location };
   }
 
-  queryFoldingRanges(moduleReference: ModuleReference): readonly Range[] | null {
+  queryFoldingRanges(moduleReference: ModuleReference): readonly Location[] | null {
     const module = this.state.getCheckedModule(moduleReference);
     if (module == null) return null;
     const ranges = module.classes.flatMap((moduleClass) => {
-      const range = moduleClass.range;
+      const range = moduleClass.location;
       const members = moduleClass.members;
-      const memberRanges = members.flatMap((member) => member.range);
+      const memberRanges = members.flatMap((member) => member.location);
       return [...memberRanges, range];
     });
     return ranges;
@@ -335,15 +331,13 @@ class LanguageServicesImpl implements LanguageServices {
         ) {
           const nullableClassDefinition = this.getClassDefinition(moduleReference, expression.name);
           if (nullableClassDefinition == null) return null;
-          const [moduleReferenceOfClass, classDefinition] = nullableClassDefinition;
-          return { moduleReference: moduleReferenceOfClass, range: classDefinition.range };
+          const [, classDefinition] = nullableClassDefinition;
+          return classDefinition.location;
         }
-        const definitionRange = this.state.variableDefinitionLookup.findAllDefinitionAndUses(
-          moduleReference,
-          expression.range
-        )?.definitionRange;
-        if (definitionRange == null) return null;
-        return { moduleReference, range: definitionRange };
+        return (
+          this.state.variableDefinitionLookup.findAllDefinitionAndUses(expression.location)
+            ?.definitionLocation ?? null
+        );
       }
       case 'ClassMemberExpression':
         return this.findClassMemberLocation(
@@ -352,16 +346,13 @@ class LanguageServicesImpl implements LanguageServices {
           expression.memberName.name
         );
       case 'FieldAccessExpression': {
-        const [moduleReferenceOfClass, classDefinition] = checkNotNull(
+        const [, classDefinition] = checkNotNull(
           this.getClassDefinition(
             moduleReference,
             (expression.expression.type as SamlangIdentifierType).identifier
           )
         );
-        return {
-          moduleReference: moduleReferenceOfClass,
-          range: classDefinition.typeDefinition.range,
-        };
+        return classDefinition.typeDefinition.location;
       }
       case 'MethodAccessExpression':
         return this.findClassMemberLocation(
@@ -410,10 +401,10 @@ class LanguageServicesImpl implements LanguageServices {
   ): Location | null {
     const nullableClassDefinition = this.getClassDefinition(moduleReference, className);
     if (nullableClassDefinition == null) return null;
-    const [moduleReferenceOfClass, classDefinition] = nullableClassDefinition;
+    const [, classDefinition] = nullableClassDefinition;
     const matchingMember = classDefinition.members.find((it) => it.name.name === memberName);
     if (matchingMember == null) return null;
-    return { moduleReference: moduleReferenceOfClass, range: matchingMember.range };
+    return matchingMember.location;
   }
 
   autoComplete(moduleReference: ModuleReference, position: Position): AutoCompletionItem[] {
@@ -543,8 +534,7 @@ class LanguageServicesImpl implements LanguageServices {
       return null;
     }
     const definitionAndUses = this.state.variableDefinitionLookup.findAllDefinitionAndUses(
-      moduleReference,
-      expression.range
+      expression.location
     );
     if (definitionAndUses == null) return null;
     return prettyPrintSamlangModule(

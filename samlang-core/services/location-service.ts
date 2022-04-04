@@ -1,11 +1,10 @@
 import {
   Location,
+  LocationCollections,
   ModuleReference,
   ModuleReferenceCollections,
   moduleReferenceToString,
   Position,
-  Range,
-  RangeCollections,
   SourceReason,
 } from '../ast/common-nodes';
 import {
@@ -22,13 +21,13 @@ export interface ReadOnlyLocationLookup<E> {
 
 export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
   /** Mapping from module reference to a list of (entity, position range of entity) */
-  private readonly locationTable = ModuleReferenceCollections.hashMapOf<HashMap<Range, E>>();
+  private readonly locationTable = ModuleReferenceCollections.hashMapOf<HashMap<Location, E>>();
 
   get(moduleReference: ModuleReference, position: Position): E | null {
     const location = this.getBestLocation(moduleReference, position);
     if (location == null) return null;
     const localTable = this.locationTable.forceGet(location.moduleReference);
-    const entity = localTable.forceGet(location.range);
+    const entity = localTable.forceGet(location);
     return entity;
   }
 
@@ -37,10 +36,10 @@ export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
     if (localMap == null) {
       this.locationTable.set(
         location.moduleReference,
-        RangeCollections.hashMapOf([location.range, entity])
+        LocationCollections.hashMapOf([location, entity])
       );
     } else {
-      localMap.set(location.range, entity);
+      localMap.set(location, entity);
     }
   }
 
@@ -59,15 +58,16 @@ export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
     if (fileLocationMap == null) return null;
     let bestWeight = Number.MAX_SAFE_INTEGER;
     let bestLocation: Location | null = null;
-    fileLocationMap.entries().forEach(([range]) => {
+    fileLocationMap.entries().forEach(([location]) => {
       // Weight calculation is adapted from the heuristics in
       // https://github.com/facebook/pyre-check/blob/master/analysis/lookup.ml
-      if (!range.containsPosition(position)) return;
+      if (!location.containsPosition(position)) return;
       const weight =
-        (range.end.line - range.start.line) * 1000 + (range.end.character - range.start.character);
+        (location.end.line - location.start.line) * 1000 +
+        (location.end.character - location.start.character);
       if (weight < bestWeight) {
         bestWeight = weight;
-        bestLocation = { moduleReference, range };
+        bestLocation = location;
       }
     });
     return bestLocation;
@@ -81,11 +81,10 @@ export class SamlangExpressionLocationLookupBuilder {
     this.locationLookup.purge(moduleReference);
     classes.forEach(({ name, members }) => {
       this.buildSingleExpression(
-        moduleReference,
         SourceExpressionVariable({
-          range: name.range,
+          location: name.location,
           type: SourceIdentifierType(
-            SourceReason(name.range, name.range),
+            SourceReason(name.location, name.location),
             moduleReference,
             `class ${moduleReferenceToString(moduleReference)}.${name.name}`
           ),
@@ -94,94 +93,87 @@ export class SamlangExpressionLocationLookupBuilder {
       );
       members.forEach((member) => {
         this.buildSingleExpression(
-          moduleReference,
           SourceExpressionVariable({
-            range: member.name.range,
+            location: member.name.location,
             type: member.type,
             name: member.name.name,
           })
         );
-        this.buildRecursively(moduleReference, member.body);
+        this.buildRecursively(member.body);
       });
     });
   }
 
-  private buildRecursively(moduleReference: ModuleReference, expression: SamlangExpression) {
+  private buildRecursively(expression: SamlangExpression) {
     switch (expression.__type__) {
       case 'LiteralExpression':
       case 'VariableExpression':
       case 'ThisExpression':
-        this.buildSingleExpression(moduleReference, expression);
+        this.buildSingleExpression(expression);
         return;
       case 'ClassMemberExpression': {
         const {
           moduleReference: modRef,
-          className: { name: className, range: classNameRange },
+          className: { name: className, location: classNameLocation },
         } = expression;
         this.buildSingleExpression(
-          moduleReference,
           SourceExpressionVariable({
-            range: classNameRange,
+            location: classNameLocation,
             type: SourceIdentifierType(
-              SourceReason(classNameRange, classNameRange),
-              moduleReference,
+              SourceReason(classNameLocation, classNameLocation),
+              classNameLocation.moduleReference,
               `class ${moduleReferenceToString(modRef)}.${className}`
             ),
             name: className,
           })
         );
-        this.buildSingleExpression(moduleReference, expression);
+        this.buildSingleExpression(expression);
         return;
       }
       case 'TupleConstructorExpression':
-        expression.expressions.forEach((it) => this.buildRecursively(moduleReference, it));
-        this.buildSingleExpression(moduleReference, expression);
+        expression.expressions.forEach((it) => this.buildRecursively(it));
+        this.buildSingleExpression(expression);
         return;
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
       case 'UnaryExpression':
-        this.buildRecursively(moduleReference, expression.expression);
-        this.buildSingleExpression(moduleReference, expression);
+        this.buildRecursively(expression.expression);
+        this.buildSingleExpression(expression);
         return;
       case 'FunctionCallExpression':
-        this.buildRecursively(moduleReference, expression.functionExpression);
-        expression.functionArguments.forEach((it) => this.buildRecursively(moduleReference, it));
-        this.buildSingleExpression(moduleReference, expression);
+        this.buildRecursively(expression.functionExpression);
+        expression.functionArguments.forEach((it) => this.buildRecursively(it));
+        this.buildSingleExpression(expression);
         return;
       case 'BinaryExpression':
-        this.buildRecursively(moduleReference, expression.e1);
-        this.buildRecursively(moduleReference, expression.e2);
-        this.buildSingleExpression(moduleReference, expression);
+        this.buildRecursively(expression.e1);
+        this.buildRecursively(expression.e2);
+        this.buildSingleExpression(expression);
         return;
       case 'IfElseExpression':
-        this.buildRecursively(moduleReference, expression.boolExpression);
-        this.buildRecursively(moduleReference, expression.e1);
-        this.buildRecursively(moduleReference, expression.e2);
-        this.buildSingleExpression(moduleReference, expression);
+        this.buildRecursively(expression.boolExpression);
+        this.buildRecursively(expression.e1);
+        this.buildRecursively(expression.e2);
+        this.buildSingleExpression(expression);
         return;
       case 'MatchExpression':
-        this.buildRecursively(moduleReference, expression.matchedExpression);
-        expression.matchingList.forEach((it) =>
-          this.buildRecursively(moduleReference, it.expression)
-        );
-        this.buildSingleExpression(moduleReference, expression);
+        this.buildRecursively(expression.matchedExpression);
+        expression.matchingList.forEach((it) => this.buildRecursively(it.expression));
+        this.buildSingleExpression(expression);
         return;
       case 'LambdaExpression':
-        this.buildRecursively(moduleReference, expression.body);
-        this.buildSingleExpression(moduleReference, expression);
+        this.buildRecursively(expression.body);
+        this.buildSingleExpression(expression);
         return;
       case 'StatementBlockExpression':
         expression.block.statements.forEach(({ assignedExpression, pattern }) => {
-          this.buildRecursively(moduleReference, assignedExpression);
+          this.buildRecursively(assignedExpression);
           const assignedExpressionType = assignedExpression.type;
           switch (pattern.type) {
             case 'TuplePattern': {
               pattern.destructedNames.forEach(({ name, type }) => {
                 if (name != null) {
-                  this.buildSingleExpression(
-                    moduleReference,
-                    SourceExpressionVariable({ ...name, type })
-                  );
+                  this.buildSingleExpression(SourceExpressionVariable({ ...name, type }));
                 }
               });
               return;
@@ -190,9 +182,8 @@ export class SamlangExpressionLocationLookupBuilder {
               return;
             case 'VariablePattern':
               this.buildSingleExpression(
-                moduleReference,
                 SourceExpressionVariable({
-                  range: pattern.range,
+                  location: pattern.location,
                   name: pattern.name,
                   type: assignedExpressionType,
                 })
@@ -200,9 +191,8 @@ export class SamlangExpressionLocationLookupBuilder {
               return;
             case 'WildCardPattern':
               this.buildSingleExpression(
-                moduleReference,
                 SourceExpressionVariable({
-                  range: pattern.range,
+                  location: pattern.location,
                   name: '_',
                   type: assignedExpressionType,
                 })
@@ -210,12 +200,12 @@ export class SamlangExpressionLocationLookupBuilder {
           }
         });
         if (expression.block.expression != null) {
-          this.buildRecursively(moduleReference, expression.block.expression);
+          this.buildRecursively(expression.block.expression);
         }
     }
   }
 
-  private buildSingleExpression(moduleReference: ModuleReference, expression: SamlangExpression) {
-    this.locationLookup.set({ moduleReference, range: expression.range }, expression);
+  private buildSingleExpression(expression: SamlangExpression) {
+    this.locationLookup.set(expression.location, expression);
   }
 }
