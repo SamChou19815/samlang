@@ -634,8 +634,6 @@ class HighIRExpressionLoweringManager {
     favoredTempVariable: string | null
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const isVoidReturn =
-      expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const loweredBoolExpression = this.loweredAndAddStatements(
       expression.boolExpression,
       null,
@@ -644,17 +642,6 @@ class HighIRExpressionLoweringManager {
     const e1LoweringResult = this.lower(expression.e1, null);
     const e2LoweringResult = this.lower(expression.e2, null);
     const variableForIfElseAssign = this.allocateTemporaryVariable(favoredTempVariable);
-    if (isVoidReturn) {
-      loweredStatements.push(
-        HIR_IF_ELSE({
-          booleanExpression: loweredBoolExpression,
-          s1: e1LoweringResult.statements,
-          s2: e2LoweringResult.statements,
-          finalAssignments: [],
-        })
-      );
-      return { statements: loweredStatements, expression: HIR_ZERO };
-    }
     const loweredReturnType = e1LoweringResult.expression.type;
     loweredStatements.push(
       HIR_IF_ELSE({
@@ -678,8 +665,6 @@ class HighIRExpressionLoweringManager {
 
   private lowerMatch(expression: MatchExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const isVoidReturn =
-      expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const matchedExpression = this.loweredAndAddStatements(
       expression.matchedExpression,
       null,
@@ -721,20 +706,21 @@ class HighIRExpressionLoweringManager {
           }
           const result = this.lower(patternExpression, null);
           localStatements.push(...result.statements);
-          const finalExpression = isVoidReturn ? undefined : result.expression;
+          const finalExpression = result.expression;
           return { tagOrder, finalExpression, statements: localStatements };
         });
       }
     );
     const lastCase = checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]);
-    let finalExpression: HighIRExpression;
-    if (isVoidReturn) {
-      loweredStatements.push(
-        ...loweredMatchingList
-          .slice(0, loweredMatchingList.length - 1)
-          .reduceRight((acc, oneCase) => {
-            const comparisonTemporary = this.allocateTemporaryVariable(null);
-            return [
+    const { s: chainedStatements, e: finalValue } = loweredMatchingList
+      .slice(0, loweredMatchingList.length - 1)
+      .reduceRight(
+        (acc, oneCase) => {
+          const comparisonTemporary = this.allocateTemporaryVariable(null);
+          const finalAssignmentTemporary = this.allocateTemporaryVariable(null);
+          const loweredReturnType = acc.e.type;
+          return {
+            s: [
               HIR_BINARY({
                 name: comparisonTemporary,
                 operator: '==',
@@ -744,53 +730,25 @@ class HighIRExpressionLoweringManager {
               HIR_IF_ELSE({
                 booleanExpression: HIR_VARIABLE(comparisonTemporary, HIR_BOOL_TYPE),
                 s1: oneCase.statements,
-                s2: acc,
-                finalAssignments: [],
+                s2: acc.s,
+                finalAssignments: [
+                  {
+                    name: finalAssignmentTemporary,
+                    type: loweredReturnType,
+                    branch1Value: oneCase.finalExpression,
+                    branch2Value: acc.e,
+                  },
+                ],
               }),
-            ];
-          }, lastCase.statements)
+            ],
+            e: HIR_VARIABLE(finalAssignmentTemporary, loweredReturnType),
+          };
+        },
+        { s: lastCase.statements, e: checkNotNull(lastCase.finalExpression) }
       );
-      finalExpression = HIR_ZERO;
-    } else {
-      const { s: chainedStatements, e: finalValue } = loweredMatchingList
-        .slice(0, loweredMatchingList.length - 1)
-        .reduceRight(
-          (acc, oneCase) => {
-            const comparisonTemporary = this.allocateTemporaryVariable(null);
-            const finalAssignmentTemporary = this.allocateTemporaryVariable(null);
-            const loweredReturnType = acc.e.type;
-            return {
-              s: [
-                HIR_BINARY({
-                  name: comparisonTemporary,
-                  operator: '==',
-                  e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
-                  e2: HIR_INT(oneCase.tagOrder),
-                }),
-                HIR_IF_ELSE({
-                  booleanExpression: HIR_VARIABLE(comparisonTemporary, HIR_BOOL_TYPE),
-                  s1: oneCase.statements,
-                  s2: acc.s,
-                  finalAssignments: [
-                    {
-                      name: finalAssignmentTemporary,
-                      type: loweredReturnType,
-                      branch1Value: checkNotNull(oneCase.finalExpression),
-                      branch2Value: acc.e,
-                    },
-                  ],
-                }),
-              ],
-              e: HIR_VARIABLE(finalAssignmentTemporary, loweredReturnType),
-            };
-          },
-          { s: lastCase.statements, e: checkNotNull(lastCase.finalExpression) }
-        );
-      loweredStatements.push(...chainedStatements);
-      finalExpression = finalValue;
-    }
+    loweredStatements.push(...chainedStatements);
 
-    return { statements: loweredStatements, expression: finalExpression };
+    return { statements: loweredStatements, expression: finalValue };
   }
 
   private lowerLambda(
