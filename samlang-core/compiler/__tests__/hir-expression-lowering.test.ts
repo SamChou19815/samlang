@@ -548,39 +548,22 @@ return (_t0: $SyntheticIDType0);`
     });
   });
 
-  describe('IfElse lowering works', () => {
-    it('1/n', () => {
-      expectCorrectlyLowered(
-        SourceExpressionIfElse({
-          type: DUMMY_IDENTIFIER_TYPE,
-          boolExpression: THIS,
-          e1: THIS,
-          e2: THIS,
-        }),
-        `let _t0: __DUMMY___Dummy;
+  it('IfElse lowering works', () => {
+    expectCorrectlyLowered(
+      SourceExpressionIfElse({
+        type: DUMMY_IDENTIFIER_TYPE,
+        boolExpression: THIS,
+        e1: THIS,
+        e2: THIS,
+      }),
+      `let _t0: __DUMMY___Dummy;
 if (_this: __DUMMY___Dummy) {
   _t0 = (_this: __DUMMY___Dummy);
 } else {
   _t0 = (_this: __DUMMY___Dummy);
 }
 return (_t0: __DUMMY___Dummy);`
-      );
-    });
-
-    it('2/n', () => {
-      expectCorrectlyLowered(
-        SourceExpressionIfElse({
-          type: SourceUnitType(DummySourceReason),
-          boolExpression: THIS,
-          e1: THIS,
-          e2: THIS,
-        }),
-        `if (_this: __DUMMY___Dummy) {
-} else {
-}
-return 0;`
-      );
-    });
+    );
   });
 
   describe('Match lowering works', () => {
@@ -619,47 +602,6 @@ return (_t2: __DUMMY___Dummy);`
     });
 
     it('2/n', () => {
-      expectCorrectlyLowered(
-        SourceExpressionMatch({
-          type: SourceUnitType(DummySourceReason),
-          matchedExpression: THIS,
-          matchingList: [
-            {
-              location: Location.DUMMY,
-              tag: SourceId('Foo'),
-              tagOrder: 0,
-              dataVariable: [SourceId('bar'), SourceIntType(DummySourceReason)],
-              expression: THIS,
-            },
-            {
-              location: Location.DUMMY,
-              tag: SourceId('Bar'),
-              tagOrder: 1,
-              expression: THIS,
-            },
-            {
-              location: Location.DUMMY,
-              tag: SourceId('Baz'),
-              tagOrder: 2,
-              expression: THIS,
-            },
-          ],
-        }),
-        `let _t0: int = (_this: __DUMMY___Dummy)[0];
-let _t2: bool = (_t0: int) == 0;
-if (_t2: bool) {
-  let bar: int = (_this: __DUMMY___Dummy)[1];
-} else {
-  let _t1: bool = (_t0: int) == 1;
-  if (_t1: bool) {
-  } else {
-  }
-}
-return 0;`
-      );
-    });
-
-    it('3/n', () => {
       expectCorrectlyLowered(
         SourceExpressionMatch({
           type: DUMMY_IDENTIFIER_TYPE,
