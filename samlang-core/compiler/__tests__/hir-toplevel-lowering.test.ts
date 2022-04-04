@@ -1,8 +1,8 @@
 import {
   DummySourceReason,
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
-  Range,
 } from '../../ast/common-nodes';
 import { EQ, MINUS, MUL } from '../../ast/common-operators';
 import { debugPrintHighIRSources } from '../../ast/hir-nodes';
@@ -37,15 +37,15 @@ describe('mir-toplevel-lowering', () => {
       imports: [],
       classes: [
         {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           associatedComments: [],
           name: SourceId('Main'),
           typeParameters: [],
-          typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
+          typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
           members: [
             {
               associatedComments: [],
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               isPublic: true,
               isMethod: false,
               name: SourceId('main'),
@@ -67,12 +67,12 @@ describe('mir-toplevel-lowering', () => {
           ],
         },
         {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           associatedComments: [],
           name: SourceId('Class1'),
           typeParameters: [],
           typeDefinition: {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             type: 'object',
             names: [SourceId('a')],
             mappings: { a: { isPublic: true, type: SourceIntType(DummySourceReason) } },
@@ -80,7 +80,7 @@ describe('mir-toplevel-lowering', () => {
           members: [
             {
               associatedComments: [],
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               isPublic: true,
               isMethod: true,
               name: SourceId('foo'),
@@ -88,9 +88,9 @@ describe('mir-toplevel-lowering', () => {
               parameters: [
                 {
                   name: 'a',
-                  nameRange: Range.DUMMY,
+                  nameLocation: Location.DUMMY,
                   type: SourceIntType(DummySourceReason),
-                  typeRange: Range.DUMMY,
+                  typeLocation: Location.DUMMY,
                 },
               ],
               type: SourceFunctionType(
@@ -102,7 +102,7 @@ describe('mir-toplevel-lowering', () => {
             },
             {
               associatedComments: [],
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               isPublic: true,
               isMethod: false,
               name: SourceId('infiniteLoop'),
@@ -123,7 +123,7 @@ describe('mir-toplevel-lowering', () => {
             },
             {
               associatedComments: [],
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               isPublic: true,
               isMethod: false,
               name: SourceId('factorial'),
@@ -131,15 +131,15 @@ describe('mir-toplevel-lowering', () => {
               parameters: [
                 {
                   name: 'n',
-                  nameRange: Range.DUMMY,
+                  nameLocation: Location.DUMMY,
                   type: SourceIntType(DummySourceReason),
-                  typeRange: Range.DUMMY,
+                  typeLocation: Location.DUMMY,
                 },
                 {
                   name: 'acc',
-                  nameRange: Range.DUMMY,
+                  nameLocation: Location.DUMMY,
                   type: SourceIntType(DummySourceReason),
-                  typeRange: Range.DUMMY,
+                  typeLocation: Location.DUMMY,
                 },
               ],
               type: SourceFunctionType(
@@ -204,20 +204,20 @@ describe('mir-toplevel-lowering', () => {
           ],
         },
         {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           associatedComments: [],
           name: SourceId('Class2'),
           typeParameters: [],
-          typeDefinition: { range: Range.DUMMY, type: 'variant', names: [], mappings: {} },
+          typeDefinition: { location: Location.DUMMY, type: 'variant', names: [], mappings: {} },
           members: [],
         },
         {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           associatedComments: [],
           name: SourceId('Class3'),
           typeParameters: [SourceId('T')],
           typeDefinition: {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             type: 'object',
             names: [SourceId('a')],
             mappings: {

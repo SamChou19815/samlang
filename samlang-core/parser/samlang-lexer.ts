@@ -1,4 +1,4 @@
-import { Position, Range } from '../ast/common-nodes';
+import { Location, ModuleReference, Position } from '../ast/common-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, checkNotNull } from '../utils';
 
@@ -19,7 +19,7 @@ class CharacterStream {
 
   private position = 0;
 
-  constructor(private readonly source: string) {}
+  constructor(private readonly moduleReference: ModuleReference, private readonly source: string) {}
 
   private advanceCharacter(character: string): void {
     this.position += 1;
@@ -44,12 +44,12 @@ class CharacterStream {
     throw new EOF();
   }
 
-  consumeAndGetRange(start: Position, length: number): Range {
+  consumeAndGetLocation(start: Position, length: number): Location {
     const startingPosition = this.position;
     for (let i = startingPosition; i < startingPosition + length; i += 1) {
       this.advanceCharacter(checkNotNull(this.source[i]));
     }
-    return new Range(start, this.currentPosition);
+    return new Location(this.moduleReference, start, this.currentPosition);
   }
 
   peekUntilWhitespace(): string {
@@ -330,7 +330,7 @@ export type SamlangTokenContent =
   | SamlangVariableTokenContent;
 
 export type SamlangToken = {
-  readonly range: Range;
+  readonly location: Location;
   readonly content: SamlangTokenContent;
 };
 
@@ -340,8 +340,8 @@ export function samlangTokenContentToString(content: SamlangTokenContent): strin
   return content.content;
 }
 
-export function samlangTokenToString({ range, content }: SamlangToken): string {
-  return `${range}: ${samlangTokenContentToString(content)}`;
+export function samlangTokenToString({ location, content }: SamlangToken): string {
+  return `${location}: ${samlangTokenContentToString(content)}`;
 }
 
 function stringHasValidEscape(string: string): boolean {
@@ -384,45 +384,45 @@ function getNextToken(
     const lineComment = stream.peekLineComment();
     if (lineComment != null) {
       return {
-        range: stream.consumeAndGetRange(start, lineComment.length),
+        location: stream.consumeAndGetLocation(start, lineComment.length),
         content: { __type__: 'LineComment', content: lineComment },
       };
     }
     const blockComment = stream.peekBlockComment();
     if (blockComment != null) {
       return {
-        range: stream.consumeAndGetRange(start, blockComment.length),
+        location: stream.consumeAndGetLocation(start, blockComment.length),
         content: { __type__: 'BlockComment', content: blockComment },
       };
     }
     const integer = stream.peekInteger();
     if (integer != null) {
       return {
-        range: stream.consumeAndGetRange(start, integer.length),
+        location: stream.consumeAndGetLocation(start, integer.length),
         content: { __type__: 'IntLiteral', content: integer },
       };
     }
     const string = stream.peekString();
     if (string != null) {
-      const range = stream.consumeAndGetRange(start, string.length);
+      const location = stream.consumeAndGetLocation(start, string.length);
       if (!stringHasValidEscape(string)) {
-        errorCollector.reportSyntaxError(range, 'Invalid escape in string.');
+        errorCollector.reportSyntaxError(location, 'Invalid escape in string.');
       }
       return {
-        range,
+        location,
         content: { __type__: 'StringLiteral', content: string },
       };
     }
 
     const identifier = stream.peekIdentifier();
     if (identifier != null) {
-      const range = stream.consumeAndGetRange(start, identifier.length);
+      const location = stream.consumeAndGetLocation(start, identifier.length);
       if ((SAMLANG_KEYWORDS as string[]).includes(identifier)) {
-        return { range, content: identifier as SamlangKeywordString };
+        return { location, content: identifier as SamlangKeywordString };
       }
       const firstLetter = checkNotNull(identifier[0]);
       return {
-        range,
+        location,
         content: {
           __type__: 'A' <= firstLetter && firstLetter <= 'Z' ? 'UpperId' : 'LowerId',
           content: identifier,
@@ -432,15 +432,18 @@ function getNextToken(
 
     for (const operator of SAMLANG_OPERATORS) {
       if (stream.peekNextConstantToken(operator)) {
-        return { range: stream.consumeAndGetRange(start, operator.length), content: operator };
+        return {
+          location: stream.consumeAndGetLocation(start, operator.length),
+          content: operator,
+        };
       }
     }
 
     const errorTokenContent = stream.peekUntilWhitespace();
-    const errorRange = stream.consumeAndGetRange(start, errorTokenContent.length);
-    errorCollector.reportSyntaxError(errorRange, 'Invalid token.');
+    const errorLocation = stream.consumeAndGetLocation(start, errorTokenContent.length);
+    errorCollector.reportSyntaxError(errorLocation, 'Invalid token.');
     return {
-      range: errorRange,
+      location: errorLocation,
       content: { __type__: 'Error', content: errorTokenContent },
     };
   } catch (e) {
@@ -451,39 +454,40 @@ function getNextToken(
 
 export default function lexSamlangProgram(
   source: string,
+  moduleReference: ModuleReference,
   errorCollector: ModuleErrorCollector
 ): readonly SamlangToken[] {
-  const stream = new CharacterStream(source);
+  const stream = new CharacterStream(moduleReference, source);
 
   const tokens: SamlangToken[] = [];
   while (true) {
     let token = getNextToken(stream, errorCollector);
     if (token == null) return tokens;
 
-    // Validate the range of int token.
+    // Validate that the int token is between min and max int.
     // We have to do it here since we need access of the previous token.
     if (typeof token.content !== 'string' && token.content.__type__ === 'IntLiteral') {
       const intLiteralString = token.content.content;
       const parsedInt = parseInt(intLiteralString, 10);
       if (parsedInt > MAX_INT_PLUS_ONE) {
-        errorCollector.reportSyntaxError(token.range, 'Not a 32-bit integer.');
+        errorCollector.reportSyntaxError(token.location, 'Not a 32-bit integer.');
         token = {
-          range: token.range,
+          location: token.location,
           content: { __type__: 'IntLiteral', content: intLiteralString },
         };
       } else if (parsedInt === MAX_INT_PLUS_ONE) {
         const previousToken = tokens[tokens.length - 1]?.content;
         if (previousToken == null || previousToken !== '-') {
-          errorCollector.reportSyntaxError(token.range, 'Not a 32-bit integer.');
+          errorCollector.reportSyntaxError(token.location, 'Not a 32-bit integer.');
           token = {
-            range: token.range,
+            location: token.location,
             content: { __type__: 'IntLiteral', content: intLiteralString },
           };
         } else {
           tokens.pop();
           // Merge - and MAX_INT_PLUS_ONE into MIN_INT
           token = {
-            range: token.range,
+            location: token.location,
             content: { __type__: 'IntLiteral', content: `-${intLiteralString}` },
           };
         }

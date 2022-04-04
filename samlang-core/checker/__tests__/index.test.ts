@@ -8,10 +8,10 @@ import {
 } from '..';
 import {
   DummySourceReason,
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
   moduleReferenceToString,
-  Range,
 } from '../../ast/common-nodes';
 import {
   SourceExpressionInt,
@@ -28,29 +28,29 @@ describe('samlang-core/checker', () => {
       collectModuleReferenceFromSamlangModule({
         imports: [
           {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             importedMembers: [],
             importedModule: ModuleReference(['A']),
-            importedModuleRange: Range.DUMMY,
+            importedModuleLocation: Location.DUMMY,
           },
         ],
         classes: [
           {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             associatedComments: [],
             name: SourceId('aa'),
             typeParameters: [],
             typeDefinition: {
               type: 'object',
               names: [SourceId('')],
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               mappings: { d: { isPublic: true, type: SourceIntType(DummySourceReason) } },
             },
             members: [
               {
                 associatedComments: [],
                 name: SourceId(''),
-                range: Range.DUMMY,
+                location: Location.DUMMY,
                 isMethod: true,
                 isPublic: true,
                 typeParameters: [],
@@ -155,7 +155,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceA,
           moduleReferenceA,
-          errorCollector.getModuleErrorCollector(moduleReferenceA)
+          errorCollector.getModuleErrorCollector()
         ),
       ],
       [
@@ -163,7 +163,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceB,
           moduleReferenceB,
-          errorCollector.getModuleErrorCollector(moduleReferenceB)
+          errorCollector.getModuleErrorCollector()
         ),
       ],
       [
@@ -171,7 +171,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceC,
           moduleReferenceC,
-          errorCollector.getModuleErrorCollector(moduleReferenceC)
+          errorCollector.getModuleErrorCollector()
         ),
       ],
       [
@@ -179,7 +179,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceD,
           moduleReferenceD,
-          errorCollector.getModuleErrorCollector(moduleReferenceD)
+          errorCollector.getModuleErrorCollector()
         ),
       ]
     );
@@ -246,7 +246,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceA,
           moduleReferenceA,
-          errorCollector.getModuleErrorCollector(moduleReferenceA)
+          errorCollector.getModuleErrorCollector()
         ),
       ],
       [
@@ -254,7 +254,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceB,
           moduleReferenceB,
-          errorCollector.getModuleErrorCollector(moduleReferenceB)
+          errorCollector.getModuleErrorCollector()
         ),
       ],
       [
@@ -262,7 +262,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceC,
           moduleReferenceC,
-          errorCollector.getModuleErrorCollector(moduleReferenceC)
+          errorCollector.getModuleErrorCollector()
         ),
       ],
       [
@@ -270,7 +270,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceD,
           moduleReferenceD,
-          errorCollector.getModuleErrorCollector(moduleReferenceD)
+          errorCollector.getModuleErrorCollector()
         ),
       ]
     );
@@ -324,7 +324,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceA,
           moduleReferenceA,
-          errorCollector.getModuleErrorCollector(moduleReferenceA)
+          errorCollector.getModuleErrorCollector()
         ),
       ],
       [
@@ -332,7 +332,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceB,
           moduleReferenceB,
-          errorCollector.getModuleErrorCollector(moduleReferenceB)
+          errorCollector.getModuleErrorCollector()
         ),
       ],
       [
@@ -340,7 +340,7 @@ describe('samlang-core/checker', () => {
         parseSamlangModuleFromText(
           sourceC,
           moduleReferenceC,
-          errorCollector.getModuleErrorCollector(moduleReferenceC)
+          errorCollector.getModuleErrorCollector()
         ),
       ]
     );
@@ -355,7 +355,7 @@ describe('samlang-core/checker', () => {
       parseSamlangModuleFromText(
         'class Main {}',
         ModuleReference(['Test']),
-        errorCollector.getModuleErrorCollector(ModuleReference(['Test']))
+        errorCollector.getModuleErrorCollector()
       ),
       errorCollector
     );

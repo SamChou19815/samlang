@@ -6,9 +6,7 @@ import { createGlobalErrorCollector } from '../../errors';
 describe('samlang-core/parser', () => {
   it('Can parse good expressions.', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
-      ModuleReference.DUMMY
-    );
+    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
 
     function expectASTWithTheSameKind(text: string, expected: SamlangExpression['__type__']): void {
       expect(
@@ -84,9 +82,7 @@ describe('samlang-core/parser', () => {
   it('Can report bad expressions.', () => {
     function expectBadAST(text: string): void {
       const globalErrorCollector = createGlobalErrorCollector();
-      const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
-        ModuleReference.DUMMY
-      );
+      const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
       parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector);
       expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
     }
@@ -131,9 +127,7 @@ describe('samlang-core/parser', () => {
 
   it('Can parse good programs.', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
-      ModuleReference.DUMMY
-    );
+    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
 
     const parsed = parseSamlangModuleFromText(
       `
@@ -221,9 +215,7 @@ describe('samlang-core/parser', () => {
 
   it('Can handle bad programs.', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
-      ModuleReference.DUMMY
-    );
+    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
 
     const parsed = parseSamlangModuleFromText(
       `
@@ -258,9 +250,7 @@ describe('samlang-core/parser', () => {
 
   it('Can handle really bad programs.', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
-      ModuleReference.DUMMY
-    );
+    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
 
     parseSamlangModuleFromText(
       `import {Foo} from 3.2
@@ -290,9 +280,7 @@ describe('samlang-core/parser', () => {
 
   it('Can handle complete trash', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
-      ModuleReference.DUMMY
-    );
+    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
 
     parseSamlangModuleFromText(
       'This is not a program.',

@@ -4,10 +4,10 @@ import {
   FALSE,
   intLiteralOf,
   Literal,
+  Location,
   ModuleReference,
   moduleReferenceToString,
   Node,
-  Range,
   SamlangReason,
   SourceReason,
   stringLiteralOf,
@@ -202,10 +202,10 @@ export interface SourceIdentifier extends Node {
 export const SourceId = (
   name: string,
   {
-    range = Range.DUMMY,
+    location = Location.DUMMY,
     associatedComments = [],
-  }: { readonly range?: Range; readonly associatedComments?: readonly TypedComment[] } = {}
-): SourceIdentifier => ({ range, associatedComments, name });
+  }: { readonly location?: Location; readonly associatedComments?: readonly TypedComment[] } = {}
+): SourceIdentifier => ({ location, associatedComments, name });
 
 interface BaseExpression extends Node {
   /** Identity of the object used for pattern matching. */
@@ -220,8 +220,8 @@ interface BaseExpression extends Node {
 
 type ExpressionConstructorArgumentObject<E extends BaseExpression> = Omit<
   E,
-  '__type__' | 'range' | 'precedence' | 'associatedComments'
-> & { readonly range?: Range; readonly associatedComments?: readonly TypedComment[] };
+  '__type__' | 'location' | 'precedence' | 'associatedComments'
+> & { readonly location?: Location; readonly associatedComments?: readonly TypedComment[] };
 
 export interface LiteralExpression extends BaseExpression {
   readonly __type__: 'LiteralExpression';
@@ -292,7 +292,7 @@ export interface IfElseExpression extends BaseExpression {
 }
 
 export interface VariantPatternToExpression {
-  readonly range: Range;
+  readonly location: Location;
   readonly tag: SourceIdentifier;
   readonly tagOrder: number;
   readonly dataVariable?: readonly [SourceIdentifier, SamlangType];
@@ -326,7 +326,7 @@ export interface ObjectPatternDestucturedName {
   readonly fieldOrder: number;
   readonly type: SamlangType;
   readonly alias?: SourceIdentifier;
-  readonly range: Range;
+  readonly location: Location;
 }
 
 export interface ObjectPattern extends Node {
@@ -379,24 +379,24 @@ export type SamlangExpression =
   | StatementBlockExpression;
 
 export const SourceExpressionTrue = (
-  range: Range = Range.DUMMY,
+  location: Location = Location.DUMMY,
   associatedComments: readonly TypedComment[] = []
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
-  range,
-  type: SourceBoolType(SourceReason(range, null)),
+  location,
+  type: SourceBoolType(SourceReason(location, null)),
   precedence: 0,
   associatedComments,
   literal: TRUE,
 });
 
 export const SourceExpressionFalse = (
-  range: Range = Range.DUMMY,
+  location: Location = Location.DUMMY,
   associatedComments: readonly TypedComment[] = []
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
-  range,
-  type: SourceBoolType(SourceReason(range, null)),
+  location,
+  type: SourceBoolType(SourceReason(location, null)),
   precedence: 0,
   associatedComments,
   literal: FALSE,
@@ -404,12 +404,12 @@ export const SourceExpressionFalse = (
 
 export const SourceExpressionInt = (
   value: number,
-  range: Range = Range.DUMMY,
+  location: Location = Location.DUMMY,
   associatedComments: readonly TypedComment[] = []
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
-  range,
-  type: SourceIntType(SourceReason(range, null)),
+  location,
+  type: SourceIntType(SourceReason(location, null)),
   precedence: 0,
   associatedComments,
   literal: intLiteralOf(value),
@@ -417,37 +417,37 @@ export const SourceExpressionInt = (
 
 export const SourceExpressionString = (
   value: string,
-  range: Range = Range.DUMMY,
+  location: Location = Location.DUMMY,
   associatedComments: readonly TypedComment[] = []
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
-  range,
-  type: SourceStringType(SourceReason(range, null)),
+  location,
+  type: SourceStringType(SourceReason(location, null)),
   precedence: 0,
   associatedComments,
   literal: stringLiteralOf(value),
 });
 
 export const SourceExpressionThis = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
 }: ExpressionConstructorArgumentObject<ThisExpression>): ThisExpression => ({
   __type__: 'ThisExpression',
-  range,
+  location,
   type,
   precedence: 0,
   associatedComments,
 });
 
 export const SourceExpressionVariable = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   name,
 }: ExpressionConstructorArgumentObject<VariableExpression>): VariableExpression => ({
   __type__: 'VariableExpression',
-  range,
+  location,
   type,
   precedence: 0,
   associatedComments,
@@ -455,7 +455,7 @@ export const SourceExpressionVariable = ({
 });
 
 export const SourceExpressionClassMember = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   typeArguments,
@@ -464,7 +464,7 @@ export const SourceExpressionClassMember = ({
   memberName,
 }: ExpressionConstructorArgumentObject<ClassMemberExpression>): ClassMemberExpression => ({
   __type__: 'ClassMemberExpression',
-  range,
+  location,
   type,
   precedence: 1,
   associatedComments,
@@ -475,13 +475,13 @@ export const SourceExpressionClassMember = ({
 });
 
 export const SourceExpressionTupleConstructor = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   expressions,
 }: ExpressionConstructorArgumentObject<TupleConstructorExpression>): TupleConstructorExpression => ({
   __type__: 'TupleConstructorExpression',
-  range,
+  location,
   type,
   precedence: 1,
   associatedComments,
@@ -489,7 +489,7 @@ export const SourceExpressionTupleConstructor = ({
 });
 
 export const SourceExpressionFieldAccess = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   expression,
@@ -497,7 +497,7 @@ export const SourceExpressionFieldAccess = ({
   fieldOrder,
 }: ExpressionConstructorArgumentObject<FieldAccessExpression>): FieldAccessExpression => ({
   __type__: 'FieldAccessExpression',
-  range,
+  location,
   type,
   precedence: 2,
   associatedComments,
@@ -507,14 +507,14 @@ export const SourceExpressionFieldAccess = ({
 });
 
 export const SourceExpressionMethodAccess = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   expression,
   methodName,
 }: ExpressionConstructorArgumentObject<MethodAccessExpression>): MethodAccessExpression => ({
   __type__: 'MethodAccessExpression',
-  range,
+  location,
   type,
   precedence: 2,
   associatedComments,
@@ -523,14 +523,14 @@ export const SourceExpressionMethodAccess = ({
 });
 
 export const SourceExpressionUnary = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   operator,
   expression,
 }: ExpressionConstructorArgumentObject<UnaryExpression>): UnaryExpression => ({
   __type__: 'UnaryExpression',
-  range,
+  location,
   type,
   precedence: 3,
   associatedComments,
@@ -539,14 +539,14 @@ export const SourceExpressionUnary = ({
 });
 
 export const SourceExpressionFunctionCall = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   functionExpression,
   functionArguments,
 }: ExpressionConstructorArgumentObject<FunctionCallExpression>): FunctionCallExpression => ({
   __type__: 'FunctionCallExpression',
-  range,
+  location,
   type,
   precedence: 2,
   associatedComments,
@@ -555,7 +555,7 @@ export const SourceExpressionFunctionCall = ({
 });
 
 export const SourceExpressionBinary = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   operatorPrecedingComments,
@@ -564,7 +564,7 @@ export const SourceExpressionBinary = ({
   e2,
 }: ExpressionConstructorArgumentObject<BinaryExpression>): BinaryExpression => ({
   __type__: 'BinaryExpression',
-  range,
+  location,
   type,
   precedence: 5 + operator.precedence,
   associatedComments,
@@ -575,7 +575,7 @@ export const SourceExpressionBinary = ({
 });
 
 export const SourceExpressionIfElse = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   boolExpression,
@@ -583,7 +583,7 @@ export const SourceExpressionIfElse = ({
   e2,
 }: ExpressionConstructorArgumentObject<IfElseExpression>): IfElseExpression => ({
   __type__: 'IfElseExpression',
-  range,
+  location,
   type,
   precedence: 11,
   associatedComments,
@@ -593,14 +593,14 @@ export const SourceExpressionIfElse = ({
 });
 
 export const SourceExpressionMatch = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   matchedExpression,
   matchingList,
 }: ExpressionConstructorArgumentObject<MatchExpression>): MatchExpression => ({
   __type__: 'MatchExpression',
-  range,
+  location,
   type,
   precedence: 12,
   associatedComments,
@@ -609,7 +609,7 @@ export const SourceExpressionMatch = ({
 });
 
 export const SourceExpressionLambda = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   parameters,
@@ -617,7 +617,7 @@ export const SourceExpressionLambda = ({
   body,
 }: ExpressionConstructorArgumentObject<LambdaExpression>): LambdaExpression => ({
   __type__: 'LambdaExpression',
-  range,
+  location,
   type,
   precedence: 13,
   associatedComments,
@@ -627,13 +627,13 @@ export const SourceExpressionLambda = ({
 });
 
 export const SourceExpressionStatementBlock = ({
-  range = Range.DUMMY,
+  location = Location.DUMMY,
   type,
   associatedComments = [],
   block,
 }: ExpressionConstructorArgumentObject<StatementBlockExpression>): StatementBlockExpression => ({
   __type__: 'StatementBlockExpression',
-  range,
+  location,
   type,
   precedence: 2,
   associatedComments,
@@ -642,9 +642,9 @@ export const SourceExpressionStatementBlock = ({
 
 export interface SourceAnnotatedVariable {
   readonly name: string;
-  readonly nameRange: Range;
+  readonly nameLocation: Location;
   readonly type: SamlangType;
-  readonly typeRange: Range;
+  readonly typeLocation: Location;
 }
 
 export interface SourceClassMemberDeclaration extends Node {
@@ -690,7 +690,7 @@ export interface SourceClassDefinition extends SourceInterfaceDeclaration {
 export interface SourceModuleMembersImport extends Node {
   readonly importedMembers: readonly SourceIdentifier[];
   readonly importedModule: ModuleReference;
-  readonly importedModuleRange: Range;
+  readonly importedModuleLocation: Location;
 }
 
 export interface SamlangModule {

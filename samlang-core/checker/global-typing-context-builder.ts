@@ -2,9 +2,9 @@
 
 import {
   BuiltinReason,
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
-  Range,
   SourceReason,
   Sources,
 } from '../ast/common-nodes';
@@ -62,15 +62,15 @@ function buildClassTypingContext(
     classDefinition
   );
   const classType = SourceIdentifierType(
-    SourceReason(classDefinition.name.range, classDefinition.name.range),
+    SourceReason(classDefinition.name.location, classDefinition.name.location),
     moduleReference,
     classDefinition.name.name,
     classDefinition.typeParameters.map((it) =>
-      SourceIdentifierType(SourceReason(it.range, it.range), moduleReference, it.name, [])
+      SourceIdentifierType(SourceReason(it.location, it.location), moduleReference, it.name, [])
     )
   );
   const { typeDefinition } = classDefinition;
-  const typeDefinitionReason = SourceReason(typeDefinition.range, typeDefinition.range);
+  const typeDefinitionReason = SourceReason(typeDefinition.location, typeDefinition.location);
   if (typeDefinition.type === 'object') {
     functions.init = normalizeTypeInformation(moduleReference, {
       isPublic: true,
@@ -121,7 +121,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
   classes: {
     Builtins: {
       typeParameters: [],
-      typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
+      typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
       functions: {
         stringToInt: {
           isPublic: true,

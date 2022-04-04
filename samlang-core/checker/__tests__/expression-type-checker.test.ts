@@ -1,8 +1,8 @@
 import {
   DummySourceReason,
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
-  Range,
 } from '../../ast/common-nodes';
 import {
   SamlangExpression,
@@ -42,7 +42,7 @@ function typeCheckInSandbox(
   currentClass?: string
 ): readonly [SamlangExpression, readonly string[]] {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(dummyModuleReference);
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
   const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
     new AccessibleGlobalTypingContext(
       dummyModuleReference,
@@ -56,7 +56,7 @@ function typeCheckInSandbox(
               Test: {
                 typeParameters: [],
                 typeDefinition: {
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: 'object',
                   names: [SourceId('foo'), SourceId('bar')],
                   mappings: {
@@ -100,7 +100,7 @@ function typeCheckInSandbox(
               Test2: {
                 typeParameters: [],
                 typeDefinition: {
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: 'variant',
                   names: [SourceId('Foo'), SourceId('Bar')],
                   mappings: {
@@ -133,7 +133,7 @@ function typeCheckInSandbox(
               Test3: {
                 typeParameters: ['E'],
                 typeDefinition: {
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: 'object',
                   names: [SourceId('foo'), SourceId('bar')],
                   mappings: {
@@ -150,7 +150,7 @@ function typeCheckInSandbox(
               Test4: {
                 typeParameters: ['E'],
                 typeDefinition: {
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: 'variant',
                   names: [SourceId('Foo'), SourceId('Bar')],
                   mappings: {
@@ -190,7 +190,7 @@ function typeCheckInSandbox(
               A: {
                 typeParameters: [],
                 typeDefinition: {
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: 'object',
                   names: [SourceId('a'), SourceId('b')],
                   mappings: {
@@ -214,7 +214,7 @@ function typeCheckInSandbox(
               B: {
                 typeParameters: [],
                 typeDefinition: {
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: 'object',
                   names: [SourceId('a'), SourceId('b')],
                   mappings: {
@@ -238,7 +238,7 @@ function typeCheckInSandbox(
               C: {
                 typeParameters: [],
                 typeDefinition: {
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: 'variant',
                   names: [SourceId('a'), SourceId('b')],
                   mappings: {
@@ -306,7 +306,7 @@ function assertTypeChecks(
         JSON.stringify(
           json,
           (_, value) => {
-            if (value instanceof Range) return '';
+            if (value instanceof Location) return '';
             if (value instanceof ModuleReference) {
               return value.toString();
             }

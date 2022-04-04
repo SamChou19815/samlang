@@ -202,9 +202,9 @@ export default class ExpressionInterpreter {
           switch (p.type) {
             case 'TuplePattern': {
               const { tupleContent } = assignedValue as TupleValue;
-              p.destructedNames.forEach((nameWithRange, i) => {
-                if (nameWithRange.name != null) {
-                  contextForStatementBlock.localValues[nameWithRange.name.name] = checkNotNull(
+              p.destructedNames.forEach((nameWithLocation, i) => {
+                if (nameWithLocation.name != null) {
+                  contextForStatementBlock.localValues[nameWithLocation.name.name] = checkNotNull(
                     tupleContent[i]
                   );
                 }

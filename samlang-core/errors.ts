@@ -1,37 +1,29 @@
-import { ModuleReference, moduleReferenceToFileName, Range } from './ast/common-nodes';
+import type { Location } from './ast/common-nodes';
 import { prettyPrintType, SamlangType } from './ast/samlang-nodes';
 
 export abstract class CompileTimeError<T = string> {
   constructor(
     public readonly errorType: T,
-    public readonly moduleReference: ModuleReference,
-    public readonly range: Range,
+    public readonly location: Location,
     public readonly reason: string
   ) {}
 
   toString(): string {
-    const filename = moduleReferenceToFileName(this.moduleReference);
-    return `${filename}:${this.range}: [${this.errorType}]: ${this.reason}`;
+    return `${this.location.toString()}: [${this.errorType}]: ${this.reason}`;
   }
 }
 
 export class SyntaxError extends CompileTimeError<'SyntaxError'> {
-  constructor(moduleReference: ModuleReference, range: Range, reason: string) {
-    super('SyntaxError', moduleReference, range, reason);
+  constructor(location: Location, reason: string) {
+    super('SyntaxError', location, reason);
   }
 }
 
 export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType'> {
-  constructor(
-    moduleReference: ModuleReference,
-    range: Range,
-    expected: SamlangType,
-    actual: SamlangType
-  ) {
+  constructor(location: Location, expected: SamlangType, actual: SamlangType) {
     super(
       'UnexpectedType',
-      moduleReference,
-      range,
+      location,
       (() => {
         const expectedType = prettyPrintType(expected);
         const actualType = prettyPrintType(actual);
@@ -42,37 +34,26 @@ export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType'> {
 }
 
 export class UnresolvedNameError extends CompileTimeError<'UnresolvedName'> {
-  constructor(moduleReference: ModuleReference, range: Range, unresolvedName: string) {
-    super('UnresolvedName', moduleReference, range, `Name \`${unresolvedName}\` is not resolved.`);
+  constructor(location: Location, unresolvedName: string) {
+    super('UnresolvedName', location, `Name \`${unresolvedName}\` is not resolved.`);
   }
 }
 
 export class UnsupportedClassTypeDefinitionError extends CompileTimeError<'UnsupportedClassTypeDefinition'> {
-  constructor(
-    moduleReference: ModuleReference,
-    range: Range,
-    typeDefinitionType: 'object' | 'variant'
-  ) {
+  constructor(location: Location, typeDefinitionType: 'object' | 'variant') {
     super(
       'UnsupportedClassTypeDefinition',
-      moduleReference,
-      range,
+      location,
       `Expect the current class to have \`${typeDefinitionType}\` type definition, but it doesn't.`
     );
   }
 }
 
 export class UnexpectedTypeKindError extends CompileTimeError<'UnexpectedTypeKind'> {
-  constructor(
-    moduleReference: ModuleReference,
-    range: Range,
-    expectedTypeKind: string,
-    actualType: string | SamlangType
-  ) {
+  constructor(location: Location, expectedTypeKind: string, actualType: string | SamlangType) {
     super(
       'UnexpectedTypeKind',
-      moduleReference,
-      range,
+      location,
       `Expected kind: \`${expectedTypeKind}\`, actual: \`${
         typeof actualType === 'string' ? actualType : prettyPrintType(actualType)
       }\`.`
@@ -81,82 +62,66 @@ export class UnexpectedTypeKindError extends CompileTimeError<'UnexpectedTypeKin
 }
 
 export class TupleSizeMismatchError extends CompileTimeError<'TupleSizeMismatch'> {
-  constructor(
-    moduleReference: ModuleReference,
-    range: Range,
-    expectedSize: number,
-    actualSize: number
-  ) {
+  constructor(location: Location, expectedSize: number, actualSize: number) {
     super(
       'TupleSizeMismatch',
-      moduleReference,
-      range,
+      location,
       `Incorrect tuple size. Expected: ${expectedSize}, actual: ${actualSize}.`
     );
   }
 }
 
 export class TypeArgumentsSizeMismatchError extends CompileTimeError<'TypeArgumentsSizeMismatch'> {
-  constructor(
-    moduleReference: ModuleReference,
-    range: Range,
-    expectedSize: number,
-    actualSize: number
-  ) {
+  constructor(location: Location, expectedSize: number, actualSize: number) {
     super(
       'TypeArgumentsSizeMismatch',
-      moduleReference,
-      range,
+      location,
       `Incorrect type arguments size. Expected: ${expectedSize}, actual: ${actualSize}.`
     );
   }
 }
 
 export class InsufficientTypeInferenceContextError extends CompileTimeError<'InsufficientTypeInferenceContext'> {
-  constructor(moduleReference: ModuleReference, range: Range) {
+  constructor(location: Location) {
     super(
       'InsufficientTypeInferenceContext',
-      moduleReference,
-      range,
+      location,
       'There is not enough context information to decide the type of this expression.'
     );
   }
 }
 
 export class CollisionError extends CompileTimeError<'Collision'> {
-  constructor(moduleReference: ModuleReference, range: Range, collidedName: string) {
+  constructor(location: Location, collidedName: string) {
     super(
       'Collision',
-      moduleReference,
-      range,
+      location,
       `Name \`${collidedName}\` collides with a previously defined name.`
     );
   }
 }
 
 export class IllegalOtherClassMatch extends CompileTimeError<'IllegalOtherClassMatch'> {
-  constructor(moduleReference: ModuleReference, range: Range) {
+  constructor(location: Location) {
     super(
       'IllegalOtherClassMatch',
-      moduleReference,
-      range,
+      location,
       "It is illegal to match on a value of other class's type."
     );
   }
 }
 
 export class IllegalThisError extends CompileTimeError<'IllegalThis'> {
-  constructor(moduleReference: ModuleReference, range: Range) {
-    super('IllegalThis', moduleReference, range, 'Keyword `this` cannot be used in this context.');
+  constructor(location: Location) {
+    super('IllegalThis', location, 'Keyword `this` cannot be used in this context.');
   }
 }
 
 export class NonExhausiveMatchError extends CompileTimeError<'NonExhausiveMatch'> {
-  constructor(moduleReference: ModuleReference, range: Range, missingTags: readonly string[]) {
+  constructor(location: Location, missingTags: readonly string[]) {
     super(
       'NonExhausiveMatch',
-      moduleReference,
-      range,
+      location,
       `The following tags are not considered in the match: [${missingTags.join(', ')}].`
     );
   }
@@ -165,7 +130,7 @@ export class NonExhausiveMatchError extends CompileTimeError<'NonExhausiveMatch'
 export interface ReadonlyGlobalErrorCollector {
   getErrors(): readonly CompileTimeError[];
 
-  getModuleErrorCollector(moduleReference: ModuleReference): ModuleErrorCollector;
+  getModuleErrorCollector(): ModuleErrorCollector;
 }
 
 interface WriteOnlyGlobalErrorCollector {
@@ -175,102 +140,87 @@ interface WriteOnlyGlobalErrorCollector {
 export class ModuleErrorCollector {
   private _hasErrors = false;
 
-  constructor(
-    private readonly moduleReference: ModuleReference,
-    private readonly collectorDelegate: WriteOnlyGlobalErrorCollector
-  ) {}
+  constructor(private readonly collectorDelegate: WriteOnlyGlobalErrorCollector) {}
 
   get hasErrors(): boolean {
     return this._hasErrors;
   }
 
-  reportSyntaxError(range: Range, reason: string): void {
+  reportSyntaxError(location: Location, reason: string): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(new SyntaxError(this.moduleReference, range, reason));
+    this.collectorDelegate.reportError(new SyntaxError(location, reason));
   }
 
-  reportUnexpectedTypeError(range: Range, expected: SamlangType, actual: SamlangType): void {
+  reportUnexpectedTypeError(location: Location, expected: SamlangType, actual: SamlangType): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new UnexpectedTypeError(this.moduleReference, range, expected, actual)
-    );
+    this.collectorDelegate.reportError(new UnexpectedTypeError(location, expected, actual));
   }
 
-  reportUnresolvedNameError(range: Range, unresolvedName: string): void {
+  reportUnresolvedNameError(location: Location, unresolvedName: string): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new UnresolvedNameError(this.moduleReference, range, unresolvedName)
-    );
+    this.collectorDelegate.reportError(new UnresolvedNameError(location, unresolvedName));
   }
 
   reportUnsupportedClassTypeDefinitionError(
-    range: Range,
+    location: Location,
     typeDefinitionType: 'object' | 'variant'
   ): void {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
-      new UnsupportedClassTypeDefinitionError(this.moduleReference, range, typeDefinitionType)
+      new UnsupportedClassTypeDefinitionError(location, typeDefinitionType)
     );
   }
 
   reportUnexpectedTypeKindError(
-    range: Range,
+    location: Location,
     expected: string,
     actual: string | SamlangType
   ): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new UnexpectedTypeKindError(this.moduleReference, range, expected, actual)
-    );
+    this.collectorDelegate.reportError(new UnexpectedTypeKindError(location, expected, actual));
   }
 
-  reportTupleSizeMismatchError(range: Range, expectedSize: number, actualSize: number): void {
+  reportTupleSizeMismatchError(location: Location, expectedSize: number, actualSize: number): void {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
-      new TupleSizeMismatchError(this.moduleReference, range, expectedSize, actualSize)
+      new TupleSizeMismatchError(location, expectedSize, actualSize)
     );
   }
 
   reportTypeArgumentsSizeMismatchError(
-    range: Range,
+    location: Location,
     expectedSize: number,
     actualSize: number
   ): void {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
-      new TypeArgumentsSizeMismatchError(this.moduleReference, range, expectedSize, actualSize)
+      new TypeArgumentsSizeMismatchError(location, expectedSize, actualSize)
     );
   }
 
-  reportInsufficientTypeInferenceContextError(range: Range): void {
+  reportInsufficientTypeInferenceContextError(location: Location): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new InsufficientTypeInferenceContextError(this.moduleReference, range)
-    );
+    this.collectorDelegate.reportError(new InsufficientTypeInferenceContextError(location));
   }
 
-  reportCollisionError(range: Range, collidedName: string): void {
+  reportCollisionError(location: Location, collidedName: string): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new CollisionError(this.moduleReference, range, collidedName)
-    );
+    this.collectorDelegate.reportError(new CollisionError(location, collidedName));
   }
 
-  reportIllegalOtherClassMatch(range: Range): void {
+  reportIllegalOtherClassMatch(location: Location): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(new IllegalOtherClassMatch(this.moduleReference, range));
+    this.collectorDelegate.reportError(new IllegalOtherClassMatch(location));
   }
 
-  reportIllegalThisError(range: Range): void {
+  reportIllegalThisError(location: Location): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(new IllegalThisError(this.moduleReference, range));
+    this.collectorDelegate.reportError(new IllegalThisError(location));
   }
 
-  reportNonExhausiveMatchError(range: Range, missingTags: readonly string[]): void {
+  reportNonExhausiveMatchError(location: Location, missingTags: readonly string[]): void {
     this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new NonExhausiveMatchError(this.moduleReference, range, missingTags)
-    );
+    this.collectorDelegate.reportError(new NonExhausiveMatchError(location, missingTags));
   }
 }
 
@@ -281,8 +231,8 @@ class GlobalErrorCollector implements ReadonlyGlobalErrorCollector, WriteOnlyGlo
     return this.errors;
   }
 
-  getModuleErrorCollector(moduleReference: ModuleReference): ModuleErrorCollector {
-    return new ModuleErrorCollector(moduleReference, this);
+  getModuleErrorCollector(): ModuleErrorCollector {
+    return new ModuleErrorCollector(this);
   }
 
   reportError(error: CompileTimeError): void {

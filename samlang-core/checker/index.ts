@@ -110,7 +110,7 @@ function typeCheckModule(
   samlangModule: SamlangModule,
   errorCollector: ReadonlyGlobalErrorCollector
 ): SamlangModule {
-  const moduleErrorCollector = errorCollector.getModuleErrorCollector(moduleReference);
+  const moduleErrorCollector = errorCollector.getModuleErrorCollector();
   checkUndefinedImportsError(sources, samlangModule, moduleErrorCollector);
   const checkedModule = typeCheckSamlangModule(
     moduleReference,
@@ -155,7 +155,7 @@ export function typeCheckSourceHandles(
           parseSamlangModuleFromText(
             text,
             moduleReference,
-            errorCollector.getModuleErrorCollector(moduleReference)
+            errorCollector.getModuleErrorCollector()
           ),
         ] as const
     )

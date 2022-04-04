@@ -24,7 +24,7 @@ class UndefinedImportChecker {
     const availableMembers = this.sources.get(oneImport.importedModule);
     if (availableMembers == null) {
       this.errorCollector.reportUnresolvedNameError(
-        oneImport.range,
+        oneImport.location,
         moduleReferenceToString(oneImport.importedModule)
       );
       return null;
@@ -35,9 +35,9 @@ class UndefinedImportChecker {
       )
     );
     const checkedMemberImports = oneImport.importedMembers.filter(
-      ({ name: importedMember, range }) => {
+      ({ name: importedMember, location }) => {
         if (!availableMembersSet.has(importedMember)) {
-          this.errorCollector.reportUnresolvedNameError(range, importedMember);
+          this.errorCollector.reportUnresolvedNameError(location, importedMember);
           return false;
         }
         return true;

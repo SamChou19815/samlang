@@ -1,4 +1,4 @@
-import { ModuleReference, Position, Range } from '../../ast/common-nodes';
+import { Location, ModuleReference, Position } from '../../ast/common-nodes';
 import type { SamlangExpression } from '../../ast/samlang-nodes';
 import { typeCheckSourceHandles } from '../../checker';
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
@@ -7,26 +7,23 @@ describe('location-service', () => {
   it('LocationLookupTest self consistent test', () => {
     const lookup = new LocationLookup<string>();
     const farPosition = Position(100, 100);
-    const range = new Range(Position(1, 1), Position(2, 2));
     const moduleReference = ModuleReference(['foo']);
-    const location = { moduleReference, range };
+    const location = new Location(moduleReference, Position(1, 1), Position(2, 2));
     lookup.set(location, 'exist');
-    expect(lookup.getBestLocation(moduleReference, range.start)).toEqual(location);
-    expect(lookup.getBestLocation(moduleReference, range.end)).toEqual(location);
+    expect(lookup.getBestLocation(moduleReference, location.start)).toEqual(location);
+    expect(lookup.getBestLocation(moduleReference, location.end)).toEqual(location);
     expect(lookup.getBestLocation(moduleReference, farPosition)).toBeNull();
     expect(lookup.getBestLocation(ModuleReference(['oof']), farPosition)).toBeNull();
-    expect(lookup.get(moduleReference, range.start)).toBe('exist');
-    expect(lookup.get(moduleReference, range.end)).toBe('exist');
+    expect(lookup.get(moduleReference, location.start)).toBe('exist');
+    expect(lookup.get(moduleReference, location.end)).toBe('exist');
     expect(lookup.get(moduleReference, farPosition)).toBeNull();
   });
 
   it('LocationLookupTest favors small range test', () => {
     const lookup = new LocationLookup<number>();
     const moduleReference = ModuleReference(['foo']);
-    const smallRange = new Range(Position(2, 1), Position(3, 2));
-    const smallLocation = { moduleReference, range: smallRange };
-    const bigRange = new Range(Position(1, 1), Position(30, 2));
-    const bigLocation = { moduleReference, range: bigRange };
+    const smallLocation = new Location(moduleReference, Position(2, 1), Position(3, 2));
+    const bigLocation = new Location(moduleReference, Position(1, 1), Position(30, 2));
     lookup.set(smallLocation, 1);
     lookup.set(bigLocation, 2);
     expect(lookup.getBestLocation(moduleReference, Position(3, 1))).toEqual(smallLocation);

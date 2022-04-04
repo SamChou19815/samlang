@@ -1,4 +1,4 @@
-import { DummySourceReason, ModuleReference, Range, SourceReason } from '../../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference, SourceReason } from '../../ast/common-nodes';
 import { AND, CONCAT, EQ, LT, MUL } from '../../ast/common-operators';
 import {
   SamlangExpression,
@@ -531,7 +531,7 @@ describe('expression-type-fixer', () => {
         }),
         matchingList: [
           {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
@@ -548,7 +548,7 @@ describe('expression-type-fixer', () => {
         }),
         matchingList: [
           {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
@@ -569,7 +569,7 @@ describe('expression-type-fixer', () => {
         }),
         matchingList: [
           {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
@@ -590,7 +590,7 @@ describe('expression-type-fixer', () => {
         }),
         matchingList: [
           {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             tag: SourceId('A'),
             tagOrder: 1,
             expression: SourceExpressionVariable({
@@ -609,12 +609,12 @@ describe('expression-type-fixer', () => {
       SourceExpressionStatementBlock({
         type: SourceUnitType(DummySourceReason),
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType(SourceReason(Range.DUMMY, null)),
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
+              typeAnnotation: SourceIntType(SourceReason(Location.DUMMY, null)),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -624,11 +624,11 @@ describe('expression-type-fixer', () => {
       SourceExpressionStatementBlock({
         type: { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
               typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
@@ -642,12 +642,12 @@ describe('expression-type-fixer', () => {
       SourceExpressionStatementBlock({
         type: SourceIntType(DummySourceReason),
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-              typeAnnotation: SourceIntType(SourceReason(Range.DUMMY, null)),
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
+              typeAnnotation: SourceIntType(SourceReason(Location.DUMMY, null)),
               assignedExpression: intOf(1),
               associatedComments: [],
             },
@@ -658,11 +658,11 @@ describe('expression-type-fixer', () => {
       SourceExpressionStatementBlock({
         type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
               typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
@@ -678,11 +678,11 @@ describe('expression-type-fixer', () => {
       SourceExpressionStatementBlock({
         type: { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
               typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
@@ -698,11 +698,11 @@ describe('expression-type-fixer', () => {
       SourceExpressionStatementBlock({
         type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
               typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],
@@ -717,11 +717,11 @@ describe('expression-type-fixer', () => {
       SourceExpressionStatementBlock({
         type: { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
         block: {
-          range: Range.DUMMY,
+          location: Location.DUMMY,
           statements: [
             {
-              range: Range.DUMMY,
-              pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
+              location: Location.DUMMY,
+              pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
               typeAnnotation: SourceIntType(DummySourceReason),
               assignedExpression: intOf(1),
               associatedComments: [],

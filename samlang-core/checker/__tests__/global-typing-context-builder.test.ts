@@ -1,8 +1,8 @@
 import {
   DummySourceReason,
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
-  Range,
 } from '../../ast/common-nodes';
 import type { SamlangModule, SourceClassDefinition } from '../../ast/samlang-nodes';
 import {
@@ -21,14 +21,14 @@ const module0Reference = ModuleReference(['Module0']);
 const module1Reference = ModuleReference(['Module1']);
 
 const typeDefinition = {
-  range: Range.DUMMY,
+  location: Location.DUMMY,
   type: 'object',
   names: [],
   mappings: {},
 } as const;
 
 const class0: SourceClassDefinition = {
-  range: Range.DUMMY,
+  location: Location.DUMMY,
   associatedComments: [],
   name: SourceId('Class0'),
   typeParameters: [],
@@ -36,7 +36,7 @@ const class0: SourceClassDefinition = {
   members: [],
 };
 const class1: SourceClassDefinition = {
-  range: Range.DUMMY,
+  location: Location.DUMMY,
   associatedComments: [],
   name: SourceId('Class1'),
   typeParameters: [],
@@ -44,7 +44,7 @@ const class1: SourceClassDefinition = {
   members: [
     {
       associatedComments: [],
-      range: Range.DUMMY,
+      location: Location.DUMMY,
       isPublic: true,
       isMethod: true,
       name: SourceId('m1'),
@@ -55,7 +55,7 @@ const class1: SourceClassDefinition = {
     },
     {
       associatedComments: [],
-      range: Range.DUMMY,
+      location: Location.DUMMY,
       isPublic: false,
       isMethod: false,
       name: SourceId('f1'),
@@ -67,7 +67,7 @@ const class1: SourceClassDefinition = {
   ],
 };
 const class2: SourceClassDefinition = {
-  range: Range.DUMMY,
+  location: Location.DUMMY,
   associatedComments: [],
   name: SourceId('Class2'),
   typeParameters: [],
@@ -79,9 +79,9 @@ const module0: SamlangModule = { imports: [], classes: [class0], interfaces: [] 
 const module1: SamlangModule = {
   imports: [
     {
-      range: Range.DUMMY,
+      location: Location.DUMMY,
       importedModule: module0Reference,
-      importedModuleRange: Range.DUMMY,
+      importedModuleLocation: Location.DUMMY,
       importedMembers: [SourceId('Class0'), SourceId('BAD_CLASS_THAT_DOESNT_EXIST')],
     },
   ],

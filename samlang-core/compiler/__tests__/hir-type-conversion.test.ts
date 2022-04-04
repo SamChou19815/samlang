@@ -1,4 +1,4 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference } from '../../ast/common-nodes';
 import {
   HIR_BOOL_TYPE,
   HIR_FUNCTION_TYPE,
@@ -329,7 +329,7 @@ describe('hir-type-conversion', () => {
       new Set(['A']),
       typeSynthesizer
     ).lowerSamlangTypeDefinition(ModuleReference.ROOT, 'Foo', {
-      range: Range.DUMMY,
+      location: Location.DUMMY,
       type: 'object',
       names: [SourceId('a'), SourceId('b')],
       mappings: {

@@ -1,4 +1,4 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference } from '../../ast/common-nodes';
 import {
   SourceBoolType,
   SourceFunctionType,
@@ -381,20 +381,20 @@ describe('constraint-aware-checker', () => {
   it('checkAndInferWithErrorRecording type', () => {
     const resolution = new TypeResolution();
     const globalCollector = createGlobalErrorCollector();
-    const moduleCollector = globalCollector.getModuleErrorCollector(ModuleReference.DUMMY);
+    const moduleCollector = globalCollector.getModuleErrorCollector();
 
     expect(
       new ConstraintAwareChecker(resolution, moduleCollector).checkAndInfer(
         SourceUnitType(DummySourceReason),
         SourceUnitType(DummySourceReason),
-        Range.DUMMY
+        Location.DUMMY
       )
     ).toEqual(SourceUnitType(DummySourceReason));
     expect(globalCollector.getErrors()).toEqual([]);
     new ConstraintAwareChecker(resolution, moduleCollector).checkAndInfer(
       SourceUnitType(DummySourceReason),
       SourceBoolType(DummySourceReason),
-      Range.DUMMY
+      Location.DUMMY
     );
     expect(globalCollector.getErrors().map((it) => it.errorType)).toEqual(['UnexpectedType']);
   });

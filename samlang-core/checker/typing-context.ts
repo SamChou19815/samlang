@@ -1,9 +1,9 @@
 import {
   DummySourceReason,
+  Location,
+  LocationCollections,
   ModuleReference,
   moduleReferenceToString,
-  Range,
-  RangeCollections,
   SourceReason,
 } from '../ast/common-nodes';
 import {
@@ -228,7 +228,7 @@ export class AccessibleGlobalTypingContext {
 }
 
 export class LocationBasedLocalTypingContext {
-  private typeMap = RangeCollections.hashMapOf<SamlangType>();
+  private typeMap = LocationCollections.hashMapOf<SamlangType>();
 
   constructor(
     private readonly ssaAnalysisResult: SsaAnalysisResult,
@@ -239,28 +239,28 @@ export class LocationBasedLocalTypingContext {
     return this.thisType;
   }
 
-  read(range: Range): SamlangType {
-    const definitionRange = this.ssaAnalysisResult.useDefineMap.get(range);
-    if (definitionRange == null) {
+  read(location: Location): SamlangType {
+    const definitionLocation = this.ssaAnalysisResult.useDefineMap.get(location);
+    if (definitionLocation == null) {
       // When the name is unbound, we treat itself as definition.
-      return UndecidedTypes.next(SourceReason(range, null));
+      return UndecidedTypes.next(SourceReason(location, null));
     }
-    return this.typeMap.forceGet(definitionRange);
+    return this.typeMap.forceGet(definitionLocation);
   }
 
-  write(range: Range, type: SamlangType): void {
-    this.typeMap.set(range, type);
+  write(location: Location, type: SamlangType): void {
+    this.typeMap.set(location, type);
   }
 
-  getCaptured(lambdaLocation: Range): ReadonlyMap<string, SamlangType> {
+  getCaptured(lambdaLocation: Location): ReadonlyMap<string, SamlangType> {
     const map = new Map<string, SamlangType>();
     const capturedEntries = this.ssaAnalysisResult.lambdaCaptures
       .forceGet(lambdaLocation)
       .entries();
-    for (const [name, range] of capturedEntries) {
+    for (const [name, location] of capturedEntries) {
       const firstLetter = name.charAt(0);
       if ('A' <= firstLetter && firstLetter <= 'Z') continue;
-      map.set(name, this.typeMap.forceGet(range));
+      map.set(name, this.typeMap.forceGet(location));
     }
     return map;
   }

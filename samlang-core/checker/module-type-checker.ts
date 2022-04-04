@@ -23,7 +23,7 @@ function typeCheckMemberDeclaration(
       memberDeclaration.typeParameters.map((it) => it.name)
     );
   memberDeclaration.parameters.forEach((parameter) => {
-    localTypingContext.write(parameter.nameRange, parameter.type);
+    localTypingContext.write(parameter.nameLocation, parameter.type);
   });
   return { contextWithAdditionalTypeParameters, localTypingContext };
 }

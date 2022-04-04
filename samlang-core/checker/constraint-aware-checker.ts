@@ -1,4 +1,4 @@
-import { moduleReferenceToString, Range } from '../ast/common-nodes';
+import { Location, moduleReferenceToString } from '../ast/common-nodes';
 import { isTheSameType, SamlangType, SamlangUndecidedType } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
@@ -124,11 +124,11 @@ export class ConstraintAwareChecker {
   readonly checkAndInfer = (
     hint: SamlangType,
     actual: SamlangType,
-    errorRange: Range
+    errorLocation: Location
   ): SamlangType => {
     const result = checkAndInfer(hint, actual, this.resolution);
     if (result.type === 'FAILED_MEET') {
-      this.errorCollector.reportUnexpectedTypeError(errorRange, result.expected, result.actual);
+      this.errorCollector.reportUnexpectedTypeError(errorLocation, result.expected, result.actual);
       return result.expected;
     }
     return result;

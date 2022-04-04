@@ -1,4 +1,4 @@
-import { DummySourceReason, ModuleReference, Range } from '../../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference } from '../../ast/common-nodes';
 import { AND, CONCAT, MUL, OR, PLUS } from '../../ast/common-operators';
 import {
   debugPrintHighIRExpression,
@@ -301,7 +301,7 @@ return (_t0: int);`
             ),
             name: 'closure',
           }),
-          functionArguments: [SourceExpressionTrue(Range.DUMMY, [])],
+          functionArguments: [SourceExpressionTrue(Location.DUMMY, [])],
         }),
         `let _t0: int = (closure: Closure)(1);
 return (_t0: int);`
@@ -320,7 +320,7 @@ return (_t0: int);`
             ),
             name: 'closure_unit_return',
           }),
-          functionArguments: [SourceExpressionTrue(Range.DUMMY, [])],
+          functionArguments: [SourceExpressionTrue(Location.DUMMY, [])],
         }),
         `(closure_unit_return: Closure)(1);
 return 0;`
@@ -591,14 +591,14 @@ return 0;`
           matchedExpression: THIS,
           matchingList: [
             {
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               tag: SourceId('Foo'),
               tagOrder: 0,
               dataVariable: [SourceId('bar'), SourceIntType(DummySourceReason)],
               expression: THIS,
             },
             {
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               tag: SourceId('Bar'),
               tagOrder: 1,
               expression: THIS,
@@ -625,20 +625,20 @@ return (_t2: __DUMMY___Dummy);`
           matchedExpression: THIS,
           matchingList: [
             {
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               tag: SourceId('Foo'),
               tagOrder: 0,
               dataVariable: [SourceId('bar'), SourceIntType(DummySourceReason)],
               expression: THIS,
             },
             {
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               tag: SourceId('Bar'),
               tagOrder: 1,
               expression: THIS,
             },
             {
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               tag: SourceId('Baz'),
               tagOrder: 2,
               expression: THIS,
@@ -666,20 +666,20 @@ return 0;`
           matchedExpression: THIS,
           matchingList: [
             {
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               tag: SourceId('Foo'),
               tagOrder: 0,
               expression: THIS,
             },
             {
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               tag: SourceId('Bar'),
               tagOrder: 1,
               dataVariable: [SourceId('bar'), DUMMY_IDENTIFIER_TYPE],
               expression: SourceExpressionVariable({ type: DUMMY_IDENTIFIER_TYPE, name: 'bar' }),
             },
             {
-              range: Range.DUMMY,
+              location: Location.DUMMY,
               tag: SourceId('Baz'),
               tagOrder: 2,
               expression: THIS,
@@ -713,12 +713,12 @@ return (_t4: __DUMMY___Dummy);`
         SourceExpressionStatementBlock({
           type: SourceUnitType(DummySourceReason),
           block: {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             statements: [
               {
-                range: Range.DUMMY,
+                location: Location.DUMMY,
                 pattern: {
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: 'TuplePattern',
                   destructedNames: [
                     { name: SourceId('ignored'), type: SourceIntType(DummySourceReason) },
@@ -730,7 +730,7 @@ return (_t4: __DUMMY___Dummy);`
                   SourceIntType(DummySourceReason),
                 ]),
                 assignedExpression: SourceExpressionTupleConstructor({
-                  range: Range.DUMMY,
+                  location: Location.DUMMY,
                   type: SourceTupleType(DummySourceReason, [
                     SourceIntType(DummySourceReason),
                     SourceIntType(DummySourceReason),
@@ -741,18 +741,18 @@ return (_t4: __DUMMY___Dummy);`
                 associatedComments: [],
               },
               {
-                range: Range.DUMMY,
-                pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
+                location: Location.DUMMY,
+                pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
                 typeAnnotation: SourceUnitType(DummySourceReason),
                 assignedExpression: SourceExpressionStatementBlock({
                   type: SourceUnitType(DummySourceReason),
                   block: {
-                    range: Range.DUMMY,
+                    location: Location.DUMMY,
                     statements: [
                       {
-                        range: Range.DUMMY,
+                        location: Location.DUMMY,
                         pattern: {
-                          range: Range.DUMMY,
+                          location: Location.DUMMY,
                           type: 'TuplePattern',
                           destructedNames: [
                             { name: SourceId('a'), type: SourceIntType(DummySourceReason) },
@@ -773,19 +773,19 @@ return (_t4: __DUMMY___Dummy);`
                         associatedComments: [],
                       },
                       {
-                        range: Range.DUMMY,
+                        location: Location.DUMMY,
                         pattern: {
-                          range: Range.DUMMY,
+                          location: Location.DUMMY,
                           type: 'ObjectPattern',
                           destructedNames: [
                             {
-                              range: Range.DUMMY,
+                              location: Location.DUMMY,
                               fieldName: SourceId('a'),
                               type: SourceIntType(DummySourceReason),
                               fieldOrder: 0,
                             },
                             {
-                              range: Range.DUMMY,
+                              location: Location.DUMMY,
                               fieldName: SourceId('b'),
                               type: SourceIntType(DummySourceReason),
                               fieldOrder: 1,
@@ -798,8 +798,8 @@ return (_t4: __DUMMY___Dummy);`
                         associatedComments: [],
                       },
                       {
-                        range: Range.DUMMY,
-                        pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
+                        location: Location.DUMMY,
+                        pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
                         typeAnnotation: DUMMY_IDENTIFIER_TYPE,
                         assignedExpression: THIS,
                         associatedComments: [],
@@ -831,18 +831,18 @@ return 0;`
         SourceExpressionStatementBlock({
           type: SourceUnitType(DummySourceReason),
           block: {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             statements: [
               {
-                range: Range.DUMMY,
-                pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
+                location: Location.DUMMY,
+                pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
                 typeAnnotation: SourceUnitType(DummySourceReason),
                 assignedExpression: SourceExpressionString('foo'),
                 associatedComments: [],
               },
               {
-                range: Range.DUMMY,
-                pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
+                location: Location.DUMMY,
+                pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'b' },
                 typeAnnotation: SourceUnitType(DummySourceReason),
                 assignedExpression: SourceExpressionVariable({
                   type: SourceStringType(DummySourceReason),
@@ -866,21 +866,21 @@ return 0;`
         SourceExpressionStatementBlock({
           type: SourceStringType(DummySourceReason),
           block: {
-            range: Range.DUMMY,
+            location: Location.DUMMY,
             statements: [
               {
-                range: Range.DUMMY,
+                location: Location.DUMMY,
                 typeAnnotation: SourceStringType(DummySourceReason),
-                pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
+                pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
                 assignedExpression: SourceExpressionStatementBlock({
                   type: SourceUnitType(DummySourceReason),
                   block: {
-                    range: Range.DUMMY,
+                    location: Location.DUMMY,
                     statements: [
                       {
-                        range: Range.DUMMY,
+                        location: Location.DUMMY,
                         typeAnnotation: SourceIntType(DummySourceReason),
-                        pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
+                        pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
                         assignedExpression: THIS,
                         associatedComments: [],
                       },

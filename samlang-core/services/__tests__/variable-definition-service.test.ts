@@ -1,8 +1,8 @@
 import {
+  Location,
   ModuleReference,
   ModuleReferenceCollections,
   Position,
-  Range,
 } from '../../ast/common-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
@@ -20,17 +20,24 @@ function prepareLookup(source: string): ModuleScopedVariableDefinitionLookup {
   const parsedModule = parseSamlangModuleFromText(
     source,
     moduleReference,
-    errorCollector.getModuleErrorCollector(moduleReference)
+    errorCollector.getModuleErrorCollector()
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   return new ModuleScopedVariableDefinitionLookup(parsedModule);
 }
 
-function query(lookup: ModuleScopedVariableDefinitionLookup, range: Range) {
-  const defAndUse = lookup.findAllDefinitionAndUses(range);
+function query(lookup: ModuleScopedVariableDefinitionLookup, location: Location) {
+  const defAndUse = lookup.findAllDefinitionAndUses(location);
   if (defAndUse == null) return null;
-  const { definitionRange, useRanges } = defAndUse;
-  return { definition: definitionRange.toString(), uses: useRanges.map((it) => it.toString()) };
+  const { definitionLocation, useLocations } = defAndUse;
+  const locToString = (l: Location) => {
+    const s = l.toString();
+    return s.substring(s.indexOf(':') + 1);
+  };
+  return {
+    definition: locToString(definitionLocation),
+    uses: useLocations.map(locToString),
+  };
 }
 
 describe('variable-definition-service', () => {
@@ -40,7 +47,7 @@ class Main {
   function test(a: int, b: bool): unit = { }
 }
 `;
-    expect(prepareLookup(source).findAllDefinitionAndUses(Range.DUMMY)).toBeNull();
+    expect(prepareLookup(source).findAllDefinitionAndUses(Location.DUMMY)).toBeNull();
   });
 
   it('ModuleScopedVariableDefinitionLookup look up tests', () => {
@@ -63,31 +70,45 @@ class Main {
 `;
     const lookup = prepareLookup(source);
 
-    expect(query(lookup, new Range(Position(3, 12), Position(3, 13)))).toEqual({
+    expect(
+      query(lookup, new Location(ModuleReference.DUMMY, Position(3, 12), Position(3, 13)))
+    ).toEqual({
       definition: '3:17-3:18',
       uses: ['4:13-4:14'],
     });
-    expect(query(lookup, new Range(Position(3, 8), Position(3, 9)))).toEqual({
+    expect(
+      query(lookup, new Location(ModuleReference.DUMMY, Position(3, 8), Position(3, 9)))
+    ).toEqual({
       definition: '4:9-4:10',
       uses: [],
     });
-    expect(query(lookup, new Range(Position(4, 9), Position(4, 10)))).toEqual({
+    expect(
+      query(lookup, new Location(ModuleReference.DUMMY, Position(4, 9), Position(4, 10)))
+    ).toEqual({
       definition: '5:10-5:11',
       uses: [],
     });
-    expect(query(lookup, new Range(Position(8, 12), Position(8, 13)))).toEqual({
+    expect(
+      query(lookup, new Location(ModuleReference.DUMMY, Position(8, 12), Position(8, 13)))
+    ).toEqual({
       definition: '7:10-7:11',
       uses: ['9:13-9:14', '10:59-10:60'],
     });
-    expect(query(lookup, new Range(Position(8, 16), Position(8, 17)))).toEqual({
+    expect(
+      query(lookup, new Location(ModuleReference.DUMMY, Position(8, 16), Position(8, 17)))
+    ).toEqual({
       definition: '7:18-7:19',
       uses: ['8:24-8:25', '9:17-9:18', '10:45-10:46', '10:75-10:76', '11:24-11:25'],
     });
-    expect(query(lookup, new Range(Position(9, 22), Position(9, 23)))).toEqual({
+    expect(
+      query(lookup, new Location(ModuleReference.DUMMY, Position(9, 22), Position(9, 23)))
+    ).toEqual({
       definition: '10:23-10:24',
       uses: ['10:37-10:38'],
     });
-    expect(query(lookup, new Range(Position(12, 19), Position(12, 21)))).toEqual({
+    expect(
+      query(lookup, new Location(ModuleReference.DUMMY, Position(12, 19), Position(12, 21)))
+    ).toEqual({
       definition: '13:14-13:16',
       uses: ['13:20-13:22'],
     });
@@ -115,29 +136,37 @@ class Main {
 }
 `,
       moduleReference,
-      errorCollector.getModuleErrorCollector(moduleReference)
+      errorCollector.getModuleErrorCollector()
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     const lookup = new VariableDefinitionLookup();
     lookup.rebuild(ModuleReferenceCollections.hashMapOf([moduleReference, parsedModule]));
 
-    expect(lookup.findAllDefinitionAndUses(ModuleReference(['Test1']), Range.DUMMY)).toBeNull();
-    expect(lookup.findAllDefinitionAndUses(ModuleReference(['Test']), Range.DUMMY)).toBeNull();
+    expect(
+      lookup.findAllDefinitionAndUses(
+        new Location(ModuleReference(['Test1']), Location.DUMMY.start, Location.DUMMY.end)
+      )
+    ).toBeNull();
+    expect(
+      lookup.findAllDefinitionAndUses(
+        new Location(ModuleReference(['Test']), Location.DUMMY.start, Location.DUMMY.end)
+      )
+    ).toBeNull();
 
-    const assertCorrectlyRewritten = (range: Range, expected: string) =>
+    const assertCorrectlyRewritten = (location: Location, expected: string) =>
       expect(
         prettyPrintSamlangModule(
           60,
           applyRenamingWithDefinitionAndUse(
             parsedModule,
-            checkNotNull(lookup.findAllDefinitionAndUses(ModuleReference(['Test']), range)),
+            checkNotNull(lookup.findAllDefinitionAndUses(location)),
             'renAmeD'
           )
         )
       ).toBe(expected);
 
     assertCorrectlyRewritten(
-      new Range(Position(3, 12), Position(3, 13)),
+      new Location(ModuleReference(['Test']), Position(3, 12), Position(3, 13)),
       `class Main {
   function test(renAmeD: int, b: bool): unit = {
     val c = renAmeD;
@@ -158,7 +187,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(3, 8), Position(3, 9)),
+      new Location(ModuleReference(['Test']), Position(3, 8), Position(3, 9)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val renAmeD = a;
@@ -179,7 +208,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(4, 9), Position(4, 10)),
+      new Location(ModuleReference(['Test']), Position(4, 9), Position(4, 10)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -200,7 +229,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(4, 18), Position(4, 19)),
+      new Location(ModuleReference(['Test']), Position(4, 18), Position(4, 19)),
       `class Main {
   function test(a: int, renAmeD: bool): unit = {
     val c = a;
@@ -221,7 +250,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(6, 35), Position(6, 36)),
+      new Location(ModuleReference(['Test']), Position(6, 35), Position(6, 36)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -242,7 +271,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(8, 12), Position(8, 13)),
+      new Location(ModuleReference(['Test']), Position(8, 12), Position(8, 13)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -263,7 +292,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(8, 16), Position(8, 17)),
+      new Location(ModuleReference(['Test']), Position(8, 16), Position(8, 17)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -284,7 +313,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(9, 22), Position(9, 23)),
+      new Location(ModuleReference(['Test']), Position(9, 22), Position(9, 23)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -305,7 +334,7 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Range(Position(12, 19), Position(12, 21)),
+      new Location(ModuleReference(['Test']), Position(12, 19), Position(12, 21)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -339,7 +368,7 @@ class Main {
 }
 `,
       moduleReference,
-      errorCollector.getModuleErrorCollector(moduleReference)
+      errorCollector.getModuleErrorCollector()
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     const lookup = new VariableDefinitionLookup();
@@ -352,8 +381,7 @@ class Main {
           parsedModule,
           checkNotNull(
             lookup.findAllDefinitionAndUses(
-              ModuleReference(['Test']),
-              new Range(Position(3, 12), Position(3, 13))
+              new Location(ModuleReference(['Test']), Position(3, 12), Position(3, 13))
             )
           ),
           'renAmeD'
