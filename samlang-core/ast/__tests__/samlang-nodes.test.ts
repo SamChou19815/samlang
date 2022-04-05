@@ -9,6 +9,7 @@ import {
   SourceStringType,
   SourceTupleType,
   SourceUnitType,
+  SourceUnknownType,
   UndecidedTypes,
 } from '../samlang-nodes';
 
@@ -18,6 +19,7 @@ describe('samlang-nodes', () => {
     expect(prettyPrintType(SourceBoolType(DummySourceReason))).toBe('bool');
     expect(prettyPrintType(SourceIntType(DummySourceReason))).toBe('int');
     expect(prettyPrintType(SourceStringType(DummySourceReason))).toBe('string');
+    expect(prettyPrintType(SourceUnknownType(DummySourceReason))).toBe('unknown');
     expect(
       prettyPrintType(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo'))
     ).toBe('Foo');

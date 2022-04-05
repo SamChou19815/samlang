@@ -23,7 +23,7 @@ interface SamlangBaseType {
 
 export interface SamlangPrimitiveType extends SamlangBaseType {
   readonly type: 'PrimitiveType';
-  readonly name: 'unit' | 'bool' | 'int' | 'string';
+  readonly name: 'unit' | 'bool' | 'int' | 'string' | 'unknown';
 }
 
 export interface SamlangIdentifierType extends SamlangBaseType {
@@ -75,6 +75,11 @@ export const SourceStringType = (reason: SamlangReason): SamlangPrimitiveType =>
   type: 'PrimitiveType',
   reason,
   name: 'string',
+});
+export const SourceUnknownType = (reason: SamlangReason): SamlangPrimitiveType => ({
+  type: 'PrimitiveType',
+  reason,
+  name: 'unknown',
 });
 
 export const SourceIdentifierType = (
