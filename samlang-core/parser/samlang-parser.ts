@@ -1125,12 +1125,10 @@ export default class SamlangModuleParser extends BaseParser {
     const associatedComments = this.collectPrecedingComments();
     const startLocation = this.assertAndConsume('val');
     const pattern = this.parsePattern();
-    let typeAnnotation: SamlangType;
+    let typeAnnotation: SamlangType | null = null;
     if (this.peek().content === ':') {
       this.consume();
       typeAnnotation = this.parseType();
-    } else {
-      typeAnnotation = UndecidedTypes.next(SourceReason(pattern.location, null));
     }
     this.assertAndConsume('=');
     const assignedExpression = this.parseExpression();

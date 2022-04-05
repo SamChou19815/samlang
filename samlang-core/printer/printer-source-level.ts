@@ -270,7 +270,7 @@ function createPrettierDocumentFromSamlangExpression(
               createPrettierDocumentForAssociatedComments(associatedComments, true) ?? PRETTIER_NIL,
               PRETTIER_TEXT('val '),
               patternDocument,
-              typeAnnotation.type === 'UndecidedType'
+              typeAnnotation == null
                 ? PRETTIER_NIL
                 : PRETTIER_TEXT(`: ${prettyPrintType(typeAnnotation)}`),
               PRETTIER_TEXT(' = '),

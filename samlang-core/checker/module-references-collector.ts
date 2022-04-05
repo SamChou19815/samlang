@@ -76,7 +76,9 @@ export function collectModuleReferenceFromExpression(
         block: { expression: finalExpression },
       } = expression;
       expression.block.statements.forEach((statement) => {
-        collectModuleReferenceFromType(statement.typeAnnotation, collector);
+        if (statement.typeAnnotation != null) {
+          collectModuleReferenceFromType(statement.typeAnnotation, collector);
+        }
         collectModuleReferenceFromExpression(statement.assignedExpression, collector);
       });
       if (finalExpression != null) {
