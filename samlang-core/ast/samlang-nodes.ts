@@ -347,7 +347,7 @@ export type Pattern = TuplePattern | ObjectPattern | VariablePattern | WildCardP
 
 export interface SamlangValStatement extends Node {
   readonly pattern: Pattern;
-  readonly typeAnnotation: SamlangType;
+  readonly typeAnnotation: SamlangType | null;
   readonly assignedExpression: SamlangExpression;
   readonly associatedComments: readonly TypedComment[];
 }

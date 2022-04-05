@@ -636,7 +636,10 @@ class ExpressionTypeChecker {
 
   private typeCheckValStatement(statement: SamlangValStatement): SamlangValStatement {
     const { location, pattern, typeAnnotation, assignedExpression } = statement;
-    const checkedAssignedExpression = this.typeCheck(assignedExpression, typeAnnotation);
+    const checkedAssignedExpression = this.typeCheck(
+      assignedExpression,
+      typeAnnotation ?? UndecidedTypes.next(SourceReason(assignedExpression.location, null))
+    );
     const checkedAssignedExpressionType = checkedAssignedExpression.type;
     let checkedPattern: Pattern;
     switch (pattern.type) {
@@ -651,7 +654,7 @@ class ExpressionTypeChecker {
             location: statement.location,
             associatedComments: statement.associatedComments,
             pattern: statement.pattern,
-            typeAnnotation: assignedExpression.type,
+            typeAnnotation,
             assignedExpression: checkedAssignedExpression,
           };
         }
@@ -686,7 +689,7 @@ class ExpressionTypeChecker {
             location: statement.location,
             associatedComments: statement.associatedComments,
             pattern: statement.pattern,
-            typeAnnotation: assignedExpression.type,
+            typeAnnotation,
             assignedExpression: checkedAssignedExpression,
           };
         }
@@ -718,7 +721,7 @@ class ExpressionTypeChecker {
               location: statement.location,
               associatedComments: statement.associatedComments,
               pattern: statement.pattern,
-              typeAnnotation: assignedExpression.type,
+              typeAnnotation,
               assignedExpression: checkedAssignedExpression,
             };
         }
@@ -739,7 +742,7 @@ class ExpressionTypeChecker {
               location: statement.location,
               associatedComments: statement.associatedComments,
               pattern: statement.pattern,
-              typeAnnotation: assignedExpression.type,
+              typeAnnotation,
               assignedExpression: checkedAssignedExpression,
             };
           }
@@ -754,7 +757,7 @@ class ExpressionTypeChecker {
               location: statement.location,
               associatedComments: statement.associatedComments,
               pattern: statement.pattern,
-              typeAnnotation: assignedExpression.type,
+              typeAnnotation,
               assignedExpression: checkedAssignedExpression,
             };
           }
@@ -779,7 +782,7 @@ class ExpressionTypeChecker {
     return {
       location: statement.location,
       pattern: checkedPattern,
-      typeAnnotation: assignedExpression.type,
+      typeAnnotation,
       assignedExpression: checkedAssignedExpression,
       associatedComments: statement.associatedComments,
     };
