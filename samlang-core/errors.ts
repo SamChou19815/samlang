@@ -61,22 +61,12 @@ export class UnexpectedTypeKindError extends CompileTimeError<'UnexpectedTypeKin
   }
 }
 
-export class TupleSizeMismatchError extends CompileTimeError<'TupleSizeMismatch'> {
-  constructor(location: Location, expectedSize: number, actualSize: number) {
+export class ArityMismatchError extends CompileTimeError<'ArityMismatchError'> {
+  constructor(location: Location, kind: string, expectedSize: number, actualSize: number) {
     super(
-      'TupleSizeMismatch',
+      'ArityMismatchError',
       location,
-      `Incorrect tuple size. Expected: ${expectedSize}, actual: ${actualSize}.`
-    );
-  }
-}
-
-export class TypeArgumentsSizeMismatchError extends CompileTimeError<'TypeArgumentsSizeMismatch'> {
-  constructor(location: Location, expectedSize: number, actualSize: number) {
-    super(
-      'TypeArgumentsSizeMismatch',
-      location,
-      `Incorrect type arguments size. Expected: ${expectedSize}, actual: ${actualSize}.`
+      `Incorrect ${kind} size. Expected: ${expectedSize}, actual: ${actualSize}.`
     );
   }
 }
@@ -180,21 +170,15 @@ export class ModuleErrorCollector {
     this.collectorDelegate.reportError(new UnexpectedTypeKindError(location, expected, actual));
   }
 
-  reportTupleSizeMismatchError(location: Location, expectedSize: number, actualSize: number): void {
-    this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new TupleSizeMismatchError(location, expectedSize, actualSize)
-    );
-  }
-
-  reportTypeArgumentsSizeMismatchError(
+  reportArityMismatchError(
     location: Location,
+    kind: string,
     expectedSize: number,
     actualSize: number
   ): void {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
-      new TypeArgumentsSizeMismatchError(location, expectedSize, actualSize)
+      new ArityMismatchError(location, kind, expectedSize, actualSize)
     );
   }
 
