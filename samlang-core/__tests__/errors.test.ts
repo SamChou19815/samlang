@@ -1,6 +1,7 @@
 import { DummySourceReason, Location } from '../ast/common-nodes';
 import { SourceBoolType, SourceIntType } from '../ast/samlang-nodes';
 import {
+  ArityMismatchError,
   CollisionError,
   CompileTimeError,
   IllegalOtherClassMatch,
@@ -8,8 +9,6 @@ import {
   InsufficientTypeInferenceContextError,
   NonExhausiveMatchError,
   SyntaxError,
-  TupleSizeMismatchError,
-  TypeArgumentsSizeMismatchError,
   UnexpectedTypeError,
   UnexpectedTypeKindError,
   UnresolvedNameError,
@@ -43,12 +42,8 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
     '__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',
   ],
   [
-    new TupleSizeMismatchError(Location.DUMMY, 1, 2),
-    '__DUMMY__.sam:0:0-0:0: [TupleSizeMismatch]: Incorrect tuple size. Expected: 1, actual: 2.',
-  ],
-  [
-    new TypeArgumentsSizeMismatchError(Location.DUMMY, 1, 2),
-    '__DUMMY__.sam:0:0-0:0: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 1, actual: 2.',
+    new ArityMismatchError(Location.DUMMY, 'tuple', 1, 2),
+    '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect tuple size. Expected: 1, actual: 2.',
   ],
   [
     new InsufficientTypeInferenceContextError(Location.DUMMY),

@@ -372,7 +372,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Test.helloWorld', SourceFunctionType(DummySourceReason, [string], unit));
 
     assertTypeErrors('Test.<A>helloWorld', SourceFunctionType(DummySourceReason, [string], unit), [
-      'Test.sam:1:1-1:19: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 0, actual: 1.',
+      'Test.sam:1:1-1:19: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
     ]);
     assertTypeErrors('Test.helloWorld2', SourceFunctionType(DummySourceReason, [string], unit), [
       'Test.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved.',
@@ -442,7 +442,7 @@ describe('expression-type-checker', () => {
       'Test4.<int, bool>Foo(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       [
-        'Test.sam:1:1-1:21: [TypeArgumentsSizeMismatch]: Incorrect type arguments size. Expected: 1, actual: 2.',
+        'Test.sam:1:1-1:21: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
       ],
       undefined
     );
@@ -769,7 +769,7 @@ describe('expression-type-checker', () => {
     it('Tuple destructuring 1', () => assertTypeChecks('{val [a, _] = [3, 2];}', unit));
     it('Tuple destructuring 2', () =>
       assertTypeErrors('{val [a, b] = [1,2,3];}', unit, [
-        'Test.sam:1:15-1:22: [TupleSizeMismatch]: Incorrect tuple size. Expected: 3, actual: 2.',
+        'Test.sam:1:15-1:22: [ArityMismatchError]: Incorrect tuple size. Expected: 3, actual: 2.',
       ]));
     it('Tuple destructuring 3', () =>
       assertTypeErrors('{val [a, b] = 1;}', unit, [

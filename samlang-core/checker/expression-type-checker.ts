@@ -171,8 +171,9 @@ class ExpressionTypeChecker {
         );
         return { ...expression, type };
       }
-      this.errorCollector.reportTypeArgumentsSizeMismatchError(
+      this.errorCollector.reportArityMismatchError(
         expression.location,
+        'type arguments',
         classFunctionTypeInformation.typeParameters.length,
         expression.typeArguments.length
       );
@@ -661,8 +662,9 @@ class ExpressionTypeChecker {
         const expectedSize = checkedAssignedExpressionType.mappings.length;
         const actualSize = pattern.destructedNames.length;
         if (expectedSize !== actualSize) {
-          this.errorCollector.reportTupleSizeMismatchError(
+          this.errorCollector.reportArityMismatchError(
             assignedExpression.location,
+            'tuple',
             expectedSize,
             actualSize
           );
