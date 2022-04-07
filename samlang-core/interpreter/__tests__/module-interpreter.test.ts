@@ -251,15 +251,15 @@ describe('module-interpreter', () => {
 
   it('synthetic functions setup correctly', () => {
     (
-      moduleInterpreter.evalContext(mainClassDef, EMPTY).classes.Main?.functions.init?.body as (
-        c: InterpretationContext
-      ) => Value
-    )({ ...EMPTY, localValues: { types: 1 } });
+      moduleInterpreter.evalContext(mainClassDef, EMPTY).classes.get('Main')?.functions.get('init')
+        ?.body as (c: InterpretationContext) => Value
+    )({ ...EMPTY, localValues: new Map([['types', 1]]) });
     (
-      moduleInterpreter.evalContext(mainVariantDef, EMPTY).classes.Main?.functions.types?.body as (
-        c: InterpretationContext
-      ) => Value
-    )({ ...EMPTY, localValues: { data: 1 } });
+      moduleInterpreter
+        .evalContext(mainVariantDef, EMPTY)
+        .classes.get('Main')
+        ?.functions.get('types')?.body as (c: InterpretationContext) => Value
+    )({ ...EMPTY, localValues: new Map([['data', 1]]) });
   });
 
   it('module runs correctly', () => {

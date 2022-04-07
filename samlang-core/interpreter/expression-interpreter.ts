@@ -18,16 +18,17 @@ export default class ExpressionInterpreter {
       case 'LiteralExpression':
         return expression.literal.value;
       case 'ThisExpression':
-        return context.localValues.this ?? this.blameTypeChecker('Missing `this`');
+        return context.localValues.get('this') ?? this.blameTypeChecker('Missing `this`');
       case 'VariableExpression':
         return (
-          context.localValues[expression.name] ??
+          context.localValues.get(expression.name) ??
           this.blameTypeChecker(`Missing variable ${expression.name}`)
         );
       case 'ClassMemberExpression':
         return (
-          context.classes[expression.className.name]?.functions?.[expression.memberName.name] ??
-          this.blameTypeChecker()
+          context.classes
+            .get(expression.className.name)
+            ?.functions?.get(expression.memberName.name) ?? this.blameTypeChecker()
         );
       case 'TupleConstructorExpression':
         return {
@@ -42,12 +43,11 @@ export default class ExpressionInterpreter {
         const identifier = (expression.expression.type as SamlangIdentifierType).identifier;
         const thisValue = this.eval(expression.expression, context);
         const methodValue =
-          context.classes[identifier]?.methods?.[expression.methodName.name] ??
+          context.classes.get(identifier)?.methods?.get(expression.methodName.name) ??
           this.blameTypeChecker();
-        methodValue.context = {
-          classes: context.classes,
-          localValues: { ...context.localValues, this: thisValue },
-        };
+        const localValues = new Map(context.localValues);
+        localValues.set('this', thisValue);
+        methodValue.context = { classes: context.classes, localValues };
         return methodValue;
       }
       case 'UnaryExpression': {
@@ -65,11 +65,11 @@ export default class ExpressionInterpreter {
         const body = functionVal.body;
         const ctx = functionVal.context;
         const argValues = expression.functionArguments.map((arg) => this.eval(arg, context));
-        const bodyLocalValues = { ...ctx.localValues };
+        const bodyLocalValues = new Map(ctx.localValues);
         args.forEach((arg, i) => {
-          bodyLocalValues[arg] = checkNotNull(argValues[i]);
+          bodyLocalValues.set(arg, checkNotNull(argValues[i]));
         });
-        const bodyContext = { classes: ctx.classes, localValues: { ...bodyLocalValues } };
+        const bodyContext = { classes: ctx.classes, localValues: new Map(bodyLocalValues) };
         if (typeof body === 'function') return body(bodyContext);
         return this.eval(body, bodyContext);
       }
@@ -176,13 +176,9 @@ export default class ExpressionInterpreter {
           this.blameTypeChecker();
         let ctx = context;
         if (matchedPattern.dataVariable) {
-          ctx = {
-            classes: ctx.classes,
-            localValues: {
-              ...ctx.localValues,
-              [matchedPattern.dataVariable[0].name]: matchedValue.data,
-            },
-          };
+          const localValues = new Map(ctx.localValues);
+          localValues.set(matchedPattern.dataVariable[0].name, matchedValue.data);
+          ctx = { classes: ctx.classes, localValues };
         }
         return this.eval(matchedPattern.expression, ctx);
       }
@@ -195,7 +191,10 @@ export default class ExpressionInterpreter {
         };
       case 'StatementBlockExpression': {
         const { block } = expression;
-        const contextForStatementBlock = { ...context, localValues: { ...context.localValues } };
+        const contextForStatementBlock = {
+          classes: context.classes,
+          localValues: new Map(context.localValues),
+        };
         block.statements.forEach((statement) => {
           const assignedValue = this.eval(statement.assignedExpression, contextForStatementBlock);
           const p = statement.pattern;
@@ -204,8 +203,9 @@ export default class ExpressionInterpreter {
               const { tupleContent } = assignedValue as TupleValue;
               p.destructedNames.forEach((nameWithLocation, i) => {
                 if (nameWithLocation.name != null) {
-                  contextForStatementBlock.localValues[nameWithLocation.name.name] = checkNotNull(
-                    tupleContent[i]
+                  contextForStatementBlock.localValues.set(
+                    nameWithLocation.name.name,
+                    checkNotNull(tupleContent[i])
                   );
                 }
               });
@@ -215,12 +215,12 @@ export default class ExpressionInterpreter {
               const { objectContent } = assignedValue as ObjectValue;
               p.destructedNames.forEach(({ fieldName, alias }) => {
                 const v = checkNotNull(objectContent.get(fieldName.name));
-                contextForStatementBlock.localValues[alias?.name ?? fieldName.name] = v;
+                contextForStatementBlock.localValues.set(alias?.name ?? fieldName.name, v);
               });
               break;
             }
             case 'VariablePattern':
-              contextForStatementBlock.localValues[p.name] = assignedValue;
+              contextForStatementBlock.localValues.set(p.name, assignedValue);
               break;
             case 'WildCardPattern':
               break;
@@ -241,8 +241,8 @@ export default class ExpressionInterpreter {
  * @param localValues the local values computed inside a function.
  */
 export type InterpretationContext = {
-  readonly classes: Readonly<Record<string, ClassValue>>;
-  readonly localValues: Readonly<Record<string, Value>>;
+  readonly classes: ReadonlyMap<string, ClassValue>;
+  readonly localValues: ReadonlyMap<string, Value>;
 };
 
 /**
@@ -252,70 +252,85 @@ export type InterpretationContext = {
  * @param methods all the defined instance methods inside the class definition.
  */
 export type ClassValue = {
-  readonly functions: Readonly<Record<string, FunctionValue>>;
-  readonly methods: Readonly<Record<string, FunctionValue>>;
+  readonly functions: ReadonlyMap<string, FunctionValue>;
+  readonly methods: ReadonlyMap<string, FunctionValue>;
 };
 
 /**
  * An empty interpretation context. Used for initial setup for interpreter.
  */
 export const EMPTY: InterpretationContext = {
-  classes: {},
-  localValues: {},
+  classes: new Map(),
+  localValues: new Map(),
 };
 
 export const createDefaultInterpretationContext = (
   collectPrinted: (s: string) => void
 ): InterpretationContext => ({
-  classes: {
-    Builtins: {
-      functions: {
-        stringToInt: {
-          type: 'functionValue',
-          arguments: ['v'],
-          body: (localContext) => {
-            const value = localContext.localValues['v'] as string;
-            const parsedValue = parseInt(value, 10);
-            if (!Number.isNaN(parsedValue)) {
-              return parsedValue;
-            }
-            throw new PanicException(`Cannot convert \`${value}\` to int.`);
-          },
-          context: EMPTY,
-        },
-        intToString: {
-          type: 'functionValue',
-          arguments: ['v'],
-          body: (localContext) => {
-            const argumentValue = localContext.localValues['v'] as number;
-            return argumentValue.toString();
-          },
-          context: EMPTY,
-        },
-        println: {
-          type: 'functionValue',
-          arguments: ['v'],
-          body: (localContext) => {
-            const value = localContext.localValues['v'] as string;
-            collectPrinted(value);
-            return { type: 'unit' };
-          },
-          context: EMPTY,
-        },
-        panic: {
-          type: 'functionValue',
-          arguments: ['v'],
-          body: (localContext) => {
-            const value = localContext.localValues['v'] as string;
-            throw new PanicException(value);
-          },
-          context: EMPTY,
-        },
+  classes: new Map([
+    [
+      'Builtins',
+      {
+        functions: new Map([
+          [
+            'stringToInt',
+            {
+              type: 'functionValue',
+              arguments: ['v'],
+              body: (localContext) => {
+                const value = localContext.localValues.get('v') as string;
+                const parsedValue = parseInt(value, 10);
+                if (!Number.isNaN(parsedValue)) {
+                  return parsedValue;
+                }
+                throw new PanicException(`Cannot convert \`${value}\` to int.`);
+              },
+              context: EMPTY,
+            },
+          ],
+          [
+            'intToString',
+            {
+              type: 'functionValue',
+              arguments: ['v'],
+              body: (localContext) => {
+                const argumentValue = localContext.localValues.get('v') as number;
+                return argumentValue.toString();
+              },
+              context: EMPTY,
+            },
+          ],
+          [
+            'println',
+            {
+              type: 'functionValue',
+              arguments: ['v'],
+              body: (localContext) => {
+                const value = localContext.localValues.get('v') as string;
+                collectPrinted(value);
+                return { type: 'unit' };
+              },
+              context: EMPTY,
+            },
+          ],
+          [
+            'panic',
+            {
+              type: 'functionValue',
+              arguments: ['v'],
+              body: (localContext) => {
+                const value = localContext.localValues.get('v') as string;
+                throw new PanicException(value);
+              },
+              context: EMPTY,
+            },
+          ],
+        ]),
+        methods: new Map(),
       },
-      methods: {},
-    },
-  },
-  localValues: {},
+    ],
+  ]),
+  localValues: new Map(),
 });
 
 /**

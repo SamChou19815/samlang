@@ -181,25 +181,25 @@ export function mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TE
 }
 
 function tryMergeIntoDerivedInductionVariableWithoutSwap(
-  existingSet: Record<string, DerivedInductionVariable>,
+  existingSet: Map<string, DerivedInductionVariable>,
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
   binaryStatement: HighIRBinaryStatement
 ): boolean {
   if (binaryStatement.e1.__type__ !== 'HighIRVariableExpression') return false;
-  const existing = existingSet[binaryStatement.e1.name];
+  const existing = existingSet.get(binaryStatement.e1.name);
   if (existing == null) return false;
   if (
     binaryStatement.e2.__type__ === 'HighIRVariableExpression' &&
     binaryStatement.operator === '+'
   ) {
-    const anotherVariable = existingSet[binaryStatement.e2.name];
+    const anotherVariable = existingSet.get(binaryStatement.e2.name);
     if (anotherVariable != null) {
       const merged = mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING(
         existing,
         anotherVariable
       );
       if (merged != null) {
-        existingSet[binaryStatement.name] = merged;
+        existingSet.set(binaryStatement.name, merged);
         return true;
       }
     }
@@ -219,7 +219,7 @@ function tryMergeIntoDerivedInductionVariableWithoutSwap(
         binaryStatement.e2
       );
       if (merged != null) {
-        existingSet[binaryStatement.name] = merged;
+        existingSet.set(binaryStatement.name, merged);
         return true;
       }
     }
@@ -228,7 +228,7 @@ function tryMergeIntoDerivedInductionVariableWithoutSwap(
 }
 
 function tryMergeIntoDerivedInductionVariable(
-  existingSet: Record<string, DerivedInductionVariable>,
+  existingSet: Map<string, DerivedInductionVariable>,
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
   binaryStatement: HighIRBinaryStatement
 ): void {
@@ -410,13 +410,13 @@ export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
   restStatements: readonly HighIRStatement[],
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
 ): readonly DerivedInductionVariableWithName[] {
-  const existingDerivedInductionVariableSet: Record<string, DerivedInductionVariable> = {};
+  const existingDerivedInductionVariableSet = new Map<string, DerivedInductionVariable>();
   allBasicInductionVariables.forEach((it) => {
-    existingDerivedInductionVariableSet[it.name] = {
+    existingDerivedInductionVariableSet.set(it.name, {
       baseName: it.name,
       multiplier: HIR_ONE,
       immediate: HIR_ZERO,
-    };
+    });
   });
   restStatements.forEach((it) => {
     if (it.__type__ !== 'HighIRBinaryStatement') return;
@@ -431,7 +431,7 @@ export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
   );
   return filterMap(restStatements, (it) => {
     if (it.__type__ !== 'HighIRBinaryStatement') return null;
-    const derivedInductionVariable = existingDerivedInductionVariableSet[it.name];
+    const derivedInductionVariable = existingDerivedInductionVariableSet.get(it.name);
     if (derivedInductionVariable == null) return null;
     if (inductionLoopVariablesCollectorNames.has(it.name)) return null;
     return { name: it.name, ...derivedInductionVariable };

@@ -59,17 +59,11 @@ export default class ModuleInterpreter {
       (newContext, classDefinition) => this.evalContext(classDefinition, newContext),
       context
     );
-    if (!fullCtx.classes.Main) {
-      return { type: 'unit' };
-    }
-    const mainModule = fullCtx.classes.Main;
-    if (!mainModule.functions.main) {
-      return { type: 'unit' };
-    }
-    const mainFunction = mainModule.functions.main;
-    if (mainFunction.arguments.length > 0) {
-      return { type: 'unit' };
-    }
+    const mainModule = fullCtx.classes.get('Main');
+    if (!mainModule) return { type: 'unit' };
+    const mainFunction = mainModule.functions.get('main');
+    if (!mainFunction) return { type: 'unit' };
+    if (mainFunction.arguments.length > 0) return { type: 'unit' };
     return this.expressionInterpreter.eval(
       mainFunction.body as SamlangExpression,
       mainFunction.context
@@ -80,8 +74,8 @@ export default class ModuleInterpreter {
     classDefinition: SourceClassDefinition,
     context: InterpretationContext
   ): InterpretationContext => {
-    const functions: Record<string, FunctionValue> = {};
-    const methods: Record<string, FunctionValue> = {};
+    const functions = new Map<string, FunctionValue>();
+    const methods = new Map<string, FunctionValue>();
     classDefinition.members.forEach((member) => {
       const lambda = SourceExpressionLambda({
         location: member.location,
@@ -92,54 +86,51 @@ export default class ModuleInterpreter {
       });
       const value = this.expressionInterpreter.eval(lambda, context) as FunctionValue;
       if (member.isMethod) {
-        methods[member.name.name] = value;
+        methods.set(member.name.name, value);
       } else {
-        functions[member.name.name] = value;
+        functions.set(member.name.name, value);
       }
     });
     const newModule: ClassValue = {
       functions,
       methods,
     };
-    const newContext = {
+    const newContext: InterpretationContext = {
       ...context,
-      classes: {
-        ...context.classes,
-        [classDefinition.name.name]: newModule,
-      },
+      classes: new Map([...Array.from(context.classes), [classDefinition.name.name, newModule]]),
     };
     // patch the functions and methods with correct context.
-    Object.keys(functions).forEach((key) => {
-      checkNotNull(functions[key]).context = newContext;
+    functions.forEach((_, key) => {
+      checkNotNull(functions.get(key)).context = newContext;
     });
-    Object.keys(methods).forEach((key) => {
-      checkNotNull(methods[key]).context = newContext;
+    methods.forEach((_, key) => {
+      checkNotNull(methods.get(key)).context = newContext;
     });
     if (classDefinition.typeDefinition.type === 'object') {
-      functions.init = {
+      functions.set('init', {
         type: 'functionValue',
         arguments: [...classDefinition.typeDefinition.names.map((it) => it.name)],
         body: (localContext) => {
           const objectContent = new Map<string, Value>();
           classDefinition.typeDefinition.names.forEach(({ name }) => {
-            objectContent.set(name, checkNotNull(localContext.localValues[name]));
+            objectContent.set(name, checkNotNull(localContext.localValues.get(name)));
           });
           return { type: 'object', objectContent };
         },
         context: EMPTY,
-      };
+      });
     } else {
       classDefinition.typeDefinition.names.forEach(({ name: tag }) => {
-        functions[tag] = {
+        functions.set(tag, {
           type: 'functionValue',
           arguments: ['data'],
           body: (localContext) => ({
             type: 'variant',
             tag,
-            data: checkNotNull(localContext.localValues['data']),
+            data: checkNotNull(localContext.localValues.get('data')),
           }),
           context: EMPTY,
-        };
+        });
       });
     }
     return newContext;
