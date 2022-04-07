@@ -22,11 +22,11 @@ export default function highIRLoopStrengthReductionOptimization(
   readonly prefixStatements: readonly HighIRStatement[];
   readonly optimizableWhileLoop: HighIROptimizableWhileLoop;
 } {
-  const basicInductionVariablesMap: Record<string, GeneralBasicInductionVariable> = {
-    [basicInductionVariableWithLoopGuard.name]: basicInductionVariableWithLoopGuard,
-  };
+  const basicInductionVariablesMap = new Map<string, GeneralBasicInductionVariable>([
+    [basicInductionVariableWithLoopGuard.name, basicInductionVariableWithLoopGuard],
+  ]);
   generalInductionVariables.forEach((it) => {
-    basicInductionVariablesMap[it.name] = it;
+    basicInductionVariablesMap.set(it.name, it);
   });
   const prefixStatements: HighIRStatement[] = [];
   const newGeneralInductionVariables: GeneralBasicInductionVariable[] = [];
@@ -34,7 +34,7 @@ export default function highIRLoopStrengthReductionOptimization(
     derivedInductionVariables,
     (derivedInductionVariable) => {
       const associatedBasicInductionVariable = checkNotNull(
-        basicInductionVariablesMap[derivedInductionVariable.baseName],
+        basicInductionVariablesMap.get(derivedInductionVariable.baseName),
         `Missing ${derivedInductionVariable.baseName}`
       );
       const addedInvariantExpressionInLoop = mergeInvariantMultiplicationForLoopOptimization(

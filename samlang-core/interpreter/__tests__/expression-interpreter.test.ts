@@ -180,8 +180,8 @@ describe('expression-interpreter', () => {
   });
 
   it('non-empty context equality check', () => {
-    const testFunctions: Record<string, FunctionValue> = {};
-    const testMethods: Record<string, FunctionValue> = {};
+    const testFunctions = new Map<string, FunctionValue>();
+    const testMethods = new Map<string, FunctionValue>();
     const samlangExpression = SourceExpressionTrue(
       new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4))
     );
@@ -191,13 +191,11 @@ describe('expression-interpreter', () => {
       body: samlangExpression,
       context: EMPTY,
     };
-    testFunctions.function1 = functionValue;
-    testMethods.method1 = functionValue;
+    testFunctions.set('function1', functionValue);
+    testMethods.set('method1', functionValue);
     const testClassValue = { functions: testFunctions, methods: testMethods };
-    const testClasses: Record<string, ClassValue> = {};
-    testClasses.class1 = testClassValue;
-    const testLocalValues: Record<string, Value> = {};
-    testLocalValues.v1 = { type: 'unit' };
+    const testClasses = new Map([['class1', testClassValue]]);
+    const testLocalValues = new Map<string, Value>([['v1', { type: 'unit' }]]);
     const testContext = { classes: testClasses, localValues: testLocalValues };
 
     expect(testContext).toEqual(testContext);
@@ -261,9 +259,8 @@ describe('expression-interpreter', () => {
       location: exampleLocation,
       type: SourceBoolType(DummySourceReason),
     });
-    const thisLocalValues: Record<string, Value> = {};
-    thisLocalValues.this = true;
-    const thisContext = { classes: {}, localValues: thisLocalValues };
+    const thisLocalValues = new Map<string, Value>([['this', true]]);
+    const thisContext = { classes: new Map<string, ClassValue>(), localValues: thisLocalValues };
     expect(interpreter.eval(thisExpression, thisContext)).toEqual(boolLiteralValue);
     expect(() => interpreter.eval(thisExpression)).toThrow('Missing `this`');
   });
@@ -274,9 +271,11 @@ describe('expression-interpreter', () => {
       type: SourceBoolType(DummySourceReason),
       name: 'test',
     });
-    const variableLocalValues: Record<string, Value> = {};
-    variableLocalValues.test = boolLiteralValue;
-    const variableContext = { classes: {}, localValues: variableLocalValues };
+    const variableLocalValues = new Map<string, Value>([['test', boolLiteralValue]]);
+    const variableContext = {
+      classes: new Map<string, ClassValue>(),
+      localValues: variableLocalValues,
+    };
     expect(interpreter.eval(variableExpression, variableContext)).toEqual(boolLiteralValue);
     expect(() => interpreter.eval(variableExpression)).toThrow(
       `Missing variable ${variableExpression.name}`
@@ -292,12 +291,16 @@ describe('expression-interpreter', () => {
       className: SourceId('myClass'),
       memberName: SourceId('func'),
     });
-    const classMemberClasses: Record<string, ClassValue> = {};
-    const classMemberFunctions: Record<string, FunctionValue> = {};
-    classMemberFunctions.func = classMemberFunction;
-    const classMemberClassValue = { functions: classMemberFunctions, methods: {} };
-    classMemberClasses.myClass = classMemberClassValue;
-    const classMemberContext = { classes: classMemberClasses, localValues: {} };
+    const classMemberClasses = new Map<string, ClassValue>([
+      [
+        'myClass',
+        {
+          functions: new Map([['func', classMemberFunction]]),
+          methods: new Map(),
+        },
+      ],
+    ]);
+    const classMemberContext = { classes: classMemberClasses, localValues: new Map() };
     expect(interpreter.eval(classMemberExpression, classMemberContext)).toEqual(
       classMemberFunction
     );
@@ -348,23 +351,31 @@ describe('expression-interpreter', () => {
     const objectContentNonEmpty = new Map();
     objectContentNonEmpty.set('test', intLiteralValue);
     const context: InterpretationContext = {
-      classes: {
-        Clazz: {
-          functions: {
-            init: {
-              type: 'functionValue',
-              arguments: ['test'],
-              body: (localContext) => ({
-                type: 'object',
-                objectContent: new Map([['test', checkNotNull(localContext.localValues['test'])]]),
-              }),
-              context: EMPTY,
-            },
+      classes: new Map([
+        [
+          'Clazz',
+          {
+            functions: new Map([
+              [
+                'init',
+                {
+                  type: 'functionValue',
+                  arguments: ['test'],
+                  body: (localContext) => ({
+                    type: 'object',
+                    objectContent: new Map([
+                      ['test', checkNotNull(localContext.localValues.get('test'))],
+                    ]),
+                  }),
+                  context: EMPTY,
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-          methods: {},
-        },
-      },
-      localValues: {},
+        ],
+      ]),
+      localValues: new Map(),
     };
     expect(() => interpreter.eval(objectConstructorExpressionEmpty)).toThrow();
     expect(interpreter.eval(objectConstructorExpressionNonEmpty, context)).toEqual({
@@ -386,24 +397,30 @@ describe('expression-interpreter', () => {
       functionArguments: [intLiteralExpression],
     });
     const context: InterpretationContext = {
-      classes: {
-        Clazz: {
-          functions: {
-            tag: {
-              type: 'functionValue',
-              arguments: ['data'],
-              body: (localContext) => ({
-                type: 'variant',
-                tag: 'tag',
-                data: checkNotNull(localContext.localValues['data']),
-              }),
-              context: EMPTY,
-            },
+      classes: new Map([
+        [
+          'Clazz',
+          {
+            functions: new Map([
+              [
+                'tag',
+                {
+                  type: 'functionValue',
+                  arguments: ['data'],
+                  body: (localContext) => ({
+                    type: 'variant',
+                    tag: 'tag',
+                    data: checkNotNull(localContext.localValues.get('data')),
+                  }),
+                  context: EMPTY,
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-          methods: {},
-        },
-      },
-      localValues: {},
+        ],
+      ]),
+      localValues: new Map(),
     };
     expect(interpreter.eval(variantExpression, context)).toEqual({
       type: 'variant',
@@ -428,23 +445,31 @@ describe('expression-interpreter', () => {
       fieldOrder: 0,
     });
     const context: InterpretationContext = {
-      classes: {
-        Clazz: {
-          functions: {
-            init: {
-              type: 'functionValue',
-              arguments: ['test'],
-              body: (localContext) => ({
-                type: 'object',
-                objectContent: new Map([['test', checkNotNull(localContext.localValues['test'])]]),
-              }),
-              context: EMPTY,
-            },
+      classes: new Map([
+        [
+          'Clazz',
+          {
+            functions: new Map([
+              [
+                'init',
+                {
+                  type: 'functionValue',
+                  arguments: ['test'],
+                  body: (localContext) => ({
+                    type: 'object',
+                    objectContent: new Map([
+                      ['test', checkNotNull(localContext.localValues.get('test'))],
+                    ]),
+                  }),
+                  context: EMPTY,
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-          methods: {},
-        },
-      },
-      localValues: {},
+        ],
+      ]),
+      localValues: new Map(),
     };
     expect(interpreter.eval(fieldAccessExpression, context)).toEqual(intLiteralValue);
     expect(() => interpreter.eval(fieldAccessExpressionFail, context)).toThrow('');
@@ -469,39 +494,46 @@ describe('expression-interpreter', () => {
       expression: identifierExpression,
       methodName: SourceId('method'),
     });
-    const methodAccessMethods: Record<string, FunctionValue> = {};
-    methodAccessMethods.method = classMemberFunction;
-    const methodAccessClass = {
-      functions: {},
-      methods: methodAccessMethods,
-    };
-    const methodAccessClasses: Record<string, ClassValue> = {};
-    methodAccessClasses.method = methodAccessClass;
-    methodAccessClasses.Clazz = {
-      functions: {
-        tag: {
-          type: 'functionValue',
-          arguments: ['data'],
-          body: (localContext) => ({
-            type: 'variant',
-            tag: 'tag',
-            data: checkNotNull(localContext.localValues['data']),
-          }),
-          context: EMPTY,
+    const methodAccessClasses: Map<string, ClassValue> = new Map([
+      [
+        'method',
+        {
+          functions: new Map(),
+          methods: new Map([['method', classMemberFunction]]),
         },
-      },
-      methods: {},
-    };
+      ],
+      [
+        'Clazz',
+        {
+          functions: new Map([
+            [
+              'tag',
+              {
+                type: 'functionValue',
+                arguments: ['data'],
+                body: (localContext) => ({
+                  type: 'variant',
+                  tag: 'tag',
+                  data: checkNotNull(localContext.localValues.get('data')),
+                }),
+                context: EMPTY,
+              },
+            ],
+          ]),
+          methods: new Map(),
+        },
+      ],
+    ]);
     const methodAccessContext: InterpretationContext = {
       classes: methodAccessClasses,
-      localValues: {},
+      localValues: new Map(),
     };
     expect(interpreter.eval(methodAccessExpression, methodAccessContext)).toEqual(
       classMemberFunction
     );
-    delete methodAccessClasses.method;
+    methodAccessClasses.delete('method');
     expect(() => interpreter.eval(methodAccessExpression, methodAccessContext)).toThrow('');
-    delete methodAccessClasses.Clazz;
+    methodAccessClasses.delete('Clazz');
     expect(() => interpreter.eval(methodAccessExpression, methodAccessContext)).toThrow('');
   });
 
@@ -871,24 +903,30 @@ describe('expression-interpreter', () => {
       matchingList: [],
     });
     const context: InterpretationContext = {
-      classes: {
-        Clazz: {
-          functions: {
-            tag: {
-              type: 'functionValue',
-              arguments: ['data'],
-              body: (localContext) => ({
-                type: 'variant',
-                tag: 'tag',
-                data: checkNotNull(localContext.localValues['data']),
-              }),
-              context: EMPTY,
-            },
+      classes: new Map([
+        [
+          'Clazz',
+          {
+            functions: new Map([
+              [
+                'tag',
+                {
+                  type: 'functionValue',
+                  arguments: ['data'],
+                  body: (localContext) => ({
+                    type: 'variant',
+                    tag: 'tag',
+                    data: checkNotNull(localContext.localValues.get('data')),
+                  }),
+                  context: EMPTY,
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-          methods: {},
-        },
-      },
-      localValues: {},
+        ],
+      ]),
+      localValues: new Map(),
     };
     expect(interpreter.eval(matchExpression, context)).toEqual(stringLiteralValue);
     expect(interpreter.eval(matchExpressionNoData, context)).toEqual(stringLiteralValue);
@@ -1007,35 +1045,45 @@ describe('expression-interpreter', () => {
       typeAnnotation: SourceIntType(DummySourceReason),
       assignedExpression: objectExpression,
     };
-    const variableLocalValues: Record<string, Value> = {};
-    variableLocalValues.var = true;
+    const variableLocalValues = new Map<string, Value>([['var', true]]);
     const variableContext: InterpretationContext = {
-      classes: {
-        Clazz: {
-          functions: {
-            init: {
-              type: 'functionValue',
-              arguments: ['test'],
-              body: (localContext) => ({
-                type: 'object',
-                objectContent: new Map([['test', checkNotNull(localContext.localValues['test'])]]),
-              }),
-              context: EMPTY,
-            },
-            tag: {
-              type: 'functionValue',
-              arguments: ['data'],
-              body: (localContext) => ({
-                type: 'variant',
-                tag: 'tag',
-                data: checkNotNull(localContext.localValues['data']),
-              }),
-              context: EMPTY,
-            },
+      classes: new Map([
+        [
+          'Clazz',
+          {
+            functions: new Map([
+              [
+                'init',
+                {
+                  type: 'functionValue',
+                  arguments: ['test'],
+                  body: (localContext) => ({
+                    type: 'object',
+                    objectContent: new Map([
+                      ['test', checkNotNull(localContext.localValues.get('test'))],
+                    ]),
+                  }),
+                  context: EMPTY,
+                },
+              ],
+              [
+                'tag',
+                {
+                  type: 'functionValue',
+                  arguments: ['data'],
+                  body: (localContext) => ({
+                    type: 'variant',
+                    tag: 'tag',
+                    data: checkNotNull(localContext.localValues.get('data')),
+                  }),
+                  context: EMPTY,
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-          methods: {},
-        },
-      },
+        ],
+      ]),
       localValues: variableLocalValues,
     };
     const variablePattern: VariablePattern = {

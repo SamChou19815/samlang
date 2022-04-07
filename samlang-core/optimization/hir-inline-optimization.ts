@@ -226,7 +226,7 @@ function inlineRewriteForStatement(
 function performInlineRewriteOnFunction(
   highIRFunction: HighIRFunction,
   functionsThatCanBeInlined: ReadonlySet<string>,
-  allFunctions: Record<string, HighIRFunction>,
+  allFunctions: Map<string, HighIRFunction>,
   allocator: OptimizationResourceAllocator
 ): HighIRFunction {
   function rewrite(statement: HighIRStatement): readonly HighIRStatement[] {
@@ -243,7 +243,7 @@ function performInlineRewriteOnFunction(
           parameters: argumentNamesOfFunctionToBeInlined,
           body: mainBodyStatementsOfFunctionToBeInlined,
           returnValue: returnValueOfFunctionToBeInlined,
-        } = checkNotNull(allFunctions[functionName], `Missing ${functionName}`);
+        } = checkNotNull(allFunctions.get(functionName), `Missing ${functionName}`);
         const temporaryPrefix = allocator.allocateInliningTemporaryPrefix();
         const context = new LocalValueContextForOptimization();
         // Inline step 1: Bind args to args temp
@@ -302,7 +302,7 @@ export default function optimizeHighIRFunctionsByInlining(
     const { functionsThatCanBeInlined, functionsThatCanPerformInlining } =
       getFunctionsToInline(tempFunctions);
     if (functionsThatCanBeInlined.size === 0) return tempFunctions;
-    const allFunctions = Object.fromEntries(tempFunctions.map((it) => [it.name, it]));
+    const allFunctions = new Map(tempFunctions.map((it) => [it.name, it]));
     tempFunctions = tempFunctions.map((oldFunction) => {
       if (!functionsThatCanPerformInlining.has(oldFunction.name)) return oldFunction;
       return performInlineRewriteOnFunction(
