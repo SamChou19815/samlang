@@ -8,13 +8,16 @@ export default function contextualTypeMeet(
   specific: SamlangType,
   errorCollector: ModuleErrorCollector
 ): SamlangType {
+  if (general.type === 'PrimitiveType' && general.name === 'unknown') {
+    errorCollector.reportInsufficientTypeInferenceContextError(specific.reason.definitionLocation);
+    return specific;
+  }
   if (specific.type === 'PrimitiveType' && specific.name === 'unknown') {
     return { ...general, reason: specific.reason };
   }
   assert(general.type !== 'UndecidedType');
   switch (general.type) {
     case 'PrimitiveType':
-      assert(general.name !== 'unknown', 'General type cannot be unknown.');
       if (!isTheSameType(general, specific)) {
         errorCollector.reportUnexpectedTypeError(
           specific.reason.definitionLocation,

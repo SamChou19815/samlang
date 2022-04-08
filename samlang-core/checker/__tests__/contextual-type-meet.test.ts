@@ -37,6 +37,9 @@ describe('contextual-type-meet', () => {
     expect(meet(SourceUnitType(DummySourceReason), SourceStringType(DummySourceReason))).toBe(
       'FAILED_MEET'
     );
+    expect(meet(SourceUnknownType(DummySourceReason), SourceStringType(DummySourceReason))).toBe(
+      'FAILED_MEET'
+    );
     expect(
       meet(
         SourceUnitType(DummySourceReason),
