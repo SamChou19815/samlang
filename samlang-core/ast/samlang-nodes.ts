@@ -33,11 +33,6 @@ export interface SamlangIdentifierType extends SamlangBaseType {
   readonly typeArguments: readonly SamlangType[];
 }
 
-export interface SamlangTupleType extends SamlangBaseType {
-  readonly type: 'TupleType';
-  readonly mappings: readonly SamlangType[];
-}
-
 export interface SamlangFunctionType extends SamlangBaseType {
   readonly type: 'FunctionType';
   readonly argumentTypes: readonly SamlangType[];
@@ -52,7 +47,6 @@ export interface SamlangUndecidedType extends SamlangBaseType {
 export type SamlangType =
   | SamlangPrimitiveType
   | SamlangIdentifierType
-  | SamlangTupleType
   | SamlangFunctionType
   | SamlangUndecidedType;
 
@@ -93,15 +87,6 @@ export const SourceIdentifierType = (
   moduleReference,
   identifier,
   typeArguments,
-});
-
-export const SourceTupleType = (
-  reason: SamlangReason,
-  mappings: readonly SamlangType[]
-): SamlangTupleType => ({
-  type: 'TupleType',
-  reason,
-  mappings,
 });
 
 export const SourceFunctionType = (
@@ -150,8 +135,6 @@ export function prettyPrintType(type: SamlangType): string {
         return type.identifier;
       }
       return `${type.identifier}<${type.typeArguments.map(prettyPrintType).join(', ')}>`;
-    case 'TupleType':
-      return `[${type.mappings.map(prettyPrintType).join(' * ')}]`;
     case 'FunctionType':
       return `(${type.argumentTypes.map(prettyPrintType).join(', ')}) -> ${prettyPrintType(
         type.returnType
@@ -173,14 +156,6 @@ export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
         t1.identifier === t2.identifier &&
         t1.typeArguments.length === t2.typeArguments.length &&
         zip(t1.typeArguments, t2.typeArguments).every(([t1Element, t2Element]) =>
-          isTheSameType(t1Element, t2Element)
-        )
-      );
-    case 'TupleType':
-      return (
-        t2.type === 'TupleType' &&
-        t1.mappings.length === t2.mappings.length &&
-        zip(t1.mappings, t2.mappings).every(([t1Element, t2Element]) =>
           isTheSameType(t1Element, t2Element)
         )
       );
@@ -250,12 +225,6 @@ export interface ClassMemberExpression extends BaseExpression {
   readonly memberName: SourceIdentifier;
 }
 
-export interface TupleConstructorExpression extends BaseExpression {
-  readonly __type__: 'TupleConstructorExpression';
-  readonly type: SamlangTupleType;
-  readonly expressions: readonly SamlangExpression[];
-}
-
 export interface FieldAccessExpression extends BaseExpression {
   readonly __type__: 'FieldAccessExpression';
   readonly expression: SamlangExpression;
@@ -318,14 +287,6 @@ export interface LambdaExpression extends BaseExpression {
   readonly body: SamlangExpression;
 }
 
-export interface TuplePattern extends Node {
-  readonly type: 'TuplePattern';
-  readonly destructedNames: readonly {
-    readonly name?: SourceIdentifier;
-    readonly type: SamlangType;
-  }[];
-}
-
 export interface ObjectPatternDestucturedName {
   readonly fieldName: SourceIdentifier;
   readonly fieldOrder: number;
@@ -348,7 +309,7 @@ export interface WildCardPattern extends Node {
   readonly type: 'WildCardPattern';
 }
 
-export type Pattern = TuplePattern | ObjectPattern | VariablePattern | WildCardPattern;
+export type Pattern = ObjectPattern | VariablePattern | WildCardPattern;
 
 export interface SamlangValStatement extends Node {
   readonly pattern: Pattern;
@@ -372,7 +333,6 @@ export type SamlangExpression =
   | ThisExpression
   | VariableExpression
   | ClassMemberExpression
-  | TupleConstructorExpression
   | FieldAccessExpression
   | MethodAccessExpression
   | UnaryExpression
@@ -477,20 +437,6 @@ export const SourceExpressionClassMember = ({
   moduleReference,
   className,
   memberName,
-});
-
-export const SourceExpressionTupleConstructor = ({
-  location = Location.DUMMY,
-  type,
-  associatedComments = [],
-  expressions,
-}: ExpressionConstructorArgumentObject<TupleConstructorExpression>): TupleConstructorExpression => ({
-  __type__: 'TupleConstructorExpression',
-  location,
-  type,
-  precedence: 1,
-  associatedComments,
-  expressions,
 });
 
 export const SourceExpressionFieldAccess = ({

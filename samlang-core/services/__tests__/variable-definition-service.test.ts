@@ -55,7 +55,6 @@ class Main {
 class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
-    val [e, _] = [b, 2];
     val g = 3;
     val {f, g as h} = Main.init(3, g);
     val _ = Obj.Tagged(h);
@@ -83,34 +82,28 @@ class Main {
       uses: [],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(4, 9), Position(4, 10)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(7, 12), Position(7, 13)))
     ).toEqual({
-      definition: '5:10-5:11',
-      uses: [],
+      definition: '6:10-6:11',
+      uses: ['8:13-8:14', '9:59-9:60'],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(8, 12), Position(8, 13)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(7, 16), Position(7, 17)))
     ).toEqual({
-      definition: '7:10-7:11',
-      uses: ['9:13-9:14', '10:59-10:60'],
+      definition: '6:18-6:19',
+      uses: ['7:24-7:25', '8:17-8:18', '9:45-9:46', '9:75-9:76', '10:24-10:25'],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(8, 16), Position(8, 17)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(8, 22), Position(8, 23)))
     ).toEqual({
-      definition: '7:18-7:19',
-      uses: ['8:24-8:25', '9:17-9:18', '10:45-10:46', '10:75-10:76', '11:24-11:25'],
+      definition: '9:23-9:24',
+      uses: ['9:37-9:38'],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(9, 22), Position(9, 23)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(11, 19), Position(11, 21)))
     ).toEqual({
-      definition: '10:23-10:24',
-      uses: ['10:37-10:38'],
-    });
-    expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(12, 19), Position(12, 21)))
-    ).toEqual({
-      definition: '13:14-13:16',
-      uses: ['13:20-13:22'],
+      definition: '12:14-12:16',
+      uses: ['12:20-12:22'],
     });
   });
 
@@ -122,7 +115,6 @@ class Main {
 class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
-    val [e, _] = [b, 2];
     val g = 3;
     val {f, g as h} = Main.init(3, g);
     val _ = Obj.Tagged(h);
@@ -170,7 +162,6 @@ class Main {
       `class Main {
   function test(renAmeD: int, b: bool): unit = {
     val c = renAmeD;
-    val [e, _] = [b, 2];
     val g = 3;
     val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
@@ -191,7 +182,6 @@ class Main {
       `class Main {
   function test(a: int, b: bool): unit = {
     val renAmeD = a;
-    val [e, _] = [b, 2];
     val g = 3;
     val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
@@ -208,53 +198,10 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(4, 9), Position(4, 10)),
+      new Location(ModuleReference(['Test']), Position(5, 35), Position(5, 36)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
-    val [renAmeD, _] = [b, 2];
-    val g = 3;
-    val { f, g as h } = Main.init(3, g);
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
-      f
-    ) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
-    }
-  }
-}
-`
-    );
-    assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(4, 18), Position(4, 19)),
-      `class Main {
-  function test(a: int, renAmeD: bool): unit = {
-    val c = a;
-    val [e, _] = [renAmeD, 2];
-    val g = 3;
-    val { f, g as h } = Main.init(3, g);
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
-      f
-    ) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
-    }
-  }
-}
-`
-    );
-    assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(6, 35), Position(6, 36)),
-      `class Main {
-  function test(a: int, b: bool): unit = {
-    val c = a;
-    val [e, _] = [b, 2];
     val renAmeD = 3;
     val { f, g as h } = Main.init(3, renAmeD);
     val _ = Obj.Tagged(h);
@@ -271,11 +218,10 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(8, 12), Position(8, 13)),
+      new Location(ModuleReference(['Test']), Position(7, 12), Position(7, 13)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
-    val [e, _] = [b, 2];
     val g = 3;
     val { f as renAmeD, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
@@ -292,11 +238,10 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(8, 16), Position(8, 17)),
+      new Location(ModuleReference(['Test']), Position(7, 16), Position(7, 17)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
-    val [e, _] = [b, 2];
     val g = 3;
     val { f, g as renAmeD } = Main.init(3, g);
     val _ = Obj.Tagged(renAmeD);
@@ -313,11 +258,10 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(9, 22), Position(9, 23)),
+      new Location(ModuleReference(['Test']), Position(8, 22), Position(8, 23)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
-    val [e, _] = [b, 2];
     val g = 3;
     val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
@@ -334,11 +278,10 @@ class Main {
 `
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(12, 19), Position(12, 21)),
+      new Location(ModuleReference(['Test']), Position(11, 19), Position(11, 21)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
-    val [e, _] = [b, 2];
     val g = 3;
     val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);

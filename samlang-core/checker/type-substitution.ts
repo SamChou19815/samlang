@@ -1,10 +1,5 @@
 import { DummySourceReason, ModuleReference } from '../ast/common-nodes';
-import {
-  SamlangType,
-  SourceFunctionType,
-  SourceIdentifierType,
-  SourceTupleType,
-} from '../ast/samlang-nodes';
+import { SamlangType, SourceFunctionType, SourceIdentifierType } from '../ast/samlang-nodes';
 import { assert } from '../utils';
 import type { MemberTypeInformation } from './typing-context';
 
@@ -24,11 +19,6 @@ export default function performTypeSubstitution(
         type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => performTypeSubstitution(it, mapping))
-      );
-    case 'TupleType':
-      return SourceTupleType(
-        type.reason,
-        type.mappings.map((it) => performTypeSubstitution(it, mapping))
       );
     case 'FunctionType':
       return SourceFunctionType(

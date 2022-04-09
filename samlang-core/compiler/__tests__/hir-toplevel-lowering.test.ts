@@ -20,7 +20,6 @@ import {
   SourceId,
   SourceIdentifierType,
   SourceIntType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import compileSamlangSourcesToHighIRSources, {
@@ -226,12 +225,10 @@ describe('mir-toplevel-lowering', () => {
                 type: SourceFunctionType(
                   DummySourceReason,
                   [
-                    SourceTupleType(DummySourceReason, [
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-                        SourceIntType(DummySourceReason),
-                      ]),
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+                      SourceIntType(DummySourceReason),
                     ]),
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
                   ],
                   SourceIntType(DummySourceReason)
                 ),
@@ -252,12 +249,11 @@ describe('mir-toplevel-lowering', () => {
     expect(
       debugPrintHighIRSources(compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources))
     ).toBe(
-      `closure type $SyntheticIDType1<T> = ($SyntheticIDType0<T>) -> int
+      `closure type $SyntheticIDType0<T> = (__DUMMY___A<int>, T) -> int
 object type __DUMMY___Main = []
 object type __DUMMY___Class1 = [int]
 variant type __DUMMY___Class2 = []
-object type __DUMMY___Class3<T> = [$SyntheticIDType1<T>]
-object type $SyntheticIDType0<T> = [__DUMMY___A<int>, T]
+object type __DUMMY___Class3<T> = [$SyntheticIDType0<T>]
 function ___DUMMY___Main_main_with_context(_context: int): int {
   let _ret: int = ___DUMMY___Main_main();
   return (_ret: int);
@@ -321,13 +317,13 @@ function ___DUMMY___Class1_factorial(n: int, acc: int): int {
   return (_t4: int);
 }
 
-function ___DUMMY___Class3_init<T>(_f0: $SyntheticIDType1<T>): __DUMMY___Class3<T> {
-  let _struct: __DUMMY___Class3<T> = [(_f0: $SyntheticIDType1<T>)];
+function ___DUMMY___Class3_init<T>(_f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {
+  let _struct: __DUMMY___Class3<T> = [(_f0: $SyntheticIDType0<T>)];
   return (_struct: __DUMMY___Class3<T>);
 }
 
-function ___DUMMY___Class3_init_with_context<T>(_context: int, _f0: $SyntheticIDType1<T>): __DUMMY___Class3<T> {
-  let _ret: __DUMMY___Class3<T> = ___DUMMY___Class3_init((_f0: $SyntheticIDType1<T>));
+function ___DUMMY___Class3_init_with_context<T>(_context: int, _f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {
+  let _ret: __DUMMY___Class3<T> = ___DUMMY___Class3_init((_f0: $SyntheticIDType0<T>));
   return (_ret: __DUMMY___Class3<T>);
 }
 

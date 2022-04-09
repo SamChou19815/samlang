@@ -68,56 +68,6 @@ ClassName
       'ClassName /* a */ /* b */ .classMember'
     );
 
-    expect(reprintExpression('[1,2,3,4,5,6,7,8,9]')).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9]');
-    expect(reprintExpression('// a\n[/* a*/ 1,// abc\n2,3]')).toBe(`// a
-[
-  /* a */ 1,
-  // abc
-  2,
-  3
-]`);
-    expect(reprintExpression('[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')).toBe(
-      `[
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14
-]`
-    );
-    expect(
-      reprintExpression(
-        '[/* a */ 1, /* a */ 2, /* a */ 3, /* a */ 4, /* a */ 5, /* a */ 6, /* a */ 7, ' +
-          '/* a */ 8, /* a */ 9, /* a */ 10, /* a */ 11, /* a */ 12, /* a */ 13, /* a */ 14]'
-      )
-    ).toBe(
-      `[
-  /* a */ 1,
-  /* a */ 2,
-  /* a */ 3,
-  /* a */ 4,
-  /* a */ 5,
-  /* a */ 6,
-  /* a */ 7,
-  /* a */ 8,
-  /* a */ 9,
-  /* a */ 10,
-  /* a */ 11,
-  /* a */ 12,
-  /* a */ 13,
-  /* a */ 14
-]`
-    );
-
     expect(reprintExpression('Test.VariantName(42)')).toBe('Test.VariantName(42)');
     expect(reprintExpression('Test.<T>VariantName(42)')).toBe('Test.<T>VariantName(42)');
     expect(reprintExpression('/* a */ Test./* b */ <T>/* c */ VariantName(42)')).toBe(
@@ -252,9 +202,8 @@ Test /* b */ /* c */ .<T>VariantName(42)`
   val _ = 0;
 }`
     );
-    expect(reprintExpression('{ val a:int=1;val [b,_]:[int*int]=2; 3 }')).toBe(`{
+    expect(reprintExpression('{ val a:int=1; 3 }')).toBe(`{
   val a: int = 1;
-  val [b, _]: [int * int] = 2;
   3
 }`);
     expect(reprintExpression('{ val {a, b as c}: int = 3 }')).toBe(`{

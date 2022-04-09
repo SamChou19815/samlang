@@ -30,11 +30,6 @@ export default class ExpressionInterpreter {
             .get(expression.className.name)
             ?.functions?.get(expression.memberName.name) ?? this.blameTypeChecker()
         );
-      case 'TupleConstructorExpression':
-        return {
-          type: 'tuple',
-          tupleContent: expression.expressions.map((e) => this.eval(e, context)),
-        };
       case 'FieldAccessExpression': {
         const thisValue = this.eval(expression.expression, context) as ObjectValue;
         return thisValue.objectContent?.get(expression.fieldName.name) ?? this.blameTypeChecker();
@@ -199,18 +194,6 @@ export default class ExpressionInterpreter {
           const assignedValue = this.eval(statement.assignedExpression, contextForStatementBlock);
           const p = statement.pattern;
           switch (p.type) {
-            case 'TuplePattern': {
-              const { tupleContent } = assignedValue as TupleValue;
-              p.destructedNames.forEach((nameWithLocation, i) => {
-                if (nameWithLocation.name != null) {
-                  contextForStatementBlock.localValues.set(
-                    nameWithLocation.name.name,
-                    checkNotNull(tupleContent[i])
-                  );
-                }
-              });
-              break;
-            }
             case 'ObjectPattern': {
               const { objectContent } = assignedValue as ObjectValue;
               p.destructedNames.forEach(({ fieldName, alias }) => {
@@ -351,18 +334,12 @@ export type Value =
   | number
   | string
   | boolean
-  | TupleValue
   | ObjectValue
   | VariantValue
   | FunctionValue;
 
 export type UnitValue = {
   readonly type: 'unit';
-};
-
-export type TupleValue = {
-  readonly type: 'tuple';
-  readonly tupleContent: Value[];
 };
 
 export type ObjectValue = {

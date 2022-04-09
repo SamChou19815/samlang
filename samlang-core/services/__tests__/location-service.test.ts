@@ -60,7 +60,7 @@ describe('location-service', () => {
     function valExample(): int = {
       val a: int = 1;
       val b = 2;
-      val [_, c] = ["dd", 3]; // c = 3
+      val c = 3; // c = 3
       val { e as d } = Obj.init(5, 4); // d = 4
       val f = Obj.init(5, 4); // d = 4
       val g = Obj.init(d, 4); // d = 4
@@ -96,7 +96,6 @@ describe('location-service', () => {
         }; // c = 4
         c
       }; // 4
-      val [e, b, _] = [1, "bool", true];
       a + 1 // 5
     }
 

@@ -7,7 +7,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
   SourceUnknownType,
   UndecidedTypes,
@@ -32,14 +31,6 @@ describe('samlang-nodes', () => {
         ])
       )
     ).toBe('Foo<unit, int, Bar>');
-    expect(
-      prettyPrintType(
-        SourceTupleType(DummySourceReason, [
-          SourceUnitType(DummySourceReason),
-          SourceIntType(DummySourceReason),
-        ])
-      )
-    ).toBe('[unit * int]');
     expect(
       prettyPrintType(SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)))
     ).toBe('() -> unit');
@@ -209,58 +200,6 @@ describe('samlang-nodes', () => {
           SourceBoolType(DummySourceReason),
         ]),
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ])
-      )
-    ).toBeTruthy();
-
-    expect(
-      isTheSameType(
-        SourceTupleType(DummySourceReason, [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceUnitType(DummySourceReason)
-      )
-    ).toBeFalsy();
-    expect(
-      isTheSameType(
-        SourceTupleType(DummySourceReason, [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceTupleType(DummySourceReason, [])
-      )
-    ).toBeFalsy();
-    expect(
-      isTheSameType(
-        SourceTupleType(DummySourceReason, [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)])
-      )
-    ).toBeFalsy();
-    expect(
-      isTheSameType(
-        SourceTupleType(DummySourceReason, [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceTupleType(DummySourceReason, [
-          SourceBoolType(DummySourceReason),
-          SourceIntType(DummySourceReason),
-        ])
-      )
-    ).toBeFalsy();
-    expect(
-      isTheSameType(
-        SourceTupleType(DummySourceReason, [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceTupleType(DummySourceReason, [
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
         ])

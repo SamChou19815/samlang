@@ -38,16 +38,6 @@ function solveTypeConstraintsInternal(
         );
       }
       return;
-    case 'TupleType':
-      if (
-        concreteType.type === 'TupleType' &&
-        concreteType.mappings.length === genericType.mappings.length
-      ) {
-        zip(concreteType.mappings, genericType.mappings).map(([c, g]) =>
-          solveTypeConstraintsInternal(c, g, typeParameters, partiallySolved)
-        );
-      }
-      return;
     case 'FunctionType':
       if (
         concreteType.type === 'FunctionType' &&
