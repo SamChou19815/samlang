@@ -21,14 +21,12 @@ import {
   SourceExpressionStatementBlock,
   SourceExpressionThis,
   SourceExpressionTrue,
-  SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
   SourceFunctionType,
   SourceId,
   SourceIdentifierType,
   SourceIntType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import { collectModuleReferenceFromExpression } from '../module-references-collector';
@@ -78,25 +76,6 @@ describe('module-references-collector', () => {
 
   it('collectModuleReferenceFromExpression works 3/n', () => {
     assertFoundAllModuleReferencesFromExpression(
-      SourceExpressionTupleConstructor({
-        type: SourceTupleType(DummySourceReason, [
-          SourceIntType(DummySourceReason),
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'f', [
-            SourceFunctionType(
-              DummySourceReason,
-              [SourceIntType(DummySourceReason)],
-              SourceTupleType(DummySourceReason, [SourceBoolType(DummySourceReason)])
-            ),
-          ]),
-        ]),
-        expressions: [intOf(1), TRUE],
-      }),
-      ['__DUMMY__']
-    );
-  });
-
-  it('collectModuleReferenceFromExpression works 6/n', () => {
-    assertFoundAllModuleReferencesFromExpression(
       SourceExpressionFieldAccess({
         type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
         expression: SourceExpressionThis({
@@ -129,7 +108,7 @@ describe('module-references-collector', () => {
     );
   });
 
-  it('collectModuleReferenceFromExpression works 8/n', () => {
+  it('collectModuleReferenceFromExpression works 4/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionBinary({
         type: SourceIntType(DummySourceReason),
@@ -142,7 +121,7 @@ describe('module-references-collector', () => {
     );
   });
 
-  it('collectModuleReferenceFromExpression works 9/n', () => {
+  it('collectModuleReferenceFromExpression works 5/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionMatch({
         type: SourceIntType(DummySourceReason),
@@ -165,7 +144,7 @@ describe('module-references-collector', () => {
     );
   });
 
-  it('collectModuleReferenceFromExpression works 10/n', () => {
+  it('collectModuleReferenceFromExpression works 6/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionStatementBlock({
         type: SourceUnitType(DummySourceReason),
@@ -206,7 +185,7 @@ describe('module-references-collector', () => {
     );
   });
 
-  it('collectModuleReferenceFromExpression works 11/n', () => {
+  it('collectModuleReferenceFromExpression works 7/n', () => {
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionIfElse({
         type: SourceBoolType(DummySourceReason),

@@ -43,7 +43,6 @@ import type {
   SamlangIdentifierType,
   SamlangType,
   StatementBlockExpression,
-  TupleConstructorExpression,
   UnaryExpression,
 } from '../ast/samlang-nodes';
 import { assert, checkNotNull, LocalStackedContext, zip } from '../utils';
@@ -170,11 +169,7 @@ class HighIRExpressionLoweringManager {
     name,
     typeArguments,
   }: HighIRIdentifierType): readonly HighIRType[] {
-    const typeDefinition = checkNotNull(
-      this.typeDefinitionMapping[name] ??
-        this.typeLoweringManager.typeSynthesizer.tupleMappings.get(name),
-      `Missing ${name}`
-    );
+    const typeDefinition = checkNotNull(this.typeDefinitionMapping[name], `Missing ${name}`);
     const replacementMap = Object.fromEntries(zip(typeDefinition.typeParameters, typeArguments));
     return typeDefinition.mappings.map((type) => highIRTypeApplication(type, replacementMap));
   }
@@ -211,8 +206,6 @@ class HighIRExpressionLoweringManager {
         return { statements: [], expression: this.resolveVariable(expression.name) };
       case 'ClassMemberExpression':
         return this.lowerClassMember(expression, favoredTempVariable);
-      case 'TupleConstructorExpression':
-        return this.lowerTupleConstructor(expression, favoredTempVariable);
       case 'FieldAccessExpression':
         return this.lowerFieldAccess(expression, favoredTempVariable);
       case 'MethodAccessExpression':
@@ -262,30 +255,6 @@ class HighIRExpressionLoweringManager {
     const finalVariableExpression = HIR_VARIABLE(closureVariableName, closureType);
     this.varibleContext.bind(closureVariableName, finalVariableExpression);
     return { statements, expression: finalVariableExpression };
-  }
-
-  private lowerTupleConstructor(
-    expression: TupleConstructorExpression,
-    favoredTempVariable: string | null
-  ): HighIRExpressionLoweringResult {
-    const loweredStatements: HighIRStatement[] = [];
-    const tupleVariableName = this.allocateTemporaryVariable(favoredTempVariable);
-    const loweredExpressions = expression.expressions.map((subExpression) =>
-      this.loweredAndAddStatements(subExpression, null, loweredStatements)
-    );
-    const loweredTupleIdentifierType = this.getSyntheticIdentifierTypeFromTuple(
-      loweredExpressions.map((it) => it.type)
-    );
-    loweredStatements.push(
-      HIR_STRUCT_INITIALIZATION({
-        structVariableName: tupleVariableName,
-        type: loweredTupleIdentifierType,
-        expressionList: loweredExpressions,
-      })
-    );
-    const finalVariableExpression = HIR_VARIABLE(tupleVariableName, loweredTupleIdentifierType);
-    this.varibleContext.bind(tupleVariableName, finalVariableExpression);
-    return { statements: loweredStatements, expression: finalVariableExpression };
   }
 
   private lowerFieldAccess(
@@ -867,32 +836,6 @@ class HighIRExpressionLoweringManager {
     const loweredFinalExpression = this.varibleContext.withNestedScope(() => {
       blockStatements.forEach(({ pattern, assignedExpression }) => {
         switch (pattern.type) {
-          case 'TuplePattern': {
-            const loweredAssignedExpression = this.loweredAndAddStatements(
-              assignedExpression,
-              null,
-              loweredStatements
-            );
-            const identifierType = loweredAssignedExpression.type;
-            assert(identifierType.__type__ === 'IdentifierType');
-            pattern.destructedNames.forEach(({ name }, index) => {
-              if (name == null) return;
-              const fieldType = checkNotNull(
-                this.resolveTypeMappingOfIdentifierType(identifierType)[index]
-              );
-              const mangledName = this.getRenamedVariableForNesting(name.name, fieldType);
-              loweredStatements.push(
-                HIR_INDEX_ACCESS({
-                  name: mangledName,
-                  type: fieldType,
-                  pointerExpression: loweredAssignedExpression,
-                  index,
-                })
-              );
-              this.varibleContext.bind(mangledName, HIR_VARIABLE(mangledName, fieldType));
-            });
-            break;
-          }
           case 'ObjectPattern': {
             const loweredAssignedExpression = this.loweredAndAddStatements(
               assignedExpression,

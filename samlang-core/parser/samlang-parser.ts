@@ -39,7 +39,6 @@ import {
   SourceExpressionString,
   SourceExpressionThis,
   SourceExpressionTrue,
-  SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
   SourceFieldType,
@@ -50,7 +49,6 @@ import {
   SourceIntType,
   SourceModuleMembersImport,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
   TypeDefinition,
   UndecidedTypes,
@@ -1070,22 +1068,6 @@ export default class SamlangModuleParser extends BaseParser {
       return nestedExpression;
     }
 
-    if (peeked.content === '[') {
-      this.consume();
-      const expressions = this.parseCommaSeparatedExpressions();
-      const endLocation = this.assertAndConsume(']');
-      const location = peeked.location.union(endLocation);
-      return SourceExpressionTupleConstructor({
-        location,
-        type: SourceTupleType(
-          SourceReason(location, null),
-          expressions.map((it) => it.type)
-        ),
-        associatedComments,
-        expressions,
-      });
-    }
-
     if (peeked.content === '{') {
       this.consume();
 
@@ -1144,24 +1126,6 @@ export default class SamlangModuleParser extends BaseParser {
 
   parsePattern = (): Pattern => {
     const peeked = this.peek();
-    if (peeked.content === '[') {
-      this.consume();
-      const destructedNames = this.parseCommaSeparatedList(() => {
-        const wildcardPeek = this.peek();
-        if (wildcardPeek.content === '_') {
-          this.consume();
-          return { type: UndecidedTypes.next(SourceReason(wildcardPeek.location, null)) };
-        }
-        const name = this.parseLowerId();
-        return { name, type: UndecidedTypes.next(SourceReason(name.location, null)) };
-      });
-      const endLocation = this.assertAndConsume(']');
-      return {
-        location: peeked.location.union(endLocation),
-        type: 'TuplePattern',
-        destructedNames,
-      };
-    }
     if (peeked.content === '{') {
       this.consume();
       const destructedNames = this.parseCommaSeparatedList(() => {
@@ -1233,12 +1197,6 @@ export default class SamlangModuleParser extends BaseParser {
         identifier,
         typeArguments,
       };
-    }
-    if (peeked.content === '[') {
-      this.consume();
-      const mappings = this.parsePunctuationSeparatedList('*', this.parseType);
-      const location = peeked.location.union(this.assertAndConsume(']'));
-      return { type: 'TupleType', reason: SourceReason(location, location), mappings };
     }
     if (peeked.content === '(') {
       this.consume();

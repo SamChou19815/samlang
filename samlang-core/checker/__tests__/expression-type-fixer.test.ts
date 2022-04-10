@@ -17,7 +17,6 @@ import {
   SourceExpressionString,
   SourceExpressionThis,
   SourceExpressionTrue,
-  SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
   SourceFunctionType,
@@ -25,7 +24,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import fixExpressionType from '../expression-type-fixer';
@@ -134,57 +132,6 @@ describe('expression-type-fixer', () => {
         memberName: SourceId('bar'),
       }),
       SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason))
-    );
-  });
-
-  it('Tuple constructors are correctly resolved.', () => {
-    assertCorrectlyFixed(
-      SourceExpressionTupleConstructor({
-        type: SourceTupleType(DummySourceReason, [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        expressions: [intOf(1), TRUE],
-      }),
-      SourceExpressionTupleConstructor({
-        type: SourceTupleType(DummySourceReason, [
-          { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
-          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
-        ]),
-        expressions: [intOf(1), TRUE],
-      }),
-      SourceTupleType(DummySourceReason, [
-        SourceIntType(DummySourceReason),
-        SourceBoolType(DummySourceReason),
-      ])
-    );
-
-    assertThrows(
-      SourceExpressionTupleConstructor({
-        type: SourceTupleType(DummySourceReason, [
-          { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
-          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
-        ]),
-        expressions: [intOf(1), TRUE],
-      }),
-      SourceTupleType(DummySourceReason, [
-        SourceBoolType(DummySourceReason),
-        SourceIntType(DummySourceReason),
-      ])
-    );
-
-    assertThrows(
-      SourceExpressionTupleConstructor({
-        type: SourceTupleType(DummySourceReason, [
-          { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
-          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
-        ]),
-        expressions: [TRUE, intOf(1)],
-      }),
-      SourceTupleType(DummySourceReason, [
-        SourceIntType(DummySourceReason),
-        SourceBoolType(DummySourceReason),
-      ])
     );
   });
 

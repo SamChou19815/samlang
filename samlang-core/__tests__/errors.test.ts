@@ -42,8 +42,8 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
     '__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',
   ],
   [
-    new ArityMismatchError(Location.DUMMY, 'tuple', 1, 2),
-    '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect tuple size. Expected: 1, actual: 2.',
+    new ArityMismatchError(Location.DUMMY, 'pair', 1, 2),
+    '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect pair size. Expected: 1, actual: 2.',
   ],
   [
     new InsufficientTypeInferenceContextError(Location.DUMMY),

@@ -14,9 +14,6 @@ export function collectModuleReferenceFromType(
       collector.add(type.moduleReference);
       type.typeArguments.forEach((it) => collectModuleReferenceFromType(it, collector));
       return;
-    case 'TupleType':
-      type.mappings.forEach((it) => collectModuleReferenceFromType(it, collector));
-      return;
     case 'FunctionType':
       type.argumentTypes.forEach((it) => collectModuleReferenceFromType(it, collector));
       collectModuleReferenceFromType(type.returnType, collector);
@@ -37,9 +34,6 @@ export function collectModuleReferenceFromExpression(
     case 'ClassMemberExpression':
       expression.typeArguments.forEach((it) => collectModuleReferenceFromType(it, collector));
       collector.add(expression.moduleReference);
-      return;
-    case 'TupleConstructorExpression':
-      expression.expressions.forEach((it) => collectModuleReferenceFromExpression(it, collector));
       return;
     case 'FieldAccessExpression':
     case 'MethodAccessExpression':

@@ -23,7 +23,6 @@ import {
 import {
   createBracesSurroundedBlockDocument,
   createBracesSurroundedDocument,
-  createBracketSurroundedDocument,
   createCommaSeparatedList,
   createParenthesisSurroundedDocument,
 } from './printer-prettier-library';
@@ -129,13 +128,6 @@ function createPrettierDocumentFromSamlangExpression(
           optionalTypeArguments(expression.typeArguments) + expression.memberName.name
         );
       }
-      case 'TupleConstructorExpression':
-        return createBracketSurroundedDocument(
-          createCommaSeparatedList(
-            expression.expressions,
-            createPrettierDocumentFromSamlangExpression
-          )
-        );
       case 'FieldAccessExpression':
         return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
@@ -241,13 +233,6 @@ function createPrettierDocumentFromSamlangExpression(
           .map(({ pattern, typeAnnotation, assignedExpression, associatedComments }) => {
             let patternDocument: PrettierDocument;
             switch (pattern.type) {
-              case 'TuplePattern':
-                patternDocument = createBracketSurroundedDocument(
-                  createCommaSeparatedList(pattern.destructedNames, (it) =>
-                    PRETTIER_TEXT(it.name?.name ?? '_')
-                  )
-                );
-                break;
               case 'ObjectPattern':
                 patternDocument = createBracesSurroundedDocument(
                   createCommaSeparatedList(pattern.destructedNames, (it) =>

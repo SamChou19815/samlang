@@ -8,7 +8,7 @@ class Obj(val d: int, val e: int) {
   function valExample(): int = {
     val a: int = 1;
     val b: int = 2;
-    val [_, c]: [string * int] = ["dd", 3];
+    val c = 3;
     val { e as d }: Obj = Obj.init(5, 4);
     val _: int = 42;
     a + b * c / d
@@ -62,7 +62,6 @@ class DifferentExpressionDemo {
       };
       c
     };
-    val [e, b, _]: [int * string * bool] = [1, "bool", true];
     a + 1
   }
 

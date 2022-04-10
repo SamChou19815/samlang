@@ -36,9 +36,6 @@ export const createCommaSeparatedList = <E>(
 export const createParenthesisSurroundedDocument = (document: PrettierDocument): PrettierDocument =>
   PRETTIER_NO_SPACE_BRACKET('(', document, ')');
 
-export const createBracketSurroundedDocument = (document: PrettierDocument): PrettierDocument =>
-  PRETTIER_NO_SPACE_BRACKET('[', document, ']');
-
 export const createBracesSurroundedDocument = (document: PrettierDocument): PrettierDocument =>
   PRETTIER_SPACED_BRACKET('{', document, '}');
 

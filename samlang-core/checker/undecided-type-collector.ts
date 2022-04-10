@@ -9,9 +9,6 @@ function collectUndecidedTypeIndicesVisitor(type: SamlangType, collector: Set<nu
         collectUndecidedTypeIndicesVisitor(typeArgument, collector)
       );
       return;
-    case 'TupleType':
-      type.mappings.forEach((oneType) => collectUndecidedTypeIndicesVisitor(oneType, collector));
-      return;
     case 'FunctionType':
       type.argumentTypes.forEach((typeArgument) =>
         collectUndecidedTypeIndicesVisitor(typeArgument, collector)

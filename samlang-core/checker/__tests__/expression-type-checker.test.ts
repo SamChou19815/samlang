@@ -13,7 +13,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
@@ -379,18 +378,6 @@ describe('expression-type-checker', () => {
     ]);
   });
 
-  it('TupleConstructor', () => {
-    assertTypeChecks('[1, 2, 3]', SourceTupleType(DummySourceReason, [int, int, int]));
-
-    assertTypeErrors('[1, 2, 3]', SourceTupleType(DummySourceReason, [int, int, bool]), [
-      'Test.sam:1:1-1:10: [UnexpectedType]: Expected: `[int * int * bool]`, actual: `[int * int * int]`.',
-    ]);
-    assertTypeErrors('[1, 2, 3]', int, [
-      'Test.sam:1:1-1:10: [UnexpectedTypeKind]: Expected kind: `tuple`, actual: `int`.',
-      'Test.sam:1:1-1:10: [UnexpectedType]: Expected: `int`, actual: `[int * int * int]`.',
-    ]);
-  });
-
   it('ObjectConstructor', () => {
     assertTypeChecks(
       'Test.init(true, 3)',
@@ -547,7 +534,10 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Builtins.panic("")', bool);
     assertTypeChecks('Builtins.panic("")', int);
     assertTypeChecks('Builtins.panic("")', string);
-    assertTypeChecks('Builtins.panic("")', SourceTupleType(DummySourceReason, [int, bool]));
+    assertTypeChecks(
+      'Builtins.panic("")',
+      SourceFunctionType(DummySourceReason, [int, bool], string)
+    );
 
     assertTypeErrors('Builtins.panic(3)', unit, [
       'Test.sam:1:16-1:17: [UnexpectedType]: Expected: `string`, actual: `int`.',
@@ -766,16 +756,6 @@ describe('expression-type-checker', () => {
   });
 
   describe('StatementBlocks', () => {
-    it('Tuple destructuring 1', () => assertTypeChecks('{val [a, _] = [3, 2];}', unit));
-    it('Tuple destructuring 2', () =>
-      assertTypeErrors('{val [a, b] = [1,2,3];}', unit, [
-        'Test.sam:1:15-1:22: [ArityMismatchError]: Incorrect tuple size. Expected: 3, actual: 2.',
-      ]));
-    it('Tuple destructuring 3', () =>
-      assertTypeErrors('{val [a, b] = 1;}', unit, [
-        'Test.sam:1:15-1:16: [UnexpectedTypeKind]: Expected kind: `tuple`, actual: `int`.',
-      ]));
-
     it('Object destructuring 1', () =>
       assertTypeChecks('{val {a, b as c} = A.init();}', unit, undefined, 'A'));
     it('Object destructuring 2', () =>
@@ -787,8 +767,8 @@ describe('expression-type-checker', () => {
         "Test.sam:1:20-1:28: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       ]));
     it('Object destructuring 4', () =>
-      assertTypeErrors('{val {a, b as c} = [1,2];}', unit, [
-        'Test.sam:1:20-1:25: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `[int * int]`.',
+      assertTypeErrors('{val {a, b as c} = 1;}', unit, [
+        'Test.sam:1:20-1:21: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
       ]));
     it('Object destructuring 5', () =>
       assertTypeErrors('{val {a, d as c} = A.init();}', unit, [

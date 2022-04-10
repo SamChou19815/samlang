@@ -130,10 +130,6 @@ export class SamlangExpressionLocationLookupBuilder {
         this.buildSingleExpression(expression);
         return;
       }
-      case 'TupleConstructorExpression':
-        expression.expressions.forEach((it) => this.buildRecursively(it));
-        this.buildSingleExpression(expression);
-        return;
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
       case 'UnaryExpression':
@@ -170,14 +166,6 @@ export class SamlangExpressionLocationLookupBuilder {
           this.buildRecursively(assignedExpression);
           const assignedExpressionType = assignedExpression.type;
           switch (pattern.type) {
-            case 'TuplePattern': {
-              pattern.destructedNames.forEach(({ name, type }) => {
-                if (name != null) {
-                  this.buildSingleExpression(SourceExpressionVariable({ ...name, type }));
-                }
-              });
-              return;
-            }
             case 'ObjectPattern':
               return;
             case 'VariablePattern':

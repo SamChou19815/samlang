@@ -5,7 +5,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
@@ -129,63 +128,6 @@ describe('constraint-aware-checker', () => {
         resolution
       )
     ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'));
-  });
-
-  it('t1=tuple type', () => {
-    const resolution = new TypeResolution();
-
-    expect(
-      checkAndInfer(
-        SourceTupleType(DummySourceReason, []),
-        SourceUnitType(DummySourceReason),
-        resolution
-      ).type
-    ).toBe('FAILED_MEET');
-    expect(
-      checkAndInfer(
-        SourceTupleType(DummySourceReason, []),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-        resolution
-      ).type
-    ).toBe('FAILED_MEET');
-    expect(
-      checkAndInfer(
-        SourceTupleType(DummySourceReason, []),
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]),
-        resolution
-      ).type
-    ).toBe('FAILED_MEET');
-    expect(
-      checkAndInfer(
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]),
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]),
-        resolution
-      )
-    ).toEqual(SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]));
-
-    expect(
-      checkAndInfer(
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]),
-        { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
-        resolution
-      )
-    ).toEqual(SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]));
-    expect(
-      checkAndInfer(
-        { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
-        SourceTupleType(DummySourceReason, [
-          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
-        ]),
-        resolution
-      )
-    ).toEqual(SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]));
-    expect(
-      checkAndInfer(
-        SourceBoolType(DummySourceReason),
-        { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
-        resolution
-      ).type
-    ).toBe('FAILED_MEET');
   });
 
   it('t1=function type', () => {

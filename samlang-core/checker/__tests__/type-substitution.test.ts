@@ -1,10 +1,5 @@
 import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
-import {
-  SourceFunctionType,
-  SourceIdentifierType,
-  SourceIntType,
-  SourceTupleType,
-} from '../../ast/samlang-nodes';
+import { SourceFunctionType, SourceIdentifierType, SourceIntType } from '../../ast/samlang-nodes';
 import performTypeSubstitution from '../type-substitution';
 
 describe('type-substitution', () => {
@@ -20,11 +15,9 @@ describe('type-substitution', () => {
                 SourceIntType(DummySourceReason),
               ]),
             ]),
-            SourceTupleType(DummySourceReason, [
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'D'),
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'E', [
-                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'F'),
-              ]),
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'D'),
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'E', [
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'F'),
             ]),
             { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
           ],
@@ -48,11 +41,9 @@ describe('type-substitution', () => {
               SourceIntType(DummySourceReason),
             ]),
           ]),
-          SourceTupleType(DummySourceReason, [
-            SourceIntType(DummySourceReason),
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'E', [
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'F'),
-            ]),
+          SourceIntType(DummySourceReason),
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'E', [
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'F'),
           ]),
           { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
         ],

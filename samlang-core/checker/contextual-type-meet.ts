@@ -47,21 +47,6 @@ export default function contextualTypeMeet(
         specific
       );
       return specific;
-    case 'TupleType':
-      if (specific.type === 'TupleType' && general.mappings.length === specific.mappings.length) {
-        return {
-          ...specific,
-          mappings: zip(general.mappings, specific.mappings).map(([g, s]) =>
-            contextualTypeMeet(g, s, errorCollector)
-          ),
-        };
-      }
-      errorCollector.reportUnexpectedTypeError(
-        specific.reason.definitionLocation,
-        general,
-        specific
-      );
-      return specific;
     case 'FunctionType':
       if (
         specific.type === 'FunctionType' &&

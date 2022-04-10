@@ -26,8 +26,6 @@ describe('samlang-core/parser', () => {
     expectASTWithTheSameKind('SomeClass.foo', 'ClassMemberExpression');
     expectASTWithTheSameKind('SomeClass.<A,B>foo', 'ClassMemberExpression');
     expectASTWithTheSameKind('SomeClass.<A>foo', 'ClassMemberExpression');
-    expectASTWithTheSameKind('[3, true]', 'TupleConstructorExpression');
-    expectASTWithTheSameKind('[3, true, "Ah"]', 'TupleConstructorExpression');
     expectASTWithTheSameKind('V.Variant({})', 'FunctionCallExpression');
     expectASTWithTheSameKind('V.Variant(3)', 'FunctionCallExpression');
     expectASTWithTheSameKind('V.<T>Variant(3)', 'FunctionCallExpression');
@@ -66,11 +64,6 @@ describe('samlang-core/parser', () => {
     expectASTWithTheSameKind('{ val a: int = 3; }', 'StatementBlockExpression');
     expectASTWithTheSameKind('{ val a: unit = {}; }', 'StatementBlockExpression');
     expectASTWithTheSameKind('{ val {foo, bar as baz}: Type = 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val [foo, _, bar] = 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind(
-      '{ val [foo, _, bar]: [int * bool] = 3; }',
-      'StatementBlockExpression'
-    );
     expectASTWithTheSameKind('{ val _: Int<bool> = 3; }', 'StatementBlockExpression');
     expectASTWithTheSameKind('{ val _: HAHAHA = 3; }', 'StatementBlockExpression');
     expectASTWithTheSameKind('{ val _: (int, bool) -> string = 3; }', 'StatementBlockExpression');

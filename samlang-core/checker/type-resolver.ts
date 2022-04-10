@@ -3,7 +3,6 @@ import {
   SamlangUndecidedType,
   SourceFunctionType,
   SourceIdentifierType,
-  SourceTupleType,
 } from '../ast/samlang-nodes';
 
 export default function resolveType(
@@ -19,11 +18,6 @@ export default function resolveType(
         type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => resolveType(it, undecidedTypeResolver))
-      );
-    case 'TupleType':
-      return SourceTupleType(
-        type.reason,
-        type.mappings.map((it) => resolveType(it, undecidedTypeResolver))
       );
     case 'FunctionType':
       return SourceFunctionType(

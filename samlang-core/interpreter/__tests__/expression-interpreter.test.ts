@@ -24,7 +24,6 @@ import {
   ObjectPatternDestucturedName,
   SamlangExpression,
   SamlangFunctionType,
-  SamlangTupleType,
   SamlangValStatement,
   SourceBoolType,
   SourceExpressionBinary,
@@ -41,7 +40,6 @@ import {
   SourceExpressionString,
   SourceExpressionThis,
   SourceExpressionTrue,
-  SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
   SourceId,
@@ -50,7 +48,6 @@ import {
   SourceStringType,
   SourceUnitType,
   StatementBlock,
-  TuplePattern,
   VariablePattern,
   VariantPatternToExpression,
   WildCardPattern,
@@ -80,7 +77,6 @@ describe('expression-interpreter', () => {
     expect({ type: 'unit' }).not.toEqual({ type: 'bool', value: true });
     expect({ type: 'unit' }).not.toEqual({ type: 'int', value: 1 });
     expect({ type: 'unit' }).not.toEqual({ type: 'string', value: 'string' });
-    expect({ type: 'unit' }).not.toEqual({ type: 'tuple', tupleContent: [] });
     expect({ type: 'unit' }).not.toEqual({ type: 'object', objectContent: new Map() });
     expect({ type: 'unit' }).not.toEqual({ type: 'variant', tag: 'tag', data: { type: 'unit' } });
 
@@ -102,16 +98,6 @@ describe('expression-interpreter', () => {
     expect({ type: 'string', value: 'string' }).not.toEqual({
       type: 'string',
       value: 'not a string',
-    });
-
-    expect({ type: 'tuple', tupleContent: [] }).toEqual({ type: 'tuple', tupleContent: [] });
-    expect({ type: 'tuple', tupleContent: [] }).not.toEqual({
-      type: 'tuple',
-      tupleContent: [{ type: 'unit' }],
-    });
-    expect({ type: 'tuple', tupleContent: [{ type: 'unit' }] }).toEqual({
-      type: 'tuple',
-      tupleContent: [{ type: 'unit' }],
     });
 
     expect({ type: 'object', objectContent: new Map() }).toEqual({
@@ -305,35 +291,6 @@ describe('expression-interpreter', () => {
       classMemberFunction
     );
     expect(() => interpreter.eval(classMemberExpression)).toThrow('');
-  });
-
-  it('tuple expression evaluates correctly', () => {
-    const tupleExpression = SourceExpressionTupleConstructor({
-      location: exampleLocation,
-      type: {
-        type: 'TupleType',
-        reason: DummySourceReason,
-        mappings: [SourceIntType(DummySourceReason)],
-      },
-      expressions: [intLiteralExpression],
-    });
-    const tupleExpressionMultiple = SourceExpressionTupleConstructor({
-      location: exampleLocation,
-      type: {
-        type: 'TupleType',
-        reason: DummySourceReason,
-        mappings: [SourceIntType(DummySourceReason), SourceBoolType(DummySourceReason)],
-      },
-      expressions: [intLiteralExpression, boolLiteralExpression],
-    });
-    expect(interpreter.eval(tupleExpression)).toEqual({
-      type: 'tuple',
-      tupleContent: [intLiteralValue],
-    });
-    expect(interpreter.eval(tupleExpressionMultiple)).toEqual({
-      type: 'tuple',
-      tupleContent: [intLiteralValue, boolLiteralValue],
-    });
   });
 
   it('object constructor expression evaluates correctly', () => {
@@ -956,40 +913,6 @@ describe('expression-interpreter', () => {
   });
 
   it('statement block expression evalutes correctly', () => {
-    const tuplePattern: TuplePattern = {
-      location: exampleLocation,
-      type: 'TuplePattern',
-      destructedNames: [{ name: SourceId('tuple'), type: SourceIntType(DummySourceReason) }],
-    };
-    const tuplePatternNull: TuplePattern = {
-      location: exampleLocation,
-      type: 'TuplePattern',
-      destructedNames: [{ type: SourceIntType(DummySourceReason) }],
-    };
-    const tupleType: SamlangTupleType = {
-      type: 'TupleType',
-      reason: DummySourceReason,
-      mappings: [SourceIntType(DummySourceReason)],
-    };
-    const tupleExpression: SamlangExpression = SourceExpressionTupleConstructor({
-      location: exampleLocation,
-      type: tupleType,
-      expressions: [intLiteralExpression],
-    });
-    const tupleStatement: SamlangValStatement = {
-      associatedComments: [],
-      pattern: tuplePattern,
-      location: exampleLocation,
-      typeAnnotation: SourceIntType(DummySourceReason),
-      assignedExpression: tupleExpression,
-    };
-    const tupleStatementNull: SamlangValStatement = {
-      associatedComments: [],
-      pattern: tuplePatternNull,
-      location: exampleLocation,
-      typeAnnotation: SourceIntType(DummySourceReason),
-      assignedExpression: tupleExpression,
-    };
     const objectDestructedNames: ObjectPatternDestucturedName = {
       fieldName: SourceId('test'),
       type: SourceIntType(DummySourceReason),
@@ -1113,13 +1036,7 @@ describe('expression-interpreter', () => {
     };
     const statementBlock: StatementBlock = {
       location: exampleLocation,
-      statements: [
-        tupleStatement,
-        tupleStatementNull,
-        objectStatement,
-        variableStatement,
-        wildCardStatement,
-      ],
+      statements: [objectStatement, variableStatement, wildCardStatement],
     };
     const statementBlockWithExpression: StatementBlock = {
       location: exampleLocation,

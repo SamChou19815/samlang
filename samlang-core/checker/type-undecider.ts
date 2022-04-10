@@ -30,7 +30,7 @@ export function undecideTypeParameters(
  * Given a `typeMappings` and its `typeParameters`, replaces all references to type parameters to
  * freshly created undecided types.
  *
- * @return tuple(
+ * @return (
  *  `typeMappings` with `typeParameters` replaced with undecided types,
  *   generated undecided types
  * ).

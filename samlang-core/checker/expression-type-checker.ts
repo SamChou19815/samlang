@@ -28,11 +28,9 @@ import {
   SourceIdentifier,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
   StatementBlockExpression,
   ThisExpression,
-  TupleConstructorExpression,
   UnaryExpression,
   UndecidedTypes,
   VariableExpression,
@@ -75,8 +73,6 @@ class ExpressionTypeChecker {
         return this.typeCheckVariable(expression, hint);
       case 'ClassMemberExpression':
         return this.typeCheckClassMember(expression, hint);
-      case 'TupleConstructorExpression':
-        return this.typeCheckTupleConstructor(expression, hint);
       case 'FieldAccessExpression':
         return this.typeCheckFieldAccess(expression, hint);
       case 'UnaryExpression':
@@ -188,31 +184,6 @@ class ExpressionTypeChecker {
       expression.location
     );
     return { ...expression, type: constraintInferredType, typeArguments: undecidedTypeArguments };
-  }
-
-  private typeCheckTupleConstructor(
-    expression: TupleConstructorExpression,
-    hint: SamlangType
-  ): SamlangExpression {
-    const checkedExpressions = expression.expressions.map(this.basicTypeCheck);
-    const locallyInferredType = SourceTupleType(
-      SourceReason(expression.location, null),
-      checkedExpressions.map((it) => it.type)
-    );
-    const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
-      hint,
-      locallyInferredType,
-      expression.location
-    );
-    if (constraintInferredType.type === 'TupleType') {
-      return { ...expression, type: constraintInferredType, expressions: checkedExpressions };
-    }
-    this.errorCollector.reportUnexpectedTypeKindError(
-      expression.location,
-      'tuple',
-      constraintInferredType
-    );
-    return { ...expression, expressions: checkedExpressions, type: locallyInferredType };
   }
 
   private tryTypeCheckMethodAccess(
@@ -644,42 +615,6 @@ class ExpressionTypeChecker {
     const checkedAssignedExpressionType = checkedAssignedExpression.type;
     let checkedPattern: Pattern;
     switch (pattern.type) {
-      case 'TuplePattern': {
-        if (checkedAssignedExpressionType.type !== 'TupleType') {
-          this.errorCollector.reportUnexpectedTypeKindError(
-            assignedExpression.location,
-            'tuple',
-            checkedAssignedExpressionType
-          );
-          return {
-            location: statement.location,
-            associatedComments: statement.associatedComments,
-            pattern: statement.pattern,
-            typeAnnotation,
-            assignedExpression: checkedAssignedExpression,
-          };
-        }
-        const expectedSize = checkedAssignedExpressionType.mappings.length;
-        const actualSize = pattern.destructedNames.length;
-        if (expectedSize !== actualSize) {
-          this.errorCollector.reportArityMismatchError(
-            assignedExpression.location,
-            'tuple',
-            expectedSize,
-            actualSize
-          );
-        }
-        const checkedDestructedNames = zip(
-          pattern.destructedNames,
-          checkedAssignedExpressionType.mappings
-        ).map(([{ name }, elementType]) => {
-          if (name != null) this.localTypingContext.write(name.location, elementType);
-          return { name, type: elementType };
-        });
-        checkedPattern = { ...pattern, destructedNames: checkedDestructedNames };
-        break;
-      }
-
       case 'ObjectPattern': {
         if (checkedAssignedExpressionType.type !== 'IdentifierType') {
           this.errorCollector.reportUnexpectedTypeKindError(

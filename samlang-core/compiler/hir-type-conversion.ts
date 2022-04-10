@@ -277,20 +277,6 @@ export class SamlangTypeLoweringManager {
           encodeSamlangType(type.moduleReference, type.identifier),
           type.typeArguments.map(this.lowerSamlangType)
         );
-      case 'TupleType': {
-        const typeMappings = type.mappings.map(this.lowerSamlangType);
-        const typeParameters = Array.from(
-          collectUsedGenericTypes(HIR_FUNCTION_TYPE(typeMappings, HIR_BOOL_TYPE), this.genericTypes)
-        );
-        const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
-          typeMappings,
-          typeParameters
-        );
-        return HIR_IDENTIFIER_TYPE(
-          typeDefinition.identifier,
-          typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
-        );
-      }
       case 'FunctionType': {
         const rewrittenFunctionType = HIR_FUNCTION_TYPE(
           type.argumentTypes.map(this.lowerSamlangType),

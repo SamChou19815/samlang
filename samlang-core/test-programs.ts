@@ -322,11 +322,12 @@ class Main {
   {
     testName: 'sam-in-samlang-list',
     sourceCode: `
-class List<T>(Nil(unit), Cons([T * List<T>])) {
+class Pair<A, B>(val a: A, val b: B) {}
+class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
   function <T> of(t: T): List<T> =
-    List.Cons([t, List.Nil({})])
+    List.Cons(Pair.init(t, List.Nil({})))
   method cons(t: T): List<T> =
-    List.Cons([t, this])
+    List.Cons(Pair.init(t, this))
 }
 class Developer(
   val name: string, val github: string,
@@ -599,7 +600,9 @@ class Main {
     testCaseName: 'CreateVariants',
     expectedStandardOut: 'hello\n',
     sourceCode: `
-class List(Nil(unit), Cons([int * List])) { function of(i: int): List = List.Cons([i, List.Nil({  })])  }
+class Pair<A, B>(val a: A, val b: B) {}
+
+class List(Nil(unit), Cons(Pair<int, List>)) { function of(i: int): List = List.Cons(Pair.init(i, List.Nil({  })))  }
 
 class Main { function main(): unit = { val _: List = List.of(1); Builtins.println("hello") }  }
 `,
@@ -853,7 +856,7 @@ class Obj(private val d: int, val e: int) {
   function valExample(): int = {
     val a: int = 1;
     val b = 2;
-    val [_, c] = ["dd", 3]; // c = 3
+    val c = 3;
     val { e as d } = Obj.init(5, 4); // d = 4
     val _ = 42;
     // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
@@ -887,7 +890,6 @@ class Main {
       }; // c = 4
       c
     }; // 4
-    val [e, b, _] = [1, "bool", true];
     a + 1 // 5
   }
 
@@ -1168,7 +1170,7 @@ class Main(val a: int, val b: bool) {
     val c = a - 3;
     val d = c * 7
     val b = true;
-    val [_, e] = [a, c]
+    val e = c;
     val _ = Main.init(e, b)
     val finalValue = a + c + d + (if (b) then 0 else Builtins.panic("")) + e; // 2 + (-1) + (-7) + (-1) = -7
     Builtins.println(Builtins.intToString(finalValue))
@@ -1390,11 +1392,13 @@ class Option<T>(Some(T), None(bool)) {
   }
 }
 
-class List<T>(Nil(bool), Cons([T * List<T>])) {
+class Pair<A, B>(val a: A, val b: B) {}
+
+class List<T>(Nil(bool), Cons(Pair<T, List<T>>)) {
   function <T> of(t: T): List<T> =
-    List.Cons([t, List.Nil(true)])
+    List.Cons(Pair.init(t, List.Nil(true)))
   method cons(t: T): List<T> =
-    List.Cons([t, this])
+    List.Cons(Pair.init(t, this))
 }
 
 class Main {

@@ -26,7 +26,6 @@ import {
   SourceExpressionString,
   SourceExpressionThis,
   SourceExpressionTrue,
-  SourceExpressionTupleConstructor,
   SourceExpressionUnary,
   SourceExpressionVariable,
   SourceFunctionType,
@@ -34,7 +33,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import lowerSamlangExpression from '../hir-expression-lowering';
@@ -137,18 +135,6 @@ describe('hir-expression-lowering', () => {
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___A_b_with_context: (int, int) -> int), context: 0 };
-return (_t0: $SyntheticIDType0);`
-    );
-  });
-
-  it('Lowering to StructConstructor works', () => {
-    expectCorrectlyLowered(
-      SourceExpressionTupleConstructor({
-        type: SourceTupleType(DummySourceReason, [DUMMY_IDENTIFIER_TYPE]),
-        expressions: [THIS],
-      }),
-      `object type $SyntheticIDType0 = [__DUMMY___Dummy]
-let _t0: $SyntheticIDType0 = [(_this: __DUMMY___Dummy)];
 return (_t0: $SyntheticIDType0);`
     );
   });
@@ -659,31 +645,6 @@ return (_t4: __DUMMY___Dummy);`
             statements: [
               {
                 location: Location.DUMMY,
-                pattern: {
-                  location: Location.DUMMY,
-                  type: 'TuplePattern',
-                  destructedNames: [
-                    { name: SourceId('ignored'), type: SourceIntType(DummySourceReason) },
-                    { type: SourceIntType(DummySourceReason) },
-                  ],
-                },
-                typeAnnotation: SourceTupleType(DummySourceReason, [
-                  SourceIntType(DummySourceReason),
-                  SourceIntType(DummySourceReason),
-                ]),
-                assignedExpression: SourceExpressionTupleConstructor({
-                  location: Location.DUMMY,
-                  type: SourceTupleType(DummySourceReason, [
-                    SourceIntType(DummySourceReason),
-                    SourceIntType(DummySourceReason),
-                  ]),
-                  associatedComments: [],
-                  expressions: [SourceExpressionInt(1), SourceExpressionInt(2)],
-                }),
-                associatedComments: [],
-              },
-              {
-                location: Location.DUMMY,
                 pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
                 typeAnnotation: SourceUnitType(DummySourceReason),
                 assignedExpression: SourceExpressionStatementBlock({
@@ -691,29 +652,6 @@ return (_t4: __DUMMY___Dummy);`
                   block: {
                     location: Location.DUMMY,
                     statements: [
-                      {
-                        location: Location.DUMMY,
-                        pattern: {
-                          location: Location.DUMMY,
-                          type: 'TuplePattern',
-                          destructedNames: [
-                            { name: SourceId('a'), type: SourceIntType(DummySourceReason) },
-                            { type: SourceIntType(DummySourceReason) },
-                          ],
-                        },
-                        typeAnnotation: SourceTupleType(DummySourceReason, [
-                          SourceIntType(DummySourceReason),
-                          SourceIntType(DummySourceReason),
-                        ]),
-                        assignedExpression: {
-                          ...THIS,
-                          type: SourceTupleType(DummySourceReason, [
-                            SourceIntType(DummySourceReason),
-                            SourceIntType(DummySourceReason),
-                          ]),
-                        },
-                        associatedComments: [],
-                      },
                       {
                         location: Location.DUMMY,
                         pattern: {
@@ -758,11 +696,7 @@ return (_t4: __DUMMY___Dummy);`
             ],
           },
         }),
-        `object type $SyntheticIDType0 = [int, int]
-let _t0: $SyntheticIDType0 = [1, 2];
-let ignored: int = (_t0: $SyntheticIDType0)[0];
-let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
-let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
+        `let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];
 return 0;`
       );

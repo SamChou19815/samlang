@@ -7,7 +7,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import typeResolver from '../type-resolver';
@@ -57,20 +56,6 @@ describe('type-resolver', () => {
       )
     ).toEqual(
       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-        SourceUnitType(DummySourceReason),
-        SourceBoolType(DummySourceReason),
-      ])
-    );
-
-    expect(
-      resolve(
-        SourceTupleType(DummySourceReason, [
-          { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
-          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
-        ])
-      )
-    ).toEqual(
-      SourceTupleType(DummySourceReason, [
         SourceUnitType(DummySourceReason),
         SourceBoolType(DummySourceReason),
       ])

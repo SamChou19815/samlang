@@ -51,11 +51,6 @@ export class ModuleScopedVariableDefinitionLookup {
       case 'VariableExpression':
         this.addDefinitionAndUse(manager.getLocalValueType(expression.name), expression.location);
         return;
-      case 'TupleConstructorExpression':
-        expression.expressions.map((it) =>
-          this.collectDefinitionAndUseWithDefinitionManager(it, manager)
-        );
-        return;
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
       case 'UnaryExpression':
@@ -102,11 +97,6 @@ export class ModuleScopedVariableDefinitionLookup {
           statements.forEach(({ pattern, assignedExpression }) => {
             this.collectDefinitionAndUseWithDefinitionManager(assignedExpression, manager);
             switch (pattern.type) {
-              case 'TuplePattern':
-                pattern.destructedNames.forEach(({ name }) => {
-                  if (name != null) this.defineVariable(name.name, name.location, manager);
-                });
-                return;
               case 'ObjectPattern':
                 pattern.destructedNames.forEach((name) => {
                   if (name.alias == null) {
@@ -192,13 +182,6 @@ function applyExpressionRenamingWithDefinitionAndUse(
   switch (expression.__type__) {
     case 'VariableExpression':
       return { ...expression, name: newName };
-    case 'TupleConstructorExpression':
-      return {
-        ...expression,
-        expressions: expression.expressions.map((it) =>
-          applyExpressionRenamingWithDefinitionAndUse(it, definitionAndUses, newName)
-        ),
-      };
     case 'FieldAccessExpression':
     case 'MethodAccessExpression':
     case 'UnaryExpression':
@@ -303,21 +286,6 @@ function applyExpressionRenamingWithDefinitionAndUse(
             );
             let pattern: Pattern;
             switch (statement.pattern.type) {
-              case 'TuplePattern':
-                pattern = {
-                  ...statement.pattern,
-                  destructedNames: statement.pattern.destructedNames.map(({ name, type }) => ({
-                    name:
-                      name == null
-                        ? undefined
-                        : name.location.toString() ===
-                          definitionAndUses.definitionLocation.toString()
-                        ? { ...name, name: newName }
-                        : name,
-                    type,
-                  })),
-                };
-                break;
               case 'ObjectPattern':
                 pattern = {
                   ...statement.pattern,

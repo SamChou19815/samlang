@@ -104,9 +104,6 @@ class SsaBuilder extends LocalStackedContext<Location> {
       case 'VariableExpression':
         this.use({ name: expression.name, location: expression.location });
         return;
-      case 'TupleConstructorExpression':
-        expression.expressions.forEach(this.visitExpression);
-        return;
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
       case 'UnaryExpression':
@@ -154,11 +151,6 @@ class SsaBuilder extends LocalStackedContext<Location> {
           statements.forEach(({ pattern, assignedExpression }) => {
             this.visitExpression(assignedExpression);
             switch (pattern.type) {
-              case 'TuplePattern':
-                pattern.destructedNames.forEach(({ name }) => {
-                  if (name != null) this.define(name);
-                });
-                return;
               case 'ObjectPattern':
                 pattern.destructedNames.forEach((name) =>
                   this.define(name.alias ?? name.fieldName)
@@ -186,9 +178,6 @@ class SsaBuilder extends LocalStackedContext<Location> {
       case 'IdentifierType':
         this.use({ name: type.identifier, location: type.reason.definitionLocation });
         type.typeArguments.forEach(this.visitType);
-        return;
-      case 'TupleType':
-        type.mappings.forEach(this.visitType);
         return;
       case 'FunctionType':
         type.argumentTypes.forEach(this.visitType);

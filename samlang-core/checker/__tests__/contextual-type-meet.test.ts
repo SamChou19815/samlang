@@ -6,7 +6,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
   SourceUnknownType,
 } from '../../ast/samlang-nodes';
@@ -108,43 +107,6 @@ describe('contextual-type-meet', () => {
         SourceUnknownType(DummySourceReason)
       )
     ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'));
-  });
-
-  it('t1=tuple type', () => {
-    expect(meet(SourceTupleType(DummySourceReason, []), SourceUnitType(DummySourceReason))).toBe(
-      'FAILED_MEET'
-    );
-    expect(
-      meet(
-        SourceTupleType(DummySourceReason, []),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B')
-      )
-    ).toBe('FAILED_MEET');
-    expect(
-      meet(
-        SourceTupleType(DummySourceReason, []),
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)])
-      )
-    ).toBe('FAILED_MEET');
-    expect(
-      meet(
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]),
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)])
-      )
-    ).toEqual(SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]));
-
-    expect(
-      meet(
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]),
-        SourceUnknownType(DummySourceReason)
-      )
-    ).toEqual(SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]));
-    expect(
-      meet(
-        SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]),
-        SourceTupleType(DummySourceReason, [SourceUnknownType(DummySourceReason)])
-      )
-    ).toEqual(SourceTupleType(DummySourceReason, [SourceIntType(DummySourceReason)]));
   });
 
   it('t1=function type', () => {

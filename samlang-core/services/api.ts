@@ -322,7 +322,6 @@ class LanguageServicesImpl implements LanguageServices {
     switch (expression.__type__) {
       case 'LiteralExpression':
       case 'ThisExpression':
-      case 'TupleConstructorExpression':
         return null;
       case 'VariableExpression': {
         if (

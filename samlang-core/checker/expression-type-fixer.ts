@@ -5,7 +5,6 @@ import {
   SamlangExpression,
   SamlangFunctionType,
   SamlangIdentifierType,
-  SamlangTupleType,
   SamlangType,
   SourceBoolType,
   SourceIntType,
@@ -65,16 +64,6 @@ export default function fixExpressionType(
           typeFixItself(typeArgument, null)
         ),
       };
-    case 'TupleConstructorExpression': {
-      const newType = typeFixItself(expression.type, expectedType) as SamlangTupleType;
-      return {
-        ...expression,
-        type: newType,
-        expressions: checkedZip(expression.expressions, newType.mappings).map(([element, type]) =>
-          tryFixExpressionType(element, type)
-        ),
-      };
-    }
     case 'FieldAccessExpression':
     case 'MethodAccessExpression':
       return {

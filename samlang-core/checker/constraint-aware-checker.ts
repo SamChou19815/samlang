@@ -44,24 +44,6 @@ function typeMeet(hint: SamlangType, actual: SamlangType, resolution: TypeResolu
         default:
           throw new Error();
       }
-    case 'TupleType':
-      switch (actual.type) {
-        case 'UndecidedType':
-          return meetWithUndecidedType(hint, actual, resolution);
-        case 'TupleType':
-          if (hint.mappings.length !== actual.mappings.length) {
-            throw new Error();
-          }
-          return {
-            type: 'TupleType',
-            reason: actual.reason,
-            mappings: zip(hint.mappings, actual.mappings).map(([type1, type2]) =>
-              meetWithResolution(type1, type2)
-            ),
-          };
-        default:
-          throw new Error();
-      }
     case 'FunctionType':
       switch (actual.type) {
         case 'UndecidedType':

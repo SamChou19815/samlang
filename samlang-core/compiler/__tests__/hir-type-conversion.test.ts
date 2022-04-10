@@ -17,7 +17,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import {
@@ -276,27 +275,6 @@ describe('hir-type-conversion', () => {
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          SourceTupleType(DummySourceReason, [
-            SourceIntType(DummySourceReason),
-            SourceBoolType(DummySourceReason),
-          ])
-        )
-      )
-    ).toBe('$SyntheticIDType0');
-    expect(
-      prettyPrintHighIRType(
-        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          SourceTupleType(DummySourceReason, [
-            SourceIntType(DummySourceReason),
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
-          ])
-        )
-      )
-    ).toBe('$SyntheticIDType1<T>');
-
-    expect(
-      prettyPrintHighIRType(
-        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
           SourceFunctionType(
             DummySourceReason,
             [
@@ -307,19 +285,16 @@ describe('hir-type-conversion', () => {
           )
         )
       )
-    ).toBe('$SyntheticIDType2<T>');
+    ).toBe('$SyntheticIDType0<T>');
 
     expect(() =>
       manager.lowerSamlangType({ type: 'UndecidedType', reason: DummySourceReason, index: 0 })
     ).toThrow();
 
-    expect(typeSynthesizer.synthesizedTupleTypes.map(prettyPrintHighIRTypeDefinition)).toEqual([
-      'object type $SyntheticIDType0 = [int, bool]',
-      'object type $SyntheticIDType1<T> = [int, T]',
-    ]);
+    expect(typeSynthesizer.synthesizedTupleTypes.map(prettyPrintHighIRTypeDefinition)).toEqual([]);
     expect(
       typeSynthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition)
-    ).toEqual(['closure type $SyntheticIDType2<T> = (T, bool) -> int']);
+    ).toEqual(['closure type $SyntheticIDType0<T> = (T, bool) -> int']);
   });
 
   it('SamlangTypeLoweringManager.lowerSamlangTypeDefinition() works', () => {

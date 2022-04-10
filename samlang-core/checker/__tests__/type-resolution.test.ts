@@ -5,7 +5,6 @@ import {
   SourceFunctionType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
 } from '../../ast/samlang-nodes';
 import { assert } from '../../utils';
@@ -49,10 +48,8 @@ describe('type-resolution', () => {
         SourceFunctionType(
           DummySourceReason,
           [
-            SourceTupleType(DummySourceReason, [
-              { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
-              { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
-            ]),
+            { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+            { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
             { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
             SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
           ],
@@ -67,10 +64,8 @@ describe('type-resolution', () => {
       SourceFunctionType(
         DummySourceReason,
         [
-          SourceTupleType(DummySourceReason, [
-            SourceIntType(DummySourceReason),
-            SourceBoolType(DummySourceReason),
-          ]),
+          SourceIntType(DummySourceReason),
+          SourceBoolType(DummySourceReason),
           SourceStringType(DummySourceReason),
           SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
         ],

@@ -7,7 +7,6 @@ import {
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
-  SourceTupleType,
   SourceUnitType,
   SourceUnknownType,
 } from '../../ast/samlang-nodes';
@@ -68,28 +67,6 @@ describe('type-constraint-solver', () => {
         ['T']
       )
     ).toEqual({ T: 'Baz' });
-  });
-
-  it('tuple type', () => {
-    expect(
-      solve(
-        SourceTupleType(DummySourceReason, [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-          SourceStringType(DummySourceReason),
-        ]),
-        SourceTupleType(DummySourceReason, [IdType('A'), IdType('B'), IdType('A')]),
-        ['A', 'B']
-      )
-    ).toEqual({ A: 'int', B: 'bool', hasError: 'true' });
-
-    expect(
-      solve(
-        SourceIntType(DummySourceReason),
-        SourceTupleType(DummySourceReason, [IdType('A'), IdType('B'), IdType('A')]),
-        ['A', 'B']
-      )
-    ).toEqual({ A: 'unknown', B: 'unknown', hasError: 'true' });
   });
 
   it('function type', () => {

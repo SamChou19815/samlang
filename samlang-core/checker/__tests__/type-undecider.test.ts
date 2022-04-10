@@ -3,7 +3,6 @@ import {
   SourceBoolType,
   SourceFunctionType,
   SourceIdentifierType,
-  SourceTupleType,
   SourceUnitType,
   UndecidedTypes,
 } from '../../ast/samlang-nodes';
@@ -24,14 +23,10 @@ describe('type-undecider', () => {
             ]),
             SourceUnitType(DummySourceReason),
             SourceUnitType(DummySourceReason),
-            SourceTupleType(DummySourceReason, [
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T2'),
-            ]),
-          ],
-          SourceTupleType(DummySourceReason, [
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T2'),
             SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T3'),
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T4'),
-          ])
+          ],
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T4')
         ),
         ['T1', 'T2', 'T3', 'T4']
       )[0]
@@ -45,14 +40,10 @@ describe('type-undecider', () => {
           ]),
           SourceUnitType(DummySourceReason),
           SourceUnitType(DummySourceReason),
-          SourceTupleType(DummySourceReason, [
-            { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
-          ]),
-        ],
-        SourceTupleType(DummySourceReason, [
+          { type: 'UndecidedType', reason: DummySourceReason, index: 1 },
           { type: 'UndecidedType', reason: DummySourceReason, index: 2 },
-          { type: 'UndecidedType', reason: DummySourceReason, index: 3 },
-        ])
+        ],
+        { type: 'UndecidedType', reason: DummySourceReason, index: 3 }
       )
     );
   });
