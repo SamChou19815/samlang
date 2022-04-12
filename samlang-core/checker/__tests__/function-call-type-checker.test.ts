@@ -27,7 +27,8 @@ const IdType = (id: string, typeArguments?: readonly SamlangType[]) =>
 function typeCheck(
   genericFunctionType: SamlangFunctionType,
   typeParameters: readonly string[],
-  functionArguments: readonly SamlangExpression[]
+  functionArguments: readonly SamlangExpression[],
+  returnTypeHint: SamlangType | null
 ) {
   const errorCollector = createGlobalErrorCollector();
   const { solvedGenericType, checkedArguments } = typeCheckFunctionCall(
@@ -35,6 +36,7 @@ function typeCheck(
     typeParameters,
     DummySourceReason,
     functionArguments,
+    returnTypeHint,
     (e) => e,
     errorCollector.getModuleErrorCollector()
   );
@@ -80,11 +82,44 @@ describe('function-call-type-checker', () => {
               },
             ],
           }),
-        ]
+        ],
+        null
       )
     ).toEqual({
       solvedGenericType: '(int, bool, bool) -> D',
       checkedArgumentsTypes: ['int', 'bool', 'bool'],
+      errors: [],
+    });
+  });
+
+  it('easy case when all arguments can be independently type checked, and return type can be inferred from hint', () => {
+    expect(
+      typeCheck(
+        SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('C')], IdType('D')),
+        ['A', 'B', 'C', 'D'],
+        [
+          SourceExpressionInt(0),
+          SourceExpressionStatementBlock({
+            type: SourceBoolType(DummySourceReason),
+            block: {
+              location: Location.DUMMY,
+              statements: [],
+              expression: SourceExpressionTrue(),
+            },
+          }),
+          SourceExpressionStatementBlock({
+            type: SourceUnitType(DummySourceReason),
+            block: {
+              location: Location.DUMMY,
+              statements: [],
+            },
+          }),
+        ],
+        SourceBoolType(DummySourceReason)
+      )
+    ).toEqual({
+      solvedGenericType: '(int, bool, unit) -> bool',
+      checkedArgumentsTypes: ['int', 'bool', 'unit'],
       errors: [],
     });
   });
@@ -111,7 +146,8 @@ describe('function-call-type-checker', () => {
               statements: [],
             },
           }),
-        ]
+        ],
+        null
       )
     ).toEqual({
       solvedGenericType: '(int, bool, unit) -> unknown',
@@ -143,7 +179,8 @@ describe('function-call-type-checker', () => {
             body: SourceExpressionTrue(),
           }),
           SourceExpressionInt(1),
-        ]
+        ],
+        null
       )
     ).toEqual({
       solvedGenericType: '((A) -> D, int) -> bool',
@@ -172,7 +209,8 @@ describe('function-call-type-checker', () => {
             captured: {},
             body: SourceExpressionTrue(),
           }),
-        ]
+        ],
+        null
       )
     ).toEqual({
       solvedGenericType: '((int) -> int) -> bool',
@@ -201,7 +239,8 @@ describe('function-call-type-checker', () => {
             captured: {},
             body: SourceExpressionTrue(),
           }),
-        ]
+        ],
+        null
       )
     ).toEqual({
       solvedGenericType: '((unknown) -> unknown) -> bool',
