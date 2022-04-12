@@ -56,6 +56,7 @@ export default function typeCheckFunctionCall(
   typeParameters: readonly string[],
   functionCallReason: SamlangReason,
   functionArguments: readonly SamlangExpression[],
+  returnTypeHint: SamlangType | null,
   typeCheck: (e: SamlangExpression, hint: SamlangType | null) => SamlangExpression,
   errorCollector: ModuleErrorCollector
 ): FunctionCallTypeCheckingResult {
@@ -69,7 +70,7 @@ export default function typeCheckFunctionCall(
   const concreteFunctionType = SourceFunctionType(
     functionCallReason,
     partiallyCheckedArguments.map((it) => it.e.type),
-    SourceUnknownType(functionCallReason)
+    returnTypeHint ?? SourceUnknownType(functionCallReason)
   );
   const { solvedContextuallyTypedConcreteType, solvedGenericType } = solveTypeConstraints(
     concreteFunctionType,
