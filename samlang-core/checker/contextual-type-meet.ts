@@ -3,28 +3,15 @@ import { isTheSameType, SamlangType } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
 
-export default function contextualTypeMeet(
-  general: SamlangType,
-  specific: SamlangType,
-  errorCollector: ModuleErrorCollector
-): SamlangType {
-  if (general.type === 'PrimitiveType' && general.name === 'unknown') {
-    errorCollector.reportInsufficientTypeInferenceContextError(specific.reason.definitionLocation);
-    return specific;
-  }
+function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType): SamlangType {
+  if (general.type === 'PrimitiveType' && general.name === 'unknown') return specific;
   if (specific.type === 'PrimitiveType' && specific.name === 'unknown') {
     return { ...general, reason: specific.reason };
   }
   assert(general.type !== 'UndecidedType');
   switch (general.type) {
     case 'PrimitiveType':
-      if (!isTheSameType(general, specific)) {
-        errorCollector.reportUnexpectedTypeError(
-          specific.reason.definitionLocation,
-          general,
-          specific
-        );
-      }
+      if (!isTheSameType(general, specific)) throw new Error();
       return specific;
     case 'IdentifierType':
       if (
@@ -37,16 +24,11 @@ export default function contextualTypeMeet(
         return {
           ...specific,
           typeArguments: zip(general.typeArguments, specific.typeArguments).map(([g, s]) =>
-            contextualTypeMeet(g, s, errorCollector)
+            contextualTypeMeetWithThrow(g, s)
           ),
         };
       }
-      errorCollector.reportUnexpectedTypeError(
-        specific.reason.definitionLocation,
-        general,
-        specific
-      );
-      return specific;
+      throw new Error();
     case 'FunctionType':
       if (
         specific.type === 'FunctionType' &&
@@ -55,16 +37,24 @@ export default function contextualTypeMeet(
         return {
           ...specific,
           argumentTypes: zip(general.argumentTypes, specific.argumentTypes).map(([g, s]) =>
-            contextualTypeMeet(g, s, errorCollector)
+            contextualTypeMeetWithThrow(g, s)
           ),
-          returnType: contextualTypeMeet(general.returnType, specific.returnType, errorCollector),
+          returnType: contextualTypeMeetWithThrow(general.returnType, specific.returnType),
         };
       }
-      errorCollector.reportUnexpectedTypeError(
-        specific.reason.definitionLocation,
-        general,
-        specific
-      );
-      return specific;
+      throw new Error();
+  }
+}
+
+export default function contextualTypeMeet(
+  general: SamlangType,
+  specific: SamlangType,
+  errorCollector: ModuleErrorCollector
+): SamlangType {
+  try {
+    return contextualTypeMeetWithThrow(general, specific);
+  } catch {
+    errorCollector.reportUnexpectedTypeError(specific.reason.definitionLocation, general, specific);
+    return specific;
   }
 }

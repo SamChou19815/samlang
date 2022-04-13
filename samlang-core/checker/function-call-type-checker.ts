@@ -70,7 +70,9 @@ export default function typeCheckFunctionCall(
   const concreteFunctionType = SourceFunctionType(
     functionCallReason,
     partiallyCheckedArguments.map((it) => it.e.type),
-    returnTypeHint ?? SourceUnknownType(functionCallReason)
+    returnTypeHint != null
+      ? { ...returnTypeHint, reason: functionCallReason }
+      : SourceUnknownType(functionCallReason)
   );
   const { solvedContextuallyTypedConcreteType, solvedGenericType } = solveTypeConstraints(
     concreteFunctionType,
