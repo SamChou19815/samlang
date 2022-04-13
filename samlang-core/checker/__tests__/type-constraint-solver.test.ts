@@ -132,10 +132,7 @@ describe('type-constraint-solver', () => {
         .getErrors()
         .map((it) => it.toString())
         .sort((a, b) => a.localeCompare(b))
-    ).toEqual([
-      '__DUMMY__.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      '__DUMMY__.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-    ]);
+    ).toEqual([]);
   });
 
   it('integration test 2', () => {

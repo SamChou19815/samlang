@@ -37,7 +37,7 @@ function typeCheck(
     DummySourceReason,
     functionArguments,
     returnTypeHint,
-    (e) => e,
+    (e, hint) => (hint == null ? e : ({ ...e, type: hint } as SamlangExpression)),
     errorCollector.getModuleErrorCollector()
   );
   return {
@@ -152,9 +152,7 @@ describe('function-call-type-checker', () => {
     ).toEqual({
       solvedGenericType: '(int, bool, unit) -> unknown',
       checkedArgumentsTypes: ['int', 'bool', 'unit'],
-      errors: [
-        '__DUMMY__.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      ],
+      errors: [],
     });
   });
 
@@ -184,7 +182,7 @@ describe('function-call-type-checker', () => {
       )
     ).toEqual({
       solvedGenericType: '((A) -> D, int) -> bool',
-      checkedArgumentsTypes: ['(unknown) -> unknown', 'int'],
+      checkedArgumentsTypes: ['(A) -> D', 'int'],
       errors: [],
     });
   });
@@ -245,10 +243,7 @@ describe('function-call-type-checker', () => {
     ).toEqual({
       solvedGenericType: '((unknown) -> unknown) -> bool',
       checkedArgumentsTypes: ['(unknown) -> unknown'],
-      errors: [
-        '__DUMMY__.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-        '__DUMMY__.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      ],
+      errors: [],
     });
   });
 });

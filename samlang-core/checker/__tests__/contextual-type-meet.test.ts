@@ -1,5 +1,6 @@
 import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
 import {
+  prettyPrintType,
   SamlangType,
   SourceBoolType,
   SourceFunctionType,
@@ -19,14 +20,12 @@ function meet(t1: SamlangType, t2: SamlangType) {
   if (moduleCollector.hasErrors) {
     return 'FAILED_MEET';
   }
-  return type;
+  return prettyPrintType(type);
 }
 
 describe('contextual-type-meet', () => {
   it('t1=primitive type', () => {
-    expect(meet(SourceUnitType(DummySourceReason), SourceUnitType(DummySourceReason))).toEqual(
-      SourceUnitType(DummySourceReason)
-    );
+    expect(meet(SourceUnitType(DummySourceReason), SourceUnitType(DummySourceReason))).toBe('unit');
     expect(meet(SourceUnitType(DummySourceReason), SourceBoolType(DummySourceReason))).toBe(
       'FAILED_MEET'
     );
@@ -37,7 +36,7 @@ describe('contextual-type-meet', () => {
       'FAILED_MEET'
     );
     expect(meet(SourceUnknownType(DummySourceReason), SourceStringType(DummySourceReason))).toBe(
-      'FAILED_MEET'
+      'string'
     );
     expect(
       meet(
@@ -46,8 +45,8 @@ describe('contextual-type-meet', () => {
       )
     ).toBe('FAILED_MEET');
 
-    expect(meet(SourceUnitType(DummySourceReason), SourceUnknownType(DummySourceReason))).toEqual(
-      SourceUnitType(DummySourceReason)
+    expect(meet(SourceUnitType(DummySourceReason), SourceUnknownType(DummySourceReason))).toBe(
+      'unit'
     );
   });
 
@@ -81,11 +80,7 @@ describe('contextual-type-meet', () => {
           SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
         ])
       )
-    ).toEqual(
-      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-      ])
-    );
+    ).toBe('A<B>');
 
     expect(
       meet(
@@ -96,17 +91,13 @@ describe('contextual-type-meet', () => {
           SourceUnknownType(DummySourceReason),
         ])
       )
-    ).toEqual(
-      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-      ])
-    );
+    ).toBe('A<B>');
     expect(
       meet(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
         SourceUnknownType(DummySourceReason)
       )
-    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'));
+    ).toBe('B');
   });
 
   it('t1=function type', () => {
@@ -145,13 +136,7 @@ describe('contextual-type-meet', () => {
           SourceIntType(DummySourceReason)
         )
       )
-    ).toEqual(
-      SourceFunctionType(
-        DummySourceReason,
-        [SourceIntType(DummySourceReason)],
-        SourceIntType(DummySourceReason)
-      )
-    );
+    ).toBe('(int) -> int');
 
     expect(
       meet(
@@ -162,13 +147,7 @@ describe('contextual-type-meet', () => {
         ),
         SourceUnknownType(DummySourceReason)
       )
-    ).toEqual(
-      SourceFunctionType(
-        DummySourceReason,
-        [SourceIntType(DummySourceReason)],
-        SourceBoolType(DummySourceReason)
-      )
-    );
+    ).toBe('(int) -> bool');
     expect(
       meet(
         SourceFunctionType(
@@ -182,12 +161,6 @@ describe('contextual-type-meet', () => {
           SourceUnknownType(DummySourceReason)
         )
       )
-    ).toEqual(
-      SourceFunctionType(
-        DummySourceReason,
-        [SourceIntType(DummySourceReason)],
-        SourceBoolType(DummySourceReason)
-      )
-    );
+    ).toBe('(int) -> bool');
   });
 });
