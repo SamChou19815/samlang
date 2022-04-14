@@ -1,4 +1,4 @@
-import { moduleReferenceToString, SourceReason } from '../ast/common-nodes';
+import { moduleReferenceToString, SamlangReason, SourceReason } from '../ast/common-nodes';
 import { SamlangType, SourceUnknownType } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
@@ -63,28 +63,36 @@ interface TypeConstraintSolution {
   readonly solvedContextuallyTypedConcreteType: SamlangType;
 }
 
-export default function solveTypeConstraints(
+export function solveMultipleTypeConstraints(
+  constraints: readonly { readonly concreteType: SamlangType; readonly genericType: SamlangType }[],
+  unknownTypeReason: SamlangReason,
+  typeParameters: readonly string[]
+): ReadonlyMap<string, SamlangType> {
+  const solvedSubstitution = new Map<string, SamlangType>();
+  const typeParameterSet = new Set(typeParameters);
+  constraints.forEach(({ concreteType, genericType }) =>
+    solveTypeConstraintsInternal(concreteType, genericType, typeParameterSet, solvedSubstitution)
+  );
+  typeParameters.forEach((typeParameter) => {
+    if (!solvedSubstitution.has(typeParameter)) {
+      // Fill in unknown for unsolved types.
+      solvedSubstitution.set(typeParameter, SourceUnknownType(unknownTypeReason));
+    }
+  });
+  return solvedSubstitution;
+}
+
+export function solveTypeConstraints(
   concreteType: SamlangType,
   genericType: SamlangType,
   typeParameters: readonly string[],
   errorCollector: ModuleErrorCollector
 ): TypeConstraintSolution {
-  const solvedSubstitution = new Map<string, SamlangType>();
-  solveTypeConstraintsInternal(
-    concreteType,
-    genericType,
-    new Set(typeParameters),
-    solvedSubstitution
+  const solvedSubstitution = solveMultipleTypeConstraints(
+    [{ concreteType, genericType }],
+    SourceReason(concreteType.reason.definitionLocation, null),
+    typeParameters
   );
-  typeParameters.forEach((typeParameter) => {
-    if (!solvedSubstitution.has(typeParameter)) {
-      // Fill in unknown for unsolved types.
-      solvedSubstitution.set(
-        typeParameter,
-        SourceUnknownType(SourceReason(concreteType.reason.definitionLocation, null))
-      );
-    }
-  });
   const solvedGenericType = performTypeSubstitution(
     genericType,
     Object.fromEntries(solvedSubstitution)

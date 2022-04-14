@@ -8,7 +8,9 @@ import {
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
-import solveTypeConstraints from './type-constraints-solver';
+import contextualTypeMeet from './contextual-type-meet';
+import { solveMultipleTypeConstraints } from './type-constraints-solver';
+import performTypeSubstitution from './type-substitution';
 
 function argumentShouldBeTypeCheckedWithoutHint(expression: SamlangExpression): boolean {
   switch (expression.__type__) {
@@ -67,24 +69,42 @@ export default function typeCheckFunctionCall(
       return { e: it, checked: false };
     }
   });
-  const concreteFunctionType = SourceFunctionType(
-    functionCallReason,
-    partiallyCheckedArguments.map((it) => it.e.type),
+  const unsolvedReturnType =
     returnTypeHint != null
       ? { ...returnTypeHint, reason: functionCallReason }
-      : SourceUnknownType(functionCallReason)
+      : SourceUnknownType(functionCallReason);
+  const solvedSubstitution = solveMultipleTypeConstraints(
+    [
+      ...zip(
+        genericFunctionType.argumentTypes,
+        partiallyCheckedArguments.map((it) => it.e.type)
+      ).map(([genericType, concreteType]) => ({ genericType, concreteType })),
+      {
+        genericType: genericFunctionType.returnType,
+        concreteType: unsolvedReturnType,
+      },
+    ],
+    functionCallReason,
+    typeParameters
   );
-  const { solvedContextuallyTypedConcreteType, solvedGenericType } = solveTypeConstraints(
-    concreteFunctionType,
+  const solvedGenericType = performTypeSubstitution(
     genericFunctionType,
-    typeParameters,
-    errorCollector
+    Object.fromEntries(solvedSubstitution)
   );
-  assert(
-    solvedContextuallyTypedConcreteType.type === 'FunctionType',
-    solvedContextuallyTypedConcreteType.type
+  assert(solvedGenericType.type === 'FunctionType');
+  const solvedConcreteArgumentTypes = zip(
+    solvedGenericType.argumentTypes,
+    partiallyCheckedArguments.map((it) => it.e.type)
+  ).map(([g, s]) => contextualTypeMeet(g, s, errorCollector));
+  const solvedConcreteReturnType = {
+    ...contextualTypeMeet(unsolvedReturnType, solvedGenericType.returnType, errorCollector),
+    reason: functionCallReason,
+  };
+  const solvedContextuallyTypedConcreteType = SourceFunctionType(
+    functionCallReason,
+    solvedConcreteArgumentTypes,
+    solvedConcreteReturnType
   );
-  assert(solvedGenericType.type === 'FunctionType', solvedGenericType.type);
   const checkedArguments = zip(
     partiallyCheckedArguments,
     solvedContextuallyTypedConcreteType.argumentTypes
