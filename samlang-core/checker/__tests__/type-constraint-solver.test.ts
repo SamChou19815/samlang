@@ -11,7 +11,7 @@ import {
   SourceUnknownType,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
-import solveTypeConstraints from '../type-constraints-solver';
+import { solveTypeConstraints } from '../type-constraints-solver';
 
 function solve(concrete: SamlangType, generic: SamlangType, typeParameters: readonly string[]) {
   const globalCollector = createGlobalErrorCollector();
