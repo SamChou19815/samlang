@@ -183,8 +183,6 @@ class SsaBuilder extends LocalStackedContext<Location> {
         type.argumentTypes.forEach(this.visitType);
         this.visitType(type.returnType);
         return;
-      case 'UndecidedType':
-        return;
     }
   };
 }

@@ -19,7 +19,7 @@ describe('type-substitution', () => {
             SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'E', [
               SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'F'),
             ]),
-            { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+            SourceIntType(DummySourceReason),
           ],
           SourceIntType(DummySourceReason)
         ),
@@ -45,7 +45,7 @@ describe('type-substitution', () => {
           SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'E', [
             SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'F'),
           ]),
-          { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
+          SourceIntType(DummySourceReason),
         ],
         SourceIntType(DummySourceReason)
       )

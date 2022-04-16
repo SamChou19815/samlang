@@ -8,7 +8,6 @@ export function collectModuleReferenceFromType(
 ): void {
   switch (type.type) {
     case 'PrimitiveType':
-    case 'UndecidedType':
       return;
     case 'IdentifierType':
       collector.add(type.moduleReference);

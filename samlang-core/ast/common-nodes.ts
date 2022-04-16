@@ -136,6 +136,10 @@ export const SourceReason = (
   annotationLocation: Location | null
 ): SamlangReason => ({ definitionLocation, annotationLocation });
 
+export function defReasonToUseReason(reason: SamlangReason, useLocation: Location): SamlangReason {
+  return { definitionLocation: useLocation, annotationLocation: reason.annotationLocation };
+}
+
 export const DummySourceReason: SamlangReason = SourceReason(Location.DUMMY, Location.DUMMY);
 // TODO(reason): Wait until we migrate to location only.
 export const BuiltinReason: SamlangReason = DummySourceReason;

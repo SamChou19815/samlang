@@ -26,8 +26,6 @@ export default function performTypeSubstitution(
         type.argumentTypes.map((it) => performTypeSubstitution(it, mapping)),
         performTypeSubstitution(type.returnType, mapping)
       );
-    case 'UndecidedType':
-      return type;
   }
 }
 

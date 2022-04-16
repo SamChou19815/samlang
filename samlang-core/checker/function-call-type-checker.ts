@@ -3,7 +3,6 @@ import {
   SamlangExpression,
   SamlangFunctionType,
   SamlangType,
-  SourceFunctionType,
   SourceUnknownType,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
@@ -50,6 +49,7 @@ function argumentShouldBeTypeCheckedWithoutHint(expression: SamlangExpression): 
 
 interface FunctionCallTypeCheckingResult {
   readonly solvedGenericType: SamlangFunctionType;
+  readonly solvedReturnType: SamlangType;
   readonly checkedArguments: readonly SamlangExpression[];
 }
 
@@ -62,6 +62,19 @@ export default function typeCheckFunctionCall(
   typeCheck: (e: SamlangExpression, hint: SamlangType | null) => SamlangExpression,
   errorCollector: ModuleErrorCollector
 ): FunctionCallTypeCheckingResult {
+  if (genericFunctionType.argumentTypes.length !== functionArguments.length) {
+    errorCollector.reportArityMismatchError(
+      functionCallReason.definitionLocation,
+      'arguments',
+      genericFunctionType.argumentTypes.length,
+      functionArguments.length
+    );
+    return {
+      solvedGenericType: genericFunctionType,
+      solvedReturnType: SourceUnknownType(functionCallReason),
+      checkedArguments: functionArguments,
+    };
+  }
   const partiallyCheckedArguments = functionArguments.map((it) => {
     if (argumentShouldBeTypeCheckedWithoutHint(it)) {
       return { e: typeCheck(it, null), checked: true };
@@ -69,45 +82,82 @@ export default function typeCheckFunctionCall(
       return { e: it, checked: false };
     }
   });
-  const unsolvedReturnType =
-    returnTypeHint != null
-      ? { ...returnTypeHint, reason: functionCallReason }
-      : SourceUnknownType(functionCallReason);
-  const solvedSubstitution = solveMultipleTypeConstraints(
-    [
-      ...zip(
-        genericFunctionType.argumentTypes,
-        partiallyCheckedArguments.map((it) => it.e.type)
-      ).map(([genericType, concreteType]) => ({ genericType, concreteType })),
-      {
-        genericType: genericFunctionType.returnType,
-        concreteType: unsolvedReturnType,
-      },
-    ],
-    functionCallReason,
+  // Phase 1: Best effort inference through arguments that can be independently typed.
+  const partiallySolvedSubstitution = solveMultipleTypeConstraints(
+    zip(
+      genericFunctionType.argumentTypes,
+      partiallyCheckedArguments.map((it) => it.e.type)
+    ).map(([genericType, concreteType]) => ({ genericType, concreteType })),
     typeParameters
   );
-  const solvedGenericType = performTypeSubstitution(
+  const partiallySolvedGenericType = performTypeSubstitution(
     genericFunctionType,
-    Object.fromEntries(solvedSubstitution)
+    Object.fromEntries(partiallySolvedSubstitution)
   );
-  assert(solvedGenericType.type === 'FunctionType');
-  const solvedConcreteArgumentTypes = zip(
-    solvedGenericType.argumentTypes,
+  const unsolvedTypeParameters = typeParameters.filter(
+    (typeParameter) => !partiallySolvedSubstitution.has(typeParameter)
+  );
+  assert(partiallySolvedGenericType.type === 'FunctionType');
+  typeParameters.forEach((typeParameter) => {
+    if (!partiallySolvedSubstitution.has(typeParameter)) {
+      // Fill in unknown for unsolved types.
+      partiallySolvedSubstitution.set(typeParameter, SourceUnknownType(functionCallReason));
+    }
+  });
+  const partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown = performTypeSubstitution(
+    genericFunctionType,
+    Object.fromEntries(partiallySolvedSubstitution)
+  );
+  assert(partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.type === 'FunctionType');
+  const partiallySolvedConcreteArgumentTypes = zip(
+    partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.argumentTypes,
     partiallyCheckedArguments.map((it) => it.e.type)
   ).map(([g, s]) => contextualTypeMeet(g, s, errorCollector));
-  const solvedConcreteReturnType = {
-    ...contextualTypeMeet(unsolvedReturnType, solvedGenericType.returnType, errorCollector),
-    reason: functionCallReason,
-  };
-  const solvedContextuallyTypedConcreteType = SourceFunctionType(
-    functionCallReason,
-    solvedConcreteArgumentTypes,
-    solvedConcreteReturnType
+  const checkedArguments = zip(partiallyCheckedArguments, partiallySolvedConcreteArgumentTypes).map(
+    ([{ e, checked }, hint]) => (checked ? e : typeCheck(e, hint))
   );
-  const checkedArguments = zip(
-    partiallyCheckedArguments,
-    solvedContextuallyTypedConcreteType.argumentTypes
-  ).map(([{ e, checked }, hint]) => (checked ? e : typeCheck(e, hint)));
-  return { solvedGenericType, checkedArguments };
+
+  // Phase 2: Use fully checked arguments to infer remaining type parameters.
+  const phase2ArgumentsConstraints = zip(
+    partiallySolvedGenericType.argumentTypes,
+    checkedArguments.map((it) => it.type)
+  ).map(([genericType, concreteType]) => ({ genericType, concreteType }));
+  if (returnTypeHint != null) {
+    phase2ArgumentsConstraints.push({
+      genericType: partiallySolvedGenericType.returnType,
+      concreteType: returnTypeHint,
+    });
+  }
+  const fullySolvedSubstitution = solveMultipleTypeConstraints(
+    phase2ArgumentsConstraints,
+    unsolvedTypeParameters
+  );
+  const stillUnresolvedTypeParameters = unsolvedTypeParameters.filter(
+    (typeParameter) => !fullySolvedSubstitution.has(typeParameter)
+  );
+  stillUnresolvedTypeParameters.forEach((typeParameter) => {
+    // Fill in unknown for unsolved types.
+    fullySolvedSubstitution.set(typeParameter, SourceUnknownType(functionCallReason));
+  });
+  if (stillUnresolvedTypeParameters.length > 0) {
+    errorCollector.reportInsufficientTypeInferenceContextError(
+      functionCallReason.definitionLocation
+    );
+  }
+  const fullySolvedGenericType = performTypeSubstitution(
+    partiallySolvedGenericType,
+    Object.fromEntries(fullySolvedSubstitution)
+  );
+  assert(fullySolvedGenericType.type === 'FunctionType');
+  const fullySolvedConcreteReturnType = contextualTypeMeet(
+    returnTypeHint ?? SourceUnknownType(functionCallReason),
+    { ...fullySolvedGenericType.returnType, reason: functionCallReason },
+    errorCollector
+  );
+
+  return {
+    solvedGenericType: fullySolvedGenericType,
+    solvedReturnType: fullySolvedConcreteReturnType,
+    checkedArguments,
+  };
 }

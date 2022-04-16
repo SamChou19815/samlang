@@ -51,6 +51,23 @@ function typeCheck(
 }
 
 describe('function-call-type-checker', () => {
+  it('function call args mismatch', () => {
+    expect(
+      typeCheck(
+        SourceFunctionType(DummySourceReason, [], SourceBoolType(DummySourceReason)),
+        [],
+        [SourceExpressionInt(0)],
+        null
+      )
+    ).toEqual({
+      solvedGenericType: '() -> bool',
+      checkedArgumentsTypes: ['int'],
+      errors: [
+        '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect arguments size. Expected: 0, actual: 1.',
+      ],
+    });
+  });
+
   it('easy case when all arguments can be independently type checked', () => {
     expect(
       typeCheck(
@@ -152,7 +169,9 @@ describe('function-call-type-checker', () => {
     ).toEqual({
       solvedGenericType: '(int, bool, unit) -> unknown',
       checkedArgumentsTypes: ['int', 'bool', 'unit'],
-      errors: [],
+      errors: [
+        '__DUMMY__.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      ],
     });
   });
 
@@ -243,7 +262,9 @@ describe('function-call-type-checker', () => {
     ).toEqual({
       solvedGenericType: '((unknown) -> unknown) -> bool',
       checkedArgumentsTypes: ['(unknown) -> unknown'],
-      errors: [],
+      errors: [
+        '__DUMMY__.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      ],
     });
   });
 });

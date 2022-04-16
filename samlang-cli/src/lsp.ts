@@ -66,7 +66,7 @@ function startSamlangLanguageServer() {
         foldingRangeProvider: true,
         completionProvider: { triggerCharacters: ['.'], resolveProvider: false },
         renameProvider: true,
-        documentFormattingProvider: {},
+        // documentFormattingProvider: {},
       },
     };
   });
@@ -142,6 +142,8 @@ function startSamlangLanguageServer() {
     };
   });
 
+  // Very slow. Disable for now.
+  /*
   connection.onDocumentFormatting((parameters) => {
     connection.console.info('[lsp] onDocumentFormatting');
     const formattedString = service.formatEntireDocument(
@@ -150,6 +152,7 @@ function startSamlangLanguageServer() {
     if (formattedString == null) return null;
     return [{ range: ENTIRE_DOCUMENT_RANGE, newText: formattedString }];
   });
+  */
 
   connection.listen();
   // eslint-disable-next-line no-console

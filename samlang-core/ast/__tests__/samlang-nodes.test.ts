@@ -1,4 +1,10 @@
-import { DummySourceReason, ModuleReference } from '../common-nodes';
+import {
+  DummySourceReason,
+  Location,
+  ModuleReference,
+  Position,
+  SourceReason,
+} from '../common-nodes';
 import {
   isTheSameType,
   prettyPrintType,
@@ -9,7 +15,7 @@ import {
   SourceStringType,
   SourceUnitType,
   SourceUnknownType,
-  UndecidedTypes,
+  typeReposition,
 } from '../samlang-nodes';
 
 describe('samlang-nodes', () => {
@@ -64,21 +70,20 @@ describe('samlang-nodes', () => {
         )
       )
     ).toBe('(() -> unit, bool) -> bool');
-    expect(
-      prettyPrintType({ type: 'UndecidedType', reason: DummySourceReason, index: 65536 })
-    ).toBe('__UNDECIDED__');
   });
 
-  it('UndecidedTypes are self consistent.', () => {
-    expect(UndecidedTypes.next(DummySourceReason).index).toBe(0);
-    expect(UndecidedTypes.next(DummySourceReason).index).toBe(1);
-    expect(UndecidedTypes.next(DummySourceReason).index).toBe(2);
-    expect(UndecidedTypes.next(DummySourceReason).index).toBe(3);
-    expect(UndecidedTypes.next(DummySourceReason).index).toBe(4);
-    expect(UndecidedTypes.next(DummySourceReason).index).toBe(5);
-    expect(UndecidedTypes.nextN(5).map((it) => it.index)).toEqual([6, 7, 8, 9, 10]);
-    UndecidedTypes.resetUndecidedTypeIndex_ONLY_FOR_TEST();
-    expect(UndecidedTypes.next(DummySourceReason).index).toBe(0);
+  it('type reposition test', () => {
+    expect(
+      typeReposition(
+        SourceIntType(
+          SourceReason(
+            new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
+            new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4))
+          )
+        ),
+        new Location(ModuleReference.DUMMY, Position(5, 6), Position(7, 8))
+      ).reason.definitionLocation.toString()
+    ).toBe('__DUMMY__.sam:6:7-8:9');
   });
 
   it('type equality test', () => {
@@ -266,25 +271,6 @@ describe('samlang-nodes', () => {
           [SourceIntType(DummySourceReason)],
           SourceBoolType(DummySourceReason)
         )
-      )
-    ).toBeTruthy();
-
-    expect(
-      isTheSameType(
-        { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
-        SourceUnitType(DummySourceReason)
-      )
-    ).toBeFalsy();
-    expect(
-      isTheSameType(
-        { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
-        { type: 'UndecidedType', reason: DummySourceReason, index: 1 }
-      )
-    ).toBeFalsy();
-    expect(
-      isTheSameType(
-        { type: 'UndecidedType', reason: DummySourceReason, index: 0 },
-        { type: 'UndecidedType', reason: DummySourceReason, index: 0 }
       )
     ).toBeTruthy();
   });

@@ -14,6 +14,7 @@
     "check": "turbo run compile",
     "test": "jest --coverage",
     "test:single": "jest -t",
+    "test:checker-unit-tests": "jest -t expression-type-checker",
     "test:integration": "esr compile-repository.ts",
     "core": "pnpm --filter @dev-sam/samlang-core",
     "cli": "pnpm --filter @dev-sam/samlang-cli",

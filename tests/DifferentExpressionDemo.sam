@@ -36,7 +36,10 @@ class Option<T>(Some(T), None(bool)) {
     match (this) { | None _ -> Option.None(true) | Some t -> Option.Some(f(t)) }
 
   function test(): unit = {
-    val _ = match (Option.None(false)) { | None _ -> "" | Some f -> Builtins.intToString(f("")) };
+    val _ = match (Option.<(string) -> int>None(false)) {
+      | None _ -> ""
+      | Some f -> Builtins.intToString(f(""))
+    };
   }
 }
 
@@ -68,7 +71,7 @@ class DifferentExpressionDemo {
   function methodAndFunctionReference(): int = Clazz.of().thisTest()
 
   function lambdaTest(a: int): string = {
-    val c: Option<string> = Option.none().toSome(3).map((x: int) -> "empty");
+    val c: Option<string> = Option.<int>none().toSome(3).map((x: int) -> "empty");
     "hello world"
   }
 

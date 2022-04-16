@@ -1,14 +1,13 @@
 import { moduleReferenceToString } from '../ast/common-nodes';
 import { isTheSameType, SamlangType } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
-import { assert, zip } from '../utils';
+import { zip } from '../utils';
 
 function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType): SamlangType {
   if (general.type === 'PrimitiveType' && general.name === 'unknown') return specific;
   if (specific.type === 'PrimitiveType' && specific.name === 'unknown') {
     return { ...general, reason: specific.reason };
   }
-  assert(general.type !== 'UndecidedType');
   switch (general.type) {
     case 'PrimitiveType':
       if (!isTheSameType(general, specific)) throw new Error();

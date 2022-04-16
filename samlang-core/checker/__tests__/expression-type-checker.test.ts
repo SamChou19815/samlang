@@ -21,7 +21,6 @@ import { checkNotNull } from '../../utils';
 import typeCheckExpression from '../expression-type-checker';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
 import { performSSAAnalysisOnSamlangExpression } from '../ssa-analysis';
-import TypeResolution from '../type-resolution';
 import {
   AccessibleGlobalTypingContext,
   LocationBasedLocalTypingContext,
@@ -92,6 +91,11 @@ function typeCheckInSandbox(
                   baz: {
                     isPublic: false,
                     typeParameters: [],
+                    type: SourceFunctionType(DummySourceReason, [int], bool),
+                  },
+                  bazWithTypeParam: {
+                    isPublic: false,
+                    typeParameters: ['A'],
                     type: SourceFunctionType(DummySourceReason, [int], bool),
                   },
                 },
@@ -280,7 +284,6 @@ function typeCheckInSandbox(
     moduleErrorCollector,
     accessibleGlobalTypingContext,
     localTypingContext,
-    new TypeResolution(),
     expectedType
   );
   return [
@@ -373,6 +376,35 @@ describe('expression-type-checker', () => {
     assertTypeErrors('Test.<A>helloWorld', SourceFunctionType(DummySourceReason, [string], unit), [
       'Test.sam:1:1-1:19: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
     ]);
+    assertTypeErrors(
+      'Test.helloWorldWithTypeParameters',
+      SourceFunctionType(DummySourceReason, [string, string], unit),
+      [
+        'Test.sam:1:1-1:34: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
+        'Test.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+        'Test.sam:1:1-1:34: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(unknown) -> unit`.',
+      ]
+    );
+    assertTypeErrors('Test.helloWorldWithTypeParameters', string, [
+      'Test.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      'Test.sam:1:1-1:34: [UnexpectedTypeKind]: Expected kind: `string`, actual: `function`.',
+      'Test.sam:1:1-1:34: [UnexpectedType]: Expected: `string`, actual: `(unknown) -> unit`.',
+    ]);
+    assertTypeErrors(
+      'Test.<int, string>helloWorldWithTypeParameters',
+      SourceFunctionType(DummySourceReason, [int], unit),
+      [
+        'Test.sam:1:1-1:47: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
+      ]
+    );
+    assertTypeErrors(
+      'Test.<string>helloWorldWithTypeParameters',
+      SourceFunctionType(DummySourceReason, [string, string], unit),
+      [
+        'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
+        'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
+      ]
+    );
     assertTypeErrors('Test.helloWorld2', SourceFunctionType(DummySourceReason, [string], unit), [
       'Test.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved.',
     ]);
@@ -443,7 +475,8 @@ describe('expression-type-checker', () => {
       'Test4.<int>Foo(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       [
-        'Test.sam:1:1-1:15: [UnexpectedType]: Expected: `(__UNDECIDED__) -> Test4<bool>`, actual: `(int) -> Test4<int>`.',
+        'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.',
+        'Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.',
       ],
       undefined
     );
@@ -464,6 +497,10 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Test.init(true, 3).foo', bool);
     assertTypeChecks('Test.init(true, 3).bar', int);
     assertTypeChecks('Test.init(true, 3).baz', SourceFunctionType(DummySourceReason, [int], bool));
+    assertTypeChecks(
+      'Test.init(true, 3).bazWithTypeParam',
+      SourceFunctionType(DummySourceReason, [int], bool)
+    );
 
     assertTypeErrors('3.foo', int, [
       'Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
@@ -491,19 +528,35 @@ describe('expression-type-checker', () => {
     ]);
     assertTypeErrors('Test.init(true, 3).baz', int, [
       'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
+      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
     ]);
+    assertTypeErrors('Test.init(true, 3).bazWithTypeParam', int, [
+      'Test.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      'Test.sam:1:1-1:36: [UnexpectedTypeKind]: Expected kind: `int`, actual: `function`.',
+      'Test.sam:1:1-1:36: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
+    ]);
+    assertTypeErrors(
+      'Test.init(true, 3).bazWithTypeParam',
+      SourceFunctionType(DummySourceReason, [int, int], bool),
+      [
+        'Test.sam:1:1-1:36: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
+        'Test.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+        'Test.sam:1:1-1:36: [UnexpectedType]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.',
+      ]
+    );
     assertTypeErrors('Test.init(true, 3).baz', SourceFunctionType(DummySourceReason, [bool], int), [
+      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
       'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
     ]);
 
     assertTypeErrors('{ val _ = (t) -> t.foo; }', unit, [
-      'Test.sam:1:18-1:19: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
     assertTypeErrors('{ val _ = (t) -> t.bar; }', unit, [
-      'Test.sam:1:18-1:19: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
     assertTypeErrors('{ val _ = (t) -> t.baz; }', unit, [
-      'Test.sam:1:18-1:19: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
   });
 
@@ -546,11 +599,10 @@ describe('expression-type-checker', () => {
 
   it('FunctionCall', () => {
     assertTypeChecks('Test.helloWorld("")', unit);
-    assertTypeChecks('((i) -> true)(3)', bool);
+    assertTypeChecks('((i: int) -> true)(3)', bool);
 
     assertTypeErrors('3(3)', unit, [
-      'Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `function`, actual: `int`.',
-      'Test.sam:1:1-1:2: [UnexpectedType]: Expected: `(__UNDECIDED__) -> unit`, actual: `int`.',
+      'Test.sam:1:1-1:5: [UnexpectedTypeKind]: Expected kind: `function`, actual: `int`.',
     ]);
 
     assertTypeErrors('Test.helloWorld(3)', unit, [
@@ -561,14 +613,13 @@ describe('expression-type-checker', () => {
     ]);
 
     assertTypeErrors('Test.helloWorld("")', bool, [
-      'Test.sam:1:1-1:16: [UnexpectedType]: Expected: `(__UNDECIDED__) -> bool`, actual: `(string) -> unit`.',
+      'Test.sam:1:1-1:20: [UnexpectedType]: Expected: `bool`, actual: `unit`.',
     ]);
     assertTypeErrors('Test.init(true, 3).baz(3)', int, [
-      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(int) -> bool`.',
+      'Test.sam:1:1-1:26: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
-    assertTypeErrors('((i) -> true)(3)', int, [
-      'Test.sam:1:2-1:13: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(__UNDECIDED__) -> bool`.',
-      'Test.sam:1:2-1:13: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(__UNDECIDED__) -> bool`.',
+    assertTypeErrors('((i: int) -> true)(3)', int, [
+      'Test.sam:1:1-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
   });
 
@@ -589,7 +640,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('true == false', bool);
     assertTypeChecks('false != true', bool);
     assertTypeChecks('"" != "3"', bool);
-    assertTypeChecks('{ val _ = (t, f) -> t == f; }', unit);
+    assertTypeChecks('{ val _ = (t: string, f: string) -> t == f; }', unit);
 
     assertTypeErrors('"1" * "1"', int, [
       'Test.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`.',
@@ -698,19 +749,22 @@ describe('expression-type-checker', () => {
 
     assertTypeErrors('if true then false else 1', bool, [
       'Test.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`.',
-      'Test.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('if false then 1 else false', int, [
-      'Test.sam:1:22-1:27: [UnexpectedType]: Expected: `int`, actual: `bool`.',
       'Test.sam:1:22-1:27: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('if false then "" else 3', string, [
       'Test.sam:1:23-1:24: [UnexpectedType]: Expected: `string`, actual: `int`.',
-      'Test.sam:1:23-1:24: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
-    assertTypeErrors('{ val _ = (b, t: bool, f: int) -> if b then t else f }', unit, [
-      'Test.sam:1:52-1:53: [UnexpectedType]: Expected: `bool`, actual: `int`.',
-    ]);
+    assertTypeErrors(
+      `{
+  val _ = (b: bool, t: bool, f: int) -> (
+    if b then t else f
+  )
+}`,
+      unit,
+      ['Test.sam:3:22-3:23: [UnexpectedType]: Expected: `bool`, actual: `int`.']
+    );
   });
 
   it('Match', () => {
@@ -723,9 +777,6 @@ describe('expression-type-checker', () => {
 
     assertTypeErrors('{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }', unit, [
       "Test.sam:1:32-1:33: [IllegalOtherClassMatch]: It is illegal to match on a value of other class's type.",
-    ]);
-    assertTypeErrors('{ val _ = (t) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }', unit, [
-      'Test.sam:1:25-1:26: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
     ]);
     assertTypeErrors('match (3) { | Foo _ -> 1 | Bar s -> 2 }', unit, [
       'Test.sam:1:8-1:9: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
@@ -751,8 +802,18 @@ describe('expression-type-checker', () => {
   });
 
   it('Lambda', () => {
-    assertTypeChecks('{val _ = (a, b, c) -> if a(b + 1) then b else c;}', unit);
+    assertTypeChecks(
+      '{val _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) then b else c;}',
+      unit
+    );
     assertTypeChecks('(a) -> a', SourceFunctionType(DummySourceReason, [int], int));
+
+    assertTypeErrors('(a) -> a', SourceFunctionType(DummySourceReason, [], int), [
+      'Test.sam:1:1-1:9: [ArityMismatchError]: Incorrect function arguments size. Expected: 0, actual: 1.',
+    ]);
+    assertTypeErrors('(a) -> a', int, [
+      'Test.sam:1:1-1:9: [UnexpectedTypeKind]: Expected kind: `int`, actual: `(unknown) -> unknown`.',
+    ]);
   });
 
   describe('StatementBlocks', () => {
@@ -785,13 +846,13 @@ describe('expression-type-checker', () => {
   });
 
   it('IfElse integration test', () => {
-    assertTypeChecks('{ val _ = (b, t, f: int) -> if b then t else f }', unit);
+    assertTypeChecks('{ val _ = (b: bool, t: int, f: int) -> if b then t else f }', unit);
   });
 
   it('Lambda integration test', () => {
     const source = `{
-    val f = (a, b, c) -> {
-        val f = (d, e) -> a + b + c + d + e;
+    val f = (a: int, b: int, c: int) -> {
+        val f = (d: int, e: int) -> a + b + c + d + e;
         f(1, 2)
     };
     f(3, 4, 5)

@@ -220,7 +220,9 @@ function createPrettierDocumentFromSamlangExpression(
           createParenthesisSurroundedDocument(
             createCommaSeparatedList(expression.parameters, ([{ name }, type]) =>
               PRETTIER_TEXT(
-                type.type === 'UndecidedType' ? name : `${name}: ${prettyPrintType(type)}`
+                type.type === 'PrimitiveType' && type.name === 'unknown'
+                  ? name
+                  : `${name}: ${prettyPrintType(type)}`
               )
             )
           ),

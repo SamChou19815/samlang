@@ -285,12 +285,14 @@ describe('samlang-core/checker', () => {
       'A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.',
       'B.sam:2:11-2:12: [Collision]: Name `A` collides with a previously defined name.',
       'B.sam:2:14-2:15: [Collision]: Name `A` collides with a previously defined name.',
-      'B.sam:3:35-3:41: [UnexpectedType]: Expected: `(__UNDECIDED__) -> B<int, bool>`, actual: `(int) -> B<__UNDECIDED__, __UNDECIDED__>`.',
+      'B.sam:3:35-3:48: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      'B.sam:3:35-3:48: [UnexpectedType]: Expected: `B<int, bool>`, actual: `B<int, int>`.',
       'C.sam:2:21-2:24: [Collision]: Name `Int` collides with a previously defined name.',
       'C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.',
       'C.sam:4:21-4:22: [Collision]: Name `T` collides with a previously defined name.',
       'C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.',
-      'C.sam:5:72-5:80: [UnresolvedName]: Name `intValue` is not resolved.',
+      'C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      'C.sam:5:70-5:82: [UnexpectedType]: Expected: `bool`, actual: `int`.',
       'D.sam:5:50-5:52: [Collision]: Name `c1` collides with a previously defined name.',
     ]);
   });
