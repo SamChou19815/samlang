@@ -88,6 +88,7 @@ describe('samlang-core/parser', () => {
     expectBadAST('SomeClass.<>foo');
     expectBadAST('SomeClass.<foo');
     expectBadAST('SomeClass.');
+    expectBadAST('ForTests.assertIntEquals(2444a, 1)');
     expectBadAST('.');
     expectBadAST(',');
     expectBadAST('[]');

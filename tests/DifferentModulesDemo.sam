@@ -61,7 +61,7 @@ class DifferentModulesDemo {
   function run(): unit = {
     val _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);
     val _ = ForTests.assertIntEquals(Box.init(42).getContent(), 42);
-    val _ = ForTests.assertIntEquals(FunctionExample.getIdentityFunction()(42), 42);
+    val _ = ForTests.assertIntEquals(FunctionExample.<int>getIdentityFunction()(42), 42);
     val _ = ForTests.assertIntEquals(Student.dummyStudent().getAge(), 0);
     val _ = ForTests.assertIntEquals(Math.plus(2, 2), 4);
     val _ = DifferentModulesDemo.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");

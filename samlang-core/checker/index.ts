@@ -147,7 +147,7 @@ export function typeCheckSourceHandles(
   sourceHandles: readonly (readonly [ModuleReference, string])[]
 ): TypeCheckSourceHandlesResult {
   const errorCollector = createGlobalErrorCollector();
-  const moduleMappings = ModuleReferenceCollections.hashMapOf(
+  const parsedSources = ModuleReferenceCollections.hashMapOf(
     ...sourceHandles.map(
       ([moduleReference, text]) =>
         [
@@ -160,7 +160,7 @@ export function typeCheckSourceHandles(
         ] as const
     )
   );
-  const [checkedSources, globalTypingContext] = typeCheckSources(moduleMappings, errorCollector);
+  const [checkedSources, globalTypingContext] = typeCheckSources(parsedSources, errorCollector);
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
 }
 

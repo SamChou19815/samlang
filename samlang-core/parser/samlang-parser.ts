@@ -50,8 +50,8 @@ import {
   SourceModuleMembersImport,
   SourceStringType,
   SourceUnitType,
+  SourceUnknownType,
   TypeDefinition,
-  UndecidedTypes,
   VariantPatternToExpression,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
@@ -588,7 +588,7 @@ export default class SamlangModuleParser extends BaseParser {
     const location = peeked.location.union(endLocation);
     return SourceExpressionMatch({
       location,
-      type: UndecidedTypes.next(SourceReason(location, null)),
+      type: SourceUnknownType(SourceReason(location, null)),
       associatedComments,
       matchedExpression,
       matchingList,
@@ -603,7 +603,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.consume();
     } else {
       const name = this.parseLowerId();
-      dataVariable = [name, UndecidedTypes.next(SourceReason(name.location, null))];
+      dataVariable = [name, SourceUnknownType(SourceReason(name.location, null))];
     }
     this.assertAndConsume('->');
     const expression = this.parseExpression();
@@ -629,7 +629,7 @@ export default class SamlangModuleParser extends BaseParser {
     const location = peeked.location.union(e2.location);
     return SourceExpressionIfElse({
       location,
-      type: UndecidedTypes.next(SourceReason(location, null)),
+      type: SourceUnknownType(SourceReason(location, null)),
       associatedComments,
       boolExpression,
       e1,
@@ -861,7 +861,7 @@ export default class SamlangModuleParser extends BaseParser {
         const location = functionExpression.location.union(fieldLocation);
         functionExpression = SourceExpressionFieldAccess({
           location,
-          type: UndecidedTypes.next(SourceReason(location, null)),
+          type: SourceUnknownType(SourceReason(location, null)),
           associatedComments: [],
           expression: functionExpression,
           fieldName: SourceId(fieldName, {
@@ -878,7 +878,7 @@ export default class SamlangModuleParser extends BaseParser {
         const location = startLocation.union(endLocation);
         functionExpression = SourceExpressionFunctionCall({
           location,
-          type: UndecidedTypes.next(SourceReason(location, null)),
+          type: SourceUnknownType(SourceReason(location, null)),
           associatedComments: [],
           functionExpression,
           functionArguments,
@@ -905,7 +905,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.consume();
       return SourceExpressionThis({
         location: peeked.location,
-        type: UndecidedTypes.next(SourceReason(peeked.location, null)),
+        type: SourceUnknownType(SourceReason(peeked.location, null)),
         associatedComments,
       });
     }
@@ -934,7 +934,7 @@ export default class SamlangModuleParser extends BaseParser {
         this.consume();
         return SourceExpressionVariable({
           location: peeked.location,
-          type: UndecidedTypes.next(SourceReason(peeked.location, null)),
+          type: SourceUnknownType(SourceReason(peeked.location, null)),
           associatedComments,
           name: peeked.content.content,
         });
@@ -960,7 +960,7 @@ export default class SamlangModuleParser extends BaseParser {
           const location = peeked.location.union(memberNameLocation);
           return SourceExpressionClassMember({
             location,
-            type: UndecidedTypes.next(SourceReason(location, null)),
+            type: SourceUnknownType(SourceReason(location, null)),
             associatedComments,
             typeArguments,
             moduleReference: this.resolveClass(className),
@@ -1009,7 +1009,7 @@ export default class SamlangModuleParser extends BaseParser {
                 const type = this.parseType();
                 return [parameter, type];
               }
-              return [parameter, UndecidedTypes.next(SourceReason(parameter.location, null))];
+              return [parameter, SourceUnknownType(SourceReason(parameter.location, null))];
             }
           );
           this.assertAndConsume(')');
@@ -1034,7 +1034,7 @@ export default class SamlangModuleParser extends BaseParser {
             associatedComments.push(...this.collectPrecedingComments());
             this.consume();
             const body = this.parseExpression();
-            const parameterType = UndecidedTypes.next(
+            const parameterType = SourceUnknownType(
               SourceReason(lowerIdentifierForLambdaPeeked.location, null)
             );
             const location = peeked.location.union(body.location);
@@ -1089,7 +1089,7 @@ export default class SamlangModuleParser extends BaseParser {
       const location = peeked.location.union(this.assertAndConsume('}'));
       return SourceExpressionStatementBlock({
         location,
-        type: UndecidedTypes.next(SourceReason(location, null)),
+        type: SourceUnknownType(SourceReason(location, null)),
         associatedComments,
         block: { location, statements, expression },
       });
@@ -1140,7 +1140,7 @@ export default class SamlangModuleParser extends BaseParser {
         return {
           fieldName,
           fieldOrder: -1,
-          type: UndecidedTypes.next(SourceReason(fieldName.location, null)),
+          type: SourceUnknownType(SourceReason(fieldName.location, null)),
           alias,
           location,
         };
@@ -1222,6 +1222,6 @@ export default class SamlangModuleParser extends BaseParser {
       peeked.location,
       `Expecting: type, actual: ${samlangTokenContentToString(peeked.content)}`
     );
-    return UndecidedTypes.next(SourceReason(peeked.location, peeked.location));
+    return SourceUnknownType(SourceReason(peeked.location, peeked.location));
   };
 }

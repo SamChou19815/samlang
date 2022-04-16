@@ -13,13 +13,12 @@ import {
   SourceFieldType,
   SourceIdentifierType,
   SourceInterfaceDeclaration,
+  SourceUnknownType,
   TypeDefinition,
-  UndecidedTypes,
 } from '../ast/samlang-nodes';
-import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
+import { assert, checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
-import { undecideTypeParameters } from './type-undecider';
 
 export interface MemberTypeInformation {
   readonly isPublic: boolean;
@@ -98,37 +97,27 @@ export class AccessibleGlobalTypingContext {
     return typeInfo;
   }
 
-  getClassMethodType(
+  getClassMethodPolymorphicType(
     moduleReference: ModuleReference,
     className: string,
     methodName: string,
     classTypeArguments: readonly SamlangType[]
-  ):
-    | SamlangFunctionType
-    | Readonly<{ type: 'UnresolvedName'; unresolvedName: string }>
-    | Readonly<{ type: 'TypeParameterSizeMismatch'; expected: number; actual: number }> {
+  ): MemberTypeInformation | null {
     const relaventClass = this.getClassTypeInformation(moduleReference, className);
-    if (relaventClass == null) {
-      return { type: 'UnresolvedName', unresolvedName: className };
-    }
+    if (relaventClass == null) return null;
     const typeInfo = relaventClass.methods?.[methodName];
-    if (typeInfo == null || (!typeInfo.isPublic && className !== this.currentClass)) {
-      return { type: 'UnresolvedName', unresolvedName: methodName };
-    }
-    const partiallyFixedType = undecideTypeParameters(typeInfo.type, typeInfo.typeParameters)[0];
+    if (typeInfo == null || (!typeInfo.isPublic && className !== this.currentClass)) return null;
     const classTypeParameters = relaventClass.typeParameters;
-    if (classTypeArguments.length !== classTypeParameters.length) {
-      return {
-        type: 'TypeParameterSizeMismatch',
-        expected: classTypeParameters.length,
-        actual: classTypeArguments.length,
-      };
-    }
-    const fullyFixedType = performTypeSubstitution(
-      partiallyFixedType,
+    const partiallyFixedType = performTypeSubstitution(
+      typeInfo.type,
       Object.fromEntries(zip(classTypeParameters, classTypeArguments))
     );
-    return fullyFixedType as SamlangFunctionType;
+    assert(partiallyFixedType.type === 'FunctionType');
+    return {
+      isPublic: typeInfo.isPublic,
+      type: partiallyFixedType,
+      typeParameters: typeInfo.typeParameters,
+    };
   }
 
   getCurrentClassTypeDefinition(): TypeDefinition & {
@@ -243,9 +232,10 @@ export class LocationBasedLocalTypingContext {
     const definitionLocation = this.ssaAnalysisResult.useDefineMap.get(location);
     if (definitionLocation == null) {
       // When the name is unbound, we treat itself as definition.
-      return UndecidedTypes.next(SourceReason(location, null));
+      return SourceUnknownType(SourceReason(location, null));
     }
-    return this.typeMap.forceGet(definitionLocation);
+    const type = this.typeMap.forceGet(definitionLocation);
+    return { ...type, reason: SourceReason(location, type.reason.definitionLocation) };
   }
 
   write(location: Location, type: SamlangType): void {

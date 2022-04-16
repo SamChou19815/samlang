@@ -17,9 +17,7 @@ export const isNotNull = <V>(value: V | null | undefined): value is V => value !
 export const ignore = (): void => {};
 
 export function assert(condition: unknown, msg?: string): asserts condition {
-  if (!condition) {
-    throw new Error(msg);
-  }
+  if (!condition) throw new Error(msg);
 }
 
 export const checkNotNull = <V>(value: V | null | undefined, msg?: string): V => {

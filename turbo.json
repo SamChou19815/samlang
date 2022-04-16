@@ -1,13 +1,13 @@
 {
+  "$schema": "https://turborepo.org/schema.json",
   "baseBranch": "origin/main",
-  "npmClient": "pnpm",
   "globalDependencies": ["configurations/*"],
   "pipeline": {
     "compile": {
       "outputs": ["tsconfig.tsbuildinfo"]
     },
     "bundle": {
-      "outputs": ["dist/index.js", "out/**", "bin/index.js"]
+      "outputs": ["dist/index.js", "out/**", "bin/index.js", "bin/lsp.js"]
     }
   }
 }

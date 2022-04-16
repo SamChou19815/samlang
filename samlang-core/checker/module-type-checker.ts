@@ -4,7 +4,6 @@ import type { ModuleErrorCollector } from '../errors';
 import { filterMap } from '../utils';
 import typeCheckExpression from './expression-type-checker';
 import performSSAAnalysisOnSamlangModule, { SsaAnalysisResult } from './ssa-analysis';
-import TypeResolution from './type-resolution';
 import {
   AccessibleGlobalTypingContext,
   LocationBasedLocalTypingContext,
@@ -63,7 +62,6 @@ export default function typeCheckSamlangModule(
           errorCollector,
           contextWithAdditionalTypeParameters,
           localTypingContext,
-          new TypeResolution(),
           member.type.returnType
         ),
       };

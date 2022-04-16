@@ -130,69 +130,20 @@ describe('typing-context', () => {
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm1')).toBeNull();
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm2')).toBeNull();
     expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm3')).toBeNull();
-
-    expect(context.getClassMethodType(ModuleReference(['A']), 'A', 'f1', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'f1', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'f2', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'f3', []).type).toBe(
-      'UnresolvedName'
-    );
     expect(
-      context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm1', [
-        SourceIntType(DummySourceReason),
-      ]).type
-    ).toBe('TypeParameterSizeMismatch');
-    expect(
-      context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm1', [
+      context.getClassMethodPolymorphicType(ModuleReference.DUMMY, 'A', 'm1', [
         SourceIntType(DummySourceReason),
         SourceIntType(DummySourceReason),
       ])
-    ).toEqual(
-      SourceFunctionType(
+    ).toEqual({
+      isPublic: true,
+      type: SourceFunctionType(
         DummySourceReason,
         [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
         SourceIntType(DummySourceReason)
-      )
-    );
-    expect(
-      context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm2', [
-        SourceIntType(DummySourceReason),
-        SourceIntType(DummySourceReason),
-      ]).type
-    ).toBe('FunctionType');
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm3', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'f1', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'f2', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'f3', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(
-      context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm1', [
-        SourceIntType(DummySourceReason),
-        SourceIntType(DummySourceReason),
-      ]).type
-    ).toBe('FunctionType');
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm2', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm3', []).type).toBe(
-      'UnresolvedName'
-    );
-    expect(context.getClassMethodType(ModuleReference.DUMMY, 'C', 'm3', []).type).toBe(
-      'UnresolvedName'
-    );
+      ),
+      typeParameters: ['C'],
+    });
 
     context.getCurrentClassTypeDefinition();
 
@@ -241,6 +192,24 @@ describe('typing-context', () => {
       mappings: {
         a: { isPublic: true, type: SourceIntType(DummySourceReason) },
         b: { isPublic: false, type: SourceIntType(DummySourceReason) },
+      },
+    });
+    expect(
+      context.resolveTypeDefinition(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
+          SourceIntType(DummySourceReason),
+        ]),
+        'variant'
+      )
+    ).toEqual({
+      type: 'Resolved',
+      names: ['a', 'b'],
+      mappings: {
+        a: { isPublic: true, type: SourceIntType(DummySourceReason) },
+        b: {
+          isPublic: false,
+          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+        },
       },
     });
 

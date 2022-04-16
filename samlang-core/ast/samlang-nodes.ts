@@ -1,6 +1,6 @@
 import { zip } from '../utils';
 import {
-  DummySourceReason,
+  defReasonToUseReason,
   FALSE,
   intLiteralOf,
   Literal,
@@ -39,16 +39,7 @@ export interface SamlangFunctionType extends SamlangBaseType {
   readonly returnType: SamlangType;
 }
 
-export interface SamlangUndecidedType extends SamlangBaseType {
-  readonly type: 'UndecidedType';
-  readonly index: number;
-}
-
-export type SamlangType =
-  | SamlangPrimitiveType
-  | SamlangIdentifierType
-  | SamlangFunctionType
-  | SamlangUndecidedType;
+export type SamlangType = SamlangPrimitiveType | SamlangIdentifierType | SamlangFunctionType;
 
 export const SourceUnitType = (reason: SamlangReason): SamlangPrimitiveType => ({
   type: 'PrimitiveType',
@@ -100,32 +91,6 @@ export const SourceFunctionType = (
   returnType,
 });
 
-export class UndecidedTypes {
-  private static nextUndecidedTypeIndex = 0;
-
-  static next(reason: SamlangReason): SamlangUndecidedType {
-    const type = {
-      type: 'UndecidedType',
-      reason,
-      index: UndecidedTypes.nextUndecidedTypeIndex,
-    } as const;
-    UndecidedTypes.nextUndecidedTypeIndex += 1;
-    return type;
-  }
-
-  static nextN(n: number): readonly SamlangUndecidedType[] {
-    const list: SamlangUndecidedType[] = [];
-    for (let i = 0; i < n; i += 1) {
-      list.push(UndecidedTypes.next(DummySourceReason));
-    }
-    return list;
-  }
-
-  static resetUndecidedTypeIndex_ONLY_FOR_TEST(): void {
-    UndecidedTypes.nextUndecidedTypeIndex = 0;
-  }
-}
-
 export function prettyPrintType(type: SamlangType): string {
   switch (type.type) {
     case 'PrimitiveType':
@@ -139,8 +104,6 @@ export function prettyPrintType(type: SamlangType): string {
       return `(${type.argumentTypes.map(prettyPrintType).join(', ')}) -> ${prettyPrintType(
         type.returnType
       )}`;
-    case 'UndecidedType':
-      return '__UNDECIDED__';
   }
 }
 
@@ -168,9 +131,11 @@ export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
           isTheSameType(t1Element, t2Element)
         )
       );
-    case 'UndecidedType':
-      return t2.type === 'UndecidedType' && t1.index === t2.index;
   }
+}
+
+export function typeReposition(type: SamlangType, useLocation: Location): SamlangType {
+  return { ...type, reason: defReasonToUseReason(type.reason, useLocation) };
 }
 
 /** An identifier with attached comments. */

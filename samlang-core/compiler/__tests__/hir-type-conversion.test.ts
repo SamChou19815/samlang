@@ -287,10 +287,6 @@ describe('hir-type-conversion', () => {
       )
     ).toBe('$SyntheticIDType0<T>');
 
-    expect(() =>
-      manager.lowerSamlangType({ type: 'UndecidedType', reason: DummySourceReason, index: 0 })
-    ).toThrow();
-
     expect(typeSynthesizer.synthesizedTupleTypes.map(prettyPrintHighIRTypeDefinition)).toEqual([]);
     expect(
       typeSynthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition)
