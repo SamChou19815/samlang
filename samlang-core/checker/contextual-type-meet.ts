@@ -53,7 +53,7 @@ export default function contextualTypeMeet(
   try {
     return contextualTypeMeetWithThrow(general, specific);
   } catch {
-    errorCollector.reportUnexpectedTypeError(specific.reason.definitionLocation, general, specific);
+    errorCollector.reportUnexpectedTypeError(specific.reason.useLocation, general, specific);
     return specific;
   }
 }

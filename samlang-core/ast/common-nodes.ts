@@ -127,17 +127,17 @@ export const LocationCollections: CollectionsConstructors<Location> = createColl
 /** SECTION 3: REASON */
 
 export interface SamlangReason {
-  readonly definitionLocation: Location;
-  readonly annotationLocation: Location | null;
+  readonly useLocation: Location;
+  readonly definitionLocation: Location | null;
 }
 
 export const SourceReason = (
-  definitionLocation: Location,
-  annotationLocation: Location | null
-): SamlangReason => ({ definitionLocation, annotationLocation });
+  useLocation: Location,
+  definitionLocation: Location | null
+): SamlangReason => ({ useLocation, definitionLocation });
 
 export function defReasonToUseReason(reason: SamlangReason, useLocation: Location): SamlangReason {
-  return { definitionLocation: useLocation, annotationLocation: reason.annotationLocation };
+  return { useLocation, definitionLocation: reason.definitionLocation };
 }
 
 export const DummySourceReason: SamlangReason = SourceReason(Location.DUMMY, Location.DUMMY);

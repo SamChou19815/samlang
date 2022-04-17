@@ -89,7 +89,7 @@ export function solveTypeConstraints(
       // Fill in unknown for unsolved types.
       solvedSubstitution.set(
         typeParameter,
-        SourceUnknownType(SourceReason(concreteType.reason.definitionLocation, null))
+        SourceUnknownType(SourceReason(concreteType.reason.useLocation, null))
       );
     }
   });

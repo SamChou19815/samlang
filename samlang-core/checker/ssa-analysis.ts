@@ -176,7 +176,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
       case 'PrimitiveType':
         return;
       case 'IdentifierType':
-        this.use({ name: type.identifier, location: type.reason.definitionLocation });
+        this.use({ name: type.identifier, location: type.reason.useLocation });
         type.typeArguments.forEach(this.visitType);
         return;
       case 'FunctionType':
