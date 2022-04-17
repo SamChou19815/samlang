@@ -24,11 +24,11 @@ describe('samlang-core/parser', () => {
     expectASTWithTheSameKind('this', 'ThisExpression');
     expectASTWithTheSameKind('abc', 'VariableExpression');
     expectASTWithTheSameKind('SomeClass.foo', 'ClassMemberExpression');
-    expectASTWithTheSameKind('SomeClass.<A,B>foo', 'ClassMemberExpression');
-    expectASTWithTheSameKind('SomeClass.<A>foo', 'ClassMemberExpression');
+    expectASTWithTheSameKind('SomeClass.foo<A,B>', 'ClassMemberExpression');
+    expectASTWithTheSameKind('SomeClass.foo<A>', 'ClassMemberExpression');
     expectASTWithTheSameKind('V.Variant({})', 'FunctionCallExpression');
     expectASTWithTheSameKind('V.Variant(3)', 'FunctionCallExpression');
-    expectASTWithTheSameKind('V.<T>Variant(3)', 'FunctionCallExpression');
+    expectASTWithTheSameKind('V.Variant<T>(3)', 'FunctionCallExpression');
     expectASTWithTheSameKind('foo.bar', 'FieldAccessExpression');
     expectASTWithTheSameKind('!false', 'UnaryExpression');
     expectASTWithTheSameKind('-42', 'UnaryExpression');

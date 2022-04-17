@@ -51,12 +51,12 @@ describe('printer-source-level', () => {
     expect(reprintExpression('hi')).toBe('hi');
     expect(reprintExpression('this')).toBe('this');
     expect(reprintExpression('ClassName.classMember')).toBe('ClassName.classMember');
-    expect(reprintExpression('ClassName.<A,B>classMember')).toBe('ClassName.<A, B>classMember');
-    expect(reprintExpression('/* a */ ClassName./* b */ <A,B> /* c */ classMember')).toBe(
+    expect(reprintExpression('ClassName.classMember<A,B>')).toBe('ClassName.classMember<A, B>');
+    expect(reprintExpression('/* a */ ClassName./* b */  /* c */ classMember<A,B>')).toBe(
       `/* a */
 ClassName
 /* b */ /* c */
-.<A, B>classMember`
+.classMember<A, B>`
     );
     expect(reprintExpression('ClassName/* a */.classMember')).toBe(
       'ClassName /* a */ .classMember'
@@ -69,10 +69,10 @@ ClassName
     );
 
     expect(reprintExpression('Test.VariantName(42)')).toBe('Test.VariantName(42)');
-    expect(reprintExpression('Test.<T>VariantName(42)')).toBe('Test.<T>VariantName(42)');
-    expect(reprintExpression('/* a */ Test./* b */ <T>/* c */ VariantName(42)')).toBe(
+    expect(reprintExpression('Test.VariantName<T>(42)')).toBe('Test.VariantName<T>(42)');
+    expect(reprintExpression('/* a */ Test./* b */ VariantName/* c */ <T>(42)')).toBe(
       `/* a */
-Test /* b */ /* c */ .<T>VariantName(42)`
+Test /* b */ /* c */ .VariantName<T>(42)`
     );
     expect(reprintExpression('/* a */Obj.VariantName(/* b */42)')).toBe(
       '/* a */ Obj.VariantName(/* b */ 42)'

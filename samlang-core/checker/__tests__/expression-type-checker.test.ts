@@ -368,12 +368,12 @@ describe('expression-type-checker', () => {
 
   it('ClassMember', () => {
     assertTypeChecks(
-      'Test.<int>helloWorldWithTypeParameters',
+      'Test.helloWorldWithTypeParameters<int>',
       SourceFunctionType(DummySourceReason, [int], unit)
     );
     assertTypeChecks('Test.helloWorld', SourceFunctionType(DummySourceReason, [string], unit));
 
-    assertTypeErrors('Test.<A>helloWorld', SourceFunctionType(DummySourceReason, [string], unit), [
+    assertTypeErrors('Test.helloWorld<A>', SourceFunctionType(DummySourceReason, [string], unit), [
       'Test.sam:1:1-1:19: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
     ]);
     assertTypeErrors(
@@ -391,14 +391,14 @@ describe('expression-type-checker', () => {
       'Test.sam:1:1-1:34: [UnexpectedType]: Expected: `string`, actual: `(unknown) -> unit`.',
     ]);
     assertTypeErrors(
-      'Test.<int, string>helloWorldWithTypeParameters',
+      'Test.helloWorldWithTypeParameters<int, string>',
       SourceFunctionType(DummySourceReason, [int], unit),
       [
         'Test.sam:1:1-1:47: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
       ]
     );
     assertTypeErrors(
-      'Test.<string>helloWorldWithTypeParameters',
+      'Test.helloWorldWithTypeParameters<string>',
       SourceFunctionType(DummySourceReason, [string, string], unit),
       [
         'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
@@ -441,7 +441,7 @@ describe('expression-type-checker', () => {
       'Test4'
     );
     assertTypeChecks(
-      'Test4.<bool>Foo(true)}',
+      'Test4.Foo<bool>(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       undefined,
       'Test4'
@@ -458,7 +458,7 @@ describe('expression-type-checker', () => {
       ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved.']
     );
     assertTypeErrors(
-      'Test4.<int, bool>Foo(true)}',
+      'Test4.Foo<int, bool>(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       [
         'Test.sam:1:1-1:21: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
@@ -466,13 +466,13 @@ describe('expression-type-checker', () => {
       undefined
     );
     assertTypeErrors(
-      'Test4.<int>Foo(true)}',
+      'Test4.Foo<int>(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [int]),
       ['Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
       undefined
     );
     assertTypeErrors(
-      'Test4.<int>Foo(true)}',
+      'Test4.Foo<int>(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       [
         'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.',

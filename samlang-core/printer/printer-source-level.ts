@@ -125,7 +125,7 @@ function createPrettierDocumentFromSamlangExpression(
         return createDocumentDottedExpression(
           PRETTIER_TEXT(expression.className.name),
           expression.memberName.associatedComments,
-          optionalTypeArguments(expression.typeArguments) + expression.memberName.name
+          expression.memberName.name + optionalTypeArguments(expression.typeArguments)
         );
       }
       case 'FieldAccessExpression':
