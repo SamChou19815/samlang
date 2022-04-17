@@ -10,7 +10,7 @@
     "lint": "eslint . --cache",
     "format": "prettier --write '**/*.{ts,js,yml}'",
     "format:check": "prettier --check '**/*.{ts,js,yml}'",
-    "bundle": "turbo run bundle",
+    "bundle": "pnpm -r bundle",
     "check": "turbo run compile",
     "test": "jest --coverage",
     "test:single": "jest -t",

@@ -559,18 +559,6 @@ export default class SamlangModuleParser extends BaseParser {
     return collector;
   };
 
-  private parseTypeArguments = (): readonly SamlangType[] => {
-    this.assertAndConsume('<');
-    const collector: SamlangType[] = [];
-    collector.push(this.parseType());
-    while (this.peek().content === ',') {
-      this.consume();
-      collector.push(this.parseType());
-    }
-    this.assertAndConsume('>');
-    return collector;
-  };
-
   private parseMatch = (): SamlangExpression => {
     const associatedComments = this.collectPrecedingComments();
     const peeked = this.peek();
@@ -947,17 +935,21 @@ export default class SamlangModuleParser extends BaseParser {
         if (nextPeeked.content === '.') {
           const memberPrecedingComments = this.collectPrecedingComments();
           this.consume();
-          let typeArguments: readonly SamlangType[];
-          if (this.peek().content === '<') {
-            memberPrecedingComments.push(...this.collectPrecedingComments());
-            typeArguments = this.parseTypeArguments();
-          } else {
-            typeArguments = [];
-          }
           memberPrecedingComments.push(...this.collectPrecedingComments());
           const { location: memberNameLocation, identifier: memberName } =
             this.assertAndConsumeIdentifier();
-          const location = peeked.location.union(memberNameLocation);
+          let location = peeked.location.union(memberNameLocation);
+          const typeArguments: SamlangType[] = [];
+          if (this.peek().content === '<') {
+            memberPrecedingComments.push(...this.collectPrecedingComments());
+            this.assertAndConsume('<');
+            typeArguments.push(this.parseType());
+            while (this.peek().content === ',') {
+              this.consume();
+              typeArguments.push(this.parseType());
+            }
+            location = location.union(this.assertAndConsume('>'));
+          }
           return SourceExpressionClassMember({
             location,
             type: SourceUnknownType(SourceReason(location, null)),

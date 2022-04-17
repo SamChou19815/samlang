@@ -102,28 +102,28 @@ class Main {
     testName: 'illegal-binary-operations',
     sourceCode: `
 class Box<T>(val value: T) {
-  function <T> empty(): Box<T> = Box.init(Builtins.<T>panic("PANIC"))
+  function <T> empty(): Box<T> = Box.init(Builtins.panic<T>("PANIC"))
   function <T> of(value: T): Box<T> = Box.init(value)
 }
 
 class AnotherBox<T>(val value: T) {
-  function <T> empty(): AnotherBox<T> = AnotherBox.init(Builtins.<T>panic("PANIC"))
+  function <T> empty(): AnotherBox<T> = AnotherBox.init(Builtins.panic<T>("PANIC"))
 }
 
 class Main {
-  function test01(): int = 42 + Box.<int>empty() // error
-  function test02(): int = Box.<int>empty() + 42 // error
-  function test03(): bool = 42 == Box.<int>empty() // error
-  function test04(): bool = Box.<int>empty() == 42 // error
-  function test05(): bool = Box.<int>empty() || false // error
-  function test06(): bool = false || Box.<int>empty() // error
+  function test01(): int = 42 + Box.empty<int>() // error
+  function test02(): int = Box.empty<int>() + 42 // error
+  function test03(): bool = 42 == Box.empty<int>() // error
+  function test04(): bool = Box.empty<int>() == 42 // error
+  function test05(): bool = Box.empty<int>() || false // error
+  function test06(): bool = false || Box.empty<int>() // error
   function test07(): int = 42 * false // error
   function test08(): int = false + false // error
   function test09(): bool = Box.of(true) == Box.of(false) // ok
   function test10(): bool = Box.of(true) == Box.of(42) // error
   function test11(): bool = Box.of(true) == Box.empty() // ok
-  function test12(): bool = Box.<int>empty() == Box.of(42) // ok
-  function test13(): bool = Box.<int>empty() == AnotherBox.<int>empty() // error
+  function test12(): bool = Box.empty<int>() == Box.of(42) // ok
+  function test13(): bool = Box.empty<int>() == AnotherBox.empty<int>() // error
   function test14(): bool =
     // Deeply nested type inconsistencies
     Box.of(Box.of(Box.of(42))) == Box.of(Box.of(Box.of(false)))
@@ -306,9 +306,9 @@ class Option<T>(Some(T), None(bool)) {
 }
 
 class Main {
-  function main(): Option<string> = Option.<string>none().toSome("hi")
+  function main(): Option<string> = Option.none<string>().toSome("hi")
   function main2(): Option<string> = {
-    val a = Option.<string>none();
+    val a = Option.none<string>();
     a.toSome("hi")
   }
 
@@ -325,7 +325,7 @@ class Main {
 class Pair<A, B>(val a: A, val b: B) {}
 class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
   function <T> of(t: T): List<T> =
-    List.Cons(Pair.init(t, List.<T>Nil({})))
+    List.Cons(Pair.init(t, List.Nil<T>({})))
   method cons(t: T): List<T> =
     List.Cons(Pair.init(t, this))
 }
@@ -516,7 +516,7 @@ class Main {
     val _ = Builtins.println(a);
     val _ = Builtins.println("b:");
     val _ = Builtins.println(b);
-    val _ = Builtins.<unit>panic("crash!");
+    val _ = Builtins.panic<unit>("crash!");
   }
 
   function checkInt(a: int, b: int): unit =
@@ -806,7 +806,7 @@ class Main {
   private function consistencyTest(): unit = {
     val _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");
     val _ = Main.assertEquals(Box.create(42).getContent(), 42, "Ah2");
-    val _ = Main.assertEquals(FunctionExample.<int>getIdentityFunction()(42), 42, "Ah3");
+    val _ = Main.assertEquals(FunctionExample.getIdentityFunction<int>()(42), 42, "Ah3");
     val _ = Main.assertEquals(Student.dummyStudent().getAge(), 0, "Ah4");
     val _ = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");
     val _ = Main.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
@@ -1090,13 +1090,13 @@ class Main {
 class Option<T>(None(unit), Some(T)) {
   method <R> mapButIgnore(f: (T) -> R): unit = {
     val _ = match (this) {
-      | None _ -> Option.<R>None({})
+      | None _ -> Option.None<R>({})
       | Some d -> Option.Some(f(d))
     };
   }
 
   function main(): unit = {
-    val none = Option.<int>None({});
+    val none = Option.None<int>({});
     val noneMapped = none.mapButIgnore((it) -> it);
     val _ = Option.Some(noneMapped).mapButIgnore((it) -> it);
   }
@@ -1228,13 +1228,13 @@ class Main {
 
   function testAndShortCircuitInIf(): unit = {
     // [0] [1]
-    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then Builtins.<unit>panic("Ah") else {};
+    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then Builtins.panic<unit>("Ah") else {};
     // [0] [1]
     val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1)) then {} else Builtins.panic("Ah");
     // [0]
-    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then Builtins.<unit>panic("Ah") else {};
+    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then Builtins.panic<unit>("Ah") else {};
     // [0]
-    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then Builtins.<unit>panic("Ah") else {};
+    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then Builtins.panic<unit>("Ah") else {};
   }
 
   function testOrShortCircuitInIf(): unit = {
@@ -1243,7 +1243,7 @@ class Main {
     // [0]
     val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {} else Builtins.panic("Ah");
     // [0] [1]
-    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)) then Builtins.<unit>panic("Ah") else {};
+    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)) then Builtins.panic<unit>("Ah") else {};
     // [0] [1]
     val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1)) then {} else Builtins.panic("Ah");
   }
@@ -1370,7 +1370,7 @@ class Option<T>(Some(T), None(bool)) {
       | Some t -> Option.Some(f(t))
     }
   function test(): unit = {
-    val _ = match (Option.<(string) -> int>None(false)) {
+    val _ = match (Option.None<(string) -> int>(false)) {
       | None _ -> ""
       | Some f -> Builtins.intToString(f(""))
     };
@@ -1381,7 +1381,7 @@ class Pair<A, B>(val a: A, val b: B) {}
 
 class List<T>(Nil(bool), Cons(Pair<T, List<T>>)) {
   function <T> of(t: T): List<T> =
-    List.Cons(Pair.init(t, List.<T>Nil(true)))
+    List.Cons(Pair.init(t, List.Nil<T>(true)))
   method cons(t: T): List<T> =
     List.Cons(Pair.init(t, this))
 }
@@ -1428,8 +1428,8 @@ class Main {
   }
 
   function lambdaTest(a: int): string = {
-    val b: Option<string> = Option.<int>none().toSome(3).map(Main.lambdaTest);
-    val c: Option<string> = Option.<int>none().toSome(3).map((x) -> "empty");
+    val b = Option.none<int>().toSome(3).map(Main.lambdaTest);
+    val c = Option.none<int>().toSome(3).map((x) -> "empty");
     "hello world"
   }
 
