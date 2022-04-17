@@ -117,24 +117,53 @@ describe('typing-context', () => {
     );
 
     expect(context.getInterfaceInformation(ModuleReference.DUMMY, 'I')).toBeTruthy();
-    expect(context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1')).toBeFalsy();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f1')).toBeTruthy();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f2')).toBeTruthy();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f3')).toBeNull();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm1')).toBeNull();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm2')).toBeNull();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm3')).toBeNull();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f1')).toBeTruthy();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f2')).toBeNull();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f3')).toBeNull();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm1')).toBeNull();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm2')).toBeNull();
-    expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm3')).toBeNull();
     expect(
-      context.getClassMethodPolymorphicType(ModuleReference.DUMMY, 'A', 'm1', [
-        SourceIntType(DummySourceReason),
-        SourceIntType(DummySourceReason),
-      ])
+      context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1', Location.DUMMY)
+    ).toBeFalsy();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f1', Location.DUMMY)
+    ).toBeTruthy();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f2', Location.DUMMY)
+    ).toBeTruthy();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f3', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm1', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm2', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm3', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f1', Location.DUMMY)
+    ).toBeTruthy();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f2', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f3', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm1', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm2', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm3', Location.DUMMY)
+    ).toBeNull();
+    expect(
+      context.getClassMethodType(
+        ModuleReference.DUMMY,
+        'A',
+        'm1',
+        [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
+        Location.DUMMY
+      )
     ).toEqual({
       isPublic: true,
       type: SourceFunctionType(

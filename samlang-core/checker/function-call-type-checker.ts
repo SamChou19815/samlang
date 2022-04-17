@@ -4,6 +4,7 @@ import {
   SamlangFunctionType,
   SamlangType,
   SourceUnknownType,
+  typeReposition,
 } from '../ast/samlang-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import { assert, zip } from '../utils';
@@ -151,7 +152,7 @@ export default function typeCheckFunctionCall(
   assert(fullySolvedGenericType.type === 'FunctionType');
   const fullySolvedConcreteReturnType = contextualTypeMeet(
     returnTypeHint ?? SourceUnknownType(functionCallReason),
-    { ...fullySolvedGenericType.returnType, reason: functionCallReason },
+    typeReposition(fullySolvedGenericType.returnType, functionCallReason.definitionLocation),
     errorCollector
   );
 

@@ -16,6 +16,7 @@ import {
   SamlangType,
   SamlangValStatement,
   SourceBoolType,
+  SourceExpressionBinary,
   SourceExpressionClassMember,
   SourceExpressionFieldAccess,
   SourceExpressionFunctionCall,
@@ -27,6 +28,7 @@ import {
   SourceExpressionThis,
   SourceExpressionUnary,
   SourceExpressionVariable,
+  sourceExpressionWithNewType,
   SourceFieldType,
   SourceFunctionType,
   SourceIdentifier,
@@ -36,6 +38,7 @@ import {
   SourceUnknownType,
   StatementBlockExpression,
   ThisExpression,
+  typeReposition,
   UnaryExpression,
   VariableExpression,
 } from '../ast/samlang-nodes';
@@ -146,10 +149,11 @@ class ExpressionTypeChecker {
     partiallyCheckedExpression: ClassMemberExpression;
     unsolvedTypeParameters: readonly string[];
   } {
-    let classFunctionTypeInformation = this.accessibleGlobalTypingContext.getClassFunctionType(
+    const classFunctionTypeInformation = this.accessibleGlobalTypingContext.getClassFunctionType(
       expression.moduleReference,
       expression.className.name,
-      expression.memberName.name
+      expression.memberName.name,
+      expression.location
     );
     if (classFunctionTypeInformation == null) {
       this.errorCollector.reportUnresolvedNameError(
@@ -167,13 +171,6 @@ class ExpressionTypeChecker {
       });
       return { partiallyCheckedExpression, unsolvedTypeParameters: [] };
     }
-    classFunctionTypeInformation = {
-      ...classFunctionTypeInformation,
-      type: {
-        ...classFunctionTypeInformation.type,
-        reason: SourceReason(expression.location, null),
-      },
-    };
     if (expression.typeArguments.length !== 0) {
       if (expression.typeArguments.length === classFunctionTypeInformation.typeParameters.length) {
         const type = this.typeMeet(
@@ -255,13 +252,7 @@ class ExpressionTypeChecker {
     // When hint is bad or there is no hint, we need to give up and let context help us more.
     const partiallyCheckedExpression = SourceExpressionClassMember({
       location: expression.location,
-      type: {
-        ...classFunctionTypeInformation.type,
-        reason: SourceReason(
-          expression.location,
-          classFunctionTypeInformation.type.reason.definitionLocation
-        ),
-      },
+      type: classFunctionTypeInformation.type,
       associatedComments: expression.associatedComments,
       typeArguments: expression.typeArguments,
       moduleReference: expression.moduleReference,
@@ -294,7 +285,7 @@ class ExpressionTypeChecker {
         )
       )
     );
-    return { ...expression, type } as SamlangExpression;
+    return sourceExpressionWithNewType(expression, type);
   }
 
   private typeCheckClassMember(
@@ -334,23 +325,14 @@ class ExpressionTypeChecker {
       });
       return { partiallyCheckedExpression, unsolvedTypeParameters: [] };
     }
-    let methodTypeInformation = this.accessibleGlobalTypingContext.getClassMethodPolymorphicType(
+    const methodTypeInformation = this.accessibleGlobalTypingContext.getClassMethodType(
       checkedExpression.type.moduleReference,
       checkedExpression.type.identifier,
       expression.fieldName.name,
-      checkedExpression.type.typeArguments
+      checkedExpression.type.typeArguments,
+      expression.location
     );
     if (methodTypeInformation != null) {
-      methodTypeInformation = {
-        ...methodTypeInformation,
-        type: {
-          ...methodTypeInformation.type,
-          reason: SourceReason(
-            expression.location,
-            methodTypeInformation.type.reason.definitionLocation
-          ),
-        },
-      };
       // This is a valid method. We will now type check it as a method access
       if (methodTypeInformation.typeParameters.length === 0) {
         // No type parameter to solve
@@ -471,10 +453,7 @@ class ExpressionTypeChecker {
       assert(order !== -1, `Bad field: ${expression.fieldName}`);
       const partiallyCheckedExpression = SourceExpressionFieldAccess({
         location: expression.location,
-        type: this.typeMeet(hint, {
-          ...fieldType.type,
-          reason: SourceReason(expression.location, fieldType.type.reason.definitionLocation),
-        }),
+        type: this.typeMeet(hint, typeReposition(fieldType.type, expression.location)),
         associatedComments: expression.associatedComments,
         expression: checkedExpression,
         fieldName: expression.fieldName,
@@ -516,7 +495,7 @@ class ExpressionTypeChecker {
     expression: FunctionCallExpression,
     hint: SamlangType | null
   ): SamlangExpression {
-    let checkedFunctionExpression: SamlangExpression;
+    let checkedFunctionExpressionWithUnresolvedGenericType: SamlangExpression;
     let typeParameters: readonly string[];
     switch (expression.functionExpression.__type__) {
       case 'ClassMemberExpression': {
@@ -525,7 +504,7 @@ class ExpressionTypeChecker {
             expression.functionExpression,
             null
           );
-        checkedFunctionExpression = partiallyCheckedExpression;
+        checkedFunctionExpressionWithUnresolvedGenericType = partiallyCheckedExpression;
         typeParameters = unsolvedTypeParameters;
         break;
       }
@@ -535,43 +514,46 @@ class ExpressionTypeChecker {
             expression.functionExpression,
             null
           );
-        checkedFunctionExpression = partiallyCheckedExpression;
+        checkedFunctionExpressionWithUnresolvedGenericType = partiallyCheckedExpression;
         typeParameters = unsolvedTypeParameters;
         break;
       }
       default:
-        checkedFunctionExpression = this.typeCheck(expression.functionExpression, null);
+        checkedFunctionExpressionWithUnresolvedGenericType = this.typeCheck(
+          expression.functionExpression,
+          null
+        );
         typeParameters = [];
         break;
     }
     if (
-      checkedFunctionExpression.type.type === 'PrimitiveType' &&
-      checkedFunctionExpression.type.name === 'unknown'
+      checkedFunctionExpressionWithUnresolvedGenericType.type.type === 'PrimitiveType' &&
+      checkedFunctionExpressionWithUnresolvedGenericType.type.name === 'unknown'
     ) {
       return SourceExpressionFunctionCall({
         location: expression.location,
         type: this.bestEffortUnknownType(hint, expression),
         associatedComments: expression.associatedComments,
         functionExpression: this.replaceUndecidedTypeParameterWithUnknownAndUpdateType(
-          checkedFunctionExpression,
+          checkedFunctionExpressionWithUnresolvedGenericType,
           typeParameters,
           null
         ),
         functionArguments: expression.functionArguments,
       });
     }
-    if (checkedFunctionExpression.type.type !== 'FunctionType') {
+    if (checkedFunctionExpressionWithUnresolvedGenericType.type.type !== 'FunctionType') {
       this.errorCollector.reportUnexpectedTypeKindError(
         expression.location,
         'function',
-        checkedFunctionExpression.type
+        checkedFunctionExpressionWithUnresolvedGenericType.type
       );
       return SourceExpressionFunctionCall({
         location: expression.location,
         type: this.bestEffortUnknownType(hint, expression),
         associatedComments: expression.associatedComments,
         functionExpression: this.replaceUndecidedTypeParameterWithUnknownAndUpdateType(
-          checkedFunctionExpression,
+          checkedFunctionExpressionWithUnresolvedGenericType,
           typeParameters,
           null
         ),
@@ -579,7 +561,7 @@ class ExpressionTypeChecker {
       });
     }
     const { solvedGenericType, solvedReturnType, checkedArguments } = typeCheckFunctionCall(
-      checkedFunctionExpression.type,
+      checkedFunctionExpressionWithUnresolvedGenericType.type,
       typeParameters,
       SourceReason(expression.location, null),
       expression.functionArguments,
@@ -587,14 +569,15 @@ class ExpressionTypeChecker {
       this.typeCheck,
       this.errorCollector
     );
+    const fullyResolvedCheckedFunctionExpression = sourceExpressionWithNewType(
+      checkedFunctionExpressionWithUnresolvedGenericType,
+      solvedGenericType
+    );
     return SourceExpressionFunctionCall({
       location: expression.location,
-      type: {
-        ...solvedReturnType,
-        reason: SourceReason(expression.location, solvedGenericType.reason.definitionLocation),
-      },
+      type: solvedReturnType,
       associatedComments: expression.associatedComments,
-      functionExpression: { ...checkedFunctionExpression, type: solvedGenericType },
+      functionExpression: fullyResolvedCheckedFunctionExpression,
       functionArguments: checkedArguments,
     });
   }
@@ -614,8 +597,11 @@ class ExpressionTypeChecker {
       case '<=':
       case '>':
       case '>=':
-        checkedExpression = {
-          ...expression,
+        checkedExpression = SourceExpressionBinary({
+          location: expression.location,
+          type: expression.type,
+          operator: expression.operator,
+          operatorPrecedingComments: expression.operatorPrecedingComments,
           e1: this.typeCheck(
             expression.e1,
             SourceIntType(SourceReason(expression.e1.location, null))
@@ -624,12 +610,15 @@ class ExpressionTypeChecker {
             expression.e2,
             SourceIntType(SourceReason(expression.e2.location, null))
           ),
-        };
+        });
         break;
       case '&&':
       case '||':
-        checkedExpression = {
-          ...expression,
+        checkedExpression = SourceExpressionBinary({
+          location: expression.location,
+          type: expression.type,
+          operator: expression.operator,
+          operatorPrecedingComments: expression.operatorPrecedingComments,
           e1: this.typeCheck(
             expression.e1,
             SourceBoolType(SourceReason(expression.e1.location, null))
@@ -638,11 +627,14 @@ class ExpressionTypeChecker {
             expression.e2,
             SourceBoolType(SourceReason(expression.e2.location, null))
           ),
-        };
+        });
         break;
       case '::':
-        checkedExpression = {
-          ...expression,
+        checkedExpression = SourceExpressionBinary({
+          location: expression.location,
+          type: expression.type,
+          operator: expression.operator,
+          operatorPrecedingComments: expression.operatorPrecedingComments,
           e1: this.typeCheck(
             expression.e1,
             SourceStringType(SourceReason(expression.e1.location, null))
@@ -651,13 +643,20 @@ class ExpressionTypeChecker {
             expression.e2,
             SourceStringType(SourceReason(expression.e2.location, null))
           ),
-        };
+        });
         break;
       case '==':
       case '!=': {
         const e1 = this.typeCheck(expression.e1, null);
         const e2 = this.typeCheck(expression.e2, e1.type);
-        checkedExpression = { ...expression, e1, e2 };
+        checkedExpression = SourceExpressionBinary({
+          location: expression.location,
+          type: expression.type,
+          operator: expression.operator,
+          operatorPrecedingComments: expression.operatorPrecedingComments,
+          e1,
+          e2,
+        });
         break;
       }
     }
@@ -677,7 +676,7 @@ class ExpressionTypeChecker {
     const e2 = this.typeCheck(expression.e2, e1.type);
     return SourceExpressionIfElse({
       location: expression.location,
-      type: { ...e2.type, reason: SourceReason(expression.location, null) },
+      type: typeReposition(e2.type, expression.location),
       associatedComments: expression.associatedComments,
       boolExpression,
       e1,
@@ -980,7 +979,13 @@ class ExpressionTypeChecker {
           const nameToBeUsed = renamedName ?? originalName;
           this.localTypingContext.write(nameToBeUsed.location, fieldType);
           const fieldOrder = checkNotNull(fieldOrderMapping[originalName.name]);
-          destructedNames.push({ ...destructedName, type: fieldType, fieldOrder });
+          destructedNames.push({
+            fieldName: originalName,
+            fieldOrder,
+            type: fieldType,
+            alias: renamedName,
+            location: destructedName.location,
+          });
         }
         checkedPattern = { location, type: 'ObjectPattern', destructedNames };
         break;
