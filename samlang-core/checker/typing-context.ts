@@ -15,6 +15,7 @@ import {
   SourceInterfaceDeclaration,
   SourceUnknownType,
   TypeDefinition,
+  typeReposition,
 } from '../ast/samlang-nodes';
 import { assert, checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
@@ -82,7 +83,8 @@ export class AccessibleGlobalTypingContext {
   getClassFunctionType(
     moduleReference: ModuleReference,
     className: string,
-    member: string
+    member: string,
+    useLocation: Location
   ): MemberTypeInformation | null {
     const typeInfo = this.getClassTypeInformation(moduleReference, className)?.functions?.[member];
     if (typeInfo == null) return null;
@@ -94,14 +96,15 @@ export class AccessibleGlobalTypingContext {
     ) {
       return null;
     }
-    return typeInfo;
+    return { ...typeInfo, type: typeReposition(typeInfo.type, useLocation) };
   }
 
-  getClassMethodPolymorphicType(
+  getClassMethodType(
     moduleReference: ModuleReference,
     className: string,
     methodName: string,
-    classTypeArguments: readonly SamlangType[]
+    classTypeArguments: readonly SamlangType[],
+    useLocation: Location
   ): MemberTypeInformation | null {
     const relaventClass = this.getClassTypeInformation(moduleReference, className);
     if (relaventClass == null) return null;
@@ -115,7 +118,7 @@ export class AccessibleGlobalTypingContext {
     assert(partiallyFixedType.type === 'FunctionType');
     return {
       isPublic: typeInfo.isPublic,
-      type: partiallyFixedType,
+      type: typeReposition(partiallyFixedType, useLocation),
       typeParameters: typeInfo.typeParameters,
     };
   }
@@ -230,12 +233,9 @@ export class LocationBasedLocalTypingContext {
 
   read(location: Location): SamlangType {
     const definitionLocation = this.ssaAnalysisResult.useDefineMap.get(location);
-    if (definitionLocation == null) {
-      // When the name is unbound, we treat itself as definition.
-      return SourceUnknownType(SourceReason(location, null));
-    }
-    const type = this.typeMap.forceGet(definitionLocation);
-    return { ...type, reason: SourceReason(location, type.reason.definitionLocation) };
+    // When the name is unbound, we treat itself as definition.
+    if (definitionLocation == null) return SourceUnknownType(SourceReason(location, null));
+    return typeReposition(this.typeMap.forceGet(definitionLocation), location);
   }
 
   write(location: Location, type: SamlangType): void {

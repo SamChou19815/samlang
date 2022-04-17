@@ -134,7 +134,7 @@ export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
   }
 }
 
-export function typeReposition(type: SamlangType, useLocation: Location): SamlangType {
+export function typeReposition<T extends SamlangType>(type: T, useLocation: Location): T {
   return { ...type, reason: defReasonToUseReason(type.reason, useLocation) };
 }
 
@@ -555,6 +555,11 @@ export const SourceExpressionStatementBlock = ({
   associatedComments,
   block,
 });
+
+export const sourceExpressionWithNewType = <E extends SamlangExpression>(
+  expression: E,
+  type: E['type']
+): E => ({ ...expression, type });
 
 export interface SourceAnnotatedVariable {
   readonly name: string;
