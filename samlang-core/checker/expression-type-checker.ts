@@ -278,10 +278,7 @@ class ExpressionTypeChecker {
       performTypeSubstitution(
         expression.type,
         Object.fromEntries(
-          zip(
-            unsolvedTypeParameters,
-            unsolvedTypeParameters.map(() => this.bestEffortUnknownType(null, expression))
-          )
+          unsolvedTypeParameters.map((it) => [it, this.bestEffortUnknownType(null, expression)])
         )
       )
     );

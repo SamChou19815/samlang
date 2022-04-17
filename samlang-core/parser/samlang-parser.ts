@@ -481,9 +481,7 @@ export default class SamlangModuleParser extends BaseParser {
     this.assertAndConsume(')');
     this.assertAndConsume(':');
     const returnType = this.parseType();
-    const functionTypeLocation = functionTypeLocationStart.union(
-      returnType.reason.definitionLocation
-    );
+    const functionTypeLocation = functionTypeLocationStart.union(returnType.reason.useLocation);
     return {
       location: startLocation,
       associatedComments,
@@ -1202,7 +1200,7 @@ export default class SamlangModuleParser extends BaseParser {
       }
       this.assertAndConsume('->');
       const returnType = this.parseType();
-      const location = peeked.location.union(returnType.reason.definitionLocation);
+      const location = peeked.location.union(returnType.reason.useLocation);
       return {
         type: 'FunctionType',
         reason: SourceReason(location, location),

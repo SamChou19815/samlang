@@ -65,7 +65,7 @@ export default function typeCheckFunctionCall(
 ): FunctionCallTypeCheckingResult {
   if (genericFunctionType.argumentTypes.length !== functionArguments.length) {
     errorCollector.reportArityMismatchError(
-      functionCallReason.definitionLocation,
+      functionCallReason.useLocation,
       'arguments',
       genericFunctionType.argumentTypes.length,
       functionArguments.length
@@ -141,9 +141,7 @@ export default function typeCheckFunctionCall(
     fullySolvedSubstitution.set(typeParameter, SourceUnknownType(functionCallReason));
   });
   if (stillUnresolvedTypeParameters.length > 0) {
-    errorCollector.reportInsufficientTypeInferenceContextError(
-      functionCallReason.definitionLocation
-    );
+    errorCollector.reportInsufficientTypeInferenceContextError(functionCallReason.useLocation);
   }
   const fullySolvedGenericType = performTypeSubstitution(
     partiallySolvedGenericType,
@@ -152,7 +150,7 @@ export default function typeCheckFunctionCall(
   assert(fullySolvedGenericType.type === 'FunctionType');
   const fullySolvedConcreteReturnType = contextualTypeMeet(
     returnTypeHint ?? SourceUnknownType(functionCallReason),
-    typeReposition(fullySolvedGenericType.returnType, functionCallReason.definitionLocation),
+    typeReposition(fullySolvedGenericType.returnType, functionCallReason.useLocation),
     errorCollector
   );
 

@@ -246,7 +246,7 @@ export const encodeHighIRNameAfterGenericsSpecialization = (
     : `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join('_')}`;
 
 function lowerSamlangPrimitiveType(type: SamlangPrimitiveType): HighIRPrimitiveType {
-  assert(type.name !== 'unknown', type.reason.definitionLocation.toString());
+  assert(type.name !== 'unknown', type.reason.useLocation.toString());
   switch (type.name) {
     case 'bool':
       return HIR_BOOL_TYPE;

@@ -82,7 +82,7 @@ describe('samlang-nodes', () => {
           )
         ),
         new Location(ModuleReference.DUMMY, Position(5, 6), Position(7, 8))
-      ).reason.definitionLocation.toString()
+      ).reason.useLocation.toString()
     ).toBe('__DUMMY__.sam:6:7-8:9');
   });
 
