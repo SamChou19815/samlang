@@ -115,7 +115,7 @@ export class AccessibleGlobalTypingContext {
       typeInfo.type,
       Object.fromEntries(zip(classTypeParameters, classTypeArguments))
     );
-    assert(partiallyFixedType.type === 'FunctionType');
+    assert(partiallyFixedType.__type__ === 'FunctionType');
     return {
       isPublic: typeInfo.isPublic,
       type: typeReposition(partiallyFixedType, useLocation),

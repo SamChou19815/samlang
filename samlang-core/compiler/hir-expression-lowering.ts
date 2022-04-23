@@ -175,7 +175,7 @@ class HighIRExpressionLoweringManager {
   }
 
   private getFunctionTypeWithoutContext(type: SamlangType): HighIRFunctionType {
-    assert(type.type === 'FunctionType');
+    assert(type.__type__ === 'FunctionType');
     return this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel(type)[1];
   }
 
@@ -350,7 +350,7 @@ class HighIRExpressionLoweringManager {
     const loweredStatements: HighIRStatement[] = [];
     const functionExpression = expression.functionExpression;
     const isVoidReturn =
-      expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
+      expression.type.__type__ === 'PrimitiveType' && expression.type.name === 'unit';
     const returnCollectorName = this.allocateTemporaryVariable(favoredTempVariable);
     let functionReturnCollectorType: HighIRType;
     let functionCall: HighIRStatement;
@@ -416,7 +416,7 @@ class HighIRExpressionLoweringManager {
           loweredStatements
         );
         assert(loweredFunctionExpression.__type__ === 'HighIRVariableExpression');
-        assert(functionExpression.type.type === 'FunctionType');
+        assert(functionExpression.type.__type__ === 'FunctionType');
         const returnType = this.typeLoweringManager.lowerSamlangType(
           functionExpression.type.returnType
         );
@@ -790,7 +790,7 @@ class HighIRExpressionLoweringManager {
     const parameters = expression.parameters.map(({ name }) => name);
     const [typeParameters, functionTypeWithoutContext] =
       this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel({
-        type: 'FunctionType',
+        __type__: 'FunctionType',
         argumentTypes: expression.type.argumentTypes,
         returnType: expression.type.returnType,
       });

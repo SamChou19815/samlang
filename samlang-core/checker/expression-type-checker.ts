@@ -215,7 +215,7 @@ class ExpressionTypeChecker {
     // Now we know we have some type parameters that cannot be locally resolved.
     if (hint != null) {
       // We either rely on hints.
-      if (hint.type === 'FunctionType') {
+      if (hint.__type__ === 'FunctionType') {
         if (hint.argumentTypes.length === classFunctionTypeInformation.type.argumentTypes.length) {
           // Hint matches the shape and can be useful.
           const { solvedGenericType } = solveTypeConstraints(
@@ -306,7 +306,7 @@ class ExpressionTypeChecker {
     unsolvedTypeParameters: readonly string[];
   } {
     const checkedExpression = this.typeCheck(expression.expression, null);
-    if (checkedExpression.type.type !== 'IdentifierType') {
+    if (checkedExpression.type.__type__ !== 'IdentifierType') {
       this.errorCollector.reportUnexpectedTypeKindError(
         checkedExpression.location,
         'identifier',
@@ -345,7 +345,7 @@ class ExpressionTypeChecker {
       // Now we know we have some type parameters that cannot be locally resolved.
       if (hint != null) {
         // We either rely on hints.
-        if (hint.type === 'FunctionType') {
+        if (hint.__type__ === 'FunctionType') {
           if (hint.argumentTypes.length === methodTypeInformation.type.argumentTypes.length) {
             // Hint matches the shape and can be useful.
             const { solvedGenericType } = solveTypeConstraints(
@@ -523,10 +523,7 @@ class ExpressionTypeChecker {
         typeParameters = [];
         break;
     }
-    if (
-      checkedFunctionExpressionWithUnresolvedGenericType.type.type === 'PrimitiveType' &&
-      checkedFunctionExpressionWithUnresolvedGenericType.type.name === 'unknown'
-    ) {
+    if (checkedFunctionExpressionWithUnresolvedGenericType.type.__type__ === 'UnknownType') {
       return SourceExpressionFunctionCall({
         location: expression.location,
         type: this.bestEffortUnknownType(hint, expression),
@@ -539,7 +536,7 @@ class ExpressionTypeChecker {
         functionArguments: expression.functionArguments,
       });
     }
-    if (checkedFunctionExpressionWithUnresolvedGenericType.type.type !== 'FunctionType') {
+    if (checkedFunctionExpressionWithUnresolvedGenericType.type.__type__ !== 'FunctionType') {
       this.errorCollector.reportUnexpectedTypeKindError(
         expression.location,
         'function',
@@ -684,7 +681,7 @@ class ExpressionTypeChecker {
   private typeCheckMatch(expression: MatchExpression, hint: SamlangType | null): SamlangExpression {
     const checkedMatchedExpression = this.typeCheck(expression.matchedExpression, null);
     const checkedMatchedExpressionType = checkedMatchedExpression.type;
-    if (checkedMatchedExpressionType.type !== 'IdentifierType') {
+    if (checkedMatchedExpressionType.__type__ !== 'IdentifierType') {
       this.errorCollector.reportUnexpectedTypeKindError(
         checkedMatchedExpression.location,
         'identifier',
@@ -803,7 +800,7 @@ class ExpressionTypeChecker {
     hint: SamlangType | null
   ): readonly SamlangType[] {
     if (hint != null) {
-      if (hint.type === 'FunctionType') {
+      if (hint.__type__ === 'FunctionType') {
         if (hint.argumentTypes.length === expression.parameters.length) {
           return zip(hint.argumentTypes, expression.parameters).map(
             ([parameterHint, parameter]) => {
@@ -834,7 +831,7 @@ class ExpressionTypeChecker {
     }
     return expression.parameters.map(({ name, typeAnnotation }) => {
       const type = typeAnnotation ?? SourceUnknownType(SourceReason(name.location, null));
-      if (type.type === 'PrimitiveType' && type.name === 'unknown') {
+      if (type.__type__ === 'UnknownType') {
         this.errorCollector.reportInsufficientTypeInferenceContextError(name.location);
       }
       this.localTypingContext.write(name.location, type);
@@ -847,7 +844,7 @@ class ExpressionTypeChecker {
     hint: SamlangType | null
   ): SamlangExpression {
     const argumentTypes = this.inferLambdaTypeParameters(expression, hint);
-    const bodyTypeHint = hint != null && hint.type === 'FunctionType' ? hint.returnType : null;
+    const bodyTypeHint = hint != null && hint.__type__ === 'FunctionType' ? hint.returnType : null;
     const body = this.typeCheck(expression.body, bodyTypeHint);
     const captured = this.localTypingContext.getCaptured(expression.location);
     const type = SourceFunctionType(
@@ -899,7 +896,7 @@ class ExpressionTypeChecker {
     let checkedPattern: Pattern;
     switch (pattern.type) {
       case 'ObjectPattern': {
-        if (checkedAssignedExpressionType.type !== 'IdentifierType') {
+        if (checkedAssignedExpressionType.__type__ !== 'IdentifierType') {
           this.errorCollector.reportUnexpectedTypeKindError(
             assignedExpression.location,
             'identifier',
