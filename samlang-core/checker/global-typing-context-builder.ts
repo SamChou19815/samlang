@@ -20,7 +20,6 @@ import {
 } from '../ast/samlang-nodes';
 import type { DefaultBuiltinClasses } from '../parser';
 import { checkNotNull } from '../utils';
-import { normalizeTypeInformation } from './type-substitution';
 import type {
   ClassTypingContext,
   GlobalTypingContext,
@@ -35,11 +34,11 @@ function buildInterfaceTypingContext(
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
-    const typeInformation = normalizeTypeInformation(moduleReference, {
+    const typeInformation = {
       isPublic,
       typeParameters: memberTypeParameters.map((it) => it.name),
       type,
-    });
+    };
     if (isMethod) {
       methods[name.name] = typeInformation;
     } else {
@@ -72,7 +71,7 @@ function buildClassTypingContext(
   const { typeDefinition } = classDefinition;
   const typeDefinitionReason = SourceReason(typeDefinition.location, typeDefinition.location);
   if (typeDefinition.type === 'object') {
-    functions.init = normalizeTypeInformation(moduleReference, {
+    functions.init = {
       isPublic: true,
       typeParameters,
       type: SourceFunctionType(
@@ -80,14 +79,14 @@ function buildClassTypingContext(
         typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it.name]).type),
         classType
       ),
-    });
+    };
   } else {
     Object.entries(typeDefinition.mappings).forEach(([tag, { type }]) => {
-      functions[tag] = normalizeTypeInformation(moduleReference, {
+      functions[tag] = {
         isPublic: true,
         typeParameters,
         type: SourceFunctionType(typeDefinitionReason, [type], classType),
-      });
+      };
     });
   }
   return { typeParameters, typeDefinition, functions, methods };
