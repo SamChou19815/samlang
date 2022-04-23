@@ -285,7 +285,6 @@ describe('samlang-core/checker', () => {
       'A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.',
       'B.sam:2:11-2:12: [Collision]: Name `A` collides with a previously defined name.',
       'B.sam:2:14-2:15: [Collision]: Name `A` collides with a previously defined name.',
-      'B.sam:3:35-3:48: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
       'B.sam:3:35-3:48: [UnexpectedType]: Expected: `B<int, bool>`, actual: `B<int, int>`.',
       'C.sam:2:21-2:24: [Collision]: Name `Int` collides with a previously defined name.',
       'C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.',

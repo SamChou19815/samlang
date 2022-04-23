@@ -1,6 +1,6 @@
 import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
 import { SourceFunctionType, SourceIdentifierType, SourceIntType } from '../../ast/samlang-nodes';
-import performTypeSubstitution from '../type-substitution';
+import performTypeSubstitution, { normalizeTypeInformation } from '../type-substitution';
 
 describe('type-substitution', () => {
   it('can replace deeply nested identifiers', () => {
@@ -50,5 +50,27 @@ describe('type-substitution', () => {
         SourceIntType(DummySourceReason)
       )
     );
+  });
+
+  it('normalizeTypeInformation works', () => {
+    expect(
+      normalizeTypeInformation(ModuleReference.DUMMY, {
+        isPublic: true,
+        typeParameters: ['A'],
+        type: SourceFunctionType(
+          DummySourceReason,
+          [SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [])],
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [])
+        ),
+      })
+    ).toEqual({
+      isPublic: true,
+      typeParameters: ['_T0'],
+      type: SourceFunctionType(
+        DummySourceReason,
+        [SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, '_T0', [])],
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, '_T0', [])
+      ),
+    });
   });
 });
