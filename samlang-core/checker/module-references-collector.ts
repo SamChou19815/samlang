@@ -6,7 +6,7 @@ export function collectModuleReferenceFromType(
   type: SamlangType,
   collector: HashSet<ModuleReference>
 ): void {
-  switch (type.type) {
+  switch (type.__type__) {
     case 'PrimitiveType':
       return;
     case 'IdentifierType':

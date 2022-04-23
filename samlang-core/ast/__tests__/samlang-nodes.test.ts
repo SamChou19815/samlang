@@ -88,6 +88,9 @@ describe('samlang-nodes', () => {
 
   it('type equality test', () => {
     expect(
+      isTheSameType(SourceUnknownType(DummySourceReason), SourceUnknownType(DummySourceReason))
+    ).toBeTruthy();
+    expect(
       isTheSameType(SourceUnitType(DummySourceReason), SourceUnitType(DummySourceReason))
     ).toBeTruthy();
     expect(

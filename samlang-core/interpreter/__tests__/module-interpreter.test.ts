@@ -97,7 +97,7 @@ describe('module-interpreter', () => {
     }),
     typeParameters: [SourceId('param')],
     type: {
-      type: 'FunctionType',
+      __type__: 'FunctionType',
       reason: DummySourceReason,
       argumentTypes: [SourceIntType(DummySourceReason)],
       returnType: SourceIntType(DummySourceReason),

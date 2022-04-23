@@ -210,7 +210,7 @@ describe('expression-interpreter', () => {
     context: EMPTY,
   };
   const functionType: SamlangFunctionType = {
-    type: 'FunctionType',
+    __type__: 'FunctionType',
     reason: DummySourceReason,
     argumentTypes: [SourceUnitType(DummySourceReason)],
     returnType: SourceStringType(DummySourceReason),
@@ -892,7 +892,7 @@ describe('expression-interpreter', () => {
 
   it('lambda expression evaluates correctly', () => {
     const lambdaFunctionType: SamlangFunctionType = {
-      type: 'FunctionType',
+      __type__: 'FunctionType',
       reason: DummySourceReason,
       argumentTypes: [SourceUnitType(DummySourceReason)],
       returnType: SourceIntType(DummySourceReason),

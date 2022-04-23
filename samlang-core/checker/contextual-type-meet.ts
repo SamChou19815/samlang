@@ -4,17 +4,15 @@ import type { ModuleErrorCollector } from '../errors';
 import { zip } from '../utils';
 
 function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType): SamlangType {
-  if (general.type === 'PrimitiveType' && general.name === 'unknown') return specific;
-  if (specific.type === 'PrimitiveType' && specific.name === 'unknown') {
-    return { ...general, reason: specific.reason };
-  }
-  switch (general.type) {
+  if (general.__type__ === 'UnknownType') return specific;
+  if (specific.__type__ === 'UnknownType') return { ...general, reason: specific.reason };
+  switch (general.__type__) {
     case 'PrimitiveType':
       if (!isTheSameType(general, specific)) throw new Error();
       return specific;
     case 'IdentifierType':
       if (
-        specific.type === 'IdentifierType' &&
+        specific.__type__ === 'IdentifierType' &&
         moduleReferenceToString(general.moduleReference) ===
           moduleReferenceToString(specific.moduleReference) &&
         general.identifier === specific.identifier &&
@@ -30,7 +28,7 @@ function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType
       throw new Error();
     case 'FunctionType':
       if (
-        specific.type === 'FunctionType' &&
+        specific.__type__ === 'FunctionType' &&
         general.argumentTypes.length === specific.argumentTypes.length
       ) {
         return {

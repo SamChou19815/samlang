@@ -172,7 +172,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
   };
 
   visitType = (type: SamlangType) => {
-    switch (type.type) {
+    switch (type.__type__) {
       case 'PrimitiveType':
         return;
       case 'IdentifierType':

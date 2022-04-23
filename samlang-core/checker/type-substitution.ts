@@ -7,7 +7,8 @@ export default function performTypeSubstitution(
   type: SamlangType,
   mapping: Readonly<Record<string, SamlangType>>
 ): SamlangType {
-  switch (type.type) {
+  switch (type.__type__) {
+    case 'UnknownType':
     case 'PrimitiveType':
       return type;
     case 'IdentifierType':
@@ -41,7 +42,7 @@ export function normalizeTypeInformation(
       ] as const
   );
   const newType = performTypeSubstitution(type, Object.fromEntries(mappings));
-  assert(newType.type === 'FunctionType');
+  assert(newType.__type__ === 'FunctionType');
   return {
     isPublic,
     typeParameters: mappings.map(([, { identifier }]) => identifier),

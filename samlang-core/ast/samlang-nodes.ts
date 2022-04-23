@@ -17,54 +17,61 @@ import {
 import type { BinaryOperator } from './common-operators';
 
 interface SamlangBaseType {
-  readonly type: string;
+  readonly __type__: string;
   readonly reason: SamlangReason;
 }
 
+export interface SamlangUnknownType extends SamlangBaseType {
+  readonly __type__: 'UnknownType';
+}
+
 export interface SamlangPrimitiveType extends SamlangBaseType {
-  readonly type: 'PrimitiveType';
-  readonly name: 'unit' | 'bool' | 'int' | 'string' | 'unknown';
+  readonly __type__: 'PrimitiveType';
+  readonly name: 'unit' | 'bool' | 'int' | 'string';
 }
 
 export interface SamlangIdentifierType extends SamlangBaseType {
-  readonly type: 'IdentifierType';
+  readonly __type__: 'IdentifierType';
   readonly moduleReference: ModuleReference;
   readonly identifier: string;
   readonly typeArguments: readonly SamlangType[];
 }
 
 export interface SamlangFunctionType extends SamlangBaseType {
-  readonly type: 'FunctionType';
+  readonly __type__: 'FunctionType';
   readonly argumentTypes: readonly SamlangType[];
   readonly returnType: SamlangType;
 }
 
-export type SamlangType = SamlangPrimitiveType | SamlangIdentifierType | SamlangFunctionType;
+export type SamlangType =
+  | SamlangUnknownType
+  | SamlangPrimitiveType
+  | SamlangIdentifierType
+  | SamlangFunctionType;
 
 export const SourceUnitType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  type: 'PrimitiveType',
+  __type__: 'PrimitiveType',
   reason,
   name: 'unit',
 });
 export const SourceBoolType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  type: 'PrimitiveType',
+  __type__: 'PrimitiveType',
   reason,
   name: 'bool',
 });
 export const SourceIntType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  type: 'PrimitiveType',
+  __type__: 'PrimitiveType',
   reason,
   name: 'int',
 });
 export const SourceStringType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  type: 'PrimitiveType',
+  __type__: 'PrimitiveType',
   reason,
   name: 'string',
 });
-export const SourceUnknownType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  type: 'PrimitiveType',
+export const SourceUnknownType = (reason: SamlangReason): SamlangUnknownType => ({
+  __type__: 'UnknownType',
   reason,
-  name: 'unknown',
 });
 
 export const SourceIdentifierType = (
@@ -73,7 +80,7 @@ export const SourceIdentifierType = (
   identifier: string,
   typeArguments: readonly SamlangType[] = []
 ): SamlangIdentifierType => ({
-  type: 'IdentifierType',
+  __type__: 'IdentifierType',
   reason,
   moduleReference,
   identifier,
@@ -85,14 +92,16 @@ export const SourceFunctionType = (
   argumentTypes: readonly SamlangType[],
   returnType: SamlangType
 ): SamlangFunctionType => ({
-  type: 'FunctionType',
+  __type__: 'FunctionType',
   reason,
   argumentTypes,
   returnType,
 });
 
 export function prettyPrintType(type: SamlangType): string {
-  switch (type.type) {
+  switch (type.__type__) {
+    case 'UnknownType':
+      return 'unknown';
     case 'PrimitiveType':
       return type.name;
     case 'IdentifierType':
@@ -108,12 +117,14 @@ export function prettyPrintType(type: SamlangType): string {
 }
 
 export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
-  switch (t1.type) {
+  switch (t1.__type__) {
+    case 'UnknownType':
+      return t2.__type__ === 'UnknownType';
     case 'PrimitiveType':
-      return t2.type === 'PrimitiveType' && t1.name === t2.name;
+      return t2.__type__ === 'PrimitiveType' && t1.name === t2.name;
     case 'IdentifierType':
       return (
-        t2.type === 'IdentifierType' &&
+        t2.__type__ === 'IdentifierType' &&
         moduleReferenceToString(t1.moduleReference) ===
           moduleReferenceToString(t2.moduleReference) &&
         t1.identifier === t2.identifier &&
@@ -124,7 +135,7 @@ export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
       );
     case 'FunctionType':
       return (
-        t2.type === 'FunctionType' &&
+        t2.__type__ === 'FunctionType' &&
         isTheSameType(t1.returnType, t2.returnType) &&
         t1.argumentTypes.length === t2.argumentTypes.length &&
         zip(t1.argumentTypes, t2.argumentTypes).every(([t1Element, t2Element]) =>

@@ -258,7 +258,7 @@ class LanguageServicesImpl implements LanguageServices {
       ];
     } else if (expression.__type__ === 'MethodAccessExpression') {
       const thisType = expression.expression.type;
-      assert(thisType.type === 'IdentifierType');
+      assert(thisType.__type__ === 'IdentifierType');
       functionReference = [
         thisType.moduleReference,
         thisType.identifier,
@@ -325,7 +325,7 @@ class LanguageServicesImpl implements LanguageServices {
         return null;
       case 'VariableExpression': {
         if (
-          expression.type.type === 'IdentifierType' &&
+          expression.type.__type__ === 'IdentifierType' &&
           expression.type.identifier.startsWith('class ')
         ) {
           const nullableClassDefinition = this.getClassDefinition(moduleReference, expression.name);
@@ -429,7 +429,7 @@ class LanguageServicesImpl implements LanguageServices {
       case 'FieldAccessExpression':
       case 'MethodAccessExpression': {
         const objectExpressionType = expression.expression.type;
-        assert(objectExpressionType.type === 'IdentifierType');
+        assert(objectExpressionType.__type__ === 'IdentifierType');
         type = objectExpressionType;
         break;
       }
@@ -527,7 +527,7 @@ class LanguageServicesImpl implements LanguageServices {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null || expression.__type__ !== 'VariableExpression') return null;
     if (
-      expression.type.type === 'IdentifierType' &&
+      expression.type.__type__ === 'IdentifierType' &&
       expression.type.identifier.startsWith('class ')
     ) {
       return null;

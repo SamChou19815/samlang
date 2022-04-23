@@ -13,8 +13,8 @@ function solveTypeConstraintsInternal(
 ): void {
   // Unknown types, which might come from expressions that need to be contextually typed (e.g. lambda),
   // do not participate in constraint solving.
-  if (concreteType.type === 'PrimitiveType' && concreteType.name === 'unknown') return;
-  switch (genericType.type) {
+  if (concreteType.__type__ === 'UnknownType') return;
+  switch (genericType.__type__) {
     case 'PrimitiveType':
       return;
     case 'IdentifierType':
@@ -26,7 +26,7 @@ function solveTypeConstraintsInternal(
         return;
       }
       if (
-        concreteType.type === 'IdentifierType' &&
+        concreteType.__type__ === 'IdentifierType' &&
         moduleReferenceToString(concreteType.moduleReference) ===
           moduleReferenceToString(genericType.moduleReference) &&
         concreteType.identifier === genericType.identifier &&
@@ -39,7 +39,7 @@ function solveTypeConstraintsInternal(
       return;
     case 'FunctionType':
       if (
-        concreteType.type === 'FunctionType' &&
+        concreteType.__type__ === 'FunctionType' &&
         concreteType.argumentTypes.length === genericType.argumentTypes.length
       ) {
         zip(concreteType.argumentTypes, genericType.argumentTypes).map(([g, s]) =>

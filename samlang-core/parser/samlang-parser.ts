@@ -1166,7 +1166,7 @@ export default class SamlangModuleParser extends BaseParser {
     ) {
       this.consume();
       return {
-        type: 'PrimitiveType',
+        __type__: 'PrimitiveType',
         reason: SourceReason(peeked.location, peeked.location),
         name: peeked.content,
       };
@@ -1183,7 +1183,7 @@ export default class SamlangModuleParser extends BaseParser {
         typeArguments = [];
       }
       return {
-        type: 'IdentifierType',
+        __type__: 'IdentifierType',
         reason: SourceReason(peeked.location, peeked.location),
         moduleReference: this.resolveClass(identifier),
         identifier,
@@ -1204,7 +1204,7 @@ export default class SamlangModuleParser extends BaseParser {
       const returnType = this.parseType();
       const location = peeked.location.union(returnType.reason.useLocation);
       return {
-        type: 'FunctionType',
+        __type__: 'FunctionType',
         reason: SourceReason(location, location),
         argumentTypes,
         returnType,
