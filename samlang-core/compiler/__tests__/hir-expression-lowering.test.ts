@@ -455,8 +455,12 @@ return (_t0: string);`
     it('1/n', () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
-          type: SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
-          parameters: [[SourceId('a'), SourceUnitType(DummySourceReason)]],
+          type: SourceFunctionType(
+            DummySourceReason,
+            [SourceUnitType(DummySourceReason)],
+            SourceUnitType(DummySourceReason)
+          ),
+          parameters: [{ name: SourceId('a'), typeAnnotation: SourceUnitType(DummySourceReason) }],
           captured: { captured_a: SourceUnitType(DummySourceReason) },
           body: THIS,
         }),
@@ -476,8 +480,12 @@ return (_t0: $SyntheticIDType1);`
     it('2/n', () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
-          type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-          parameters: [[SourceId('a'), SourceUnitType(DummySourceReason)]],
+          type: SourceFunctionType(
+            DummySourceReason,
+            [SourceUnitType(DummySourceReason)],
+            SourceIntType(DummySourceReason)
+          ),
+          parameters: [{ name: SourceId('a'), typeAnnotation: SourceUnitType(DummySourceReason) }],
           captured: { captured_a: SourceUnitType(DummySourceReason) },
           body: THIS,
         }),
@@ -497,8 +505,12 @@ return (_t0: $SyntheticIDType1);`
     it('3/n', () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
-          type: SourceFunctionType(DummySourceReason, [], DUMMY_IDENTIFIER_TYPE),
-          parameters: [[SourceId('a'), SourceUnitType(DummySourceReason)]],
+          type: SourceFunctionType(
+            DummySourceReason,
+            [SourceUnitType(DummySourceReason)],
+            DUMMY_IDENTIFIER_TYPE
+          ),
+          parameters: [{ name: SourceId('a'), typeAnnotation: SourceUnitType(DummySourceReason) }],
           captured: { captured_a: SourceUnitType(DummySourceReason) },
           body: THIS,
         }),
@@ -518,8 +530,12 @@ return (_t0: $SyntheticIDType1);`
     it('4/n', () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
-          type: SourceFunctionType(DummySourceReason, [], DUMMY_IDENTIFIER_TYPE),
-          parameters: [[SourceId('a'), SourceUnitType(DummySourceReason)]],
+          type: SourceFunctionType(
+            DummySourceReason,
+            [SourceUnitType(DummySourceReason)],
+            DUMMY_IDENTIFIER_TYPE
+          ),
+          parameters: [{ name: SourceId('a'), typeAnnotation: SourceUnitType(DummySourceReason) }],
           captured: {},
           body: THIS,
         }),

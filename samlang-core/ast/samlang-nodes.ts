@@ -247,7 +247,10 @@ export interface MatchExpression extends BaseExpression {
 export interface LambdaExpression extends BaseExpression {
   readonly __type__: 'LambdaExpression';
   readonly type: SamlangFunctionType;
-  readonly parameters: readonly (readonly [SourceIdentifier, SamlangType])[];
+  readonly parameters: readonly {
+    readonly name: SourceIdentifier;
+    readonly typeAnnotation: SamlangType | null;
+  }[];
   readonly captured: Record<string, SamlangType>;
   readonly body: SamlangExpression;
 }

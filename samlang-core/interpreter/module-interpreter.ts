@@ -80,7 +80,10 @@ export default class ModuleInterpreter {
       const lambda = SourceExpressionLambda({
         location: member.location,
         type: member.type,
-        parameters: member.parameters.map(({ name, type }) => [SourceId(name), type]),
+        parameters: member.parameters.map(({ name, type }) => ({
+          name: SourceId(name),
+          typeAnnotation: type,
+        })),
         captured: {},
         body: member.body,
       });

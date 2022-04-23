@@ -787,11 +787,11 @@ class HighIRExpressionLoweringManager {
       );
     });
 
-    const parameters = expression.parameters.map(([name]) => name);
+    const parameters = expression.parameters.map(({ name }) => name);
     const [typeParameters, functionTypeWithoutContext] =
       this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel({
         type: 'FunctionType',
-        argumentTypes: expression.parameters.map(([, type]) => type),
+        argumentTypes: expression.type.argumentTypes,
         returnType: expression.type.returnType,
       });
     const functionName = this.allocateSyntheticFunctionName();
@@ -814,7 +814,7 @@ class HighIRExpressionLoweringManager {
     return {
       name: functionName,
       typeParameters,
-      parameters: ['_context', ...expression.parameters.map(([{ name }]) => name)],
+      parameters: ['_context', ...expression.parameters.map(({ name: { name } }) => name)],
       type: HIR_FUNCTION_TYPE(
         [contextType, ...functionTypeWithoutContext.argumentTypes],
         functionTypeWithoutContext.returnType

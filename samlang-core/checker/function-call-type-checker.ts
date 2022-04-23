@@ -40,9 +40,8 @@ function argumentShouldBeTypeCheckedWithoutHint(expression: SamlangExpression): 
       );
     case 'LambdaExpression': {
       return (
-        expression.parameters.every(
-          ([, annotation]) => annotation.type !== 'PrimitiveType' || annotation.name !== 'unknown'
-        ) && argumentShouldBeTypeCheckedWithoutHint(expression.body)
+        expression.parameters.every(({ typeAnnotation }) => typeAnnotation != null) &&
+        argumentShouldBeTypeCheckedWithoutHint(expression.body)
       );
     }
   }

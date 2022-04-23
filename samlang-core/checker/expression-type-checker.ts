@@ -801,15 +801,19 @@ class ExpressionTypeChecker {
   private inferLambdaTypeParameters(
     expression: LambdaExpression,
     hint: SamlangType | null
-  ): readonly (readonly [SourceIdentifier, SamlangType])[] {
+  ): readonly SamlangType[] {
     if (hint != null) {
       if (hint.type === 'FunctionType') {
         if (hint.argumentTypes.length === expression.parameters.length) {
           return zip(hint.argumentTypes, expression.parameters).map(
-            ([parameterHint, [parameterName, parameterType]]) => {
-              const type = this.typeMeet(parameterHint, parameterType);
-              this.localTypingContext.write(parameterName.location, type);
-              return [parameterName, type];
+            ([parameterHint, parameter]) => {
+              const type = this.typeMeet(
+                parameterHint,
+                parameter.typeAnnotation ??
+                  SourceUnknownType(SourceReason(parameter.name.location, null))
+              );
+              this.localTypingContext.write(parameter.name.location, type);
+              return type;
             }
           );
         } else {
@@ -828,30 +832,34 @@ class ExpressionTypeChecker {
         );
       }
     }
-    expression.parameters.forEach(([parameterName, parameterType]) => {
-      this.localTypingContext.write(parameterName.location, parameterType);
+    return expression.parameters.map(({ name, typeAnnotation }) => {
+      const type = typeAnnotation ?? SourceUnknownType(SourceReason(name.location, null));
+      if (type.type === 'PrimitiveType' && type.name === 'unknown') {
+        this.errorCollector.reportInsufficientTypeInferenceContextError(name.location);
+      }
+      this.localTypingContext.write(name.location, type);
+      return type;
     });
-    return expression.parameters;
   }
 
   private typeCheckLambda(
     expression: LambdaExpression,
     hint: SamlangType | null
   ): SamlangExpression {
-    const parameters = this.inferLambdaTypeParameters(expression, hint);
+    const argumentTypes = this.inferLambdaTypeParameters(expression, hint);
     const bodyTypeHint = hint != null && hint.type === 'FunctionType' ? hint.returnType : null;
     const body = this.typeCheck(expression.body, bodyTypeHint);
     const captured = this.localTypingContext.getCaptured(expression.location);
     const type = SourceFunctionType(
       SourceReason(expression.location, expression.location),
-      expression.type.argumentTypes,
+      argumentTypes,
       body.type
     );
     return SourceExpressionLambda({
       location: expression.location,
       type,
       associatedComments: expression.associatedComments,
-      parameters,
+      parameters: expression.parameters,
       captured: Object.fromEntries(captured.entries()),
       body,
     });

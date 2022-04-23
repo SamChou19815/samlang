@@ -85,7 +85,7 @@ export class ModuleScopedVariableDefinitionLookup {
         return;
       case 'LambdaExpression':
         manager.withNestedScope(() => {
-          expression.parameters.forEach(([{ name, location }]) =>
+          expression.parameters.forEach(({ name: { name, location } }) =>
             this.defineVariable(name, location, manager)
           );
           this.collectDefinitionAndUseWithDefinitionManager(expression.body, manager);
@@ -261,12 +261,13 @@ function applyExpressionRenamingWithDefinitionAndUse(
     case 'LambdaExpression':
       return {
         ...expression,
-        parameters: expression.parameters.map(([parameterName, parameterType]) => [
-          parameterName.location.toString() === definitionAndUses.definitionLocation.toString()
-            ? SourceId(newName)
-            : parameterName,
-          parameterType,
-        ]),
+        parameters: expression.parameters.map(({ name, typeAnnotation }) => ({
+          name:
+            name.location.toString() === definitionAndUses.definitionLocation.toString()
+              ? SourceId(newName)
+              : name,
+          typeAnnotation,
+        })),
         body: applyExpressionRenamingWithDefinitionAndUse(
           expression.body,
           definitionAndUses,

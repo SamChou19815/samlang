@@ -550,12 +550,15 @@ describe('expression-type-checker', () => {
     ]);
 
     assertTypeErrors('{ val _ = (t) -> t.foo; }', unit, [
+      'Test.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
       'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
     assertTypeErrors('{ val _ = (t) -> t.bar; }', unit, [
+      'Test.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
       'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
     assertTypeErrors('{ val _ = (t) -> t.baz; }', unit, [
+      'Test.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
       'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
   });
@@ -745,7 +748,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('if true then false else true', bool);
     assertTypeChecks('if false then 1 else 0', int);
     assertTypeChecks('if false then "" else ""', string);
-    assertTypeChecks('{ val _ = (b, t: int, f) -> if b then t else f }', unit);
+    assertTypeChecks('{ val _ = (b: bool, t: int, f: int) -> if b then t else f }', unit);
 
     assertTypeErrors('if true then false else 1', bool, [
       'Test.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`.',
@@ -810,9 +813,11 @@ describe('expression-type-checker', () => {
 
     assertTypeErrors('(a) -> a', SourceFunctionType(DummySourceReason, [], int), [
       'Test.sam:1:1-1:9: [ArityMismatchError]: Incorrect function arguments size. Expected: 0, actual: 1.',
+      'Test.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
     ]);
     assertTypeErrors('(a) -> a', int, [
       'Test.sam:1:1-1:9: [UnexpectedTypeKind]: Expected kind: `int`, actual: `(unknown) -> unknown`.',
+      'Test.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
     ]);
   });
 

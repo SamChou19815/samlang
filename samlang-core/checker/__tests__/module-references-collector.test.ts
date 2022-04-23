@@ -199,7 +199,10 @@ describe('module-references-collector', () => {
               [SourceIntType(DummySourceReason)],
               SourceBoolType(DummySourceReason)
             ),
-            parameters: [[SourceId('a'), SourceIntType(DummySourceReason)]],
+            parameters: [
+              { name: SourceId('a'), typeAnnotation: null },
+              { name: SourceId('b'), typeAnnotation: SourceIntType(DummySourceReason) },
+            ],
             captured: { a: SourceIntType(DummySourceReason) },
             body: TRUE,
           }),
