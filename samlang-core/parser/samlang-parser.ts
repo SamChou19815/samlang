@@ -992,14 +992,14 @@ export default class SamlangModuleParser extends BaseParser {
         if (next.content === ',' || next.content === ':') {
           this.unconsume();
           const parameters = this.parseCommaSeparatedList(
-            (): readonly [SourceIdentifier, SamlangType] => {
-              const parameter = this.parseLowerId();
+            (): { name: SourceIdentifier; typeAnnotation: SamlangType | null } => {
+              const name = this.parseLowerId();
               if (this.peek().content === ':') {
                 this.consume();
-                const type = this.parseType();
-                return [parameter, type];
+                const typeAnnotation = this.parseType();
+                return { name, typeAnnotation };
               }
-              return [parameter, SourceUnknownType(SourceReason(parameter.location, null))];
+              return { name, typeAnnotation: null };
             }
           );
           this.assertAndConsume(')');
@@ -1010,7 +1010,9 @@ export default class SamlangModuleParser extends BaseParser {
             location,
             type: SourceFunctionType(
               SourceReason(location, location),
-              parameters.map((it) => it[1]),
+              parameters.map(
+                (it) => it.typeAnnotation ?? SourceUnknownType(SourceReason(it.name.location, null))
+              ),
               body.type
             ),
             associatedComments,
@@ -1037,12 +1039,12 @@ export default class SamlangModuleParser extends BaseParser {
               ),
               associatedComments,
               parameters: [
-                [
-                  SourceId(lowerIdentifierForLambdaPeeked.content.content, {
+                {
+                  name: SourceId(lowerIdentifierForLambdaPeeked.content.content, {
                     location: lowerIdentifierForLambdaPeeked.location,
                   }),
-                  parameterType,
-                ],
+                  typeAnnotation: null,
+                },
               ],
               captured: {},
               body,

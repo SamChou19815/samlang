@@ -180,7 +180,7 @@ export default class ExpressionInterpreter {
       case 'LambdaExpression':
         return {
           type: 'functionValue',
-          arguments: expression.parameters.map((param) => param[0].name),
+          arguments: expression.parameters.map((param) => param.name.name),
           body: expression.body,
           context,
         };

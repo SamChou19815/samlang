@@ -590,7 +590,7 @@ describe('expression-interpreter', () => {
     const functionExpressionWithArgs = SourceExpressionLambda({
       location: exampleLocation,
       type: functionType,
-      parameters: [[SourceId('arg1'), SourceStringType(DummySourceReason)]],
+      parameters: [{ name: SourceId('arg1'), typeAnnotation: SourceStringType(DummySourceReason) }],
       captured: {},
       body: stringLiteralExpression,
     });

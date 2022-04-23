@@ -136,9 +136,9 @@ class SsaBuilder extends LocalStackedContext<Location> {
         return;
       case 'LambdaExpression': {
         const [, captured] = this.withNestedScopeReturnCaptured(() => {
-          expression.parameters.forEach(([id, type]) => {
-            this.define(id);
-            this.visitType(type);
+          expression.parameters.forEach(({ name, typeAnnotation }) => {
+            this.define(name);
+            if (typeAnnotation != null) this.visitType(typeAnnotation);
           });
           this.visitExpression(expression.body);
         });

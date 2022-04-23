@@ -191,7 +191,7 @@ describe('function-call-type-checker', () => {
               [SourceUnknownType(DummySourceReason)],
               SourceUnknownType(DummySourceReason)
             ),
-            parameters: [[SourceId('a'), SourceUnknownType(DummySourceReason)]],
+            parameters: [{ name: SourceId('a'), typeAnnotation: null }],
             captured: {},
             body: SourceExpressionTrue(),
           }),
@@ -222,7 +222,7 @@ describe('function-call-type-checker', () => {
               [SourceIntType(DummySourceReason)],
               SourceIntType(DummySourceReason)
             ),
-            parameters: [[SourceId('a'), SourceIntType(DummySourceReason)]],
+            parameters: [{ name: SourceId('a'), typeAnnotation: SourceIntType(DummySourceReason) }],
             captured: {},
             body: SourceExpressionTrue(),
           }),
@@ -252,7 +252,7 @@ describe('function-call-type-checker', () => {
               [SourceUnknownType(DummySourceReason)],
               SourceUnknownType(DummySourceReason)
             ),
-            parameters: [[SourceId('a'), SourceUnknownType(DummySourceReason)]],
+            parameters: [{ name: SourceId('a'), typeAnnotation: null }],
             captured: {},
             body: SourceExpressionTrue(),
           }),
