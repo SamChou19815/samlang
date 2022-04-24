@@ -57,11 +57,7 @@ function checkErrors(
   const sources = createMockSources(modules);
   const globalErrorCollector = createGlobalErrorCollector();
   sources.forEach((samlangModule) => {
-    checkUndefinedImportsError(
-      sources,
-      samlangModule,
-      globalErrorCollector.getModuleErrorCollector()
-    );
+    checkUndefinedImportsError(sources, samlangModule, globalErrorCollector.getErrorReporter());
   });
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual(errors);
 }

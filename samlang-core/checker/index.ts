@@ -110,13 +110,13 @@ function typeCheckModule(
   samlangModule: SamlangModule,
   errorCollector: ReadonlyGlobalErrorCollector
 ): SamlangModule {
-  const moduleErrorCollector = errorCollector.getModuleErrorCollector();
-  checkUndefinedImportsError(sources, samlangModule, moduleErrorCollector);
+  const errorReporter = errorCollector.getErrorReporter();
+  checkUndefinedImportsError(sources, samlangModule, errorReporter);
   const checkedModule = typeCheckSamlangModule(
     moduleReference,
     samlangModule,
     globalTypingContext,
-    moduleErrorCollector
+    errorReporter
   );
   return checkedModule;
 }
@@ -152,11 +152,7 @@ export function typeCheckSourceHandles(
       ([moduleReference, text]) =>
         [
           moduleReference,
-          parseSamlangModuleFromText(
-            text,
-            moduleReference,
-            errorCollector.getModuleErrorCollector()
-          ),
+          parseSamlangModuleFromText(text, moduleReference, errorCollector.getErrorReporter()),
         ] as const
     )
   );

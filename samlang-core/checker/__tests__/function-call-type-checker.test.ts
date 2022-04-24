@@ -38,7 +38,7 @@ function typeCheck(
     functionArguments,
     returnTypeHint,
     (e, hint) => (hint == null ? e : ({ ...e, type: hint } as SamlangExpression)),
-    errorCollector.getModuleErrorCollector()
+    errorCollector.getErrorReporter()
   );
   return {
     solvedGenericType: prettyPrintType(solvedGenericType),

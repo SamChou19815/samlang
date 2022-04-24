@@ -15,17 +15,17 @@ import { solveTypeConstraints } from '../type-constraints-solver';
 
 function solve(concrete: SamlangType, generic: SamlangType, typeParameters: readonly string[]) {
   const globalCollector = createGlobalErrorCollector();
-  const moduleCollector = globalCollector.getModuleErrorCollector();
+  const errorReporter = globalCollector.getErrorReporter();
   const { solvedSubstitution } = solveTypeConstraints(
     concrete,
     generic,
     typeParameters,
-    moduleCollector
+    errorReporter
   );
   const result = Object.fromEntries(
     Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)])
   );
-  if (moduleCollector.hasErrors) result.hasError = 'true';
+  if (globalCollector.hasErrors) result.hasError = 'true';
   return result;
 }
 
@@ -117,7 +117,7 @@ describe('type-constraint-solver', () => {
           SourceUnitType(DummySourceReason)
         ),
         ['A', 'B'],
-        errorCollector.getModuleErrorCollector()
+        errorCollector.getErrorReporter()
       );
 
     expect(
@@ -157,7 +157,7 @@ describe('type-constraint-solver', () => {
           SourceUnitType(DummySourceReason)
         ),
         ['B'],
-        errorCollector.getModuleErrorCollector()
+        errorCollector.getErrorReporter()
       );
 
     expect(

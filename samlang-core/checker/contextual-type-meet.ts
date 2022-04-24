@@ -1,6 +1,6 @@
 import { moduleReferenceToString } from '../ast/common-nodes';
 import { isTheSameType, SamlangType } from '../ast/samlang-nodes';
-import type { ModuleErrorCollector } from '../errors';
+import type { GlobalErrorReporter } from '../errors';
 import { zip } from '../utils';
 
 function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType): SamlangType {
@@ -46,12 +46,12 @@ function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType
 export default function contextualTypeMeet(
   general: SamlangType,
   specific: SamlangType,
-  errorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): SamlangType {
   try {
     return contextualTypeMeetWithThrow(general, specific);
   } catch {
-    errorCollector.reportUnexpectedTypeError(specific.reason.useLocation, general, specific);
+    errorReporter.reportUnexpectedTypeError(specific.reason.useLocation, general, specific);
     return specific;
   }
 }

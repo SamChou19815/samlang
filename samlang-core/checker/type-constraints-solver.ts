@@ -1,6 +1,6 @@
 import { moduleReferenceToString, SourceReason } from '../ast/common-nodes';
 import { SamlangType, SourceUnknownType } from '../ast/samlang-nodes';
-import type { ModuleErrorCollector } from '../errors';
+import type { GlobalErrorReporter } from '../errors';
 import { zip } from '../utils';
 import contextualTypeMeet from './contextual-type-meet';
 import performTypeSubstitution from './type-substitution';
@@ -78,7 +78,7 @@ export function solveTypeConstraints(
   concreteType: SamlangType,
   genericType: SamlangType,
   typeParameters: readonly string[],
-  errorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): TypeConstraintSolution {
   const solvedSubstitution = solveMultipleTypeConstraints(
     [{ concreteType, genericType }],
@@ -100,7 +100,7 @@ export function solveTypeConstraints(
   const solvedContextuallyTypedConcreteType = contextualTypeMeet(
     solvedGenericType,
     concreteType,
-    errorCollector
+    errorReporter
   );
   return { solvedSubstitution, solvedGenericType, solvedContextuallyTypedConcreteType };
 }

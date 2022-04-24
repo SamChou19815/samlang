@@ -40,7 +40,7 @@ function typeCheckInSandbox(
   currentClass?: string
 ): readonly [SamlangExpression, readonly string[]] {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
+  const errorReporter = globalErrorCollector.getErrorReporter();
   const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
     new AccessibleGlobalTypingContext(
       dummyModuleReference,
@@ -272,7 +272,7 @@ function typeCheckInSandbox(
 
   // Parse
   const parsedExpression = checkNotNull(
-    parseSamlangExpressionFromText(source, dummyModuleReference, moduleErrorCollector)
+    parseSamlangExpressionFromText(source, dummyModuleReference, errorReporter)
   );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
 
@@ -281,7 +281,7 @@ function typeCheckInSandbox(
   const localTypingContext = new LocationBasedLocalTypingContext(ssaAnalysisResult, null);
   const checkedExpression = typeCheckExpression(
     parsedExpression,
-    moduleErrorCollector,
+    errorReporter,
     accessibleGlobalTypingContext,
     localTypingContext,
     expectedType

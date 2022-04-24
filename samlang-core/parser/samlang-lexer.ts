@@ -1,5 +1,5 @@
 import { Location, ModuleReference, Position } from '../ast/common-nodes';
-import type { ModuleErrorCollector } from '../errors';
+import type { GlobalErrorReporter } from '../errors';
 import { assert, checkNotNull } from '../utils';
 
 const characterIsWhitespace = (character: string): boolean => /\s/.test(character);
@@ -375,7 +375,7 @@ function stringHasValidEscape(string: string): boolean {
 
 function getNextToken(
   stream: CharacterStream,
-  errorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): SamlangToken | null {
   try {
     stream.consumeWhitespace();
@@ -406,7 +406,7 @@ function getNextToken(
     if (string != null) {
       const location = stream.consumeAndGetLocation(start, string.length);
       if (!stringHasValidEscape(string)) {
-        errorCollector.reportSyntaxError(location, 'Invalid escape in string.');
+        errorReporter.reportSyntaxError(location, 'Invalid escape in string.');
       }
       return {
         location,
@@ -441,7 +441,7 @@ function getNextToken(
 
     const errorTokenContent = stream.peekUntilWhitespace();
     const errorLocation = stream.consumeAndGetLocation(start, errorTokenContent.length);
-    errorCollector.reportSyntaxError(errorLocation, 'Invalid token.');
+    errorReporter.reportSyntaxError(errorLocation, 'Invalid token.');
     return {
       location: errorLocation,
       content: { __type__: 'Error', content: errorTokenContent },
@@ -455,13 +455,13 @@ function getNextToken(
 export default function lexSamlangProgram(
   source: string,
   moduleReference: ModuleReference,
-  errorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): readonly SamlangToken[] {
   const stream = new CharacterStream(moduleReference, source);
 
   const tokens: SamlangToken[] = [];
   while (true) {
-    let token = getNextToken(stream, errorCollector);
+    let token = getNextToken(stream, errorReporter);
     if (token == null) return tokens;
 
     // Validate that the int token is between min and max int.
@@ -470,7 +470,7 @@ export default function lexSamlangProgram(
       const intLiteralString = token.content.content;
       const parsedInt = parseInt(intLiteralString, 10);
       if (parsedInt > MAX_INT_PLUS_ONE) {
-        errorCollector.reportSyntaxError(token.location, 'Not a 32-bit integer.');
+        errorReporter.reportSyntaxError(token.location, 'Not a 32-bit integer.');
         token = {
           location: token.location,
           content: { __type__: 'IntLiteral', content: intLiteralString },
@@ -478,7 +478,7 @@ export default function lexSamlangProgram(
       } else if (parsedInt === MAX_INT_PLUS_ONE) {
         const previousToken = tokens[tokens.length - 1]?.content;
         if (previousToken == null || previousToken !== '-') {
-          errorCollector.reportSyntaxError(token.location, 'Not a 32-bit integer.');
+          errorReporter.reportSyntaxError(token.location, 'Not a 32-bit integer.');
           token = {
             location: token.location,
             content: { __type__: 'IntLiteral', content: intLiteralString },

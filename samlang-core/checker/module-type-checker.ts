@@ -1,6 +1,6 @@
 import type { ModuleReference } from '../ast/common-nodes';
 import type { SamlangModule, SourceClassMemberDeclaration } from '../ast/samlang-nodes';
-import type { ModuleErrorCollector } from '../errors';
+import type { GlobalErrorReporter } from '../errors';
 import { filterMap } from '../utils';
 import typeCheckExpression from './expression-type-checker';
 import performSSAAnalysisOnSamlangModule, { SsaAnalysisResult } from './ssa-analysis';
@@ -31,9 +31,9 @@ export default function typeCheckSamlangModule(
   moduleReference: ModuleReference,
   samlangModule: SamlangModule,
   globalTypingContext: ReadonlyGlobalTypingContext,
-  errorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): SamlangModule {
-  const ssaResult = performSSAAnalysisOnSamlangModule(samlangModule, errorCollector);
+  const ssaResult = performSSAAnalysisOnSamlangModule(samlangModule, errorReporter);
 
   samlangModule.interfaces.forEach((interfaceDeclaration) => {
     const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
@@ -59,7 +59,7 @@ export default function typeCheckSamlangModule(
         ...member,
         body: typeCheckExpression(
           member.body,
-          errorCollector,
+          errorReporter,
           contextWithAdditionalTypeParameters,
           localTypingContext,
           member.type.returnType

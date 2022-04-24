@@ -6,7 +6,7 @@ const lex = (source: string): readonly string[] =>
   lexSamlangProgram(
     source,
     ModuleReference([]),
-    createGlobalErrorCollector().getModuleErrorCollector()
+    createGlobalErrorCollector().getErrorReporter()
   ).map(samlangTokenToString);
 
 describe('samlang-lexer', () => {
