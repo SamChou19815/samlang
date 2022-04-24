@@ -6,11 +6,11 @@ import { createGlobalErrorCollector } from '../../errors';
 describe('samlang-core/parser', () => {
   it('Can parse good expressions.', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
+    const errorReporter = globalErrorCollector.getErrorReporter();
 
     function expectASTWithTheSameKind(text: string, expected: SamlangExpression['__type__']): void {
       expect(
-        parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector)?.__type__
+        parseSamlangExpressionFromText(text, ModuleReference.DUMMY, errorReporter)?.__type__
       ).toBe(expected);
     }
 
@@ -75,8 +75,8 @@ describe('samlang-core/parser', () => {
   it('Can report bad expressions.', () => {
     function expectBadAST(text: string): void {
       const globalErrorCollector = createGlobalErrorCollector();
-      const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
-      parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector);
+      const errorReporter = globalErrorCollector.getErrorReporter();
+      parseSamlangExpressionFromText(text, ModuleReference.DUMMY, errorReporter);
       expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
     }
 
@@ -121,7 +121,7 @@ describe('samlang-core/parser', () => {
 
   it('Can parse good programs.', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
+    const errorReporter = globalErrorCollector.getErrorReporter();
 
     const parsed = parseSamlangModuleFromText(
       `
@@ -186,7 +186,7 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      moduleErrorCollector
+      errorReporter
     );
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     expect(
@@ -209,7 +209,7 @@ describe('samlang-core/parser', () => {
 
   it('Can handle bad programs.', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
+    const errorReporter = globalErrorCollector.getErrorReporter();
 
     const parsed = parseSamlangModuleFromText(
       `
@@ -235,7 +235,7 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      moduleErrorCollector
+      errorReporter
     );
     if (parsed == null) throw new Error();
     expect(parsed.imports.length).toBe(1);
@@ -244,7 +244,7 @@ describe('samlang-core/parser', () => {
 
   it('Can handle really bad programs.', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
+    const errorReporter = globalErrorCollector.getErrorReporter();
 
     parseSamlangModuleFromText(
       `import {Foo} from 3.2
@@ -267,20 +267,16 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      moduleErrorCollector
+      errorReporter
     );
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   });
 
   it('Can handle complete trash', () => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector();
+    const errorReporter = globalErrorCollector.getErrorReporter();
 
-    parseSamlangModuleFromText(
-      'This is not a program.',
-      ModuleReference.DUMMY,
-      moduleErrorCollector
-    );
+    parseSamlangModuleFromText('This is not a program.', ModuleReference.DUMMY, errorReporter);
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([
       '__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces.',
       '__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces.',

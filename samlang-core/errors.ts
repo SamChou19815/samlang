@@ -1,5 +1,6 @@
-import type { Location } from './ast/common-nodes';
+import { Location, ModuleReferenceCollections } from './ast/common-nodes';
 import { prettyPrintType, SamlangType } from './ast/samlang-nodes';
+import type { ModuleReference } from './dist';
 
 export abstract class CompileTimeError<T = string> {
   constructor(
@@ -118,36 +119,31 @@ export class NonExhausiveMatchError extends CompileTimeError<'NonExhausiveMatch'
 }
 
 export interface ReadonlyGlobalErrorCollector {
+  get hasErrors(): boolean;
+
+  moduleHasError(moduleReference: ModuleReference): boolean;
+
   getErrors(): readonly CompileTimeError[];
 
-  getModuleErrorCollector(): ModuleErrorCollector;
+  getErrorReporter(): GlobalErrorReporter;
 }
 
 interface WriteOnlyGlobalErrorCollector {
   reportError(error: CompileTimeError): void;
 }
 
-export class ModuleErrorCollector {
-  private _hasErrors = false;
-
+export class GlobalErrorReporter {
   constructor(private readonly collectorDelegate: WriteOnlyGlobalErrorCollector) {}
 
-  get hasErrors(): boolean {
-    return this._hasErrors;
-  }
-
   reportSyntaxError(location: Location, reason: string): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new SyntaxError(location, reason));
   }
 
   reportUnexpectedTypeError(location: Location, expected: SamlangType, actual: SamlangType): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new UnexpectedTypeError(location, expected, actual));
   }
 
   reportUnresolvedNameError(location: Location, unresolvedName: string): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new UnresolvedNameError(location, unresolvedName));
   }
 
@@ -155,7 +151,6 @@ export class ModuleErrorCollector {
     location: Location,
     typeDefinitionType: 'object' | 'variant'
   ): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(
       new UnsupportedClassTypeDefinitionError(location, typeDefinitionType)
     );
@@ -166,7 +161,6 @@ export class ModuleErrorCollector {
     expected: string,
     actual: string | SamlangType
   ): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new UnexpectedTypeKindError(location, expected, actual));
   }
 
@@ -176,51 +170,55 @@ export class ModuleErrorCollector {
     expectedSize: number,
     actualSize: number
   ): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(
       new ArityMismatchError(location, kind, expectedSize, actualSize)
     );
   }
 
   reportInsufficientTypeInferenceContextError(location: Location): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new InsufficientTypeInferenceContextError(location));
   }
 
   reportCollisionError(location: Location, collidedName: string): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new CollisionError(location, collidedName));
   }
 
   reportIllegalOtherClassMatch(location: Location): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new IllegalOtherClassMatch(location));
   }
 
   reportIllegalThisError(location: Location): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new IllegalThisError(location));
   }
 
   reportNonExhausiveMatchError(location: Location, missingTags: readonly string[]): void {
-    this._hasErrors = true;
     this.collectorDelegate.reportError(new NonExhausiveMatchError(location, missingTags));
   }
 }
 
 class GlobalErrorCollector implements ReadonlyGlobalErrorCollector, WriteOnlyGlobalErrorCollector {
   private readonly errors: CompileTimeError[] = [];
+  private readonly modulesWithError = ModuleReferenceCollections.hashSetOf();
+
+  get hasErrors(): boolean {
+    return this.errors.length > 0;
+  }
+
+  moduleHasError(moduleReference: ModuleReference): boolean {
+    return this.modulesWithError.has(moduleReference);
+  }
 
   getErrors(): readonly CompileTimeError[] {
     return this.errors;
   }
 
-  getModuleErrorCollector(): ModuleErrorCollector {
-    return new ModuleErrorCollector(this);
+  getErrorReporter(): GlobalErrorReporter {
+    return new GlobalErrorReporter(this);
   }
 
   reportError(error: CompileTimeError): void {
     this.errors.push(error);
+    this.modulesWithError.add(error.location.moduleReference);
   }
 }
 

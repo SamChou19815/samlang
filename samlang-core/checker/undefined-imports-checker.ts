@@ -1,12 +1,12 @@
 import { moduleReferenceToString, Sources } from '../ast/common-nodes';
 import type { SamlangModule, SourceModuleMembersImport } from '../ast/samlang-nodes';
-import type { ModuleErrorCollector } from '../errors';
+import type { GlobalErrorReporter } from '../errors';
 import { filterMap } from '../utils';
 
 class UndefinedImportChecker {
   constructor(
     private readonly sources: Sources<SamlangModule>,
-    private readonly errorCollector: ModuleErrorCollector
+    private readonly errorReporter: GlobalErrorReporter
   ) {}
 
   checkModuleImports(samlangModule: SamlangModule): SamlangModule {
@@ -23,7 +23,7 @@ class UndefinedImportChecker {
   ): SourceModuleMembersImport | null => {
     const availableMembers = this.sources.get(oneImport.importedModule);
     if (availableMembers == null) {
-      this.errorCollector.reportUnresolvedNameError(
+      this.errorReporter.reportUnresolvedNameError(
         oneImport.location,
         moduleReferenceToString(oneImport.importedModule)
       );
@@ -37,7 +37,7 @@ class UndefinedImportChecker {
     const checkedMemberImports = oneImport.importedMembers.filter(
       ({ name: importedMember, location }) => {
         if (!availableMembersSet.has(importedMember)) {
-          this.errorCollector.reportUnresolvedNameError(location, importedMember);
+          this.errorReporter.reportUnresolvedNameError(location, importedMember);
           return false;
         }
         return true;
@@ -50,7 +50,7 @@ class UndefinedImportChecker {
 export default function checkUndefinedImportsError(
   sources: Sources<SamlangModule>,
   samlangModule: SamlangModule,
-  errorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): SamlangModule {
-  return new UndefinedImportChecker(sources, errorCollector).checkModuleImports(samlangModule);
+  return new UndefinedImportChecker(sources, errorReporter).checkModuleImports(samlangModule);
 }

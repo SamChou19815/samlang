@@ -54,7 +54,7 @@ import {
   TypeDefinition,
   VariantPatternToExpression,
 } from '../ast/samlang-nodes';
-import type { ModuleErrorCollector } from '../errors';
+import type { GlobalErrorReporter } from '../errors';
 import { checkNotNull } from '../utils';
 import {
   SamlangKeywordString,
@@ -70,7 +70,7 @@ export class BaseParser {
   constructor(
     private readonly tokens: readonly SamlangToken[],
     protected readonly moduleReference: ModuleReference,
-    public readonly errorCollector: ModuleErrorCollector
+    public readonly errorReporter: GlobalErrorReporter
   ) {}
 
   protected lastLocation(): Location {
@@ -169,7 +169,7 @@ export class BaseParser {
   }
 
   protected report(location: Location, reason: string): void {
-    this.errorCollector.reportSyntaxError(location, reason);
+    this.errorReporter.reportSyntaxError(location, reason);
   }
 
   protected parsePunctuationSeparatedList = <T>(
@@ -223,11 +223,11 @@ export default class SamlangModuleParser extends BaseParser {
 
   constructor(
     tokens: readonly SamlangToken[],
-    errorCollector: ModuleErrorCollector,
+    errorReporter: GlobalErrorReporter,
     moduleReference: ModuleReference,
     private readonly builtInClasses: ReadonlySet<string>
   ) {
-    super(tokens, moduleReference, errorCollector);
+    super(tokens, moduleReference, errorReporter);
   }
 
   private resolveClass = (className: string) => {

@@ -152,35 +152,19 @@ describe('samlang-core/checker', () => {
     const sources = ModuleReferenceCollections.hashMapOf(
       [
         moduleReferenceA,
-        parseSamlangModuleFromText(
-          sourceA,
-          moduleReferenceA,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceA, moduleReferenceA, errorCollector.getErrorReporter()),
       ],
       [
         moduleReferenceB,
-        parseSamlangModuleFromText(
-          sourceB,
-          moduleReferenceB,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceB, moduleReferenceB, errorCollector.getErrorReporter()),
       ],
       [
         moduleReferenceC,
-        parseSamlangModuleFromText(
-          sourceC,
-          moduleReferenceC,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceC, moduleReferenceC, errorCollector.getErrorReporter()),
       ],
       [
         moduleReferenceD,
-        parseSamlangModuleFromText(
-          sourceD,
-          moduleReferenceD,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceD, moduleReferenceD, errorCollector.getErrorReporter()),
       ]
     );
 
@@ -243,35 +227,19 @@ describe('samlang-core/checker', () => {
     const sources = ModuleReferenceCollections.mapOf(
       [
         moduleReferenceA,
-        parseSamlangModuleFromText(
-          sourceA,
-          moduleReferenceA,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceA, moduleReferenceA, errorCollector.getErrorReporter()),
       ],
       [
         moduleReferenceB,
-        parseSamlangModuleFromText(
-          sourceB,
-          moduleReferenceB,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceB, moduleReferenceB, errorCollector.getErrorReporter()),
       ],
       [
         moduleReferenceC,
-        parseSamlangModuleFromText(
-          sourceC,
-          moduleReferenceC,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceC, moduleReferenceC, errorCollector.getErrorReporter()),
       ],
       [
         moduleReferenceD,
-        parseSamlangModuleFromText(
-          sourceD,
-          moduleReferenceD,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceD, moduleReferenceD, errorCollector.getErrorReporter()),
       ]
     );
 
@@ -322,27 +290,15 @@ describe('samlang-core/checker', () => {
     const sources = ModuleReferenceCollections.mapOf(
       [
         moduleReferenceA,
-        parseSamlangModuleFromText(
-          sourceA,
-          moduleReferenceA,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceA, moduleReferenceA, errorCollector.getErrorReporter()),
       ],
       [
         moduleReferenceB,
-        parseSamlangModuleFromText(
-          sourceB,
-          moduleReferenceB,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceB, moduleReferenceB, errorCollector.getErrorReporter()),
       ],
       [
         moduleReferenceC,
-        parseSamlangModuleFromText(
-          sourceC,
-          moduleReferenceC,
-          errorCollector.getModuleErrorCollector()
-        ),
+        parseSamlangModuleFromText(sourceC, moduleReferenceC, errorCollector.getErrorReporter()),
       ]
     );
 
@@ -356,7 +312,7 @@ describe('samlang-core/checker', () => {
       parseSamlangModuleFromText(
         'class Main {}',
         ModuleReference(['Test']),
-        errorCollector.getModuleErrorCollector()
+        errorCollector.getErrorReporter()
       ),
       errorCollector
     );

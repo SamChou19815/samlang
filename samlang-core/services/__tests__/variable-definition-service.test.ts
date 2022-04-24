@@ -20,7 +20,7 @@ function prepareLookup(source: string): ModuleScopedVariableDefinitionLookup {
   const parsedModule = parseSamlangModuleFromText(
     source,
     moduleReference,
-    errorCollector.getModuleErrorCollector()
+    errorCollector.getErrorReporter()
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   return new ModuleScopedVariableDefinitionLookup(parsedModule);
@@ -128,7 +128,7 @@ class Main {
 }
 `,
       moduleReference,
-      errorCollector.getModuleErrorCollector()
+      errorCollector.getErrorReporter()
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     const lookup = new VariableDefinitionLookup();
@@ -311,7 +311,7 @@ class Main {
 }
 `,
       moduleReference,
-      errorCollector.getModuleErrorCollector()
+      errorCollector.getErrorReporter()
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     const lookup = new VariableDefinitionLookup();

@@ -6,7 +6,7 @@ describe('samlang-parser', () => {
   it('BaseParser test', () => {
     class P extends BaseParser {
       constructor() {
-        super([], ModuleReference.DUMMY, createGlobalErrorCollector().getModuleErrorCollector());
+        super([], ModuleReference.DUMMY, createGlobalErrorCollector().getErrorReporter());
       }
 
       test() {
@@ -22,7 +22,7 @@ describe('samlang-parser', () => {
   it('SamlangParser empty robustness test', () => {
     const parser = new SamlangParser(
       [],
-      createGlobalErrorCollector().getModuleErrorCollector(),
+      createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       new Set()
     );
@@ -40,7 +40,7 @@ describe('samlang-parser', () => {
   it('SamlangParser error robustness test', () => {
     const parser = new SamlangParser(
       [{ location: Location.DUMMY, content: { __type__: 'Error', content: 'fooooo' } }],
-      createGlobalErrorCollector().getModuleErrorCollector(),
+      createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       new Set()
     );

@@ -6,7 +6,7 @@ import type {
   SourceIdentifier,
   SourceInterfaceDeclaration,
 } from '../ast/samlang-nodes';
-import type { ModuleErrorCollector } from '../errors';
+import type { GlobalErrorReporter } from '../errors';
 import { checkNotNull, LocalStackedContext, ReadonlyHashMap, ReadonlyHashSet } from '../utils';
 
 type SimplifiedSourceIdentifier = Omit<SourceIdentifier, 'associatedComments'>;
@@ -18,7 +18,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
   useDefineMap = LocationCollections.hashMapOf<Location>();
   lambdaCaptures = LocationCollections.hashMapOf<ReadonlyMap<string, Location>>();
 
-  constructor(private readonly errorCollector?: ModuleErrorCollector) {
+  constructor(private readonly errorReporter?: GlobalErrorReporter) {
     super();
   }
 
@@ -26,7 +26,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
     this.addLocalValueType(name, location, () => {
       if (!this.invalidDefines.has(location)) {
         // Never error on an illegal define twice, since they might be visited multiple times.
-        this.errorCollector?.reportCollisionError(location, name);
+        this.errorReporter?.reportCollisionError(location, name);
       }
       this.invalidDefines.add(location);
     });
@@ -37,7 +37,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
     const definition = this.getLocalValueType(name);
     if (definition == null) {
       this.unboundNames.add(name);
-      this.errorCollector?.reportUnresolvedNameError(location, name);
+      this.errorReporter?.reportUnresolvedNameError(location, name);
     } else {
       this.useDefineMap.set(location, definition);
       const uses = this.definitionToUsesMap.get(definition);
@@ -197,9 +197,9 @@ export interface SsaAnalysisResult {
 
 export function performSSAAnalysisOnSamlangExpression(
   expression: SamlangExpression,
-  errorCollector?: ModuleErrorCollector
+  errorReporter?: GlobalErrorReporter
 ): SsaAnalysisResult {
-  const builder = new SsaBuilder(errorCollector);
+  const builder = new SsaBuilder(errorReporter);
   builder.visitExpression(expression);
   return {
     unboundNames: builder.unboundNames,
@@ -212,9 +212,9 @@ export function performSSAAnalysisOnSamlangExpression(
 
 export default function performSSAAnalysisOnSamlangModule(
   samlangModule: SamlangModule,
-  errorCollector?: ModuleErrorCollector
+  errorReporter?: GlobalErrorReporter
 ): SsaAnalysisResult {
-  const builder = new SsaBuilder(errorCollector);
+  const builder = new SsaBuilder(errorReporter);
   builder.visitToplevel(samlangModule);
   return {
     unboundNames: builder.unboundNames,

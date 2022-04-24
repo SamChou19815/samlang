@@ -1,6 +1,6 @@
 import type { ModuleReference } from '../ast/common-nodes';
 import type { SamlangExpression, SamlangModule } from '../ast/samlang-nodes';
-import { createGlobalErrorCollector, ModuleErrorCollector } from '../errors';
+import { createGlobalErrorCollector, GlobalErrorReporter } from '../errors';
 import { filterMap } from '../utils';
 import lexSamlangProgram from './samlang-lexer';
 import SamlangModuleParser from './samlang-parser';
@@ -12,11 +12,11 @@ const builtinClassesSet = new Set(DEFAULT_BUILTIN_CLASSES);
 export function parseSamlangModuleFromText(
   text: string,
   moduleReference: ModuleReference,
-  moduleErrorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): SamlangModule {
   const parser = new SamlangModuleParser(
-    lexSamlangProgram(text, moduleReference, moduleErrorCollector),
-    moduleErrorCollector,
+    lexSamlangProgram(text, moduleReference, errorReporter),
+    errorReporter,
     moduleReference,
     builtinClassesSet
   );
@@ -26,11 +26,11 @@ export function parseSamlangModuleFromText(
 export function parseSamlangExpressionFromText(
   text: string,
   moduleReference: ModuleReference,
-  moduleErrorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): SamlangExpression {
   const parser = new SamlangModuleParser(
-    lexSamlangProgram(text, moduleReference, moduleErrorCollector),
-    moduleErrorCollector,
+    lexSamlangProgram(text, moduleReference, errorReporter),
+    errorReporter,
     moduleReference,
     builtinClassesSet
   );
@@ -42,8 +42,10 @@ export function parseSources(
 ): readonly (readonly [ModuleReference, SamlangModule])[] {
   const errorCollector = createGlobalErrorCollector();
   return filterMap(sourceHandles, ([moduleReference, sourceString]) => {
-    const moduleErrorCollector = errorCollector.getModuleErrorCollector();
-    const parsed = parseSamlangModuleFromText(sourceString, moduleReference, moduleErrorCollector);
-    return moduleErrorCollector.hasErrors ? null : ([moduleReference, parsed] as const);
+    const errorReporter = errorCollector.getErrorReporter();
+    const parsed = parseSamlangModuleFromText(sourceString, moduleReference, errorReporter);
+    return errorCollector.moduleHasError(moduleReference)
+      ? null
+      : ([moduleReference, parsed] as const);
   });
 }

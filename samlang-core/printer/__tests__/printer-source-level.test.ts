@@ -17,7 +17,7 @@ function reprintExpression(rawSourceWithTypeAnnotation: string, width = 40): str
     parseSamlangExpressionFromText(
       rawSourceWithTypeAnnotation,
       ModuleReference.DUMMY,
-      errorCollector.getModuleErrorCollector()
+      errorCollector.getErrorReporter()
     )
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
@@ -30,7 +30,7 @@ function reprintModule(rawSourceWithTypeAnnotation: string, width = 40): string 
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
     ModuleReference.DUMMY,
-    errorCollector.getModuleErrorCollector()
+    errorCollector.getErrorReporter()
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);

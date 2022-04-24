@@ -6,7 +6,7 @@ import {
   SourceUnknownType,
   typeReposition,
 } from '../ast/samlang-nodes';
-import type { ModuleErrorCollector } from '../errors';
+import type { GlobalErrorReporter } from '../errors';
 import { assert, zip } from '../utils';
 import contextualTypeMeet from './contextual-type-meet';
 import { solveMultipleTypeConstraints } from './type-constraints-solver';
@@ -60,10 +60,10 @@ export default function typeCheckFunctionCall(
   functionArguments: readonly SamlangExpression[],
   returnTypeHint: SamlangType | null,
   typeCheck: (e: SamlangExpression, hint: SamlangType | null) => SamlangExpression,
-  errorCollector: ModuleErrorCollector
+  errorReporter: GlobalErrorReporter
 ): FunctionCallTypeCheckingResult {
   if (genericFunctionType.argumentTypes.length !== functionArguments.length) {
-    errorCollector.reportArityMismatchError(
+    errorReporter.reportArityMismatchError(
       functionCallReason.useLocation,
       'arguments',
       genericFunctionType.argumentTypes.length,
@@ -112,7 +112,7 @@ export default function typeCheckFunctionCall(
   const partiallySolvedConcreteArgumentTypes = zip(
     partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.argumentTypes,
     partiallyCheckedArguments.map((it) => it.e.type)
-  ).map(([g, s]) => contextualTypeMeet(g, s, errorCollector));
+  ).map(([g, s]) => contextualTypeMeet(g, s, errorReporter));
   const checkedArguments = zip(partiallyCheckedArguments, partiallySolvedConcreteArgumentTypes).map(
     ([{ e, checked }, hint]) => (checked ? e : typeCheck(e, hint))
   );
@@ -140,7 +140,7 @@ export default function typeCheckFunctionCall(
     fullySolvedSubstitution.set(typeParameter, SourceUnknownType(functionCallReason));
   });
   if (stillUnresolvedTypeParameters.length > 0) {
-    errorCollector.reportInsufficientTypeInferenceContextError(functionCallReason.useLocation);
+    errorReporter.reportInsufficientTypeInferenceContextError(functionCallReason.useLocation);
   }
   const fullySolvedGenericType = performTypeSubstitution(
     partiallySolvedGenericType,
@@ -150,7 +150,7 @@ export default function typeCheckFunctionCall(
   const fullySolvedConcreteReturnType = contextualTypeMeet(
     returnTypeHint ?? SourceUnknownType(functionCallReason),
     typeReposition(fullySolvedGenericType.returnType, functionCallReason.useLocation),
-    errorCollector
+    errorReporter
   );
 
   return {

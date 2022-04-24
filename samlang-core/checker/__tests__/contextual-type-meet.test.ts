@@ -15,11 +15,9 @@ import contextualTypeMeet from '../contextual-type-meet';
 
 function meet(t1: SamlangType, t2: SamlangType) {
   const globalCollector = createGlobalErrorCollector();
-  const moduleCollector = globalCollector.getModuleErrorCollector();
-  const type = contextualTypeMeet(t1, t2, moduleCollector);
-  if (moduleCollector.hasErrors) {
-    return 'FAILED_MEET';
-  }
+  const errorReporter = globalCollector.getErrorReporter();
+  const type = contextualTypeMeet(t1, t2, errorReporter);
+  if (globalCollector.hasErrors) return 'FAILED_MEET';
   return prettyPrintType(type);
 }
 

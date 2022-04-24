@@ -81,7 +81,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
       const rawModule = parseSamlangModuleFromText(
         sourceCode,
         moduleReference,
-        errorCollector.getModuleErrorCollector()
+        errorCollector.getErrorReporter()
       );
       this.rawModules.set(moduleReference, rawModule);
     });
@@ -139,7 +139,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
     const rawModule = parseSamlangModuleFromText(
       sourceCode,
       moduleReference,
-      errorCollector.getModuleErrorCollector()
+      errorCollector.getErrorReporter()
     );
     this.rawModules.set(moduleReference, rawModule);
     const affected = this.reportChanges(moduleReference, rawModule);
