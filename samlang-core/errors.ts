@@ -1,6 +1,5 @@
-import { Location, ModuleReferenceCollections } from './ast/common-nodes';
+import { Location, ModuleReference, ModuleReferenceCollections } from './ast/common-nodes';
 import { prettyPrintType, SamlangType } from './ast/samlang-nodes';
-import type { ModuleReference } from './dist';
 
 export abstract class CompileTimeError<T = string> {
   constructor(
