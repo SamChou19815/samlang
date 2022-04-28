@@ -1,0 +1,394 @@
+{
+  "0 debug pnpm:scope": {
+    "selected": 5,
+    "total": 5,
+    "workspacePrefix": "/Users/sam/Desktop/samlang"
+  },
+  "1 debug pnpm:package-manifest": {
+    "initial": {
+      "name": "@dev-sam/jest-raw-loader",
+      "version": "0.0.1",
+      "private": true
+    },
+    "prefix": "/Users/sam/Desktop/samlang/jest-raw-loader"
+  },
+  "2 debug pnpm:package-manifest": {
+    "initial": {
+      "name": "@dev-sam/samlang-core",
+      "version": "0.6.0",
+      "license": "AGPLv3",
+      "scripts": {
+        "compile": "tsc --incremental --noEmit",
+        "bundle": "node build.js"
+      },
+      "main": "dist/index.js",
+      "types": "dist/index.d.ts",
+      "sideEffects": false,
+      "dependencies": {
+        "binaryen": "^102.0.0"
+      }
+    },
+    "prefix": "/Users/sam/Desktop/samlang/samlang-core"
+  },
+  "3 debug pnpm:package-manifest": {
+    "initial": {
+      "name": "vscode-samlang",
+      "displayName": "vscode-samlang",
+      "description": "samlang for VSCode",
+      "version": "0.0.10",
+      "publisher": "dev-sam",
+      "repository": {
+        "url": "https://github.com/SamChou19815/samlang"
+      },
+      "engines": {
+        "vscode": "^1.62.0"
+      },
+      "categories": [
+        "Programming Languages",
+        "Snippets"
+      ],
+      "icon": "images/samlang.png",
+      "main": "./out/extension.js",
+      "activationEvents": [
+        "onLanguage:samlang"
+      ],
+      "contributes": {
+        "languages": [
+          {
+            "id": "samlang",
+            "aliases": [
+              "samlang",
+              "SAMLANG"
+            ],
+            "extensions": [
+              ".sam"
+            ],
+            "configuration": "./language-configuration.json"
+          }
+        ],
+        "grammars": [
+          {
+            "language": "samlang",
+            "scopeName": "text.samlang",
+            "path": "./syntaxes/samlang.json"
+          }
+        ],
+        "snippets": [
+          {
+            "language": "samlang",
+            "path": "./snippets.json"
+          }
+        ],
+        "configuration": {
+          "type": "object",
+          "title": "samlang Language Service Configuration",
+          "properties": {
+            "samlang.programPath": {
+              "type": "string",
+              "description": "Path to `samlang` program."
+            }
+          }
+        }
+      },
+      "scripts": {
+        "compile": "tsc --incremental --noEmit",
+        "bundle": "node bundle.js"
+      },
+      "devDependencies": {
+        "@types/vscode": "1.62.0",
+        "vscode-languageclient": "^8.0.0-next.7"
+      }
+    },
+    "prefix": "/Users/sam/Desktop/samlang/samlang-vscode"
+  },
+  "4 debug pnpm:package-manifest": {
+    "initial": {
+      "name": "@dev-sam/samlang-cli",
+      "version": "0.6.0",
+      "license": "AGPLv3",
+      "files": [
+        "bin",
+        "loader.js",
+        "loader.d.ts"
+      ],
+      "scripts": {
+        "compile": "tsc --incremental --noEmit",
+        "bundle": "node build.js"
+      },
+      "bin": {
+        "samlang": "./bin/index.js"
+      },
+      "dependencies": {
+        "@dev-sam/samlang-core": "workspace:^0.6.0"
+      },
+      "devDependencies": {
+        "vscode-languageserver": "^8.0.0-next.5"
+      }
+    },
+    "prefix": "/Users/sam/Desktop/samlang/samlang-cli"
+  },
+  "5 debug pnpm:package-manifest": {
+    "initial": {
+      "private": true,
+      "workspaces": [
+        "jest-raw-loader",
+        "samlang-cli",
+        "samlang-core",
+        "samlang-vscode"
+      ],
+      "scripts": {
+        "lint": "eslint . --cache",
+        "format": "prettier --write '**/*.{ts,js,yml}'",
+        "format:check": "prettier --check '**/*.{ts,js,yml}'",
+        "bundle": "pnpm -r bundle",
+        "check": "turbo run compile",
+        "test": "jest --coverage",
+        "test:single": "jest -t",
+        "test:checker-unit-tests": "jest -t expression-type-checker",
+        "test:integration": "esr compile-repository.ts",
+        "core": "pnpm --filter @dev-sam/samlang-core",
+        "cli": "pnpm --filter @dev-sam/samlang-cli",
+        "vscode": "pnpm --filter samlang-vscode",
+        "bump": "pnpm up -r @types/jest @types/node prettier jest esbuild husky lint-staged turbo eslint \"@typescript-eslint/*\""
+      },
+      "devDependencies": {
+        "@dev-sam/eslint-config-common": "0.23.0",
+        "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0",
+        "@dev-sam/jest-raw-loader": "workspace:0.0.1",
+        "@dev-sam/samlang-cli": "workspace:0.6.0",
+        "@types/jest": "^27.4.1",
+        "@types/node": "^17.0.27",
+        "@typescript-eslint/eslint-plugin": "^5.21.0",
+        "@typescript-eslint/parser": "^5.21.0",
+        "esbuild": "^0.14.38",
+        "eslint": "^8.14.0",
+        "husky": "^7.0.4",
+        "jest": "^28.0.0",
+        "lint-staged": "^12.4.0",
+        "prettier": "^2.6.2",
+        "prettier-plugin-organize-imports": "^2.3.4",
+        "turbo": "^1.2.5",
+        "typescript": "^4.5.5"
+      },
+      "eslintConfig": {
+        "extends": "@dev-sam/common"
+      },
+      "prettier": {
+        "printWidth": 100,
+        "singleQuote": true,
+        "endOfLine": "lf",
+        "pluginSearchDirs": [
+          "."
+        ]
+      },
+      "jest": {
+        "transform": {
+          "\\.ts$": "@dev-sam/jest-esbuild-transformer",
+          "\\.wat$": "@dev-sam/jest-raw-loader"
+        },
+        "coverageThreshold": {
+          "global": {
+            "branches": 100,
+            "functions": 100,
+            "lines": 100,
+            "statements": 0
+          }
+        }
+      },
+      "lint-staged": {
+        "**/*.{ts,js,yml}": [
+          "pnpm prettier --write"
+        ]
+      },
+      "packageManager": "pnpm@6.29.2"
+    },
+    "prefix": "/Users/sam/Desktop/samlang"
+  },
+  "6 debug pnpm:context": {
+    "currentLockfileExists": false,
+    "storeDir": "/Users/sam/.pnpm-store/v3",
+    "virtualStoreDir": "/Users/sam/Desktop/samlang/node_modules/.pnpm"
+  },
+  "7 debug pnpm:stage": {
+    "prefix": "/Users/sam/Desktop/samlang",
+    "stage": "resolution_started"
+  },
+  "8 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/binaryen/102.0.0",
+    "wanted": {
+      "dependentId": "samlang-core",
+      "name": "binaryen",
+      "rawSpec": "^102.0.0"
+    }
+  },
+  "9 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/@types/vscode/1.62.0",
+    "wanted": {
+      "dependentId": "samlang-vscode",
+      "name": "@types/vscode",
+      "rawSpec": "1.62.0"
+    }
+  },
+  "10 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/vscode-languageclient/8.0.0-next.7",
+    "wanted": {
+      "dependentId": "samlang-vscode",
+      "name": "vscode-languageclient",
+      "rawSpec": "^8.0.0-next.7"
+    }
+  },
+  "11 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/vscode-languageserver/8.0.0-next.5",
+    "wanted": {
+      "dependentId": "samlang-cli",
+      "name": "vscode-languageserver",
+      "rawSpec": "^8.0.0-next.5"
+    }
+  },
+  "12 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/@dev-sam/eslint-config-common/0.23.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "@dev-sam/eslint-config-common",
+      "rawSpec": "0.23.0"
+    }
+  },
+  "13 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/@types/jest/27.4.1",
+    "wanted": {
+      "dependentId": ".",
+      "name": "@types/jest",
+      "rawSpec": "^27.4.1"
+    }
+  },
+  "14 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/@types/node/17.0.27",
+    "wanted": {
+      "dependentId": ".",
+      "name": "@types/node",
+      "rawSpec": "^17.0.27"
+    }
+  },
+  "15 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/@typescript-eslint/eslint-plugin/5.21.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "@typescript-eslint/eslint-plugin",
+      "rawSpec": "^5.21.0"
+    }
+  },
+  "16 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/@typescript-eslint/parser/5.21.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "@typescript-eslint/parser",
+      "rawSpec": "^5.21.0"
+    }
+  },
+  "17 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/esbuild/0.14.38",
+    "wanted": {
+      "dependentId": ".",
+      "name": "esbuild",
+      "rawSpec": "^0.14.38"
+    }
+  },
+  "18 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/eslint/8.14.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "eslint",
+      "rawSpec": "^8.14.0"
+    }
+  },
+  "19 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/husky/7.0.4",
+    "wanted": {
+      "dependentId": ".",
+      "name": "husky",
+      "rawSpec": "^7.0.4"
+    }
+  },
+  "20 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/jest/28.0.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "jest",
+      "rawSpec": "^28.0.0"
+    }
+  },
+  "21 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/lint-staged/12.4.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "lint-staged",
+      "rawSpec": "^12.4.0"
+    }
+  },
+  "22 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/prettier/2.6.2",
+    "wanted": {
+      "dependentId": ".",
+      "name": "prettier",
+      "rawSpec": "^2.6.2"
+    }
+  },
+  "23 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/prettier-plugin-organize-imports/2.3.4",
+    "wanted": {
+      "dependentId": ".",
+      "name": "prettier-plugin-organize-imports",
+      "rawSpec": "^2.3.4"
+    }
+  },
+  "24 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/turbo/1.2.5",
+    "wanted": {
+      "dependentId": ".",
+      "name": "turbo",
+      "rawSpec": "^1.2.5"
+    }
+  },
+  "25 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/typescript/4.5.5",
+    "wanted": {
+      "dependentId": ".",
+      "name": "typescript",
+      "rawSpec": "^4.5.5"
+    }
+  },
+  "26 debug pnpm:_dependency_resolved": {
+    "resolution": "link:../samlang-core",
+    "wanted": {
+      "dependentId": "samlang-cli",
+      "name": "@dev-sam/samlang-core",
+      "rawSpec": "workspace:^0.6.0"
+    }
+  },
+  "27 debug pnpm:_dependency_resolved": {
+    "resolution": "link:jest-raw-loader",
+    "wanted": {
+      "dependentId": ".",
+      "name": "@dev-sam/jest-raw-loader",
+      "rawSpec": "workspace:0.0.1"
+    }
+  },
+  "28 debug pnpm:_dependency_resolved": {
+    "resolution": "link:samlang-cli",
+    "wanted": {
+      "dependentId": ".",
+      "name": "@dev-sam/samlang-cli",
+      "rawSpec": "workspace:0.6.0"
+    }
+  },
+  "29 error pnpm": {
+    "code": "ERR_PNPM_NO_MATCHING_VERSION_INSIDE_WORKSPACE",
+    "pkgsStack": [],
+    "err": {
+      "name": "pnpm",
+      "message": "In : No matching version found for @dev-sam/jest-esbuild-transformer@0.4.0 inside the workspace",
+      "code": "ERR_PNPM_NO_MATCHING_VERSION_INSIDE_WORKSPACE",
+      "stack": "pnpm: In : No matching version found for @dev-sam/jest-esbuild-transformer@0.4.0 inside the workspace\n    at tryResolveFromWorkspace (/Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:85931:15)\n    at resolveNpm (/Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:85822:39)\n    at Object.resolve (/Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:86054:40)\n    at ctx.requestsQueue.add.priority (/Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:74443:75)\n    at run (/Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:74159:90)\n    at PQueue._tryToStartAnother (/Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:74113:13)\n    at /Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:74172:16\n    at new Promise (<anonymous>)\n    at PQueue.add (/Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:74154:16)\n    at resolveAndFetch (/Users/sam/.node/corepack/pnpm/6.29.2/dist/pnpm.cjs:74443:55)"
+    }
+  }
+}

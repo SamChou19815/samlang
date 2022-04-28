@@ -1,0 +1,22 @@
+{
+  "name": "@dev-sam/jest-esbuild-transformer",
+  "version": "0.4.0",
+  "license": "AGPLv3",
+  "files": [
+    "api.js",
+    "index.js",
+    "runner.js"
+  ],
+  "bin": {
+    "esr": "runner.js"
+  },
+  "scripts": {
+    "compile": "tsc"
+  },
+  "peerDependencies": {
+    "esbuild": "*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.14.38"
+  }
+}
