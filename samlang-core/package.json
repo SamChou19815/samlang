@@ -3,7 +3,7 @@
   "version": "0.6.0",
   "license": "AGPLv3",
   "scripts": {
-    "compile": "tsc --incremental --noEmit",
+    "check": "tsc --incremental --noEmit",
     "bundle": "node build.js"
   },
   "main": "dist/index.js",

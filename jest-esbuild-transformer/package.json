@@ -11,7 +11,7 @@
     "esr": "runner.js"
   },
   "scripts": {
-    "compile": "tsc"
+    "check": "tsc"
   },
   "peerDependencies": {
     "esbuild": "*"

@@ -18,10 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: SamChou19815/infra/actions/setup-node-project@main
-        with:
-          historyForDiff: true
       - name: Compile
-        run: pnpm compile --filter "...[${{ github.event.pull_request.base.sha }}]"
+        run: pnpm check
   test:
     runs-on: ubuntu-latest
     steps:

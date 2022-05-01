@@ -3,10 +3,11 @@
   "baseBranch": "origin/main",
   "globalDependencies": ["configurations/*"],
   "pipeline": {
-    "compile": {
+    "check": {
       "outputs": ["tsconfig.tsbuildinfo"]
     },
     "bundle": {
+      "dependsOn": ["^bundle"],
       "outputs": ["dist/index.js", "out/**", "bin/index.js", "bin/lsp.js"]
     }
   }
