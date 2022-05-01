@@ -58,7 +58,7 @@
     }
   },
   "scripts": {
-    "compile": "tsc --incremental --noEmit",
+    "check": "tsc --incremental --noEmit",
     "bundle": "node bundle.js"
   },
   "devDependencies": {
