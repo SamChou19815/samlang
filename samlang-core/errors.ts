@@ -1,9 +1,9 @@
 import { Location, ModuleReference, ModuleReferenceCollections } from './ast/common-nodes';
 import { prettyPrintType, SamlangType } from './ast/samlang-nodes';
 
-export abstract class CompileTimeError<T = string> {
+export abstract class CompileTimeError {
   constructor(
-    public readonly errorType: T,
+    public readonly errorType: string,
     public readonly location: Location,
     public readonly reason: string
   ) {}
@@ -13,13 +13,13 @@ export abstract class CompileTimeError<T = string> {
   }
 }
 
-export class SyntaxError extends CompileTimeError<'SyntaxError'> {
+export class SyntaxError extends CompileTimeError {
   constructor(location: Location, reason: string) {
     super('SyntaxError', location, reason);
   }
 }
 
-export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType'> {
+export class UnexpectedTypeError extends CompileTimeError {
   constructor(location: Location, expected: SamlangType, actual: SamlangType) {
     super(
       'UnexpectedType',
@@ -33,13 +33,23 @@ export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType'> {
   }
 }
 
-export class UnresolvedNameError extends CompileTimeError<'UnresolvedName'> {
+export class UnresolvedNameError extends CompileTimeError {
   constructor(location: Location, unresolvedName: string) {
     super('UnresolvedName', location, `Name \`${unresolvedName}\` is not resolved.`);
   }
 }
 
-export class UnsupportedClassTypeDefinitionError extends CompileTimeError<'UnsupportedClassTypeDefinition'> {
+export class MissingDefinitionsError extends CompileTimeError {
+  constructor(location: Location, missingDefinitions: readonly string[]) {
+    super(
+      'MissingDefinitions',
+      location,
+      `Missing definitions for [${missingDefinitions.join(', ')}].`
+    );
+  }
+}
+
+export class UnsupportedClassTypeDefinitionError extends CompileTimeError {
   constructor(location: Location, typeDefinitionType: 'object' | 'variant') {
     super(
       'UnsupportedClassTypeDefinition',
@@ -49,7 +59,7 @@ export class UnsupportedClassTypeDefinitionError extends CompileTimeError<'Unsup
   }
 }
 
-export class UnexpectedTypeKindError extends CompileTimeError<'UnexpectedTypeKind'> {
+export class UnexpectedTypeKindError extends CompileTimeError {
   constructor(location: Location, expectedTypeKind: string, actualType: string | SamlangType) {
     super(
       'UnexpectedTypeKind',
@@ -61,7 +71,7 @@ export class UnexpectedTypeKindError extends CompileTimeError<'UnexpectedTypeKin
   }
 }
 
-export class ArityMismatchError extends CompileTimeError<'ArityMismatchError'> {
+export class ArityMismatchError extends CompileTimeError {
   constructor(location: Location, kind: string, expectedSize: number, actualSize: number) {
     super(
       'ArityMismatchError',
@@ -71,7 +81,7 @@ export class ArityMismatchError extends CompileTimeError<'ArityMismatchError'> {
   }
 }
 
-export class InsufficientTypeInferenceContextError extends CompileTimeError<'InsufficientTypeInferenceContext'> {
+export class InsufficientTypeInferenceContextError extends CompileTimeError {
   constructor(location: Location) {
     super(
       'InsufficientTypeInferenceContext',
@@ -81,7 +91,7 @@ export class InsufficientTypeInferenceContextError extends CompileTimeError<'Ins
   }
 }
 
-export class CollisionError extends CompileTimeError<'Collision'> {
+export class CollisionError extends CompileTimeError {
   constructor(location: Location, collidedName: string) {
     super(
       'Collision',
@@ -91,7 +101,7 @@ export class CollisionError extends CompileTimeError<'Collision'> {
   }
 }
 
-export class IllegalOtherClassMatch extends CompileTimeError<'IllegalOtherClassMatch'> {
+export class IllegalOtherClassMatch extends CompileTimeError {
   constructor(location: Location) {
     super(
       'IllegalOtherClassMatch',
@@ -101,13 +111,13 @@ export class IllegalOtherClassMatch extends CompileTimeError<'IllegalOtherClassM
   }
 }
 
-export class IllegalThisError extends CompileTimeError<'IllegalThis'> {
+export class IllegalThisError extends CompileTimeError {
   constructor(location: Location) {
     super('IllegalThis', location, 'Keyword `this` cannot be used in this context.');
   }
 }
 
-export class NonExhausiveMatchError extends CompileTimeError<'NonExhausiveMatch'> {
+export class NonExhausiveMatchError extends CompileTimeError {
   constructor(location: Location, missingTags: readonly string[]) {
     super(
       'NonExhausiveMatch',
@@ -144,6 +154,10 @@ export class GlobalErrorReporter {
 
   reportUnresolvedNameError(location: Location, unresolvedName: string): void {
     this.collectorDelegate.reportError(new UnresolvedNameError(location, unresolvedName));
+  }
+
+  reportMissingDefinitionsError(location: Location, missingMembers: readonly string[]): void {
+    this.collectorDelegate.reportError(new MissingDefinitionsError(location, missingMembers));
   }
 
   reportUnsupportedClassTypeDefinitionError(
