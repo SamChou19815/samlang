@@ -95,6 +95,6 @@ function _checkInterfaceComformance(
     );
   });
   if (missingMembers.length > 0) {
-    // TODO: error on this
+    errorReporter.reportMissingDefinitionsError(actual.location, missingMembers);
   }
 }
