@@ -137,7 +137,7 @@ describe('samlang-core/parser', () => {
       method bar(baz: bool): int
     }
 
-    class Main {
+    class Main : Baz {
       function main(): string = "Hello World"
     }
 
@@ -149,7 +149,7 @@ describe('samlang-core/parser', () => {
 
     class Util
 
-    class A(val a: int)
+    class A(val a: int) : Baz
 
     class Option<T>(None(unit), Some(T)) {
       function <T> getNone(): Option<T> = Option.None({})

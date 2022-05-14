@@ -619,6 +619,7 @@ export interface TypeDefinition extends Node {
 
 export interface SourceClassDefinition extends SourceInterfaceDeclaration {
   readonly typeDefinition: TypeDefinition;
+  readonly implementsNode?: SamlangIdentifierType;
   readonly members: readonly SourceClassMemberDefinition[];
 }
 
