@@ -19,6 +19,7 @@ import {
 import {
   Pattern,
   SamlangExpression,
+  SamlangIdentifierType,
   SamlangModule,
   SamlangType,
   SamlangValStatement,
@@ -327,8 +328,17 @@ export default class SamlangModuleParser extends BaseParser {
 
   parseClass(): SourceClassDefinition {
     const { startLocation, ...header } = this.parseClassHeader();
+    let implementsNode: SamlangIdentifierType | undefined;
+    let startLocationWithImplements = startLocation;
+    if (this.peek().content === ':') {
+      this.assertAndConsume(':');
+      implementsNode = this.parseIdentifierType(this.parseUpperId());
+      startLocationWithImplements = startLocationWithImplements.union(
+        implementsNode.reason.useLocation
+      );
+    }
     if (this.peekedClassedOrInterfaceStart()) {
-      return { location: startLocation, ...header, members: [] };
+      return { location: startLocationWithImplements, ...header, implementsNode, members: [] };
     }
     this.assertAndConsume('{');
     const members: SourceClassMemberDefinition[] = [];
@@ -340,17 +350,29 @@ export default class SamlangModuleParser extends BaseParser {
       members.push(this.parseSourceClassMemberDefinition());
     }
     const endLocation = this.assertAndConsume('}');
-    return { location: startLocation.union(endLocation), ...header, members };
+    return {
+      location: startLocationWithImplements.union(endLocation),
+      ...header,
+      implementsNode,
+      members,
+    };
   }
 
-  private parseClassHeader(): Omit<SourceClassDefinition, 'location' | 'members'> & {
+  private parseClassHeader(): Omit<
+    SourceClassDefinition,
+    'location' | 'members' | 'implementsNode'
+  > & {
     readonly startLocation: Location;
   } {
     const associatedComments = this.collectPrecedingComments();
     let startLocation = this.assertAndConsume('class');
     const name = this.parseUpperId();
     startLocation = startLocation.union(name.location);
-    if (this.peek().content === '{' || this.peekedClassedOrInterfaceStart()) {
+    if (
+      this.peek().content === '{' ||
+      this.peek().content === ':' ||
+      this.peekedClassedOrInterfaceStart()
+    ) {
       // Util class. Now the class header has ended.
       return {
         startLocation,
@@ -1172,23 +1194,10 @@ export default class SamlangModuleParser extends BaseParser {
       };
     }
     if (typeof peeked.content !== 'string' && peeked.content.__type__ === 'UpperId') {
-      const identifier = peeked.content.content;
       this.consume();
-      let typeArguments: readonly SamlangType[];
-      if (this.peek().content === '<') {
-        this.consume();
-        typeArguments = this.parseCommaSeparatedList(this.parseType);
-        this.assertAndConsume('>');
-      } else {
-        typeArguments = [];
-      }
-      return {
-        __type__: 'IdentifierType',
-        reason: SourceReason(peeked.location, peeked.location),
-        moduleReference: this.resolveClass(identifier),
-        identifier,
-        typeArguments,
-      };
+      return this.parseIdentifierType(
+        SourceId(peeked.content.content, { location: peeked.location })
+      );
     }
     if (peeked.content === '(') {
       this.consume();
@@ -1216,4 +1225,23 @@ export default class SamlangModuleParser extends BaseParser {
     );
     return SourceUnknownType(SourceReason(peeked.location, peeked.location));
   };
+
+  private parseIdentifierType(identifier: SourceIdentifier): SamlangIdentifierType {
+    let typeArguments: readonly SamlangType[];
+    let location = identifier.location;
+    if (this.peek().content === '<') {
+      this.consume();
+      typeArguments = this.parseCommaSeparatedList(this.parseType);
+      location = location.union(this.assertAndConsume('>'));
+    } else {
+      typeArguments = [];
+    }
+    return {
+      __type__: 'IdentifierType',
+      reason: SourceReason(location, location),
+      moduleReference: this.resolveClass(identifier.name),
+      identifier: identifier.name,
+      typeArguments,
+    };
+  }
 }
