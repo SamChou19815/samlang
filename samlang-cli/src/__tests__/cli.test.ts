@@ -1,7 +1,12 @@
+import { jest } from '@jest/globals';
 import cliMainRunner, { CLIRunners, parseCLIArguments } from '../cli';
 
 function assertCalled(commandLineArguments: readonly string[], called: keyof CLIRunners): void {
-  const runner: CLIRunners = { format: jest.fn(), compile: jest.fn(), help: jest.fn() };
+  const runner: CLIRunners = {
+    format: jest.fn<() => Promise<void>>(),
+    compile: jest.fn<() => Promise<void>>(),
+    help: jest.fn<() => Promise<void>>(),
+  };
   cliMainRunner(runner, commandLineArguments);
   // @ts-expect-error: expected
   Object.keys(runner).forEach((commandName: keyof CLIRunners) => {

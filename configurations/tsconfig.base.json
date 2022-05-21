@@ -7,7 +7,7 @@
     "importsNotUsedAsValues": "error",
     "isolatedModules": false,
     "lib": ["esnext", "dom"],
-    "module": "CommonJS",
+    "module": "es2022",
     "moduleResolution": "node",
     "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
