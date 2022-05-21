@@ -1,31 +1,8 @@
 // @ts-check
 
-const { createHash } = require('crypto');
-const { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } = require('fs');
-const Module = require('module');
-const { tmpdir } = require('os');
-const { extname, resolve } = require('path');
-
 const { transformSync } = require('esbuild');
-
-const tmpPath = resolve(tmpdir(), 'esbuild-runner-cache');
-if (!existsSync(tmpPath)) mkdirSync(tmpPath, { recursive: true });
-
-/**
- * @param {string} filename
- * @param {() => string} transpiler
- */
-function cachedGet(filename, transpiler) {
-  const hash = createHash('md5').update(resolve(filename)).digest('hex');
-
-  const compiledPath = resolve(tmpPath, `${hash}.js`);
-  if (!existsSync(compiledPath) || statSync(compiledPath).mtime < statSync(filename).mtime) {
-    const code = transpiler();
-    writeFileSync(compiledPath, code, { encoding: 'utf-8' });
-    return code;
-  }
-  return readFileSync(compiledPath, { encoding: 'utf-8' });
-}
+const Module = require('module');
+const { extname } = require('path');
 
 /** @type {Record<string, import('esbuild').Loader>} */
 const loaders = {
@@ -58,7 +35,7 @@ const registerHook = () => {
         const defaultCompile = mod._compile;
         mod._compile = (/** @type {string} */ code) => {
           mod._compile = defaultCompile;
-          return mod._compile(transpile(code, filename), filename);
+          return mod._compile(transpile(code, filename, 'cjs').code, filename);
         };
       }
       defaultLoader(mod, filename);
@@ -69,21 +46,24 @@ const registerHook = () => {
 /**
  * @param {string} src
  * @param {string} filename
+ * @param {'esm' | 'cjs'} format
  */
-const transpile = (src, filename) =>
-  cachedGet(
-    filename,
-    () =>
-      transformSync(src, {
-        format: 'cjs',
-        logLevel: 'error',
-        target,
-        minify: false,
-        sourcemap: 'inline',
-        loader: loaders[extname(filename)],
-        sourcefile: filename,
-      }).code
-  );
+const transpile = (src, filename, format) =>
+  transformSync(src, {
+    format,
+    logLevel: 'error',
+    target,
+    minify: false,
+    sourcemap: 'inline',
+    loader: loaders[extname(filename)],
+    sourcefile: filename,
+  });
+
+/**
+ * @param {string} src
+ * @param {string} filename
+ */
+const transpileESM = (src, filename) => transpile(src, filename, 'esm');
 
 module.exports.registerHook = registerHook;
-module.exports.transpile = transpile;
+module.exports.transpileESM = transpileESM;

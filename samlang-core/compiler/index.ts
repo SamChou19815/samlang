@@ -1,4 +1,4 @@
-import * as binaryen from 'binaryen';
+import binaryen from 'binaryen';
 import type { MidIRSources } from '../ast/mir-nodes';
 import { prettyPrintWebAssemblyModule } from '../ast/wasm-nodes';
 import compileSamlangSourcesToHighIRSources from './hir-toplevel-lowering';

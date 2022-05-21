@@ -131,8 +131,8 @@ describe('samlang-cli/configuration', () => {
 
     it('Real filesystem integration test.', () => {
       expect(loadSamlangProjectConfiguration()).toEqual({
-        sourceDirectory: resolve(__dirname, '..', '..', '..'),
-        outputDirectory: resolve(__dirname, '..', '..', '..', 'out'),
+        sourceDirectory: resolve(process.env.PWD || ''),
+        outputDirectory: resolve(process.env.PWD || '', 'out'),
         entryPoints: ['tests.AllTests'],
       });
     });

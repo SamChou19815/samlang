@@ -13,7 +13,6 @@ function getTypeCheckedModule(code: string): SamlangModule {
 }
 
 describe('printer-integration-test', () => {
-  // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
   if (process.env.CI) {
     runnableSamlangProgramTestCases.forEach(({ testCaseName: id, sourceCode: code }) => {
       it(`samlang source level pretty printer is self-consistent for ${id}`, () => {

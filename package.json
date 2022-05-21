@@ -6,9 +6,8 @@
     "format:check": "prettier --check '**/*.{ts,js,yml}'",
     "bundle": "turbo run bundle",
     "check": "turbo run check",
-    "test": "jest --coverage",
-    "test:single": "jest -t",
-    "test:checker-unit-tests": "jest -t expression-type-checker",
+    "test": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:single": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-vm-modules jest -t",
     "test:integration": "esr compile-repository.ts",
     "core": "pnpm --filter @dev-sam/samlang-core",
     "cli": "pnpm --filter @dev-sam/samlang-cli",
@@ -20,18 +19,19 @@
     "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0",
     "@dev-sam/jest-raw-loader": "workspace:0.0.1",
     "@dev-sam/samlang-cli": "workspace:0.6.0",
-    "@types/jest": "^27.5.0",
-    "@types/node": "^17.0.31",
-    "@typescript-eslint/eslint-plugin": "^5.22.0",
-    "@typescript-eslint/parser": "^5.22.0",
-    "esbuild": "^0.14.38",
-    "eslint": "^8.15.0",
+    "@jest/globals": "^28.1.0",
+    "@types/jest": "^27.5.1",
+    "@types/node": "^17.0.35",
+    "@typescript-eslint/eslint-plugin": "^5.25.0",
+    "@typescript-eslint/parser": "^5.25.0",
+    "esbuild": "^0.14.39",
+    "eslint": "^8.16.0",
     "husky": "^7.0.4",
     "jest": "^28.1.0",
     "lint-staged": "^12.4.1",
     "prettier": "^2.6.2",
     "prettier-plugin-organize-imports": "^2.3.4",
-    "turbo": "^1.2.8",
+    "turbo": "^1.2.9",
     "typescript": "^4.6.4"
   },
   "eslintConfig": {
@@ -50,6 +50,7 @@
       "\\.ts$": "@dev-sam/jest-esbuild-transformer",
       "\\.wat$": "@dev-sam/jest-raw-loader"
     },
+    "coverageProvider": "v8",
     "coverageThreshold": {
       "global": {
         "branches": 100,
@@ -57,12 +58,15 @@
         "lines": 100,
         "statements": 0
       }
-    }
+    },
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ]
   },
   "lint-staged": {
     "**/*.{ts,js,yml}": [
       "pnpm prettier --write"
     ]
   },
-  "packageManager": "pnpm@7.0.0"
+  "packageManager": "pnpm@7.1.2"
 }
