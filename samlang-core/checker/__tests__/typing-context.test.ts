@@ -44,6 +44,7 @@ describe('typing-context', () => {
                   },
                 },
               },
+              implements: null,
               functions: {
                 f1: {
                   isPublic: true,
@@ -84,6 +85,7 @@ describe('typing-context', () => {
                 names: [],
                 mappings: {},
               },
+              implements: null,
               functions: {
                 f1: {
                   isPublic: true,
