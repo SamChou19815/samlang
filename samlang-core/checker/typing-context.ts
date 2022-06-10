@@ -35,6 +35,7 @@ export interface InterfaceTypingContext {
 
 export interface ClassTypingContext extends InterfaceTypingContext {
   readonly typeDefinition: TypeDefinition;
+  readonly implements: SamlangIdentifierType | null;
 }
 
 export interface ModuleTypingContext {

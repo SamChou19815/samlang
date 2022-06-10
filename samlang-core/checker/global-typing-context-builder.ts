@@ -89,7 +89,13 @@ function buildClassTypingContext(
       };
     });
   }
-  return { typeParameters, typeDefinition, functions, methods };
+  return {
+    typeParameters,
+    typeDefinition,
+    implements: classDefinition.implementsNode ?? null,
+    functions,
+    methods,
+  };
 }
 
 function buildModuleTypingContext(
@@ -121,6 +127,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
     Builtins: {
       typeParameters: [],
       typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
+      implements: null,
       functions: {
         stringToInt: {
           isPublic: true,
