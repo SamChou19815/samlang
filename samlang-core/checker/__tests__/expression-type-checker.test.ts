@@ -62,7 +62,7 @@ function typeCheckInSandbox(
                     bar: { isPublic: false, type: int },
                   },
                 },
-                implements: null,
+                extendsOrImplements: null,
                 functions: {
                   init: {
                     isPublic: true,
@@ -112,7 +112,7 @@ function typeCheckInSandbox(
                     Bar: { isPublic: true, type: int },
                   },
                 },
-                implements: null,
+                extendsOrImplements: null,
                 functions: {
                   Foo: {
                     isPublic: true,
@@ -149,7 +149,7 @@ function typeCheckInSandbox(
                     bar: { isPublic: false, type: int },
                   },
                 },
-                implements: null,
+                extendsOrImplements: null,
                 functions: {},
                 methods: {},
               },
@@ -167,7 +167,7 @@ function typeCheckInSandbox(
                     Bar: { isPublic: true, type: int },
                   },
                 },
-                implements: null,
+                extendsOrImplements: null,
                 functions: {
                   Foo: {
                     isPublic: true,
@@ -205,7 +205,7 @@ function typeCheckInSandbox(
                     b: { isPublic: false, type: bool },
                   },
                 },
-                implements: null,
+                extendsOrImplements: null,
                 functions: {
                   init: {
                     isPublic: true,
@@ -230,7 +230,7 @@ function typeCheckInSandbox(
                     b: { isPublic: false, type: bool },
                   },
                 },
-                implements: null,
+                extendsOrImplements: null,
                 functions: {
                   init: {
                     isPublic: true,
@@ -255,7 +255,7 @@ function typeCheckInSandbox(
                     b: { isPublic: true, type: bool },
                   },
                 },
-                implements: null,
+                extendsOrImplements: null,
                 functions: {
                   init: {
                     isPublic: true,

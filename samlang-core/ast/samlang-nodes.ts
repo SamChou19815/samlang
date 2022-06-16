@@ -602,6 +602,8 @@ export interface SourceInterfaceDeclaration extends Node {
   readonly name: SourceIdentifier;
   readonly typeParameters: readonly SourceIdentifier[];
   readonly typeDefinition?: TypeDefinition;
+  /** The node after colon, interpreted as extends in interfaces and implements in classes. */
+  readonly extendsOrImplementsNode?: SamlangIdentifierType;
   readonly members: readonly SourceClassMemberDeclaration[];
 }
 
@@ -619,7 +621,6 @@ export interface TypeDefinition extends Node {
 
 export interface SourceClassDefinition extends SourceInterfaceDeclaration {
   readonly typeDefinition: TypeDefinition;
-  readonly implementsNode?: SamlangIdentifierType;
   readonly members: readonly SourceClassMemberDefinition[];
 }
 

@@ -29,7 +29,7 @@ import type {
 
 function buildInterfaceTypingContext(
   moduleReference: ModuleReference,
-  { typeParameters, members }: SourceInterfaceDeclaration
+  { typeParameters, members, extendsOrImplementsNode }: SourceInterfaceDeclaration
 ) {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
@@ -47,6 +47,7 @@ function buildInterfaceTypingContext(
   });
   return {
     typeParameters: typeParameters.map((it) => it.name),
+    extendsOrImplements: extendsOrImplementsNode ?? null,
     functions,
     methods,
   };
@@ -92,7 +93,7 @@ function buildClassTypingContext(
   return {
     typeParameters,
     typeDefinition,
-    implements: classDefinition.implementsNode ?? null,
+    extendsOrImplements: classDefinition.extendsOrImplementsNode ?? null,
     functions,
     methods,
   };
@@ -127,7 +128,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
     Builtins: {
       typeParameters: [],
       typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
-      implements: null,
+      extendsOrImplements: null,
       functions: {
         stringToInt: {
           isPublic: true,
