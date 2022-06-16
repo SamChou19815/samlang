@@ -108,7 +108,7 @@ describe('global-typing-context-builder', () => {
         Class0: {
           typeParameters: [],
           typeDefinition,
-          implements: null,
+          extendsOrImplements: null,
           functions: {
             init: {
               isPublic: true,
@@ -130,7 +130,7 @@ describe('global-typing-context-builder', () => {
         Class1: {
           typeParameters: [],
           typeDefinition,
-          implements: null,
+          extendsOrImplements: null,
           functions: {
             f1: {
               isPublic: false,
@@ -158,7 +158,7 @@ describe('global-typing-context-builder', () => {
         Class2: {
           typeParameters: [],
           typeDefinition,
-          implements: null,
+          extendsOrImplements: null,
           functions: {
             init: {
               isPublic: true,
@@ -198,7 +198,7 @@ describe('global-typing-context-builder', () => {
         Class0: {
           typeParameters: [],
           typeDefinition,
-          implements: null,
+          extendsOrImplements: null,
           functions: {
             init: {
               isPublic: true,
@@ -220,7 +220,7 @@ describe('global-typing-context-builder', () => {
         Class1: {
           typeParameters: [],
           typeDefinition,
-          implements: null,
+          extendsOrImplements: null,
           functions: {
             f1: {
               isPublic: false,
@@ -248,7 +248,7 @@ describe('global-typing-context-builder', () => {
         Class2: {
           typeParameters: [],
           typeDefinition,
-          implements: null,
+          extendsOrImplements: null,
           functions: {
             init: {
               isPublic: true,
@@ -292,7 +292,7 @@ describe('global-typing-context-builder', () => {
         Class1: {
           typeParameters: [],
           typeDefinition,
-          implements: null,
+          extendsOrImplements: null,
           functions: {
             f1: {
               isPublic: false,
@@ -320,7 +320,7 @@ describe('global-typing-context-builder', () => {
         Class2: {
           typeParameters: [],
           typeDefinition,
-          implements: null,
+          extendsOrImplements: null,
           functions: {
             init: {
               isPublic: true,

@@ -22,6 +22,7 @@ describe('typing-context', () => {
           interfaces: {
             I: {
               typeParameters: ['A', 'B'],
+              extendsOrImplements: null,
               functions: {},
               methods: {},
             },
@@ -44,7 +45,7 @@ describe('typing-context', () => {
                   },
                 },
               },
-              implements: null,
+              extendsOrImplements: null,
               functions: {
                 f1: {
                   isPublic: true,
@@ -85,7 +86,7 @@ describe('typing-context', () => {
                 names: [],
                 mappings: {},
               },
-              implements: null,
+              extendsOrImplements: null,
               functions: {
                 f1: {
                   isPublic: true,

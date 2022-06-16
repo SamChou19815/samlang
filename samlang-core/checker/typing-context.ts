@@ -31,11 +31,11 @@ export interface InterfaceTypingContext {
   readonly typeParameters: readonly string[];
   readonly functions: Readonly<Record<string, MemberTypeInformation>>;
   readonly methods: Readonly<Record<string, MemberTypeInformation>>;
+  readonly extendsOrImplements: SamlangIdentifierType | null;
 }
 
 export interface ClassTypingContext extends InterfaceTypingContext {
   readonly typeDefinition: TypeDefinition;
-  readonly implements: SamlangIdentifierType | null;
 }
 
 export interface ModuleTypingContext {
