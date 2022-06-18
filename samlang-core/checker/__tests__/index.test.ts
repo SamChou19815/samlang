@@ -215,7 +215,9 @@ describe('samlang-core/checker', () => {
     function main(): unit = {
       val _ = (foo: Useless) -> {};
     }
-  }`;
+  }
+  interface Bar {}
+  class Foo : Bar {}`;
 
     const moduleReferenceA = ModuleReference(['A']);
     const moduleReferenceB = ModuleReference(['B']);
