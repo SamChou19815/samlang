@@ -47,6 +47,7 @@ const registerHook = () => {
  * @param {string} src
  * @param {string} filename
  * @param {'esm' | 'cjs'} format
+ * @returns {import('esbuild').TransformResult}
  */
 const transpile = (src, filename, format) =>
   transformSync(src, {
@@ -62,6 +63,7 @@ const transpile = (src, filename, format) =>
 /**
  * @param {string} src
  * @param {string} filename
+ * @returns {import('esbuild').TransformResult}
  */
 const transpileESM = (src, filename) => transpile(src, filename, 'esm');
 
