@@ -27,11 +27,23 @@ export interface MemberTypeInformation {
   readonly type: SamlangFunctionType;
 }
 
-export interface InterfaceTypingContext {
-  readonly typeParameters: readonly string[];
+interface InterfaceTypingContextInstantiatedMembers {
   readonly functions: Readonly<Record<string, MemberTypeInformation>>;
   readonly methods: Readonly<Record<string, MemberTypeInformation>>;
+}
+
+interface InterfaceTypingContextInstantiatedNodes
+  extends InterfaceTypingContextInstantiatedMembers {
   readonly extendsOrImplements: SamlangIdentifierType | null;
+}
+
+export interface FullyInlinedInterfaceTypingContext
+  extends InterfaceTypingContextInstantiatedMembers {
+  readonly typeParameters: readonly string[];
+}
+
+export interface InterfaceTypingContext extends InterfaceTypingContextInstantiatedNodes {
+  readonly typeParameters: readonly string[];
 }
 
 export interface ClassTypingContext extends InterfaceTypingContext {
@@ -72,6 +84,94 @@ export class AccessibleGlobalTypingContext {
     className: string
   ): InterfaceTypingContext | undefined {
     return this.globalTypingContext.get(moduleReference)?.interfaces[className];
+  }
+
+  getFullyInlinedInterfaceContext(
+    moduleReference: ModuleReference,
+    className: string
+  ): {
+    context: FullyInlinedInterfaceTypingContext;
+    missingInterface: SamlangIdentifierType | null;
+  } | null {
+    const interfaceTypingContext = this.getInterfaceInformation(moduleReference, className);
+    if (interfaceTypingContext == null) return null;
+    const collector: InterfaceTypingContextInstantiatedMembers[] = [];
+    const missingInterface = this.recursiveComputeInterfaceMembersChain(
+      SourceIdentifierType(
+        // Reason is unused for computation. The ID type is only for substitutio
+        DummySourceReason,
+        moduleReference,
+        className
+      ),
+      collector
+    );
+    const functions: Record<string, MemberTypeInformation> = {};
+    const methods: Record<string, MemberTypeInformation> = {};
+    collector.forEach((it) => {
+      // Shadowing is allowed, as long as type matches.
+      // Conformance will be checked in interface-conformance-checking.ts
+      Object.entries(it.functions).forEach(([name, type]) => {
+        functions[name] = type;
+      });
+      Object.entries(it.methods).forEach(([name, type]) => {
+        methods[name] = type;
+      });
+    });
+    return {
+      context: { typeParameters: interfaceTypingContext.typeParameters, functions, methods },
+      missingInterface,
+    };
+  }
+
+  private recursiveComputeInterfaceMembersChain(
+    interfaceType: SamlangIdentifierType,
+    collector: InterfaceTypingContextInstantiatedMembers[]
+  ): SamlangIdentifierType | null {
+    const interfaceContext = this.getInterfaceInformation(
+      interfaceType.moduleReference,
+      interfaceType.identifier
+    );
+    if (interfaceContext == null) return interfaceType;
+    const { functions, methods, extendsOrImplements } =
+      AccessibleGlobalTypingContext.getInstantiatedInterface(interfaceContext, interfaceType);
+    let missingInterface: SamlangIdentifierType | null = null;
+    if (extendsOrImplements != null) {
+      // TODO: handle cyclic structure
+      missingInterface = this.recursiveComputeInterfaceMembersChain(extendsOrImplements, collector);
+    }
+    collector.push({ functions, methods });
+    return missingInterface;
+  }
+
+  private static getInstantiatedInterface(
+    interfaceContext: InterfaceTypingContext,
+    instantiatedInterfaceType: SamlangIdentifierType
+  ): InterfaceTypingContextInstantiatedNodes {
+    const mapping = Object.fromEntries(
+      zip(interfaceContext.typeParameters, instantiatedInterfaceType.typeArguments)
+    );
+    return {
+      functions: interfaceContext.functions,
+      methods: Object.fromEntries(
+        Object.entries(interfaceContext.methods).map(
+          ([name, { isPublic, typeParameters, type }]) => [
+            name,
+            {
+              isPublic,
+              typeParameters,
+              type: performTypeSubstitution(type, mapping) as SamlangFunctionType,
+            },
+          ]
+        )
+      ),
+      extendsOrImplements:
+        interfaceContext.extendsOrImplements != null
+          ? (performTypeSubstitution(
+              interfaceContext.extendsOrImplements,
+              mapping
+            ) as SamlangIdentifierType)
+          : null,
+    };
   }
 
   getClassTypeInformation(

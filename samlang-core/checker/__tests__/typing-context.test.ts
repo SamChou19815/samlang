@@ -10,6 +10,7 @@ import {
   SourceIdentifierType,
   SourceIntType,
 } from '../../ast/samlang-nodes';
+import { checkNotNull } from '../../utils';
 import { AccessibleGlobalTypingContext } from '../typing-context';
 
 describe('typing-context', () => {
@@ -25,6 +26,89 @@ describe('typing-context', () => {
               extendsOrImplements: null,
               functions: {},
               methods: {},
+            },
+            IUseNonExistent: {
+              typeParameters: ['A', 'B'],
+              extendsOrImplements: SourceIdentifierType(
+                DummySourceReason,
+                ModuleReference.DUMMY,
+                'not_exist'
+              ),
+              functions: {},
+              methods: {},
+            },
+            IBase: {
+              typeParameters: ['A', 'B'],
+              extendsOrImplements: null,
+              functions: {},
+              methods: {
+                m1: {
+                  isPublic: true,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [
+                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                    ],
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+                  ),
+                },
+              },
+            },
+            ILevel1: {
+              typeParameters: ['A', 'B'],
+              extendsOrImplements: SourceIdentifierType(
+                DummySourceReason,
+                ModuleReference.DUMMY,
+                'IBase',
+                [
+                  SourceIntType(DummySourceReason),
+                  SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                ]
+              ),
+              functions: {
+                f1: {
+                  isPublic: true,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [
+                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                    ],
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+                  ),
+                },
+              },
+              methods: {},
+            },
+            ILevel2: {
+              typeParameters: ['A', 'B'],
+              extendsOrImplements: SourceIdentifierType(
+                DummySourceReason,
+                ModuleReference.DUMMY,
+                'ILevel1',
+                [
+                  SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                  SourceIntType(DummySourceReason),
+                ]
+              ),
+              functions: {},
+              methods: {
+                m2: {
+                  isPublic: true,
+                  typeParameters: ['C'],
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [
+                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                    ],
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+                  ),
+                },
+              },
             },
           },
           classes: {
@@ -120,6 +204,63 @@ describe('typing-context', () => {
     );
 
     expect(context.getInterfaceInformation(ModuleReference.DUMMY, 'I')).toBeTruthy();
+
+    expect(
+      context.getFullyInlinedInterfaceContext(ModuleReference.DUMMY, 'I_not_exist')
+    ).toBeNull();
+    expect(
+      context.getFullyInlinedInterfaceContext(ModuleReference.DUMMY, 'IUseNonExistent')
+        ?.missingInterface
+    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'not_exist'));
+    expect(context.getFullyInlinedInterfaceContext(ModuleReference.DUMMY, 'I')?.context).toEqual({
+      typeParameters: ['A', 'B'],
+      functions: {},
+      methods: {},
+    });
+    expect(
+      checkNotNull(context.getFullyInlinedInterfaceContext(ModuleReference.DUMMY, 'ILevel2'))
+        .context
+    ).toEqual({
+      typeParameters: ['A', 'B'],
+      functions: {
+        f1: {
+          isPublic: true,
+          typeParameters: ['C'],
+          type: SourceFunctionType(
+            DummySourceReason,
+            [
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+            ],
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+          ),
+        },
+      },
+      methods: {
+        m1: {
+          isPublic: true,
+          typeParameters: ['C'],
+          type: SourceFunctionType(
+            DummySourceReason,
+            [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+          ),
+        },
+        m2: {
+          isPublic: true,
+          typeParameters: ['C'],
+          type: SourceFunctionType(
+            DummySourceReason,
+            [
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+            ],
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+          ),
+        },
+      },
+    });
+
     expect(
       context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1', Location.DUMMY)
     ).toBeFalsy();
