@@ -7,7 +7,7 @@ import {
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
 import performTypeSubstitution from './type-substitution';
-import type { InterfaceTypingContext, MemberTypeInformation } from './typing-context';
+import type { FullyInlinedInterfaceTypingContext, MemberTypeInformation } from './typing-context';
 
 function checkClassMemberConformance(
   expectedClassTypeParameters: readonly string[],
@@ -55,9 +55,10 @@ function checkClassMemberConformance(
   }
 }
 
-function _checkInterfaceComformance(
-  expected: InterfaceTypingContext,
+function _checkInterfaceConformance(
+  expected: FullyInlinedInterfaceTypingContext,
   actual: SourceInterfaceDeclaration,
+  reportMissingMembers: boolean,
   errorReporter: GlobalErrorReporter
 ) {
   const expectedClassTypeParameters = expected.typeParameters;
@@ -94,7 +95,7 @@ function _checkInterfaceComformance(
       errorReporter
     );
   });
-  if (missingMembers.length > 0) {
+  if (reportMissingMembers && missingMembers.length > 0) {
     errorReporter.reportMissingDefinitionsError(actual.location, missingMembers);
   }
 }
