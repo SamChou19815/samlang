@@ -1,13 +1,19 @@
-import { DummySourceReason, ModuleReference } from '../ast/common-nodes';
+import { DummySourceReason, ModuleReference, Sources } from '../ast/common-nodes';
 import {
   isTheSameType,
+  SamlangModule,
   SourceClassMemberDeclaration,
   SourceIdentifierType,
   SourceInterfaceDeclaration,
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
 import performTypeSubstitution from './type-substitution';
-import type { FullyInlinedInterfaceTypingContext, MemberTypeInformation } from './typing-context';
+import {
+  AccessibleGlobalTypingContext,
+  GlobalTypingContext,
+  InterfaceTypingContextInstantiatedMembers,
+  MemberTypeInformation,
+} from './typing-context';
 
 function checkClassMemberConformance(
   expectedClassTypeParameters: readonly string[],
@@ -55,13 +61,12 @@ function checkClassMemberConformance(
   }
 }
 
-function _checkInterfaceConformance(
-  expected: FullyInlinedInterfaceTypingContext,
+function checkSingleInterfaceConformance(
+  expected: InterfaceTypingContextInstantiatedMembers,
   actual: SourceInterfaceDeclaration,
-  reportMissingMembers: boolean,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
+  reportMissingMembers: boolean
 ) {
-  const expectedClassTypeParameters = expected.typeParameters;
   const actualClassTypeParameters = actual.typeParameters.map((it) => it.name);
   const actualMembersMap = new Map(actual.members.map((member) => [member.name.name, member]));
   const missingMembers: string[] = [];
@@ -72,7 +77,7 @@ function _checkInterfaceConformance(
       return;
     }
     checkClassMemberConformance(
-      expectedClassTypeParameters,
+      actualClassTypeParameters, // TODO: ?
       actualClassTypeParameters,
       false,
       expectedMember,
@@ -87,7 +92,7 @@ function _checkInterfaceConformance(
       return;
     }
     checkClassMemberConformance(
-      expectedClassTypeParameters,
+      actualClassTypeParameters,
       actualClassTypeParameters,
       true,
       expectedMember,
@@ -98,4 +103,57 @@ function _checkInterfaceConformance(
   if (reportMissingMembers && missingMembers.length > 0) {
     errorReporter.reportMissingDefinitionsError(actual.location, missingMembers);
   }
+}
+
+function checkModuleMemberInterfaceConformance(
+  typingContext: AccessibleGlobalTypingContext,
+  actual: SourceInterfaceDeclaration,
+  errorReporter: GlobalErrorReporter,
+  reportMissingMembers: boolean
+): void {
+  const instantiatedInterfaceType = actual.extendsOrImplementsNode;
+  if (instantiatedInterfaceType == null) return;
+  const { context, missingInterface } =
+    typingContext.getFullyInlinedInterfaceContext(instantiatedInterfaceType);
+  if (missingInterface != null) {
+    errorReporter.reportUnresolvedNameError(
+      instantiatedInterfaceType.reason.useLocation,
+      instantiatedInterfaceType.identifier
+    );
+    return;
+  }
+  checkSingleInterfaceConformance(context, actual, errorReporter, reportMissingMembers);
+}
+
+export default function checkSourcesInterfaceConformance(
+  sources: Sources<SamlangModule>,
+  globalTypingContext: GlobalTypingContext,
+  errorReporter: GlobalErrorReporter
+): void {
+  sources.forEach((samlangModule, moduleReference) => {
+    samlangModule.classes.forEach((declaration) => {
+      checkModuleMemberInterfaceConformance(
+        AccessibleGlobalTypingContext.fromInterface(
+          moduleReference,
+          globalTypingContext,
+          declaration
+        ),
+        declaration,
+        errorReporter,
+        /* reportMissingMembers */ true
+      );
+    });
+    samlangModule.interfaces.forEach((declaration) => {
+      checkModuleMemberInterfaceConformance(
+        AccessibleGlobalTypingContext.fromInterface(
+          moduleReference,
+          globalTypingContext,
+          declaration
+        ),
+        declaration,
+        errorReporter,
+        /* reportMissingMembers */ false
+      );
+    });
+  });
 }
