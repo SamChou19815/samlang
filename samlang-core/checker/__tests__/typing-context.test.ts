@@ -206,22 +206,30 @@ describe('typing-context', () => {
     expect(context.getInterfaceInformation(ModuleReference.DUMMY, 'I')).toBeTruthy();
 
     expect(
-      context.getFullyInlinedInterfaceContext(ModuleReference.DUMMY, 'I_not_exist')
-    ).toBeNull();
+      context.getFullyInlinedInterfaceContext(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist')
+      )?.missingInterface
+    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist'));
     expect(
-      context.getFullyInlinedInterfaceContext(ModuleReference.DUMMY, 'IUseNonExistent')
-        ?.missingInterface
+      context.getFullyInlinedInterfaceContext(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'IUseNonExistent')
+      )?.missingInterface
     ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'not_exist'));
-    expect(context.getFullyInlinedInterfaceContext(ModuleReference.DUMMY, 'I')?.context).toEqual({
-      typeParameters: ['A', 'B'],
+    expect(
+      context.getFullyInlinedInterfaceContext(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I')
+      )?.context
+    ).toEqual({
       functions: {},
       methods: {},
     });
     expect(
-      checkNotNull(context.getFullyInlinedInterfaceContext(ModuleReference.DUMMY, 'ILevel2'))
-        .context
+      checkNotNull(
+        context.getFullyInlinedInterfaceContext(
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ILevel2')
+        )
+      ).context
     ).toEqual({
-      typeParameters: ['A', 'B'],
       functions: {
         f1: {
           isPublic: true,

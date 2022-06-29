@@ -27,7 +27,7 @@ export interface MemberTypeInformation {
   readonly type: SamlangFunctionType;
 }
 
-interface InterfaceTypingContextInstantiatedMembers {
+export interface InterfaceTypingContextInstantiatedMembers {
   readonly functions: Readonly<Record<string, MemberTypeInformation>>;
   readonly methods: Readonly<Record<string, MemberTypeInformation>>;
 }
@@ -35,11 +35,6 @@ interface InterfaceTypingContextInstantiatedMembers {
 interface InterfaceTypingContextInstantiatedNodes
   extends InterfaceTypingContextInstantiatedMembers {
   readonly extendsOrImplements: SamlangIdentifierType | null;
-}
-
-export interface FullyInlinedInterfaceTypingContext
-  extends InterfaceTypingContextInstantiatedMembers {
-  readonly typeParameters: readonly string[];
 }
 
 export interface InterfaceTypingContext extends InterfaceTypingContextInstantiatedNodes {
@@ -86,23 +81,23 @@ export class AccessibleGlobalTypingContext {
     return this.globalTypingContext.get(moduleReference)?.interfaces[className];
   }
 
-  getFullyInlinedInterfaceContext(
-    moduleReference: ModuleReference,
-    className: string
-  ): {
-    context: FullyInlinedInterfaceTypingContext;
+  getFullyInlinedInterfaceContext(instantiatedInterfaceType: SamlangIdentifierType): {
+    context: InterfaceTypingContextInstantiatedMembers;
     missingInterface: SamlangIdentifierType | null;
-  } | null {
-    const interfaceTypingContext = this.getInterfaceInformation(moduleReference, className);
-    if (interfaceTypingContext == null) return null;
+  } {
+    const interfaceTypingContext = this.getInterfaceInformation(
+      instantiatedInterfaceType.moduleReference,
+      instantiatedInterfaceType.identifier
+    );
+    if (interfaceTypingContext == null) {
+      return {
+        context: { functions: {}, methods: {} },
+        missingInterface: instantiatedInterfaceType,
+      };
+    }
     const collector: InterfaceTypingContextInstantiatedMembers[] = [];
     const missingInterface = this.recursiveComputeInterfaceMembersChain(
-      SourceIdentifierType(
-        // Reason is unused for computation. The ID type is only for substitutio
-        DummySourceReason,
-        moduleReference,
-        className
-      ),
+      instantiatedInterfaceType,
       collector
     );
     const functions: Record<string, MemberTypeInformation> = {};
@@ -118,7 +113,7 @@ export class AccessibleGlobalTypingContext {
       });
     });
     return {
-      context: { typeParameters: interfaceTypingContext.typeParameters, functions, methods },
+      context: { functions, methods },
       missingInterface,
     };
   }
