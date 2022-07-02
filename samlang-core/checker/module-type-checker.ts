@@ -13,9 +13,11 @@ import {
 function typeCheckMemberDeclaration(
   memberDeclaration: SourceClassMemberDeclaration,
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-  ssaResult: SsaAnalysisResult
+  ssaResult: SsaAnalysisResult,
+  inClass: boolean
 ) {
-  const thisType = memberDeclaration.isMethod ? accessibleGlobalTypingContext.thisType : null;
+  const thisType =
+    inClass && memberDeclaration.isMethod ? accessibleGlobalTypingContext.thisType : null;
   const localTypingContext = new LocationBasedLocalTypingContext(ssaResult, thisType);
   const contextWithAdditionalTypeParameters =
     accessibleGlobalTypingContext.withAdditionalTypeParameters(
@@ -42,7 +44,12 @@ export default function typeCheckSamlangModule(
       interfaceDeclaration
     );
     interfaceDeclaration.members.forEach((member) =>
-      typeCheckMemberDeclaration(member, accessibleGlobalTypingContext, ssaResult)
+      typeCheckMemberDeclaration(
+        member,
+        accessibleGlobalTypingContext,
+        ssaResult,
+        /* inClass */ false
+      )
     );
   });
 
@@ -54,7 +61,12 @@ export default function typeCheckSamlangModule(
     );
     const checkedMembers = filterMap(classDefinition.members, (member) => {
       const { contextWithAdditionalTypeParameters, localTypingContext } =
-        typeCheckMemberDeclaration(member, accessibleGlobalTypingContext, ssaResult);
+        typeCheckMemberDeclaration(
+          member,
+          accessibleGlobalTypingContext,
+          ssaResult,
+          /* inClass */ true
+        );
       return {
         ...member,
         body: typeCheckExpression(
