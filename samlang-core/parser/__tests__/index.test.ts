@@ -132,7 +132,7 @@ describe('samlang-core/parser', () => {
 
     interface Bar<T> {}
 
-    interface Baz {
+    interface Baz : Bar<int> {
       function foo(): string
       method bar(baz: bool): int
     }
