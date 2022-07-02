@@ -278,12 +278,12 @@ describe('samlang-core/parser', () => {
 
     parseSamlangModuleFromText('This is not a program.', ModuleReference.DUMMY, errorReporter);
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([
-      '__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces.',
-      '__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces.',
-      '__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes and interfaces.',
-      '__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes and interfaces.',
-      '__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes and interfaces.',
-      '__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes and interfaces.',
+      '__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces: This',
+      '__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces: is',
+      '__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes and interfaces: not',
+      '__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes and interfaces: a',
+      '__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes and interfaces: program',
+      '__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes and interfaces: .',
     ]);
   });
 

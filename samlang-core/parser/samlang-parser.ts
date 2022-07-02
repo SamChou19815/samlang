@@ -272,7 +272,9 @@ export default class SamlangModuleParser extends BaseParser {
         if (potentialGarbagePeeked.content === 'EOF') break ParseClassesAndInterfaces;
         this.report(
           potentialGarbagePeeked.location,
-          'Unexpected token among the classes and interfaces.'
+          `Unexpected token among the classes and interfaces: ${samlangTokenContentToString(
+            potentialGarbagePeeked.content
+          )}`
         );
         this.consume();
         potentialGarbagePeeked = this.peek();
@@ -308,8 +310,21 @@ export default class SamlangModuleParser extends BaseParser {
     } else {
       typeParameters = [];
     }
+    let extendsOrImplementsNode: SamlangIdentifierType | undefined;
+    if (this.peek().content === ':') {
+      this.assertAndConsume(':');
+      extendsOrImplementsNode = this.parseIdentifierType(this.parseUpperId());
+      startLocation = startLocation.union(extendsOrImplementsNode.reason.useLocation);
+    }
     if (this.peek().content !== '{') {
-      return { associatedComments, location: startLocation, name, typeParameters, members: [] };
+      return {
+        associatedComments,
+        location: startLocation,
+        name,
+        typeParameters,
+        extendsOrImplementsNode,
+        members: [],
+      };
     }
     this.assertAndConsume('{');
     const members: SourceClassMemberDeclaration[] = [];
@@ -322,6 +337,7 @@ export default class SamlangModuleParser extends BaseParser {
       location: startLocation.union(endLocation),
       name,
       typeParameters,
+      extendsOrImplementsNode,
       members,
     };
   }
