@@ -63,7 +63,10 @@ class SsaBuilder extends LocalStackedContext<Location> {
       this.withNestedScope(() => {
         const extendsOrImplementsNode = interfaceDeclaration.extendsOrImplementsNode;
         if (extendsOrImplementsNode != null) {
-          this.visitType(extendsOrImplementsNode);
+          this.withNestedScope(() => {
+            this.defineAll(interfaceDeclaration.typeParameters);
+            this.visitType(extendsOrImplementsNode);
+          });
         }
         const typeDefinition = interfaceDeclaration.typeDefinition;
         if (typeDefinition != null) {
