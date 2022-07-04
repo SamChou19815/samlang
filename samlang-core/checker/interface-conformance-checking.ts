@@ -16,8 +16,6 @@ import {
 } from './typing-context';
 
 function checkClassMemberConformance(
-  expectedClassTypeParameters: readonly string[],
-  actualClassTypeParameters: readonly string[],
   expectedIsMethod: boolean,
   expected: MemberTypeInformation,
   actual: SourceClassMemberDeclaration,
@@ -34,10 +32,6 @@ function checkClassMemberConformance(
   }
   const expectedTypeParameters = [...expected.typeParameters];
   const actualTypeParameters = [...actual.typeParameters.map((it) => it.name)];
-  if (expectedIsMethod && actual.isMethod) {
-    expectedTypeParameters.push(...expectedClassTypeParameters);
-    actualTypeParameters.push(...actualClassTypeParameters);
-  }
   const expectedType = performTypeSubstitution(
     expected.type,
     Object.fromEntries(
@@ -67,7 +61,6 @@ function checkSingleInterfaceConformance(
   errorReporter: GlobalErrorReporter,
   reportMissingMembers: boolean
 ) {
-  const actualClassTypeParameters = actual.typeParameters.map((it) => it.name);
   const actualMembersMap = new Map(actual.members.map((member) => [member.name.name, member]));
   const missingMembers: string[] = [];
   Object.entries(expected.functions).forEach(([name, expectedMember]) => {
@@ -76,14 +69,7 @@ function checkSingleInterfaceConformance(
       missingMembers.push(name);
       return;
     }
-    checkClassMemberConformance(
-      actualClassTypeParameters, // TODO: ?
-      actualClassTypeParameters,
-      false,
-      expectedMember,
-      actualMember,
-      errorReporter
-    );
+    checkClassMemberConformance(false, expectedMember, actualMember, errorReporter);
   });
   Object.entries(expected.methods).forEach(([name, expectedMember]) => {
     const actualMember = actualMembersMap.get(name);
@@ -91,14 +77,7 @@ function checkSingleInterfaceConformance(
       missingMembers.push(name);
       return;
     }
-    checkClassMemberConformance(
-      actualClassTypeParameters,
-      actualClassTypeParameters,
-      true,
-      expectedMember,
-      actualMember,
-      errorReporter
-    );
+    checkClassMemberConformance(true, expectedMember, actualMember, errorReporter);
   });
   if (reportMissingMembers && missingMembers.length > 0) {
     errorReporter.reportMissingDefinitionsError(actual.location, missingMembers);
@@ -115,13 +94,8 @@ function checkModuleMemberInterfaceConformance(
   if (instantiatedInterfaceType == null) return;
   const { context, missingInterface } =
     typingContext.getFullyInlinedInterfaceContext(instantiatedInterfaceType);
-  if (missingInterface != null) {
-    errorReporter.reportUnresolvedNameError(
-      instantiatedInterfaceType.reason.useLocation,
-      instantiatedInterfaceType.identifier
-    );
-    return;
-  }
+  // No need to error, it will be caught by SSA analysis anyways.
+  if (missingInterface != null) return;
   checkSingleInterfaceConformance(context, actual, errorReporter, reportMissingMembers);
 }
 
