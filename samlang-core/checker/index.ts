@@ -12,6 +12,7 @@ import {
   DEFAULT_BUILTIN_TYPING_CONTEXT,
   updateGlobalTypingContext,
 } from './global-typing-context-builder';
+import checkSourcesInterfaceConformance from './interface-conformance-checking';
 import {
   collectModuleReferenceFromExpression,
   collectModuleReferenceFromType,
@@ -127,6 +128,7 @@ export function typeCheckSources(
   builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT
 ): readonly [Sources<SamlangModule>, GlobalTypingContext] {
   const globalTypingContext = buildGlobalTypingContext(sources, builtinModuleTypes);
+  checkSourcesInterfaceConformance(sources, globalTypingContext, errorCollector.getErrorReporter());
   const checkedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();
   sources.forEach((samlangModule, moduleReference) => {
     checkedSources.set(
@@ -167,6 +169,7 @@ export function typeCheckSourcesIncrementally(
   errorCollector: ReadonlyGlobalErrorCollector
 ): Sources<SamlangModule> {
   updateGlobalTypingContext(globalTypingContext, sources, affectedSourceList);
+  checkSourcesInterfaceConformance(sources, globalTypingContext, errorCollector.getErrorReporter());
   const updatedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();
   affectedSourceList.forEach((moduleReference) => {
     const samlangModule = sources.get(moduleReference);

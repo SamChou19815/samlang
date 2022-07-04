@@ -266,6 +266,76 @@ describe('samlang-core/checker', () => {
     ]);
   });
 
+  it('typeCheckSources interface conformance tests', () => {
+    const source = `
+interface Foo {}
+class A : Foo {} // OK
+interface Bar {
+  function a(): unit
+  method b(): string
+}
+class B : Bar {} // Error
+class C : Bar {
+  function a(): string = "" // error
+  method b(): unit = {} // error
+}
+class D : Bar {
+  function b(): string = "" // error
+  method a(): unit = {} // error
+}
+interface Base<TA, TB> {
+  method <TC> m1(a: TA, b: TB): TC
+}
+interface Baz1<TA, TB> : Base<int, TB> {
+  function <TA, TB, TC> f1(a: TA, b: TB): TC
+}
+interface Baz2<TA, TB> : Baz1<TA, int> {
+  method <TC> m2(a: TA, b: TB): TC
+}
+class E : Baz2<string, bool> { // all good
+  method <TC> m1(a: int, b: int): TC = Builtins.panic("")
+  function <TA, TB, TC> f1(a: TA, b: TB): TC = Builtins.panic("")
+  method <TC> m2(a: string, b: bool): TC = Builtins.panic("")
+}
+class F : Baz2<string, bool> {
+  method <TC> m1(a: string, b: string): TC = Builtins.panic("") // error
+  function <TA, TB, TC> f1(a: string, b: string): TC = Builtins.panic("") // error
+  method <TC> m2(a: string, b: string): TC = Builtins.panic("") // error
+}
+class G : Baz2<string, bool> { // same as E, but different tparams, OK
+  method <TD> m1(a: int, b: int): TD = Builtins.panic("")
+  function <TA1, TB1, TD> f1(a: TA1, b: TB1): TD = Builtins.panic("")
+  method <TD> m2(a: string, b: bool): TD = Builtins.panic("")
+}
+class Z : DumDum {}
+    `;
+
+    const moduleReference = ModuleReference(['A']);
+    const errorCollector = createGlobalErrorCollector();
+    const sources = ModuleReferenceCollections.mapOf([
+      moduleReference,
+      parseSamlangModuleFromText(source, moduleReference, errorCollector.getErrorReporter()),
+    ]);
+
+    typeCheckSources(sources, errorCollector);
+    expect(
+      errorCollector
+        .getErrors()
+        .map((e) => e.toString())
+        .sort()
+    ).toEqual([
+      'A.sam:10:3-10:28: [UnexpectedType]: Expected: `() -> unit`, actual: `() -> string`.',
+      'A.sam:11:3-11:24: [UnexpectedType]: Expected: `() -> string`, actual: `() -> unit`.',
+      'A.sam:14:3-14:28: [UnexpectedTypeKind]: Expected kind: `method`, actual: `function`.',
+      'A.sam:15:3-15:24: [UnexpectedTypeKind]: Expected kind: `function`, actual: `method`.',
+      'A.sam:32:3-32:64: [UnexpectedType]: Expected: `(int, int) -> _T0`, actual: `(string, string) -> _T0`.',
+      'A.sam:33:3-33:74: [UnexpectedType]: Expected: `(_T0, _T1) -> _T2`, actual: `(string, string) -> _T2`.',
+      'A.sam:34:3-34:64: [UnexpectedType]: Expected: `(string, bool) -> _T0`, actual: `(string, string) -> _T0`.',
+      'A.sam:41:11-41:17: [UnresolvedName]: Name `DumDum` is not resolved.',
+      'A.sam:8:1-8:17: [MissingDefinitions]: Missing definitions for [a, b].',
+    ]);
+  });
+
   it('typeCheckSources identifier resolution test.', () => {
     // Test https://github.com/SamChou19815/samlang/issues/167 is resolved.
     const sourceA = `
