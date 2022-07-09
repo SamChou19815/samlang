@@ -110,6 +110,26 @@ describe('typing-context', () => {
                 },
               },
             },
+            ICyclic1: {
+              typeParameters: [],
+              extendsOrImplements: SourceIdentifierType(
+                DummySourceReason,
+                ModuleReference.DUMMY,
+                'ICyclic2'
+              ),
+              functions: {},
+              methods: {},
+            },
+            ICyclic2: {
+              typeParameters: [],
+              extendsOrImplements: SourceIdentifierType(
+                DummySourceReason,
+                ModuleReference.DUMMY,
+                'ICyclic1'
+              ),
+              functions: {},
+              methods: {},
+            },
           },
           classes: {
             A: {
@@ -268,6 +288,17 @@ describe('typing-context', () => {
         },
       },
     });
+
+    expect(() =>
+      context.getFullyInlinedInterfaceContext(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1')
+      )
+    ).toThrow();
+    expect(() =>
+      context.getFullyInlinedInterfaceContext(
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2')
+      )
+    ).toThrow();
 
     expect(
       context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1', Location.DUMMY)

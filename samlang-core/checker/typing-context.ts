@@ -3,6 +3,7 @@ import {
   Location,
   LocationCollections,
   ModuleReference,
+  ModuleReferenceCollections,
   moduleReferenceToString,
   SourceReason,
 } from '../ast/common-nodes';
@@ -98,7 +99,8 @@ export class AccessibleGlobalTypingContext {
     const collector: InterfaceTypingContextInstantiatedMembers[] = [];
     const missingInterface = this.recursiveComputeInterfaceMembersChain(
       instantiatedInterfaceType,
-      collector
+      collector,
+      ModuleReferenceCollections.hashMapOf()
     );
     const functions: Record<string, MemberTypeInformation> = {};
     const methods: Record<string, MemberTypeInformation> = {};
@@ -120,8 +122,14 @@ export class AccessibleGlobalTypingContext {
 
   private recursiveComputeInterfaceMembersChain(
     interfaceType: SamlangIdentifierType,
-    collector: InterfaceTypingContextInstantiatedMembers[]
+    collector: InterfaceTypingContextInstantiatedMembers[],
+    visited: HashMap<ModuleReference, Set<string>>
   ): SamlangIdentifierType | null {
+    const visitedTypesInModule = visited.get(interfaceType.moduleReference) ?? new Set();
+    if (visitedTypesInModule.has(interfaceType.identifier)) {
+      throw interfaceType;
+    }
+    visited.set(interfaceType.moduleReference, visitedTypesInModule.add(interfaceType.identifier));
     const interfaceContext = this.getInterfaceInformation(
       interfaceType.moduleReference,
       interfaceType.identifier
@@ -131,8 +139,11 @@ export class AccessibleGlobalTypingContext {
       AccessibleGlobalTypingContext.getInstantiatedInterface(interfaceContext, interfaceType);
     let missingInterface: SamlangIdentifierType | null = null;
     if (extendsOrImplements != null) {
-      // TODO: handle cyclic structure
-      missingInterface = this.recursiveComputeInterfaceMembersChain(extendsOrImplements, collector);
+      missingInterface = this.recursiveComputeInterfaceMembersChain(
+        extendsOrImplements,
+        collector,
+        visited
+      );
     }
     collector.push({ functions, methods });
     return missingInterface;
