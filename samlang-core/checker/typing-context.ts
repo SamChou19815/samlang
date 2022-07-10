@@ -84,20 +84,17 @@ export class AccessibleGlobalTypingContext {
 
   getFullyInlinedInterfaceContext(instantiatedInterfaceType: SamlangIdentifierType): {
     context: InterfaceTypingContextInstantiatedMembers;
-    missingInterface: SamlangIdentifierType | null;
+    cyclicType: SamlangIdentifierType | null;
   } {
     const interfaceTypingContext = this.getInterfaceInformation(
       instantiatedInterfaceType.moduleReference,
       instantiatedInterfaceType.identifier
     );
     if (interfaceTypingContext == null) {
-      return {
-        context: { functions: {}, methods: {} },
-        missingInterface: instantiatedInterfaceType,
-      };
+      return { context: { functions: {}, methods: {} }, cyclicType: null };
     }
     const collector: InterfaceTypingContextInstantiatedMembers[] = [];
-    const missingInterface = this.recursiveComputeInterfaceMembersChain(
+    const cyclicType = this.recursiveComputeInterfaceMembersChain(
       instantiatedInterfaceType,
       collector,
       ModuleReferenceCollections.hashMapOf()
@@ -114,10 +111,7 @@ export class AccessibleGlobalTypingContext {
         methods[name] = type;
       });
     });
-    return {
-      context: { functions, methods },
-      missingInterface,
-    };
+    return { context: { functions, methods }, cyclicType };
   }
 
   private recursiveComputeInterfaceMembersChain(
@@ -127,26 +121,26 @@ export class AccessibleGlobalTypingContext {
   ): SamlangIdentifierType | null {
     const visitedTypesInModule = visited.get(interfaceType.moduleReference) ?? new Set();
     if (visitedTypesInModule.has(interfaceType.identifier)) {
-      throw interfaceType;
+      return interfaceType;
     }
     visited.set(interfaceType.moduleReference, visitedTypesInModule.add(interfaceType.identifier));
     const interfaceContext = this.getInterfaceInformation(
       interfaceType.moduleReference,
       interfaceType.identifier
     );
-    if (interfaceContext == null) return interfaceType;
+    if (interfaceContext == null) return null;
     const { functions, methods, extendsOrImplements } =
       AccessibleGlobalTypingContext.getInstantiatedInterface(interfaceContext, interfaceType);
-    let missingInterface: SamlangIdentifierType | null = null;
+    let cyclicType: SamlangIdentifierType | null = null;
     if (extendsOrImplements != null) {
-      missingInterface = this.recursiveComputeInterfaceMembersChain(
+      cyclicType = this.recursiveComputeInterfaceMembersChain(
         extendsOrImplements,
         collector,
         visited
       );
     }
     collector.push({ functions, methods });
-    return missingInterface;
+    return cyclicType;
   }
 
   private static getInstantiatedInterface(
