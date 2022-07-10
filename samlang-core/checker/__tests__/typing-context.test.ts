@@ -228,13 +228,19 @@ describe('typing-context', () => {
     expect(
       context.getFullyInlinedInterfaceContext(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist')
-      )?.missingInterface
-    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist'));
+      )?.context
+    ).toEqual({
+      functions: {},
+      methods: {},
+    });
     expect(
       context.getFullyInlinedInterfaceContext(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'IUseNonExistent')
-      )?.missingInterface
-    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'not_exist'));
+      )?.context
+    ).toEqual({
+      functions: {},
+      methods: {},
+    });
     expect(
       context.getFullyInlinedInterfaceContext(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I')
@@ -289,16 +295,16 @@ describe('typing-context', () => {
       },
     });
 
-    expect(() =>
+    expect(
       context.getFullyInlinedInterfaceContext(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1')
-      )
-    ).toThrow();
-    expect(() =>
+      ).cyclicType
+    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1'));
+    expect(
       context.getFullyInlinedInterfaceContext(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2')
-      )
-    ).toThrow();
+      ).cyclicType
+    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2'));
 
     expect(
       context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1', Location.DUMMY)

@@ -92,10 +92,8 @@ function checkModuleMemberInterfaceConformance(
 ): void {
   const instantiatedInterfaceType = actual.extendsOrImplementsNode;
   if (instantiatedInterfaceType == null) return;
-  const { context, missingInterface } =
+  const { context, cyclicType: _ } =
     typingContext.getFullyInlinedInterfaceContext(instantiatedInterfaceType);
-  // No need to error, it will be caught by SSA analysis anyways.
-  if (missingInterface != null) return;
   checkSingleInterfaceConformance(context, actual, errorReporter, reportMissingMembers);
 }
 
