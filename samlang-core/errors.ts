@@ -127,6 +127,16 @@ export class NonExhausiveMatchError extends CompileTimeError {
   }
 }
 
+export class CyclicTypeDefinitionError extends CompileTimeError {
+  constructor(type: SamlangType) {
+    super(
+      'CyclicTypeDefinition',
+      type.reason.useLocation,
+      `Type \`${prettyPrintType(type)}\` has a cyclic definition.`
+    );
+  }
+}
+
 export interface ReadonlyGlobalErrorCollector {
   get hasErrors(): boolean;
 
@@ -206,6 +216,10 @@ export class GlobalErrorReporter {
 
   reportNonExhausiveMatchError(location: Location, missingTags: readonly string[]): void {
     this.collectorDelegate.reportError(new NonExhausiveMatchError(location, missingTags));
+  }
+
+  reportCyclicTypeDefinitionError(type: SamlangType): void {
+    this.collectorDelegate.reportError(new CyclicTypeDefinitionError(type));
   }
 }
 

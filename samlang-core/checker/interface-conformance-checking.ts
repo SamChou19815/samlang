@@ -92,8 +92,9 @@ function checkModuleMemberInterfaceConformance(
 ): void {
   const instantiatedInterfaceType = actual.extendsOrImplementsNode;
   if (instantiatedInterfaceType == null) return;
-  const { context, cyclicType: _ } =
+  const { context, cyclicType } =
     typingContext.getFullyInlinedInterfaceContext(instantiatedInterfaceType);
+  if (cyclicType != null) errorReporter.reportCyclicTypeDefinitionError(cyclicType);
   checkSingleInterfaceConformance(context, actual, errorReporter, reportMissingMembers);
 }
 
