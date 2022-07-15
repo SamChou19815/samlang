@@ -28,6 +28,7 @@ describe('samlang-core/errors', () => {
     reporter.reportIllegalThisError(Location.DUMMY);
     reporter.reportNonExhausiveMatchError(Location.DUMMY, ['A', 'B']);
     reporter.reportMissingDefinitionsError(Location.DUMMY, ['foo', 'bar']);
+    reporter.reportCyclicTypeDefinitionError(SourceIntType(DummySourceReason));
 
     const errors = collector
       .getErrors()
@@ -46,6 +47,7 @@ describe('samlang-core/errors', () => {
       '[IllegalThis]: Keyword `this` cannot be used in this context.',
       '[NonExhausiveMatch]: The following tags are not considered in the match: [A, B].',
       '[MissingDefinitions]: Missing definitions for [foo, bar].',
+      '[CyclicTypeDefinition]: Type `int` has a cyclic definition.',
     ]);
   });
 });
