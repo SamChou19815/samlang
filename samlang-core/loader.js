@@ -1,6 +1,6 @@
 module.exports = function samlangGeneratedWebAssemblyLoader(
   /** @type {ArrayBufferView | ArrayBuffer} */ bytes,
-  builtinsPatch = () => ({})
+  builtinsPatch = () => ({}),
 ) {
   const memory = new WebAssembly.Memory({ initial: 2, maximum: 65536 });
   const codeModule = new WebAssembly.Module(bytes);

@@ -46,7 +46,7 @@ class WasmFunctionLoweringManager {
 
   private constructor(
     private readonly globalVariablesToPointerMapping: Readonly<Record<string, number>>,
-    private readonly functionIndexMapping: Readonly<Record<string, number>>
+    private readonly functionIndexMapping: Readonly<Record<string, number>>,
   ) {}
 
   private GET(n: string): WebAssemblyInlineInstruction {
@@ -62,11 +62,11 @@ class WasmFunctionLoweringManager {
   static lowerMidIRFunction(
     globalVariablesToPointerMapping: Readonly<Record<string, number>>,
     functionIndexMapping: Readonly<Record<string, number>>,
-    midIRFunction: MidIRFunction
+    midIRFunction: MidIRFunction,
   ): WebAssemblyFunction {
     const instance = new WasmFunctionLoweringManager(
       globalVariablesToPointerMapping,
-      functionIndexMapping
+      functionIndexMapping,
     );
     const instructions = midIRFunction.body.flatMap((it) => instance.lowerMidIRStatement(it));
     instructions.push(instance.lowerMidIRExpression(midIRFunction.returnValue));
@@ -90,14 +90,18 @@ class WasmFunctionLoweringManager {
           WasmStore(
             this.lowerMidIRExpression(s.pointerExpression),
             s.index,
-            this.lowerMidIRExpression(s.assignedExpression)
+            this.lowerMidIRExpression(s.assignedExpression),
           ),
         ];
       case 'MidIRBinaryStatement':
         return [
           this.SET(
             s.name,
-            WasmBinary(this.lowerMidIRExpression(s.e1), s.operator, this.lowerMidIRExpression(s.e2))
+            WasmBinary(
+              this.lowerMidIRExpression(s.e1),
+              s.operator,
+              this.lowerMidIRExpression(s.e2),
+            ),
           ),
         ];
       case 'MidIRFunctionCallStatement': {
@@ -108,7 +112,7 @@ class WasmFunctionLoweringManager {
             : WasmIndirectCall(
                 this.lowerMidIRExpression(s.functionExpression),
                 WasmFunctionTypeString(s.functionArguments.length),
-                argumentInstructions
+                argumentInstructions,
               );
         return [
           s.returnCollector == null
@@ -121,13 +125,13 @@ class WasmFunctionLoweringManager {
         const s1 = [
           ...s.s1.flatMap((it) => this.lowerMidIRStatement(it)),
           ...s.finalAssignments.map((it) =>
-            this.SET(it.name, this.lowerMidIRExpression(it.branch1Value))
+            this.SET(it.name, this.lowerMidIRExpression(it.branch1Value)),
           ),
         ];
         const s2 = [
           ...s.s2.flatMap((it) => this.lowerMidIRStatement(it)),
           ...s.finalAssignments.map((it) =>
-            this.SET(it.name, this.lowerMidIRExpression(it.branch2Value))
+            this.SET(it.name, this.lowerMidIRExpression(it.branch2Value)),
           ),
         ];
         if (s1.length === 0) {
@@ -145,7 +149,7 @@ class WasmFunctionLoweringManager {
           WasmIfElse(
             condition,
             s.statements.flatMap((it) => this.lowerMidIRStatement(it)),
-            []
+            [],
           ),
         ];
       }
@@ -172,7 +176,7 @@ class WasmFunctionLoweringManager {
             instructions: [
               ...s.statements.flatMap((it) => this.lowerMidIRStatement(it)),
               ...s.loopVariables.map((it) =>
-                this.SET(it.name, this.lowerMidIRExpression(it.loopValue))
+                this.SET(it.name, this.lowerMidIRExpression(it.loopValue)),
               ),
               WasmJump(continueLabel),
             ],
@@ -187,12 +191,12 @@ class WasmFunctionLoweringManager {
         const instructions: WebAssemblyInstruction[] = [
           this.SET(
             s.structVariableName,
-            WasmDirectCall(ENCODED_FUNCTION_NAME_MALLOC, [WasmConst(s.expressionList.length * 4)])
+            WasmDirectCall(ENCODED_FUNCTION_NAME_MALLOC, [WasmConst(s.expressionList.length * 4)]),
           ),
         ];
         s.expressionList.forEach((e, i) => {
           instructions.push(
-            WasmStore(this.GET(s.structVariableName), i, this.lowerMidIRExpression(e))
+            WasmStore(this.GET(s.structVariableName), i, this.lowerMidIRExpression(e)),
           );
         });
         return instructions;
@@ -209,8 +213,8 @@ class WasmFunctionLoweringManager {
           checkNotNull(
             (e.type.__type__ === 'FunctionType'
               ? this.functionIndexMapping
-              : this.globalVariablesToPointerMapping)[e.name]
-          )
+              : this.globalVariablesToPointerMapping)[e.name],
+          ),
         );
       case 'MidIRVariableExpression':
         return this.GET(e.name);
@@ -219,7 +223,7 @@ class WasmFunctionLoweringManager {
 }
 
 export default function lowerMidIRSourcesToWasmModule(
-  midIRSources: MidIRSources
+  midIRSources: MidIRSources,
 ): WebAssemblyModule {
   let dataStart = 4096;
   const globalVariablesToPointerMapping: Record<string, number> = {};
@@ -232,12 +236,12 @@ export default function lowerMidIRSourcesToWasmModule(
     return globalVariable;
   });
   const functionIndexMapping = Object.fromEntries(
-    midIRSources.functions.map(({ name }, index) => [name, index])
+    midIRSources.functions.map(({ name }, index) => [name, index]),
   );
 
   return {
     functionTypeParameterCounts: Array.from(
-      new Set(midIRSources.functions.map((it) => it.parameters.length))
+      new Set(midIRSources.functions.map((it) => it.parameters.length)),
     ),
     globalVariables,
     exportedFunctions: midIRSources.mainFunctionNames,
@@ -245,8 +249,8 @@ export default function lowerMidIRSourcesToWasmModule(
       WasmFunctionLoweringManager.lowerMidIRFunction(
         globalVariablesToPointerMapping,
         functionIndexMapping,
-        it
-      )
+        it,
+      ),
     ),
   };
 }

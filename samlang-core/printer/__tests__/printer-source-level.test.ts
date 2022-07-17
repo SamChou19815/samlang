@@ -17,8 +17,8 @@ function reprintExpression(rawSourceWithTypeAnnotation: string, width = 40): str
     parseSamlangExpressionFromText(
       rawSourceWithTypeAnnotation,
       ModuleReference.DUMMY,
-      errorCollector.getErrorReporter()
-    )
+      errorCollector.getErrorReporter(),
+    ),
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
@@ -30,7 +30,7 @@ function reprintModule(rawSourceWithTypeAnnotation: string, width = 40): string 
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
     ModuleReference.DUMMY,
-    errorCollector.getErrorReporter()
+    errorCollector.getErrorReporter(),
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
@@ -46,7 +46,7 @@ describe('printer-source-level', () => {
  * long long long long long long long
  * long long long
  */
-1`
+1`,
     );
     expect(reprintExpression('hi')).toBe('hi');
     expect(reprintExpression('this')).toBe('this');
@@ -56,31 +56,31 @@ describe('printer-source-level', () => {
       `/* a */
 ClassName
 /* b */ /* c */
-.classMember<A, B>`
+.classMember<A, B>`,
     );
     expect(reprintExpression('ClassName/* a */.classMember')).toBe(
-      'ClassName /* a */ .classMember'
+      'ClassName /* a */ .classMember',
     );
     expect(reprintExpression('ClassName. /* b */classMember')).toBe(
-      'ClassName /* b */ .classMember'
+      'ClassName /* b */ .classMember',
     );
     expect(reprintExpression('ClassName/* a */. /* b */classMember')).toBe(
-      'ClassName /* a */ /* b */ .classMember'
+      'ClassName /* a */ /* b */ .classMember',
     );
 
     expect(reprintExpression('Test.VariantName(42)')).toBe('Test.VariantName(42)');
     expect(reprintExpression('Test.VariantName<T>(42)')).toBe('Test.VariantName<T>(42)');
     expect(reprintExpression('/* a */ Test./* b */ VariantName/* c */ <T>(42)')).toBe(
       `/* a */
-Test /* b */ /* c */ .VariantName<T>(42)`
+Test /* b */ /* c */ .VariantName<T>(42)`,
     );
     expect(reprintExpression('/* a */Obj.VariantName(/* b */42)')).toBe(
-      '/* a */ Obj.VariantName(/* b */ 42)'
+      '/* a */ Obj.VariantName(/* b */ 42)',
     );
     expect(reprintExpression('V.VariantName(aVariableNameThatIsVeryVeryVeryLong)')).toBe(
       `V.VariantName(
   aVariableNameThatIsVeryVeryVeryLong
-)`
+)`,
     );
 
     expect(reprintExpression('foo.bar')).toBe('foo.bar');
@@ -95,8 +95,8 @@ Test /* b */ /* c */ .VariantName<T>(42)`
             name: 'foo',
           }),
           methodName: SourceId('bar'),
-        })
-      ).trimEnd()
+        }),
+      ).trimEnd(),
     ).toBe('foo.bar');
 
     expect(reprintExpression('-42')).toBe('-42');
@@ -121,12 +121,12 @@ Test /* b */ /* c */ .VariantName<T>(42)`
   v8,
   v9,
   v10
-)`
+)`,
     );
 
     expect(reprintExpression('1 + 1')).toBe('1 + 1');
     expect(reprintExpression('/* a */ 1 /* plus */ + /* b */ 1')).toBe(
-      '/* a */ 1 /* plus */ + /* b */ 1'
+      '/* a */ 1 /* plus */ + /* b */ 1',
     );
     expect(reprintExpression('1 + 1 * 1')).toBe('1 + 1 * 1');
     expect(reprintExpression('(1 + 1) * 1')).toBe('(1 + 1) * 1');
@@ -161,8 +161,8 @@ Test /* b */ /* c */ .VariantName<T>(42)`
         val _ = println("");
         val _ = println("");
         val _ = println("");
-      }`
-      )
+      }`,
+      ),
     ).toBe(`if (b) then {
   // fff
   val _ = println("");
@@ -200,7 +200,7 @@ Test /* b */ /* c */ .VariantName<T>(42)`
       `{
   val _: int = 0;
   val _ = 0;
-}`
+}`,
     );
     expect(reprintExpression('{ val a:int=1; 3 }')).toBe(`{
   val a: int = 1;
@@ -212,8 +212,8 @@ Test /* b */ /* c */ .VariantName<T>(42)`
 
     expect(
       reprintExpression(
-        '{ val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }'
-      )
+        '{ val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }',
+      ),
     ).toBe(`{
   val a: unit = {
     val b: unit = {
@@ -225,8 +225,8 @@ Test /* b */ /* c */ .VariantName<T>(42)`
 }`);
     expect(
       reprintExpression(
-        '() -> () -> () -> { val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }'
-      )
+        '() -> () -> () -> { val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }',
+      ),
     ).toBe(`() -> () -> () -> {
   val a: unit = {
     val b: unit = {
@@ -247,7 +247,7 @@ interface Foo {}
 class Empty
 interface Bar<A> { function baz(): int }
 class Main { function main(): unit = {} }
-    `)
+    `),
     ).toBe(`
 interface Foo
 
@@ -298,7 +298,7 @@ class A(val a: int) {}
  * long document string
  */
 class Main {}
-`)
+`),
     ).toBe(`
 import { Foo } from Bar.Baz
 import {

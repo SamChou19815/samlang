@@ -78,7 +78,7 @@ export const SourceIdentifierType = (
   reason: SamlangReason,
   moduleReference: ModuleReference,
   identifier: string,
-  typeArguments: readonly SamlangType[] = []
+  typeArguments: readonly SamlangType[] = [],
 ): SamlangIdentifierType => ({
   __type__: 'IdentifierType',
   reason,
@@ -90,7 +90,7 @@ export const SourceIdentifierType = (
 export const SourceFunctionType = (
   reason: SamlangReason,
   argumentTypes: readonly SamlangType[],
-  returnType: SamlangType
+  returnType: SamlangType,
 ): SamlangFunctionType => ({
   __type__: 'FunctionType',
   reason,
@@ -111,7 +111,7 @@ export function prettyPrintType(type: SamlangType): string {
       return `${type.identifier}<${type.typeArguments.map(prettyPrintType).join(', ')}>`;
     case 'FunctionType':
       return `(${type.argumentTypes.map(prettyPrintType).join(', ')}) -> ${prettyPrintType(
-        type.returnType
+        type.returnType,
       )}`;
   }
 }
@@ -130,7 +130,7 @@ export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
         t1.identifier === t2.identifier &&
         t1.typeArguments.length === t2.typeArguments.length &&
         zip(t1.typeArguments, t2.typeArguments).every(([t1Element, t2Element]) =>
-          isTheSameType(t1Element, t2Element)
+          isTheSameType(t1Element, t2Element),
         )
       );
     case 'FunctionType':
@@ -139,7 +139,7 @@ export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
         isTheSameType(t1.returnType, t2.returnType) &&
         t1.argumentTypes.length === t2.argumentTypes.length &&
         zip(t1.argumentTypes, t2.argumentTypes).every(([t1Element, t2Element]) =>
-          isTheSameType(t1Element, t2Element)
+          isTheSameType(t1Element, t2Element),
         )
       );
   }
@@ -160,7 +160,7 @@ export const SourceId = (
   {
     location = Location.DUMMY,
     associatedComments = [],
-  }: { readonly location?: Location; readonly associatedComments?: readonly TypedComment[] } = {}
+  }: { readonly location?: Location; readonly associatedComments?: readonly TypedComment[] } = {},
 ): SourceIdentifier => ({ location, associatedComments, name });
 
 interface BaseExpression extends Node {
@@ -324,7 +324,7 @@ export type SamlangExpression =
 
 export const SourceExpressionTrue = (
   location: Location = Location.DUMMY,
-  associatedComments: readonly TypedComment[] = []
+  associatedComments: readonly TypedComment[] = [],
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   location,
@@ -336,7 +336,7 @@ export const SourceExpressionTrue = (
 
 export const SourceExpressionFalse = (
   location: Location = Location.DUMMY,
-  associatedComments: readonly TypedComment[] = []
+  associatedComments: readonly TypedComment[] = [],
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   location,
@@ -349,7 +349,7 @@ export const SourceExpressionFalse = (
 export const SourceExpressionInt = (
   value: number,
   location: Location = Location.DUMMY,
-  associatedComments: readonly TypedComment[] = []
+  associatedComments: readonly TypedComment[] = [],
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   location,
@@ -362,7 +362,7 @@ export const SourceExpressionInt = (
 export const SourceExpressionString = (
   value: string,
   location: Location = Location.DUMMY,
-  associatedComments: readonly TypedComment[] = []
+  associatedComments: readonly TypedComment[] = [],
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   location,
@@ -572,7 +572,7 @@ export const SourceExpressionStatementBlock = ({
 
 export const sourceExpressionWithNewType = <E extends SamlangExpression>(
   expression: E,
-  type: E['type']
+  type: E['type'],
 ): E => ({ ...expression, type });
 
 export interface SourceAnnotatedVariable {

@@ -41,7 +41,7 @@ export class ModuleScopedVariableDefinitionLookup {
 
   private collectDefinitionAndUseWithDefinitionManager(
     expression: SamlangExpression,
-    manager: ScopedDefinitionManager
+    manager: ScopedDefinitionManager,
   ): void {
     switch (expression.__type__) {
       case 'LiteralExpression':
@@ -59,7 +59,7 @@ export class ModuleScopedVariableDefinitionLookup {
       case 'FunctionCallExpression':
         this.collectDefinitionAndUseWithDefinitionManager(expression.functionExpression, manager);
         expression.functionArguments.forEach((it) =>
-          this.collectDefinitionAndUseWithDefinitionManager(it, manager)
+          this.collectDefinitionAndUseWithDefinitionManager(it, manager),
         );
         return;
       case 'BinaryExpression':
@@ -86,7 +86,7 @@ export class ModuleScopedVariableDefinitionLookup {
       case 'LambdaExpression':
         manager.withNestedScope(() => {
           expression.parameters.forEach(({ name: { name, location } }) =>
-            this.defineVariable(name, location, manager)
+            this.defineVariable(name, location, manager),
           );
           this.collectDefinitionAndUseWithDefinitionManager(expression.body, manager);
         });
@@ -147,7 +147,7 @@ export class VariableDefinitionLookup implements ReadonlyVariableDefinitionLooku
     sources.forEach((samlangModule, moduleReference) => {
       this.moduleTable.set(
         moduleReference,
-        new ModuleScopedVariableDefinitionLookup(samlangModule)
+        new ModuleScopedVariableDefinitionLookup(samlangModule),
       );
     });
   }
@@ -161,7 +161,7 @@ export class VariableDefinitionLookup implements ReadonlyVariableDefinitionLooku
 
 function getRelevantInRanges(
   location: Location,
-  { definitionLocation, useLocations }: DefinitionAndUses
+  { definitionLocation, useLocations }: DefinitionAndUses,
 ) {
   const locations: Location[] = [];
   if (location.contains(definitionLocation)) locations.push(definitionLocation);
@@ -172,7 +172,7 @@ function getRelevantInRanges(
 function applyExpressionRenamingWithDefinitionAndUse(
   expression: SamlangExpression,
   definitionAndUses: DefinitionAndUses,
-  newName: string
+  newName: string,
 ): SamlangExpression {
   const relevantInRange = getRelevantInRanges(expression.location, definitionAndUses);
   if (relevantInRange.length === 0) return expression;
@@ -190,7 +190,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
         expression: applyExpressionRenamingWithDefinitionAndUse(
           expression.expression,
           definitionAndUses,
-          newName
+          newName,
         ),
       };
     case 'FunctionCallExpression':
@@ -199,10 +199,10 @@ function applyExpressionRenamingWithDefinitionAndUse(
         functionExpression: applyExpressionRenamingWithDefinitionAndUse(
           expression.functionExpression,
           definitionAndUses,
-          newName
+          newName,
         ),
         functionArguments: expression.functionArguments.map((it) =>
-          applyExpressionRenamingWithDefinitionAndUse(it, definitionAndUses, newName)
+          applyExpressionRenamingWithDefinitionAndUse(it, definitionAndUses, newName),
         ),
       };
     case 'BinaryExpression':
@@ -217,7 +217,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
         boolExpression: applyExpressionRenamingWithDefinitionAndUse(
           expression.boolExpression,
           definitionAndUses,
-          newName
+          newName,
         ),
         e1: applyExpressionRenamingWithDefinitionAndUse(expression.e1, definitionAndUses, newName),
         e2: applyExpressionRenamingWithDefinitionAndUse(expression.e2, definitionAndUses, newName),
@@ -228,13 +228,13 @@ function applyExpressionRenamingWithDefinitionAndUse(
         matchedExpression: applyExpressionRenamingWithDefinitionAndUse(
           expression.matchedExpression,
           definitionAndUses,
-          newName
+          newName,
         ),
         matchingList: expression.matchingList.map((matchingItem) => {
           const rewrittenExpression = applyExpressionRenamingWithDefinitionAndUse(
             matchingItem.expression,
             definitionAndUses,
-            newName
+            newName,
           );
           if (matchingItem.dataVariable == null) {
             return {
@@ -271,7 +271,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
         body: applyExpressionRenamingWithDefinitionAndUse(
           expression.body,
           definitionAndUses,
-          newName
+          newName,
         ),
       };
     case 'StatementBlockExpression':
@@ -283,7 +283,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
             const assignedExpression = applyExpressionRenamingWithDefinitionAndUse(
               statement.assignedExpression,
               definitionAndUses,
-              newName
+              newName,
             );
             let pattern: Pattern;
             switch (statement.pattern.type) {
@@ -320,7 +320,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
                         }
                       }
                       return { fieldName, fieldOrder, type, alias, location };
-                    }
+                    },
                   ),
                 };
                 break;
@@ -347,7 +347,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
               : applyExpressionRenamingWithDefinitionAndUse(
                   expression.block.expression,
                   definitionAndUses,
-                  newName
+                  newName,
                 ),
         },
       };
@@ -357,7 +357,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
 export const applyRenamingWithDefinitionAndUse = (
   samlangModule: SamlangModule,
   definitionAndUses: DefinitionAndUses,
-  newName: string
+  newName: string,
 ): SamlangModule => ({
   imports: samlangModule.imports,
   classes: samlangModule.classes.map((classDefinition) => ({
@@ -367,7 +367,7 @@ export const applyRenamingWithDefinitionAndUse = (
       parameters: member.parameters.map((variable) =>
         variable.nameLocation.toString() === definitionAndUses.definitionLocation.toString()
           ? { ...variable, name: newName }
-          : variable
+          : variable,
       ),
       body: applyExpressionRenamingWithDefinitionAndUse(member.body, definitionAndUses, newName),
     })),

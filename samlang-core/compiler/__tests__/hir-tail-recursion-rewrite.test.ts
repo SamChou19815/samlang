@@ -20,8 +20,8 @@ const assertOptimizationFails = (highIRFunction: HighIRFunction): void =>
 const assertOptimizationSucceed = (highIRFunction: HighIRFunction, expected: string): void =>
   expect(
     debugPrintHighIRFunction(
-      checkNotNull(optimizeHighIRFunctionByTailRecursionRewrite(highIRFunction))
-    )
+      checkNotNull(optimizeHighIRFunctionByTailRecursionRewrite(highIRFunction)),
+    ),
   ).toBe(expected);
 
 describe('hir-tail-recursion-optimization', () => {
@@ -178,7 +178,7 @@ describe('hir-tail-recursion-optimization', () => {
   }
   return (r: int);
 }
-`
+`,
     );
   });
 
@@ -212,7 +212,7 @@ describe('hir-tail-recursion-optimization', () => {
   }
   return 0;
 }
-`
+`,
     );
   });
 
@@ -277,7 +277,7 @@ describe('hir-tail-recursion-optimization', () => {
   }
   return (r: int);
 }
-`
+`,
     );
   });
 
@@ -332,7 +332,7 @@ describe('hir-tail-recursion-optimization', () => {
   }
   return (r: int);
 }
-`
+`,
     );
   });
 
@@ -377,7 +377,7 @@ describe('hir-tail-recursion-optimization', () => {
   }
   return 0;
 }
-`
+`,
     );
   });
 
@@ -450,7 +450,7 @@ describe('hir-tail-recursion-optimization', () => {
   }
   return (v: int);
 }
-`
+`,
     );
   });
 });

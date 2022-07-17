@@ -31,7 +31,7 @@ describe('samlang-cli/configuration', () => {
           "outputDirectory": "output",
           "entryPoints": ["a", "b"]
         }
-        `)
+        `),
       ).toEqual({
         sourceDirectory: 'source',
         outputDirectory: 'output',
@@ -65,7 +65,7 @@ describe('samlang-cli/configuration', () => {
           fileReader() {
             return null;
           },
-        })
+        }),
       ).toBe('NO_CONFIGURATION');
     });
 
@@ -79,7 +79,7 @@ describe('samlang-cli/configuration', () => {
           fileReader() {
             return null;
           },
-        })
+        }),
       ).toBe('UNREADABLE_CONFIGURATION_FILE');
     });
 
@@ -93,7 +93,7 @@ describe('samlang-cli/configuration', () => {
           fileReader() {
             return 'bad file haha';
           },
-        })
+        }),
       ).toBe('UNPARSABLE_CONFIGURATION_FILE');
     });
 
@@ -107,7 +107,7 @@ describe('samlang-cli/configuration', () => {
           fileReader() {
             return '{}';
           },
-        })
+        }),
       ).toBeTruthy();
     });
 
@@ -116,7 +116,7 @@ describe('samlang-cli/configuration', () => {
         loadSamlangProjectConfiguration({
           ...fileSystemLoader_EXPOSED_FOR_TESTING,
           startPath: resolve('./samlang-cli/fixtures/bad-configuration-file'),
-        })
+        }),
       ).toBe('UNREADABLE_CONFIGURATION_FILE');
     });
 
@@ -125,7 +125,7 @@ describe('samlang-cli/configuration', () => {
         loadSamlangProjectConfiguration({
           ...fileSystemLoader_EXPOSED_FOR_TESTING,
           startPath: '/',
-        })
+        }),
       ).toBe('NO_CONFIGURATION');
     });
 

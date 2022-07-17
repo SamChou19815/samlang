@@ -35,7 +35,7 @@ export interface CLIRunners {
 
 export default async function cliMainRunner(
   runners: CLIRunners,
-  commandLineArguments: readonly string[]
+  commandLineArguments: readonly string[],
 ): Promise<void> {
   const action = parseCLIArguments(commandLineArguments);
   switch (action.type) {

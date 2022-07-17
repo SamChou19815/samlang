@@ -61,9 +61,9 @@ class HighIRTypeDeduplicator {
           typeParameters,
           functionType: HIR_FUNCTION_TYPE(
             functionType.argumentTypes.map(this.rewriteType),
-            this.rewriteType(functionType.returnType)
+            this.rewriteType(functionType.returnType),
           ),
-        })
+        }),
       ),
       typeDefinitions: Array.from(this.typeDefinitionMapping.values()).map(
         ({ identifier, type, typeParameters, names, mappings }) => ({
@@ -72,7 +72,7 @@ class HighIRTypeDeduplicator {
           typeParameters,
           names,
           mappings: mappings.map(this.rewriteType),
-        })
+        }),
       ),
       mainFunctionNames,
       functions: functions.map(this.rewriteFunction),
@@ -137,7 +137,7 @@ class HighIRTypeDeduplicator {
               type: this.rewriteType(type),
               branch1Value: this.rewriteExpression(branch1Value),
               branch2Value: this.rewriteExpression(branch2Value),
-            })
+            }),
           ),
         });
       case 'HighIRSingleIfStatement':
@@ -198,7 +198,7 @@ class HighIRTypeDeduplicator {
       case 'FunctionType':
         return HIR_FUNCTION_TYPE(
           type.argumentTypes.map(this.rewriteType),
-          this.rewriteType(type.returnType)
+          this.rewriteType(type.returnType),
         );
     }
   };

@@ -132,7 +132,7 @@ describe('hir-inline-optimization', () => {
           }),
         ],
         returnValue: HIR_VARIABLE('ss', HIR_INT_TYPE),
-      })
+      }),
     ).toBe(32);
   });
 
@@ -140,13 +140,13 @@ describe('hir-inline-optimization', () => {
     expect(
       optimizeHighIRFunctionsByInlining(functions, new OptimizationResourceAllocator())
         .map(debugPrintHighIRFunction)
-        .join('\n')
+        .join('\n'),
     ).toBe(expected);
   };
 
   it('optimizeHighIRFunctionsByInlining empty test', () => {
     expect(optimizeHighIRFunctionsByInlining([], new OptimizationResourceAllocator()).length).toBe(
-      0
+      0,
     );
   });
 
@@ -256,7 +256,7 @@ describe('hir-inline-optimization', () => {
           returnValue: HIR_ZERO,
         },
       ],
-      new OptimizationResourceAllocator()
+      new OptimizationResourceAllocator(),
     );
 
     optimizeHighIRFunctionsByInlining(
@@ -284,7 +284,7 @@ describe('hir-inline-optimization', () => {
           returnValue: HIR_ZERO,
         },
       ],
-      new OptimizationResourceAllocator()
+      new OptimizationResourceAllocator(),
     );
   });
 
@@ -322,7 +322,7 @@ describe('hir-inline-optimization', () => {
                 HIR_FUNCTION_CALL({
                   functionExpression: HIR_NAME(
                     'factorial',
-                    HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE)
+                    HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
                   ),
                   functionArguments: [
                     HIR_VARIABLE('n1', HIR_INT_TYPE),
@@ -372,7 +372,7 @@ describe('hir-inline-optimization', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME(
                 'moveMove',
-                HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
+                HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
               ),
               functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
@@ -386,11 +386,11 @@ describe('hir-inline-optimization', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME(
                   'non-existing-function',
-                  HIR_FUNCTION_TYPE([], HIR_INT_TYPE)
+                  HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
                 ),
                 functionArguments: [],
                 returnType: HIR_INT_TYPE,
-              })
+              }),
             ),
           ],
           returnValue: HIR_ZERO,
@@ -485,7 +485,7 @@ function bb(): int {
   let c: int = (a: int)[0];
   return 0;
 }
-`
+`,
     );
   });
 
@@ -556,7 +556,7 @@ function main(): int {
   }
   return 0;
 }
-`
+`,
     );
   });
 
@@ -621,7 +621,7 @@ function main(): int {
   }
   return 0;
 }
-`
+`,
     );
   });
 
@@ -717,7 +717,7 @@ function main(): int {
   }
   return 0;
 }
-`
+`,
     );
   });
 
@@ -758,7 +758,7 @@ function main(): int {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME(
                 'fooBar',
-                HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE)
+                HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
               ),
               functionArguments: [HIR_ONE, HIR_ZERO],
               returnType: HIR_INT_TYPE,
@@ -782,7 +782,7 @@ function main(): int {
   break;
   return 0;
 }
-`
+`,
     );
   });
 
@@ -820,7 +820,7 @@ function main(): int {
       `function fooBar(): int {
   return 0;
 }
-`
+`,
     );
   });
 
@@ -903,7 +903,7 @@ function main(): int {
   }
   return (v: int);
 }
-`
+`,
     );
   });
 
@@ -947,7 +947,7 @@ function main(): int {
 function main(): int {
   return 0;
 }
-`
+`,
     );
   });
 });

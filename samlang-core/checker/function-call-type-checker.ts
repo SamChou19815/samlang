@@ -31,7 +31,7 @@ function argumentShouldBeTypeCheckedWithoutHint(expression: SamlangExpression): 
       );
     case 'MatchExpression':
       return expression.matchingList.every((it) =>
-        argumentShouldBeTypeCheckedWithoutHint(it.expression)
+        argumentShouldBeTypeCheckedWithoutHint(it.expression),
       );
     case 'StatementBlockExpression':
       return (
@@ -60,14 +60,14 @@ export default function typeCheckFunctionCall(
   functionArguments: readonly SamlangExpression[],
   returnTypeHint: SamlangType | null,
   typeCheck: (e: SamlangExpression, hint: SamlangType | null) => SamlangExpression,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): FunctionCallTypeCheckingResult {
   if (genericFunctionType.argumentTypes.length !== functionArguments.length) {
     errorReporter.reportArityMismatchError(
       functionCallReason.useLocation,
       'arguments',
       genericFunctionType.argumentTypes.length,
-      functionArguments.length
+      functionArguments.length,
     );
     return {
       solvedGenericType: genericFunctionType,
@@ -86,16 +86,16 @@ export default function typeCheckFunctionCall(
   const partiallySolvedSubstitution = solveMultipleTypeConstraints(
     zip(
       genericFunctionType.argumentTypes,
-      partiallyCheckedArguments.map((it) => it.e.type)
+      partiallyCheckedArguments.map((it) => it.e.type),
     ).map(([genericType, concreteType]) => ({ genericType, concreteType })),
-    typeParameters
+    typeParameters,
   );
   const partiallySolvedGenericType = performTypeSubstitution(
     genericFunctionType,
-    Object.fromEntries(partiallySolvedSubstitution)
+    Object.fromEntries(partiallySolvedSubstitution),
   );
   const unsolvedTypeParameters = typeParameters.filter(
-    (typeParameter) => !partiallySolvedSubstitution.has(typeParameter)
+    (typeParameter) => !partiallySolvedSubstitution.has(typeParameter),
   );
   assert(partiallySolvedGenericType.__type__ === 'FunctionType');
   typeParameters.forEach((typeParameter) => {
@@ -106,21 +106,21 @@ export default function typeCheckFunctionCall(
   });
   const partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown = performTypeSubstitution(
     genericFunctionType,
-    Object.fromEntries(partiallySolvedSubstitution)
+    Object.fromEntries(partiallySolvedSubstitution),
   );
   assert(partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.__type__ === 'FunctionType');
   const partiallySolvedConcreteArgumentTypes = zip(
     partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.argumentTypes,
-    partiallyCheckedArguments.map((it) => it.e.type)
+    partiallyCheckedArguments.map((it) => it.e.type),
   ).map(([g, s]) => contextualTypeMeet(g, s, errorReporter));
   const checkedArguments = zip(partiallyCheckedArguments, partiallySolvedConcreteArgumentTypes).map(
-    ([{ e, checked }, hint]) => (checked ? e : typeCheck(e, hint))
+    ([{ e, checked }, hint]) => (checked ? e : typeCheck(e, hint)),
   );
 
   // Phase 2: Use fully checked arguments to infer remaining type parameters.
   const phase2ArgumentsConstraints = zip(
     partiallySolvedGenericType.argumentTypes,
-    checkedArguments.map((it) => it.type)
+    checkedArguments.map((it) => it.type),
   ).map(([genericType, concreteType]) => ({ genericType, concreteType }));
   if (returnTypeHint != null) {
     phase2ArgumentsConstraints.push({
@@ -130,10 +130,10 @@ export default function typeCheckFunctionCall(
   }
   const fullySolvedSubstitution = solveMultipleTypeConstraints(
     phase2ArgumentsConstraints,
-    unsolvedTypeParameters
+    unsolvedTypeParameters,
   );
   const stillUnresolvedTypeParameters = unsolvedTypeParameters.filter(
-    (typeParameter) => !fullySolvedSubstitution.has(typeParameter)
+    (typeParameter) => !fullySolvedSubstitution.has(typeParameter),
   );
   stillUnresolvedTypeParameters.forEach((typeParameter) => {
     // Fill in unknown for unsolved types.
@@ -144,13 +144,13 @@ export default function typeCheckFunctionCall(
   }
   const fullySolvedGenericType = performTypeSubstitution(
     partiallySolvedGenericType,
-    Object.fromEntries(fullySolvedSubstitution)
+    Object.fromEntries(fullySolvedSubstitution),
   );
   assert(fullySolvedGenericType.__type__ === 'FunctionType');
   const fullySolvedConcreteReturnType = contextualTypeMeet(
     returnTypeHint ?? SourceUnknownType(functionCallReason),
     typeReposition(fullySolvedGenericType.returnType, functionCallReason.useLocation),
-    errorReporter
+    errorReporter,
   );
 
   return {

@@ -11,12 +11,12 @@ export type SamlangSourcesCompilationResult =
   | { readonly __type__: 'ERROR'; readonly errors: readonly string[] };
 
 export function reformatSamlangSources(
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
 ): readonly (readonly [ModuleReference, string])[];
 
 export function compileSamlangSources(
   sourceHandles: readonly (readonly [ModuleReference, string])[],
-  entryModuleReferences: readonly ModuleReference[]
+  entryModuleReferences: readonly ModuleReference[],
 ): SamlangSourcesCompilationResult;
 
 export type SamlangSingleSourceCompilationResult =
@@ -24,5 +24,5 @@ export type SamlangSingleSourceCompilationResult =
   | { readonly __type__: 'ERROR'; readonly errors: readonly string[] };
 
 export function compileSingleSamlangSource(
-  programString: string
+  programString: string,
 ): SamlangSingleSourceCompilationResult;

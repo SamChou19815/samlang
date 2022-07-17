@@ -12,7 +12,7 @@ export default class ExpressionInterpreter {
 
   readonly eval = (
     expression: SamlangExpression,
-    context: InterpretationContext = EMPTY
+    context: InterpretationContext = EMPTY,
   ): Value => {
     switch (expression.__type__) {
       case 'LiteralExpression':
@@ -161,7 +161,7 @@ export default class ExpressionInterpreter {
       case 'IfElseExpression': {
         return this.eval(
           (this.eval(expression.boolExpression) as boolean) ? expression.e1 : expression.e2,
-          context
+          context,
         );
       }
       case 'MatchExpression': {
@@ -248,7 +248,7 @@ export const EMPTY: InterpretationContext = {
 };
 
 export const createDefaultInterpretationContext = (
-  collectPrinted: (s: string) => void
+  collectPrinted: (s: string) => void,
 ): InterpretationContext => ({
   classes: new Map([
     [

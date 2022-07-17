@@ -6,7 +6,7 @@ const lex = (source: string): readonly string[] =>
   lexSamlangProgram(
     source,
     ModuleReference([]),
-    createGlobalErrorCollector().getErrorReporter()
+    createGlobalErrorCollector().getErrorReporter(),
   ).map(samlangTokenToString);
 
 describe('samlang-lexer', () => {
@@ -48,7 +48,7 @@ class Main {
   }
 
 }
-`)
+`),
     ).toEqual([
       '.sam:2:1-2:6: class',
       '.sam:2:7-2:11: Main',
@@ -244,7 +244,7 @@ class Main {
     )
 
 }
-`)
+`),
     ).toEqual([
       '.sam:2:1-2:6: class',
       '.sam:2:7-2:10: Foo',
@@ -620,7 +620,7 @@ class Main {
     /*
   }
 }
-`)
+`),
     ).toEqual([
       '.sam:2:1-2:6: class',
       '.sam:2:7-2:11: Main',

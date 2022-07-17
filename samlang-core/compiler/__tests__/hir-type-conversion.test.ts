@@ -36,40 +36,40 @@ describe('hir-type-conversion', () => {
     expect(
       synthesizer.synthesizeTupleType(
         [HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)],
-        []
-      ).identifier
+        [],
+      ).identifier,
     ).toBe('$SyntheticIDType0');
     expect(
       synthesizer.synthesizeTupleType(
         [HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_BOOL_TYPE)],
-        []
-      ).identifier
+        [],
+      ).identifier,
     ).toBe('$SyntheticIDType1');
 
     expect(
       synthesizer.synthesizeTupleType(
         [HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)],
-        []
-      ).identifier
+        [],
+      ).identifier,
     ).toBe('$SyntheticIDType0');
     expect(
       synthesizer.synthesizeTupleType(
         [HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_BOOL_TYPE)],
-        []
-      ).identifier
+        [],
+      ).identifier,
     ).toBe('$SyntheticIDType1');
 
     expect(
-      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_INT_TYPE), []).identifier
+      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_INT_TYPE), []).identifier,
     ).toBe('$SyntheticIDType2');
     expect(
-      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_INT_TYPE), []).identifier
+      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_INT_TYPE), []).identifier,
     ).toBe('$SyntheticIDType2');
     expect(
-      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE), []).identifier
+      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE), []).identifier,
     ).toBe('$SyntheticIDType3');
     expect(
-      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE), []).identifier
+      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE), []).identifier,
     ).toBe('$SyntheticIDType3');
 
     expect(synthesizer.synthesizedTupleTypes.map(prettyPrintHighIRTypeDefinition)).toEqual([
@@ -81,7 +81,7 @@ describe('hir-type-conversion', () => {
       '$SyntheticIDType1',
     ]);
     expect(synthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition)).toEqual(
-      ['closure type $SyntheticIDType2 = () -> int', 'closure type $SyntheticIDType3 = () -> bool']
+      ['closure type $SyntheticIDType2 = () -> int', 'closure type $SyntheticIDType3 = () -> bool'],
     );
     expect(Array.from(synthesizer.closureMappings.keys())).toEqual([
       '$SyntheticIDType2',
@@ -94,24 +94,24 @@ describe('hir-type-conversion', () => {
     expect(Array.from(collectUsedGenericTypes(HIR_BOOL_TYPE, genericTypes))).toEqual([]);
 
     expect(
-      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('C'), genericTypes))
+      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('C'), genericTypes)),
     ).toEqual([]);
     expect(
-      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('A', [HIR_BOOL_TYPE]), genericTypes))
+      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('A', [HIR_BOOL_TYPE]), genericTypes)),
     ).toEqual([]);
     expect(
-      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), genericTypes))
+      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), genericTypes)),
     ).toEqual(['A']);
     expect(
-      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'), genericTypes))
+      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'), genericTypes)),
     ).toEqual(['B']);
     expect(
       Array.from(
         collectUsedGenericTypes(
           HIR_IDENTIFIER_TYPE('A', [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')]),
-          genericTypes
-        )
-      )
+          genericTypes,
+        ),
+      ),
     ).toEqual(['B']);
 
     expect(
@@ -119,11 +119,11 @@ describe('hir-type-conversion', () => {
         collectUsedGenericTypes(
           HIR_FUNCTION_TYPE(
             [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')],
-            HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')
+            HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
           ),
-          genericTypes
-        )
-      )
+          genericTypes,
+        ),
+      ),
     ).toEqual(['A', 'B']);
   });
 
@@ -133,8 +133,8 @@ describe('hir-type-conversion', () => {
         [],
         HIR_IDENTIFIER_TYPE('Foo_bool', []),
         HIR_IDENTIFIER_TYPE('Foo', [HIR_BOOL_TYPE]),
-        () => [HIR_BOOL_TYPE]
-      )
+        () => [HIR_BOOL_TYPE],
+      ),
     ).toEqual([]);
 
     expect(
@@ -142,8 +142,8 @@ describe('hir-type-conversion', () => {
         [],
         HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
         HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('T'),
-        (t) => [HIR_BOOL_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(t.name)]
-      )
+        (t) => [HIR_BOOL_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(t.name)],
+      ),
     ).toEqual([]);
 
     expect(
@@ -157,8 +157,8 @@ describe('hir-type-conversion', () => {
               HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
               HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
             ],
-            HIR_STRING_TYPE
-          )
+            HIR_STRING_TYPE,
+          ),
         ),
         HIR_FUNCTION_TYPE(
           [HIR_INT_TYPE, HIR_BOOL_TYPE],
@@ -168,11 +168,11 @@ describe('hir-type-conversion', () => {
               HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
               HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
             ],
-            HIR_STRING_TYPE
-          )
+            HIR_STRING_TYPE,
+          ),
         ),
-        () => []
-      )
+        () => [],
+      ),
     ).toEqual([HIR_FUNCTION_TYPE([], HIR_INT_TYPE)]);
   });
 
@@ -182,23 +182,23 @@ describe('hir-type-conversion', () => {
     expect(highIRTypeApplication(HIR_STRING_TYPE, {})).toEqual(HIR_STRING_TYPE);
 
     expect(
-      highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]), { A: HIR_INT_TYPE })
+      highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]), { A: HIR_INT_TYPE }),
     ).toEqual(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]));
     expect(
-      highIRTypeApplication(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), { B: HIR_INT_TYPE })
+      highIRTypeApplication(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), { B: HIR_INT_TYPE }),
     ).toEqual(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'));
     expect(
-      highIRTypeApplication(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), { A: HIR_INT_TYPE })
+      highIRTypeApplication(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), { A: HIR_INT_TYPE }),
     ).toEqual(HIR_INT_TYPE);
 
     expect(
       highIRTypeApplication(
         HIR_FUNCTION_TYPE(
           [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')],
-          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')
+          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
         ),
-        { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE }
-      )
+        { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE },
+      ),
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
   });
 
@@ -207,8 +207,8 @@ describe('hir-type-conversion', () => {
       resolveIdentifierTypeMappings(
         HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
         () => undefined,
-        () => undefined
-      )
+        () => undefined,
+      ),
     ).toThrow();
 
     expect(
@@ -219,8 +219,8 @@ describe('hir-type-conversion', () => {
           typeParameters: [],
           functionType: HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE),
         }),
-        () => undefined
-      )
+        () => undefined,
+      ),
     ).toEqual([HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE)]);
 
     expect(
@@ -233,14 +233,14 @@ describe('hir-type-conversion', () => {
           typeParameters: ['B'],
           names: [],
           mappings: [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')],
-        })
-      )
+        }),
+      ),
     ).toEqual([HIR_INT_TYPE]);
   });
 
   it('encodeHighIRIdentifierTypeAfterGenericsSpecialization works', () => {
     expect(() =>
-      encodeHighIRNameAfterGenericsSpecialization('A', [HIR_FUNCTION_TYPE([], HIR_INT_TYPE)])
+      encodeHighIRNameAfterGenericsSpecialization('A', [HIR_FUNCTION_TYPE([], HIR_INT_TYPE)]),
     ).toThrow();
 
     expect(encodeHighIRNameAfterGenericsSpecialization('A', [])).toBe('A');
@@ -249,7 +249,7 @@ describe('hir-type-conversion', () => {
       encodeHighIRNameAfterGenericsSpecialization('A', [
         HIR_INT_TYPE,
         HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
-      ])
+      ]),
     ).toBe('A_int_B');
   });
 
@@ -267,9 +267,9 @@ describe('hir-type-conversion', () => {
         manager.lowerSamlangType(
           SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
             SourceIntType(DummySourceReason),
-          ])
-        )
-      )
+          ]),
+        ),
+      ),
     ).toBe('__DUMMY___A<int>');
 
     expect(
@@ -281,15 +281,15 @@ describe('hir-type-conversion', () => {
               SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
               SourceBoolType(DummySourceReason),
             ],
-            SourceIntType(DummySourceReason)
-          )
-        )
-      )
+            SourceIntType(DummySourceReason),
+          ),
+        ),
+      ),
     ).toBe('$SyntheticIDType0<T>');
 
     expect(typeSynthesizer.synthesizedTupleTypes.map(prettyPrintHighIRTypeDefinition)).toEqual([]);
     expect(
-      typeSynthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition)
+      typeSynthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition),
     ).toEqual(['closure type $SyntheticIDType0<T> = (T, bool) -> int']);
   });
 
@@ -298,7 +298,7 @@ describe('hir-type-conversion', () => {
 
     const typeDefinition = new SamlangTypeLoweringManager(
       new Set(['A']),
-      typeSynthesizer
+      typeSynthesizer,
     ).lowerSamlangTypeDefinition(ModuleReference.ROOT, 'Foo', {
       location: Location.DUMMY,
       type: 'object',
@@ -311,10 +311,10 @@ describe('hir-type-conversion', () => {
               SourceFunctionType(
                 DummySourceReason,
                 [SourceIdentifierType(DummySourceReason, ModuleReference.ROOT, 'A')],
-                SourceBoolType(DummySourceReason)
+                SourceBoolType(DummySourceReason),
               ),
             ],
-            SourceBoolType(DummySourceReason)
+            SourceBoolType(DummySourceReason),
           ),
           isPublic: true,
         },
@@ -325,10 +325,10 @@ describe('hir-type-conversion', () => {
               SourceFunctionType(
                 DummySourceReason,
                 [SourceIdentifierType(DummySourceReason, ModuleReference.ROOT, 'A')],
-                SourceBoolType(DummySourceReason)
+                SourceBoolType(DummySourceReason),
               ),
             ],
-            SourceBoolType(DummySourceReason)
+            SourceBoolType(DummySourceReason),
           ),
           isPublic: false,
         },
@@ -336,11 +336,11 @@ describe('hir-type-conversion', () => {
     });
     expect(
       [...typeSynthesizer.synthesizedTupleTypes, typeDefinition].map(
-        prettyPrintHighIRTypeDefinition
-      )
+        prettyPrintHighIRTypeDefinition,
+      ),
     ).toEqual(['object type _Foo<A> = [$SyntheticIDType1<A>, $SyntheticIDType1<A>]']);
     expect(
-      typeSynthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition)
+      typeSynthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition),
     ).toEqual([
       'closure type $SyntheticIDType0<A> = (A) -> bool',
       'closure type $SyntheticIDType1<A> = ($SyntheticIDType0<A>) -> bool',
@@ -354,9 +354,9 @@ describe('hir-type-conversion', () => {
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
-        )
-      )
+          SourceBoolType(DummySourceReason),
+        ),
+      ),
     ).toEqual([[], HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)]);
 
     expect(
@@ -367,17 +367,17 @@ describe('hir-type-conversion', () => {
             SourceFunctionType(
               DummySourceReason,
               [SourceIntType(DummySourceReason)],
-              SourceBoolType(DummySourceReason)
+              SourceBoolType(DummySourceReason),
             ),
           ],
-          SourceBoolType(DummySourceReason)
-        )
-      )
+          SourceBoolType(DummySourceReason),
+        ),
+      ),
     ).toEqual([
       [],
       HIR_FUNCTION_TYPE(
         [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('$SyntheticIDType0')],
-        HIR_BOOL_TYPE
+        HIR_BOOL_TYPE,
       ),
     ]);
   });

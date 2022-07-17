@@ -19,18 +19,18 @@ describe('hir-flexible-op', () => {
       e2: HIR_ZERO,
     });
     expect(
-      createHighIRFlexibleOrderOperatorNode('+', HIR_ZERO, HIR_NAME('', HIR_INT_TYPE))
+      createHighIRFlexibleOrderOperatorNode('+', HIR_ZERO, HIR_NAME('', HIR_INT_TYPE)),
     ).toEqual({
       operator: '+',
       e1: HIR_NAME('', HIR_INT_TYPE),
       e2: HIR_ZERO,
     });
     expect(
-      createHighIRFlexibleOrderOperatorNode('+', HIR_ZERO, HIR_VARIABLE('', HIR_INT_TYPE))
+      createHighIRFlexibleOrderOperatorNode('+', HIR_ZERO, HIR_VARIABLE('', HIR_INT_TYPE)),
     ).toEqual({ operator: '+', e1: HIR_VARIABLE('', HIR_INT_TYPE), e2: HIR_ZERO });
 
     expect(
-      createHighIRFlexibleOrderOperatorNode('+', HIR_NAME('', HIR_INT_TYPE), HIR_ZERO)
+      createHighIRFlexibleOrderOperatorNode('+', HIR_NAME('', HIR_INT_TYPE), HIR_ZERO),
     ).toEqual({
       operator: '+',
       e1: HIR_NAME('', HIR_INT_TYPE),
@@ -40,15 +40,15 @@ describe('hir-flexible-op', () => {
       createHighIRFlexibleOrderOperatorNode(
         '+',
         HIR_NAME('a', HIR_INT_TYPE),
-        HIR_NAME('b', HIR_INT_TYPE)
-      )
+        HIR_NAME('b', HIR_INT_TYPE),
+      ),
     ).toEqual({ operator: '+', e1: HIR_NAME('b', HIR_INT_TYPE), e2: HIR_NAME('a', HIR_INT_TYPE) });
     expect(
       createHighIRFlexibleOrderOperatorNode(
         '+',
         HIR_NAME('', HIR_INT_TYPE),
-        HIR_VARIABLE('', HIR_INT_TYPE)
-      )
+        HIR_VARIABLE('', HIR_INT_TYPE),
+      ),
     ).toEqual({
       operator: '+',
       e1: HIR_VARIABLE('', HIR_INT_TYPE),
@@ -56,14 +56,14 @@ describe('hir-flexible-op', () => {
     });
 
     expect(
-      createHighIRFlexibleOrderOperatorNode('+', HIR_VARIABLE('', HIR_INT_TYPE), HIR_ZERO)
+      createHighIRFlexibleOrderOperatorNode('+', HIR_VARIABLE('', HIR_INT_TYPE), HIR_ZERO),
     ).toEqual({ operator: '+', e1: HIR_VARIABLE('', HIR_INT_TYPE), e2: HIR_ZERO });
     expect(
       createHighIRFlexibleOrderOperatorNode(
         '+',
         HIR_VARIABLE('a', HIR_INT_TYPE),
-        HIR_NAME('b', HIR_INT_TYPE)
-      )
+        HIR_NAME('b', HIR_INT_TYPE),
+      ),
     ).toEqual({
       operator: '+',
       e1: HIR_VARIABLE('a', HIR_INT_TYPE),
@@ -73,8 +73,8 @@ describe('hir-flexible-op', () => {
       createHighIRFlexibleOrderOperatorNode(
         '+',
         HIR_VARIABLE('a', HIR_INT_TYPE),
-        HIR_VARIABLE('b', HIR_INT_TYPE)
-      )
+        HIR_VARIABLE('b', HIR_INT_TYPE),
+      ),
     ).toEqual({
       operator: '+',
       e1: HIR_VARIABLE('b', HIR_INT_TYPE),

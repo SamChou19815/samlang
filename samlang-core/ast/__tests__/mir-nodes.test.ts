@@ -38,9 +38,9 @@ describe('mir-nodes', () => {
       prettyPrintMidIRType(
         MIR_FUNCTION_TYPE(
           [MIR_INT_TYPE, MIR_INT_TYPE],
-          MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE('Foo'), MIR_ANY_TYPE], MIR_STRING_TYPE)
-        )
-      )
+          MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE('Foo'), MIR_ANY_TYPE], MIR_STRING_TYPE),
+        ),
+      ),
     ).toBe('(t0: number, t1: number) => (t0: Foo, t1: any) => Str');
   });
 
@@ -165,7 +165,7 @@ describe('mir-nodes', () => {
             returnValue: MIR_ZERO,
           },
         ],
-      })
+      }),
     ).toBe(`const dev_meggo = [0, "vibez"];
 function Bar(f) {
   let bar;
@@ -229,31 +229,31 @@ function Bar(f) {
     expect(isTheSameMidIRType(MIR_IDENTIFIER_TYPE('A'), MIR_IDENTIFIER_TYPE('A'))).toBeTruthy();
 
     expect(
-      isTheSameMidIRType(MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE), MIR_INT_TYPE)
+      isTheSameMidIRType(MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE), MIR_INT_TYPE),
     ).toBeFalsy();
     expect(
       isTheSameMidIRType(
         MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
-        MIR_FUNCTION_TYPE([MIR_BOOL_TYPE], MIR_INT_TYPE)
-      )
+        MIR_FUNCTION_TYPE([MIR_BOOL_TYPE], MIR_INT_TYPE),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameMidIRType(
         MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
-        MIR_FUNCTION_TYPE([MIR_BOOL_TYPE], MIR_BOOL_TYPE)
-      )
+        MIR_FUNCTION_TYPE([MIR_BOOL_TYPE], MIR_BOOL_TYPE),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameMidIRType(
         MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
-        MIR_FUNCTION_TYPE([], MIR_BOOL_TYPE)
-      )
+        MIR_FUNCTION_TYPE([], MIR_BOOL_TYPE),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameMidIRType(
         MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
-        MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE)
-      )
+        MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
+      ),
     ).toBeTruthy();
   });
 
@@ -389,7 +389,7 @@ function Bar(f) {
             returnValue: MIR_ZERO,
           },
         ],
-      })
+      }),
     ).toBe(`type Str = [number, string];
 const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
 const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.log(line); return 0; };

@@ -34,8 +34,8 @@ describe('mir-loop-strength-reduction', () => {
           ],
           statements: [],
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual({
       prefixStatements: [
         HIR_BINARY({

@@ -11,7 +11,7 @@ export class Location {
   constructor(
     public readonly moduleReference: ModuleReference,
     public readonly start: Position,
-    public readonly end: Position
+    public readonly end: Position,
   );
   readonly containsPosition: (position: Position) => boolean;
   readonly contains: (other: Location) => boolean;

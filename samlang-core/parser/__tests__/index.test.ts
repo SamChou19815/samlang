@@ -10,7 +10,7 @@ describe('samlang-core/parser', () => {
 
     function expectASTWithTheSameKind(text: string, expected: SamlangExpression['__type__']): void {
       expect(
-        parseSamlangExpressionFromText(text, ModuleReference.DUMMY, errorReporter)?.__type__
+        parseSamlangExpressionFromText(text, ModuleReference.DUMMY, errorReporter)?.__type__,
       ).toBe(expected);
     }
 
@@ -186,14 +186,14 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      errorReporter
+      errorReporter,
     );
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     expect(
       parsed.imports.map((it) => ({
         members: it.importedMembers.map(({ name }) => name),
         importedModule: moduleReferenceToString(it.importedModule),
-      }))
+      })),
     ).toEqual([{ importedModule: 'Path.To', members: ['Foo', 'Bar'] }]);
     expect(parsed.classes.map((it) => it.name.name)).toEqual([
       'Main',
@@ -235,7 +235,7 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      errorReporter
+      errorReporter,
     );
     if (parsed == null) throw new Error();
     expect(parsed.imports.length).toBe(1);
@@ -267,7 +267,7 @@ describe('samlang-core/parser', () => {
     }
     `,
       ModuleReference.DUMMY,
-      errorReporter
+      errorReporter,
     );
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   });
@@ -293,7 +293,7 @@ describe('samlang-core/parser', () => {
         [ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
         // with syntax error
         [ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
-      ]).length
+      ]).length,
     ).toBe(1);
   });
 });

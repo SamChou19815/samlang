@@ -26,7 +26,7 @@ describe('samlang-nodes', () => {
     expect(prettyPrintType(SourceStringType(DummySourceReason))).toBe('string');
     expect(prettyPrintType(SourceUnknownType(DummySourceReason))).toBe('unknown');
     expect(
-      prettyPrintType(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo'))
+      prettyPrintType(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo')),
     ).toBe('Foo');
     expect(
       prettyPrintType(
@@ -34,29 +34,29 @@ describe('samlang-nodes', () => {
           SourceUnitType(DummySourceReason),
           SourceIntType(DummySourceReason),
           SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar'),
-        ])
-      )
+        ]),
+      ),
     ).toBe('Foo<unit, int, Bar>');
     expect(
-      prettyPrintType(SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)))
+      prettyPrintType(SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason))),
     ).toBe('() -> unit');
     expect(
       prettyPrintType(
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
-        )
-      )
+          SourceBoolType(DummySourceReason),
+        ),
+      ),
     ).toBe('(int) -> bool');
     expect(
       prettyPrintType(
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason), SourceBoolType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
-        )
-      )
+          SourceBoolType(DummySourceReason),
+        ),
+      ),
     ).toBe('(int, bool) -> bool');
     expect(
       prettyPrintType(
@@ -66,9 +66,9 @@ describe('samlang-nodes', () => {
             SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
             SourceBoolType(DummySourceReason),
           ],
-          SourceBoolType(DummySourceReason)
-        )
-      )
+          SourceBoolType(DummySourceReason),
+        ),
+      ),
     ).toBe('(() -> unit, bool) -> bool');
   });
 
@@ -78,65 +78,65 @@ describe('samlang-nodes', () => {
         SourceIntType(
           SourceReason(
             new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
-            new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4))
-          )
+            new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
+          ),
         ),
-        new Location(ModuleReference.DUMMY, Position(5, 6), Position(7, 8))
-      ).reason.useLocation.toString()
+        new Location(ModuleReference.DUMMY, Position(5, 6), Position(7, 8)),
+      ).reason.useLocation.toString(),
     ).toBe('__DUMMY__.sam:6:7-8:9');
   });
 
   it('type equality test', () => {
     expect(
-      isTheSameType(SourceUnknownType(DummySourceReason), SourceUnknownType(DummySourceReason))
+      isTheSameType(SourceUnknownType(DummySourceReason), SourceUnknownType(DummySourceReason)),
     ).toBeTruthy();
     expect(
-      isTheSameType(SourceUnitType(DummySourceReason), SourceUnitType(DummySourceReason))
+      isTheSameType(SourceUnitType(DummySourceReason), SourceUnitType(DummySourceReason)),
     ).toBeTruthy();
     expect(
-      isTheSameType(SourceUnitType(DummySourceReason), SourceBoolType(DummySourceReason))
+      isTheSameType(SourceUnitType(DummySourceReason), SourceBoolType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceUnitType(DummySourceReason), SourceIntType(DummySourceReason))
+      isTheSameType(SourceUnitType(DummySourceReason), SourceIntType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceUnitType(DummySourceReason), SourceStringType(DummySourceReason))
+      isTheSameType(SourceUnitType(DummySourceReason), SourceStringType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceBoolType(DummySourceReason), SourceUnitType(DummySourceReason))
+      isTheSameType(SourceBoolType(DummySourceReason), SourceUnitType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceBoolType(DummySourceReason), SourceBoolType(DummySourceReason))
+      isTheSameType(SourceBoolType(DummySourceReason), SourceBoolType(DummySourceReason)),
     ).toBeTruthy();
     expect(
-      isTheSameType(SourceBoolType(DummySourceReason), SourceIntType(DummySourceReason))
+      isTheSameType(SourceBoolType(DummySourceReason), SourceIntType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceBoolType(DummySourceReason), SourceStringType(DummySourceReason))
+      isTheSameType(SourceBoolType(DummySourceReason), SourceStringType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason))
+      isTheSameType(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceIntType(DummySourceReason), SourceBoolType(DummySourceReason))
+      isTheSameType(SourceIntType(DummySourceReason), SourceBoolType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceIntType(DummySourceReason), SourceIntType(DummySourceReason))
+      isTheSameType(SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)),
     ).toBeTruthy();
     expect(
-      isTheSameType(SourceIntType(DummySourceReason), SourceStringType(DummySourceReason))
+      isTheSameType(SourceIntType(DummySourceReason), SourceStringType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceStringType(DummySourceReason), SourceUnitType(DummySourceReason))
+      isTheSameType(SourceStringType(DummySourceReason), SourceUnitType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceStringType(DummySourceReason), SourceBoolType(DummySourceReason))
+      isTheSameType(SourceStringType(DummySourceReason), SourceBoolType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceStringType(DummySourceReason), SourceIntType(DummySourceReason))
+      isTheSameType(SourceStringType(DummySourceReason), SourceIntType(DummySourceReason)),
     ).toBeFalsy();
     expect(
-      isTheSameType(SourceStringType(DummySourceReason), SourceStringType(DummySourceReason))
+      isTheSameType(SourceStringType(DummySourceReason), SourceStringType(DummySourceReason)),
     ).toBeTruthy();
 
     expect(
@@ -145,8 +145,8 @@ describe('samlang-nodes', () => {
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
         ]),
-        SourceUnitType(DummySourceReason)
-      )
+        SourceUnitType(DummySourceReason),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
@@ -154,8 +154,8 @@ describe('samlang-nodes', () => {
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
         ]),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B')
-      )
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
@@ -163,8 +163,8 @@ describe('samlang-nodes', () => {
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
         ]),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A')
-      )
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
@@ -174,8 +174,8 @@ describe('samlang-nodes', () => {
         ]),
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
           SourceIntType(DummySourceReason),
-        ])
-      )
+        ]),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
@@ -186,8 +186,8 @@ describe('samlang-nodes', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
-        ])
-      )
+        ]),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
@@ -198,8 +198,8 @@ describe('samlang-nodes', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference(['AAA']), 'A', [
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
-        ])
-      )
+        ]),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
@@ -210,8 +210,8 @@ describe('samlang-nodes', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
           SourceIntType(DummySourceReason),
           SourceBoolType(DummySourceReason),
-        ])
-      )
+        ]),
+      ),
     ).toBeTruthy();
 
     expect(
@@ -219,62 +219,62 @@ describe('samlang-nodes', () => {
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
-        SourceUnitType(DummySourceReason)
-      )
+        SourceUnitType(DummySourceReason),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
         SourceFunctionType(
           DummySourceReason,
           [SourceBoolType(DummySourceReason)],
-          SourceIntType(DummySourceReason)
-        )
-      )
+          SourceIntType(DummySourceReason),
+        ),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
         SourceFunctionType(
           DummySourceReason,
           [SourceBoolType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
-        )
-      )
+          SourceBoolType(DummySourceReason),
+        ),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
-        SourceFunctionType(DummySourceReason, [], SourceBoolType(DummySourceReason))
-      )
+        SourceFunctionType(DummySourceReason, [], SourceBoolType(DummySourceReason)),
+      ),
     ).toBeFalsy();
     expect(
       isTheSameType(
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
-        )
-      )
+          SourceBoolType(DummySourceReason),
+        ),
+      ),
     ).toBeTruthy();
   });
 });

@@ -33,9 +33,9 @@ describe('hir-nodes', () => {
             HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE]),
             HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo'),
           ],
-          HIR_STRING_TYPE
-        )
-      )
+          HIR_STRING_TYPE,
+        ),
+      ),
     ).toBe('(Foo<string>, Foo) -> string');
   });
 
@@ -47,7 +47,7 @@ describe('hir-nodes', () => {
         typeParameters: [],
         names: [],
         mappings: [HIR_INT_TYPE, HIR_BOOL_TYPE],
-      })
+      }),
     ).toBe('object type A = [int, bool]');
     expect(
       prettyPrintHighIRTypeDefinition({
@@ -56,7 +56,7 @@ describe('hir-nodes', () => {
         typeParameters: ['C'],
         names: [],
         mappings: [HIR_INT_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('C')],
-      })
+      }),
     ).toBe('variant type B<C> = [int, C]');
   });
 
@@ -129,7 +129,7 @@ describe('hir-nodes', () => {
               type: HIR_INT_TYPE,
               pointerExpression: HIR_VARIABLE(
                 'big',
-                HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar')
+                HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar'),
               ),
               index: 0,
             }),
@@ -142,8 +142,8 @@ describe('hir-nodes', () => {
               branch2Value: HIR_VARIABLE('b2', HIR_INT_TYPE),
             },
           ],
-        })
-      )
+        }),
+      ),
     ).toBe(`let bar: int;
 if 0 {
   let baz: FooBar = [meggo];
@@ -211,7 +211,7 @@ if 0 {
                 type: HIR_INT_TYPE,
                 pointerExpression: HIR_VARIABLE(
                   'big',
-                  HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar')
+                  HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar'),
                 ),
                 index: 0,
               }),
@@ -219,7 +219,7 @@ if 0 {
             returnValue: HIR_ZERO,
           },
         ],
-      })
+      }),
     ).toBe(`const dev_meggo = 'vibez';
 
 closure type c = () -> int
@@ -247,7 +247,7 @@ sources.mains = [ddd]`);
             returnValue: HIR_ZERO,
           },
         ],
-      })
+      }),
     ).toBe(`function Bar<A>(f: int): int {
   return 0;
 }

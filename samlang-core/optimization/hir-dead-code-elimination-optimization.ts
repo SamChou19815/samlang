@@ -4,7 +4,7 @@ import { ifElseOrNull } from './hir-optimization-common';
 
 export function collectUseFromHighIRExpression(
   expression: HighIRExpression,
-  set: Set<string>
+  set: Set<string>,
 ): void {
   if (expression.__type__ === 'HighIRVariableExpression') set.add(expression.name);
 }
@@ -57,7 +57,7 @@ export function collectUseFromHighIRStatement(statement: HighIRStatement, set: S
 
 function optimizeHighIRStatement(
   statement: HighIRStatement,
-  set: Set<string>
+  set: Set<string>,
 ): readonly HighIRStatement[] {
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement':
@@ -115,10 +115,10 @@ function optimizeHighIRStatement(
       const usedSetInsideLoop = new Set<string>();
       collectUseFromHighIRStatement(statement, usedSetInsideLoop);
       const usedLoopVariablesInsideLoop = statement.loopVariables.filter((it) =>
-        usedSetInsideLoop.has(it.name)
+        usedSetInsideLoop.has(it.name),
       );
       usedLoopVariablesInsideLoop.forEach((it) =>
-        collectUseFromHighIRExpression(it.loopValue, set)
+        collectUseFromHighIRExpression(it.loopValue, set),
       );
       const statements = internalOptimizeHighIRStatementsByDCE(statement.statements, set);
       const loopVariables = filterMap(usedLoopVariablesInsideLoop, (variable) => {
@@ -141,7 +141,7 @@ function optimizeHighIRStatement(
 
 export function internalOptimizeHighIRStatementsByDCE(
   statements: readonly HighIRStatement[],
-  set: Set<string>
+  set: Set<string>,
 ): readonly HighIRStatement[] {
   return [...statements]
     .reverse()
@@ -150,7 +150,7 @@ export function internalOptimizeHighIRStatementsByDCE(
 }
 
 export default function optimizeHighIRFunctionByDeadCodeElimination(
-  highIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction,
 ): HighIRFunction {
   const set = new Set<string>();
   collectUseFromHighIRExpression(highIRFunction.returnValue, set);

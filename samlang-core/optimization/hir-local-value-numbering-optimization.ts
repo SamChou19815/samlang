@@ -41,7 +41,7 @@ class LocalBindedValueContext extends LocalStackedContext<string> {
 
 function optimizeHighIRExpression(
   expression: HighIRExpression,
-  variableContext: LocalVariableContext
+  variableContext: LocalVariableContext,
 ): HighIRExpression {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
@@ -57,7 +57,7 @@ function optimizeHighIRExpression(
 function optimizeHighIRStatement(
   statement: HighIRStatement,
   variableContext: LocalVariableContext,
-  bindedValueContext: LocalBindedValueContext
+  bindedValueContext: LocalBindedValueContext,
 ): HighIRStatement | null {
   const getExpressionUnderContext = (expression: HighIRExpression) =>
     optimizeHighIRExpression(expression, variableContext);
@@ -96,7 +96,7 @@ function optimizeHighIRStatement(
     case 'HighIRFunctionCallStatement':
       return HIR_FUNCTION_CALL({
         functionExpression: getExpressionUnderContext(
-          statement.functionExpression
+          statement.functionExpression,
         ) as HighIRNameExpression,
         functionArguments: statement.functionArguments.map(getExpressionUnderContext),
         returnType: statement.returnType,
@@ -110,30 +110,30 @@ function optimizeHighIRStatement(
           const statements = optimizeHighIRStatements(
             statement.s1,
             variableContext,
-            bindedValueContext
+            bindedValueContext,
           );
           return [
             statements,
             statement.finalAssignments.map((final) =>
-              getExpressionUnderContext(final.branch1Value)
+              getExpressionUnderContext(final.branch1Value),
             ),
           ] as const;
-        })
+        }),
       );
       const [s2, branch2Values] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const statements = optimizeHighIRStatements(
             statement.s2,
             variableContext,
-            bindedValueContext
+            bindedValueContext,
           );
           return [
             statements,
             statement.finalAssignments.map((final) =>
-              getExpressionUnderContext(final.branch2Value)
+              getExpressionUnderContext(final.branch2Value),
             ),
           ] as const;
-        })
+        }),
       );
       return HIR_IF_ELSE({
         booleanExpression,
@@ -144,7 +144,7 @@ function optimizeHighIRStatement(
             ...final,
             branch1Value,
             branch2Value,
-          })
+          }),
         ),
       });
     }
@@ -153,8 +153,8 @@ function optimizeHighIRStatement(
       const booleanExpression = getExpressionUnderContext(statement.booleanExpression);
       const statements = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() =>
-          optimizeHighIRStatements(statement.statements, variableContext, bindedValueContext)
-        )
+          optimizeHighIRStatements(statement.statements, variableContext, bindedValueContext),
+        ),
       );
       return HIR_SINGLE_IF({
         booleanExpression,
@@ -172,23 +172,23 @@ function optimizeHighIRStatement(
           name,
           type,
           initialValue: getExpressionUnderContext(initialValue),
-        })
+        }),
       );
       const [statements, loopVariableLoopValues] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const newStatements = optimizeHighIRStatements(
             statement.statements,
             variableContext,
-            bindedValueContext
+            bindedValueContext,
           );
           return [
             newStatements,
             statement.loopVariables.map((it) => getExpressionUnderContext(it.loopValue)),
           ];
-        })
+        }),
       );
       const loopVariables = zip(loopVariableWithoutLoopValues, loopVariableLoopValues).map(
-        ([rest, loopValue]) => ({ ...rest, loopValue })
+        ([rest, loopValue]) => ({ ...rest, loopValue }),
       );
       return HIR_WHILE({ loopVariables, statements, breakCollector: statement.breakCollector });
     }
@@ -214,15 +214,15 @@ function optimizeHighIRStatement(
 function optimizeHighIRStatements(
   statements: readonly HighIRStatement[],
   variableContext: LocalVariableContext,
-  bindedValueContext: LocalBindedValueContext
+  bindedValueContext: LocalBindedValueContext,
 ): readonly HighIRStatement[] {
   return filterMap(statements, (it) =>
-    optimizeHighIRStatement(it, variableContext, bindedValueContext)
+    optimizeHighIRStatement(it, variableContext, bindedValueContext),
   );
 }
 
 export default function optimizeHighIRFunctionByLocalValueNumbering(
-  highIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction,
 ): HighIRFunction {
   const variableContext = new LocalVariableContext();
   const bindedValueContext = new LocalBindedValueContext();

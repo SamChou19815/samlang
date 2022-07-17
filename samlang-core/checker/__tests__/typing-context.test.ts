@@ -32,7 +32,7 @@ describe('typing-context', () => {
               extendsOrImplements: SourceIdentifierType(
                 DummySourceReason,
                 ModuleReference.DUMMY,
-                'not_exist'
+                'not_exist',
               ),
               functions: {},
               methods: {},
@@ -51,7 +51,7 @@ describe('typing-context', () => {
                       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
                       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
                     ],
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
                   ),
                 },
               },
@@ -65,7 +65,7 @@ describe('typing-context', () => {
                 [
                   SourceIntType(DummySourceReason),
                   SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                ]
+                ],
               ),
               functions: {
                 f1: {
@@ -77,7 +77,7 @@ describe('typing-context', () => {
                       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
                       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
                     ],
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
                   ),
                 },
               },
@@ -92,7 +92,7 @@ describe('typing-context', () => {
                 [
                   SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
                   SourceIntType(DummySourceReason),
-                ]
+                ],
               ),
               functions: {},
               methods: {
@@ -105,7 +105,7 @@ describe('typing-context', () => {
                       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
                       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
                     ],
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
                   ),
                 },
               },
@@ -115,7 +115,7 @@ describe('typing-context', () => {
               extendsOrImplements: SourceIdentifierType(
                 DummySourceReason,
                 ModuleReference.DUMMY,
-                'ICyclic2'
+                'ICyclic2',
               ),
               functions: {},
               methods: {},
@@ -125,7 +125,7 @@ describe('typing-context', () => {
               extendsOrImplements: SourceIdentifierType(
                 DummySourceReason,
                 ModuleReference.DUMMY,
-                'ICyclic1'
+                'ICyclic1',
               ),
               functions: {},
               methods: {},
@@ -172,7 +172,7 @@ describe('typing-context', () => {
                       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
                       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
                     ],
-                    SourceIntType(DummySourceReason)
+                    SourceIntType(DummySourceReason),
                   ),
                 },
                 m2: {
@@ -220,31 +220,31 @@ describe('typing-context', () => {
         },
       ]),
       new Set('T'),
-      'A'
+      'A',
     );
 
     expect(context.getInterfaceInformation(ModuleReference.DUMMY, 'I')).toBeTruthy();
 
     expect(
       context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist')
-      )?.context
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist'),
+      )?.context,
     ).toEqual({
       functions: {},
       methods: {},
     });
     expect(
       context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'IUseNonExistent')
-      )?.context
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'IUseNonExistent'),
+      )?.context,
     ).toEqual({
       functions: {},
       methods: {},
     });
     expect(
       context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I')
-      )?.context
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I'),
+      )?.context,
     ).toEqual({
       functions: {},
       methods: {},
@@ -252,9 +252,9 @@ describe('typing-context', () => {
     expect(
       checkNotNull(
         context.getFullyInlinedInterfaceContext(
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ILevel2')
-        )
-      ).context
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ILevel2'),
+        ),
+      ).context,
     ).toEqual({
       functions: {
         f1: {
@@ -266,7 +266,7 @@ describe('typing-context', () => {
               SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
               SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
             ],
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
           ),
         },
       },
@@ -277,7 +277,7 @@ describe('typing-context', () => {
           type: SourceFunctionType(
             DummySourceReason,
             [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
           ),
         },
         m2: {
@@ -289,7 +289,7 @@ describe('typing-context', () => {
               SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
               SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
             ],
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C')
+            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
           ),
         },
       },
@@ -297,53 +297,53 @@ describe('typing-context', () => {
 
     expect(
       context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1')
-      ).cyclicType
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1'),
+      ).cyclicType,
     ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1'));
     expect(
       context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2')
-      ).cyclicType
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2'),
+      ).cyclicType,
     ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2'));
 
     expect(
-      context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1', Location.DUMMY),
     ).toBeFalsy();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f1', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f1', Location.DUMMY),
     ).toBeTruthy();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f2', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f2', Location.DUMMY),
     ).toBeTruthy();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f3', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f3', Location.DUMMY),
     ).toBeNull();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm1', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm1', Location.DUMMY),
     ).toBeNull();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm2', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm2', Location.DUMMY),
     ).toBeNull();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm3', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm3', Location.DUMMY),
     ).toBeNull();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f1', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f1', Location.DUMMY),
     ).toBeTruthy();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f2', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f2', Location.DUMMY),
     ).toBeNull();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f3', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f3', Location.DUMMY),
     ).toBeNull();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm1', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm1', Location.DUMMY),
     ).toBeNull();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm2', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm2', Location.DUMMY),
     ).toBeNull();
     expect(
-      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm3', Location.DUMMY)
+      context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm3', Location.DUMMY),
     ).toBeNull();
     expect(
       context.getClassMethodType(
@@ -351,14 +351,14 @@ describe('typing-context', () => {
         'A',
         'm1',
         [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-        Location.DUMMY
-      )
+        Location.DUMMY,
+      ),
     ).toEqual({
       isPublic: true,
       type: SourceFunctionType(
         DummySourceReason,
         [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-        SourceIntType(DummySourceReason)
+        SourceIntType(DummySourceReason),
       ),
       typeParameters: ['C'],
     });
@@ -371,8 +371,8 @@ describe('typing-context', () => {
           SourceIntType(DummySourceReason),
           SourceIntType(DummySourceReason),
         ]),
-        'object'
-      ).type
+        'object',
+      ).type,
     ).toBe('UnsupportedClassTypeDefinition');
     expect(
       context.resolveTypeDefinition(
@@ -380,8 +380,8 @@ describe('typing-context', () => {
           SourceIntType(DummySourceReason),
           SourceIntType(DummySourceReason),
         ]),
-        'object'
-      )
+        'object',
+      ),
     ).toEqual({
       type: 'Resolved',
       names: [],
@@ -393,8 +393,8 @@ describe('typing-context', () => {
           SourceIntType(DummySourceReason),
           SourceIntType(DummySourceReason),
         ]),
-        'variant'
-      ).type
+        'variant',
+      ).type,
     ).toBe('IllegalOtherClassMatch');
     expect(
       context.resolveTypeDefinition(
@@ -402,8 +402,8 @@ describe('typing-context', () => {
           SourceIntType(DummySourceReason),
           SourceIntType(DummySourceReason),
         ]),
-        'variant'
-      )
+        'variant',
+      ),
     ).toEqual({
       type: 'Resolved',
       names: ['a', 'b'],
@@ -417,8 +417,8 @@ describe('typing-context', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
           SourceIntType(DummySourceReason),
         ]),
-        'variant'
-      )
+        'variant',
+      ),
     ).toEqual({
       type: 'Resolved',
       names: ['a', 'b'],
@@ -435,7 +435,7 @@ describe('typing-context', () => {
       SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-      ])
+      ]),
     );
 
     context.withAdditionalTypeParameters(['A', 'B']);

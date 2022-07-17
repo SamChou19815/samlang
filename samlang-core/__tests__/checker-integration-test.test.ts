@@ -47,7 +47,7 @@ const expectedErrors: readonly string[] = [
 describe('checker-integration-test', () => {
   it('samlang type checker integration test', () => {
     const { compileTimeErrors } = typeCheckSourceHandles(
-      samlangProgramCheckerTestSources.map((it) => [ModuleReference([it.testName]), it.sourceCode])
+      samlangProgramCheckerTestSources.map((it) => [ModuleReference([it.testName]), it.sourceCode]),
     );
 
     const actualErrors = compileTimeErrors

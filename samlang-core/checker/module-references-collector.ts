@@ -4,7 +4,7 @@ import type { HashSet } from '../utils';
 
 export function collectModuleReferenceFromType(
   type: SamlangType,
-  collector: HashSet<ModuleReference>
+  collector: HashSet<ModuleReference>,
 ): void {
   switch (type.__type__) {
     case 'PrimitiveType':
@@ -22,7 +22,7 @@ export function collectModuleReferenceFromType(
 
 export function collectModuleReferenceFromExpression(
   expression: SamlangExpression,
-  collector: HashSet<ModuleReference>
+  collector: HashSet<ModuleReference>,
 ): void {
   collectModuleReferenceFromType(expression.type, collector);
   switch (expression.__type__) {
@@ -42,7 +42,7 @@ export function collectModuleReferenceFromExpression(
     case 'FunctionCallExpression':
       collectModuleReferenceFromExpression(expression.functionExpression, collector);
       expression.functionArguments.forEach((it) =>
-        collectModuleReferenceFromExpression(it, collector)
+        collectModuleReferenceFromExpression(it, collector),
       );
       return;
     case 'BinaryExpression':
@@ -57,7 +57,7 @@ export function collectModuleReferenceFromExpression(
     case 'MatchExpression':
       collectModuleReferenceFromExpression(expression.matchedExpression, collector);
       expression.matchingList.forEach((it) =>
-        collectModuleReferenceFromExpression(it.expression, collector)
+        collectModuleReferenceFromExpression(it.expression, collector),
       );
       return;
     case 'LambdaExpression':

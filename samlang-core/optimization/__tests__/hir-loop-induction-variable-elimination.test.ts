@@ -46,8 +46,8 @@ describe('hir-loop-induction-variable-elimination', () => {
           derivedInductionVariables: [],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -66,8 +66,8 @@ describe('hir-loop-induction-variable-elimination', () => {
           statements: [],
           breakCollector: { name: '', type: HIR_INT_TYPE, value: HIR_VARIABLE('i', HIR_INT_TYPE) },
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -132,8 +132,8 @@ describe('hir-loop-induction-variable-elimination', () => {
             }),
           ],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -160,8 +160,8 @@ describe('hir-loop-induction-variable-elimination', () => {
           ],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -189,8 +189,8 @@ describe('hir-loop-induction-variable-elimination', () => {
           ],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
   });
 
@@ -219,8 +219,8 @@ describe('hir-loop-induction-variable-elimination', () => {
           ],
           statements: [],
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual({
       prefixStatements: [
         HIR_BINARY({ name: '_loop_0', operator: '*', e1: HIR_INT(3), e2: HIR_ONE }),
@@ -291,8 +291,8 @@ describe('hir-loop-induction-variable-elimination', () => {
           ],
           statements: [],
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual({
       prefixStatements: [
         HIR_BINARY({
@@ -373,8 +373,8 @@ describe('hir-loop-induction-variable-elimination', () => {
           ],
           statements: [],
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual({
       prefixStatements: [
         HIR_BINARY({

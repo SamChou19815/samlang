@@ -114,8 +114,8 @@ describe('wasm-module-lowering', () => {
               returnValue: ZERO,
             },
           ],
-        })
-      )
+        }),
+      ),
     ).toBe(`(type $i32_=>_i32 (func (param i32) (result i32)))
 (import "builtins" "${ENCODED_FUNCTION_NAME_PRINTLN}" (func $${ENCODED_FUNCTION_NAME_PRINTLN} (param i32) (result i32)))
 (import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))

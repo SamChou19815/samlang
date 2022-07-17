@@ -29,7 +29,7 @@ export { DEFAULT_BUILTIN_TYPING_CONTEXT };
 export type { GlobalTypingContext, MemberTypeInformation };
 
 export function collectModuleReferenceFromSamlangModule(
-  samlangModule: SamlangModule
+  samlangModule: SamlangModule,
 ): HashSet<ModuleReference> {
   const collector = ModuleReferenceCollections.hashSetOf();
   samlangModule.imports.forEach((it) => collector.add(it.importedModule));
@@ -40,7 +40,7 @@ export function collectModuleReferenceFromSamlangModule(
   });
   samlangModule.classes.forEach((samlangClass) => {
     Object.values(samlangClass.typeDefinition.mappings).forEach((it) =>
-      collectModuleReferenceFromType(it.type, collector)
+      collectModuleReferenceFromType(it.type, collector),
     );
     samlangClass.members.forEach((member) => {
       collectModuleReferenceFromType(member.type, collector);
@@ -95,7 +95,7 @@ export class DependencyTracker {
       if (reverseDependencies == null) {
         this.reverseDependency.set(
           newUsedModule,
-          ModuleReferenceCollections.hashSetOf(moduleReference)
+          ModuleReferenceCollections.hashSetOf(moduleReference),
         );
       } else {
         reverseDependencies?.add(moduleReference);
@@ -109,7 +109,7 @@ function typeCheckModule(
   globalTypingContext: GlobalTypingContext,
   moduleReference: ModuleReference,
   samlangModule: SamlangModule,
-  errorCollector: ReadonlyGlobalErrorCollector
+  errorCollector: ReadonlyGlobalErrorCollector,
 ): SamlangModule {
   const errorReporter = errorCollector.getErrorReporter();
   checkUndefinedImportsError(sources, samlangModule, errorReporter);
@@ -117,7 +117,7 @@ function typeCheckModule(
     moduleReference,
     samlangModule,
     globalTypingContext,
-    errorReporter
+    errorReporter,
   );
   return checkedModule;
 }
@@ -125,7 +125,7 @@ function typeCheckModule(
 export function typeCheckSources(
   sources: Sources<SamlangModule>,
   errorCollector: ReadonlyGlobalErrorCollector,
-  builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT
+  builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT,
 ): readonly [Sources<SamlangModule>, GlobalTypingContext] {
   const globalTypingContext = buildGlobalTypingContext(sources, builtinModuleTypes);
   checkSourcesInterfaceConformance(sources, globalTypingContext, errorCollector.getErrorReporter());
@@ -133,7 +133,7 @@ export function typeCheckSources(
   sources.forEach((samlangModule, moduleReference) => {
     checkedSources.set(
       moduleReference,
-      typeCheckModule(sources, globalTypingContext, moduleReference, samlangModule, errorCollector)
+      typeCheckModule(sources, globalTypingContext, moduleReference, samlangModule, errorCollector),
     );
   });
   return [checkedSources, globalTypingContext];
@@ -146,7 +146,7 @@ type TypeCheckSourceHandlesResult = {
 };
 
 export function typeCheckSourceHandles(
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
 ): TypeCheckSourceHandlesResult {
   const errorCollector = createGlobalErrorCollector();
   const parsedSources = ModuleReferenceCollections.hashMapOf(
@@ -155,8 +155,8 @@ export function typeCheckSourceHandles(
         [
           moduleReference,
           parseSamlangModuleFromText(text, moduleReference, errorCollector.getErrorReporter()),
-        ] as const
-    )
+        ] as const,
+    ),
   );
   const [checkedSources, globalTypingContext] = typeCheckSources(parsedSources, errorCollector);
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
@@ -166,7 +166,7 @@ export function typeCheckSourcesIncrementally(
   sources: Sources<SamlangModule>,
   globalTypingContext: GlobalTypingContext,
   affectedSourceList: readonly ModuleReference[],
-  errorCollector: ReadonlyGlobalErrorCollector
+  errorCollector: ReadonlyGlobalErrorCollector,
 ): Sources<SamlangModule> {
   updateGlobalTypingContext(globalTypingContext, sources, affectedSourceList);
   checkSourcesInterfaceConformance(sources, globalTypingContext, errorCollector.getErrorReporter());
@@ -178,7 +178,7 @@ export function typeCheckSourcesIncrementally(
     }
     updatedSources.set(
       moduleReference,
-      typeCheckModule(sources, globalTypingContext, moduleReference, samlangModule, errorCollector)
+      typeCheckModule(sources, globalTypingContext, moduleReference, samlangModule, errorCollector),
     );
   });
   return updatedSources;
@@ -186,12 +186,12 @@ export function typeCheckSourcesIncrementally(
 
 export function typeCheckSingleModuleSource(
   samlangModule: SamlangModule,
-  errorCollector: ReadonlyGlobalErrorCollector
+  errorCollector: ReadonlyGlobalErrorCollector,
 ): SamlangModule {
   const moduleReference = ModuleReference(['Test']);
   const checkedModule = typeCheckSources(
     ModuleReferenceCollections.mapOf([moduleReference, samlangModule]),
-    errorCollector
+    errorCollector,
   )[0].forceGet(moduleReference);
   return checkedModule;
 }

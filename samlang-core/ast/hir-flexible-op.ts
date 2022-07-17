@@ -49,7 +49,7 @@ function compareHighIR(e1: HighIRExpression, e2: HighIRExpression): number {
 export default function createHighIRFlexibleOrderOperatorNode(
   irOperator: IROperator,
   expression1: HighIRExpression,
-  expression2: HighIRExpression
+  expression2: HighIRExpression,
 ): Readonly<{ operator: IROperator; e1: HighIRExpression; e2: HighIRExpression }> {
   const { operator, e1, e2 } = HIR_BINARY({
     name: '',

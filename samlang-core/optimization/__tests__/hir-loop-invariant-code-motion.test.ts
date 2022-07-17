@@ -175,7 +175,7 @@ describe('hir-loop-invariant-code-motion', () => {
             }),
           ],
           breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-        })
+        }),
       );
 
     const jointDebugPrint = [...hoistedStatementsBeforeWhile, optimizedWhileStatement]

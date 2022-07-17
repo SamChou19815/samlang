@@ -91,7 +91,7 @@ const module1: SamlangModule = {
 
 const testSources = ModuleReferenceCollections.mapOf(
   [module0Reference, module0],
-  [module1Reference, module1]
+  [module1Reference, module1],
 );
 
 describe('global-typing-context-builder', () => {
@@ -115,7 +115,7 @@ describe('global-typing-context-builder', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [],
-                SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', [])
+                SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', []),
               ),
               typeParameters: [],
             },
@@ -142,7 +142,7 @@ describe('global-typing-context-builder', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', [])
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
               ),
               typeParameters: [],
             },
@@ -165,7 +165,7 @@ describe('global-typing-context-builder', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', [])
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
               ),
               typeParameters: [],
             },
@@ -185,9 +185,9 @@ describe('global-typing-context-builder', () => {
       actualGlobalTypingContext,
       ModuleReferenceCollections.mapOf(
         [module0Reference, module0],
-        [module1Reference, { ...module1, classes: [class1, class2] }]
+        [module1Reference, { ...module1, classes: [class1, class2] }],
       ),
-      [module0Reference, module1Reference]
+      [module0Reference, module1Reference],
     );
 
     expect(actualGlobalTypingContext.size).toBe(3);
@@ -205,7 +205,7 @@ describe('global-typing-context-builder', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [],
-                SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', [])
+                SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', []),
               ),
               typeParameters: [],
             },
@@ -232,7 +232,7 @@ describe('global-typing-context-builder', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', [])
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
               ),
               typeParameters: [],
             },
@@ -255,7 +255,7 @@ describe('global-typing-context-builder', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', [])
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
               ),
               typeParameters: [],
             },
@@ -275,9 +275,9 @@ describe('global-typing-context-builder', () => {
       actualGlobalTypingContext,
       ModuleReferenceCollections.mapOf(
         [module0Reference, { imports: [], classes: [], interfaces: [] }],
-        [module1Reference, module1]
+        [module1Reference, module1],
       ),
-      [module0Reference, module1Reference]
+      [module0Reference, module1Reference],
     );
 
     expect(actualGlobalTypingContext.size).toBe(3);
@@ -304,7 +304,7 @@ describe('global-typing-context-builder', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', [])
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
               ),
               typeParameters: [],
             },
@@ -327,7 +327,7 @@ describe('global-typing-context-builder', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', [])
+                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
               ),
               typeParameters: [],
             },
@@ -346,7 +346,7 @@ describe('global-typing-context-builder', () => {
     updateGlobalTypingContext(
       actualGlobalTypingContext,
       ModuleReferenceCollections.mapOf([module1Reference, module1]),
-      [module0Reference, module1Reference]
+      [module0Reference, module1Reference],
     );
     expect(actualGlobalTypingContext.size).toBe(2);
   });

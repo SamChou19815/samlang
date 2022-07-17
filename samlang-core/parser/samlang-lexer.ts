@@ -375,7 +375,7 @@ function stringHasValidEscape(string: string): boolean {
 
 function getNextToken(
   stream: CharacterStream,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): SamlangToken | null {
   try {
     stream.consumeWhitespace();
@@ -455,7 +455,7 @@ function getNextToken(
 export default function lexSamlangProgram(
   source: string,
   moduleReference: ModuleReference,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): readonly SamlangToken[] {
   const stream = new CharacterStream(moduleReference, source);
 

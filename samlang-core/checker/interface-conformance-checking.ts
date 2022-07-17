@@ -19,7 +19,7 @@ function checkClassMemberConformance(
   expectedIsMethod: boolean,
   expected: MemberTypeInformation,
   actual: SourceClassMemberDeclaration,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): void {
   // We first filter out incompatible kind
   if (expectedIsMethod && !actual.isMethod) {
@@ -38,8 +38,8 @@ function checkClassMemberConformance(
       expectedTypeParameters.map((name, i) => [
         name,
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, `_T${i}`, []),
-      ])
-    )
+      ]),
+    ),
   );
   const actualType = performTypeSubstitution(
     actual.type,
@@ -47,8 +47,8 @@ function checkClassMemberConformance(
       actualTypeParameters.map((name, i) => [
         name,
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, `_T${i}`, []),
-      ])
-    )
+      ]),
+    ),
   );
   if (!isTheSameType(expectedType, actualType)) {
     errorReporter.reportUnexpectedTypeError(actual.location, expectedType, actualType);
@@ -59,7 +59,7 @@ function checkSingleInterfaceConformance(
   expected: InterfaceTypingContextInstantiatedMembers,
   actual: SourceInterfaceDeclaration,
   errorReporter: GlobalErrorReporter,
-  reportMissingMembers: boolean
+  reportMissingMembers: boolean,
 ) {
   const actualMembersMap = new Map(actual.members.map((member) => [member.name.name, member]));
   const missingMembers: string[] = [];
@@ -88,7 +88,7 @@ function checkModuleMemberInterfaceConformance(
   typingContext: AccessibleGlobalTypingContext,
   actual: SourceInterfaceDeclaration,
   errorReporter: GlobalErrorReporter,
-  reportMissingMembers: boolean
+  reportMissingMembers: boolean,
 ): void {
   const instantiatedInterfaceType = actual.extendsOrImplementsNode;
   if (instantiatedInterfaceType == null) return;
@@ -101,7 +101,7 @@ function checkModuleMemberInterfaceConformance(
 export default function checkSourcesInterfaceConformance(
   sources: Sources<SamlangModule>,
   globalTypingContext: GlobalTypingContext,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): void {
   sources.forEach((samlangModule, moduleReference) => {
     samlangModule.classes.forEach((declaration) => {
@@ -109,11 +109,11 @@ export default function checkSourcesInterfaceConformance(
         AccessibleGlobalTypingContext.fromInterface(
           moduleReference,
           globalTypingContext,
-          declaration
+          declaration,
         ),
         declaration,
         errorReporter,
-        /* reportMissingMembers */ true
+        /* reportMissingMembers */ true,
       );
     });
     samlangModule.interfaces.forEach((declaration) => {
@@ -121,11 +121,11 @@ export default function checkSourcesInterfaceConformance(
         AccessibleGlobalTypingContext.fromInterface(
           moduleReference,
           globalTypingContext,
-          declaration
+          declaration,
         ),
         declaration,
         errorReporter,
-        /* reportMissingMembers */ false
+        /* reportMissingMembers */ false,
       );
     });
   });

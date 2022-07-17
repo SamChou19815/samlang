@@ -8,7 +8,7 @@ export type SamlangProjectConfiguration = {
 };
 
 export function parseSamlangProjectConfiguration(
-  configurationString: string
+  configurationString: string,
 ): SamlangProjectConfiguration | null {
   try {
     const json: unknown = JSON.parse(configurationString);

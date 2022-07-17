@@ -12,13 +12,13 @@ const builtinClassesSet = new Set(DEFAULT_BUILTIN_CLASSES);
 export function parseSamlangModuleFromText(
   text: string,
   moduleReference: ModuleReference,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): SamlangModule {
   const parser = new SamlangModuleParser(
     lexSamlangProgram(text, moduleReference, errorReporter),
     errorReporter,
     moduleReference,
-    builtinClassesSet
+    builtinClassesSet,
   );
   return parser.parseModule();
 }
@@ -26,19 +26,19 @@ export function parseSamlangModuleFromText(
 export function parseSamlangExpressionFromText(
   text: string,
   moduleReference: ModuleReference,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): SamlangExpression {
   const parser = new SamlangModuleParser(
     lexSamlangProgram(text, moduleReference, errorReporter),
     errorReporter,
     moduleReference,
-    builtinClassesSet
+    builtinClassesSet,
   );
   return parser.parseExpression();
 }
 
 export function parseSources(
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
 ): readonly (readonly [ModuleReference, SamlangModule])[] {
   const errorCollector = createGlobalErrorCollector();
   return filterMap(sourceHandles, ([moduleReference, sourceString]) => {

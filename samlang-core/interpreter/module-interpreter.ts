@@ -57,7 +57,7 @@ export default class ModuleInterpreter {
   private unsafeEval = (module: SamlangModule, context: InterpretationContext): Value => {
     const fullCtx = module.classes.reduce(
       (newContext, classDefinition) => this.evalContext(classDefinition, newContext),
-      context
+      context,
     );
     const mainModule = fullCtx.classes.get('Main');
     if (!mainModule) return { type: 'unit' };
@@ -66,13 +66,13 @@ export default class ModuleInterpreter {
     if (mainFunction.arguments.length > 0) return { type: 'unit' };
     return this.expressionInterpreter.eval(
       mainFunction.body as SamlangExpression,
-      mainFunction.context
+      mainFunction.context,
     );
   };
 
   evalContext = (
     classDefinition: SourceClassDefinition,
-    context: InterpretationContext
+    context: InterpretationContext,
   ): InterpretationContext => {
     const functions = new Map<string, FunctionValue>();
     const methods = new Map<string, FunctionValue>();

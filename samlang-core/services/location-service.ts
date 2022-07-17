@@ -36,7 +36,7 @@ export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
     if (localMap == null) {
       this.locationTable.set(
         location.moduleReference,
-        LocationCollections.hashMapOf([location, entity])
+        LocationCollections.hashMapOf([location, entity]),
       );
     } else {
       localMap.set(location, entity);
@@ -86,10 +86,10 @@ export class SamlangExpressionLocationLookupBuilder {
           type: SourceIdentifierType(
             SourceReason(name.location, name.location),
             moduleReference,
-            `class ${moduleReferenceToString(moduleReference)}.${name.name}`
+            `class ${moduleReferenceToString(moduleReference)}.${name.name}`,
           ),
           name: name.name,
-        })
+        }),
       );
       members.forEach((member) => {
         this.buildSingleExpression(
@@ -97,7 +97,7 @@ export class SamlangExpressionLocationLookupBuilder {
             location: member.name.location,
             type: member.type,
             name: member.name.name,
-          })
+          }),
         );
         this.buildRecursively(member.body);
       });
@@ -122,10 +122,10 @@ export class SamlangExpressionLocationLookupBuilder {
             type: SourceIdentifierType(
               SourceReason(classNameLocation, classNameLocation),
               classNameLocation.moduleReference,
-              `class ${moduleReferenceToString(modRef)}.${className}`
+              `class ${moduleReferenceToString(modRef)}.${className}`,
             ),
             name: className,
-          })
+          }),
         );
         this.buildSingleExpression(expression);
         return;
@@ -174,7 +174,7 @@ export class SamlangExpressionLocationLookupBuilder {
                   location: pattern.location,
                   name: pattern.name,
                   type: assignedExpressionType,
-                })
+                }),
               );
               return;
             case 'WildCardPattern':
@@ -183,7 +183,7 @@ export class SamlangExpressionLocationLookupBuilder {
                   location: pattern.location,
                   name: '_',
                   type: assignedExpressionType,
-                })
+                }),
               );
           }
         });

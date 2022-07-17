@@ -57,16 +57,16 @@ class ExpressionTypeChecker {
   constructor(
     private readonly accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     private readonly localTypingContext: LocationBasedLocalTypingContext,
-    public readonly errorReporter: GlobalErrorReporter
+    public readonly errorReporter: GlobalErrorReporter,
   ) {}
 
   readonly typeCheck = (
     expression: SamlangExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression => {
     assert(
       expression.__type__ !== 'MethodAccessExpression',
-      'Raw parsed expression does not contain this!'
+      'Raw parsed expression does not contain this!',
     );
     switch (expression.__type__) {
       case 'LiteralExpression':
@@ -101,13 +101,13 @@ class ExpressionTypeChecker {
 
   private readonly bestEffortUnknownType = (
     general: SamlangType | null,
-    expression: SamlangExpression
+    expression: SamlangExpression,
   ): SamlangType =>
     this.typeMeet(general, SourceUnknownType(SourceReason(expression.location, null)));
 
   private typeCheckLiteral(
     expression: LiteralExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     this.typeMeet(hint, expression.type);
     // Literals are already well typed if it passed the previous check.
@@ -132,7 +132,7 @@ class ExpressionTypeChecker {
 
   private typeCheckVariable(
     expression: VariableExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     return SourceExpressionVariable({
       location: expression.location,
@@ -144,7 +144,7 @@ class ExpressionTypeChecker {
 
   private typeCheckClassMemberWithPotentiallyUnresolvedTypeParameters(
     expression: ClassMemberExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): {
     partiallyCheckedExpression: ClassMemberExpression;
     unsolvedTypeParameters: readonly string[];
@@ -153,12 +153,12 @@ class ExpressionTypeChecker {
       expression.moduleReference,
       expression.className.name,
       expression.memberName.name,
-      expression.location
+      expression.location,
     );
     if (classFunctionTypeInformation == null) {
       this.errorReporter.reportUnresolvedNameError(
         expression.location,
-        `${expression.className.name}.${expression.memberName.name}`
+        `${expression.className.name}.${expression.memberName.name}`,
       );
       const partiallyCheckedExpression = SourceExpressionClassMember({
         location: expression.location,
@@ -178,9 +178,9 @@ class ExpressionTypeChecker {
           performTypeSubstitution(
             classFunctionTypeInformation.type,
             Object.fromEntries(
-              zip(classFunctionTypeInformation.typeParameters, expression.typeArguments)
-            )
-          )
+              zip(classFunctionTypeInformation.typeParameters, expression.typeArguments),
+            ),
+          ),
         );
         const partiallyCheckedExpression = SourceExpressionClassMember({
           location: expression.location,
@@ -197,7 +197,7 @@ class ExpressionTypeChecker {
         expression.location,
         'type arguments',
         classFunctionTypeInformation.typeParameters.length,
-        expression.typeArguments.length
+        expression.typeArguments.length,
       );
     } else if (classFunctionTypeInformation.typeParameters.length === 0) {
       // No type parameter to solve
@@ -222,7 +222,7 @@ class ExpressionTypeChecker {
             hint,
             classFunctionTypeInformation.type,
             classFunctionTypeInformation.typeParameters,
-            this.errorReporter
+            this.errorReporter,
           );
           const partiallyCheckedExpression = SourceExpressionClassMember({
             location: expression.location,
@@ -239,13 +239,13 @@ class ExpressionTypeChecker {
           expression.location,
           'parameter',
           hint.argumentTypes.length,
-          classFunctionTypeInformation.type.argumentTypes.length
+          classFunctionTypeInformation.type.argumentTypes.length,
         );
       } else {
         this.errorReporter.reportUnexpectedTypeKindError(
           expression.location,
           prettyPrintType(hint),
-          'function'
+          'function',
         );
       }
     }
@@ -268,7 +268,7 @@ class ExpressionTypeChecker {
   private replaceUndecidedTypeParameterWithUnknownAndUpdateType(
     expression: SamlangExpression,
     unsolvedTypeParameters: readonly string[],
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     if (unsolvedTypeParameters.length !== 0) {
       this.errorReporter.reportInsufficientTypeInferenceContextError(expression.location);
@@ -278,29 +278,29 @@ class ExpressionTypeChecker {
       performTypeSubstitution(
         expression.type,
         Object.fromEntries(
-          unsolvedTypeParameters.map((it) => [it, this.bestEffortUnknownType(null, expression)])
-        )
-      )
+          unsolvedTypeParameters.map((it) => [it, this.bestEffortUnknownType(null, expression)]),
+        ),
+      ),
     );
     return sourceExpressionWithNewType(expression, type);
   }
 
   private typeCheckClassMember(
     expression: ClassMemberExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     const { partiallyCheckedExpression, unsolvedTypeParameters } =
       this.typeCheckClassMemberWithPotentiallyUnresolvedTypeParameters(expression, hint);
     return this.replaceUndecidedTypeParameterWithUnknownAndUpdateType(
       partiallyCheckedExpression,
       unsolvedTypeParameters,
-      hint
+      hint,
     );
   }
 
   private typeCheckFieldOrMethodAccessWithPotentiallyUnresolvedTypeParameters(
     expression: FieldAccessExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): {
     partiallyCheckedExpression: FieldAccessExpression | MethodAccessExpression;
     unsolvedTypeParameters: readonly string[];
@@ -310,7 +310,7 @@ class ExpressionTypeChecker {
       this.errorReporter.reportUnexpectedTypeKindError(
         checkedExpression.location,
         'identifier',
-        checkedExpression.type
+        checkedExpression.type,
       );
       const partiallyCheckedExpression = SourceExpressionFieldAccess({
         location: expression.location,
@@ -327,7 +327,7 @@ class ExpressionTypeChecker {
       checkedExpression.type.identifier,
       expression.fieldName.name,
       checkedExpression.type.typeArguments,
-      expression.location
+      expression.location,
     );
     if (methodTypeInformation != null) {
       // This is a valid method. We will now type check it as a method access
@@ -352,7 +352,7 @@ class ExpressionTypeChecker {
               hint,
               methodTypeInformation.type,
               methodTypeInformation.typeParameters,
-              this.errorReporter
+              this.errorReporter,
             );
             const partiallyCheckedExpression = SourceExpressionMethodAccess({
               location: expression.location,
@@ -367,13 +367,13 @@ class ExpressionTypeChecker {
             expression.location,
             'parameter',
             hint.argumentTypes.length,
-            methodTypeInformation.type.argumentTypes.length
+            methodTypeInformation.type.argumentTypes.length,
           );
         } else {
           this.errorReporter.reportUnexpectedTypeKindError(
             expression.location,
             prettyPrintType(hint),
-            'function'
+            'function',
           );
         }
       }
@@ -392,13 +392,13 @@ class ExpressionTypeChecker {
     } else {
       const fieldMappingsOrError = this.accessibleGlobalTypingContext.resolveTypeDefinition(
         checkedExpression.type,
-        'object'
+        'object',
       );
       assert(fieldMappingsOrError.type !== 'IllegalOtherClassMatch', 'Impossible!');
       if (fieldMappingsOrError.type === 'UnsupportedClassTypeDefinition') {
         this.errorReporter.reportUnsupportedClassTypeDefinitionError(
           checkedExpression.location,
-          'object'
+          'object',
         );
         const partiallyCheckedExpression = SourceExpressionFieldAccess({
           location: expression.location,
@@ -416,7 +416,7 @@ class ExpressionTypeChecker {
       if (fieldType == null) {
         this.errorReporter.reportUnresolvedNameError(
           expression.fieldName.location,
-          expression.fieldName.name
+          expression.fieldName.name,
         );
         const partiallyCheckedExpression = SourceExpressionFieldAccess({
           location: expression.location,
@@ -434,7 +434,7 @@ class ExpressionTypeChecker {
       ) {
         this.errorReporter.reportUnresolvedNameError(
           expression.fieldName.location,
-          expression.fieldName.name
+          expression.fieldName.name,
         );
         const partiallyCheckedExpression = SourceExpressionFieldAccess({
           location: expression.location,
@@ -462,7 +462,7 @@ class ExpressionTypeChecker {
 
   private typeCheckFieldAccess(
     expression: FieldAccessExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     const { partiallyCheckedExpression, unsolvedTypeParameters } =
       this.typeCheckFieldOrMethodAccessWithPotentiallyUnresolvedTypeParameters(expression, hint);
@@ -472,7 +472,7 @@ class ExpressionTypeChecker {
     return this.replaceUndecidedTypeParameterWithUnknownAndUpdateType(
       partiallyCheckedExpression,
       unsolvedTypeParameters,
-      hint
+      hint,
     );
   }
 
@@ -490,7 +490,7 @@ class ExpressionTypeChecker {
 
   private typeCheckFunctionCall(
     expression: FunctionCallExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     let checkedFunctionExpressionWithUnresolvedGenericType: SamlangExpression;
     let typeParameters: readonly string[];
@@ -499,7 +499,7 @@ class ExpressionTypeChecker {
         const { partiallyCheckedExpression, unsolvedTypeParameters } =
           this.typeCheckClassMemberWithPotentiallyUnresolvedTypeParameters(
             expression.functionExpression,
-            null
+            null,
           );
         checkedFunctionExpressionWithUnresolvedGenericType = partiallyCheckedExpression;
         typeParameters = unsolvedTypeParameters;
@@ -509,7 +509,7 @@ class ExpressionTypeChecker {
         const { partiallyCheckedExpression, unsolvedTypeParameters } =
           this.typeCheckFieldOrMethodAccessWithPotentiallyUnresolvedTypeParameters(
             expression.functionExpression,
-            null
+            null,
           );
         checkedFunctionExpressionWithUnresolvedGenericType = partiallyCheckedExpression;
         typeParameters = unsolvedTypeParameters;
@@ -518,7 +518,7 @@ class ExpressionTypeChecker {
       default:
         checkedFunctionExpressionWithUnresolvedGenericType = this.typeCheck(
           expression.functionExpression,
-          null
+          null,
         );
         typeParameters = [];
         break;
@@ -531,7 +531,7 @@ class ExpressionTypeChecker {
         functionExpression: this.replaceUndecidedTypeParameterWithUnknownAndUpdateType(
           checkedFunctionExpressionWithUnresolvedGenericType,
           typeParameters,
-          null
+          null,
         ),
         functionArguments: expression.functionArguments,
       });
@@ -540,7 +540,7 @@ class ExpressionTypeChecker {
       this.errorReporter.reportUnexpectedTypeKindError(
         expression.location,
         'function',
-        checkedFunctionExpressionWithUnresolvedGenericType.type
+        checkedFunctionExpressionWithUnresolvedGenericType.type,
       );
       return SourceExpressionFunctionCall({
         location: expression.location,
@@ -549,7 +549,7 @@ class ExpressionTypeChecker {
         functionExpression: this.replaceUndecidedTypeParameterWithUnknownAndUpdateType(
           checkedFunctionExpressionWithUnresolvedGenericType,
           typeParameters,
-          null
+          null,
         ),
         functionArguments: expression.functionArguments,
       });
@@ -561,11 +561,11 @@ class ExpressionTypeChecker {
       expression.functionArguments,
       hint,
       this.typeCheck,
-      this.errorReporter
+      this.errorReporter,
     );
     const fullyResolvedCheckedFunctionExpression = sourceExpressionWithNewType(
       checkedFunctionExpressionWithUnresolvedGenericType,
-      solvedGenericType
+      solvedGenericType,
     );
     return SourceExpressionFunctionCall({
       location: expression.location,
@@ -578,7 +578,7 @@ class ExpressionTypeChecker {
 
   private typeCheckBinary(
     expression: BinaryExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     let checkedExpression: SamlangExpression;
     switch (expression.operator.symbol) {
@@ -598,11 +598,11 @@ class ExpressionTypeChecker {
           operatorPrecedingComments: expression.operatorPrecedingComments,
           e1: this.typeCheck(
             expression.e1,
-            SourceIntType(SourceReason(expression.e1.location, null))
+            SourceIntType(SourceReason(expression.e1.location, null)),
           ),
           e2: this.typeCheck(
             expression.e2,
-            SourceIntType(SourceReason(expression.e2.location, null))
+            SourceIntType(SourceReason(expression.e2.location, null)),
           ),
         });
         break;
@@ -615,11 +615,11 @@ class ExpressionTypeChecker {
           operatorPrecedingComments: expression.operatorPrecedingComments,
           e1: this.typeCheck(
             expression.e1,
-            SourceBoolType(SourceReason(expression.e1.location, null))
+            SourceBoolType(SourceReason(expression.e1.location, null)),
           ),
           e2: this.typeCheck(
             expression.e2,
-            SourceBoolType(SourceReason(expression.e2.location, null))
+            SourceBoolType(SourceReason(expression.e2.location, null)),
           ),
         });
         break;
@@ -631,11 +631,11 @@ class ExpressionTypeChecker {
           operatorPrecedingComments: expression.operatorPrecedingComments,
           e1: this.typeCheck(
             expression.e1,
-            SourceStringType(SourceReason(expression.e1.location, null))
+            SourceStringType(SourceReason(expression.e1.location, null)),
           ),
           e2: this.typeCheck(
             expression.e2,
-            SourceStringType(SourceReason(expression.e2.location, null))
+            SourceStringType(SourceReason(expression.e2.location, null)),
           ),
         });
         break;
@@ -660,11 +660,11 @@ class ExpressionTypeChecker {
 
   private typeCheckIfElse(
     expression: IfElseExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     const boolExpression = this.typeCheck(
       expression.boolExpression,
-      SourceBoolType(SourceReason(expression.boolExpression.location, null))
+      SourceBoolType(SourceReason(expression.boolExpression.location, null)),
     );
     const e1 = this.typeCheck(expression.e1, hint);
     const e2 = this.typeCheck(expression.e2, e1.type);
@@ -685,7 +685,7 @@ class ExpressionTypeChecker {
       this.errorReporter.reportUnexpectedTypeKindError(
         checkedMatchedExpression.location,
         'identifier',
-        checkedMatchedExpressionType
+        checkedMatchedExpressionType,
       );
       return SourceExpressionMatch({
         location: expression.location,
@@ -697,7 +697,7 @@ class ExpressionTypeChecker {
     }
     const variantTypeDefinition = this.accessibleGlobalTypingContext.resolveTypeDefinition(
       checkedMatchedExpressionType,
-      'variant'
+      'variant',
     );
     let variantNames: readonly string[];
     let variantMappings: Readonly<Record<string, SourceFieldType>>;
@@ -718,7 +718,7 @@ class ExpressionTypeChecker {
       case 'UnsupportedClassTypeDefinition':
         this.errorReporter.reportUnsupportedClassTypeDefinitionError(
           checkedMatchedExpression.location,
-          'variant'
+          'variant',
         );
         return SourceExpressionMatch({
           location: expression.location,
@@ -775,7 +775,7 @@ class ExpressionTypeChecker {
           dataVariable: checkedDatadataVariable,
           expression: checkedExpression,
         };
-      }
+      },
     );
     const unusedTags = Object.keys(unusedMappings);
     if (unusedTags.length > 0) {
@@ -784,7 +784,7 @@ class ExpressionTypeChecker {
     const matchingListTypes = checkedMatchingList.map((it) => it.expression.type);
     const finalType = matchingListTypes.reduce(
       (general, specific) => this.typeMeet(general, specific),
-      checkNotNull(hint ?? matchingListTypes[0])
+      checkNotNull(hint ?? matchingListTypes[0]),
     );
     return SourceExpressionMatch({
       location: expression.location,
@@ -797,7 +797,7 @@ class ExpressionTypeChecker {
 
   private inferLambdaTypeParameters(
     expression: LambdaExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): readonly SamlangType[] {
     if (hint != null) {
       if (hint.__type__ === 'FunctionType') {
@@ -807,25 +807,25 @@ class ExpressionTypeChecker {
               const type = this.typeMeet(
                 parameterHint,
                 parameter.typeAnnotation ??
-                  SourceUnknownType(SourceReason(parameter.name.location, null))
+                  SourceUnknownType(SourceReason(parameter.name.location, null)),
               );
               this.localTypingContext.write(parameter.name.location, type);
               return type;
-            }
+            },
           );
         } else {
           this.errorReporter.reportArityMismatchError(
             expression.location,
             'function arguments',
             hint.argumentTypes.length,
-            expression.parameters.length
+            expression.parameters.length,
           );
         }
       } else {
         this.errorReporter.reportUnexpectedTypeKindError(
           expression.location,
           prettyPrintType(hint),
-          expression.type
+          expression.type,
         );
       }
     }
@@ -841,7 +841,7 @@ class ExpressionTypeChecker {
 
   private typeCheckLambda(
     expression: LambdaExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     const argumentTypes = this.inferLambdaTypeParameters(expression, hint);
     const bodyTypeHint = hint != null && hint.__type__ === 'FunctionType' ? hint.returnType : null;
@@ -850,7 +850,7 @@ class ExpressionTypeChecker {
     const type = SourceFunctionType(
       SourceReason(expression.location, expression.location),
       argumentTypes,
-      body.type
+      body.type,
     );
     return SourceExpressionLambda({
       location: expression.location,
@@ -864,14 +864,14 @@ class ExpressionTypeChecker {
 
   private typeCheckStatementBlock(
     expression: StatementBlockExpression,
-    hint: SamlangType | null
+    hint: SamlangType | null,
   ): SamlangExpression {
     const reason = SourceReason(expression.location, expression.location);
     if (expression.block.expression == null) {
       this.typeMeet(hint, SourceUnitType(reason));
     }
     const checkedStatements = expression.block.statements.map((statement) =>
-      this.typeCheckValStatement(statement)
+      this.typeCheckValStatement(statement),
     );
     const checkedStatementBlock =
       expression.block.expression != null
@@ -900,7 +900,7 @@ class ExpressionTypeChecker {
           this.errorReporter.reportUnexpectedTypeKindError(
             assignedExpression.location,
             'identifier',
-            checkedAssignedExpressionType
+            checkedAssignedExpressionType,
           );
           return {
             location: statement.location,
@@ -912,7 +912,7 @@ class ExpressionTypeChecker {
         }
         const fieldMappingsOrError = this.accessibleGlobalTypingContext.resolveTypeDefinition(
           checkedAssignedExpressionType,
-          'object'
+          'object',
         );
         let fieldNamesMappings: {
           readonly fieldNames: readonly string[];
@@ -920,7 +920,7 @@ class ExpressionTypeChecker {
         };
         assert(
           fieldMappingsOrError.type !== 'IllegalOtherClassMatch',
-          'We match on objects here, so this case is impossible.'
+          'We match on objects here, so this case is impossible.',
         );
         switch (fieldMappingsOrError.type) {
           case 'Resolved':
@@ -932,7 +932,7 @@ class ExpressionTypeChecker {
           case 'UnsupportedClassTypeDefinition':
             this.errorReporter.reportUnsupportedClassTypeDefinitionError(
               assignedExpression.location,
-              'object'
+              'object',
             );
             return {
               location: statement.location,
@@ -944,12 +944,12 @@ class ExpressionTypeChecker {
         }
         const { fieldNames, fieldMappings } = fieldNamesMappings;
         const fieldOrderMapping = Object.fromEntries(
-          fieldNames.map((name, index) => [name, index])
+          fieldNames.map((name, index) => [name, index]),
         );
         const destructedNames: ObjectPatternDestucturedName[] = [];
         for (let i = 0; i < pattern.destructedNames.length; i += 1) {
           const destructedName: ObjectPatternDestucturedName = checkNotNull(
-            pattern.destructedNames[i]
+            pattern.destructedNames[i],
           );
           const { fieldName: originalName, alias: renamedName } = destructedName;
           const fieldInformation = fieldMappings[originalName.name];
@@ -1017,12 +1017,12 @@ export default function typeCheckExpression(
   errorCollector: GlobalErrorReporter,
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
   localTypingContext: LocationBasedLocalTypingContext,
-  hint: SamlangType
+  hint: SamlangType,
 ): SamlangExpression {
   const checker = new ExpressionTypeChecker(
     accessibleGlobalTypingContext,
     localTypingContext,
-    errorCollector
+    errorCollector,
   );
   return checker.typeCheck(expression, hint);
 }

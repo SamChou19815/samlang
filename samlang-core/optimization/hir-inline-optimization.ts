@@ -50,7 +50,7 @@ function estimateStatementInlineCost(statement: HighIRStatement): number {
 }
 
 export function estimateFunctionInlineCost_EXPOSED_FOR_TESTING(
-  highIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction,
 ): number {
   return highIRFunction.body.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0);
 }
@@ -73,7 +73,7 @@ function getFunctionsToInline(functions: readonly HighIRFunction[]): {
 
 function inlineRewriteExpression(
   expression: HighIRExpression,
-  context: LocalValueContextForOptimization
+  context: LocalValueContextForOptimization,
 ): HighIRExpression {
   if (expression.__type__ !== 'HighIRVariableExpression') return expression;
   const binded = context.getLocalValueType(expression.name);
@@ -84,7 +84,7 @@ function inlineRewriteForStatement(
   prefix: string,
   context: LocalValueContextForOptimization,
   returnCollector: Readonly<{ name: string; type: HighIRType }> | undefined,
-  statement: HighIRStatement
+  statement: HighIRStatement,
 ): HighIRStatement {
   function rewrite(expression: HighIRExpression): HighIRExpression {
     if (expression.__type__ !== 'HighIRVariableExpression') return expression;
@@ -131,7 +131,7 @@ function inlineRewriteForStatement(
       const booleanExpression = rewrite(statement.booleanExpression);
       const [s1, branch1Values] = context.withNestedScope(() => {
         const statements = filterMap(statement.s1, (it) =>
-          inlineRewriteForStatement(prefix, context, returnCollector, it)
+          inlineRewriteForStatement(prefix, context, returnCollector, it),
         );
         return [
           statements,
@@ -140,7 +140,7 @@ function inlineRewriteForStatement(
       });
       const [s2, branch2Values] = context.withNestedScope(() => {
         const statements = filterMap(statement.s2, (it) =>
-          inlineRewriteForStatement(prefix, context, returnCollector, it)
+          inlineRewriteForStatement(prefix, context, returnCollector, it),
         );
         return [
           statements,
@@ -158,7 +158,7 @@ function inlineRewriteForStatement(
             type: final.type,
             branch1Value,
             branch2Value,
-          })
+          }),
         ),
       };
     }
@@ -167,8 +167,8 @@ function inlineRewriteForStatement(
       const booleanExpression = rewrite(statement.booleanExpression);
       const statements = context.withNestedScope(() =>
         filterMap(statement.statements, (it) =>
-          inlineRewriteForStatement(prefix, context, returnCollector, it)
-        )
+          inlineRewriteForStatement(prefix, context, returnCollector, it),
+        ),
       );
       return { ...statement, booleanExpression, statements };
     }
@@ -182,10 +182,10 @@ function inlineRewriteForStatement(
           name: bindWithMangledName(name, type),
           type,
           initialValue: rewrite(initialValue),
-        })
+        }),
       );
       const statements = statement.statements.map((it) =>
-        inlineRewriteForStatement(prefix, context, returnCollector, it)
+        inlineRewriteForStatement(prefix, context, returnCollector, it),
       );
       const loopVariablesLoopValues = statement.loopVariables.map((it) => rewrite(it.loopValue));
       const breakCollector =
@@ -194,12 +194,12 @@ function inlineRewriteForStatement(
           : {
               name: bindWithMangledName(
                 statement.breakCollector.name,
-                statement.breakCollector.type
+                statement.breakCollector.type,
               ),
               type: statement.breakCollector.type,
             };
       const loopVariables = zip(loopVariablesWithoutLoopValue, loopVariablesLoopValues).map(
-        ([rest, loopValue]) => ({ ...rest, loopValue })
+        ([rest, loopValue]) => ({ ...rest, loopValue }),
       );
       return { ...statement, loopVariables, statements, breakCollector };
     }
@@ -216,7 +216,7 @@ function inlineRewriteForStatement(
         ...statement,
         closureVariableName: bindWithMangledName(
           statement.closureVariableName,
-          statement.closureType
+          statement.closureType,
         ),
         context: rewrite(statement.context),
       };
@@ -227,7 +227,7 @@ function performInlineRewriteOnFunction(
   highIRFunction: HighIRFunction,
   functionsThatCanBeInlined: ReadonlySet<string>,
   allFunctions: Map<string, HighIRFunction>,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): HighIRFunction {
   function rewrite(statement: HighIRStatement): readonly HighIRStatement[] {
     switch (statement.__type__) {
@@ -250,7 +250,7 @@ function performInlineRewriteOnFunction(
         zip(argumentNamesOfFunctionToBeInlined, functionArguments).forEach(
           ([parameter, functionArgument]) => {
             context.bind(parameter, functionArgument);
-          }
+          },
         );
         // Inline step 2: Add in body code and change return statements
         const rewrittenBody = filterMap(mainBodyStatementsOfFunctionToBeInlined, (it) =>
@@ -258,8 +258,8 @@ function performInlineRewriteOnFunction(
             temporaryPrefix,
             context,
             returnCollector != null ? { name: returnCollector, type: returnType } : undefined,
-            it
-          )
+            it,
+          ),
         );
         if (returnCollector == null) return rewrittenBody;
         // Using this to move the value around, will be optimized away eventually.
@@ -295,7 +295,7 @@ function performInlineRewriteOnFunction(
 
 export default function optimizeHighIRFunctionsByInlining(
   highIRFunction: readonly HighIRFunction[],
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): readonly HighIRFunction[] {
   let tempFunctions = highIRFunction;
   for (let i = 0; i < 5; i += 1) {
@@ -309,7 +309,7 @@ export default function optimizeHighIRFunctionsByInlining(
         oldFunction,
         functionsThatCanBeInlined,
         allFunctions,
-        allocator
+        allocator,
       );
     });
   }

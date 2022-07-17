@@ -14,7 +14,7 @@ interface BinaryenModule {
 
 function lowerMidIRSourcesToWasmModule(midIRSources: MidIRSources): BinaryenModule {
   const unoptimizedWasmModule = prettyPrintWebAssemblyModule(
-    lowerMidIRSourcesToWasmModuleInInternalAST(midIRSources)
+    lowerMidIRSourcesToWasmModuleInInternalAST(midIRSources),
   );
   const wasmModule = binaryen.parseText(`(module\n${LIBSAM_WAT}\n${unoptimizedWasmModule}\n)\n`);
   wasmModule.optimize();

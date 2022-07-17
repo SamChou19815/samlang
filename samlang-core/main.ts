@@ -15,7 +15,7 @@ import prettyPrintSamlangModule from './printer';
 import { assert } from './utils';
 
 export function reformatSamlangSources(
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
 ): readonly (readonly [ModuleReference, string])[] {
   return parseSources(sourceHandles).map(([moduleReference, samlangModule]) => [
     moduleReference,
@@ -28,14 +28,14 @@ const EMITTED_WAT_FILE = '__all__.wat';
 
 export function compileSamlangSources(
   sourceHandles: readonly (readonly [ModuleReference, string])[],
-  entryModuleReferences: readonly ModuleReference[]
+  entryModuleReferences: readonly ModuleReference[],
 ): SamlangSourcesCompilationResult {
   const { checkedSources: sources, compileTimeErrors } = typeCheckSourceHandles(sourceHandles);
   const errors = compileTimeErrors.map((it) => it.toString()).sort((a, b) => a.localeCompare(b));
   entryModuleReferences.forEach((moduleReference) => {
     if (!sources.has(moduleReference)) {
       errors.unshift(
-        `Invalid entry point: ${moduleReferenceToString(moduleReference)} does not exist.`
+        `Invalid entry point: ${moduleReferenceToString(moduleReference)} does not exist.`,
       );
     }
   });
@@ -44,7 +44,7 @@ export function compileSamlangSources(
   }
 
   const midIRSources = lowerHighIRSourcesToMidIRSources(
-    optimizeHighIRSourcesAccordingToConfiguration(compileSamlangSourcesToHighIRSources(sources))
+    optimizeHighIRSourcesAccordingToConfiguration(compileSamlangSourcesToHighIRSources(sources)),
   );
   const commonTSCode = prettyPrintMidIRSourcesAsTSSources(midIRSources);
   const wasmModule = lowerMidIRSourcesToWasmModule(midIRSources);
@@ -69,7 +69,7 @@ require('@dev-sam/samlang-cli/loader')(binary).${mainFunctionName}();
 
 function interpretWebAssemblyModule(
   emittedWasmBinary: Uint8Array,
-  mainFunctionName: string
+  mainFunctionName: string,
 ): string {
   let printed = '';
   const functions = samlangGeneratedWebAssemblyLoader(emittedWasmBinary, (pointerToString) => ({
@@ -84,12 +84,12 @@ function interpretWebAssemblyModule(
 }
 
 export function compileSingleSamlangSource(
-  programString: string
+  programString: string,
 ): SamlangSingleSourceCompilationResult {
   const demoModuleReference = ModuleReference(['Demo']);
   const result = compileSamlangSources(
     [[demoModuleReference, programString]],
-    [demoModuleReference]
+    [demoModuleReference],
   );
   if (result.__type__ === 'ERROR') return result;
   const emittedTSCode = result.emittedCode['Demo.ts'];
@@ -98,7 +98,7 @@ export function compileSingleSamlangSource(
   assert(emittedWasmBinary instanceof Uint8Array);
   const interpreterResult = interpretWebAssemblyModule(
     emittedWasmBinary,
-    encodeMainFunctionName(demoModuleReference)
+    encodeMainFunctionName(demoModuleReference),
   );
   return { __type__: 'OK', emittedTSCode, interpreterResult };
 }

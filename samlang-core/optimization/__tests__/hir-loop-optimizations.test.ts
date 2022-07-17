@@ -25,22 +25,22 @@ import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 function assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
   highIRWhileStatement: HighIRWhileStatement,
-  expected: string
+  expected: string,
 ): void {
   expect(
     optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING(
       highIRWhileStatement,
-      new OptimizationResourceAllocator()
+      new OptimizationResourceAllocator(),
     )
       .map((it) => debugPrintHighIRStatement(it))
-      .join('\n')
+      .join('\n'),
   ).toBe(expected);
 }
 
 function assertOptimizeHighIRStatementsWithAllLoopOptimizations(
   statements: HighIRStatement[],
   returnValue: HighIRExpression,
-  expected: string
+  expected: string,
 ): void {
   const { body, returnValue: optimizedReturnValue } =
     optimizeHighIRFunctionWithAllLoopOptimizations(
@@ -52,12 +52,12 @@ function assertOptimizeHighIRStatementsWithAllLoopOptimizations(
         body: statements,
         returnValue,
       },
-      new OptimizationResourceAllocator()
+      new OptimizationResourceAllocator(),
     );
 
   expect(
     `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
-      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`
+      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`,
   ).toBe(expected);
 }
 
@@ -130,12 +130,12 @@ describe('mir-loop-optimizations', () => {
         loopVariables: [],
         statements: [HIR_BINARY({ name: 'a', operator: '+', e1: HIR_ZERO, e2: HIR_ZERO })],
       }),
-      'let a: int = 0 + 0;\nwhile (true) {\n}'
+      'let a: int = 0 + 0;\nwhile (true) {\n}',
     );
 
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
       optimizableWhile1,
-      'let _loop_0: int = 10 * 10;\nlet bc: int = (_loop_0: int) + 0;'
+      'let _loop_0: int = 10 * 10;\nlet bc: int = (_loop_0: int) + 0;',
     );
 
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
@@ -156,7 +156,7 @@ while (true) {
   let _loop_4: int = (tmp_j: int) + 1;
   j = (tmp_j: int);
   tmp_j = (_loop_4: int);
-}`
+}`,
     );
 
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
@@ -183,7 +183,7 @@ while (true) {
   i = (_loop_4: int);
   tmp_j = (_loop_5: int);
   tmp_k = (_loop_6: int);
-}`
+}`,
     );
 
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
@@ -228,7 +228,7 @@ while (true) {
   let tmp_j: int = (_loop_2: int) + 0;
   j = (tmp_j: int);
   i = (_loop_0: int);
-}`
+}`,
     );
 
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
@@ -261,7 +261,7 @@ while (true) {
   }
   let _loop_4: int = (tmp_j: int) + 1;
   tmp_j = (_loop_4: int);
-}`
+}`,
     );
   });
 
@@ -289,13 +289,13 @@ while (true) {
         }),
       ],
       HIR_ZERO,
-      'let tmp_j: int = (i: int) * 2;\nreturn 0;'
+      'let tmp_j: int = (i: int) * 2;\nreturn 0;',
     );
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
       [optimizableWhile1],
       HIR_VARIABLE('bc', HIR_INT_TYPE),
-      '\nreturn 100;'
+      '\nreturn 100;',
     );
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
@@ -314,7 +314,7 @@ while (true) {
   j = (tmp_j: int);
   tmp_j = (_loop_4: int);
 }
-return (bc: int);`
+return (bc: int);`,
     );
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
@@ -339,7 +339,7 @@ while (true) {
   tmp_j = (_loop_5: int);
   tmp_k = (_loop_6: int);
 }
-return (bc: int);`
+return (bc: int);`,
     );
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
@@ -373,7 +373,7 @@ return (bc: int);`
         }),
       ],
       HIR_VARIABLE('bc', HIR_INT_TYPE),
-      '\nreturn 24;'
+      '\nreturn 24;',
     );
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
@@ -438,7 +438,7 @@ while (true) {
   i = (_loop_4: int);
   j = (_loop_5: int);
 }
-return 0;`
+return 0;`,
     );
   });
 });

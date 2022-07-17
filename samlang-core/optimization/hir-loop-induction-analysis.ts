@@ -83,7 +83,7 @@ const statementsContainsBreak = (statements: readonly HighIRStatement[]): boolea
 
 function mergeInvariantAdditionForLoopOptimization(
   existingValue: PotentialLoopInvariantExpression,
-  addedValue: PotentialLoopInvariantExpression
+  addedValue: PotentialLoopInvariantExpression,
 ): PotentialLoopInvariantExpression | null {
   if (
     existingValue.__type__ === 'HighIRIntLiteralExpression' &&
@@ -102,7 +102,7 @@ function mergeInvariantAdditionForLoopOptimization(
 
 export function mergeInvariantMultiplicationForLoopOptimization(
   existingValue: PotentialLoopInvariantExpression,
-  addedValue: PotentialLoopInvariantExpression
+  addedValue: PotentialLoopInvariantExpression,
 ): PotentialLoopInvariantExpression | null {
   if (
     existingValue.__type__ === 'HighIRIntLiteralExpression' &&
@@ -122,12 +122,12 @@ export function mergeInvariantMultiplicationForLoopOptimization(
 function mergeConstantOperationIntoDerivedInductionVariable(
   existing: DerivedInductionVariable,
   operator: '+' | '*',
-  loopInvariantExpression: PotentialLoopInvariantExpression
+  loopInvariantExpression: PotentialLoopInvariantExpression,
 ): DerivedInductionVariable | null {
   if (operator === '+') {
     const mergedImmediate = mergeInvariantAdditionForLoopOptimization(
       existing.immediate,
-      loopInvariantExpression
+      loopInvariantExpression,
     );
     if (mergedImmediate == null) return null;
     return { ...existing, immediate: mergedImmediate };
@@ -164,16 +164,16 @@ function mergeConstantOperationIntoDerivedInductionVariable(
 
 export function mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING(
   existing: DerivedInductionVariable,
-  anotherVariable: DerivedInductionVariable
+  anotherVariable: DerivedInductionVariable,
 ): DerivedInductionVariable | null {
   if (existing.baseName !== anotherVariable.baseName) return null;
   const mergedMultiplier = mergeInvariantAdditionForLoopOptimization(
     existing.multiplier,
-    anotherVariable.multiplier
+    anotherVariable.multiplier,
   );
   const mergedImmediate = mergeInvariantAdditionForLoopOptimization(
     existing.immediate,
-    anotherVariable.immediate
+    anotherVariable.immediate,
   );
   return mergedMultiplier == null || mergedImmediate == null
     ? null
@@ -183,7 +183,7 @@ export function mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TE
 function tryMergeIntoDerivedInductionVariableWithoutSwap(
   existingSet: Map<string, DerivedInductionVariable>,
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
-  binaryStatement: HighIRBinaryStatement
+  binaryStatement: HighIRBinaryStatement,
 ): boolean {
   if (binaryStatement.e1.__type__ !== 'HighIRVariableExpression') return false;
   const existing = existingSet.get(binaryStatement.e1.name);
@@ -196,7 +196,7 @@ function tryMergeIntoDerivedInductionVariableWithoutSwap(
     if (anotherVariable != null) {
       const merged = mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING(
         existing,
-        anotherVariable
+        anotherVariable,
       );
       if (merged != null) {
         existingSet.set(binaryStatement.name, merged);
@@ -216,7 +216,7 @@ function tryMergeIntoDerivedInductionVariableWithoutSwap(
       const merged = mergeConstantOperationIntoDerivedInductionVariable(
         existing,
         binaryStatement.operator,
-        binaryStatement.e2
+        binaryStatement.e2,
       );
       if (merged != null) {
         existingSet.set(binaryStatement.name, merged);
@@ -230,13 +230,13 @@ function tryMergeIntoDerivedInductionVariableWithoutSwap(
 function tryMergeIntoDerivedInductionVariable(
   existingSet: Map<string, DerivedInductionVariable>,
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
-  binaryStatement: HighIRBinaryStatement
+  binaryStatement: HighIRBinaryStatement,
 ): void {
   if (
     tryMergeIntoDerivedInductionVariableWithoutSwap(
       existingSet,
       expressionIsLoopInvariant,
-      binaryStatement
+      binaryStatement,
     )
   ) {
     return;
@@ -282,7 +282,7 @@ export function invertGuardOperator(operator: '<' | '<=' | '>' | '>='): '<' | '<
 
 export function getGuardOperator_EXPOSED_FOR_TESTING(
   operator: IROperator,
-  invertCondition: boolean
+  invertCondition: boolean,
 ): '<' | '<=' | '>' | '>=' | null {
   switch (operator) {
     case '<':
@@ -302,7 +302,7 @@ export function getGuardOperator_EXPOSED_FOR_TESTING(
 
 export function extractLoopGuardStructure_EXPOSED_FOR_TESTING(
   { statements, breakCollector: originalBreakCollector }: HighIRWhileStatement,
-  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
+  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
 ): LoopGuardStructure | null {
   if (statements.length < 2) return null;
   const [firstBinaryStatement, secondSingleIfStatement, ...restStatements] = statements;
@@ -324,7 +324,7 @@ export function extractLoopGuardStructure_EXPOSED_FOR_TESTING(
   if (onlyBreakStatement.__type__ !== 'HighIRBreakStatement') return null;
   const guardOperator = getGuardOperator_EXPOSED_FOR_TESTING(
     firstBinaryStatement.operator,
-    secondSingleIfStatement.invertCondition
+    secondSingleIfStatement.invertCondition,
   );
   if (guardOperator == null) return null;
   const potentialBasicInductionVariableNameWithLoopGuard = firstBinaryStatement.e1.name;
@@ -355,7 +355,7 @@ export function extractBasicInductionVariables_EXPOSED_FOR_TESTING(
   potentialBasicInductionVariableNameWithLoopGuard: string,
   loopVariables: readonly GeneralHighIRLoopVariables[],
   restStatements: readonly HighIRStatement[],
-  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
+  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
 ): ExtractedBasicInductionVariables | null {
   const allBasicInductionVariables: GeneralBasicInductionVariableWithLoopValueCollector[] = [];
   const loopVariablesThatAreNotBasicInductionVariables: GeneralHighIRLoopVariables[] = [];
@@ -394,7 +394,7 @@ export function extractBasicInductionVariables_EXPOSED_FOR_TESTING(
 
   // Extract the ONE basic induction variable associated with the loopGuard.
   const basicInductionVariableWithAssociatedLoopGuard = allBasicInductionVariables.find(
-    (it) => it.name === potentialBasicInductionVariableNameWithLoopGuard
+    (it) => it.name === potentialBasicInductionVariableNameWithLoopGuard,
   );
   if (basicInductionVariableWithAssociatedLoopGuard == null) return null;
 
@@ -408,7 +408,7 @@ export function extractBasicInductionVariables_EXPOSED_FOR_TESTING(
 export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
   allBasicInductionVariables: readonly GeneralBasicInductionVariableWithLoopValueCollector[],
   restStatements: readonly HighIRStatement[],
-  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
+  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
 ): readonly DerivedInductionVariableWithName[] {
   const existingDerivedInductionVariableSet = new Map<string, DerivedInductionVariable>();
   allBasicInductionVariables.forEach((it) => {
@@ -423,11 +423,11 @@ export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
     tryMergeIntoDerivedInductionVariable(
       existingDerivedInductionVariableSet,
       expressionIsLoopInvariant,
-      it
+      it,
     );
   });
   const inductionLoopVariablesCollectorNames = new Set(
-    allBasicInductionVariables.map((it) => it.loopValueCollector)
+    allBasicInductionVariables.map((it) => it.loopValueCollector),
   );
   return filterMap(restStatements, (it) => {
     if (it.__type__ !== 'HighIRBinaryStatement') return null;
@@ -440,7 +440,7 @@ export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
 
 export function removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(
   otherLoopVariables: readonly GeneralHighIRLoopVariables[],
-  restStatements: readonly HighIRStatement[]
+  restStatements: readonly HighIRStatement[],
 ): readonly HighIRStatement[] {
   const liveVariableSet = new Set<string>();
   otherLoopVariables.forEach((it) => {
@@ -452,7 +452,7 @@ export function removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(
 
 export function expressionIsLoopInvariant_EXPOSED_FOR_TESTING(
   expression: HighIRExpression,
-  nonLoopInvariantVariables: ReadonlySet<string>
+  nonLoopInvariantVariables: ReadonlySet<string>,
 ): boolean {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
@@ -473,7 +473,7 @@ export function expressionIsLoopInvariant_EXPOSED_FOR_TESTING(
  */
 export default function extractOptimizableWhileLoop(
   whileStatement: HighIRWhileStatement,
-  nonLoopInvariantVariables: ReadonlySet<string>
+  nonLoopInvariantVariables: ReadonlySet<string>,
 ): HighIROptimizableWhileLoop | null {
   const expressionIsLoopInvariant = (expression: HighIRExpression): boolean =>
     expressionIsLoopInvariant_EXPOSED_FOR_TESTING(expression, nonLoopInvariantVariables);
@@ -481,7 +481,7 @@ export default function extractOptimizableWhileLoop(
   // Phase 1: Check the structure for loop guard.
   const loopGuardStructure = extractLoopGuardStructure_EXPOSED_FOR_TESTING(
     whileStatement,
-    expressionIsLoopInvariant
+    expressionIsLoopInvariant,
   );
   if (loopGuardStructure == null) return null;
   const {
@@ -497,7 +497,7 @@ export default function extractOptimizableWhileLoop(
     potentialBasicInductionVariableNameWithLoopGuard,
     whileStatement.loopVariables,
     restStatements,
-    expressionIsLoopInvariant
+    expressionIsLoopInvariant,
   );
   if (extractedBasicInductionVariables == null) return null;
   const {
@@ -520,7 +520,7 @@ export default function extractOptimizableWhileLoop(
   const derivedInductionVariables = extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
     allBasicInductionVariables,
     restStatements,
-    expressionIsLoopInvariant
+    expressionIsLoopInvariant,
   );
   const derivedInductionVariableNames = new Set(derivedInductionVariables.map((it) => it.name));
 
@@ -529,9 +529,9 @@ export default function extractOptimizableWhileLoop(
     loopVariablesThatAreNotBasicInductionVariables.filter(
       (it) =>
         it.loopValue.__type__ !== 'HighIRVariableExpression' ||
-        !derivedInductionVariableNames.has(it.loopValue.name)
+        !derivedInductionVariableNames.has(it.loopValue.name),
     ),
-    restStatements
+    restStatements,
   );
 
   return {

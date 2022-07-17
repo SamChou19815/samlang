@@ -25,7 +25,7 @@ import performGenericsSpecializationOnHighIRSources from '../hir-generics-specia
 
 const expectSpecialized = (sources: HighIRSources, expected: string) =>
   expect(debugPrintHighIRSources(performGenericsSpecializationOnHighIRSources(sources))).toBe(
-    expected.trim()
+    expected.trim(),
   );
 
 describe('hir-generics-specialization', () => {
@@ -38,7 +38,7 @@ describe('hir-generics-specialization', () => {
         mainFunctionNames: [],
         functions: [],
       },
-      ''
+      '',
     );
   });
 
@@ -62,7 +62,7 @@ function main(): int {
 }
 
 sources.mains = [main]
-`
+`,
     );
   });
 
@@ -85,7 +85,7 @@ sources.mains = [main]
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME(
                   '__builtins_println',
-                  HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE)
+                  HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
                 ),
                 functionArguments: [HIR_NAME('G1', HIR_STRING_TYPE)],
                 returnType: HIR_INT_TYPE,
@@ -103,7 +103,7 @@ function main(): int {
 }
 
 sources.mains = [main]
-`
+`,
     );
   });
 
@@ -130,7 +130,7 @@ sources.mains = [main]
             returnValue: HIR_ZERO,
           },
         ],
-      })
+      }),
     ).toThrow();
 
     expect(() =>
@@ -149,7 +149,7 @@ sources.mains = [main]
             returnValue: HIR_ZERO,
           },
         ],
-      })
+      }),
     ).toThrow();
 
     expect(() =>
@@ -168,7 +168,7 @@ sources.mains = [main]
             returnValue: HIR_ZERO,
           },
         ],
-      })
+      }),
     ).toThrow();
   });
 
@@ -254,7 +254,7 @@ sources.mains = [main]
                   HIR_FUNCTION_CALL({
                     functionExpression: HIR_NAME(
                       'creatorIA',
-                      HIR_FUNCTION_TYPE([HIR_INT_TYPE], typeI)
+                      HIR_FUNCTION_TYPE([HIR_INT_TYPE], typeI),
                     ),
                     functionArguments: [HIR_ZERO],
                     returnType: typeI,
@@ -265,8 +265,8 @@ sources.mains = [main]
                       'creatorIA',
                       HIR_FUNCTION_TYPE(
                         [HIR_STRING_TYPE],
-                        HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE])
-                      )
+                        HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
+                      ),
                     ),
                     functionArguments: [G1],
                     returnType: typeI,
@@ -275,7 +275,7 @@ sources.mains = [main]
                   HIR_FUNCTION_CALL({
                     functionExpression: HIR_NAME(
                       'creatorIB',
-                      HIR_FUNCTION_TYPE([HIR_STRING_TYPE], typeI)
+                      HIR_FUNCTION_TYPE([HIR_STRING_TYPE], typeI),
                     ),
                     functionArguments: [G1],
                     returnType: typeI,
@@ -312,7 +312,7 @@ sources.mains = [main]
                     functionName: 'creatorIA',
                     functionType: HIR_FUNCTION_TYPE(
                       [HIR_STRING_TYPE],
-                      HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE])
+                      HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
                     ),
                     context: G1,
                   }),
@@ -322,7 +322,7 @@ sources.mains = [main]
                     functionName: 'creatorIA',
                     functionType: HIR_FUNCTION_TYPE(
                       [HIR_STRING_TYPE],
-                      HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE])
+                      HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
                     ),
                     context: G1,
                   }),
@@ -385,7 +385,7 @@ function main(): int {
 }
 
 sources.mains = [main]
-      `
+      `,
     );
   });
 
@@ -465,7 +465,7 @@ function main(): int {
   return 0;
 }
 
-sources.mains = [main]`
+sources.mains = [main]`,
     );
   });
 });

@@ -29,7 +29,7 @@ import {
 
 export function createPrettierDocumentForAssociatedComments(
   associatedComments: readonly TypedComment[],
-  addFinalLineBreak: boolean
+  addFinalLineBreak: boolean,
 ): PrettierDocument | null {
   const documents = associatedComments.flatMap((precedingComment) => {
     switch (precedingComment.type) {
@@ -54,18 +54,18 @@ const optionalTypeArguments = (typeArguments: readonly SamlangType[]) =>
   typeArguments.length > 0 ? `<${typeArguments.map(prettyPrintType).join(', ')}>` : '';
 
 function createPrettierDocumentFromSamlangExpression(
-  expression: SamlangExpression
+  expression: SamlangExpression,
 ): PrettierDocument {
   function createDocumentForSubExpressionConsideringPrecedenceLevel(
     subExpression: SamlangExpression,
-    equalLevelParenthesis = false
+    equalLevelParenthesis = false,
   ): PrettierDocument {
     const addParenthesis = equalLevelParenthesis
       ? subExpression.precedence >= expression.precedence
       : subExpression.precedence > expression.precedence;
     if (addParenthesis) {
       return createParenthesisSurroundedDocument(
-        createPrettierDocumentFromSamlangExpression(subExpression)
+        createPrettierDocumentFromSamlangExpression(subExpression),
       );
     }
     return createPrettierDocumentFromSamlangExpression(subExpression);
@@ -78,11 +78,11 @@ function createPrettierDocumentFromSamlangExpression(
       documents.push(
         PRETTIER_TEXT('if '),
         createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(ifElseExpression.boolExpression)
+          createPrettierDocumentFromSamlangExpression(ifElseExpression.boolExpression),
         ),
         PRETTIER_TEXT(' then '),
         createDocumentForSubExpressionConsideringPrecedenceLevel(ifElseExpression.e1),
-        PRETTIER_TEXT(' else ')
+        PRETTIER_TEXT(' else '),
       );
       ifElseExpression = ifElseExpression.e2;
     } while (ifElseExpression.__type__ === 'IfElseExpression');
@@ -93,7 +93,7 @@ function createPrettierDocumentFromSamlangExpression(
   function createDocumentDottedExpression(
     base: PrettierDocument,
     comments: readonly TypedComment[],
-    member: string
+    member: string,
   ) {
     const memberPrecedingCommentsDoc = createPrettierDocumentForAssociatedComments(comments, true);
     const memberPrecedingCommentsDocs =
@@ -104,13 +104,13 @@ function createPrettierDocumentFromSamlangExpression(
       base,
       memberPrecedingCommentsDocs,
       PRETTIER_TEXT('.'),
-      PRETTIER_TEXT(member)
+      PRETTIER_TEXT(member),
     );
   }
 
   const precedingCommentDoc = createPrettierDocumentForAssociatedComments(
     expression.associatedComments,
-    true
+    true,
   );
 
   const documentWithoutPrecedingComment = (() => {
@@ -125,25 +125,25 @@ function createPrettierDocumentFromSamlangExpression(
         return createDocumentDottedExpression(
           PRETTIER_TEXT(expression.className.name),
           expression.memberName.associatedComments,
-          expression.memberName.name + optionalTypeArguments(expression.typeArguments)
+          expression.memberName.name + optionalTypeArguments(expression.typeArguments),
         );
       }
       case 'FieldAccessExpression':
         return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
           expression.fieldName.associatedComments,
-          expression.fieldName.name
+          expression.fieldName.name,
         );
       case 'MethodAccessExpression':
         return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
           expression.methodName.associatedComments,
-          expression.methodName.name
+          expression.methodName.name,
         );
       case 'UnaryExpression':
         return PRETTIER_CONCAT(
           PRETTIER_TEXT(`${expression.operator}`),
-          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression)
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
         );
       case 'FunctionCallExpression':
         return PRETTIER_CONCAT(
@@ -151,14 +151,14 @@ function createPrettierDocumentFromSamlangExpression(
           createParenthesisSurroundedDocument(
             createCommaSeparatedList(
               expression.functionArguments,
-              createPrettierDocumentFromSamlangExpression
-            )
-          )
+              createPrettierDocumentFromSamlangExpression,
+            ),
+          ),
         );
       case 'BinaryExpression': {
         const operatorPrecedingCommentsDoc = createPrettierDocumentForAssociatedComments(
           expression.operatorPrecedingComments,
-          false
+          false,
         );
         const operatorPrecedingCommentsDocs =
           operatorPrecedingCommentsDoc != null
@@ -170,7 +170,7 @@ function createPrettierDocumentFromSamlangExpression(
             createPrettierDocumentFromSamlangExpression(expression.e1),
             operatorPrecedingCommentsDocs,
             PRETTIER_TEXT(` ${expression.operator.symbol} `),
-            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2, true)
+            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2, true),
           );
         }
         if (expression.e2.precedence === expression.precedence) {
@@ -185,7 +185,7 @@ function createPrettierDocumentFromSamlangExpression(
                 createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1, true),
                 operatorPrecedingCommentsDocs,
                 PRETTIER_TEXT(` ${expression.operator.symbol} `),
-                createPrettierDocumentFromSamlangExpression(expression.e2)
+                createPrettierDocumentFromSamlangExpression(expression.e2),
               );
           }
         }
@@ -193,7 +193,7 @@ function createPrettierDocumentFromSamlangExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1, true),
           operatorPrecedingCommentsDocs,
           PRETTIER_TEXT(` ${expression.operator.symbol} `),
-          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2, true)
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2, true),
         );
       }
       case 'IfElseExpression':
@@ -209,10 +209,10 @@ function createPrettierDocumentFromSamlangExpression(
         return PRETTIER_CONCAT(
           PRETTIER_TEXT('match '),
           createParenthesisSurroundedDocument(
-            createPrettierDocumentFromSamlangExpression(expression.matchedExpression)
+            createPrettierDocumentFromSamlangExpression(expression.matchedExpression),
           ),
           PRETTIER_TEXT(' '),
-          createBracesSurroundedDocument(PRETTIER_CONCAT(...list.slice(0, list.length - 1)))
+          createBracesSurroundedDocument(PRETTIER_CONCAT(...list.slice(0, list.length - 1))),
         );
       }
       case 'LambdaExpression':
@@ -220,12 +220,12 @@ function createPrettierDocumentFromSamlangExpression(
           createParenthesisSurroundedDocument(
             createCommaSeparatedList(expression.parameters, ({ name: { name }, typeAnnotation }) =>
               PRETTIER_TEXT(
-                typeAnnotation == null ? name : `${name}: ${prettyPrintType(typeAnnotation)}`
-              )
-            )
+                typeAnnotation == null ? name : `${name}: ${prettyPrintType(typeAnnotation)}`,
+              ),
+            ),
           ),
           PRETTIER_TEXT(' -> '),
-          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.body)
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.body),
         );
       case 'StatementBlockExpression': {
         const { statements, expression: finalExpression } = expression.block;
@@ -239,9 +239,9 @@ function createPrettierDocumentFromSamlangExpression(
                     PRETTIER_TEXT(
                       it.alias == null
                         ? it.fieldName.name
-                        : `${it.fieldName.name} as ${it.alias.name}`
-                    )
-                  )
+                        : `${it.fieldName.name} as ${it.alias.name}`,
+                    ),
+                  ),
                 );
                 break;
               case 'VariablePattern':
@@ -289,16 +289,16 @@ function createPrettierDocumentFromSamlangExpression(
 
 export function prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
   availableWidth: number,
-  expression: SamlangExpression
+  expression: SamlangExpression,
 ): string {
   return prettyPrintAccordingToPrettierAlgorithm(
     availableWidth,
-    createPrettierDocumentFromSamlangExpression(expression)
+    createPrettierDocumentFromSamlangExpression(expression),
   );
 }
 
 export function createPrettierDocumentsFromSamlangInterfaceMember(
-  member: SourceClassMemberDeclaration & { readonly body?: SamlangExpression }
+  member: SourceClassMemberDeclaration & { readonly body?: SamlangExpression },
 ): readonly PrettierDocument[] {
   const bodyDocument =
     member.body == null ? PRETTIER_NIL : createPrettierDocumentFromSamlangExpression(member.body);
@@ -314,7 +314,7 @@ export function createPrettierDocumentsFromSamlangInterfaceMember(
     bodyDocumentWithPotentialIndentation = PRETTIER_CONCAT(PRETTIER_TEXT(' {'), bodyDocument.doc2);
   } else {
     bodyDocumentWithPotentialIndentation = PRETTIER_GROUP(
-      PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, bodyDocument))
+      PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, bodyDocument)),
     );
   }
 
@@ -328,8 +328,8 @@ export function createPrettierDocumentsFromSamlangInterfaceMember(
     PRETTIER_TEXT(member.name.name),
     createParenthesisSurroundedDocument(
       createCommaSeparatedList(member.parameters, (annotated) =>
-        PRETTIER_TEXT(`${annotated.name}: ${prettyPrintType(annotated.type)}`)
-      )
+        PRETTIER_TEXT(`${annotated.name}: ${prettyPrintType(annotated.type)}`),
+      ),
     ),
     PRETTIER_TEXT(`: ${prettyPrintType(member.type.returnType)}${member.body == null ? '' : ' ='}`),
     bodyDocumentWithPotentialIndentation,

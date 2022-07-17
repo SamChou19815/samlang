@@ -29,7 +29,7 @@ import optimizeHighIRFunctionByLocalValueNumbering from '../hir-local-value-numb
 function assertCorrectlyOptimized(
   statements: HighIRStatement[],
   returnValue: HighIRExpression,
-  expected: string
+  expected: string,
 ): void {
   const { body, returnValue: optimizedReturnValue } = optimizeHighIRFunctionByLocalValueNumbering({
     name: '',
@@ -42,7 +42,7 @@ function assertCorrectlyOptimized(
 
   expect(
     `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
-      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`
+      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`,
   ).toBe(expected);
 }
 
@@ -113,7 +113,7 @@ let b3: int = (i0: int) + (b0: int);
 let s: S = [(i0: int), (b0: int), (b3: int)];
 let s: S = Closure { fun: (a: () -> int), context: 0 };
 fff((i0: int), (b0: int), (b3: int));
-return (ss: int);`
+return (ss: int);`,
     );
   });
 
@@ -173,7 +173,7 @@ if 0 {
   let i4: int = (i0: int)[1];
 }
 let i5: int = (i0: int)[1];
-return 0;`
+return 0;`,
     );
   });
 
@@ -236,7 +236,7 @@ if 0 {
   let i4: int = (i0: int)[1];
   bar = (i0: int);
 }
-return 0;`
+return 0;`,
     );
   });
 
@@ -308,7 +308,7 @@ while (true) {
   }
   n = (_tmp_n: int);
 }
-return 0;`
+return 0;`,
     );
   });
 
@@ -373,7 +373,7 @@ while (true) {
   }
   n = (_tmp_n: int);
 }
-return (v: int);`
+return (v: int);`,
     );
   });
 });

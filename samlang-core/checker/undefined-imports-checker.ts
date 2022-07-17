@@ -6,7 +6,7 @@ import { filterMap } from '../utils';
 class UndefinedImportChecker {
   constructor(
     private readonly sources: Sources<SamlangModule>,
-    private readonly errorReporter: GlobalErrorReporter
+    private readonly errorReporter: GlobalErrorReporter,
   ) {}
 
   checkModuleImports(samlangModule: SamlangModule): SamlangModule {
@@ -19,20 +19,20 @@ class UndefinedImportChecker {
   }
 
   private checkModuleMembersImport = (
-    oneImport: SourceModuleMembersImport
+    oneImport: SourceModuleMembersImport,
   ): SourceModuleMembersImport | null => {
     const availableMembers = this.sources.get(oneImport.importedModule);
     if (availableMembers == null) {
       this.errorReporter.reportUnresolvedNameError(
         oneImport.location,
-        moduleReferenceToString(oneImport.importedModule)
+        moduleReferenceToString(oneImport.importedModule),
       );
       return null;
     }
     const availableMembersSet = new Set(
       [...availableMembers.classes, ...availableMembers.interfaces].map(
-        (oneClass) => oneClass.name.name
-      )
+        (oneClass) => oneClass.name.name,
+      ),
     );
     const checkedMemberImports = oneImport.importedMembers.filter(
       ({ name: importedMember, location }) => {
@@ -41,7 +41,7 @@ class UndefinedImportChecker {
           return false;
         }
         return true;
-      }
+      },
     );
     return { ...oneImport, importedMembers: checkedMemberImports };
   };
@@ -50,7 +50,7 @@ class UndefinedImportChecker {
 export default function checkUndefinedImportsError(
   sources: Sources<SamlangModule>,
   samlangModule: SamlangModule,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): SamlangModule {
   return new UndefinedImportChecker(sources, errorReporter).checkModuleImports(samlangModule);
 }

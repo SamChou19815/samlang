@@ -23,7 +23,7 @@ export interface LanguageServices {
 
   queryForHover(
     moduleReference: ModuleReference,
-    position: Position
+    position: Position,
   ): { contents: Readonly<{ language: string; value: string }>[]; location: Location } | null;
 
   queryFoldingRanges(moduleReference: ModuleReference): readonly Location[] | null;
@@ -35,7 +35,7 @@ export interface LanguageServices {
   renameVariable(
     moduleReference: ModuleReference,
     position: Position,
-    newName: string
+    newName: string,
   ): 'Invalid' | string | null;
 
   formatEntireDocument(moduleReference: ModuleReference): string | null;

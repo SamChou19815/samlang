@@ -117,15 +117,15 @@ function bracketFlexible(
   left: string,
   separator: PrettierDocument,
   doc: PrettierDocument,
-  right: string
+  right: string,
 ): PrettierDocument {
   return PRETTIER_GROUP(
     PRETTIER_CONCAT(
       PRETTIER_TEXT(left),
       PRETTIER_NEST(2, PRETTIER_CONCAT(separator, doc)),
       separator,
-      PRETTIER_TEXT(right)
-    )
+      PRETTIER_TEXT(right),
+    ),
   );
 }
 
@@ -136,14 +136,14 @@ function bracketFlexible(
 export const PRETTIER_NO_SPACE_BRACKET = (
   left: string,
   doc: PrettierDocument,
-  right: string
+  right: string,
 ): PrettierDocument => bracketFlexible(left, PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL, doc, right);
 
 /** Correspond to the bracket function in the prettier paper. */
 export const PRETTIER_SPACED_BRACKET = (
   left: string,
   doc: PrettierDocument,
-  right: string
+  right: string,
 ): PrettierDocument => bracketFlexible(left, PRETTIER_LINE, doc, right);
 
 export function PRETTIER_LINE_COMMENT(text: string): PrettierDocument {
@@ -154,9 +154,9 @@ export function PRETTIER_LINE_COMMENT(text: string): PrettierDocument {
     ...words.map((word) =>
       PRETTIER_UNION(
         PRETTIER_TEXT(`${word} `),
-        PRETTIER_CONCAT(PRETTIER_TEXT(word), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT('// '))
-      )
-    )
+        PRETTIER_CONCAT(PRETTIER_TEXT(word), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT('// ')),
+      ),
+    ),
   );
   return PRETTIER_UNION(singleLineForm, multipleLineForm);
 }
@@ -171,11 +171,11 @@ export function PRETTIER_MULTILINE_COMMENT(starter: string, text: string): Prett
     ...words.map((word) =>
       PRETTIER_UNION(
         PRETTIER_TEXT(`${word} `),
-        PRETTIER_CONCAT(PRETTIER_TEXT(word), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT(' * '))
-      )
+        PRETTIER_CONCAT(PRETTIER_TEXT(word), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT(' * ')),
+      ),
     ),
     PRETTIER_EXTENSION_LINE_HARD,
-    PRETTIER_TEXT(' */')
+    PRETTIER_TEXT(' */'),
   );
   return PRETTIER_UNION(singleLineForm, multipleLineForm);
 }
@@ -225,7 +225,7 @@ type ImmutableIntermediateDocumentList =
 
 function intermediateDocumentFitsInAvailableWidth(
   availableWidth: number,
-  documents: ImmutableIntermediateDocumentList
+  documents: ImmutableIntermediateDocumentList,
 ): boolean {
   let remainingWidth = availableWidth;
   let docList = documents;
@@ -262,13 +262,13 @@ const createImmutablePrettierDocumentListItem = getMemoized2ArgFunction(
   (indentation: number, doc: PrettierDocument): readonly [number, PrettierDocument] => [
     indentation,
     doc,
-  ]
+  ],
 );
 const createImmutablePrettierDocumentList = getMemoized2ArgFunction(
   (
     item: readonly [number, PrettierDocument],
-    list: ImmutablePrettierDocumentList
-  ): ImmutablePrettierDocumentList => [item, list]
+    list: ImmutablePrettierDocumentList,
+  ): ImmutablePrettierDocumentList => [item, list],
 );
 
 /**
@@ -292,9 +292,9 @@ function generateBestDoc(availableWidth: number) {
               createImmutablePrettierDocumentListItem(indentation, document.doc1),
               createImmutablePrettierDocumentList(
                 createImmutablePrettierDocumentListItem(indentation, document.doc2),
-                rest
-              )
-            )
+                rest,
+              ),
+            ),
           );
         case 'NEST':
           return generateMemoized(
@@ -302,10 +302,10 @@ function generateBestDoc(availableWidth: number) {
             createImmutablePrettierDocumentList(
               createImmutablePrettierDocumentListItem(
                 indentation + document.indentation,
-                document.doc
+                document.doc,
               ),
-              rest
-            )
+              rest,
+            ),
           );
         case 'TEXT':
           return [
@@ -321,8 +321,8 @@ function generateBestDoc(availableWidth: number) {
             consumed,
             createImmutablePrettierDocumentList(
               createImmutablePrettierDocumentListItem(indentation, document.doc1),
-              rest
-            )
+              rest,
+            ),
           );
           if (intermediateDocumentFitsInAvailableWidth(availableWidth - consumed, choice1)) {
             return choice1;
@@ -331,20 +331,20 @@ function generateBestDoc(availableWidth: number) {
               consumed,
               createImmutablePrettierDocumentList(
                 createImmutablePrettierDocumentListItem(indentation, document.doc2),
-                rest
-              )
+                rest,
+              ),
             );
           }
         }
       }
-    }
+    },
   );
   return generateMemoized;
 }
 
 export function prettyPrintAccordingToPrettierAlgorithm(
   availableWidth: number,
-  document: PrettierDocument
+  document: PrettierDocument,
 ): string {
   let documents = generateBestDoc(availableWidth)(0, [[0, document], null]);
   const collector: string[] = [];

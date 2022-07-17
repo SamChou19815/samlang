@@ -9,7 +9,7 @@ function solveTypeConstraintsInternal(
   concreteType: SamlangType,
   genericType: SamlangType,
   typeParameters: ReadonlySet<string>,
-  partiallySolved: Map<string, SamlangType>
+  partiallySolved: Map<string, SamlangType>,
 ): void {
   // Unknown types, which might come from expressions that need to be contextually typed (e.g. lambda),
   // do not participate in constraint solving.
@@ -33,7 +33,7 @@ function solveTypeConstraintsInternal(
         concreteType.typeArguments.length === genericType.typeArguments.length
       ) {
         zip(concreteType.typeArguments, genericType.typeArguments).map(([c, g]) =>
-          solveTypeConstraintsInternal(c, g, typeParameters, partiallySolved)
+          solveTypeConstraintsInternal(c, g, typeParameters, partiallySolved),
         );
       }
       return;
@@ -43,13 +43,13 @@ function solveTypeConstraintsInternal(
         concreteType.argumentTypes.length === genericType.argumentTypes.length
       ) {
         zip(concreteType.argumentTypes, genericType.argumentTypes).map(([g, s]) =>
-          solveTypeConstraintsInternal(g, s, typeParameters, partiallySolved)
+          solveTypeConstraintsInternal(g, s, typeParameters, partiallySolved),
         );
         solveTypeConstraintsInternal(
           concreteType.returnType,
           genericType.returnType,
           typeParameters,
-          partiallySolved
+          partiallySolved,
         );
       }
       return;
@@ -64,12 +64,12 @@ interface TypeConstraintSolution {
 
 export function solveMultipleTypeConstraints(
   constraints: readonly { readonly concreteType: SamlangType; readonly genericType: SamlangType }[],
-  typeParameters: readonly string[]
+  typeParameters: readonly string[],
 ): Map<string, SamlangType> {
   const solvedSubstitution = new Map<string, SamlangType>();
   const typeParameterSet = new Set(typeParameters);
   constraints.forEach(({ concreteType, genericType }) =>
-    solveTypeConstraintsInternal(concreteType, genericType, typeParameterSet, solvedSubstitution)
+    solveTypeConstraintsInternal(concreteType, genericType, typeParameterSet, solvedSubstitution),
   );
   return solvedSubstitution;
 }
@@ -78,29 +78,29 @@ export function solveTypeConstraints(
   concreteType: SamlangType,
   genericType: SamlangType,
   typeParameters: readonly string[],
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): TypeConstraintSolution {
   const solvedSubstitution = solveMultipleTypeConstraints(
     [{ concreteType, genericType }],
-    typeParameters
+    typeParameters,
   );
   typeParameters.forEach((typeParameter) => {
     if (!solvedSubstitution.has(typeParameter)) {
       // Fill in unknown for unsolved types.
       solvedSubstitution.set(
         typeParameter,
-        SourceUnknownType(SourceReason(concreteType.reason.useLocation, null))
+        SourceUnknownType(SourceReason(concreteType.reason.useLocation, null)),
       );
     }
   });
   const solvedGenericType = performTypeSubstitution(
     genericType,
-    Object.fromEntries(solvedSubstitution)
+    Object.fromEntries(solvedSubstitution),
   );
   const solvedContextuallyTypedConcreteType = contextualTypeMeet(
     solvedGenericType,
     concreteType,
-    errorReporter
+    errorReporter,
   );
   return { solvedSubstitution, solvedGenericType, solvedContextuallyTypedConcreteType };
 }

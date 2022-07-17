@@ -14,11 +14,11 @@ import { collectSources, getConfiguration } from './utils';
 
 async function compileEverything(configuration: SamlangProjectConfiguration): Promise<void> {
   const entryModuleReferences = configuration.entryPoints.map((entryPoint) =>
-    ModuleReference(entryPoint.split('.'))
+    ModuleReference(entryPoint.split('.')),
   );
   const result = compileSamlangSources(
     collectSources(configuration, (parts) => ModuleReference(parts)),
-    entryModuleReferences
+    entryModuleReferences,
   );
   if (result.__type__ === 'ERROR') {
     console.error(`Found ${result.errors.length} error(s).`);
@@ -30,7 +30,7 @@ async function compileEverything(configuration: SamlangProjectConfiguration): Pr
   await Promise.all(
     Object.entries(result.emittedCode).map(async ([filename, content]) => {
       await writeFile(join(configuration.outputDirectory, filename), content);
-    })
+    }),
   );
 }
 
@@ -41,10 +41,10 @@ const runners: CLIRunners = {
     } else {
       await Promise.all(
         reformatSamlangSources(
-          collectSources(getConfiguration(), (parts) => ModuleReference(parts))
+          collectSources(getConfiguration(), (parts) => ModuleReference(parts)),
         ).map(([moduleReference, newCode]) =>
-          writeFile(`${moduleReference.join(sep)}.sam`, newCode)
-        )
+          writeFile(`${moduleReference.join(sep)}.sam`, newCode),
+        ),
       );
     }
   },

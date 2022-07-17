@@ -27,7 +27,7 @@ import optimizeHighIRFunctionByDeadCodeElimination from '../hir-dead-code-elimin
 function assertCorrectlyOptimized(
   statements: HighIRStatement[],
   returnValue: HighIRExpression,
-  expected: string
+  expected: string,
 ): void {
   const { body, returnValue: optimizedReturnValue } = optimizeHighIRFunctionByDeadCodeElimination({
     name: '',
@@ -40,7 +40,7 @@ function assertCorrectlyOptimized(
 
   expect(
     `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
-      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`
+      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`,
   ).toBe(expected);
 }
 
@@ -75,7 +75,7 @@ let u2: int = 0 % 1;
 let p: int = 0 + 1;
 let s: S = [(p: int)];
 ff((s: int));
-return (ii: int);`
+return (ii: int);`,
     );
   });
 
@@ -133,7 +133,7 @@ let p: int = 0 + 1;
 let i1: int = (p: int)[3];
 let s1: Id = Closure { fun: (closure: () -> int), context: (b2: int) };
 ff((i1: int), (s1: Id));
-return 0;`
+return 0;`,
     );
   });
 
@@ -167,7 +167,7 @@ if (b: bool) {
 } else {
   s1();
 }
-return 0;`
+return 0;`,
     );
   });
 
@@ -213,7 +213,7 @@ if (b: bool) {
   let a2: int = s1();
   ma = (a2: int);
 }
-return (ma: int);`
+return (ma: int);`,
     );
   });
 
@@ -254,7 +254,7 @@ if (b: bool) {
 } else {
   s1();
 }
-return 0;`
+return 0;`,
     );
   });
 
@@ -297,7 +297,7 @@ if (b: bool) {
 } else {
   s1();
 }
-return 0;`
+return 0;`,
     );
   });
 
@@ -313,7 +313,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `\nreturn 0;`
+      `\nreturn 0;`,
     );
   });
 
@@ -327,7 +327,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `\nreturn 0;`
+      `\nreturn 0;`,
     );
   });
 
@@ -418,7 +418,7 @@ while (true) {
   }
   n = (_tmp_n: int);
 }
-return 0;`
+return 0;`,
     );
   });
 
@@ -467,7 +467,7 @@ while (true) {
   }
   n = (_tmp_n: int);
 }
-return 0;`
+return 0;`,
     );
   });
 
@@ -501,7 +501,7 @@ while (true) {
   let n1: int = (n: int) + 0;
   n = (n1: int);
 }
-return (v: int);`
+return (v: int);`,
     );
   });
 
@@ -530,7 +530,7 @@ return (v: int);`
       HIR_VARIABLE('v', HIR_INT_TYPE),
       `while (true) {
 }
-return (v: int);`
+return (v: int);`,
     );
   });
 });

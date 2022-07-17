@@ -20,7 +20,7 @@ const createMockClass = (name: string): SourceClassDefinition => ({
 const createMockModule = (
   name: string,
   imports: readonly (readonly [string, readonly string[]])[] = [],
-  members: readonly string[] = []
+  members: readonly string[] = [],
 ): readonly [string, SamlangModule] => [
   name,
   {
@@ -29,13 +29,13 @@ const createMockModule = (
       importedMembers: importedMembers.map((it) =>
         SourceId(it, {
           location: new Location(ModuleReference([name]), Location.DUMMY.start, Location.DUMMY.end),
-        })
+        }),
       ),
       importedModule: ModuleReference([importedModuleName]),
       importedModuleLocation: new Location(
         ModuleReference([name]),
         Location.DUMMY.start,
-        Location.DUMMY.end
+        Location.DUMMY.end,
       ),
     })),
     classes: members.map((className) => createMockClass(className)),
@@ -44,15 +44,15 @@ const createMockModule = (
 ];
 
 const createMockSources = (
-  modules: readonly (readonly [string, SamlangModule])[]
+  modules: readonly (readonly [string, SamlangModule])[],
 ): Sources<SamlangModule> =>
   ModuleReferenceCollections.hashMapOf(
-    ...modules.map(([name, samlangModule]) => [ModuleReference([name]), samlangModule] as const)
+    ...modules.map(([name, samlangModule]) => [ModuleReference([name]), samlangModule] as const),
   );
 
 function checkErrors(
   modules: readonly (readonly [string, SamlangModule])[],
-  errors: readonly string[]
+  errors: readonly string[],
 ): void {
   const sources = createMockSources(modules);
   const globalErrorCollector = createGlobalErrorCollector();
@@ -72,7 +72,7 @@ describe('undefined-import-checker', () => {
         createMockModule('B', [], ['Foo']),
         createMockModule('C', [], ['Bar']),
       ],
-      []
+      [],
     );
   });
 
@@ -82,7 +82,7 @@ describe('undefined-import-checker', () => {
         createMockModule('A', [['B', ['Bar']]], ['Foo']),
         createMockModule('B', [['A', ['Foo']]], ['Bar']),
       ],
-      []
+      [],
     );
   });
 
@@ -97,14 +97,14 @@ describe('undefined-import-checker', () => {
         'A.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
         'B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.',
         'B.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
-      ]
+      ],
     );
   });
 
   it('Importing missing module causes errors.', () => {
     checkErrors(
       [createMockModule('A', [['B', []]])],
-      ['A.sam:0:0-0:0: [UnresolvedName]: Name `B` is not resolved.']
+      ['A.sam:0:0-0:0: [UnresolvedName]: Name `B` is not resolved.'],
     );
   });
 });
