@@ -87,13 +87,13 @@ export class Location implements ILocation {
   static readonly DUMMY: Location = new Location(
     ModuleReference.DUMMY,
     DUMMY_POSITION,
-    DUMMY_POSITION
+    DUMMY_POSITION,
   );
 
   constructor(
     public readonly moduleReference: ModuleReference,
     public readonly start: Position,
-    public readonly end: Position
+    public readonly end: Position,
   ) {}
 
   readonly containsPosition = (position: Position): boolean =>
@@ -105,7 +105,7 @@ export class Location implements ILocation {
   readonly union = (other: ILocation): ILocation => {
     assert(
       moduleReferenceToString(this.moduleReference) ===
-        moduleReferenceToString(other.moduleReference)
+        moduleReferenceToString(other.moduleReference),
     );
     const start = comparePosition(this.start, other.start) < 0 ? this.start : other.start;
     const end = comparePosition(this.end, other.end) > 0 ? this.end : other.end;
@@ -121,7 +121,7 @@ export class Location implements ILocation {
 }
 
 export const LocationCollections: CollectionsConstructors<Location> = createCollectionConstructors(
-  (location) => location.toString()
+  (location) => location.toString(),
 );
 
 /** SECTION 3: REASON */
@@ -133,7 +133,7 @@ export interface SamlangReason {
 
 export const SourceReason = (
   useLocation: Location,
-  definitionLocation: Location | null
+  definitionLocation: Location | null,
 ): SamlangReason => ({ useLocation, definitionLocation });
 
 export function defReasonToUseReason(reason: SamlangReason, useLocation: Location): SamlangReason {

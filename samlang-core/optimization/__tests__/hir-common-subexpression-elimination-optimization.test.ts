@@ -26,10 +26,10 @@ function assertCorrectlyOptimized(statements: HighIRStatement[], expected: strin
         body: statements,
         returnValue: HIR_ZERO,
       },
-      new OptimizationResourceAllocator()
+      new OptimizationResourceAllocator(),
     )
       .body.map((it) => debugPrintHighIRStatement(it))
-      .join('\n')
+      .join('\n'),
   ).toBe(expected);
 }
 
@@ -84,7 +84,7 @@ if (b: bool) {
   fff((_cse_1_: int), (_cse_0_: int));
 } else {
   eee((_cse_1_: int), (_cse_0_: int));
-}`
+}`,
     );
   });
 });

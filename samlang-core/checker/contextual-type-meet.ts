@@ -21,7 +21,7 @@ function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType
         return {
           ...specific,
           typeArguments: zip(general.typeArguments, specific.typeArguments).map(([g, s]) =>
-            contextualTypeMeetWithThrow(g, s)
+            contextualTypeMeetWithThrow(g, s),
           ),
         };
       }
@@ -34,7 +34,7 @@ function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType
         return {
           ...specific,
           argumentTypes: zip(general.argumentTypes, specific.argumentTypes).map(([g, s]) =>
-            contextualTypeMeetWithThrow(g, s)
+            contextualTypeMeetWithThrow(g, s),
           ),
           returnType: contextualTypeMeetWithThrow(general.returnType, specific.returnType),
         };
@@ -46,7 +46,7 @@ function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType
 export default function contextualTypeMeet(
   general: SamlangType,
   specific: SamlangType,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): SamlangType {
   try {
     return contextualTypeMeetWithThrow(general, specific);

@@ -32,13 +32,13 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
   functionName: string,
   functionParameterTypes: readonly HighIRType[],
   expectedReturnCollector: string | null,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): RewriteResult | null {
   const lastStatement = statements[statements.length - 1];
   if (lastStatement == null) return null;
 
   const getBreakValueFromBranchValue = (
-    branchValue: HighIRExpression = HIR_ZERO
+    branchValue: HighIRExpression = HIR_ZERO,
   ): HighIRExpression => branchValue;
 
   switch (lastStatement.__type__) {
@@ -74,7 +74,7 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
 
     case 'HighIRIfElseStatement': {
       const relaventFinalAssignment = lastStatement.finalAssignments.find(
-        (it) => it.name === expectedReturnCollector
+        (it) => it.name === expectedReturnCollector,
       );
       let newExpectedReturnCollector: readonly [string | null, string | null] = [null, null];
       if (expectedReturnCollector != null) {
@@ -90,14 +90,14 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
         functionName,
         functionParameterTypes,
         newExpectedReturnCollector[0],
-        allocator
+        allocator,
       );
       const s2Result = tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
         lastStatement.s2,
         functionName,
         functionParameterTypes,
         newExpectedReturnCollector[1],
-        allocator
+        allocator,
       );
       if (s1Result == null && s2Result == null) return null;
       if (s1Result == null) {
@@ -139,7 +139,7 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
       const newFinalAssignments = zip3(
         s1Result.functionArguments,
         s2Result.functionArguments,
-        functionParameterTypes
+        functionParameterTypes,
       ).map(([branch1Value, branch2Value, type]) => ({
         name: allocator.allocateTailRecTemporary(),
         type,
@@ -185,7 +185,7 @@ export default function optimizeHighIRFunctionByTailRecursionRewrite({
     name,
     type.argumentTypes,
     returnValue.__type__ === 'HighIRIntLiteralExpression' ? null : returnValue.name,
-    allocator
+    allocator,
   );
   if (result == null) return null;
   const { statements, functionArguments } = result;
@@ -203,10 +203,10 @@ export default function optimizeHighIRFunctionByTailRecursionRewrite({
               type: loopVariableType,
               initialValue: HIR_VARIABLE(
                 getTailRecursionParameterName(loopVariableName),
-                loopVariableType
+                loopVariableType,
               ),
               loopValue,
-            })
+            }),
           ),
           statements,
         }),
@@ -228,10 +228,10 @@ export default function optimizeHighIRFunctionByTailRecursionRewrite({
             type: loopVariableType,
             initialValue: HIR_VARIABLE(
               getTailRecursionParameterName(loopVariableName),
-              loopVariableType
+              loopVariableType,
             ),
             loopValue,
-          })
+          }),
         ),
         statements,
         breakCollector: { name: returnValue.name, type: returnValue.type },

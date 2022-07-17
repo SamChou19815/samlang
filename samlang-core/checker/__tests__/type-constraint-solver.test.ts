@@ -20,10 +20,10 @@ function solve(concrete: SamlangType, generic: SamlangType, typeParameters: read
     concrete,
     generic,
     typeParameters,
-    errorReporter
+    errorReporter,
   );
   const result = Object.fromEntries(
-    Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)])
+    Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)]),
   );
   if (globalCollector.hasErrors) result.hasError = 'true';
   return result;
@@ -39,7 +39,7 @@ describe('type-constraint-solver', () => {
     });
 
     expect(
-      solve(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason), ['T'])
+      solve(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason), ['T']),
     ).toEqual({ T: 'unknown', hasError: 'true' });
   });
 
@@ -52,8 +52,8 @@ describe('type-constraint-solver', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar', [
           SourceIntType(DummySourceReason),
         ]),
-        ['Foo']
-      )
+        ['Foo'],
+      ),
     ).toEqual({ Foo: 'unknown', hasError: 'true' });
 
     expect(
@@ -64,8 +64,8 @@ describe('type-constraint-solver', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo', [
           SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar', [IdType('T')]),
         ]),
-        ['T']
-      )
+        ['T'],
+      ),
     ).toEqual({ T: 'Baz' });
   });
 
@@ -79,19 +79,19 @@ describe('type-constraint-solver', () => {
             SourceBoolType(DummySourceReason),
             SourceStringType(DummySourceReason),
           ],
-          SourceUnitType(DummySourceReason)
+          SourceUnitType(DummySourceReason),
         ),
         SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('A')], IdType('C')),
-        ['A', 'B', 'C']
-      )
+        ['A', 'B', 'C'],
+      ),
     ).toEqual({ A: 'int', B: 'bool', C: 'unit', hasError: 'true' });
 
     expect(
       solve(
         SourceIntType(DummySourceReason),
         SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('A')], IdType('C')),
-        ['A', 'B', 'C']
-      )
+        ['A', 'B', 'C'],
+      ),
     ).toEqual({ A: 'unknown', B: 'unknown', C: 'unknown', hasError: 'true' });
   });
 
@@ -105,33 +105,33 @@ describe('type-constraint-solver', () => {
             SourceFunctionType(
               DummySourceReason,
               [SourceUnknownType(DummySourceReason)],
-              SourceUnknownType(DummySourceReason)
+              SourceUnknownType(DummySourceReason),
             ),
             SourceIntType(DummySourceReason),
           ],
-          SourceUnitType(DummySourceReason)
+          SourceUnitType(DummySourceReason),
         ),
         SourceFunctionType(
           DummySourceReason,
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('A')), IdType('B')],
-          SourceUnitType(DummySourceReason)
+          SourceUnitType(DummySourceReason),
         ),
         ['A', 'B'],
-        errorCollector.getErrorReporter()
+        errorCollector.getErrorReporter(),
       );
 
     expect(
-      Object.fromEntries(Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)]))
+      Object.fromEntries(Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)])),
     ).toEqual({ A: 'unknown', B: 'int' });
     expect(prettyPrintType(solvedGenericType)).toBe('((unknown) -> unknown, int) -> unit');
     expect(prettyPrintType(solvedContextuallyTypedConcreteType)).toBe(
-      '((unknown) -> unknown, int) -> unit'
+      '((unknown) -> unknown, int) -> unit',
     );
     expect(
       errorCollector
         .getErrors()
         .map((it) => it.toString())
-        .sort((a, b) => a.localeCompare(b))
+        .sort((a, b) => a.localeCompare(b)),
     ).toEqual([]);
   });
 
@@ -145,23 +145,23 @@ describe('type-constraint-solver', () => {
             SourceFunctionType(
               DummySourceReason,
               [SourceUnknownType(DummySourceReason)],
-              SourceUnknownType(DummySourceReason)
+              SourceUnknownType(DummySourceReason),
             ),
             SourceIntType(DummySourceReason),
           ],
-          SourceUnitType(DummySourceReason)
+          SourceUnitType(DummySourceReason),
         ),
         SourceFunctionType(
           DummySourceReason,
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('A')), IdType('B')],
-          SourceUnitType(DummySourceReason)
+          SourceUnitType(DummySourceReason),
         ),
         ['B'],
-        errorCollector.getErrorReporter()
+        errorCollector.getErrorReporter(),
       );
 
     expect(
-      Object.fromEntries(Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)]))
+      Object.fromEntries(Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)])),
     ).toEqual({ B: 'int' });
     expect(prettyPrintType(solvedGenericType)).toBe('((A) -> A, int) -> unit');
     expect(prettyPrintType(solvedContextuallyTypedConcreteType)).toBe('((A) -> A, int) -> unit');

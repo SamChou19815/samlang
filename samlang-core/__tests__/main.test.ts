@@ -12,7 +12,7 @@ import { compileSamlangSources, compileSingleSamlangSource, reformatSamlangSourc
 describe('samlang-core/index', () => {
   it('reformatSamlangSources works', () => {
     expect(reformatSamlangSources([[ModuleReference(['A']), 'class Main {}']])[0]?.[1]).toBe(
-      'class Main\n'
+      'class Main\n',
     );
   });
 
@@ -35,7 +35,7 @@ describe('samlang-core/index', () => {
 
   it('compileSingleSamlangSource works when given good program.', () => {
     const result = compileSingleSamlangSource(
-      'class Main { function main(): unit = Builtins.println("hello world") }'
+      'class Main { function main(): unit = Builtins.println("hello world") }',
     );
     if (result.__type__ === 'ERROR') {
       throw new Error(result.errors.join('\n'));

@@ -52,7 +52,7 @@ describe('wasm-nodes', () => {
                   WasmBinary(WasmConst(0), '>=', WasmConst(0)),
                   WasmBinary(WasmConst(0), '==', WasmConst(0)),
                   WasmBinary(WasmConst(0), '!=', WasmConst(0)),
-                ]
+                ],
               ),
               WasmJump('aa'),
               WasmLoop({
@@ -70,7 +70,7 @@ describe('wasm-nodes', () => {
             ],
           },
         ],
-      })
+      }),
     ).toBe(
       `(type $none_=>_i32 (func (result i32)))
 (type $i32_=>_i32 (func (param i32) (result i32)))
@@ -117,7 +117,7 @@ describe('wasm-nodes', () => {
   )
 )
 (export "main" (func $main))
-`
+`,
     );
   });
 });

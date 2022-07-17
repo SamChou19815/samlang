@@ -22,7 +22,7 @@ class Test {
   function test(): int = "haha"
 }
 interface I { function test(): int }
-`
+`,
     );
 
     expect(state.allModulesWithError.length).toBe(1);
@@ -83,7 +83,7 @@ class Test1 {
   function test(): int = "haha"
 }
 class Test2 {}
-`
+`,
     );
     expect(state.getErrors(test1ModuleReference).map((it) => it.toString())).toEqual([
       'Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
@@ -100,7 +100,7 @@ class Test2 {}
 class Test1 {
   function test(): int = 3
 }
-`
+`,
     );
     expect(state.getErrors(test1ModuleReference)).toEqual([]);
     expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
@@ -118,7 +118,7 @@ import { Test1, Test2 } from Test1
 class Test2 {
   function test(): string = "haha"
 }
-`
+`,
     );
     expect(state.getErrors(test1ModuleReference)).toEqual([]);
     expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
@@ -135,7 +135,7 @@ import { Test1 } from Test1
 class Test2 {
   function test(): string = "haha"
 }
-  `
+  `,
     );
     expect(state.getErrors(test1ModuleReference)).toEqual([]);
     expect(state.getErrors(test2ModuleReference)).toEqual([]);
@@ -293,44 +293,44 @@ class Test1(val a: int) {
 
     const actualLocation0 = service.queryDefinitionLocation(moduleReference1, Position(4, 34));
     expect(actualLocation0?.toString()).toEqual(
-      new Location(moduleReference1, Position(2, 0), Position(14, 1)).toString()
+      new Location(moduleReference1, Position(2, 0), Position(14, 1)).toString(),
     );
 
     const actualLocation1 = service.queryDefinitionLocation(moduleReference1, Position(4, 40));
     expect(actualLocation1?.toString()).toEqual(
-      new Location(moduleReference1, Position(4, 2), Position(4, 59)).toString()
+      new Location(moduleReference1, Position(4, 2), Position(4, 59)).toString(),
     );
 
     const actualLocation21 = service.queryDefinitionLocation(moduleReference1, Position(4, 47));
     expect(actualLocation21?.toString()).toEqual(
-      new Location(moduleReference1, Position(4, 16), Position(4, 17)).toString()
+      new Location(moduleReference1, Position(4, 16), Position(4, 17)).toString(),
     );
 
     const actualLocation22 = service.queryDefinitionLocation(moduleReference1, Position(4, 51));
     expect(actualLocation22?.toString()).toEqual(
-      new Location(moduleReference2, Position(0, 12), Position(0, 44)).toString()
+      new Location(moduleReference2, Position(0, 12), Position(0, 44)).toString(),
     );
 
     const actualLocation3 = service.queryDefinitionLocation(moduleReference1, Position(5, 30));
     expect(actualLocation3?.toString()).toEqual(
-      new Location(moduleReference3, Position(0, 0), Position(0, 49)).toString()
+      new Location(moduleReference3, Position(0, 0), Position(0, 49)).toString(),
     );
 
     const actualLocation4 = service.queryDefinitionLocation(moduleReference1, Position(6, 28));
     expect(actualLocation4?.toString()).toEqual(
-      new Location(moduleReference1, Position(2, 0), Position(14, 1)).toString()
+      new Location(moduleReference1, Position(2, 0), Position(14, 1)).toString(),
     );
 
     expect(service.queryDefinitionLocation(moduleReference1, Position(6, 35))).toBeNull();
 
     const actualLocation5 = service.queryDefinitionLocation(moduleReference1, Position(6, 41));
     expect(actualLocation5?.toString()).toEqual(
-      new Location(moduleReference1, Position(2, 11), Position(2, 23)).toString()
+      new Location(moduleReference1, Position(2, 11), Position(2, 23)).toString(),
     );
 
     const actualLocation6 = service.queryDefinitionLocation(moduleReference1, Position(10, 15));
     expect(actualLocation6?.toString()).toEqual(
-      new Location(moduleReference1, Position(9, 10), Position(9, 11)).toString()
+      new Location(moduleReference1, Position(9, 10), Position(9, 11)).toString(),
     );
     const actualLocation7 = service.queryDefinitionLocation(moduleReference1, Position(11, 15));
     expect(actualLocation7).toBeNull();
@@ -384,7 +384,7 @@ class Main {
       ],
     ]);
     expect(
-      service.queryFoldingRanges(testModuleReference)?.map((loc) => loc.toString())
+      service.queryFoldingRanges(testModuleReference)?.map((loc) => loc.toString()),
     ).toMatchObject([
       new Location(testModuleReference, Position(1, 0), Position(1, 39)).toString(),
       new Location(testModuleReference, Position(3, 2), Position(4, 31)).toString(),
@@ -638,14 +638,14 @@ class Test {
   function main(): unit = {
     val a = b;
   }
-}\n`
+}\n`,
     );
     expect(service.renameVariable(testModuleReference, Position(2, 32), 'c')).toBe(
       `class Test {
   function main(): unit = {
     val c = b;
   }
-}\n`
+}\n`,
     );
   });
 
@@ -665,7 +665,7 @@ class Main {
       `class Main {
   function main(): Developer = Developer.sam()
 }
-`
+`,
     );
     expect(service.formatEntireDocument(ModuleReference(['dsafadfasd']))).toBe(null);
   });

@@ -37,7 +37,7 @@ const bool = SourceBoolType(DummySourceReason);
 function typeCheckInSandbox(
   source: string,
   expectedType: SamlangType,
-  currentClass?: string
+  currentClass?: string,
 ): readonly [SamlangExpression, readonly string[]] {
   const globalErrorCollector = createGlobalErrorCollector();
   const errorReporter = globalErrorCollector.getErrorReporter();
@@ -70,7 +70,7 @@ function typeCheckInSandbox(
                     type: SourceFunctionType(
                       DummySourceReason,
                       [bool, int],
-                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test')
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test'),
                     ),
                   },
                   helloWorld: {
@@ -84,7 +84,7 @@ function typeCheckInSandbox(
                     type: SourceFunctionType(
                       DummySourceReason,
                       [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A')],
-                      unit
+                      unit,
                     ),
                   },
                 },
@@ -120,7 +120,7 @@ function typeCheckInSandbox(
                     type: SourceFunctionType(
                       DummySourceReason,
                       [bool],
-                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2')
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
                     ),
                   },
                   Bar: {
@@ -129,7 +129,7 @@ function typeCheckInSandbox(
                     type: SourceFunctionType(
                       DummySourceReason,
                       [int],
-                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2')
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
                     ),
                   },
                 },
@@ -177,7 +177,7 @@ function typeCheckInSandbox(
                       [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E')],
                       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [
                         SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
-                      ])
+                      ]),
                     ),
                   },
                   Bar: {
@@ -188,7 +188,7 @@ function typeCheckInSandbox(
                       [int],
                       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [
                         SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
-                      ])
+                      ]),
                     ),
                   },
                 },
@@ -213,7 +213,7 @@ function typeCheckInSandbox(
                     type: SourceFunctionType(
                       DummySourceReason,
                       [],
-                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A', [])
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A', []),
                     ),
                   },
                 },
@@ -238,7 +238,7 @@ function typeCheckInSandbox(
                     type: SourceFunctionType(
                       DummySourceReason,
                       [],
-                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'B', [])
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'B', []),
                     ),
                   },
                 },
@@ -263,7 +263,7 @@ function typeCheckInSandbox(
                     type: SourceFunctionType(
                       DummySourceReason,
                       [],
-                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'C', [])
+                      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'C', []),
                     ),
                   },
                 },
@@ -271,15 +271,15 @@ function typeCheckInSandbox(
               },
             },
           },
-        ]
+        ],
       ),
       new Set(),
-      currentClass ?? 'Test'
+      currentClass ?? 'Test',
     );
 
   // Parse
   const parsedExpression = checkNotNull(
-    parseSamlangExpressionFromText(source, dummyModuleReference, errorReporter)
+    parseSamlangExpressionFromText(source, dummyModuleReference, errorReporter),
   );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
 
@@ -291,7 +291,7 @@ function typeCheckInSandbox(
     errorReporter,
     accessibleGlobalTypingContext,
     localTypingContext,
-    expectedType
+    expectedType,
   );
   return [
     checkedExpression,
@@ -306,7 +306,7 @@ function assertTypeChecks(
   source: string,
   expectedType: SamlangType,
   expectedExpression?: SamlangExpression,
-  currentClass?: string
+  currentClass?: string,
 ): void {
   const [actualExpression, errors] = typeCheckInSandbox(source, expectedType, currentClass);
   if (expectedExpression) {
@@ -321,8 +321,8 @@ function assertTypeChecks(
             }
             return value;
           },
-          4
-        )
+          4,
+        ),
       );
     expect(standardize(actualExpression)).toStrictEqual(standardize(expectedExpression));
   }
@@ -333,7 +333,7 @@ function assertTypeErrors(
   source: string,
   expectedType: SamlangType,
   expectedErrors: readonly string[],
-  currentClass?: string
+  currentClass?: string,
 ): void {
   expect(typeCheckInSandbox(source, expectedType, currentClass)[1]).toEqual(expectedErrors);
 }
@@ -376,7 +376,7 @@ describe('expression-type-checker', () => {
   it('ClassMember', () => {
     assertTypeChecks(
       'Test.helloWorldWithTypeParameters<int>',
-      SourceFunctionType(DummySourceReason, [int], unit)
+      SourceFunctionType(DummySourceReason, [int], unit),
     );
     assertTypeChecks('Test.helloWorld', SourceFunctionType(DummySourceReason, [string], unit));
 
@@ -390,7 +390,7 @@ describe('expression-type-checker', () => {
         'Test.sam:1:1-1:34: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
         'Test.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
         'Test.sam:1:1-1:34: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(unknown) -> unit`.',
-      ]
+      ],
     );
     assertTypeErrors('Test.helloWorldWithTypeParameters', string, [
       'Test.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
@@ -402,7 +402,7 @@ describe('expression-type-checker', () => {
       SourceFunctionType(DummySourceReason, [int], unit),
       [
         'Test.sam:1:1-1:47: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
-      ]
+      ],
     );
     assertTypeErrors(
       'Test.helloWorldWithTypeParameters<string>',
@@ -410,7 +410,7 @@ describe('expression-type-checker', () => {
       [
         'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
         'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
-      ]
+      ],
     );
     assertTypeErrors('Test.helloWorld2', SourceFunctionType(DummySourceReason, [string], unit), [
       'Test.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved.',
@@ -420,11 +420,11 @@ describe('expression-type-checker', () => {
   it('ObjectConstructor', () => {
     assertTypeChecks(
       'Test.init(true, 3)',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test')
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test'),
     );
     assertTypeChecks(
       '{ val foo=true; Test.init(foo, 3) }',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test')
+      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test'),
     );
   });
 
@@ -433,36 +433,36 @@ describe('expression-type-checker', () => {
       'Test2.Foo(true)',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
       undefined,
-      'Test2'
+      'Test2',
     );
     assertTypeChecks(
       'Test2.Bar(42)',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
       undefined,
-      'Test2'
+      'Test2',
     );
     assertTypeChecks(
       'Test4.Foo(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       undefined,
-      'Test4'
+      'Test4',
     );
     assertTypeChecks(
       'Test4.Foo<bool>(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
       undefined,
-      'Test4'
+      'Test4',
     );
 
     assertTypeErrors(
       'Test.Foo(true)',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved.']
+      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved.'],
     );
     assertTypeErrors(
       'Test.Bar(42)',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved.']
+      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved.'],
     );
     assertTypeErrors(
       'Test4.Foo<int, bool>(true)}',
@@ -470,13 +470,13 @@ describe('expression-type-checker', () => {
       [
         'Test.sam:1:1-1:21: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
       ],
-      undefined
+      undefined,
     );
     assertTypeErrors(
       'Test4.Foo<int>(true)}',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [int]),
       ['Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
-      undefined
+      undefined,
     );
     assertTypeErrors(
       'Test4.Foo<int>(true)}',
@@ -485,18 +485,18 @@ describe('expression-type-checker', () => {
         'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.',
         'Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.',
       ],
-      undefined
+      undefined,
     );
     assertTypeErrors(
       'Test44.Bar(42)',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved.']
+      ['Test.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved.'],
     );
     assertTypeErrors(
       'Test2.Tars(42)',
       SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
       ['Test.sam:1:1-1:11: [UnresolvedName]: Name `Test2.Tars` is not resolved.'],
-      'Test2'
+      'Test2',
     );
   });
 
@@ -506,7 +506,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Test.init(true, 3).baz', SourceFunctionType(DummySourceReason, [int], bool));
     assertTypeChecks(
       'Test.init(true, 3).bazWithTypeParam',
-      SourceFunctionType(DummySourceReason, [int], bool)
+      SourceFunctionType(DummySourceReason, [int], bool),
     );
 
     assertTypeErrors('3.foo', int, [
@@ -524,7 +524,7 @@ describe('expression-type-checker', () => {
       [
         "Test.sam:1:1-1:16: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       ],
-      'Test2'
+      'Test2',
     );
 
     assertTypeErrors('Test.init(true, 3).foo', int, [
@@ -549,7 +549,7 @@ describe('expression-type-checker', () => {
         'Test.sam:1:1-1:36: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
         'Test.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
         'Test.sam:1:1-1:36: [UnexpectedType]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.',
-      ]
+      ],
     );
     assertTypeErrors('Test.init(true, 3).baz', SourceFunctionType(DummySourceReason, [bool], int), [
       'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
@@ -599,7 +599,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Builtins.panic("")', string);
     assertTypeChecks(
       'Builtins.panic("")',
-      SourceFunctionType(DummySourceReason, [int, bool], string)
+      SourceFunctionType(DummySourceReason, [int, bool], string),
     );
 
     assertTypeErrors('Builtins.panic(3)', unit, [
@@ -773,7 +773,7 @@ describe('expression-type-checker', () => {
   )
 }`,
       unit,
-      ['Test.sam:3:22-3:23: [UnexpectedType]: Expected: `bool`, actual: `int`.']
+      ['Test.sam:3:22-3:23: [UnexpectedType]: Expected: `bool`, actual: `int`.'],
     );
   });
 
@@ -782,7 +782,7 @@ describe('expression-type-checker', () => {
       '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }',
       unit,
       undefined,
-      'Test2'
+      'Test2',
     );
 
     assertTypeErrors('{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }', unit, [
@@ -801,20 +801,20 @@ describe('expression-type-checker', () => {
         'Test.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].',
         'Test.sam:1:52-1:55: [UnresolvedName]: Name `Baz` is not resolved.',
       ],
-      'Test2'
+      'Test2',
     );
     assertTypeErrors(
       '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar d -> 2 }; }',
       unit,
       [],
-      'Test2'
+      'Test2',
     );
   });
 
   it('Lambda', () => {
     assertTypeChecks(
       '{val _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) then b else c;}',
-      unit
+      unit,
     );
     assertTypeChecks('(a) -> a', SourceFunctionType(DummySourceReason, [int], int));
 

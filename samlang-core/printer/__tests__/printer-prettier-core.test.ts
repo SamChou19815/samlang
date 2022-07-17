@@ -19,7 +19,7 @@ describe('printer-prettier-core', () => {
     expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'))).toEqual(PRETTIER_TEXT('a'));
     expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'))).toEqual(PRETTIER_TEXT('a'));
     expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_TEXT('b'), PRETTIER_TEXT('c'))).toEqual(
-      PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_CONCAT(PRETTIER_TEXT('b'), PRETTIER_TEXT('c')))
+      PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_CONCAT(PRETTIER_TEXT('b'), PRETTIER_TEXT('c'))),
     );
   });
 
@@ -27,8 +27,8 @@ describe('printer-prettier-core', () => {
     expect(
       prettyPrintAccordingToPrettierAlgorithm(
         20,
-        PRETTIER_MULTILINE_COMMENT('/**', 'this is a test haha foo bar oh noooooo')
-      )
+        PRETTIER_MULTILINE_COMMENT('/**', 'this is a test haha foo bar oh noooooo'),
+      ),
     ).toBe(`/**
  * this is a test
  * haha foo bar oh
@@ -36,14 +36,14 @@ describe('printer-prettier-core', () => {
  */
 `);
     expect(
-      prettyPrintAccordingToPrettierAlgorithm(20, PRETTIER_MULTILINE_COMMENT('/**', 'test test'))
+      prettyPrintAccordingToPrettierAlgorithm(20, PRETTIER_MULTILINE_COMMENT('/**', 'test test')),
     ).toBe('/** test test */\n');
 
     expect(
       prettyPrintAccordingToPrettierAlgorithm(
         1,
-        PRETTIER_MULTILINE_COMMENT('/**', 'this is a test haha foo bar oh noooooo')
-      )
+        PRETTIER_MULTILINE_COMMENT('/**', 'this is a test haha foo bar oh noooooo'),
+      ),
     ).toBe(`/**
  * this
  * is
@@ -70,13 +70,13 @@ describe('printer-prettier-core', () => {
             PRETTIER_LINE,
             PRETTIER_NEST(
               2,
-              PRETTIER_CONCAT(PRETTIER_TEXT('c'), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT('d'))
+              PRETTIER_CONCAT(PRETTIER_TEXT('c'), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT('d')),
             ),
             PRETTIER_LINE,
-            PRETTIER_TEXT('b')
-          )
-        )
-      )
+            PRETTIER_TEXT('b'),
+          ),
+        ),
+      ),
     ).toBe(`a
 c
   d

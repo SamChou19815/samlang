@@ -29,7 +29,7 @@ import optimizeHighIRFunctionByConditionalConstantPropagation from '../hir-condi
 function assertCorrectlyOptimized(
   statements: HighIRStatement[],
   returnValue: HighIRExpression,
-  expected: string
+  expected: string,
 ): void {
   const { body, returnValue: optimizedReturnValue } =
     optimizeHighIRFunctionByConditionalConstantPropagation({
@@ -43,7 +43,7 @@ function assertCorrectlyOptimized(
 
   expect(
     `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
-      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`
+      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`,
   ).toBe(expected);
 }
 
@@ -262,7 +262,7 @@ let a15: int = (i0: int) * 5;
 let a16: int = (a15: int) + 5;
 let a17: int = (a15: int) + 47;
 let a18: int = (a15: int) / 5;
-return (a17: int);`
+return (a17: int);`,
     );
   });
 
@@ -295,7 +295,7 @@ return (a17: int);`
       ],
       HIR_VARIABLE('result', HIR_INT_TYPE),
       `let a: Id = [0, 1];
-return 1;`
+return 1;`,
     );
   });
 
@@ -316,7 +316,7 @@ return 1;`
         }),
       ],
       HIR_ZERO,
-      `let a1: int = (a0: int) + 2;\nlet a2: int = (a0: int) + 4;\nreturn 0;`
+      `let a1: int = (a0: int) + 2;\nlet a2: int = (a0: int) + 4;\nreturn 0;`,
     );
   });
 
@@ -339,7 +339,7 @@ return 1;`
       HIR_ZERO,
       `let a1: int = (a0: int) + 2;
 let a2: int = (a0: int) + -1;
-return 0;`
+return 0;`,
     );
   });
 
@@ -362,7 +362,7 @@ return 0;`
       HIR_ZERO,
       `let a1: int = (a0: int) + -2;
 let a2: int = (a0: int) + 1;
-return 0;`
+return 0;`,
     );
   });
 
@@ -385,7 +385,7 @@ return 0;`
       HIR_ZERO,
       `let a1: int = (a0: int) + -2;
 let a2: int = (a0: int) + -5;
-return 0;`
+return 0;`,
     );
   });
 
@@ -422,7 +422,7 @@ return 0;`
 let a2: int = (a0: int) * 6;
 let a3: int = (a0: int) + 2;
 let a4: int = (a3: int) * 3;
-return 0;`
+return 0;`,
     );
   });
 
@@ -443,7 +443,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) < 1;\nreturn 0;`
+      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) < 1;\nreturn 0;`,
     );
 
     assertCorrectlyOptimized(
@@ -462,7 +462,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) <= 1;\nreturn 0;`
+      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) <= 1;\nreturn 0;`,
     );
 
     assertCorrectlyOptimized(
@@ -481,7 +481,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) > 1;\nreturn 0;`
+      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) > 1;\nreturn 0;`,
     );
 
     assertCorrectlyOptimized(
@@ -500,7 +500,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) >= 1;\nreturn 0;`
+      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) >= 1;\nreturn 0;`,
     );
 
     assertCorrectlyOptimized(
@@ -519,7 +519,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) == 1;\nreturn 0;`
+      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) == 1;\nreturn 0;`,
     );
 
     assertCorrectlyOptimized(
@@ -538,7 +538,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) != 1;\nreturn 0;`
+      `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) != 1;\nreturn 0;`,
     );
   });
 
@@ -559,7 +559,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `let a1: int = (a0: int) * 2;\nlet a2: bool = (a1: int) == 3;\nreturn 0;`
+      `let a1: int = (a0: int) * 2;\nlet a2: bool = (a1: int) == 3;\nreturn 0;`,
     );
   });
 
@@ -682,7 +682,7 @@ bar();
 let a1: int = foo();
 let a22: int = bar();
 let r1: bool = (a22: int) == (a1: int);
-return 1;`
+return 1;`,
     );
   });
 
@@ -774,7 +774,7 @@ if (b: bool) {
   let a2: int = bar(9);
   ma1 = (a2: int);
 }
-return 6;`
+return 6;`,
     );
   });
 
@@ -788,7 +788,7 @@ return 6;`
         }),
       ],
       HIR_ZERO,
-      `\nreturn 0;`
+      `\nreturn 0;`,
     );
 
     assertCorrectlyOptimized(
@@ -800,7 +800,7 @@ return 6;`
         }),
       ],
       HIR_ZERO,
-      `undefined = (n: int);\nbreak;\nreturn 0;`
+      `undefined = (n: int);\nbreak;\nreturn 0;`,
     );
 
     assertCorrectlyOptimized(
@@ -812,7 +812,7 @@ return 6;`
         }),
       ],
       HIR_ZERO,
-      `\nreturn 0;`
+      `\nreturn 0;`,
     );
   });
 
@@ -850,7 +850,7 @@ return 6;`
         }),
       ],
       HIR_ZERO,
-      `\nreturn 0;`
+      `\nreturn 0;`,
     );
   });
 
@@ -889,7 +889,7 @@ return 6;`
         }),
       ],
       HIR_VARIABLE('b', HIR_INT_TYPE),
-      `\nreturn 0;`
+      `\nreturn 0;`,
     );
   });
 
@@ -937,7 +937,7 @@ while (true) {
   let _tmp_n: int = (n: int) + -1;
   n = (_tmp_n: int);
 }
-return 0;`
+return 0;`,
     );
   });
 
@@ -975,7 +975,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `\nreturn 0;`
+      `\nreturn 0;`,
     );
   });
 
@@ -995,7 +995,7 @@ return 0;`
         }),
       ],
       HIR_ZERO,
-      `\nreturn 0;`
+      `\nreturn 0;`,
     );
   });
 
@@ -1016,7 +1016,7 @@ return 0;`
         }),
       ],
       HIR_VARIABLE('v', HIR_INT_TYPE),
-      `\nreturn 10;`
+      `\nreturn 10;`,
     );
   });
 
@@ -1042,7 +1042,7 @@ let v: int;
 while (true) {
   n = 11;
 }
-return (v: int);`
+return (v: int);`,
     );
   });
 
@@ -1065,7 +1065,7 @@ return (v: int);`
       `while (true) {
   let a: int = (v2: int) + (v1: int);
 }
-return 0;`
+return 0;`,
     );
   });
 });

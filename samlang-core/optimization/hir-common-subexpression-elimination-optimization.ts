@@ -17,13 +17,13 @@ function intersectionOf(
   ...others: readonly ReadonlyHashSet<ExpressionWrapper>[]
 ): readonly BindedValue[] {
   return filterMap(set1.toArray(), (wrapper) =>
-    others.every((it) => it.has(wrapper)) ? wrapper.value : null
+    others.every((it) => it.has(wrapper)) ? wrapper.value : null,
   );
 }
 
 function produceHoistedStatement(
   allocator: OptimizationResourceAllocator,
-  value: BindedValue
+  value: BindedValue,
 ): HighIRStatement {
   switch (value.__type__) {
     case 'IndexAccess':
@@ -46,7 +46,7 @@ function produceHoistedStatement(
 function optimizeHighIRStatement(
   statement: HighIRStatement,
   allocator: OptimizationResourceAllocator,
-  set: HashSet<ExpressionWrapper>
+  set: HashSet<ExpressionWrapper>,
 ): readonly HighIRStatement[] {
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement':
@@ -56,7 +56,7 @@ function optimizeHighIRStatement(
           type: statement.type,
           pointerExpression: statement.pointerExpression,
           index: statement.index,
-        })
+        }),
       );
       return [statement];
 
@@ -67,7 +67,7 @@ function optimizeHighIRStatement(
           operator: statement.operator,
           e1: statement.e1,
           e2: statement.e2,
-        })
+        }),
       );
       return [statement];
 
@@ -82,15 +82,15 @@ function optimizeHighIRStatement(
     case 'HighIRIfElseStatement': {
       const { statements: s1, set: set1 } = optimizeHighIRStatementsWithSet(
         statement.s1,
-        allocator
+        allocator,
       );
       const { statements: s2, set: set2 } = optimizeHighIRStatementsWithSet(
         statement.s2,
-        allocator
+        allocator,
       );
       const commonExpressions = intersectionOf(set1, set2);
       const hoistedStatements = commonExpressions.flatMap((it) =>
-        optimizeHighIRStatement(produceHoistedStatement(allocator, it), allocator, set)
+        optimizeHighIRStatement(produceHoistedStatement(allocator, it), allocator, set),
       );
       return [{ ...statement, s1, s2 }, ...hoistedStatements.reverse()];
     }
@@ -98,12 +98,12 @@ function optimizeHighIRStatement(
 }
 
 const expressionWrapperHashsetOf = createCollectionConstructors((it: ExpressionWrapper) =>
-  it.toString()
+  it.toString(),
 ).hashSetOf;
 
 function optimizeHighIRStatementsWithSet(
   statements: readonly HighIRStatement[],
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): { statements: readonly HighIRStatement[]; set: ReadonlyHashSet<ExpressionWrapper> } {
   const set = expressionWrapperHashsetOf();
   const optimizedStatements = [...statements]
@@ -115,7 +115,7 @@ function optimizeHighIRStatementsWithSet(
 
 export default function optimizeHighIRFunctionByCommonSubExpressionElimination(
   highIRFunction: HighIRFunction,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): HighIRFunction {
   return optimizeHighIRFunctionByLocalValueNumbering({
     ...highIRFunction,

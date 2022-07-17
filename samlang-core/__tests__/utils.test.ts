@@ -20,10 +20,10 @@ import {
 describe('samlang-utils', () => {
   it('intArrayToDataString test', () => {
     expect(intArrayToDataString([1, 2, 3, 4])).toBe(
-      '\\01\\00\\00\\00\\02\\00\\00\\00\\03\\00\\00\\00\\04\\00\\00\\00'
+      '\\01\\00\\00\\00\\02\\00\\00\\00\\03\\00\\00\\00\\04\\00\\00\\00',
     );
     expect(intArrayToDataString([1, 124, 4531, 33])).toBe(
-      '\\01\\00\\00\\00\\7c\\00\\00\\00\\b3\\11\\00\\00\\21\\00\\00\\00'
+      '\\01\\00\\00\\00\\7c\\00\\00\\00\\b3\\11\\00\\00\\21\\00\\00\\00',
     );
   });
 
@@ -76,11 +76,11 @@ describe('samlang-utils', () => {
       createCollectionConstructors((s: string) => s.toLowerCase()).mapOf(
         ['a', 3],
         ['b', 4],
-        ['A', 4]
-      ).size
+        ['A', 4],
+      ).size,
     ).toBe(2);
     expect(
-      createCollectionConstructors((s: string) => s.toLowerCase()).setOf('a', 'B', 'A').size
+      createCollectionConstructors((s: string) => s.toLowerCase()).setOf('a', 'B', 'A').size,
     ).toBe(2);
   });
 
@@ -215,7 +215,7 @@ describe('samlang-utils', () => {
       expect(() =>
         context.addLocalValueType('a', 3, () => {
           throw new Error();
-        })
+        }),
       ).toThrow();
       context.addLocalValueType('c', 3, error);
       context.addLocalValueType('d', 3, error);

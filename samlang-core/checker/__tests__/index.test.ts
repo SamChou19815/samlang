@@ -65,7 +65,7 @@ describe('samlang-core/checker', () => {
       })
         .toArray()
         .map(moduleReferenceToString)
-        .sort((a, b) => a.localeCompare(b))
+        .sort((a, b) => a.localeCompare(b)),
     ).toEqual(['A']);
   });
 
@@ -165,7 +165,7 @@ describe('samlang-core/checker', () => {
       [
         moduleReferenceD,
         parseSamlangModuleFromText(sourceD, moduleReferenceD, errorCollector.getErrorReporter()),
-      ]
+      ],
     );
 
     const [, globalTypingContext] = typeCheckSources(sources, errorCollector);
@@ -176,13 +176,13 @@ describe('samlang-core/checker', () => {
       sources,
       globalTypingContext,
       [moduleReferenceC, moduleReferenceD],
-      errorCollector
+      errorCollector,
     );
     expect(
       errorCollector
         .getErrors()
         .map((e) => e.toString())
-        .sort()
+        .sort(),
     ).toEqual([
       'D.sam:3:3-3:22: [UnresolvedName]: Name `C` is not resolved.',
       "D.sam:5:65-5:67: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
@@ -242,7 +242,7 @@ describe('samlang-core/checker', () => {
       [
         moduleReferenceD,
         parseSamlangModuleFromText(sourceD, moduleReferenceD, errorCollector.getErrorReporter()),
-      ]
+      ],
     );
 
     typeCheckSources(sources, errorCollector);
@@ -250,7 +250,7 @@ describe('samlang-core/checker', () => {
       errorCollector
         .getErrors()
         .map((e) => e.toString())
-        .sort()
+        .sort(),
     ).toEqual([
       'A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.',
       'B.sam:2:11-2:12: [Collision]: Name `A` collides with a previously defined name.',
@@ -326,7 +326,7 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       errorCollector
         .getErrors()
         .map((e) => e.toString())
-        .sort()
+        .sort(),
     ).toEqual([
       'A.sam:10:3-10:28: [UnexpectedType]: Expected: `() -> unit`, actual: `() -> string`.',
       'A.sam:11:3-11:24: [UnexpectedType]: Expected: `() -> string`, actual: `() -> unit`.',
@@ -379,7 +379,7 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       [
         moduleReferenceC,
         parseSamlangModuleFromText(sourceC, moduleReferenceC, errorCollector.getErrorReporter()),
-      ]
+      ],
     );
 
     typeCheckSources(sources, errorCollector);
@@ -392,9 +392,9 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       parseSamlangModuleFromText(
         'class Main {}',
         ModuleReference(['Test']),
-        errorCollector.getErrorReporter()
+        errorCollector.getErrorReporter(),
       ),
-      errorCollector
+      errorCollector,
     );
 
     expect(errorCollector.getErrors()).toEqual([]);

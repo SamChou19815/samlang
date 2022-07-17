@@ -12,7 +12,7 @@ describe('common-names', () => {
 
   it('Dashed module has correct name', () => {
     expect(encodeMainFunctionName(ModuleReference(['Foo-Bar-Derp', 'Baz']))).toBe(
-      '_Foo_Bar_Derp$Baz_Main_main'
+      '_Foo_Bar_Derp$Baz_Main_main',
     );
   });
 

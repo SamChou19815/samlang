@@ -14,7 +14,7 @@ function collectForTypeSet(type: HighIRType, typeSet: Set<string>): void {
 function collectUsedNamesFromExpression(
   nameSet: Set<string>,
   typeSet: Set<string>,
-  expression: HighIRExpression
+  expression: HighIRExpression,
 ): void {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
@@ -30,7 +30,7 @@ function collectUsedNamesFromExpression(
 function collectUsedNamesFromStatement(
   nameSet: Set<string>,
   typeSet: Set<string>,
-  statement: HighIRStatement
+  statement: HighIRStatement,
 ): void {
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement':
@@ -45,7 +45,7 @@ function collectUsedNamesFromStatement(
     case 'HighIRFunctionCallStatement':
       collectUsedNamesFromExpression(nameSet, typeSet, statement.functionExpression);
       statement.functionArguments.forEach((it) =>
-        collectUsedNamesFromExpression(nameSet, typeSet, it)
+        collectUsedNamesFromExpression(nameSet, typeSet, it),
       );
       collectForTypeSet(statement.returnType, typeSet);
       break;
@@ -79,7 +79,7 @@ function collectUsedNamesFromStatement(
       break;
     case 'HighIRStructInitializationStatement':
       statement.expressionList.forEach((it) =>
-        collectUsedNamesFromExpression(nameSet, typeSet, it)
+        collectUsedNamesFromExpression(nameSet, typeSet, it),
       );
       collectForTypeSet(statement.type, typeSet);
       break;
@@ -93,7 +93,7 @@ function collectUsedNamesFromStatement(
 }
 
 function getOtherFunctionsUsedByGivenFunction(
-  highIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction,
 ): readonly [ReadonlySet<string>, ReadonlySet<string>] {
   const nameSet = new Set<string>();
   const typeSet = new Set<string>();
@@ -107,10 +107,10 @@ function getOtherFunctionsUsedByGivenFunction(
 
 function analyzeUsedFunctionNamesAndTypeNames(
   functions: readonly HighIRFunction[],
-  entryPoints: readonly string[]
+  entryPoints: readonly string[],
 ): readonly [ReadonlySet<string>, ReadonlySet<string>] {
   const usedFunctionMap = new Map(
-    functions.map((it) => [it.name, getOtherFunctionsUsedByGivenFunction(it)])
+    functions.map((it) => [it.name, getOtherFunctionsUsedByGivenFunction(it)]),
   );
 
   const usedNames = new Set<string>();
@@ -132,17 +132,17 @@ function analyzeUsedFunctionNamesAndTypeNames(
   }
 
   const usedTypes = new Set(
-    Array.from(usedNames).flatMap((it) => Array.from(usedFunctionMap.get(it)?.[1] ?? []))
+    Array.from(usedNames).flatMap((it) => Array.from(usedFunctionMap.get(it)?.[1] ?? [])),
   );
   return [usedNames, usedTypes];
 }
 
 export default function optimizeHighIRSourcesByEliminatingUnusedOnes(
-  sources: HighIRSources
+  sources: HighIRSources,
 ): HighIRSources {
   const [usedNames, usedTypes] = analyzeUsedFunctionNamesAndTypeNames(
     sources.functions,
-    sources.mainFunctionNames
+    sources.mainFunctionNames,
   );
   const globalVariables = sources.globalVariables.filter((it) => usedNames.has(it.name));
   const typeDefinitions = sources.typeDefinitions.filter((it) => usedTypes.has(it.identifier));

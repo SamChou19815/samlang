@@ -21,21 +21,24 @@ import { runnableSamlangProgramTestCases } from '../test-programs';
 
 describe('compiler-integration-tests', () => {
   const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
-    runnableSamlangProgramTestCases.map((it) => [ModuleReference([it.testCaseName]), it.sourceCode])
+    runnableSamlangProgramTestCases.map((it) => [
+      ModuleReference([it.testCaseName]),
+      it.sourceCode,
+    ]),
   );
 
   expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
 
   const midIROptimizedSingleSource = lowerHighIRSourcesToMidIRSources(
     optimizeHighIRSourcesAccordingToConfiguration(
-      compileSamlangSourcesToHighIRSources(checkedSources)
-    )
+      compileSamlangSourcesToHighIRSources(checkedSources),
+    ),
   );
   const expectedResult = Object.fromEntries(
     runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => [
       testCaseName,
       expectedStandardOut,
-    ])
+    ]),
   );
   it('MIR[all]', () => {
     let jsCode = `let printed;
@@ -74,7 +77,7 @@ result['${testCaseName}'] = printed;
           printed += `${pointerToString(p)}\n`;
           return 0;
         },
-      })
+      }),
     );
     wasmModule.dispose();
 
@@ -85,7 +88,7 @@ result['${testCaseName}'] = printed;
         const result = printed;
         printed = '';
         return [testCaseName, result];
-      })
+      }),
     );
     expect(actualResult).toEqual(expectedResult);
   });

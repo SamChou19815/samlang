@@ -81,7 +81,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
       const rawModule = parseSamlangModuleFromText(
         sourceCode,
         moduleReference,
-        errorCollector.getErrorReporter()
+        errorCollector.getErrorReporter(),
       );
       this.rawModules.set(moduleReference, rawModule);
     });
@@ -139,7 +139,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
     const rawModule = parseSamlangModuleFromText(
       sourceCode,
       moduleReference,
-      errorCollector.getErrorReporter()
+      errorCollector.getErrorReporter(),
     );
     this.rawModules.set(moduleReference, rawModule);
     const affected = this.reportChanges(moduleReference, rawModule);
@@ -174,7 +174,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
 
   private reportChanges(
     moduleReference: ModuleReference,
-    samlangModule: SamlangModule | null
+    samlangModule: SamlangModule | null,
   ): readonly ModuleReference[] {
     const affected = ModuleReferenceCollections.hashSetOf(moduleReference);
 
@@ -185,7 +185,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
       this.dependencyTracker.update(moduleReference);
     } else {
       const dependencies = collectModuleReferenceFromSamlangModule(
-        typeCheckSingleModuleSource(samlangModule, createGlobalErrorCollector())
+        typeCheckSingleModuleSource(samlangModule, createGlobalErrorCollector()),
       );
       dependencies.delete(moduleReference);
       this.dependencyTracker.update(moduleReference, dependencies.toArray());
@@ -195,13 +195,13 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
 
   private incrementalTypeCheck(
     affectedSourceList: readonly ModuleReference[],
-    errorCollector: ReadonlyGlobalErrorCollector
+    errorCollector: ReadonlyGlobalErrorCollector,
   ): void {
     const updatedModules = typeCheckSourcesIncrementally(
       this.rawModules,
       this._globalTypingContext,
       affectedSourceList,
-      errorCollector
+      errorCollector,
     );
     updatedModules.forEach((updatedModule, moduleReference) => {
       this.checkedModules.set(moduleReference, updatedModule);
@@ -214,7 +214,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
 
   private updateLocationLookupsForCheckedModules(checkedModules: Sources<SamlangModule>) {
     const locationLookupBuilder = new SamlangExpressionLocationLookupBuilder(
-      this._expressionLocationLookup
+      this._expressionLocationLookup,
     );
     checkedModules.forEach((checkedModule, moduleReference) => {
       locationLookupBuilder.rebuild(moduleReference, checkedModule);
@@ -290,7 +290,7 @@ class LanguageServicesImpl implements LanguageServices {
       const document = getLastDocComment(
         this.state
           .getRawModule(expressionModuleReference)
-          ?.classes.find((it) => it.name.name === expressionClassName)?.associatedComments
+          ?.classes.find((it) => it.name.name === expressionClassName)?.associatedComments,
       );
       const typeContent = { language: 'samlang', value: `class ${expressionClassName}` };
       return {
@@ -342,14 +342,14 @@ class LanguageServicesImpl implements LanguageServices {
         return this.findClassMemberLocation(
           moduleReference,
           expression.className.name,
-          expression.memberName.name
+          expression.memberName.name,
         );
       case 'FieldAccessExpression': {
         const [, classDefinition] = checkNotNull(
           this.getClassDefinition(
             moduleReference,
-            (expression.expression.type as SamlangIdentifierType).identifier
-          )
+            (expression.expression.type as SamlangIdentifierType).identifier,
+          ),
         );
         return classDefinition.typeDefinition.location;
       }
@@ -357,7 +357,7 @@ class LanguageServicesImpl implements LanguageServices {
         return this.findClassMemberLocation(
           moduleReference,
           (expression.expression.type as SamlangIdentifierType).identifier,
-          expression.methodName.name
+          expression.methodName.name,
         );
       case 'UnaryExpression':
       case 'FunctionCallExpression':
@@ -372,11 +372,11 @@ class LanguageServicesImpl implements LanguageServices {
 
   private getClassDefinition(
     moduleReference: ModuleReference,
-    className: string
+    className: string,
   ): readonly [ModuleReference, SourceClassDefinition] | undefined {
     const samlangModule = checkNotNull(
       this.state.getCheckedModule(moduleReference),
-      `Missing ${moduleReference}`
+      `Missing ${moduleReference}`,
     );
     const { imports, classes } = samlangModule;
     for (let i = 0; i < classes.length; i += 1) {
@@ -396,7 +396,7 @@ class LanguageServicesImpl implements LanguageServices {
   private findClassMemberLocation(
     moduleReference: ModuleReference,
     className: string,
-    memberName: string
+    memberName: string,
   ): Location | null {
     const nullableClassDefinition = this.getClassDefinition(moduleReference, className);
     if (nullableClassDefinition == null) return null;
@@ -413,14 +413,14 @@ class LanguageServicesImpl implements LanguageServices {
     if (expression.__type__ === 'ClassMemberExpression') {
       const relevantClassType = this.getClassType(
         expression.moduleReference,
-        expression.className.name
+        expression.className.name,
       );
       if (relevantClassType == null) return [];
       return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
         return LanguageServicesImpl.getCompletionResultFromTypeInformation(
           name,
           typeInformation,
-          CompletionItemKinds.FUNCTION
+          CompletionItemKinds.FUNCTION,
         );
       });
     }
@@ -457,8 +457,8 @@ class LanguageServicesImpl implements LanguageServices {
           LanguageServicesImpl.getCompletionResultFromTypeInformation(
             name,
             typeInformation,
-            CompletionItemKinds.METHOD
-          )
+            CompletionItemKinds.METHOD,
+          ),
         );
       }
     });
@@ -467,7 +467,7 @@ class LanguageServicesImpl implements LanguageServices {
 
   private getClassType(
     moduleReference: ModuleReference,
-    className: string
+    className: string,
   ): ClassTypingContext | undefined {
     return this.state.globalTypingContext.get(moduleReference)?.classes[className];
   }
@@ -475,15 +475,15 @@ class LanguageServicesImpl implements LanguageServices {
   private static getCompletionResultFromTypeInformation(
     name: string,
     typeInformation: MemberTypeInformation,
-    kind: CompletionItemKind
+    kind: CompletionItemKind,
   ): AutoCompletionItem {
     const functionType = typeInformation.type;
     const detailedName = `${name}${LanguageServicesImpl.prettyPrintFunctionTypeWithDummyParameters(
-      functionType
+      functionType,
     )}`;
     const [insertText, isSnippet] = LanguageServicesImpl.getInsertText(
       name,
-      functionType.argumentTypes.length
+      functionType.argumentTypes.length,
     );
     return {
       label: detailedName,
@@ -520,7 +520,7 @@ class LanguageServicesImpl implements LanguageServices {
   renameVariable(
     moduleReference: ModuleReference,
     position: Position,
-    newName: string
+    newName: string,
   ): 'Invalid' | string | null {
     const trimmedNewName = newName.trim();
     if (!/[a-z][A-Za-z0-9]*/.test(trimmedNewName)) return 'Invalid';
@@ -533,7 +533,7 @@ class LanguageServicesImpl implements LanguageServices {
       return null;
     }
     const definitionAndUses = this.state.variableDefinitionLookup.findAllDefinitionAndUses(
-      expression.location
+      expression.location,
     );
     if (definitionAndUses == null) return null;
     return prettyPrintSamlangModule(
@@ -541,8 +541,8 @@ class LanguageServicesImpl implements LanguageServices {
       applyRenamingWithDefinitionAndUse(
         checkNotNull(this.state.getCheckedModule(moduleReference), `Missing ${moduleReference}`),
         definitionAndUses,
-        newName
-      )
+        newName,
+      ),
     );
   }
 
@@ -557,7 +557,7 @@ class LanguageServicesImpl implements LanguageServices {
 }
 
 export default function createSamlangLanguageService(
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
 ): LanguageServices {
   return new LanguageServicesImpl(new LanguageServiceStateImpl(sourceHandles));
 }

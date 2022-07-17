@@ -95,7 +95,7 @@ describe('mir-toplevel-lowering', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [SourceIntType(DummySourceReason)],
-                SourceIntType(DummySourceReason)
+                SourceIntType(DummySourceReason),
               ),
               body: THIS,
             },
@@ -144,7 +144,7 @@ describe('mir-toplevel-lowering', () => {
               type: SourceFunctionType(
                 DummySourceReason,
                 [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-                SourceIntType(DummySourceReason)
+                SourceIntType(DummySourceReason),
               ),
               body: SourceExpressionIfElse({
                 type: SourceIntType(DummySourceReason),
@@ -165,7 +165,7 @@ describe('mir-toplevel-lowering', () => {
                     type: SourceFunctionType(
                       DummySourceReason,
                       [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-                      SourceIntType(DummySourceReason)
+                      SourceIntType(DummySourceReason),
                     ),
                     typeArguments: [],
                     moduleReference: ModuleReference.DUMMY,
@@ -230,7 +230,7 @@ describe('mir-toplevel-lowering', () => {
                     ]),
                     SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
                   ],
-                  SourceIntType(DummySourceReason)
+                  SourceIntType(DummySourceReason),
                 ),
               },
             },
@@ -243,11 +243,11 @@ describe('mir-toplevel-lowering', () => {
 
     const sources = ModuleReferenceCollections.mapOf(
       [ModuleReference.DUMMY, sourceModule],
-      [ModuleReference(['Foo']), { imports: [], classes: [], interfaces: [] }]
+      [ModuleReference(['Foo']), { imports: [], classes: [], interfaces: [] }],
     );
 
     expect(
-      debugPrintHighIRSources(compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources))
+      debugPrintHighIRSources(compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources)),
     ).toBe(
       `closure type $SyntheticIDType0<T> = (__DUMMY___A<int>, T) -> int
 object type __DUMMY___Main = []
@@ -327,7 +327,7 @@ function ___DUMMY___Class3_init_with_context<T>(_context: int, _f0: $SyntheticID
   return (_ret: __DUMMY___Class3<T>);
 }
 
-sources.mains = [___DUMMY___Main_main]`
+sources.mains = [___DUMMY___Main_main]`,
     );
 
     expect(`\n${debugPrintHighIRSources(compileSamlangSourcesToHighIRSources(sources))}`).toBe(`

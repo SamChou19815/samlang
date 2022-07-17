@@ -17,7 +17,7 @@ import {
 
 export const createCommaSeparatedList = <E>(
   elements: readonly E[],
-  documentCreator: (element: E) => PrettierDocument
+  documentCreator: (element: E) => PrettierDocument,
 ): PrettierDocument => {
   if (elements.length === 0) return PRETTIER_NIL;
   if (elements.length === 1) return documentCreator(checkNotNull(elements[0]));
@@ -27,7 +27,7 @@ export const createCommaSeparatedList = <E>(
       documentCreator(checkNotNull(elements[i])),
       PRETTIER_TEXT(','),
       PRETTIER_LINE,
-      base
+      base,
     );
   }
   return base;
@@ -40,11 +40,11 @@ export const createBracesSurroundedDocument = (document: PrettierDocument): Pret
   PRETTIER_SPACED_BRACKET('{', document, '}');
 
 export const createBracesSurroundedBlockDocument = (
-  documents: readonly PrettierDocument[]
+  documents: readonly PrettierDocument[],
 ): PrettierDocument =>
   PRETTIER_CONCAT(
     PRETTIER_TEXT('{'),
     PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, ...documents)),
     PRETTIER_LINE,
-    PRETTIER_TEXT('}')
+    PRETTIER_TEXT('}'),
   );

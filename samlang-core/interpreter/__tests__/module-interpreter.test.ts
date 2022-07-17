@@ -105,7 +105,7 @@ describe('module-interpreter', () => {
     parameters: [],
     body: SourceExpressionInt(
       2,
-      new Location(ModuleReference.DUMMY, Position(123, 45), Position(145, 89))
+      new Location(ModuleReference.DUMMY, Position(123, 45), Position(145, 89)),
     ),
   };
 
@@ -124,7 +124,7 @@ describe('module-interpreter', () => {
       functionArguments: [
         SourceExpressionString(
           'Hello world',
-          new Location(ModuleReference.DUMMY, Position(183, 23), Position(203, 21))
+          new Location(ModuleReference.DUMMY, Position(183, 23), Position(203, 21)),
         ),
       ],
     }),
@@ -150,7 +150,7 @@ describe('module-interpreter', () => {
       functionArguments: [
         SourceExpressionInt(
           2,
-          new Location(ModuleReference.DUMMY, Position(123, 45), Position(145, 89))
+          new Location(ModuleReference.DUMMY, Position(123, 45), Position(145, 89)),
         ),
       ],
     }),

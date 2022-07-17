@@ -19,7 +19,7 @@ import {
 
 export default function prettyPrintSamlangModule(
   availableWidth: number,
-  samlangModule: SamlangModule
+  samlangModule: SamlangModule,
 ): string {
   const imports = samlangModule.imports
     .map((oneImport) =>
@@ -28,11 +28,11 @@ export default function prettyPrintSamlangModule(
         PRETTIER_CONCAT(
           PRETTIER_TEXT('import '),
           createBracesSurroundedDocument(
-            createCommaSeparatedList(oneImport.importedMembers, ({ name }) => PRETTIER_TEXT(name))
+            createCommaSeparatedList(oneImport.importedMembers, ({ name }) => PRETTIER_TEXT(name)),
           ),
-          PRETTIER_TEXT(` from ${oneImport.importedModule.join('.')}`)
-        )
-      )
+          PRETTIER_TEXT(` from ${oneImport.importedModule.join('.')}`),
+        ),
+      ),
     )
     .join('');
 
@@ -44,20 +44,20 @@ export default function prettyPrintSamlangModule(
       PRETTIER_TEXT(
         interfaceDeclaration.typeParameters.length === 0
           ? ''
-          : `<${interfaceDeclaration.typeParameters.map((it) => it.name).join(', ')}>`
+          : `<${interfaceDeclaration.typeParameters.map((it) => it.name).join(', ')}>`,
       ),
     ];
 
     if (interfaceDeclaration.members.length === 0) {
       return prettyPrintAccordingToPrettierAlgorithm(
         availableWidth,
-        PRETTIER_CONCAT(...documents)
+        PRETTIER_CONCAT(...documents),
       ).trimEnd();
     }
 
     let interfaceString = prettyPrintAccordingToPrettierAlgorithm(
       availableWidth,
-      PRETTIER_CONCAT(...documents)
+      PRETTIER_CONCAT(...documents),
     ).trimEnd();
     interfaceString += ' {';
 
@@ -68,9 +68,9 @@ export default function prettyPrintSamlangModule(
           2,
           PRETTIER_CONCAT(
             PRETTIER_LINE,
-            ...createPrettierDocumentsFromSamlangInterfaceMember(member)
-          )
-        )
+            ...createPrettierDocumentsFromSamlangInterfaceMember(member),
+          ),
+        ),
       );
     });
     interfaceString += '}';
@@ -86,7 +86,7 @@ export default function prettyPrintSamlangModule(
           return `${modifier}val ${name}: ${prettyPrintType(type.type)}`;
         }
         return `${name}(${prettyPrintType(type.type)})`;
-      }
+      },
     );
 
     const documents = [
@@ -96,25 +96,25 @@ export default function prettyPrintSamlangModule(
       PRETTIER_TEXT(
         classDefinition.typeParameters.length === 0
           ? ''
-          : `<${classDefinition.typeParameters.map((it) => it.name).join(', ')}>`
+          : `<${classDefinition.typeParameters.map((it) => it.name).join(', ')}>`,
       ),
       typeMappingItems.length === 0
         ? PRETTIER_NIL
         : createParenthesisSurroundedDocument(
-            createCommaSeparatedList(typeMappingItems, PRETTIER_TEXT)
+            createCommaSeparatedList(typeMappingItems, PRETTIER_TEXT),
           ),
     ];
 
     if (classDefinition.members.length === 0) {
       return prettyPrintAccordingToPrettierAlgorithm(
         availableWidth,
-        PRETTIER_CONCAT(...documents)
+        PRETTIER_CONCAT(...documents),
       ).trimEnd();
     }
 
     let classString = prettyPrintAccordingToPrettierAlgorithm(
       availableWidth,
-      PRETTIER_CONCAT(...documents)
+      PRETTIER_CONCAT(...documents),
     ).trimEnd();
     classString += ' {';
 
@@ -125,9 +125,9 @@ export default function prettyPrintSamlangModule(
           2,
           PRETTIER_CONCAT(
             PRETTIER_LINE,
-            ...createPrettierDocumentsFromSamlangInterfaceMember(member)
-          )
-        )
+            ...createPrettierDocumentsFromSamlangInterfaceMember(member),
+          ),
+        ),
       );
     });
     classString += '}';

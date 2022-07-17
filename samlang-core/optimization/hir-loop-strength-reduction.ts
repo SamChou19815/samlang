@@ -17,7 +17,7 @@ export default function highIRLoopStrengthReductionOptimization(
     statements,
     breakCollector,
   }: HighIROptimizableWhileLoop,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): {
   readonly prefixStatements: readonly HighIRStatement[];
   readonly optimizableWhileLoop: HighIROptimizableWhileLoop;
@@ -35,11 +35,11 @@ export default function highIRLoopStrengthReductionOptimization(
     (derivedInductionVariable) => {
       const associatedBasicInductionVariable = checkNotNull(
         basicInductionVariablesMap.get(derivedInductionVariable.baseName),
-        `Missing ${derivedInductionVariable.baseName}`
+        `Missing ${derivedInductionVariable.baseName}`,
       );
       const addedInvariantExpressionInLoop = mergeInvariantMultiplicationForLoopOptimization(
         associatedBasicInductionVariable.incrementAmount,
-        derivedInductionVariable.multiplier
+        derivedInductionVariable.multiplier,
       );
       if (addedInvariantExpressionInLoop == null) return derivedInductionVariable;
 
@@ -51,7 +51,7 @@ export default function highIRLoopStrengthReductionOptimization(
           ...createHighIRFlexibleOrderOperatorNode(
             '*',
             derivedInductionVariable.multiplier,
-            associatedBasicInductionVariable.initialValue
+            associatedBasicInductionVariable.initialValue,
           ),
         }),
         HIR_BINARY({
@@ -59,9 +59,9 @@ export default function highIRLoopStrengthReductionOptimization(
           ...createHighIRFlexibleOrderOperatorNode(
             '+',
             derivedInductionVariable.immediate,
-            HIR_VARIABLE(newInitialValueTempTemporary, HIR_INT_TYPE)
+            HIR_VARIABLE(newInitialValueTempTemporary, HIR_INT_TYPE),
           ),
-        })
+        }),
       );
       newGeneralInductionVariables.push({
         name: derivedInductionVariable.name,
@@ -69,7 +69,7 @@ export default function highIRLoopStrengthReductionOptimization(
         incrementAmount: addedInvariantExpressionInLoop,
       });
       return null;
-    }
+    },
   );
 
   return {

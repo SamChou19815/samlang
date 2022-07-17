@@ -24,7 +24,7 @@ describe('samlang-parser', () => {
       [],
       createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
-      new Set()
+      new Set(),
     );
 
     parser.parseInterface();
@@ -42,7 +42,7 @@ describe('samlang-parser', () => {
       [{ location: Location.DUMMY, content: { __type__: 'Error', content: 'fooooo' } }],
       createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
-      new Set()
+      new Set(),
     );
 
     parser.parseInterface();

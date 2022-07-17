@@ -28,7 +28,7 @@ export function activate(): void {
         options: { execArgv: ['--nolazy', '--inspect=6009', '--stack_size=1024'] },
       },
     },
-    { documentSelector: [{ scheme: 'file', language: 'samlang' }] }
+    { documentSelector: [{ scheme: 'file', language: 'samlang' }] },
   );
 
   languageClient.start();

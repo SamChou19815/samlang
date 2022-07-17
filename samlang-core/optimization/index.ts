@@ -29,13 +29,13 @@ function optimizeHighIRFunctionForOneRound(
     doesPerformLocalValueNumbering,
     doesPerformCommonSubExpressionElimination,
     doesPerformLoopOptimization,
-  }: OptimizationConfiguration
+  }: OptimizationConfiguration,
 ): HighIRFunction {
   let optimizedFunction = optimizeHighIRFunctionByConditionalConstantPropagation(highIRFunction);
   if (doesPerformLoopOptimization) {
     optimizedFunction = optimizeHighIRFunctionWithAllLoopOptimizations(
       optimizedFunction,
-      allocator
+      allocator,
     );
   }
   if (doesPerformLocalValueNumbering) {
@@ -44,7 +44,7 @@ function optimizeHighIRFunctionForOneRound(
   if (doesPerformCommonSubExpressionElimination) {
     optimizedFunction = optimizeHighIRFunctionByCommonSubExpressionElimination(
       optimizedFunction,
-      allocator
+      allocator,
     );
   }
   return optimizeHighIRFunctionByDeadCodeElimination(optimizedFunction);
@@ -53,33 +53,33 @@ function optimizeHighIRFunctionForOneRound(
 function optimizeFunctionForRounds(
   highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator,
-  optimizationConfiguration: OptimizationConfiguration
+  optimizationConfiguration: OptimizationConfiguration,
 ): HighIRFunction {
   let optimizedFunction = highIRFunction;
   for (let j = 0; j < 5; j += 1) {
     optimizedFunction = optimizeHighIRFunctionForOneRound(
       optimizedFunction,
       allocator,
-      optimizationConfiguration
+      optimizationConfiguration,
     );
   }
   return optimizeHighIRFunctionByConditionalConstantPropagation(
     optimizeHighIRFunctionByDeadCodeElimination(
-      optimizeHighIRFunctionByConditionalConstantPropagation(optimizedFunction)
-    )
+      optimizeHighIRFunctionByConditionalConstantPropagation(optimizedFunction),
+    ),
   );
 }
 
 export function optimizeHighIRSourcesAccordingToConfiguration(
   sources: HighIRSources,
-  optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
+  optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration,
 ): HighIRSources {
   const allocator = new OptimizationResourceAllocator();
 
   let intermediate = sources;
   for (let i = 0; i < 4; i += 1) {
     let optimizedFunctions: readonly HighIRFunction[] = intermediate.functions.map((it) =>
-      optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
+      optimizeFunctionForRounds(it, allocator, optimizationConfiguration),
     );
     if (optimizationConfiguration.doesPerformInlining) {
       optimizedFunctions = optimizeHighIRFunctionsByInlining(optimizedFunctions, allocator);
@@ -93,7 +93,7 @@ export function optimizeHighIRSourcesAccordingToConfiguration(
   return {
     ...intermediate,
     functions: intermediate.functions.map((it) =>
-      optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
+      optimizeFunctionForRounds(it, allocator, optimizationConfiguration),
     ),
   };
 }

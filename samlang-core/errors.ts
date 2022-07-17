@@ -5,7 +5,7 @@ export abstract class CompileTimeError {
   constructor(
     public readonly errorType: string,
     public readonly location: Location,
-    public readonly reason: string
+    public readonly reason: string,
   ) {}
 
   toString(): string {
@@ -28,7 +28,7 @@ export class UnexpectedTypeError extends CompileTimeError {
         const expectedType = prettyPrintType(expected);
         const actualType = prettyPrintType(actual);
         return `Expected: \`${expectedType}\`, actual: \`${actualType}\`.`;
-      })()
+      })(),
     );
   }
 }
@@ -44,7 +44,7 @@ export class MissingDefinitionsError extends CompileTimeError {
     super(
       'MissingDefinitions',
       location,
-      `Missing definitions for [${missingDefinitions.join(', ')}].`
+      `Missing definitions for [${missingDefinitions.join(', ')}].`,
     );
   }
 }
@@ -54,7 +54,7 @@ export class UnsupportedClassTypeDefinitionError extends CompileTimeError {
     super(
       'UnsupportedClassTypeDefinition',
       location,
-      `Expect the current class to have \`${typeDefinitionType}\` type definition, but it doesn't.`
+      `Expect the current class to have \`${typeDefinitionType}\` type definition, but it doesn't.`,
     );
   }
 }
@@ -66,7 +66,7 @@ export class UnexpectedTypeKindError extends CompileTimeError {
       location,
       `Expected kind: \`${expectedTypeKind}\`, actual: \`${
         typeof actualType === 'string' ? actualType : prettyPrintType(actualType)
-      }\`.`
+      }\`.`,
     );
   }
 }
@@ -76,7 +76,7 @@ export class ArityMismatchError extends CompileTimeError {
     super(
       'ArityMismatchError',
       location,
-      `Incorrect ${kind} size. Expected: ${expectedSize}, actual: ${actualSize}.`
+      `Incorrect ${kind} size. Expected: ${expectedSize}, actual: ${actualSize}.`,
     );
   }
 }
@@ -86,7 +86,7 @@ export class InsufficientTypeInferenceContextError extends CompileTimeError {
     super(
       'InsufficientTypeInferenceContext',
       location,
-      'There is not enough context information to decide the type of this expression.'
+      'There is not enough context information to decide the type of this expression.',
     );
   }
 }
@@ -96,7 +96,7 @@ export class CollisionError extends CompileTimeError {
     super(
       'Collision',
       location,
-      `Name \`${collidedName}\` collides with a previously defined name.`
+      `Name \`${collidedName}\` collides with a previously defined name.`,
     );
   }
 }
@@ -106,7 +106,7 @@ export class IllegalOtherClassMatch extends CompileTimeError {
     super(
       'IllegalOtherClassMatch',
       location,
-      "It is illegal to match on a value of other class's type."
+      "It is illegal to match on a value of other class's type.",
     );
   }
 }
@@ -122,7 +122,7 @@ export class NonExhausiveMatchError extends CompileTimeError {
     super(
       'NonExhausiveMatch',
       location,
-      `The following tags are not considered in the match: [${missingTags.join(', ')}].`
+      `The following tags are not considered in the match: [${missingTags.join(', ')}].`,
     );
   }
 }
@@ -132,7 +132,7 @@ export class CyclicTypeDefinitionError extends CompileTimeError {
     super(
       'CyclicTypeDefinition',
       type.reason.useLocation,
-      `Type \`${prettyPrintType(type)}\` has a cyclic definition.`
+      `Type \`${prettyPrintType(type)}\` has a cyclic definition.`,
     );
   }
 }
@@ -172,17 +172,17 @@ export class GlobalErrorReporter {
 
   reportUnsupportedClassTypeDefinitionError(
     location: Location,
-    typeDefinitionType: 'object' | 'variant'
+    typeDefinitionType: 'object' | 'variant',
   ): void {
     this.collectorDelegate.reportError(
-      new UnsupportedClassTypeDefinitionError(location, typeDefinitionType)
+      new UnsupportedClassTypeDefinitionError(location, typeDefinitionType),
     );
   }
 
   reportUnexpectedTypeKindError(
     location: Location,
     expected: string,
-    actual: string | SamlangType
+    actual: string | SamlangType,
   ): void {
     this.collectorDelegate.reportError(new UnexpectedTypeKindError(location, expected, actual));
   }
@@ -191,10 +191,10 @@ export class GlobalErrorReporter {
     location: Location,
     kind: string,
     expectedSize: number,
-    actualSize: number
+    actualSize: number,
   ): void {
     this.collectorDelegate.reportError(
-      new ArityMismatchError(location, kind, expectedSize, actualSize)
+      new ArityMismatchError(location, kind, expectedSize, actualSize),
     );
   }
 

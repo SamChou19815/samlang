@@ -59,25 +59,25 @@ export class AccessibleGlobalTypingContext {
     public readonly currentModuleReference: ModuleReference,
     private readonly globalTypingContext: ReadonlyGlobalTypingContext,
     public readonly typeParameters: ReadonlySet<string>,
-    public readonly currentClass: string
+    public readonly currentClass: string,
   ) {}
 
   static fromInterface(
     currentModuleReference: ModuleReference,
     globalTypingContext: ReadonlyGlobalTypingContext,
-    interfaceDeclaration: SourceInterfaceDeclaration
+    interfaceDeclaration: SourceInterfaceDeclaration,
   ): AccessibleGlobalTypingContext {
     return new AccessibleGlobalTypingContext(
       currentModuleReference,
       globalTypingContext,
       new Set(interfaceDeclaration.typeParameters.map((it) => it.name)),
-      interfaceDeclaration.name.name
+      interfaceDeclaration.name.name,
     );
   }
 
   getInterfaceInformation(
     moduleReference: ModuleReference,
-    className: string
+    className: string,
   ): InterfaceTypingContext | undefined {
     return this.globalTypingContext.get(moduleReference)?.interfaces[className];
   }
@@ -88,7 +88,7 @@ export class AccessibleGlobalTypingContext {
   } {
     const interfaceTypingContext = this.getInterfaceInformation(
       instantiatedInterfaceType.moduleReference,
-      instantiatedInterfaceType.identifier
+      instantiatedInterfaceType.identifier,
     );
     if (interfaceTypingContext == null) {
       return { context: { functions: {}, methods: {} }, cyclicType: null };
@@ -97,7 +97,7 @@ export class AccessibleGlobalTypingContext {
     const cyclicType = this.recursiveComputeInterfaceMembersChain(
       instantiatedInterfaceType,
       collector,
-      ModuleReferenceCollections.hashMapOf()
+      ModuleReferenceCollections.hashMapOf(),
     );
     const functions: Record<string, MemberTypeInformation> = {};
     const methods: Record<string, MemberTypeInformation> = {};
@@ -117,7 +117,7 @@ export class AccessibleGlobalTypingContext {
   private recursiveComputeInterfaceMembersChain(
     interfaceType: SamlangIdentifierType,
     collector: InterfaceTypingContextInstantiatedMembers[],
-    visited: HashMap<ModuleReference, Set<string>>
+    visited: HashMap<ModuleReference, Set<string>>,
   ): SamlangIdentifierType | null {
     const visitedTypesInModule = visited.get(interfaceType.moduleReference) ?? new Set();
     if (visitedTypesInModule.has(interfaceType.identifier)) {
@@ -126,7 +126,7 @@ export class AccessibleGlobalTypingContext {
     visited.set(interfaceType.moduleReference, visitedTypesInModule.add(interfaceType.identifier));
     const interfaceContext = this.getInterfaceInformation(
       interfaceType.moduleReference,
-      interfaceType.identifier
+      interfaceType.identifier,
     );
     if (interfaceContext == null) return null;
     const { functions, methods, extendsOrImplements } =
@@ -136,7 +136,7 @@ export class AccessibleGlobalTypingContext {
       cyclicType = this.recursiveComputeInterfaceMembersChain(
         extendsOrImplements,
         collector,
-        visited
+        visited,
       );
     }
     collector.push({ functions, methods });
@@ -145,10 +145,10 @@ export class AccessibleGlobalTypingContext {
 
   private static getInstantiatedInterface(
     interfaceContext: InterfaceTypingContext,
-    instantiatedInterfaceType: SamlangIdentifierType
+    instantiatedInterfaceType: SamlangIdentifierType,
   ): InterfaceTypingContextInstantiatedNodes {
     const mapping = Object.fromEntries(
-      zip(interfaceContext.typeParameters, instantiatedInterfaceType.typeArguments)
+      zip(interfaceContext.typeParameters, instantiatedInterfaceType.typeArguments),
     );
     return {
       functions: interfaceContext.functions,
@@ -161,14 +161,14 @@ export class AccessibleGlobalTypingContext {
               typeParameters,
               type: performTypeSubstitution(type, mapping) as SamlangFunctionType,
             },
-          ]
-        )
+          ],
+        ),
       ),
       extendsOrImplements:
         interfaceContext.extendsOrImplements != null
           ? (performTypeSubstitution(
               interfaceContext.extendsOrImplements,
-              mapping
+              mapping,
             ) as SamlangIdentifierType)
           : null,
     };
@@ -176,7 +176,7 @@ export class AccessibleGlobalTypingContext {
 
   getClassTypeInformation(
     moduleReference: ModuleReference,
-    className: string
+    className: string,
   ): ClassTypingContext | undefined {
     return this.globalTypingContext.get(moduleReference)?.classes[className];
   }
@@ -185,7 +185,7 @@ export class AccessibleGlobalTypingContext {
     moduleReference: ModuleReference,
     className: string,
     member: string,
-    useLocation: Location
+    useLocation: Location,
   ): MemberTypeInformation | null {
     const typeInfo = this.getClassTypeInformation(moduleReference, className)?.functions?.[member];
     if (typeInfo == null) return null;
@@ -205,7 +205,7 @@ export class AccessibleGlobalTypingContext {
     className: string,
     methodName: string,
     classTypeArguments: readonly SamlangType[],
-    useLocation: Location
+    useLocation: Location,
   ): MemberTypeInformation | null {
     const relaventClass = this.getClassTypeInformation(moduleReference, className);
     if (relaventClass == null) return null;
@@ -214,7 +214,7 @@ export class AccessibleGlobalTypingContext {
     const classTypeParameters = relaventClass.typeParameters;
     const partiallyFixedType = performTypeSubstitution(
       typeInfo.type,
-      Object.fromEntries(zip(classTypeParameters, classTypeArguments))
+      Object.fromEntries(zip(classTypeParameters, classTypeArguments)),
     );
     assert(partiallyFixedType.__type__ === 'FunctionType');
     return {
@@ -228,7 +228,7 @@ export class AccessibleGlobalTypingContext {
     readonly classTypeParameters: readonly string[];
   } {
     const classTypingContext = checkNotNull(
-      this.getClassTypeInformation(this.currentModuleReference, this.currentClass)
+      this.getClassTypeInformation(this.currentModuleReference, this.currentClass),
     );
     return {
       ...classTypingContext.typeDefinition,
@@ -243,7 +243,7 @@ export class AccessibleGlobalTypingContext {
    */
   resolveTypeDefinition(
     { moduleReference, identifier, typeArguments }: SamlangIdentifierType,
-    typeDefinitionType: 'object' | 'variant'
+    typeDefinitionType: 'object' | 'variant',
   ):
     | {
         readonly type: 'Resolved';
@@ -287,26 +287,26 @@ export class AccessibleGlobalTypingContext {
               isPublic: fieldType.isPublic,
               type: performTypeSubstitution(
                 fieldType.type,
-                Object.fromEntries(zip(classTypeParameters, typeArguments))
+                Object.fromEntries(zip(classTypeParameters, typeArguments)),
               ),
             },
           ];
-        })
+        }),
       ),
     };
   }
 
   get thisType(): SamlangIdentifierType {
     const currentClassTypingContext = checkNotNull(
-      this.getClassTypeInformation(this.currentModuleReference, this.currentClass)
+      this.getClassTypeInformation(this.currentModuleReference, this.currentClass),
     );
     return SourceIdentifierType(
       DummySourceReason,
       this.currentModuleReference,
       this.currentClass,
       currentClassTypingContext.typeParameters.map((it) =>
-        SourceIdentifierType(DummySourceReason, this.currentModuleReference, it)
-      )
+        SourceIdentifierType(DummySourceReason, this.currentModuleReference, it),
+      ),
     );
   }
 
@@ -315,7 +315,7 @@ export class AccessibleGlobalTypingContext {
       this.currentModuleReference,
       this.globalTypingContext,
       new Set([...this.typeParameters, ...typeParameters]),
-      this.currentClass
+      this.currentClass,
     );
   }
 }
@@ -325,7 +325,7 @@ export class LocationBasedLocalTypingContext {
 
   constructor(
     private readonly ssaAnalysisResult: SsaAnalysisResult,
-    private readonly thisType: SamlangType | null
+    private readonly thisType: SamlangType | null,
   ) {}
 
   getThisType(): SamlangType | null {

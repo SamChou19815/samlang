@@ -28,7 +28,7 @@ function typeCheck(
   genericFunctionType: SamlangFunctionType,
   typeParameters: readonly string[],
   functionArguments: readonly SamlangExpression[],
-  returnTypeHint: SamlangType | null
+  returnTypeHint: SamlangType | null,
 ) {
   const errorCollector = createGlobalErrorCollector();
   const { solvedGenericType, checkedArguments } = typeCheckFunctionCall(
@@ -38,7 +38,7 @@ function typeCheck(
     functionArguments,
     returnTypeHint,
     (e, hint) => (hint == null ? e : ({ ...e, type: hint } as SamlangExpression)),
-    errorCollector.getErrorReporter()
+    errorCollector.getErrorReporter(),
   );
   return {
     solvedGenericType: prettyPrintType(solvedGenericType),
@@ -57,8 +57,8 @@ describe('function-call-type-checker', () => {
         SourceFunctionType(DummySourceReason, [], SourceBoolType(DummySourceReason)),
         [],
         [SourceExpressionInt(0)],
-        null
-      )
+        null,
+      ),
     ).toEqual({
       solvedGenericType: '() -> bool',
       checkedArgumentsTypes: ['int'],
@@ -100,8 +100,8 @@ describe('function-call-type-checker', () => {
             ],
           }),
         ],
-        null
-      )
+        null,
+      ),
     ).toEqual({
       solvedGenericType: '(int, bool, bool) -> D',
       checkedArgumentsTypes: ['int', 'bool', 'bool'],
@@ -132,8 +132,8 @@ describe('function-call-type-checker', () => {
             },
           }),
         ],
-        SourceBoolType(DummySourceReason)
-      )
+        SourceBoolType(DummySourceReason),
+      ),
     ).toEqual({
       solvedGenericType: '(int, bool, unit) -> bool',
       checkedArgumentsTypes: ['int', 'bool', 'unit'],
@@ -164,8 +164,8 @@ describe('function-call-type-checker', () => {
             },
           }),
         ],
-        null
-      )
+        null,
+      ),
     ).toEqual({
       solvedGenericType: '(int, bool, unit) -> unknown',
       checkedArgumentsTypes: ['int', 'bool', 'unit'],
@@ -181,7 +181,7 @@ describe('function-call-type-checker', () => {
         SourceFunctionType(
           DummySourceReason,
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('D')), IdType('T')],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
         ['T'],
         [
@@ -189,7 +189,7 @@ describe('function-call-type-checker', () => {
             type: SourceFunctionType(
               DummySourceReason,
               [SourceUnknownType(DummySourceReason)],
-              SourceUnknownType(DummySourceReason)
+              SourceUnknownType(DummySourceReason),
             ),
             parameters: [{ name: SourceId('a'), typeAnnotation: null }],
             captured: {},
@@ -197,8 +197,8 @@ describe('function-call-type-checker', () => {
           }),
           SourceExpressionInt(1),
         ],
-        null
-      )
+        null,
+      ),
     ).toEqual({
       solvedGenericType: '((A) -> D, int) -> bool',
       checkedArgumentsTypes: ['(A) -> D', 'int'],
@@ -212,7 +212,7 @@ describe('function-call-type-checker', () => {
         SourceFunctionType(
           DummySourceReason,
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('B'))],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
         ['A', 'B'],
         [
@@ -220,15 +220,15 @@ describe('function-call-type-checker', () => {
             type: SourceFunctionType(
               DummySourceReason,
               [SourceIntType(DummySourceReason)],
-              SourceIntType(DummySourceReason)
+              SourceIntType(DummySourceReason),
             ),
             parameters: [{ name: SourceId('a'), typeAnnotation: SourceIntType(DummySourceReason) }],
             captured: {},
             body: SourceExpressionTrue(),
           }),
         ],
-        null
-      )
+        null,
+      ),
     ).toEqual({
       solvedGenericType: '((int) -> int) -> bool',
       checkedArgumentsTypes: ['(int) -> int'],
@@ -242,7 +242,7 @@ describe('function-call-type-checker', () => {
         SourceFunctionType(
           DummySourceReason,
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('B'))],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
         ['A', 'B'],
         [
@@ -250,15 +250,15 @@ describe('function-call-type-checker', () => {
             type: SourceFunctionType(
               DummySourceReason,
               [SourceUnknownType(DummySourceReason)],
-              SourceUnknownType(DummySourceReason)
+              SourceUnknownType(DummySourceReason),
             ),
             parameters: [{ name: SourceId('a'), typeAnnotation: null }],
             captured: {},
             body: SourceExpressionTrue(),
           }),
         ],
-        null
-      )
+        null,
+      ),
     ).toEqual({
       solvedGenericType: '((unknown) -> unknown) -> bool',
       checkedArgumentsTypes: ['(unknown) -> unknown'],

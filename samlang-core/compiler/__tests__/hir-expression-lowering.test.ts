@@ -42,13 +42,13 @@ import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from '../hir-type-c
 const DUMMY_IDENTIFIER_TYPE = SourceIdentifierType(
   DummySourceReason,
   ModuleReference.DUMMY,
-  'Dummy'
+  'Dummy',
 );
 const THIS = SourceExpressionThis({ type: DUMMY_IDENTIFIER_TYPE });
 
 function expectCorrectlyLowered(
   samlangExpression: SamlangExpression,
-  expectedString: string
+  expectedString: string,
 ): void {
   const typeSynthesizer = new HighIRTypeSynthesizer();
   const typeLoweringManager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
@@ -82,7 +82,7 @@ function expectCorrectlyLowered(
     },
     /* typeLoweringManager */ typeLoweringManager,
     /* stringManager */ stringManager,
-    /* expression */ samlangExpression
+    /* expression */ samlangExpression,
   );
   const syntheticModule: HighIRSources = {
     globalVariables: stringManager.globalVariables,
@@ -94,7 +94,7 @@ function expectCorrectlyLowered(
   expect(
     `${debugPrintHighIRSources(syntheticModule)}
 ${statements.map((it) => debugPrintHighIRStatement(it)).join('\n')}
-return ${debugPrintHighIRExpression(expression)};`.trim()
+return ${debugPrintHighIRExpression(expression)};`.trim(),
   ).toBe(expectedString);
 }
 
@@ -105,7 +105,7 @@ describe('hir-expression-lowering', () => {
     expectCorrectlyLowered(SourceExpressionInt(0), 'return 0;');
     expectCorrectlyLowered(
       SourceExpressionString('foo'),
-      "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;"
+      "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
     );
   });
 
@@ -116,7 +116,7 @@ describe('hir-expression-lowering', () => {
   it('Variable lowering works.', () => {
     expectCorrectlyLowered(
       SourceExpressionVariable({ type: SourceUnitType(DummySourceReason), name: 'foo' }),
-      'return (foo: int);'
+      'return (foo: int);',
     );
   });
 
@@ -126,7 +126,7 @@ describe('hir-expression-lowering', () => {
         type: SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceIntType(DummySourceReason)
+          SourceIntType(DummySourceReason),
         ),
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
@@ -135,7 +135,7 @@ describe('hir-expression-lowering', () => {
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___A_b_with_context: (int, int) -> int), context: 0 };
-return (_t0: $SyntheticIDType0);`
+return (_t0: $SyntheticIDType0);`,
     );
   });
 
@@ -147,7 +147,7 @@ return (_t0: $SyntheticIDType0);`
         fieldName: SourceId('foo'),
         fieldOrder: 0,
       }),
-      'let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);'
+      'let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);',
     );
   });
 
@@ -157,14 +157,14 @@ return (_t0: $SyntheticIDType0);`
         type: SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceIntType(DummySourceReason)
+          SourceIntType(DummySourceReason),
         ),
         expression: THIS,
         methodName: SourceId('foo'),
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy_foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
-return (_t0: $SyntheticIDType0);`
+return (_t0: $SyntheticIDType0);`,
     );
   });
 
@@ -175,7 +175,7 @@ return (_t0: $SyntheticIDType0);`
         operator: '!',
         expression: THIS,
       }),
-      'let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);'
+      'let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);',
     );
 
     expectCorrectlyLowered(
@@ -184,7 +184,7 @@ return (_t0: $SyntheticIDType0);`
         operator: '-',
         expression: THIS,
       }),
-      'let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);'
+      'let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);',
     );
   });
 
@@ -197,7 +197,7 @@ return (_t0: $SyntheticIDType0);`
             type: SourceFunctionType(
               DummySourceReason,
               [DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE],
-              SourceIntType(DummySourceReason)
+              SourceIntType(DummySourceReason),
             ),
             typeArguments: [],
             moduleReference: ModuleReference(['ModuleModule']),
@@ -207,7 +207,7 @@ return (_t0: $SyntheticIDType0);`
           functionArguments: [THIS, THIS],
         }),
         `let _t0: int = _ModuleModule_ImportedClass_bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t0: int);`
+return (_t0: int);`,
       );
     });
 
@@ -219,7 +219,7 @@ return (_t0: int);`
             type: SourceFunctionType(
               DummySourceReason,
               [SourceIntType(DummySourceReason)],
-              SourceUnitType(DummySourceReason)
+              SourceUnitType(DummySourceReason),
             ),
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
@@ -229,7 +229,7 @@ return (_t0: int);`
           functionArguments: [SourceExpressionInt(0)],
         }),
         `___DUMMY___C_m1(0);
-return 0;`
+return 0;`,
       );
     });
 
@@ -241,7 +241,7 @@ return 0;`
             type: SourceFunctionType(
               DummySourceReason,
               [SourceIntType(DummySourceReason)],
-              DUMMY_IDENTIFIER_TYPE
+              DUMMY_IDENTIFIER_TYPE,
             ),
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
@@ -251,7 +251,7 @@ return 0;`
           functionArguments: [SourceExpressionInt(0)],
         }),
         `let _t0: __DUMMY___Dummy = ___DUMMY___C_m2(0);
-return (_t0: __DUMMY___Dummy);`
+return (_t0: __DUMMY___Dummy);`,
       );
     });
 
@@ -263,7 +263,7 @@ return (_t0: __DUMMY___Dummy);`
             type: SourceFunctionType(
               DummySourceReason,
               [DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE],
-              SourceIntType(DummySourceReason)
+              SourceIntType(DummySourceReason),
             ),
             expression: THIS,
             methodName: SourceId('fooBar'),
@@ -271,7 +271,7 @@ return (_t0: __DUMMY___Dummy);`
           functionArguments: [THIS, THIS],
         }),
         `let _t0: int = ___DUMMY___Dummy_fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t0: int);`
+return (_t0: int);`,
       );
     });
 
@@ -283,14 +283,14 @@ return (_t0: int);`
             type: SourceFunctionType(
               DummySourceReason,
               [SourceBoolType(DummySourceReason)],
-              SourceIntType(DummySourceReason)
+              SourceIntType(DummySourceReason),
             ),
             name: 'closure',
           }),
           functionArguments: [SourceExpressionTrue(Location.DUMMY, [])],
         }),
         `let _t0: int = (closure: Closure)(1);
-return (_t0: int);`
+return (_t0: int);`,
       );
     });
 
@@ -302,14 +302,14 @@ return (_t0: int);`
             type: SourceFunctionType(
               DummySourceReason,
               [SourceBoolType(DummySourceReason)],
-              SourceUnitType(DummySourceReason)
+              SourceUnitType(DummySourceReason),
             ),
             name: 'closure_unit_return',
           }),
           functionArguments: [SourceExpressionTrue(Location.DUMMY, [])],
         }),
         `(closure_unit_return: Closure)(1);
-return 0;`
+return 0;`,
       );
     });
   });
@@ -324,7 +324,7 @@ return 0;`
           e1: THIS,
           e2: THIS,
         }),
-        'let _t0: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t0: int);'
+        'let _t0: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t0: int);',
       );
     });
 
@@ -337,7 +337,7 @@ return 0;`
           e1: THIS,
           e2: THIS,
         }),
-        'let _t0: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t0: int);'
+        'let _t0: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t0: int);',
       );
     });
 
@@ -356,7 +356,7 @@ if (foo: int) {
 } else {
   _t0 = 0;
 }
-return (_t0: bool);`
+return (_t0: bool);`,
       );
 
       expectCorrectlyLowered(
@@ -367,7 +367,7 @@ return (_t0: bool);`
           e1: SourceExpressionTrue(),
           e2: SourceExpressionVariable({ type: SourceIntType(DummySourceReason), name: 'foo' }),
         }),
-        'return (foo: int);'
+        'return (foo: int);',
       );
 
       expectCorrectlyLowered(
@@ -378,7 +378,7 @@ return (_t0: bool);`
           e1: SourceExpressionFalse(),
           e2: SourceExpressionVariable({ type: SourceIntType(DummySourceReason), name: 'foo' }),
         }),
-        'return 0;'
+        'return 0;',
       );
     });
 
@@ -391,7 +391,7 @@ return (_t0: bool);`
           e1: SourceExpressionTrue(),
           e2: SourceExpressionInt(65536),
         }),
-        'return 1;'
+        'return 1;',
       );
 
       expectCorrectlyLowered(
@@ -402,7 +402,7 @@ return (_t0: bool);`
           e1: SourceExpressionFalse(),
           e2: SourceExpressionInt(65536),
         }),
-        'return 65536;'
+        'return 65536;',
       );
 
       expectCorrectlyLowered(
@@ -419,7 +419,7 @@ if (foo: int) {
 } else {
   _t0 = (bar: bool);
 }
-return (_t0: bool);`
+return (_t0: bool);`,
       );
     });
 
@@ -433,7 +433,7 @@ return (_t0: bool);`
           e2: THIS,
         }),
         `let _t0: string = _builtin_stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t0: string);`
+return (_t0: string);`,
       );
     });
 
@@ -446,7 +446,7 @@ return (_t0: string);`
           e1: SourceExpressionString('hello '),
           e2: SourceExpressionString('world'),
         }),
-        "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;"
+        "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;",
       );
     });
   });
@@ -458,7 +458,7 @@ return (_t0: string);`
           type: SourceFunctionType(
             DummySourceReason,
             [SourceUnitType(DummySourceReason)],
-            SourceUnitType(DummySourceReason)
+            SourceUnitType(DummySourceReason),
           ),
           parameters: [{ name: SourceId('a'), typeAnnotation: SourceUnitType(DummySourceReason) }],
           captured: { captured_a: SourceUnitType(DummySourceReason) },
@@ -473,7 +473,7 @@ function ___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0(_context: $SyntheticIDTyp
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
 let _t0: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t1: $SyntheticIDType0) };
-return (_t0: $SyntheticIDType1);`
+return (_t0: $SyntheticIDType1);`,
       );
     });
 
@@ -483,7 +483,7 @@ return (_t0: $SyntheticIDType1);`
           type: SourceFunctionType(
             DummySourceReason,
             [SourceUnitType(DummySourceReason)],
-            SourceIntType(DummySourceReason)
+            SourceIntType(DummySourceReason),
           ),
           parameters: [{ name: SourceId('a'), typeAnnotation: SourceUnitType(DummySourceReason) }],
           captured: { captured_a: SourceUnitType(DummySourceReason) },
@@ -498,7 +498,7 @@ function ___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0(_context: $SyntheticIDTyp
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
 let _t0: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t1: $SyntheticIDType0) };
-return (_t0: $SyntheticIDType1);`
+return (_t0: $SyntheticIDType1);`,
       );
     });
 
@@ -508,7 +508,7 @@ return (_t0: $SyntheticIDType1);`
           type: SourceFunctionType(
             DummySourceReason,
             [SourceUnitType(DummySourceReason)],
-            DUMMY_IDENTIFIER_TYPE
+            DUMMY_IDENTIFIER_TYPE,
           ),
           parameters: [{ name: SourceId('a'), typeAnnotation: SourceUnitType(DummySourceReason) }],
           captured: { captured_a: SourceUnitType(DummySourceReason) },
@@ -523,7 +523,7 @@ function ___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0(_context: $SyntheticIDTyp
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
 let _t0: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy), context: (_t1: $SyntheticIDType0) };
-return (_t0: $SyntheticIDType1);`
+return (_t0: $SyntheticIDType1);`,
       );
     });
 
@@ -533,7 +533,7 @@ return (_t0: $SyntheticIDType1);`
           type: SourceFunctionType(
             DummySourceReason,
             [SourceUnitType(DummySourceReason)],
-            DUMMY_IDENTIFIER_TYPE
+            DUMMY_IDENTIFIER_TYPE,
           ),
           parameters: [{ name: SourceId('a'), typeAnnotation: SourceUnitType(DummySourceReason) }],
           captured: {},
@@ -545,7 +545,7 @@ function ___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0(_context: int, a: int): _
 }
 
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0: (int, int) -> __DUMMY___Dummy), context: 0 };
-return (_t0: $SyntheticIDType0);`
+return (_t0: $SyntheticIDType0);`,
       );
     });
   });
@@ -564,7 +564,7 @@ if (_this: __DUMMY___Dummy) {
 } else {
   _t0 = (_this: __DUMMY___Dummy);
 }
-return (_t0: __DUMMY___Dummy);`
+return (_t0: __DUMMY___Dummy);`,
     );
   });
 
@@ -599,7 +599,7 @@ if (_t1: bool) {
 } else {
   _t2 = (_this: __DUMMY___Dummy);
 }
-return (_t2: __DUMMY___Dummy);`
+return (_t2: __DUMMY___Dummy);`,
       );
     });
 
@@ -646,7 +646,7 @@ if (_t3: bool) {
   }
   _t4 = (_t2: __DUMMY___Dummy);
 }
-return (_t4: __DUMMY___Dummy);`
+return (_t4: __DUMMY___Dummy);`,
       );
     });
   });
@@ -714,7 +714,7 @@ return (_t4: __DUMMY___Dummy);`
         }),
         `let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];
-return 0;`
+return 0;`,
       );
     });
 
@@ -749,7 +749,7 @@ return 0;`
             }),
           },
         }),
-        "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;"
+        "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
       );
     });
 
@@ -792,7 +792,7 @@ return 0;`
             }),
           },
         }),
-        'return (_this: __DUMMY___Dummy);'
+        'return (_this: __DUMMY___Dummy);',
       );
     });
   });

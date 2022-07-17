@@ -44,7 +44,7 @@ describe('hir-type-deduplication', () => {
             returnValue: HIR_ZERO,
           },
         ],
-      })
+      }),
     ).toThrow();
 
     expect(() =>
@@ -63,7 +63,7 @@ describe('hir-type-deduplication', () => {
             returnValue: HIR_ZERO,
           },
         ],
-      })
+      }),
     ).toThrow();
 
     expect(() =>
@@ -82,7 +82,7 @@ describe('hir-type-deduplication', () => {
             returnValue: HIR_ZERO,
           },
         ],
-      })
+      }),
     ).toThrow();
   });
 
@@ -139,7 +139,7 @@ describe('hir-type-deduplication', () => {
                     HIR_FUNCTION_CALL({
                       functionExpression: HIR_NAME(
                         'f',
-                        HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
+                        HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
                       ),
                       functionArguments: [HIR_ZERO],
                       returnType: HIR_INT_TYPE,
@@ -163,7 +163,7 @@ describe('hir-type-deduplication', () => {
                       functionName: 'f',
                       functionType: HIR_FUNCTION_TYPE(
                         [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('E')],
-                        HIR_INT_TYPE
+                        HIR_INT_TYPE,
                       ),
                       context: HIR_VARIABLE('v', HIR_INT_TYPE),
                     }),
@@ -181,8 +181,8 @@ describe('hir-type-deduplication', () => {
               returnValue: HIR_ZERO,
             },
           ],
-        })
-      )
+        }),
+      ),
     ).toBe(`closure type A = () -> int
 object type C = [int, string]
 function main(): int {

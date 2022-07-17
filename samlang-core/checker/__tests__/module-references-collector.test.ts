@@ -33,7 +33,7 @@ import { collectModuleReferenceFromExpression } from '../module-references-colle
 
 function assertFoundAllModuleReferencesFromExpression(
   expression: SamlangExpression,
-  expected: readonly string[]
+  expected: readonly string[],
 ): void {
   const collector = ModuleReferenceCollections.hashSetOf();
   collectModuleReferenceFromExpression(expression, collector);
@@ -41,7 +41,7 @@ function assertFoundAllModuleReferencesFromExpression(
     collector
       .toArray()
       .map(moduleReferenceToString)
-      .sort((a, b) => a.localeCompare(b))
+      .sort((a, b) => a.localeCompare(b)),
   ).toEqual(expected);
 }
 
@@ -53,11 +53,11 @@ describe('module-references-collector', () => {
     assertFoundAllModuleReferencesFromExpression(TRUE, []);
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionVariable({ type: SourceUnitType(DummySourceReason), name: 'v' }),
-      []
+      [],
     );
     assertFoundAllModuleReferencesFromExpression(
       SourceExpressionThis({ type: SourceUnitType(DummySourceReason) }),
-      []
+      [],
     );
   });
 
@@ -70,7 +70,7 @@ describe('module-references-collector', () => {
         className: SourceId('Foo'),
         memberName: SourceId('bar'),
       }),
-      ['__DUMMY__']
+      ['__DUMMY__'],
     );
   });
 
@@ -84,7 +84,7 @@ describe('module-references-collector', () => {
         fieldName: SourceId('bar'),
         fieldOrder: 1,
       }),
-      ['__DUMMY__']
+      ['__DUMMY__'],
     );
 
     assertFoundAllModuleReferencesFromExpression(
@@ -95,7 +95,7 @@ describe('module-references-collector', () => {
         }),
         methodName: SourceId('bar'),
       }),
-      ['__DUMMY__']
+      ['__DUMMY__'],
     );
 
     assertFoundAllModuleReferencesFromExpression(
@@ -104,7 +104,7 @@ describe('module-references-collector', () => {
         operator: '!',
         expression: TRUE,
       }),
-      []
+      [],
     );
   });
 
@@ -117,7 +117,7 @@ describe('module-references-collector', () => {
         e1: intOf(1),
         e2: intOf(1),
       }),
-      []
+      [],
     );
   });
 
@@ -140,7 +140,7 @@ describe('module-references-collector', () => {
           },
         ],
       }),
-      ['__DUMMY__']
+      ['__DUMMY__'],
     );
   });
 
@@ -161,7 +161,7 @@ describe('module-references-collector', () => {
           ],
         },
       }),
-      []
+      [],
     );
 
     assertFoundAllModuleReferencesFromExpression(
@@ -181,7 +181,7 @@ describe('module-references-collector', () => {
           expression: intOf(1),
         },
       }),
-      []
+      [],
     );
   });
 
@@ -197,7 +197,7 @@ describe('module-references-collector', () => {
             type: SourceFunctionType(
               DummySourceReason,
               [SourceIntType(DummySourceReason)],
-              SourceBoolType(DummySourceReason)
+              SourceBoolType(DummySourceReason),
             ),
             parameters: [
               { name: SourceId('a'), typeAnnotation: null },
@@ -211,7 +211,7 @@ describe('module-references-collector', () => {
           ],
         }),
       }),
-      []
+      [],
     );
   });
 });

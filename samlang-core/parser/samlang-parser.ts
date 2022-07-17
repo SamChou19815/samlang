@@ -71,7 +71,7 @@ export class BaseParser {
   constructor(
     private readonly tokens: readonly SamlangToken[],
     protected readonly moduleReference: ModuleReference,
-    public readonly errorReporter: GlobalErrorReporter
+    public readonly errorReporter: GlobalErrorReporter,
   ) {}
 
   protected lastLocation(): Location {
@@ -175,7 +175,7 @@ export class BaseParser {
 
   protected parsePunctuationSeparatedList = <T>(
     punctuation: ',' | '.' | '*',
-    parser: () => T
+    parser: () => T,
   ): T[] => {
     const collector: T[] = [];
     collector.push(parser());
@@ -203,7 +203,7 @@ export class BaseParser {
     }
     this.report(
       peeked.location,
-      `Expected: identifier, actual: ${samlangTokenContentToString(peeked.content)}.`
+      `Expected: identifier, actual: ${samlangTokenContentToString(peeked.content)}.`,
     );
     return { identifier: 'MISSING', location: peeked.location };
   }
@@ -226,7 +226,7 @@ export default class SamlangModuleParser extends BaseParser {
     tokens: readonly SamlangToken[],
     errorReporter: GlobalErrorReporter,
     moduleReference: ModuleReference,
-    private readonly builtInClasses: ReadonlySet<string>
+    private readonly builtInClasses: ReadonlySet<string>,
   ) {
     super(tokens, moduleReference, errorReporter);
   }
@@ -247,11 +247,11 @@ export default class SamlangModuleParser extends BaseParser {
       this.assertAndConsume('from');
       const importLocationStart = this.peek().location;
       const importedModule = ModuleReference(
-        this.parsePunctuationSeparatedList('.', () => this.assertAndConsumeIdentifier().identifier)
+        this.parsePunctuationSeparatedList('.', () => this.assertAndConsumeIdentifier().identifier),
       );
       const importedModuleLocation = importLocationStart.union(this.lastLocation());
       importedMembers.forEach(({ name: variable }) =>
-        this.classSourceMap.set(variable, importedModule)
+        this.classSourceMap.set(variable, importedModule),
       );
       imports.push({
         location: importStart.union(importedModuleLocation),
@@ -273,8 +273,8 @@ export default class SamlangModuleParser extends BaseParser {
         this.report(
           potentialGarbagePeeked.location,
           `Unexpected token among the classes and interfaces: ${samlangTokenContentToString(
-            potentialGarbagePeeked.content
-          )}`
+            potentialGarbagePeeked.content,
+          )}`,
         );
         this.consume();
         potentialGarbagePeeked = this.peek();
@@ -287,7 +287,7 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseClassOrInterface(
     classes: SourceClassDefinition[],
-    interfaces: SourceInterfaceDeclaration[]
+    interfaces: SourceInterfaceDeclaration[],
   ) {
     const peeked = this.peek().content;
     this.unconsumeComments();
@@ -411,7 +411,7 @@ export default class SamlangModuleParser extends BaseParser {
     const typeDefinitionLocationEnd = this.assertAndConsume(')');
     const typeDefinition: TypeDefinition = {
       location: (typeParameterLocationStart ?? typeDefinitionLocationStart).union(
-        typeDefinitionLocationEnd
+        typeDefinitionLocationEnd,
       ),
       ...innerTypeDefinition,
     };
@@ -474,7 +474,7 @@ export default class SamlangModuleParser extends BaseParser {
 
   parseSourceClassMemberDefinition = (): SourceClassMemberDefinition => {
     const { location, ...common } = this.parseSourceClassMemberDeclarationCommon(
-      /* allowPrivate */ true
+      /* allowPrivate */ true,
     );
     this.assertAndConsume('=');
     const body = this.parseExpression();
@@ -482,7 +482,7 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   private parseSourceClassMemberDeclarationCommon(
-    allowPrivate: boolean
+    allowPrivate: boolean,
   ): SourceClassMemberDeclaration & {
     isPublic: boolean;
   } {
@@ -541,7 +541,7 @@ export default class SamlangModuleParser extends BaseParser {
       type: SourceFunctionType(
         SourceReason(functionTypeLocation, functionTypeLocation),
         parameters.map((it) => it.type),
-        returnType
+        returnType,
       ),
       parameters,
     };
@@ -567,7 +567,7 @@ export default class SamlangModuleParser extends BaseParser {
         text: postProcessBlockComment(
           isDocComment
             ? rawText.substring(3, rawText.length - 2)
-            : rawText.substring(2, rawText.length - 2)
+            : rawText.substring(2, rawText.length - 2),
         ),
       });
     }
@@ -951,7 +951,7 @@ export default class SamlangModuleParser extends BaseParser {
         return SourceExpressionInt(
           parseInt(peeked.content.content, 10),
           peeked.location,
-          associatedComments
+          associatedComments,
         );
       }
 
@@ -961,7 +961,7 @@ export default class SamlangModuleParser extends BaseParser {
         return SourceExpressionString(
           unescapeQuotes(literalText.substring(1, literalText.length - 1)),
           peeked.location,
-          associatedComments
+          associatedComments,
         );
       }
 
@@ -1049,7 +1049,7 @@ export default class SamlangModuleParser extends BaseParser {
                 return { name, typeAnnotation };
               }
               return { name, typeAnnotation: null };
-            }
+            },
           );
           this.assertAndConsume(')');
           this.assertAndConsume('->');
@@ -1060,9 +1060,10 @@ export default class SamlangModuleParser extends BaseParser {
             type: SourceFunctionType(
               SourceReason(location, location),
               parameters.map(
-                (it) => it.typeAnnotation ?? SourceUnknownType(SourceReason(it.name.location, null))
+                (it) =>
+                  it.typeAnnotation ?? SourceUnknownType(SourceReason(it.name.location, null)),
               ),
-              body.type
+              body.type,
             ),
             associatedComments,
             parameters,
@@ -1076,7 +1077,7 @@ export default class SamlangModuleParser extends BaseParser {
             this.consume();
             const body = this.parseExpression();
             const parameterType = SourceUnknownType(
-              SourceReason(lowerIdentifierForLambdaPeeked.location, null)
+              SourceReason(lowerIdentifierForLambdaPeeked.location, null),
             );
             const location = peeked.location.union(body.location);
             return SourceExpressionLambda({
@@ -1084,7 +1085,7 @@ export default class SamlangModuleParser extends BaseParser {
               type: SourceFunctionType(
                 SourceReason(location, location),
                 [parameterType],
-                body.type
+                body.type,
               ),
               associatedComments,
               parameters: [
@@ -1139,7 +1140,7 @@ export default class SamlangModuleParser extends BaseParser {
     // We failed to parse the base expression, so we stick in a dummy value here.
     this.report(
       peeked.location,
-      `Expected: expression, actual: ${samlangTokenContentToString(peeked.content)}`
+      `Expected: expression, actual: ${samlangTokenContentToString(peeked.content)}`,
     );
     return SourceExpressionInt(0, peeked.location, associatedComments);
   };
@@ -1223,7 +1224,7 @@ export default class SamlangModuleParser extends BaseParser {
     if (typeof peeked.content !== 'string' && peeked.content.__type__ === 'UpperId') {
       this.consume();
       return this.parseIdentifierType(
-        SourceId(peeked.content.content, { location: peeked.location })
+        SourceId(peeked.content.content, { location: peeked.location }),
       );
     }
     if (peeked.content === '(') {
@@ -1248,7 +1249,7 @@ export default class SamlangModuleParser extends BaseParser {
     }
     this.report(
       peeked.location,
-      `Expecting: type, actual: ${samlangTokenContentToString(peeked.content)}`
+      `Expecting: type, actual: ${samlangTokenContentToString(peeked.content)}`,
     );
     return SourceUnknownType(SourceReason(peeked.location, peeked.location));
   };

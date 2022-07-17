@@ -73,7 +73,7 @@ type BinaryExpression = {
 function mergeBinaryExpression(
   outerOperator: IROperator,
   inner: BinaryExpression,
-  outerConstant: number
+  outerConstant: number,
 ): BinaryExpression | null {
   switch (outerOperator) {
     case '+':
@@ -117,7 +117,7 @@ class BinaryExpressionContext extends LocalStackedContext<BinaryExpression> {}
 
 function optimizeHighIRExpression(
   valueContext: LocalValueContextForOptimization,
-  expression: HighIRExpression
+  expression: HighIRExpression,
 ): HighIRExpression {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
@@ -134,7 +134,7 @@ function optimizeHighIRStatement(
   statement: HighIRStatement,
   valueContext: LocalValueContextForOptimization,
   indexAccessExpressionContext: LocalValueContextForOptimization,
-  binaryExpressionContext: BinaryExpressionContext
+  binaryExpressionContext: BinaryExpressionContext,
 ): readonly HighIRStatement[] {
   const optimizeExpression = (expression: HighIRExpression) =>
     optimizeHighIRExpression(valueContext, expression);
@@ -144,7 +144,7 @@ function optimizeHighIRStatement(
 
   const tryOptimizeLoopByRunForSomeIterations = (
     { loopVariables, statements, breakCollector }: HighIRWhileStatement,
-    maxDepth = 5
+    maxDepth = 5,
   ): readonly HighIRStatement[] | null => {
     const firstIterationOptimizationTrial = withNestedScope(() => {
       loopVariables.forEach((it) => valueContext.bind(it.name, it.initialValue));
@@ -152,7 +152,7 @@ function optimizeHighIRStatement(
         statements,
         valueContext,
         indexAccessExpressionContext,
-        binaryExpressionContext
+        binaryExpressionContext,
       );
       const lastStatementOfFirstRunOptimizedStatements =
         firstRunOptimizedStatements[firstRunOptimizedStatements.length - 1];
@@ -177,23 +177,23 @@ function optimizeHighIRStatement(
     });
     if (firstIterationOptimizationTrial == null) return null;
     const lastStatementOfFirstRunOptimizedStatements = checkNotNull(
-      firstIterationOptimizationTrial[firstIterationOptimizationTrial.length - 1]
+      firstIterationOptimizationTrial[firstIterationOptimizationTrial.length - 1],
     );
     if (lastStatementOfFirstRunOptimizedStatements.__type__ !== 'HighIRBreakStatement') {
       assert(
         firstIterationOptimizationTrial.length === 1 &&
-          lastStatementOfFirstRunOptimizedStatements.__type__ === 'HighIRWhileStatement'
+          lastStatementOfFirstRunOptimizedStatements.__type__ === 'HighIRWhileStatement',
       );
       if (maxDepth === 0) return firstIterationOptimizationTrial;
       return tryOptimizeLoopByRunForSomeIterations(
         lastStatementOfFirstRunOptimizedStatements,
-        maxDepth - 1
+        maxDepth - 1,
       );
     }
     if (breakCollector != null) {
       valueContext.bind(
         breakCollector.name,
-        optimizeExpression(lastStatementOfFirstRunOptimizedStatements.breakValue)
+        optimizeExpression(lastStatementOfFirstRunOptimizedStatements.breakValue),
       );
     }
     return firstIterationOptimizationTrial.slice(0, firstIterationOptimizationTrial.length - 1);
@@ -204,7 +204,7 @@ function optimizeHighIRStatement(
       const pointerExpression = optimizeExpression(statement.pointerExpression);
       const { name, type, index } = statement;
       const computed = indexAccessExpressionContext.getLocalValueType(
-        `${debugPrintHighIRExpression(pointerExpression)}[${index}]`
+        `${debugPrintHighIRExpression(pointerExpression)}[${index}]`,
       );
       if (computed == null) return [HIR_INDEX_ACCESS({ name, type, pointerExpression, index })];
       valueContext.bind(name, computed);
@@ -273,13 +273,13 @@ function optimizeHighIRStatement(
         partiallyOptimizedStatement.e2.__type__ === 'HighIRIntLiteralExpression'
       ) {
         const existingBinaryForE1 = binaryExpressionContext.getLocalValueType(
-          partiallyOptimizedStatement.e1.name
+          partiallyOptimizedStatement.e1.name,
         );
         if (existingBinaryForE1 != null) {
           const merged = mergeBinaryExpression(
             partiallyOptimizedStatement.operator,
             existingBinaryForE1,
-            partiallyOptimizedStatement.e2.value
+            partiallyOptimizedStatement.e2.value,
           );
           if (merged != null) return [{ ...partiallyOptimizedStatement, ...merged }];
         }
@@ -290,7 +290,7 @@ function optimizeHighIRStatement(
             e1: partiallyOptimizedStatement.e1,
             e2: partiallyOptimizedStatement.e2,
           },
-          ignore
+          ignore,
         );
       }
       return [partiallyOptimizedStatement];
@@ -300,7 +300,7 @@ function optimizeHighIRStatement(
       return [
         HIR_FUNCTION_CALL({
           functionExpression: optimizeExpression(
-            statement.functionExpression
+            statement.functionExpression,
           ) as HighIRNameExpression,
           functionArguments: statement.functionArguments.map(optimizeExpression),
           returnType: statement.returnType,
@@ -316,12 +316,14 @@ function optimizeHighIRStatement(
           isTrue ? statement.s1 : statement.s2,
           valueContext,
           indexAccessExpressionContext,
-          binaryExpressionContext
+          binaryExpressionContext,
         );
         statement.finalAssignments.forEach((final) => {
           valueContext.bind(
             final.name,
-            isTrue ? optimizeExpression(final.branch1Value) : optimizeExpression(final.branch2Value)
+            isTrue
+              ? optimizeExpression(final.branch1Value)
+              : optimizeExpression(final.branch2Value),
           );
         });
         return statements;
@@ -331,7 +333,7 @@ function optimizeHighIRStatement(
           statement.s1,
           valueContext,
           indexAccessExpressionContext,
-          binaryExpressionContext
+          binaryExpressionContext,
         );
         return [
           statements,
@@ -343,7 +345,7 @@ function optimizeHighIRStatement(
           statement.s2,
           valueContext,
           indexAccessExpressionContext,
-          binaryExpressionContext
+          binaryExpressionContext,
         );
         return [
           statements,
@@ -360,7 +362,7 @@ function optimizeHighIRStatement(
             return null;
           }
           return { ...final, branch1Value, branch2Value };
-        }
+        },
       );
       return ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignments }));
     }
@@ -374,7 +376,7 @@ function optimizeHighIRStatement(
             statement.statements,
             valueContext,
             indexAccessExpressionContext,
-            binaryExpressionContext
+            binaryExpressionContext,
           );
         }
         return [];
@@ -383,10 +385,14 @@ function optimizeHighIRStatement(
         statement.statements,
         valueContext,
         indexAccessExpressionContext,
-        binaryExpressionContext
+        binaryExpressionContext,
       );
       return singleIfOrNull(
-        HIR_SINGLE_IF({ booleanExpression, invertCondition: statement.invertCondition, statements })
+        HIR_SINGLE_IF({
+          booleanExpression,
+          invertCondition: statement.invertCondition,
+          statements,
+        }),
       );
     }
 
@@ -404,14 +410,14 @@ function optimizeHighIRStatement(
         return it;
       });
       const loopVariableInitialValues = filteredLoopVariables.map((it) =>
-        optimizeExpression(it.initialValue)
+        optimizeExpression(it.initialValue),
       );
       const [statements, loopVariableLoopValues] = withNestedScope(() => {
         const newStatements = optimizeHighIRStatements(
           statement.statements,
           valueContext,
           indexAccessExpressionContext,
-          binaryExpressionContext
+          binaryExpressionContext,
         );
         return [
           newStatements,
@@ -421,7 +427,7 @@ function optimizeHighIRStatement(
       const loopVariables = zip3(
         loopVariableInitialValues,
         loopVariableLoopValues,
-        filteredLoopVariables
+        filteredLoopVariables,
       ).map(([initialValue, loopValue, variable]) => ({ ...variable, initialValue, loopValue }));
       const lastStatement = statements[statements.length - 1];
       if (lastStatement != null && lastStatement.__type__ === 'HighIRBreakStatement') {
@@ -431,12 +437,12 @@ function optimizeHighIRStatement(
           statements.slice(0, statements.length - 1),
           valueContext,
           indexAccessExpressionContext,
-          binaryExpressionContext
+          binaryExpressionContext,
         );
         if (statement.breakCollector != null) {
           valueContext.bind(
             statement.breakCollector.name,
-            optimizeExpression(lastStatement.breakValue)
+            optimizeExpression(lastStatement.breakValue),
           );
         }
         return movedStatements;
@@ -457,7 +463,7 @@ function optimizeHighIRStatement(
           expressionList: statement.expressionList.map((it, index) => {
             const optimized = optimizeExpression(it);
             const indexAccessKey = `${debugPrintHighIRExpression(
-              HIR_VARIABLE(statement.structVariableName, statement.type)
+              HIR_VARIABLE(statement.structVariableName, statement.type),
             )}[${index}]`;
             indexAccessExpressionContext.addLocalValueType(indexAccessKey, optimized, ignore);
             return optimized;
@@ -482,7 +488,7 @@ function optimizeHighIRStatements(
   statements: readonly HighIRStatement[],
   valueContext: LocalValueContextForOptimization,
   indexAccessExpressionContext: LocalValueContextForOptimization,
-  binaryExpressionContext: BinaryExpressionContext
+  binaryExpressionContext: BinaryExpressionContext,
 ): readonly HighIRStatement[] {
   const collector: HighIRStatement[] = [];
   outer: for (let i = 0; i < statements.length; i += 1) {
@@ -490,7 +496,7 @@ function optimizeHighIRStatements(
       checkNotNull(statements[i]),
       valueContext,
       indexAccessExpressionContext,
-      binaryExpressionContext
+      binaryExpressionContext,
     );
     for (let j = 0; j < optimized.length; j += 1) {
       const s = checkNotNull(optimized[j]);
@@ -502,7 +508,7 @@ function optimizeHighIRStatements(
 }
 
 export default function optimizeHighIRFunctionByConditionalConstantPropagation(
-  highIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction,
 ): HighIRFunction {
   const valueContext = new LocalValueContextForOptimization();
   const indexAccessExpressionContext = new LocalValueContextForOptimization();
@@ -511,7 +517,7 @@ export default function optimizeHighIRFunctionByConditionalConstantPropagation(
     highIRFunction.body,
     valueContext,
     indexAccessExpressionContext,
-    binaryExpressionContext
+    binaryExpressionContext,
   );
   const returnValue = optimizeHighIRExpression(valueContext, highIRFunction.returnValue);
   return { ...highIRFunction, body, returnValue };

@@ -27,7 +27,7 @@ export const HIR_STRING_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType',
 
 export const HIR_IDENTIFIER_TYPE = (
   name: string,
-  typeArguments: readonly HighIRType[]
+  typeArguments: readonly HighIRType[],
 ): HighIRIdentifierType => ({
   __type__: 'IdentifierType',
   name,
@@ -42,7 +42,7 @@ export const HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS = (name: string): HighIRIdent
 
 export const HIR_FUNCTION_TYPE = (
   argumentTypes: readonly HighIRType[],
-  returnType: HighIRType
+  returnType: HighIRType,
 ): HighIRFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
 
 export function prettyPrintHighIRType(type: HighIRType): string {
@@ -76,7 +76,7 @@ export function prettyPrintHighIRClosureTypeDefinition({
 }: HighIRClosureTypeDefinition): string {
   return `closure type ${nameWithTypeParameter(
     identifier,
-    typeParameters
+    typeParameters,
   )} = ${prettyPrintHighIRType(functionType)}`;
 }
 
@@ -248,7 +248,7 @@ export const HIR_ONE: HighIRIntLiteralExpression = HIR_INT(1);
 
 export const HIR_NAME = (
   name: string,
-  type: HighIRPrimitiveType | HighIRFunctionType
+  type: HighIRPrimitiveType | HighIRFunctionType,
 ): HighIRNameExpression => ({
   __type__: 'HighIRNameExpression',
   type,
@@ -418,7 +418,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         const pointerExpression = debugPrintHighIRExpression(s.pointerExpression);
         collector.push(
           '  '.repeat(level),
-          `let ${s.name}: ${type} = ${pointerExpression}[${s.index}];\n`
+          `let ${s.name}: ${type} = ${pointerExpression}[${s.index}];\n`,
         );
         return;
       }
@@ -438,7 +438,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
             : '';
         collector.push(
           '  '.repeat(level),
-          `${collectorString}${functionString}(${argumentString});\n`
+          `${collectorString}${functionString}(${argumentString});\n`,
         );
         return;
       }
@@ -449,7 +449,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         });
         collector.push(
           '  '.repeat(level),
-          `if ${debugPrintHighIRExpression(s.booleanExpression)} {\n`
+          `if ${debugPrintHighIRExpression(s.booleanExpression)} {\n`,
         );
         level += 1;
         s.s1.forEach(printer);
@@ -471,7 +471,9 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
       case 'HighIRSingleIfStatement':
         collector.push(
           '  '.repeat(level),
-          `if ${s.invertCondition ? '!' : ''}${debugPrintHighIRExpression(s.booleanExpression)} {\n`
+          `if ${s.invertCondition ? '!' : ''}${debugPrintHighIRExpression(
+            s.booleanExpression,
+          )} {\n`,
         );
         level += 1;
         s.statements.forEach(printer);
@@ -481,7 +483,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
       case 'HighIRBreakStatement':
         collector.push(
           '  '.repeat(level),
-          `${breakCollector} = ${debugPrintHighIRExpression(s.breakValue)};\n`
+          `${breakCollector} = ${debugPrintHighIRExpression(s.breakValue)};\n`,
         );
         collector.push('  '.repeat(level), 'break;\n');
         break;
@@ -490,7 +492,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
           const type = prettyPrintHighIRType(v.type);
           collector.push(
             '  '.repeat(level),
-            `let ${v.name}: ${type} = ${debugPrintHighIRExpression(v.initialValue)};\n`
+            `let ${v.name}: ${type} = ${debugPrintHighIRExpression(v.initialValue)};\n`,
           );
         });
         const previousBreakCollector = breakCollector;
@@ -505,7 +507,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         s.loopVariables.forEach((v) => {
           collector.push(
             '  '.repeat(level),
-            `${v.name} = ${debugPrintHighIRExpression(v.loopValue)};\n`
+            `${v.name} = ${debugPrintHighIRExpression(v.loopValue)};\n`,
           );
         });
         level -= 1;
@@ -517,7 +519,9 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         const expressionString = s.expressionList.map(debugPrintHighIRExpression).join(', ');
         collector.push(
           '  '.repeat(level),
-          `let ${s.structVariableName}: ${prettyPrintHighIRType(s.type)} = [${expressionString}];\n`
+          `let ${s.structVariableName}: ${prettyPrintHighIRType(
+            s.type,
+          )} = [${expressionString}];\n`,
         );
         break;
       }
@@ -529,7 +533,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         const context = debugPrintHighIRExpression(s.context);
         collector.push(
           '  '.repeat(level),
-          `let ${closureNameType} = Closure { fun: (${functionNameType}), context: ${context} };\n`
+          `let ${closureNameType} = Closure { fun: (${functionNameType}), context: ${context} };\n`,
         );
         return;
       }
@@ -571,7 +575,7 @@ export function debugPrintHighIRFunction({
     .join(', ');
   const typeParameterString = typeParameters.length === 0 ? '' : `<${typeParameters.join(', ')}>`;
   const header = `function ${name}${typeParameterString}(${typedParameters}): ${prettyPrintHighIRType(
-    returnType
+    returnType,
   )} {`;
   const body = [
     ...bodyStatements.map((it) => debugPrintHighIRStatement(it, 1)),

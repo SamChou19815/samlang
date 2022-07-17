@@ -21,7 +21,7 @@ describe('type-substitution', () => {
             ]),
             SourceIntType(DummySourceReason),
           ],
-          SourceIntType(DummySourceReason)
+          SourceIntType(DummySourceReason),
         ),
         {
           A: SourceIntType(DummySourceReason),
@@ -29,8 +29,8 @@ describe('type-substitution', () => {
           C: SourceIntType(DummySourceReason),
           D: SourceIntType(DummySourceReason),
           E: SourceIntType(DummySourceReason),
-        }
-      )
+        },
+      ),
     ).toEqual(
       SourceFunctionType(
         DummySourceReason,
@@ -47,8 +47,8 @@ describe('type-substitution', () => {
           ]),
           SourceIntType(DummySourceReason),
         ],
-        SourceIntType(DummySourceReason)
-      )
+        SourceIntType(DummySourceReason),
+      ),
     );
   });
 
@@ -60,16 +60,16 @@ describe('type-substitution', () => {
         type: SourceFunctionType(
           DummySourceReason,
           [SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [])],
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [])
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', []),
         ),
-      })
+      }),
     ).toEqual({
       isPublic: true,
       typeParameters: ['_T0'],
       type: SourceFunctionType(
         DummySourceReason,
         [SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, '_T0', [])],
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, '_T0', [])
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, '_T0', []),
       ),
     });
   });

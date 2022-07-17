@@ -19,14 +19,14 @@ export function getConfiguration(): SamlangProjectConfiguration {
 
 export function collectSources(
   { sourceDirectory }: SamlangProjectConfiguration,
-  moduleReferenceCreator: (parts: readonly string[]) => ModuleReference
+  moduleReferenceCreator: (parts: readonly string[]) => ModuleReference,
 ): readonly (readonly [ModuleReference, string])[] {
   const sourcePath = path.resolve(sourceDirectory);
   const sources: (readonly [ModuleReference, string])[] = [];
 
   function filePathToModuleReference(
     absoluteSourcePath: string,
-    filePath: string
+    filePath: string,
   ): ModuleReference {
     const relativeFile = path.normalize(path.relative(absoluteSourcePath, filePath));
     const relativeFileWithoutExtension = relativeFile.substring(0, relativeFile.length - 4);
@@ -43,7 +43,7 @@ export function collectSources(
 
       if (stats.isDirectory()) {
         fs.readdirSync(p).forEach((relativeChildPath) =>
-          recursiveVisit(path.join(p, relativeChildPath))
+          recursiveVisit(path.join(p, relativeChildPath)),
         );
       }
     }

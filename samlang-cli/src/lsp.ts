@@ -31,7 +31,7 @@ function startSamlangLanguageServer() {
   function uriToModuleReference(uri: string): ModuleReference {
     const relativePath = relative(
       configuration.sourceDirectory,
-      uri.startsWith('file://') ? uri.substring('file://'.length) : uri
+      uri.startsWith('file://') ? uri.substring('file://'.length) : uri,
     );
     return ModuleReference(relativePath.substring(0, relativePath.length - 4).split(sep));
   }
@@ -88,7 +88,7 @@ function startSamlangLanguageServer() {
     connection.console.info('[lsp] onHover');
     return service.queryForHover(
       uriToModuleReference(parameters.textDocument.uri),
-      parameters.position
+      parameters.position,
     );
   });
 
@@ -96,7 +96,7 @@ function startSamlangLanguageServer() {
     connection.console.info('[lsp] onDefinition');
     const location = service.queryDefinitionLocation(
       uriToModuleReference(parameters.textDocument.uri),
-      parameters.position
+      parameters.position,
     );
     return location == null
       ? null
@@ -109,7 +109,7 @@ function startSamlangLanguageServer() {
   connection.onFoldingRanges((parameters) => {
     connection.console.info('[lsp] onFoldingRanges');
     const foldingRangeResult = service.queryFoldingRanges(
-      uriToModuleReference(parameters.textDocument.uri)
+      uriToModuleReference(parameters.textDocument.uri),
     );
     if (foldingRangeResult == null) return null;
     return foldingRangeResult.map(samlangRangeToLspFoldingRange);
@@ -119,7 +119,7 @@ function startSamlangLanguageServer() {
     connection.console.info('[lsp] onCompletion');
     return service.autoComplete(
       uriToModuleReference(parameters.textDocument.uri),
-      parameters.position
+      parameters.position,
     );
   });
 
@@ -128,7 +128,7 @@ function startSamlangLanguageServer() {
     const result = service.renameVariable(
       uriToModuleReference(parameters.textDocument.uri),
       parameters.position,
-      parameters.newName
+      parameters.newName,
     );
     if (result == null) return null;
     if (result === 'Invalid') return new ResponseError(1, 'Invalid identifier.');

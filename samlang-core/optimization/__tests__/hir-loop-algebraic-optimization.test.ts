@@ -17,13 +17,13 @@ describe('mir-loop-algebraic-optimizations', () => {
       initial: number,
       increment: number,
       operator: '<' | '<=' | '>' | '>=',
-      guard: number
+      guard: number,
     ): number | null =>
       analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING(
         initial,
         increment,
         operator,
-        guard
+        guard,
       );
 
     expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '<', 1)).toBe(0);
@@ -64,8 +64,8 @@ describe('mir-loop-algebraic-optimizations', () => {
           derivedInductionVariables: [],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -83,8 +83,8 @@ describe('mir-loop-algebraic-optimizations', () => {
           derivedInductionVariables: [],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -102,8 +102,8 @@ describe('mir-loop-algebraic-optimizations', () => {
           derivedInductionVariables: [],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -123,8 +123,8 @@ describe('mir-loop-algebraic-optimizations', () => {
           ],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -144,8 +144,8 @@ describe('mir-loop-algebraic-optimizations', () => {
           derivedInductionVariables: [],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
 
     expect(
@@ -163,8 +163,8 @@ describe('mir-loop-algebraic-optimizations', () => {
           derivedInductionVariables: [],
           statements: [],
         },
-        allocator
-      )
+        allocator,
+      ),
     ).toBeNull();
   });
 
@@ -184,8 +184,8 @@ describe('mir-loop-algebraic-optimizations', () => {
           derivedInductionVariables: [],
           statements: [],
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual([]);
   });
 
@@ -206,8 +206,8 @@ describe('mir-loop-algebraic-optimizations', () => {
           statements: [],
           breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_INT(3) },
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual([HIR_BINARY({ name: 'bc', operator: '+', e1: HIR_INT(3), e2: HIR_ZERO })]);
   });
 
@@ -232,8 +232,8 @@ describe('mir-loop-algebraic-optimizations', () => {
             value: HIR_VARIABLE('i', HIR_INT_TYPE),
           },
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual([HIR_BINARY({ name: 'bc', operator: '+', e1: HIR_INT(20), e2: HIR_ZERO })]);
   });
 
@@ -264,8 +264,8 @@ describe('mir-loop-algebraic-optimizations', () => {
             value: HIR_VARIABLE('j', HIR_INT_TYPE),
           },
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual([
       HIR_BINARY({
         name: '_loop_0',
@@ -309,8 +309,8 @@ describe('mir-loop-algebraic-optimizations', () => {
             value: HIR_VARIABLE('aa', HIR_INT_TYPE),
           },
         },
-        new OptimizationResourceAllocator()
-      )
+        new OptimizationResourceAllocator(),
+      ),
     ).toEqual([
       HIR_BINARY({
         name: 'bc',

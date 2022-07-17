@@ -29,7 +29,7 @@ import type {
 
 function buildInterfaceTypingContext(
   moduleReference: ModuleReference,
-  { typeParameters, members, extendsOrImplementsNode }: SourceInterfaceDeclaration
+  { typeParameters, members, extendsOrImplementsNode }: SourceInterfaceDeclaration,
 ) {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
@@ -55,19 +55,19 @@ function buildInterfaceTypingContext(
 
 function buildClassTypingContext(
   moduleReference: ModuleReference,
-  classDefinition: SourceClassDefinition
+  classDefinition: SourceClassDefinition,
 ): ClassTypingContext {
   const { typeParameters, functions, methods } = buildInterfaceTypingContext(
     moduleReference,
-    classDefinition
+    classDefinition,
   );
   const classType = SourceIdentifierType(
     SourceReason(classDefinition.name.location, classDefinition.name.location),
     moduleReference,
     classDefinition.name.name,
     classDefinition.typeParameters.map((it) =>
-      SourceIdentifierType(SourceReason(it.location, it.location), moduleReference, it.name, [])
-    )
+      SourceIdentifierType(SourceReason(it.location, it.location), moduleReference, it.name, []),
+    ),
   );
   const { typeDefinition } = classDefinition;
   const typeDefinitionReason = SourceReason(typeDefinition.location, typeDefinition.location);
@@ -78,7 +78,7 @@ function buildClassTypingContext(
       type: SourceFunctionType(
         typeDefinitionReason,
         typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it.name]).type),
-        classType
+        classType,
       ),
     };
   } else {
@@ -101,20 +101,20 @@ function buildClassTypingContext(
 
 function buildModuleTypingContext(
   moduleReference: ModuleReference,
-  samlangModule: SamlangModule
+  samlangModule: SamlangModule,
 ): ModuleTypingContext {
   return {
     interfaces: Object.fromEntries(
       samlangModule.interfaces.map((declaration) => [
         declaration.name.name,
         buildInterfaceTypingContext(moduleReference, declaration),
-      ])
+      ]),
     ),
     classes: Object.fromEntries(
       samlangModule.classes.map((declaration) => [
         declaration.name.name,
         buildClassTypingContext(moduleReference, declaration),
-      ])
+      ]),
     ),
   };
 }
@@ -136,7 +136,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
           type: SourceFunctionType(
             BuiltinReason,
             [SourceStringType(BuiltinReason)],
-            SourceIntType(BuiltinReason)
+            SourceIntType(BuiltinReason),
           ),
         },
         intToString: {
@@ -145,7 +145,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
           type: SourceFunctionType(
             BuiltinReason,
             [SourceIntType(BuiltinReason)],
-            SourceStringType(BuiltinReason)
+            SourceStringType(BuiltinReason),
           ),
         },
         println: {
@@ -154,7 +154,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
           type: SourceFunctionType(
             BuiltinReason,
             [SourceStringType(BuiltinReason)],
-            SourceUnitType(BuiltinReason)
+            SourceUnitType(BuiltinReason),
           ),
         },
         panic: {
@@ -163,7 +163,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
           type: SourceFunctionType(
             BuiltinReason,
             [SourceStringType(BuiltinReason)],
-            SourceIdentifierType(BuiltinReason, ModuleReference.ROOT, 'T')
+            SourceIdentifierType(BuiltinReason, ModuleReference.ROOT, 'T'),
           ),
         },
       },
@@ -180,7 +180,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
  */
 export function buildGlobalTypingContext(
   sources: Sources<SamlangModule>,
-  builtinModuleTypes: ModuleTypingContext
+  builtinModuleTypes: ModuleTypingContext,
 ): GlobalTypingContext {
   const modules = ModuleReferenceCollections.hashMapOf<ModuleTypingContext>();
   modules.set(ModuleReference.ROOT, builtinModuleTypes);
@@ -201,7 +201,7 @@ export function buildGlobalTypingContext(
 export function updateGlobalTypingContext(
   globalTypingContext: GlobalTypingContext,
   sources: Sources<SamlangModule>,
-  potentiallyAffectedModuleReferences: readonly ModuleReference[]
+  potentiallyAffectedModuleReferences: readonly ModuleReference[],
 ): void {
   potentiallyAffectedModuleReferences.forEach((moduleReference) => {
     const samlangModule = sources.get(moduleReference);
@@ -210,7 +210,7 @@ export function updateGlobalTypingContext(
     } else {
       globalTypingContext.set(
         moduleReference,
-        buildModuleTypingContext(moduleReference, samlangModule)
+        buildModuleTypingContext(moduleReference, samlangModule),
       );
     }
   });

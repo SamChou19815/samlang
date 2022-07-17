@@ -36,14 +36,14 @@ function expandOptimizableWhileLoop(
     statements,
     breakCollector,
   }: HighIROptimizableWhileLoop,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): HighIRWhileStatement {
   const basicInductionVariableWithLoopGuardLoopValueCollector = allocator.allocateLoopTemporary();
   const breakValue = breakCollector?.value ?? HIR_ZERO;
   const usefulUsedSet = new Set<string>([basicInductionVariableWithLoopGuard.name]);
   collectUseFromHighIRExpression(breakValue, usefulUsedSet);
   loopVariablesThatAreNotBasicInductionVariables.forEach((it) =>
-    collectUseFromHighIRExpression(it.loopValue, usefulUsedSet)
+    collectUseFromHighIRExpression(it.loopValue, usefulUsedSet),
   );
   statements.forEach((it) => collectUseFromHighIRStatement(it, usefulUsedSet));
   const generalBasicInductionVariablesWithLoopValueCollectors = generalInductionVariables
@@ -92,7 +92,7 @@ function expandOptimizableWhileLoop(
           operator: '+',
           e1: HIR_VARIABLE(v.name, HIR_INT_TYPE),
           e2: v.incrementAmount,
-        })
+        }),
       ),
       ...derivedInductionVariables.flatMap((derivedInductionVariable) => {
         const step1Temp = allocator.allocateLoopTemporary();
@@ -102,7 +102,7 @@ function expandOptimizableWhileLoop(
             ...createHighIRFlexibleOrderOperatorNode(
               '*',
               HIR_VARIABLE(derivedInductionVariable.baseName, HIR_INT_TYPE),
-              derivedInductionVariable.multiplier
+              derivedInductionVariable.multiplier,
             ),
           }),
           HIR_BINARY({
@@ -110,7 +110,7 @@ function expandOptimizableWhileLoop(
             ...createHighIRFlexibleOrderOperatorNode(
               '+',
               HIR_VARIABLE(step1Temp, HIR_INT_TYPE),
-              derivedInductionVariable.immediate
+              derivedInductionVariable.immediate,
             ),
           }),
         ];
@@ -123,13 +123,13 @@ function expandOptimizableWhileLoop(
 
 export function optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING(
   highIRWhileStatement: HighIRWhileStatement,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): readonly HighIRStatement[] {
   const { hoistedStatementsBeforeWhile, optimizedWhileStatement, nonLoopInvariantVariables } =
     optimizeHighIRWhileStatementByLoopInvariantCodeMotion(highIRWhileStatement);
   const optimizableWhileStatement = extractOptimizableWhileLoop(
     optimizedWhileStatement,
-    nonLoopInvariantVariables
+    nonLoopInvariantVariables,
   );
   const finalStatements = [...hoistedStatementsBeforeWhile];
   if (optimizableWhileStatement == null) {
@@ -138,7 +138,7 @@ export function optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR
   }
   const algebraicallyOptimizedStatements = highIRLoopAlgebraicOptimization(
     optimizableWhileStatement,
-    allocator
+    allocator,
   );
   if (algebraicallyOptimizedStatements != null) {
     finalStatements.push(...algebraicallyOptimizedStatements);
@@ -146,7 +146,7 @@ export function optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR
   }
   const inductionVariableEliminationResult = highIRLoopInductionVariableEliminationOptimization(
     optimizableWhileStatement,
-    allocator
+    allocator,
   );
   let newOptimizableWhileStatement = optimizableWhileStatement;
   if (inductionVariableEliminationResult != null) {
@@ -155,18 +155,18 @@ export function optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR
   }
   const strengthReductionResult = highIRLoopStrengthReductionOptimization(
     newOptimizableWhileStatement,
-    allocator
+    allocator,
   );
   finalStatements.push(...strengthReductionResult.prefixStatements);
   const alreadyHandledInductionVariableNames = new Set(
-    strengthReductionResult.optimizableWhileLoop.generalInductionVariables.map((it) => it.name)
+    strengthReductionResult.optimizableWhileLoop.generalInductionVariables.map((it) => it.name),
   );
   newOptimizableWhileStatement = {
     ...strengthReductionResult.optimizableWhileLoop,
     statements: strengthReductionResult.optimizableWhileLoop.statements.filter(
       (it) =>
         it.__type__ !== 'HighIRBinaryStatement' ||
-        !alreadyHandledInductionVariableNames.has(it.name)
+        !alreadyHandledInductionVariableNames.has(it.name),
     ),
   };
   finalStatements.push(expandOptimizableWhileLoop(newOptimizableWhileStatement, allocator));
@@ -175,7 +175,7 @@ export function optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR
 
 function recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(
   statement: HighIRStatement,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): readonly HighIRStatement[] {
   switch (statement.__type__) {
     case 'HighIRIfElseStatement':
@@ -183,10 +183,10 @@ function recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(
         {
           ...statement,
           s1: statement.s1.flatMap((it) =>
-            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator),
           ),
           s2: statement.s2.flatMap((it) =>
-            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator),
           ),
         },
       ];
@@ -195,17 +195,17 @@ function recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(
         {
           ...statement,
           statements: statement.statements.flatMap((it) =>
-            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator),
           ),
         },
       ];
     case 'HighIRWhileStatement': {
       const optimizedStatements = statement.statements.flatMap((it) =>
-        recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+        recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator),
       );
       return optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING(
         { ...statement, statements: optimizedStatements },
-        allocator
+        allocator,
       );
     }
     default:
@@ -215,12 +215,12 @@ function recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(
 
 export default function optimizeHighIRFunctionWithAllLoopOptimizations(
   highIRFunction: HighIRFunction,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): HighIRFunction {
   return optimizeHighIRStatementsByConditionalConstantPropagation({
     ...highIRFunction,
     body: highIRFunction.body.flatMap((it) =>
-      recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+      recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator),
     ),
   });
 }

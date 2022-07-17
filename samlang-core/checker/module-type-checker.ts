@@ -14,14 +14,14 @@ function typeCheckMemberDeclaration(
   memberDeclaration: SourceClassMemberDeclaration,
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
   ssaResult: SsaAnalysisResult,
-  inClass: boolean
+  inClass: boolean,
 ) {
   const thisType =
     inClass && memberDeclaration.isMethod ? accessibleGlobalTypingContext.thisType : null;
   const localTypingContext = new LocationBasedLocalTypingContext(ssaResult, thisType);
   const contextWithAdditionalTypeParameters =
     accessibleGlobalTypingContext.withAdditionalTypeParameters(
-      memberDeclaration.typeParameters.map((it) => it.name)
+      memberDeclaration.typeParameters.map((it) => it.name),
     );
   memberDeclaration.parameters.forEach((parameter) => {
     localTypingContext.write(parameter.nameLocation, parameter.type);
@@ -33,7 +33,7 @@ export default function typeCheckSamlangModule(
   moduleReference: ModuleReference,
   samlangModule: SamlangModule,
   globalTypingContext: ReadonlyGlobalTypingContext,
-  errorReporter: GlobalErrorReporter
+  errorReporter: GlobalErrorReporter,
 ): SamlangModule {
   const ssaResult = performSSAAnalysisOnSamlangModule(samlangModule, errorReporter);
 
@@ -41,15 +41,15 @@ export default function typeCheckSamlangModule(
     const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
       moduleReference,
       globalTypingContext,
-      interfaceDeclaration
+      interfaceDeclaration,
     );
     interfaceDeclaration.members.forEach((member) =>
       typeCheckMemberDeclaration(
         member,
         accessibleGlobalTypingContext,
         ssaResult,
-        /* inClass */ false
-      )
+        /* inClass */ false,
+      ),
     );
   });
 
@@ -57,7 +57,7 @@ export default function typeCheckSamlangModule(
     const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
       moduleReference,
       globalTypingContext,
-      classDefinition
+      classDefinition,
     );
     const checkedMembers = filterMap(classDefinition.members, (member) => {
       const { contextWithAdditionalTypeParameters, localTypingContext } =
@@ -65,7 +65,7 @@ export default function typeCheckSamlangModule(
           member,
           accessibleGlobalTypingContext,
           ssaResult,
-          /* inClass */ true
+          /* inClass */ true,
         );
       return {
         ...member,
@@ -74,7 +74,7 @@ export default function typeCheckSamlangModule(
           errorReporter,
           contextWithAdditionalTypeParameters,
           localTypingContext,
-          member.type.returnType
+          member.type.returnType,
         ),
       };
     });

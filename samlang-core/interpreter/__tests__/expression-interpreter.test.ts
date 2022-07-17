@@ -135,7 +135,7 @@ describe('expression-interpreter', () => {
     });
 
     const samlangExpression = SourceExpressionTrue(
-      new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4))
+      new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
     );
     expect({
       type: 'functionValue',
@@ -169,7 +169,7 @@ describe('expression-interpreter', () => {
     const testFunctions = new Map<string, FunctionValue>();
     const testMethods = new Map<string, FunctionValue>();
     const samlangExpression = SourceExpressionTrue(
-      new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4))
+      new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
     );
     const functionValue: FunctionValue = {
       type: 'functionValue',
@@ -192,13 +192,13 @@ describe('expression-interpreter', () => {
   const exampleLocation: Location = new Location(
     ModuleReference.DUMMY,
     Position(1, 2),
-    Position(3, 4)
+    Position(3, 4),
   );
   const intLiteralExpression: SamlangExpression = SourceExpressionInt(5, exampleLocation);
   const intLiteralValue: Value = 5;
   const stringLiteralExpression: SamlangExpression = SourceExpressionString(
     'value',
-    exampleLocation
+    exampleLocation,
   );
   const stringLiteralValue: Value = 'value';
   const boolLiteralExpression: SamlangExpression = SourceExpressionTrue(exampleLocation);
@@ -264,7 +264,7 @@ describe('expression-interpreter', () => {
     };
     expect(interpreter.eval(variableExpression, variableContext)).toEqual(boolLiteralValue);
     expect(() => interpreter.eval(variableExpression)).toThrow(
-      `Missing variable ${variableExpression.name}`
+      `Missing variable ${variableExpression.name}`,
     );
   });
 
@@ -288,7 +288,7 @@ describe('expression-interpreter', () => {
     ]);
     const classMemberContext = { classes: classMemberClasses, localValues: new Map() };
     expect(interpreter.eval(classMemberExpression, classMemberContext)).toEqual(
-      classMemberFunction
+      classMemberFunction,
     );
     expect(() => interpreter.eval(classMemberExpression)).toThrow('');
   });
@@ -486,7 +486,7 @@ describe('expression-interpreter', () => {
       localValues: new Map(),
     };
     expect(interpreter.eval(methodAccessExpression, methodAccessContext)).toEqual(
-      classMemberFunction
+      classMemberFunction,
     );
     methodAccessClasses.delete('method');
     expect(() => interpreter.eval(methodAccessExpression, methodAccessContext)).toThrow('');
@@ -580,7 +580,7 @@ describe('expression-interpreter', () => {
     const context: InterpretationContext = createDefaultInterpretationContext(() => {});
     expect(interpreter.eval(stringToIntFunctionCall, context)).toEqual(intLiteralValue);
     expect(() => interpreter.eval(stringToIntFunctionCallFail, context)).toThrow(
-      `Cannot convert \`${stringLiteralExpression.literal.value}\` to int.`
+      `Cannot convert \`${stringLiteralExpression.literal.value}\` to int.`,
     );
     expect(interpreter.eval(intToStringFunctionCall, context)).toEqual('5');
     expect(interpreter.eval(printlnFunctionCall, context)).toEqual({ type: 'unit' });

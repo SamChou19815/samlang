@@ -132,7 +132,7 @@ export const WasmLocalGet = (name: string): WebAssemblyLocalGetInstruction => ({
 
 export const WasmLocalSet = (
   name: string,
-  assigned: WebAssemblyInlineInstruction
+  assigned: WebAssemblyInlineInstruction,
 ): WebAssemblyLocalSetInstruction => ({
   __type__: 'WebAssemblyLocalSetInstruction',
   name,
@@ -142,7 +142,7 @@ export const WasmLocalSet = (
 export const WasmBinary = (
   v1: WebAssemblyInlineInstruction,
   operator: IROperator,
-  v2: WebAssemblyInlineInstruction
+  v2: WebAssemblyInlineInstruction,
 ): WebAssemblyBinaryInstruction => ({
   __type__: 'WebAssemblyBinaryInstruction',
   v1,
@@ -152,7 +152,7 @@ export const WasmBinary = (
 
 export const WasmLoad = (
   pointer: WebAssemblyInlineInstruction,
-  index: number
+  index: number,
 ): WebAssemblyLoadInstruction => ({
   __type__: 'WebAssemblyLoadInstruction',
   index,
@@ -162,7 +162,7 @@ export const WasmLoad = (
 export const WasmStore = (
   pointer: WebAssemblyInlineInstruction,
   index: number,
-  assigned: WebAssemblyInlineInstruction
+  assigned: WebAssemblyInlineInstruction,
 ): WebAssemblyStoreInstruction => ({
   __type__: 'WebAssemblyStoreInstruction',
   index,
@@ -172,7 +172,7 @@ export const WasmStore = (
 
 export const WasmDirectCall = (
   functionName: string,
-  functionArguments: readonly WebAssemblyInlineInstruction[]
+  functionArguments: readonly WebAssemblyInlineInstruction[],
 ): WebAssemblyFunctionDirectCallInstruction => ({
   __type__: 'WebAssemblyFunctionDirectCallInstruction',
   functionName,
@@ -182,7 +182,7 @@ export const WasmDirectCall = (
 export const WasmIndirectCall = (
   functionIndex: WebAssemblyInlineInstruction,
   functionTypeString: string,
-  functionArguments: readonly WebAssemblyInlineInstruction[]
+  functionArguments: readonly WebAssemblyInlineInstruction[],
 ): WebAssemblyFunctionIndirectCallInstruction => ({
   __type__: 'WebAssemblyFunctionIndirectCallInstruction',
   functionIndex,
@@ -193,7 +193,7 @@ export const WasmIndirectCall = (
 export const WasmIfElse = (
   condition: WebAssemblyInlineInstruction,
   s1: readonly WebAssemblyInstruction[],
-  s2: readonly WebAssemblyInstruction[]
+  s2: readonly WebAssemblyInstruction[],
 ): WebAssemblyIfElseInstruction => ({
   __type__: 'WebAssemblyIfElseInstruction',
   condition,
@@ -339,18 +339,18 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
   });
   collector.push(
     `(import "builtins" "${ENCODED_FUNCTION_NAME_PRINTLN}" (func $${ENCODED_FUNCTION_NAME_PRINTLN} (param i32) (result i32)))\n`,
-    `(import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))\n`
+    `(import "builtins" "${ENCODED_FUNCTION_NAME_THROW}" (func $${ENCODED_FUNCTION_NAME_THROW} (param i32) (result i32)))\n`,
   );
   wasmModule.globalVariables.flatMap(({ constantPointer, ints }) => {
     collector.push(`(data (i32.const ${constantPointer}) "${intArrayToDataString(ints)}")\n`);
   });
   collector.push(`(table $0 ${wasmModule.functions.length} funcref)\n`);
   collector.push(
-    `(elem $0 (i32.const 0) ${wasmModule.functions.map((it) => `$${it.name}`).join(' ')})\n`
+    `(elem $0 (i32.const 0) ${wasmModule.functions.map((it) => `$${it.name}`).join(' ')})\n`,
   );
   wasmModule.functions.forEach(({ name, parameters, localVariables, instructions }) => {
     collector.push(
-      `(func $${name} ${parameters.map((it) => `(param $${it} i32)`).join(' ')} (result i32)\n`
+      `(func $${name} ${parameters.map((it) => `(param $${it} i32)`).join(' ')} (result i32)\n`,
     );
     localVariables.forEach((it) => collector.push(`  (local $${it} i32)\n`));
     instructions.forEach(printInstruction);

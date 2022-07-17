@@ -20,7 +20,7 @@ function prepareLookup(source: string): ModuleScopedVariableDefinitionLookup {
   const parsedModule = parseSamlangModuleFromText(
     source,
     moduleReference,
-    errorCollector.getErrorReporter()
+    errorCollector.getErrorReporter(),
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   return new ModuleScopedVariableDefinitionLookup(parsedModule);
@@ -70,37 +70,37 @@ class Main {
     const lookup = prepareLookup(source);
 
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(3, 12), Position(3, 13)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(3, 12), Position(3, 13))),
     ).toEqual({
       definition: '3:17-3:18',
       uses: ['4:13-4:14'],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(3, 8), Position(3, 9)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(3, 8), Position(3, 9))),
     ).toEqual({
       definition: '4:9-4:10',
       uses: [],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(7, 12), Position(7, 13)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(7, 12), Position(7, 13))),
     ).toEqual({
       definition: '6:10-6:11',
       uses: ['8:13-8:14', '9:59-9:60'],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(7, 16), Position(7, 17)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(7, 16), Position(7, 17))),
     ).toEqual({
       definition: '6:18-6:19',
       uses: ['7:24-7:25', '8:17-8:18', '9:45-9:46', '9:75-9:76', '10:24-10:25'],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(8, 22), Position(8, 23)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(8, 22), Position(8, 23))),
     ).toEqual({
       definition: '9:23-9:24',
       uses: ['9:37-9:38'],
     });
     expect(
-      query(lookup, new Location(ModuleReference.DUMMY, Position(11, 19), Position(11, 21)))
+      query(lookup, new Location(ModuleReference.DUMMY, Position(11, 19), Position(11, 21))),
     ).toEqual({
       definition: '12:14-12:16',
       uses: ['12:20-12:22'],
@@ -128,7 +128,7 @@ class Main {
 }
 `,
       moduleReference,
-      errorCollector.getErrorReporter()
+      errorCollector.getErrorReporter(),
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     const lookup = new VariableDefinitionLookup();
@@ -136,13 +136,13 @@ class Main {
 
     expect(
       lookup.findAllDefinitionAndUses(
-        new Location(ModuleReference(['Test1']), Location.DUMMY.start, Location.DUMMY.end)
-      )
+        new Location(ModuleReference(['Test1']), Location.DUMMY.start, Location.DUMMY.end),
+      ),
     ).toBeNull();
     expect(
       lookup.findAllDefinitionAndUses(
-        new Location(ModuleReference(['Test']), Location.DUMMY.start, Location.DUMMY.end)
-      )
+        new Location(ModuleReference(['Test']), Location.DUMMY.start, Location.DUMMY.end),
+      ),
     ).toBeNull();
 
     const assertCorrectlyRewritten = (location: Location, expected: string) =>
@@ -152,9 +152,9 @@ class Main {
           applyRenamingWithDefinitionAndUse(
             parsedModule,
             checkNotNull(lookup.findAllDefinitionAndUses(location)),
-            'renAmeD'
-          )
-        )
+            'renAmeD',
+          ),
+        ),
       ).toBe(expected);
 
     assertCorrectlyRewritten(
@@ -175,7 +175,7 @@ class Main {
     }
   }
 }
-`
+`,
     );
     assertCorrectlyRewritten(
       new Location(ModuleReference(['Test']), Position(3, 8), Position(3, 9)),
@@ -195,7 +195,7 @@ class Main {
     }
   }
 }
-`
+`,
     );
     assertCorrectlyRewritten(
       new Location(ModuleReference(['Test']), Position(5, 35), Position(5, 36)),
@@ -215,7 +215,7 @@ class Main {
     }
   }
 }
-`
+`,
     );
     assertCorrectlyRewritten(
       new Location(ModuleReference(['Test']), Position(7, 12), Position(7, 13)),
@@ -235,7 +235,7 @@ class Main {
     }
   }
 }
-`
+`,
     );
     assertCorrectlyRewritten(
       new Location(ModuleReference(['Test']), Position(7, 16), Position(7, 17)),
@@ -255,7 +255,7 @@ class Main {
     }
   }
 }
-`
+`,
     );
     assertCorrectlyRewritten(
       new Location(ModuleReference(['Test']), Position(8, 22), Position(8, 23)),
@@ -275,7 +275,7 @@ class Main {
     }
   }
 }
-`
+`,
     );
     assertCorrectlyRewritten(
       new Location(ModuleReference(['Test']), Position(11, 19), Position(11, 21)),
@@ -295,7 +295,7 @@ class Main {
     }
   }
 }
-`
+`,
     );
   });
 
@@ -311,7 +311,7 @@ class Main {
 }
 `,
       moduleReference,
-      errorCollector.getErrorReporter()
+      errorCollector.getErrorReporter(),
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
     const lookup = new VariableDefinitionLookup();
@@ -324,12 +324,12 @@ class Main {
           parsedModule,
           checkNotNull(
             lookup.findAllDefinitionAndUses(
-              new Location(ModuleReference(['Test']), Position(3, 12), Position(3, 13))
-            )
+              new Location(ModuleReference(['Test']), Position(3, 12), Position(3, 13)),
+            ),
           ),
-          'renAmeD'
-        )
-      )
+          'renAmeD',
+        ),
+      ),
     ).toBe(`class Main {
   function test(renAmeD: int, b: bool): unit = {
     val c = renAmeD.foo;

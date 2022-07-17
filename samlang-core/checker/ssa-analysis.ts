@@ -74,7 +74,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
             this.defineAll(interfaceDeclaration.typeParameters);
             this.defineAll(typeDefinition.names);
             typeDefinition.names.forEach((it) =>
-              this.visitType(checkNotNull(typeDefinition.mappings[it.name]).type)
+              this.visitType(checkNotNull(typeDefinition.mappings[it.name]).type),
             );
           });
         }
@@ -82,7 +82,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
         // Pull member names into another scope for conflict test,
         // as they cannot be referenced by name without class prefix.
         this.withNestedScope(() =>
-          interfaceDeclaration.members.map(({ name }) => this.define(name))
+          interfaceDeclaration.members.map(({ name }) => this.define(name)),
         );
         interfaceDeclaration.members.map((member) => {
           this.withNestedScope(() => {
@@ -160,7 +160,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
             switch (pattern.type) {
               case 'ObjectPattern':
                 pattern.destructedNames.forEach((name) =>
-                  this.define(name.alias ?? name.fieldName)
+                  this.define(name.alias ?? name.fieldName),
                 );
                 return;
               case 'VariablePattern':
@@ -204,7 +204,7 @@ export interface SsaAnalysisResult {
 
 export function performSSAAnalysisOnSamlangExpression(
   expression: SamlangExpression,
-  errorReporter?: GlobalErrorReporter
+  errorReporter?: GlobalErrorReporter,
 ): SsaAnalysisResult {
   const builder = new SsaBuilder(errorReporter);
   builder.visitExpression(expression);
@@ -219,7 +219,7 @@ export function performSSAAnalysisOnSamlangExpression(
 
 export default function performSSAAnalysisOnSamlangModule(
   samlangModule: SamlangModule,
-  errorReporter?: GlobalErrorReporter
+  errorReporter?: GlobalErrorReporter,
 ): SsaAnalysisResult {
   const builder = new SsaBuilder(errorReporter);
   builder.visitToplevel(samlangModule);

@@ -13,7 +13,7 @@ import type OptimizationResourceAllocator from './optimization-resource-allocato
 function analyzeNumberOfIterationsToBreakLessThanGuard(
   initialGuardValue: number,
   guardIncrementAmount: number,
-  guardedValue: number
+  guardedValue: number,
 ): number | null {
   // Condition is already satisfied, so it does not loop.
   if (initialGuardValue >= guardedValue) return 0;
@@ -31,32 +31,32 @@ export function analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING(
   initialGuardValue: number,
   guardIncrementAmount: number,
   operator: '<' | '<=' | '>' | '>=',
-  guardedValue: number
+  guardedValue: number,
 ): number | null {
   switch (operator) {
     case '<':
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         initialGuardValue,
         guardIncrementAmount,
-        guardedValue
+        guardedValue,
       );
     case '<=':
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         initialGuardValue,
         guardIncrementAmount,
-        guardedValue + 1
+        guardedValue + 1,
       );
     case '>':
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         -initialGuardValue,
         -guardIncrementAmount,
-        -guardedValue
+        -guardedValue,
       );
     case '>=':
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         -initialGuardValue,
         -guardIncrementAmount,
-        -(guardedValue - 1)
+        -(guardedValue - 1),
       );
   }
 }
@@ -71,7 +71,7 @@ export default function highIRLoopAlgebraicOptimization(
     statements,
     breakCollector,
   }: HighIROptimizableWhileLoop,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): readonly HighIRStatement[] | null {
   if (
     basicInductionVariableWithLoopGuard.initialValue.__type__ !== 'HighIRIntLiteralExpression' ||
@@ -87,7 +87,7 @@ export default function highIRLoopAlgebraicOptimization(
     basicInductionVariableWithLoopGuard.initialValue.value,
     basicInductionVariableWithLoopGuard.incrementAmount.value,
     basicInductionVariableWithLoopGuard.guardOperator,
-    basicInductionVariableWithLoopGuard.guardExpression.value
+    basicInductionVariableWithLoopGuard.guardExpression.value,
   );
   if (numberOfLoopIterations == null) return null;
   const basicInductionVariableWithLoopGuardFinalValue =
@@ -127,7 +127,7 @@ export default function highIRLoopAlgebraicOptimization(
     ];
   }
   const relevantGeneralInductionVariable = generalInductionVariables.find(
-    (it) => it.name === breakVariable
+    (it) => it.name === breakVariable,
   );
   if (relevantGeneralInductionVariable == null) {
     // Now we know that the break value is a constant, so we can directly return the assignment
@@ -150,7 +150,7 @@ export default function highIRLoopAlgebraicOptimization(
       ...createHighIRFlexibleOrderOperatorNode(
         '*',
         relevantGeneralInductionVariable.incrementAmount,
-        HIR_INT(numberOfLoopIterations)
+        HIR_INT(numberOfLoopIterations),
       ),
     }),
     HIR_BINARY({
@@ -158,7 +158,7 @@ export default function highIRLoopAlgebraicOptimization(
       ...createHighIRFlexibleOrderOperatorNode(
         '+',
         relevantGeneralInductionVariable.initialValue,
-        HIR_VARIABLE(incrementTemporary, HIR_INT_TYPE)
+        HIR_VARIABLE(incrementTemporary, HIR_INT_TYPE),
       ),
     }),
   ];

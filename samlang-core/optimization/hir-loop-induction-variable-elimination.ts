@@ -22,13 +22,13 @@ export default function highIRLoopInductionVariableEliminationOptimization(
     statements,
     breakCollector,
   }: HighIROptimizableWhileLoop,
-  allocator: OptimizationResourceAllocator
+  allocator: OptimizationResourceAllocator,
 ): {
   readonly prefixStatements: readonly HighIRStatement[];
   readonly optimizableWhileLoop: HighIROptimizableWhileLoop;
 } | null {
   const expressionUsesBasicInductionVariableWithLoopGuard = (
-    expression: HighIRExpression
+    expression: HighIRExpression,
   ): boolean =>
     expression.__type__ === 'HighIRVariableExpression' &&
     expression.name === basicInductionVariableWithLoopGuard.name;
@@ -55,7 +55,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
           statement.finalAssignments.some(
             (it) =>
               expressionUsesBasicInductionVariableWithLoopGuard(it.branch1Value) ||
-              expressionUsesBasicInductionVariableWithLoopGuard(it.branch2Value)
+              expressionUsesBasicInductionVariableWithLoopGuard(it.branch2Value),
           )
         );
       case 'HighIRSingleIfStatement':
@@ -70,7 +70,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
           statement.loopVariables.some(
             (it) =>
               expressionUsesBasicInductionVariableWithLoopGuard(it.initialValue) ||
-              expressionUsesBasicInductionVariableWithLoopGuard(it.loopValue)
+              expressionUsesBasicInductionVariableWithLoopGuard(it.loopValue),
           ) || statement.statements.some(statementUsesBasicInductionVariableWithLoopGuard)
         );
       case 'HighIRStructInitializationStatement':
@@ -83,7 +83,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
   if (
     statements.some(statementUsesBasicInductionVariableWithLoopGuard) ||
     loopVariablesThatAreNotBasicInductionVariables.some((it) =>
-      expressionUsesBasicInductionVariableWithLoopGuard(it.loopValue)
+      expressionUsesBasicInductionVariableWithLoopGuard(it.loopValue),
     ) ||
     (breakCollector != null &&
       expressionUsesBasicInductionVariableWithLoopGuard(breakCollector.value))
@@ -92,15 +92,15 @@ export default function highIRLoopInductionVariableEliminationOptimization(
   }
 
   const relevantDerivedInductionLoopVariables = derivedInductionVariables.filter(
-    (it) => it.baseName === basicInductionVariableWithLoopGuard.name
+    (it) => it.baseName === basicInductionVariableWithLoopGuard.name,
   );
   if (relevantDerivedInductionLoopVariables.length !== 1) return null;
   const onlyRelevantDerivedInductionVariable = checkNotNull(
-    relevantDerivedInductionLoopVariables[0]
+    relevantDerivedInductionLoopVariables[0],
   );
   const addedInvariantExpressionInLoop = mergeInvariantMultiplicationForLoopOptimization(
     basicInductionVariableWithLoopGuard.incrementAmount,
-    onlyRelevantDerivedInductionVariable.multiplier
+    onlyRelevantDerivedInductionVariable.multiplier,
   );
   if (addedInvariantExpressionInLoop == null) return null;
 
@@ -114,7 +114,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
       ...createHighIRFlexibleOrderOperatorNode(
         '*',
         onlyRelevantDerivedInductionVariable.multiplier,
-        basicInductionVariableWithLoopGuard.initialValue
+        basicInductionVariableWithLoopGuard.initialValue,
       ),
     }),
     HIR_BINARY({
@@ -122,7 +122,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
       ...createHighIRFlexibleOrderOperatorNode(
         '+',
         onlyRelevantDerivedInductionVariable.immediate,
-        HIR_VARIABLE(newInitialValueTempTemporary, HIR_INT_TYPE)
+        HIR_VARIABLE(newInitialValueTempTemporary, HIR_INT_TYPE),
       ),
     }),
     HIR_BINARY({
@@ -130,7 +130,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
       ...createHighIRFlexibleOrderOperatorNode(
         '*',
         onlyRelevantDerivedInductionVariable.multiplier,
-        basicInductionVariableWithLoopGuard.guardExpression
+        basicInductionVariableWithLoopGuard.guardExpression,
       ),
     }),
     HIR_BINARY({
@@ -138,7 +138,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
       ...createHighIRFlexibleOrderOperatorNode(
         '+',
         onlyRelevantDerivedInductionVariable.immediate,
-        HIR_VARIABLE(newGuardValueTempTemporary, HIR_INT_TYPE)
+        HIR_VARIABLE(newGuardValueTempTemporary, HIR_INT_TYPE),
       ),
     }),
   ];
@@ -156,7 +156,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
       generalInductionVariables,
       loopVariablesThatAreNotBasicInductionVariables,
       derivedInductionVariables: derivedInductionVariables.filter(
-        (it) => it.name !== onlyRelevantDerivedInductionVariable.name
+        (it) => it.name !== onlyRelevantDerivedInductionVariable.name,
       ),
       statements,
       breakCollector,

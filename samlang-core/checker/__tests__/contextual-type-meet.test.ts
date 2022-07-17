@@ -25,26 +25,26 @@ describe('contextual-type-meet', () => {
   it('t1=primitive type', () => {
     expect(meet(SourceUnitType(DummySourceReason), SourceUnitType(DummySourceReason))).toBe('unit');
     expect(meet(SourceUnitType(DummySourceReason), SourceBoolType(DummySourceReason))).toBe(
-      'FAILED_MEET'
+      'FAILED_MEET',
     );
     expect(meet(SourceUnitType(DummySourceReason), SourceIntType(DummySourceReason))).toBe(
-      'FAILED_MEET'
+      'FAILED_MEET',
     );
     expect(meet(SourceUnitType(DummySourceReason), SourceStringType(DummySourceReason))).toBe(
-      'FAILED_MEET'
+      'FAILED_MEET',
     );
     expect(meet(SourceUnknownType(DummySourceReason), SourceStringType(DummySourceReason))).toBe(
-      'string'
+      'string',
     );
     expect(
       meet(
         SourceUnitType(DummySourceReason),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A')
-      )
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+      ),
     ).toBe('FAILED_MEET');
 
     expect(meet(SourceUnitType(DummySourceReason), SourceUnknownType(DummySourceReason))).toBe(
-      'unit'
+      'unit',
     );
   });
 
@@ -52,22 +52,22 @@ describe('contextual-type-meet', () => {
     expect(
       meet(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-        SourceUnitType(DummySourceReason)
-      )
+        SourceUnitType(DummySourceReason),
+      ),
     ).toBe('FAILED_MEET');
     expect(
       meet(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B')
-      )
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+      ),
     ).toBe('FAILED_MEET');
     expect(
       meet(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
           SourceIntType(DummySourceReason),
-        ])
-      )
+        ]),
+      ),
     ).toBe('FAILED_MEET');
     expect(
       meet(
@@ -76,8 +76,8 @@ describe('contextual-type-meet', () => {
         ]),
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
           SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-        ])
-      )
+        ]),
+      ),
     ).toBe('A<B>');
 
     expect(
@@ -87,14 +87,14 @@ describe('contextual-type-meet', () => {
         ]),
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
           SourceUnknownType(DummySourceReason),
-        ])
-      )
+        ]),
+      ),
     ).toBe('A<B>');
     expect(
       meet(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-        SourceUnknownType(DummySourceReason)
-      )
+        SourceUnknownType(DummySourceReason),
+      ),
     ).toBe('B');
   });
 
@@ -102,14 +102,14 @@ describe('contextual-type-meet', () => {
     expect(
       meet(
         SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-        SourceUnitType(DummySourceReason)
-      )
+        SourceUnitType(DummySourceReason),
+      ),
     ).toBe('FAILED_MEET');
     expect(
       meet(
         SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B')
-      )
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+      ),
     ).toBe('FAILED_MEET');
     expect(
       meet(
@@ -117,23 +117,23 @@ describe('contextual-type-meet', () => {
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceIntType(DummySourceReason)
-        )
-      )
+          SourceIntType(DummySourceReason),
+        ),
+      ),
     ).toBe('FAILED_MEET');
     expect(
       meet(
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceIntType(DummySourceReason)
+          SourceIntType(DummySourceReason),
         ),
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceIntType(DummySourceReason)
-        )
-      )
+          SourceIntType(DummySourceReason),
+        ),
+      ),
     ).toBe('(int) -> int');
 
     expect(
@@ -141,24 +141,24 @@ describe('contextual-type-meet', () => {
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
-        SourceUnknownType(DummySourceReason)
-      )
+        SourceUnknownType(DummySourceReason),
+      ),
     ).toBe('(int) -> bool');
     expect(
       meet(
         SourceFunctionType(
           DummySourceReason,
           [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason)
+          SourceBoolType(DummySourceReason),
         ),
         SourceFunctionType(
           DummySourceReason,
           [SourceUnknownType(DummySourceReason)],
-          SourceUnknownType(DummySourceReason)
-        )
-      )
+          SourceUnknownType(DummySourceReason),
+        ),
+      ),
     ).toBe('(int) -> bool');
   });
 });

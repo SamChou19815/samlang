@@ -11,7 +11,7 @@ describe('samlang-core/errors', () => {
     reporter.reportUnexpectedTypeError(
       Location.DUMMY,
       SourceIntType(DummySourceReason),
-      SourceBoolType(DummySourceReason)
+      SourceBoolType(DummySourceReason),
     );
     reporter.reportUnresolvedNameError(Location.DUMMY, 'global');
     reporter.reportUnsupportedClassTypeDefinitionError(Location.DUMMY, 'object');
@@ -19,7 +19,7 @@ describe('samlang-core/errors', () => {
     reporter.reportUnexpectedTypeKindError(
       Location.DUMMY,
       'array',
-      SourceIntType(DummySourceReason)
+      SourceIntType(DummySourceReason),
     );
     reporter.reportArityMismatchError(Location.DUMMY, 'pair', 1, 2);
     reporter.reportInsufficientTypeInferenceContextError(Location.DUMMY);

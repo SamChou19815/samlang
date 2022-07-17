@@ -3,7 +3,7 @@ import { ModuleReference } from './common-nodes';
 export function encodeFunctionNameGlobally(
   moduleReference: ModuleReference,
   className: string,
-  functionName: string
+  functionName: string,
 ): string {
   const encodedModuleReference = moduleReference.map((it) => it.replace(/-/g, '_')).join('$');
   return `_${encodedModuleReference}_${className}_${functionName}`;
@@ -20,22 +20,22 @@ export const ENCODED_FUNCTION_NAME_STRING_CONCAT = encodeBuiltinName('stringConc
 export const ENCODED_FUNCTION_NAME_THROW = encodeFunctionNameGlobally(
   ModuleReference.ROOT,
   'Builtins',
-  'panic'
+  'panic',
 );
 export const ENCODED_FUNCTION_NAME_STRING_TO_INT = encodeFunctionNameGlobally(
   ModuleReference.ROOT,
   'Builtins',
-  'stringToInt'
+  'stringToInt',
 );
 export const ENCODED_FUNCTION_NAME_INT_TO_STRING = encodeFunctionNameGlobally(
   ModuleReference.ROOT,
   'Builtins',
-  'intToString'
+  'intToString',
 );
 export const ENCODED_FUNCTION_NAME_PRINTLN = encodeFunctionNameGlobally(
   ModuleReference.ROOT,
   'Builtins',
-  'println'
+  'println',
 );
 
 export const ENCODED_COMPILED_PROGRAM_MAIN = '_compiled_program_main';

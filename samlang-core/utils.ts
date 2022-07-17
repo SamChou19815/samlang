@@ -32,13 +32,13 @@ export const zip = <A, B>(list1: readonly A[], list2: readonly B[]): readonly (r
 export const zip3 = <A, B, C>(
   list1: readonly A[],
   list2: readonly B[],
-  list3: readonly C[]
+  list3: readonly C[],
 ): readonly (readonly [A, B, C])[] =>
   list1.map((e1, i) => [e1, checkNotNull(list2[i]), checkNotNull(list3[i])]);
 
 export function filterMap<T, R>(
   list: readonly T[],
-  filterMapper: (value: T, index: number, array: readonly T[]) => R | null | undefined
+  filterMapper: (value: T, index: number, array: readonly T[]) => R | null | undefined,
 ): readonly R[] {
   const result: R[] = [];
   list.forEach((value, index, array) => {
@@ -81,7 +81,7 @@ class HashMapImpl<K, V> implements HashMap<K, V> {
 
   constructor(
     private readonly uniqueHash: (key: K) => string | number,
-    keyValuePairs: readonly (readonly [K, V])[]
+    keyValuePairs: readonly (readonly [K, V])[],
   ) {
     this.backingMap = new Map(keyValuePairs.map((pair) => [uniqueHash(pair[0]), pair] as const));
   }
@@ -173,7 +173,7 @@ export interface CollectionsConstructors<K> {
 }
 
 export function createCollectionConstructors<K>(
-  uniqueHash: (key: K) => string | number
+  uniqueHash: (key: K) => string | number,
 ): CollectionsConstructors<K> {
   return {
     hashMapOf: (...keyValuePairs) => new HashMapImpl(uniqueHash, keyValuePairs),
@@ -199,7 +199,7 @@ export const listShallowEquals = <T>(list1: readonly T[], list2: readonly T[]): 
 export const mapEquals = <K, V>(
   map1: ReadonlyMap<K, V> | ReadonlyMap<K, V>,
   map2: ReadonlyMap<K, V>,
-  valueEqualityTester: (v1: V, v2: V) => boolean = (v1, v2) => v1 === v2
+  valueEqualityTester: (v1: V, v2: V) => boolean = (v1, v2) => v1 === v2,
 ): boolean => {
   if (map1.size !== map2.size) {
     return false;
@@ -216,7 +216,7 @@ export const mapEquals = <K, V>(
 export const hashMapEquals = <K, V>(
   map1: ReadonlyHashMap<K, V>,
   map2: ReadonlyHashMap<K, V>,
-  valueEqualityTester: (v1: V, v2: V) => boolean = (v1, v2) => v1 === v2
+  valueEqualityTester: (v1: V, v2: V) => boolean = (v1, v2) => v1 === v2,
 ): boolean => {
   if (map1.size !== map2.size) {
     return false;

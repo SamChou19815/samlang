@@ -46,7 +46,7 @@ describe('printer-js', () => {
     `;
     const { checkedSources } = typeCheckSourceHandles([[moduleReference, sourceCode]]);
     const mirSources = lowerHighIRSourcesToMidIRSources(
-      compileSamlangSourcesToHighIRSources(checkedSources)
+      compileSamlangSourcesToHighIRSources(checkedSources),
     );
     expect(prettyPrintMidIRSourcesAsJSSources(mirSources)).toBe(
       `const GLOBAL_STRING_0 = [0, "Hello World!"];
@@ -54,7 +54,7 @@ function _Test_Main_main() {
   __Builtins_println(GLOBAL_STRING_0);
   return 0;
 }
-`
+`,
     );
   });
 
@@ -142,8 +142,8 @@ function _Test_Main_main() {
           ],
           returnValue: MIR_ZERO,
         },
-        false
-      )
+        false,
+      ),
     ).toBe(
       `
 function baz(d, t, i) {
@@ -163,7 +163,7 @@ function baz(d, t, i) {
   let res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}(five, four);
   return 0;
 }
-`.trimStart()
+`.trimStart(),
     );
   });
 
@@ -175,7 +175,7 @@ function baz(d, t, i) {
     expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
 
     const printed = prettyPrintMidIRSourcesAsJSSources(
-      lowerHighIRSourcesToMidIRSources(compileSamlangSourcesToHighIRSources(checkedSources))
+      lowerHighIRSourcesToMidIRSources(compileSamlangSourcesToHighIRSources(checkedSources)),
     );
     const mainFunctionName = encodeMainFunctionName(moduleReference);
     const jsCode = `let printed = '';
@@ -201,8 +201,8 @@ function baz(d, t, i) {
             Builtins.println("Hello "::"World!")
           }
       }
-      `
-      )
+      `,
+      ),
     ).toBe('Hello World!\n');
 
     expect(
@@ -211,8 +211,8 @@ function baz(d, t, i) {
       class Main {
           function main(a: int, b: int): int = a + b
       }
-      `
-      )
+      `,
+      ),
     ).toBe('');
     expect(
       setupIntegration(
@@ -221,8 +221,8 @@ function baz(d, t, i) {
         function sum(a: int, b: int): int = a + b
         function main(): unit = Builtins.println(Builtins.intToString(Main.sum(42, 7)))
       }
-      `
-      )
+      `,
+      ),
     ).toBe('49\n');
     expect(
       setupIntegration(
@@ -234,8 +234,8 @@ function baz(d, t, i) {
         function main(): unit = Builtins.println(MeaningOfLife.conditional(Main.sum(42, 7)))
         function sum(a: int, b: int): int = a + b
       }
-      `
-      )
+      `,
+      ),
     ).toBe('Not the meaning of life... keep looking\n');
     expect(
       setupIntegration(
@@ -248,8 +248,8 @@ function baz(d, t, i) {
         function oof(): int = 14
         function main(): unit = Builtins.println(Builtins.intToString(Foo.bar() * Main.oof()))
       }
-      `
-      )
+      `,
+      ),
     ).toBe(`42\n`);
     expect(
       setupIntegration(
@@ -265,8 +265,8 @@ function baz(d, t, i) {
           val _ = Builtins.println(Builtins.intToString(Student.dummyStudent().age))
         }
       }
-      `
-      )
+      `,
+      ),
     ).toBe(`RANDOM_BABY\n0\n`);
     expect(
       setupIntegration(
@@ -286,8 +286,8 @@ function baz(d, t, i) {
       class Main {
         function main(): unit = Builtins.println(HelloWorld.getGlobalMessage())
       }
-      `
-      )
+      `,
+      ),
     ).toBe(`Hello World\n`);
     expect(() =>
       setupIntegration(
@@ -304,8 +304,8 @@ function baz(d, t, i) {
         val _ = Builtins.println(Builtins.intToString(Main.div(30, 2)))
       }
     }
-    `
-      )
+    `,
+      ),
     ).toThrow(`Division by zero is illegal!`);
   });
 });

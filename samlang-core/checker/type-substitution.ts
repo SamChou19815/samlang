@@ -5,7 +5,7 @@ import type { MemberTypeInformation } from './typing-context';
 
 export default function performTypeSubstitution(
   type: SamlangType,
-  mapping: Readonly<Record<string, SamlangType>>
+  mapping: Readonly<Record<string, SamlangType>>,
 ): SamlangType {
   switch (type.__type__) {
     case 'UnknownType':
@@ -19,27 +19,27 @@ export default function performTypeSubstitution(
         type.reason,
         type.moduleReference,
         type.identifier,
-        type.typeArguments.map((it) => performTypeSubstitution(it, mapping))
+        type.typeArguments.map((it) => performTypeSubstitution(it, mapping)),
       );
     case 'FunctionType':
       return SourceFunctionType(
         type.reason,
         type.argumentTypes.map((it) => performTypeSubstitution(it, mapping)),
-        performTypeSubstitution(type.returnType, mapping)
+        performTypeSubstitution(type.returnType, mapping),
       );
   }
 }
 
 export function normalizeTypeInformation(
   currentModuleReference: ModuleReference,
-  { isPublic, typeParameters, type }: MemberTypeInformation
+  { isPublic, typeParameters, type }: MemberTypeInformation,
 ): MemberTypeInformation {
   const mappings = typeParameters.map(
     (typeParameter, i) =>
       [
         typeParameter,
         SourceIdentifierType(DummySourceReason, currentModuleReference, `_T${i}`),
-      ] as const
+      ] as const,
   );
   const newType = performTypeSubstitution(type, Object.fromEntries(mappings));
   assert(newType.__type__ === 'FunctionType');

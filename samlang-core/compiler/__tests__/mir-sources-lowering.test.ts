@@ -39,8 +39,8 @@ const assertLowered = (sources: SimplifiedSources, expected: string) =>
         ...sources,
         globalVariables: [],
         mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
-      })
-    )
+      }),
+    ),
   ).toBe(expected);
 
 describe('mir-sources-lowering', () => {
@@ -54,7 +54,7 @@ const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(
 const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)];
 const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
 const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
-`
+`,
     );
   });
 
@@ -405,7 +405,7 @@ function __decRef_string(o: Str): number {
 function __decRef_nothing(o: any): number {
   return 0;
 }
-`
+`,
     );
   });
 });
