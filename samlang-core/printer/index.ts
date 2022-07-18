@@ -1,4 +1,4 @@
-import { prettyPrintType, SamlangModule } from '../ast/samlang-nodes';
+import { prettyPrintType, prettyPrintTypeParameter, SamlangModule } from '../ast/samlang-nodes';
 import {
   PRETTIER_CONCAT,
   PRETTIER_LINE,
@@ -44,7 +44,7 @@ export default function prettyPrintSamlangModule(
       PRETTIER_TEXT(
         interfaceDeclaration.typeParameters.length === 0
           ? ''
-          : `<${interfaceDeclaration.typeParameters.map((it) => it.name).join(', ')}>`,
+          : `<${interfaceDeclaration.typeParameters.map(prettyPrintTypeParameter).join(', ')}>`,
       ),
     ];
 
@@ -96,7 +96,7 @@ export default function prettyPrintSamlangModule(
       PRETTIER_TEXT(
         classDefinition.typeParameters.length === 0
           ? ''
-          : `<${classDefinition.typeParameters.map((it) => it.name).join(', ')}>`,
+          : `<${classDefinition.typeParameters.map(prettyPrintTypeParameter).join(', ')}>`,
       ),
       typeMappingItems.length === 0
         ? PRETTIER_NIL

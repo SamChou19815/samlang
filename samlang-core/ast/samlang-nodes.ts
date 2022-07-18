@@ -593,6 +593,11 @@ export interface SourceTypeParameter extends Node {
   readonly bound: SamlangType | null;
 }
 
+export function prettyPrintTypeParameter({ name, bound }: SourceTypeParameter): string {
+  if (bound == null) return name.name;
+  return `${name.name}: ${prettyPrintType(bound)}`;
+}
+
 export interface SourceClassMemberDeclaration extends Node {
   readonly associatedComments: readonly TypedComment[];
   readonly isPublic: boolean;
