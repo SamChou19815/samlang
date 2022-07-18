@@ -9,11 +9,16 @@ import {
   SourceStringType,
   SourceUnitType,
   SourceUnknownType,
+  TypeParameterSignature,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { solveTypeConstraints } from '../type-constraints-solver';
 
-function solve(concrete: SamlangType, generic: SamlangType, typeParameters: readonly string[]) {
+function solve(
+  concrete: SamlangType,
+  generic: SamlangType,
+  typeParameters: readonly TypeParameterSignature[],
+) {
   const globalCollector = createGlobalErrorCollector();
   const errorReporter = globalCollector.getErrorReporter();
   const { solvedSubstitution } = solveTypeConstraints(
@@ -39,12 +44,16 @@ describe('type-constraint-solver', () => {
     });
 
     expect(
-      solve(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason), ['T']),
+      solve(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason), [
+        { name: 'T', bound: null },
+      ]),
     ).toEqual({ T: 'unknown', hasError: 'true' });
   });
 
   it('identifier type', () => {
-    expect(solve(SourceIntType(DummySourceReason), IdType('T'), ['T'])).toEqual({ T: 'int' });
+    expect(
+      solve(SourceIntType(DummySourceReason), IdType('T'), [{ name: 'T', bound: null }]),
+    ).toEqual({ T: 'int' });
 
     expect(
       solve(
@@ -52,7 +61,7 @@ describe('type-constraint-solver', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar', [
           SourceIntType(DummySourceReason),
         ]),
-        ['Foo'],
+        [{ name: 'Foo', bound: null }],
       ),
     ).toEqual({ Foo: 'unknown', hasError: 'true' });
 
@@ -64,7 +73,7 @@ describe('type-constraint-solver', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo', [
           SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar', [IdType('T')]),
         ]),
-        ['T'],
+        [{ name: 'T', bound: null }],
       ),
     ).toEqual({ T: 'Baz' });
   });
@@ -82,7 +91,11 @@ describe('type-constraint-solver', () => {
           SourceUnitType(DummySourceReason),
         ),
         SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('A')], IdType('C')),
-        ['A', 'B', 'C'],
+        [
+          { name: 'A', bound: null },
+          { name: 'B', bound: null },
+          { name: 'C', bound: null },
+        ],
       ),
     ).toEqual({ A: 'int', B: 'bool', C: 'unit', hasError: 'true' });
 
@@ -90,7 +103,11 @@ describe('type-constraint-solver', () => {
       solve(
         SourceIntType(DummySourceReason),
         SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('A')], IdType('C')),
-        ['A', 'B', 'C'],
+        [
+          { name: 'A', bound: null },
+          { name: 'B', bound: null },
+          { name: 'C', bound: null },
+        ],
       ),
     ).toEqual({ A: 'unknown', B: 'unknown', C: 'unknown', hasError: 'true' });
   });
@@ -116,7 +133,10 @@ describe('type-constraint-solver', () => {
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('A')), IdType('B')],
           SourceUnitType(DummySourceReason),
         ),
-        ['A', 'B'],
+        [
+          { name: 'A', bound: null },
+          { name: 'B', bound: null },
+        ],
         errorCollector.getErrorReporter(),
       );
 
@@ -156,7 +176,7 @@ describe('type-constraint-solver', () => {
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('A')), IdType('B')],
           SourceUnitType(DummySourceReason),
         ),
-        ['B'],
+        [{ name: 'B', bound: null }],
         errorCollector.getErrorReporter(),
       );
 

@@ -4,6 +4,7 @@ import {
   SamlangFunctionType,
   SamlangType,
   SourceUnknownType,
+  TypeParameterSignature,
   typeReposition,
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
@@ -55,7 +56,7 @@ interface FunctionCallTypeCheckingResult {
 
 export default function typeCheckFunctionCall(
   genericFunctionType: SamlangFunctionType,
-  typeParameters: readonly string[],
+  typeParameters: readonly TypeParameterSignature[],
   functionCallReason: SamlangReason,
   functionArguments: readonly SamlangExpression[],
   returnTypeHint: SamlangType | null,
@@ -95,13 +96,13 @@ export default function typeCheckFunctionCall(
     Object.fromEntries(partiallySolvedSubstitution),
   );
   const unsolvedTypeParameters = typeParameters.filter(
-    (typeParameter) => !partiallySolvedSubstitution.has(typeParameter),
+    (typeParameter) => !partiallySolvedSubstitution.has(typeParameter.name),
   );
   assert(partiallySolvedGenericType.__type__ === 'FunctionType');
   typeParameters.forEach((typeParameter) => {
-    if (!partiallySolvedSubstitution.has(typeParameter)) {
+    if (!partiallySolvedSubstitution.has(typeParameter.name)) {
       // Fill in unknown for unsolved types.
-      partiallySolvedSubstitution.set(typeParameter, SourceUnknownType(functionCallReason));
+      partiallySolvedSubstitution.set(typeParameter.name, SourceUnknownType(functionCallReason));
     }
   });
   const partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown = performTypeSubstitution(
@@ -133,11 +134,11 @@ export default function typeCheckFunctionCall(
     unsolvedTypeParameters,
   );
   const stillUnresolvedTypeParameters = unsolvedTypeParameters.filter(
-    (typeParameter) => !fullySolvedSubstitution.has(typeParameter),
+    (typeParameter) => !fullySolvedSubstitution.has(typeParameter.name),
   );
   stillUnresolvedTypeParameters.forEach((typeParameter) => {
     // Fill in unknown for unsolved types.
-    fullySolvedSubstitution.set(typeParameter, SourceUnknownType(functionCallReason));
+    fullySolvedSubstitution.set(typeParameter.name, SourceUnknownType(functionCallReason));
   });
   if (stillUnresolvedTypeParameters.length > 0) {
     errorReporter.reportInsufficientTypeInferenceContextError(functionCallReason.useLocation);

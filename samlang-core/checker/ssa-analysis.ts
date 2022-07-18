@@ -61,17 +61,20 @@ class SsaBuilder extends LocalStackedContext<Location> {
 
     interfaces.forEach((interfaceDeclaration) => {
       this.withNestedScope(() => {
+        interfaceDeclaration.typeParameters.forEach(({ bound }) => {
+          if (bound != null) this.visitType(bound);
+        });
         const extendsOrImplementsNode = interfaceDeclaration.extendsOrImplementsNode;
         if (extendsOrImplementsNode != null) {
           this.withNestedScope(() => {
-            this.defineAll(interfaceDeclaration.typeParameters);
+            this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
             this.visitType(extendsOrImplementsNode);
           });
         }
         const typeDefinition = interfaceDeclaration.typeDefinition;
         if (typeDefinition != null) {
           this.withNestedScope(() => {
-            this.defineAll(interfaceDeclaration.typeParameters);
+            this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
             this.defineAll(typeDefinition.names);
             typeDefinition.names.forEach((it) =>
               this.visitType(checkNotNull(typeDefinition.mappings[it.name]).type),
@@ -86,8 +89,13 @@ class SsaBuilder extends LocalStackedContext<Location> {
         );
         interfaceDeclaration.members.map((member) => {
           this.withNestedScope(() => {
-            if (member.isMethod) this.defineAll(interfaceDeclaration.typeParameters);
-            this.defineAll(member.typeParameters);
+            member.typeParameters.forEach(({ bound }) => {
+              if (bound != null) this.visitType(bound);
+            });
+            if (member.isMethod) {
+              this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
+            }
+            this.defineAll(member.typeParameters.map((it) => it.name));
             member.parameters.forEach(({ name, nameLocation: location, type }) => {
               this.define({ name, location });
               this.visitType(type);

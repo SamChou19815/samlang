@@ -36,7 +36,7 @@ function checkClassMemberConformance(
     expected.type,
     Object.fromEntries(
       expectedTypeParameters.map((name, i) => [
-        name,
+        name.name,
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, `_T${i}`, []),
       ]),
     ),
@@ -45,7 +45,7 @@ function checkClassMemberConformance(
     actual.type,
     Object.fromEntries(
       actualTypeParameters.map((name, i) => [
-        name,
+        name.name,
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, `_T${i}`, []),
       ]),
     ),

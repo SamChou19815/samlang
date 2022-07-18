@@ -38,6 +38,7 @@ import {
   SourceUnknownType,
   StatementBlockExpression,
   ThisExpression,
+  TypeParameterSignature,
   typeReposition,
   UnaryExpression,
   VariableExpression,
@@ -147,7 +148,7 @@ class ExpressionTypeChecker {
     hint: SamlangType | null,
   ): {
     partiallyCheckedExpression: ClassMemberExpression;
-    unsolvedTypeParameters: readonly string[];
+    unsolvedTypeParameters: readonly TypeParameterSignature[];
   } {
     const classFunctionTypeInformation = this.accessibleGlobalTypingContext.getClassFunctionType(
       expression.moduleReference,
@@ -178,7 +179,10 @@ class ExpressionTypeChecker {
           performTypeSubstitution(
             classFunctionTypeInformation.type,
             Object.fromEntries(
-              zip(classFunctionTypeInformation.typeParameters, expression.typeArguments),
+              zip(
+                classFunctionTypeInformation.typeParameters.map((it) => it.name),
+                expression.typeArguments,
+              ),
             ),
           ),
         );
@@ -267,7 +271,7 @@ class ExpressionTypeChecker {
 
   private replaceUndecidedTypeParameterWithUnknownAndUpdateType(
     expression: SamlangExpression,
-    unsolvedTypeParameters: readonly string[],
+    unsolvedTypeParameters: readonly TypeParameterSignature[],
     hint: SamlangType | null,
   ): SamlangExpression {
     if (unsolvedTypeParameters.length !== 0) {
@@ -278,7 +282,10 @@ class ExpressionTypeChecker {
       performTypeSubstitution(
         expression.type,
         Object.fromEntries(
-          unsolvedTypeParameters.map((it) => [it, this.bestEffortUnknownType(null, expression)]),
+          unsolvedTypeParameters.map((it) => [
+            it.name,
+            this.bestEffortUnknownType(null, expression),
+          ]),
         ),
       ),
     );
@@ -303,7 +310,7 @@ class ExpressionTypeChecker {
     hint: SamlangType | null,
   ): {
     partiallyCheckedExpression: FieldAccessExpression | MethodAccessExpression;
-    unsolvedTypeParameters: readonly string[];
+    unsolvedTypeParameters: readonly TypeParameterSignature[];
   } {
     const checkedExpression = this.typeCheck(expression.expression, null);
     if (checkedExpression.type.__type__ !== 'IdentifierType') {
@@ -493,7 +500,7 @@ class ExpressionTypeChecker {
     hint: SamlangType | null,
   ): SamlangExpression {
     let checkedFunctionExpressionWithUnresolvedGenericType: SamlangExpression;
-    let typeParameters: readonly string[];
+    let typeParameters: readonly TypeParameterSignature[];
     switch (expression.functionExpression.__type__) {
       case 'ClassMemberExpression': {
         const { partiallyCheckedExpression, unsolvedTypeParameters } =

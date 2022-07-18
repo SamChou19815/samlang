@@ -1,5 +1,5 @@
 import { moduleReferenceToString, SourceReason } from '../ast/common-nodes';
-import { SamlangType, SourceUnknownType } from '../ast/samlang-nodes';
+import { SamlangType, SourceUnknownType, TypeParameterSignature } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
 import { zip } from '../utils';
 import contextualTypeMeet from './contextual-type-meet';
@@ -64,10 +64,10 @@ interface TypeConstraintSolution {
 
 export function solveMultipleTypeConstraints(
   constraints: readonly { readonly concreteType: SamlangType; readonly genericType: SamlangType }[],
-  typeParameters: readonly string[],
+  typeParameters: readonly TypeParameterSignature[],
 ): Map<string, SamlangType> {
   const solvedSubstitution = new Map<string, SamlangType>();
-  const typeParameterSet = new Set(typeParameters);
+  const typeParameterSet = new Set(typeParameters.map((it) => it.name));
   constraints.forEach(({ concreteType, genericType }) =>
     solveTypeConstraintsInternal(concreteType, genericType, typeParameterSet, solvedSubstitution),
   );
@@ -77,7 +77,7 @@ export function solveMultipleTypeConstraints(
 export function solveTypeConstraints(
   concreteType: SamlangType,
   genericType: SamlangType,
-  typeParameters: readonly string[],
+  typeParameters: readonly TypeParameterSignature[],
   errorReporter: GlobalErrorReporter,
 ): TypeConstraintSolution {
   const solvedSubstitution = solveMultipleTypeConstraints(
@@ -85,10 +85,10 @@ export function solveTypeConstraints(
     typeParameters,
   );
   typeParameters.forEach((typeParameter) => {
-    if (!solvedSubstitution.has(typeParameter)) {
+    if (!solvedSubstitution.has(typeParameter.name)) {
       // Fill in unknown for unsolved types.
       solvedSubstitution.set(
-        typeParameter,
+        typeParameter.name,
         SourceUnknownType(SourceReason(concreteType.reason.useLocation, null)),
       );
     }
