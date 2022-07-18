@@ -376,6 +376,17 @@ export default class SamlangModuleParser extends BaseParser {
     let startLocation = this.assertAndConsume('class');
     const name = this.parseUpperId();
     startLocation = startLocation.union(name.location);
+    let typeParameters: readonly SourceTypeParameter[];
+    let typeParameterLocationStart: Location | undefined;
+    let typeParameterLocationEnd: Location | undefined;
+    if (this.peek().content === '<') {
+      typeParameterLocationStart = this.peek().location;
+      this.consume();
+      typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
+      typeParameterLocationEnd = this.assertAndConsume('>');
+    } else {
+      typeParameters = [];
+    }
     if (
       this.peek().content === '{' ||
       this.peek().content === ':' ||
@@ -389,23 +400,16 @@ export default class SamlangModuleParser extends BaseParser {
       }
       // Util class. Now the class header has ended.
       return {
-        startLocation,
+        startLocation:
+          typeParameterLocationEnd == null
+            ? startLocation
+            : startLocation.union(typeParameterLocationEnd),
         associatedComments,
         name,
-        typeParameters: [],
+        typeParameters,
         typeDefinition: { location: this.peek().location, type: 'object', names: [], mappings: {} },
         extendsOrImplementsNode,
       };
-    }
-    let typeParameters: readonly SourceTypeParameter[];
-    let typeParameterLocationStart: Location | undefined;
-    if (this.peek().content === '<') {
-      typeParameterLocationStart = this.peek().location;
-      this.consume();
-      typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
-      this.assertAndConsume('>');
-    } else {
-      typeParameters = [];
     }
     const typeDefinitionLocationStart = this.assertAndConsume('(');
     const innerTypeDefinition = this.parseTypeDefinitionInner();
