@@ -37,7 +37,7 @@ export function normalizeTypeInformation(
   const mappings = typeParameters.map(
     (typeParameter, i) =>
       [
-        typeParameter,
+        typeParameter.name,
         SourceIdentifierType(DummySourceReason, currentModuleReference, `_T${i}`),
       ] as const,
   );
@@ -45,7 +45,10 @@ export function normalizeTypeInformation(
   assert(newType.__type__ === 'FunctionType');
   return {
     isPublic,
-    typeParameters: mappings.map(([, { identifier }]) => identifier),
+    typeParameters: mappings.map(([, { identifier }], i) => ({
+      name: identifier,
+      bound: typeParameters[i]?.bound ?? null,
+    })),
     type: newType,
   };
 }
