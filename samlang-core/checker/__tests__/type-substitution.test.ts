@@ -23,13 +23,13 @@ describe('type-substitution', () => {
           ],
           SourceIntType(DummySourceReason),
         ),
-        {
-          A: SourceIntType(DummySourceReason),
-          B: SourceIntType(DummySourceReason),
-          C: SourceIntType(DummySourceReason),
-          D: SourceIntType(DummySourceReason),
-          E: SourceIntType(DummySourceReason),
-        },
+        new Map([
+          ['A', SourceIntType(DummySourceReason)],
+          ['B', SourceIntType(DummySourceReason)],
+          ['C', SourceIntType(DummySourceReason)],
+          ['D', SourceIntType(DummySourceReason)],
+          ['E', SourceIntType(DummySourceReason)],
+        ]),
       ),
     ).toEqual(
       SourceFunctionType(

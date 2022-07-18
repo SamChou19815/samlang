@@ -93,10 +93,7 @@ export function solveTypeConstraints(
       );
     }
   });
-  const solvedGenericType = performTypeSubstitution(
-    genericType,
-    Object.fromEntries(solvedSubstitution),
-  );
+  const solvedGenericType = performTypeSubstitution(genericType, new Map(solvedSubstitution));
   const solvedContextuallyTypedConcreteType = contextualTypeMeet(
     solvedGenericType,
     concreteType,

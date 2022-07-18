@@ -148,7 +148,7 @@ export class AccessibleGlobalTypingContext {
     interfaceContext: InterfaceTypingContext,
     instantiatedInterfaceType: SamlangIdentifierType,
   ): InterfaceTypingContextInstantiatedNodes {
-    const mapping = Object.fromEntries(
+    const mapping = new Map(
       zip(
         interfaceContext.typeParameters.map((it) => it.name),
         instantiatedInterfaceType.typeArguments,
@@ -218,7 +218,7 @@ export class AccessibleGlobalTypingContext {
     const classTypeParameters = relaventClass.typeParameters;
     const partiallyFixedType = performTypeSubstitution(
       typeInfo.type,
-      Object.fromEntries(
+      new Map(
         zip(
           classTypeParameters.map((it) => it.name),
           classTypeArguments,
@@ -299,7 +299,7 @@ export class AccessibleGlobalTypingContext {
               isPublic: fieldType.isPublic,
               type: performTypeSubstitution(
                 fieldType.type,
-                Object.fromEntries(
+                new Map(
                   zip(
                     classTypeParameters.map((it) => it.name),
                     typeArguments,

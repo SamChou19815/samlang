@@ -178,7 +178,7 @@ class ExpressionTypeChecker {
           hint,
           performTypeSubstitution(
             classFunctionTypeInformation.type,
-            Object.fromEntries(
+            new Map(
               zip(
                 classFunctionTypeInformation.typeParameters.map((it) => it.name),
                 expression.typeArguments,
@@ -281,7 +281,7 @@ class ExpressionTypeChecker {
       hint,
       performTypeSubstitution(
         expression.type,
-        Object.fromEntries(
+        new Map(
           unsolvedTypeParameters.map((it) => [
             it.name,
             this.bestEffortUnknownType(null, expression),

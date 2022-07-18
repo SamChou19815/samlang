@@ -252,7 +252,7 @@ class GenericsSpecializationRewriter {
             this.originalClosureTypeDefinitions[concreteType.name],
             `Missing ${concreteType.name}`,
           );
-          const solvedTypeArgumentsReplacementMap = Object.fromEntries(
+          const solvedTypeArgumentsReplacementMap = new Map(
             zip(
               closureTypeDefinition.typeParameters,
               solveTypeArguments(
@@ -283,7 +283,7 @@ class GenericsSpecializationRewriter {
         }
         return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(encodedName);
       }
-      const solvedTypeArgumentsReplacementMap = Object.fromEntries(
+      const solvedTypeArgumentsReplacementMap = new Map(
         zip(
           typeDefinition.typeParameters,
           solveTypeArguments(

@@ -93,7 +93,7 @@ export default function typeCheckFunctionCall(
   );
   const partiallySolvedGenericType = performTypeSubstitution(
     genericFunctionType,
-    Object.fromEntries(partiallySolvedSubstitution),
+    new Map(partiallySolvedSubstitution),
   );
   const unsolvedTypeParameters = typeParameters.filter(
     (typeParameter) => !partiallySolvedSubstitution.has(typeParameter.name),
@@ -107,7 +107,7 @@ export default function typeCheckFunctionCall(
   });
   const partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown = performTypeSubstitution(
     genericFunctionType,
-    Object.fromEntries(partiallySolvedSubstitution),
+    new Map(partiallySolvedSubstitution),
   );
   assert(partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.__type__ === 'FunctionType');
   const partiallySolvedConcreteArgumentTypes = zip(
@@ -145,7 +145,7 @@ export default function typeCheckFunctionCall(
   }
   const fullySolvedGenericType = performTypeSubstitution(
     partiallySolvedGenericType,
-    Object.fromEntries(fullySolvedSubstitution),
+    new Map(fullySolvedSubstitution),
   );
   assert(fullySolvedGenericType.__type__ === 'FunctionType');
   const fullySolvedConcreteReturnType = contextualTypeMeet(

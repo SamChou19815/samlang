@@ -34,7 +34,7 @@ function checkClassMemberConformance(
   const actualTypeParameters = [...actual.typeParameters.map((it) => it.name)];
   const expectedType = performTypeSubstitution(
     expected.type,
-    Object.fromEntries(
+    new Map(
       expectedTypeParameters.map((name, i) => [
         name.name,
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, `_T${i}`, []),
@@ -43,7 +43,7 @@ function checkClassMemberConformance(
   );
   const actualType = performTypeSubstitution(
     actual.type,
-    Object.fromEntries(
+    new Map(
       actualTypeParameters.map((name, i) => [
         name.name,
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, `_T${i}`, []),
