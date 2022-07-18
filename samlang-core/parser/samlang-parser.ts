@@ -50,6 +50,7 @@ import {
   SourceIntType,
   SourceModuleMembersImport,
   SourceStringType,
+  SourceTypeParameter,
   SourceUnitType,
   SourceUnknownType,
   TypeDefinition,
@@ -302,10 +303,10 @@ export default class SamlangModuleParser extends BaseParser {
     const associatedComments = this.collectPrecedingComments();
     let startLocation = this.assertAndConsume('interface');
     const name = this.parseUpperId();
-    let typeParameters: readonly SourceIdentifier[];
+    let typeParameters: readonly SourceTypeParameter[];
     if (this.peek().content === '<') {
       this.consume();
-      typeParameters = this.parseCommaSeparatedList(this.parseUpperId);
+      typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
       startLocation = startLocation.union(this.assertAndConsume('>'));
     } else {
       typeParameters = [];
@@ -396,12 +397,12 @@ export default class SamlangModuleParser extends BaseParser {
         extendsOrImplementsNode,
       };
     }
-    let typeParameters: readonly SourceIdentifier[];
+    let typeParameters: readonly SourceTypeParameter[];
     let typeParameterLocationStart: Location | undefined;
     if (this.peek().content === '<') {
       typeParameterLocationStart = this.peek().location;
       this.consume();
-      typeParameters = this.parseCommaSeparatedList(() => this.parseUpperId());
+      typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
       this.assertAndConsume('>');
     } else {
       typeParameters = [];
@@ -506,10 +507,10 @@ export default class SamlangModuleParser extends BaseParser {
     } else {
       this.assertAndConsume('method');
     }
-    let typeParameters: SourceIdentifier[];
+    let typeParameters: SourceTypeParameter[];
     if (this.peek().content === '<') {
       this.consume();
-      typeParameters = this.parseCommaSeparatedList(() => this.parseUpperId());
+      typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
       this.assertAndConsume('>');
     } else {
       typeParameters = [];
@@ -572,6 +573,23 @@ export default class SamlangModuleParser extends BaseParser {
       });
     }
     return comments;
+  };
+
+  private parseTypeParameter = (): SourceTypeParameter => {
+    const associatedComments = this.collectPrecedingComments();
+    const name = this.parseUpperId();
+    let bound: SamlangType | null = null;
+    if (this.peek().content === ':') {
+      this.consume();
+      bound = this.parseType();
+    }
+    const location = bound != null ? name.location.union(bound.reason.useLocation) : name.location;
+    return {
+      associatedComments,
+      location,
+      name,
+      bound,
+    };
   };
 
   private parseUpperId = (): SourceIdentifier => {
