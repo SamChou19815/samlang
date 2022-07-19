@@ -36,7 +36,7 @@ function buildInterfaceTypingContext(
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
     const typeInformation = {
       isPublic,
-      typeParameters: memberTypeParameters.map((it) => it.name),
+      typeParameters: memberTypeParameters.map((it) => ({ name: it.name.name, bound: it.bound })),
       type,
     };
     if (isMethod) {
@@ -46,7 +46,7 @@ function buildInterfaceTypingContext(
     }
   });
   return {
-    typeParameters: typeParameters.map((it) => it.name),
+    typeParameters: typeParameters.map((it) => ({ name: it.name.name, bound: it.bound })),
     extendsOrImplements: extendsOrImplementsNode ?? null,
     functions,
     methods,
@@ -66,7 +66,12 @@ function buildClassTypingContext(
     moduleReference,
     classDefinition.name.name,
     classDefinition.typeParameters.map((it) =>
-      SourceIdentifierType(SourceReason(it.location, it.location), moduleReference, it.name, []),
+      SourceIdentifierType(
+        SourceReason(it.location, it.location),
+        moduleReference,
+        it.name.name,
+        [],
+      ),
     ),
   );
   const { typeDefinition } = classDefinition;
@@ -159,7 +164,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
         },
         panic: {
           isPublic: true,
-          typeParameters: ['T'],
+          typeParameters: [{ name: 'T', bound: null }],
           type: SourceFunctionType(
             BuiltinReason,
             [SourceStringType(BuiltinReason)],

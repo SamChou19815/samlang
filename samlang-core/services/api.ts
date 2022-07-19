@@ -497,7 +497,9 @@ class LanguageServicesImpl implements LanguageServices {
   private static prettyPrintTypeInformation(typeInformation: MemberTypeInformation): string {
     return typeInformation.typeParameters.length === 0
       ? prettyPrintType(typeInformation.type)
-      : `<${typeInformation.typeParameters.join(', ')}>(${prettyPrintType(typeInformation.type)})`;
+      : `<${typeInformation.typeParameters.map((it) => it.name).join(', ')}>(${prettyPrintType(
+          typeInformation.type,
+        )})`;
   }
 
   private static prettyPrintFunctionTypeWithDummyParameters({

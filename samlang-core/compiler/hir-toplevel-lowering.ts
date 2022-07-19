@@ -226,7 +226,7 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
     samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
       compiledTypeDefinitions.push(
         new SamlangTypeLoweringManager(
-          new Set(typeParameters.map((it) => it.name)),
+          new Set(typeParameters.map((it) => it.name.name)),
           typeSynthesizer,
         ).lowerSamlangTypeDefinition(moduleReference, className.name, typeDefinition),
       );
@@ -267,8 +267,8 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
               className.name,
               member.name.name,
               typeDefinitionMapping,
-              typeParameters.map((it) => it.name),
-              member.typeParameters.map((it) => it.name),
+              typeParameters.map((it) => it.name.name),
+              member.typeParameters.map((it) => it.name.name),
               member.parameters,
               member.type.returnType,
               member.body,
@@ -283,7 +283,7 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
               className.name,
               member.name.name,
               typeDefinitionMapping,
-              member.typeParameters.map((it) => it.name),
+              member.typeParameters.map((it) => it.name.name),
               member.parameters,
               member.type.returnType,
               member.body,

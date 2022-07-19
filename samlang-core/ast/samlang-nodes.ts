@@ -49,6 +49,11 @@ export type SamlangType =
   | SamlangIdentifierType
   | SamlangFunctionType;
 
+export interface TypeParameterSignature {
+  readonly name: string;
+  readonly bound: SamlangType | null;
+}
+
 export const SourceUnitType = (reason: SamlangReason): SamlangPrimitiveType => ({
   __type__: 'PrimitiveType',
   reason,
@@ -582,12 +587,23 @@ export interface SourceAnnotatedVariable {
   readonly typeLocation: Location;
 }
 
+export interface SourceTypeParameter extends Node {
+  readonly associatedComments: readonly TypedComment[];
+  readonly name: SourceIdentifier;
+  readonly bound: SamlangType | null;
+}
+
+export function prettyPrintTypeParameter({ name, bound }: SourceTypeParameter): string {
+  if (bound == null) return name.name;
+  return `${name.name}: ${prettyPrintType(bound)}`;
+}
+
 export interface SourceClassMemberDeclaration extends Node {
   readonly associatedComments: readonly TypedComment[];
   readonly isPublic: boolean;
   readonly isMethod: boolean;
   readonly name: SourceIdentifier;
-  readonly typeParameters: readonly SourceIdentifier[];
+  readonly typeParameters: readonly SourceTypeParameter[];
   readonly type: SamlangFunctionType;
   readonly parameters: readonly SourceAnnotatedVariable[];
   readonly body?: SamlangExpression;
@@ -600,7 +616,7 @@ export interface SourceClassMemberDefinition extends SourceClassMemberDeclaratio
 export interface SourceInterfaceDeclaration extends Node {
   readonly associatedComments: readonly TypedComment[];
   readonly name: SourceIdentifier;
-  readonly typeParameters: readonly SourceIdentifier[];
+  readonly typeParameters: readonly SourceTypeParameter[];
   readonly typeDefinition?: TypeDefinition;
   /** The node after colon, interpreted as extends in interfaces and implements in classes. */
   readonly extendsOrImplementsNode?: SamlangIdentifierType;

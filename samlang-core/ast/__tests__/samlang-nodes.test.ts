@@ -8,8 +8,10 @@ import {
 import {
   isTheSameType,
   prettyPrintType,
+  prettyPrintTypeParameter,
   SourceBoolType,
   SourceFunctionType,
+  SourceId,
   SourceIdentifierType,
   SourceIntType,
   SourceStringType,
@@ -70,6 +72,22 @@ describe('samlang-nodes', () => {
         ),
       ),
     ).toBe('(() -> unit, bool) -> bool');
+    expect(
+      prettyPrintTypeParameter({
+        name: SourceId('Foo'),
+        bound: null,
+        associatedComments: [],
+        location: Location.DUMMY,
+      }),
+    ).toBe('Foo');
+    expect(
+      prettyPrintTypeParameter({
+        name: SourceId('Foo'),
+        bound: SourceBoolType(DummySourceReason),
+        associatedComments: [],
+        location: Location.DUMMY,
+      }),
+    ).toBe('Foo: bool');
   });
 
   it('type reposition test', () => {

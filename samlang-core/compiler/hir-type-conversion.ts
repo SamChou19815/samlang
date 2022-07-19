@@ -173,7 +173,7 @@ export function solveTypeArguments(
 
 export const highIRTypeApplication = (
   type: HighIRType,
-  replacementMap: Readonly<Record<string, HighIRType>>,
+  replacementMap: ReadonlyMap<string, HighIRType>,
 ): HighIRType => {
   switch (type.__type__) {
     case 'PrimitiveType':
@@ -185,7 +185,7 @@ export const highIRTypeApplication = (
           type.typeArguments.map((it) => highIRTypeApplication(it, replacementMap)),
         );
       }
-      return replacementMap[type.name] ?? type;
+      return replacementMap.get(type.name) ?? type;
     case 'FunctionType':
       return HIR_FUNCTION_TYPE(
         type.argumentTypes.map((it) => highIRTypeApplication(it, replacementMap)),
@@ -204,7 +204,7 @@ export function resolveIdentifierTypeMappings(
     return [
       highIRTypeApplication(
         closureType.functionType,
-        Object.fromEntries(zip(closureType.typeParameters, identifierType.typeArguments)),
+        new Map(zip(closureType.typeParameters, identifierType.typeArguments)),
       ),
     ];
   }
@@ -212,9 +212,7 @@ export function resolveIdentifierTypeMappings(
     getTypeDefinition(identifierType.name),
     `Missing ${identifierType.name}`,
   );
-  const replacementMap = Object.fromEntries(
-    zip(typeDefinition.typeParameters, identifierType.typeArguments),
-  );
+  const replacementMap = new Map(zip(typeDefinition.typeParameters, identifierType.typeArguments));
   return typeDefinition.mappings.map((it) => highIRTypeApplication(it, replacementMap));
 }
 

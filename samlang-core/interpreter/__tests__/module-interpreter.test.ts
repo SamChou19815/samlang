@@ -30,7 +30,9 @@ describe('module-interpreter', () => {
     name: SourceId('class', {
       location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
     }),
-    typeParameters: [SourceId('param')],
+    typeParameters: [
+      { name: SourceId('param'), bound: null, associatedComments: [], location: Location.DUMMY },
+    ],
     members: [],
     location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
@@ -51,7 +53,9 @@ describe('module-interpreter', () => {
     name: SourceId('Main', {
       location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
     }),
-    typeParameters: [SourceId('main')],
+    typeParameters: [
+      { name: SourceId('main'), bound: null, associatedComments: [], location: Location.DUMMY },
+    ],
     members: [],
     location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
@@ -71,7 +75,9 @@ describe('module-interpreter', () => {
     name: SourceId('Main', {
       location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
     }),
-    typeParameters: [SourceId('main')],
+    typeParameters: [
+      { name: SourceId('main'), bound: null, associatedComments: [], location: Location.DUMMY },
+    ],
     members: [],
     location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
@@ -95,7 +101,9 @@ describe('module-interpreter', () => {
     name: SourceId('main', {
       location: new Location(ModuleReference.DUMMY, Position(12, 34), Position(34, 45)),
     }),
-    typeParameters: [SourceId('param')],
+    typeParameters: [
+      { name: SourceId('param'), bound: null, associatedComments: [], location: Location.DUMMY },
+    ],
     type: {
       __type__: 'FunctionType',
       reason: DummySourceReason,

@@ -17,6 +17,7 @@ import {
   SourceIntType,
   SourceUnitType,
   SourceUnknownType,
+  TypeParameterSignature,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import typeCheckFunctionCall from '../function-call-type-checker';
@@ -26,7 +27,7 @@ const IdType = (id: string, typeArguments?: readonly SamlangType[]) =>
 
 function typeCheck(
   genericFunctionType: SamlangFunctionType,
-  typeParameters: readonly string[],
+  typeParameters: readonly TypeParameterSignature[],
   functionArguments: readonly SamlangExpression[],
   returnTypeHint: SamlangType | null,
 ) {
@@ -72,7 +73,11 @@ describe('function-call-type-checker', () => {
     expect(
       typeCheck(
         SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('C')], IdType('D')),
-        ['A', 'B', 'C'],
+        [
+          { name: 'A', bound: null },
+          { name: 'B', bound: null },
+          { name: 'C', bound: null },
+        ],
         [
           SourceExpressionInt(0),
           SourceExpressionIfElse({
@@ -113,7 +118,12 @@ describe('function-call-type-checker', () => {
     expect(
       typeCheck(
         SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('C')], IdType('D')),
-        ['A', 'B', 'C', 'D'],
+        [
+          { name: 'A', bound: null },
+          { name: 'B', bound: null },
+          { name: 'C', bound: null },
+          { name: 'D', bound: null },
+        ],
         [
           SourceExpressionInt(0),
           SourceExpressionStatementBlock({
@@ -145,7 +155,12 @@ describe('function-call-type-checker', () => {
     expect(
       typeCheck(
         SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('C')], IdType('D')),
-        ['A', 'B', 'C', 'D'],
+        [
+          { name: 'A', bound: null },
+          { name: 'B', bound: null },
+          { name: 'C', bound: null },
+          { name: 'D', bound: null },
+        ],
         [
           SourceExpressionInt(0),
           SourceExpressionStatementBlock({
@@ -183,7 +198,7 @@ describe('function-call-type-checker', () => {
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('D')), IdType('T')],
           SourceBoolType(DummySourceReason),
         ),
-        ['T'],
+        [{ name: 'T', bound: null }],
         [
           SourceExpressionLambda({
             type: SourceFunctionType(
@@ -214,7 +229,10 @@ describe('function-call-type-checker', () => {
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('B'))],
           SourceBoolType(DummySourceReason),
         ),
-        ['A', 'B'],
+        [
+          { name: 'A', bound: null },
+          { name: 'B', bound: null },
+        ],
         [
           SourceExpressionLambda({
             type: SourceFunctionType(
@@ -244,7 +262,10 @@ describe('function-call-type-checker', () => {
           [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('B'))],
           SourceBoolType(DummySourceReason),
         ),
-        ['A', 'B'],
+        [
+          { name: 'A', bound: null },
+          { name: 'B', bound: null },
+        ],
         [
           SourceExpressionLambda({
             type: SourceFunctionType(

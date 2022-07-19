@@ -80,7 +80,7 @@ function typeCheckInSandbox(
                   },
                   helloWorldWithTypeParameters: {
                     isPublic: false,
-                    typeParameters: ['A'],
+                    typeParameters: [{ name: 'A', bound: null }],
                     type: SourceFunctionType(
                       DummySourceReason,
                       [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A')],
@@ -96,7 +96,7 @@ function typeCheckInSandbox(
                   },
                   bazWithTypeParam: {
                     isPublic: false,
-                    typeParameters: ['A'],
+                    typeParameters: [{ name: 'A', bound: null }],
                     type: SourceFunctionType(DummySourceReason, [int], bool),
                   },
                 },
@@ -136,7 +136,7 @@ function typeCheckInSandbox(
                 methods: {},
               },
               Test3: {
-                typeParameters: ['E'],
+                typeParameters: [{ name: 'E', bound: null }],
                 typeDefinition: {
                   location: Location.DUMMY,
                   type: 'object',
@@ -154,7 +154,7 @@ function typeCheckInSandbox(
                 methods: {},
               },
               Test4: {
-                typeParameters: ['E'],
+                typeParameters: [{ name: 'E', bound: null }],
                 typeDefinition: {
                   location: Location.DUMMY,
                   type: 'variant',
@@ -171,7 +171,7 @@ function typeCheckInSandbox(
                 functions: {
                   Foo: {
                     isPublic: true,
-                    typeParameters: ['E'],
+                    typeParameters: [{ name: 'E', bound: null }],
                     type: SourceFunctionType(
                       DummySourceReason,
                       [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E')],
@@ -182,7 +182,7 @@ function typeCheckInSandbox(
                   },
                   Bar: {
                     isPublic: true,
-                    typeParameters: ['E'],
+                    typeParameters: [{ name: 'E', bound: null }],
                     type: SourceFunctionType(
                       DummySourceReason,
                       [int],

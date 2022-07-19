@@ -2,6 +2,7 @@ import { prettyPrintLiteral, TypedComment } from '../ast/common-nodes';
 import {
   IfElseExpression,
   prettyPrintType,
+  prettyPrintTypeParameter,
   SamlangExpression,
   SamlangType,
   SourceClassMemberDeclaration,
@@ -323,7 +324,7 @@ export function createPrettierDocumentsFromSamlangInterfaceMember(
     member.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
     PRETTIER_TEXT(member.isMethod ? 'method ' : 'function '),
     member.typeParameters.length > 0
-      ? PRETTIER_TEXT(`<${member.typeParameters.map((it) => it.name).join(', ')}> `)
+      ? PRETTIER_TEXT(`<${member.typeParameters.map(prettyPrintTypeParameter).join(', ')}> `)
       : PRETTIER_NIL,
     PRETTIER_TEXT(member.name.name),
     createParenthesisSurroundedDocument(

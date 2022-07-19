@@ -177,18 +177,27 @@ describe('hir-type-conversion', () => {
   });
 
   it('highIRTypeApplication works', () => {
-    expect(highIRTypeApplication(HIR_BOOL_TYPE, {})).toEqual(HIR_BOOL_TYPE);
-    expect(highIRTypeApplication(HIR_INT_TYPE, {})).toEqual(HIR_INT_TYPE);
-    expect(highIRTypeApplication(HIR_STRING_TYPE, {})).toEqual(HIR_STRING_TYPE);
+    expect(highIRTypeApplication(HIR_BOOL_TYPE, new Map())).toEqual(HIR_BOOL_TYPE);
+    expect(highIRTypeApplication(HIR_INT_TYPE, new Map())).toEqual(HIR_INT_TYPE);
+    expect(highIRTypeApplication(HIR_STRING_TYPE, new Map())).toEqual(HIR_STRING_TYPE);
 
     expect(
-      highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]), { A: HIR_INT_TYPE }),
+      highIRTypeApplication(
+        HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]),
+        new Map([['A', HIR_INT_TYPE]]),
+      ),
     ).toEqual(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]));
     expect(
-      highIRTypeApplication(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), { B: HIR_INT_TYPE }),
+      highIRTypeApplication(
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
+        new Map([['B', HIR_INT_TYPE]]),
+      ),
     ).toEqual(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'));
     expect(
-      highIRTypeApplication(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), { A: HIR_INT_TYPE }),
+      highIRTypeApplication(
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
+        new Map([['A', HIR_INT_TYPE]]),
+      ),
     ).toEqual(HIR_INT_TYPE);
 
     expect(
@@ -197,7 +206,10 @@ describe('hir-type-conversion', () => {
           [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')],
           HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
         ),
-        { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE },
+        new Map([
+          ['A', HIR_INT_TYPE],
+          ['B', HIR_BOOL_TYPE],
+        ]),
       ),
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
   });

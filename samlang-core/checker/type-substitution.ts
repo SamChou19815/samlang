@@ -5,7 +5,7 @@ import type { MemberTypeInformation } from './typing-context';
 
 export default function performTypeSubstitution(
   type: SamlangType,
-  mapping: Readonly<Record<string, SamlangType>>,
+  mapping: ReadonlyMap<string, SamlangType>,
 ): SamlangType {
   switch (type.__type__) {
     case 'UnknownType':
@@ -13,7 +13,7 @@ export default function performTypeSubstitution(
       return type;
     case 'IdentifierType':
       if (type.typeArguments.length === 0) {
-        return mapping[type.identifier] ?? type;
+        return mapping.get(type.identifier) ?? type;
       }
       return SourceIdentifierType(
         type.reason,
@@ -37,15 +37,18 @@ export function normalizeTypeInformation(
   const mappings = typeParameters.map(
     (typeParameter, i) =>
       [
-        typeParameter,
+        typeParameter.name,
         SourceIdentifierType(DummySourceReason, currentModuleReference, `_T${i}`),
       ] as const,
   );
-  const newType = performTypeSubstitution(type, Object.fromEntries(mappings));
+  const newType = performTypeSubstitution(type, new Map(mappings));
   assert(newType.__type__ === 'FunctionType');
   return {
     isPublic,
-    typeParameters: mappings.map(([, { identifier }]) => identifier),
+    typeParameters: mappings.map(([, { identifier }], i) => ({
+      name: identifier,
+      bound: typeParameters[i]?.bound ?? null,
+    })),
     type: newType,
   };
 }

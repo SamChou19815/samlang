@@ -214,7 +214,9 @@ describe('mir-toplevel-lowering', () => {
           location: Location.DUMMY,
           associatedComments: [],
           name: SourceId('Class3'),
-          typeParameters: [SourceId('T')],
+          typeParameters: [
+            { name: SourceId('T'), bound: null, associatedComments: [], location: Location.DUMMY },
+          ],
           typeDefinition: {
             location: Location.DUMMY,
             type: 'object',

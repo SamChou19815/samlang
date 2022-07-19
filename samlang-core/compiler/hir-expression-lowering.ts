@@ -170,7 +170,7 @@ class HighIRExpressionLoweringManager {
     typeArguments,
   }: HighIRIdentifierType): readonly HighIRType[] {
     const typeDefinition = checkNotNull(this.typeDefinitionMapping[name], `Missing ${name}`);
-    const replacementMap = Object.fromEntries(zip(typeDefinition.typeParameters, typeArguments));
+    const replacementMap = new Map(zip(typeDefinition.typeParameters, typeArguments));
     return typeDefinition.mappings.map((type) => highIRTypeApplication(type, replacementMap));
   }
 

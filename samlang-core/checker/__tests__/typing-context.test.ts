@@ -22,13 +22,19 @@ describe('typing-context', () => {
         {
           interfaces: {
             I: {
-              typeParameters: ['A', 'B'],
+              typeParameters: [
+                { name: 'A', bound: null },
+                { name: 'B', bound: null },
+              ],
               extendsOrImplements: null,
               functions: {},
               methods: {},
             },
             IUseNonExistent: {
-              typeParameters: ['A', 'B'],
+              typeParameters: [
+                { name: 'A', bound: null },
+                { name: 'B', bound: null },
+              ],
               extendsOrImplements: SourceIdentifierType(
                 DummySourceReason,
                 ModuleReference.DUMMY,
@@ -38,13 +44,16 @@ describe('typing-context', () => {
               methods: {},
             },
             IBase: {
-              typeParameters: ['A', 'B'],
+              typeParameters: [
+                { name: 'A', bound: null },
+                { name: 'B', bound: null },
+              ],
               extendsOrImplements: null,
               functions: {},
               methods: {
                 m1: {
                   isPublic: true,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(
                     DummySourceReason,
                     [
@@ -57,7 +66,10 @@ describe('typing-context', () => {
               },
             },
             ILevel1: {
-              typeParameters: ['A', 'B'],
+              typeParameters: [
+                { name: 'A', bound: null },
+                { name: 'B', bound: null },
+              ],
               extendsOrImplements: SourceIdentifierType(
                 DummySourceReason,
                 ModuleReference.DUMMY,
@@ -70,7 +82,7 @@ describe('typing-context', () => {
               functions: {
                 f1: {
                   isPublic: true,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(
                     DummySourceReason,
                     [
@@ -84,7 +96,10 @@ describe('typing-context', () => {
               methods: {},
             },
             ILevel2: {
-              typeParameters: ['A', 'B'],
+              typeParameters: [
+                { name: 'A', bound: null },
+                { name: 'B', bound: null },
+              ],
               extendsOrImplements: SourceIdentifierType(
                 DummySourceReason,
                 ModuleReference.DUMMY,
@@ -98,7 +113,7 @@ describe('typing-context', () => {
               methods: {
                 m2: {
                   isPublic: true,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(
                     DummySourceReason,
                     [
@@ -133,7 +148,10 @@ describe('typing-context', () => {
           },
           classes: {
             A: {
-              typeParameters: ['A', 'B'],
+              typeParameters: [
+                { name: 'A', bound: null },
+                { name: 'B', bound: null },
+              ],
               typeDefinition: {
                 location: Location.DUMMY,
                 type: 'variant',
@@ -153,19 +171,19 @@ describe('typing-context', () => {
               functions: {
                 f1: {
                   isPublic: true,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                 },
                 f2: {
                   isPublic: false,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                 },
               },
               methods: {
                 m1: {
                   isPublic: true,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(
                     DummySourceReason,
                     [
@@ -177,13 +195,16 @@ describe('typing-context', () => {
                 },
                 m2: {
                   isPublic: false,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                 },
               },
             },
             B: {
-              typeParameters: ['E', 'F'],
+              typeParameters: [
+                { name: 'E', bound: null },
+                { name: 'F', bound: null },
+              ],
               typeDefinition: {
                 location: Location.DUMMY,
                 type: 'object',
@@ -194,24 +215,24 @@ describe('typing-context', () => {
               functions: {
                 f1: {
                   isPublic: true,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                 },
                 f2: {
                   isPublic: false,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                 },
               },
               methods: {
                 m1: {
                   isPublic: true,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                 },
                 m2: {
                   isPublic: false,
-                  typeParameters: ['C'],
+                  typeParameters: [{ name: 'C', bound: null }],
                   type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
                 },
               },
@@ -259,7 +280,7 @@ describe('typing-context', () => {
       functions: {
         f1: {
           isPublic: true,
-          typeParameters: ['C'],
+          typeParameters: [{ name: 'C', bound: null }],
           type: SourceFunctionType(
             DummySourceReason,
             [
@@ -273,7 +294,7 @@ describe('typing-context', () => {
       methods: {
         m1: {
           isPublic: true,
-          typeParameters: ['C'],
+          typeParameters: [{ name: 'C', bound: null }],
           type: SourceFunctionType(
             DummySourceReason,
             [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
@@ -282,7 +303,7 @@ describe('typing-context', () => {
         },
         m2: {
           isPublic: true,
-          typeParameters: ['C'],
+          typeParameters: [{ name: 'C', bound: null }],
           type: SourceFunctionType(
             DummySourceReason,
             [
@@ -360,7 +381,7 @@ describe('typing-context', () => {
         [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
         SourceIntType(DummySourceReason),
       ),
-      typeParameters: ['C'],
+      typeParameters: [{ name: 'C', bound: null }],
     });
 
     context.getCurrentClassTypeDefinition();

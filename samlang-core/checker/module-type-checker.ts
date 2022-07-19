@@ -21,7 +21,7 @@ function typeCheckMemberDeclaration(
   const localTypingContext = new LocationBasedLocalTypingContext(ssaResult, thisType);
   const contextWithAdditionalTypeParameters =
     accessibleGlobalTypingContext.withAdditionalTypeParameters(
-      memberDeclaration.typeParameters.map((it) => it.name),
+      memberDeclaration.typeParameters.map((it) => it.name.name),
     );
   memberDeclaration.parameters.forEach((parameter) => {
     localTypingContext.write(parameter.nameLocation, parameter.type);

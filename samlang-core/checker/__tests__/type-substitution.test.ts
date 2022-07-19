@@ -23,13 +23,13 @@ describe('type-substitution', () => {
           ],
           SourceIntType(DummySourceReason),
         ),
-        {
-          A: SourceIntType(DummySourceReason),
-          B: SourceIntType(DummySourceReason),
-          C: SourceIntType(DummySourceReason),
-          D: SourceIntType(DummySourceReason),
-          E: SourceIntType(DummySourceReason),
-        },
+        new Map([
+          ['A', SourceIntType(DummySourceReason)],
+          ['B', SourceIntType(DummySourceReason)],
+          ['C', SourceIntType(DummySourceReason)],
+          ['D', SourceIntType(DummySourceReason)],
+          ['E', SourceIntType(DummySourceReason)],
+        ]),
       ),
     ).toEqual(
       SourceFunctionType(
@@ -56,7 +56,7 @@ describe('type-substitution', () => {
     expect(
       normalizeTypeInformation(ModuleReference.DUMMY, {
         isPublic: true,
-        typeParameters: ['A'],
+        typeParameters: [{ name: 'A', bound: null }],
         type: SourceFunctionType(
           DummySourceReason,
           [SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [])],
@@ -65,7 +65,29 @@ describe('type-substitution', () => {
       }),
     ).toEqual({
       isPublic: true,
-      typeParameters: ['_T0'],
+      typeParameters: [{ name: '_T0', bound: null }],
+      type: SourceFunctionType(
+        DummySourceReason,
+        [SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, '_T0', [])],
+        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, '_T0', []),
+      ),
+    });
+  });
+
+  it('normalizeTypeInformation with bounds works', () => {
+    expect(
+      normalizeTypeInformation(ModuleReference.DUMMY, {
+        isPublic: true,
+        typeParameters: [{ name: 'A', bound: SourceIntType(DummySourceReason) }],
+        type: SourceFunctionType(
+          DummySourceReason,
+          [SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [])],
+          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', []),
+        ),
+      }),
+    ).toEqual({
+      isPublic: true,
+      typeParameters: [{ name: '_T0', bound: SourceIntType(DummySourceReason) }],
       type: SourceFunctionType(
         DummySourceReason,
         [SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, '_T0', [])],

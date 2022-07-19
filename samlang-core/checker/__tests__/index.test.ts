@@ -306,8 +306,9 @@ class G : Baz2<string, bool> { // same as E, but different tparams, OK
   method <TD> m1(a: int, b: int): TD = Builtins.panic("")
   function <TA1, TB1, TD> f1(a: TA1, b: TB1): TD = Builtins.panic("")
   method <TD> m2(a: string, b: bool): TD = Builtins.panic("")
+  method <TE: int> unrelated(): unit = {}
 }
-class Z : DumDum {}
+class Z<T: int> : DumDum {} // error
 interface Cyclic1 : Cyclic2 {} // error: cyclic
 interface Cyclic2 : Cyclic3 {} // error: cyclic
 interface Cyclic3 : Cyclic1 {} // error: cyclic
@@ -335,11 +336,11 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       'A.sam:32:3-32:64: [UnexpectedType]: Expected: `(int, int) -> _T0`, actual: `(string, string) -> _T0`.',
       'A.sam:33:3-33:74: [UnexpectedType]: Expected: `(_T0, _T1) -> _T2`, actual: `(string, string) -> _T2`.',
       'A.sam:34:3-34:64: [UnexpectedType]: Expected: `(string, bool) -> _T0`, actual: `(string, string) -> _T0`.',
-      'A.sam:41:11-41:17: [UnresolvedName]: Name `DumDum` is not resolved.',
-      'A.sam:42:21-42:28: [CyclicTypeDefinition]: Type `Cyclic2` has a cyclic definition.',
-      'A.sam:43:21-43:28: [CyclicTypeDefinition]: Type `Cyclic3` has a cyclic definition.',
-      'A.sam:44:21-44:28: [CyclicTypeDefinition]: Type `Cyclic1` has a cyclic definition.',
-      'A.sam:45:21-45:28: [CyclicTypeDefinition]: Type `Cyclic4` has a cyclic definition.',
+      'A.sam:42:19-42:25: [UnresolvedName]: Name `DumDum` is not resolved.',
+      'A.sam:43:21-43:28: [CyclicTypeDefinition]: Type `Cyclic2` has a cyclic definition.',
+      'A.sam:44:21-44:28: [CyclicTypeDefinition]: Type `Cyclic3` has a cyclic definition.',
+      'A.sam:45:21-45:28: [CyclicTypeDefinition]: Type `Cyclic1` has a cyclic definition.',
+      'A.sam:46:21-46:28: [CyclicTypeDefinition]: Type `Cyclic4` has a cyclic definition.',
       'A.sam:8:1-8:17: [MissingDefinitions]: Missing definitions for [a, b].',
     ]);
   });

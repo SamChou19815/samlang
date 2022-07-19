@@ -16,6 +16,7 @@ import {
   SourceInterfaceDeclaration,
   SourceUnknownType,
   TypeDefinition,
+  TypeParameterSignature,
   typeReposition,
 } from '../ast/samlang-nodes';
 import { assert, checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
@@ -24,7 +25,7 @@ import performTypeSubstitution from './type-substitution';
 
 export interface MemberTypeInformation {
   readonly isPublic: boolean;
-  readonly typeParameters: readonly string[];
+  readonly typeParameters: readonly TypeParameterSignature[];
   readonly type: SamlangFunctionType;
 }
 
@@ -39,7 +40,7 @@ interface InterfaceTypingContextInstantiatedNodes
 }
 
 export interface InterfaceTypingContext extends InterfaceTypingContextInstantiatedNodes {
-  readonly typeParameters: readonly string[];
+  readonly typeParameters: readonly TypeParameterSignature[];
 }
 
 export interface ClassTypingContext extends InterfaceTypingContext {
@@ -70,7 +71,7 @@ export class AccessibleGlobalTypingContext {
     return new AccessibleGlobalTypingContext(
       currentModuleReference,
       globalTypingContext,
-      new Set(interfaceDeclaration.typeParameters.map((it) => it.name)),
+      new Set(interfaceDeclaration.typeParameters.map(({ name: { name } }) => name)),
       interfaceDeclaration.name.name,
     );
   }
@@ -147,8 +148,11 @@ export class AccessibleGlobalTypingContext {
     interfaceContext: InterfaceTypingContext,
     instantiatedInterfaceType: SamlangIdentifierType,
   ): InterfaceTypingContextInstantiatedNodes {
-    const mapping = Object.fromEntries(
-      zip(interfaceContext.typeParameters, instantiatedInterfaceType.typeArguments),
+    const mapping = new Map(
+      zip(
+        interfaceContext.typeParameters.map((it) => it.name),
+        instantiatedInterfaceType.typeArguments,
+      ),
     );
     return {
       functions: interfaceContext.functions,
@@ -214,7 +218,12 @@ export class AccessibleGlobalTypingContext {
     const classTypeParameters = relaventClass.typeParameters;
     const partiallyFixedType = performTypeSubstitution(
       typeInfo.type,
-      Object.fromEntries(zip(classTypeParameters, classTypeArguments)),
+      new Map(
+        zip(
+          classTypeParameters.map((it) => it.name),
+          classTypeArguments,
+        ),
+      ),
     );
     assert(partiallyFixedType.__type__ === 'FunctionType');
     return {
@@ -225,7 +234,10 @@ export class AccessibleGlobalTypingContext {
   }
 
   getCurrentClassTypeDefinition(): TypeDefinition & {
-    readonly classTypeParameters: readonly string[];
+    readonly classTypeParameters: readonly {
+      readonly name: string;
+      readonly bound: SamlangType | null;
+    }[];
   } {
     const classTypingContext = checkNotNull(
       this.getClassTypeInformation(this.currentModuleReference, this.currentClass),
@@ -287,7 +299,12 @@ export class AccessibleGlobalTypingContext {
               isPublic: fieldType.isPublic,
               type: performTypeSubstitution(
                 fieldType.type,
-                Object.fromEntries(zip(classTypeParameters, typeArguments)),
+                new Map(
+                  zip(
+                    classTypeParameters.map((it) => it.name),
+                    typeArguments,
+                  ),
+                ),
               ),
             },
           ];
@@ -305,7 +322,7 @@ export class AccessibleGlobalTypingContext {
       this.currentModuleReference,
       this.currentClass,
       currentClassTypingContext.typeParameters.map((it) =>
-        SourceIdentifierType(DummySourceReason, this.currentModuleReference, it),
+        SourceIdentifierType(DummySourceReason, this.currentModuleReference, it.name),
       ),
     );
   }
