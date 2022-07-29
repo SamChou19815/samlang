@@ -585,7 +585,7 @@ export default class SamlangModuleParser extends BaseParser {
     let bound: SamlangType | null = null;
     if (this.peek().content === ':') {
       this.consume();
-      bound = this.parseType();
+      bound = this.parseIdentifierType(this.parseUpperId());
     }
     const location = bound != null ? name.location.union(bound.reason.useLocation) : name.location;
     return {

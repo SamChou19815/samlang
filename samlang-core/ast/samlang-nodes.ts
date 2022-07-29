@@ -590,7 +590,7 @@ export interface SourceAnnotatedVariable {
 export interface SourceTypeParameter extends Node {
   readonly associatedComments: readonly TypedComment[];
   readonly name: SourceIdentifier;
-  readonly bound: SamlangType | null;
+  readonly bound: SamlangIdentifierType | null;
 }
 
 export function prettyPrintTypeParameter({ name, bound }: SourceTypeParameter): string {
