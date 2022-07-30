@@ -162,7 +162,7 @@ describe('samlang-core/parser', () => {
     }
 
     class TypeInference {
-      function <T: int> notAnnotated(): unit = {
+      function <T: Int> notAnnotated(): unit = {
         val _ = (a, b, c) -> if a(b + 1) then b else c;
       }
       // Read the docs to see how we do the type inference.

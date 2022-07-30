@@ -306,9 +306,9 @@ class G : Baz2<string, bool> { // same as E, but different tparams, OK
   method <TD> m1(a: int, b: int): TD = Builtins.panic("")
   function <TA1, TB1, TD> f1(a: TA1, b: TB1): TD = Builtins.panic("")
   method <TD> m2(a: string, b: bool): TD = Builtins.panic("")
-  method <TE: int> unrelated(): unit = {}
+  method <TE: Foo> unrelated(): unit = {}
 }
-class Z<T: int> : DumDum {} // error
+class Z<T: Foo> : DumDum {} // error
 interface Cyclic1 : Cyclic2 {} // error: cyclic
 interface Cyclic2 : Cyclic3 {} // error: cyclic
 interface Cyclic3 : Cyclic1 {} // error: cyclic

@@ -83,11 +83,11 @@ describe('samlang-nodes', () => {
     expect(
       prettyPrintTypeParameter({
         name: SourceId('Foo'),
-        bound: SourceBoolType(DummySourceReason),
+        bound: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar'),
         associatedComments: [],
         location: Location.DUMMY,
       }),
-    ).toBe('Foo: bool');
+    ).toBe('Foo: Bar');
   });
 
   it('type reposition test', () => {
