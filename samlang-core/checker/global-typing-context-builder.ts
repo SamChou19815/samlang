@@ -22,17 +22,17 @@ import type { DefaultBuiltinClasses } from '../parser';
 import { checkNotNull } from '../utils';
 import type {
   ClassTypingContext,
-  GlobalTypingContext,
   MemberTypeInformation,
   ModuleTypingContext,
+  UnoptimizedGlobalTypingContext,
 } from './typing-context';
 
 function buildInterfaceTypingContext(
   moduleReference: ModuleReference,
   { typeParameters, members, extendsOrImplementsNode }: SourceInterfaceDeclaration,
 ) {
-  const functions: Record<string, MemberTypeInformation> = {};
-  const methods: Record<string, MemberTypeInformation> = {};
+  const functions = new Map<string, MemberTypeInformation>();
+  const methods = new Map<string, MemberTypeInformation>();
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
     const typeInformation = {
       isPublic,
@@ -40,9 +40,9 @@ function buildInterfaceTypingContext(
       type,
     };
     if (isMethod) {
-      methods[name.name] = typeInformation;
+      methods.set(name.name, typeInformation);
     } else {
-      functions[name.name] = typeInformation;
+      functions.set(name.name, typeInformation);
     }
   });
   return {
@@ -77,7 +77,7 @@ function buildClassTypingContext(
   const { typeDefinition } = classDefinition;
   const typeDefinitionReason = SourceReason(typeDefinition.location, typeDefinition.location);
   if (typeDefinition.type === 'object') {
-    functions.init = {
+    functions.set('init', {
       isPublic: true,
       typeParameters,
       type: SourceFunctionType(
@@ -85,14 +85,14 @@ function buildClassTypingContext(
         typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it.name]).type),
         classType,
       ),
-    };
+    });
   } else {
     Object.entries(typeDefinition.mappings).forEach(([tag, { type }]) => {
-      functions[tag] = {
+      functions.set(tag, {
         isPublic: true,
         typeParameters,
         type: SourceFunctionType(typeDefinitionReason, [type], classType),
-      };
+      });
     });
   }
   return {
@@ -109,13 +109,13 @@ function buildModuleTypingContext(
   samlangModule: SamlangModule,
 ): ModuleTypingContext {
   return {
-    interfaces: Object.fromEntries(
+    interfaces: new Map(
       samlangModule.interfaces.map((declaration) => [
         declaration.name.name,
         buildInterfaceTypingContext(moduleReference, declaration),
       ]),
     ),
-    classes: Object.fromEntries(
+    classes: new Map(
       samlangModule.classes.map((declaration) => [
         declaration.name.name,
         buildClassTypingContext(moduleReference, declaration),
@@ -125,56 +125,71 @@ function buildModuleTypingContext(
 }
 
 export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
-  readonly interfaces: Readonly<Record<never, ClassTypingContext>>;
-  readonly classes: Readonly<Record<DefaultBuiltinClasses, ClassTypingContext>>;
+  readonly interfaces: ReadonlyMap<string, ClassTypingContext>;
+  readonly classes: ReadonlyMap<DefaultBuiltinClasses, ClassTypingContext>;
 } = {
-  interfaces: {},
-  classes: {
-    Builtins: {
-      typeParameters: [],
-      typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
-      extendsOrImplements: null,
-      functions: {
-        stringToInt: {
-          isPublic: true,
-          typeParameters: [],
-          type: SourceFunctionType(
-            BuiltinReason,
-            [SourceStringType(BuiltinReason)],
-            SourceIntType(BuiltinReason),
-          ),
-        },
-        intToString: {
-          isPublic: true,
-          typeParameters: [],
-          type: SourceFunctionType(
-            BuiltinReason,
-            [SourceIntType(BuiltinReason)],
-            SourceStringType(BuiltinReason),
-          ),
-        },
-        println: {
-          isPublic: true,
-          typeParameters: [],
-          type: SourceFunctionType(
-            BuiltinReason,
-            [SourceStringType(BuiltinReason)],
-            SourceUnitType(BuiltinReason),
-          ),
-        },
-        panic: {
-          isPublic: true,
-          typeParameters: [{ name: 'T', bound: null }],
-          type: SourceFunctionType(
-            BuiltinReason,
-            [SourceStringType(BuiltinReason)],
-            SourceIdentifierType(BuiltinReason, ModuleReference.ROOT, 'T'),
-          ),
-        },
+  interfaces: new Map(),
+  classes: new Map([
+    [
+      'Builtins',
+      {
+        typeParameters: [],
+        typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
+        extendsOrImplements: null,
+        functions: new Map([
+          [
+            'stringToInt',
+            {
+              isPublic: true,
+              typeParameters: [],
+              type: SourceFunctionType(
+                BuiltinReason,
+                [SourceStringType(BuiltinReason)],
+                SourceIntType(BuiltinReason),
+              ),
+            },
+          ],
+          [
+            'intToString',
+            {
+              isPublic: true,
+              typeParameters: [],
+              type: SourceFunctionType(
+                BuiltinReason,
+                [SourceIntType(BuiltinReason)],
+                SourceStringType(BuiltinReason),
+              ),
+            },
+          ],
+          [
+            'println',
+            {
+              isPublic: true,
+              typeParameters: [],
+              type: SourceFunctionType(
+                BuiltinReason,
+                [SourceStringType(BuiltinReason)],
+                SourceUnitType(BuiltinReason),
+              ),
+            },
+          ],
+          [
+            'panic',
+            {
+              isPublic: true,
+              typeParameters: [{ name: 'T', bound: null }],
+              type: SourceFunctionType(
+                BuiltinReason,
+                [SourceStringType(BuiltinReason)],
+                SourceIdentifierType(BuiltinReason, ModuleReference.ROOT, 'T'),
+              ),
+            },
+          ],
+        ]),
+        methods: new Map(),
       },
-      methods: {},
-    },
-  },
+    ],
+  ]),
 };
 
 /**
@@ -186,7 +201,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
 export function buildGlobalTypingContext(
   sources: Sources<SamlangModule>,
   builtinModuleTypes: ModuleTypingContext,
-): GlobalTypingContext {
+): UnoptimizedGlobalTypingContext {
   const modules = ModuleReferenceCollections.hashMapOf<ModuleTypingContext>();
   modules.set(ModuleReference.ROOT, builtinModuleTypes);
   sources.forEach((samlangModule, moduleReference) => {
@@ -204,7 +219,7 @@ export function buildGlobalTypingContext(
  * (It can be a conservative estimate. You can send more, but not less.)
  */
 export function updateGlobalTypingContext(
-  globalTypingContext: GlobalTypingContext,
+  globalTypingContext: UnoptimizedGlobalTypingContext,
   sources: Sources<SamlangModule>,
   potentiallyAffectedModuleReferences: readonly ModuleReference[],
 ): void {

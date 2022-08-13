@@ -19,14 +19,14 @@ import {
 } from './module-references-collector';
 import typeCheckSamlangModule from './module-type-checker';
 import type {
-  GlobalTypingContext,
   MemberTypeInformation,
   ModuleTypingContext,
+  UnoptimizedGlobalTypingContext,
 } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
 
 export { DEFAULT_BUILTIN_TYPING_CONTEXT };
-export type { GlobalTypingContext, MemberTypeInformation };
+export type { UnoptimizedGlobalTypingContext as GlobalTypingContext, MemberTypeInformation };
 
 export function collectModuleReferenceFromSamlangModule(
   samlangModule: SamlangModule,
@@ -106,7 +106,7 @@ export class DependencyTracker {
 
 function typeCheckModule(
   sources: Sources<SamlangModule>,
-  globalTypingContext: GlobalTypingContext,
+  globalTypingContext: UnoptimizedGlobalTypingContext,
   moduleReference: ModuleReference,
   samlangModule: SamlangModule,
   errorCollector: ReadonlyGlobalErrorCollector,
@@ -126,7 +126,7 @@ export function typeCheckSources(
   sources: Sources<SamlangModule>,
   errorCollector: ReadonlyGlobalErrorCollector,
   builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT,
-): readonly [Sources<SamlangModule>, GlobalTypingContext] {
+): readonly [Sources<SamlangModule>, UnoptimizedGlobalTypingContext] {
   const globalTypingContext = buildGlobalTypingContext(sources, builtinModuleTypes);
   checkSourcesInterfaceConformance(sources, globalTypingContext, errorCollector.getErrorReporter());
   const checkedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();
@@ -141,7 +141,7 @@ export function typeCheckSources(
 
 type TypeCheckSourceHandlesResult = {
   readonly checkedSources: Sources<SamlangModule>;
-  readonly globalTypingContext: GlobalTypingContext;
+  readonly globalTypingContext: UnoptimizedGlobalTypingContext;
   readonly compileTimeErrors: readonly CompileTimeError[];
 };
 
@@ -164,7 +164,7 @@ export function typeCheckSourceHandles(
 
 export function typeCheckSourcesIncrementally(
   sources: Sources<SamlangModule>,
-  globalTypingContext: GlobalTypingContext,
+  globalTypingContext: UnoptimizedGlobalTypingContext,
   affectedSourceList: readonly ModuleReference[],
   errorCollector: ReadonlyGlobalErrorCollector,
 ): Sources<SamlangModule> {

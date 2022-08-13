@@ -30,8 +30,8 @@ export interface MemberTypeInformation {
 }
 
 export interface InterfaceTypingContextInstantiatedMembers {
-  readonly functions: Readonly<Record<string, MemberTypeInformation>>;
-  readonly methods: Readonly<Record<string, MemberTypeInformation>>;
+  readonly functions: ReadonlyMap<string, MemberTypeInformation>;
+  readonly methods: ReadonlyMap<string, MemberTypeInformation>;
 }
 
 interface InterfaceTypingContextInstantiatedNodes
@@ -48,24 +48,27 @@ export interface ClassTypingContext extends InterfaceTypingContext {
 }
 
 export interface ModuleTypingContext {
-  readonly interfaces: Readonly<Record<string, InterfaceTypingContext>>;
-  readonly classes: Readonly<Record<string, ClassTypingContext>>;
+  readonly interfaces: ReadonlyMap<string, InterfaceTypingContext>;
+  readonly classes: ReadonlyMap<string, ClassTypingContext>;
 }
 
-export type GlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
-export type ReadonlyGlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
+export type UnoptimizedGlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
+export type ReadonlyUnoptimizedGlobalTypingContext = ReadonlyHashMap<
+  ModuleReference,
+  ModuleTypingContext
+>;
 
 export class AccessibleGlobalTypingContext {
   constructor(
     public readonly currentModuleReference: ModuleReference,
-    private readonly globalTypingContext: ReadonlyGlobalTypingContext,
+    private readonly globalTypingContext: ReadonlyUnoptimizedGlobalTypingContext,
     public readonly typeParameters: ReadonlySet<string>,
     public readonly currentClass: string,
   ) {}
 
   static fromInterface(
     currentModuleReference: ModuleReference,
-    globalTypingContext: ReadonlyGlobalTypingContext,
+    globalTypingContext: ReadonlyUnoptimizedGlobalTypingContext,
     interfaceDeclaration: SourceInterfaceDeclaration,
   ): AccessibleGlobalTypingContext {
     return new AccessibleGlobalTypingContext(
@@ -80,7 +83,7 @@ export class AccessibleGlobalTypingContext {
     moduleReference: ModuleReference,
     className: string,
   ): InterfaceTypingContext | undefined {
-    return this.globalTypingContext.get(moduleReference)?.interfaces[className];
+    return this.globalTypingContext.get(moduleReference)?.interfaces?.get(className);
   }
 
   getFullyInlinedInterfaceContext(instantiatedInterfaceType: SamlangIdentifierType): {
@@ -92,7 +95,7 @@ export class AccessibleGlobalTypingContext {
       instantiatedInterfaceType.identifier,
     );
     if (interfaceTypingContext == null) {
-      return { context: { functions: {}, methods: {} }, cyclicType: null };
+      return { context: { functions: new Map(), methods: new Map() }, cyclicType: null };
     }
     const collector: InterfaceTypingContextInstantiatedMembers[] = [];
     const cyclicType = this.recursiveComputeInterfaceMembersChain(
@@ -100,17 +103,13 @@ export class AccessibleGlobalTypingContext {
       collector,
       ModuleReferenceCollections.hashMapOf(),
     );
-    const functions: Record<string, MemberTypeInformation> = {};
-    const methods: Record<string, MemberTypeInformation> = {};
+    const functions = new Map<string, MemberTypeInformation>();
+    const methods = new Map<string, MemberTypeInformation>();
     collector.forEach((it) => {
       // Shadowing is allowed, as long as type matches.
       // Conformance will be checked in interface-conformance-checking.ts
-      Object.entries(it.functions).forEach(([name, type]) => {
-        functions[name] = type;
-      });
-      Object.entries(it.methods).forEach(([name, type]) => {
-        methods[name] = type;
-      });
+      it.functions.forEach((type, name) => functions.set(name, type));
+      it.methods.forEach((type, name) => methods.set(name, type));
     });
     return { context: { functions, methods }, cyclicType };
   }
@@ -156,8 +155,8 @@ export class AccessibleGlobalTypingContext {
     );
     return {
       functions: interfaceContext.functions,
-      methods: Object.fromEntries(
-        Object.entries(interfaceContext.methods).map(
+      methods: new Map(
+        Array.from(interfaceContext.methods.entries()).map(
           ([name, { isPublic, typeParameters, type }]) => [
             name,
             {
@@ -182,7 +181,7 @@ export class AccessibleGlobalTypingContext {
     moduleReference: ModuleReference,
     className: string,
   ): ClassTypingContext | undefined {
-    return this.globalTypingContext.get(moduleReference)?.classes[className];
+    return this.globalTypingContext.get(moduleReference)?.classes?.get(className);
   }
 
   getClassFunctionType(
@@ -191,7 +190,9 @@ export class AccessibleGlobalTypingContext {
     member: string,
     useLocation: Location,
   ): MemberTypeInformation | null {
-    const typeInfo = this.getClassTypeInformation(moduleReference, className)?.functions?.[member];
+    const typeInfo = this.getClassTypeInformation(moduleReference, className)?.functions?.get(
+      member,
+    );
     if (typeInfo == null) return null;
     if (
       !typeInfo.isPublic &&
@@ -213,7 +214,7 @@ export class AccessibleGlobalTypingContext {
   ): MemberTypeInformation | null {
     const relaventClass = this.getClassTypeInformation(moduleReference, className);
     if (relaventClass == null) return null;
-    const typeInfo = relaventClass.methods?.[methodName];
+    const typeInfo = relaventClass.methods?.get(methodName);
     if (typeInfo == null || (!typeInfo.isPublic && className !== this.currentClass)) return null;
     const classTypeParameters = relaventClass.typeParameters;
     const partiallyFixedType = performTypeSubstitution(

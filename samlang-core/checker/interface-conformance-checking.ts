@@ -10,9 +10,9 @@ import type { GlobalErrorReporter } from '../errors';
 import performTypeSubstitution from './type-substitution';
 import {
   AccessibleGlobalTypingContext,
-  GlobalTypingContext,
   InterfaceTypingContextInstantiatedMembers,
   MemberTypeInformation,
+  UnoptimizedGlobalTypingContext,
 } from './typing-context';
 
 function checkClassMemberConformance(
@@ -63,7 +63,7 @@ function checkSingleInterfaceConformance(
 ) {
   const actualMembersMap = new Map(actual.members.map((member) => [member.name.name, member]));
   const missingMembers: string[] = [];
-  Object.entries(expected.functions).forEach(([name, expectedMember]) => {
+  Array.from(expected.functions.entries()).forEach(([name, expectedMember]) => {
     const actualMember = actualMembersMap.get(name);
     if (actualMember == null) {
       missingMembers.push(name);
@@ -71,7 +71,7 @@ function checkSingleInterfaceConformance(
     }
     checkClassMemberConformance(false, expectedMember, actualMember, errorReporter);
   });
-  Object.entries(expected.methods).forEach(([name, expectedMember]) => {
+  Array.from(expected.methods.entries()).forEach(([name, expectedMember]) => {
     const actualMember = actualMembersMap.get(name);
     if (actualMember == null) {
       missingMembers.push(name);
@@ -100,7 +100,7 @@ function checkModuleMemberInterfaceConformance(
 
 export default function checkSourcesInterfaceConformance(
   sources: Sources<SamlangModule>,
-  globalTypingContext: GlobalTypingContext,
+  globalTypingContext: UnoptimizedGlobalTypingContext,
   errorReporter: GlobalErrorReporter,
 ): void {
   sources.forEach((samlangModule, moduleReference) => {
