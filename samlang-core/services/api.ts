@@ -416,7 +416,7 @@ class LanguageServicesImpl implements LanguageServices {
         expression.className.name,
       );
       if (relevantClassType == null) return [];
-      return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
+      return Array.from(relevantClassType.functions.entries(), ([name, typeInformation]) => {
         return LanguageServicesImpl.getCompletionResultFromTypeInformation(
           name,
           typeInformation,
@@ -451,7 +451,7 @@ class LanguageServicesImpl implements LanguageServices {
         });
       });
     }
-    Object.entries(relevantClassType.methods).forEach(([name, typeInformation]) => {
+    Array.from(relevantClassType.methods.entries()).forEach(([name, typeInformation]) => {
       if (isInsideClass || typeInformation.isPublic) {
         completionResults.push(
           LanguageServicesImpl.getCompletionResultFromTypeInformation(
@@ -469,7 +469,7 @@ class LanguageServicesImpl implements LanguageServices {
     moduleReference: ModuleReference,
     className: string,
   ): ClassTypingContext | undefined {
-    return this.state.globalTypingContext.get(moduleReference)?.classes[className];
+    return this.state.globalTypingContext.get(moduleReference)?.classes?.get(className);
   }
 
   private static getCompletionResultFromTypeInformation(

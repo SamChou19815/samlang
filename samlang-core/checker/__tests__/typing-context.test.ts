@@ -11,7 +11,7 @@ import {
   SourceIntType,
 } from '../../ast/samlang-nodes';
 import { checkNotNull } from '../../utils';
-import { AccessibleGlobalTypingContext } from '../typing-context';
+import { AccessibleGlobalTypingContext, ClassTypingContext } from '../typing-context';
 
 describe('typing-context', () => {
   it('AccessibleGlobalTypingContext tests', () => {
@@ -20,224 +20,312 @@ describe('typing-context', () => {
       ModuleReferenceCollections.hashMapOf([
         ModuleReference.DUMMY,
         {
-          interfaces: {
-            I: {
-              typeParameters: [
-                { name: 'A', bound: null },
-                { name: 'B', bound: null },
-              ],
-              extendsOrImplements: null,
-              functions: {},
-              methods: {},
-            },
-            IUseNonExistent: {
-              typeParameters: [
-                { name: 'A', bound: null },
-                { name: 'B', bound: null },
-              ],
-              extendsOrImplements: SourceIdentifierType(
-                DummySourceReason,
-                ModuleReference.DUMMY,
-                'not_exist',
-              ),
-              functions: {},
-              methods: {},
-            },
-            IBase: {
-              typeParameters: [
-                { name: 'A', bound: null },
-                { name: 'B', bound: null },
-              ],
-              extendsOrImplements: null,
-              functions: {},
-              methods: {
-                m1: {
-                  isPublic: true,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(
-                    DummySourceReason,
-                    [
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                    ],
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-                  ),
-                },
-              },
-            },
-            ILevel1: {
-              typeParameters: [
-                { name: 'A', bound: null },
-                { name: 'B', bound: null },
-              ],
-              extendsOrImplements: SourceIdentifierType(
-                DummySourceReason,
-                ModuleReference.DUMMY,
-                'IBase',
-                [
-                  SourceIntType(DummySourceReason),
-                  SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+          interfaces: new Map([
+            [
+              'I',
+              {
+                typeParameters: [
+                  { name: 'A', bound: null },
+                  { name: 'B', bound: null },
                 ],
-              ),
-              functions: {
-                f1: {
-                  isPublic: true,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(
-                    DummySourceReason,
-                    [
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                    ],
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-                  ),
-                },
+                extendsOrImplements: null,
+                functions: new Map(),
+                methods: new Map(),
               },
-              methods: {},
-            },
-            ILevel2: {
-              typeParameters: [
-                { name: 'A', bound: null },
-                { name: 'B', bound: null },
-              ],
-              extendsOrImplements: SourceIdentifierType(
-                DummySourceReason,
-                ModuleReference.DUMMY,
-                'ILevel1',
-                [
-                  SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                  SourceIntType(DummySourceReason),
+            ],
+            [
+              'IUseNonExistent',
+              {
+                typeParameters: [
+                  { name: 'A', bound: null },
+                  { name: 'B', bound: null },
                 ],
-              ),
-              functions: {},
-              methods: {
-                m2: {
-                  isPublic: true,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(
-                    DummySourceReason,
-                    [
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                    ],
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-                  ),
-                },
+                extendsOrImplements: SourceIdentifierType(
+                  DummySourceReason,
+                  ModuleReference.DUMMY,
+                  'not_exist',
+                ),
+                functions: new Map(),
+                methods: new Map(),
               },
-            },
-            ICyclic1: {
-              typeParameters: [],
-              extendsOrImplements: SourceIdentifierType(
-                DummySourceReason,
-                ModuleReference.DUMMY,
-                'ICyclic2',
-              ),
-              functions: {},
-              methods: {},
-            },
-            ICyclic2: {
-              typeParameters: [],
-              extendsOrImplements: SourceIdentifierType(
-                DummySourceReason,
-                ModuleReference.DUMMY,
-                'ICyclic1',
-              ),
-              functions: {},
-              methods: {},
-            },
-          },
-          classes: {
-            A: {
-              typeParameters: [
-                { name: 'A', bound: null },
-                { name: 'B', bound: null },
-              ],
-              typeDefinition: {
-                location: Location.DUMMY,
-                type: 'variant',
-                names: [SourceId('a'), SourceId('b')],
-                mappings: {
-                  a: {
-                    isPublic: true,
-                    type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                  },
-                  b: {
-                    isPublic: false,
-                    type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                  },
-                },
+            ],
+            [
+              'IBase',
+              {
+                typeParameters: [
+                  { name: 'A', bound: null },
+                  { name: 'B', bound: null },
+                ],
+                extendsOrImplements: null,
+                functions: new Map(),
+                methods: new Map([
+                  [
+                    'm1',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [
+                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                        ],
+                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+                      ),
+                    },
+                  ],
+                ]),
               },
-              extendsOrImplements: null,
-              functions: {
-                f1: {
-                  isPublic: true,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-                },
-                f2: {
-                  isPublic: false,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-                },
-              },
-              methods: {
-                m1: {
-                  isPublic: true,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(
-                    DummySourceReason,
-                    [
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                    ],
+            ],
+            [
+              'ILevel1',
+              {
+                typeParameters: [
+                  { name: 'A', bound: null },
+                  { name: 'B', bound: null },
+                ],
+                extendsOrImplements: SourceIdentifierType(
+                  DummySourceReason,
+                  ModuleReference.DUMMY,
+                  'IBase',
+                  [
                     SourceIntType(DummySourceReason),
-                  ),
-                },
-                m2: {
-                  isPublic: false,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-                },
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                  ],
+                ),
+                functions: new Map([
+                  [
+                    'f1',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [
+                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                        ],
+                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+                      ),
+                    },
+                  ],
+                ]),
+                methods: new Map(),
               },
-            },
-            B: {
-              typeParameters: [
-                { name: 'E', bound: null },
-                { name: 'F', bound: null },
-              ],
-              typeDefinition: {
-                location: Location.DUMMY,
-                type: 'object',
-                names: [],
-                mappings: {},
+            ],
+            [
+              'ILevel2',
+              {
+                typeParameters: [
+                  { name: 'A', bound: null },
+                  { name: 'B', bound: null },
+                ],
+                extendsOrImplements: SourceIdentifierType(
+                  DummySourceReason,
+                  ModuleReference.DUMMY,
+                  'ILevel1',
+                  [
+                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                    SourceIntType(DummySourceReason),
+                  ],
+                ),
+                functions: new Map(),
+                methods: new Map([
+                  [
+                    'm2',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [
+                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                        ],
+                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+                      ),
+                    },
+                  ],
+                ]),
               },
-              extendsOrImplements: null,
-              functions: {
-                f1: {
-                  isPublic: true,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-                },
-                f2: {
-                  isPublic: false,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-                },
+            ],
+            [
+              'ICyclic1',
+              {
+                typeParameters: [],
+                extendsOrImplements: SourceIdentifierType(
+                  DummySourceReason,
+                  ModuleReference.DUMMY,
+                  'ICyclic2',
+                ),
+                functions: new Map(),
+                methods: new Map(),
               },
-              methods: {
-                m1: {
-                  isPublic: true,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-                },
-                m2: {
-                  isPublic: false,
-                  typeParameters: [{ name: 'C', bound: null }],
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-                },
+            ],
+            [
+              'ICyclic2',
+              {
+                typeParameters: [],
+                extendsOrImplements: SourceIdentifierType(
+                  DummySourceReason,
+                  ModuleReference.DUMMY,
+                  'ICyclic1',
+                ),
+                functions: new Map(),
+                methods: new Map(),
               },
-            },
-          },
+            ],
+          ]),
+          classes: new Map<string, ClassTypingContext>([
+            [
+              'A',
+              {
+                typeParameters: [
+                  { name: 'A', bound: null },
+                  { name: 'B', bound: null },
+                ],
+                typeDefinition: {
+                  location: Location.DUMMY,
+                  type: 'variant',
+                  names: [SourceId('a'), SourceId('b')],
+                  mappings: {
+                    a: {
+                      isPublic: true,
+                      type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                    },
+                    b: {
+                      isPublic: false,
+                      type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                    },
+                  },
+                },
+                extendsOrImplements: null,
+                functions: new Map([
+                  [
+                    'f1',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [],
+                        SourceIntType(DummySourceReason),
+                      ),
+                    },
+                  ],
+                  [
+                    'f2',
+                    {
+                      isPublic: false,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [],
+                        SourceIntType(DummySourceReason),
+                      ),
+                    },
+                  ],
+                ]),
+                methods: new Map([
+                  [
+                    'm1',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [
+                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                        ],
+                        SourceIntType(DummySourceReason),
+                      ),
+                    },
+                  ],
+                  [
+                    'm2',
+                    {
+                      isPublic: false,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [],
+                        SourceIntType(DummySourceReason),
+                      ),
+                    },
+                  ],
+                ]),
+              },
+            ],
+            [
+              'B',
+              {
+                typeParameters: [
+                  { name: 'E', bound: null },
+                  { name: 'F', bound: null },
+                ],
+                typeDefinition: {
+                  location: Location.DUMMY,
+                  type: 'object',
+                  names: [],
+                  mappings: {},
+                },
+                extendsOrImplements: null,
+                functions: new Map([
+                  [
+                    'f1',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [],
+                        SourceIntType(DummySourceReason),
+                      ),
+                    },
+                  ],
+                  [
+                    'f2',
+                    {
+                      isPublic: false,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [],
+                        SourceIntType(DummySourceReason),
+                      ),
+                    },
+                  ],
+                ]),
+                methods: new Map([
+                  [
+                    'm1',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [],
+                        SourceIntType(DummySourceReason),
+                      ),
+                    },
+                  ],
+                  [
+                    'm2',
+                    {
+                      isPublic: false,
+                      typeParameters: [{ name: 'C', bound: null }],
+                      type: SourceFunctionType(
+                        DummySourceReason,
+                        [],
+                        SourceIntType(DummySourceReason),
+                      ),
+                    },
+                  ],
+                ]),
+              },
+            ],
+          ]),
         },
       ]),
       new Set('T'),
@@ -251,24 +339,24 @@ describe('typing-context', () => {
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist'),
       )?.context,
     ).toEqual({
-      functions: {},
-      methods: {},
+      functions: new Map(),
+      methods: new Map(),
     });
     expect(
       context.getFullyInlinedInterfaceContext(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'IUseNonExistent'),
       )?.context,
     ).toEqual({
-      functions: {},
-      methods: {},
+      functions: new Map(),
+      methods: new Map(),
     });
     expect(
       context.getFullyInlinedInterfaceContext(
         SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I'),
       )?.context,
     ).toEqual({
-      functions: {},
-      methods: {},
+      functions: new Map(),
+      methods: new Map(),
     });
     expect(
       checkNotNull(
@@ -277,43 +365,52 @@ describe('typing-context', () => {
         ),
       ).context,
     ).toEqual({
-      functions: {
-        f1: {
-          isPublic: true,
-          typeParameters: [{ name: 'C', bound: null }],
-          type: SourceFunctionType(
-            DummySourceReason,
-            [
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-            ],
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-          ),
-        },
-      },
-      methods: {
-        m1: {
-          isPublic: true,
-          typeParameters: [{ name: 'C', bound: null }],
-          type: SourceFunctionType(
-            DummySourceReason,
-            [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-          ),
-        },
-        m2: {
-          isPublic: true,
-          typeParameters: [{ name: 'C', bound: null }],
-          type: SourceFunctionType(
-            DummySourceReason,
-            [
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-            ],
-            SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-          ),
-        },
-      },
+      functions: new Map([
+        [
+          'f1',
+          {
+            isPublic: true,
+            typeParameters: [{ name: 'C', bound: null }],
+            type: SourceFunctionType(
+              DummySourceReason,
+              [
+                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+              ],
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+            ),
+          },
+        ],
+      ]),
+      methods: new Map([
+        [
+          'm1',
+          {
+            isPublic: true,
+            typeParameters: [{ name: 'C', bound: null }],
+            type: SourceFunctionType(
+              DummySourceReason,
+              [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+            ),
+          },
+        ],
+        [
+          'm2',
+          {
+            isPublic: true,
+            typeParameters: [{ name: 'C', bound: null }],
+            type: SourceFunctionType(
+              DummySourceReason,
+              [
+                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+              ],
+              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+            ),
+          },
+        ],
+      ]),
     });
 
     expect(

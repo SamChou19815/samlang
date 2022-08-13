@@ -45,8 +45,8 @@ class WasmFunctionLoweringManager {
   private localVariables = new Set<string>();
 
   private constructor(
-    private readonly globalVariablesToPointerMapping: Readonly<Record<string, number>>,
-    private readonly functionIndexMapping: Readonly<Record<string, number>>,
+    private readonly globalVariablesToPointerMapping: ReadonlyMap<string, number>,
+    private readonly functionIndexMapping: ReadonlyMap<string, number>,
   ) {}
 
   private GET(n: string): WebAssemblyInlineInstruction {
@@ -60,8 +60,8 @@ class WasmFunctionLoweringManager {
   }
 
   static lowerMidIRFunction(
-    globalVariablesToPointerMapping: Readonly<Record<string, number>>,
-    functionIndexMapping: Readonly<Record<string, number>>,
+    globalVariablesToPointerMapping: ReadonlyMap<string, number>,
+    functionIndexMapping: ReadonlyMap<string, number>,
     midIRFunction: MidIRFunction,
   ): WebAssemblyFunction {
     const instance = new WasmFunctionLoweringManager(
@@ -213,7 +213,8 @@ class WasmFunctionLoweringManager {
           checkNotNull(
             (e.type.__type__ === 'FunctionType'
               ? this.functionIndexMapping
-              : this.globalVariablesToPointerMapping)[e.name],
+              : this.globalVariablesToPointerMapping
+            ).get(e.name),
           ),
         );
       case 'MidIRVariableExpression':
@@ -226,16 +227,16 @@ export default function lowerMidIRSourcesToWasmModule(
   midIRSources: MidIRSources,
 ): WebAssemblyModule {
   let dataStart = 4096;
-  const globalVariablesToPointerMapping: Record<string, number> = {};
+  const globalVariablesToPointerMapping = new Map<string, number>();
   const globalVariables = midIRSources.globalVariables.map(({ name, content }) => {
     const ints = Array.from(content).map((it) => it.charCodeAt(0));
     ints.unshift(0, content.length);
     const globalVariable: WebAssemblyGlobalData = { constantPointer: dataStart, ints };
-    globalVariablesToPointerMapping[name] = dataStart;
+    globalVariablesToPointerMapping.set(name, dataStart);
     dataStart += (content.length + 2) * 4;
     return globalVariable;
   });
-  const functionIndexMapping = Object.fromEntries(
+  const functionIndexMapping = new Map(
     midIRSources.functions.map(({ name }, index) => [name, index]),
   );
 

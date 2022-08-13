@@ -7,7 +7,7 @@ import performSSAAnalysisOnSamlangModule, { SsaAnalysisResult } from './ssa-anal
 import {
   AccessibleGlobalTypingContext,
   LocationBasedLocalTypingContext,
-  ReadonlyGlobalTypingContext,
+  ReadonlyUnoptimizedGlobalTypingContext,
 } from './typing-context';
 
 function typeCheckMemberDeclaration(
@@ -32,7 +32,7 @@ function typeCheckMemberDeclaration(
 export default function typeCheckSamlangModule(
   moduleReference: ModuleReference,
   samlangModule: SamlangModule,
-  globalTypingContext: ReadonlyGlobalTypingContext,
+  globalTypingContext: ReadonlyUnoptimizedGlobalTypingContext,
   errorReporter: GlobalErrorReporter,
 ): SamlangModule {
   const ssaResult = performSSAAnalysisOnSamlangModule(samlangModule, errorReporter);

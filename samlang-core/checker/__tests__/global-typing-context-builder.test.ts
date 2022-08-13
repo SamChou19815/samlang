@@ -97,89 +97,113 @@ const testSources = ModuleReferenceCollections.mapOf(
 describe('global-typing-context-builder', () => {
   it('can handle imports and definitions', () => {
     const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {
-      classes: {},
-      interfaces: {},
+      classes: new Map(),
+      interfaces: new Map(),
     });
     expect(actualGlobalTypingContext.size).toBe(3);
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-      interfaces: {},
-      classes: {
-        Class0: {
-          typeParameters: [],
-          typeDefinition,
-          extendsOrImplements: null,
-          functions: {
-            init: {
-              isPublic: true,
-              type: SourceFunctionType(
-                DummySourceReason,
-                [],
-                SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', []),
-              ),
-              typeParameters: [],
-            },
+      interfaces: new Map(),
+      classes: new Map([
+        [
+          'Class0',
+          {
+            typeParameters: [],
+            typeDefinition,
+            extendsOrImplements: null,
+            functions: new Map([
+              [
+                'init',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [],
+                    SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', []),
+                  ),
+                  typeParameters: [],
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-          methods: {},
-        },
-      },
+        ],
+      ]),
     });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-      interfaces: {},
-      classes: {
-        Class1: {
-          typeParameters: [],
-          typeDefinition,
-          extendsOrImplements: null,
-          functions: {
-            f1: {
-              isPublic: false,
-              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-              typeParameters: [],
-            },
-            init: {
-              isPublic: true,
-              type: SourceFunctionType(
-                DummySourceReason,
-                [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
-              ),
-              typeParameters: [],
-            },
+      interfaces: new Map(),
+      classes: new Map([
+        [
+          'Class1',
+          {
+            typeParameters: [],
+            typeDefinition,
+            extendsOrImplements: null,
+            functions: new Map([
+              [
+                'f1',
+                {
+                  isPublic: false,
+                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  typeParameters: [],
+                },
+              ],
+              [
+                'init',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [],
+                    SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
+                  ),
+                  typeParameters: [],
+                },
+              ],
+            ]),
+            methods: new Map([
+              [
+                'm1',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  typeParameters: [],
+                },
+              ],
+            ]),
           },
-          methods: {
-            m1: {
-              isPublic: true,
-              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-              typeParameters: [],
-            },
+        ],
+        [
+          'Class2',
+          {
+            typeParameters: [],
+            typeDefinition,
+            extendsOrImplements: null,
+            functions: new Map([
+              [
+                'init',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [],
+                    SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
+                  ),
+                  typeParameters: [],
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-        },
-        Class2: {
-          typeParameters: [],
-          typeDefinition,
-          extendsOrImplements: null,
-          functions: {
-            init: {
-              isPublic: true,
-              type: SourceFunctionType(
-                DummySourceReason,
-                [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
-              ),
-              typeParameters: [],
-            },
-          },
-          methods: {},
-        },
-      },
+        ],
+      ]),
     });
   });
 
   it('can handle incremental add', () => {
     const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {
-      classes: {},
-      interfaces: {},
+      classes: new Map(),
+      interfaces: new Map(),
     });
     updateGlobalTypingContext(
       actualGlobalTypingContext,
@@ -193,83 +217,107 @@ describe('global-typing-context-builder', () => {
     expect(actualGlobalTypingContext.size).toBe(3);
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-      interfaces: {},
-      classes: {
-        Class0: {
-          typeParameters: [],
-          typeDefinition,
-          extendsOrImplements: null,
-          functions: {
-            init: {
-              isPublic: true,
-              type: SourceFunctionType(
-                DummySourceReason,
-                [],
-                SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', []),
-              ),
-              typeParameters: [],
-            },
+      interfaces: new Map(),
+      classes: new Map([
+        [
+          'Class0',
+          {
+            typeParameters: [],
+            typeDefinition,
+            extendsOrImplements: null,
+            functions: new Map([
+              [
+                'init',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [],
+                    SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', []),
+                  ),
+                  typeParameters: [],
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-          methods: {},
-        },
-      },
+        ],
+      ]),
     });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-      interfaces: {},
-      classes: {
-        Class1: {
-          typeParameters: [],
-          typeDefinition,
-          extendsOrImplements: null,
-          functions: {
-            f1: {
-              isPublic: false,
-              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-              typeParameters: [],
-            },
-            init: {
-              isPublic: true,
-              type: SourceFunctionType(
-                DummySourceReason,
-                [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
-              ),
-              typeParameters: [],
-            },
+      interfaces: new Map(),
+      classes: new Map([
+        [
+          'Class1',
+          {
+            typeParameters: [],
+            typeDefinition,
+            extendsOrImplements: null,
+            functions: new Map([
+              [
+                'f1',
+                {
+                  isPublic: false,
+                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  typeParameters: [],
+                },
+              ],
+              [
+                'init',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [],
+                    SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
+                  ),
+                  typeParameters: [],
+                },
+              ],
+            ]),
+            methods: new Map([
+              [
+                'm1',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  typeParameters: [],
+                },
+              ],
+            ]),
           },
-          methods: {
-            m1: {
-              isPublic: true,
-              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-              typeParameters: [],
-            },
+        ],
+        [
+          'Class2',
+          {
+            typeParameters: [],
+            typeDefinition,
+            extendsOrImplements: null,
+            functions: new Map([
+              [
+                'init',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [],
+                    SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
+                  ),
+                  typeParameters: [],
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-        },
-        Class2: {
-          typeParameters: [],
-          typeDefinition,
-          extendsOrImplements: null,
-          functions: {
-            init: {
-              isPublic: true,
-              type: SourceFunctionType(
-                DummySourceReason,
-                [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
-              ),
-              typeParameters: [],
-            },
-          },
-          methods: {},
-        },
-      },
+        ],
+      ]),
     });
   });
 
   it('can handle incremental update', () => {
     const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {
-      classes: {},
-      interfaces: {},
+      classes: new Map(),
+      interfaces: new Map(),
     });
     updateGlobalTypingContext(
       actualGlobalTypingContext,
@@ -283,65 +331,83 @@ describe('global-typing-context-builder', () => {
     expect(actualGlobalTypingContext.size).toBe(3);
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-      interfaces: {},
-      classes: {},
+      interfaces: new Map(),
+      classes: new Map(),
     });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-      interfaces: {},
-      classes: {
-        Class1: {
-          typeParameters: [],
-          typeDefinition,
-          extendsOrImplements: null,
-          functions: {
-            f1: {
-              isPublic: false,
-              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-              typeParameters: [],
-            },
-            init: {
-              isPublic: true,
-              type: SourceFunctionType(
-                DummySourceReason,
-                [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
-              ),
-              typeParameters: [],
-            },
+      interfaces: new Map(),
+      classes: new Map([
+        [
+          'Class1',
+          {
+            typeParameters: [],
+            typeDefinition,
+            extendsOrImplements: null,
+            functions: new Map([
+              [
+                'f1',
+                {
+                  isPublic: false,
+                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  typeParameters: [],
+                },
+              ],
+              [
+                'init',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [],
+                    SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
+                  ),
+                  typeParameters: [],
+                },
+              ],
+            ]),
+            methods: new Map([
+              [
+                'm1',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  typeParameters: [],
+                },
+              ],
+            ]),
           },
-          methods: {
-            m1: {
-              isPublic: true,
-              type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
-              typeParameters: [],
-            },
+        ],
+        [
+          'Class2',
+          {
+            typeParameters: [],
+            typeDefinition,
+            extendsOrImplements: null,
+            functions: new Map([
+              [
+                'init',
+                {
+                  isPublic: true,
+                  type: SourceFunctionType(
+                    DummySourceReason,
+                    [],
+                    SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
+                  ),
+                  typeParameters: [],
+                },
+              ],
+            ]),
+            methods: new Map(),
           },
-        },
-        Class2: {
-          typeParameters: [],
-          typeDefinition,
-          extendsOrImplements: null,
-          functions: {
-            init: {
-              isPublic: true,
-              type: SourceFunctionType(
-                DummySourceReason,
-                [],
-                SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
-              ),
-              typeParameters: [],
-            },
-          },
-          methods: {},
-        },
-      },
+        ],
+      ]),
     });
   });
 
   it('can handle incremental removal', () => {
     const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {
-      classes: {},
-      interfaces: {},
+      classes: new Map(),
+      interfaces: new Map(),
     });
     updateGlobalTypingContext(
       actualGlobalTypingContext,
