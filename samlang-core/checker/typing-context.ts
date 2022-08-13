@@ -52,23 +52,19 @@ export interface ModuleTypingContext {
   readonly classes: ReadonlyMap<string, ClassTypingContext>;
 }
 
-export type UnoptimizedGlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
-export type ReadonlyUnoptimizedGlobalTypingContext = ReadonlyHashMap<
-  ModuleReference,
-  ModuleTypingContext
->;
+export type UnoptimizedGlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
 
 export class AccessibleGlobalTypingContext {
   constructor(
     public readonly currentModuleReference: ModuleReference,
-    private readonly globalTypingContext: ReadonlyUnoptimizedGlobalTypingContext,
+    private readonly globalTypingContext: UnoptimizedGlobalTypingContext,
     public readonly typeParameters: ReadonlySet<string>,
     public readonly currentClass: string,
   ) {}
 
   static fromInterface(
     currentModuleReference: ModuleReference,
-    globalTypingContext: ReadonlyUnoptimizedGlobalTypingContext,
+    globalTypingContext: UnoptimizedGlobalTypingContext,
     interfaceDeclaration: SourceInterfaceDeclaration,
   ): AccessibleGlobalTypingContext {
     return new AccessibleGlobalTypingContext(

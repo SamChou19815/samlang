@@ -197,12 +197,12 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
     affectedSourceList: readonly ModuleReference[],
     errorCollector: ReadonlyGlobalErrorCollector,
   ): void {
-    const updatedModules = typeCheckSourcesIncrementally(
+    const [updatedModules, globalTypingContext] = typeCheckSourcesIncrementally(
       this.rawModules,
-      this._globalTypingContext,
       affectedSourceList,
       errorCollector,
     );
+    this._globalTypingContext = globalTypingContext;
     updatedModules.forEach((updatedModule, moduleReference) => {
       this.checkedModules.set(moduleReference, updatedModule);
     });
