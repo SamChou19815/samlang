@@ -10,7 +10,6 @@ import type { HashSet, ReadonlyHashSet } from '../utils';
 import {
   buildGlobalTypingContext,
   DEFAULT_BUILTIN_TYPING_CONTEXT,
-  updateGlobalTypingContext,
 } from './global-typing-context-builder';
 import checkSourcesInterfaceConformance from './interface-conformance-checking';
 import {
@@ -18,11 +17,7 @@ import {
   collectModuleReferenceFromType,
 } from './module-references-collector';
 import typeCheckSamlangModule from './module-type-checker';
-import type {
-  MemberTypeInformation,
-  ModuleTypingContext,
-  UnoptimizedGlobalTypingContext,
-} from './typing-context';
+import type { MemberTypeInformation, UnoptimizedGlobalTypingContext } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
 
 export { DEFAULT_BUILTIN_TYPING_CONTEXT };
@@ -125,9 +120,8 @@ function typeCheckModule(
 export function typeCheckSources(
   sources: Sources<SamlangModule>,
   errorCollector: ReadonlyGlobalErrorCollector,
-  builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT,
 ): readonly [Sources<SamlangModule>, UnoptimizedGlobalTypingContext] {
-  const globalTypingContext = buildGlobalTypingContext(sources, builtinModuleTypes);
+  const globalTypingContext = buildGlobalTypingContext(sources, DEFAULT_BUILTIN_TYPING_CONTEXT);
   checkSourcesInterfaceConformance(sources, globalTypingContext, errorCollector.getErrorReporter());
   const checkedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();
   sources.forEach((samlangModule, moduleReference) => {
@@ -164,11 +158,10 @@ export function typeCheckSourceHandles(
 
 export function typeCheckSourcesIncrementally(
   sources: Sources<SamlangModule>,
-  globalTypingContext: UnoptimizedGlobalTypingContext,
   affectedSourceList: readonly ModuleReference[],
   errorCollector: ReadonlyGlobalErrorCollector,
-): Sources<SamlangModule> {
-  updateGlobalTypingContext(globalTypingContext, sources, affectedSourceList);
+): readonly [Sources<SamlangModule>, UnoptimizedGlobalTypingContext] {
+  const globalTypingContext = buildGlobalTypingContext(sources, DEFAULT_BUILTIN_TYPING_CONTEXT);
   checkSourcesInterfaceConformance(sources, globalTypingContext, errorCollector.getErrorReporter());
   const updatedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();
   affectedSourceList.forEach((moduleReference) => {
@@ -181,7 +174,7 @@ export function typeCheckSourcesIncrementally(
       typeCheckModule(sources, globalTypingContext, moduleReference, samlangModule, errorCollector),
     );
   });
-  return updatedSources;
+  return [updatedSources, globalTypingContext];
 }
 
 export function typeCheckSingleModuleSource(

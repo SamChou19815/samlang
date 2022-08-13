@@ -209,29 +209,3 @@ export function buildGlobalTypingContext(
   });
   return modules;
 }
-
-/**
- * Imperatively patch a global typing context with incremental update.
- *
- * @param globalTypingContext existing context to be updated.
- * @param sources a collection of all sources needed for type checking.
- * @param potentiallyAffectedModuleReferences a list of modules that might be affected by a change.
- * (It can be a conservative estimate. You can send more, but not less.)
- */
-export function updateGlobalTypingContext(
-  globalTypingContext: UnoptimizedGlobalTypingContext,
-  sources: Sources<SamlangModule>,
-  potentiallyAffectedModuleReferences: readonly ModuleReference[],
-): void {
-  potentiallyAffectedModuleReferences.forEach((moduleReference) => {
-    const samlangModule = sources.get(moduleReference);
-    if (samlangModule == null) {
-      globalTypingContext.delete(moduleReference);
-    } else {
-      globalTypingContext.set(
-        moduleReference,
-        buildModuleTypingContext(moduleReference, samlangModule),
-      );
-    }
-  });
-}

@@ -168,16 +168,11 @@ describe('samlang-core/checker', () => {
       ],
     );
 
-    const [, globalTypingContext] = typeCheckSources(sources, errorCollector);
+    typeCheckSources(sources, errorCollector);
     expect(errorCollector.getErrors().map((e) => e.toString())).toEqual([]);
 
     sources.delete(moduleReferenceC);
-    typeCheckSourcesIncrementally(
-      sources,
-      globalTypingContext,
-      [moduleReferenceC, moduleReferenceD],
-      errorCollector,
-    );
+    typeCheckSourcesIncrementally(sources, [moduleReferenceC, moduleReferenceD], errorCollector);
     expect(
       errorCollector
         .getErrors()
