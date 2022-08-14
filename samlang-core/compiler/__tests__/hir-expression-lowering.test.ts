@@ -64,22 +64,28 @@ function expectCorrectlyLowered(
       ['closure_unit_return', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Closure')],
       ['captured_a', HIR_INT_TYPE],
     ],
-    /* typeDefinitionMapping */ {
-      __DUMMY___Foo: {
-        identifier: '__DUMMY___Foo',
-        type: 'object',
-        typeParameters: [],
-        names: [],
-        mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
-      },
-      __DUMMY___Dummy: {
-        identifier: '__DUMMY___Dummy',
-        type: 'object',
-        typeParameters: [],
-        names: [],
-        mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
-      },
-    },
+    /* typeDefinitionMapping */ new Map([
+      [
+        '__DUMMY___Foo',
+        {
+          identifier: '__DUMMY___Foo',
+          type: 'object',
+          typeParameters: [],
+          names: [],
+          mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
+        },
+      ],
+      [
+        '__DUMMY___Dummy',
+        {
+          identifier: '__DUMMY___Dummy',
+          type: 'object',
+          typeParameters: [],
+          names: [],
+          mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
+        },
+      ],
+    ]),
     /* typeLoweringManager */ typeLoweringManager,
     /* stringManager */ stringManager,
     /* expression */ samlangExpression,

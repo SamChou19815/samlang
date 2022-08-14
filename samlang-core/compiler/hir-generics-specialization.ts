@@ -28,37 +28,40 @@ import {
 } from './hir-type-conversion';
 
 class GenericsSpecializationRewriter {
-  private readonly originalClosureTypeDefinitions: Readonly<
-    Record<string, HighIRClosureTypeDefinition>
-  >;
-  private readonly originalTypeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>;
-  private readonly originalFunctions: Readonly<Record<string, HighIRFunction>>;
+  private readonly originalClosureTypeDefinitions: ReadonlyMap<string, HighIRClosureTypeDefinition>;
+  private readonly originalTypeDefinitions: ReadonlyMap<string, HighIRTypeDefinition>;
+  private readonly originalFunctions: ReadonlyMap<string, HighIRFunction>;
 
-  public readonly usedStringNames: Set<string> = new Set();
-  public readonly specializedClosureTypeDefinitions: Record<string, HighIRClosureTypeDefinition> =
-    {};
-  public readonly specializedTypeDefinitions: Record<string, HighIRTypeDefinition> = {};
-  public readonly specializedFunctions: Record<string, HighIRFunction> = {};
+  public readonly usedStringNames = new Set<string>();
+  public readonly specializedClosureTypeDefinitions = new Map<
+    string,
+    HighIRClosureTypeDefinition
+  >();
+  public readonly specializedTypeDefinitions = new Map<string, HighIRTypeDefinition>();
+  public readonly specializedFunctions = new Map<string, HighIRFunction>();
 
   constructor(sources: HighIRSources) {
-    this.originalClosureTypeDefinitions = Object.fromEntries(
+    this.originalClosureTypeDefinitions = new Map(
       sources.closureTypes.map((it) => [it.identifier, it]),
     );
-    this.originalTypeDefinitions = Object.fromEntries(
+    this.originalTypeDefinitions = new Map(
       sources.typeDefinitions.map((it) => [it.identifier, it]),
     );
-    this.originalFunctions = Object.fromEntries(sources.functions.map((it) => [it.name, it]));
+    this.originalFunctions = new Map(sources.functions.map((it) => [it.name, it]));
     sources.mainFunctionNames.forEach((mainFunctionName) => {
-      this.specializedFunctions[mainFunctionName] = this.rewriteFunction(
-        checkNotNull(this.originalFunctions[mainFunctionName], `Missing ${mainFunctionName}`),
-        {},
+      this.specializedFunctions.set(
+        mainFunctionName,
+        this.rewriteFunction(
+          checkNotNull(this.originalFunctions.get(mainFunctionName), `Missing ${mainFunctionName}`),
+          new Map(),
+        ),
       );
     });
   }
 
   private rewriteFunction = (
     highIRFunction: HighIRFunction,
-    genericsReplacementMap: Readonly<Record<string, HighIRType>>,
+    genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): HighIRFunction => ({
     name: highIRFunction.name,
     parameters: highIRFunction.parameters,
@@ -70,7 +73,7 @@ class GenericsSpecializationRewriter {
 
   private rewriteStatement(
     statement: HighIRStatement,
-    genericsReplacementMap: Readonly<Record<string, HighIRType>>,
+    genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): HighIRStatement {
     switch (statement.__type__) {
       case 'HighIRIndexAccessStatement':
@@ -155,7 +158,7 @@ class GenericsSpecializationRewriter {
 
   private rewriteExpression(
     expression: HighIRExpression,
-    genericsReplacementMap: Readonly<Record<string, HighIRType>>,
+    genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): HighIRExpression {
     switch (expression.__type__) {
       case 'HighIRIntLiteralExpression':
@@ -178,7 +181,7 @@ class GenericsSpecializationRewriter {
   }
 
   private rewriteFunctionName(originalName: string, functionType: HighIRFunctionType): string {
-    const existingFunction = this.originalFunctions[originalName];
+    const existingFunction = this.originalFunctions.get(originalName);
     if (existingFunction == null) return originalName;
     const solvedFunctionTypeArguments = solveTypeArguments(
       existingFunction.typeParameters,
@@ -190,19 +193,22 @@ class GenericsSpecializationRewriter {
       originalName,
       solvedFunctionTypeArguments,
     );
-    if (this.specializedFunctions[encodedSpecializedFunctionName] == null) {
+    if (!this.specializedFunctions.has(encodedSpecializedFunctionName)) {
       // Temporaily add an incorrect version to avoid infinite recursion.
-      this.specializedFunctions[encodedSpecializedFunctionName] = existingFunction;
-      this.specializedFunctions[encodedSpecializedFunctionName] = this.rewriteFunction(
-        {
-          name: encodedSpecializedFunctionName,
-          parameters: existingFunction.parameters,
-          typeParameters: [],
-          type: functionType,
-          body: existingFunction.body,
-          returnValue: existingFunction.returnValue,
-        },
-        Object.fromEntries(zip(existingFunction.typeParameters, solvedFunctionTypeArguments)),
+      this.specializedFunctions.set(encodedSpecializedFunctionName, existingFunction);
+      this.specializedFunctions.set(
+        encodedSpecializedFunctionName,
+        this.rewriteFunction(
+          {
+            name: encodedSpecializedFunctionName,
+            parameters: existingFunction.parameters,
+            typeParameters: [],
+            type: functionType,
+            body: existingFunction.body,
+            returnValue: existingFunction.returnValue,
+          },
+          new Map(zip(existingFunction.typeParameters, solvedFunctionTypeArguments)),
+        ),
       );
     }
     return encodedSpecializedFunctionName;
@@ -210,7 +216,7 @@ class GenericsSpecializationRewriter {
 
   private rewriteType(
     type: HighIRType,
-    genericsReplacementMap: Readonly<Record<string, HighIRType>>,
+    genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): HighIRType {
     switch (type.__type__) {
       case 'PrimitiveType':
@@ -227,10 +233,10 @@ class GenericsSpecializationRewriter {
 
   private rewriteHighIRIdentifierType(
     type: HighIRIdentifierType,
-    genericsReplacementMap: Readonly<Record<string, HighIRType>>,
+    genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): HighIRType {
     if (type.typeArguments.length === 0) {
-      const replacement = genericsReplacementMap[type.name];
+      const replacement = genericsReplacementMap.get(type.name);
       if (replacement != null) return replacement;
     }
     const concreteType = {
@@ -241,15 +247,15 @@ class GenericsSpecializationRewriter {
       concreteType.name,
       concreteType.typeArguments,
     );
-    const existingSpecializedTypeDefinition = this.specializedTypeDefinitions[encodedName];
+    const existingSpecializedTypeDefinition = this.specializedTypeDefinitions.get(encodedName);
     if (existingSpecializedTypeDefinition == null) {
-      const typeDefinition = this.originalTypeDefinitions[concreteType.name];
+      const typeDefinition = this.originalTypeDefinitions.get(concreteType.name);
       if (typeDefinition == null) {
         const existingSpecializedClosureTypeDefinition =
-          this.specializedClosureTypeDefinitions[encodedName];
+          this.specializedClosureTypeDefinitions.get(encodedName);
         if (existingSpecializedClosureTypeDefinition == null) {
           const closureTypeDefinition = checkNotNull(
-            this.originalClosureTypeDefinitions[concreteType.name],
+            this.originalClosureTypeDefinitions.get(concreteType.name),
             `Missing ${concreteType.name}`,
           );
           const solvedTypeArgumentsReplacementMap = new Map(
@@ -266,20 +272,20 @@ class GenericsSpecializationRewriter {
               ),
             ),
           );
-          this.specializedClosureTypeDefinitions[encodedName] = closureTypeDefinition;
+          this.specializedClosureTypeDefinitions.set(encodedName, closureTypeDefinition);
           const rewrittenFunctionType = this.rewriteType(
             highIRTypeApplication(
               closureTypeDefinition.functionType,
               solvedTypeArgumentsReplacementMap,
             ),
-            {},
+            new Map(),
           );
           assert(rewrittenFunctionType.__type__ === 'FunctionType');
-          this.specializedClosureTypeDefinitions[encodedName] = {
+          this.specializedClosureTypeDefinitions.set(encodedName, {
             identifier: encodedName,
             typeParameters: [],
             functionType: rewrittenFunctionType,
-          };
+          });
         }
         return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(encodedName);
       }
@@ -297,16 +303,16 @@ class GenericsSpecializationRewriter {
           ),
         ),
       );
-      this.specializedTypeDefinitions[encodedName] = typeDefinition;
-      this.specializedTypeDefinitions[encodedName] = {
+      this.specializedTypeDefinitions.set(encodedName, typeDefinition);
+      this.specializedTypeDefinitions.set(encodedName, {
         identifier: encodedName,
         typeParameters: [],
         type: typeDefinition.type,
         names: typeDefinition.names,
         mappings: typeDefinition.mappings.map((it) =>
-          this.rewriteType(highIRTypeApplication(it, solvedTypeArgumentsReplacementMap), {}),
+          this.rewriteType(highIRTypeApplication(it, solvedTypeArgumentsReplacementMap), new Map()),
         ),
-      };
+      });
     }
     return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(encodedName);
   }
@@ -315,8 +321,9 @@ class GenericsSpecializationRewriter {
     resolveIdentifierTypeMappings(
       identifierType,
       (name) =>
-        this.specializedClosureTypeDefinitions[name] ?? this.originalClosureTypeDefinitions[name],
-      (name) => this.specializedTypeDefinitions[name] ?? this.originalTypeDefinitions[name],
+        this.specializedClosureTypeDefinitions.get(name) ??
+        this.originalClosureTypeDefinitions.get(name),
+      (name) => this.specializedTypeDefinitions.get(name) ?? this.originalTypeDefinitions.get(name),
     );
 }
 
@@ -326,9 +333,9 @@ export default function performGenericsSpecializationOnHighIRSources(
   const rewriter = new GenericsSpecializationRewriter(sources);
   return {
     globalVariables: sources.globalVariables.filter((it) => rewriter.usedStringNames.has(it.name)),
-    closureTypes: Object.values(rewriter.specializedClosureTypeDefinitions),
-    typeDefinitions: Object.values(rewriter.specializedTypeDefinitions),
+    closureTypes: Array.from(rewriter.specializedClosureTypeDefinitions.values()),
+    typeDefinitions: Array.from(rewriter.specializedTypeDefinitions.values()),
     mainFunctionNames: sources.mainFunctionNames,
-    functions: Object.values(rewriter.specializedFunctions),
+    functions: Array.from(rewriter.specializedFunctions.values()),
   };
 }

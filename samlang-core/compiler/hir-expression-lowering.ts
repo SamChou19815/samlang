@@ -94,7 +94,7 @@ class HighIRExpressionLoweringManager {
     private readonly moduleReference: ModuleReference,
     private readonly encodedFunctionName: string,
     private readonly definedVariables: readonly (readonly [string, HighIRType])[],
-    private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
+    private readonly typeDefinitionMapping: ReadonlyMap<string, HighIRTypeDefinition>,
     private readonly typeLoweringManager: SamlangTypeLoweringManager,
     private readonly stringManager: HighIRStringManager,
   ) {
@@ -169,7 +169,7 @@ class HighIRExpressionLoweringManager {
     name,
     typeArguments,
   }: HighIRIdentifierType): readonly HighIRType[] {
-    const typeDefinition = checkNotNull(this.typeDefinitionMapping[name], `Missing ${name}`);
+    const typeDefinition = checkNotNull(this.typeDefinitionMapping.get(name), `Missing ${name}`);
     const replacementMap = new Map(zip(typeDefinition.typeParameters, typeArguments));
     return typeDefinition.mappings.map((type) => highIRTypeApplication(type, replacementMap));
   }
@@ -900,7 +900,7 @@ export default function lowerSamlangExpression(
   moduleReference: ModuleReference,
   encodedFunctionName: string,
   definedVariables: readonly (readonly [string, HighIRType])[],
-  typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
+  typeDefinitionMapping: ReadonlyMap<string, HighIRTypeDefinition>,
   typeLoweringManager: SamlangTypeLoweringManager,
   stringManager: HighIRStringManager,
   expression: SamlangExpression,

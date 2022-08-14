@@ -4,7 +4,7 @@ const { transformSync } = require('esbuild');
 const Module = require('module');
 const { extname } = require('path');
 
-/** @type {Record<string, import('esbuild').Loader>} */
+/** @type {{[extension: string]: import('esbuild').Loader}} */
 const loaders = {
   '.js': 'js',
   '.mjs': 'js',

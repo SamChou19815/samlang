@@ -59,10 +59,10 @@ function companionFunctionWithContext(originalFunction: HighIRFunction): HighIRF
 function lowerSamlangConstructorsToHighIRFunctions(
   moduleReference: ModuleReference,
   className: string,
-  typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
+  typeDefinitionMapping: ReadonlyMap<string, HighIRTypeDefinition>,
 ) {
   const typeName = encodeSamlangType(moduleReference, className);
-  const typeDefinition = checkNotNull(typeDefinitionMapping[typeName], `Missing ${typeName}`);
+  const typeDefinition = checkNotNull(typeDefinitionMapping.get(typeName), `Missing ${typeName}`);
   const structVariableName = '_struct';
   const structType = HIR_IDENTIFIER_TYPE(
     typeName,
@@ -116,7 +116,7 @@ function compileSamlangFunctionToHighIRFunctions(
   moduleReference: ModuleReference,
   className: string,
   memberName: string,
-  typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
+  typeDefinitionMapping: ReadonlyMap<string, HighIRTypeDefinition>,
   memberTypeParameters: readonly string[],
   memberParameters: readonly SourceAnnotatedVariable[],
   memberReturnType: SamlangType,
@@ -165,7 +165,7 @@ function compileSamlangMethodToHighIRFunctions(
   moduleReference: ModuleReference,
   className: string,
   memberName: string,
-  typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
+  typeDefinitionMapping: ReadonlyMap<string, HighIRTypeDefinition>,
   classTypeParameters: readonly string[],
   memberTypeParameters: readonly string[],
   memberParameters: readonly SourceAnnotatedVariable[],
@@ -243,9 +243,7 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
       }
     });
   });
-  const typeDefinitionMapping = Object.fromEntries(
-    compiledTypeDefinitions.map((it) => [it.identifier, it]),
-  );
+  const typeDefinitionMapping = new Map(compiledTypeDefinitions.map((it) => [it.identifier, it]));
 
   const stringManager = new HighIRStringManager();
   const compiledFunctionsWithAddedDummyContext: HighIRFunction[] = [];
