@@ -1,4 +1,5 @@
 import {
+  BuiltinReason,
   DummySourceReason,
   Location,
   LocationCollections,
@@ -12,13 +13,18 @@ import {
   SamlangIdentifierType,
   SamlangType,
   SourceFieldType,
+  SourceFunctionType,
   SourceIdentifierType,
   SourceInterfaceDeclaration,
+  SourceIntType,
+  SourceStringType,
+  SourceUnitType,
   SourceUnknownType,
   TypeDefinition,
   TypeParameterSignature,
   typeReposition,
 } from '../ast/samlang-nodes';
+import type { DefaultBuiltinClasses } from '../parser';
 import { assert, checkNotNull, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
@@ -60,6 +66,75 @@ export interface ModuleTypingContext {
   readonly interfaces: ReadonlyMap<string, InterfaceTypingContext>;
   readonly classes: ReadonlyMap<string, ClassTypingContext>;
 }
+
+export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
+  readonly interfaces: ReadonlyMap<string, ClassTypingContext>;
+  readonly classes: ReadonlyMap<DefaultBuiltinClasses, ClassTypingContext>;
+} = {
+  interfaces: new Map(),
+  classes: new Map([
+    [
+      'Builtins',
+      {
+        typeParameters: [],
+        typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
+        extendsOrImplements: null,
+        superTypes: [],
+        functions: new Map([
+          [
+            'stringToInt',
+            {
+              isPublic: true,
+              typeParameters: [],
+              type: SourceFunctionType(
+                BuiltinReason,
+                [SourceStringType(BuiltinReason)],
+                SourceIntType(BuiltinReason),
+              ),
+            },
+          ],
+          [
+            'intToString',
+            {
+              isPublic: true,
+              typeParameters: [],
+              type: SourceFunctionType(
+                BuiltinReason,
+                [SourceIntType(BuiltinReason)],
+                SourceStringType(BuiltinReason),
+              ),
+            },
+          ],
+          [
+            'println',
+            {
+              isPublic: true,
+              typeParameters: [],
+              type: SourceFunctionType(
+                BuiltinReason,
+                [SourceStringType(BuiltinReason)],
+                SourceUnitType(BuiltinReason),
+              ),
+            },
+          ],
+          [
+            'panic',
+            {
+              isPublic: true,
+              typeParameters: [{ name: 'T', bound: null }],
+              type: SourceFunctionType(
+                BuiltinReason,
+                [SourceStringType(BuiltinReason)],
+                SourceIdentifierType(BuiltinReason, ModuleReference.ROOT, 'T'),
+              ),
+            },
+          ],
+        ]),
+        methods: new Map(),
+      },
+    ],
+  ]),
+};
 
 export type GlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
 

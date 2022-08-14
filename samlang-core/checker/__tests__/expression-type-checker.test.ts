@@ -19,11 +19,11 @@ import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
 import { checkNotNull } from '../../utils';
 import typeCheckExpression from '../expression-type-checker';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
 import { performSSAAnalysisOnSamlangExpression } from '../ssa-analysis';
 import {
   AccessibleGlobalTypingContext,
   ClassTypingContext,
+  DEFAULT_BUILTIN_TYPING_CONTEXT,
   LocationBasedLocalTypingContext,
   ModuleTypingContext,
 } from '../typing-context';
