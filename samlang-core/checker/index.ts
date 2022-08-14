@@ -7,10 +7,7 @@ import {
 } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
 import type { HashSet, ReadonlyHashSet } from '../utils';
-import {
-  buildGlobalTypingContext,
-  DEFAULT_BUILTIN_TYPING_CONTEXT,
-} from './global-typing-context-builder';
+import { buildGlobalTypingContext } from './global-typing-context-builder';
 import optimizeGlobalTypingContextWithInterfaceConformanceChecking from './interface-conformance-checking';
 import {
   collectModuleReferenceFromExpression,
@@ -20,7 +17,6 @@ import typeCheckSamlangModule from './module-type-checker';
 import type { GlobalTypingContext, MemberTypeInformation } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
 
-export { DEFAULT_BUILTIN_TYPING_CONTEXT };
 export type { GlobalTypingContext as GlobalTypingContext, MemberTypeInformation };
 
 export function collectModuleReferenceFromSamlangModule(
@@ -123,7 +119,7 @@ export function typeCheckSources(
 ): readonly [Sources<SamlangModule>, GlobalTypingContext] {
   const globalTypingContext = optimizeGlobalTypingContextWithInterfaceConformanceChecking(
     sources,
-    buildGlobalTypingContext(sources, DEFAULT_BUILTIN_TYPING_CONTEXT),
+    buildGlobalTypingContext(sources),
     errorCollector.getErrorReporter(),
   );
   const checkedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();
@@ -166,7 +162,7 @@ export function typeCheckSourcesIncrementally(
 ): readonly [Sources<SamlangModule>, GlobalTypingContext] {
   const globalTypingContext = optimizeGlobalTypingContextWithInterfaceConformanceChecking(
     sources,
-    buildGlobalTypingContext(sources, DEFAULT_BUILTIN_TYPING_CONTEXT),
+    buildGlobalTypingContext(sources),
     errorCollector.getErrorReporter(),
   );
   const updatedSources = ModuleReferenceCollections.hashMapOf<SamlangModule>();

@@ -1,8 +1,6 @@
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 
 import {
-  BuiltinReason,
-  Location,
   ModuleReference,
   ModuleReferenceCollections,
   SourceReason,
@@ -14,23 +12,21 @@ import {
   SourceFunctionType,
   SourceIdentifierType,
   SourceInterfaceDeclaration,
-  SourceIntType,
-  SourceStringType,
-  SourceUnitType,
 } from '../ast/samlang-nodes';
-import type { DefaultBuiltinClasses } from '../parser';
 import { checkNotNull } from '../utils';
-import type {
+import {
   ClassTypingContext,
+  DEFAULT_BUILTIN_TYPING_CONTEXT,
   GlobalTypingContext,
   MemberTypeInformation,
   ModuleTypingContext,
 } from './typing-context';
 
-function buildInterfaceTypingContext(
-  moduleReference: ModuleReference,
-  { typeParameters, members, extendsOrImplementsNode }: SourceInterfaceDeclaration,
-) {
+function buildInterfaceTypingContext({
+  typeParameters,
+  members,
+  extendsOrImplementsNode,
+}: SourceInterfaceDeclaration) {
   const functions = new Map<string, MemberTypeInformation>();
   const methods = new Map<string, MemberTypeInformation>();
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
@@ -58,10 +54,7 @@ function buildClassTypingContext(
   moduleReference: ModuleReference,
   classDefinition: SourceClassDefinition,
 ): ClassTypingContext {
-  const { typeParameters, functions, methods } = buildInterfaceTypingContext(
-    moduleReference,
-    classDefinition,
-  );
+  const { typeParameters, functions, methods } = buildInterfaceTypingContext(classDefinition);
   const classType = SourceIdentifierType(
     SourceReason(classDefinition.name.location, classDefinition.name.location),
     moduleReference,
@@ -114,7 +107,7 @@ function buildModuleTypingContext(
     interfaces: new Map(
       samlangModule.interfaces.map((declaration) => [
         declaration.name.name,
-        buildInterfaceTypingContext(moduleReference, declaration),
+        buildInterfaceTypingContext(declaration),
       ]),
     ),
     classes: new Map(
@@ -126,78 +119,9 @@ function buildModuleTypingContext(
   };
 }
 
-export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
-  readonly interfaces: ReadonlyMap<string, ClassTypingContext>;
-  readonly classes: ReadonlyMap<DefaultBuiltinClasses, ClassTypingContext>;
-} = {
-  interfaces: new Map(),
-  classes: new Map([
-    [
-      'Builtins',
-      {
-        typeParameters: [],
-        typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
-        extendsOrImplements: null,
-        superTypes: [],
-        functions: new Map([
-          [
-            'stringToInt',
-            {
-              isPublic: true,
-              typeParameters: [],
-              type: SourceFunctionType(
-                BuiltinReason,
-                [SourceStringType(BuiltinReason)],
-                SourceIntType(BuiltinReason),
-              ),
-            },
-          ],
-          [
-            'intToString',
-            {
-              isPublic: true,
-              typeParameters: [],
-              type: SourceFunctionType(
-                BuiltinReason,
-                [SourceIntType(BuiltinReason)],
-                SourceStringType(BuiltinReason),
-              ),
-            },
-          ],
-          [
-            'println',
-            {
-              isPublic: true,
-              typeParameters: [],
-              type: SourceFunctionType(
-                BuiltinReason,
-                [SourceStringType(BuiltinReason)],
-                SourceUnitType(BuiltinReason),
-              ),
-            },
-          ],
-          [
-            'panic',
-            {
-              isPublic: true,
-              typeParameters: [{ name: 'T', bound: null }],
-              type: SourceFunctionType(
-                BuiltinReason,
-                [SourceStringType(BuiltinReason)],
-                SourceIdentifierType(BuiltinReason, ModuleReference.ROOT, 'T'),
-              ),
-            },
-          ],
-        ]),
-        methods: new Map(),
-      },
-    ],
-  ]),
-};
-
 export function buildGlobalTypingContext(
   sources: Sources<SamlangModule>,
-  builtinModuleTypes: ModuleTypingContext,
+  builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT,
 ): GlobalTypingContext {
   const modules = ModuleReferenceCollections.hashMapOf<ModuleTypingContext>();
   modules.set(ModuleReference.ROOT, builtinModuleTypes);
