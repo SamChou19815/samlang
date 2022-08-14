@@ -6,8 +6,8 @@ import typeCheckExpression from './expression-type-checker';
 import performSSAAnalysisOnSamlangModule, { SsaAnalysisResult } from './ssa-analysis';
 import {
   AccessibleGlobalTypingContext,
+  GlobalTypingContext,
   LocationBasedLocalTypingContext,
-  UnoptimizedGlobalTypingContext,
 } from './typing-context';
 
 function typeCheckMemberDeclaration(
@@ -32,7 +32,7 @@ function typeCheckMemberDeclaration(
 export default function typeCheckSamlangModule(
   moduleReference: ModuleReference,
   samlangModule: SamlangModule,
-  globalTypingContext: UnoptimizedGlobalTypingContext,
+  globalTypingContext: GlobalTypingContext,
   errorReporter: GlobalErrorReporter,
 ): SamlangModule {
   const ssaResult = performSSAAnalysisOnSamlangModule(samlangModule, errorReporter);

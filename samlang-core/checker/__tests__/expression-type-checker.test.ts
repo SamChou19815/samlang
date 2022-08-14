@@ -66,6 +66,7 @@ function typeCheckInSandbox(
                     },
                   },
                   extendsOrImplements: null,
+                  superTypes: [],
                   functions: new Map([
                     [
                       'init',
@@ -134,6 +135,7 @@ function typeCheckInSandbox(
                     },
                   },
                   extendsOrImplements: null,
+                  superTypes: [],
                   functions: new Map([
                     [
                       'Foo',
@@ -180,6 +182,7 @@ function typeCheckInSandbox(
                     },
                   },
                   extendsOrImplements: null,
+                  superTypes: [],
                   functions: new Map(),
                   methods: new Map(),
                 },
@@ -201,6 +204,7 @@ function typeCheckInSandbox(
                     },
                   },
                   extendsOrImplements: null,
+                  superTypes: [],
                   functions: new Map([
                     [
                       'Foo',
@@ -248,6 +252,7 @@ function typeCheckInSandbox(
                     },
                   },
                   extendsOrImplements: null,
+                  superTypes: [],
                   functions: new Map([
                     [
                       'init',
@@ -279,6 +284,7 @@ function typeCheckInSandbox(
                     },
                   },
                   extendsOrImplements: null,
+                  superTypes: [],
                   functions: new Map([
                     [
                       'init',
@@ -310,6 +316,7 @@ function typeCheckInSandbox(
                     },
                   },
                   extendsOrImplements: null,
+                  superTypes: [],
                   functions: new Map([
                     [
                       'init',

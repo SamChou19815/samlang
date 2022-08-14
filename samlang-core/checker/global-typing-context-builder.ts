@@ -22,9 +22,9 @@ import type { DefaultBuiltinClasses } from '../parser';
 import { checkNotNull } from '../utils';
 import type {
   ClassTypingContext,
+  GlobalTypingContext,
   MemberTypeInformation,
   ModuleTypingContext,
-  UnoptimizedGlobalTypingContext,
 } from './typing-context';
 
 function buildInterfaceTypingContext(
@@ -48,6 +48,7 @@ function buildInterfaceTypingContext(
   return {
     typeParameters: typeParameters.map((it) => ({ name: it.name.name, bound: it.bound })),
     extendsOrImplements: extendsOrImplementsNode ?? null,
+    superTypes: [],
     functions,
     methods,
   };
@@ -99,6 +100,7 @@ function buildClassTypingContext(
     typeParameters,
     typeDefinition,
     extendsOrImplements: classDefinition.extendsOrImplementsNode ?? null,
+    superTypes: [],
     functions,
     methods,
   };
@@ -136,6 +138,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
         typeParameters: [],
         typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
         extendsOrImplements: null,
+        superTypes: [],
         functions: new Map([
           [
             'stringToInt',
@@ -192,16 +195,10 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
   ]),
 };
 
-/**
- * Build global typing context from scratch.
- *
- * @param sources a collection of all sources needed for type checking.
- * @returns a fully constructed global typing context.
- */
 export function buildGlobalTypingContext(
   sources: Sources<SamlangModule>,
   builtinModuleTypes: ModuleTypingContext,
-): UnoptimizedGlobalTypingContext {
+): GlobalTypingContext {
   const modules = ModuleReferenceCollections.hashMapOf<ModuleTypingContext>();
   modules.set(ModuleReference.ROOT, builtinModuleTypes);
   sources.forEach((samlangModule, moduleReference) => {

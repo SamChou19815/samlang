@@ -58,7 +58,7 @@ export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
     if (fileLocationMap == null) return null;
     let bestWeight = Number.MAX_SAFE_INTEGER;
     let bestLocation: Location | null = null;
-    fileLocationMap.entries().forEach(([location]) => {
+    fileLocationMap.forEach((_, location) => {
       // Weight calculation is adapted from the heuristics in
       // https://github.com/facebook/pyre-check/blob/master/analysis/lookup.ml
       if (!location.containsPosition(position)) return;

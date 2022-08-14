@@ -108,6 +108,7 @@ describe('global-typing-context-builder', () => {
             typeParameters: [],
             typeDefinition,
             extendsOrImplements: null,
+            superTypes: [],
             functions: new Map([
               [
                 'init',
@@ -136,6 +137,7 @@ describe('global-typing-context-builder', () => {
             typeParameters: [],
             typeDefinition,
             extendsOrImplements: null,
+            superTypes: [],
             functions: new Map([
               [
                 'f1',
@@ -176,6 +178,7 @@ describe('global-typing-context-builder', () => {
             typeParameters: [],
             typeDefinition,
             extendsOrImplements: null,
+            superTypes: [],
             functions: new Map([
               [
                 'init',
