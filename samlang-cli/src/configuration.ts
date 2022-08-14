@@ -17,7 +17,7 @@ export function parseSamlangProjectConfiguration(
       sourceDirectory = '.',
       outputDirectory = 'out',
       entryPoints = [],
-    } = json as Record<string, unknown>;
+    } = json as { [k: string]: unknown };
     if (typeof sourceDirectory !== 'string' || typeof outputDirectory !== 'string') return null;
     if (!Array.isArray(entryPoints)) return null;
     const validatedEntryPoints: string[] = [];

@@ -92,8 +92,8 @@ const variableOfMidIRExpression = (expression: MidIRExpression): string | null =
 
 class HighIRToMidIRLoweringManager {
   constructor(
-    private readonly closureTypeDefinitions: Readonly<Record<string, MidIRFunctionType>>,
-    private readonly typeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>,
+    private readonly closureTypeDefinitions: ReadonlyMap<string, MidIRFunctionType>,
+    private readonly typeDefinitions: ReadonlyMap<string, HighIRTypeDefinition>,
     private readonly isTheSameLoweredType: (t1: MidIRType, t2?: MidIRType) => boolean,
   ) {}
 
@@ -108,7 +108,7 @@ class HighIRToMidIRLoweringManager {
   public generateDestructorFunctions(): readonly MidIRFunction[] {
     const functions: MidIRFunction[] = [];
 
-    Object.values(this.typeDefinitions).forEach((typeDefinition) => {
+    for (const typeDefinition of this.typeDefinitions.values()) {
       functions.push(
         this.generateSingleDestructorFunction(
           typeDefinition.identifier,
@@ -205,9 +205,9 @@ class HighIRToMidIRLoweringManager {
           },
         ),
       );
-    });
+    }
 
-    Object.keys(this.closureTypeDefinitions).forEach((typeName) => {
+    for (const typeName of this.closureTypeDefinitions.keys()) {
       functions.push(
         this.generateSingleDestructorFunction(
           typeName,
@@ -234,7 +234,7 @@ class HighIRToMidIRLoweringManager {
           },
         ),
       );
-    });
+    }
 
     functions.push(this.generateSingleDestructorFunction('string', () => {}));
 
@@ -473,7 +473,7 @@ class HighIRToMidIRLoweringManager {
         assert(pointerType.__type__ === 'IdentifierType');
         const variableType = lowerHighIRType(statement.type);
         const typeDefinition = checkNotNull(
-          this.typeDefinitions[pointerType.name],
+          this.typeDefinitions.get(pointerType.name),
           `Missing ${pointerType.name}`,
         );
         if (typeDefinition.type === 'object') {
@@ -526,7 +526,7 @@ class HighIRToMidIRLoweringManager {
               closureHighIRType.typeArguments.length === 0,
           );
           const functionType = checkNotNull(
-            this.closureTypeDefinitions[closureHighIRType.name],
+            this.closureTypeDefinitions.get(closureHighIRType.name),
             `Missing ${closureHighIRType.name}`,
           );
           const pointerExpression = lowerHighIRExpression(statement.functionExpression);
@@ -625,7 +625,7 @@ class HighIRToMidIRLoweringManager {
       case 'HighIRStructInitializationStatement': {
         const structVariableName = statement.structVariableName;
         const type = lowerHighIRType(statement.type);
-        const typeDefinition = this.typeDefinitions[statement.type.name];
+        const typeDefinition = this.typeDefinitions.get(statement.type.name);
         assert(typeDefinition != null, `Missing typedef ${statement.type.name}`);
         const statements: MidIRStatement[] = [];
         const expressionList =
@@ -790,7 +790,7 @@ function generalizedLowerHighIRSourcesToMidIRSources(
   isTheSameLoweredType: (t1: MidIRType, t2?: MidIRType) => boolean,
 ): MidIRSources {
   const typeDefinitions: MidIRTypeDefinition[] = [];
-  const closureTypeDefinitionMapForLowering = Object.fromEntries(
+  const closureTypeDefinitionMapForLowering = new Map(
     sources.closureTypes.map((it) => {
       assert(it.typeParameters.length === 0);
       const functionTypeWithoutContextArgument = lowerHighIRFunctionType(it.functionType);
@@ -810,7 +810,7 @@ function generalizedLowerHighIRSourcesToMidIRSources(
       return [it.identifier, functionType];
     }),
   );
-  const typeDefinitionMapForLowering = Object.fromEntries(
+  const typeDefinitionMapForLowering = new Map(
     sources.typeDefinitions.map((it) => {
       const mappings =
         it.type === 'object' ? it.mappings.map(lowerHighIRType) : [MIR_INT_TYPE, MIR_ANY_TYPE];
