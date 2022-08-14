@@ -3,11 +3,11 @@ import {
   Location,
   LocationCollections,
   ModuleReference,
-  ModuleReferenceCollections,
   moduleReferenceToString,
   SourceReason,
 } from '../ast/common-nodes';
 import {
+  prettyPrintType,
   SamlangFunctionType,
   SamlangIdentifierType,
   SamlangType,
@@ -19,7 +19,7 @@ import {
   TypeParameterSignature,
   typeReposition,
 } from '../ast/samlang-nodes';
-import { assert, checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
+import { assert, checkNotNull, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
 
@@ -29,18 +29,27 @@ export interface MemberTypeInformation {
   readonly type: SamlangFunctionType;
 }
 
+export function memberTypeInformationToString(
+  name: string,
+  { isPublic, typeParameters, type }: MemberTypeInformation,
+): string {
+  const accessString = isPublic ? 'public' : 'private';
+  const tparams = typeParameters.map((it) =>
+    it.bound != null ? `${it.name}: ${prettyPrintType(it.bound)}` : it.name,
+  );
+  const tparamString = tparams.length > 0 ? `<${tparams.join(', ')}>` : '';
+  return `${accessString} ${name}${tparamString}${prettyPrintType(type)}`;
+}
+
 export interface InterfaceTypingContextInstantiatedMembers {
   readonly functions: ReadonlyMap<string, MemberTypeInformation>;
   readonly methods: ReadonlyMap<string, MemberTypeInformation>;
 }
 
-interface InterfaceTypingContextInstantiatedNodes
-  extends InterfaceTypingContextInstantiatedMembers {
-  readonly extendsOrImplements: SamlangIdentifierType | null;
-}
-
-export interface InterfaceTypingContext extends InterfaceTypingContextInstantiatedNodes {
+export interface InterfaceTypingContext extends InterfaceTypingContextInstantiatedMembers {
   readonly typeParameters: readonly TypeParameterSignature[];
+  readonly extendsOrImplements: SamlangIdentifierType | null;
+  readonly superTypes: readonly SamlangIdentifierType[];
 }
 
 export interface ClassTypingContext extends InterfaceTypingContext {
@@ -52,19 +61,19 @@ export interface ModuleTypingContext {
   readonly classes: ReadonlyMap<string, ClassTypingContext>;
 }
 
-export type UnoptimizedGlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
+export type GlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
 
 export class AccessibleGlobalTypingContext {
   constructor(
     public readonly currentModuleReference: ModuleReference,
-    private readonly globalTypingContext: UnoptimizedGlobalTypingContext,
+    private readonly globalTypingContext: GlobalTypingContext,
     public readonly typeParameters: ReadonlySet<string>,
     public readonly currentClass: string,
   ) {}
 
   static fromInterface(
     currentModuleReference: ModuleReference,
-    globalTypingContext: UnoptimizedGlobalTypingContext,
+    globalTypingContext: GlobalTypingContext,
     interfaceDeclaration: SourceInterfaceDeclaration,
   ): AccessibleGlobalTypingContext {
     return new AccessibleGlobalTypingContext(
@@ -80,97 +89,6 @@ export class AccessibleGlobalTypingContext {
     className: string,
   ): InterfaceTypingContext | undefined {
     return this.globalTypingContext.get(moduleReference)?.interfaces?.get(className);
-  }
-
-  getFullyInlinedInterfaceContext(instantiatedInterfaceType: SamlangIdentifierType): {
-    context: InterfaceTypingContextInstantiatedMembers;
-    cyclicType: SamlangIdentifierType | null;
-  } {
-    const interfaceTypingContext = this.getInterfaceInformation(
-      instantiatedInterfaceType.moduleReference,
-      instantiatedInterfaceType.identifier,
-    );
-    if (interfaceTypingContext == null) {
-      return { context: { functions: new Map(), methods: new Map() }, cyclicType: null };
-    }
-    const collector: InterfaceTypingContextInstantiatedMembers[] = [];
-    const cyclicType = this.recursiveComputeInterfaceMembersChain(
-      instantiatedInterfaceType,
-      collector,
-      ModuleReferenceCollections.hashMapOf(),
-    );
-    const functions = new Map<string, MemberTypeInformation>();
-    const methods = new Map<string, MemberTypeInformation>();
-    collector.forEach((it) => {
-      // Shadowing is allowed, as long as type matches.
-      // Conformance will be checked in interface-conformance-checking.ts
-      it.functions.forEach((type, name) => functions.set(name, type));
-      it.methods.forEach((type, name) => methods.set(name, type));
-    });
-    return { context: { functions, methods }, cyclicType };
-  }
-
-  private recursiveComputeInterfaceMembersChain(
-    interfaceType: SamlangIdentifierType,
-    collector: InterfaceTypingContextInstantiatedMembers[],
-    visited: HashMap<ModuleReference, Set<string>>,
-  ): SamlangIdentifierType | null {
-    const visitedTypesInModule = visited.get(interfaceType.moduleReference) ?? new Set();
-    if (visitedTypesInModule.has(interfaceType.identifier)) {
-      return interfaceType;
-    }
-    visited.set(interfaceType.moduleReference, visitedTypesInModule.add(interfaceType.identifier));
-    const interfaceContext = this.getInterfaceInformation(
-      interfaceType.moduleReference,
-      interfaceType.identifier,
-    );
-    if (interfaceContext == null) return null;
-    const { functions, methods, extendsOrImplements } =
-      AccessibleGlobalTypingContext.getInstantiatedInterface(interfaceContext, interfaceType);
-    let cyclicType: SamlangIdentifierType | null = null;
-    if (extendsOrImplements != null) {
-      cyclicType = this.recursiveComputeInterfaceMembersChain(
-        extendsOrImplements,
-        collector,
-        visited,
-      );
-    }
-    collector.push({ functions, methods });
-    return cyclicType;
-  }
-
-  private static getInstantiatedInterface(
-    interfaceContext: InterfaceTypingContext,
-    instantiatedInterfaceType: SamlangIdentifierType,
-  ): InterfaceTypingContextInstantiatedNodes {
-    const mapping = new Map(
-      zip(
-        interfaceContext.typeParameters.map((it) => it.name),
-        instantiatedInterfaceType.typeArguments,
-      ),
-    );
-    return {
-      functions: interfaceContext.functions,
-      methods: new Map(
-        Array.from(interfaceContext.methods.entries()).map(
-          ([name, { isPublic, typeParameters, type }]) => [
-            name,
-            {
-              isPublic,
-              typeParameters,
-              type: performTypeSubstitution(type, mapping) as SamlangFunctionType,
-            },
-          ],
-        ),
-      ),
-      extendsOrImplements:
-        interfaceContext.extendsOrImplements != null
-          ? (performTypeSubstitution(
-              interfaceContext.extendsOrImplements,
-              mapping,
-            ) as SamlangIdentifierType)
-          : null,
-    };
   }
 
   getClassTypeInformation(
@@ -359,9 +277,7 @@ export class LocationBasedLocalTypingContext {
 
   getCaptured(lambdaLocation: Location): ReadonlyMap<string, SamlangType> {
     const map = new Map<string, SamlangType>();
-    const capturedEntries = this.ssaAnalysisResult.lambdaCaptures
-      .forceGet(lambdaLocation)
-      .entries();
+    const capturedEntries = this.ssaAnalysisResult.lambdaCaptures.forceGet(lambdaLocation);
     for (const [name, location] of capturedEntries) {
       const firstLetter = name.charAt(0);
       if ('A' <= firstLetter && firstLetter <= 'Z') continue;

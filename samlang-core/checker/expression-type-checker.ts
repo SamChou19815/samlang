@@ -864,7 +864,7 @@ class ExpressionTypeChecker {
       type,
       associatedComments: expression.associatedComments,
       parameters: expression.parameters,
-      captured: Object.fromEntries(captured.entries()),
+      captured: Object.fromEntries(captured),
       body,
     });
   }

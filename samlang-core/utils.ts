@@ -204,7 +204,7 @@ export const mapEquals = <K, V>(
   if (map1.size !== map2.size) {
     return false;
   }
-  return Array.from(map1.entries()).every(([key, v1]) => {
+  return Array.from(map1).every(([key, v1]) => {
     const v2 = map2.get(key);
     if (v2 == null) {
       return false;

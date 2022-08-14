@@ -10,10 +10,33 @@ import {
   SourceIdentifierType,
   SourceIntType,
 } from '../../ast/samlang-nodes';
-import { checkNotNull } from '../../utils';
-import { AccessibleGlobalTypingContext, ClassTypingContext } from '../typing-context';
+import {
+  AccessibleGlobalTypingContext,
+  ClassTypingContext,
+  memberTypeInformationToString,
+} from '../typing-context';
 
 describe('typing-context', () => {
+  it('memberTypeInformationToString tests', () => {
+    expect(
+      memberTypeInformationToString('foo', {
+        isPublic: false,
+        typeParameters: [],
+        type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+      }),
+    ).toBe('private foo() -> int');
+
+    expect(
+      memberTypeInformationToString('bar', {
+        isPublic: true,
+        typeParameters: [
+          { name: 'T', bound: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A') },
+        ],
+        type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+      }),
+    ).toBe('public bar<T: A>() -> int');
+  });
+
   it('AccessibleGlobalTypingContext tests', () => {
     const context = new AccessibleGlobalTypingContext(
       ModuleReference.DUMMY,
@@ -29,148 +52,7 @@ describe('typing-context', () => {
                   { name: 'B', bound: null },
                 ],
                 extendsOrImplements: null,
-                functions: new Map(),
-                methods: new Map(),
-              },
-            ],
-            [
-              'IUseNonExistent',
-              {
-                typeParameters: [
-                  { name: 'A', bound: null },
-                  { name: 'B', bound: null },
-                ],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'not_exist',
-                ),
-                functions: new Map(),
-                methods: new Map(),
-              },
-            ],
-            [
-              'IBase',
-              {
-                typeParameters: [
-                  { name: 'A', bound: null },
-                  { name: 'B', bound: null },
-                ],
-                extendsOrImplements: null,
-                functions: new Map(),
-                methods: new Map([
-                  [
-                    'm1',
-                    {
-                      isPublic: true,
-                      typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                        ],
-                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-                      ),
-                    },
-                  ],
-                ]),
-              },
-            ],
-            [
-              'ILevel1',
-              {
-                typeParameters: [
-                  { name: 'A', bound: null },
-                  { name: 'B', bound: null },
-                ],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'IBase',
-                  [
-                    SourceIntType(DummySourceReason),
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                  ],
-                ),
-                functions: new Map([
-                  [
-                    'f1',
-                    {
-                      isPublic: true,
-                      typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                        ],
-                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-                      ),
-                    },
-                  ],
-                ]),
-                methods: new Map(),
-              },
-            ],
-            [
-              'ILevel2',
-              {
-                typeParameters: [
-                  { name: 'A', bound: null },
-                  { name: 'B', bound: null },
-                ],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'ILevel1',
-                  [
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                    SourceIntType(DummySourceReason),
-                  ],
-                ),
-                functions: new Map(),
-                methods: new Map([
-                  [
-                    'm2',
-                    {
-                      isPublic: true,
-                      typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                        ],
-                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-                      ),
-                    },
-                  ],
-                ]),
-              },
-            ],
-            [
-              'ICyclic1',
-              {
-                typeParameters: [],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'ICyclic2',
-                ),
-                functions: new Map(),
-                methods: new Map(),
-              },
-            ],
-            [
-              'ICyclic2',
-              {
-                typeParameters: [],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'ICyclic1',
-                ),
+                superTypes: [],
                 functions: new Map(),
                 methods: new Map(),
               },
@@ -200,6 +82,7 @@ describe('typing-context', () => {
                   },
                 },
                 extendsOrImplements: null,
+                superTypes: [],
                 functions: new Map([
                   [
                     'f1',
@@ -271,6 +154,7 @@ describe('typing-context', () => {
                   mappings: {},
                 },
                 extendsOrImplements: null,
+                superTypes: [],
                 functions: new Map([
                   [
                     'f1',
@@ -333,96 +217,6 @@ describe('typing-context', () => {
     );
 
     expect(context.getInterfaceInformation(ModuleReference.DUMMY, 'I')).toBeTruthy();
-
-    expect(
-      context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist'),
-      )?.context,
-    ).toEqual({
-      functions: new Map(),
-      methods: new Map(),
-    });
-    expect(
-      context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'IUseNonExistent'),
-      )?.context,
-    ).toEqual({
-      functions: new Map(),
-      methods: new Map(),
-    });
-    expect(
-      context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I'),
-      )?.context,
-    ).toEqual({
-      functions: new Map(),
-      methods: new Map(),
-    });
-    expect(
-      checkNotNull(
-        context.getFullyInlinedInterfaceContext(
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ILevel2'),
-        ),
-      ).context,
-    ).toEqual({
-      functions: new Map([
-        [
-          'f1',
-          {
-            isPublic: true,
-            typeParameters: [{ name: 'C', bound: null }],
-            type: SourceFunctionType(
-              DummySourceReason,
-              [
-                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-              ],
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-            ),
-          },
-        ],
-      ]),
-      methods: new Map([
-        [
-          'm1',
-          {
-            isPublic: true,
-            typeParameters: [{ name: 'C', bound: null }],
-            type: SourceFunctionType(
-              DummySourceReason,
-              [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-            ),
-          },
-        ],
-        [
-          'm2',
-          {
-            isPublic: true,
-            typeParameters: [{ name: 'C', bound: null }],
-            type: SourceFunctionType(
-              DummySourceReason,
-              [
-                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-              ],
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
-            ),
-          },
-        ],
-      ]),
-    });
-
-    expect(
-      context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1'),
-      ).cyclicType,
-    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1'));
-    expect(
-      context.getFullyInlinedInterfaceContext(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2'),
-      ).cyclicType,
-    ).toEqual(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2'));
 
     expect(
       context.getClassFunctionType(ModuleReference(['A']), 'A', 'f1', Location.DUMMY),

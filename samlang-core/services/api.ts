@@ -416,7 +416,7 @@ class LanguageServicesImpl implements LanguageServices {
         expression.className.name,
       );
       if (relevantClassType == null) return [];
-      return Array.from(relevantClassType.functions.entries(), ([name, typeInformation]) => {
+      return Array.from(relevantClassType.functions, ([name, typeInformation]) => {
         return LanguageServicesImpl.getCompletionResultFromTypeInformation(
           name,
           typeInformation,
@@ -451,7 +451,7 @@ class LanguageServicesImpl implements LanguageServices {
         });
       });
     }
-    Array.from(relevantClassType.methods.entries()).forEach(([name, typeInformation]) => {
+    Array.from(relevantClassType.methods).forEach(([name, typeInformation]) => {
       if (isInsideClass || typeInformation.isPublic) {
         completionResults.push(
           LanguageServicesImpl.getCompletionResultFromTypeInformation(
