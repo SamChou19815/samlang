@@ -6,69 +6,48 @@ import {
   SourceReason,
 } from '../common-nodes';
 import {
+  AstBuilder,
   isTheSameType,
   prettyPrintType,
   prettyPrintTypeParameter,
-  SourceBoolType,
-  SourceFunctionType,
   SourceId,
   SourceIdentifierType,
   SourceIntType,
-  SourceStringType,
-  SourceUnitType,
   SourceUnknownType,
   typeReposition,
 } from '../samlang-nodes';
 
 describe('samlang-nodes', () => {
   it('prettyPrint is working.', () => {
-    expect(prettyPrintType(SourceUnitType(DummySourceReason))).toBe('unit');
-    expect(prettyPrintType(SourceBoolType(DummySourceReason))).toBe('bool');
-    expect(prettyPrintType(SourceIntType(DummySourceReason))).toBe('int');
-    expect(prettyPrintType(SourceStringType(DummySourceReason))).toBe('string');
+    expect(prettyPrintType(AstBuilder.UnitType)).toBe('unit');
+    expect(prettyPrintType(AstBuilder.BoolType)).toBe('bool');
+    expect(prettyPrintType(AstBuilder.IntType)).toBe('int');
+    expect(prettyPrintType(AstBuilder.StringType)).toBe('string');
     expect(prettyPrintType(SourceUnknownType(DummySourceReason))).toBe('unknown');
-    expect(
-      prettyPrintType(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo')),
-    ).toBe('Foo');
+    expect(prettyPrintType(AstBuilder.IdType('Foo'))).toBe('Foo');
     expect(
       prettyPrintType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo', [
-          SourceUnitType(DummySourceReason),
-          SourceIntType(DummySourceReason),
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar'),
+        AstBuilder.IdType('Foo', [
+          AstBuilder.UnitType,
+          AstBuilder.IntType,
+          AstBuilder.IdType('Bar'),
         ]),
       ),
     ).toBe('Foo<unit, int, Bar>');
-    expect(
-      prettyPrintType(SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason))),
-    ).toBe('() -> unit');
-    expect(
-      prettyPrintType(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
-      ),
-    ).toBe('(int) -> bool');
+    expect(prettyPrintType(AstBuilder.FunType([], AstBuilder.UnitType))).toBe('() -> unit');
+    expect(prettyPrintType(AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType))).toBe(
+      '(int) -> bool',
+    );
     expect(
       prettyPrintType(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason), SourceBoolType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
+        AstBuilder.FunType([AstBuilder.IntType, AstBuilder.BoolType], AstBuilder.BoolType),
       ),
     ).toBe('(int, bool) -> bool');
     expect(
       prettyPrintType(
-        SourceFunctionType(
-          DummySourceReason,
-          [
-            SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
-            SourceBoolType(DummySourceReason),
-          ],
-          SourceBoolType(DummySourceReason),
+        AstBuilder.FunType(
+          [AstBuilder.FunType([], AstBuilder.UnitType), AstBuilder.BoolType],
+          AstBuilder.BoolType,
         ),
       ),
     ).toBe('(() -> unit, bool) -> bool');
@@ -83,7 +62,7 @@ describe('samlang-nodes', () => {
     expect(
       prettyPrintTypeParameter({
         name: SourceId('Foo'),
-        bound: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar'),
+        bound: AstBuilder.IdType('Bar'),
         associatedComments: [],
         location: Location.DUMMY,
       }),
@@ -108,190 +87,97 @@ describe('samlang-nodes', () => {
     expect(
       isTheSameType(SourceUnknownType(DummySourceReason), SourceUnknownType(DummySourceReason)),
     ).toBeTruthy();
-    expect(
-      isTheSameType(SourceUnitType(DummySourceReason), SourceUnitType(DummySourceReason)),
-    ).toBeTruthy();
-    expect(
-      isTheSameType(SourceUnitType(DummySourceReason), SourceBoolType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceUnitType(DummySourceReason), SourceIntType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceUnitType(DummySourceReason), SourceStringType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceBoolType(DummySourceReason), SourceUnitType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceBoolType(DummySourceReason), SourceBoolType(DummySourceReason)),
-    ).toBeTruthy();
-    expect(
-      isTheSameType(SourceBoolType(DummySourceReason), SourceIntType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceBoolType(DummySourceReason), SourceStringType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceIntType(DummySourceReason), SourceBoolType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)),
-    ).toBeTruthy();
-    expect(
-      isTheSameType(SourceIntType(DummySourceReason), SourceStringType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceStringType(DummySourceReason), SourceUnitType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceStringType(DummySourceReason), SourceBoolType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceStringType(DummySourceReason), SourceIntType(DummySourceReason)),
-    ).toBeFalsy();
-    expect(
-      isTheSameType(SourceStringType(DummySourceReason), SourceStringType(DummySourceReason)),
-    ).toBeTruthy();
+    expect(isTheSameType(AstBuilder.UnitType, AstBuilder.UnitType)).toBeTruthy();
+    expect(isTheSameType(AstBuilder.UnitType, AstBuilder.BoolType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.UnitType, AstBuilder.IntType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.UnitType, AstBuilder.StringType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.BoolType, AstBuilder.UnitType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.BoolType, AstBuilder.BoolType)).toBeTruthy();
+    expect(isTheSameType(AstBuilder.BoolType, AstBuilder.IntType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.BoolType, AstBuilder.StringType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.IntType, AstBuilder.UnitType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.IntType, AstBuilder.BoolType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.IntType, AstBuilder.IntType)).toBeTruthy();
+    expect(isTheSameType(AstBuilder.IntType, AstBuilder.StringType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.StringType, AstBuilder.UnitType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.StringType, AstBuilder.BoolType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.StringType, AstBuilder.IntType)).toBeFalsy();
+    expect(isTheSameType(AstBuilder.StringType, AstBuilder.StringType)).toBeTruthy();
 
     expect(
       isTheSameType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceUnitType(DummySourceReason),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.UnitType,
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType('B'),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType('A'),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-        ]),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType('A', [AstBuilder.IntType]),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceBoolType(DummySourceReason),
-          SourceIntType(DummySourceReason),
-        ]),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
+        AstBuilder.IdType('A', [AstBuilder.BoolType, AstBuilder.IntType]),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
         SourceIdentifierType(DummySourceReason, ModuleReference(['AAA']), 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
+          AstBuilder.IntType,
+          AstBuilder.BoolType,
         ]),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceBoolType(DummySourceReason),
-        ]),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
       ),
     ).toBeTruthy();
 
     expect(
       isTheSameType(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
-        SourceUnitType(DummySourceReason),
+        AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
+        AstBuilder.UnitType,
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceBoolType(DummySourceReason)],
-          SourceIntType(DummySourceReason),
-        ),
+        AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
+        AstBuilder.FunType([AstBuilder.BoolType], AstBuilder.IntType),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceBoolType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
+        AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
+        AstBuilder.FunType([AstBuilder.BoolType], AstBuilder.BoolType),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
-        SourceFunctionType(DummySourceReason, [], SourceBoolType(DummySourceReason)),
+        AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
+        AstBuilder.FunType([], AstBuilder.BoolType),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
+        AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
+        AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
       ),
     ).toBeTruthy();
   });

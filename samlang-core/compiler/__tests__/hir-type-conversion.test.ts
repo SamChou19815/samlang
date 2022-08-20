@@ -1,4 +1,4 @@
-import { DummySourceReason, Location, ModuleReference } from '../../ast/common-nodes';
+import { Location, ModuleReference } from '../../ast/common-nodes';
 import {
   HIR_BOOL_TYPE,
   HIR_FUNCTION_TYPE,
@@ -10,15 +10,7 @@ import {
   prettyPrintHighIRType,
   prettyPrintHighIRTypeDefinition,
 } from '../../ast/hir-nodes';
-import {
-  SourceBoolType,
-  SourceFunctionType,
-  SourceId,
-  SourceIdentifierType,
-  SourceIntType,
-  SourceStringType,
-  SourceUnitType,
-} from '../../ast/samlang-nodes';
+import { AstBuilder, SourceId } from '../../ast/samlang-nodes';
 import {
   collectUsedGenericTypes,
   encodeHighIRNameAfterGenericsSpecialization,
@@ -269,32 +261,19 @@ describe('hir-type-conversion', () => {
     const typeSynthesizer = new HighIRTypeSynthesizer();
     const manager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
 
-    expect(manager.lowerSamlangType(SourceBoolType(DummySourceReason))).toEqual(HIR_BOOL_TYPE);
-    expect(manager.lowerSamlangType(SourceIntType(DummySourceReason))).toEqual(HIR_INT_TYPE);
-    expect(manager.lowerSamlangType(SourceUnitType(DummySourceReason))).toEqual(HIR_INT_TYPE);
-    expect(manager.lowerSamlangType(SourceStringType(DummySourceReason))).toEqual(HIR_STRING_TYPE);
+    expect(manager.lowerSamlangType(AstBuilder.BoolType)).toEqual(HIR_BOOL_TYPE);
+    expect(manager.lowerSamlangType(AstBuilder.IntType)).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangType(AstBuilder.UnitType)).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangType(AstBuilder.StringType)).toEqual(HIR_STRING_TYPE);
 
     expect(
-      prettyPrintHighIRType(
-        manager.lowerSamlangType(
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-            SourceIntType(DummySourceReason),
-          ]),
-        ),
-      ),
+      prettyPrintHighIRType(manager.lowerSamlangType(AstBuilder.IdType('A', [AstBuilder.IntType]))),
     ).toBe('__DUMMY___A<int>');
 
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          SourceFunctionType(
-            DummySourceReason,
-            [
-              SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
-              SourceBoolType(DummySourceReason),
-            ],
-            SourceIntType(DummySourceReason),
-          ),
+          AstBuilder.FunType([AstBuilder.IdType('T'), AstBuilder.BoolType], AstBuilder.IntType),
         ),
       ),
     ).toBe('$SyntheticIDType0<T>');
@@ -317,30 +296,16 @@ describe('hir-type-conversion', () => {
       names: [SourceId('a'), SourceId('b')],
       mappings: {
         a: {
-          type: SourceFunctionType(
-            DummySourceReason,
-            [
-              SourceFunctionType(
-                DummySourceReason,
-                [SourceIdentifierType(DummySourceReason, ModuleReference.ROOT, 'A')],
-                SourceBoolType(DummySourceReason),
-              ),
-            ],
-            SourceBoolType(DummySourceReason),
+          type: AstBuilder.FunType(
+            [AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.BoolType)],
+            AstBuilder.BoolType,
           ),
           isPublic: true,
         },
         b: {
-          type: SourceFunctionType(
-            DummySourceReason,
-            [
-              SourceFunctionType(
-                DummySourceReason,
-                [SourceIdentifierType(DummySourceReason, ModuleReference.ROOT, 'A')],
-                SourceBoolType(DummySourceReason),
-              ),
-            ],
-            SourceBoolType(DummySourceReason),
+          type: AstBuilder.FunType(
+            [AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.BoolType)],
+            AstBuilder.BoolType,
           ),
           isPublic: false,
         },
@@ -363,26 +328,15 @@ describe('hir-type-conversion', () => {
     const manager = new SamlangTypeLoweringManager(new Set(['A']), new HighIRTypeSynthesizer());
     expect(
       manager.lowerSamlangFunctionTypeForTopLevel(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceIntType(DummySourceReason)],
-          SourceBoolType(DummySourceReason),
-        ),
+        AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
       ),
     ).toEqual([[], HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)]);
 
     expect(
       manager.lowerSamlangFunctionTypeForTopLevel(
-        SourceFunctionType(
-          DummySourceReason,
-          [
-            SourceFunctionType(
-              DummySourceReason,
-              [SourceIntType(DummySourceReason)],
-              SourceBoolType(DummySourceReason),
-            ),
-          ],
-          SourceBoolType(DummySourceReason),
+        AstBuilder.FunType(
+          [AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType)],
+          AstBuilder.BoolType,
         ),
       ),
     ).toEqual([

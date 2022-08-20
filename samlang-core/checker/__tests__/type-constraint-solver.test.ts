@@ -1,13 +1,8 @@
-import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
+import { DummySourceReason } from '../../ast/common-nodes';
 import {
+  AstBuilder,
   prettyPrintType,
   SamlangType,
-  SourceBoolType,
-  SourceFunctionType,
-  SourceIdentifierType,
-  SourceIntType,
-  SourceStringType,
-  SourceUnitType,
   SourceUnknownType,
   TypeParameterSignature,
 } from '../../ast/samlang-nodes';
@@ -34,45 +29,33 @@ function solve(
   return result;
 }
 
-const IdType = (id: string) =>
-  SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, id, []);
-
 describe('type-constraint-solver', () => {
   it('primitive types', () => {
-    expect(solve(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason), [])).toEqual({
+    expect(solve(AstBuilder.IntType, AstBuilder.UnitType, [])).toEqual({
       hasError: 'true',
     });
 
-    expect(
-      solve(SourceIntType(DummySourceReason), SourceUnitType(DummySourceReason), [
-        { name: 'T', bound: null },
-      ]),
-    ).toEqual({ T: 'unknown', hasError: 'true' });
+    expect(solve(AstBuilder.IntType, AstBuilder.UnitType, [{ name: 'T', bound: null }])).toEqual({
+      T: 'unknown',
+      hasError: 'true',
+    });
   });
 
   it('identifier type', () => {
-    expect(
-      solve(SourceIntType(DummySourceReason), IdType('T'), [{ name: 'T', bound: null }]),
-    ).toEqual({ T: 'int' });
+    expect(solve(AstBuilder.IntType, AstBuilder.IdType('T'), [{ name: 'T', bound: null }])).toEqual(
+      { T: 'int' },
+    );
 
     expect(
-      solve(
-        SourceIntType(DummySourceReason),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar', [
-          SourceIntType(DummySourceReason),
-        ]),
-        [{ name: 'Foo', bound: null }],
-      ),
+      solve(AstBuilder.IntType, AstBuilder.IdType('Bar', [AstBuilder.IntType]), [
+        { name: 'Foo', bound: null },
+      ]),
     ).toEqual({ Foo: 'unknown', hasError: 'true' });
 
     expect(
       solve(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo', [
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar', [IdType('Baz')]),
-        ]),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Foo', [
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Bar', [IdType('T')]),
-        ]),
+        AstBuilder.IdType('Foo', [AstBuilder.IdType('Bar', [AstBuilder.IdType('Baz')])]),
+        AstBuilder.IdType('Foo', [AstBuilder.IdType('Bar', [AstBuilder.IdType('T')])]),
         [{ name: 'T', bound: null }],
       ),
     ).toEqual({ T: 'Baz' });
@@ -81,16 +64,14 @@ describe('type-constraint-solver', () => {
   it('function type', () => {
     expect(
       solve(
-        SourceFunctionType(
-          DummySourceReason,
-          [
-            SourceIntType(DummySourceReason),
-            SourceBoolType(DummySourceReason),
-            SourceStringType(DummySourceReason),
-          ],
-          SourceUnitType(DummySourceReason),
+        AstBuilder.FunType(
+          [AstBuilder.IntType, AstBuilder.BoolType, AstBuilder.StringType],
+          AstBuilder.UnitType,
         ),
-        SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('A')], IdType('C')),
+        AstBuilder.FunType(
+          [AstBuilder.IdType('A'), AstBuilder.IdType('B'), AstBuilder.IdType('A')],
+          AstBuilder.IdType('C'),
+        ),
         [
           { name: 'A', bound: null },
           { name: 'B', bound: null },
@@ -101,8 +82,11 @@ describe('type-constraint-solver', () => {
 
     expect(
       solve(
-        SourceIntType(DummySourceReason),
-        SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('A')], IdType('C')),
+        AstBuilder.IntType,
+        AstBuilder.FunType(
+          [AstBuilder.IdType('A'), AstBuilder.IdType('B'), AstBuilder.IdType('A')],
+          AstBuilder.IdType('C'),
+        ),
         [
           { name: 'A', bound: null },
           { name: 'B', bound: null },
@@ -116,22 +100,22 @@ describe('type-constraint-solver', () => {
     const errorCollector = createGlobalErrorCollector();
     const { solvedSubstitution, solvedGenericType, solvedContextuallyTypedConcreteType } =
       solveTypeConstraints(
-        SourceFunctionType(
-          DummySourceReason,
+        AstBuilder.FunType(
           [
-            SourceFunctionType(
-              DummySourceReason,
+            AstBuilder.FunType(
               [SourceUnknownType(DummySourceReason)],
               SourceUnknownType(DummySourceReason),
             ),
-            SourceIntType(DummySourceReason),
+            AstBuilder.IntType,
           ],
-          SourceUnitType(DummySourceReason),
+          AstBuilder.UnitType,
         ),
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('A')), IdType('B')],
-          SourceUnitType(DummySourceReason),
+        AstBuilder.FunType(
+          [
+            AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.IdType('A')),
+            AstBuilder.IdType('B'),
+          ],
+          AstBuilder.UnitType,
         ),
         [
           { name: 'A', bound: null },
@@ -141,7 +125,7 @@ describe('type-constraint-solver', () => {
       );
 
     expect(
-      Object.fromEntries(Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)])),
+      Object.fromEntries(Array.from(solvedSubstitution, ([k, t]) => [k, prettyPrintType(t)])),
     ).toEqual({ A: 'unknown', B: 'int' });
     expect(prettyPrintType(solvedGenericType)).toBe('((unknown) -> unknown, int) -> unit');
     expect(prettyPrintType(solvedContextuallyTypedConcreteType)).toBe(
@@ -159,22 +143,22 @@ describe('type-constraint-solver', () => {
     const errorCollector = createGlobalErrorCollector();
     const { solvedSubstitution, solvedGenericType, solvedContextuallyTypedConcreteType } =
       solveTypeConstraints(
-        SourceFunctionType(
-          DummySourceReason,
+        AstBuilder.FunType(
           [
-            SourceFunctionType(
-              DummySourceReason,
+            AstBuilder.FunType(
               [SourceUnknownType(DummySourceReason)],
               SourceUnknownType(DummySourceReason),
             ),
-            SourceIntType(DummySourceReason),
+            AstBuilder.IntType,
           ],
-          SourceUnitType(DummySourceReason),
+          AstBuilder.UnitType,
         ),
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('A')), IdType('B')],
-          SourceUnitType(DummySourceReason),
+        AstBuilder.FunType(
+          [
+            AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.IdType('A')),
+            AstBuilder.IdType('B'),
+          ],
+          AstBuilder.UnitType,
         ),
         [{ name: 'B', bound: null }],
         errorCollector.getErrorReporter(),

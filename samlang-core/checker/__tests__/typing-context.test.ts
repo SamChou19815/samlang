@@ -1,15 +1,5 @@
-import {
-  DummySourceReason,
-  Location,
-  ModuleReference,
-  ModuleReferenceCollections,
-} from '../../ast/common-nodes';
-import {
-  SourceFunctionType,
-  SourceId,
-  SourceIdentifierType,
-  SourceIntType,
-} from '../../ast/samlang-nodes';
+import { Location, ModuleReference, ModuleReferenceCollections } from '../../ast/common-nodes';
+import { AstBuilder, prettyPrintType, SourceId } from '../../ast/samlang-nodes';
 import {
   AccessibleGlobalTypingContext,
   ClassTypingContext,
@@ -22,17 +12,15 @@ describe('typing-context', () => {
       memberTypeInformationToString('foo', {
         isPublic: false,
         typeParameters: [],
-        type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+        type: AstBuilder.FunType([], AstBuilder.IntType),
       }),
     ).toBe('private foo() -> int');
 
     expect(
       memberTypeInformationToString('bar', {
         isPublic: true,
-        typeParameters: [
-          { name: 'T', bound: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A') },
-        ],
-        type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+        typeParameters: [{ name: 'T', bound: AstBuilder.IdType('A') }],
+        type: AstBuilder.FunType([], AstBuilder.IntType),
       }),
     ).toBe('public bar<T: A>() -> int');
   });
@@ -73,11 +61,11 @@ describe('typing-context', () => {
                   mappings: {
                     a: {
                       isPublic: true,
-                      type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
+                      type: AstBuilder.IdType('A'),
                     },
                     b: {
                       isPublic: false,
-                      type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+                      type: AstBuilder.IdType('B'),
                     },
                   },
                 },
@@ -88,11 +76,7 @@ describe('typing-context', () => {
                     {
                       isPublic: true,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [],
-                        SourceIntType(DummySourceReason),
-                      ),
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
                     },
                   ],
                   [
@@ -100,11 +84,7 @@ describe('typing-context', () => {
                     {
                       isPublic: false,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [],
-                        SourceIntType(DummySourceReason),
-                      ),
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
                     },
                   ],
                 ]),
@@ -114,13 +94,9 @@ describe('typing-context', () => {
                     {
                       isPublic: true,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                        ],
-                        SourceIntType(DummySourceReason),
+                      type: AstBuilder.FunType(
+                        [AstBuilder.IdType('A'), AstBuilder.IdType('B')],
+                        AstBuilder.IntType,
                       ),
                     },
                   ],
@@ -129,11 +105,7 @@ describe('typing-context', () => {
                     {
                       isPublic: false,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [],
-                        SourceIntType(DummySourceReason),
-                      ),
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
                     },
                   ],
                 ]),
@@ -159,11 +131,7 @@ describe('typing-context', () => {
                     {
                       isPublic: true,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [],
-                        SourceIntType(DummySourceReason),
-                      ),
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
                     },
                   ],
                   [
@@ -171,11 +139,7 @@ describe('typing-context', () => {
                     {
                       isPublic: false,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [],
-                        SourceIntType(DummySourceReason),
-                      ),
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
                     },
                   ],
                 ]),
@@ -185,11 +149,7 @@ describe('typing-context', () => {
                     {
                       isPublic: true,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [],
-                        SourceIntType(DummySourceReason),
-                      ),
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
                     },
                   ],
                   [
@@ -197,11 +157,7 @@ describe('typing-context', () => {
                     {
                       isPublic: false,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [],
-                        SourceIntType(DummySourceReason),
-                      ),
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
                     },
                   ],
                 ]),
@@ -260,16 +216,12 @@ describe('typing-context', () => {
         ModuleReference.DUMMY,
         'A',
         'm1',
-        [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
+        [AstBuilder.IntType, AstBuilder.IntType],
         Location.DUMMY,
       ),
     ).toEqual({
       isPublic: true,
-      type: SourceFunctionType(
-        DummySourceReason,
-        [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-        SourceIntType(DummySourceReason),
-      ),
+      type: AstBuilder.FunType([AstBuilder.IntType, AstBuilder.IntType], AstBuilder.IntType),
       typeParameters: [{ name: 'C', bound: null }],
     });
 
@@ -277,19 +229,13 @@ describe('typing-context', () => {
 
     expect(
       context.resolveTypeDefinition(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceIntType(DummySourceReason),
-        ]),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
         'object',
       ).type,
     ).toBe('UnsupportedClassTypeDefinition');
     expect(
       context.resolveTypeDefinition(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B', [
-          SourceIntType(DummySourceReason),
-          SourceIntType(DummySourceReason),
-        ]),
+        AstBuilder.IdType('B', [AstBuilder.IntType, AstBuilder.IntType]),
         'object',
       ),
     ).toEqual({
@@ -299,54 +245,38 @@ describe('typing-context', () => {
     });
     expect(
       context.resolveTypeDefinition(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B', [
-          SourceIntType(DummySourceReason),
-          SourceIntType(DummySourceReason),
-        ]),
+        AstBuilder.IdType('B', [AstBuilder.IntType, AstBuilder.IntType]),
         'variant',
       ).type,
     ).toBe('IllegalOtherClassMatch');
     expect(
       context.resolveTypeDefinition(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-          SourceIntType(DummySourceReason),
-        ]),
+        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
         'variant',
       ),
     ).toEqual({
       type: 'Resolved',
       names: ['a', 'b'],
       mappings: {
-        a: { isPublic: true, type: SourceIntType(DummySourceReason) },
-        b: { isPublic: false, type: SourceIntType(DummySourceReason) },
+        a: { isPublic: true, type: AstBuilder.IntType },
+        b: { isPublic: false, type: AstBuilder.IntType },
       },
     });
     expect(
-      context.resolveTypeDefinition(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-          SourceIntType(DummySourceReason),
-        ]),
-        'variant',
-      ),
+      context.resolveTypeDefinition(AstBuilder.IdType('A', [AstBuilder.IntType]), 'variant'),
     ).toEqual({
       type: 'Resolved',
       names: ['a', 'b'],
       mappings: {
-        a: { isPublic: true, type: SourceIntType(DummySourceReason) },
+        a: { isPublic: true, type: AstBuilder.IntType },
         b: {
           isPublic: false,
-          type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
+          type: AstBuilder.IdType('B'),
         },
       },
     });
 
-    expect(context.thisType).toEqual(
-      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-      ]),
-    );
+    expect(prettyPrintType(context.thisType)).toBe('A<A, B>');
 
     context.withAdditionalTypeParameters(['A', 'B']);
     context.withAdditionalTypeParameters(new Set(['C', 'D']));

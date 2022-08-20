@@ -5,15 +5,11 @@ import {
   ModuleReferenceCollections,
 } from '../../ast/common-nodes';
 import {
+  AstBuilder,
   SamlangExpression,
   SamlangType,
-  SourceBoolType,
-  SourceFunctionType,
   SourceId,
   SourceIdentifierType,
-  SourceIntType,
-  SourceStringType,
-  SourceUnitType,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
@@ -30,10 +26,10 @@ import {
 
 const dummyModuleReference: ModuleReference = ModuleReference(['Test']);
 
-const int = SourceIntType(DummySourceReason);
-const string = SourceStringType(DummySourceReason);
-const unit = SourceUnitType(DummySourceReason);
-const bool = SourceBoolType(DummySourceReason);
+const int = AstBuilder.IntType;
+const string = AstBuilder.StringType;
+const unit = AstBuilder.UnitType;
+const bool = AstBuilder.BoolType;
 
 function typeCheckInSandbox(
   source: string,
@@ -72,8 +68,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [bool, int],
                           SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test'),
                         ),
@@ -84,7 +79,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: false,
                         typeParameters: [],
-                        type: SourceFunctionType(DummySourceReason, [string], unit),
+                        type: AstBuilder.FunType([string], unit),
                       },
                     ],
                     [
@@ -92,8 +87,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: false,
                         typeParameters: [{ name: 'A', bound: null }],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A')],
                           unit,
                         ),
@@ -106,7 +100,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: false,
                         typeParameters: [],
-                        type: SourceFunctionType(DummySourceReason, [int], bool),
+                        type: AstBuilder.FunType([int], bool),
                       },
                     ],
                     [
@@ -114,7 +108,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: false,
                         typeParameters: [{ name: 'A', bound: null }],
-                        type: SourceFunctionType(DummySourceReason, [int], bool),
+                        type: AstBuilder.FunType([int], bool),
                       },
                     ],
                   ]),
@@ -140,8 +134,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [bool],
                           SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
                         ),
@@ -152,8 +145,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [int],
                           SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
                         ),
@@ -207,8 +199,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [{ name: 'E', bound: null }],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E')],
                           SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [
                             SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
@@ -221,8 +212,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [{ name: 'E', bound: null }],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [int],
                           SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [
                             SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
@@ -254,8 +244,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [],
                           SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A', []),
                         ),
@@ -285,8 +274,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [],
                           SourceIdentifierType(DummySourceReason, dummyModuleReference, 'B', []),
                         ),
@@ -316,8 +304,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: SourceFunctionType(
-                          DummySourceReason,
+                        type: AstBuilder.FunType(
                           [],
                           SourceIdentifierType(DummySourceReason, dummyModuleReference, 'C', []),
                         ),
@@ -432,18 +419,15 @@ describe('expression-type-checker', () => {
   });
 
   it('ClassMember', () => {
-    assertTypeChecks(
-      'Test.helloWorldWithTypeParameters<int>',
-      SourceFunctionType(DummySourceReason, [int], unit),
-    );
-    assertTypeChecks('Test.helloWorld', SourceFunctionType(DummySourceReason, [string], unit));
+    assertTypeChecks('Test.helloWorldWithTypeParameters<int>', AstBuilder.FunType([int], unit));
+    assertTypeChecks('Test.helloWorld', AstBuilder.FunType([string], unit));
 
-    assertTypeErrors('Test.helloWorld<A>', SourceFunctionType(DummySourceReason, [string], unit), [
+    assertTypeErrors('Test.helloWorld<A>', AstBuilder.FunType([string], unit), [
       'Test.sam:1:1-1:19: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
     ]);
     assertTypeErrors(
       'Test.helloWorldWithTypeParameters',
-      SourceFunctionType(DummySourceReason, [string, string], unit),
+      AstBuilder.FunType([string, string], unit),
       [
         'Test.sam:1:1-1:34: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
         'Test.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
@@ -457,20 +441,20 @@ describe('expression-type-checker', () => {
     ]);
     assertTypeErrors(
       'Test.helloWorldWithTypeParameters<int, string>',
-      SourceFunctionType(DummySourceReason, [int], unit),
+      AstBuilder.FunType([int], unit),
       [
         'Test.sam:1:1-1:47: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
       ],
     );
     assertTypeErrors(
       'Test.helloWorldWithTypeParameters<string>',
-      SourceFunctionType(DummySourceReason, [string, string], unit),
+      AstBuilder.FunType([string, string], unit),
       [
         'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
         'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
       ],
     );
-    assertTypeErrors('Test.helloWorld2', SourceFunctionType(DummySourceReason, [string], unit), [
+    assertTypeErrors('Test.helloWorld2', AstBuilder.FunType([string], unit), [
       'Test.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved.',
     ]);
   });
@@ -561,11 +545,8 @@ describe('expression-type-checker', () => {
   it('FieldAccess && MethodAccess', () => {
     assertTypeChecks('Test.init(true, 3).foo', bool);
     assertTypeChecks('Test.init(true, 3).bar', int);
-    assertTypeChecks('Test.init(true, 3).baz', SourceFunctionType(DummySourceReason, [int], bool));
-    assertTypeChecks(
-      'Test.init(true, 3).bazWithTypeParam',
-      SourceFunctionType(DummySourceReason, [int], bool),
-    );
+    assertTypeChecks('Test.init(true, 3).baz', AstBuilder.FunType([int], bool));
+    assertTypeChecks('Test.init(true, 3).bazWithTypeParam', AstBuilder.FunType([int], bool));
 
     assertTypeErrors('3.foo', int, [
       'Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
@@ -600,16 +581,12 @@ describe('expression-type-checker', () => {
       'Test.sam:1:1-1:36: [UnexpectedTypeKind]: Expected kind: `int`, actual: `function`.',
       'Test.sam:1:1-1:36: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
     ]);
-    assertTypeErrors(
-      'Test.init(true, 3).bazWithTypeParam',
-      SourceFunctionType(DummySourceReason, [int, int], bool),
-      [
-        'Test.sam:1:1-1:36: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
-        'Test.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-        'Test.sam:1:1-1:36: [UnexpectedType]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.',
-      ],
-    );
-    assertTypeErrors('Test.init(true, 3).baz', SourceFunctionType(DummySourceReason, [bool], int), [
+    assertTypeErrors('Test.init(true, 3).bazWithTypeParam', AstBuilder.FunType([int, int], bool), [
+      'Test.sam:1:1-1:36: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
+      'Test.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      'Test.sam:1:1-1:36: [UnexpectedType]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.',
+    ]);
+    assertTypeErrors('Test.init(true, 3).baz', AstBuilder.FunType([bool], int), [
       'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
       'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
     ]);
@@ -655,10 +632,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Builtins.panic("")', bool);
     assertTypeChecks('Builtins.panic("")', int);
     assertTypeChecks('Builtins.panic("")', string);
-    assertTypeChecks(
-      'Builtins.panic("")',
-      SourceFunctionType(DummySourceReason, [int, bool], string),
-    );
+    assertTypeChecks('Builtins.panic("")', AstBuilder.FunType([int, bool], string));
 
     assertTypeErrors('Builtins.panic(3)', unit, [
       'Test.sam:1:16-1:17: [UnexpectedType]: Expected: `string`, actual: `int`.',
@@ -874,9 +848,9 @@ describe('expression-type-checker', () => {
       '{val _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) then b else c;}',
       unit,
     );
-    assertTypeChecks('(a) -> a', SourceFunctionType(DummySourceReason, [int], int));
+    assertTypeChecks('(a) -> a', AstBuilder.FunType([int], int));
 
-    assertTypeErrors('(a) -> a', SourceFunctionType(DummySourceReason, [], int), [
+    assertTypeErrors('(a) -> a', AstBuilder.FunType([], int), [
       'Test.sam:1:1-1:9: [ArityMismatchError]: Incorrect function arguments size. Expected: 0, actual: 1.',
       'Test.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
     ]);

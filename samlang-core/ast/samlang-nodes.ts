@@ -1,6 +1,7 @@
 import { zip } from '../utils';
 import {
   defReasonToUseReason,
+  DummySourceReason,
   FALSE,
   intLiteralOf,
   Literal,
@@ -51,7 +52,7 @@ export type SamlangType =
 
 export interface TypeParameterSignature {
   readonly name: string;
-  readonly bound: SamlangType | null;
+  readonly bound: SamlangIdentifierType | null;
 }
 
 export const SourceUnitType = (reason: SamlangReason): SamlangPrimitiveType => ({
@@ -328,8 +329,8 @@ export type SamlangExpression =
   | StatementBlockExpression;
 
 export const SourceExpressionTrue = (
-  location: Location = Location.DUMMY,
-  associatedComments: readonly TypedComment[] = [],
+  location: Location,
+  associatedComments: readonly TypedComment[],
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   location,
@@ -340,8 +341,8 @@ export const SourceExpressionTrue = (
 });
 
 export const SourceExpressionFalse = (
-  location: Location = Location.DUMMY,
-  associatedComments: readonly TypedComment[] = [],
+  location: Location,
+  associatedComments: readonly TypedComment[],
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   location,
@@ -650,4 +651,28 @@ export interface SamlangModule {
   readonly imports: readonly SourceModuleMembersImport[];
   readonly interfaces: readonly SourceInterfaceDeclaration[];
   readonly classes: readonly SourceClassDefinition[];
+}
+
+/** A factory class to conveniently building AST nodes for the purpose of testing or synthesis. */
+export class AstBuilder {
+  // TYPES
+
+  static UnitType: SamlangPrimitiveType = SourceUnitType(DummySourceReason);
+  static IntType: SamlangPrimitiveType = SourceIntType(DummySourceReason);
+  static BoolType: SamlangPrimitiveType = SourceBoolType(DummySourceReason);
+  static StringType: SamlangPrimitiveType = SourceStringType(DummySourceReason);
+
+  static IdType = (id: string, typeArguments: readonly SamlangType[] = []): SamlangIdentifierType =>
+    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, id, typeArguments);
+
+  static FunType = (
+    argumentTypes: readonly SamlangType[],
+    returnType: SamlangType,
+  ): SamlangFunctionType => SourceFunctionType(DummySourceReason, argumentTypes, returnType);
+
+  // EXPRESSIONS
+
+  static TRUE: LiteralExpression = SourceExpressionTrue(Location.DUMMY, []);
+  static FALSE: LiteralExpression = SourceExpressionFalse(Location.DUMMY, []);
+  static ZERO: LiteralExpression = SourceExpressionInt(0);
 }
