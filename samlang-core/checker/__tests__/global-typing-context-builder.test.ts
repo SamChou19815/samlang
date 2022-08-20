@@ -255,12 +255,7 @@ describe('global-typing-context-builder', () => {
                     'm1',
                     {
                       isPublic: true,
-                      typeParameters: [
-                        {
-                          name: 'C',
-                          bound: AstBuilder.IdType('A'),
-                        },
-                      ],
+                      typeParameters: [{ name: 'C', bound: AstBuilder.IdType('A') }],
                       type: AstBuilder.FunType(
                         [AstBuilder.IdType('A'), AstBuilder.IdType('B')],
                         AstBuilder.IdType('C'),
@@ -294,7 +289,19 @@ describe('global-typing-context-builder', () => {
                     },
                   ],
                 ]),
-                methods: new Map(),
+                methods: new Map([
+                  [
+                    'm1',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'C', bound: AstBuilder.IdType('A') }],
+                      type: AstBuilder.FunType(
+                        [AstBuilder.IdType('A'), AstBuilder.IdType('B')],
+                        AstBuilder.IdType('C'),
+                      ),
+                    },
+                  ],
+                ]),
               },
             ],
             [
@@ -386,7 +393,7 @@ describe('global-typing-context-builder', () => {
     });
     expect(inlinedContextFromType(AstBuilder.IdType('ILevel2'))).toEqual({
       functions: ['public f1<C>(A, B) -> C'],
-      methods: ['public m1<C: int>(int, int) -> C', 'public m2<C>(A, B) -> C'],
+      methods: ['public m1<C: A>(A, int) -> C', 'public m2<C>(A, B) -> C'],
       superTypes: ['IBase<int, int>', 'ILevel1<A, int>'],
     });
 
