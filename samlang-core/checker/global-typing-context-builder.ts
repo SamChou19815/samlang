@@ -1,7 +1,6 @@
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 
 import {
-  DummySourceReason,
   ModuleReference,
   ModuleReferenceCollections,
   SourceReason,
@@ -181,28 +180,42 @@ function checkModuleMemberInterfaceConformance(
       errorReporter.reportUnexpectedTypeKindError(actual.location, 'function', 'method');
       return;
     }
-    const expectedTypeParameters = [...expected.typeParameters];
-    const actualTypeParameters = [...actual.typeParameters.map((it) => it.name)];
-    const expectedType = performTypeSubstitution(
-      expected.type,
-      new Map(
-        expectedTypeParameters.map((name, i) => [
-          name.name,
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, `_T${i}`, []),
-        ]),
-      ),
-    );
-    const actualType = performTypeSubstitution(
-      actual.type,
-      new Map(
-        actualTypeParameters.map((name, i) => [
-          name.name,
-          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, `_T${i}`, []),
-        ]),
-      ),
-    );
-    if (!isTheSameType(expectedType, actualType)) {
-      errorReporter.reportUnexpectedTypeError(actual.location, expectedType, actualType);
+    if (expected.typeParameters.length !== actual.typeParameters.length) {
+      errorReporter.reportArityMismatchError(
+        actual.location,
+        'type parameters',
+        expected.typeParameters.length,
+        actual.typeParameters.length,
+      );
+      return;
+    }
+    let noTypeParameterConformanceErrors = true;
+    for (const [e, a] of zip(expected.typeParameters, actual.typeParameters)) {
+      if (e.name !== a.name.name) {
+        errorReporter.reportTypeParameterNameMismatchError(a.name.location, e.name, a.name.name);
+        noTypeParameterConformanceErrors = false;
+      }
+      if (e.bound == null && a.bound != null) {
+        errorReporter.reportUnexpectedTypeKindError(
+          a.bound.reason.useLocation,
+          'unbounded type parameter',
+          'bounded type parameter',
+        );
+        noTypeParameterConformanceErrors = false;
+      } else if (e.bound != null && a.bound == null) {
+        errorReporter.reportUnexpectedTypeKindError(
+          actual.location,
+          'bounded type parameter',
+          'unbounded type parameter',
+        );
+        noTypeParameterConformanceErrors = false;
+      } else if (e.bound != null && a.bound != null && !isTheSameType(e.bound, a.bound)) {
+        errorReporter.reportUnexpectedTypeError(actual.location, e.bound, a.bound);
+        noTypeParameterConformanceErrors = false;
+      }
+    }
+    if (noTypeParameterConformanceErrors && !isTheSameType(expected.type, actual.type)) {
+      errorReporter.reportUnexpectedTypeError(actual.location, expected.type, actual.type);
     }
   }
 

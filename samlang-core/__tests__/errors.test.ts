@@ -10,6 +10,7 @@ describe('samlang-core/errors', () => {
     reporter.reportSyntaxError(Location.DUMMY, 'bad code');
     reporter.reportUnexpectedTypeError(Location.DUMMY, AstBuilder.IntType, AstBuilder.BoolType);
     reporter.reportUnresolvedNameError(Location.DUMMY, 'global');
+    reporter.reportTypeParameterNameMismatchError(Location.DUMMY, 'foo', 'bar');
     reporter.reportUnsupportedClassTypeDefinitionError(Location.DUMMY, 'object');
     reporter.reportUnexpectedTypeKindError(Location.DUMMY, 'array', 'object');
     reporter.reportUnexpectedTypeKindError(Location.DUMMY, 'array', AstBuilder.IntType);
@@ -29,6 +30,7 @@ describe('samlang-core/errors', () => {
       '[SyntaxError]: bad code',
       '[UnexpectedType]: Expected: `int`, actual: `bool`.',
       '[UnresolvedName]: Name `global` is not resolved.',
+      '[TypeParameterNameMismatch]: Type parameter name mismatch. Expected `foo`, actual: bar.',
       "[UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       '[UnexpectedTypeKind]: Expected kind: `array`, actual: `object`.',
       '[UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',

@@ -39,6 +39,16 @@ export class UnresolvedNameError extends CompileTimeError {
   }
 }
 
+export class TypeParameterNameMismatchError extends CompileTimeError {
+  constructor(location: Location, expected: string, actual: string) {
+    super(
+      'TypeParameterNameMismatch',
+      location,
+      `Type parameter name mismatch. Expected \`${expected}\`, actual: ${actual}.`,
+    );
+  }
+}
+
 export class MissingDefinitionsError extends CompileTimeError {
   constructor(location: Location, missingDefinitions: readonly string[]) {
     super(
@@ -164,6 +174,12 @@ export class GlobalErrorReporter {
 
   reportUnresolvedNameError(location: Location, unresolvedName: string): void {
     this.collectorDelegate.reportError(new UnresolvedNameError(location, unresolvedName));
+  }
+
+  reportTypeParameterNameMismatchError(location: Location, expected: string, actual: string): void {
+    this.collectorDelegate.reportError(
+      new TypeParameterNameMismatchError(location, expected, actual),
+    );
   }
 
   reportMissingDefinitionsError(location: Location, missingMembers: readonly string[]): void {
