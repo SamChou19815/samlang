@@ -82,7 +82,13 @@ function recursiveComputeInterfaceMembersChain(
       name,
       {
         isPublic,
-        typeParameters,
+        typeParameters: typeParameters.map((it) => ({
+          name: it.name,
+          bound:
+            it.bound != null
+              ? (performTypeSubstitution(it.bound, substitutionMapping) as SamlangIdentifierType)
+              : null,
+        })),
         type: performTypeSubstitution(type, substitutionMapping) as SamlangFunctionType,
       },
     ]),
