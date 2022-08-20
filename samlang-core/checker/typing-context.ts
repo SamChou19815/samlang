@@ -47,14 +47,10 @@ export function memberTypeInformationToString(
   return `${accessString} ${name}${tparamString}${prettyPrintType(type)}`;
 }
 
-export interface InterfaceTypingContextInstantiatedMembers {
+export interface InterfaceTypingContext {
   readonly functions: ReadonlyMap<string, MemberTypeInformation>;
   readonly methods: ReadonlyMap<string, MemberTypeInformation>;
-}
-
-export interface InterfaceTypingContext extends InterfaceTypingContextInstantiatedMembers {
   readonly typeParameters: readonly TypeParameterSignature[];
-  readonly extendsOrImplements: SamlangIdentifierType | null;
   readonly superTypes: readonly SamlangIdentifierType[];
 }
 

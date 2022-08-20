@@ -17,9 +17,11 @@ import {
   SourceFunctionType,
   SourceIdentifierType,
   SourceInterfaceDeclaration,
+  TypeDefinition,
+  TypeParameterSignature,
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
-import { checkNotNull, HashMap, zip } from '../utils';
+import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
 import performTypeSubstitution from './type-substitution';
 import {
   ClassTypingContext,
@@ -30,6 +32,22 @@ import {
   ModuleTypingContext,
 } from './typing-context';
 
+interface UnoptimizedInterfaceTypingContext {
+  readonly functions: ReadonlyMap<string, MemberTypeInformation>;
+  readonly methods: ReadonlyMap<string, MemberTypeInformation>;
+  readonly typeParameters: readonly TypeParameterSignature[];
+  readonly extendsOrImplements: SamlangIdentifierType | null;
+}
+
+interface UnoptimizedClassTypingContext extends UnoptimizedInterfaceTypingContext {
+  readonly typeDefinition: TypeDefinition;
+}
+
+interface UnoptimizedModuleTypingContext {
+  readonly interfaces: ReadonlyMap<string, UnoptimizedInterfaceTypingContext>;
+  readonly classes: ReadonlyMap<string, UnoptimizedClassTypingContext>;
+}
+
 type InterfaceInliningCollector = Array<{
   readonly functions: Map<string, MemberTypeInformation>;
   readonly methods: Map<string, MemberTypeInformation>;
@@ -38,7 +56,7 @@ type InterfaceInliningCollector = Array<{
 
 function recursiveComputeInterfaceMembersChain(
   interfaceType: SamlangIdentifierType,
-  globalTypingContext: GlobalTypingContext,
+  unoptimizedGlobalTypingContext: ReadonlyHashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   collector: InterfaceInliningCollector,
   visited: HashMap<ModuleReference, Set<string>>,
   errorReporter: GlobalErrorReporter,
@@ -49,7 +67,7 @@ function recursiveComputeInterfaceMembersChain(
     return;
   }
   visited.set(interfaceType.moduleReference, visitedTypesInModule.add(interfaceType.identifier));
-  const interfaceContext = globalTypingContext
+  const interfaceContext = unoptimizedGlobalTypingContext
     .get(interfaceType.moduleReference)
     ?.interfaces?.get(interfaceType.identifier);
   if (interfaceContext == null) return null;
@@ -79,7 +97,7 @@ function recursiveComputeInterfaceMembersChain(
   if (baseInterfaceType != null) {
     recursiveComputeInterfaceMembersChain(
       baseInterfaceType,
-      globalTypingContext,
+      unoptimizedGlobalTypingContext,
       collector,
       visited,
       errorReporter,
@@ -94,14 +112,14 @@ function recursiveComputeInterfaceMembersChain(
 
 export function getFullyInlinedInterfaceContext(
   instantiatedInterfaceType: SamlangIdentifierType,
-  globalTypingContext: GlobalTypingContext,
+  unoptimizedGlobalTypingContext: ReadonlyHashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   errorReporter: GlobalErrorReporter,
 ): {
   readonly functions: Map<string, MemberTypeInformation>;
   readonly methods: Map<string, MemberTypeInformation>;
   readonly superTypes: readonly SamlangIdentifierType[];
 } {
-  const interfaceTypingContext = globalTypingContext
+  const interfaceTypingContext = unoptimizedGlobalTypingContext
     .get(instantiatedInterfaceType.moduleReference)
     ?.interfaces?.get(instantiatedInterfaceType.identifier);
   if (interfaceTypingContext == null) {
@@ -110,7 +128,7 @@ export function getFullyInlinedInterfaceContext(
   const collector: InterfaceInliningCollector = [];
   recursiveComputeInterfaceMembersChain(
     instantiatedInterfaceType,
-    globalTypingContext,
+    unoptimizedGlobalTypingContext,
     collector,
     ModuleReferenceCollections.hashMapOf(),
     errorReporter,
@@ -128,7 +146,7 @@ export function getFullyInlinedInterfaceContext(
 }
 
 function checkModuleMemberInterfaceConformance(
-  globalTypingContext: GlobalTypingContext,
+  unoptimizedGlobalTypingContext: ReadonlyHashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   actualInterface: SourceInterfaceDeclaration,
   errorReporter: GlobalErrorReporter,
   reportMissingMembers: boolean,
@@ -139,7 +157,7 @@ function checkModuleMemberInterfaceConformance(
   }
   const fullyInlinedInterfaceContext = getFullyInlinedInterfaceContext(
     instantiatedInterfaceType,
-    globalTypingContext,
+    unoptimizedGlobalTypingContext,
     errorReporter,
   );
 
@@ -211,7 +229,7 @@ function checkModuleMemberInterfaceConformance(
 
 function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
   sources: Sources<SamlangModule>,
-  globalTypingContext: GlobalTypingContext,
+  unoptimizedGlobalTypingContext: ReadonlyHashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   builtinModuleTypes: ModuleTypingContext,
   errorReporter: GlobalErrorReporter,
 ): GlobalTypingContext {
@@ -220,27 +238,32 @@ function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
     builtinModuleTypes,
   ]);
   sources.forEach((samlangModule, moduleReference) => {
-    const moduleTypingContext = globalTypingContext.forceGet(moduleReference);
+    const moduleTypingContext = unoptimizedGlobalTypingContext.forceGet(moduleReference);
     const optimizedModuleTypingContext = {
       classes: new Map<string, ClassTypingContext>(),
       interfaces: new Map<string, InterfaceTypingContext>(),
     };
     samlangModule.classes.forEach((declaration) => {
       const fullyInlinedInterfaceContext = checkModuleMemberInterfaceConformance(
-        globalTypingContext,
+        unoptimizedGlobalTypingContext,
         declaration,
         errorReporter,
         /* reportMissingMembers */ true,
       );
-      const optimizedClassTypingContext = {
-        ...checkNotNull(moduleTypingContext.classes.get(declaration.name.name)),
+      const unoptimizedClassTypingContext = checkNotNull(
+        moduleTypingContext.classes.get(declaration.name.name),
+      );
+      optimizedModuleTypingContext.classes.set(declaration.name.name, {
+        functions: unoptimizedClassTypingContext.functions,
+        methods: unoptimizedClassTypingContext.methods,
+        typeParameters: unoptimizedClassTypingContext.typeParameters,
+        typeDefinition: unoptimizedClassTypingContext.typeDefinition,
         superTypes: fullyInlinedInterfaceContext.superTypes,
-      };
-      optimizedModuleTypingContext.classes.set(declaration.name.name, optimizedClassTypingContext);
+      });
     });
     samlangModule.interfaces.forEach((declaration) => {
       const fullyInlinedInterfaceContext = checkModuleMemberInterfaceConformance(
-        globalTypingContext,
+        unoptimizedGlobalTypingContext,
         declaration,
         errorReporter,
         /* reportMissingMembers */ false,
@@ -255,8 +278,10 @@ function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
         fullyInlinedInterfaceContext.methods.set(name, info);
       });
       optimizedModuleTypingContext.interfaces.set(declaration.name.name, {
-        ...unoptimizedInterfaceTypingContext,
-        ...fullyInlinedInterfaceContext,
+        functions: fullyInlinedInterfaceContext.functions,
+        methods: fullyInlinedInterfaceContext.methods,
+        typeParameters: unoptimizedInterfaceTypingContext.typeParameters,
+        superTypes: fullyInlinedInterfaceContext.superTypes,
       });
     });
     optimizedGlobalTypingContext.set(moduleReference, optimizedModuleTypingContext);
@@ -269,8 +294,8 @@ export function buildGlobalTypingContext(
   errorReporter: GlobalErrorReporter,
   builtinModuleTypes: ModuleTypingContext = DEFAULT_BUILTIN_TYPING_CONTEXT,
 ): GlobalTypingContext {
-  const modules = ModuleReferenceCollections.hashMapOf<ModuleTypingContext>();
-  modules.set(ModuleReference.ROOT, builtinModuleTypes);
+  const unoptimizedGlobalTypingContext =
+    ModuleReferenceCollections.hashMapOf<UnoptimizedModuleTypingContext>();
 
   function buildInterfaceTypingContext({
     typeParameters,
@@ -294,7 +319,6 @@ export function buildGlobalTypingContext(
     return {
       typeParameters: typeParameters.map((it) => ({ name: it.name.name, bound: it.bound })),
       extendsOrImplements: extendsOrImplementsNode ?? null,
-      superTypes: [],
       functions,
       methods,
     };
@@ -303,7 +327,7 @@ export function buildGlobalTypingContext(
   function buildClassTypingContext(
     moduleReference: ModuleReference,
     classDefinition: SourceClassDefinition,
-  ): ClassTypingContext {
+  ): UnoptimizedClassTypingContext {
     const { typeParameters, functions, methods } = buildInterfaceTypingContext(classDefinition);
     const classType = SourceIdentifierType(
       SourceReason(classDefinition.name.location, classDefinition.name.location),
@@ -343,14 +367,13 @@ export function buildGlobalTypingContext(
       typeParameters,
       typeDefinition,
       extendsOrImplements: classDefinition.extendsOrImplementsNode ?? null,
-      superTypes: [],
       functions,
       methods,
     };
   }
 
   sources.forEach((samlangModule, moduleReference) => {
-    modules.set(moduleReference, {
+    unoptimizedGlobalTypingContext.set(moduleReference, {
       interfaces: new Map(
         samlangModule.interfaces.map((declaration) => [
           declaration.name.name,
@@ -368,7 +391,7 @@ export function buildGlobalTypingContext(
 
   return optimizeGlobalTypingContextWithInterfaceConformanceChecking(
     sources,
-    modules,
+    unoptimizedGlobalTypingContext,
     builtinModuleTypes,
     errorReporter,
   );
