@@ -266,7 +266,16 @@ describe('global-typing-context-builder', () => {
                     'm1',
                     {
                       isPublic: true,
-                      typeParameters: [{ name: 'C', bound: null }],
+                      typeParameters: [
+                        {
+                          name: 'C',
+                          bound: SourceIdentifierType(
+                            DummySourceReason,
+                            ModuleReference.DUMMY,
+                            'A',
+                          ),
+                        },
+                      ],
                       type: SourceFunctionType(
                         DummySourceReason,
                         [
@@ -436,7 +445,7 @@ describe('global-typing-context-builder', () => {
       ),
     ).toEqual({
       functions: ['public f1<C>(A, B) -> C'],
-      methods: ['public m1<C>(int, int) -> C', 'public m2<C>(A, B) -> C'],
+      methods: ['public m1<C: int>(int, int) -> C', 'public m2<C>(A, B) -> C'],
       superTypes: ['IBase<int, int>', 'ILevel1<A, int>'],
     });
 
