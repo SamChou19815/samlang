@@ -1,5 +1,5 @@
-import { DummySourceReason, Location } from '../ast/common-nodes';
-import { SourceBoolType, SourceIntType } from '../ast/samlang-nodes';
+import { Location } from '../ast/common-nodes';
+import { AstBuilder } from '../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../errors';
 
 describe('samlang-core/errors', () => {
@@ -8,19 +8,11 @@ describe('samlang-core/errors', () => {
 
     const reporter = collector.getErrorReporter();
     reporter.reportSyntaxError(Location.DUMMY, 'bad code');
-    reporter.reportUnexpectedTypeError(
-      Location.DUMMY,
-      SourceIntType(DummySourceReason),
-      SourceBoolType(DummySourceReason),
-    );
+    reporter.reportUnexpectedTypeError(Location.DUMMY, AstBuilder.IntType, AstBuilder.BoolType);
     reporter.reportUnresolvedNameError(Location.DUMMY, 'global');
     reporter.reportUnsupportedClassTypeDefinitionError(Location.DUMMY, 'object');
     reporter.reportUnexpectedTypeKindError(Location.DUMMY, 'array', 'object');
-    reporter.reportUnexpectedTypeKindError(
-      Location.DUMMY,
-      'array',
-      SourceIntType(DummySourceReason),
-    );
+    reporter.reportUnexpectedTypeKindError(Location.DUMMY, 'array', AstBuilder.IntType);
     reporter.reportArityMismatchError(Location.DUMMY, 'pair', 1, 2);
     reporter.reportInsufficientTypeInferenceContextError(Location.DUMMY);
     reporter.reportCollisionError(Location.DUMMY, 'a');
@@ -28,7 +20,7 @@ describe('samlang-core/errors', () => {
     reporter.reportIllegalThisError(Location.DUMMY);
     reporter.reportNonExhausiveMatchError(Location.DUMMY, ['A', 'B']);
     reporter.reportMissingDefinitionsError(Location.DUMMY, ['foo', 'bar']);
-    reporter.reportCyclicTypeDefinitionError(SourceIntType(DummySourceReason));
+    reporter.reportCyclicTypeDefinitionError(AstBuilder.IntType);
 
     const errors = collector
       .getErrors()

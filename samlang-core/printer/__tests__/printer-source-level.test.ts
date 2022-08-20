@@ -1,10 +1,10 @@
 import prettyPrintSamlangModule from '..';
-import { DummySourceReason, ModuleReference } from '../../ast/common-nodes';
+import { ModuleReference } from '../../ast/common-nodes';
 import {
+  AstBuilder,
   SourceExpressionMethodAccess,
   SourceExpressionVariable,
   SourceId,
-  SourceIntType,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
@@ -89,9 +89,9 @@ Test /* b */ /* c */ .VariantName<T>(42)`,
       prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
         40,
         SourceExpressionMethodAccess({
-          type: SourceIntType(DummySourceReason),
+          type: AstBuilder.IntType,
           expression: SourceExpressionVariable({
-            type: SourceIntType(DummySourceReason),
+            type: AstBuilder.IntType,
             name: 'foo',
           }),
           methodName: SourceId('bar'),

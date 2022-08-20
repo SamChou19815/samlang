@@ -7,18 +7,12 @@ import {
   typeCheckSourcesIncrementally,
 } from '..';
 import {
-  DummySourceReason,
   Location,
   ModuleReference,
   ModuleReferenceCollections,
   moduleReferenceToString,
 } from '../../ast/common-nodes';
-import {
-  SourceExpressionInt,
-  SourceFunctionType,
-  SourceId,
-  SourceIntType,
-} from '../../ast/samlang-nodes';
+import { AstBuilder, SourceExpressionInt, SourceId } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
 
@@ -44,7 +38,7 @@ describe('samlang-core/checker', () => {
               type: 'object',
               names: [SourceId('')],
               location: Location.DUMMY,
-              mappings: { d: { isPublic: true, type: SourceIntType(DummySourceReason) } },
+              mappings: { d: { isPublic: true, type: AstBuilder.IntType } },
             },
             members: [
               {
@@ -55,7 +49,7 @@ describe('samlang-core/checker', () => {
                 isPublic: true,
                 typeParameters: [],
                 parameters: [],
-                type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                type: AstBuilder.FunType([], AstBuilder.IntType),
                 body: SourceExpressionInt(3),
               },
             ],

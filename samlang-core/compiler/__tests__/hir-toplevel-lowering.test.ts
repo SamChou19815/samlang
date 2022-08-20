@@ -1,14 +1,9 @@
-import {
-  DummySourceReason,
-  Location,
-  ModuleReference,
-  ModuleReferenceCollections,
-} from '../../ast/common-nodes';
+import { Location, ModuleReference, ModuleReferenceCollections } from '../../ast/common-nodes';
 import { EQ, MINUS, MUL } from '../../ast/common-operators';
 import { debugPrintHighIRSources } from '../../ast/hir-nodes';
 import {
+  AstBuilder,
   SamlangModule,
-  SourceBoolType,
   SourceExpressionBinary,
   SourceExpressionClassMember,
   SourceExpressionFunctionCall,
@@ -16,18 +11,14 @@ import {
   SourceExpressionInt,
   SourceExpressionThis,
   SourceExpressionVariable,
-  SourceFunctionType,
   SourceId,
-  SourceIdentifierType,
-  SourceIntType,
-  SourceUnitType,
 } from '../../ast/samlang-nodes';
 import compileSamlangSourcesToHighIRSources, {
   compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,
 } from '../hir-toplevel-lowering';
 
 const THIS = SourceExpressionThis({
-  type: SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'Dummy'),
+  type: AstBuilder.IdType('Dummy'),
 });
 
 describe('mir-toplevel-lowering', () => {
@@ -50,11 +41,11 @@ describe('mir-toplevel-lowering', () => {
               name: SourceId('main'),
               typeParameters: [],
               parameters: [],
-              type: SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
+              type: AstBuilder.FunType([], AstBuilder.UnitType),
               body: SourceExpressionFunctionCall({
-                type: SourceUnitType(DummySourceReason),
+                type: AstBuilder.UnitType,
                 functionExpression: SourceExpressionClassMember({
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  type: AstBuilder.FunType([], AstBuilder.IntType),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
                   className: SourceId('Class1'),
@@ -74,7 +65,7 @@ describe('mir-toplevel-lowering', () => {
             location: Location.DUMMY,
             type: 'object',
             names: [SourceId('a')],
-            mappings: { a: { isPublic: true, type: SourceIntType(DummySourceReason) } },
+            mappings: { a: { isPublic: true, type: AstBuilder.IntType } },
           },
           members: [
             {
@@ -88,15 +79,11 @@ describe('mir-toplevel-lowering', () => {
                 {
                   name: 'a',
                   nameLocation: Location.DUMMY,
-                  type: SourceIntType(DummySourceReason),
+                  type: AstBuilder.IntType,
                   typeLocation: Location.DUMMY,
                 },
               ],
-              type: SourceFunctionType(
-                DummySourceReason,
-                [SourceIntType(DummySourceReason)],
-                SourceIntType(DummySourceReason),
-              ),
+              type: AstBuilder.FunType([AstBuilder.IntType], AstBuilder.IntType),
               body: THIS,
             },
             {
@@ -107,11 +94,11 @@ describe('mir-toplevel-lowering', () => {
               name: SourceId('infiniteLoop'),
               typeParameters: [],
               parameters: [],
-              type: SourceFunctionType(DummySourceReason, [], SourceUnitType(DummySourceReason)),
+              type: AstBuilder.FunType([], AstBuilder.UnitType),
               body: SourceExpressionFunctionCall({
-                type: SourceUnitType(DummySourceReason),
+                type: AstBuilder.UnitType,
                 functionExpression: SourceExpressionClassMember({
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  type: AstBuilder.FunType([], AstBuilder.IntType),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
                   className: SourceId('Class1'),
@@ -131,41 +118,39 @@ describe('mir-toplevel-lowering', () => {
                 {
                   name: 'n',
                   nameLocation: Location.DUMMY,
-                  type: SourceIntType(DummySourceReason),
+                  type: AstBuilder.IntType,
                   typeLocation: Location.DUMMY,
                 },
                 {
                   name: 'acc',
                   nameLocation: Location.DUMMY,
-                  type: SourceIntType(DummySourceReason),
+                  type: AstBuilder.IntType,
                   typeLocation: Location.DUMMY,
                 },
               ],
-              type: SourceFunctionType(
-                DummySourceReason,
-                [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-                SourceIntType(DummySourceReason),
+              type: AstBuilder.FunType(
+                [AstBuilder.IntType, AstBuilder.IntType],
+                AstBuilder.IntType,
               ),
               body: SourceExpressionIfElse({
-                type: SourceIntType(DummySourceReason),
+                type: AstBuilder.IntType,
                 boolExpression: SourceExpressionBinary({
-                  type: SourceBoolType(DummySourceReason),
+                  type: AstBuilder.BoolType,
                   operatorPrecedingComments: [],
                   operator: EQ,
                   e1: SourceExpressionVariable({
-                    type: SourceIntType(DummySourceReason),
+                    type: AstBuilder.IntType,
                     name: 'n',
                   }),
                   e2: SourceExpressionInt(0),
                 }),
                 e1: SourceExpressionInt(1),
                 e2: SourceExpressionFunctionCall({
-                  type: SourceIntType(DummySourceReason),
+                  type: AstBuilder.IntType,
                   functionExpression: SourceExpressionClassMember({
-                    type: SourceFunctionType(
-                      DummySourceReason,
-                      [SourceIntType(DummySourceReason), SourceIntType(DummySourceReason)],
-                      SourceIntType(DummySourceReason),
+                    type: AstBuilder.FunType(
+                      [AstBuilder.IntType, AstBuilder.IntType],
+                      AstBuilder.IntType,
                     ),
                     typeArguments: [],
                     moduleReference: ModuleReference.DUMMY,
@@ -174,25 +159,25 @@ describe('mir-toplevel-lowering', () => {
                   }),
                   functionArguments: [
                     SourceExpressionBinary({
-                      type: SourceIntType(DummySourceReason),
+                      type: AstBuilder.IntType,
                       operatorPrecedingComments: [],
                       operator: MINUS,
                       e1: SourceExpressionVariable({
-                        type: SourceIntType(DummySourceReason),
+                        type: AstBuilder.IntType,
                         name: 'n',
                       }),
                       e2: SourceExpressionInt(1),
                     }),
                     SourceExpressionBinary({
-                      type: SourceIntType(DummySourceReason),
+                      type: AstBuilder.IntType,
                       operatorPrecedingComments: [],
                       operator: MUL,
                       e1: SourceExpressionVariable({
-                        type: SourceIntType(DummySourceReason),
+                        type: AstBuilder.IntType,
                         name: 'n',
                       }),
                       e2: SourceExpressionVariable({
-                        type: SourceIntType(DummySourceReason),
+                        type: AstBuilder.IntType,
                         name: 'acc',
                       }),
                     }),
@@ -224,15 +209,9 @@ describe('mir-toplevel-lowering', () => {
             mappings: {
               a: {
                 isPublic: true,
-                type: SourceFunctionType(
-                  DummySourceReason,
-                  [
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A', [
-                      SourceIntType(DummySourceReason),
-                    ]),
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'T'),
-                  ],
-                  SourceIntType(DummySourceReason),
+                type: AstBuilder.FunType(
+                  [AstBuilder.IdType('A', [AstBuilder.IntType]), AstBuilder.IdType('T')],
+                  AstBuilder.IntType,
                 ),
               },
             },

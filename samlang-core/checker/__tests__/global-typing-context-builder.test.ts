@@ -4,20 +4,16 @@ import {
   ModuleReference,
   ModuleReferenceCollections,
 } from '../../ast/common-nodes';
-import type {
-  SamlangModule,
-  SourceClassDefinition,
-  TypeDefinition,
-  TypeParameterSignature,
-} from '../../ast/samlang-nodes';
 import {
+  AstBuilder,
   prettyPrintType,
   SamlangIdentifierType,
-  SourceExpressionFalse,
-  SourceFunctionType,
+  SamlangModule,
+  SourceClassDefinition,
   SourceId,
   SourceIdentifierType,
-  SourceIntType,
+  TypeDefinition,
+  TypeParameterSignature,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import {
@@ -59,9 +55,9 @@ const class1: SourceClassDefinition = {
       isMethod: true,
       name: SourceId('m1'),
       typeParameters: [],
-      type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+      type: AstBuilder.FunType([], AstBuilder.IntType),
       parameters: [],
-      body: SourceExpressionFalse(),
+      body: AstBuilder.FALSE,
     },
     {
       associatedComments: [],
@@ -70,9 +66,9 @@ const class1: SourceClassDefinition = {
       isMethod: false,
       name: SourceId('f1'),
       typeParameters: [],
-      type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+      type: AstBuilder.FunType([], AstBuilder.IntType),
       parameters: [],
-      body: SourceExpressionFalse(),
+      body: AstBuilder.FALSE,
     },
   ],
 };
@@ -130,8 +126,7 @@ describe('global-typing-context-builder', () => {
                 'init',
                 {
                   isPublic: true,
-                  type: SourceFunctionType(
-                    DummySourceReason,
+                  type: AstBuilder.FunType(
                     [],
                     SourceIdentifierType(DummySourceReason, module0Reference, 'Class0', []),
                   ),
@@ -158,7 +153,7 @@ describe('global-typing-context-builder', () => {
                 'f1',
                 {
                   isPublic: false,
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  type: AstBuilder.FunType([], AstBuilder.IntType),
                   typeParameters: [],
                 },
               ],
@@ -166,8 +161,7 @@ describe('global-typing-context-builder', () => {
                 'init',
                 {
                   isPublic: true,
-                  type: SourceFunctionType(
-                    DummySourceReason,
+                  type: AstBuilder.FunType(
                     [],
                     SourceIdentifierType(DummySourceReason, module1Reference, 'Class1', []),
                   ),
@@ -180,7 +174,7 @@ describe('global-typing-context-builder', () => {
                 'm1',
                 {
                   isPublic: true,
-                  type: SourceFunctionType(DummySourceReason, [], SourceIntType(DummySourceReason)),
+                  type: AstBuilder.FunType([], AstBuilder.IntType),
                   typeParameters: [],
                 },
               ],
@@ -198,8 +192,7 @@ describe('global-typing-context-builder', () => {
                 'init',
                 {
                   isPublic: true,
-                  type: SourceFunctionType(
-                    DummySourceReason,
+                  type: AstBuilder.FunType(
                     [],
                     SourceIdentifierType(DummySourceReason, module1Reference, 'Class2', []),
                   ),
@@ -243,11 +236,7 @@ describe('global-typing-context-builder', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'not_exist',
-                ),
+                extendsOrImplements: AstBuilder.IdType('not_exist'),
                 functions: new Map(),
                 methods: new Map(),
               },
@@ -269,20 +258,12 @@ describe('global-typing-context-builder', () => {
                       typeParameters: [
                         {
                           name: 'C',
-                          bound: SourceIdentifierType(
-                            DummySourceReason,
-                            ModuleReference.DUMMY,
-                            'A',
-                          ),
+                          bound: AstBuilder.IdType('A'),
                         },
                       ],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                        ],
-                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+                      type: AstBuilder.FunType(
+                        [AstBuilder.IdType('A'), AstBuilder.IdType('B')],
+                        AstBuilder.IdType('C'),
                       ),
                     },
                   ],
@@ -296,28 +277,19 @@ describe('global-typing-context-builder', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'IBase',
-                  [
-                    SourceIntType(DummySourceReason),
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                  ],
-                ),
+                extendsOrImplements: AstBuilder.IdType('IBase', [
+                  AstBuilder.IntType,
+                  AstBuilder.IdType('B'),
+                ]),
                 functions: new Map([
                   [
                     'f1',
                     {
                       isPublic: true,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                        ],
-                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+                      type: AstBuilder.FunType(
+                        [AstBuilder.IdType('A'), AstBuilder.IdType('B')],
+                        AstBuilder.IdType('C'),
                       ),
                     },
                   ],
@@ -332,15 +304,10 @@ describe('global-typing-context-builder', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'ILevel1',
-                  [
-                    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                    SourceIntType(DummySourceReason),
-                  ],
-                ),
+                extendsOrImplements: AstBuilder.IdType('ILevel1', [
+                  AstBuilder.IdType('A'),
+                  AstBuilder.IntType,
+                ]),
                 functions: new Map(),
                 methods: new Map([
                   [
@@ -348,13 +315,9 @@ describe('global-typing-context-builder', () => {
                     {
                       isPublic: true,
                       typeParameters: [{ name: 'C', bound: null }],
-                      type: SourceFunctionType(
-                        DummySourceReason,
-                        [
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'A'),
-                          SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'B'),
-                        ],
-                        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'C'),
+                      type: AstBuilder.FunType(
+                        [AstBuilder.IdType('A'), AstBuilder.IdType('B')],
+                        AstBuilder.IdType('C'),
                       ),
                     },
                   ],
@@ -365,11 +328,7 @@ describe('global-typing-context-builder', () => {
               'ICyclic1',
               {
                 typeParameters: [],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'ICyclic2',
-                ),
+                extendsOrImplements: AstBuilder.IdType('ICyclic2'),
                 functions: new Map(),
                 methods: new Map(),
               },
@@ -378,11 +337,7 @@ describe('global-typing-context-builder', () => {
               'ICyclic2',
               {
                 typeParameters: [],
-                extendsOrImplements: SourceIdentifierType(
-                  DummySourceReason,
-                  ModuleReference.DUMMY,
-                  'ICyclic1',
-                ),
+                extendsOrImplements: AstBuilder.IdType('ICyclic1'),
                 functions: new Map(),
                 methods: new Map(),
               },
@@ -413,37 +368,23 @@ describe('global-typing-context-builder', () => {
       };
     }
 
-    expect(
-      inlinedContextFromType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I_not_exist'),
-      ),
-    ).toEqual({
+    expect(inlinedContextFromType(AstBuilder.IdType('I_not_exist'))).toEqual({
       functions: [],
       methods: [],
       superTypes: [],
     });
 
-    expect(
-      inlinedContextFromType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'IUseNonExistent'),
-      ),
-    ).toEqual({
+    expect(inlinedContextFromType(AstBuilder.IdType('IUseNonExistent'))).toEqual({
       functions: [],
       methods: [],
       superTypes: ['not_exist'],
     });
-    expect(
-      inlinedContextFromType(SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'I')),
-    ).toEqual({
+    expect(inlinedContextFromType(AstBuilder.IdType('I'))).toEqual({
       functions: [],
       methods: [],
       superTypes: [],
     });
-    expect(
-      inlinedContextFromType(
-        SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ILevel2'),
-      ),
-    ).toEqual({
+    expect(inlinedContextFromType(AstBuilder.IdType('ILevel2'))).toEqual({
       functions: ['public f1<C>(A, B) -> C'],
       methods: ['public m1<C: int>(int, int) -> C', 'public m2<C>(A, B) -> C'],
       superTypes: ['IBase<int, int>', 'ILevel1<A, int>'],
@@ -452,12 +393,12 @@ describe('global-typing-context-builder', () => {
     const errorCollector = createGlobalErrorCollector();
     const errorReporter = errorCollector.getErrorReporter();
     getFullyInlinedInterfaceContext(
-      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic1'),
+      AstBuilder.IdType('ICyclic1'),
       globalTypingContext,
       errorReporter,
     );
     getFullyInlinedInterfaceContext(
-      SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, 'ICyclic2'),
+      AstBuilder.IdType('ICyclic2'),
       globalTypingContext,
       errorReporter,
     );

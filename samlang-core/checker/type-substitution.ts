@@ -1,7 +1,4 @@
-import { DummySourceReason, ModuleReference } from '../ast/common-nodes';
 import { SamlangType, SourceFunctionType, SourceIdentifierType } from '../ast/samlang-nodes';
-import { assert } from '../utils';
-import type { MemberTypeInformation } from './typing-context';
 
 export default function performTypeSubstitution(
   type: SamlangType,
@@ -28,27 +25,4 @@ export default function performTypeSubstitution(
         performTypeSubstitution(type.returnType, mapping),
       );
   }
-}
-
-export function normalizeTypeInformation(
-  currentModuleReference: ModuleReference,
-  { isPublic, typeParameters, type }: MemberTypeInformation,
-): MemberTypeInformation {
-  const mappings = typeParameters.map(
-    (typeParameter, i) =>
-      [
-        typeParameter.name,
-        SourceIdentifierType(DummySourceReason, currentModuleReference, `_T${i}`),
-      ] as const,
-  );
-  const newType = performTypeSubstitution(type, new Map(mappings));
-  assert(newType.__type__ === 'FunctionType');
-  return {
-    isPublic,
-    typeParameters: mappings.map(([, { identifier }], i) => ({
-      name: identifier,
-      bound: typeParameters[i]?.bound ?? null,
-    })),
-    type: newType,
-  };
 }

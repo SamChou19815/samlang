@@ -1,29 +1,23 @@
-import { DummySourceReason, Location, ModuleReference } from '../../ast/common-nodes';
+import { DummySourceReason, Location } from '../../ast/common-nodes';
 import {
+  AstBuilder,
   prettyPrintType,
   SamlangExpression,
   SamlangFunctionType,
   SamlangType,
-  SourceBoolType,
   SourceExpressionIfElse,
   SourceExpressionInt,
   SourceExpressionLambda,
   SourceExpressionMatch,
   SourceExpressionStatementBlock,
-  SourceExpressionTrue,
-  SourceFunctionType,
   SourceId,
-  SourceIdentifierType,
-  SourceIntType,
-  SourceUnitType,
   SourceUnknownType,
   TypeParameterSignature,
 } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import typeCheckFunctionCall from '../function-call-type-checker';
 
-const IdType = (id: string, typeArguments?: readonly SamlangType[]) =>
-  SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, id, typeArguments);
+const IdType = AstBuilder.IdType;
 
 function typeCheck(
   genericFunctionType: SamlangFunctionType,
@@ -54,12 +48,7 @@ function typeCheck(
 describe('function-call-type-checker', () => {
   it('function call args mismatch', () => {
     expect(
-      typeCheck(
-        SourceFunctionType(DummySourceReason, [], SourceBoolType(DummySourceReason)),
-        [],
-        [SourceExpressionInt(0)],
-        null,
-      ),
+      typeCheck(AstBuilder.FunType([], AstBuilder.BoolType), [], [SourceExpressionInt(0)], null),
     ).toEqual({
       solvedGenericType: '() -> bool',
       checkedArgumentsTypes: ['int'],
@@ -72,7 +61,7 @@ describe('function-call-type-checker', () => {
   it('easy case when all arguments can be independently type checked', () => {
     expect(
       typeCheck(
-        SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('C')], IdType('D')),
+        AstBuilder.FunType([IdType('A'), IdType('B'), IdType('C')], IdType('D')),
         [
           { name: 'A', bound: null },
           { name: 'B', bound: null },
@@ -81,26 +70,26 @@ describe('function-call-type-checker', () => {
         [
           SourceExpressionInt(0),
           SourceExpressionIfElse({
-            type: SourceBoolType(DummySourceReason),
-            boolExpression: SourceExpressionTrue(),
-            e1: SourceExpressionTrue(),
-            e2: SourceExpressionTrue(),
+            type: AstBuilder.BoolType,
+            boolExpression: AstBuilder.TRUE,
+            e1: AstBuilder.TRUE,
+            e2: AstBuilder.TRUE,
           }),
           SourceExpressionMatch({
-            type: SourceBoolType(DummySourceReason),
-            matchedExpression: SourceExpressionTrue(),
+            type: AstBuilder.BoolType,
+            matchedExpression: AstBuilder.TRUE,
             matchingList: [
               {
                 location: Location.DUMMY,
                 tag: SourceId('A'),
                 tagOrder: 0,
-                expression: SourceExpressionTrue(),
+                expression: AstBuilder.TRUE,
               },
               {
                 location: Location.DUMMY,
                 tag: SourceId('B'),
                 tagOrder: 1,
-                expression: SourceExpressionTrue(),
+                expression: AstBuilder.TRUE,
               },
             ],
           }),
@@ -117,7 +106,7 @@ describe('function-call-type-checker', () => {
   it('easy case when all arguments can be independently type checked, and return type can be inferred from hint', () => {
     expect(
       typeCheck(
-        SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('C')], IdType('D')),
+        AstBuilder.FunType([IdType('A'), IdType('B'), IdType('C')], IdType('D')),
         [
           { name: 'A', bound: null },
           { name: 'B', bound: null },
@@ -127,22 +116,22 @@ describe('function-call-type-checker', () => {
         [
           SourceExpressionInt(0),
           SourceExpressionStatementBlock({
-            type: SourceBoolType(DummySourceReason),
+            type: AstBuilder.BoolType,
             block: {
               location: Location.DUMMY,
               statements: [],
-              expression: SourceExpressionTrue(),
+              expression: AstBuilder.TRUE,
             },
           }),
           SourceExpressionStatementBlock({
-            type: SourceUnitType(DummySourceReason),
+            type: AstBuilder.UnitType,
             block: {
               location: Location.DUMMY,
               statements: [],
             },
           }),
         ],
-        SourceBoolType(DummySourceReason),
+        AstBuilder.BoolType,
       ),
     ).toEqual({
       solvedGenericType: '(int, bool, unit) -> bool',
@@ -154,7 +143,7 @@ describe('function-call-type-checker', () => {
   it('easy case when all arguments can be independently type checked, but return type cannot', () => {
     expect(
       typeCheck(
-        SourceFunctionType(DummySourceReason, [IdType('A'), IdType('B'), IdType('C')], IdType('D')),
+        AstBuilder.FunType([IdType('A'), IdType('B'), IdType('C')], IdType('D')),
         [
           { name: 'A', bound: null },
           { name: 'B', bound: null },
@@ -164,15 +153,15 @@ describe('function-call-type-checker', () => {
         [
           SourceExpressionInt(0),
           SourceExpressionStatementBlock({
-            type: SourceBoolType(DummySourceReason),
+            type: AstBuilder.BoolType,
             block: {
               location: Location.DUMMY,
               statements: [],
-              expression: SourceExpressionTrue(),
+              expression: AstBuilder.TRUE,
             },
           }),
           SourceExpressionStatementBlock({
-            type: SourceUnitType(DummySourceReason),
+            type: AstBuilder.UnitType,
             block: {
               location: Location.DUMMY,
               statements: [],
@@ -193,22 +182,20 @@ describe('function-call-type-checker', () => {
   it('Lambda expressions must be contextually typed', () => {
     expect(
       typeCheck(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('D')), IdType('T')],
-          SourceBoolType(DummySourceReason),
+        AstBuilder.FunType(
+          [AstBuilder.FunType([IdType('A')], IdType('D')), IdType('T')],
+          AstBuilder.BoolType,
         ),
         [{ name: 'T', bound: null }],
         [
           SourceExpressionLambda({
-            type: SourceFunctionType(
-              DummySourceReason,
+            type: AstBuilder.FunType(
               [SourceUnknownType(DummySourceReason)],
               SourceUnknownType(DummySourceReason),
             ),
             parameters: [{ name: SourceId('a'), typeAnnotation: null }],
             captured: {},
-            body: SourceExpressionTrue(),
+            body: AstBuilder.TRUE,
           }),
           SourceExpressionInt(1),
         ],
@@ -224,25 +211,17 @@ describe('function-call-type-checker', () => {
   it('Lambda can be type checked on its own', () => {
     expect(
       typeCheck(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('B'))],
-          SourceBoolType(DummySourceReason),
-        ),
+        AstBuilder.FunType([AstBuilder.FunType([IdType('A')], IdType('B'))], AstBuilder.BoolType),
         [
           { name: 'A', bound: null },
           { name: 'B', bound: null },
         ],
         [
           SourceExpressionLambda({
-            type: SourceFunctionType(
-              DummySourceReason,
-              [SourceIntType(DummySourceReason)],
-              SourceIntType(DummySourceReason),
-            ),
-            parameters: [{ name: SourceId('a'), typeAnnotation: SourceIntType(DummySourceReason) }],
+            type: AstBuilder.FunType([AstBuilder.IntType], AstBuilder.IntType),
+            parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.IntType }],
             captured: {},
-            body: SourceExpressionTrue(),
+            body: AstBuilder.TRUE,
           }),
         ],
         null,
@@ -257,25 +236,20 @@ describe('function-call-type-checker', () => {
   it('Lambda under constrained', () => {
     expect(
       typeCheck(
-        SourceFunctionType(
-          DummySourceReason,
-          [SourceFunctionType(DummySourceReason, [IdType('A')], IdType('B'))],
-          SourceBoolType(DummySourceReason),
-        ),
+        AstBuilder.FunType([AstBuilder.FunType([IdType('A')], IdType('B'))], AstBuilder.BoolType),
         [
           { name: 'A', bound: null },
           { name: 'B', bound: null },
         ],
         [
           SourceExpressionLambda({
-            type: SourceFunctionType(
-              DummySourceReason,
+            type: AstBuilder.FunType(
               [SourceUnknownType(DummySourceReason)],
               SourceUnknownType(DummySourceReason),
             ),
             parameters: [{ name: SourceId('a'), typeAnnotation: null }],
             captured: {},
-            body: SourceExpressionTrue(),
+            body: AstBuilder.TRUE,
           }),
         ],
         null,

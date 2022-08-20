@@ -3,6 +3,7 @@
 
 import { DummySourceReason, Location, ModuleReference, Position } from '../../ast/common-nodes';
 import {
+  AstBuilder,
   SamlangModule,
   SourceClassDefinition,
   SourceClassMemberDefinition,
@@ -11,7 +12,6 @@ import {
   SourceExpressionInt,
   SourceExpressionString,
   SourceId,
-  SourceIntType,
 } from '../../ast/samlang-nodes';
 import { EMPTY, InterpretationContext, Value } from '../expression-interpreter';
 import ModuleInterpreter from '../module-interpreter';
@@ -19,11 +19,7 @@ import ModuleInterpreter from '../module-interpreter';
 describe('module-interpreter', () => {
   const moduleInterpreter = new ModuleInterpreter();
 
-  const moduleEmpty: SamlangModule = {
-    imports: [],
-    classes: [],
-    interfaces: [],
-  };
+  const moduleEmpty: SamlangModule = { imports: [], classes: [], interfaces: [] };
 
   const exampleClassDef: SourceClassDefinition = {
     associatedComments: [],
@@ -39,12 +35,7 @@ describe('module-interpreter', () => {
       location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
       type: 'object',
       names: [SourceId('types')],
-      mappings: {
-        types: {
-          type: SourceIntType(DummySourceReason),
-          isPublic: true,
-        },
-      },
+      mappings: { types: { type: AstBuilder.IntType, isPublic: true } },
     },
   };
 
@@ -64,7 +55,7 @@ describe('module-interpreter', () => {
       names: [SourceId('types')],
       mappings: {
         types: {
-          type: SourceIntType(DummySourceReason),
+          type: AstBuilder.IntType,
           isPublic: true,
         },
       },
@@ -86,7 +77,7 @@ describe('module-interpreter', () => {
       names: [SourceId('types')],
       mappings: {
         types: {
-          type: SourceIntType(DummySourceReason),
+          type: AstBuilder.IntType,
           isPublic: true,
         },
       },
@@ -107,8 +98,8 @@ describe('module-interpreter', () => {
     type: {
       __type__: 'FunctionType',
       reason: DummySourceReason,
-      argumentTypes: [SourceIntType(DummySourceReason)],
-      returnType: SourceIntType(DummySourceReason),
+      argumentTypes: [AstBuilder.IntType],
+      returnType: AstBuilder.IntType,
     },
     parameters: [],
     body: SourceExpressionInt(
@@ -121,9 +112,9 @@ describe('module-interpreter', () => {
     ...memberMainFunctionNoArgs,
     body: SourceExpressionFunctionCall({
       location: new Location(ModuleReference.DUMMY, Position(12, 34), Position(34, 45)),
-      type: SourceIntType(DummySourceReason),
+      type: AstBuilder.IntType,
       functionExpression: SourceExpressionClassMember({
-        type: SourceIntType(DummySourceReason),
+        type: AstBuilder.IntType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
         className: SourceId('Builtins'),
@@ -147,9 +138,9 @@ describe('module-interpreter', () => {
     ...memberMainFunctionNoArgs,
     body: SourceExpressionFunctionCall({
       location: new Location(ModuleReference.DUMMY, Position(12, 34), Position(34, 45)),
-      type: SourceIntType(DummySourceReason),
+      type: AstBuilder.IntType,
       functionExpression: SourceExpressionClassMember({
-        type: SourceIntType(DummySourceReason),
+        type: AstBuilder.IntType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
         className: SourceId('Builtins'),
@@ -170,7 +161,7 @@ describe('module-interpreter', () => {
       {
         name: 'param',
         nameLocation: new Location(ModuleReference.DUMMY, Position(231, 34), Position(88, 78)),
-        type: SourceIntType(DummySourceReason),
+        type: AstBuilder.IntType,
         typeLocation: new Location(ModuleReference.DUMMY, Position(123, 98), Position(124, 78)),
       },
     ],
