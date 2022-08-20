@@ -81,7 +81,6 @@ describe('typing-context', () => {
                     },
                   },
                 },
-                extendsOrImplements: null,
                 superTypes: [],
                 functions: new Map([
                   [
@@ -153,7 +152,6 @@ describe('typing-context', () => {
                   names: [],
                   mappings: {},
                 },
-                extendsOrImplements: null,
                 superTypes: [],
                 functions: new Map([
                   [

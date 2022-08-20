@@ -65,7 +65,6 @@ function typeCheckInSandbox(
                       bar: { isPublic: false, type: int },
                     },
                   },
-                  extendsOrImplements: null,
                   superTypes: [],
                   functions: new Map([
                     [
@@ -134,7 +133,6 @@ function typeCheckInSandbox(
                       Bar: { isPublic: true, type: int },
                     },
                   },
-                  extendsOrImplements: null,
                   superTypes: [],
                   functions: new Map([
                     [
@@ -181,7 +179,6 @@ function typeCheckInSandbox(
                       bar: { isPublic: false, type: int },
                     },
                   },
-                  extendsOrImplements: null,
                   superTypes: [],
                   functions: new Map(),
                   methods: new Map(),
@@ -203,7 +200,6 @@ function typeCheckInSandbox(
                       Bar: { isPublic: true, type: int },
                     },
                   },
-                  extendsOrImplements: null,
                   superTypes: [],
                   functions: new Map([
                     [
@@ -251,7 +247,6 @@ function typeCheckInSandbox(
                       b: { isPublic: false, type: bool },
                     },
                   },
-                  extendsOrImplements: null,
                   superTypes: [],
                   functions: new Map([
                     [
@@ -283,7 +278,6 @@ function typeCheckInSandbox(
                       b: { isPublic: false, type: bool },
                     },
                   },
-                  extendsOrImplements: null,
                   superTypes: [],
                   functions: new Map([
                     [
@@ -315,7 +309,6 @@ function typeCheckInSandbox(
                       b: { isPublic: true, type: bool },
                     },
                   },
-                  extendsOrImplements: null,
                   superTypes: [],
                   functions: new Map([
                     [
