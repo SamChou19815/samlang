@@ -77,7 +77,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
             this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
             this.defineAll(typeDefinition.names);
             typeDefinition.names.forEach((it) =>
-              this.visitType(checkNotNull(typeDefinition.mappings[it.name]).type),
+              this.visitType(checkNotNull(typeDefinition.mappings.get(it.name)).type),
             );
           });
         }

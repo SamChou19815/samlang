@@ -419,7 +419,7 @@ class ExpressionTypeChecker {
       }
       const fieldNames = fieldMappingsOrError.names;
       const fieldMappings = fieldMappingsOrError.mappings;
-      const fieldType = fieldMappings[expression.fieldName.name];
+      const fieldType = fieldMappings.get(expression.fieldName.name);
       if (fieldType == null) {
         this.errorReporter.reportUnresolvedNameError(
           expression.fieldName.location,
@@ -707,7 +707,7 @@ class ExpressionTypeChecker {
       'variant',
     );
     let variantNames: readonly string[];
-    let variantMappings: Readonly<Record<string, SourceFieldType>>;
+    let variantMappings: ReadonlyMap<string, SourceFieldType>;
     switch (variantTypeDefinition.type) {
       case 'Resolved':
         variantNames = variantTypeDefinition.names;
@@ -735,7 +735,7 @@ class ExpressionTypeChecker {
           matchingList: expression.matchingList,
         });
     }
-    const unusedMappings = { ...variantMappings };
+    const unusedMappings = new Map(variantMappings);
     const checkedMatchingList = filterMap(
       expression.matchingList,
       ({
@@ -744,12 +744,12 @@ class ExpressionTypeChecker {
         dataVariable,
         expression: correspondingExpression,
       }) => {
-        const mappingDataType = unusedMappings[tag]?.type;
+        const mappingDataType = unusedMappings.get(tag)?.type;
         if (mappingDataType == null) {
           this.errorReporter.reportUnresolvedNameError(tagLocation, tag);
           return null;
         }
-        delete unusedMappings[tag];
+        unusedMappings.delete(tag);
         let checkedExpression: SamlangExpression;
         let checkedDatadataVariable: readonly [SourceIdentifier, SamlangType] | undefined =
           undefined;
@@ -784,7 +784,7 @@ class ExpressionTypeChecker {
         };
       },
     );
-    const unusedTags = Object.keys(unusedMappings);
+    const unusedTags = Array.from(unusedMappings.keys());
     if (unusedTags.length > 0) {
       this.errorReporter.reportNonExhausiveMatchError(expression.location, unusedTags);
     }
@@ -864,7 +864,7 @@ class ExpressionTypeChecker {
       type,
       associatedComments: expression.associatedComments,
       parameters: expression.parameters,
-      captured: Object.fromEntries(captured),
+      captured: new Map(captured),
       body,
     });
   }
@@ -923,7 +923,7 @@ class ExpressionTypeChecker {
         );
         let fieldNamesMappings: {
           readonly fieldNames: readonly string[];
-          readonly fieldMappings: Readonly<Record<string, SourceFieldType>>;
+          readonly fieldMappings: ReadonlyMap<string, SourceFieldType>;
         };
         assert(
           fieldMappingsOrError.type !== 'IllegalOtherClassMatch',
@@ -950,16 +950,14 @@ class ExpressionTypeChecker {
             };
         }
         const { fieldNames, fieldMappings } = fieldNamesMappings;
-        const fieldOrderMapping = Object.fromEntries(
-          fieldNames.map((name, index) => [name, index]),
-        );
+        const fieldOrderMapping = new Map(fieldNames.map((name, index) => [name, index]));
         const destructedNames: ObjectPatternDestucturedName[] = [];
         for (let i = 0; i < pattern.destructedNames.length; i += 1) {
           const destructedName: ObjectPatternDestucturedName = checkNotNull(
             pattern.destructedNames[i],
           );
           const { fieldName: originalName, alias: renamedName } = destructedName;
-          const fieldInformation = fieldMappings[originalName.name];
+          const fieldInformation = fieldMappings.get(originalName.name);
           if (fieldInformation == null) {
             this.errorReporter.reportUnresolvedNameError(originalName.location, originalName.name);
             return {
@@ -987,7 +985,7 @@ class ExpressionTypeChecker {
           }
           const nameToBeUsed = renamedName ?? originalName;
           this.localTypingContext.write(nameToBeUsed.location, fieldType);
-          const fieldOrder = checkNotNull(fieldOrderMapping[originalName.name]);
+          const fieldOrder = checkNotNull(fieldOrderMapping.get(originalName.name));
           destructedNames.push({
             fieldName: originalName,
             fieldOrder,

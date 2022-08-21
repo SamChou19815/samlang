@@ -192,7 +192,7 @@ describe('module-references-collector', () => {
               { name: SourceId('a'), typeAnnotation: null },
               { name: SourceId('b'), typeAnnotation: AstBuilder.IntType },
             ],
-            captured: { a: AstBuilder.IntType },
+            captured: new Map([['a', AstBuilder.IntType]]),
             body: AstBuilder.TRUE,
           }),
           functionArguments: [SourceExpressionVariable({ type: AstBuilder.IntType, name: 'v' })],

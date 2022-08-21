@@ -38,7 +38,7 @@ describe('samlang-core/checker', () => {
               type: 'object',
               names: [SourceId('')],
               location: Location.DUMMY,
-              mappings: { d: { isPublic: true, type: AstBuilder.IntType } },
+              mappings: new Map([['d', { isPublic: true, type: AstBuilder.IntType }]]),
             },
             members: [
               {

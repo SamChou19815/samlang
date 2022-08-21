@@ -1,13 +1,13 @@
 import { Location, ModuleReference, ModuleReferenceCollections } from '../../ast/common-nodes';
-import { AstBuilder, SourceId } from '../../ast/samlang-nodes';
+import { AstBuilder } from '../../ast/samlang-nodes';
 import {
   AccessibleGlobalTypingContext,
-  ClassTypingContext,
   createBuiltinFunction,
   createPrivateBuiltinFunction,
   InterfaceTypingContext,
   memberTypeInformationToString,
   ModuleTypingContext,
+  TypeDefinitionTypingContext,
 } from '../typing-context';
 
 describe('typing-context', () => {
@@ -34,6 +34,7 @@ describe('typing-context', () => {
       ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
         ModuleReference.DUMMY,
         {
+          typeDefinitions: new Map(),
           interfaces: new Map<string, InterfaceTypingContext>([
             [
               'A',
@@ -85,8 +86,21 @@ describe('typing-context', () => {
       ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
         ModuleReference.DUMMY,
         {
+          typeDefinitions: new Map<string, TypeDefinitionTypingContext>([
+            [
+              'A',
+              {
+                type: 'variant',
+                names: ['a', 'b'],
+                mappings: new Map([
+                  ['a', { isPublic: true, type: AstBuilder.IdType('A') }],
+                  ['b', { isPublic: false, type: AstBuilder.IdType('B') }],
+                ]),
+              },
+            ],
+          ]),
           interfaces: new Map(),
-          classes: new Map<string, ClassTypingContext>([
+          classes: new Map<string, InterfaceTypingContext>([
             [
               'A',
               {
@@ -94,15 +108,6 @@ describe('typing-context', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                typeDefinition: {
-                  location: Location.DUMMY,
-                  type: 'variant',
-                  names: [SourceId('a'), SourceId('b')],
-                  mappings: {
-                    a: { isPublic: true, type: AstBuilder.IdType('A') },
-                    b: { isPublic: false, type: AstBuilder.IdType('B') },
-                  },
-                },
                 superTypes: [],
                 functions: new Map([
                   createBuiltinFunction('f1', [], AstBuilder.IntType, ['C']),
@@ -126,12 +131,6 @@ describe('typing-context', () => {
                   { name: 'E', bound: null },
                   { name: 'F', bound: null },
                 ],
-                typeDefinition: {
-                  location: Location.DUMMY,
-                  type: 'object',
-                  names: [],
-                  mappings: {},
-                },
                 superTypes: [],
                 functions: new Map([
                   createBuiltinFunction('f1', [], AstBuilder.IntType, ['C']),
@@ -183,8 +182,22 @@ describe('typing-context', () => {
       ModuleReferenceCollections.hashMapOf([
         ModuleReference.DUMMY,
         {
+          typeDefinitions: new Map<string, TypeDefinitionTypingContext>([
+            [
+              'A',
+              {
+                type: 'variant',
+                names: ['a', 'b'],
+                mappings: new Map([
+                  ['a', { isPublic: true, type: AstBuilder.IdType('A') }],
+                  ['b', { isPublic: false, type: AstBuilder.IdType('B') }],
+                ]),
+              },
+            ],
+            ['B', { type: 'object', names: [], mappings: new Map() }],
+          ]),
           interfaces: new Map(),
-          classes: new Map<string, ClassTypingContext>([
+          classes: new Map<string, InterfaceTypingContext>([
             [
               'A',
               {
@@ -192,15 +205,6 @@ describe('typing-context', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                typeDefinition: {
-                  location: Location.DUMMY,
-                  type: 'variant',
-                  names: [SourceId('a'), SourceId('b')],
-                  mappings: {
-                    a: { isPublic: true, type: AstBuilder.IdType('A') },
-                    b: { isPublic: false, type: AstBuilder.IdType('B') },
-                  },
-                },
                 superTypes: [],
                 functions: new Map(),
                 methods: new Map(),
@@ -213,12 +217,6 @@ describe('typing-context', () => {
                   { name: 'E', bound: null },
                   { name: 'F', bound: null },
                 ],
-                typeDefinition: {
-                  location: Location.DUMMY,
-                  type: 'object',
-                  names: [],
-                  mappings: {},
-                },
                 superTypes: [],
                 functions: new Map(),
                 methods: new Map(),
@@ -245,7 +243,7 @@ describe('typing-context', () => {
     ).toEqual({
       type: 'Resolved',
       names: [],
-      mappings: {},
+      mappings: new Map(),
     });
     expect(
       context.resolveTypeDefinition(
@@ -261,23 +259,20 @@ describe('typing-context', () => {
     ).toEqual({
       type: 'Resolved',
       names: ['a', 'b'],
-      mappings: {
-        a: { isPublic: true, type: AstBuilder.IntType },
-        b: { isPublic: false, type: AstBuilder.IntType },
-      },
+      mappings: new Map([
+        ['a', { isPublic: true, type: AstBuilder.IntType }],
+        ['b', { isPublic: false, type: AstBuilder.IntType }],
+      ]),
     });
     expect(
       context.resolveTypeDefinition(AstBuilder.IdType('A', [AstBuilder.IntType]), 'variant'),
     ).toEqual({
       type: 'Resolved',
       names: ['a', 'b'],
-      mappings: {
-        a: { isPublic: true, type: AstBuilder.IntType },
-        b: {
-          isPublic: false,
-          type: AstBuilder.IdType('B'),
-        },
-      },
+      mappings: new Map([
+        ['a', { isPublic: true, type: AstBuilder.IntType }],
+        ['b', { isPublic: false, type: AstBuilder.IdType('B') }],
+      ]),
     });
   });
 });

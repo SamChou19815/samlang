@@ -20,18 +20,18 @@ import {
   buildGlobalTypingContext,
   getFullyInlinedInterfaceContext,
 } from '../global-typing-context-builder';
-import type { MemberTypeInformation } from '../typing-context';
+import type { MemberTypeInformation, TypeDefinitionTypingContext } from '../typing-context';
 import { memberTypeInformationToString } from '../typing-context';
 
 const module0Reference = ModuleReference(['Module0']);
 const module1Reference = ModuleReference(['Module1']);
 
-const typeDefinition = {
+const typeDefinition: TypeDefinition = {
   location: Location.DUMMY,
   type: 'object',
   names: [],
-  mappings: {},
-} as const;
+  mappings: new Map(),
+};
 
 const class0: SourceClassDefinition = {
   location: Location.DUMMY,
@@ -106,6 +106,7 @@ describe('global-typing-context-builder', () => {
       testSources,
       createGlobalErrorCollector().getErrorReporter(),
       {
+        typeDefinitions: new Map(),
         classes: new Map(),
         interfaces: new Map(),
       },
@@ -113,13 +114,13 @@ describe('global-typing-context-builder', () => {
     expect(actualGlobalTypingContext.size).toBe(3);
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
+      typeDefinitions: new Map([['Class0', { type: 'object', names: [], mappings: new Map() }]]),
       interfaces: new Map(),
       classes: new Map([
         [
           'Class0',
           {
             typeParameters: [],
-            typeDefinition,
             superTypes: [],
             functions: new Map([
               [
@@ -140,13 +141,16 @@ describe('global-typing-context-builder', () => {
       ]),
     });
     expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
+      typeDefinitions: new Map([
+        ['Class1', { type: 'object', names: [], mappings: new Map() }],
+        ['Class2', { type: 'object', names: [], mappings: new Map() }],
+      ]),
       interfaces: new Map(),
       classes: new Map([
         [
           'Class1',
           {
             typeParameters: [],
-            typeDefinition,
             superTypes: [],
             functions: new Map([
               [
@@ -185,7 +189,6 @@ describe('global-typing-context-builder', () => {
           'Class2',
           {
             typeParameters: [],
-            typeDefinition,
             superTypes: [],
             functions: new Map([
               [
@@ -220,6 +223,7 @@ describe('global-typing-context-builder', () => {
     }
 
     interface UnoptimizedModuleTypingContext {
+      readonly typeDefinitions: ReadonlyMap<string, TypeDefinitionTypingContext>;
       readonly interfaces: ReadonlyMap<string, UnoptimizedInterfaceTypingContext>;
       readonly classes: ReadonlyMap<string, UnoptimizedClassTypingContext>;
     }
@@ -228,6 +232,7 @@ describe('global-typing-context-builder', () => {
       ModuleReferenceCollections.hashMapOf<UnoptimizedModuleTypingContext>([
         ModuleReference.DUMMY,
         {
+          typeDefinitions: new Map(),
           interfaces: new Map([
             [
               'IUseNonExistent',

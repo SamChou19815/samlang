@@ -79,15 +79,13 @@ export default function prettyPrintSamlangModule(
   });
 
   const classes = samlangModule.classes.map((classDefinition) => {
-    const typeMappingItems = Object.entries(classDefinition.typeDefinition.mappings).map(
-      ([name, type]) => {
-        if (classDefinition.typeDefinition.type === 'object') {
-          const modifier = type.isPublic ? '' : 'private ';
-          return `${modifier}val ${name}: ${prettyPrintType(type.type)}`;
-        }
-        return `${name}(${prettyPrintType(type.type)})`;
-      },
-    );
+    const typeMappingItems = Array.from(classDefinition.typeDefinition.mappings, ([name, type]) => {
+      if (classDefinition.typeDefinition.type === 'object') {
+        const modifier = type.isPublic ? '' : 'private ';
+        return `${modifier}val ${name}: ${prettyPrintType(type.type)}`;
+      }
+      return `${name}(${prettyPrintType(type.type)})`;
+    });
 
     const documents = [
       createPrettierDocumentForAssociatedComments(classDefinition.associatedComments, true) ??

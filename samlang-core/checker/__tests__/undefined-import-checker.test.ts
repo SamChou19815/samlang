@@ -14,7 +14,7 @@ const createMockClass = (name: string): SourceClassDefinition => ({
   name: SourceId(name),
   typeParameters: [],
   members: [],
-  typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
+  typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: new Map() },
 });
 
 const createMockModule = (

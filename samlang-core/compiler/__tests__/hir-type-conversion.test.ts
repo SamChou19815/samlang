@@ -294,22 +294,28 @@ describe('hir-type-conversion', () => {
       location: Location.DUMMY,
       type: 'object',
       names: [SourceId('a'), SourceId('b')],
-      mappings: {
-        a: {
-          type: AstBuilder.FunType(
-            [AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.BoolType)],
-            AstBuilder.BoolType,
-          ),
-          isPublic: true,
-        },
-        b: {
-          type: AstBuilder.FunType(
-            [AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.BoolType)],
-            AstBuilder.BoolType,
-          ),
-          isPublic: false,
-        },
-      },
+      mappings: new Map([
+        [
+          'a',
+          {
+            type: AstBuilder.FunType(
+              [AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.BoolType)],
+              AstBuilder.BoolType,
+            ),
+            isPublic: true,
+          },
+        ],
+        [
+          'b',
+          {
+            type: AstBuilder.FunType(
+              [AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.BoolType)],
+              AstBuilder.BoolType,
+            ),
+            isPublic: false,
+          },
+        ],
+      ]),
     });
     expect(
       [...typeSynthesizer.synthesizedTupleTypes, typeDefinition].map(

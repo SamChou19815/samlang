@@ -426,7 +426,7 @@ return (_t0: string);`,
         SourceExpressionLambda({
           type: AstBuilder.FunType([AstBuilder.UnitType], AstBuilder.UnitType),
           parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.UnitType }],
-          captured: { captured_a: AstBuilder.UnitType },
+          captured: new Map([['captured_a', AstBuilder.UnitType]]),
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> int
@@ -447,7 +447,7 @@ return (_t0: $SyntheticIDType1);`,
         SourceExpressionLambda({
           type: AstBuilder.FunType([AstBuilder.UnitType], AstBuilder.IntType),
           parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.UnitType }],
-          captured: { captured_a: AstBuilder.UnitType },
+          captured: new Map([['captured_a', AstBuilder.UnitType]]),
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> int
@@ -468,7 +468,7 @@ return (_t0: $SyntheticIDType1);`,
         SourceExpressionLambda({
           type: AstBuilder.FunType([AstBuilder.UnitType], DUMMY_IDENTIFIER_TYPE),
           parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.UnitType }],
-          captured: { captured_a: AstBuilder.UnitType },
+          captured: new Map([['captured_a', AstBuilder.UnitType]]),
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> __DUMMY___Dummy
@@ -489,7 +489,7 @@ return (_t0: $SyntheticIDType1);`,
         SourceExpressionLambda({
           type: AstBuilder.FunType([AstBuilder.UnitType], DUMMY_IDENTIFIER_TYPE),
           parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.UnitType }],
-          captured: {},
+          captured: new Map(),
           body: THIS,
         }),
         `closure type $SyntheticIDType0 = (int) -> __DUMMY___Dummy

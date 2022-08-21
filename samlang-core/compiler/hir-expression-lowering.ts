@@ -724,7 +724,8 @@ class HighIRExpressionLoweringManager {
     expression: LambdaExpression,
     favoredTempVariable: string | null,
   ): HighIRExpressionLoweringResult {
-    const captured = Object.keys(expression.captured).map(
+    const captured = Array.from(
+      expression.captured.keys(),
       (name) => [name, this.resolveVariable(name)] as const,
     );
 
