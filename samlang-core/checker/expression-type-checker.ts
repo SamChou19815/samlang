@@ -116,7 +116,7 @@ class ExpressionTypeChecker {
   }
 
   private typeCheckThis(expression: ThisExpression, hint: SamlangType | null): SamlangExpression {
-    const typeFromContext = this.localTypingContext.getThisType();
+    const typeFromContext = this.localTypingContext.thisType;
     let type: SamlangType;
     if (typeFromContext == null) {
       this.errorReporter.reportIllegalThisError(expression.location);
@@ -150,7 +150,7 @@ class ExpressionTypeChecker {
     partiallyCheckedExpression: ClassMemberExpression;
     unsolvedTypeParameters: readonly TypeParameterSignature[];
   } {
-    const classFunctionTypeInformation = this.accessibleGlobalTypingContext.getClassFunctionType(
+    const classFunctionTypeInformation = this.accessibleGlobalTypingContext.getFunctionType(
       expression.moduleReference,
       expression.className.name,
       expression.memberName.name,
@@ -329,7 +329,7 @@ class ExpressionTypeChecker {
       });
       return { partiallyCheckedExpression, unsolvedTypeParameters: [] };
     }
-    const methodTypeInformation = this.accessibleGlobalTypingContext.getClassMethodType(
+    const methodTypeInformation = this.accessibleGlobalTypingContext.getMethodType(
       checkedExpression.type.moduleReference,
       checkedExpression.type.identifier,
       expression.fieldName.name,

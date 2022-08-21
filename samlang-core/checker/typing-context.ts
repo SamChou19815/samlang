@@ -1,6 +1,5 @@
 import {
   BuiltinReason,
-  DummySourceReason,
   Location,
   LocationCollections,
   ModuleReference,
@@ -8,24 +7,20 @@ import {
   SourceReason,
 } from '../ast/common-nodes';
 import {
+  CustomizedReasonAstBuilder,
+  isTheSameType,
   prettyPrintType,
   SamlangFunctionType,
   SamlangIdentifierType,
   SamlangType,
   SourceFieldType,
-  SourceFunctionType,
-  SourceIdentifierType,
-  SourceInterfaceDeclaration,
-  SourceIntType,
-  SourceStringType,
-  SourceUnitType,
   SourceUnknownType,
   TypeDefinition,
   TypeParameterSignature,
   typeReposition,
 } from '../ast/samlang-nodes';
 import type { DefaultBuiltinClasses } from '../parser';
-import { assert, checkNotNull, ReadonlyHashMap, zip } from '../utils';
+import { assert, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
 
@@ -63,6 +58,43 @@ export interface ModuleTypingContext {
   readonly classes: ReadonlyMap<string, ClassTypingContext>;
 }
 
+const AST = new CustomizedReasonAstBuilder(BuiltinReason, ModuleReference.ROOT);
+
+function createCustomBuiltinFunction(
+  name: string,
+  isPublic: boolean,
+  typeParameters: readonly string[],
+  argumentTypes: readonly SamlangType[],
+  returnType: SamlangType,
+): readonly [string, MemberTypeInformation] {
+  return [
+    name,
+    {
+      isPublic,
+      typeParameters: typeParameters.map((it) => ({ name: it, bound: null })),
+      type: AST.FunType(argumentTypes, returnType),
+    },
+  ];
+}
+
+export function createBuiltinFunction(
+  name: string,
+  argumentTypes: readonly SamlangType[],
+  returnType: SamlangType,
+  typeParameters: readonly string[] = [],
+): readonly [string, MemberTypeInformation] {
+  return createCustomBuiltinFunction(name, true, typeParameters, argumentTypes, returnType);
+}
+
+export function createPrivateBuiltinFunction(
+  name: string,
+  argumentTypes: readonly SamlangType[],
+  returnType: SamlangType,
+  typeParameters: readonly string[] = [],
+): readonly [string, MemberTypeInformation] {
+  return createCustomBuiltinFunction(name, false, typeParameters, argumentTypes, returnType);
+}
+
 export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
   readonly interfaces: ReadonlyMap<string, ClassTypingContext>;
   readonly classes: ReadonlyMap<DefaultBuiltinClasses, ClassTypingContext>;
@@ -77,54 +109,10 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
         extendsOrImplements: null,
         superTypes: [],
         functions: new Map([
-          [
-            'stringToInt',
-            {
-              isPublic: true,
-              typeParameters: [],
-              type: SourceFunctionType(
-                BuiltinReason,
-                [SourceStringType(BuiltinReason)],
-                SourceIntType(BuiltinReason),
-              ),
-            },
-          ],
-          [
-            'intToString',
-            {
-              isPublic: true,
-              typeParameters: [],
-              type: SourceFunctionType(
-                BuiltinReason,
-                [SourceIntType(BuiltinReason)],
-                SourceStringType(BuiltinReason),
-              ),
-            },
-          ],
-          [
-            'println',
-            {
-              isPublic: true,
-              typeParameters: [],
-              type: SourceFunctionType(
-                BuiltinReason,
-                [SourceStringType(BuiltinReason)],
-                SourceUnitType(BuiltinReason),
-              ),
-            },
-          ],
-          [
-            'panic',
-            {
-              isPublic: true,
-              typeParameters: [{ name: 'T', bound: null }],
-              type: SourceFunctionType(
-                BuiltinReason,
-                [SourceStringType(BuiltinReason)],
-                SourceIdentifierType(BuiltinReason, ModuleReference.ROOT, 'T'),
-              ),
-            },
-          ],
+          createBuiltinFunction('stringToInt', [AST.StringType], AST.IntType),
+          createBuiltinFunction('intToString', [AST.IntType], AST.StringType),
+          createBuiltinFunction('println', [AST.StringType], AST.UnitType),
+          createBuiltinFunction('panic', [AST.StringType], AST.IdType('T'), ['T']),
         ]),
         methods: new Map(),
       },
@@ -136,46 +124,50 @@ export type GlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingC
 
 export class AccessibleGlobalTypingContext {
   constructor(
-    public readonly currentModuleReference: ModuleReference,
     private readonly globalTypingContext: GlobalTypingContext,
-    public readonly typeParameters: ReadonlySet<string>,
+    public readonly currentModuleReference: ModuleReference,
     public readonly currentClass: string,
   ) {}
 
-  static fromInterface(
-    currentModuleReference: ModuleReference,
-    globalTypingContext: GlobalTypingContext,
-    interfaceDeclaration: SourceInterfaceDeclaration,
-  ): AccessibleGlobalTypingContext {
-    return new AccessibleGlobalTypingContext(
-      currentModuleReference,
-      globalTypingContext,
-      new Set(interfaceDeclaration.typeParameters.map(({ name: { name } }) => name)),
-      interfaceDeclaration.name.name,
-    );
-  }
-
-  getInterfaceInformation(
+  private getInterfaceInformation(
     moduleReference: ModuleReference,
     className: string,
   ): InterfaceTypingContext | undefined {
-    return this.globalTypingContext.get(moduleReference)?.interfaces?.get(className);
+    return (
+      this.globalTypingContext.get(moduleReference)?.classes?.get(className) ||
+      this.globalTypingContext.get(moduleReference)?.interfaces?.get(className)
+    );
   }
 
-  getClassTypeInformation(
-    moduleReference: ModuleReference,
-    className: string,
-  ): ClassTypingContext | undefined {
-    return this.globalTypingContext.get(moduleReference)?.classes?.get(className);
+  public isSubtype(lower: SamlangType, upper: SamlangIdentifierType): boolean {
+    if (lower.__type__ !== 'IdentifierType') return false;
+    const interfaceTypingContext = this.getInterfaceInformation(
+      lower.moduleReference,
+      lower.identifier,
+    );
+    if (interfaceTypingContext == null) return false;
+    if (lower.typeArguments.length !== interfaceTypingContext.typeParameters.length) return false;
+    return interfaceTypingContext.superTypes.some((potentialSuperType) => {
+      const substitutedPotentialSuperType = performTypeSubstitution(
+        potentialSuperType,
+        new Map(
+          zip(interfaceTypingContext.typeParameters, lower.typeArguments).map(([name, arg]) => [
+            name.name,
+            arg,
+          ]),
+        ),
+      );
+      return isTheSameType(substitutedPotentialSuperType, upper);
+    });
   }
 
-  getClassFunctionType(
+  public getFunctionType(
     moduleReference: ModuleReference,
     className: string,
     member: string,
     useLocation: Location,
   ): MemberTypeInformation | null {
-    const typeInfo = this.getClassTypeInformation(moduleReference, className)?.functions?.get(
+    const typeInfo = this.getInterfaceInformation(moduleReference, className)?.functions?.get(
       member,
     );
     if (typeInfo == null) return null;
@@ -190,14 +182,14 @@ export class AccessibleGlobalTypingContext {
     return { ...typeInfo, type: typeReposition(typeInfo.type, useLocation) };
   }
 
-  getClassMethodType(
+  public getMethodType(
     moduleReference: ModuleReference,
     className: string,
     methodName: string,
     classTypeArguments: readonly SamlangType[],
     useLocation: Location,
   ): MemberTypeInformation | null {
-    const relaventClass = this.getClassTypeInformation(moduleReference, className);
+    const relaventClass = this.getInterfaceInformation(moduleReference, className);
     if (relaventClass == null) return null;
     const typeInfo = relaventClass.methods?.get(methodName);
     if (typeInfo == null || (!typeInfo.isPublic && className !== this.currentClass)) return null;
@@ -219,27 +211,12 @@ export class AccessibleGlobalTypingContext {
     };
   }
 
-  getCurrentClassTypeDefinition(): TypeDefinition & {
-    readonly classTypeParameters: readonly {
-      readonly name: string;
-      readonly bound: SamlangType | null;
-    }[];
-  } {
-    const classTypingContext = checkNotNull(
-      this.getClassTypeInformation(this.currentModuleReference, this.currentClass),
-    );
-    return {
-      ...classTypingContext.typeDefinition,
-      classTypeParameters: classTypingContext.typeParameters,
-    };
-  }
-
   /**
    * Resolve the type definition for an identifier within the current enclosing class.
    * This method will refuse to resolve variant identifier types outside of its enclosing class
    * according to type checking rules.
    */
-  resolveTypeDefinition(
+  public resolveTypeDefinition(
     { moduleReference, identifier, typeArguments }: SamlangIdentifierType,
     typeDefinitionType: 'object' | 'variant',
   ):
@@ -258,7 +235,7 @@ export class AccessibleGlobalTypingContext {
     ) {
       return { type: 'IllegalOtherClassMatch' };
     }
-    const relaventClass = this.getClassTypeInformation(moduleReference, identifier);
+    const relaventClass = this.globalTypingContext.get(moduleReference)?.classes?.get(identifier);
     if (
       relaventClass == null ||
       relaventClass.typeDefinition == null ||
@@ -298,29 +275,6 @@ export class AccessibleGlobalTypingContext {
       ),
     };
   }
-
-  get thisType(): SamlangIdentifierType {
-    const currentClassTypingContext = checkNotNull(
-      this.getClassTypeInformation(this.currentModuleReference, this.currentClass),
-    );
-    return SourceIdentifierType(
-      DummySourceReason,
-      this.currentModuleReference,
-      this.currentClass,
-      currentClassTypingContext.typeParameters.map((it) =>
-        SourceIdentifierType(DummySourceReason, this.currentModuleReference, it.name),
-      ),
-    );
-  }
-
-  withAdditionalTypeParameters(typeParameters: Iterable<string>): AccessibleGlobalTypingContext {
-    return new AccessibleGlobalTypingContext(
-      this.currentModuleReference,
-      this.globalTypingContext,
-      new Set([...this.typeParameters, ...typeParameters]),
-      this.currentClass,
-    );
-  }
 }
 
 export class LocationBasedLocalTypingContext {
@@ -328,12 +282,8 @@ export class LocationBasedLocalTypingContext {
 
   constructor(
     private readonly ssaAnalysisResult: SsaAnalysisResult,
-    private readonly thisType: SamlangType | null,
+    public readonly thisType: SamlangType | null,
   ) {}
-
-  getThisType(): SamlangType | null {
-    return this.thisType;
-  }
 
   read(location: Location): SamlangType {
     const definitionLocation = this.ssaAnalysisResult.useDefineMap.get(location);

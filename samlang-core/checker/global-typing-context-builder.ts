@@ -324,7 +324,7 @@ export function buildGlobalTypingContext(
     const functions = new Map<string, MemberTypeInformation>();
     const methods = new Map<string, MemberTypeInformation>();
     members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
-      const typeInformation = {
+      const typeInformation: MemberTypeInformation = {
         isPublic,
         typeParameters: memberTypeParameters.map((it) => ({ name: it.name.name, bound: it.bound })),
         type,

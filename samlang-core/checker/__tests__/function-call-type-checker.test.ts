@@ -68,7 +68,7 @@ describe('function-call-type-checker', () => {
           { name: 'C', bound: null },
         ],
         [
-          SourceExpressionInt(0),
+          AstBuilder.ZERO,
           SourceExpressionIfElse({
             type: AstBuilder.BoolType,
             boolExpression: AstBuilder.TRUE,
@@ -114,21 +114,14 @@ describe('function-call-type-checker', () => {
           { name: 'D', bound: null },
         ],
         [
-          SourceExpressionInt(0),
+          AstBuilder.ZERO,
           SourceExpressionStatementBlock({
             type: AstBuilder.BoolType,
-            block: {
-              location: Location.DUMMY,
-              statements: [],
-              expression: AstBuilder.TRUE,
-            },
+            block: { location: Location.DUMMY, statements: [], expression: AstBuilder.TRUE },
           }),
           SourceExpressionStatementBlock({
             type: AstBuilder.UnitType,
-            block: {
-              location: Location.DUMMY,
-              statements: [],
-            },
+            block: { location: Location.DUMMY, statements: [] },
           }),
         ],
         AstBuilder.BoolType,
@@ -151,21 +144,14 @@ describe('function-call-type-checker', () => {
           { name: 'D', bound: null },
         ],
         [
-          SourceExpressionInt(0),
+          AstBuilder.ZERO,
           SourceExpressionStatementBlock({
             type: AstBuilder.BoolType,
-            block: {
-              location: Location.DUMMY,
-              statements: [],
-              expression: AstBuilder.TRUE,
-            },
+            block: { location: Location.DUMMY, statements: [], expression: AstBuilder.TRUE },
           }),
           SourceExpressionStatementBlock({
             type: AstBuilder.UnitType,
-            block: {
-              location: Location.DUMMY,
-              statements: [],
-            },
+            block: { location: Location.DUMMY, statements: [] },
           }),
         ],
         null,
