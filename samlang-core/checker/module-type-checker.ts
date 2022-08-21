@@ -1,5 +1,10 @@
-import type { ModuleReference } from '../ast/common-nodes';
-import type { SamlangModule, SourceClassMemberDeclaration } from '../ast/samlang-nodes';
+import { ModuleReference, SourceReason } from '../ast/common-nodes';
+import {
+  SamlangIdentifierType,
+  SamlangModule,
+  SourceClassMemberDeclaration,
+  SourceIdentifierType,
+} from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
 import { filterMap } from '../utils';
 import typeCheckExpression from './expression-type-checker';
@@ -12,21 +17,14 @@ import {
 
 function typeCheckMemberDeclaration(
   memberDeclaration: SourceClassMemberDeclaration,
-  accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
   ssaResult: SsaAnalysisResult,
-  inClass: boolean,
+  thisType: SamlangIdentifierType | null,
 ) {
-  const thisType =
-    inClass && memberDeclaration.isMethod ? accessibleGlobalTypingContext.thisType : null;
   const localTypingContext = new LocationBasedLocalTypingContext(ssaResult, thisType);
-  const contextWithAdditionalTypeParameters =
-    accessibleGlobalTypingContext.withAdditionalTypeParameters(
-      memberDeclaration.typeParameters.map((it) => it.name.name),
-    );
   memberDeclaration.parameters.forEach((parameter) => {
     localTypingContext.write(parameter.nameLocation, parameter.type);
   });
-  return { contextWithAdditionalTypeParameters, localTypingContext };
+  return localTypingContext;
 }
 
 export default function typeCheckSamlangModule(
@@ -38,41 +36,37 @@ export default function typeCheckSamlangModule(
   const ssaResult = performSSAAnalysisOnSamlangModule(samlangModule, errorReporter);
 
   samlangModule.interfaces.forEach((interfaceDeclaration) => {
-    const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
-      moduleReference,
-      globalTypingContext,
-      interfaceDeclaration,
-    );
     interfaceDeclaration.members.forEach((member) =>
-      typeCheckMemberDeclaration(
-        member,
-        accessibleGlobalTypingContext,
-        ssaResult,
-        /* inClass */ false,
-      ),
+      typeCheckMemberDeclaration(member, ssaResult, /* thisType */ null),
     );
   });
 
   const checkedClasses = samlangModule.classes.map((classDefinition) => {
-    const accessibleGlobalTypingContext = AccessibleGlobalTypingContext.fromInterface(
-      moduleReference,
+    const accessibleGlobalTypingContext = new AccessibleGlobalTypingContext(
       globalTypingContext,
-      classDefinition,
+      moduleReference,
+      classDefinition.name.name,
     );
     const checkedMembers = filterMap(classDefinition.members, (member) => {
-      const { contextWithAdditionalTypeParameters, localTypingContext } =
-        typeCheckMemberDeclaration(
-          member,
-          accessibleGlobalTypingContext,
-          ssaResult,
-          /* inClass */ true,
-        );
+      const thisType = SourceIdentifierType(
+        SourceReason(classDefinition.name.location, classDefinition.name.location),
+        moduleReference,
+        classDefinition.name.name,
+        classDefinition.typeParameters.map((it) =>
+          SourceIdentifierType(
+            SourceReason(it.location, it.location),
+            moduleReference,
+            it.name.name,
+          ),
+        ),
+      );
+      const localTypingContext = typeCheckMemberDeclaration(member, ssaResult, thisType);
       return {
         ...member,
         body: typeCheckExpression(
           member.body,
           errorReporter,
-          contextWithAdditionalTypeParameters,
+          accessibleGlobalTypingContext,
           localTypingContext,
           member.type.returnType,
         ),

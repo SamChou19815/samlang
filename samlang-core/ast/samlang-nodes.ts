@@ -654,25 +654,31 @@ export interface SamlangModule {
 }
 
 /** A factory class to conveniently building AST nodes for the purpose of testing or synthesis. */
-export class AstBuilder {
-  // TYPES
+export class CustomizedReasonAstBuilder {
+  constructor(
+    private readonly reason: SamlangReason,
+    private readonly moduleReference: ModuleReference,
+  ) {}
 
-  static UnitType: SamlangPrimitiveType = SourceUnitType(DummySourceReason);
-  static IntType: SamlangPrimitiveType = SourceIntType(DummySourceReason);
-  static BoolType: SamlangPrimitiveType = SourceBoolType(DummySourceReason);
-  static StringType: SamlangPrimitiveType = SourceStringType(DummySourceReason);
+  UnitType: SamlangPrimitiveType = SourceUnitType(this.reason);
+  IntType: SamlangPrimitiveType = SourceIntType(this.reason);
+  BoolType: SamlangPrimitiveType = SourceBoolType(this.reason);
+  StringType: SamlangPrimitiveType = SourceStringType(this.reason);
 
-  static IdType = (id: string, typeArguments: readonly SamlangType[] = []): SamlangIdentifierType =>
-    SourceIdentifierType(DummySourceReason, ModuleReference.DUMMY, id, typeArguments);
+  IdType = (id: string, typeArguments: readonly SamlangType[] = []): SamlangIdentifierType =>
+    SourceIdentifierType(this.reason, this.moduleReference, id, typeArguments);
 
-  static FunType = (
-    argumentTypes: readonly SamlangType[],
-    returnType: SamlangType,
-  ): SamlangFunctionType => SourceFunctionType(DummySourceReason, argumentTypes, returnType);
+  FunType = (argumentTypes: readonly SamlangType[], returnType: SamlangType): SamlangFunctionType =>
+    SourceFunctionType(this.reason, argumentTypes, returnType);
 
   // EXPRESSIONS
 
-  static TRUE: LiteralExpression = SourceExpressionTrue(Location.DUMMY, []);
-  static FALSE: LiteralExpression = SourceExpressionFalse(Location.DUMMY, []);
-  static ZERO: LiteralExpression = SourceExpressionInt(0);
+  TRUE: LiteralExpression = SourceExpressionTrue(Location.DUMMY, []);
+  FALSE: LiteralExpression = SourceExpressionFalse(Location.DUMMY, []);
+  ZERO: LiteralExpression = SourceExpressionInt(0);
 }
+
+export const AstBuilder: CustomizedReasonAstBuilder = new CustomizedReasonAstBuilder(
+  DummySourceReason,
+  ModuleReference.DUMMY,
+);

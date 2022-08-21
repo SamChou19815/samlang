@@ -1,16 +1,5 @@
-import {
-  DummySourceReason,
-  Location,
-  ModuleReference,
-  ModuleReferenceCollections,
-} from '../../ast/common-nodes';
-import {
-  AstBuilder,
-  SamlangExpression,
-  SamlangType,
-  SourceId,
-  SourceIdentifierType,
-} from '../../ast/samlang-nodes';
+import { Location, ModuleReference, ModuleReferenceCollections } from '../../ast/common-nodes';
+import { AstBuilder, SamlangExpression, SamlangType, SourceId } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
 import { checkNotNull } from '../../utils';
@@ -23,8 +12,6 @@ import {
   LocationBasedLocalTypingContext,
   ModuleTypingContext,
 } from '../typing-context';
-
-const dummyModuleReference: ModuleReference = ModuleReference(['Test']);
 
 const int = AstBuilder.IntType;
 const string = AstBuilder.StringType;
@@ -40,11 +27,10 @@ function typeCheckInSandbox(
   const errorReporter = globalErrorCollector.getErrorReporter();
   const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
     new AccessibleGlobalTypingContext(
-      dummyModuleReference,
       ModuleReferenceCollections.hashMapOf<ModuleTypingContext>(
         [ModuleReference.ROOT, DEFAULT_BUILTIN_TYPING_CONTEXT],
         [
-          dummyModuleReference,
+          ModuleReference.DUMMY,
           {
             interfaces: new Map(),
             classes: new Map<string, ClassTypingContext>([
@@ -68,10 +54,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: AstBuilder.FunType(
-                          [bool, int],
-                          SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test'),
-                        ),
+                        type: AstBuilder.FunType([bool, int], AstBuilder.IdType('Test')),
                       },
                     ],
                     [
@@ -87,10 +70,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: false,
                         typeParameters: [{ name: 'A', bound: null }],
-                        type: AstBuilder.FunType(
-                          [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A')],
-                          unit,
-                        ),
+                        type: AstBuilder.FunType([AstBuilder.IdType('A')], unit),
                       },
                     ],
                   ]),
@@ -134,10 +114,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: AstBuilder.FunType(
-                          [bool],
-                          SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-                        ),
+                        type: AstBuilder.FunType([bool], AstBuilder.IdType('Test2')),
                       },
                     ],
                     [
@@ -145,10 +122,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: AstBuilder.FunType(
-                          [int],
-                          SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-                        ),
+                        type: AstBuilder.FunType([int], AstBuilder.IdType('Test2')),
                       },
                     ],
                   ]),
@@ -166,7 +140,7 @@ function typeCheckInSandbox(
                     mappings: {
                       foo: {
                         isPublic: true,
-                        type: SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
+                        type: AstBuilder.IdType('E'),
                       },
                       bar: { isPublic: false, type: int },
                     },
@@ -187,7 +161,7 @@ function typeCheckInSandbox(
                     mappings: {
                       Foo: {
                         isPublic: true,
-                        type: SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
+                        type: AstBuilder.IdType('E'),
                       },
                       Bar: { isPublic: true, type: int },
                     },
@@ -200,10 +174,8 @@ function typeCheckInSandbox(
                         isPublic: true,
                         typeParameters: [{ name: 'E', bound: null }],
                         type: AstBuilder.FunType(
-                          [SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E')],
-                          SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [
-                            SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
-                          ]),
+                          [AstBuilder.IdType('E')],
+                          AstBuilder.IdType('Test4', [AstBuilder.IdType('E')]),
                         ),
                       },
                     ],
@@ -214,9 +186,7 @@ function typeCheckInSandbox(
                         typeParameters: [{ name: 'E', bound: null }],
                         type: AstBuilder.FunType(
                           [int],
-                          SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [
-                            SourceIdentifierType(DummySourceReason, dummyModuleReference, 'E'),
-                          ]),
+                          AstBuilder.IdType('Test4', [AstBuilder.IdType('E')]),
                         ),
                       },
                     ],
@@ -244,10 +214,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: AstBuilder.FunType(
-                          [],
-                          SourceIdentifierType(DummySourceReason, dummyModuleReference, 'A', []),
-                        ),
+                        type: AstBuilder.FunType([], AstBuilder.IdType('A')),
                       },
                     ],
                   ]),
@@ -274,10 +241,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: AstBuilder.FunType(
-                          [],
-                          SourceIdentifierType(DummySourceReason, dummyModuleReference, 'B', []),
-                        ),
+                        type: AstBuilder.FunType([], AstBuilder.IdType('B')),
                       },
                     ],
                   ]),
@@ -304,10 +268,7 @@ function typeCheckInSandbox(
                       {
                         isPublic: true,
                         typeParameters: [],
-                        type: AstBuilder.FunType(
-                          [],
-                          SourceIdentifierType(DummySourceReason, dummyModuleReference, 'C', []),
-                        ),
+                        type: AstBuilder.FunType([], AstBuilder.IdType('C')),
                       },
                     ],
                   ]),
@@ -318,13 +279,13 @@ function typeCheckInSandbox(
           },
         ],
       ),
-      new Set(),
+      ModuleReference.DUMMY,
       currentClass ?? 'Test',
     );
 
   // Parse
   const parsedExpression = checkNotNull(
-    parseSamlangExpressionFromText(source, dummyModuleReference, errorReporter),
+    parseSamlangExpressionFromText(source, ModuleReference.DUMMY, errorReporter),
   );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
 
@@ -391,22 +352,22 @@ describe('expression-type-checker', () => {
     assertTypeChecks('"a"', string);
 
     assertTypeErrors('true', unit, [
-      'Test.sam:1:1-1:5: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:5: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('false', unit, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('42', unit, [
-      'Test.sam:1:1-1:3: [UnexpectedType]: Expected: `unit`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:3: [UnexpectedType]: Expected: `unit`, actual: `int`.',
     ]);
     assertTypeErrors('"a"', unit, [
-      'Test.sam:1:1-1:4: [UnexpectedType]: Expected: `unit`, actual: `string`.',
+      '__DUMMY__.sam:1:1-1:4: [UnexpectedType]: Expected: `unit`, actual: `string`.',
     ]);
   });
 
   it('This', () => {
     assertTypeErrors('this', int, [
-      'Test.sam:1:1-1:5: [IllegalThis]: Keyword `this` cannot be used in this context.',
+      '__DUMMY__.sam:1:1-1:5: [IllegalThis]: Keyword `this` cannot be used in this context.',
     ]);
   });
 
@@ -414,7 +375,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('{ val foo = 3; foo }', int);
 
     assertTypeErrors('{ val foo = true; foo }', int, [
-      'Test.sam:1:19-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:19-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
   });
 
@@ -423,121 +384,94 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Test.helloWorld', AstBuilder.FunType([string], unit));
 
     assertTypeErrors('Test.helloWorld<A>', AstBuilder.FunType([string], unit), [
-      'Test.sam:1:1-1:19: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
+      '__DUMMY__.sam:1:1-1:19: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
     ]);
     assertTypeErrors(
       'Test.helloWorldWithTypeParameters',
       AstBuilder.FunType([string, string], unit),
       [
-        'Test.sam:1:1-1:34: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
-        'Test.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-        'Test.sam:1:1-1:34: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(unknown) -> unit`.',
+        '__DUMMY__.sam:1:1-1:34: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
+        '__DUMMY__.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+        '__DUMMY__.sam:1:1-1:34: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(unknown) -> unit`.',
       ],
     );
     assertTypeErrors('Test.helloWorldWithTypeParameters', string, [
-      'Test.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      'Test.sam:1:1-1:34: [UnexpectedTypeKind]: Expected kind: `string`, actual: `function`.',
-      'Test.sam:1:1-1:34: [UnexpectedType]: Expected: `string`, actual: `(unknown) -> unit`.',
+      '__DUMMY__.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      '__DUMMY__.sam:1:1-1:34: [UnexpectedTypeKind]: Expected kind: `string`, actual: `function`.',
+      '__DUMMY__.sam:1:1-1:34: [UnexpectedType]: Expected: `string`, actual: `(unknown) -> unit`.',
     ]);
     assertTypeErrors(
       'Test.helloWorldWithTypeParameters<int, string>',
       AstBuilder.FunType([int], unit),
       [
-        'Test.sam:1:1-1:47: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
+        '__DUMMY__.sam:1:1-1:47: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
       ],
     );
     assertTypeErrors(
       'Test.helloWorldWithTypeParameters<string>',
       AstBuilder.FunType([string, string], unit),
       [
-        'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
-        'Test.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
+        '__DUMMY__.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
+        '__DUMMY__.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.',
       ],
     );
     assertTypeErrors('Test.helloWorld2', AstBuilder.FunType([string], unit), [
-      'Test.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved.',
+      '__DUMMY__.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved.',
     ]);
   });
 
   it('ObjectConstructor', () => {
-    assertTypeChecks(
-      'Test.init(true, 3)',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test'),
-    );
-    assertTypeChecks(
-      '{ val foo=true; Test.init(foo, 3) }',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test'),
-    );
+    assertTypeChecks('Test.init(true, 3)', AstBuilder.IdType('Test'));
+    assertTypeChecks('{ val foo=true; Test.init(foo, 3) }', AstBuilder.IdType('Test'));
   });
 
   it('VariantConstructor', () => {
-    assertTypeChecks(
-      'Test2.Foo(true)',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      undefined,
-      'Test2',
-    );
-    assertTypeChecks(
-      'Test2.Bar(42)',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      undefined,
-      'Test2',
-    );
-    assertTypeChecks(
-      'Test4.Foo(true)}',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
-      undefined,
-      'Test4',
-    );
+    assertTypeChecks('Test2.Foo(true)', AstBuilder.IdType('Test2'), undefined, 'Test2');
+    assertTypeChecks('Test2.Bar(42)', AstBuilder.IdType('Test2'), undefined, 'Test2');
+    assertTypeChecks('Test4.Foo(true)}', AstBuilder.IdType('Test4', [bool]), undefined, 'Test4');
     assertTypeChecks(
       'Test4.Foo<bool>(true)}',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
+      AstBuilder.IdType('Test4', [bool]),
       undefined,
       'Test4',
     );
 
-    assertTypeErrors(
-      'Test.Foo(true)',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved.'],
-    );
-    assertTypeErrors(
-      'Test.Bar(42)',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved.'],
-    );
+    assertTypeErrors('Test.Foo(true)', AstBuilder.IdType('Test2'), [
+      '__DUMMY__.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved.',
+    ]);
+    assertTypeErrors('Test.Bar(42)', AstBuilder.IdType('Test2'), [
+      '__DUMMY__.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved.',
+    ]);
     assertTypeErrors(
       'Test4.Foo<int, bool>(true)}',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
+      AstBuilder.IdType('Test4', [bool]),
       [
-        'Test.sam:1:1-1:21: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
+        '__DUMMY__.sam:1:1-1:21: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
       ],
       undefined,
     );
     assertTypeErrors(
       'Test4.Foo<int>(true)}',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [int]),
-      ['Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
+      AstBuilder.IdType('Test4', [int]),
+      ['__DUMMY__.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
       undefined,
     );
     assertTypeErrors(
       'Test4.Foo<int>(true)}',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test4', [bool]),
+      AstBuilder.IdType('Test4', [bool]),
       [
-        'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.',
-        'Test.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+        '__DUMMY__.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.',
+        '__DUMMY__.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.',
       ],
       undefined,
     );
-    assertTypeErrors(
-      'Test44.Bar(42)',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved.'],
-    );
+    assertTypeErrors('Test44.Bar(42)', AstBuilder.IdType('Test2'), [
+      '__DUMMY__.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved.',
+    ]);
     assertTypeErrors(
       'Test2.Tars(42)',
-      SourceIdentifierType(DummySourceReason, dummyModuleReference, 'Test2'),
-      ['Test.sam:1:1-1:11: [UnresolvedName]: Name `Test2.Tars` is not resolved.'],
+      AstBuilder.IdType('Test2'),
+      ['__DUMMY__.sam:1:1-1:11: [UnresolvedName]: Name `Test2.Tars` is not resolved.'],
       'Test2',
     );
   });
@@ -549,59 +483,59 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Test.init(true, 3).bazWithTypeParam', AstBuilder.FunType([int], bool));
 
     assertTypeErrors('3.foo', int, [
-      'Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
     ]);
     assertTypeErrors('Test.init(true, 3).bazz', int, [
-      'Test.sam:1:20-1:24: [UnresolvedName]: Name `bazz` is not resolved.',
+      '__DUMMY__.sam:1:20-1:24: [UnresolvedName]: Name `bazz` is not resolved.',
     ]);
     assertTypeErrors('{ val _ = (t3: Test3<bool>) -> t3.bar }', unit, [
-      'Test.sam:1:35-1:38: [UnresolvedName]: Name `bar` is not resolved.',
+      '__DUMMY__.sam:1:35-1:38: [UnresolvedName]: Name `bar` is not resolved.',
     ]);
     assertTypeErrors(
       'Test2.Foo(true).foo',
       int,
       [
-        "Test.sam:1:1-1:16: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
+        "__DUMMY__.sam:1:1-1:16: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       ],
       'Test2',
     );
 
     assertTypeErrors('Test.init(true, 3).foo', int, [
-      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('Test.init(true, 3).bar', bool, [
-      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('Test.init(true, 3).baz', int, [
-      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
-      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
+      '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
+      '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
     ]);
     assertTypeErrors('Test.init(true, 3).bazWithTypeParam', int, [
-      'Test.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      'Test.sam:1:1-1:36: [UnexpectedTypeKind]: Expected kind: `int`, actual: `function`.',
-      'Test.sam:1:1-1:36: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
+      '__DUMMY__.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      '__DUMMY__.sam:1:1-1:36: [UnexpectedTypeKind]: Expected kind: `int`, actual: `function`.',
+      '__DUMMY__.sam:1:1-1:36: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
     ]);
     assertTypeErrors('Test.init(true, 3).bazWithTypeParam', AstBuilder.FunType([int, int], bool), [
-      'Test.sam:1:1-1:36: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
-      'Test.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      'Test.sam:1:1-1:36: [UnexpectedType]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.',
+      '__DUMMY__.sam:1:1-1:36: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.',
+      '__DUMMY__.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      '__DUMMY__.sam:1:1-1:36: [UnexpectedType]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.',
     ]);
     assertTypeErrors('Test.init(true, 3).baz', AstBuilder.FunType([bool], int), [
-      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
-      'Test.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
+      '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
+      '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
     ]);
 
     assertTypeErrors('{ val _ = (t) -> t.foo; }', unit, [
-      'Test.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
+      '__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      '__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
     assertTypeErrors('{ val _ = (t) -> t.bar; }', unit, [
-      'Test.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
+      '__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      '__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
     assertTypeErrors('{ val _ = (t) -> t.baz; }', unit, [
-      'Test.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
-      'Test.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
+      '__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      '__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.',
     ]);
   });
 
@@ -611,19 +545,19 @@ describe('expression-type-checker', () => {
     assertTypeChecks('!false', bool);
 
     assertTypeErrors('-(false)', int, [
-      'Test.sam:1:3-1:8: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:3-1:8: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('!1', bool, [
-      'Test.sam:1:2-1:3: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:2-1:3: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('-(1+1)', bool, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('!true', int, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('!false', int, [
-      'Test.sam:1:1-1:7: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
   });
 
@@ -635,7 +569,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Builtins.panic("")', AstBuilder.FunType([int, bool], string));
 
     assertTypeErrors('Builtins.panic(3)', unit, [
-      'Test.sam:1:16-1:17: [UnexpectedType]: Expected: `string`, actual: `int`.',
+      '__DUMMY__.sam:1:16-1:17: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
   });
 
@@ -644,24 +578,24 @@ describe('expression-type-checker', () => {
     assertTypeChecks('((i: int) -> true)(3)', bool);
 
     assertTypeErrors('3(3)', unit, [
-      'Test.sam:1:1-1:5: [UnexpectedTypeKind]: Expected kind: `function`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:5: [UnexpectedTypeKind]: Expected kind: `function`, actual: `int`.',
     ]);
 
     assertTypeErrors('Test.helloWorld(3)', unit, [
-      'Test.sam:1:17-1:18: [UnexpectedType]: Expected: `string`, actual: `int`.',
+      '__DUMMY__.sam:1:17-1:18: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
     assertTypeErrors('((i: int) -> true)({})', bool, [
-      'Test.sam:1:20-1:22: [UnexpectedType]: Expected: `int`, actual: `unit`.',
+      '__DUMMY__.sam:1:20-1:22: [UnexpectedType]: Expected: `int`, actual: `unit`.',
     ]);
 
     assertTypeErrors('Test.helloWorld("")', bool, [
-      'Test.sam:1:1-1:20: [UnexpectedType]: Expected: `bool`, actual: `unit`.',
+      '__DUMMY__.sam:1:1-1:20: [UnexpectedType]: Expected: `bool`, actual: `unit`.',
     ]);
     assertTypeErrors('Test.init(true, 3).baz(3)', int, [
-      'Test.sam:1:1-1:26: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:26: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('((i: int) -> true)(3)', int, [
-      'Test.sam:1:1-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
   });
 
@@ -685,101 +619,101 @@ describe('expression-type-checker', () => {
     assertTypeChecks('{ val _ = (t: string, f: string) -> t == f; }', unit);
 
     assertTypeErrors('"1" * "1"', int, [
-      'Test.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`.',
-      'Test.sam:1:7-1:10: [UnexpectedType]: Expected: `int`, actual: `string`.',
+      '__DUMMY__.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`.',
+      '__DUMMY__.sam:1:7-1:10: [UnexpectedType]: Expected: `int`, actual: `string`.',
     ]);
     assertTypeErrors('"1" - 1', int, [
-      'Test.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`.',
+      '__DUMMY__.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`.',
     ]);
     assertTypeErrors('1 % "1"', int, [
-      'Test.sam:1:5-1:8: [UnexpectedType]: Expected: `int`, actual: `string`.',
+      '__DUMMY__.sam:1:5-1:8: [UnexpectedType]: Expected: `int`, actual: `string`.',
     ]);
     assertTypeErrors('1 + false', int, [
-      'Test.sam:1:5-1:10: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:5-1:10: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('false - 1', int, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('"" < false', bool, [
-      'Test.sam:1:1-1:3: [UnexpectedType]: Expected: `int`, actual: `string`.',
-      'Test.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:3: [UnexpectedType]: Expected: `int`, actual: `string`.',
+      '__DUMMY__.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('1 <= false', bool, [
-      'Test.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('1 > ""', bool, [
-      'Test.sam:1:5-1:7: [UnexpectedType]: Expected: `int`, actual: `string`.',
+      '__DUMMY__.sam:1:5-1:7: [UnexpectedType]: Expected: `int`, actual: `string`.',
     ]);
     assertTypeErrors('true >= 1', bool, [
-      'Test.sam:1:1-1:5: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:5: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('false || 4', bool, [
-      'Test.sam:1:10-1:11: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:10-1:11: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('2 && 3', bool, [
-      'Test.sam:1:1-1:2: [UnexpectedType]: Expected: `bool`, actual: `int`.',
-      'Test.sam:1:6-1:7: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:2: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:6-1:7: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('1 == false', bool, [
-      'Test.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('true == 3', bool, [
-      'Test.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('true != 3', bool, [
-      'Test.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('"" != 3', bool, [
-      'Test.sam:1:7-1:8: [UnexpectedType]: Expected: `string`, actual: `int`.',
+      '__DUMMY__.sam:1:7-1:8: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
     assertTypeErrors('{ val _ = (t: int, f: bool) -> t == f; }', unit, [
-      'Test.sam:1:37-1:38: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:37-1:38: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
 
     assertTypeErrors('1 * 1', unit, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
     ]);
     assertTypeErrors('1 - 1', unit, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
     ]);
     assertTypeErrors('1 % 1', unit, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
     ]);
     assertTypeErrors('1 + 1', unit, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
     ]);
     assertTypeErrors('1 - 1', unit, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`.',
     ]);
     assertTypeErrors('1 < 1', unit, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('1 <= 1', unit, [
-      'Test.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('1 > 1', unit, [
-      'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('1 >= 1', unit, [
-      'Test.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('true || false', unit, [
-      'Test.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('false && true', unit, [
-      'Test.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('1 == 1', unit, [
-      'Test.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('true == false', unit, [
-      'Test.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('true != true', unit, [
-      'Test.sam:1:1-1:13: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:13: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
     assertTypeErrors('"" != "3"', unit, [
-      'Test.sam:1:1-1:10: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
+      '__DUMMY__.sam:1:1-1:10: [UnexpectedType]: Expected: `unit`, actual: `bool`.',
     ]);
   });
 
@@ -790,13 +724,13 @@ describe('expression-type-checker', () => {
     assertTypeChecks('{ val _ = (b: bool, t: int, f: int) -> if b then t else f }', unit);
 
     assertTypeErrors('if true then false else 1', bool, [
-      'Test.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+      '__DUMMY__.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     ]);
     assertTypeErrors('if false then 1 else false', int, [
-      'Test.sam:1:22-1:27: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '__DUMMY__.sam:1:22-1:27: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
     assertTypeErrors('if false then "" else 3', string, [
-      'Test.sam:1:23-1:24: [UnexpectedType]: Expected: `string`, actual: `int`.',
+      '__DUMMY__.sam:1:23-1:24: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
     assertTypeErrors(
       `{
@@ -805,7 +739,7 @@ describe('expression-type-checker', () => {
   )
 }`,
       unit,
-      ['Test.sam:3:22-3:23: [UnexpectedType]: Expected: `bool`, actual: `int`.'],
+      ['__DUMMY__.sam:3:22-3:23: [UnexpectedType]: Expected: `bool`, actual: `int`.'],
     );
   });
 
@@ -818,20 +752,20 @@ describe('expression-type-checker', () => {
     );
 
     assertTypeErrors('{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }', unit, [
-      "Test.sam:1:32-1:33: [IllegalOtherClassMatch]: It is illegal to match on a value of other class's type.",
+      "__DUMMY__.sam:1:32-1:33: [IllegalOtherClassMatch]: It is illegal to match on a value of other class's type.",
     ]);
     assertTypeErrors('match (3) { | Foo _ -> 1 | Bar s -> 2 }', unit, [
-      'Test.sam:1:8-1:9: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
+      '__DUMMY__.sam:1:8-1:9: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
     ]);
     assertTypeErrors('match (Test.init(true, 3)) { | Foo _ -> 1 | Bar s -> 2 }', unit, [
-      "Test.sam:1:8-1:26: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
+      "__DUMMY__.sam:1:8-1:26: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
     ]);
     assertTypeErrors(
       '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Baz s -> 2 }; }',
       unit,
       [
-        'Test.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].',
-        'Test.sam:1:52-1:55: [UnresolvedName]: Name `Baz` is not resolved.',
+        '__DUMMY__.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].',
+        '__DUMMY__.sam:1:52-1:55: [UnresolvedName]: Name `Baz` is not resolved.',
       ],
       'Test2',
     );
@@ -851,12 +785,12 @@ describe('expression-type-checker', () => {
     assertTypeChecks('(a) -> a', AstBuilder.FunType([int], int));
 
     assertTypeErrors('(a) -> a', AstBuilder.FunType([], int), [
-      'Test.sam:1:1-1:9: [ArityMismatchError]: Incorrect function arguments size. Expected: 0, actual: 1.',
-      'Test.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      '__DUMMY__.sam:1:1-1:9: [ArityMismatchError]: Incorrect function arguments size. Expected: 0, actual: 1.',
+      '__DUMMY__.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
     ]);
     assertTypeErrors('(a) -> a', int, [
-      'Test.sam:1:1-1:9: [UnexpectedTypeKind]: Expected kind: `int`, actual: `(unknown) -> unknown`.',
-      'Test.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+      '__DUMMY__.sam:1:1-1:9: [UnexpectedTypeKind]: Expected kind: `int`, actual: `(unknown) -> unknown`.',
+      '__DUMMY__.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
     ]);
   });
 
@@ -865,19 +799,19 @@ describe('expression-type-checker', () => {
       assertTypeChecks('{val {a, b as c} = A.init();}', unit, undefined, 'A'));
     it('Object destructuring 2', () =>
       assertTypeErrors('{val {a, b as c} = A.init();}', unit, [
-        'Test.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.',
+        '__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.',
       ]));
     it('Object destructuring 3', () =>
       assertTypeErrors('{val {a, b as c} = C.init();}', unit, [
-        "Test.sam:1:20-1:28: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
+        "__DUMMY__.sam:1:20-1:28: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       ]));
     it('Object destructuring 4', () =>
       assertTypeErrors('{val {a, b as c} = 1;}', unit, [
-        'Test.sam:1:20-1:21: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
+        '__DUMMY__.sam:1:20-1:21: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
       ]));
     it('Object destructuring 5', () =>
       assertTypeErrors('{val {a, d as c} = A.init();}', unit, [
-        'Test.sam:1:10-1:11: [UnresolvedName]: Name `d` is not resolved.',
+        '__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `d` is not resolved.',
       ]));
 
     it('Variable pattern 1', () => assertTypeChecks('{val a = 1;}', unit));
