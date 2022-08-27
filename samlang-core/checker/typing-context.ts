@@ -15,7 +15,6 @@ import {
   SamlangType,
   SourceFieldType,
   SourceUnknownType,
-  TypeDefinition,
   TypeParameterSignature,
   typeReposition,
 } from '../ast/samlang-nodes';
@@ -49,13 +48,16 @@ export interface InterfaceTypingContext {
   readonly superTypes: readonly SamlangIdentifierType[];
 }
 
-export interface ClassTypingContext extends InterfaceTypingContext {
-  readonly typeDefinition: TypeDefinition;
+export interface TypeDefinitionTypingContext {
+  readonly type: 'object' | 'variant';
+  readonly names: readonly string[];
+  readonly mappings: ReadonlyMap<string, SourceFieldType>;
 }
 
 export interface ModuleTypingContext {
+  readonly typeDefinitions: ReadonlyMap<string, TypeDefinitionTypingContext>;
   readonly interfaces: ReadonlyMap<string, InterfaceTypingContext>;
-  readonly classes: ReadonlyMap<string, ClassTypingContext>;
+  readonly classes: ReadonlyMap<string, InterfaceTypingContext>;
 }
 
 const AST = new CustomizedReasonAstBuilder(BuiltinReason, ModuleReference.ROOT);
@@ -96,16 +98,23 @@ export function createPrivateBuiltinFunction(
 }
 
 export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
-  readonly interfaces: ReadonlyMap<string, ClassTypingContext>;
-  readonly classes: ReadonlyMap<DefaultBuiltinClasses, ClassTypingContext>;
+  readonly typeDefinitions: ReadonlyMap<string, TypeDefinitionTypingContext>;
+  readonly interfaces: ReadonlyMap<string, InterfaceTypingContext>;
+  readonly classes: ReadonlyMap<DefaultBuiltinClasses, InterfaceTypingContext>;
 } = {
+  typeDefinitions: new Map(),
   interfaces: new Map(),
   classes: new Map([
     [
       'Builtins',
       {
         typeParameters: [],
-        typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
+        typeDefinition: {
+          location: Location.DUMMY,
+          type: 'object',
+          names: [],
+          mappings: new Map(),
+        },
         extendsOrImplements: null,
         superTypes: [],
         functions: new Map([
@@ -223,7 +232,7 @@ export class AccessibleGlobalTypingContext {
     | {
         readonly type: 'Resolved';
         readonly names: readonly string[];
-        readonly mappings: Readonly<Record<string, SourceFieldType>>;
+        readonly mappings: ReadonlyMap<string, SourceFieldType>;
       }
     | { readonly type: 'IllegalOtherClassMatch' }
     | { readonly type: 'UnsupportedClassTypeDefinition' } {
@@ -236,26 +245,26 @@ export class AccessibleGlobalTypingContext {
       return { type: 'IllegalOtherClassMatch' };
     }
     const relaventClass = this.globalTypingContext.get(moduleReference)?.classes?.get(identifier);
+    const relaventTypingDefinition = this.globalTypingContext
+      .get(moduleReference)
+      ?.typeDefinitions?.get(identifier);
     if (
       relaventClass == null ||
-      relaventClass.typeDefinition == null ||
-      relaventClass.typeDefinition.type !== typeDefinitionType
+      relaventTypingDefinition == null ||
+      relaventTypingDefinition.type !== typeDefinitionType
     ) {
       return { type: 'UnsupportedClassTypeDefinition' };
     }
-    const {
-      typeParameters,
-      typeDefinition: { names, mappings: nameMappings },
-    } = relaventClass;
-    let classTypeParameters = typeParameters;
-    if (typeParameters.length > typeArguments.length) {
+    const { names, mappings: nameMappings } = relaventTypingDefinition;
+    let classTypeParameters = relaventClass.typeParameters;
+    if (classTypeParameters.length > typeArguments.length) {
       classTypeParameters = classTypeParameters.slice(0, typeArguments.length);
     }
     return {
       type: 'Resolved',
-      names: names.map((it) => it.name),
-      mappings: Object.fromEntries(
-        Object.entries(nameMappings).map(([name, fieldType]) => {
+      names,
+      mappings: new Map(
+        Array.from(nameMappings, ([name, fieldType]) => {
           return [
             name,
             {

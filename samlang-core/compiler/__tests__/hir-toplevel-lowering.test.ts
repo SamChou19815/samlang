@@ -31,7 +31,12 @@ describe('mir-toplevel-lowering', () => {
           associatedComments: [],
           name: SourceId('Main'),
           typeParameters: [],
-          typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: {} },
+          typeDefinition: {
+            location: Location.DUMMY,
+            type: 'object',
+            names: [],
+            mappings: new Map(),
+          },
           members: [
             {
               associatedComments: [],
@@ -65,7 +70,7 @@ describe('mir-toplevel-lowering', () => {
             location: Location.DUMMY,
             type: 'object',
             names: [SourceId('a')],
-            mappings: { a: { isPublic: true, type: AstBuilder.IntType } },
+            mappings: new Map([['a', { isPublic: true, type: AstBuilder.IntType }]]),
           },
           members: [
             {
@@ -192,7 +197,12 @@ describe('mir-toplevel-lowering', () => {
           associatedComments: [],
           name: SourceId('Class2'),
           typeParameters: [],
-          typeDefinition: { location: Location.DUMMY, type: 'variant', names: [], mappings: {} },
+          typeDefinition: {
+            location: Location.DUMMY,
+            type: 'variant',
+            names: [],
+            mappings: new Map(),
+          },
           members: [],
         },
         {
@@ -206,15 +216,18 @@ describe('mir-toplevel-lowering', () => {
             location: Location.DUMMY,
             type: 'object',
             names: [SourceId('a')],
-            mappings: {
-              a: {
-                isPublic: true,
-                type: AstBuilder.FunType(
-                  [AstBuilder.IdType('A', [AstBuilder.IntType]), AstBuilder.IdType('T')],
-                  AstBuilder.IntType,
-                ),
-              },
-            },
+            mappings: new Map([
+              [
+                'a',
+                {
+                  isPublic: true,
+                  type: AstBuilder.FunType(
+                    [AstBuilder.IdType('A', [AstBuilder.IntType]), AstBuilder.IdType('T')],
+                    AstBuilder.IntType,
+                  ),
+                },
+              ],
+            ]),
           },
           members: [],
         },

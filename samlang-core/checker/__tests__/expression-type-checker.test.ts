@@ -1,5 +1,5 @@
 import { Location, ModuleReference, ModuleReferenceCollections } from '../../ast/common-nodes';
-import { AstBuilder, SamlangExpression, SamlangType, SourceId } from '../../ast/samlang-nodes';
+import { AstBuilder, SamlangExpression, SamlangType } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
 import { checkNotNull } from '../../utils';
@@ -7,10 +7,11 @@ import typeCheckExpression from '../expression-type-checker';
 import { performSSAAnalysisOnSamlangExpression } from '../ssa-analysis';
 import {
   AccessibleGlobalTypingContext,
-  ClassTypingContext,
   DEFAULT_BUILTIN_TYPING_CONTEXT,
+  InterfaceTypingContext,
   LocationBasedLocalTypingContext,
   ModuleTypingContext,
+  TypeDefinitionTypingContext,
 } from '../typing-context';
 
 const int = AstBuilder.IntType;
@@ -32,21 +33,91 @@ function typeCheckInSandbox(
         [
           ModuleReference.DUMMY,
           {
+            typeDefinitions: new Map<string, TypeDefinitionTypingContext>([
+              [
+                'Test',
+                {
+                  type: 'object',
+                  names: ['foo', 'bar'],
+                  mappings: new Map([
+                    ['foo', { isPublic: true, type: bool }],
+                    ['bar', { isPublic: false, type: int }],
+                  ]),
+                },
+              ],
+              [
+                'Test2',
+                {
+                  type: 'variant',
+                  names: ['Foo', 'Bar'],
+                  mappings: new Map([
+                    ['Foo', { isPublic: true, type: bool }],
+                    ['Bar', { isPublic: true, type: int }],
+                  ]),
+                },
+              ],
+              [
+                'Test3',
+                {
+                  type: 'object',
+                  names: ['foo', 'bar'],
+                  mappings: new Map([
+                    ['foo', { isPublic: true, type: AstBuilder.IdType('E') }],
+                    ['bar', { isPublic: false, type: int }],
+                  ]),
+                },
+              ],
+              [
+                'Test4',
+                {
+                  type: 'variant',
+                  names: ['Foo', 'Bar'],
+                  mappings: new Map([
+                    ['Foo', { isPublic: true, type: AstBuilder.IdType('E') }],
+                    ['Bar', { isPublic: true, type: int }],
+                  ]),
+                },
+              ],
+              [
+                'A',
+                {
+                  type: 'object',
+                  names: ['a', 'b'],
+                  mappings: new Map([
+                    ['a', { isPublic: true, type: int }],
+                    ['b', { isPublic: false, type: bool }],
+                  ]),
+                },
+              ],
+              [
+                'B',
+                {
+                  type: 'object',
+                  names: ['a', 'b'],
+                  mappings: new Map([
+                    ['a', { isPublic: true, type: int }],
+                    ['b', { isPublic: false, type: bool }],
+                  ]),
+                },
+              ],
+              [
+                'C',
+                {
+                  type: 'variant',
+                  names: ['a', 'b'],
+                  mappings: new Map([
+                    ['a', { isPublic: true, type: int }],
+                    ['b', { isPublic: true, type: bool }],
+                  ]),
+                },
+              ],
+            ]),
             interfaces: new Map(),
-            classes: new Map<string, ClassTypingContext>([
+            classes: new Map<string, InterfaceTypingContext>([
               [
                 'Test',
                 {
                   typeParameters: [],
-                  typeDefinition: {
-                    location: Location.DUMMY,
-                    type: 'object',
-                    names: [SourceId('foo'), SourceId('bar')],
-                    mappings: {
-                      foo: { isPublic: true, type: bool },
-                      bar: { isPublic: false, type: int },
-                    },
-                  },
                   superTypes: [],
                   functions: new Map([
                     [
@@ -98,15 +169,6 @@ function typeCheckInSandbox(
                 'Test2',
                 {
                   typeParameters: [],
-                  typeDefinition: {
-                    location: Location.DUMMY,
-                    type: 'variant',
-                    names: [SourceId('Foo'), SourceId('Bar')],
-                    mappings: {
-                      Foo: { isPublic: true, type: bool },
-                      Bar: { isPublic: true, type: int },
-                    },
-                  },
                   superTypes: [],
                   functions: new Map([
                     [
@@ -133,18 +195,6 @@ function typeCheckInSandbox(
                 'Test3',
                 {
                   typeParameters: [{ name: 'E', bound: null }],
-                  typeDefinition: {
-                    location: Location.DUMMY,
-                    type: 'object',
-                    names: [SourceId('foo'), SourceId('bar')],
-                    mappings: {
-                      foo: {
-                        isPublic: true,
-                        type: AstBuilder.IdType('E'),
-                      },
-                      bar: { isPublic: false, type: int },
-                    },
-                  },
                   superTypes: [],
                   functions: new Map(),
                   methods: new Map(),
@@ -154,18 +204,6 @@ function typeCheckInSandbox(
                 'Test4',
                 {
                   typeParameters: [{ name: 'E', bound: null }],
-                  typeDefinition: {
-                    location: Location.DUMMY,
-                    type: 'variant',
-                    names: [SourceId('Foo'), SourceId('Bar')],
-                    mappings: {
-                      Foo: {
-                        isPublic: true,
-                        type: AstBuilder.IdType('E'),
-                      },
-                      Bar: { isPublic: true, type: int },
-                    },
-                  },
                   superTypes: [],
                   functions: new Map([
                     [
@@ -198,15 +236,6 @@ function typeCheckInSandbox(
                 'A',
                 {
                   typeParameters: [],
-                  typeDefinition: {
-                    location: Location.DUMMY,
-                    type: 'object',
-                    names: [SourceId('a'), SourceId('b')],
-                    mappings: {
-                      a: { isPublic: true, type: int },
-                      b: { isPublic: false, type: bool },
-                    },
-                  },
                   superTypes: [],
                   functions: new Map([
                     [
@@ -225,15 +254,6 @@ function typeCheckInSandbox(
                 'B',
                 {
                   typeParameters: [],
-                  typeDefinition: {
-                    location: Location.DUMMY,
-                    type: 'object',
-                    names: [SourceId('a'), SourceId('b')],
-                    mappings: {
-                      a: { isPublic: true, type: int },
-                      b: { isPublic: false, type: bool },
-                    },
-                  },
                   superTypes: [],
                   functions: new Map([
                     [
@@ -252,15 +272,6 @@ function typeCheckInSandbox(
                 'C',
                 {
                   typeParameters: [],
-                  typeDefinition: {
-                    location: Location.DUMMY,
-                    type: 'variant',
-                    names: [SourceId('a'), SourceId('b')],
-                    mappings: {
-                      a: { isPublic: true, type: int },
-                      b: { isPublic: true, type: bool },
-                    },
-                  },
                   superTypes: [],
                   functions: new Map([
                     [

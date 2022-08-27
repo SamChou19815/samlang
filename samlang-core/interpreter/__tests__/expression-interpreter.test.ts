@@ -217,7 +217,7 @@ describe('expression-interpreter', () => {
     location: exampleLocation,
     type: functionType,
     parameters: [],
-    captured: {},
+    captured: new Map(),
     body: stringLiteralExpression,
   });
 
@@ -578,7 +578,7 @@ describe('expression-interpreter', () => {
       location: exampleLocation,
       type: functionType,
       parameters: [{ name: SourceId('arg1'), typeAnnotation: AstBuilder.StringType }],
-      captured: {},
+      captured: new Map(),
       body: stringLiteralExpression,
     });
     const functionCallExpressionNoArgs = SourceExpressionFunctionCall({
@@ -888,7 +888,7 @@ describe('expression-interpreter', () => {
       location: exampleLocation,
       type: lambdaFunctionType,
       parameters: [],
-      captured: {},
+      captured: new Map(),
       body: intLiteralExpression,
     });
     expect(interpreter.eval(lambdaExpression)).toEqual({

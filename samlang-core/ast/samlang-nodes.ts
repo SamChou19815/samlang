@@ -268,7 +268,7 @@ export interface LambdaExpression extends BaseExpression {
     readonly name: SourceIdentifier;
     readonly typeAnnotation: SamlangType | null;
   }[];
-  readonly captured: Record<string, SamlangType>;
+  readonly captured: ReadonlyMap<string, SamlangType>;
   readonly body: SamlangExpression;
 }
 
@@ -633,7 +633,7 @@ export interface TypeDefinition extends Node {
   readonly type: 'object' | 'variant';
   /** A list of fields. Used for ordering during codegen. */
   readonly names: readonly SourceIdentifier[];
-  readonly mappings: Readonly<Record<string, SourceFieldType>>;
+  readonly mappings: ReadonlyMap<string, SourceFieldType>;
 }
 
 export interface SourceClassDefinition extends SourceInterfaceDeclaration {

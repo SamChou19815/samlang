@@ -29,9 +29,9 @@ export function collectModuleReferenceFromSamlangModule(
     });
   });
   samlangModule.classes.forEach((samlangClass) => {
-    Object.values(samlangClass.typeDefinition.mappings).forEach((it) =>
-      collectModuleReferenceFromType(it.type, collector),
-    );
+    for (const { type } of samlangClass.typeDefinition.mappings.values()) {
+      collectModuleReferenceFromType(type, collector);
+    }
     samlangClass.members.forEach((member) => {
       collectModuleReferenceFromType(member.type, collector);
       collectModuleReferenceFromExpression(member.body, collector);

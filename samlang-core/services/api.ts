@@ -24,7 +24,7 @@ import {
   typeCheckSources,
   typeCheckSourcesIncrementally,
 } from '../checker';
-import type { ClassTypingContext } from '../checker/typing-context';
+import type { InterfaceTypingContext } from '../checker/typing-context';
 import {
   CompileTimeError,
   createGlobalErrorCollector,
@@ -411,7 +411,7 @@ class LanguageServicesImpl implements LanguageServices {
     const classOfExpression = this.state.classLocationLookup.get(moduleReference, position);
     if (expression == null || classOfExpression == null) return [];
     if (expression.__type__ === 'ClassMemberExpression') {
-      const relevantClassType = this.getClassType(
+      const relevantClassType = this.getInterfaceType(
         expression.moduleReference,
         expression.className.name,
       );
@@ -436,12 +436,17 @@ class LanguageServicesImpl implements LanguageServices {
       default:
         return [];
     }
-    const relevantClassType = this.getClassType(type.moduleReference, type.identifier);
-    if (relevantClassType == null) return [];
+    const relevantInterfaceType = this.state.globalTypingContext
+      .get(type.moduleReference)
+      ?.classes?.get(type.identifier);
+    const relevantTypeDefinition = this.state.globalTypingContext
+      .get(type.moduleReference)
+      ?.typeDefinitions?.get(type.identifier);
+    if (relevantInterfaceType == null) return [];
     const completionResults: AutoCompletionItem[] = [];
     const isInsideClass = classOfExpression === type.identifier;
-    if (isInsideClass && relevantClassType.typeDefinition?.type === 'object') {
-      Object.entries(relevantClassType.typeDefinition.mappings).forEach(([name, fieldType]) => {
+    if (isInsideClass && relevantTypeDefinition?.type === 'object') {
+      for (const [name, fieldType] of relevantTypeDefinition.mappings) {
         completionResults.push({
           label: name,
           insertText: name,
@@ -449,9 +454,9 @@ class LanguageServicesImpl implements LanguageServices {
           kind: CompletionItemKinds.FIELD,
           detail: prettyPrintType(fieldType.type),
         });
-      });
+      }
     }
-    Array.from(relevantClassType.methods).forEach(([name, typeInformation]) => {
+    Array.from(relevantInterfaceType.methods).forEach(([name, typeInformation]) => {
       if (isInsideClass || typeInformation.isPublic) {
         completionResults.push(
           LanguageServicesImpl.getCompletionResultFromTypeInformation(
@@ -465,10 +470,10 @@ class LanguageServicesImpl implements LanguageServices {
     return completionResults;
   }
 
-  private getClassType(
+  private getInterfaceType(
     moduleReference: ModuleReference,
     className: string,
-  ): ClassTypingContext | undefined {
+  ): InterfaceTypingContext | undefined {
     return this.state.globalTypingContext.get(moduleReference)?.classes?.get(className);
   }
 

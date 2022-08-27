@@ -84,7 +84,7 @@ export default class ModuleInterpreter {
           name: SourceId(name),
           typeAnnotation: type,
         })),
-        captured: {},
+        captured: new Map(),
         body: member.body,
       });
       const value = this.expressionInterpreter.eval(lambda, context) as FunctionValue;

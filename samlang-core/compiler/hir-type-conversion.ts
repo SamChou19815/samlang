@@ -304,7 +304,7 @@ export class SamlangTypeLoweringManager {
     typeParameters: Array.from(this.genericTypes),
     names: names.map((it) => it.name),
     mappings: names.map((it) =>
-      this.lowerSamlangType(checkNotNull(sourceLevelMappings[it.name]).type),
+      this.lowerSamlangType(checkNotNull(sourceLevelMappings.get(it.name)).type),
     ),
   });
 

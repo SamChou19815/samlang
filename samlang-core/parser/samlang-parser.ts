@@ -407,7 +407,12 @@ export default class SamlangModuleParser extends BaseParser {
         associatedComments,
         name,
         typeParameters,
-        typeDefinition: { location: this.peek().location, type: 'object', names: [], mappings: {} },
+        typeDefinition: {
+          location: this.peek().location,
+          type: 'object',
+          names: [],
+          mappings: new Map(),
+        },
         extendsOrImplementsNode,
       };
     }
@@ -440,18 +445,18 @@ export default class SamlangModuleParser extends BaseParser {
   private parseTypeDefinitionInner = (): Omit<TypeDefinition, 'location'> => {
     const firstPeeked = this.peek().content;
     if (typeof firstPeeked !== 'string' && firstPeeked.__type__ === 'UpperId') {
-      const mappings: Record<string, SourceFieldType> = {};
+      const mappings = new Map<string, SourceFieldType>();
       const names = this.parseCommaSeparatedList(() => {
         const name = this.parseUpperId();
         this.assertAndConsume('(');
         const type = this.parseType();
         this.assertAndConsume(')');
-        mappings[name.name] = { type, isPublic: false };
+        mappings.set(name.name, { type, isPublic: false });
         return name;
       });
       return { type: 'variant', names, mappings };
     } else {
-      const mappings: Record<string, SourceFieldType> = {};
+      const mappings = new Map<string, SourceFieldType>();
       const names = this.parseCommaSeparatedList(() => {
         let isPublic = true;
         if (this.peek().content === 'private') {
@@ -462,7 +467,7 @@ export default class SamlangModuleParser extends BaseParser {
         const name = this.parseLowerId();
         this.assertAndConsume(':');
         const type = this.parseType();
-        mappings[name.name] = { type, isPublic };
+        mappings.set(name.name, { type, isPublic });
         return name;
       });
       return { type: 'object', names, mappings };
@@ -1049,7 +1054,7 @@ export default class SamlangModuleParser extends BaseParser {
           type: SourceFunctionType(SourceReason(location, location), [], body.type),
           associatedComments,
           parameters: [],
-          captured: {},
+          captured: new Map(),
           body,
         });
       }
@@ -1089,7 +1094,7 @@ export default class SamlangModuleParser extends BaseParser {
             ),
             associatedComments,
             parameters,
-            captured: {},
+            captured: new Map(),
             body,
           });
         } else if (next.content === ')') {
@@ -1118,7 +1123,7 @@ export default class SamlangModuleParser extends BaseParser {
                   typeAnnotation: null,
                 },
               ],
-              captured: {},
+              captured: new Map(),
               body,
             });
           } else {

@@ -16,19 +16,18 @@ import {
   SourceFunctionType,
   SourceIdentifierType,
   SourceInterfaceDeclaration,
-  TypeDefinition,
   TypeParameterSignature,
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
 import performTypeSubstitution from './type-substitution';
 import {
-  ClassTypingContext,
   DEFAULT_BUILTIN_TYPING_CONTEXT,
   GlobalTypingContext,
   InterfaceTypingContext,
   MemberTypeInformation,
   ModuleTypingContext,
+  TypeDefinitionTypingContext,
 } from './typing-context';
 
 interface UnoptimizedInterfaceTypingContext {
@@ -38,13 +37,10 @@ interface UnoptimizedInterfaceTypingContext {
   readonly extendsOrImplements: SamlangIdentifierType | null;
 }
 
-interface UnoptimizedClassTypingContext extends UnoptimizedInterfaceTypingContext {
-  readonly typeDefinition: TypeDefinition;
-}
-
 interface UnoptimizedModuleTypingContext {
+  readonly typeDefinitions: ReadonlyMap<string, TypeDefinitionTypingContext>;
   readonly interfaces: ReadonlyMap<string, UnoptimizedInterfaceTypingContext>;
-  readonly classes: ReadonlyMap<string, UnoptimizedClassTypingContext>;
+  readonly classes: ReadonlyMap<string, UnoptimizedInterfaceTypingContext>;
 }
 
 type InterfaceInliningCollector = Array<{
@@ -259,7 +255,8 @@ function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
   sources.forEach((samlangModule, moduleReference) => {
     const moduleTypingContext = unoptimizedGlobalTypingContext.forceGet(moduleReference);
     const optimizedModuleTypingContext = {
-      classes: new Map<string, ClassTypingContext>(),
+      typeDefinitions: moduleTypingContext.typeDefinitions,
+      classes: new Map<string, InterfaceTypingContext>(),
       interfaces: new Map<string, InterfaceTypingContext>(),
     };
     samlangModule.classes.forEach((declaration) => {
@@ -276,7 +273,6 @@ function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
         functions: unoptimizedClassTypingContext.functions,
         methods: unoptimizedClassTypingContext.methods,
         typeParameters: unoptimizedClassTypingContext.typeParameters,
-        typeDefinition: unoptimizedClassTypingContext.typeDefinition,
         superTypes: fullyInlinedInterfaceContext.superTypes,
       });
     });
@@ -346,7 +342,7 @@ export function buildGlobalTypingContext(
   function buildClassTypingContext(
     moduleReference: ModuleReference,
     classDefinition: SourceClassDefinition,
-  ): UnoptimizedClassTypingContext {
+  ): UnoptimizedInterfaceTypingContext {
     const { typeParameters, functions, methods } = buildInterfaceTypingContext(classDefinition);
     const classType = SourceIdentifierType(
       SourceReason(classDefinition.name.location, classDefinition.name.location),
@@ -369,22 +365,21 @@ export function buildGlobalTypingContext(
         typeParameters,
         type: SourceFunctionType(
           typeDefinitionReason,
-          typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings[it.name]).type),
+          typeDefinition.names.map((it) => checkNotNull(typeDefinition.mappings.get(it.name)).type),
           classType,
         ),
       });
     } else {
-      Object.entries(typeDefinition.mappings).forEach(([tag, { type }]) => {
+      for (const [tag, { type }] of typeDefinition.mappings) {
         functions.set(tag, {
           isPublic: true,
           typeParameters,
           type: SourceFunctionType(typeDefinitionReason, [type], classType),
         });
-      });
+      }
     }
     return {
       typeParameters,
-      typeDefinition,
       extendsOrImplements: classDefinition.extendsOrImplementsNode ?? null,
       functions,
       methods,
@@ -393,6 +388,16 @@ export function buildGlobalTypingContext(
 
   sources.forEach((samlangModule, moduleReference) => {
     unoptimizedGlobalTypingContext.set(moduleReference, {
+      typeDefinitions: new Map(
+        samlangModule.classes.map(({ name: { name }, typeDefinition }) => [
+          name,
+          {
+            type: typeDefinition.type,
+            names: typeDefinition.names.map((it) => it.name),
+            mappings: typeDefinition.mappings,
+          },
+        ]),
+      ),
       interfaces: new Map(
         samlangModule.interfaces.map((declaration) => [
           declaration.name.name,

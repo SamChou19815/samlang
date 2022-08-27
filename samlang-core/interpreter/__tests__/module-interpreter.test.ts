@@ -35,7 +35,7 @@ describe('module-interpreter', () => {
       location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
       type: 'object',
       names: [SourceId('types')],
-      mappings: { types: { type: AstBuilder.IntType, isPublic: true } },
+      mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
     },
   };
 
@@ -53,12 +53,7 @@ describe('module-interpreter', () => {
       location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
       type: 'object',
       names: [SourceId('types')],
-      mappings: {
-        types: {
-          type: AstBuilder.IntType,
-          isPublic: true,
-        },
-      },
+      mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
     },
   };
   const mainVariantDef: SourceClassDefinition = {
@@ -75,12 +70,7 @@ describe('module-interpreter', () => {
       location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
       type: 'variant',
       names: [SourceId('types')],
-      mappings: {
-        types: {
-          type: AstBuilder.IntType,
-          isPublic: true,
-        },
-      },
+      mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
     },
   };
 
