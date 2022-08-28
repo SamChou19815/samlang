@@ -14,8 +14,8 @@ export type AutoCompletionItem = {
 export interface LanguageServiceState {
   get allModulesWithError(): readonly ModuleReference[];
   getErrors(moduleReference: ModuleReference): readonly { readonly location: Location }[];
-  update(moduleReference: ModuleReference, sourceCode: string): readonly ModuleReference[];
-  remove(moduleReference: ModuleReference): readonly ModuleReference[];
+  update(moduleReference: ModuleReference, sourceCode: string): void;
+  remove(moduleReference: ModuleReference): void;
 }
 
 export interface LanguageServices {

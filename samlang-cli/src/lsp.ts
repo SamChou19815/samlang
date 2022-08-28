@@ -42,8 +42,8 @@ function startSamlangLanguageServer() {
   // Create a connection for the server. The connection uses Node's IPC as a transport.
   const connection = createConnection();
 
-  function publishDiagnostics(affectedModules: readonly ModuleReference[]): void {
-    affectedModules.forEach((affectedModule) => {
+  function publishDiagnostics(): void {
+    service.state.allModulesWithError.forEach((affectedModule) => {
       connection.sendDiagnostics({
         uri: moduleReferenceToUri(affectedModule),
         diagnostics: service.state.getErrors(affectedModule).map((error) => ({
@@ -73,7 +73,7 @@ function startSamlangLanguageServer() {
 
   connection.onInitialized(() => {
     connection.console.info('[lsp] onInitialized');
-    publishDiagnostics(service.state.allModulesWithError);
+    publishDiagnostics();
   });
 
   connection.onDidChangeTextDocument((parameters) => {
@@ -81,7 +81,8 @@ function startSamlangLanguageServer() {
     const moduleReference = uriToModuleReference(parameters.textDocument.uri);
     const sourceCode = parameters.contentChanges[0]?.text;
     if (sourceCode == null) return;
-    publishDiagnostics(service.state.update(moduleReference, sourceCode));
+    service.state.update(moduleReference, sourceCode);
+    publishDiagnostics();
   });
 
   connection.onHover((parameters) => {

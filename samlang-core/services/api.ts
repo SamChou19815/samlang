@@ -15,24 +15,12 @@ import {
   SourceClassDefinition,
   SourceClassMemberDefinition,
 } from '../ast/samlang-nodes';
-import {
-  collectModuleReferenceFromSamlangModule,
-  DependencyTracker,
-  GlobalTypingContext,
-  MemberTypeInformation,
-  typeCheckSingleModuleSource,
-  typeCheckSources,
-  typeCheckSourcesIncrementally,
-} from '../checker';
+import { GlobalTypingContext, MemberTypeInformation, typeCheckSources } from '../checker';
 import type { InterfaceTypingContext } from '../checker/typing-context';
-import {
-  CompileTimeError,
-  createGlobalErrorCollector,
-  ReadonlyGlobalErrorCollector,
-} from '../errors';
+import { CompileTimeError, createGlobalErrorCollector } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
 import prettyPrintSamlangModule from '../printer';
-import { assert, checkNotNull, filterMap, HashMap } from '../utils';
+import { assert, checkNotNull, filterMap } from '../utils';
 import {
   LocationLookup,
   ReadOnlyLocationLookup,
@@ -51,50 +39,37 @@ import {
 } from './variable-definition-service';
 
 export class LanguageServiceStateImpl implements LanguageServiceState {
-  private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
-
-  private readonly rawSources: HashMap<ModuleReference, string> =
-    ModuleReferenceCollections.hashMapOf();
-
-  private readonly rawModules: HashMap<ModuleReference, SamlangModule> =
-    ModuleReferenceCollections.hashMapOf();
-
-  private readonly checkedModules: HashMap<ModuleReference, SamlangModule>;
-
-  private readonly errors: HashMap<ModuleReference, readonly CompileTimeError[]> =
-    ModuleReferenceCollections.hashMapOf();
-
-  private _globalTypingContext: GlobalTypingContext;
-
-  private _expressionLocationLookup: LocationLookup<SamlangExpression> = new LocationLookup();
-
-  private _classLocationLookup: LocationLookup<string> = new LocationLookup();
-
-  private _classMemberLocationLookup: LocationLookup<SourceClassMemberDefinition> =
-    new LocationLookup();
-
+  private readonly rawSources = ModuleReferenceCollections.hashMapOf<string>();
+  private rawModules = ModuleReferenceCollections.mapOf<SamlangModule>();
+  private checkedModules = ModuleReferenceCollections.mapOf<SamlangModule>();
+  private errors = ModuleReferenceCollections.mapOf<readonly CompileTimeError[]>();
+  private _globalTypingContext: GlobalTypingContext = ModuleReferenceCollections.mapOf();
+  private _expressionLocationLookup = new LocationLookup<SamlangExpression>();
+  private _classLocationLookup = new LocationLookup<string>();
+  private _classMemberLocationLookup = new LocationLookup<SourceClassMemberDefinition>();
   private _variableDefinitionLookup: VariableDefinitionLookup = new VariableDefinitionLookup();
 
   constructor(sourceHandles: readonly (readonly [ModuleReference, string])[]) {
+    this.rawSources = ModuleReferenceCollections.hashMapOf(...sourceHandles);
+    this.init();
+  }
+
+  private init() {
     const errorCollector = createGlobalErrorCollector();
-    sourceHandles.forEach(([moduleReference, sourceCode]) => {
-      const rawModule = parseSamlangModuleFromText(
-        sourceCode,
-        moduleReference,
-        errorCollector.getErrorReporter(),
-      );
-      this.rawModules.set(moduleReference, rawModule);
-    });
+    this.rawModules = ModuleReferenceCollections.hashMapOf(
+      ...this.rawSources.entries().map(([moduleReference, sourceCode]) => {
+        const rawModule = parseSamlangModuleFromText(
+          sourceCode,
+          moduleReference,
+          errorCollector.getErrorReporter(),
+        );
+        return [moduleReference, rawModule] as const;
+      }),
+    );
     const [checkedModules, globalTypingContext] = typeCheckSources(this.rawModules, errorCollector);
-    this.checkedModules = checkedModules as HashMap<ModuleReference, SamlangModule>;
-    checkedModules.forEach((checkedModule, moduleReference) => {
-      const dependencies = collectModuleReferenceFromSamlangModule(checkedModule);
-      dependencies.delete(moduleReference);
-      this.dependencyTracker.update(moduleReference, dependencies.toArray());
-    });
+    this.checkedModules = checkedModules;
     this._globalTypingContext = globalTypingContext;
     this.updateErrors(errorCollector.getErrors());
-
     this.updateLocationLookupsForCheckedModules(checkedModules);
   }
 
@@ -134,29 +109,14 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
     return this.errors.get(moduleReference) ?? [];
   }
 
-  update(moduleReference: ModuleReference, sourceCode: string): readonly ModuleReference[] {
-    const errorCollector = createGlobalErrorCollector();
-    const rawModule = parseSamlangModuleFromText(
-      sourceCode,
-      moduleReference,
-      errorCollector.getErrorReporter(),
-    );
-    this.rawModules.set(moduleReference, rawModule);
-    const affected = this.reportChanges(moduleReference, rawModule);
-    this.incrementalTypeCheck(affected, errorCollector);
-    return affected;
+  update(moduleReference: ModuleReference, sourceCode: string): void {
+    this.rawSources.set(moduleReference, sourceCode);
+    this.init();
   }
 
-  remove(moduleReference: ModuleReference): readonly ModuleReference[] {
+  remove(moduleReference: ModuleReference): void {
     this.rawSources.delete(moduleReference);
-    this.rawModules.delete(moduleReference);
-    this.checkedModules.delete(moduleReference);
-    this.errors.set(moduleReference, []);
-    this._expressionLocationLookup.purge(moduleReference);
-    this._classLocationLookup.purge(moduleReference);
-    const affected = this.reportChanges(moduleReference, null);
-    this.incrementalTypeCheck(affected, createGlobalErrorCollector());
-    return affected;
+    this.init();
   }
 
   private updateErrors(updatedErrors: readonly CompileTimeError[]): void {
@@ -169,47 +129,7 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
         group.push(error);
       }
     });
-    grouped.forEach((errors, moduleReference) => this.errors.set(moduleReference, errors));
-  }
-
-  private reportChanges(
-    moduleReference: ModuleReference,
-    samlangModule: SamlangModule | null,
-  ): readonly ModuleReference[] {
-    const affected = ModuleReferenceCollections.hashSetOf(moduleReference);
-
-    this.dependencyTracker
-      .getReverseDependencies(moduleReference)
-      .forEach((it) => affected.add(it));
-    if (samlangModule == null) {
-      this.dependencyTracker.update(moduleReference);
-    } else {
-      const dependencies = collectModuleReferenceFromSamlangModule(
-        typeCheckSingleModuleSource(samlangModule, createGlobalErrorCollector()),
-      );
-      dependencies.delete(moduleReference);
-      this.dependencyTracker.update(moduleReference, dependencies.toArray());
-    }
-    return affected.toArray();
-  }
-
-  private incrementalTypeCheck(
-    affectedSourceList: readonly ModuleReference[],
-    errorCollector: ReadonlyGlobalErrorCollector,
-  ): void {
-    const [updatedModules, globalTypingContext] = typeCheckSourcesIncrementally(
-      this.rawModules,
-      affectedSourceList,
-      errorCollector,
-    );
-    this._globalTypingContext = globalTypingContext;
-    updatedModules.forEach((updatedModule, moduleReference) => {
-      this.checkedModules.set(moduleReference, updatedModule);
-    });
-
-    this.updateLocationLookupsForCheckedModules(updatedModules);
-    affectedSourceList.forEach((affectedSource) => this.errors.delete(affectedSource));
-    this.updateErrors(errorCollector.getErrors());
+    this.errors = grouped;
   }
 
   private updateLocationLookupsForCheckedModules(checkedModules: Sources<SamlangModule>) {

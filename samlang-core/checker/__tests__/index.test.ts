@@ -1,121 +1,9 @@
-import {
-  collectModuleReferenceFromSamlangModule,
-  DependencyTracker,
-  typeCheckSingleModuleSource,
-  typeCheckSourceHandles,
-  typeCheckSources,
-  typeCheckSourcesIncrementally,
-} from '..';
-import {
-  Location,
-  ModuleReference,
-  ModuleReferenceCollections,
-  moduleReferenceToString,
-} from '../../ast/common-nodes';
-import { AstBuilder, SourceExpressionInt, SourceId } from '../../ast/samlang-nodes';
+import { typeCheckSingleModuleSource, typeCheckSourceHandles, typeCheckSources } from '..';
+import { ModuleReference, ModuleReferenceCollections } from '../../ast/common-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
 
 describe('samlang-core/checker', () => {
-  it('collectModuleReferenceFromSamlangModule works', () => {
-    expect(
-      collectModuleReferenceFromSamlangModule({
-        imports: [
-          {
-            location: Location.DUMMY,
-            importedMembers: [],
-            importedModule: ModuleReference(['A']),
-            importedModuleLocation: Location.DUMMY,
-          },
-        ],
-        classes: [
-          {
-            location: Location.DUMMY,
-            associatedComments: [],
-            name: SourceId('aa'),
-            typeParameters: [],
-            typeDefinition: {
-              type: 'object',
-              names: [SourceId('')],
-              location: Location.DUMMY,
-              mappings: new Map([['d', { isPublic: true, type: AstBuilder.IntType }]]),
-            },
-            members: [
-              {
-                associatedComments: [],
-                name: SourceId(''),
-                location: Location.DUMMY,
-                isMethod: true,
-                isPublic: true,
-                typeParameters: [],
-                parameters: [],
-                type: AstBuilder.FunType([], AstBuilder.IntType),
-                body: SourceExpressionInt(3),
-              },
-            ],
-          },
-        ],
-        interfaces: [],
-      })
-        .toArray()
-        .map(moduleReferenceToString)
-        .sort((a, b) => a.localeCompare(b)),
-    ).toEqual(['A']);
-  });
-
-  it('can track and update dependencies', () => {
-    const tracker = new DependencyTracker();
-    const moduleA = ModuleReference(['A']);
-    const moduleB = ModuleReference(['B']);
-    const moduleC = ModuleReference(['C']);
-    const moduleD = ModuleReference(['D']);
-    const moduleE = ModuleReference(['E']);
-
-    // Wave 1
-    tracker.update(moduleA, [moduleB, moduleC]);
-    tracker.update(moduleD, [moduleB, moduleC]);
-    tracker.update(moduleE, [moduleB, moduleC]);
-    tracker.update(moduleA, [moduleB, moduleC]);
-    tracker.update(moduleD, [moduleB, moduleC]);
-    tracker.update(moduleE, [moduleB, moduleC]);
-    expect(tracker.getForwardDependencies(moduleA).toArray()).toEqual([moduleB, moduleC]);
-    expect(tracker.getForwardDependencies(moduleB).toArray()).toEqual([]);
-    expect(tracker.getForwardDependencies(moduleC).toArray()).toEqual([]);
-    expect(tracker.getForwardDependencies(moduleD).toArray()).toEqual([moduleB, moduleC]);
-    expect(tracker.getForwardDependencies(moduleE).toArray()).toEqual([moduleB, moduleC]);
-    expect(tracker.getReverseDependencies(moduleA).toArray()).toEqual([]);
-    expect(tracker.getReverseDependencies(moduleB).toArray()).toEqual([moduleA, moduleD, moduleE]);
-    expect(tracker.getReverseDependencies(moduleC).toArray()).toEqual([moduleA, moduleD, moduleE]);
-    expect(tracker.getReverseDependencies(moduleD).toArray()).toEqual([]);
-    expect(tracker.getReverseDependencies(moduleE).toArray()).toEqual([]);
-
-    // Wave 2
-    tracker.update(moduleA, [moduleD, moduleE]);
-    expect(tracker.getForwardDependencies(moduleA).toArray()).toEqual([moduleD, moduleE]);
-    expect(tracker.getForwardDependencies(moduleB).toArray()).toEqual([]);
-    expect(tracker.getForwardDependencies(moduleC).toArray()).toEqual([]);
-    expect(tracker.getForwardDependencies(moduleD).toArray()).toEqual([moduleB, moduleC]);
-    expect(tracker.getForwardDependencies(moduleE).toArray()).toEqual([moduleB, moduleC]);
-    expect(tracker.getReverseDependencies(moduleA).toArray()).toEqual([]);
-    expect(tracker.getReverseDependencies(moduleB).toArray()).toEqual([moduleD, moduleE]);
-    expect(tracker.getReverseDependencies(moduleC).toArray()).toEqual([moduleD, moduleE]);
-    expect(tracker.getReverseDependencies(moduleD).toArray()).toEqual([moduleA]);
-    expect(tracker.getReverseDependencies(moduleE).toArray()).toEqual([moduleA]);
-
-    // Wave 3
-    tracker.update(moduleA);
-    expect(tracker.getForwardDependencies(moduleA).toArray()).toEqual([]);
-    expect(tracker.getForwardDependencies(moduleB).toArray()).toEqual([]);
-    expect(tracker.getForwardDependencies(moduleC).toArray()).toEqual([]);
-    expect(tracker.getForwardDependencies(moduleD).toArray()).toEqual([moduleB, moduleC]);
-    expect(tracker.getForwardDependencies(moduleE).toArray()).toEqual([moduleB, moduleC]);
-    expect(tracker.getReverseDependencies(moduleA).toArray()).toEqual([]);
-    expect(tracker.getReverseDependencies(moduleB).toArray()).toEqual([moduleD, moduleE]);
-    expect(tracker.getReverseDependencies(moduleC).toArray()).toEqual([moduleD, moduleE]);
-    expect(tracker.getReverseDependencies(moduleD).toArray()).toEqual([]);
-    expect(tracker.getReverseDependencies(moduleE).toArray()).toEqual([]);
-  });
-
   it('typeCheckSources integration smoke test (passing case)', () => {
     const sourceA = `class A { function a(): int = 42 }`;
     const sourceB = `import { A } from A
@@ -164,21 +52,6 @@ describe('samlang-core/checker', () => {
 
     typeCheckSources(sources, errorCollector);
     expect(errorCollector.getErrors().map((e) => e.toString())).toEqual([]);
-
-    sources.delete(moduleReferenceC);
-    typeCheckSourcesIncrementally(sources, [moduleReferenceC, moduleReferenceD], errorCollector);
-    expect(
-      errorCollector
-        .getErrors()
-        .map((e) => e.toString())
-        .sort(),
-    ).toEqual([
-      'D.sam:3:3-3:22: [UnresolvedName]: Name `C` is not resolved.',
-      "D.sam:5:65-5:67: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
-      "D.sam:5:82-5:84: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
-      'D.sam:6:63-6:70: [UnresolvedName]: Name `C.ofInt` is not resolved.',
-      'D.sam:6:79-6:84: [UnresolvedName]: Name `C.ofB` is not resolved.',
-    ]);
   });
 
   it('typeCheckSources smoke test (failing case)', () => {
