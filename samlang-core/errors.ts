@@ -33,6 +33,20 @@ export class UnexpectedTypeError extends CompileTimeError {
   }
 }
 
+export class UnexpectedSubtypeError extends CompileTimeError {
+  constructor(location: Location, expected: SamlangType, actual: SamlangType) {
+    super(
+      'UnexpectedSubType',
+      location,
+      (() => {
+        const expectedType = prettyPrintType(expected);
+        const actualType = prettyPrintType(actual);
+        return `Expected: subtype of \`${expectedType}\`, actual: \`${actualType}\`.`;
+      })(),
+    );
+  }
+}
+
 export class UnresolvedNameError extends CompileTimeError {
   constructor(location: Location, unresolvedName: string) {
     super('UnresolvedName', location, `Name \`${unresolvedName}\` is not resolved.`);
@@ -170,6 +184,14 @@ export class GlobalErrorReporter {
 
   reportUnexpectedTypeError(location: Location, expected: SamlangType, actual: SamlangType): void {
     this.collectorDelegate.reportError(new UnexpectedTypeError(location, expected, actual));
+  }
+
+  reportUnexpectedSubtypeError(
+    location: Location,
+    expected: SamlangType,
+    actual: SamlangType,
+  ): void {
+    this.collectorDelegate.reportError(new UnexpectedSubtypeError(location, expected, actual));
   }
 
   reportUnresolvedNameError(location: Location, unresolvedName: string): void {

@@ -389,7 +389,7 @@ describe('global-typing-context-builder', () => {
     expect(inlinedContextFromType(AstBuilder.IdType('IUseNonExistent'))).toEqual({
       functions: [],
       methods: [],
-      superTypes: ['not_exist'],
+      superTypes: ['not_exist', 'IUseNonExistent'],
     });
     expect(inlinedContextFromType(AstBuilder.IdType('I'))).toEqual({
       functions: [],
@@ -399,7 +399,7 @@ describe('global-typing-context-builder', () => {
     expect(inlinedContextFromType(AstBuilder.IdType('ILevel2'))).toEqual({
       functions: ['public f1<C>(A, B) -> C'],
       methods: ['public m1<C: A>(A, int) -> C', 'public m2<C>(A, B) -> C'],
-      superTypes: ['IBase<int, int>', 'ILevel1<A, int>'],
+      superTypes: ['IBase<int, int>', 'ILevel1<A, int>', 'ILevel2'],
     });
 
     const errorCollector = createGlobalErrorCollector();

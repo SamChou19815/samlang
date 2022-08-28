@@ -24,6 +24,7 @@ function typeCheck(
   typeParameters: readonly TypeParameterSignature[],
   functionArguments: readonly SamlangExpression[],
   returnTypeHint: SamlangType | null,
+  isSubtypeMock = true,
 ) {
   const errorCollector = createGlobalErrorCollector();
   const { solvedGenericType, checkedArguments } = typeCheckFunctionCall(
@@ -33,6 +34,7 @@ function typeCheck(
     functionArguments,
     returnTypeHint,
     (e, hint) => (hint == null ? e : ({ ...e, type: hint } as SamlangExpression)),
+    () => isSubtypeMock,
     errorCollector.getErrorReporter(),
   );
   return {
@@ -216,6 +218,34 @@ describe('function-call-type-checker', () => {
       solvedGenericType: '((int) -> int) -> bool',
       checkedArgumentsTypes: ['(int) -> int'],
       errors: [],
+    });
+  });
+
+  it('Subtype failure', () => {
+    expect(
+      typeCheck(
+        AstBuilder.FunType(
+          [AstBuilder.FunType([IdType('A')], AstBuilder.IntType)],
+          AstBuilder.BoolType,
+        ),
+        [{ name: 'A', bound: IdType('A') }],
+        [
+          SourceExpressionLambda({
+            type: AstBuilder.FunType([AstBuilder.IntType], AstBuilder.IntType),
+            parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.IntType }],
+            captured: new Map(),
+            body: AstBuilder.TRUE,
+          }),
+        ],
+        null,
+        false,
+      ),
+    ).toEqual({
+      solvedGenericType: '((int) -> int) -> bool',
+      checkedArgumentsTypes: ['(int) -> int'],
+      errors: [
+        '__DUMMY__.sam:0:0-0:0: [UnexpectedSubType]: Expected: subtype of `A`, actual: `int`.',
+      ],
     });
   });
 

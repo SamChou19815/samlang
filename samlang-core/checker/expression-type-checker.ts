@@ -568,6 +568,7 @@ class ExpressionTypeChecker {
       expression.functionArguments,
       hint,
       this.typeCheck,
+      this.accessibleGlobalTypingContext.isSubtype,
       this.errorReporter,
     );
     const fullyResolvedCheckedFunctionExpression = sourceExpressionWithNewType(

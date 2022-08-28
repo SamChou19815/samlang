@@ -9,6 +9,7 @@ describe('samlang-core/errors', () => {
     const reporter = collector.getErrorReporter();
     reporter.reportSyntaxError(Location.DUMMY, 'bad code');
     reporter.reportUnexpectedTypeError(Location.DUMMY, AstBuilder.IntType, AstBuilder.BoolType);
+    reporter.reportUnexpectedSubtypeError(Location.DUMMY, AstBuilder.IntType, AstBuilder.BoolType);
     reporter.reportUnresolvedNameError(Location.DUMMY, 'global');
     reporter.reportTypeParameterNameMismatchError(Location.DUMMY, 'foo', 'bar');
     reporter.reportUnsupportedClassTypeDefinitionError(Location.DUMMY, 'object');
@@ -29,6 +30,7 @@ describe('samlang-core/errors', () => {
     expect(errors).toEqual([
       '[SyntaxError]: bad code',
       '[UnexpectedType]: Expected: `int`, actual: `bool`.',
+      '[UnexpectedSubType]: Expected: subtype of `int`, actual: `bool`.',
       '[UnresolvedName]: Name `global` is not resolved.',
       '[TypeParameterNameMismatch]: Type parameter name mismatch. Expected `foo`, actual: bar.',
       "[UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",

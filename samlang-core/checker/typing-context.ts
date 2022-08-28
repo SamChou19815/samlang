@@ -148,7 +148,7 @@ export class AccessibleGlobalTypingContext {
     );
   }
 
-  public isSubtype(lower: SamlangType, upper: SamlangIdentifierType): boolean {
+  public isSubtype = (lower: SamlangType, upper: SamlangIdentifierType): boolean => {
     if (lower.__type__ !== 'IdentifierType') return false;
     const interfaceTypingContext = this.getInterfaceInformation(
       lower.moduleReference,
@@ -168,7 +168,7 @@ export class AccessibleGlobalTypingContext {
       );
       return isTheSameType(substitutedPotentialSuperType, upper);
     });
-  }
+  };
 
   public getFunctionType(
     moduleReference: ModuleReference,
