@@ -2,6 +2,7 @@ import type { SamlangReason } from '../ast/common-nodes';
 import {
   SamlangExpression,
   SamlangFunctionType,
+  SamlangIdentifierType,
   SamlangType,
   SourceUnknownType,
   TypeParameterSignature,
@@ -61,6 +62,7 @@ export default function typeCheckFunctionCall(
   functionArguments: readonly SamlangExpression[],
   returnTypeHint: SamlangType | null,
   typeCheck: (e: SamlangExpression, hint: SamlangType | null) => SamlangExpression,
+  isSubtype: (lower: SamlangType, upper: SamlangIdentifierType) => boolean,
   errorReporter: GlobalErrorReporter,
 ): FunctionCallTypeCheckingResult {
   if (genericFunctionType.argumentTypes.length !== functionArguments.length) {
@@ -93,7 +95,7 @@ export default function typeCheckFunctionCall(
   );
   const partiallySolvedGenericType = performTypeSubstitution(
     genericFunctionType,
-    new Map(partiallySolvedSubstitution),
+    partiallySolvedSubstitution,
   );
   const unsolvedTypeParameters = typeParameters.filter(
     (typeParameter) => !partiallySolvedSubstitution.has(typeParameter.name),
@@ -107,7 +109,7 @@ export default function typeCheckFunctionCall(
   });
   const partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown = performTypeSubstitution(
     genericFunctionType,
-    new Map(partiallySolvedSubstitution),
+    partiallySolvedSubstitution,
   );
   assert(partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.__type__ === 'FunctionType');
   const partiallySolvedConcreteArgumentTypes = zip(
@@ -145,7 +147,7 @@ export default function typeCheckFunctionCall(
   }
   const fullySolvedGenericType = performTypeSubstitution(
     partiallySolvedGenericType,
-    new Map(fullySolvedSubstitution),
+    fullySolvedSubstitution,
   );
   assert(fullySolvedGenericType.__type__ === 'FunctionType');
   const fullySolvedConcreteReturnType = contextualTypeMeet(
@@ -153,6 +155,18 @@ export default function typeCheckFunctionCall(
     typeReposition(fullySolvedGenericType.returnType, functionCallReason.useLocation),
     errorReporter,
   );
+
+  typeParameters.forEach(({ name, bound }) => {
+    const solvedTypeArgument =
+      fullySolvedSubstitution.get(name) || partiallySolvedSubstitution.get(name);
+    if (solvedTypeArgument != null && bound != null && !isSubtype(solvedTypeArgument, bound)) {
+      errorReporter.reportUnexpectedSubtypeError(
+        solvedTypeArgument.reason.useLocation,
+        bound,
+        solvedTypeArgument,
+      );
+    }
+  });
 
   return {
     solvedGenericType: fullySolvedGenericType,

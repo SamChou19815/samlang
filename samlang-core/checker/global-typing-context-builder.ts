@@ -143,6 +143,7 @@ export function getFullyInlinedInterfaceContext(
     it.methods.forEach((type, name) => methods.set(name, type));
     if (it.baseInterfaceType != null) superTypes.push(it.baseInterfaceType);
   });
+  superTypes.push(instantiatedInterfaceType);
   return { functions, methods, superTypes };
 }
 
