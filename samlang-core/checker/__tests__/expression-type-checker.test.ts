@@ -302,7 +302,7 @@ function typeCheckInSandbox(
 
   // Type Check
   const ssaAnalysisResult = performSSAAnalysisOnSamlangExpression(parsedExpression);
-  const localTypingContext = new LocationBasedLocalTypingContext(ssaAnalysisResult, null);
+  const localTypingContext = new LocationBasedLocalTypingContext(ssaAnalysisResult);
   const checkedExpression = typeCheckExpression(
     parsedExpression,
     errorReporter,
@@ -377,9 +377,8 @@ describe('expression-type-checker', () => {
   });
 
   it('This', () => {
-    assertTypeErrors('this', int, [
-      '__DUMMY__.sam:1:1-1:5: [IllegalThis]: Keyword `this` cannot be used in this context.',
-    ]);
+    // Should already errored during SSA analysis
+    assertTypeChecks('this', int);
   });
 
   it('Variable', () => {

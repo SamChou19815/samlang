@@ -3,6 +3,7 @@ import type {
   SamlangExpression,
   SamlangModule,
   SamlangType,
+  SourceClassMemberDeclaration,
   SourceIdentifier,
   SourceInterfaceDeclaration,
 } from '../ast/samlang-nodes';
@@ -49,7 +50,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
     }
   };
 
-  visitToplevel(samlangModule: SamlangModule) {
+  visitToplevel(samlangModule: SamlangModule): void {
     samlangModule.imports.forEach((oneImport) => this.defineAll(oneImport.importedMembers));
 
     const interfaces: SourceInterfaceDeclaration[] = [
@@ -87,34 +88,46 @@ class SsaBuilder extends LocalStackedContext<Location> {
         this.withNestedScope(() =>
           interfaceDeclaration.members.map(({ name }) => this.define(name)),
         );
-        interfaceDeclaration.members.map((member) => {
-          this.withNestedScope(() => {
-            member.typeParameters.forEach(({ bound }) => {
-              if (bound != null) this.visitType(bound);
-            });
-            if (member.isMethod) {
-              this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
-            }
-            this.defineAll(member.typeParameters.map((it) => it.name));
-            member.parameters.forEach(({ name, nameLocation: location, type }) => {
-              this.define({ name, location });
-              this.visitType(type);
-            });
-            this.visitType(member.type.returnType);
-            if (member.body != null) {
-              this.visitExpression(member.body);
-            }
-          });
+        this.withNestedScope(() => {
+          if (typeDefinition != null) {
+            this.define({ name: 'this', location: interfaceDeclaration.location });
+          }
+          this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
+          this.visitMembers(interfaceDeclaration.members.filter((it) => it.isMethod));
+        });
+        this.withNestedScope(() => {
+          this.visitMembers(interfaceDeclaration.members.filter((it) => !it.isMethod));
         });
       });
     });
   }
 
-  visitExpression = (expression: SamlangExpression) => {
+  private visitMembers(members: readonly SourceClassMemberDeclaration[]): void {
+    members.forEach((member) => {
+      this.withNestedScope(() => {
+        member.typeParameters.forEach(({ bound }) => {
+          if (bound != null) this.visitType(bound);
+        });
+        this.defineAll(member.typeParameters.map((it) => it.name));
+        member.parameters.forEach(({ name, nameLocation: location, type }) => {
+          this.define({ name, location });
+          this.visitType(type);
+        });
+        this.visitType(member.type.returnType);
+        if (member.body != null) {
+          this.visitExpression(member.body);
+        }
+      });
+    });
+  }
+
+  visitExpression = (expression: SamlangExpression): void => {
     switch (expression.__type__) {
       case 'LiteralExpression':
-      case 'ThisExpression':
       case 'ClassMemberExpression':
+        return;
+      case 'ThisExpression':
+        this.use({ name: 'this', location: expression.location });
         return;
       case 'VariableExpression':
         this.use({ name: expression.name, location: expression.location });

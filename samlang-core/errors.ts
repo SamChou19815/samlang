@@ -135,12 +135,6 @@ export class IllegalOtherClassMatch extends CompileTimeError {
   }
 }
 
-export class IllegalThisError extends CompileTimeError {
-  constructor(location: Location) {
-    super('IllegalThis', location, 'Keyword `this` cannot be used in this context.');
-  }
-}
-
 export class NonExhausiveMatchError extends CompileTimeError {
   constructor(location: Location, missingTags: readonly string[]) {
     super(
@@ -246,10 +240,6 @@ export class GlobalErrorReporter {
 
   reportIllegalOtherClassMatch(location: Location): void {
     this.collectorDelegate.reportError(new IllegalOtherClassMatch(location));
-  }
-
-  reportIllegalThisError(location: Location): void {
-    this.collectorDelegate.reportError(new IllegalThisError(location));
   }
 
   reportNonExhausiveMatchError(location: Location, missingTags: readonly string[]): void {

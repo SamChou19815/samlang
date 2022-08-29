@@ -32,6 +32,7 @@ const expectedErrors: readonly string[] = [
   'illegal-shadow.sam:22:9-22:10: [Collision]: Name `a` collides with a previously defined name.',
   'illegal-shadow.sam:3:7-3:8: [Collision]: Name `A` collides with a previously defined name.',
   'illegal-shadow.sam:7:12-7:16: [Collision]: Name `test` collides with a previously defined name.',
+  'illegal-this.sam:5:13-5:17: [UnresolvedName]: Name `this` is not resolved.',
   'insufficient-type-info-none.sam:8:13-8:26: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
   'insufficient-type-info.sam:5:13-5:47: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
   'invalid-property-declaration-syntax.sam:2:12-2:13: [SyntaxError]: Expected: val, actual: a.',

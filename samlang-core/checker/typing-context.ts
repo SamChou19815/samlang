@@ -19,7 +19,7 @@ import {
   typeReposition,
 } from '../ast/samlang-nodes';
 import type { DefaultBuiltinClasses } from '../parser';
-import { assert, ReadonlyHashMap, zip } from '../utils';
+import { assert, checkNotNull, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
 
@@ -289,16 +289,16 @@ export class AccessibleGlobalTypingContext {
 export class LocationBasedLocalTypingContext {
   private typeMap = LocationCollections.hashMapOf<SamlangType>();
 
-  constructor(
-    private readonly ssaAnalysisResult: SsaAnalysisResult,
-    public readonly thisType: SamlangType | null,
-  ) {}
+  constructor(private readonly ssaAnalysisResult: SsaAnalysisResult) {}
 
   read(location: Location): SamlangType {
     const definitionLocation = this.ssaAnalysisResult.useDefineMap.get(location);
     // When the name is unbound, we treat itself as definition.
     if (definitionLocation == null) return SourceUnknownType(SourceReason(location, null));
-    return typeReposition(this.typeMap.forceGet(definitionLocation), location);
+    return typeReposition(
+      checkNotNull(this.typeMap.get(definitionLocation), definitionLocation.toString()),
+      location,
+    );
   }
 
   write(location: Location, type: SamlangType): void {

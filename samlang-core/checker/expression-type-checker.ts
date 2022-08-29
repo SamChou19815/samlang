@@ -116,17 +116,9 @@ class ExpressionTypeChecker {
   }
 
   private typeCheckThis(expression: ThisExpression, hint: SamlangType | null): SamlangExpression {
-    const typeFromContext = this.localTypingContext.thisType;
-    let type: SamlangType;
-    if (typeFromContext == null) {
-      this.errorReporter.reportIllegalThisError(expression.location);
-      type = this.bestEffortUnknownType(hint, expression);
-    } else {
-      type = this.typeMeet(hint, typeFromContext);
-    }
     return SourceExpressionThis({
       location: expression.location,
-      type,
+      type: this.typeMeet(hint, this.localTypingContext.read(expression.location)),
       associatedComments: expression.associatedComments,
     });
   }
