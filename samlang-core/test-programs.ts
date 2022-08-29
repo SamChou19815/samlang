@@ -182,6 +182,17 @@ class Main {
 `,
   },
   {
+    testName: 'illegal-this',
+    sourceCode: `
+
+class Main {
+  function main(): unit = {
+    val _ = this;
+  }
+}
+`,
+  },
+  {
     testName: 'insufficient-type-info',
     sourceCode: `
 class NotEnoughTypeInfo {

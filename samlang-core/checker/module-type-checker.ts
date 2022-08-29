@@ -1,31 +1,14 @@
 import { ModuleReference, SourceReason } from '../ast/common-nodes';
-import {
-  SamlangIdentifierType,
-  SamlangModule,
-  SourceClassMemberDeclaration,
-  SourceIdentifierType,
-} from '../ast/samlang-nodes';
+import { SamlangModule, SourceIdentifierType } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
 import { filterMap } from '../utils';
 import typeCheckExpression from './expression-type-checker';
-import performSSAAnalysisOnSamlangModule, { SsaAnalysisResult } from './ssa-analysis';
+import performSSAAnalysisOnSamlangModule from './ssa-analysis';
 import {
   AccessibleGlobalTypingContext,
   GlobalTypingContext,
   LocationBasedLocalTypingContext,
 } from './typing-context';
-
-function typeCheckMemberDeclaration(
-  memberDeclaration: SourceClassMemberDeclaration,
-  ssaResult: SsaAnalysisResult,
-  thisType: SamlangIdentifierType | null,
-) {
-  const localTypingContext = new LocationBasedLocalTypingContext(ssaResult, thisType);
-  memberDeclaration.parameters.forEach((parameter) => {
-    localTypingContext.write(parameter.nameLocation, parameter.type);
-  });
-  return localTypingContext;
-}
 
 export default function typeCheckSamlangModule(
   moduleReference: ModuleReference,
@@ -34,11 +17,14 @@ export default function typeCheckSamlangModule(
   errorReporter: GlobalErrorReporter,
 ): SamlangModule {
   const ssaResult = performSSAAnalysisOnSamlangModule(samlangModule, errorReporter);
+  const localTypingContext = new LocationBasedLocalTypingContext(ssaResult);
 
   samlangModule.interfaces.forEach((interfaceDeclaration) => {
-    interfaceDeclaration.members.forEach((member) =>
-      typeCheckMemberDeclaration(member, ssaResult, /* thisType */ null),
-    );
+    interfaceDeclaration.members.forEach((member) => {
+      member.parameters.forEach((parameter) => {
+        localTypingContext.write(parameter.nameLocation, parameter.type);
+      });
+    });
   });
 
   const checkedClasses = samlangModule.classes.map((classDefinition) => {
@@ -47,8 +33,9 @@ export default function typeCheckSamlangModule(
       moduleReference,
       classDefinition.name.name,
     );
-    const checkedMembers = filterMap(classDefinition.members, (member) => {
-      const thisType = SourceIdentifierType(
+    localTypingContext.write(
+      classDefinition.location,
+      SourceIdentifierType(
         SourceReason(classDefinition.name.location, classDefinition.name.location),
         moduleReference,
         classDefinition.name.name,
@@ -59,8 +46,12 @@ export default function typeCheckSamlangModule(
             it.name.name,
           ),
         ),
-      );
-      const localTypingContext = typeCheckMemberDeclaration(member, ssaResult, thisType);
+      ),
+    );
+    const checkedMembers = filterMap(classDefinition.members, (member) => {
+      member.parameters.forEach((parameter) => {
+        localTypingContext.write(parameter.nameLocation, parameter.type);
+      });
       return {
         ...member,
         body: typeCheckExpression(
