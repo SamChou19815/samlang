@@ -3,15 +3,15 @@ import { AstBuilder, SamlangExpression, SamlangType } from '../../ast/samlang-no
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
 import { checkNotNull } from '../../utils';
-import typeCheckExpression from '../expression-type-checker';
+import { typeCheckExpression } from '../main-type-checker';
 import { performSSAAnalysisOnSamlangExpression } from '../ssa-analysis';
 import {
-  AccessibleGlobalTypingContext,
   DEFAULT_BUILTIN_TYPING_CONTEXT,
   InterfaceTypingContext,
   LocationBasedLocalTypingContext,
   ModuleTypingContext,
   TypeDefinitionTypingContext,
+  TypingContext,
 } from '../typing-context';
 
 const int = AstBuilder.IntType;
@@ -26,273 +26,6 @@ function typeCheckInSandbox(
 ): readonly [SamlangExpression, readonly string[]] {
   const globalErrorCollector = createGlobalErrorCollector();
   const errorReporter = globalErrorCollector.getErrorReporter();
-  const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
-    new AccessibleGlobalTypingContext(
-      ModuleReferenceCollections.hashMapOf<ModuleTypingContext>(
-        [ModuleReference.ROOT, DEFAULT_BUILTIN_TYPING_CONTEXT],
-        [
-          ModuleReference.DUMMY,
-          {
-            typeDefinitions: new Map<string, TypeDefinitionTypingContext>([
-              [
-                'Test',
-                {
-                  type: 'object',
-                  names: ['foo', 'bar'],
-                  mappings: new Map([
-                    ['foo', { isPublic: true, type: bool }],
-                    ['bar', { isPublic: false, type: int }],
-                  ]),
-                },
-              ],
-              [
-                'Test2',
-                {
-                  type: 'variant',
-                  names: ['Foo', 'Bar'],
-                  mappings: new Map([
-                    ['Foo', { isPublic: true, type: bool }],
-                    ['Bar', { isPublic: true, type: int }],
-                  ]),
-                },
-              ],
-              [
-                'Test3',
-                {
-                  type: 'object',
-                  names: ['foo', 'bar'],
-                  mappings: new Map([
-                    ['foo', { isPublic: true, type: AstBuilder.IdType('E') }],
-                    ['bar', { isPublic: false, type: int }],
-                  ]),
-                },
-              ],
-              [
-                'Test4',
-                {
-                  type: 'variant',
-                  names: ['Foo', 'Bar'],
-                  mappings: new Map([
-                    ['Foo', { isPublic: true, type: AstBuilder.IdType('E') }],
-                    ['Bar', { isPublic: true, type: int }],
-                  ]),
-                },
-              ],
-              [
-                'A',
-                {
-                  type: 'object',
-                  names: ['a', 'b'],
-                  mappings: new Map([
-                    ['a', { isPublic: true, type: int }],
-                    ['b', { isPublic: false, type: bool }],
-                  ]),
-                },
-              ],
-              [
-                'B',
-                {
-                  type: 'object',
-                  names: ['a', 'b'],
-                  mappings: new Map([
-                    ['a', { isPublic: true, type: int }],
-                    ['b', { isPublic: false, type: bool }],
-                  ]),
-                },
-              ],
-              [
-                'C',
-                {
-                  type: 'variant',
-                  names: ['a', 'b'],
-                  mappings: new Map([
-                    ['a', { isPublic: true, type: int }],
-                    ['b', { isPublic: true, type: bool }],
-                  ]),
-                },
-              ],
-            ]),
-            interfaces: new Map(),
-            classes: new Map<string, InterfaceTypingContext>([
-              [
-                'Test',
-                {
-                  typeParameters: [],
-                  superTypes: [],
-                  functions: new Map([
-                    [
-                      'init',
-                      {
-                        isPublic: true,
-                        typeParameters: [],
-                        type: AstBuilder.FunType([bool, int], AstBuilder.IdType('Test')),
-                      },
-                    ],
-                    [
-                      'helloWorld',
-                      {
-                        isPublic: false,
-                        typeParameters: [],
-                        type: AstBuilder.FunType([string], unit),
-                      },
-                    ],
-                    [
-                      'helloWorldWithTypeParameters',
-                      {
-                        isPublic: false,
-                        typeParameters: [{ name: 'A', bound: null }],
-                        type: AstBuilder.FunType([AstBuilder.IdType('A')], unit),
-                      },
-                    ],
-                  ]),
-                  methods: new Map([
-                    [
-                      'baz',
-                      {
-                        isPublic: false,
-                        typeParameters: [],
-                        type: AstBuilder.FunType([int], bool),
-                      },
-                    ],
-                    [
-                      'bazWithTypeParam',
-                      {
-                        isPublic: false,
-                        typeParameters: [{ name: 'A', bound: null }],
-                        type: AstBuilder.FunType([int], bool),
-                      },
-                    ],
-                  ]),
-                },
-              ],
-              [
-                'Test2',
-                {
-                  typeParameters: [],
-                  superTypes: [],
-                  functions: new Map([
-                    [
-                      'Foo',
-                      {
-                        isPublic: true,
-                        typeParameters: [],
-                        type: AstBuilder.FunType([bool], AstBuilder.IdType('Test2')),
-                      },
-                    ],
-                    [
-                      'Bar',
-                      {
-                        isPublic: true,
-                        typeParameters: [],
-                        type: AstBuilder.FunType([int], AstBuilder.IdType('Test2')),
-                      },
-                    ],
-                  ]),
-                  methods: new Map(),
-                },
-              ],
-              [
-                'Test3',
-                {
-                  typeParameters: [{ name: 'E', bound: null }],
-                  superTypes: [],
-                  functions: new Map(),
-                  methods: new Map(),
-                },
-              ],
-              [
-                'Test4',
-                {
-                  typeParameters: [{ name: 'E', bound: null }],
-                  superTypes: [],
-                  functions: new Map([
-                    [
-                      'Foo',
-                      {
-                        isPublic: true,
-                        typeParameters: [{ name: 'E', bound: null }],
-                        type: AstBuilder.FunType(
-                          [AstBuilder.IdType('E')],
-                          AstBuilder.IdType('Test4', [AstBuilder.IdType('E')]),
-                        ),
-                      },
-                    ],
-                    [
-                      'Bar',
-                      {
-                        isPublic: true,
-                        typeParameters: [{ name: 'E', bound: null }],
-                        type: AstBuilder.FunType(
-                          [int],
-                          AstBuilder.IdType('Test4', [AstBuilder.IdType('E')]),
-                        ),
-                      },
-                    ],
-                  ]),
-                  methods: new Map(),
-                },
-              ],
-              [
-                'A',
-                {
-                  typeParameters: [],
-                  superTypes: [],
-                  functions: new Map([
-                    [
-                      'init',
-                      {
-                        isPublic: true,
-                        typeParameters: [],
-                        type: AstBuilder.FunType([], AstBuilder.IdType('A')),
-                      },
-                    ],
-                  ]),
-                  methods: new Map(),
-                },
-              ],
-              [
-                'B',
-                {
-                  typeParameters: [],
-                  superTypes: [],
-                  functions: new Map([
-                    [
-                      'init',
-                      {
-                        isPublic: true,
-                        typeParameters: [],
-                        type: AstBuilder.FunType([], AstBuilder.IdType('B')),
-                      },
-                    ],
-                  ]),
-                  methods: new Map(),
-                },
-              ],
-              [
-                'C',
-                {
-                  typeParameters: [],
-                  superTypes: [],
-                  functions: new Map([
-                    [
-                      'init',
-                      {
-                        isPublic: true,
-                        typeParameters: [],
-                        type: AstBuilder.FunType([], AstBuilder.IdType('C')),
-                      },
-                    ],
-                  ]),
-                  methods: new Map(),
-                },
-              ],
-            ]),
-          },
-        ],
-      ),
-      ModuleReference.DUMMY,
-      currentClass ?? 'Test',
-    );
 
   // Parse
   const parsedExpression = checkNotNull(
@@ -300,16 +33,279 @@ function typeCheckInSandbox(
   );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
 
-  // Type Check
   const ssaAnalysisResult = performSSAAnalysisOnSamlangExpression(parsedExpression);
   const localTypingContext = new LocationBasedLocalTypingContext(ssaAnalysisResult);
-  const checkedExpression = typeCheckExpression(
-    parsedExpression,
-    errorReporter,
-    accessibleGlobalTypingContext,
+  const context = new TypingContext(
+    ModuleReferenceCollections.hashMapOf<ModuleTypingContext>(
+      [ModuleReference.ROOT, DEFAULT_BUILTIN_TYPING_CONTEXT],
+      [
+        ModuleReference.DUMMY,
+        {
+          typeDefinitions: new Map<string, TypeDefinitionTypingContext>([
+            [
+              'Test',
+              {
+                type: 'object',
+                names: ['foo', 'bar'],
+                mappings: new Map([
+                  ['foo', { isPublic: true, type: bool }],
+                  ['bar', { isPublic: false, type: int }],
+                ]),
+              },
+            ],
+            [
+              'Test2',
+              {
+                type: 'variant',
+                names: ['Foo', 'Bar'],
+                mappings: new Map([
+                  ['Foo', { isPublic: true, type: bool }],
+                  ['Bar', { isPublic: true, type: int }],
+                ]),
+              },
+            ],
+            [
+              'Test3',
+              {
+                type: 'object',
+                names: ['foo', 'bar'],
+                mappings: new Map([
+                  ['foo', { isPublic: true, type: AstBuilder.IdType('E') }],
+                  ['bar', { isPublic: false, type: int }],
+                ]),
+              },
+            ],
+            [
+              'Test4',
+              {
+                type: 'variant',
+                names: ['Foo', 'Bar'],
+                mappings: new Map([
+                  ['Foo', { isPublic: true, type: AstBuilder.IdType('E') }],
+                  ['Bar', { isPublic: true, type: int }],
+                ]),
+              },
+            ],
+            [
+              'A',
+              {
+                type: 'object',
+                names: ['a', 'b'],
+                mappings: new Map([
+                  ['a', { isPublic: true, type: int }],
+                  ['b', { isPublic: false, type: bool }],
+                ]),
+              },
+            ],
+            [
+              'B',
+              {
+                type: 'object',
+                names: ['a', 'b'],
+                mappings: new Map([
+                  ['a', { isPublic: true, type: int }],
+                  ['b', { isPublic: false, type: bool }],
+                ]),
+              },
+            ],
+            [
+              'C',
+              {
+                type: 'variant',
+                names: ['a', 'b'],
+                mappings: new Map([
+                  ['a', { isPublic: true, type: int }],
+                  ['b', { isPublic: true, type: bool }],
+                ]),
+              },
+            ],
+          ]),
+          interfaces: new Map(),
+          classes: new Map<string, InterfaceTypingContext>([
+            [
+              'Test',
+              {
+                typeParameters: [],
+                superTypes: [],
+                functions: new Map([
+                  [
+                    'init',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([bool, int], AstBuilder.IdType('Test')),
+                    },
+                  ],
+                  [
+                    'helloWorld',
+                    {
+                      isPublic: false,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([string], unit),
+                    },
+                  ],
+                  [
+                    'helloWorldWithTypeParameters',
+                    {
+                      isPublic: false,
+                      typeParameters: [{ name: 'A', bound: null }],
+                      type: AstBuilder.FunType([AstBuilder.IdType('A')], unit),
+                    },
+                  ],
+                ]),
+                methods: new Map([
+                  [
+                    'baz',
+                    {
+                      isPublic: false,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([int], bool),
+                    },
+                  ],
+                  [
+                    'bazWithTypeParam',
+                    {
+                      isPublic: false,
+                      typeParameters: [{ name: 'A', bound: null }],
+                      type: AstBuilder.FunType([int], bool),
+                    },
+                  ],
+                ]),
+              },
+            ],
+            [
+              'Test2',
+              {
+                typeParameters: [],
+                superTypes: [],
+                functions: new Map([
+                  [
+                    'Foo',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([bool], AstBuilder.IdType('Test2')),
+                    },
+                  ],
+                  [
+                    'Bar',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([int], AstBuilder.IdType('Test2')),
+                    },
+                  ],
+                ]),
+                methods: new Map(),
+              },
+            ],
+            [
+              'Test3',
+              {
+                typeParameters: [{ name: 'E', bound: null }],
+                superTypes: [],
+                functions: new Map(),
+                methods: new Map(),
+              },
+            ],
+            [
+              'Test4',
+              {
+                typeParameters: [{ name: 'E', bound: null }],
+                superTypes: [],
+                functions: new Map([
+                  [
+                    'Foo',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'E', bound: null }],
+                      type: AstBuilder.FunType(
+                        [AstBuilder.IdType('E')],
+                        AstBuilder.IdType('Test4', [AstBuilder.IdType('E')]),
+                      ),
+                    },
+                  ],
+                  [
+                    'Bar',
+                    {
+                      isPublic: true,
+                      typeParameters: [{ name: 'E', bound: null }],
+                      type: AstBuilder.FunType(
+                        [int],
+                        AstBuilder.IdType('Test4', [AstBuilder.IdType('E')]),
+                      ),
+                    },
+                  ],
+                ]),
+                methods: new Map(),
+              },
+            ],
+            [
+              'A',
+              {
+                typeParameters: [],
+                superTypes: [],
+                functions: new Map([
+                  [
+                    'init',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([], AstBuilder.IdType('A')),
+                    },
+                  ],
+                ]),
+                methods: new Map(),
+              },
+            ],
+            [
+              'B',
+              {
+                typeParameters: [],
+                superTypes: [],
+                functions: new Map([
+                  [
+                    'init',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([], AstBuilder.IdType('B')),
+                    },
+                  ],
+                ]),
+                methods: new Map(),
+              },
+            ],
+            [
+              'C',
+              {
+                typeParameters: [],
+                superTypes: [],
+                functions: new Map([
+                  [
+                    'init',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([], AstBuilder.IdType('C')),
+                    },
+                  ],
+                ]),
+                methods: new Map(),
+              },
+            ],
+          ]),
+        },
+      ],
+    ),
     localTypingContext,
-    expectedType,
+    errorReporter,
+    ModuleReference.DUMMY,
+    currentClass ?? 'Test',
   );
+
+  // Type Check
+  const checkedExpression = typeCheckExpression(parsedExpression, context, expectedType);
   return [
     checkedExpression,
     globalErrorCollector
@@ -355,7 +351,7 @@ function assertTypeErrors(
   expect(typeCheckInSandbox(source, expectedType, currentClass)[1]).toEqual(expectedErrors);
 }
 
-describe('expression-type-checker', () => {
+describe('main-type-checker', () => {
   it('Literal', () => {
     assertTypeChecks('true', bool);
     assertTypeChecks('false', bool);
