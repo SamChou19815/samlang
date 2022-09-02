@@ -223,60 +223,45 @@ export class TypingContext {
     };
   }
 
-  /**
-   * Resolve the type definition for an identifier within the current enclosing class.
-   * This method will refuse to resolve variant identifier types outside of its enclosing class
-   * according to type checking rules.
-   */
   public resolveTypeDefinition(
     { moduleReference, identifier, typeArguments }: SamlangIdentifierType,
     typeDefinitionType: 'object' | 'variant',
-  ):
-    | {
-        readonly type: 'Resolved';
-        readonly names: readonly string[];
-        readonly mappings: ReadonlyMap<string, SourceFieldType>;
-      }
-    | { readonly type: 'UnsupportedClassTypeDefinition' } {
-    const relaventClass = this.globalTypingContext.get(moduleReference)?.classes?.get(identifier);
+  ): {
+    readonly names: readonly string[];
+    readonly mappings: ReadonlyMap<string, SourceFieldType>;
+  } {
+    let relaventTypeParameters =
+      this.getInterfaceInformation(moduleReference, identifier)?.typeParameters ?? [];
     const relaventTypingDefinition = this.globalTypingContext
       .get(moduleReference)
       ?.typeDefinitions?.get(identifier);
-    if (
-      relaventClass == null ||
-      relaventTypingDefinition == null ||
-      relaventTypingDefinition.type !== typeDefinitionType
-    ) {
-      return { type: 'UnsupportedClassTypeDefinition' };
+    if (relaventTypingDefinition == null || relaventTypingDefinition.type !== typeDefinitionType) {
+      return { names: [], mappings: new Map() };
     }
     const { names, mappings: nameMappings } = relaventTypingDefinition;
-    let classTypeParameters = relaventClass.typeParameters;
-    if (classTypeParameters.length > typeArguments.length) {
-      classTypeParameters = classTypeParameters.slice(0, typeArguments.length);
+    if (relaventTypeParameters.length > typeArguments.length) {
+      relaventTypeParameters = relaventTypeParameters.slice(0, typeArguments.length);
     }
-    return {
-      type: 'Resolved',
-      names,
-      mappings: new Map(
-        Array.from(nameMappings, ([name, fieldType]) => {
-          return [
-            name,
-            {
-              isPublic: fieldType.isPublic,
-              type: performTypeSubstitution(
-                fieldType.type,
-                new Map(
-                  zip(
-                    classTypeParameters.map((it) => it.name),
-                    typeArguments,
-                  ),
+    const mappings = new Map(
+      Array.from(nameMappings, ([name, fieldType]) => {
+        return [
+          name,
+          {
+            isPublic: fieldType.isPublic,
+            type: performTypeSubstitution(
+              fieldType.type,
+              new Map(
+                zip(
+                  relaventTypeParameters.map((it) => it.name),
+                  typeArguments,
                 ),
               ),
-            },
-          ];
-        }),
-      ),
-    };
+            ),
+          },
+        ];
+      }),
+    );
+    return { names, mappings };
   }
 }
 

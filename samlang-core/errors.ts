@@ -73,16 +73,6 @@ class MissingDefinitionsError extends CompileTimeError {
   }
 }
 
-class UnsupportedClassTypeDefinitionError extends CompileTimeError {
-  constructor(location: Location, typeDefinitionType: 'object' | 'variant') {
-    super(
-      'UnsupportedClassTypeDefinition',
-      location,
-      `Expect the current class to have \`${typeDefinitionType}\` type definition, but it doesn't.`,
-    );
-  }
-}
-
 class UnexpectedTypeKindError extends CompileTimeError {
   constructor(location: Location, expectedTypeKind: string, actualType: string | SamlangType) {
     super(
@@ -190,15 +180,6 @@ export class GlobalErrorReporter {
 
   reportMissingDefinitionsError(location: Location, missingMembers: readonly string[]): void {
     this.collectorDelegate.reportError(new MissingDefinitionsError(location, missingMembers));
-  }
-
-  reportUnsupportedClassTypeDefinitionError(
-    location: Location,
-    typeDefinitionType: 'object' | 'variant',
-  ): void {
-    this.collectorDelegate.reportError(
-      new UnsupportedClassTypeDefinitionError(location, typeDefinitionType),
-    );
   }
 
   reportUnexpectedTypeKindError(

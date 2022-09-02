@@ -500,9 +500,7 @@ describe('main-type-checker', () => {
     assertTypeErrors(
       'Test2.Foo(true).foo',
       int,
-      [
-        "__DUMMY__.sam:1:1-1:16: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
-      ],
+      ['__DUMMY__.sam:1:17-1:20: [UnresolvedName]: Name `foo` is not resolved.'],
       'Test2',
     );
 
@@ -762,7 +760,8 @@ describe('main-type-checker', () => {
       '__DUMMY__.sam:1:8-1:9: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
     ]);
     assertTypeErrors('match (Test.init(true, 3)) { | Foo _ -> 1 | Bar s -> 2 }', unit, [
-      "__DUMMY__.sam:1:8-1:26: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
+      '__DUMMY__.sam:1:32-1:35: [UnresolvedName]: Name `Foo` is not resolved.',
+      '__DUMMY__.sam:1:45-1:48: [UnresolvedName]: Name `Bar` is not resolved.',
     ]);
     assertTypeErrors(
       '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Baz s -> 2 }; }',
@@ -807,7 +806,7 @@ describe('main-type-checker', () => {
       ]));
     it('Object destructuring 3', () =>
       assertTypeErrors('{val {a, b as c} = C.init();}', unit, [
-        "__DUMMY__.sam:1:20-1:28: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
+        '__DUMMY__.sam:1:7-1:8: [UnresolvedName]: Name `a` is not resolved.',
       ]));
     it('Object destructuring 4', () =>
       assertTypeErrors('{val {a, b as c} = 1;}', unit, [
