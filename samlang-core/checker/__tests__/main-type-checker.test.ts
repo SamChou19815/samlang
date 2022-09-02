@@ -3,10 +3,10 @@ import { AstBuilder, SamlangExpression, SamlangType } from '../../ast/samlang-no
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
 import { checkNotNull } from '../../utils';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../builtins';
 import { typeCheckExpression } from '../main-type-checker';
 import { performSSAAnalysisOnSamlangExpression } from '../ssa-analysis';
 import {
-  DEFAULT_BUILTIN_TYPING_CONTEXT,
   InterfaceTypingContext,
   LocationBasedLocalTypingContext,
   ModuleTypingContext,
@@ -120,8 +120,7 @@ function typeCheckInSandbox(
               },
             ],
           ]),
-          interfaces: new Map(),
-          classes: new Map<string, InterfaceTypingContext>([
+          interfaces: new Map<string, InterfaceTypingContext>([
             [
               'Test',
               {
@@ -302,6 +301,7 @@ function typeCheckInSandbox(
     errorReporter,
     ModuleReference.DUMMY,
     currentClass ?? 'Test',
+    /* availableTypeParameters */ [],
   );
 
   // Type Check

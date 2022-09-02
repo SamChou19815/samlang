@@ -1,4 +1,5 @@
 import {
+  DummySourceReason,
   Location,
   LocationCollections,
   ModuleReference,
@@ -6,13 +7,11 @@ import {
 } from '../../ast/common-nodes';
 import { AstBuilder } from '../../ast/samlang-nodes';
 import { createGlobalErrorCollector } from '../../errors';
+import { createBuiltinFunction, createPrivateBuiltinFunction } from '../builtins';
 import type { SsaAnalysisResult } from '../ssa-analysis';
 import {
-  createBuiltinFunction,
-  createPrivateBuiltinFunction,
   InterfaceTypingContext,
   LocationBasedLocalTypingContext,
-  memberTypeInformationToString,
   ModuleTypingContext,
   TypeDefinitionTypingContext,
   TypingContext,
@@ -27,24 +26,6 @@ const EMPTY_SSA_ANALYSIS_RESULT_FOR_MOCKING: SsaAnalysisResult = {
 };
 
 describe('typing-context', () => {
-  it('memberTypeInformationToString tests', () => {
-    expect(
-      memberTypeInformationToString('foo', {
-        isPublic: false,
-        typeParameters: [],
-        type: AstBuilder.FunType([], AstBuilder.IntType),
-      }),
-    ).toBe('private foo() -> int');
-
-    expect(
-      memberTypeInformationToString('bar', {
-        isPublic: true,
-        typeParameters: [{ name: 'T', bound: AstBuilder.IdType('A') }],
-        type: AstBuilder.FunType([], AstBuilder.IntType),
-      }),
-    ).toBe('public bar<T: A>() -> int');
-  });
-
   it('TypingContext.isSubtype tests', () => {
     const context = new TypingContext(
       ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
@@ -62,13 +43,13 @@ describe('typing-context', () => {
               },
             ],
           ]),
-          classes: new Map(),
         },
       ]),
       new LocationBasedLocalTypingContext(EMPTY_SSA_ANALYSIS_RESULT_FOR_MOCKING),
       createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       'A',
+      /* availableTypeParameters */ [],
     );
 
     // Non-id lower type
@@ -99,6 +80,52 @@ describe('typing-context', () => {
     ).toBeTruthy();
   });
 
+  it('TypingContext.validateTypeInstantiation tests', () => {
+    const errorCollector = createGlobalErrorCollector();
+    const context = new TypingContext(
+      ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
+        ModuleReference.DUMMY,
+        {
+          typeDefinitions: new Map(),
+          interfaces: new Map<string, InterfaceTypingContext>([
+            [
+              'A',
+              {
+                typeParameters: [
+                  { name: 'T1', bound: null },
+                  { name: 'T2', bound: AstBuilder.IdType('A') },
+                ],
+                superTypes: [],
+                functions: new Map(),
+                methods: new Map(),
+              },
+            ],
+          ]),
+        },
+      ]),
+      new LocationBasedLocalTypingContext(EMPTY_SSA_ANALYSIS_RESULT_FOR_MOCKING),
+      errorCollector.getErrorReporter(),
+      ModuleReference.DUMMY,
+      'A',
+      /* availableTypeParameters */ [],
+    );
+
+    context.validateTypeInstantiation(AstBuilder.IntType);
+    context.validateTypeInstantiation(
+      AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
+    );
+    context.validateTypeInstantiation({ __type__: 'UnknownType', reason: DummySourceReason });
+    context.validateTypeInstantiation(AstBuilder.IdType('T'));
+    context.validateTypeInstantiation(AstBuilder.IdType('A'));
+    context.validateTypeInstantiation(
+      AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
+    );
+    expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([
+      '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 2, actual: 0.',
+      '__DUMMY__.sam:0:0-0:0: [UnexpectedSubType]: Expected: subtype of `A`, actual: `int`.',
+    ]);
+  });
+
   it('TypingContext get member tests', () => {
     const context = new TypingContext(
       ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
@@ -117,8 +144,7 @@ describe('typing-context', () => {
               },
             ],
           ]),
-          interfaces: new Map(),
-          classes: new Map<string, InterfaceTypingContext>([
+          interfaces: new Map<string, InterfaceTypingContext>([
             [
               'A',
               {
@@ -167,6 +193,10 @@ describe('typing-context', () => {
       createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       'A',
+      /* availableTypeParameters */ [
+        { name: 'TT1', bound: AstBuilder.IdType('A') },
+        { name: 'TT2', bound: null },
+      ],
     );
 
     expect(context.getFunctionType(ModuleReference(['A']), 'A', 'f1', Location.DUMMY)).toBeFalsy();
@@ -195,11 +225,17 @@ describe('typing-context', () => {
       type: AstBuilder.FunType([AstBuilder.IntType, AstBuilder.IntType], AstBuilder.IntType),
       typeParameters: [{ name: 'C', bound: null }],
     });
+
+    // Read through the type parameter bound.
+    expect(context.getFunctionType(ModuleReference.DUMMY, 'TT1', 'f1', Location.DUMMY)).toEqual(
+      createBuiltinFunction('f1', [], AstBuilder.IntType, ['C'])[1],
+    );
+    expect(context.getFunctionType(ModuleReference.DUMMY, 'TT2', 'f1', Location.DUMMY)).toBeNull();
   });
 
   it('TypingContext.resolveTypeDefinition tests', () => {
     const context = new TypingContext(
-      ModuleReferenceCollections.hashMapOf([
+      ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
         ModuleReference.DUMMY,
         {
           typeDefinitions: new Map<string, TypeDefinitionTypingContext>([
@@ -216,8 +252,7 @@ describe('typing-context', () => {
             ],
             ['B', { type: 'object', names: [], mappings: new Map() }],
           ]),
-          interfaces: new Map(),
-          classes: new Map<string, InterfaceTypingContext>([
+          interfaces: new Map<string, InterfaceTypingContext>([
             [
               'A',
               {
@@ -249,6 +284,7 @@ describe('typing-context', () => {
       createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       'A',
+      /* availableTypeParameters */ [],
     );
 
     expect(

@@ -20,9 +20,9 @@ import {
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from './builtins';
 import performTypeSubstitution from './type-substitution';
-import {
-  DEFAULT_BUILTIN_TYPING_CONTEXT,
+import type {
   GlobalTypingContext,
   InterfaceTypingContext,
   MemberTypeInformation,
@@ -257,7 +257,6 @@ function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
     const moduleTypingContext = unoptimizedGlobalTypingContext.forceGet(moduleReference);
     const optimizedModuleTypingContext = {
       typeDefinitions: moduleTypingContext.typeDefinitions,
-      classes: new Map<string, InterfaceTypingContext>(),
       interfaces: new Map<string, InterfaceTypingContext>(),
     };
     samlangModule.classes.forEach((declaration) => {
@@ -270,7 +269,7 @@ function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
       const unoptimizedClassTypingContext = checkNotNull(
         moduleTypingContext.classes.get(declaration.name.name),
       );
-      optimizedModuleTypingContext.classes.set(declaration.name.name, {
+      optimizedModuleTypingContext.interfaces.set(declaration.name.name, {
         functions: unoptimizedClassTypingContext.functions,
         methods: unoptimizedClassTypingContext.methods,
         typeParameters: unoptimizedClassTypingContext.typeParameters,

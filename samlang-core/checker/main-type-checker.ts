@@ -17,6 +17,8 @@ import {
   SamlangType,
   SamlangValStatement,
   SourceBoolType,
+  SourceClassDefinition,
+  SourceClassMemberDefinition,
   SourceExpressionBinary,
   SourceExpressionClassMember,
   SourceExpressionFieldAccess,
@@ -959,14 +961,7 @@ export function typeCheckSamlangModule(
     });
   });
 
-  const checkedClasses = samlangModule.classes.map((classDefinition) => {
-    const context = new TypingContext(
-      globalTypingContext,
-      localTypingContext,
-      errorReporter,
-      moduleReference,
-      classDefinition.name.name,
-    );
+  samlangModule.classes.forEach((classDefinition) => {
     localTypingContext.write(
       classDefinition.location,
       SourceIdentifierType(
@@ -982,16 +977,54 @@ export function typeCheckSamlangModule(
         ),
       ),
     );
-    const checkedMembers = filterMap(classDefinition.members, (member) => {
+    classDefinition.members.forEach((member) => {
       member.parameters.forEach((parameter) => {
         localTypingContext.write(parameter.nameLocation, parameter.type);
       });
-      return {
-        ...member,
-        body: typeCheckExpression(member.body, context, member.type.returnType),
-      };
     });
-    return { ...classDefinition, members: checkedMembers };
   });
-  return { ...samlangModule, classes: checkedClasses };
+
+  const checkedClasses = samlangModule.classes.map((classDefinition): SourceClassDefinition => {
+    const checkedMembers: SourceClassMemberDefinition[] = [];
+    classDefinition.members.forEach((member) => {
+      const typeParameterSignatures: readonly TypeParameterSignature[] = (
+        member.isMethod
+          ? [...classDefinition.typeParameters, ...member.typeParameters]
+          : member.typeParameters
+      ).map((it) => ({ name: it.name.name, bound: it.bound }));
+      const context = new TypingContext(
+        globalTypingContext,
+        localTypingContext,
+        errorReporter,
+        moduleReference,
+        classDefinition.name.name,
+        typeParameterSignatures,
+      );
+      checkedMembers.push({
+        location: member.location,
+        associatedComments: member.associatedComments,
+        isPublic: member.isPublic,
+        isMethod: member.isMethod,
+        name: member.name,
+        typeParameters: member.typeParameters,
+        type: member.type,
+        parameters: member.parameters,
+        body: typeCheckExpression(member.body, context, member.type.returnType),
+      });
+    });
+    return {
+      location: classDefinition.location,
+      associatedComments: classDefinition.associatedComments,
+      name: classDefinition.name,
+      typeParameters: classDefinition.typeParameters,
+      typeDefinition: classDefinition.typeDefinition,
+      extendsOrImplementsNode: classDefinition.extendsOrImplementsNode,
+      members: checkedMembers,
+    };
+  });
+  return {
+    imports: samlangModule.imports,
+    interfaces: samlangModule.interfaces,
+    classes: checkedClasses,
+  };
 }

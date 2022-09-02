@@ -1,5 +1,4 @@
 import {
-  BuiltinReason,
   Location,
   LocationCollections,
   ModuleReference,
@@ -7,7 +6,6 @@ import {
   SourceReason,
 } from '../ast/common-nodes';
 import {
-  CustomizedReasonAstBuilder,
   isTheSameType,
   prettyPrintType,
   SamlangFunctionType,
@@ -19,10 +17,40 @@ import {
   typeReposition,
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
-import type { DefaultBuiltinClasses } from '../parser';
 import { assert, checkNotNull, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
+
+export class LocationBasedLocalTypingContext {
+  private typeMap = LocationCollections.hashMapOf<SamlangType>();
+
+  constructor(private readonly ssaAnalysisResult: SsaAnalysisResult) {}
+
+  read(location: Location): SamlangType {
+    const definitionLocation = this.ssaAnalysisResult.useDefineMap.get(location);
+    // When the name is unbound, we treat itself as definition.
+    if (definitionLocation == null) return SourceUnknownType(SourceReason(location, null));
+    return typeReposition(
+      checkNotNull(this.typeMap.get(definitionLocation), definitionLocation.toString()),
+      location,
+    );
+  }
+
+  write(location: Location, type: SamlangType): void {
+    this.typeMap.set(location, type);
+  }
+
+  getCaptured(lambdaLocation: Location): ReadonlyMap<string, SamlangType> {
+    const map = new Map<string, SamlangType>();
+    const capturedEntries = this.ssaAnalysisResult.lambdaCaptures.forceGet(lambdaLocation);
+    for (const [name, location] of capturedEntries) {
+      const firstLetter = name.charAt(0);
+      if ('A' <= firstLetter && firstLetter <= 'Z') continue;
+      map.set(name, this.typeMap.forceGet(location));
+    }
+    return map;
+  }
+}
 
 export interface MemberTypeInformation {
   readonly isPublic: boolean;
@@ -58,77 +86,7 @@ export interface TypeDefinitionTypingContext {
 export interface ModuleTypingContext {
   readonly typeDefinitions: ReadonlyMap<string, TypeDefinitionTypingContext>;
   readonly interfaces: ReadonlyMap<string, InterfaceTypingContext>;
-  readonly classes: ReadonlyMap<string, InterfaceTypingContext>;
 }
-
-const AST = new CustomizedReasonAstBuilder(BuiltinReason, ModuleReference.ROOT);
-
-function createCustomBuiltinFunction(
-  name: string,
-  isPublic: boolean,
-  typeParameters: readonly string[],
-  argumentTypes: readonly SamlangType[],
-  returnType: SamlangType,
-): readonly [string, MemberTypeInformation] {
-  return [
-    name,
-    {
-      isPublic,
-      typeParameters: typeParameters.map((it) => ({ name: it, bound: null })),
-      type: AST.FunType(argumentTypes, returnType),
-    },
-  ];
-}
-
-export function createBuiltinFunction(
-  name: string,
-  argumentTypes: readonly SamlangType[],
-  returnType: SamlangType,
-  typeParameters: readonly string[] = [],
-): readonly [string, MemberTypeInformation] {
-  return createCustomBuiltinFunction(name, true, typeParameters, argumentTypes, returnType);
-}
-
-export function createPrivateBuiltinFunction(
-  name: string,
-  argumentTypes: readonly SamlangType[],
-  returnType: SamlangType,
-  typeParameters: readonly string[] = [],
-): readonly [string, MemberTypeInformation] {
-  return createCustomBuiltinFunction(name, false, typeParameters, argumentTypes, returnType);
-}
-
-export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
-  readonly typeDefinitions: ReadonlyMap<string, TypeDefinitionTypingContext>;
-  readonly interfaces: ReadonlyMap<string, InterfaceTypingContext>;
-  readonly classes: ReadonlyMap<DefaultBuiltinClasses, InterfaceTypingContext>;
-} = {
-  typeDefinitions: new Map(),
-  interfaces: new Map(),
-  classes: new Map([
-    [
-      'Builtins',
-      {
-        typeParameters: [],
-        typeDefinition: {
-          location: Location.DUMMY,
-          type: 'object',
-          names: [],
-          mappings: new Map(),
-        },
-        extendsOrImplements: null,
-        superTypes: [],
-        functions: new Map([
-          createBuiltinFunction('stringToInt', [AST.StringType], AST.IntType),
-          createBuiltinFunction('intToString', [AST.IntType], AST.StringType),
-          createBuiltinFunction('println', [AST.StringType], AST.UnitType),
-          createBuiltinFunction('panic', [AST.StringType], AST.IdType('T'), ['T']),
-        ]),
-        methods: new Map(),
-      },
-    ],
-  ]),
-};
 
 export type GlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
 
@@ -139,16 +97,36 @@ export class TypingContext {
     public readonly errorReporter: GlobalErrorReporter,
     public readonly currentModuleReference: ModuleReference,
     public readonly currentClass: string,
+    public readonly availableTypeParameters: readonly TypeParameterSignature[],
   ) {}
 
   private getInterfaceInformation(
     moduleReference: ModuleReference,
-    className: string,
+    identifier: string,
   ): InterfaceTypingContext | undefined {
-    return (
-      this.globalTypingContext.get(moduleReference)?.classes?.get(className) ||
-      this.globalTypingContext.get(moduleReference)?.interfaces?.get(className)
+    const relevantTypeParameter = this.availableTypeParameters.find((it) => it.name === identifier);
+    if (relevantTypeParameter != null) {
+      if (relevantTypeParameter.bound == null) {
+        // Accessing interface info on an unbounded type parameter is not necessarily bad,
+        // but it won't produce any good information either.
+        return { functions: new Map(), methods: new Map(), typeParameters: [], superTypes: [] };
+      }
+      return this.dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
+        relevantTypeParameter.bound.moduleReference,
+        relevantTypeParameter.bound.identifier,
+      );
+    }
+    return this.dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
+      moduleReference,
+      identifier,
     );
+  }
+
+  private dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
+    moduleReference: ModuleReference,
+    identifier: string,
+  ): InterfaceTypingContext | undefined {
+    return this.globalTypingContext.get(moduleReference)?.interfaces?.get(identifier);
   }
 
   public isSubtype = (lower: SamlangType, upper: SamlangIdentifierType): boolean => {
@@ -171,6 +149,43 @@ export class TypingContext {
       );
       return isTheSameType(substitutedPotentialSuperType, upper);
     });
+  };
+
+  public validateTypeInstantiation = (type: SamlangType): void => {
+    // if (type.__type__ !== 'IdentifierType') return;
+    if (type.__type__ === 'PrimitiveType' || type.__type__ === 'UnknownType') return;
+    if (type.__type__ === 'FunctionType') {
+      type.argumentTypes.forEach(this.validateTypeInstantiation);
+      this.validateTypeInstantiation(type.returnType);
+      return;
+    }
+    type.typeArguments.forEach((it) => this.validateTypeInstantiation(it));
+    const interfaceInformation = this.getInterfaceInformation(
+      type.moduleReference,
+      type.identifier,
+    );
+    // Syntactically invalid types are already validated.
+    if (interfaceInformation == null) return;
+    if (interfaceInformation.typeParameters.length !== type.typeArguments.length) {
+      this.errorReporter.reportArityMismatchError(
+        type.reason.useLocation,
+        'type arguments',
+        interfaceInformation.typeParameters.length,
+        type.typeArguments.length,
+      );
+      return;
+    }
+    zip(interfaceInformation.typeParameters, type.typeArguments).forEach(
+      ([{ bound }, typeArgument]) => {
+        if (bound != null && !this.isSubtype(typeArgument, bound)) {
+          this.errorReporter.reportUnexpectedSubtypeError(
+            typeArgument.reason.useLocation,
+            bound,
+            typeArgument,
+          );
+        }
+      },
+    );
   };
 
   public getFunctionType(
@@ -262,36 +277,5 @@ export class TypingContext {
       }),
     );
     return { names, mappings };
-  }
-}
-
-export class LocationBasedLocalTypingContext {
-  private typeMap = LocationCollections.hashMapOf<SamlangType>();
-
-  constructor(private readonly ssaAnalysisResult: SsaAnalysisResult) {}
-
-  read(location: Location): SamlangType {
-    const definitionLocation = this.ssaAnalysisResult.useDefineMap.get(location);
-    // When the name is unbound, we treat itself as definition.
-    if (definitionLocation == null) return SourceUnknownType(SourceReason(location, null));
-    return typeReposition(
-      checkNotNull(this.typeMap.get(definitionLocation), definitionLocation.toString()),
-      location,
-    );
-  }
-
-  write(location: Location, type: SamlangType): void {
-    this.typeMap.set(location, type);
-  }
-
-  getCaptured(lambdaLocation: Location): ReadonlyMap<string, SamlangType> {
-    const map = new Map<string, SamlangType>();
-    const capturedEntries = this.ssaAnalysisResult.lambdaCaptures.forceGet(lambdaLocation);
-    for (const [name, location] of capturedEntries) {
-      const firstLetter = name.charAt(0);
-      if ('A' <= firstLetter && firstLetter <= 'Z') continue;
-      map.set(name, this.typeMap.forceGet(location));
-    }
-    return map;
   }
 }

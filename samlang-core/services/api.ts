@@ -358,7 +358,7 @@ class LanguageServicesImpl implements LanguageServices {
     }
     const relevantInterfaceType = this.state.globalTypingContext
       .get(type.moduleReference)
-      ?.classes?.get(type.identifier);
+      ?.interfaces?.get(type.identifier);
     const relevantTypeDefinition = this.state.globalTypingContext
       .get(type.moduleReference)
       ?.typeDefinitions?.get(type.identifier);
@@ -394,7 +394,7 @@ class LanguageServicesImpl implements LanguageServices {
     moduleReference: ModuleReference,
     className: string,
   ): InterfaceTypingContext | undefined {
-    return this.state.globalTypingContext.get(moduleReference)?.classes?.get(className);
+    return this.state.globalTypingContext.get(moduleReference)?.interfaces?.get(className);
   }
 
   private static getCompletionResultFromTypeInformation(
