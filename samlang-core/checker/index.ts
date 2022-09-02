@@ -7,7 +7,7 @@ import {
 } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
 import { buildGlobalTypingContext } from './global-typing-context-builder';
-import {typeCheckSamlangModule} from './main-type-checker';
+import { typeCheckSamlangModule } from './main-type-checker';
 import type { GlobalTypingContext, MemberTypeInformation } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
 
