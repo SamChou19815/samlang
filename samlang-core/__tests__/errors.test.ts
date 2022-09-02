@@ -12,13 +12,11 @@ describe('samlang-core/errors', () => {
     reporter.reportUnexpectedSubtypeError(Location.DUMMY, AstBuilder.IntType, AstBuilder.BoolType);
     reporter.reportUnresolvedNameError(Location.DUMMY, 'global');
     reporter.reportTypeParameterNameMismatchError(Location.DUMMY, 'foo', 'bar');
-    reporter.reportUnsupportedClassTypeDefinitionError(Location.DUMMY, 'object');
     reporter.reportUnexpectedTypeKindError(Location.DUMMY, 'array', 'object');
     reporter.reportUnexpectedTypeKindError(Location.DUMMY, 'array', AstBuilder.IntType);
     reporter.reportArityMismatchError(Location.DUMMY, 'pair', 1, 2);
     reporter.reportInsufficientTypeInferenceContextError(Location.DUMMY);
     reporter.reportCollisionError(Location.DUMMY, 'a');
-    reporter.reportIllegalOtherClassMatch(Location.DUMMY);
     reporter.reportNonExhausiveMatchError(Location.DUMMY, ['A', 'B']);
     reporter.reportMissingDefinitionsError(Location.DUMMY, ['foo', 'bar']);
     reporter.reportCyclicTypeDefinitionError(AstBuilder.IntType);
@@ -32,13 +30,11 @@ describe('samlang-core/errors', () => {
       '[UnexpectedSubType]: Expected: subtype of `int`, actual: `bool`.',
       '[UnresolvedName]: Name `global` is not resolved.',
       '[TypeParameterNameMismatch]: Type parameter name mismatch. Expected `foo`, actual: bar.',
-      "[UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
       '[UnexpectedTypeKind]: Expected kind: `array`, actual: `object`.',
       '[UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',
       '[ArityMismatchError]: Incorrect pair size. Expected: 1, actual: 2.',
       '[InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
       '[Collision]: Name `a` collides with a previously defined name.',
-      "[IllegalOtherClassMatch]: It is illegal to match on a value of other class's type.",
       '[NonExhausiveMatch]: The following tags are not considered in the match: [A, B].',
       '[MissingDefinitions]: Missing definitions for [foo, bar].',
       '[CyclicTypeDefinition]: Type `int` has a cyclic definition.',

@@ -255,31 +255,26 @@ describe('typing-context', () => {
       context.resolveTypeDefinition(
         AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
         'object',
-      ).type,
-    ).toBe('UnsupportedClassTypeDefinition');
-    expect(
-      context.resolveTypeDefinition(
-        AstBuilder.IdType('B', [AstBuilder.IntType, AstBuilder.IntType]),
-        'object',
       ),
     ).toEqual({
-      type: 'Resolved',
       names: [],
       mappings: new Map(),
     });
     expect(
       context.resolveTypeDefinition(
         AstBuilder.IdType('B', [AstBuilder.IntType, AstBuilder.IntType]),
-        'variant',
-      ).type,
-    ).toBe('IllegalOtherClassMatch');
+        'object',
+      ),
+    ).toEqual({
+      names: [],
+      mappings: new Map(),
+    });
     expect(
       context.resolveTypeDefinition(
         AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
         'variant',
       ),
     ).toEqual({
-      type: 'Resolved',
       names: ['a', 'b'],
       mappings: new Map([
         ['a', { isPublic: true, type: AstBuilder.IntType }],
@@ -289,7 +284,6 @@ describe('typing-context', () => {
     expect(
       context.resolveTypeDefinition(AstBuilder.IdType('A', [AstBuilder.IntType]), 'variant'),
     ).toEqual({
-      type: 'Resolved',
       names: ['a', 'b'],
       mappings: new Map([
         ['a', { isPublic: true, type: AstBuilder.IntType }],
