@@ -1,4 +1,4 @@
-import { SourceReason } from '../ast/common-nodes';
+import { ModuleReference, SourceReason } from '../ast/common-nodes';
 import {
   BinaryExpression,
   ClassMemberExpression,
@@ -13,6 +13,7 @@ import {
   Pattern,
   prettyPrintType,
   SamlangExpression,
+  SamlangModule,
   SamlangType,
   SamlangValStatement,
   SourceBoolType,
@@ -32,6 +33,7 @@ import {
   SourceFieldType,
   SourceFunctionType,
   SourceIdentifier,
+  SourceIdentifierType,
   SourceIntType,
   SourceStringType,
   SourceUnitType,
@@ -47,19 +49,25 @@ import type { GlobalErrorReporter } from '../errors';
 import { assert, checkNotNull, filterMap, zip } from '../utils';
 import contextualTypeMeet from './contextual-type-meet';
 import typeCheckFunctionCall from './function-call-type-checker';
+import performSSAAnalysisOnSamlangModule from './ssa-analysis';
 import { solveTypeConstraints } from './type-constraints-solver';
 import performTypeSubstitution from './type-substitution';
-import type {
-  AccessibleGlobalTypingContext,
+import {
+  GlobalTypingContext,
   LocationBasedLocalTypingContext,
+  TypingContext,
 } from './typing-context';
 
 class ExpressionTypeChecker {
-  constructor(
-    private readonly accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-    private readonly localTypingContext: LocationBasedLocalTypingContext,
-    public readonly errorReporter: GlobalErrorReporter,
-  ) {}
+  constructor(private readonly context: TypingContext) {}
+
+  private get localTypingContext(): LocationBasedLocalTypingContext {
+    return this.context.localTypingContext;
+  }
+
+  private get errorReporter(): GlobalErrorReporter {
+    return this.context.errorReporter;
+  }
 
   readonly typeCheck = (
     expression: SamlangExpression,
@@ -142,7 +150,7 @@ class ExpressionTypeChecker {
     partiallyCheckedExpression: ClassMemberExpression;
     unsolvedTypeParameters: readonly TypeParameterSignature[];
   } {
-    const classFunctionTypeInformation = this.accessibleGlobalTypingContext.getFunctionType(
+    const classFunctionTypeInformation = this.context.getFunctionType(
       expression.moduleReference,
       expression.className.name,
       expression.memberName.name,
@@ -321,7 +329,7 @@ class ExpressionTypeChecker {
       });
       return { partiallyCheckedExpression, unsolvedTypeParameters: [] };
     }
-    const methodTypeInformation = this.accessibleGlobalTypingContext.getMethodType(
+    const methodTypeInformation = this.context.getMethodType(
       checkedExpression.type.moduleReference,
       checkedExpression.type.identifier,
       expression.fieldName.name,
@@ -389,7 +397,7 @@ class ExpressionTypeChecker {
         unsolvedTypeParameters: methodTypeInformation.typeParameters,
       };
     } else {
-      const fieldMappingsOrError = this.accessibleGlobalTypingContext.resolveTypeDefinition(
+      const fieldMappingsOrError = this.context.resolveTypeDefinition(
         checkedExpression.type,
         'object',
       );
@@ -427,10 +435,7 @@ class ExpressionTypeChecker {
         });
         return { partiallyCheckedExpression, unsolvedTypeParameters: [] };
       }
-      if (
-        checkedExpression.type.identifier !== this.accessibleGlobalTypingContext.currentClass &&
-        !fieldType.isPublic
-      ) {
+      if (checkedExpression.type.identifier !== this.context.currentClass && !fieldType.isPublic) {
         this.errorReporter.reportUnresolvedNameError(
           expression.fieldName.location,
           expression.fieldName.name,
@@ -560,7 +565,7 @@ class ExpressionTypeChecker {
       expression.functionArguments,
       hint,
       this.typeCheck,
-      this.accessibleGlobalTypingContext.isSubtype,
+      this.context.isSubtype,
       this.errorReporter,
     );
     const fullyResolvedCheckedFunctionExpression = sourceExpressionWithNewType(
@@ -695,7 +700,7 @@ class ExpressionTypeChecker {
         matchingList: expression.matchingList,
       });
     }
-    const variantTypeDefinition = this.accessibleGlobalTypingContext.resolveTypeDefinition(
+    const variantTypeDefinition = this.context.resolveTypeDefinition(
       checkedMatchedExpressionType,
       'variant',
     );
@@ -910,7 +915,7 @@ class ExpressionTypeChecker {
             assignedExpression: checkedAssignedExpression,
           };
         }
-        const fieldMappingsOrError = this.accessibleGlobalTypingContext.resolveTypeDefinition(
+        const fieldMappingsOrError = this.context.resolveTypeDefinition(
           checkedAssignedExpressionType,
           'object',
         );
@@ -962,11 +967,7 @@ class ExpressionTypeChecker {
             };
           }
           const { isPublic, type: fieldType } = fieldInformation;
-          if (
-            checkedAssignedExpressionType.identifier !==
-              this.accessibleGlobalTypingContext.currentClass &&
-            !isPublic
-          ) {
+          if (checkedAssignedExpressionType.identifier !== this.context.currentClass && !isPublic) {
             this.errorReporter.reportUnresolvedNameError(originalName.location, originalName.name);
             return {
               location: statement.location,
@@ -1010,17 +1011,64 @@ class ExpressionTypeChecker {
   }
 }
 
-export default function typeCheckExpression(
+export function typeCheckExpression(
   expression: SamlangExpression,
-  errorCollector: GlobalErrorReporter,
-  accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-  localTypingContext: LocationBasedLocalTypingContext,
+  context: TypingContext,
   hint: SamlangType,
 ): SamlangExpression {
-  const checker = new ExpressionTypeChecker(
-    accessibleGlobalTypingContext,
-    localTypingContext,
-    errorCollector,
-  );
-  return checker.typeCheck(expression, hint);
+  return new ExpressionTypeChecker(context).typeCheck(expression, hint);
+}
+
+export function typeCheckSamlangModule(
+  moduleReference: ModuleReference,
+  samlangModule: SamlangModule,
+  globalTypingContext: GlobalTypingContext,
+  errorReporter: GlobalErrorReporter,
+): SamlangModule {
+  const ssaResult = performSSAAnalysisOnSamlangModule(samlangModule, errorReporter);
+  const localTypingContext = new LocationBasedLocalTypingContext(ssaResult);
+
+  samlangModule.interfaces.forEach((interfaceDeclaration) => {
+    interfaceDeclaration.members.forEach((member) => {
+      member.parameters.forEach((parameter) => {
+        localTypingContext.write(parameter.nameLocation, parameter.type);
+      });
+    });
+  });
+
+  const checkedClasses = samlangModule.classes.map((classDefinition) => {
+    const context = new TypingContext(
+      globalTypingContext,
+      localTypingContext,
+      errorReporter,
+      moduleReference,
+      classDefinition.name.name,
+    );
+    localTypingContext.write(
+      classDefinition.location,
+      SourceIdentifierType(
+        SourceReason(classDefinition.name.location, classDefinition.name.location),
+        moduleReference,
+        classDefinition.name.name,
+        classDefinition.typeParameters.map((it) =>
+          SourceIdentifierType(
+            SourceReason(it.location, it.location),
+            moduleReference,
+            it.name.name,
+          ),
+        ),
+      ),
+    );
+    const checkedMembers = filterMap(classDefinition.members, (member) => {
+      member.parameters.forEach((parameter) => {
+        localTypingContext.write(parameter.nameLocation, parameter.type);
+      });
+      return {
+        ...member,
+        body: typeCheckExpression(member.body, context, member.type.returnType),
+      };
+    });
+    return { ...classDefinition, members: checkedMembers };
+  });
+  return { ...samlangModule, classes: checkedClasses };
 }

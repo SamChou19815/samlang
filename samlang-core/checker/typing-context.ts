@@ -18,6 +18,7 @@ import {
   TypeParameterSignature,
   typeReposition,
 } from '../ast/samlang-nodes';
+import type { GlobalErrorReporter } from '../errors';
 import type { DefaultBuiltinClasses } from '../parser';
 import { assert, checkNotNull, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
@@ -131,9 +132,11 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
 
 export type GlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
 
-export class AccessibleGlobalTypingContext {
+export class TypingContext {
   constructor(
     private readonly globalTypingContext: GlobalTypingContext,
+    public readonly localTypingContext: LocationBasedLocalTypingContext,
+    public readonly errorReporter: GlobalErrorReporter,
     public readonly currentModuleReference: ModuleReference,
     public readonly currentClass: string,
   ) {}

@@ -1,14 +1,30 @@
-import { Location, ModuleReference, ModuleReferenceCollections } from '../../ast/common-nodes';
-import { AstBuilder } from '../../ast/samlang-nodes';
 import {
-  AccessibleGlobalTypingContext,
+  Location,
+  LocationCollections,
+  ModuleReference,
+  ModuleReferenceCollections,
+} from '../../ast/common-nodes';
+import { AstBuilder } from '../../ast/samlang-nodes';
+import { createGlobalErrorCollector } from '../../errors';
+import type { SsaAnalysisResult } from '../ssa-analysis';
+import {
   createBuiltinFunction,
   createPrivateBuiltinFunction,
   InterfaceTypingContext,
+  LocationBasedLocalTypingContext,
   memberTypeInformationToString,
   ModuleTypingContext,
   TypeDefinitionTypingContext,
+  TypingContext,
 } from '../typing-context';
+
+const EMPTY_SSA_ANALYSIS_RESULT_FOR_MOCKING: SsaAnalysisResult = {
+  unboundNames: new Set(),
+  invalidDefines: LocationCollections.setOf(),
+  definitionToUsesMap: LocationCollections.mapOf(),
+  useDefineMap: LocationCollections.mapOf(),
+  lambdaCaptures: LocationCollections.mapOf(),
+};
 
 describe('typing-context', () => {
   it('memberTypeInformationToString tests', () => {
@@ -29,8 +45,8 @@ describe('typing-context', () => {
     ).toBe('public bar<T: A>() -> int');
   });
 
-  it('AccessibleGlobalTypingContext.isSubtype tests', () => {
-    const context = new AccessibleGlobalTypingContext(
+  it('TypingContext.isSubtype tests', () => {
+    const context = new TypingContext(
       ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
         ModuleReference.DUMMY,
         {
@@ -49,6 +65,8 @@ describe('typing-context', () => {
           classes: new Map(),
         },
       ]),
+      new LocationBasedLocalTypingContext(EMPTY_SSA_ANALYSIS_RESULT_FOR_MOCKING),
+      createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       'A',
     );
@@ -81,8 +99,8 @@ describe('typing-context', () => {
     ).toBeTruthy();
   });
 
-  it('AccessibleGlobalTypingContext get member tests', () => {
-    const context = new AccessibleGlobalTypingContext(
+  it('TypingContext get member tests', () => {
+    const context = new TypingContext(
       ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
         ModuleReference.DUMMY,
         {
@@ -145,6 +163,8 @@ describe('typing-context', () => {
           ]),
         },
       ]),
+      new LocationBasedLocalTypingContext(EMPTY_SSA_ANALYSIS_RESULT_FOR_MOCKING),
+      createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       'A',
     );
@@ -177,8 +197,8 @@ describe('typing-context', () => {
     });
   });
 
-  it('AccessibleGlobalTypingContext.resolveTypeDefinition tests', () => {
-    const context = new AccessibleGlobalTypingContext(
+  it('TypingContext.resolveTypeDefinition tests', () => {
+    const context = new TypingContext(
       ModuleReferenceCollections.hashMapOf([
         ModuleReference.DUMMY,
         {
@@ -225,6 +245,8 @@ describe('typing-context', () => {
           ]),
         },
       ]),
+      new LocationBasedLocalTypingContext(EMPTY_SSA_ANALYSIS_RESULT_FOR_MOCKING),
+      createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       'A',
     );
