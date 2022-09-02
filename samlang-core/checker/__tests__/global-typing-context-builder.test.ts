@@ -107,7 +107,6 @@ describe('global-typing-context-builder', () => {
       createGlobalErrorCollector().getErrorReporter(),
       {
         typeDefinitions: new Map(),
-        classes: new Map(),
         interfaces: new Map(),
       },
     );
@@ -115,8 +114,7 @@ describe('global-typing-context-builder', () => {
 
     expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
       typeDefinitions: new Map([['Class0', { type: 'object', names: [], mappings: new Map() }]]),
-      interfaces: new Map(),
-      classes: new Map([
+      interfaces: new Map([
         [
           'Class0',
           {
@@ -145,8 +143,7 @@ describe('global-typing-context-builder', () => {
         ['Class1', { type: 'object', names: [], mappings: new Map() }],
         ['Class2', { type: 'object', names: [], mappings: new Map() }],
       ]),
-      interfaces: new Map(),
-      classes: new Map([
+      interfaces: new Map([
         [
           'Class1',
           {
