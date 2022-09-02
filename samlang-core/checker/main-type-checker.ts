@@ -401,7 +401,6 @@ class ExpressionTypeChecker {
         checkedExpression.type,
         'object',
       );
-      assert(fieldMappingsOrError.type !== 'IllegalOtherClassMatch', 'Impossible!');
       if (fieldMappingsOrError.type === 'UnsupportedClassTypeDefinition') {
         this.errorReporter.reportUnsupportedClassTypeDefinitionError(
           checkedExpression.location,
@@ -711,15 +710,6 @@ class ExpressionTypeChecker {
         variantNames = variantTypeDefinition.names;
         variantMappings = variantTypeDefinition.mappings;
         break;
-      case 'IllegalOtherClassMatch':
-        this.errorReporter.reportIllegalOtherClassMatch(checkedMatchedExpression.location);
-        return SourceExpressionMatch({
-          location: expression.location,
-          type: this.bestEffortUnknownType(hint, expression),
-          associatedComments: expression.associatedComments,
-          matchedExpression: checkedMatchedExpression,
-          matchingList: expression.matchingList,
-        });
       case 'UnsupportedClassTypeDefinition':
         this.errorReporter.reportUnsupportedClassTypeDefinitionError(
           checkedMatchedExpression.location,
@@ -923,10 +913,6 @@ class ExpressionTypeChecker {
           readonly fieldNames: readonly string[];
           readonly fieldMappings: ReadonlyMap<string, SourceFieldType>;
         };
-        assert(
-          fieldMappingsOrError.type !== 'IllegalOtherClassMatch',
-          'We match on objects here, so this case is impossible.',
-        );
         switch (fieldMappingsOrError.type) {
           case 'Resolved':
             fieldNamesMappings = {

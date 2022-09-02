@@ -237,16 +237,7 @@ export class TypingContext {
         readonly names: readonly string[];
         readonly mappings: ReadonlyMap<string, SourceFieldType>;
       }
-    | { readonly type: 'IllegalOtherClassMatch' }
     | { readonly type: 'UnsupportedClassTypeDefinition' } {
-    if (
-      (moduleReferenceToString(moduleReference) !==
-        moduleReferenceToString(this.currentModuleReference) ||
-        identifier !== this.currentClass) &&
-      typeDefinitionType === 'variant'
-    ) {
-      return { type: 'IllegalOtherClassMatch' };
-    }
     const relaventClass = this.globalTypingContext.get(moduleReference)?.classes?.get(identifier);
     const relaventTypingDefinition = this.globalTypingContext
       .get(moduleReference)

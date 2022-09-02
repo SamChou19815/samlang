@@ -757,9 +757,7 @@ describe('main-type-checker', () => {
       'Test2',
     );
 
-    assertTypeErrors('{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }', unit, [
-      "__DUMMY__.sam:1:32-1:33: [IllegalOtherClassMatch]: It is illegal to match on a value of other class's type.",
-    ]);
+    assertTypeChecks('{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }', unit);
     assertTypeErrors('match (3) { | Foo _ -> 1 | Bar s -> 2 }', unit, [
       '__DUMMY__.sam:1:8-1:9: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
     ]);

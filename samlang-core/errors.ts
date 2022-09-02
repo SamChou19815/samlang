@@ -13,13 +13,13 @@ export abstract class CompileTimeError {
   }
 }
 
-export class SyntaxError extends CompileTimeError {
+class SyntaxError extends CompileTimeError {
   constructor(location: Location, reason: string) {
     super('SyntaxError', location, reason);
   }
 }
 
-export class UnexpectedTypeError extends CompileTimeError {
+class UnexpectedTypeError extends CompileTimeError {
   constructor(location: Location, expected: SamlangType, actual: SamlangType) {
     super(
       'UnexpectedType',
@@ -33,7 +33,7 @@ export class UnexpectedTypeError extends CompileTimeError {
   }
 }
 
-export class UnexpectedSubtypeError extends CompileTimeError {
+class UnexpectedSubtypeError extends CompileTimeError {
   constructor(location: Location, expected: SamlangType, actual: SamlangType) {
     super(
       'UnexpectedSubType',
@@ -47,13 +47,13 @@ export class UnexpectedSubtypeError extends CompileTimeError {
   }
 }
 
-export class UnresolvedNameError extends CompileTimeError {
+class UnresolvedNameError extends CompileTimeError {
   constructor(location: Location, unresolvedName: string) {
     super('UnresolvedName', location, `Name \`${unresolvedName}\` is not resolved.`);
   }
 }
 
-export class TypeParameterNameMismatchError extends CompileTimeError {
+class TypeParameterNameMismatchError extends CompileTimeError {
   constructor(location: Location, expected: string, actual: string) {
     super(
       'TypeParameterNameMismatch',
@@ -63,7 +63,7 @@ export class TypeParameterNameMismatchError extends CompileTimeError {
   }
 }
 
-export class MissingDefinitionsError extends CompileTimeError {
+class MissingDefinitionsError extends CompileTimeError {
   constructor(location: Location, missingDefinitions: readonly string[]) {
     super(
       'MissingDefinitions',
@@ -73,7 +73,7 @@ export class MissingDefinitionsError extends CompileTimeError {
   }
 }
 
-export class UnsupportedClassTypeDefinitionError extends CompileTimeError {
+class UnsupportedClassTypeDefinitionError extends CompileTimeError {
   constructor(location: Location, typeDefinitionType: 'object' | 'variant') {
     super(
       'UnsupportedClassTypeDefinition',
@@ -83,7 +83,7 @@ export class UnsupportedClassTypeDefinitionError extends CompileTimeError {
   }
 }
 
-export class UnexpectedTypeKindError extends CompileTimeError {
+class UnexpectedTypeKindError extends CompileTimeError {
   constructor(location: Location, expectedTypeKind: string, actualType: string | SamlangType) {
     super(
       'UnexpectedTypeKind',
@@ -95,7 +95,7 @@ export class UnexpectedTypeKindError extends CompileTimeError {
   }
 }
 
-export class ArityMismatchError extends CompileTimeError {
+class ArityMismatchError extends CompileTimeError {
   constructor(location: Location, kind: string, expectedSize: number, actualSize: number) {
     super(
       'ArityMismatchError',
@@ -105,7 +105,7 @@ export class ArityMismatchError extends CompileTimeError {
   }
 }
 
-export class InsufficientTypeInferenceContextError extends CompileTimeError {
+class InsufficientTypeInferenceContextError extends CompileTimeError {
   constructor(location: Location) {
     super(
       'InsufficientTypeInferenceContext',
@@ -115,7 +115,7 @@ export class InsufficientTypeInferenceContextError extends CompileTimeError {
   }
 }
 
-export class CollisionError extends CompileTimeError {
+class CollisionError extends CompileTimeError {
   constructor(location: Location, collidedName: string) {
     super(
       'Collision',
@@ -125,17 +125,7 @@ export class CollisionError extends CompileTimeError {
   }
 }
 
-export class IllegalOtherClassMatch extends CompileTimeError {
-  constructor(location: Location) {
-    super(
-      'IllegalOtherClassMatch',
-      location,
-      "It is illegal to match on a value of other class's type.",
-    );
-  }
-}
-
-export class NonExhausiveMatchError extends CompileTimeError {
+class NonExhausiveMatchError extends CompileTimeError {
   constructor(location: Location, missingTags: readonly string[]) {
     super(
       'NonExhausiveMatch',
@@ -145,7 +135,7 @@ export class NonExhausiveMatchError extends CompileTimeError {
   }
 }
 
-export class CyclicTypeDefinitionError extends CompileTimeError {
+class CyclicTypeDefinitionError extends CompileTimeError {
   constructor(type: SamlangType) {
     super(
       'CyclicTypeDefinition',
@@ -236,10 +226,6 @@ export class GlobalErrorReporter {
 
   reportCollisionError(location: Location, collidedName: string): void {
     this.collectorDelegate.reportError(new CollisionError(location, collidedName));
-  }
-
-  reportIllegalOtherClassMatch(location: Location): void {
-    this.collectorDelegate.reportError(new IllegalOtherClassMatch(location));
   }
 
   reportNonExhausiveMatchError(location: Location, missingTags: readonly string[]): void {

@@ -269,12 +269,6 @@ describe('typing-context', () => {
     });
     expect(
       context.resolveTypeDefinition(
-        AstBuilder.IdType('B', [AstBuilder.IntType, AstBuilder.IntType]),
-        'variant',
-      ).type,
-    ).toBe('IllegalOtherClassMatch');
-    expect(
-      context.resolveTypeDefinition(
         AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
         'variant',
       ),
