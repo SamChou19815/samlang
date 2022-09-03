@@ -48,12 +48,12 @@ const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)
 const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
 const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
 const GLOBAL_STRING_0: Str = [0, "hello world"];
-function _Demo_Main_main(): number {
+function _Demo_Main$main(): number {
   ${ENCODED_FUNCTION_NAME_PRINTLN}(GLOBAL_STRING_0);
   return 0;
 }
 
-_Demo_Main_main();
+_Demo_Main$main();
 `);
     expect(result.interpreterResult).toBe('hello world\n');
   });

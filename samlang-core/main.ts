@@ -73,7 +73,7 @@ function interpretWebAssemblyModule(
 ): string {
   let printed = '';
   const functions = samlangGeneratedWebAssemblyLoader(emittedWasmBinary, (pointerToString) => ({
-    __Builtins_println(p: number) {
+    __Builtins$println(p: number) {
       printed += pointerToString(p);
       printed += '\n';
       return 0;

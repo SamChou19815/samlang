@@ -1,6 +1,7 @@
 import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeFunctionNameGlobally,
+  encodeGenericFunctionNameGlobally,
 } from '../ast/common-names';
 import type { ModuleReference } from '../ast/common-nodes';
 import {
@@ -227,11 +228,22 @@ class HighIRExpressionLoweringManager {
     }
   };
 
+  private encodeFunctionNameGloballyConsideringGenerics(
+    moduleReference: ModuleReference,
+    className: string,
+    functionName: string,
+  ): string {
+    if (this.typeLoweringManager.genericTypes.has(className)) {
+      return encodeGenericFunctionNameGlobally(className, functionName);
+    }
+    return encodeFunctionNameGlobally(moduleReference, className, functionName);
+  }
+
   private lowerClassMember(
     expression: ClassMemberExpression,
     favoredTempVariable: string | null,
   ): HighIRExpressionLoweringResult {
-    const encodedOriginalFunctionName = encodeFunctionNameGlobally(
+    const encodedOriginalFunctionName = this.encodeFunctionNameGloballyConsideringGenerics(
       expression.moduleReference,
       expression.className.name,
       expression.memberName.name,
@@ -287,7 +299,7 @@ class HighIRExpressionLoweringManager {
     expression: MethodAccessExpression,
     favoredTempVariable: string | null,
   ): HighIRExpressionLoweringResult {
-    const functionName = encodeFunctionNameGlobally(
+    const functionName = this.encodeFunctionNameGloballyConsideringGenerics(
       (expression.expression.type as SamlangIdentifierType).moduleReference,
       (expression.expression.type as SamlangIdentifierType).identifier,
       expression.methodName.name,
@@ -356,7 +368,7 @@ class HighIRExpressionLoweringManager {
     let functionCall: HighIRStatement;
     switch (functionExpression.__type__) {
       case 'ClassMemberExpression': {
-        const functionName = encodeFunctionNameGlobally(
+        const functionName = this.encodeFunctionNameGloballyConsideringGenerics(
           functionExpression.moduleReference,
           functionExpression.className.name,
           functionExpression.memberName.name,
@@ -376,7 +388,7 @@ class HighIRExpressionLoweringManager {
         break;
       }
       case 'MethodAccessExpression': {
-        const functionName = encodeFunctionNameGlobally(
+        const functionName = this.encodeFunctionNameGloballyConsideringGenerics(
           (functionExpression.expression.type as SamlangIdentifierType).moduleReference,
           (functionExpression.expression.type as SamlangIdentifierType).identifier,
           functionExpression.methodName.name,
