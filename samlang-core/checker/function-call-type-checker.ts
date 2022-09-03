@@ -56,6 +56,31 @@ interface FunctionCallTypeCheckingResult {
   readonly checkedArguments: readonly SamlangExpression[];
 }
 
+export function validateTypeArguments(
+  typeParameters: readonly TypeParameterSignature[],
+  substitutionMap: ReadonlyMap<string, SamlangType>,
+  isSubtype: (lower: SamlangType, upper: SamlangIdentifierType) => boolean,
+  errorReporter: GlobalErrorReporter,
+): void {
+  typeParameters.forEach(({ name, bound }) => {
+    const solvedTypeArgument = substitutionMap.get(name);
+    if (solvedTypeArgument != null && bound != null) {
+      const substitutedBound = performTypeSubstitution(bound, substitutionMap);
+      if (
+        !isTheSameType(solvedTypeArgument, substitutedBound) &&
+        (substitutedBound.__type__ !== 'IdentifierType' ||
+          !isSubtype(solvedTypeArgument, substitutedBound))
+      ) {
+        errorReporter.reportUnexpectedSubtypeError(
+          solvedTypeArgument.reason.useLocation,
+          substitutedBound,
+          solvedTypeArgument,
+        );
+      }
+    }
+  });
+}
+
 export default function typeCheckFunctionCall(
   genericFunctionType: SamlangFunctionType,
   typeParameters: readonly TypeParameterSignature[],
@@ -159,23 +184,7 @@ export default function typeCheckFunctionCall(
 
   const fullSolutionSubstitution = new Map(fullySolvedSubstitution);
   partiallySolvedSubstitution.forEach((type, name) => fullSolutionSubstitution.set(name, type));
-  typeParameters.forEach(({ name, bound }) => {
-    const solvedTypeArgument = fullSolutionSubstitution.get(name);
-    if (solvedTypeArgument != null && bound != null) {
-      const substitutedBound = performTypeSubstitution(bound, fullSolutionSubstitution);
-      if (
-        !isTheSameType(solvedTypeArgument, substitutedBound) &&
-        (substitutedBound.__type__ !== 'IdentifierType' ||
-          !isSubtype(solvedTypeArgument, substitutedBound))
-      ) {
-        errorReporter.reportUnexpectedSubtypeError(
-          solvedTypeArgument.reason.useLocation,
-          substitutedBound,
-          solvedTypeArgument,
-        );
-      }
-    }
-  });
+  validateTypeArguments(typeParameters, fullSolutionSubstitution, isSubtype, errorReporter);
 
   return {
     solvedGenericType: fullySolvedGenericType,
