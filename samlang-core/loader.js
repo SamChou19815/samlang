@@ -14,12 +14,12 @@ module.exports = function samlangGeneratedWebAssemblyLoader(
   }
 
   const builtins = {
-    __Builtins_println(p) {
+    __Builtins$println(p) {
       // eslint-disable-next-line no-console
       console.log(pointerToString(p));
       return 0;
     },
-    __Builtins_panic(p) {
+    __Builtins$panic(p) {
       throw new Error(pointerToString(p));
     },
     ...builtinsPatch(pointerToString),

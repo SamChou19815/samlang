@@ -62,8 +62,14 @@ result['${testCaseName}'] = printed;
     });
     jsCode += 'result';
 
-    // eslint-disable-next-line no-eval
-    expect(eval(jsCode)).toEqual(expectedResult);
+    let evalResult: unknown;
+    try {
+      // eslint-disable-next-line no-eval
+      evalResult = eval(jsCode);
+    } catch (e) {
+      throw new Error(`${jsCode}\n\n${e}`);
+    }
+    expect(evalResult).toEqual(expectedResult);
   });
 
   it('WASM[all]', () => {
@@ -73,7 +79,7 @@ result['${testCaseName}'] = printed;
     const mainFunctions = samlangGeneratedWebAssemblyLoader(
       wasmModule.emitBinary(),
       (pointerToString) => ({
-        __Builtins_println(p: number) {
+        __Builtins$println(p: number) {
           printed += `${pointerToString(p)}\n`;
           return 0;
         },

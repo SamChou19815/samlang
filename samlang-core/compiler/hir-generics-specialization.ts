@@ -148,7 +148,11 @@ class GenericsSpecializationRewriter {
         return HIR_CLOSURE_INITIALIZATION({
           closureVariableName: statement.closureVariableName,
           closureType,
-          functionName: this.rewriteFunctionName(statement.functionName, functionType),
+          functionName: this.rewriteFunctionName(
+            statement.functionName,
+            functionType,
+            genericsReplacementMap,
+          ),
           functionType,
           context: this.rewriteExpression(statement.context, genericsReplacementMap),
         });
@@ -174,13 +178,34 @@ class GenericsSpecializationRewriter {
           expression.type.argumentTypes.map((it) => this.rewriteType(it, genericsReplacementMap)),
           this.rewriteType(expression.type.returnType, genericsReplacementMap),
         );
-        const rewrittenName = this.rewriteFunctionName(expression.name, functionType);
+        const rewrittenName = this.rewriteFunctionName(
+          expression.name,
+          functionType,
+          genericsReplacementMap,
+        );
         return HIR_NAME(rewrittenName, functionType);
       }
     }
   }
 
-  private rewriteFunctionName(originalName: string, functionType: HighIRFunctionType): string {
+  private rewriteFunctionName(
+    originalName: string,
+    functionType: HighIRFunctionType,
+    genericsReplacementMap: ReadonlyMap<string, HighIRType>,
+  ): string {
+    if (originalName.startsWith('$GENERICS$_')) {
+      const [genericClassName, functionName] = originalName.slice('$GENERICS$_'.length).split('$');
+      const replacementClass = checkNotNull(
+        genericsReplacementMap.get(checkNotNull(genericClassName)),
+      );
+      assert(replacementClass.__type__ === 'IdentifierType');
+      assert(functionName != null);
+      return this.rewriteFunctionName(
+        `_${replacementClass.name.slice(0, replacementClass.name.indexOf('_'))}$${functionName}`,
+        functionType,
+        genericsReplacementMap,
+      );
+    }
     const existingFunction = this.originalFunctions.get(originalName);
     if (existingFunction == null) return originalName;
     const solvedFunctionTypeArguments = solveTypeArguments(

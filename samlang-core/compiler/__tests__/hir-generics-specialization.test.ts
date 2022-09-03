@@ -215,6 +215,23 @@ sources.mains = [main]
         mainFunctionNames: ['main'],
         functions: [
           {
+            name: 'functor_fun',
+            parameters: ['a'],
+            typeParameters: ['A'],
+            type: HIR_FUNCTION_TYPE([typeA], HIR_INT_TYPE),
+            body: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME(
+                  '$GENERICS$_A$foo',
+                  HIR_FUNCTION_TYPE([typeA], HIR_INT_TYPE),
+                ),
+                functionArguments: [HIR_ZERO],
+                returnType: HIR_INT_TYPE,
+              }),
+            ],
+            returnValue: HIR_ZERO,
+          },
+          {
             name: 'creatorIA',
             parameters: ['a'],
             typeParameters: ['A'],
@@ -280,6 +297,14 @@ sources.mains = [main]
                     functionArguments: [G1],
                     returnType: typeI,
                     returnCollector: 'b',
+                  }),
+                  HIR_FUNCTION_CALL({
+                    functionExpression: HIR_NAME(
+                      'functor_fun',
+                      HIR_FUNCTION_TYPE([typeI], HIR_INT_TYPE),
+                    ),
+                    functionArguments: [G1],
+                    returnType: typeI,
                   }),
                   HIR_INDEX_ACCESS({
                     name: 'v1',
@@ -364,12 +389,18 @@ function creatorIB_string(b: string): I_int_string {
   return (v: I_int_string);
 }
 
+function functor_fun_I_int_string(a: I_int_string): int {
+  _I$foo(0);
+  return 0;
+}
+
 function main(): int {
   let finalV: int;
   if 1 {
     let a: I_int_string = creatorIA_int(0);
     let a2: I_int_string = creatorIA_string(G1);
     let b: I_int_string = creatorIB_string(G1);
+    functor_fun_I_int_string(G1);
     let v1: int = (a: I_int_string)[0];
     finalV = (v1: int);
   } else {

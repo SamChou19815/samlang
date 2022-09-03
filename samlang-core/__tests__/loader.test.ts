@@ -12,12 +12,12 @@ describe('samlang-core/loader', () => {
     const log = (...args: readonly unknown[]) => console.log(...args);
     const mockLog = jest.fn();
     console.log = mockLog;
-    f.__Builtins_println?.();
+    f.__Builtins$println?.();
     console.log = log;
     expect(mockLog).toBeCalled();
   });
 
   it('__Builtins_panic test', () => {
-    expect(() => f.__Builtins_panic?.()).toThrow();
+    expect(() => f.__Builtins$panic?.()).toThrow();
   });
 });

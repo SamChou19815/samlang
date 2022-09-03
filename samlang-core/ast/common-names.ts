@@ -6,7 +6,11 @@ export function encodeFunctionNameGlobally(
   functionName: string,
 ): string {
   const encodedModuleReference = moduleReference.map((it) => it.replace(/-/g, '_')).join('$');
-  return `_${encodedModuleReference}_${className}_${functionName}`;
+  return `_${encodedModuleReference}_${className}$${functionName}`;
+}
+
+export function encodeGenericFunctionNameGlobally(className: string, functionName: string): string {
+  return `$GENERICS$_${className}$${functionName}`;
 }
 
 export const encodeBuiltinName = (name: string): string => `_builtin_${name}`;

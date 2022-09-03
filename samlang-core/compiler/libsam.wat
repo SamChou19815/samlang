@@ -410,7 +410,7 @@
   )
   (i32.const 0)
 )
-(func $__Builtins_intToString (type $t0) (param $p0 i32) (result i32)
+(func $__Builtins$intToString (type $t0) (param $p0 i32) (result i32)
   (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32)
   (global.set $g0 (local.tee $l1 (i32.sub (global.get $g0) (i32.const 16))))
   (block $B0
@@ -514,7 +514,7 @@
   )
   (local.get $l3)
 )
-(func $__Builtins_stringToInt (type $t0) (param $p0 i32) (result i32)
+(func $__Builtins$stringToInt (type $t0) (param $p0 i32) (result i32)
   (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32)
   (block $B0
     (br_if $B0 (i32.eqz (local.tee $l1 (i32.load offset=4 (local.get $p0)))))

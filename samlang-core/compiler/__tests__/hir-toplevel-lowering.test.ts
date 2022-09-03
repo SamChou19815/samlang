@@ -59,6 +59,34 @@ describe('mir-toplevel-lowering', () => {
                 functionArguments: [],
               }),
             },
+            {
+              associatedComments: [],
+              location: Location.DUMMY,
+              isPublic: true,
+              isMethod: false,
+              name: SourceId('loopy'),
+              typeParameters: [
+                {
+                  name: SourceId('T'),
+                  bound: null,
+                  associatedComments: [],
+                  location: Location.DUMMY,
+                },
+              ],
+              parameters: [],
+              type: AstBuilder.FunType([], AstBuilder.UnitType),
+              body: SourceExpressionFunctionCall({
+                type: AstBuilder.UnitType,
+                functionExpression: SourceExpressionClassMember({
+                  type: AstBuilder.FunType([], AstBuilder.IntType),
+                  typeArguments: [],
+                  moduleReference: ModuleReference.DUMMY,
+                  className: SourceId('T'),
+                  memberName: SourceId('loopy'),
+                }),
+                functionArguments: [],
+              }),
+            },
           ],
         },
         {
@@ -248,56 +276,66 @@ object type __DUMMY___Main = []
 object type __DUMMY___Class1 = [int]
 variant type __DUMMY___Class2 = []
 object type __DUMMY___Class3<T> = [$SyntheticIDType0<T>]
-function ___DUMMY___Main_main_with_context(_context: int): int {
-  let _ret: int = ___DUMMY___Main_main();
+function ___DUMMY___Main$main_with_context(_context: int): int {
+  let _ret: int = ___DUMMY___Main$main();
   return (_ret: int);
 }
 
-function ___DUMMY___Class1_infiniteLoop_with_context(_context: int): int {
-  let _ret: int = ___DUMMY___Class1_infiniteLoop();
+function ___DUMMY___Main$loopy_with_context<T>(_context: int): int {
+  let _ret: int = ___DUMMY___Main$loopy();
   return (_ret: int);
 }
 
-function ___DUMMY___Class1_factorial_with_context(_context: int, n: int, acc: int): int {
-  let _ret: int = ___DUMMY___Class1_factorial((n: int), (acc: int));
+function ___DUMMY___Class1$infiniteLoop_with_context(_context: int): int {
+  let _ret: int = ___DUMMY___Class1$infiniteLoop();
   return (_ret: int);
 }
 
-function ___DUMMY___Main_init(): __DUMMY___Main {
+function ___DUMMY___Class1$factorial_with_context(_context: int, n: int, acc: int): int {
+  let _ret: int = ___DUMMY___Class1$factorial((n: int), (acc: int));
+  return (_ret: int);
+}
+
+function ___DUMMY___Main$init(): __DUMMY___Main {
   let _struct: __DUMMY___Main = [];
   return (_struct: __DUMMY___Main);
 }
 
-function ___DUMMY___Main_init_with_context(_context: int): __DUMMY___Main {
-  let _ret: __DUMMY___Main = ___DUMMY___Main_init();
+function ___DUMMY___Main$init_with_context(_context: int): __DUMMY___Main {
+  let _ret: __DUMMY___Main = ___DUMMY___Main$init();
   return (_ret: __DUMMY___Main);
 }
 
-function ___DUMMY___Main_main(): int {
-  ___DUMMY___Class1_infiniteLoop();
+function ___DUMMY___Main$main(): int {
+  ___DUMMY___Class1$infiniteLoop();
   return 0;
 }
 
-function ___DUMMY___Class1_init(_f0: int): __DUMMY___Class1 {
+function ___DUMMY___Main$loopy<T>(): int {
+  $GENERICS$_T$loopy();
+  return 0;
+}
+
+function ___DUMMY___Class1$init(_f0: int): __DUMMY___Class1 {
   let _struct: __DUMMY___Class1 = [(_f0: int)];
   return (_struct: __DUMMY___Class1);
 }
 
-function ___DUMMY___Class1_init_with_context(_context: int, _f0: int): __DUMMY___Class1 {
-  let _ret: __DUMMY___Class1 = ___DUMMY___Class1_init((_f0: int));
+function ___DUMMY___Class1$init_with_context(_context: int, _f0: int): __DUMMY___Class1 {
+  let _ret: __DUMMY___Class1 = ___DUMMY___Class1$init((_f0: int));
   return (_ret: __DUMMY___Class1);
 }
 
-function ___DUMMY___Class1_foo(_this: __DUMMY___Class1, a: int): int {
+function ___DUMMY___Class1$foo(_this: __DUMMY___Class1, a: int): int {
   return (_this: __DUMMY___Class1);
 }
 
-function ___DUMMY___Class1_infiniteLoop(): int {
-  ___DUMMY___Class1_infiniteLoop();
+function ___DUMMY___Class1$infiniteLoop(): int {
+  ___DUMMY___Class1$infiniteLoop();
   return 0;
 }
 
-function ___DUMMY___Class1_factorial(n: int, acc: int): int {
+function ___DUMMY___Class1$factorial(n: int, acc: int): int {
   let _t0: bool = (n: int) == 0;
   let _t4: int;
   if (_t0: bool) {
@@ -305,37 +343,37 @@ function ___DUMMY___Class1_factorial(n: int, acc: int): int {
   } else {
     let _t2: int = (n: int) + -1;
     let _t3: int = (n: int) * (acc: int);
-    let _t1: int = ___DUMMY___Class1_factorial((_t2: int), (_t3: int));
+    let _t1: int = ___DUMMY___Class1$factorial((_t2: int), (_t3: int));
     _t4 = (_t1: int);
   }
   return (_t4: int);
 }
 
-function ___DUMMY___Class3_init<T>(_f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {
+function ___DUMMY___Class3$init<T>(_f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {
   let _struct: __DUMMY___Class3<T> = [(_f0: $SyntheticIDType0<T>)];
   return (_struct: __DUMMY___Class3<T>);
 }
 
-function ___DUMMY___Class3_init_with_context<T>(_context: int, _f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {
-  let _ret: __DUMMY___Class3<T> = ___DUMMY___Class3_init((_f0: $SyntheticIDType0<T>));
+function ___DUMMY___Class3$init_with_context<T>(_context: int, _f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {
+  let _ret: __DUMMY___Class3<T> = ___DUMMY___Class3$init((_f0: $SyntheticIDType0<T>));
   return (_ret: __DUMMY___Class3<T>);
 }
 
-sources.mains = [___DUMMY___Main_main]`,
+sources.mains = [___DUMMY___Main$main]`,
     );
 
     expect(`\n${debugPrintHighIRSources(compileSamlangSourcesToHighIRSources(sources))}`).toBe(`
-function ___DUMMY___Class1_infiniteLoop(): int {
+function ___DUMMY___Class1$infiniteLoop(): int {
   while (true) {
   }
   return 0;
 }
 
-function ___DUMMY___Main_main(): int {
-  ___DUMMY___Class1_infiniteLoop();
+function ___DUMMY___Main$main(): int {
+  ___DUMMY___Class1$infiniteLoop();
   return 0;
 }
 
-sources.mains = [___DUMMY___Main_main]`);
+sources.mains = [___DUMMY___Main$main]`);
   });
 });

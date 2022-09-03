@@ -50,8 +50,8 @@ describe('printer-js', () => {
     );
     expect(prettyPrintMidIRSourcesAsJSSources(mirSources)).toBe(
       `const GLOBAL_STRING_0 = [0, "Hello World!"];
-function _Test_Main_main() {
-  __Builtins_println(GLOBAL_STRING_0);
+function _Test_Main$main() {
+  __Builtins$println(GLOBAL_STRING_0);
   return 0;
 }
 `,
