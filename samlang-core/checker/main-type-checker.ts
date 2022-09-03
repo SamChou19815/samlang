@@ -35,8 +35,10 @@ import {
   SourceFunctionType,
   SourceIdentifier,
   SourceIdentifierType,
+  SourceInterfaceDeclaration,
   SourceIntType,
   SourceStringType,
+  SourceTypeParameter,
   SourceUnitType,
   SourceUnknownType,
   StatementBlockExpression,
@@ -754,7 +756,7 @@ class ExpressionTypeChecker {
     });
   }
 
-  private inferLambdaTypeParameters(
+  private inferLambdaParameterTypes(
     expression: LambdaExpression,
     hint: SamlangType | null,
   ): readonly SamlangType[] {
@@ -790,6 +792,7 @@ class ExpressionTypeChecker {
     }
     return expression.parameters.map(({ name, typeAnnotation }) => {
       const type = typeAnnotation ?? SourceUnknownType(SourceReason(name.location, null));
+      this.context.validateTypeInstantiation(type);
       if (type.__type__ === 'UnknownType') {
         this.errorReporter.reportInsufficientTypeInferenceContextError(name.location);
       }
@@ -802,7 +805,7 @@ class ExpressionTypeChecker {
     expression: LambdaExpression,
     hint: SamlangType | null,
   ): SamlangExpression {
-    const argumentTypes = this.inferLambdaTypeParameters(expression, hint);
+    const argumentTypes = this.inferLambdaParameterTypes(expression, hint);
     const bodyTypeHint = hint != null && hint.__type__ === 'FunctionType' ? hint.returnType : null;
     const body = this.typeCheck(expression.body, bodyTypeHint);
     const captured = this.localTypingContext.getCaptured(expression.location);
@@ -850,6 +853,7 @@ class ExpressionTypeChecker {
 
   private typeCheckValStatement(statement: SamlangValStatement): SamlangValStatement {
     const { location, pattern, typeAnnotation, assignedExpression } = statement;
+    if (typeAnnotation != null) this.context.validateTypeInstantiation(typeAnnotation);
     const checkedAssignedExpression = this.typeCheck(assignedExpression, typeAnnotation);
     const checkedAssignedExpressionType = checkedAssignedExpression.type;
     let checkedPattern: Pattern;
@@ -944,6 +948,71 @@ export function typeCheckExpression(
   return new ExpressionTypeChecker(context).typeCheck(expression, hint);
 }
 
+function typeParameterToSignatures(
+  typeParameters: readonly SourceTypeParameter[],
+): readonly TypeParameterSignature[] {
+  return typeParameters.map((it) => ({ name: it.name.name, bound: it.bound }));
+}
+
+function validateSignatureTypes(
+  interfaceDeclaration: SourceInterfaceDeclaration,
+  globalTypingContext: GlobalTypingContext,
+  localTypingContext: LocationBasedLocalTypingContext,
+  moduleReference: ModuleReference,
+  errorReporter: GlobalErrorReporter,
+): void {
+  const contextWithTypeLevelTypeParameters = new TypingContext(
+    globalTypingContext,
+    localTypingContext,
+    errorReporter,
+    moduleReference,
+    interfaceDeclaration.name.name,
+    typeParameterToSignatures(interfaceDeclaration.typeParameters),
+  );
+  const contextWithoutTypeParameters = new TypingContext(
+    globalTypingContext,
+    localTypingContext,
+    errorReporter,
+    moduleReference,
+    interfaceDeclaration.name.name,
+    [],
+  );
+  interfaceDeclaration.typeParameters.forEach((it) => {
+    if (it.bound != null) {
+      contextWithoutTypeParameters.validateTypeInstantiation(it.bound);
+    }
+  });
+  if (interfaceDeclaration.extendsOrImplementsNode != null) {
+    contextWithTypeLevelTypeParameters.validateTypeInstantiation(
+      interfaceDeclaration.extendsOrImplementsNode,
+    );
+  }
+  if (interfaceDeclaration.typeDefinition != null) {
+    for (const fieldType of interfaceDeclaration.typeDefinition.mappings.values()) {
+      contextWithTypeLevelTypeParameters.validateTypeInstantiation(fieldType.type);
+    }
+  }
+  interfaceDeclaration.members.forEach((member) => {
+    member.typeParameters.forEach((it) => {
+      if (it.bound != null) {
+        contextWithoutTypeParameters.validateTypeInstantiation(it.bound);
+      }
+    });
+    new TypingContext(
+      globalTypingContext,
+      localTypingContext,
+      errorReporter,
+      moduleReference,
+      interfaceDeclaration.name.name,
+      typeParameterToSignatures(
+        member.isMethod
+          ? [...interfaceDeclaration.typeParameters, ...member.typeParameters]
+          : member.typeParameters,
+      ),
+    ).validateTypeInstantiation(member.type);
+  });
+}
+
 export function typeCheckSamlangModule(
   moduleReference: ModuleReference,
   samlangModule: SamlangModule,
@@ -954,6 +1023,13 @@ export function typeCheckSamlangModule(
   const localTypingContext = new LocationBasedLocalTypingContext(ssaResult);
 
   samlangModule.interfaces.forEach((interfaceDeclaration) => {
+    validateSignatureTypes(
+      interfaceDeclaration,
+      globalTypingContext,
+      localTypingContext,
+      moduleReference,
+      errorReporter,
+    );
     interfaceDeclaration.members.forEach((member) => {
       member.parameters.forEach((parameter) => {
         localTypingContext.write(parameter.nameLocation, parameter.type);
@@ -962,6 +1038,13 @@ export function typeCheckSamlangModule(
   });
 
   samlangModule.classes.forEach((classDefinition) => {
+    validateSignatureTypes(
+      classDefinition,
+      globalTypingContext,
+      localTypingContext,
+      moduleReference,
+      errorReporter,
+    );
     localTypingContext.write(
       classDefinition.location,
       SourceIdentifierType(
@@ -987,18 +1070,17 @@ export function typeCheckSamlangModule(
   const checkedClasses = samlangModule.classes.map((classDefinition): SourceClassDefinition => {
     const checkedMembers: SourceClassMemberDefinition[] = [];
     classDefinition.members.forEach((member) => {
-      const typeParameterSignatures: readonly TypeParameterSignature[] = (
-        member.isMethod
-          ? [...classDefinition.typeParameters, ...member.typeParameters]
-          : member.typeParameters
-      ).map((it) => ({ name: it.name.name, bound: it.bound }));
       const context = new TypingContext(
         globalTypingContext,
         localTypingContext,
         errorReporter,
         moduleReference,
         classDefinition.name.name,
-        typeParameterSignatures,
+        typeParameterToSignatures(
+          member.isMethod
+            ? [...classDefinition.typeParameters, ...member.typeParameters]
+            : member.typeParameters,
+        ),
       );
       checkedMembers.push({
         location: member.location,
