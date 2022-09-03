@@ -243,8 +243,32 @@ describe('function-call-type-checker', () => {
     ).toEqual({
       solvedGenericType: '((int) -> int) -> bool',
       checkedArgumentsTypes: ['(int) -> int'],
+      errors: [],
+    });
+
+    expect(
+      typeCheck(
+        AstBuilder.FunType(
+          [AstBuilder.FunType([IdType('A')], AstBuilder.IntType)],
+          AstBuilder.BoolType,
+        ),
+        [{ name: 'A', bound: IdType('B') }],
+        [
+          SourceExpressionLambda({
+            type: AstBuilder.FunType([AstBuilder.IntType], AstBuilder.IntType),
+            parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.IntType }],
+            captured: new Map(),
+            body: AstBuilder.TRUE,
+          }),
+        ],
+        null,
+        false,
+      ),
+    ).toEqual({
+      solvedGenericType: '((int) -> int) -> bool',
+      checkedArgumentsTypes: ['(int) -> int'],
       errors: [
-        '__DUMMY__.sam:0:0-0:0: [UnexpectedSubType]: Expected: subtype of `A`, actual: `int`.',
+        '__DUMMY__.sam:0:0-0:0: [UnexpectedSubType]: Expected: subtype of `B`, actual: `int`.',
       ],
     });
   });

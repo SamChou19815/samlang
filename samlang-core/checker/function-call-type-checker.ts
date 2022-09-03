@@ -1,5 +1,6 @@
 import type { SamlangReason } from '../ast/common-nodes';
 import {
+  isTheSameType,
   SamlangExpression,
   SamlangFunctionType,
   SamlangIdentifierType,
@@ -156,15 +157,23 @@ export default function typeCheckFunctionCall(
     errorReporter,
   );
 
+  const fullSolutionSubstitution = new Map(fullySolvedSubstitution);
+  partiallySolvedSubstitution.forEach((type, name) => fullSolutionSubstitution.set(name, type));
   typeParameters.forEach(({ name, bound }) => {
-    const solvedTypeArgument =
-      fullySolvedSubstitution.get(name) || partiallySolvedSubstitution.get(name);
-    if (solvedTypeArgument != null && bound != null && !isSubtype(solvedTypeArgument, bound)) {
-      errorReporter.reportUnexpectedSubtypeError(
-        solvedTypeArgument.reason.useLocation,
-        bound,
-        solvedTypeArgument,
-      );
+    const solvedTypeArgument = fullSolutionSubstitution.get(name);
+    if (solvedTypeArgument != null && bound != null) {
+      const substitutedBound = performTypeSubstitution(bound, fullSolutionSubstitution);
+      if (
+        !isTheSameType(solvedTypeArgument, substitutedBound) &&
+        (substitutedBound.__type__ !== 'IdentifierType' ||
+          !isSubtype(solvedTypeArgument, substitutedBound))
+      ) {
+        errorReporter.reportUnexpectedSubtypeError(
+          solvedTypeArgument.reason.useLocation,
+          substitutedBound,
+          solvedTypeArgument,
+        );
+      }
     }
   });
 
