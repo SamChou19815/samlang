@@ -62,8 +62,11 @@ class SsaBuilder extends LocalStackedContext<Location> {
 
     interfaces.forEach((interfaceDeclaration) => {
       this.withNestedScope(() => {
-        interfaceDeclaration.typeParameters.forEach(({ bound }) => {
-          if (bound != null) this.visitType(bound);
+        this.withNestedScope(() => {
+          this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
+          interfaceDeclaration.typeParameters.forEach(({ bound }) => {
+            if (bound != null) this.visitType(bound);
+          });
         });
         const extendsOrImplementsNode = interfaceDeclaration.extendsOrImplementsNode;
         if (extendsOrImplementsNode != null) {
@@ -105,10 +108,10 @@ class SsaBuilder extends LocalStackedContext<Location> {
   private visitMembers(members: readonly SourceClassMemberDeclaration[]): void {
     members.forEach((member) => {
       this.withNestedScope(() => {
+        this.defineAll(member.typeParameters.map((it) => it.name));
         member.typeParameters.forEach(({ bound }) => {
           if (bound != null) this.visitType(bound);
         });
-        this.defineAll(member.typeParameters.map((it) => it.name));
         member.parameters.forEach(({ name, nameLocation: location, type }) => {
           this.define({ name, location });
           this.visitType(type);
