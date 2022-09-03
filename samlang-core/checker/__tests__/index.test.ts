@@ -210,7 +210,6 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       'A.sam:34:3-34:64: [UnexpectedType]: Expected: `(string, bool) -> TC`, actual: `(string, string) -> TC`.',
       'A.sam:37:11-37:13: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected `TC`, actual: TD.',
       'A.sam:38:17-38:19: [UnexpectedTypeKind]: Expected kind: `unbounded type parameter`, actual: `bounded type parameter`.',
-      'A.sam:38:17-38:19: [UnresolvedName]: Name `TA` is not resolved.',
       'A.sam:42:3-42:9: [UnexpectedTypeKind]: Expected kind: `bounded type parameter`, actual: `unbounded type parameter`.',
       'A.sam:45:3-45:9: [ArityMismatchError]: Incorrect type parameters size. Expected: 1, actual: 0.',
       'A.sam:48:3-48:9: [UnexpectedType]: Expected: `Foo`, actual: `Bar`.',

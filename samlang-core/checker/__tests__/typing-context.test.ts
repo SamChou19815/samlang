@@ -107,7 +107,7 @@ describe('typing-context', () => {
       errorCollector.getErrorReporter(),
       ModuleReference.DUMMY,
       'A',
-      /* availableTypeParameters */ [],
+      /* availableTypeParameters */ [{ name: 'TPARAM', bound: null }],
     );
 
     context.validateTypeInstantiation(AstBuilder.IntType);
@@ -115,12 +115,15 @@ describe('typing-context', () => {
       AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
     );
     context.validateTypeInstantiation({ __type__: 'UnknownType', reason: DummySourceReason });
+    context.validateTypeInstantiation(AstBuilder.IdType('TPARAM'));
+    context.validateTypeInstantiation(AstBuilder.IdType('TPARAM', [AstBuilder.IntType]));
     context.validateTypeInstantiation(AstBuilder.IdType('T'));
     context.validateTypeInstantiation(AstBuilder.IdType('A'));
     context.validateTypeInstantiation(
       AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([
+      '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
       '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 2, actual: 0.',
       '__DUMMY__.sam:0:0-0:0: [UnexpectedSubType]: Expected: subtype of `A`, actual: `int`.',
     ]);
@@ -196,6 +199,7 @@ describe('typing-context', () => {
       /* availableTypeParameters */ [
         { name: 'TT1', bound: AstBuilder.IdType('A') },
         { name: 'TT2', bound: null },
+        { name: 'TT3', bound: AstBuilder.IdType('sdfasdfasfs') },
       ],
     );
 
@@ -231,6 +235,7 @@ describe('typing-context', () => {
       createBuiltinFunction('f1', [], AstBuilder.IntType, ['C'])[1],
     );
     expect(context.getFunctionType(ModuleReference.DUMMY, 'TT2', 'f1', Location.DUMMY)).toBeNull();
+    expect(context.getFunctionType(ModuleReference.DUMMY, 'TT3', 'f1', Location.DUMMY)).toBeNull();
   });
 
   it('TypingContext.resolveTypeDefinition tests', () => {

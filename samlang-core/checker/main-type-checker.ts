@@ -969,18 +969,8 @@ function validateSignatureTypes(
     interfaceDeclaration.name.name,
     typeParameterToSignatures(interfaceDeclaration.typeParameters),
   );
-  const contextWithoutTypeParameters = new TypingContext(
-    globalTypingContext,
-    localTypingContext,
-    errorReporter,
-    moduleReference,
-    interfaceDeclaration.name.name,
-    [],
-  );
   interfaceDeclaration.typeParameters.forEach((it) => {
-    if (it.bound != null) {
-      contextWithoutTypeParameters.validateTypeInstantiation(it.bound);
-    }
+    if (it.bound != null) contextWithTypeLevelTypeParameters.validateTypeInstantiation(it.bound);
   });
   if (interfaceDeclaration.extendsOrImplementsNode != null) {
     contextWithTypeLevelTypeParameters.validateTypeInstantiation(
@@ -993,12 +983,7 @@ function validateSignatureTypes(
     }
   }
   interfaceDeclaration.members.forEach((member) => {
-    member.typeParameters.forEach((it) => {
-      if (it.bound != null) {
-        contextWithoutTypeParameters.validateTypeInstantiation(it.bound);
-      }
-    });
-    new TypingContext(
+    const memberContext = new TypingContext(
       globalTypingContext,
       localTypingContext,
       errorReporter,
@@ -1009,7 +994,11 @@ function validateSignatureTypes(
           ? [...interfaceDeclaration.typeParameters, ...member.typeParameters]
           : member.typeParameters,
       ),
-    ).validateTypeInstantiation(member.type);
+    );
+    member.typeParameters.forEach((it) => {
+      if (it.bound != null) memberContext.validateTypeInstantiation(it.bound);
+    });
+    memberContext.validateTypeInstantiation(member.type);
   });
 }
 
