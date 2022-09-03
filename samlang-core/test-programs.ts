@@ -79,6 +79,24 @@ class Main {
 `,
   },
   {
+    testName: 'bounded-generics',
+    sourceCode: `
+interface Comparable<T> {
+  method compare(other: T): int
+}
+class BoxedInt(val i: int): Comparable<BoxedInt> {
+  method compare(other: BoxedInt): int = this.i - other.i
+}
+class TwoItemCompare {
+  function <C: Comparable<C>> compare(v1: C, v2: C): int =
+    v1.compare(v2)
+}
+class Pair<T: Comparable<T>>(val v1: T, val v2: T) {
+  method relation(): int = TwoItemCompare.compare(this.v1, this.v2)
+}
+`,
+  },
+  {
     testName: 'complete-trash',
     sourceCode: `This is a bad source.`,
   },
