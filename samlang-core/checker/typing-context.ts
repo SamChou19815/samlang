@@ -159,6 +159,19 @@ export class TypingContext {
       this.validateTypeInstantiation(type.returnType);
       return;
     }
+    // Generic type is assumed to be good, but it must have zero type args.
+    if (this.availableTypeParameters.some((it) => it.name === type.identifier)) {
+      if (type.typeArguments.length !== 0) {
+        this.errorReporter.reportArityMismatchError(
+          type.reason.useLocation,
+          'type arguments',
+          0,
+          type.typeArguments.length,
+        );
+        return;
+      }
+      return;
+    }
     type.typeArguments.forEach((it) => this.validateTypeInstantiation(it));
     const interfaceInformation = this.getInterfaceInformation(
       type.moduleReference,
