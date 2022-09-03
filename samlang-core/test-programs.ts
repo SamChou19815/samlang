@@ -329,6 +329,18 @@ class Main {
 `,
   },
   {
+    testName: 'pipe',
+    sourceCode: `
+class Main {
+  function <A, B, C> pipe(a: A, f1: (A)->B, f2: (B)->C): C = f2(f1(a))
+
+  function main(): unit = {
+    val _ = Main.pipe(1, (n) -> Builtins.intToString(n), (s) -> Builtins.stringToInt(s))
+  }
+}
+`,
+  },
+  {
     testName: 'polymorphic-option',
     sourceCode: `
 class Option<T>(Some(T), None(bool)) {

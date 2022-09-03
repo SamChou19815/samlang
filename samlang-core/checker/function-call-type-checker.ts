@@ -10,7 +10,7 @@ import {
   typeReposition,
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
-import { assert, zip } from '../utils';
+import { assert, checkNotNull, zip } from '../utils';
 import contextualTypeMeet from './contextual-type-meet';
 import { solveMultipleTypeConstraints } from './type-constraints-solver';
 import performTypeSubstitution from './type-substitution';
@@ -50,10 +50,42 @@ function argumentShouldBeTypeCheckedWithoutHint(expression: SamlangExpression): 
   }
 }
 
-interface FunctionCallTypeCheckingResult {
-  readonly solvedGenericType: SamlangFunctionType;
-  readonly solvedReturnType: SamlangType;
-  readonly checkedArguments: readonly SamlangExpression[];
+/**
+ * Solve type arguments with the best effort with the provided information.
+ * A function type with potentially less unknown slots will be returned.
+ */
+function solveTypeArguments(
+  functionCallReason: SamlangReason,
+  genericFunctionType: SamlangFunctionType,
+  typeParameters: readonly TypeParameterSignature[],
+  argumentTypes: readonly SamlangType[],
+  returnTypeHint: SamlangType | null,
+): SamlangFunctionType {
+  const constraints = zip(genericFunctionType.argumentTypes, argumentTypes).map(
+    ([genericType, concreteType]) => ({
+      genericType,
+      concreteType,
+    }),
+  );
+  if (returnTypeHint != null) {
+    constraints.push({
+      genericType: genericFunctionType.returnType,
+      concreteType: returnTypeHint,
+    });
+  }
+  const partiallySolvedSubstitution = solveMultipleTypeConstraints(constraints, typeParameters);
+  typeParameters.forEach((typeParameter) => {
+    if (!partiallySolvedSubstitution.has(typeParameter.name)) {
+      // Fill in unknown for unsolved types.
+      partiallySolvedSubstitution.set(typeParameter.name, SourceUnknownType(functionCallReason));
+    }
+  });
+  const partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown = performTypeSubstitution(
+    genericFunctionType,
+    partiallySolvedSubstitution,
+  );
+  assert(partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.__type__ === 'FunctionType');
+  return partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown;
 }
 
 export function validateTypeArguments(
@@ -81,6 +113,12 @@ export function validateTypeArguments(
   });
 }
 
+interface FunctionCallTypeCheckingResult {
+  readonly solvedGenericType: SamlangFunctionType;
+  readonly solvedReturnType: SamlangType;
+  readonly checkedArguments: readonly SamlangExpression[];
+}
+
 export default function typeCheckFunctionCall(
   genericFunctionType: SamlangFunctionType,
   typeParameters: readonly TypeParameterSignature[],
@@ -104,6 +142,7 @@ export default function typeCheckFunctionCall(
       checkedArguments: functionArguments,
     };
   }
+  // Phase 0: Initial Synthesis
   const partiallyCheckedArguments = functionArguments.map((it) => {
     if (argumentShouldBeTypeCheckedWithoutHint(it)) {
       return { e: typeCheck(it, null), checked: true };
@@ -111,57 +150,42 @@ export default function typeCheckFunctionCall(
       return { e: it, checked: false };
     }
   });
-  // Phase 1: Best effort inference through arguments that can be independently typed.
-  const partiallySolvedSubstitution = solveMultipleTypeConstraints(
-    zip(
-      genericFunctionType.argumentTypes,
+  // Phase 1-n: Best effort inference through arguments that are already checked.
+  for (let i = 0; i < partiallyCheckedArguments.length; i++) {
+    const partiallyCheckedExpression = checkNotNull(partiallyCheckedArguments[i]);
+    const bestEffortInstantiatedFunctionType = solveTypeArguments(
+      functionCallReason,
+      genericFunctionType,
+      typeParameters,
       partiallyCheckedArguments.map((it) => it.e.type),
-    ).map(([genericType, concreteType]) => ({ genericType, concreteType })),
-    typeParameters,
-  );
-  const partiallySolvedGenericType = performTypeSubstitution(
-    genericFunctionType,
-    partiallySolvedSubstitution,
-  );
-  const unsolvedTypeParameters = typeParameters.filter(
-    (typeParameter) => !partiallySolvedSubstitution.has(typeParameter.name),
-  );
-  assert(partiallySolvedGenericType.__type__ === 'FunctionType');
-  typeParameters.forEach((typeParameter) => {
-    if (!partiallySolvedSubstitution.has(typeParameter.name)) {
-      // Fill in unknown for unsolved types.
-      partiallySolvedSubstitution.set(typeParameter.name, SourceUnknownType(functionCallReason));
-    }
-  });
-  const partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown = performTypeSubstitution(
-    genericFunctionType,
-    partiallySolvedSubstitution,
-  );
-  assert(partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.__type__ === 'FunctionType');
-  const partiallySolvedConcreteArgumentTypes = zip(
-    partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.argumentTypes,
-    partiallyCheckedArguments.map((it) => it.e.type),
-  ).map(([g, s]) => contextualTypeMeet(g, s, errorReporter));
-  const checkedArguments = zip(partiallyCheckedArguments, partiallySolvedConcreteArgumentTypes).map(
-    ([{ e, checked }, hint]) => (checked ? e : typeCheck(e, hint)),
-  );
+      returnTypeHint,
+    );
+    const hint = contextualTypeMeet(
+      checkNotNull(bestEffortInstantiatedFunctionType.argumentTypes[i]),
+      partiallyCheckedExpression.e.type,
+      errorReporter,
+    );
+    if (partiallyCheckedExpression.checked) continue;
+    const fullyCheckedExpression = typeCheck(partiallyCheckedExpression.e, hint);
+    partiallyCheckedArguments[i] = { e: fullyCheckedExpression, checked: true };
+  }
 
-  // Phase 2: Use fully checked arguments to infer remaining type parameters.
-  const phase2ArgumentsConstraints = zip(
-    partiallySolvedGenericType.argumentTypes,
-    checkedArguments.map((it) => it.type),
+  // Phase n+1: Use fully checked arguments to infer remaining type parameters.
+  const finalPhaseArgumentsConstraints = zip(
+    genericFunctionType.argumentTypes,
+    partiallyCheckedArguments.map((it) => it.e.type),
   ).map(([genericType, concreteType]) => ({ genericType, concreteType }));
   if (returnTypeHint != null) {
-    phase2ArgumentsConstraints.push({
-      genericType: partiallySolvedGenericType.returnType,
+    finalPhaseArgumentsConstraints.push({
+      genericType: genericFunctionType.returnType,
       concreteType: returnTypeHint,
     });
   }
   const fullySolvedSubstitution = solveMultipleTypeConstraints(
-    phase2ArgumentsConstraints,
-    unsolvedTypeParameters,
+    finalPhaseArgumentsConstraints,
+    typeParameters,
   );
-  const stillUnresolvedTypeParameters = unsolvedTypeParameters.filter(
+  const stillUnresolvedTypeParameters = typeParameters.filter(
     (typeParameter) => !fullySolvedSubstitution.has(typeParameter.name),
   );
   stillUnresolvedTypeParameters.forEach((typeParameter) => {
@@ -172,7 +196,7 @@ export default function typeCheckFunctionCall(
     errorReporter.reportInsufficientTypeInferenceContextError(functionCallReason.useLocation);
   }
   const fullySolvedGenericType = performTypeSubstitution(
-    partiallySolvedGenericType,
+    genericFunctionType,
     fullySolvedSubstitution,
   );
   assert(fullySolvedGenericType.__type__ === 'FunctionType');
@@ -182,9 +206,8 @@ export default function typeCheckFunctionCall(
     errorReporter,
   );
 
-  const fullSolutionSubstitution = new Map(fullySolvedSubstitution);
-  partiallySolvedSubstitution.forEach((type, name) => fullSolutionSubstitution.set(name, type));
-  validateTypeArguments(typeParameters, fullSolutionSubstitution, isSubtype, errorReporter);
+  validateTypeArguments(typeParameters, fullySolvedSubstitution, isSubtype, errorReporter);
+  const checkedArguments = partiallyCheckedArguments.map((it) => it.e);
 
   return {
     solvedGenericType: fullySolvedGenericType,
