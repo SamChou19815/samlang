@@ -12,12 +12,13 @@ import {
   SamlangIdentifierType,
   SamlangType,
   SourceFieldType,
+  SourceIdentifierType,
   SourceUnknownType,
   TypeParameterSignature,
   typeReposition,
 } from '../ast/samlang-nodes';
 import type { GlobalErrorReporter } from '../errors';
-import { assert, checkNotNull, ReadonlyHashMap, zip } from '../utils';
+import { checkNotNull, ReadonlyHashMap, zip } from '../utils';
 import type { SsaAnalysisResult } from './ssa-analysis';
 import performTypeSubstitution from './type-substitution';
 
@@ -50,6 +51,34 @@ export class LocationBasedLocalTypingContext {
     }
     return map;
   }
+}
+
+function instantiateInterfaceContext(
+  potentiallyNotInstantiatedInterfaceInformation: InterfaceTypingContext,
+  idType: SamlangIdentifierType,
+): InterfaceTypingContext {
+  const substitutionMap = new Map(
+    zip(
+      potentiallyNotInstantiatedInterfaceInformation.typeParameters
+        .slice(0, idType.typeArguments.length)
+        .map((it) => it.name),
+      idType.typeArguments,
+    ),
+  );
+  const methods = new Map<string, MemberTypeInformation>();
+  for (const [name, info] of potentiallyNotInstantiatedInterfaceInformation.methods.entries()) {
+    methods.set(name, {
+      isPublic: info.isPublic,
+      typeParameters: info.typeParameters,
+      type: performTypeSubstitution(info.type, substitutionMap) as SamlangFunctionType,
+    });
+  }
+  return {
+    functions: potentiallyNotInstantiatedInterfaceInformation.functions,
+    methods,
+    typeParameters: [],
+    superTypes: [...potentiallyNotInstantiatedInterfaceInformation.superTypes, idType],
+  };
 }
 
 export interface MemberTypeInformation {
@@ -100,6 +129,8 @@ export class TypingContext {
     public readonly availableTypeParameters: readonly TypeParameterSignature[],
   ) {}
 
+  // needed get instantiated interface info
+
   private getInterfaceInformation(
     moduleReference: ModuleReference,
     identifier: string,
@@ -111,39 +142,13 @@ export class TypingContext {
         // but it won't produce any good information either.
         return { functions: new Map(), methods: new Map(), typeParameters: [], superTypes: [] };
       }
-      const potentiallyNotInstantiatedInterfaceInformation =
+      const interfaceContext =
         this.dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
           relevantTypeParameter.bound.moduleReference,
           relevantTypeParameter.bound.identifier,
         );
-      if (potentiallyNotInstantiatedInterfaceInformation == null) {
-        return undefined;
-      }
-      const substitutionMap = new Map(
-        zip(
-          potentiallyNotInstantiatedInterfaceInformation.typeParameters
-            .slice(0, relevantTypeParameter.bound.typeArguments.length)
-            .map((it) => it.name),
-          relevantTypeParameter.bound.typeArguments,
-        ),
-      );
-      const methods = new Map<string, MemberTypeInformation>();
-      for (const [name, info] of potentiallyNotInstantiatedInterfaceInformation.methods.entries()) {
-        methods.set(name, {
-          isPublic: info.isPublic,
-          typeParameters: info.typeParameters,
-          type: performTypeSubstitution(info.type, substitutionMap) as SamlangFunctionType,
-        });
-      }
-      return {
-        functions: potentiallyNotInstantiatedInterfaceInformation.functions,
-        methods,
-        typeParameters: [],
-        superTypes: [
-          ...potentiallyNotInstantiatedInterfaceInformation.superTypes,
-          relevantTypeParameter.bound,
-        ],
-      };
+      if (interfaceContext == null) return undefined;
+      return instantiateInterfaceContext(interfaceContext, relevantTypeParameter.bound);
     }
     return this.dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
       moduleReference,
@@ -260,22 +265,19 @@ export class TypingContext {
   ): MemberTypeInformation | null {
     const relaventClass = this.getInterfaceInformation(moduleReference, className);
     if (relaventClass == null) return null;
-    const typeInfo = relaventClass.methods?.get(methodName);
-    if (typeInfo == null || (!typeInfo.isPublic && className !== this.currentClass)) return null;
-    const classTypeParameters = relaventClass.typeParameters;
-    const partiallyFixedType = performTypeSubstitution(
-      typeInfo.type,
-      new Map(
-        zip(
-          classTypeParameters.map((it) => it.name),
-          classTypeArguments,
-        ),
+    const typeInfo = instantiateInterfaceContext(
+      relaventClass,
+      SourceIdentifierType(
+        SourceReason(useLocation, null),
+        moduleReference,
+        className,
+        classTypeArguments,
       ),
-    );
-    assert(partiallyFixedType.__type__ === 'FunctionType');
+    ).methods?.get(methodName);
+    if (typeInfo == null || (!typeInfo.isPublic && className !== this.currentClass)) return null;
     return {
       isPublic: typeInfo.isPublic,
-      type: typeReposition(partiallyFixedType, useLocation),
+      type: typeReposition(typeInfo.type, useLocation),
       typeParameters: typeInfo.typeParameters,
     };
   }
