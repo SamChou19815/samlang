@@ -111,10 +111,39 @@ export class TypingContext {
         // but it won't produce any good information either.
         return { functions: new Map(), methods: new Map(), typeParameters: [], superTypes: [] };
       }
-      return this.dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
-        relevantTypeParameter.bound.moduleReference,
-        relevantTypeParameter.bound.identifier,
+      const potentiallyNotInstantiatedInterfaceInformation =
+        this.dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
+          relevantTypeParameter.bound.moduleReference,
+          relevantTypeParameter.bound.identifier,
+        );
+      if (potentiallyNotInstantiatedInterfaceInformation == null) {
+        return undefined;
+      }
+      const substitutionMap = new Map(
+        zip(
+          potentiallyNotInstantiatedInterfaceInformation.typeParameters
+            .slice(0, relevantTypeParameter.bound.typeArguments.length)
+            .map((it) => it.name),
+          relevantTypeParameter.bound.typeArguments,
+        ),
       );
+      const methods = new Map<string, MemberTypeInformation>();
+      for (const [name, info] of potentiallyNotInstantiatedInterfaceInformation.methods.entries()) {
+        methods.set(name, {
+          isPublic: info.isPublic,
+          typeParameters: info.typeParameters,
+          type: performTypeSubstitution(info.type, substitutionMap) as SamlangFunctionType,
+        });
+      }
+      return {
+        functions: potentiallyNotInstantiatedInterfaceInformation.functions,
+        methods,
+        typeParameters: [],
+        superTypes: [
+          ...potentiallyNotInstantiatedInterfaceInformation.superTypes,
+          relevantTypeParameter.bound,
+        ],
+      };
     }
     return this.dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
       moduleReference,

@@ -199,6 +199,7 @@ describe('typing-context', () => {
       /* availableTypeParameters */ [
         { name: 'TT1', bound: AstBuilder.IdType('A') },
         { name: 'TT2', bound: null },
+        { name: 'TT3', bound: AstBuilder.IdType('sdfasdfasfs') },
       ],
     );
 
@@ -234,6 +235,7 @@ describe('typing-context', () => {
       createBuiltinFunction('f1', [], AstBuilder.IntType, ['C'])[1],
     );
     expect(context.getFunctionType(ModuleReference.DUMMY, 'TT2', 'f1', Location.DUMMY)).toBeNull();
+    expect(context.getFunctionType(ModuleReference.DUMMY, 'TT3', 'f1', Location.DUMMY)).toBeNull();
   });
 
   it('TypingContext.resolveTypeDefinition tests', () => {
