@@ -92,7 +92,9 @@ class TwoItemCompare {
     v1.compare(v2)
 }
 class Pair<T: Comparable<T>>(val v1: T, val v2: T) {
-  method relation(): int = TwoItemCompare.compare(this.v1, this.v2)
+  method relation1(): int = TwoItemCompare.compare(this.v1, this.v2)
+  method relation2(): int = TwoItemCompare.compare<T>(this.v1, this.v2)
+  method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2)
 }
 `,
   },

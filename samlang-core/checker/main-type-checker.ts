@@ -51,7 +51,7 @@ import {
 import type { GlobalErrorReporter } from '../errors';
 import { assert, checkNotNull, filterMap, zip } from '../utils';
 import contextualTypeMeet from './contextual-type-meet';
-import typeCheckFunctionCall from './function-call-type-checker';
+import typeCheckFunctionCall, { validateTypeArguments } from './function-call-type-checker';
 import performSSAAnalysisOnSamlangModule from './ssa-analysis';
 import { solveTypeConstraints } from './type-constraints-solver';
 import performTypeSubstitution from './type-substitution';
@@ -177,17 +177,21 @@ class ExpressionTypeChecker {
     }
     if (expression.typeArguments.length !== 0) {
       if (expression.typeArguments.length === classFunctionTypeInformation.typeParameters.length) {
+        const substitutionMap = new Map(
+          zip(
+            classFunctionTypeInformation.typeParameters.map((it) => it.name),
+            expression.typeArguments,
+          ),
+        );
+        validateTypeArguments(
+          classFunctionTypeInformation.typeParameters,
+          substitutionMap,
+          this.context.isSubtype,
+          this.errorReporter,
+        );
         const type = this.typeMeet(
           hint,
-          performTypeSubstitution(
-            classFunctionTypeInformation.type,
-            new Map(
-              zip(
-                classFunctionTypeInformation.typeParameters.map((it) => it.name),
-                expression.typeArguments,
-              ),
-            ),
-          ),
+          performTypeSubstitution(classFunctionTypeInformation.type, substitutionMap),
         );
         const partiallyCheckedExpression = SourceExpressionClassMember({
           location: expression.location,
