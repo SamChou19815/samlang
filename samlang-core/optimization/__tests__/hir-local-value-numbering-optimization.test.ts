@@ -92,8 +92,7 @@ describe('mir-local-value-numbering-optimization', () => {
         HIR_CLOSURE_INITIALIZATION({
           closureVariableName: 's',
           closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('S'),
-          functionName: 'a',
-          functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          functionName: HIR_FUNCTION_NAME('a', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
           context: HIR_ZERO,
         }),
         HIR_FUNCTION_CALL({

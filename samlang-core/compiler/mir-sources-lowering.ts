@@ -654,12 +654,12 @@ class HighIRToMidIRLoweringManager {
       }
       case 'HighIRClosureInitializationStatement': {
         const closureType = lowerHighIRType(statement.closureType);
-        const originalFunctionType = lowerHighIRFunctionType(statement.functionType);
+        const originalFunctionType = lowerHighIRFunctionType(statement.functionName.type);
         const typeErasedClosureType = MIR_FUNCTION_TYPE(
           [MIR_ANY_TYPE, ...originalFunctionType.argumentTypes.slice(1)],
           originalFunctionType.returnType,
         );
-        const functionName = MIR_NAME(statement.functionName, originalFunctionType);
+        const functionName = MIR_NAME(statement.functionName.name, originalFunctionType);
         const context = lowerHighIRExpression(statement.context);
         const statements: MidIRStatement[] = [];
         this.addReferenceCountingIfTypeAllowed(statements, context);

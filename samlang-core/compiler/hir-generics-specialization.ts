@@ -2,6 +2,7 @@ import {
   HighIRClosureTypeDefinition,
   HighIRExpression,
   HighIRFunction,
+  HighIRFunctionNameExpression,
   HighIRFunctionType,
   HighIRIdentifierType,
   HighIRSources,
@@ -23,7 +24,6 @@ import { assert, checkNotNull, zip } from '../utils';
 import {
   encodeHighIRNameAfterGenericsSpecialization,
   highIRTypeApplication,
-  resolveIdentifierTypeMappings,
   solveTypeArguments,
 } from './hir-type-conversion';
 
@@ -146,17 +146,13 @@ class GenericsSpecializationRewriter {
       case 'HighIRClosureInitializationStatement': {
         const closureType = this.rewriteType(statement.closureType, genericsReplacementMap);
         assert(closureType.__type__ === 'IdentifierType');
-        const functionType = this.rewriteType(statement.functionType, genericsReplacementMap);
-        assert(functionType.__type__ === 'FunctionType');
         return HIR_CLOSURE_INITIALIZATION({
           closureVariableName: statement.closureVariableName,
           closureType,
-          functionName: this.rewriteFunctionName(
+          functionName: this.rewriteExpression(
             statement.functionName,
-            functionType,
             genericsReplacementMap,
-          ),
-          functionType,
+          ) as HighIRFunctionNameExpression,
           context: this.rewriteExpression(statement.context, genericsReplacementMap),
         });
       }
@@ -183,13 +179,11 @@ class GenericsSpecializationRewriter {
         const rewrittenName = this.rewriteFunctionName(
           expression.name,
           functionType,
+          expression.typeArguments.map((it) => this.rewriteType(it, genericsReplacementMap)),
           genericsReplacementMap,
         );
-        return HIR_FUNCTION_NAME(
-          rewrittenName,
-          functionType,
-          expression.typeArguments.map((it) => this.rewriteType(it, genericsReplacementMap)),
-        );
+        // After specialization, there should be no more type arguments.
+        return HIR_FUNCTION_NAME(rewrittenName, functionType, []);
       }
     }
   }
@@ -197,6 +191,7 @@ class GenericsSpecializationRewriter {
   private rewriteFunctionName(
     originalName: string,
     functionType: HighIRFunctionType,
+    functionTypeArguments: readonly HighIRType[],
     genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): string {
     if (originalName.startsWith('$GENERICS$_')) {
@@ -209,20 +204,15 @@ class GenericsSpecializationRewriter {
       return this.rewriteFunctionName(
         `_${replacementClass.name.slice(0, replacementClass.name.indexOf('_'))}$${functionName}`,
         functionType,
+        functionTypeArguments,
         genericsReplacementMap,
       );
     }
     const existingFunction = this.originalFunctions.get(originalName);
     if (existingFunction == null) return originalName;
-    const solvedFunctionTypeArguments = solveTypeArguments(
-      existingFunction.typeParameters,
-      functionType,
-      existingFunction.type,
-      this.resolveIdentifierType,
-    );
     const encodedSpecializedFunctionName = encodeHighIRNameAfterGenericsSpecialization(
       originalName,
-      solvedFunctionTypeArguments,
+      functionTypeArguments,
     );
     if (!this.specializedFunctions.has(encodedSpecializedFunctionName)) {
       // Temporaily add an incorrect version to avoid infinite recursion.
@@ -238,7 +228,7 @@ class GenericsSpecializationRewriter {
             body: existingFunction.body,
             returnValue: existingFunction.returnValue,
           },
-          new Map(zip(existingFunction.typeParameters, solvedFunctionTypeArguments)),
+          new Map(zip(existingFunction.typeParameters, functionTypeArguments)),
         ),
       );
     }
@@ -299,7 +289,6 @@ class GenericsSpecializationRewriter {
                   concreteType.name,
                   closureTypeDefinition.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS),
                 ),
-                this.resolveIdentifierType,
               ),
             ),
           );
@@ -330,7 +319,6 @@ class GenericsSpecializationRewriter {
               concreteType.name,
               typeDefinition.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS),
             ),
-            this.resolveIdentifierType,
           ),
         ),
       );
@@ -347,15 +335,6 @@ class GenericsSpecializationRewriter {
     }
     return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(encodedName);
   }
-
-  private resolveIdentifierType = (identifierType: HighIRIdentifierType): readonly HighIRType[] =>
-    resolveIdentifierTypeMappings(
-      identifierType,
-      (name) =>
-        this.specializedClosureTypeDefinitions.get(name) ??
-        this.originalClosureTypeDefinitions.get(name),
-      (name) => this.specializedTypeDefinitions.get(name) ?? this.originalTypeDefinitions.get(name),
-    );
 }
 
 export default function performGenericsSpecializationOnHighIRSources(

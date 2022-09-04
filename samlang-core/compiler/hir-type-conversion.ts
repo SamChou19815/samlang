@@ -120,11 +120,9 @@ export function solveTypeArguments(
   genericTypeParameters: readonly string[],
   specializedType: HighIRType,
   parameterizedTypeDefinition: HighIRType,
-  resolveIdentifierTypeMappingList: (type: HighIRIdentifierType) => readonly HighIRType[],
 ): readonly HighIRType[] {
   const genericTypeParameterSet = new Set(genericTypeParameters);
   const solved = new Map<string, HighIRType>();
-  const encountered = new Set<string>();
 
   function solve(t1: HighIRType, t2: HighIRType): void {
     switch (t1.__type__) {
@@ -137,23 +135,11 @@ export function solveTypeArguments(
           solved.set(t1.name, t2);
           return;
         }
-        if (encountered.has(t1.name)) return;
-        encountered.add(t1.name);
         assert(t2.__type__ === 'IdentifierType', `t2 has type ${t2.__type__}`);
-        if (t1.name === t2.name) {
-          // Things might already been specialized.
-          assert(t1.typeArguments.length === t2.typeArguments.length);
-          zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
-        } else {
-          const resolvedT1 = resolveIdentifierTypeMappingList(t1);
-          const resolvedT2 = resolveIdentifierTypeMappingList(t2);
-          assert(
-            resolvedT1.length === resolvedT2.length,
-            `t1.length=${resolvedT1.length}, t2.length=${resolvedT2.length}`,
-          );
-          zip(resolvedT1, resolvedT2).forEach(([a1, a2]) => solve(a1, a2));
-        }
-
+        assert(t1.name === t2.name, `${t1.name} ${t2.name}`);
+        // Things might already been specialized.
+        assert(t1.typeArguments.length === t2.typeArguments.length);
+        zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
         return;
       case 'FunctionType':
         assert(

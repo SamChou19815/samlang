@@ -273,6 +273,7 @@ sources.mains = [main]
                     functionExpression: HIR_FUNCTION_NAME(
                       'creatorIA',
                       HIR_FUNCTION_TYPE([HIR_INT_TYPE], typeI),
+                      [HIR_INT_TYPE],
                     ),
                     functionArguments: [HIR_ZERO],
                     returnType: typeI,
@@ -285,6 +286,7 @@ sources.mains = [main]
                         [HIR_STRING_TYPE],
                         HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
                       ),
+                      [HIR_STRING_TYPE],
                     ),
                     functionArguments: [G1],
                     returnType: typeI,
@@ -294,6 +296,7 @@ sources.mains = [main]
                     functionExpression: HIR_FUNCTION_NAME(
                       'creatorIB',
                       HIR_FUNCTION_TYPE([HIR_STRING_TYPE], typeI),
+                      [HIR_STRING_TYPE],
                     ),
                     functionArguments: [G1],
                     returnType: typeI,
@@ -303,6 +306,7 @@ sources.mains = [main]
                     functionExpression: HIR_FUNCTION_NAME(
                       'functor_fun',
                       HIR_FUNCTION_TYPE([typeI], HIR_INT_TYPE),
+                      [typeI],
                     ),
                     functionArguments: [G1],
                     returnType: typeI,
@@ -338,20 +342,26 @@ sources.mains = [main]
                   HIR_CLOSURE_INITIALIZATION({
                     closureVariableName: 'c1',
                     closureType: HIR_IDENTIFIER_TYPE('CC', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
-                    functionName: 'creatorIA',
-                    functionType: HIR_FUNCTION_TYPE(
+                    functionName: HIR_FUNCTION_NAME(
+                      'creatorIA',
+                      HIR_FUNCTION_TYPE(
+                        [HIR_STRING_TYPE],
+                        HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
+                      ),
                       [HIR_STRING_TYPE],
-                      HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
                     ),
                     context: G1,
                   }),
                   HIR_CLOSURE_INITIALIZATION({
                     closureVariableName: 'c2',
                     closureType: HIR_IDENTIFIER_TYPE('CC', [HIR_INT_TYPE, HIR_STRING_TYPE]),
-                    functionName: 'creatorIA',
-                    functionType: HIR_FUNCTION_TYPE(
+                    functionName: HIR_FUNCTION_NAME(
+                      'creatorIA',
+                      HIR_FUNCTION_TYPE(
+                        [HIR_STRING_TYPE],
+                        HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
+                      ),
                       [HIR_STRING_TYPE],
-                      HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
                     ),
                     context: G1,
                   }),
@@ -478,9 +488,7 @@ sources.mains = [main]
             type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
             body: [
               HIR_FUNCTION_CALL({
-                functionExpression: HIR_FUNCTION_NAME('creatorJ', HIR_FUNCTION_TYPE([], typeJ), [
-                  HIR_INT_TYPE,
-                ]),
+                functionExpression: HIR_FUNCTION_NAME('creatorJ', HIR_FUNCTION_TYPE([], typeJ)),
                 functionArguments: [],
                 returnType: typeJ,
               }),
@@ -498,7 +506,7 @@ function creatorJ(): J {
 }
 
 function main(): int {
-  creatorJ<int>();
+  creatorJ();
   return 0;
 }
 

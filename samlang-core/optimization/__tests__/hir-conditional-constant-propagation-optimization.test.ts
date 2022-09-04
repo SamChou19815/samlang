@@ -159,8 +159,7 @@ describe('hir-conditional-constant-propagation', () => {
         HIR_CLOSURE_INITIALIZATION({
           closureVariableName: 's',
           closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Id'),
-          functionName: 'closure',
-          functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          functionName: HIR_FUNCTION_NAME('closure', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
           context: HIR_VARIABLE('b2', HIR_INT_TYPE),
         }),
         HIR_FUNCTION_CALL({

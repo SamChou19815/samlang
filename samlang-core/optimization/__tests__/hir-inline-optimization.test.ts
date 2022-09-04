@@ -59,8 +59,7 @@ describe('hir-inline-optimization', () => {
           HIR_CLOSURE_INITIALIZATION({
             closureVariableName: 'v',
             closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
-            functionName: 'f',
-            functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+            functionName: HIR_FUNCTION_NAME('f', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
             context: HIR_ZERO,
           }),
           HIR_FUNCTION_CALL({
@@ -750,8 +749,7 @@ function main(): int {
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 's',
               closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('SS'),
-              functionName: 'aaa',
-              functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+              functionName: HIR_FUNCTION_NAME('aaa', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
               context: HIR_ZERO,
             }),
             HIR_BREAK(HIR_ZERO),

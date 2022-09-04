@@ -160,10 +160,12 @@ describe('hir-type-deduplication', () => {
                     HIR_CLOSURE_INITIALIZATION({
                       closureVariableName: '_',
                       closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('C'),
-                      functionName: 'f',
-                      functionType: HIR_FUNCTION_TYPE(
-                        [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('E')],
-                        HIR_INT_TYPE,
+                      functionName: HIR_FUNCTION_NAME(
+                        'f',
+                        HIR_FUNCTION_TYPE(
+                          [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('E')],
+                          HIR_INT_TYPE,
+                        ),
                       ),
                       context: HIR_VARIABLE('v', HIR_INT_TYPE),
                     }),

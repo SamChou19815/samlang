@@ -262,8 +262,11 @@ class HighIRExpressionLoweringManager {
       HIR_CLOSURE_INITIALIZATION({
         closureVariableName,
         closureType,
-        functionName: `${encodedOriginalFunctionName}_with_context`,
-        functionType,
+        functionName: HIR_FUNCTION_NAME(
+          `${encodedOriginalFunctionName}_with_context`,
+          functionType,
+          expression.typeArguments.map(this.typeLoweringManager.lowerSamlangType),
+        ),
         context: HIR_ZERO,
       }),
     ];
@@ -323,8 +326,11 @@ class HighIRExpressionLoweringManager {
         HIR_CLOSURE_INITIALIZATION({
           closureVariableName,
           closureType,
-          functionName,
-          functionType: methodType,
+          functionName: HIR_FUNCTION_NAME(
+            functionName,
+            methodType,
+            expression.typeArguments.map(this.typeLoweringManager.lowerSamlangType),
+          ),
           context: result.expression,
         }),
       ],
@@ -786,8 +792,11 @@ class HighIRExpressionLoweringManager {
       HIR_CLOSURE_INITIALIZATION({
         closureVariableName,
         closureType,
-        functionName: syntheticLambda.name,
-        functionType: syntheticLambda.type,
+        functionName: HIR_FUNCTION_NAME(
+          syntheticLambda.name,
+          syntheticLambda.type,
+          syntheticLambda.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS),
+        ),
         context,
       }),
     );

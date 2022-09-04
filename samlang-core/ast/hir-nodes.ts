@@ -212,8 +212,7 @@ export interface HighIRClosureInitializationStatement extends BaseHighIRStatemen
   readonly __type__: 'HighIRClosureInitializationStatement';
   readonly closureVariableName: string;
   readonly closureType: HighIRIdentifierType;
-  readonly functionName: string;
-  readonly functionType: HighIRFunctionType;
+  readonly functionName: HighIRFunctionNameExpression;
   readonly context: HighIRExpression;
 }
 
@@ -400,14 +399,12 @@ export const HIR_CLOSURE_INITIALIZATION = ({
   closureVariableName,
   closureType,
   functionName,
-  functionType,
   context,
 }: ConstructorArgumentObject<HighIRClosureInitializationStatement>): HighIRClosureInitializationStatement => ({
   __type__: 'HighIRClosureInitializationStatement',
   closureVariableName,
   closureType,
   functionName,
-  functionType,
   context,
 });
 
@@ -551,8 +548,8 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
       case 'HighIRClosureInitializationStatement': {
         const closureType = prettyPrintHighIRType(s.closureType);
         const closureNameType = `${s.closureVariableName}: ${closureType}`;
-        const functionType = prettyPrintHighIRType(s.functionType);
-        const functionNameType = `${s.functionName}: ${functionType}`;
+        const functionType = prettyPrintHighIRType(s.functionName.type);
+        const functionNameType = `${s.functionName.name}: ${functionType}`;
         const context = debugPrintHighIRExpression(s.context);
         collector.push(
           '  '.repeat(level),

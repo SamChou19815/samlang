@@ -4,6 +4,7 @@ import {
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_IF_ELSE,
@@ -109,8 +110,7 @@ describe('hir-loop-induction-variable-elimination', () => {
                 HIR_CLOSURE_INITIALIZATION({
                   closureVariableName: '_',
                   closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
-                  functionName: '1',
-                  functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+                  functionName: HIR_FUNCTION_NAME('1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
                   context: HIR_ZERO,
                 }),
               ],
