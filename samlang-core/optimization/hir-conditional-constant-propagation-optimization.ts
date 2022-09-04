@@ -478,7 +478,6 @@ function optimizeHighIRStatement(
           closureVariableName: statement.closureVariableName,
           closureType: statement.closureType,
           functionName: statement.functionName,
-          functionType: statement.functionType,
           context: optimizeExpression(statement.context),
         }),
       ];

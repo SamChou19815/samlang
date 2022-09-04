@@ -85,9 +85,9 @@ function collectUsedNamesFromStatement(
       collectForTypeSet(statement.type, typeSet);
       break;
     case 'HighIRClosureInitializationStatement':
-      nameSet.add(statement.functionName);
+      nameSet.add(statement.functionName.name);
       collectUsedNamesFromExpression(nameSet, typeSet, statement.context);
-      collectForTypeSet(statement.functionType, typeSet);
+      collectForTypeSet(statement.functionName.type, typeSet);
       collectForTypeSet(statement.closureType, typeSet);
       break;
   }

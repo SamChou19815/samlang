@@ -122,24 +122,6 @@ describe('hir-type-conversion', () => {
   it('solveTypeArguments works', () => {
     expect(
       solveTypeArguments(
-        [],
-        HIR_IDENTIFIER_TYPE('Foo_bool', []),
-        HIR_IDENTIFIER_TYPE('Foo', [HIR_BOOL_TYPE]),
-        () => [HIR_BOOL_TYPE],
-      ),
-    ).toEqual([]);
-
-    expect(
-      solveTypeArguments(
-        [],
-        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
-        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('T'),
-        (t) => [HIR_BOOL_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(t.name)],
-      ),
-    ).toEqual([]);
-
-    expect(
-      solveTypeArguments(
         ['A'],
         HIR_FUNCTION_TYPE(
           [HIR_INT_TYPE, HIR_BOOL_TYPE],
@@ -163,7 +145,6 @@ describe('hir-type-conversion', () => {
             HIR_STRING_TYPE,
           ),
         ),
-        () => [],
       ),
     ).toEqual([HIR_FUNCTION_TYPE([], HIR_INT_TYPE)]);
   });

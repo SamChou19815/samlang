@@ -159,13 +159,12 @@ class HighIRTypeDeduplicator {
       case 'HighIRClosureInitializationStatement': {
         const closureType = this.rewriteType(statement.closureType);
         assert(closureType.__type__ === 'IdentifierType');
-        const functionType = this.rewriteType(statement.functionType);
-        assert(functionType.__type__ === 'FunctionType');
+        const functionName = this.rewriteExpression(statement.functionName);
+        assert(functionName.__type__ === 'HighIRFunctionNameExpression');
         return HIR_CLOSURE_INITIALIZATION({
           closureVariableName: statement.closureVariableName,
           closureType,
-          functionName: statement.functionName,
-          functionType,
+          functionName,
           context: this.rewriteExpression(statement.context),
         });
       }

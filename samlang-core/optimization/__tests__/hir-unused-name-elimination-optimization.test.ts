@@ -155,8 +155,7 @@ describe('hir-unused-name-elimination-optimization', () => {
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: '_',
               closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(''),
-              functionName: '',
-              functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+              functionName: HIR_FUNCTION_NAME('', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
               context: HIR_ZERO,
             }),
           ],

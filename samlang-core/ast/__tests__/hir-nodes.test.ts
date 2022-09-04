@@ -75,8 +75,10 @@ describe('hir-nodes', () => {
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'closure',
               closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CCC'),
-              functionName: 'foo',
-              functionType: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+              functionName: HIR_FUNCTION_NAME(
+                'foo',
+                HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+              ),
               context: HIR_ZERO,
             }),
             HIR_BINARY({ name: 'dd', operator: '<', e1: HIR_INT(0), e2: HIR_INT(0) }),

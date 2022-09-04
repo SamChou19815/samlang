@@ -6,6 +6,7 @@ import {
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_IF_ELSE,
@@ -138,15 +139,13 @@ describe('hir-loop-invariant-code-motion', () => {
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'g',
               closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
-              functionName: 'f',
-              functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+              functionName: HIR_FUNCTION_NAME('f', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
               context: HIR_VARIABLE('x', HIR_INT_TYPE),
             }),
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'h',
               closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
-              functionName: 'f',
-              functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+              functionName: HIR_FUNCTION_NAME('f', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
               context: HIR_VARIABLE('d', HIR_INT_TYPE),
             }),
             HIR_STRUCT_INITIALIZATION({

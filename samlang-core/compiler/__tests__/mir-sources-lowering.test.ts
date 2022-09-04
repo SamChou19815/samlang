@@ -198,15 +198,19 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'c1',
               closureType,
-              functionName: 'aaa',
-              functionType: HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
+              functionName: HIR_FUNCTION_NAME(
+                'aaa',
+                HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
+              ),
               context: HIR_STRING_NAME('G1'),
             }),
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'c2',
               closureType,
-              functionName: 'bbb',
-              functionType: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+              functionName: HIR_FUNCTION_NAME(
+                'bbb',
+                HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+              ),
               context: HIR_ZERO,
             }),
           ],
@@ -244,8 +248,10 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
                 HIR_CLOSURE_INITIALIZATION({
                   closureVariableName: 'c3',
                   closureType,
-                  functionName: 'aaa',
-                  functionType: HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
+                  functionName: HIR_FUNCTION_NAME(
+                    'aaa',
+                    HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
+                  ),
                   context: HIR_VARIABLE('G1', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC')),
                 }),
               ],
