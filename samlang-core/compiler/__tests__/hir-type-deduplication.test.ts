@@ -4,12 +4,12 @@ import {
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_SINGLE_IF,
   HIR_STRING_TYPE,
   HIR_STRUCT_INITIALIZATION,
@@ -137,10 +137,11 @@ describe('hir-type-deduplication', () => {
                       e2: HIR_ZERO,
                     }),
                     HIR_FUNCTION_CALL({
-                      functionExpression: HIR_NAME(
+                      functionExpression: HIR_FUNCTION_NAME(
                         'f',
                         HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
                       ),
+                      typeArguments: [],
                       functionArguments: [HIR_ZERO],
                       returnType: HIR_INT_TYPE,
                     }),

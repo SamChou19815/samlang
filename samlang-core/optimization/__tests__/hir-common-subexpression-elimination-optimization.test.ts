@@ -4,10 +4,11 @@ import {
   HIR_BINARY,
   HIR_BOOL_TYPE,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
+  HIR_FUNCTION_TYPE,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_ONE,
   HIR_VARIABLE,
   HIR_ZERO,
@@ -49,7 +50,8 @@ describe('hir-common-subexpression-elimination', () => {
               index: 3,
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('fff', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('fff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [
                 HIR_VARIABLE('a', HIR_INT_TYPE),
                 HIR_VARIABLE('ddd', HIR_INT_TYPE),
@@ -66,7 +68,8 @@ describe('hir-common-subexpression-elimination', () => {
               index: 3,
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('eee', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('eee', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [
                 HIR_VARIABLE('fd', HIR_INT_TYPE),
                 HIR_VARIABLE('eee', HIR_INT_TYPE),

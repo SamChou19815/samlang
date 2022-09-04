@@ -116,6 +116,7 @@ export function validateTypeArguments(
 interface FunctionCallTypeCheckingResult {
   readonly solvedGenericType: SamlangFunctionType;
   readonly solvedReturnType: SamlangType;
+  readonly solvedSubstitution: ReadonlyMap<string, SamlangType>;
   readonly checkedArguments: readonly SamlangExpression[];
 }
 
@@ -139,6 +140,7 @@ export default function typeCheckFunctionCall(
     return {
       solvedGenericType: genericFunctionType,
       solvedReturnType: SourceUnknownType(functionCallReason),
+      solvedSubstitution: new Map(),
       checkedArguments: functionArguments,
     };
   }
@@ -212,6 +214,7 @@ export default function typeCheckFunctionCall(
   return {
     solvedGenericType: fullySolvedGenericType,
     solvedReturnType: fullySolvedConcreteReturnType,
+    solvedSubstitution: fullySolvedSubstitution,
     checkedArguments,
   };
 }

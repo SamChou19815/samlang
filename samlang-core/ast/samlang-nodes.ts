@@ -210,6 +210,7 @@ export interface ClassMemberExpression extends BaseExpression {
 export interface FieldAccessExpression extends BaseExpression {
   readonly __type__: 'FieldAccessExpression';
   readonly expression: SamlangExpression;
+  readonly typeArguments: readonly SamlangType[];
   readonly fieldName: SourceIdentifier;
   readonly fieldOrder: number;
 }
@@ -217,6 +218,7 @@ export interface FieldAccessExpression extends BaseExpression {
 export interface MethodAccessExpression extends BaseExpression {
   readonly __type__: 'MethodAccessExpression';
   readonly expression: SamlangExpression;
+  readonly typeArguments: readonly SamlangType[];
   readonly methodName: SourceIdentifier;
 }
 
@@ -429,6 +431,7 @@ export const SourceExpressionFieldAccess = ({
   type,
   associatedComments = [],
   expression,
+  typeArguments,
   fieldName,
   fieldOrder,
 }: ExpressionConstructorArgumentObject<FieldAccessExpression>): FieldAccessExpression => ({
@@ -438,6 +441,7 @@ export const SourceExpressionFieldAccess = ({
   precedence: 2,
   associatedComments,
   expression,
+  typeArguments,
   fieldName,
   fieldOrder,
 });
@@ -447,6 +451,7 @@ export const SourceExpressionMethodAccess = ({
   type,
   associatedComments = [],
   expression,
+  typeArguments,
   methodName,
 }: ExpressionConstructorArgumentObject<MethodAccessExpression>): MethodAccessExpression => ({
   __type__: 'MethodAccessExpression',
@@ -455,6 +460,7 @@ export const SourceExpressionMethodAccess = ({
   precedence: 2,
   associatedComments,
   expression,
+  typeArguments,
   methodName,
 });
 

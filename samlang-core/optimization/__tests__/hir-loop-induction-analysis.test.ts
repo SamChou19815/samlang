@@ -1,6 +1,6 @@
 import {
   HighIRExpression,
-  HighIRNameExpression,
+  HighIRFunctionNameExpression,
   HIR_BINARY,
   HIR_BOOL_TYPE,
   HIR_BREAK,
@@ -10,9 +10,9 @@ import {
   HIR_INDEX_ACCESS,
   HIR_INT,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_ONE,
   HIR_SINGLE_IF,
+  HIR_STRING_NAME,
   HIR_STRUCT_INITIALIZATION,
   HIR_VARIABLE,
   HIR_WHILE,
@@ -44,9 +44,9 @@ const mockExpressionIsLoopInvariantWithOutside = (e: HighIRExpression): boolean 
 
 describe('hir-loop-induction-analysis', () => {
   it('expressionIsLoopInvariant test', () => {
-    expect(
-      expressionIsLoopInvariant_EXPOSED_FOR_TESTING(HIR_NAME('ss', HIR_BOOL_TYPE), new Set()),
-    ).toBe(false);
+    expect(expressionIsLoopInvariant_EXPOSED_FOR_TESTING(HIR_STRING_NAME('ss'), new Set())).toBe(
+      false,
+    );
     expect(expressionIsLoopInvariant_EXPOSED_FOR_TESTING(HIR_ZERO, new Set())).toBe(true);
   });
 
@@ -244,7 +244,8 @@ describe('hir-loop-induction-analysis', () => {
             }),
             HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+              functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -285,7 +286,7 @@ describe('hir-loop-induction-analysis', () => {
           statements: [
             HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
             HIR_SINGLE_IF({
-              booleanExpression: HIR_NAME('ss', HIR_BOOL_TYPE),
+              booleanExpression: HIR_STRING_NAME('ss'),
               invertCondition: false,
               statements: [
                 HIR_STRUCT_INITIALIZATION({
@@ -527,12 +528,14 @@ describe('hir-loop-induction-analysis', () => {
             e2: HIR_INT(6),
           }),
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+            functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+            typeArguments: [],
             functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
           }),
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+            functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+            typeArguments: [],
             functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
             returnCollector: 'fc',
@@ -574,12 +577,14 @@ describe('hir-loop-induction-analysis', () => {
       HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
       HIR_BINARY({ name: 'tmp_x', operator: '*', e1: VARIABLE_TMP_I, e2: HIR_INT(5) }),
       HIR_FUNCTION_CALL({
-        functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+        functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+        typeArguments: [],
         functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
         returnType: HIR_INT_TYPE,
       }),
       HIR_FUNCTION_CALL({
-        functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+        functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+        typeArguments: [],
         functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
         returnType: HIR_INT_TYPE,
         returnCollector: 'fc',
@@ -615,12 +620,14 @@ describe('hir-loop-induction-analysis', () => {
             e2: HIR_INT(6),
           }),
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+            functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+            typeArguments: [],
             functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
           }),
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+            functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+            typeArguments: [],
             functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
             returnCollector: 'fc',
@@ -703,7 +710,7 @@ describe('hir-loop-induction-analysis', () => {
             name: 'tmp_j',
             operator: '+',
             e1: VARIABLE_I,
-            e2: HIR_NAME('outside', HIR_INT_TYPE),
+            e2: HIR_STRING_NAME('outside'),
           }),
         ],
         mockExpressionIsLoopInvariantWithOutside,

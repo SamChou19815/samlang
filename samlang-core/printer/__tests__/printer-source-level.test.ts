@@ -94,10 +94,26 @@ Test /* b */ /* c */ .VariantName<T>(42)`,
             type: AstBuilder.IntType,
             name: 'foo',
           }),
+          typeArguments: [],
           methodName: SourceId('bar'),
         }),
       ).trimEnd(),
     ).toBe('foo.bar');
+
+    expect(
+      prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
+        40,
+        SourceExpressionMethodAccess({
+          type: AstBuilder.IntType,
+          expression: SourceExpressionVariable({
+            type: AstBuilder.IntType,
+            name: 'foo',
+          }),
+          typeArguments: [AstBuilder.IntType],
+          methodName: SourceId('bar'),
+        }),
+      ).trimEnd(),
+    ).toBe('foo.bar<int>');
 
     expect(reprintExpression('-42')).toBe('-42');
     expect(reprintExpression('!(1+aVariableNameThatIsVeryVeryVeryVeryVeryLong)')).toBe(`!(

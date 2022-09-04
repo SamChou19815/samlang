@@ -169,6 +169,14 @@ function typeCheckInSandbox(
                       type: AstBuilder.FunType([int], bool),
                     },
                   ],
+                  [
+                    'bazWithUsefulTypeParam',
+                    {
+                      isPublic: false,
+                      typeParameters: [{ name: 'A', bound: null }],
+                      type: AstBuilder.FunType([AstBuilder.IdType('A')], bool),
+                    },
+                  ],
                 ]),
               },
             ],
@@ -487,6 +495,11 @@ describe('main-type-checker', () => {
     assertTypeChecks('Test.init(true, 3).bar', int);
     assertTypeChecks('Test.init(true, 3).baz', AstBuilder.FunType([int], bool));
     assertTypeChecks('Test.init(true, 3).bazWithTypeParam', AstBuilder.FunType([int], bool));
+    assertTypeChecks('Test.init(true, 3).bazWithTypeParam<int>', AstBuilder.FunType([int], bool));
+    assertTypeChecks(
+      'Test.init(true, 3).bazWithUsefulTypeParam<int>',
+      AstBuilder.FunType([int], bool),
+    );
 
     assertTypeErrors('3.foo', int, [
       '__DUMMY__.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.',
@@ -504,6 +517,9 @@ describe('main-type-checker', () => {
       'Test2',
     );
 
+    assertTypeErrors('Test.init(true, 3).foo<int>', bool, [
+      '__DUMMY__.sam:1:1-1:28: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
+    ]);
     assertTypeErrors('Test.init(true, 3).foo', int, [
       '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `bool`.',
     ]);
@@ -513,6 +529,9 @@ describe('main-type-checker', () => {
     assertTypeErrors('Test.init(true, 3).baz', int, [
       '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
       '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.',
+    ]);
+    assertTypeErrors('Test.init(true, 3).baz<int>', AstBuilder.FunType([int], bool), [
+      '__DUMMY__.sam:1:1-1:28: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
     ]);
     assertTypeErrors('Test.init(true, 3).bazWithTypeParam', int, [
       '__DUMMY__.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
@@ -524,6 +543,21 @@ describe('main-type-checker', () => {
       '__DUMMY__.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
       '__DUMMY__.sam:1:1-1:36: [UnexpectedType]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.',
     ]);
+    assertTypeErrors(
+      'Test.init(true, 3).bazWithTypeParam<int, int>',
+      AstBuilder.FunType([int], bool),
+      [
+        '__DUMMY__.sam:1:1-1:46: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.',
+      ],
+    );
+    assertTypeErrors(
+      'Test.init(true, 3).bazWithUsefulTypeParam<bool>',
+      AstBuilder.FunType([int], bool),
+      [
+        '__DUMMY__.sam:1:1-1:48: [UnexpectedType]: Expected: `(int) -> bool`, actual: `(bool) -> bool`.',
+        '__DUMMY__.sam:1:1-1:48: [UnexpectedType]: Expected: `(int) -> bool`, actual: `(bool) -> bool`.',
+      ],
+    );
     assertTypeErrors('Test.init(true, 3).baz', AstBuilder.FunType([bool], int), [
       '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',
       '__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.',

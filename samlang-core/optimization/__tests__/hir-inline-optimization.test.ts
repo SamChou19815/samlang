@@ -7,13 +7,13 @@ import {
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
   HIR_INT,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_ONE,
   HIR_SINGLE_IF,
   HIR_STRUCT_INITIALIZATION,
@@ -64,7 +64,8 @@ describe('hir-inline-optimization', () => {
             context: HIR_ZERO,
           }),
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('fff', HIR_INT_TYPE),
+            functionExpression: HIR_FUNCTION_NAME('fff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+            typeArguments: [],
             functionArguments: [
               HIR_VARIABLE('i1', HIR_INT_TYPE),
               HIR_VARIABLE('b1', HIR_INT_TYPE),
@@ -178,7 +179,8 @@ describe('hir-inline-optimization', () => {
           ],
         }),
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('fff', HIR_INT_TYPE),
+          functionExpression: HIR_FUNCTION_NAME('fff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+          typeArguments: [],
           functionArguments: [
             HIR_VARIABLE('i1', HIR_INT_TYPE),
             HIR_VARIABLE('b1', HIR_INT_TYPE),
@@ -268,7 +270,8 @@ describe('hir-inline-optimization', () => {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('loop', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              functionExpression: HIR_FUNCTION_NAME('loop', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -320,10 +323,11 @@ describe('hir-inline-optimization', () => {
                   e2: HIR_VARIABLE('acc', HIR_INT_TYPE),
                 }),
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME(
+                  functionExpression: HIR_FUNCTION_NAME(
                     'factorial',
                     HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
                   ),
+                  typeArguments: [],
                   functionArguments: [
                     HIR_VARIABLE('n1', HIR_INT_TYPE),
                     HIR_VARIABLE('acc1', HIR_INT_TYPE),
@@ -351,7 +355,8 @@ describe('hir-inline-optimization', () => {
           typeParameters: [],
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('loop', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              functionExpression: HIR_FUNCTION_NAME('loop', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -365,29 +370,33 @@ describe('hir-inline-optimization', () => {
           typeParameters: [],
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('bb', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              functionExpression: HIR_FUNCTION_NAME('bb', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME(
+              functionExpression: HIR_FUNCTION_NAME(
                 'moveMove',
                 HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
               ),
+              typeArguments: [],
               functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_VARIABLE('a', HIR_INT_TYPE),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
             ...Array.from(new Array(10).keys()).map(() =>
               HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME(
+                functionExpression: HIR_FUNCTION_NAME(
                   'non-existing-function',
                   HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
                 ),
+                typeArguments: [],
                 functionArguments: [],
                 returnType: HIR_INT_TYPE,
               }),
@@ -503,7 +512,11 @@ function bb(): int {
               s1: [],
               s2: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                  functionExpression: HIR_FUNCTION_NAME(
+                    'fooBar',
+                    HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+                  ),
+                  typeArguments: [],
                   functionArguments: [],
                   returnType: HIR_INT_TYPE,
                 }),
@@ -520,7 +533,8 @@ function bb(): int {
           typeParameters: [],
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'v',
@@ -575,7 +589,11 @@ function main(): int {
               statements: [
                 HIR_BINARY({ name: 'vvv', operator: '+', e1: HIR_ZERO, e2: HIR_ZERO }),
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                  functionExpression: HIR_FUNCTION_NAME(
+                    'fooBar',
+                    HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+                  ),
+                  typeArguments: [],
                   functionArguments: [],
                   returnType: HIR_INT_TYPE,
                 }),
@@ -591,7 +609,8 @@ function main(): int {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'v',
@@ -638,7 +657,11 @@ function main(): int {
               booleanExpression: HIR_VARIABLE('bar', HIR_INT_TYPE),
               s1: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                  functionExpression: HIR_FUNCTION_NAME(
+                    'fooBar',
+                    HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+                  ),
+                  typeArguments: [],
                   functionArguments: [],
                   returnType: HIR_INT_TYPE,
                 }),
@@ -663,7 +686,8 @@ function main(): int {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'v',
@@ -756,10 +780,11 @@ function main(): int {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME(
+              functionExpression: HIR_FUNCTION_NAME(
                 'fooBar',
                 HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
               ),
+              typeArguments: [],
               functionArguments: [HIR_ONE, HIR_ZERO],
               returnType: HIR_INT_TYPE,
             }),
@@ -844,7 +869,11 @@ function main(): int {
               ],
               statements: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+                  functionExpression: HIR_FUNCTION_NAME(
+                    'fooBar',
+                    HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+                  ),
+                  typeArguments: [],
                   functionArguments: [],
                   returnType: HIR_INT_TYPE,
                   returnCollector: '_tmp_n',
@@ -861,7 +890,8 @@ function main(): int {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'v',
@@ -931,7 +961,8 @@ function main(): int {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'v',

@@ -6,6 +6,7 @@ import {
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
@@ -13,8 +14,8 @@ import {
   HIR_INDEX_ACCESS,
   HIR_INT,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_SINGLE_IF,
+  HIR_STRING_NAME,
   HIR_STRING_TYPE,
   HIR_STRUCT_INITIALIZATION,
   HIR_VARIABLE,
@@ -69,7 +70,7 @@ describe('hir-nodes', () => {
             HIR_STRUCT_INITIALIZATION({
               structVariableName: 'baz',
               type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar'),
-              expressionList: [HIR_NAME('meggo', HIR_STRING_TYPE)],
+              expressionList: [HIR_STRING_NAME('meggo')],
             }),
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'closure',
@@ -112,7 +113,8 @@ describe('hir-nodes', () => {
             HIR_BINARY({ name: 'dd', operator: '/', e1: HIR_INT(0), e2: HIR_INT(0) }),
             HIR_BINARY({ name: 'dd', operator: '%', e1: HIR_INT(0), e2: HIR_INT(0) }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('h', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('h', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [
                 HIR_VARIABLE('big', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar')),
               ],
@@ -120,7 +122,8 @@ describe('hir-nodes', () => {
               returnCollector: 'vibez',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('stresso', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('stresso', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [HIR_INT_TYPE],
               functionArguments: [HIR_VARIABLE('d', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),
@@ -172,7 +175,7 @@ if 0 {
   let dd: int = 0 / 0;
   let dd: int = 0 % 0;
   let vibez: int = h((big: FooBar));
-  stresso((d: int));
+  stresso<int>((d: int));
   let f: int = (big: FooBar)[0];
   bar = (b2: int);
 }`);

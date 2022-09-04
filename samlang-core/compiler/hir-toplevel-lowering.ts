@@ -5,12 +5,12 @@ import {
   HighIRSources,
   HighIRTypeDefinition,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_INT,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_STRUCT_INITIALIZATION,
   HIR_VARIABLE,
 } from '../ast/hir-nodes';
@@ -43,7 +43,8 @@ function companionFunctionWithContext(originalFunction: HighIRFunction): HighIRF
     ),
     body: [
       HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME(originalFunction.name, originalFunction.type),
+        functionExpression: HIR_FUNCTION_NAME(originalFunction.name, originalFunction.type),
+        typeArguments: originalFunction.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS),
         functionArguments: zip(
           originalFunction.parameters,
           originalFunction.type.argumentTypes,

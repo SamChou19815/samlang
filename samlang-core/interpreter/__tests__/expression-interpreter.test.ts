@@ -378,6 +378,7 @@ describe('expression-interpreter', () => {
       location: exampleLocation,
       type: AstBuilder.IntType,
       expression: objectConstructorExpressionNonEmpty,
+      typeArguments: [],
       fieldName: SourceId('test'),
       fieldOrder: 0,
     });
@@ -385,6 +386,7 @@ describe('expression-interpreter', () => {
       location: exampleLocation,
       type: AstBuilder.IntType,
       expression: stringLiteralExpression,
+      typeArguments: [],
       fieldName: SourceId('test'),
       fieldOrder: 0,
     });
@@ -436,6 +438,7 @@ describe('expression-interpreter', () => {
       location: exampleLocation,
       type: identifier,
       expression: identifierExpression,
+      typeArguments: [],
       methodName: SourceId('method'),
     });
     const methodAccessClasses: Map<string, ClassValue> = new Map([

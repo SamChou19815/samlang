@@ -17,15 +17,18 @@ function compareHighIR(e1: HighIRExpression, e2: HighIRExpression): number {
           }
           return diff >= 0 ? 1 : -1;
         }
-        case 'HighIRNameExpression':
+        case 'HighIRStringNameExpression':
+        case 'HighIRFunctionNameExpression':
         case 'HighIRVariableExpression':
           return -1;
       }
-    case 'HighIRNameExpression':
+    case 'HighIRStringNameExpression':
+    case 'HighIRFunctionNameExpression':
       switch (e2.__type__) {
         case 'HighIRIntLiteralExpression':
           return 1;
-        case 'HighIRNameExpression':
+        case 'HighIRStringNameExpression':
+        case 'HighIRFunctionNameExpression':
           return e1.name.localeCompare(e2.name);
         case 'HighIRVariableExpression':
           return -1;
@@ -33,7 +36,8 @@ function compareHighIR(e1: HighIRExpression, e2: HighIRExpression): number {
     case 'HighIRVariableExpression':
       switch (e2.__type__) {
         case 'HighIRIntLiteralExpression':
-        case 'HighIRNameExpression':
+        case 'HighIRStringNameExpression':
+        case 'HighIRFunctionNameExpression':
           return 1;
         case 'HighIRVariableExpression':
           return e1.name.localeCompare(e2.name);

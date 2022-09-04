@@ -11,12 +11,12 @@ import {
   HIR_BINARY,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
-  HIR_NAME,
   HIR_STRUCT_INITIALIZATION,
 } from '../ast/hir-nodes';
 import { assert, checkNotNull, zip } from '../utils';
@@ -98,9 +98,15 @@ class GenericsSpecializationRewriter {
           statement.functionExpression,
           genericsReplacementMap,
         );
-        assert(functionExpression.__type__ !== 'HighIRIntLiteralExpression');
+        assert(
+          functionExpression.__type__ === 'HighIRFunctionNameExpression' ||
+            functionExpression.__type__ === 'HighIRVariableExpression',
+        );
         return HIR_FUNCTION_CALL({
           functionExpression,
+          typeArguments: statement.typeArguments.map((it) =>
+            this.rewriteType(it, genericsReplacementMap),
+          ),
           functionArguments: statement.functionArguments.map((it) =>
             this.rewriteExpression(it, genericsReplacementMap),
           ),
@@ -169,11 +175,10 @@ class GenericsSpecializationRewriter {
         return expression;
       case 'HighIRVariableExpression':
         return { ...expression, type: this.rewriteType(expression.type, genericsReplacementMap) };
-      case 'HighIRNameExpression': {
-        if (expression.type.__type__ === 'PrimitiveType') {
-          this.usedStringNames.add(expression.name);
-          return expression;
-        }
+      case 'HighIRStringNameExpression':
+        this.usedStringNames.add(expression.name);
+        return expression;
+      case 'HighIRFunctionNameExpression': {
         const functionType = HIR_FUNCTION_TYPE(
           expression.type.argumentTypes.map((it) => this.rewriteType(it, genericsReplacementMap)),
           this.rewriteType(expression.type.returnType, genericsReplacementMap),
@@ -183,7 +188,7 @@ class GenericsSpecializationRewriter {
           functionType,
           genericsReplacementMap,
         );
-        return HIR_NAME(rewrittenName, functionType);
+        return HIR_FUNCTION_NAME(rewrittenName, functionType);
       }
     }
   }

@@ -77,7 +77,8 @@ function lowerHighIRExpression(expression: HighIRExpression): MidIRExpression {
       };
     case 'HighIRVariableExpression':
       return MIR_VARIABLE(expression.name, lowerHighIRType(expression.type));
-    case 'HighIRNameExpression':
+    case 'HighIRStringNameExpression':
+    case 'HighIRFunctionNameExpression':
       return MIR_NAME(expression.name, lowerHighIRType(expression.type));
   }
 }
@@ -510,7 +511,7 @@ class HighIRToMidIRLoweringManager {
           statement.returnCollector ??
           (referenceTypeName(loweredReturnType) ? this.tempAllocator() : undefined);
         const statements: MidIRStatement[] = [];
-        if (statement.functionExpression.__type__ === 'HighIRNameExpression') {
+        if (statement.functionExpression.__type__ === 'HighIRFunctionNameExpression') {
           statements.push(
             MIR_FUNCTION_CALL({
               functionExpression: lowerHighIRExpression(statement.functionExpression),
