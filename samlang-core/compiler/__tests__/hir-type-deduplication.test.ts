@@ -141,7 +141,6 @@ describe('hir-type-deduplication', () => {
                         'f',
                         HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
                       ),
-                      typeArguments: [],
                       functionArguments: [HIR_ZERO],
                       returnType: HIR_INT_TYPE,
                     }),

@@ -96,13 +96,11 @@ describe('hir-loop-invariant-code-motion', () => {
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-              typeArguments: [],
               functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-              typeArguments: [],
               functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
               returnCollector: 'fc',

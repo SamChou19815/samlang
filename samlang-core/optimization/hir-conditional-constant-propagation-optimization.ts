@@ -303,7 +303,6 @@ function optimizeHighIRStatement(
           functionExpression: optimizeExpression(
             statement.functionExpression,
           ) as HighIRFunctionNameExpression,
-          typeArguments: statement.typeArguments,
           functionArguments: statement.functionArguments.map(optimizeExpression),
           returnType: statement.returnType,
           returnCollector: statement.returnCollector,

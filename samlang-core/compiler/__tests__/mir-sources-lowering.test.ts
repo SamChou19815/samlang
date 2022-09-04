@@ -117,7 +117,6 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
           body: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_VARIABLE('cc', closureType),
-              typeArguments: [],
               functionArguments: [HIR_ZERO],
               returnType: HIR_INT_TYPE,
             }),
@@ -227,13 +226,11 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
                     'main',
                     HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
                   ),
-                  typeArguments: [],
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_INT_TYPE,
                 }),
                 HIR_FUNCTION_CALL({
                   functionExpression: HIR_FUNCTION_NAME('cc', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-                  typeArguments: [],
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_INT_TYPE,
                 }),
@@ -241,7 +238,6 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
               s2: [
                 HIR_FUNCTION_CALL({
                   functionExpression: HIR_VARIABLE('cc', closureType),
-                  typeArguments: [],
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC'),
                 }),

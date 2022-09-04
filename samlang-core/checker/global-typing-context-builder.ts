@@ -270,6 +270,7 @@ function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
         moduleTypingContext.classes.get(declaration.name.name),
       );
       optimizedModuleTypingContext.interfaces.set(declaration.name.name, {
+        isConcrete: true,
         functions: unoptimizedClassTypingContext.functions,
         methods: unoptimizedClassTypingContext.methods,
         typeParameters: unoptimizedClassTypingContext.typeParameters,
@@ -293,6 +294,7 @@ function optimizeGlobalTypingContextWithInterfaceConformanceChecking(
         fullyInlinedInterfaceContext.methods.set(name, info);
       });
       optimizedModuleTypingContext.interfaces.set(declaration.name.name, {
+        isConcrete: false,
         functions: fullyInlinedInterfaceContext.functions,
         methods: fullyInlinedInterfaceContext.methods,
         typeParameters: unoptimizedInterfaceTypingContext.typeParameters,

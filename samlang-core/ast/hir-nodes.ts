@@ -118,6 +118,7 @@ export interface HighIRFunctionNameExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRFunctionNameExpression';
   readonly name: string;
   readonly type: HighIRFunctionType;
+  readonly typeArguments: readonly HighIRType[];
 }
 
 export interface HighIRVariableExpression extends BaseHighIRExpression {
@@ -156,7 +157,6 @@ export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRFunctionCallStatement';
   /** When `functionExpression` is a variable, it's interpreted as a closure call. */
   readonly functionExpression: HighIRFunctionNameExpression | HighIRVariableExpression;
-  readonly typeArguments: readonly HighIRType[];
   readonly functionArguments: readonly HighIRExpression[];
   readonly returnType: HighIRType;
   readonly returnCollector?: string;
@@ -263,10 +263,12 @@ export const HIR_STRING_NAME = (name: string): HighIRStringNameExpression => ({
 export const HIR_FUNCTION_NAME = (
   name: string,
   type: HighIRFunctionType,
+  typeArguments: readonly HighIRType[] = [],
 ): HighIRFunctionNameExpression => ({
   __type__: 'HighIRFunctionNameExpression',
   name,
   type,
+  typeArguments,
 });
 
 export const HIR_VARIABLE = (name: string, type: HighIRType): HighIRVariableExpression => ({
@@ -332,14 +334,12 @@ export const HIR_INDEX_ACCESS = ({
 
 export const HIR_FUNCTION_CALL = ({
   functionExpression,
-  typeArguments,
   functionArguments,
   returnType,
   returnCollector,
 }: ConstructorArgumentObject<HighIRFunctionCallStatement>): HighIRFunctionCallStatement => ({
   __type__: 'HighIRFunctionCallStatement',
   functionExpression,
-  typeArguments,
   functionArguments,
   returnType,
   returnCollector,
@@ -418,8 +418,14 @@ export function debugPrintHighIRExpression(expression: HighIRExpression): string
     case 'HighIRVariableExpression':
       return `(${expression.name}: ${prettyPrintHighIRType(expression.type)})`;
     case 'HighIRStringNameExpression':
-    case 'HighIRFunctionNameExpression':
       return expression.name;
+    case 'HighIRFunctionNameExpression': {
+      const typeParameterString =
+        expression.typeArguments.length === 0
+          ? ''
+          : `<${expression.typeArguments.map(prettyPrintHighIRType).join(', ')}>`;
+      return expression.name + typeParameterString;
+    }
   }
 }
 
@@ -448,10 +454,6 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
       }
       case 'HighIRFunctionCallStatement': {
         const functionString = debugPrintHighIRExpression(s.functionExpression);
-        const typeParameterString =
-          s.typeArguments.length === 0
-            ? ''
-            : `<${s.typeArguments.map(prettyPrintHighIRType).join(', ')}>`;
         const argumentString = s.functionArguments.map(debugPrintHighIRExpression).join(', ');
         const collectorString =
           s.returnCollector != null
@@ -459,7 +461,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
             : '';
         collector.push(
           '  '.repeat(level),
-          `${collectorString}${functionString}${typeParameterString}(${argumentString});\n`,
+          `${collectorString}${functionString}(${argumentString});\n`,
         );
         return;
       }

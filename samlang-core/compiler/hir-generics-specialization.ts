@@ -104,9 +104,6 @@ class GenericsSpecializationRewriter {
         );
         return HIR_FUNCTION_CALL({
           functionExpression,
-          typeArguments: statement.typeArguments.map((it) =>
-            this.rewriteType(it, genericsReplacementMap),
-          ),
           functionArguments: statement.functionArguments.map((it) =>
             this.rewriteExpression(it, genericsReplacementMap),
           ),
@@ -188,7 +185,11 @@ class GenericsSpecializationRewriter {
           functionType,
           genericsReplacementMap,
         );
-        return HIR_FUNCTION_NAME(rewrittenName, functionType);
+        return HIR_FUNCTION_NAME(
+          rewrittenName,
+          functionType,
+          expression.typeArguments.map((it) => this.rewriteType(it, genericsReplacementMap)),
+        );
       }
     }
   }

@@ -1105,7 +1105,7 @@ function validateSignatureTypes(
     member.typeParameters.forEach((it) => {
       if (it.bound != null) memberContext.validateTypeInstantiation(it.bound);
     });
-    memberContext.validateTypeInstantiation(member.type);
+    memberContext.validateTypeInstantiationDisallowAbstractTypes(member.type);
   });
 }
 

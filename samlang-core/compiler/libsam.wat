@@ -560,7 +560,7 @@
   )
   (i32.const 0)
 )
-(func $_builtin_stringConcat (type $t1) (param $p0 i32) (param $p1 i32) (result i32)
+(func $__Builtins$stringConcat (type $t1) (param $p0 i32) (param $p1 i32) (result i32)
   (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local $l6 i32)
   (i32.store offset=4
     (local.tee $l5

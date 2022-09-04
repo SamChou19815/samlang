@@ -165,7 +165,6 @@ describe('hir-conditional-constant-propagation', () => {
         }),
         HIR_FUNCTION_CALL({
           functionExpression: HIR_FUNCTION_NAME('fff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-          typeArguments: [],
           functionArguments: [
             HIR_VARIABLE('b1', HIR_INT_TYPE),
             HIR_VARIABLE('b2', HIR_INT_TYPE),
@@ -573,7 +572,6 @@ return 0;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -581,7 +579,6 @@ return 0;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('bar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -594,7 +591,6 @@ return 0;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -602,7 +598,6 @@ return 0;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('bar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -615,7 +610,6 @@ return 0;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a1',
@@ -624,7 +618,6 @@ return 0;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('bar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a2',
@@ -645,7 +638,6 @@ return 0;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a11',
@@ -654,7 +646,6 @@ return 0;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('bar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a22',
@@ -715,7 +706,6 @@ return 1;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [HIR_VARIABLE('a0', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),
@@ -723,7 +713,6 @@ return 1;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('bar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [HIR_VARIABLE('a1', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),
@@ -735,7 +724,6 @@ return 1;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [HIR_VARIABLE('a0', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a1',
@@ -744,7 +732,6 @@ return 1;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('bar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [HIR_VARIABLE('a1', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a2',

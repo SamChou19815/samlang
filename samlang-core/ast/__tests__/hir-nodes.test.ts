@@ -114,7 +114,6 @@ describe('hir-nodes', () => {
             HIR_BINARY({ name: 'dd', operator: '%', e1: HIR_INT(0), e2: HIR_INT(0) }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('h', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [
                 HIR_VARIABLE('big', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar')),
               ],
@@ -122,8 +121,11 @@ describe('hir-nodes', () => {
               returnCollector: 'vibez',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_FUNCTION_NAME('stresso', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [HIR_INT_TYPE],
+              functionExpression: HIR_FUNCTION_NAME(
+                'stresso',
+                HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+                [HIR_INT_TYPE],
+              ),
               functionArguments: [HIR_VARIABLE('d', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),

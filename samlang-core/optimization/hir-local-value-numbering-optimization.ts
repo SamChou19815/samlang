@@ -99,7 +99,6 @@ function optimizeHighIRStatement(
         functionExpression: getExpressionUnderContext(
           statement.functionExpression,
         ) as HighIRFunctionNameExpression,
-        typeArguments: statement.typeArguments,
         functionArguments: statement.functionArguments.map(getExpressionUnderContext),
         returnType: statement.returnType,
         returnCollector: statement.returnCollector,

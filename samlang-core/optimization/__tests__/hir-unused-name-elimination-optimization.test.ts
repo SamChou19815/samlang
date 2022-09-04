@@ -58,7 +58,6 @@ describe('hir-unused-name-elimination-optimization', () => {
           body: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -84,7 +83,6 @@ describe('hir-unused-name-elimination-optimization', () => {
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('baz', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [HIR_STRING_NAME('haha')],
               returnType: HIR_INT_TYPE,
             }),
@@ -151,7 +149,6 @@ describe('hir-unused-name-elimination-optimization', () => {
           body: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),

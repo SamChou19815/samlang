@@ -118,6 +118,7 @@ describe('global-typing-context-builder', () => {
         [
           'Class0',
           {
+            isConcrete: true,
             typeParameters: [],
             superTypes: [],
             functions: new Map([
@@ -147,6 +148,7 @@ describe('global-typing-context-builder', () => {
         [
           'Class1',
           {
+            isConcrete: true,
             typeParameters: [],
             superTypes: [],
             functions: new Map([
@@ -185,6 +187,7 @@ describe('global-typing-context-builder', () => {
         [
           'Class2',
           {
+            isConcrete: true,
             typeParameters: [],
             superTypes: [],
             functions: new Map([

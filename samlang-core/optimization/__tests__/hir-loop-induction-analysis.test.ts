@@ -245,7 +245,6 @@ describe('hir-loop-induction-analysis', () => {
             HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -529,13 +528,11 @@ describe('hir-loop-induction-analysis', () => {
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-            typeArguments: [],
             functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-            typeArguments: [],
             functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
             returnCollector: 'fc',
@@ -578,13 +575,11 @@ describe('hir-loop-induction-analysis', () => {
       HIR_BINARY({ name: 'tmp_x', operator: '*', e1: VARIABLE_TMP_I, e2: HIR_INT(5) }),
       HIR_FUNCTION_CALL({
         functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-        typeArguments: [],
         functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
         returnType: HIR_INT_TYPE,
       }),
       HIR_FUNCTION_CALL({
         functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-        typeArguments: [],
         functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
         returnType: HIR_INT_TYPE,
         returnCollector: 'fc',
@@ -621,13 +616,11 @@ describe('hir-loop-induction-analysis', () => {
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-            typeArguments: [],
             functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-            typeArguments: [],
             functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
             returnCollector: 'fc',

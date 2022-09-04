@@ -43,8 +43,11 @@ function companionFunctionWithContext(originalFunction: HighIRFunction): HighIRF
     ),
     body: [
       HIR_FUNCTION_CALL({
-        functionExpression: HIR_FUNCTION_NAME(originalFunction.name, originalFunction.type),
-        typeArguments: originalFunction.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS),
+        functionExpression: HIR_FUNCTION_NAME(
+          originalFunction.name,
+          originalFunction.type,
+          originalFunction.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS),
+        ),
         functionArguments: zip(
           originalFunction.parameters,
           originalFunction.type.argumentTypes,
@@ -176,8 +179,8 @@ function compileSamlangMethodToHighIRFunctions(
   stringManager: HighIRStringManager,
 ) {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, memberName);
-  const typeParametersSet = new Set([...classTypeParameters, ...memberTypeParameters]);
-  const typeParameterArray = Array.from(typeParametersSet);
+  const typeParameterArray = [...classTypeParameters, ...memberTypeParameters];
+  const typeParametersSet = new Set(typeParameterArray);
   const typeLoweringManager = new SamlangTypeLoweringManager(typeParametersSet, typeSynthesizer);
   const mainFunctionParameterWithTypes = [
     [

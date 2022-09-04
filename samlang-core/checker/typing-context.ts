@@ -74,6 +74,7 @@ function instantiateInterfaceContext(
     });
   }
   return {
+    isConcrete: potentiallyNotInstantiatedInterfaceInformation.isConcrete,
     functions: potentiallyNotInstantiatedInterfaceInformation.functions,
     methods,
     typeParameters: [],
@@ -100,6 +101,7 @@ export function memberTypeInformationToString(
 }
 
 export interface InterfaceTypingContext {
+  readonly isConcrete: boolean;
   readonly functions: ReadonlyMap<string, MemberTypeInformation>;
   readonly methods: ReadonlyMap<string, MemberTypeInformation>;
   readonly typeParameters: readonly TypeParameterSignature[];
@@ -140,7 +142,13 @@ export class TypingContext {
       if (relevantTypeParameter.bound == null) {
         // Accessing interface info on an unbounded type parameter is not necessarily bad,
         // but it won't produce any good information either.
-        return { functions: new Map(), methods: new Map(), typeParameters: [], superTypes: [] };
+        return {
+          isConcrete: true,
+          functions: new Map(),
+          methods: new Map(),
+          typeParameters: [],
+          superTypes: [],
+        };
       }
       const interfaceContext =
         this.dangerouslyGetInterfaceInformationWithoutConsideringTypeParametersInBound(
@@ -185,12 +193,23 @@ export class TypingContext {
     });
   };
 
-  public validateTypeInstantiation = (type: SamlangType): void => {
+  public validateTypeInstantiation = (type: SamlangType): void =>
+    this.validateTypeInstantiationCustomized(type, false);
+
+  public validateTypeInstantiationDisallowAbstractTypes = (type: SamlangType): void =>
+    this.validateTypeInstantiationCustomized(type, true);
+
+  private validateTypeInstantiationCustomized(
+    type: SamlangType,
+    enforceConcreteTypes: boolean,
+  ): void {
     // if (type.__type__ !== 'IdentifierType') return;
     if (type.__type__ === 'PrimitiveType' || type.__type__ === 'UnknownType') return;
     if (type.__type__ === 'FunctionType') {
-      type.argumentTypes.forEach(this.validateTypeInstantiation);
-      this.validateTypeInstantiation(type.returnType);
+      type.argumentTypes.forEach((it) =>
+        this.validateTypeInstantiationCustomized(it, enforceConcreteTypes),
+      );
+      this.validateTypeInstantiationCustomized(type.returnType, enforceConcreteTypes);
       return;
     }
     // Generic type is assumed to be good, but it must have zero type args.
@@ -206,13 +225,22 @@ export class TypingContext {
       }
       return;
     }
-    type.typeArguments.forEach((it) => this.validateTypeInstantiation(it));
+    type.typeArguments.forEach((it) =>
+      this.validateTypeInstantiationCustomized(it, enforceConcreteTypes),
+    );
     const interfaceInformation = this.getInterfaceInformation(
       type.moduleReference,
       type.identifier,
     );
     // Syntactically invalid types are already validated.
     if (interfaceInformation == null) return;
+    if (!interfaceInformation.isConcrete && enforceConcreteTypes) {
+      this.errorReporter.reportUnexpectedTypeKindError(
+        type.reason.useLocation,
+        'non-abstract type',
+        type,
+      );
+    }
     if (interfaceInformation.typeParameters.length !== type.typeArguments.length) {
       this.errorReporter.reportArityMismatchError(
         type.reason.useLocation,
@@ -233,7 +261,7 @@ export class TypingContext {
         }
       },
     );
-  };
+  }
 
   public getFunctionType(
     moduleReference: ModuleReference,

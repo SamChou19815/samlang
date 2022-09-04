@@ -51,7 +51,6 @@ describe('hir-common-subexpression-elimination', () => {
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('fff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [
                 HIR_VARIABLE('a', HIR_INT_TYPE),
                 HIR_VARIABLE('ddd', HIR_INT_TYPE),
@@ -69,7 +68,6 @@ describe('hir-common-subexpression-elimination', () => {
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('eee', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [
                 HIR_VARIABLE('fd', HIR_INT_TYPE),
                 HIR_VARIABLE('eee', HIR_INT_TYPE),

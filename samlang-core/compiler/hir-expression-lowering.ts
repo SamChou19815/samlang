@@ -381,9 +381,10 @@ class HighIRExpressionLoweringManager {
         );
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = HIR_FUNCTION_CALL({
-          functionExpression: HIR_FUNCTION_NAME(functionName, functionTypeWithoutContext),
-          typeArguments: functionExpression.typeArguments.map(
-            this.typeLoweringManager.lowerSamlangType,
+          functionExpression: HIR_FUNCTION_NAME(
+            functionName,
+            functionTypeWithoutContext,
+            functionExpression.typeArguments.map(this.typeLoweringManager.lowerSamlangType),
           ),
           functionArguments: expression.functionArguments.map((oneArgument) =>
             this.loweredAndAddStatements(oneArgument, null, loweredStatements),
@@ -394,9 +395,10 @@ class HighIRExpressionLoweringManager {
         break;
       }
       case 'MethodAccessExpression': {
+        assert(functionExpression.expression.type.__type__ === 'IdentifierType');
         const functionName = this.encodeFunctionNameGloballyConsideringGenerics(
-          (functionExpression.expression.type as SamlangIdentifierType).moduleReference,
-          (functionExpression.expression.type as SamlangIdentifierType).identifier,
+          functionExpression.expression.type.moduleReference,
+          functionExpression.expression.type.identifier,
           functionExpression.methodName.name,
         );
         const functionTypeWithoutContext = this.getFunctionTypeWithoutContext(
@@ -408,6 +410,7 @@ class HighIRExpressionLoweringManager {
           null,
           loweredStatements,
         );
+        assert(highIRFunctionExpression.type.__type__ === 'IdentifierType');
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_FUNCTION_NAME(
             functionName,
@@ -415,9 +418,10 @@ class HighIRExpressionLoweringManager {
               [highIRFunctionExpression.type, ...functionTypeWithoutContext.argumentTypes],
               functionTypeWithoutContext.returnType,
             ),
-          ),
-          typeArguments: functionExpression.typeArguments.map(
-            this.typeLoweringManager.lowerSamlangType,
+            [
+              ...highIRFunctionExpression.type.typeArguments,
+              ...functionExpression.typeArguments.map(this.typeLoweringManager.lowerSamlangType),
+            ],
           ),
           functionArguments: [
             highIRFunctionExpression,
@@ -447,8 +451,6 @@ class HighIRExpressionLoweringManager {
         functionReturnCollectorType = returnType;
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: loweredFunctionExpression,
-          // Closure call can't be polymorphic.
-          typeArguments: [],
           functionArguments: loweredFunctionArguments,
           returnType,
           returnCollector: isVoidReturn ? undefined : returnCollectorName,
@@ -571,8 +573,8 @@ class HighIRExpressionLoweringManager {
             functionExpression: HIR_FUNCTION_NAME(
               ENCODED_FUNCTION_NAME_STRING_CONCAT,
               HIR_FUNCTION_TYPE([HIR_STRING_TYPE, HIR_STRING_TYPE], HIR_STRING_TYPE),
+              [],
             ),
-            typeArguments: [],
             functionArguments: [loweredE1, loweredE2],
             returnType: HIR_STRING_TYPE,
             returnCollector: returnCollectorName,

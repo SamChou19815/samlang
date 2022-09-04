@@ -98,7 +98,6 @@ describe('mir-local-value-numbering-optimization', () => {
         }),
         HIR_FUNCTION_CALL({
           functionExpression: HIR_FUNCTION_NAME('fff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-          typeArguments: [],
           functionArguments: [
             HIR_VARIABLE('i1', HIR_INT_TYPE),
             HIR_VARIABLE('b1', HIR_INT_TYPE),

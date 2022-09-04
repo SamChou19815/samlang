@@ -124,7 +124,6 @@ class HighIRTypeDeduplicator {
         );
         return HIR_FUNCTION_CALL({
           functionExpression,
-          typeArguments: statement.typeArguments.map(this.rewriteType),
           functionArguments: statement.functionArguments.map(this.rewriteExpression),
           returnType: this.rewriteType(statement.returnType),
           returnCollector: statement.returnCollector,
@@ -184,7 +183,11 @@ class HighIRTypeDeduplicator {
       case 'HighIRFunctionNameExpression': {
         const type = this.rewriteType(expression.type);
         assert(type.__type__ === 'FunctionType');
-        return HIR_FUNCTION_NAME(expression.name, type);
+        return HIR_FUNCTION_NAME(
+          expression.name,
+          type,
+          expression.typeArguments.map(this.rewriteType),
+        );
       }
     }
   };

@@ -20,7 +20,11 @@ export const encodeMainFunctionName = (moduleReference: ModuleReference): string
 
 export const ENCODED_FUNCTION_NAME_MALLOC = encodeBuiltinName('malloc');
 export const ENCODED_FUNCTION_NAME_FREE = encodeBuiltinName('free');
-export const ENCODED_FUNCTION_NAME_STRING_CONCAT = encodeBuiltinName('stringConcat');
+export const ENCODED_FUNCTION_NAME_STRING_CONCAT = encodeFunctionNameGlobally(
+  ModuleReference.ROOT,
+  'Builtins',
+  'stringConcat',
+);
 export const ENCODED_FUNCTION_NAME_THROW = encodeFunctionNameGlobally(
   ModuleReference.ROOT,
   'Builtins',
