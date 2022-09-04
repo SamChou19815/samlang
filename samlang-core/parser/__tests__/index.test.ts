@@ -30,6 +30,7 @@ describe('samlang-core/parser', () => {
     expectASTWithTheSameKind('V.Variant(3)', 'FunctionCallExpression');
     expectASTWithTheSameKind('V.Variant<T>(3)', 'FunctionCallExpression');
     expectASTWithTheSameKind('foo.bar', 'FieldAccessExpression');
+    expectASTWithTheSameKind('foo.bar<int, bool>', 'FieldAccessExpression');
     expectASTWithTheSameKind('!false', 'UnaryExpression');
     expectASTWithTheSameKind('-42', 'UnaryExpression');
     expectASTWithTheSameKind('haha(3, 4, false, "oh no")', 'FunctionCallExpression');

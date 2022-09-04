@@ -20,7 +20,8 @@ function collectUsedNamesFromExpression(
     case 'HighIRIntLiteralExpression':
     case 'HighIRVariableExpression':
       break;
-    case 'HighIRNameExpression':
+    case 'HighIRStringNameExpression':
+    case 'HighIRFunctionNameExpression':
       nameSet.add(expression.name);
       break;
   }

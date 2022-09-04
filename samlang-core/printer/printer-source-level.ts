@@ -133,13 +133,13 @@ function createPrettierDocumentFromSamlangExpression(
         return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
           expression.fieldName.associatedComments,
-          expression.fieldName.name,
+          expression.fieldName.name + optionalTypeArguments(expression.typeArguments),
         );
       case 'MethodAccessExpression':
         return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
           expression.methodName.associatedComments,
-          expression.methodName.name,
+          expression.methodName.name + optionalTypeArguments(expression.typeArguments),
         );
       case 'UnaryExpression':
         return PRETTIER_CONCAT(

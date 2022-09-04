@@ -5,6 +5,7 @@ import {
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
@@ -12,8 +13,8 @@ import {
   HIR_INDEX_ACCESS,
   HIR_INT,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_SINGLE_IF,
+  HIR_STRING_NAME,
   HIR_STRING_TYPE,
   HIR_STRUCT_INITIALIZATION,
   HIR_TRUE,
@@ -83,11 +84,12 @@ sources.mains = [main]
             type,
             body: [
               HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME(
+                functionExpression: HIR_FUNCTION_NAME(
                   '__builtins_println',
                   HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
                 ),
-                functionArguments: [HIR_NAME('G1', HIR_STRING_TYPE)],
+                typeArguments: [],
+                functionArguments: [HIR_STRING_NAME('G1')],
                 returnType: HIR_INT_TYPE,
               }),
             ],
@@ -179,7 +181,7 @@ sources.mains = [main]
     const typeIA = HIR_IDENTIFIER_TYPE('I', [typeA, HIR_STRING_TYPE]);
     const typeIB = HIR_IDENTIFIER_TYPE('I', [HIR_INT_TYPE, typeB]);
     const typeI = HIR_IDENTIFIER_TYPE('I', [HIR_INT_TYPE, HIR_STRING_TYPE]);
-    const G1 = HIR_NAME('G1', HIR_STRING_TYPE);
+    const G1 = HIR_STRING_NAME('G1');
     expectSpecialized(
       {
         globalVariables: [
@@ -221,10 +223,11 @@ sources.mains = [main]
             type: HIR_FUNCTION_TYPE([typeA], HIR_INT_TYPE),
             body: [
               HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME(
+                functionExpression: HIR_FUNCTION_NAME(
                   '$GENERICS$_A$foo',
                   HIR_FUNCTION_TYPE([typeA], HIR_INT_TYPE),
                 ),
+                typeArguments: [],
                 functionArguments: [HIR_ZERO],
                 returnType: HIR_INT_TYPE,
               }),
@@ -269,40 +272,44 @@ sources.mains = [main]
                 booleanExpression: HIR_TRUE,
                 s1: [
                   HIR_FUNCTION_CALL({
-                    functionExpression: HIR_NAME(
+                    functionExpression: HIR_FUNCTION_NAME(
                       'creatorIA',
                       HIR_FUNCTION_TYPE([HIR_INT_TYPE], typeI),
                     ),
+                    typeArguments: [],
                     functionArguments: [HIR_ZERO],
                     returnType: typeI,
                     returnCollector: 'a',
                   }),
                   HIR_FUNCTION_CALL({
-                    functionExpression: HIR_NAME(
+                    functionExpression: HIR_FUNCTION_NAME(
                       'creatorIA',
                       HIR_FUNCTION_TYPE(
                         [HIR_STRING_TYPE],
                         HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
                       ),
                     ),
+                    typeArguments: [],
                     functionArguments: [G1],
                     returnType: typeI,
                     returnCollector: 'a2',
                   }),
                   HIR_FUNCTION_CALL({
-                    functionExpression: HIR_NAME(
+                    functionExpression: HIR_FUNCTION_NAME(
                       'creatorIB',
                       HIR_FUNCTION_TYPE([HIR_STRING_TYPE], typeI),
                     ),
+                    typeArguments: [],
                     functionArguments: [G1],
                     returnType: typeI,
                     returnCollector: 'b',
                   }),
                   HIR_FUNCTION_CALL({
-                    functionExpression: HIR_NAME(
+                    functionExpression: HIR_FUNCTION_NAME(
                       'functor_fun',
                       HIR_FUNCTION_TYPE([typeI], HIR_INT_TYPE),
                     ),
+                    typeArguments: [],
                     functionArguments: [G1],
                     returnType: typeI,
                   }),
@@ -315,7 +322,11 @@ sources.mains = [main]
                 ],
                 s2: [
                   HIR_FUNCTION_CALL({
-                    functionExpression: HIR_NAME('main', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                    functionExpression: HIR_FUNCTION_NAME(
+                      'main',
+                      HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+                    ),
+                    typeArguments: [],
                     functionArguments: [],
                     returnType: HIR_INT_TYPE,
                   }),
@@ -474,7 +485,8 @@ sources.mains = [main]
             type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
             body: [
               HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('creatorJ', HIR_FUNCTION_TYPE([], typeJ)),
+                functionExpression: HIR_FUNCTION_NAME('creatorJ', HIR_FUNCTION_TYPE([], typeJ)),
+                typeArguments: [HIR_INT_TYPE],
                 functionArguments: [],
                 returnType: typeJ,
               }),
@@ -492,7 +504,7 @@ function creatorJ(): J {
 }
 
 function main(): int {
-  creatorJ();
+  creatorJ<int>();
   return 0;
 }
 

@@ -4,14 +4,14 @@ import {
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_SINGLE_IF,
-  HIR_STRING_TYPE,
+  HIR_STRING_NAME,
   HIR_STRUCT_INITIALIZATION,
   HIR_WHILE,
   HIR_ZERO,
@@ -57,7 +57,8 @@ describe('hir-unused-name-elimination-optimization', () => {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('foo', HIR_STRING_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -73,17 +74,18 @@ describe('hir-unused-name-elimination-optimization', () => {
             HIR_STRUCT_INITIALIZATION({
               structVariableName: '',
               type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo'),
-              expressionList: [HIR_NAME('bar', HIR_INT_TYPE)],
+              expressionList: [HIR_STRING_NAME('bar')],
             }),
             HIR_INDEX_ACCESS({
               name: 'd',
               type: HIR_INT_TYPE,
-              pointerExpression: HIR_NAME('bar', HIR_INT_TYPE),
+              pointerExpression: HIR_STRING_NAME('bar'),
               index: 0,
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('baz', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              functionArguments: [HIR_NAME('haha', HIR_INT_TYPE)],
+              functionExpression: HIR_FUNCTION_NAME('baz', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
+              functionArguments: [HIR_STRING_NAME('haha')],
               returnType: HIR_INT_TYPE,
             }),
             HIR_IF_ELSE({
@@ -92,16 +94,16 @@ describe('hir-unused-name-elimination-optimization', () => {
                 HIR_BINARY({
                   name: '',
                   operator: '+',
-                  e1: HIR_NAME('foo', HIR_INT_TYPE),
-                  e2: HIR_NAME('bar', HIR_INT_TYPE),
+                  e1: HIR_STRING_NAME('foo'),
+                  e2: HIR_STRING_NAME('bar'),
                 }),
               ],
               s2: [
                 HIR_BINARY({
                   name: '',
                   operator: '+',
-                  e1: HIR_NAME('foo', HIR_INT_TYPE),
-                  e2: HIR_NAME('bar', HIR_INT_TYPE),
+                  e1: HIR_STRING_NAME('foo'),
+                  e2: HIR_STRING_NAME('bar'),
                 }),
               ],
               finalAssignments: [
@@ -126,8 +128,8 @@ describe('hir-unused-name-elimination-optimization', () => {
                 HIR_BINARY({
                   name: '',
                   operator: '+',
-                  e1: HIR_NAME('foo', HIR_INT_TYPE),
-                  e2: HIR_NAME('bar', HIR_INT_TYPE),
+                  e1: HIR_STRING_NAME('foo'),
+                  e2: HIR_STRING_NAME('bar'),
                 }),
               ],
             }),
@@ -139,7 +141,7 @@ describe('hir-unused-name-elimination-optimization', () => {
               breakCollector: { name: 'd', type: HIR_INT_TYPE },
             }),
           ],
-          returnValue: HIR_NAME('bar', HIR_INT_TYPE),
+          returnValue: HIR_STRING_NAME('bar'),
         },
         {
           name: 'bar',
@@ -148,7 +150,8 @@ describe('hir-unused-name-elimination-optimization', () => {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
+              functionExpression: HIR_FUNCTION_NAME('foo', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),

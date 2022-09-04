@@ -1,5 +1,5 @@
 import {
-  HighIRNameExpression,
+  HighIRFunctionNameExpression,
   HIR_BINARY,
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
@@ -92,7 +92,8 @@ describe('hir-loop-induction-variable-elimination', () => {
             }),
             HIR_BINARY({ name: '', operator: '!=', e1: HIR_ZERO, e2: HIR_ZERO }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+              functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+              typeArguments: [],
               functionArguments: [HIR_ZERO],
               returnType: HIR_INT_TYPE,
             }),

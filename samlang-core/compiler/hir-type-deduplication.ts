@@ -9,11 +9,11 @@ import {
   HIR_BINARY,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
-  HIR_NAME,
   HIR_STRUCT_INITIALIZATION,
   prettyPrintHighIRType,
 } from '../ast/hir-nodes';
@@ -118,9 +118,13 @@ class HighIRTypeDeduplicator {
         });
       case 'HighIRFunctionCallStatement': {
         const functionExpression = this.rewriteExpression(statement.functionExpression);
-        assert(functionExpression.__type__ !== 'HighIRIntLiteralExpression');
+        assert(
+          functionExpression.__type__ === 'HighIRFunctionNameExpression' ||
+            functionExpression.__type__ === 'HighIRVariableExpression',
+        );
         return HIR_FUNCTION_CALL({
           functionExpression,
+          typeArguments: statement.typeArguments.map(this.rewriteType),
           functionArguments: statement.functionArguments.map(this.rewriteExpression),
           returnType: this.rewriteType(statement.returnType),
           returnCollector: statement.returnCollector,
@@ -175,10 +179,12 @@ class HighIRTypeDeduplicator {
         return expression;
       case 'HighIRVariableExpression':
         return { ...expression, type: this.rewriteType(expression.type) };
-      case 'HighIRNameExpression': {
+      case 'HighIRStringNameExpression':
+        return expression;
+      case 'HighIRFunctionNameExpression': {
         const type = this.rewriteType(expression.type);
-        assert(type.__type__ !== 'IdentifierType');
-        return HIR_NAME(expression.name, type);
+        assert(type.__type__ === 'FunctionType');
+        return HIR_FUNCTION_NAME(expression.name, type);
       }
     }
   };

@@ -44,7 +44,7 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
   switch (lastStatement.__type__) {
     case 'HighIRFunctionCallStatement':
       if (
-        lastStatement.functionExpression.__type__ !== 'HighIRNameExpression' ||
+        lastStatement.functionExpression.__type__ === 'HighIRVariableExpression' ||
         lastStatement.functionExpression.name !== functionName
       ) {
         return null;
@@ -178,7 +178,12 @@ export default function optimizeHighIRFunctionByTailRecursionRewrite({
   body,
   returnValue,
 }: HighIRFunction): HighIRFunction | null {
-  if (returnValue.__type__ === 'HighIRNameExpression') return null;
+  if (
+    returnValue.__type__ === 'HighIRStringNameExpression' ||
+    returnValue.__type__ === 'HighIRFunctionNameExpression'
+  ) {
+    return null;
+  }
   const allocator = new OptimizationResourceAllocator();
   const result = tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
     body,

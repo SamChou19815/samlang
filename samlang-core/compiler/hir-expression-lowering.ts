@@ -17,6 +17,7 @@ import {
   HIR_CLOSURE_INITIALIZATION,
   HIR_FALSE,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
@@ -24,7 +25,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_INT,
   HIR_INT_TYPE,
-  HIR_NAME,
+  HIR_STRING_NAME,
   HIR_STRING_TYPE,
   HIR_STRUCT_INITIALIZATION,
   HIR_TRUE,
@@ -67,7 +68,10 @@ type HighIRExpressionLoweringResultWithSyntheticFunctions = {
 
 class HighIRLoweringContext extends LocalStackedContext<HighIRExpression> {
   addLocalValueType(name: string, value: HighIRExpression, onCollision: () => void): void {
-    if (value.__type__ !== 'HighIRNameExpression') {
+    if (
+      value.__type__ !== 'HighIRStringNameExpression' &&
+      value.__type__ !== 'HighIRFunctionNameExpression'
+    ) {
       super.addLocalValueType(name, value, onCollision);
       return;
     }
@@ -194,9 +198,8 @@ class HighIRExpressionLoweringManager {
           case 'StringLiteral': {
             return {
               statements: [],
-              expression: HIR_NAME(
+              expression: HIR_STRING_NAME(
                 this.stringManager.allocateStringArrayGlobalVariable(expression.literal.value).name,
-                HIR_STRING_TYPE,
               ),
             };
           }
@@ -378,7 +381,10 @@ class HighIRExpressionLoweringManager {
         );
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(functionName, functionTypeWithoutContext),
+          functionExpression: HIR_FUNCTION_NAME(functionName, functionTypeWithoutContext),
+          typeArguments: functionExpression.typeArguments.map(
+            this.typeLoweringManager.lowerSamlangType,
+          ),
           functionArguments: expression.functionArguments.map((oneArgument) =>
             this.loweredAndAddStatements(oneArgument, null, loweredStatements),
           ),
@@ -403,12 +409,15 @@ class HighIRExpressionLoweringManager {
           loweredStatements,
         );
         functionCall = HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(
+          functionExpression: HIR_FUNCTION_NAME(
             functionName,
             HIR_FUNCTION_TYPE(
               [highIRFunctionExpression.type, ...functionTypeWithoutContext.argumentTypes],
               functionTypeWithoutContext.returnType,
             ),
+          ),
+          typeArguments: functionExpression.typeArguments.map(
+            this.typeLoweringManager.lowerSamlangType,
           ),
           functionArguments: [
             highIRFunctionExpression,
@@ -438,6 +447,8 @@ class HighIRExpressionLoweringManager {
         functionReturnCollectorType = returnType;
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: loweredFunctionExpression,
+          // Closure call can't be polymorphic.
+          typeArguments: [],
           functionArguments: loweredFunctionArguments,
           returnType,
           returnCollector: isVoidReturn ? undefined : returnCollectorName,
@@ -544,11 +555,10 @@ class HighIRExpressionLoweringManager {
         ) {
           return {
             statements: [],
-            expression: HIR_NAME(
+            expression: HIR_STRING_NAME(
               this.stringManager.allocateStringArrayGlobalVariable(
                 expression.e1.literal.value + expression.e2.literal.value,
               ).name,
-              HIR_STRING_TYPE,
             ),
           };
         }
@@ -558,10 +568,11 @@ class HighIRExpressionLoweringManager {
         const returnCollectorName = this.allocateTemporaryVariable(favoredTempVariable);
         loweredStatements.push(
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME(
+            functionExpression: HIR_FUNCTION_NAME(
               ENCODED_FUNCTION_NAME_STRING_CONCAT,
               HIR_FUNCTION_TYPE([HIR_STRING_TYPE, HIR_STRING_TYPE], HIR_STRING_TYPE),
             ),
+            typeArguments: [],
             functionArguments: [loweredE1, loweredE2],
             returnType: HIR_STRING_TYPE,
             returnCollector: returnCollectorName,

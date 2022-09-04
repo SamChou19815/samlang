@@ -282,7 +282,7 @@ function ___DUMMY___Main$main_with_context(_context: int): int {
 }
 
 function ___DUMMY___Main$loopy_with_context<T>(_context: int): int {
-  let _ret: int = ___DUMMY___Main$loopy();
+  let _ret: int = ___DUMMY___Main$loopy<T>();
   return (_ret: int);
 }
 
@@ -355,7 +355,7 @@ function ___DUMMY___Class3$init<T>(_f0: $SyntheticIDType0<T>): __DUMMY___Class3<
 }
 
 function ___DUMMY___Class3$init_with_context<T>(_context: int, _f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {
-  let _ret: __DUMMY___Class3<T> = ___DUMMY___Class3$init((_f0: $SyntheticIDType0<T>));
+  let _ret: __DUMMY___Class3<T> = ___DUMMY___Class3$init<T>((_f0: $SyntheticIDType0<T>));
   return (_ret: __DUMMY___Class3<T>);
 }
 

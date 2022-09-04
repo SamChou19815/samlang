@@ -1,7 +1,7 @@
 import {
   HighIRExpression,
   HighIRFunction,
-  HighIRNameExpression,
+  HighIRFunctionNameExpression,
   HighIRStatement,
   HighIRType,
   HIR_VARIABLE,
@@ -113,7 +113,9 @@ function inlineRewriteForStatement(
         e2: rewrite(statement.e2),
       };
     case 'HighIRFunctionCallStatement': {
-      const functionExpression = rewrite(statement.functionExpression) as HighIRNameExpression;
+      const functionExpression = rewrite(
+        statement.functionExpression,
+      ) as HighIRFunctionNameExpression;
       const functionArguments = statement.functionArguments.map(rewrite);
       if (statement.returnCollector == null) {
         return { ...statement, functionExpression, functionArguments };
@@ -233,7 +235,7 @@ function performInlineRewriteOnFunction(
     switch (statement.__type__) {
       case 'HighIRFunctionCallStatement': {
         const { functionExpression, functionArguments, returnType, returnCollector } = statement;
-        if (functionExpression.__type__ !== 'HighIRNameExpression') return [statement];
+        if (functionExpression.__type__ !== 'HighIRFunctionNameExpression') return [statement];
         const functionName = functionExpression.name;
         if (!functionsThatCanBeInlined.has(functionName) || functionName === highIRFunction.name) {
           return [statement];

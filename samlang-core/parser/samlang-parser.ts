@@ -920,12 +920,24 @@ export default class SamlangModuleParser extends BaseParser {
         this.consume();
         fieldPrecedingComments.push(...this.collectPrecedingComments());
         const { location: fieldLocation, variable: fieldName } = this.assertAndPeekLowerId();
-        const location = functionExpression.location.union(fieldLocation);
+        const typeArguments: SamlangType[] = [];
+        let location = functionExpression.location.union(fieldLocation);
+        if (this.peek().content === '<') {
+          fieldPrecedingComments.push(...this.collectPrecedingComments());
+          this.assertAndConsume('<');
+          typeArguments.push(this.parseType());
+          while (this.peek().content === ',') {
+            this.consume();
+            typeArguments.push(this.parseType());
+          }
+          location = location.union(this.assertAndConsume('>'));
+        }
         functionExpression = SourceExpressionFieldAccess({
           location,
           type: SourceUnknownType(SourceReason(location, null)),
           associatedComments: [],
           expression: functionExpression,
+          typeArguments,
           fieldName: SourceId(fieldName, {
             location: fieldLocation,
             associatedComments: fieldPrecedingComments,

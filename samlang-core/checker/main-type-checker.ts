@@ -1,4 +1,4 @@
-import { ModuleReference, SourceReason } from '../ast/common-nodes';
+import { DummySourceReason, ModuleReference, SourceReason } from '../ast/common-nodes';
 import {
   BinaryExpression,
   ClassMemberExpression,
@@ -229,7 +229,7 @@ class ExpressionTypeChecker {
       if (hint.__type__ === 'FunctionType') {
         if (hint.argumentTypes.length === classFunctionTypeInformation.type.argumentTypes.length) {
           // Hint matches the shape and can be useful.
-          const { solvedGenericType } = solveTypeConstraints(
+          const { solvedGenericType, solvedSubstitution } = solveTypeConstraints(
             hint,
             classFunctionTypeInformation.type,
             classFunctionTypeInformation.typeParameters,
@@ -239,7 +239,16 @@ class ExpressionTypeChecker {
             location: expression.location,
             type: solvedGenericType,
             associatedComments: expression.associatedComments,
-            typeArguments: expression.typeArguments,
+            typeArguments: classFunctionTypeInformation.typeParameters.map((it) =>
+              performTypeSubstitution(
+                SourceIdentifierType(
+                  DummySourceReason,
+                  this.context.currentModuleReference,
+                  it.name,
+                ),
+                solvedSubstitution,
+              ),
+            ),
             moduleReference: expression.moduleReference,
             className: expression.className,
             memberName: expression.memberName,
@@ -265,11 +274,14 @@ class ExpressionTypeChecker {
       location: expression.location,
       type: classFunctionTypeInformation.type,
       associatedComments: expression.associatedComments,
-      typeArguments: expression.typeArguments,
+      typeArguments: classFunctionTypeInformation.typeParameters.map((it) =>
+        SourceIdentifierType(DummySourceReason, this.context.currentModuleReference, it.name),
+      ),
       moduleReference: expression.moduleReference,
       className: expression.className,
       memberName: expression.memberName,
     });
+    expression.typeArguments.forEach(this.context.validateTypeInstantiation);
     return {
       partiallyCheckedExpression,
       unsolvedTypeParameters: classFunctionTypeInformation.typeParameters,
@@ -277,26 +289,38 @@ class ExpressionTypeChecker {
   }
 
   private replaceUndecidedTypeParameterWithUnknownAndUpdateType(
-    expression: SamlangExpression,
+    expression:
+      | SamlangExpression
+      | ClassMemberExpression
+      | FieldAccessExpression
+      | MethodAccessExpression,
     unsolvedTypeParameters: readonly TypeParameterSignature[],
     hint: SamlangType | null,
   ): SamlangExpression {
     if (unsolvedTypeParameters.length !== 0) {
       this.errorReporter.reportInsufficientTypeInferenceContextError(expression.location);
     }
-    const type = this.typeMeet(
-      hint,
-      performTypeSubstitution(
-        expression.type,
-        new Map(
-          unsolvedTypeParameters.map((it) => [
-            it.name,
-            this.bestEffortUnknownType(null, expression),
-          ]),
-        ),
-      ),
+    const substitutionMap = new Map(
+      unsolvedTypeParameters.map((it) => [it.name, this.bestEffortUnknownType(null, expression)]),
     );
-    return sourceExpressionWithNewType(expression, type);
+    const type = this.typeMeet(hint, performTypeSubstitution(expression.type, substitutionMap));
+    let expressionWithPatchedTypeArguments: SamlangExpression;
+    switch (expression.__type__) {
+      case 'ClassMemberExpression':
+      case 'FieldAccessExpression':
+      case 'MethodAccessExpression':
+        expressionWithPatchedTypeArguments = {
+          ...expression,
+          typeArguments: expression.typeArguments.map((it) =>
+            performTypeSubstitution(it, substitutionMap),
+          ),
+        };
+        break;
+      default:
+        expressionWithPatchedTypeArguments = expression;
+        break;
+    }
+    return sourceExpressionWithNewType(expressionWithPatchedTypeArguments, type);
   }
 
   private typeCheckClassMember(
@@ -331,6 +355,7 @@ class ExpressionTypeChecker {
         type: this.bestEffortUnknownType(hint, expression),
         associatedComments: expression.associatedComments,
         expression: checkedExpression,
+        typeArguments: expression.typeArguments,
         fieldName: expression.fieldName,
         fieldOrder: expression.fieldOrder,
       });
@@ -345,6 +370,42 @@ class ExpressionTypeChecker {
     );
     if (methodTypeInformation != null) {
       // This is a valid method. We will now type check it as a method access
+      expression.typeArguments.forEach(this.context.validateTypeInstantiation);
+      if (expression.typeArguments.length > 0) {
+        if (expression.typeArguments.length === methodTypeInformation.typeParameters.length) {
+          const substitutionMap = new Map(
+            zip(
+              methodTypeInformation.typeParameters.map((it) => it.name),
+              expression.typeArguments,
+            ),
+          );
+          validateTypeArguments(
+            methodTypeInformation.typeParameters,
+            substitutionMap,
+            this.context.isSubtype,
+            this.errorReporter,
+          );
+          const type = this.typeMeet(
+            hint,
+            performTypeSubstitution(methodTypeInformation.type, substitutionMap),
+          );
+          const partiallyCheckedExpression = SourceExpressionMethodAccess({
+            location: expression.location,
+            type,
+            associatedComments: expression.associatedComments,
+            expression: checkedExpression,
+            typeArguments: expression.typeArguments,
+            methodName: expression.fieldName,
+          });
+          return { partiallyCheckedExpression, unsolvedTypeParameters: [] };
+        }
+        this.errorReporter.reportArityMismatchError(
+          expression.location,
+          'type arguments',
+          methodTypeInformation.typeParameters.length,
+          expression.typeArguments.length,
+        );
+      }
       if (methodTypeInformation.typeParameters.length === 0) {
         // No type parameter to solve
         const partiallyCheckedExpression = SourceExpressionMethodAccess({
@@ -352,6 +413,7 @@ class ExpressionTypeChecker {
           type: this.typeMeet(hint, methodTypeInformation.type),
           associatedComments: expression.associatedComments,
           expression: checkedExpression,
+          typeArguments: expression.typeArguments,
           methodName: expression.fieldName,
         });
         return { partiallyCheckedExpression, unsolvedTypeParameters: [] };
@@ -362,7 +424,7 @@ class ExpressionTypeChecker {
         if (hint.__type__ === 'FunctionType') {
           if (hint.argumentTypes.length === methodTypeInformation.type.argumentTypes.length) {
             // Hint matches the shape and can be useful.
-            const { solvedGenericType } = solveTypeConstraints(
+            const { solvedGenericType, solvedSubstitution } = solveTypeConstraints(
               hint,
               methodTypeInformation.type,
               methodTypeInformation.typeParameters,
@@ -373,6 +435,16 @@ class ExpressionTypeChecker {
               type: solvedGenericType,
               associatedComments: expression.associatedComments,
               expression: checkedExpression,
+              typeArguments: methodTypeInformation.typeParameters.map((it) =>
+                performTypeSubstitution(
+                  SourceIdentifierType(
+                    DummySourceReason,
+                    this.context.currentModuleReference,
+                    it.name,
+                  ),
+                  solvedSubstitution,
+                ),
+              ),
               methodName: expression.fieldName,
             });
             return { partiallyCheckedExpression, unsolvedTypeParameters: [] };
@@ -397,6 +469,9 @@ class ExpressionTypeChecker {
         type: methodTypeInformation.type,
         associatedComments: expression.associatedComments,
         expression: checkedExpression,
+        typeArguments: methodTypeInformation.typeParameters.map((it) =>
+          SourceIdentifierType(DummySourceReason, this.context.currentModuleReference, it.name),
+        ),
         methodName: expression.fieldName,
       });
       return {
@@ -404,6 +479,14 @@ class ExpressionTypeChecker {
         unsolvedTypeParameters: methodTypeInformation.typeParameters,
       };
     } else {
+      if (expression.typeArguments.length !== 0) {
+        this.errorReporter.reportArityMismatchError(
+          expression.location,
+          'type arguments',
+          0,
+          expression.typeArguments.length,
+        );
+      }
       const { names: fieldNames, mappings: fieldMappings } = this.context.resolveTypeDefinition(
         checkedExpression.type,
         'object',
@@ -419,6 +502,7 @@ class ExpressionTypeChecker {
           type: this.bestEffortUnknownType(hint, expression),
           associatedComments: expression.associatedComments,
           expression: checkedExpression,
+          typeArguments: expression.typeArguments,
           fieldName: expression.fieldName,
           fieldOrder: expression.fieldOrder,
         });
@@ -434,6 +518,7 @@ class ExpressionTypeChecker {
           type: this.bestEffortUnknownType(hint, expression),
           associatedComments: expression.associatedComments,
           expression: checkedExpression,
+          typeArguments: expression.typeArguments,
           fieldName: expression.fieldName,
           fieldOrder: expression.fieldOrder,
         });
@@ -446,6 +531,7 @@ class ExpressionTypeChecker {
         type: this.typeMeet(hint, typeReposition(fieldType.type, expression.location)),
         associatedComments: expression.associatedComments,
         expression: checkedExpression,
+        typeArguments: expression.typeArguments,
         fieldName: expression.fieldName,
         fieldOrder: order,
       });
@@ -547,25 +633,42 @@ class ExpressionTypeChecker {
         functionArguments: expression.functionArguments,
       });
     }
-    const { solvedGenericType, solvedReturnType, checkedArguments } = typeCheckFunctionCall(
-      checkedFunctionExpressionWithUnresolvedGenericType.type,
-      typeParameters,
-      SourceReason(expression.location, null),
-      expression.functionArguments,
-      hint,
-      this.typeCheck,
-      this.context.isSubtype,
-      this.errorReporter,
-    );
+    const { solvedGenericType, solvedReturnType, solvedSubstitution, checkedArguments } =
+      typeCheckFunctionCall(
+        checkedFunctionExpressionWithUnresolvedGenericType.type,
+        typeParameters,
+        SourceReason(expression.location, null),
+        expression.functionArguments,
+        hint,
+        this.typeCheck,
+        this.context.isSubtype,
+        this.errorReporter,
+      );
     const fullyResolvedCheckedFunctionExpression = sourceExpressionWithNewType(
       checkedFunctionExpressionWithUnresolvedGenericType,
       solvedGenericType,
     );
+    let expressionWithPatchedTypeArguments: SamlangExpression;
+    switch (fullyResolvedCheckedFunctionExpression.__type__) {
+      case 'ClassMemberExpression':
+      case 'FieldAccessExpression':
+      case 'MethodAccessExpression':
+        expressionWithPatchedTypeArguments = {
+          ...fullyResolvedCheckedFunctionExpression,
+          typeArguments: fullyResolvedCheckedFunctionExpression.typeArguments.map((it) =>
+            performTypeSubstitution(it, solvedSubstitution),
+          ),
+        };
+        break;
+      default:
+        expressionWithPatchedTypeArguments = fullyResolvedCheckedFunctionExpression;
+        break;
+    }
     return SourceExpressionFunctionCall({
       location: expression.location,
       type: solvedReturnType,
       associatedComments: expression.associatedComments,
-      functionExpression: fullyResolvedCheckedFunctionExpression,
+      functionExpression: expressionWithPatchedTypeArguments,
       functionArguments: checkedArguments,
     });
   }

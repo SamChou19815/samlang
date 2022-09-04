@@ -205,7 +205,8 @@ function tryMergeIntoDerivedInductionVariableWithoutSwap(
     }
   }
   if (
-    binaryStatement.e2.__type__ === 'HighIRNameExpression' ||
+    binaryStatement.e2.__type__ === 'HighIRStringNameExpression' ||
+    binaryStatement.e2.__type__ === 'HighIRFunctionNameExpression' ||
     !expressionIsLoopInvariant(binaryStatement.e2)
   ) {
     return false;
@@ -329,7 +330,10 @@ export function extractLoopGuardStructure_EXPOSED_FOR_TESTING(
   if (guardOperator == null) return null;
   const potentialBasicInductionVariableNameWithLoopGuard = firstBinaryStatement.e1.name;
   const guardExpression = firstBinaryStatement.e2;
-  assert(guardExpression.__type__ !== 'HighIRNameExpression');
+  assert(
+    guardExpression.__type__ !== 'HighIRStringNameExpression' &&
+      guardExpression.__type__ !== 'HighIRFunctionNameExpression',
+  );
 
   const breakCollector =
     originalBreakCollector == null
@@ -374,7 +378,10 @@ export function extractBasicInductionVariables_EXPOSED_FOR_TESTING(
           statement.e1.name === loopVariable.name &&
           expressionIsLoopInvariant(statement.e2)
         ) {
-          assert(statement.e2.__type__ !== 'HighIRNameExpression');
+          assert(
+            statement.e2.__type__ !== 'HighIRStringNameExpression' &&
+              statement.e2.__type__ !== 'HighIRFunctionNameExpression',
+          );
           return statement.e2;
         }
         return null;
@@ -457,7 +464,8 @@ export function expressionIsLoopInvariant_EXPOSED_FOR_TESTING(
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
       return true;
-    case 'HighIRNameExpression':
+    case 'HighIRStringNameExpression':
+    case 'HighIRFunctionNameExpression':
       // We are doing algebraic operations here. Name is hopeless.
       return false;
     case 'HighIRVariableExpression':

@@ -13,13 +13,14 @@ import {
   HIR_BREAK,
   HIR_CLOSURE_INITIALIZATION,
   HIR_FUNCTION_CALL,
+  HIR_FUNCTION_NAME,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
   HIR_INT_TYPE,
-  HIR_NAME,
   HIR_SINGLE_IF,
+  HIR_STRING_NAME,
   HIR_STRING_TYPE,
   HIR_STRUCT_INITIALIZATION,
   HIR_TRUE,
@@ -116,6 +117,7 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
           body: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_VARIABLE('cc', closureType),
+              typeArguments: [],
               functionArguments: [HIR_ZERO],
               returnType: HIR_INT_TYPE,
             }),
@@ -192,14 +194,14 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
             HIR_STRUCT_INITIALIZATION({
               structVariableName: 'v2',
               type: variantType,
-              expressionList: [HIR_ZERO, HIR_NAME('G1', HIR_STRING_TYPE)],
+              expressionList: [HIR_ZERO, HIR_STRING_NAME('G1')],
             }),
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'c1',
               closureType,
               functionName: 'aaa',
               functionType: HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
-              context: HIR_NAME('G1', HIR_STRING_TYPE),
+              context: HIR_STRING_NAME('G1'),
             }),
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'c2',
@@ -221,12 +223,17 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
               booleanExpression: HIR_TRUE,
               s1: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('main', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                  functionExpression: HIR_FUNCTION_NAME(
+                    'main',
+                    HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+                  ),
+                  typeArguments: [],
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_INT_TYPE,
                 }),
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('cc', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                  functionExpression: HIR_FUNCTION_NAME('cc', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                  typeArguments: [],
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_INT_TYPE,
                 }),
@@ -234,6 +241,7 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
               s2: [
                 HIR_FUNCTION_CALL({
                   functionExpression: HIR_VARIABLE('cc', closureType),
+                  typeArguments: [],
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC'),
                 }),

@@ -1,6 +1,6 @@
 import {
   debugPrintHighIRStatement,
-  HighIRNameExpression,
+  HighIRFunctionNameExpression,
   HIR_BINARY,
   HIR_BOOL_TYPE,
   HIR_BREAK,
@@ -95,12 +95,14 @@ describe('hir-loop-invariant-code-motion', () => {
               e2: HIR_INT(6),
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+              functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+              typeArguments: [],
               functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_ZERO as unknown as HighIRNameExpression,
+              functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
+              typeArguments: [],
               functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
               returnCollector: 'fc',

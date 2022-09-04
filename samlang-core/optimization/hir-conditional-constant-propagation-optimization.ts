@@ -5,8 +5,8 @@ import {
   HighIRBinaryStatement,
   HighIRExpression,
   HighIRFunction,
+  HighIRFunctionNameExpression,
   HighIRIntLiteralExpression,
-  HighIRNameExpression,
   HighIRStatement,
   HighIRVariableExpression,
   HighIRWhileStatement,
@@ -121,7 +121,8 @@ function optimizeHighIRExpression(
 ): HighIRExpression {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
+    case 'HighIRStringNameExpression':
+    case 'HighIRFunctionNameExpression':
       return expression;
     case 'HighIRVariableExpression': {
       const binded = valueContext.getLocalValueType(expression.name);
@@ -301,7 +302,8 @@ function optimizeHighIRStatement(
         HIR_FUNCTION_CALL({
           functionExpression: optimizeExpression(
             statement.functionExpression,
-          ) as HighIRNameExpression,
+          ) as HighIRFunctionNameExpression,
+          typeArguments: statement.typeArguments,
           functionArguments: statement.functionArguments.map(optimizeExpression),
           returnType: statement.returnType,
           returnCollector: statement.returnCollector,

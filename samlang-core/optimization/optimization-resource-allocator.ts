@@ -2,6 +2,7 @@ export default class OptimizationResourceAllocator {
   private cseHoistingTemporaryID = 0;
   private inliningPrefixID = 0;
   private loopTemporaryID = 0;
+
   allocateCSEHoistedTemporary(): string {
     const temporary = `_cse_${this.cseHoistingTemporaryID}_`;
     this.cseHoistingTemporaryID += 1;

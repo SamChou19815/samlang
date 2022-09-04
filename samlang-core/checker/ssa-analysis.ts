@@ -127,7 +127,9 @@ class SsaBuilder extends LocalStackedContext<Location> {
   visitExpression = (expression: SamlangExpression): void => {
     switch (expression.__type__) {
       case 'LiteralExpression':
+        return;
       case 'ClassMemberExpression':
+        expression.typeArguments.forEach(this.visitType);
         return;
       case 'ThisExpression':
         this.use({ name: 'this', location: expression.location });
@@ -137,6 +139,9 @@ class SsaBuilder extends LocalStackedContext<Location> {
         return;
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
+        this.visitExpression(expression.expression);
+        expression.typeArguments.forEach(this.visitType);
+        return;
       case 'UnaryExpression':
         this.visitExpression(expression.expression);
         return;
