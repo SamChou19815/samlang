@@ -68,7 +68,6 @@ describe('hir-tail-recursion-optimization', () => {
       body: [
         HIR_FUNCTION_CALL({
           functionExpression: HIR_VARIABLE('', HIR_INT_TYPE),
-          typeArguments: [],
           functionArguments: [],
           returnType: HIR_INT_TYPE,
         }),
@@ -86,7 +85,6 @@ describe('hir-tail-recursion-optimization', () => {
       body: [
         HIR_FUNCTION_CALL({
           functionExpression: HIR_FUNCTION_NAME('', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-          typeArguments: [],
           functionArguments: [],
           returnType: HIR_INT_TYPE,
         }),
@@ -140,7 +138,6 @@ describe('hir-tail-recursion-optimization', () => {
       body: [
         HIR_FUNCTION_CALL({
           functionExpression: HIR_FUNCTION_NAME('ff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-          typeArguments: [],
           functionArguments: [],
           returnType: HIR_INT_TYPE,
         }),
@@ -165,7 +162,6 @@ describe('hir-tail-recursion-optimization', () => {
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_FUNCTION_NAME('loopy', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-            typeArguments: [],
             functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
             returnCollector: 'r',
@@ -203,7 +199,6 @@ describe('hir-tail-recursion-optimization', () => {
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_FUNCTION_NAME('loopy', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-            typeArguments: [],
             functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
           }),
@@ -241,7 +236,6 @@ describe('hir-tail-recursion-optimization', () => {
             s1: [
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_FUNCTION_NAME('loopy', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-                typeArguments: [],
                 functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
                 returnType: HIR_INT_TYPE,
                 returnCollector: 'r1',
@@ -250,7 +244,6 @@ describe('hir-tail-recursion-optimization', () => {
             s2: [
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_FUNCTION_NAME('loopy', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-                typeArguments: [],
                 functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
                 returnType: HIR_INT_TYPE,
                 returnCollector: 'r2',
@@ -308,7 +301,6 @@ describe('hir-tail-recursion-optimization', () => {
             s1: [
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_FUNCTION_NAME('loopy', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-                typeArguments: [],
                 functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
                 returnType: HIR_INT_TYPE,
                 returnCollector: 'r1',
@@ -364,7 +356,6 @@ describe('hir-tail-recursion-optimization', () => {
             s1: [
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_FUNCTION_NAME('loopy', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-                typeArguments: [],
                 functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
                 returnType: HIR_INT_TYPE,
               }),
@@ -418,7 +409,6 @@ describe('hir-tail-recursion-optimization', () => {
                       'loopy',
                       HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
                     ),
-                    typeArguments: [],
                     functionArguments: [HIR_VARIABLE('nn', HIR_INT_TYPE)],
                     returnType: HIR_INT_TYPE,
                     returnCollector: 'r',

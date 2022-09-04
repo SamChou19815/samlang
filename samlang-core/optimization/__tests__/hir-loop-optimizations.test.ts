@@ -408,7 +408,6 @@ return (bc: int);`,
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-              typeArguments: [],
               functionArguments: [VARIABLE_J],
               returnType: HIR_INT_TYPE,
             }),

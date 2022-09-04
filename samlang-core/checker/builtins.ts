@@ -52,6 +52,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
     [
       'Builtins',
       {
+        isConcrete: true,
         typeParameters: [],
         typeDefinition: {
           location: Location.DUMMY,
@@ -66,6 +67,7 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
           createBuiltinFunction('intToString', [AST.IntType], AST.StringType),
           createBuiltinFunction('println', [AST.StringType], AST.UnitType),
           createBuiltinFunction('panic', [AST.StringType], AST.IdType('T'), ['T']),
+          createBuiltinFunction('stringConcat', [AST.StringType, AST.StringType], AST.StringType),
         ]),
         methods: new Map(),
       },

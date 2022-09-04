@@ -404,7 +404,7 @@ return (_t0: bool);`,
           e1: THIS,
           e2: THIS,
         }),
-        `let _t0: string = _builtin_stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+        `let _t0: string = __Builtins$stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: string);`,
       );
     });

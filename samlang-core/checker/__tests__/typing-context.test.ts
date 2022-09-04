@@ -36,6 +36,7 @@ describe('typing-context', () => {
             [
               'A',
               {
+                isConcrete: true,
                 typeParameters: [{ name: 'T', bound: null }],
                 superTypes: [AstBuilder.IdType('B', [AstBuilder.IdType('T'), AstBuilder.IntType])],
                 functions: new Map(),
@@ -91,10 +92,21 @@ describe('typing-context', () => {
             [
               'A',
               {
+                isConcrete: true,
                 typeParameters: [
                   { name: 'T1', bound: null },
                   { name: 'T2', bound: AstBuilder.IdType('A') },
                 ],
+                superTypes: [],
+                functions: new Map(),
+                methods: new Map(),
+              },
+            ],
+            [
+              'B',
+              {
+                isConcrete: false,
+                typeParameters: [],
                 superTypes: [],
                 functions: new Map(),
                 methods: new Map(),
@@ -122,10 +134,12 @@ describe('typing-context', () => {
     context.validateTypeInstantiation(
       AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
     );
+    context.validateTypeInstantiationDisallowAbstractTypes(AstBuilder.IdType('B', []));
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([
       '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
       '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 2, actual: 0.',
       '__DUMMY__.sam:0:0-0:0: [UnexpectedSubType]: Expected: subtype of `A`, actual: `int`.',
+      '__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`, actual: `B`.',
     ]);
   });
 
@@ -151,6 +165,7 @@ describe('typing-context', () => {
             [
               'A',
               {
+                isConcrete: true,
                 typeParameters: [
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
@@ -174,6 +189,7 @@ describe('typing-context', () => {
             [
               'B',
               {
+                isConcrete: true,
                 typeParameters: [
                   { name: 'E', bound: null },
                   { name: 'F', bound: null },
@@ -261,6 +277,7 @@ describe('typing-context', () => {
             [
               'A',
               {
+                isConcrete: true,
                 typeParameters: [
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
@@ -273,6 +290,7 @@ describe('typing-context', () => {
             [
               'B',
               {
+                isConcrete: true,
                 typeParameters: [
                   { name: 'E', bound: null },
                   { name: 'F', bound: null },

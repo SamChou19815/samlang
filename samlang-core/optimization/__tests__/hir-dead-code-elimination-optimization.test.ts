@@ -65,7 +65,6 @@ describe('hir-dead-code-elimination', () => {
         }),
         HIR_FUNCTION_CALL({
           functionExpression: HIR_FUNCTION_NAME('ff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-          typeArguments: [],
           functionArguments: [HIR_VARIABLE('s', HIR_INT_TYPE)],
           returnType: HIR_INT_TYPE,
         }),
@@ -120,7 +119,6 @@ return (ii: int);`,
         }),
         HIR_FUNCTION_CALL({
           functionExpression: HIR_FUNCTION_NAME('ff', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-          typeArguments: [],
           functionArguments: [
             HIR_VARIABLE('i1', HIR_INT_TYPE),
             HIR_VARIABLE('s1', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Id')),
@@ -148,7 +146,6 @@ return 0;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -156,7 +153,6 @@ return 0;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -184,7 +180,6 @@ return 0;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a1',
@@ -193,7 +188,6 @@ return 0;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a2',
@@ -232,7 +226,6 @@ return (ma: int);`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -240,7 +233,6 @@ return (ma: int);`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
             }),
@@ -275,7 +267,6 @@ return 0;`,
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a1',
@@ -284,7 +275,6 @@ return 0;`,
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a2',
@@ -362,7 +352,6 @@ return 0;`,
           statements: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_FUNCTION_NAME('s1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              typeArguments: [],
               functionArguments: [HIR_ZERO],
               returnType: HIR_INT_TYPE,
               returnCollector: 'a2',

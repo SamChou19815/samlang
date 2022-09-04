@@ -94,7 +94,11 @@ class TwoItemCompare {
 class Pair<T: Comparable<T>>(val v1: T, val v2: T) {
   method relation1(): int = TwoItemCompare.compare(this.v1, this.v2)
   method relation2(): int = TwoItemCompare.compare<T>(this.v1, this.v2)
-  method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2)
+  method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+}
+class TestLimitedSubtyping {
+  function test(v: Comparable<BoxedInt>): unit = {} // error signature validation
+  function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
 }
 `,
   },

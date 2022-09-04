@@ -124,6 +124,7 @@ function typeCheckInSandbox(
             [
               'Test',
               {
+                isConcrete: true,
                 typeParameters: [],
                 superTypes: [],
                 functions: new Map([
@@ -183,6 +184,7 @@ function typeCheckInSandbox(
             [
               'Test2',
               {
+                isConcrete: true,
                 typeParameters: [],
                 superTypes: [],
                 functions: new Map([
@@ -209,6 +211,7 @@ function typeCheckInSandbox(
             [
               'Test3',
               {
+                isConcrete: true,
                 typeParameters: [{ name: 'E', bound: null }],
                 superTypes: [],
                 functions: new Map(),
@@ -218,6 +221,7 @@ function typeCheckInSandbox(
             [
               'Test4',
               {
+                isConcrete: true,
                 typeParameters: [{ name: 'E', bound: null }],
                 superTypes: [],
                 functions: new Map([
@@ -250,6 +254,7 @@ function typeCheckInSandbox(
             [
               'A',
               {
+                isConcrete: true,
                 typeParameters: [],
                 superTypes: [],
                 functions: new Map([
@@ -268,6 +273,7 @@ function typeCheckInSandbox(
             [
               'B',
               {
+                isConcrete: true,
                 typeParameters: [],
                 superTypes: [],
                 functions: new Map([
@@ -286,6 +292,7 @@ function typeCheckInSandbox(
             [
               'C',
               {
+                isConcrete: true,
                 typeParameters: [],
                 superTypes: [],
                 functions: new Map([

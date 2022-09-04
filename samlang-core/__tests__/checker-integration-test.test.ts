@@ -10,6 +10,8 @@ const expectedErrors: readonly string[] = [
   'bounded-generics.sam:15:52-15:55: [UnexpectedSubType]: Expected: subtype of `Comparable<int>`, actual: `int`.',
   'bounded-generics.sam:15:57-15:64: [UnexpectedType]: Expected: `int`, actual: `T`.',
   'bounded-generics.sam:15:66-15:73: [UnexpectedType]: Expected: `int`, actual: `T`.',
+  'bounded-generics.sam:18:20-18:40: [UnexpectedTypeKind]: Expected kind: `non-abstract type`, actual: `Comparable<BoxedInt>`.',
+  'bounded-generics.sam:19:53-19:69: [UnexpectedType]: Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.',
   'complete-trash.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces: This',
   'complete-trash.sam:1:11-1:14: [SyntaxError]: Unexpected token among the classes and interfaces: bad',
   'complete-trash.sam:1:15-1:21: [SyntaxError]: Unexpected token among the classes and interfaces: source',
