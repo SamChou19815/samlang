@@ -1,0 +1,70 @@
+import { Pair } from tests.StdLib
+
+interface Comparable<T> {
+  method compare(other: T): int
+}
+
+class BoxedInt(val i: int) : Comparable<BoxedInt> {
+  method compare(other: BoxedInt): int = this.i - other.i
+}
+
+class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
+  function <T: Comparable<T>> nil(): List<T> = List.Nil<T>({  })
+
+  function <T: Comparable<T>> of(t: T): List<T> = List.Cons(Pair.init(t, List.Nil<T>({  })))
+
+  method cons(t: T): List<T> = List.Cons(Pair.init(t, this))
+
+  method iter(f: (T) -> unit): unit =
+    match (this) {
+      | Nil _ -> {  }
+      | Cons pair -> {
+        val { a as v, b as rest } = pair;
+        val _ = f(v);
+        rest.iter(f)
+      }
+    }
+
+  method sort(): List<T> =
+    match (this) {
+      | Nil _ -> this
+      | Cons pair -> match (pair.b) {
+        | Nil _ -> this
+        | Cons _ -> {
+          val { a as l1, b as l2 } = this.split(List.nil<T>(), List.nil<T>());
+          l1.sort().merge(l2.sort())
+        }
+      }
+    }
+
+  private method merge(other: List<T>): List<T> =
+    match (this) {
+      | Nil _ -> other
+      | Cons pair1 -> match (other) {
+        | Nil _ -> this
+        | Cons pair2 -> {
+          val { a as h1, b as t1 } = pair1;
+          val { a as h2, b as t2 } = pair2;
+          if (h1.compare(h2) < 0) then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
+        }
+      }
+    }
+
+  private method split(y: List<T>, z: List<T>): Pair<List<T>, List<T>> =
+    match (this) {
+      | Nil _ -> Pair.init(y, z)
+      | Cons pair -> {
+        val { a as x, b as rest } = pair;
+        rest.split(z, y.cons(x))
+      }
+    }
+}
+
+class SortableListTest {
+  function run(): unit = {
+    val list = List.of(BoxedInt.init(4)).cons(BoxedInt.init(2)).cons(BoxedInt.init(1)).cons(
+      BoxedInt.init(3)
+    );
+    list.sort().iter((n) -> Builtins.println(Builtins.intToString(n.i)))
+  }
+}

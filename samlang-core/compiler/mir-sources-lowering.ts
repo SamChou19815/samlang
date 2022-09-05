@@ -557,6 +557,12 @@ class HighIRToMidIRLoweringManager {
             }),
           );
         }
+        if (returnCollector != null) {
+          this.addReferenceCountingIfTypeAllowed(
+            statements,
+            MIR_VARIABLE(returnCollector, loweredReturnType),
+          );
+        }
         return statements;
       }
       case 'HighIRIfElseStatement': {

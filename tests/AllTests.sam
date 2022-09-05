@@ -13,6 +13,7 @@ import { IntToString } from tests.IntToString
 import { LoopOptimization } from tests.LoopOptimization
 import { MathFunctions } from tests.MathFunctions
 import { PrintHelloWorld } from tests.PrintHelloWorld
+import { SortableListTest } from tests.SortableList
 
 class TestCase(val name: string, val runner: () -> unit) {
   method run(): unit = {
@@ -39,7 +40,7 @@ class Main {
       TestCase.init("LoopOptimization", LoopOptimization.run)
     ).cons(TestCase.init("MathFunctions", MathFunctions.run)).cons(
       TestCase.init("PrintHelloWorld", PrintHelloWorld.run)
-    ).reverse()
+    ).cons(TestCase.init("SortableList", SortableListTest.run)).reverse()
 
   function main(): unit = {
     val _ = Main.getTests().iter((test) -> test.run());
