@@ -13,6 +13,7 @@ const createMockClass = (name: string): SourceClassDefinition => ({
   associatedComments: [],
   name: SourceId(name),
   typeParameters: [],
+  extendsOrImplementsNodes: [],
   members: [],
   typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: new Map() },
 });

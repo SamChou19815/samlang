@@ -281,7 +281,7 @@ class ExpressionTypeChecker {
       className: expression.className,
       memberName: expression.memberName,
     });
-    expression.typeArguments.forEach(this.context.validateTypeInstantiation);
+    expression.typeArguments.forEach(this.context.validateTypeInstantiationStrictly);
     return {
       partiallyCheckedExpression,
       unsolvedTypeParameters: classFunctionTypeInformation.typeParameters,
@@ -370,7 +370,7 @@ class ExpressionTypeChecker {
     );
     if (methodTypeInformation != null) {
       // This is a valid method. We will now type check it as a method access
-      expression.typeArguments.forEach(this.context.validateTypeInstantiation);
+      expression.typeArguments.forEach(this.context.validateTypeInstantiationStrictly);
       if (expression.typeArguments.length > 0) {
         if (expression.typeArguments.length === methodTypeInformation.typeParameters.length) {
           const substitutionMap = new Map(
@@ -899,7 +899,7 @@ class ExpressionTypeChecker {
     }
     return expression.parameters.map(({ name, typeAnnotation }) => {
       const type = typeAnnotation ?? SourceUnknownType(SourceReason(name.location, null));
-      this.context.validateTypeInstantiation(type);
+      this.context.validateTypeInstantiationStrictly(type);
       if (type.__type__ === 'UnknownType') {
         this.errorReporter.reportInsufficientTypeInferenceContextError(name.location);
       }
@@ -960,7 +960,7 @@ class ExpressionTypeChecker {
 
   private typeCheckValStatement(statement: SamlangValStatement): SamlangValStatement {
     const { location, pattern, typeAnnotation, assignedExpression } = statement;
-    if (typeAnnotation != null) this.context.validateTypeInstantiation(typeAnnotation);
+    if (typeAnnotation != null) this.context.validateTypeInstantiationStrictly(typeAnnotation);
     const checkedAssignedExpression = this.typeCheck(assignedExpression, typeAnnotation);
     const checkedAssignedExpressionType = checkedAssignedExpression.type;
     let checkedPattern: Pattern;
@@ -1077,16 +1077,16 @@ function validateSignatureTypes(
     typeParameterToSignatures(interfaceDeclaration.typeParameters),
   );
   interfaceDeclaration.typeParameters.forEach((it) => {
-    if (it.bound != null) contextWithTypeLevelTypeParameters.validateTypeInstantiation(it.bound);
+    if (it.bound != null) {
+      contextWithTypeLevelTypeParameters.validateTypeInstantiationAllowAbstractTypes(it.bound);
+    }
   });
-  if (interfaceDeclaration.extendsOrImplementsNode != null) {
-    contextWithTypeLevelTypeParameters.validateTypeInstantiation(
-      interfaceDeclaration.extendsOrImplementsNode,
-    );
-  }
+  interfaceDeclaration.extendsOrImplementsNodes.forEach(
+    contextWithTypeLevelTypeParameters.validateTypeInstantiationAllowAbstractTypes,
+  );
   if (interfaceDeclaration.typeDefinition != null) {
     for (const fieldType of interfaceDeclaration.typeDefinition.mappings.values()) {
-      contextWithTypeLevelTypeParameters.validateTypeInstantiation(fieldType.type);
+      contextWithTypeLevelTypeParameters.validateTypeInstantiationStrictly(fieldType.type);
     }
   }
   interfaceDeclaration.members.forEach((member) => {
@@ -1103,9 +1103,9 @@ function validateSignatureTypes(
       ),
     );
     member.typeParameters.forEach((it) => {
-      if (it.bound != null) memberContext.validateTypeInstantiation(it.bound);
+      if (it.bound != null) memberContext.validateTypeInstantiationAllowAbstractTypes(it.bound);
     });
-    memberContext.validateTypeInstantiationDisallowAbstractTypes(member.type);
+    memberContext.validateTypeInstantiationStrictly(member.type);
   });
 }
 
@@ -1196,7 +1196,7 @@ export function typeCheckSamlangModule(
       name: classDefinition.name,
       typeParameters: classDefinition.typeParameters,
       typeDefinition: classDefinition.typeDefinition,
-      extendsOrImplementsNode: classDefinition.extendsOrImplementsNode,
+      extendsOrImplementsNodes: classDefinition.extendsOrImplementsNodes,
       members: checkedMembers,
     };
   });

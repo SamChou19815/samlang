@@ -61,30 +61,23 @@ class SsaBuilder extends LocalStackedContext<Location> {
     interfaces.forEach(({ name }) => this.define(name));
 
     interfaces.forEach((interfaceDeclaration) => {
+      const typeDefinition = interfaceDeclaration.typeDefinition;
+
       this.withNestedScope(() => {
         this.withNestedScope(() => {
           this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
           interfaceDeclaration.typeParameters.forEach(({ bound }) => {
             if (bound != null) this.visitType(bound);
           });
-        });
-        const extendsOrImplementsNode = interfaceDeclaration.extendsOrImplementsNode;
-        if (extendsOrImplementsNode != null) {
-          this.withNestedScope(() => {
-            this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
-            this.visitType(extendsOrImplementsNode);
-          });
-        }
-        const typeDefinition = interfaceDeclaration.typeDefinition;
-        if (typeDefinition != null) {
-          this.withNestedScope(() => {
-            this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
+          interfaceDeclaration.extendsOrImplementsNodes.forEach(this.visitType);
+
+          if (typeDefinition != null) {
             this.defineAll(typeDefinition.names);
             typeDefinition.names.forEach((it) =>
               this.visitType(checkNotNull(typeDefinition.mappings.get(it.name)).type),
             );
-          });
-        }
+          }
+        });
 
         // Pull member names into another scope for conflict test,
         // as they cannot be referenced by name without class prefix.

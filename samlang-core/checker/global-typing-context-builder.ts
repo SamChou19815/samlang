@@ -34,7 +34,7 @@ interface UnoptimizedInterfaceTypingContext {
   readonly functions: ReadonlyMap<string, MemberTypeInformation>;
   readonly methods: ReadonlyMap<string, MemberTypeInformation>;
   readonly typeParameters: readonly TypeParameterSignature[];
-  readonly extendsOrImplements: SamlangIdentifierType | null;
+  readonly extendsOrImplements: readonly SamlangIdentifierType[];
 }
 
 interface UnoptimizedModuleTypingContext {
@@ -46,7 +46,7 @@ interface UnoptimizedModuleTypingContext {
 type InterfaceInliningCollector = Array<{
   readonly functions: Map<string, MemberTypeInformation>;
   readonly methods: Map<string, MemberTypeInformation>;
-  readonly baseInterfaceType: SamlangIdentifierType | null;
+  readonly baseInterfaceTypes: readonly SamlangIdentifierType[];
 }>;
 
 function recursiveComputeInterfaceMembersChain(
@@ -65,7 +65,7 @@ function recursiveComputeInterfaceMembersChain(
   const interfaceContext = unoptimizedGlobalTypingContext
     .get(interfaceType.moduleReference)
     ?.interfaces?.get(interfaceType.identifier);
-  if (interfaceContext == null) return null;
+  if (interfaceContext == null) return;
   const substitutionMapping = new Map(
     zip(
       interfaceContext.typeParameters.map((it) => it.name),
@@ -88,30 +88,26 @@ function recursiveComputeInterfaceMembersChain(
       },
     ]),
   );
-  const baseInterfaceType =
-    interfaceContext.extendsOrImplements != null
-      ? (performTypeSubstitution(
-          interfaceContext.extendsOrImplements,
-          substitutionMapping,
-        ) as SamlangIdentifierType)
-      : null;
-  if (baseInterfaceType != null) {
+  const baseInterfaceTypes = interfaceContext.extendsOrImplements.map(
+    (it) => performTypeSubstitution(it, substitutionMapping) as SamlangIdentifierType,
+  );
+  baseInterfaceTypes.forEach((it) => {
     recursiveComputeInterfaceMembersChain(
-      baseInterfaceType,
+      it,
       unoptimizedGlobalTypingContext,
       collector,
       visited,
       errorReporter,
     );
-  }
+  });
   collector.push({
     functions: new Map(interfaceContext.functions),
     methods: inlinedMethods,
-    baseInterfaceType,
+    baseInterfaceTypes,
   });
 }
 
-export function getFullyInlinedInterfaceContext(
+function getFullyInlinedInterfaceContext(
   instantiatedInterfaceType: SamlangIdentifierType,
   unoptimizedGlobalTypingContext: ReadonlyHashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   errorReporter: GlobalErrorReporter,
@@ -141,24 +137,124 @@ export function getFullyInlinedInterfaceContext(
     // Shadowing is allowed, as long as type matches.
     it.functions.forEach((type, name) => functions.set(name, type));
     it.methods.forEach((type, name) => methods.set(name, type));
-    if (it.baseInterfaceType != null) superTypes.push(it.baseInterfaceType);
+    superTypes.push(...it.baseInterfaceTypes);
   });
   superTypes.push(instantiatedInterfaceType);
   return { functions, methods, superTypes };
+}
+
+function checkClassMemberTypeConformance(
+  expected: MemberTypeInformation,
+  actual: MemberTypeInformation,
+  errorReporter: GlobalErrorReporter,
+): void {
+  if (expected.typeParameters.length !== actual.typeParameters.length) {
+    errorReporter.reportArityMismatchError(
+      actual.type.reason.useLocation,
+      'type parameters',
+      expected.typeParameters.length,
+      actual.typeParameters.length,
+    );
+    return;
+  }
+  let hasTypeParameterConformanceErrors = false;
+  for (const [e, a] of zip(expected.typeParameters, actual.typeParameters)) {
+    if (e.name !== a.name) {
+      hasTypeParameterConformanceErrors = true;
+      break;
+    }
+    if (e.bound == null && a.bound != null) {
+      hasTypeParameterConformanceErrors = true;
+      break;
+    } else if (e.bound != null && a.bound == null) {
+      hasTypeParameterConformanceErrors = true;
+      break;
+    } else if (e.bound != null && a.bound != null && !isTheSameType(e.bound, a.bound)) {
+      hasTypeParameterConformanceErrors = true;
+      break;
+    }
+  }
+  if (hasTypeParameterConformanceErrors) {
+    errorReporter.reportTypeParameterMismatchError(
+      actual.type.reason.useLocation,
+      expected.typeParameters,
+    );
+  } else if (!isTheSameType(expected.type, actual.type)) {
+    errorReporter.reportUnexpectedTypeError(
+      actual.type.reason.useLocation,
+      expected.type,
+      actual.type,
+    );
+  }
+}
+
+export function getFullyInlinedMultipleInterfaceContext(
+  instantiatedInterfaceTypes: readonly SamlangIdentifierType[],
+  unoptimizedGlobalTypingContext: ReadonlyHashMap<ModuleReference, UnoptimizedModuleTypingContext>,
+  errorReporter: GlobalErrorReporter,
+): ReturnType<typeof getFullyInlinedInterfaceContext> {
+  const acc = {
+    functions: new Map<string, MemberTypeInformation>(),
+    methods: new Map<string, MemberTypeInformation>(),
+    superTypes: [] as SamlangIdentifierType[],
+  };
+
+  function validateAndPatch(
+    existingMap: Map<string, MemberTypeInformation>,
+    newlyInlinedMap: Map<string, MemberTypeInformation>,
+  ) {
+    for (const [name, info] of newlyInlinedMap) {
+      const existing = existingMap.get(name);
+      if (existing != null) {
+        checkClassMemberTypeConformance(existing, info, errorReporter);
+      }
+      existingMap.set(name, info);
+    }
+  }
+
+  instantiatedInterfaceTypes.forEach((instantiatedInterfaceType) => {
+    if (
+      unoptimizedGlobalTypingContext
+        .get(instantiatedInterfaceType.moduleReference)
+        ?.classes.has(instantiatedInterfaceType.identifier)
+    ) {
+      errorReporter.reportUnexpectedTypeKindError(
+        instantiatedInterfaceType.reason.useLocation,
+        'interface type',
+        'class type',
+      );
+    } else if (
+      !unoptimizedGlobalTypingContext
+        .get(instantiatedInterfaceType.moduleReference)
+        ?.interfaces.has(instantiatedInterfaceType.identifier)
+    ) {
+      errorReporter.reportUnresolvedNameError(
+        instantiatedInterfaceType.reason.useLocation,
+        instantiatedInterfaceType.identifier,
+      );
+    }
+
+    const inlined = getFullyInlinedInterfaceContext(
+      instantiatedInterfaceType,
+      unoptimizedGlobalTypingContext,
+      errorReporter,
+    );
+    validateAndPatch(acc.functions, inlined.functions);
+    validateAndPatch(acc.methods, inlined.methods);
+    acc.superTypes.push(...inlined.superTypes);
+  });
+
+  return acc;
 }
 
 function checkModuleMemberInterfaceConformance(
   unoptimizedGlobalTypingContext: ReadonlyHashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   actualInterface: SourceInterfaceDeclaration,
   errorReporter: GlobalErrorReporter,
-  reportMissingMembers: boolean,
+  isClass: boolean,
 ): ReturnType<typeof getFullyInlinedInterfaceContext> {
-  const instantiatedInterfaceType = actualInterface.extendsOrImplementsNode;
-  if (instantiatedInterfaceType == null) {
-    return { functions: new Map(), methods: new Map(), superTypes: [] };
-  }
-  const fullyInlinedInterfaceContext = getFullyInlinedInterfaceContext(
-    instantiatedInterfaceType,
+  const fullyInlinedInterfaceContext = getFullyInlinedMultipleInterfaceContext(
+    actualInterface.extendsOrImplementsNodes,
     unoptimizedGlobalTypingContext,
     errorReporter,
   );
@@ -177,43 +273,22 @@ function checkModuleMemberInterfaceConformance(
       errorReporter.reportUnexpectedTypeKindError(actual.location, 'function', 'method');
       return;
     }
-    if (expected.typeParameters.length !== actual.typeParameters.length) {
-      errorReporter.reportArityMismatchError(
+    if (!actual.isPublic) {
+      errorReporter.reportUnexpectedTypeKindError(
         actual.location,
-        'type parameters',
-        expected.typeParameters.length,
-        actual.typeParameters.length,
+        'public class member',
+        'private class member',
       );
-      return;
     }
-    let noTypeParameterConformanceErrors = true;
-    for (const [e, a] of zip(expected.typeParameters, actual.typeParameters)) {
-      if (e.name !== a.name.name) {
-        errorReporter.reportTypeParameterNameMismatchError(a.name.location, e.name, a.name.name);
-        noTypeParameterConformanceErrors = false;
-      }
-      if (e.bound == null && a.bound != null) {
-        errorReporter.reportUnexpectedTypeKindError(
-          a.bound.reason.useLocation,
-          'unbounded type parameter',
-          'bounded type parameter',
-        );
-        noTypeParameterConformanceErrors = false;
-      } else if (e.bound != null && a.bound == null) {
-        errorReporter.reportUnexpectedTypeKindError(
-          actual.location,
-          'bounded type parameter',
-          'unbounded type parameter',
-        );
-        noTypeParameterConformanceErrors = false;
-      } else if (e.bound != null && a.bound != null && !isTheSameType(e.bound, a.bound)) {
-        errorReporter.reportUnexpectedTypeError(actual.location, e.bound, a.bound);
-        noTypeParameterConformanceErrors = false;
-      }
-    }
-    if (noTypeParameterConformanceErrors && !isTheSameType(expected.type, actual.type)) {
-      errorReporter.reportUnexpectedTypeError(actual.location, expected.type, actual.type);
-    }
+    checkClassMemberTypeConformance(
+      expected,
+      {
+        isPublic: actual.isPublic,
+        typeParameters: actual.typeParameters.map(({ name: { name }, bound }) => ({ name, bound })),
+        type: actual.type,
+      },
+      errorReporter,
+    );
   }
 
   const actualMembersMap = new Map(
@@ -236,7 +311,7 @@ function checkModuleMemberInterfaceConformance(
     }
     checkClassMemberConformance(true, expectedMember, actualMember);
   }
-  if (reportMissingMembers && missingMembers.length > 0) {
+  if (isClass && missingMembers.length > 0) {
     errorReporter.reportMissingDefinitionsError(actualInterface.location, missingMembers);
   }
 
@@ -317,7 +392,7 @@ export function buildGlobalTypingContext(
   function buildInterfaceTypingContext({
     typeParameters,
     members,
-    extendsOrImplementsNode,
+    extendsOrImplementsNodes,
   }: SourceInterfaceDeclaration) {
     const functions = new Map<string, MemberTypeInformation>();
     const methods = new Map<string, MemberTypeInformation>();
@@ -335,7 +410,7 @@ export function buildGlobalTypingContext(
     });
     return {
       typeParameters: typeParameters.map((it) => ({ name: it.name.name, bound: it.bound })),
-      extendsOrImplements: extendsOrImplementsNode ?? null,
+      extendsOrImplements: extendsOrImplementsNodes,
       functions,
       methods,
     };
@@ -382,7 +457,7 @@ export function buildGlobalTypingContext(
     }
     return {
       typeParameters,
-      extendsOrImplements: classDefinition.extendsOrImplementsNode ?? null,
+      extendsOrImplements: classDefinition.extendsOrImplementsNodes,
       functions,
       methods,
     };

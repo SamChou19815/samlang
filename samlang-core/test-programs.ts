@@ -100,6 +100,15 @@ class TestLimitedSubtyping {
   function test(v: Comparable<BoxedInt>): unit = {} // error signature validation
   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
 }
+interface Conflicting1 {
+  function foo(): int
+}
+interface Conflicting2 {
+  function foo(): bool
+}
+interface ExtendingConfliting : Conflicting1, Conflicting2
+class ImplItself : ImplItself {} // error: expect interface type
+class ImplTArg<T> : T {} // error: T not resolved
 `,
   },
   {

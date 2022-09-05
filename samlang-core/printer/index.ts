@@ -1,4 +1,9 @@
-import { prettyPrintType, prettyPrintTypeParameter, SamlangModule } from '../ast/samlang-nodes';
+import {
+  prettyPrintType,
+  prettyPrintTypeParameter,
+  SamlangIdentifierType,
+  SamlangModule,
+} from '../ast/samlang-nodes';
 import {
   PRETTIER_CONCAT,
   PRETTIER_LINE,
@@ -16,6 +21,13 @@ import {
   createPrettierDocumentForAssociatedComments,
   createPrettierDocumentsFromSamlangInterfaceMember,
 } from './printer-source-level';
+
+function extendsOrImplementsNodesToString(
+  extendsOrImplementsNodes: readonly SamlangIdentifierType[],
+): string {
+  if (extendsOrImplementsNodes.length === 0) return '';
+  return ` : ${extendsOrImplementsNodes.map(prettyPrintType).join(', ')}`;
+}
 
 export default function prettyPrintSamlangModule(
   availableWidth: number,
@@ -46,9 +58,9 @@ export default function prettyPrintSamlangModule(
           ? ''
           : `<${interfaceDeclaration.typeParameters.map(prettyPrintTypeParameter).join(', ')}>`,
       ),
-      interfaceDeclaration.extendsOrImplementsNode != null
-        ? PRETTIER_TEXT(` : ${prettyPrintType(interfaceDeclaration.extendsOrImplementsNode)}`)
-        : PRETTIER_NIL,
+      PRETTIER_TEXT(
+        extendsOrImplementsNodesToString(interfaceDeclaration.extendsOrImplementsNodes),
+      ),
     ];
 
     if (interfaceDeclaration.members.length === 0) {
@@ -104,9 +116,7 @@ export default function prettyPrintSamlangModule(
         : createParenthesisSurroundedDocument(
             createCommaSeparatedList(typeMappingItems, PRETTIER_TEXT),
           ),
-      classDefinition.extendsOrImplementsNode != null
-        ? PRETTIER_TEXT(` : ${prettyPrintType(classDefinition.extendsOrImplementsNode)}`)
-        : PRETTIER_NIL,
+      PRETTIER_TEXT(extendsOrImplementsNodesToString(classDefinition.extendsOrImplementsNodes)),
     ];
 
     if (classDefinition.members.length === 0) {

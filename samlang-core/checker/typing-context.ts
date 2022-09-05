@@ -8,6 +8,7 @@ import {
 import {
   isTheSameType,
   prettyPrintType,
+  prettyPrintTypeParamaters,
   SamlangFunctionType,
   SamlangIdentifierType,
   SamlangType,
@@ -93,10 +94,7 @@ export function memberTypeInformationToString(
   { isPublic, typeParameters, type }: MemberTypeInformation,
 ): string {
   const accessString = isPublic ? 'public' : 'private';
-  const tparams = typeParameters.map((it) =>
-    it.bound != null ? `${it.name}: ${prettyPrintType(it.bound)}` : it.name,
-  );
-  const tparamString = tparams.length > 0 ? `<${tparams.join(', ')}>` : '';
+  const tparamString = prettyPrintTypeParamaters(typeParameters);
   return `${accessString} ${name}${tparamString}${prettyPrintType(type)}`;
 }
 
@@ -193,10 +191,10 @@ export class TypingContext {
     });
   };
 
-  public validateTypeInstantiation = (type: SamlangType): void =>
+  public validateTypeInstantiationAllowAbstractTypes = (type: SamlangType): void =>
     this.validateTypeInstantiationCustomized(type, false);
 
-  public validateTypeInstantiationDisallowAbstractTypes = (type: SamlangType): void =>
+  public validateTypeInstantiationStrictly = (type: SamlangType): void =>
     this.validateTypeInstantiationCustomized(type, true);
 
   private validateTypeInstantiationCustomized(
@@ -206,10 +204,8 @@ export class TypingContext {
     // if (type.__type__ !== 'IdentifierType') return;
     if (type.__type__ === 'PrimitiveType' || type.__type__ === 'UnknownType') return;
     if (type.__type__ === 'FunctionType') {
-      type.argumentTypes.forEach((it) =>
-        this.validateTypeInstantiationCustomized(it, enforceConcreteTypes),
-      );
-      this.validateTypeInstantiationCustomized(type.returnType, enforceConcreteTypes);
+      type.argumentTypes.forEach((it) => this.validateTypeInstantiationCustomized(it, true));
+      this.validateTypeInstantiationCustomized(type.returnType, true);
       return;
     }
     // Generic type is assumed to be good, but it must have zero type args.
@@ -225,9 +221,7 @@ export class TypingContext {
       }
       return;
     }
-    type.typeArguments.forEach((it) =>
-      this.validateTypeInstantiationCustomized(it, enforceConcreteTypes),
-    );
+    type.typeArguments.forEach((it) => this.validateTypeInstantiationCustomized(it, true));
     const interfaceInformation = this.getInterfaceInformation(
       type.moduleReference,
       type.identifier,

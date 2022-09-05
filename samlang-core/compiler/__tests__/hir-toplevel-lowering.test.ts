@@ -37,6 +37,7 @@ describe('mir-toplevel-lowering', () => {
             names: [],
             mappings: new Map(),
           },
+          extendsOrImplementsNodes: [],
           members: [
             {
               associatedComments: [],
@@ -100,6 +101,7 @@ describe('mir-toplevel-lowering', () => {
             names: [SourceId('a')],
             mappings: new Map([['a', { isPublic: true, type: AstBuilder.IntType }]]),
           },
+          extendsOrImplementsNodes: [],
           members: [
             {
               associatedComments: [],
@@ -231,6 +233,7 @@ describe('mir-toplevel-lowering', () => {
             names: [],
             mappings: new Map(),
           },
+          extendsOrImplementsNodes: [],
           members: [],
         },
         {
@@ -257,6 +260,7 @@ describe('mir-toplevel-lowering', () => {
               ],
             ]),
           },
+          extendsOrImplementsNodes: [],
           members: [],
         },
       ],

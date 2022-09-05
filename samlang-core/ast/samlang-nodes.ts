@@ -122,6 +122,15 @@ export function prettyPrintType(type: SamlangType): string {
   }
 }
 
+export function prettyPrintTypeParamaters(
+  typeParameters: readonly TypeParameterSignature[],
+): string {
+  const tparams = typeParameters.map((it) =>
+    it.bound != null ? `${it.name}: ${prettyPrintType(it.bound)}` : it.name,
+  );
+  return tparams.length > 0 ? `<${tparams.join(', ')}>` : '';
+}
+
 export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
   switch (t1.__type__) {
     case 'UnknownType':
@@ -626,7 +635,7 @@ export interface SourceInterfaceDeclaration extends Node {
   readonly typeParameters: readonly SourceTypeParameter[];
   readonly typeDefinition?: TypeDefinition;
   /** The node after colon, interpreted as extends in interfaces and implements in classes. */
-  readonly extendsOrImplementsNode?: SamlangIdentifierType;
+  readonly extendsOrImplementsNodes: readonly SamlangIdentifierType[];
   readonly members: readonly SourceClassMemberDeclaration[];
 }
 
