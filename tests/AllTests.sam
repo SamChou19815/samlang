@@ -25,7 +25,7 @@ class TestCase(val name: string, val runner: () -> unit) {
 
 class Main {
   private function getTests(): List<TestCase> =
-    List.of(TestCase.init("AndOrInsideIf", AndOrInsideIf.run)).cons(
+    List.nil<TestCase>().cons(TestCase.init("AndOrInsideIf", AndOrInsideIf.run)).cons(
       TestCase.init("Benchmark", Benchmark.run)
     ).cons(TestCase.init("BlockInIfElse", BlockInIfElse.run)).cons(
       TestCase.init("ConstantFoldingTest", ConstantFoldingTest.run)

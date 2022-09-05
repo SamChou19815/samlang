@@ -1,4 +1,8 @@
-import { encodeFunctionNameGlobally, encodeMainFunctionName } from '../ast/common-names';
+import {
+  encodeFunctionNameGlobally,
+  encodeMainFunctionName,
+  encodeSamlangType,
+} from '../ast/common-names';
 import type { ModuleReference, Sources } from '../ast/common-nodes';
 import {
   HighIRFunction,
@@ -25,11 +29,7 @@ import lowerSamlangExpression from './hir-expression-lowering';
 import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
 import HighIRStringManager from './hir-string-manager';
 import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-rewrite';
-import {
-  encodeSamlangType,
-  HighIRTypeSynthesizer,
-  SamlangTypeLoweringManager,
-} from './hir-type-conversion';
+import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from './hir-type-conversion';
 import deduplicateHighIRTypes from './hir-type-deduplication';
 
 function companionFunctionWithContext(originalFunction: HighIRFunction): HighIRFunction {
