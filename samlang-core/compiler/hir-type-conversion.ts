@@ -2,7 +2,6 @@ import type { ModuleReference } from '../ast/common-nodes';
 import {
   HighIRClosureTypeDefinition,
   HighIRFunctionType,
-  HighIRIdentifierType,
   HighIRPrimitiveType,
   HighIRType,
   HighIRTypeDefinition,
@@ -179,28 +178,6 @@ export const highIRTypeApplication = (
       );
   }
 };
-
-export function resolveIdentifierTypeMappings(
-  identifierType: HighIRIdentifierType,
-  getClosureTypeDefinition: (name: string) => HighIRClosureTypeDefinition | undefined,
-  getTypeDefinition: (name: string) => HighIRTypeDefinition | undefined,
-): readonly HighIRType[] {
-  const closureType = getClosureTypeDefinition(identifierType.name);
-  if (closureType != null) {
-    return [
-      highIRTypeApplication(
-        closureType.functionType,
-        new Map(zip(closureType.typeParameters, identifierType.typeArguments)),
-      ),
-    ];
-  }
-  const typeDefinition = checkNotNull(
-    getTypeDefinition(identifierType.name),
-    `Missing ${identifierType.name}`,
-  );
-  const replacementMap = new Map(zip(typeDefinition.typeParameters, identifierType.typeArguments));
-  return typeDefinition.mappings.map((it) => highIRTypeApplication(it, replacementMap));
-}
 
 export const encodeSamlangType = (moduleReference: ModuleReference, identifier: string): string =>
   `${moduleReference.join('_')}_${identifier}`;

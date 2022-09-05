@@ -16,7 +16,6 @@ import {
   encodeHighIRNameAfterGenericsSpecialization,
   highIRTypeApplication,
   HighIRTypeSynthesizer,
-  resolveIdentifierTypeMappings,
   SamlangTypeLoweringManager,
   solveTypeArguments,
 } from '../hir-type-conversion';
@@ -185,42 +184,6 @@ describe('hir-type-conversion', () => {
         ]),
       ),
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
-  });
-
-  it('resolveIdentifierTypeMappings works', () => {
-    expect(() =>
-      resolveIdentifierTypeMappings(
-        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
-        () => undefined,
-        () => undefined,
-      ),
-    ).toThrow();
-
-    expect(
-      resolveIdentifierTypeMappings(
-        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
-        () => ({
-          identifier: 'A',
-          typeParameters: [],
-          functionType: HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE),
-        }),
-        () => undefined,
-      ),
-    ).toEqual([HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE)]);
-
-    expect(
-      resolveIdentifierTypeMappings(
-        HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]),
-        () => undefined,
-        () => ({
-          identifier: 'A',
-          type: 'object',
-          typeParameters: ['B'],
-          names: [],
-          mappings: [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')],
-        }),
-      ),
-    ).toEqual([HIR_INT_TYPE]);
   });
 
   it('encodeHighIRIdentifierTypeAfterGenericsSpecialization works', () => {
