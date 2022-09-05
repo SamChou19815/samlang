@@ -167,9 +167,9 @@ class WasmFunctionLoweringManager {
         const exitLabel = this.allocator.allocateLabelWithAnnotation('loop_exit');
         this.currentLoopContext = { breakCollector: s.breakCollector?.name, exitLabel };
         const instructions = [
-          ...s.loopVariables.flatMap((it) => [
+          ...s.loopVariables.map((it) =>
             this.SET(it.name, this.lowerMidIRExpression(it.initialValue)),
-          ]),
+          ),
           WasmLoop({
             continueLabel,
             exitLabel,

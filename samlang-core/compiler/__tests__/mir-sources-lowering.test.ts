@@ -54,7 +54,7 @@ const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.lo
 const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(v, 10);
 const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)];
 const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
-const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
+const ${ENCODED_FUNCTION_NAME_FREE} = (v: any): number => { v.length = 0; return 0 };
 `,
     );
   });
@@ -280,7 +280,7 @@ const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([, line]: Str): number => { console.lo
 const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = ([, v]: Str): number => parseInt(v, 10);
 const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v: number): Str => [1, String(v)];
 const ${ENCODED_FUNCTION_NAME_THROW} = ([, v]: Str): number => { throw Error(v); };
-const ${ENCODED_FUNCTION_NAME_FREE} = (v: unknown): number => 0;
+const ${ENCODED_FUNCTION_NAME_FREE} = (v: any): number => { v.length = 0; return 0 };
 type CC = [number, (t0: any) => number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
 type Variant = [number, number, any];
@@ -351,12 +351,15 @@ function _compiled_program_main(): number {
     let _mid_t1: (t0: any, t1: number) => number = cc[2];
     let _mid_t2: any = cc[3];
     let _mid_t0: CC = _mid_t1(_mid_t2, 0);
-    let _mid_t3: number = G1[0];
+    let _mid_t3: number = _mid_t0[0];
     let _mid_t4: number = _mid_t3 + 1;
-    G1[0] = _mid_t4;
-    let _mid_t5 = G1 as any;
-    let _mid_t6 = __decRef_CC as (t0: any) => number;
-    let c3: CC = [1, _mid_t6, aaa, _mid_t5];
+    _mid_t0[0] = _mid_t4;
+    let _mid_t5: number = G1[0];
+    let _mid_t6: number = _mid_t5 + 1;
+    G1[0] = _mid_t6;
+    let _mid_t7 = G1 as any;
+    let _mid_t8 = __decRef_CC as (t0: any) => number;
+    let c3: CC = [1, _mid_t8, aaa, _mid_t7];
     __decRef_CC(_mid_t0);
     __decRef_CC(c3);
     finalV = v2;
