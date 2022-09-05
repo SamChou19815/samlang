@@ -223,13 +223,29 @@ sources.mains = [main]
             body: [
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_FUNCTION_NAME(
-                  '$GENERICS$_A$foo',
+                  '$GENERICS$_A$bar',
                   HIR_FUNCTION_TYPE([typeA], HIR_INT_TYPE),
                 ),
                 functionArguments: [HIR_ZERO],
                 returnType: HIR_INT_TYPE,
               }),
             ],
+            returnValue: HIR_ZERO,
+          },
+          {
+            name: '_I$bar',
+            parameters: ['a'],
+            typeParameters: ['A'],
+            type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+            body: [],
+            returnValue: HIR_ZERO,
+          },
+          {
+            name: '_J$bar',
+            parameters: ['a'],
+            typeParameters: ['A'],
+            type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+            body: [],
             returnValue: HIR_ZERO,
           },
           {
@@ -310,6 +326,15 @@ sources.mains = [main]
                     ),
                     functionArguments: [G1],
                     returnType: typeI,
+                  }),
+                  HIR_FUNCTION_CALL({
+                    functionExpression: HIR_FUNCTION_NAME(
+                      'functor_fun',
+                      HIR_FUNCTION_TYPE([typeJ], HIR_INT_TYPE),
+                      [typeJ],
+                    ),
+                    functionArguments: [G1],
+                    returnType: typeJ,
                   }),
                   HIR_INDEX_ACCESS({
                     name: 'v1',
@@ -404,7 +429,20 @@ function creatorIB_string(b: string): I_int_string {
 }
 
 function functor_fun_I_int_string(a: I_int_string): int {
-  _I$foo(0);
+  _I$bar(0);
+  return 0;
+}
+
+function _I$bar(a: I_int_string): int {
+  return 0;
+}
+
+function functor_fun_J(a: J): int {
+  _J$bar(0);
+  return 0;
+}
+
+function _J$bar(a: J): int {
   return 0;
 }
 
@@ -415,6 +453,7 @@ function main(): int {
     let a2: I_int_string = creatorIA_string(G1);
     let b: I_int_string = creatorIB_string(G1);
     functor_fun_I_int_string(G1);
+    functor_fun_J(G1);
     let v1: int = (a: I_int_string)[0];
     finalV = (v1: int);
   } else {

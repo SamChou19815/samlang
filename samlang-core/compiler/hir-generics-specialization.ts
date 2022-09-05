@@ -32,6 +32,8 @@ class GenericsSpecializationRewriter {
   private readonly originalTypeDefinitions: ReadonlyMap<string, HighIRTypeDefinition>;
   private readonly originalFunctions: ReadonlyMap<string, HighIRFunction>;
 
+  private readonly specializedHighIRIdentifierTypeMapping = new Map<string, string>();
+
   public readonly usedStringNames = new Set<string>();
   public readonly specializedClosureTypeDefinitions = new Map<
     string,
@@ -201,8 +203,12 @@ class GenericsSpecializationRewriter {
       );
       assert(replacementClass.__type__ === 'IdentifierType');
       assert(functionName != null);
+      const replacementClassType = checkNotNull(
+        this.specializedHighIRIdentifierTypeMapping.get(replacementClass.name),
+      );
+      const rewrittenFunctionName = `_${replacementClassType}$${functionName}`;
       return this.rewriteFunctionName(
-        `_${replacementClass.name.slice(0, replacementClass.name.indexOf('_'))}$${functionName}`,
+        rewrittenFunctionName,
         functionType,
         functionTypeArguments,
         genericsReplacementMap,
@@ -307,6 +313,7 @@ class GenericsSpecializationRewriter {
             functionType: rewrittenFunctionType,
           });
         }
+        this.specializedHighIRIdentifierTypeMapping.set(encodedName, type.name);
         return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(encodedName);
       }
       const solvedTypeArgumentsReplacementMap = new Map(
@@ -333,6 +340,7 @@ class GenericsSpecializationRewriter {
         ),
       });
     }
+    this.specializedHighIRIdentifierTypeMapping.set(encodedName, type.name);
     return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(encodedName);
   }
 }
