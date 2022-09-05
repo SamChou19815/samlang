@@ -18,7 +18,7 @@ import {
 import { createGlobalErrorCollector } from '../../errors';
 import {
   buildGlobalTypingContext,
-  getFullyInlinedInterfaceContext,
+  getFullyInlinedMultipleInterfaceContext,
 } from '../global-typing-context-builder';
 import type { MemberTypeInformation, TypeDefinitionTypingContext } from '../typing-context';
 import { memberTypeInformationToString } from '../typing-context';
@@ -39,6 +39,7 @@ const class0: SourceClassDefinition = {
   name: SourceId('Class0'),
   typeParameters: [],
   typeDefinition,
+  extendsOrImplementsNodes: [],
   members: [],
 };
 const class1: SourceClassDefinition = {
@@ -47,6 +48,7 @@ const class1: SourceClassDefinition = {
   name: SourceId('Class1'),
   typeParameters: [],
   typeDefinition,
+  extendsOrImplementsNodes: [],
   members: [
     {
       associatedComments: [],
@@ -78,6 +80,7 @@ const class2: SourceClassDefinition = {
   name: SourceId('Class2'),
   typeParameters: [],
   typeDefinition,
+  extendsOrImplementsNodes: [],
   members: [],
 };
 
@@ -210,12 +213,12 @@ describe('global-typing-context-builder', () => {
     });
   });
 
-  it('getFullyInlinedInterfaceContext tests', () => {
+  it('getFullyInlinedMultipleInterfaceContext tests', () => {
     interface UnoptimizedInterfaceTypingContext {
       readonly functions: ReadonlyMap<string, MemberTypeInformation>;
       readonly methods: ReadonlyMap<string, MemberTypeInformation>;
       readonly typeParameters: readonly TypeParameterSignature[];
-      readonly extendsOrImplements: SamlangIdentifierType | null;
+      readonly extendsOrImplements: readonly SamlangIdentifierType[];
     }
 
     interface UnoptimizedClassTypingContext extends UnoptimizedInterfaceTypingContext {
@@ -241,7 +244,7 @@ describe('global-typing-context-builder', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                extendsOrImplements: AstBuilder.IdType('not_exist'),
+                extendsOrImplements: [AstBuilder.IdType('not_exist')],
                 functions: new Map(),
                 methods: new Map(),
               },
@@ -253,7 +256,7 @@ describe('global-typing-context-builder', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                extendsOrImplements: null,
+                extendsOrImplements: [],
                 functions: new Map(),
                 methods: new Map([
                   [
@@ -277,10 +280,9 @@ describe('global-typing-context-builder', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                extendsOrImplements: AstBuilder.IdType('IBase', [
-                  AstBuilder.IntType,
-                  AstBuilder.IdType('B'),
-                ]),
+                extendsOrImplements: [
+                  AstBuilder.IdType('IBase', [AstBuilder.IntType, AstBuilder.IdType('B')]),
+                ],
                 functions: new Map([
                   [
                     'f1',
@@ -316,10 +318,9 @@ describe('global-typing-context-builder', () => {
                   { name: 'A', bound: null },
                   { name: 'B', bound: null },
                 ],
-                extendsOrImplements: AstBuilder.IdType('ILevel1', [
-                  AstBuilder.IdType('A'),
-                  AstBuilder.IntType,
-                ]),
+                extendsOrImplements: [
+                  AstBuilder.IdType('ILevel1', [AstBuilder.IdType('A'), AstBuilder.IntType]),
+                ],
                 functions: new Map(),
                 methods: new Map([
                   [
@@ -340,7 +341,7 @@ describe('global-typing-context-builder', () => {
               'ICyclic1',
               {
                 typeParameters: [],
-                extendsOrImplements: AstBuilder.IdType('ICyclic2'),
+                extendsOrImplements: [AstBuilder.IdType('ICyclic2')],
                 functions: new Map(),
                 methods: new Map(),
               },
@@ -349,9 +350,63 @@ describe('global-typing-context-builder', () => {
               'ICyclic2',
               {
                 typeParameters: [],
-                extendsOrImplements: AstBuilder.IdType('ICyclic1'),
+                extendsOrImplements: [AstBuilder.IdType('ICyclic1')],
                 functions: new Map(),
                 methods: new Map(),
+              },
+            ],
+            [
+              'ConflictExtends1',
+              {
+                typeParameters: [],
+                extendsOrImplements: [],
+                functions: new Map([
+                  [
+                    'f',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
+                    },
+                  ],
+                ]),
+                methods: new Map([
+                  [
+                    'm',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
+                    },
+                  ],
+                ]),
+              },
+            ],
+            [
+              'ConflictExtends2',
+              {
+                typeParameters: [],
+                extendsOrImplements: [],
+                functions: new Map([
+                  [
+                    'f',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([], AstBuilder.IntType),
+                    },
+                  ],
+                ]),
+                methods: new Map([
+                  [
+                    'm',
+                    {
+                      isPublic: true,
+                      typeParameters: [],
+                      type: AstBuilder.FunType([], AstBuilder.BoolType),
+                    },
+                  ],
+                ]),
               },
             ],
           ]),
@@ -359,9 +414,9 @@ describe('global-typing-context-builder', () => {
         },
       ]);
 
-    function inlinedContextFromType(idType: SamlangIdentifierType) {
-      const { functions, methods, superTypes } = getFullyInlinedInterfaceContext(
-        idType,
+    function inlinedContextFromType(...idTypes: readonly SamlangIdentifierType[]) {
+      const { functions, methods, superTypes } = getFullyInlinedMultipleInterfaceContext(
+        idTypes,
         globalTypingContext,
         createGlobalErrorCollector().getErrorReporter(),
       );
@@ -404,19 +459,25 @@ describe('global-typing-context-builder', () => {
 
     const errorCollector = createGlobalErrorCollector();
     const errorReporter = errorCollector.getErrorReporter();
-    getFullyInlinedInterfaceContext(
-      AstBuilder.IdType('ICyclic1'),
+    getFullyInlinedMultipleInterfaceContext(
+      [AstBuilder.IdType('ICyclic1')],
       globalTypingContext,
       errorReporter,
     );
-    getFullyInlinedInterfaceContext(
-      AstBuilder.IdType('ICyclic2'),
+    getFullyInlinedMultipleInterfaceContext(
+      [AstBuilder.IdType('ICyclic2')],
+      globalTypingContext,
+      errorReporter,
+    );
+    getFullyInlinedMultipleInterfaceContext(
+      [AstBuilder.IdType('ConflictExtends1'), AstBuilder.IdType('ConflictExtends2')],
       globalTypingContext,
       errorReporter,
     );
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([
       '__DUMMY__.sam:0:0-0:0: [CyclicTypeDefinition]: Type `ICyclic1` has a cyclic definition.',
       '__DUMMY__.sam:0:0-0:0: [CyclicTypeDefinition]: Type `ICyclic2` has a cyclic definition.',
+      '__DUMMY__.sam:0:0-0:0: [UnexpectedType]: Expected: `() -> int`, actual: `() -> bool`.',
     ]);
   });
 });

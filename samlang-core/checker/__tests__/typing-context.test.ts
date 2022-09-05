@@ -122,19 +122,24 @@ describe('typing-context', () => {
       /* availableTypeParameters */ [{ name: 'TPARAM', bound: null }],
     );
 
-    context.validateTypeInstantiation(AstBuilder.IntType);
-    context.validateTypeInstantiation(
+    context.validateTypeInstantiationAllowAbstractTypes(AstBuilder.IntType);
+    context.validateTypeInstantiationAllowAbstractTypes(
       AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType),
     );
-    context.validateTypeInstantiation({ __type__: 'UnknownType', reason: DummySourceReason });
-    context.validateTypeInstantiation(AstBuilder.IdType('TPARAM'));
-    context.validateTypeInstantiation(AstBuilder.IdType('TPARAM', [AstBuilder.IntType]));
-    context.validateTypeInstantiation(AstBuilder.IdType('T'));
-    context.validateTypeInstantiation(AstBuilder.IdType('A'));
-    context.validateTypeInstantiation(
+    context.validateTypeInstantiationAllowAbstractTypes({
+      __type__: 'UnknownType',
+      reason: DummySourceReason,
+    });
+    context.validateTypeInstantiationAllowAbstractTypes(AstBuilder.IdType('TPARAM'));
+    context.validateTypeInstantiationAllowAbstractTypes(
+      AstBuilder.IdType('TPARAM', [AstBuilder.IntType]),
+    );
+    context.validateTypeInstantiationAllowAbstractTypes(AstBuilder.IdType('T'));
+    context.validateTypeInstantiationAllowAbstractTypes(AstBuilder.IdType('A'));
+    context.validateTypeInstantiationAllowAbstractTypes(
       AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.IntType]),
     );
-    context.validateTypeInstantiationDisallowAbstractTypes(AstBuilder.IdType('B', []));
+    context.validateTypeInstantiationStrictly(AstBuilder.IdType('B', []));
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([
       '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.',
       '__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 2, actual: 0.',

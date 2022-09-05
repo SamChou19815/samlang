@@ -162,7 +162,7 @@ class E : Baz2<string, bool> { // all good
   method <TC> m2(a: string, b: bool): TC = Builtins.panic("")
 }
 class F : Baz2<string, bool> {
-  method <TC> m1(a: string, b: string): TC = Builtins.panic("") // error
+  private method <TC> m1(a: string, b: string): TC = Builtins.panic("") // error
   function <TA, TB, TC> f1(a: string, b: string): TC = Builtins.panic("") // error
   method <TC> m2(a: string, b: string): TC = Builtins.panic("") // error
 }
@@ -201,18 +201,20 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
         .map((e) => e.toString())
         .sort(),
     ).toEqual([
-      'A.sam:10:3-10:28: [UnexpectedType]: Expected: `() -> unit`, actual: `() -> string`.',
-      'A.sam:11:3-11:24: [UnexpectedType]: Expected: `() -> string`, actual: `() -> unit`.',
+      'A.sam:10:13-10:23: [UnexpectedType]: Expected: `() -> unit`, actual: `() -> string`.',
+      'A.sam:11:11-11:19: [UnexpectedType]: Expected: `() -> string`, actual: `() -> unit`.',
       'A.sam:14:3-14:28: [UnexpectedTypeKind]: Expected kind: `method`, actual: `function`.',
       'A.sam:15:3-15:24: [UnexpectedTypeKind]: Expected kind: `function`, actual: `method`.',
-      'A.sam:32:3-32:64: [UnexpectedType]: Expected: `(int, int) -> TC`, actual: `(string, string) -> TC`.',
-      'A.sam:33:3-33:74: [UnexpectedType]: Expected: `(TA, TB) -> TC`, actual: `(string, string) -> TC`.',
-      'A.sam:34:3-34:64: [UnexpectedType]: Expected: `(string, bool) -> TC`, actual: `(string, string) -> TC`.',
-      'A.sam:37:11-37:13: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected `TC`, actual: TD.',
-      'A.sam:38:17-38:19: [UnexpectedTypeKind]: Expected kind: `unbounded type parameter`, actual: `bounded type parameter`.',
-      'A.sam:42:3-42:9: [UnexpectedTypeKind]: Expected kind: `bounded type parameter`, actual: `unbounded type parameter`.',
-      'A.sam:45:3-45:9: [ArityMismatchError]: Incorrect type parameters size. Expected: 1, actual: 0.',
-      'A.sam:48:3-48:9: [UnexpectedType]: Expected: `Foo`, actual: `Bar`.',
+      'A.sam:32:25-32:51: [UnexpectedType]: Expected: `(int, int) -> TC`, actual: `(string, string) -> TC`.',
+      'A.sam:32:3-32:72: [UnexpectedTypeKind]: Expected kind: `public class member`, actual: `private class member`.',
+      'A.sam:33:27-33:53: [UnexpectedType]: Expected: `(TA, TB) -> TC`, actual: `(string, string) -> TC`.',
+      'A.sam:34:17-34:43: [UnexpectedType]: Expected: `(string, bool) -> TC`, actual: `(string, string) -> TC`.',
+      'A.sam:37:17-37:37: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TC>`.',
+      'A.sam:38:31-38:49: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TA, TB, TC>`.',
+      'A.sam:42:24-42:32: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TE: Foo>`.',
+      'A.sam:45:19-45:27: [ArityMismatchError]: Incorrect type parameters size. Expected: 1, actual: 0.',
+      'A.sam:48:29-48:37: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TE: Foo>`.',
+      'A.sam:50:19-50:25: [UnresolvedName]: Name `DumDum` is not resolved.',
       'A.sam:50:19-50:25: [UnresolvedName]: Name `DumDum` is not resolved.',
       'A.sam:51:21-51:28: [CyclicTypeDefinition]: Type `Cyclic2` has a cyclic definition.',
       'A.sam:52:21-52:28: [CyclicTypeDefinition]: Type `Cyclic3` has a cyclic definition.',

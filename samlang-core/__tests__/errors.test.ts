@@ -11,7 +11,7 @@ describe('samlang-core/errors', () => {
     reporter.reportUnexpectedTypeError(Location.DUMMY, AstBuilder.IntType, AstBuilder.BoolType);
     reporter.reportUnexpectedSubtypeError(Location.DUMMY, AstBuilder.IntType, AstBuilder.BoolType);
     reporter.reportUnresolvedNameError(Location.DUMMY, 'global');
-    reporter.reportTypeParameterNameMismatchError(Location.DUMMY, 'foo', 'bar');
+    reporter.reportTypeParameterMismatchError(Location.DUMMY, []);
     reporter.reportUnexpectedTypeKindError(Location.DUMMY, 'array', 'object');
     reporter.reportUnexpectedTypeKindError(Location.DUMMY, 'array', AstBuilder.IntType);
     reporter.reportArityMismatchError(Location.DUMMY, 'pair', 1, 2);
@@ -29,7 +29,7 @@ describe('samlang-core/errors', () => {
       '[UnexpectedType]: Expected: `int`, actual: `bool`.',
       '[UnexpectedSubType]: Expected: subtype of `int`, actual: `bool`.',
       '[UnresolvedName]: Name `global` is not resolved.',
-      '[TypeParameterNameMismatch]: Type parameter name mismatch. Expected `foo`, actual: bar.',
+      '[TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of ``.',
       '[UnexpectedTypeKind]: Expected kind: `array`, actual: `object`.',
       '[UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',
       '[ArityMismatchError]: Incorrect pair size. Expected: 1, actual: 2.',

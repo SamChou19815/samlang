@@ -1,5 +1,10 @@
 import { Location, ModuleReference, ModuleReferenceCollections } from './ast/common-nodes';
-import { prettyPrintType, SamlangType } from './ast/samlang-nodes';
+import {
+  prettyPrintType,
+  prettyPrintTypeParamaters,
+  SamlangType,
+  TypeParameterSignature,
+} from './ast/samlang-nodes';
 
 export abstract class CompileTimeError {
   constructor(
@@ -53,12 +58,14 @@ class UnresolvedNameError extends CompileTimeError {
   }
 }
 
-class TypeParameterNameMismatchError extends CompileTimeError {
-  constructor(location: Location, expected: string, actual: string) {
+class TypeParameterMismatchError extends CompileTimeError {
+  constructor(location: Location, expected: readonly TypeParameterSignature[]) {
     super(
       'TypeParameterNameMismatch',
       location,
-      `Type parameter name mismatch. Expected \`${expected}\`, actual: ${actual}.`,
+      `Type parameter name mismatch. Expected exact match of \`${prettyPrintTypeParamaters(
+        expected,
+      )}\`.`,
     );
   }
 }
@@ -172,10 +179,11 @@ export class GlobalErrorReporter {
     this.collectorDelegate.reportError(new UnresolvedNameError(location, unresolvedName));
   }
 
-  reportTypeParameterNameMismatchError(location: Location, expected: string, actual: string): void {
-    this.collectorDelegate.reportError(
-      new TypeParameterNameMismatchError(location, expected, actual),
-    );
+  reportTypeParameterMismatchError(
+    location: Location,
+    expected: readonly TypeParameterSignature[],
+  ): void {
+    this.collectorDelegate.reportError(new TypeParameterMismatchError(location, expected));
   }
 
   reportMissingDefinitionsError(location: Location, missingMembers: readonly string[]): void {

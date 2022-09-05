@@ -37,6 +37,7 @@ describe('module-interpreter', () => {
       names: [SourceId('types')],
       mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
     },
+    extendsOrImplementsNodes: [],
   };
 
   const mainClassDef: SourceClassDefinition = {
@@ -55,6 +56,7 @@ describe('module-interpreter', () => {
       names: [SourceId('types')],
       mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
     },
+    extendsOrImplementsNodes: [],
   };
   const mainVariantDef: SourceClassDefinition = {
     associatedComments: [],
@@ -72,6 +74,7 @@ describe('module-interpreter', () => {
       names: [SourceId('types')],
       mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
     },
+    extendsOrImplementsNodes: [],
   };
 
   const memberMainFunctionNoArgs: SourceClassMemberDefinition = {
