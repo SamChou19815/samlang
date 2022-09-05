@@ -9,6 +9,9 @@ export function encodeFunctionNameGlobally(
   return `_${encodedModuleReference}_${className}$${functionName}`;
 }
 
+export const encodeSamlangType = (moduleReference: ModuleReference, identifier: string): string =>
+  `${moduleReference.map((it) => it.replace(/-/g, '_')).join('$')}_${identifier}`;
+
 export function encodeGenericFunctionNameGlobally(className: string, functionName: string): string {
   return `$GENERICS$_${className}$${functionName}`;
 }

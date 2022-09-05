@@ -46,6 +46,9 @@ export default function prettyPrintSamlangModule(
           ? ''
           : `<${interfaceDeclaration.typeParameters.map(prettyPrintTypeParameter).join(', ')}>`,
       ),
+      interfaceDeclaration.extendsOrImplementsNode != null
+        ? PRETTIER_TEXT(` : ${prettyPrintType(interfaceDeclaration.extendsOrImplementsNode)}`)
+        : PRETTIER_NIL,
     ];
 
     if (interfaceDeclaration.members.length === 0) {
@@ -101,6 +104,9 @@ export default function prettyPrintSamlangModule(
         : createParenthesisSurroundedDocument(
             createCommaSeparatedList(typeMappingItems, PRETTIER_TEXT),
           ),
+      classDefinition.extendsOrImplementsNode != null
+        ? PRETTIER_TEXT(` : ${prettyPrintType(classDefinition.extendsOrImplementsNode)}`)
+        : PRETTIER_NIL,
     ];
 
     if (classDefinition.members.length === 0) {

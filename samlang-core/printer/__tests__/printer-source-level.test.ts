@@ -260,18 +260,24 @@ Test /* b */ /* c */ .VariantName<T>(42)`,
     expect(
       reprintModule(`
 interface Foo {}
+interface Foo2 : Foo {}
 class Empty
+class Empty2 : Foo
 interface Bar<A> { function baz(): int }
 class Main { function main(): unit = {} }
     `),
     ).toBe(`
 interface Foo
 
+interface Foo2 : Foo
+
 interface Bar<A> {
   function baz(): int
 }
 
 class Empty
+
+class Empty2 : Foo
 
 class Main {
   function main(): unit = {  }

@@ -1,3 +1,4 @@
+import { encodeSamlangType } from '../ast/common-names';
 import type { ModuleReference } from '../ast/common-nodes';
 import {
   HighIRClosureTypeDefinition,
@@ -178,9 +179,6 @@ export const highIRTypeApplication = (
       );
   }
 };
-
-export const encodeSamlangType = (moduleReference: ModuleReference, identifier: string): string =>
-  `${moduleReference.join('_')}_${identifier}`;
 
 /** A encoder ensures that all the characters are good for function names. */
 function encodeHighIRTypeForGenericsSpecialization(type: HighIRType): string {
