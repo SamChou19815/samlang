@@ -72,7 +72,7 @@ export class BaseParser {
   constructor(
     private readonly tokens: readonly SamlangToken[],
     protected readonly moduleReference: ModuleReference,
-    public readonly errorReporter: GlobalErrorReporter,
+    protected readonly errorReporter: GlobalErrorReporter,
   ) {}
 
   protected lastLocation(): Location {
