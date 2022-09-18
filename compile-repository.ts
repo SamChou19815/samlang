@@ -1,6 +1,4 @@
-#!/usr/bin/env node
 /* eslint-disable no-console */
-// @ts-check
 
 import { spawnSync } from 'child_process';
 import fs from 'fs';
