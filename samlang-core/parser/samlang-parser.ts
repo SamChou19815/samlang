@@ -299,88 +299,11 @@ export default class SamlangModuleParser extends BaseParser {
     }
   }
 
-  parseInterface(): SourceInterfaceDeclaration {
-    const associatedComments = this.collectPrecedingComments();
-    let startLocation = this.assertAndConsume('interface');
-    const name = this.parseUpperId();
-    let typeParameters: readonly SourceTypeParameter[];
-    if (this.peek().content === '<') {
-      this.consume();
-      typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
-      startLocation = startLocation.union(this.assertAndConsume('>'));
-    } else {
-      typeParameters = [];
-    }
-    let extendsOrImplementsNodes: readonly SamlangIdentifierType[] = [];
-    if (this.peek().content === ':') {
-      this.assertAndConsume(':');
-      extendsOrImplementsNodes = this.parseCommaSeparatedList(() =>
-        this.parseIdentifierType(this.parseUpperId()),
-      );
-      startLocation = startLocation.union(
-        checkNotNull(extendsOrImplementsNodes[extendsOrImplementsNodes.length - 1]).reason
-          .useLocation,
-      );
-    }
-    if (this.peek().content !== '{') {
-      return {
-        associatedComments,
-        location: startLocation,
-        name,
-        typeParameters,
-        extendsOrImplementsNodes,
-        members: [],
-      };
-    }
-    this.assertAndConsume('{');
-    const members: SourceClassMemberDeclaration[] = [];
-    while (this.peek().content === 'function' || this.peek().content === 'method') {
-      members.push(this.parseSourceClassMemberDeclaration());
-    }
-    const endLocation = this.assertAndConsume('}');
-    return {
-      associatedComments,
-      location: startLocation.union(endLocation),
-      name,
-      typeParameters,
-      extendsOrImplementsNodes,
-      members,
-    };
-  }
-
   parseClass(): SourceClassDefinition {
-    const { startLocation, ...header } = this.parseClassHeader();
-    if (this.peekedClassedOrInterfaceStart()) {
-      return {
-        location: startLocation,
-        ...header,
-        members: [],
-      };
-    }
-    this.assertAndConsume('{');
-    const members: SourceClassMemberDefinition[] = [];
-    while (
-      this.peek().content === 'private' ||
-      this.peek().content === 'function' ||
-      this.peek().content === 'method'
-    ) {
-      members.push(this.parseSourceClassMemberDefinition());
-    }
-    const endLocation = this.assertAndConsume('}');
-    return {
-      location: startLocation.union(endLocation),
-      ...header,
-      members,
-    };
-  }
-
-  private parseClassHeader(): Omit<SourceClassDefinition, 'location' | 'members'> & {
-    readonly startLocation: Location;
-  } {
     const associatedComments = this.collectPrecedingComments();
-    let startLocation = this.assertAndConsume('class');
+    let location = this.assertAndConsume('class');
     const name = this.parseUpperId();
-    startLocation = startLocation.union(name.location);
+    location = location.union(name.location);
     let typeParameters: readonly SourceTypeParameter[];
     let typeParameterLocationStart: Location | undefined;
     let typeParameterLocationEnd: Location | undefined;
@@ -392,68 +315,115 @@ export default class SamlangModuleParser extends BaseParser {
     } else {
       typeParameters = [];
     }
+    let typeDefinition: TypeDefinition;
+    let extendsOrImplementsNodes: readonly SamlangIdentifierType[] = [];
     if (
       this.peek().content === '{' ||
       this.peek().content === ':' ||
       this.peekedClassedOrInterfaceStart()
     ) {
-      let extendsOrImplementsNodes: readonly SamlangIdentifierType[] = [];
       if (this.peek().content === ':') {
         this.assertAndConsume(':');
         extendsOrImplementsNodes = this.parseCommaSeparatedList(() =>
           this.parseIdentifierType(this.parseUpperId()),
         );
-        startLocation = startLocation.union(
+        location = location.union(
           checkNotNull(extendsOrImplementsNodes[extendsOrImplementsNodes.length - 1]).reason
             .useLocation,
         );
       }
       // Util class. Now the class header has ended.
-      return {
-        startLocation:
-          typeParameterLocationEnd == null
-            ? startLocation
-            : startLocation.union(typeParameterLocationEnd),
-        associatedComments,
-        name,
-        typeParameters,
-        typeDefinition: {
-          location: this.peek().location,
-          type: 'object',
-          names: [],
-          mappings: new Map(),
-        },
-        extendsOrImplementsNodes,
+      location =
+        typeParameterLocationEnd == null ? location : location.union(typeParameterLocationEnd);
+      typeDefinition = {
+        location: this.peek().location,
+        type: 'object',
+        names: [],
+        mappings: new Map(),
       };
+    } else {
+      const typeDefinitionLocationStart = this.assertAndConsume('(');
+      const innerTypeDefinition = this.parseTypeDefinitionInner();
+      const typeDefinitionLocationEnd = this.assertAndConsume(')');
+      typeDefinition = {
+        location: (typeParameterLocationStart ?? typeDefinitionLocationStart).union(
+          typeDefinitionLocationEnd,
+        ),
+        ...innerTypeDefinition,
+      };
+      location = location.union(typeDefinitionLocationEnd);
+      if (this.peek().content === ':') {
+        this.assertAndConsume(':');
+        extendsOrImplementsNodes = this.parseCommaSeparatedList(() =>
+          this.parseIdentifierType(this.parseUpperId()),
+        );
+        location = location.union(
+          checkNotNull(extendsOrImplementsNodes[extendsOrImplementsNodes.length - 1]).reason
+            .useLocation,
+        );
+      }
     }
-    const typeDefinitionLocationStart = this.assertAndConsume('(');
-    const innerTypeDefinition = this.parseTypeDefinitionInner();
-    const typeDefinitionLocationEnd = this.assertAndConsume(')');
-    const typeDefinition: TypeDefinition = {
-      location: (typeParameterLocationStart ?? typeDefinitionLocationStart).union(
-        typeDefinitionLocationEnd,
-      ),
-      ...innerTypeDefinition,
+    const members: SourceClassMemberDefinition[] = [];
+    if (!this.peekedClassedOrInterfaceStart()) {
+      this.assertAndConsume('{');
+      while (
+        this.peek().content === 'private' ||
+        this.peek().content === 'function' ||
+        this.peek().content === 'method'
+      ) {
+        members.push(this.parseSourceClassMemberDefinition());
+      }
+      location = location.union(this.assertAndConsume('}'));
+    }
+    return {
+      location,
+      associatedComments,
+      name,
+      typeParameters,
+      typeDefinition,
+      extendsOrImplementsNodes,
+      members,
     };
-    startLocation = startLocation.union(typeDefinitionLocationEnd);
+  }
+
+  parseInterface(): SourceInterfaceDeclaration {
+    const associatedComments = this.collectPrecedingComments();
+    let location = this.assertAndConsume('interface');
+    const name = this.parseUpperId();
+    let typeParameters: readonly SourceTypeParameter[];
+    if (this.peek().content === '<') {
+      this.consume();
+      typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
+      location = location.union(this.assertAndConsume('>'));
+    } else {
+      typeParameters = [];
+    }
     let extendsOrImplementsNodes: readonly SamlangIdentifierType[] = [];
     if (this.peek().content === ':') {
       this.assertAndConsume(':');
       extendsOrImplementsNodes = this.parseCommaSeparatedList(() =>
         this.parseIdentifierType(this.parseUpperId()),
       );
-      startLocation = startLocation.union(
+      location = location.union(
         checkNotNull(extendsOrImplementsNodes[extendsOrImplementsNodes.length - 1]).reason
           .useLocation,
       );
     }
+    const members: SourceClassMemberDeclaration[] = [];
+    if (this.peek().content === '{') {
+      this.assertAndConsume('{');
+      while (this.peek().content === 'function' || this.peek().content === 'method') {
+        members.push(this.parseSourceClassMemberDeclaration());
+      }
+      location = location.union(this.assertAndConsume('}'));
+    }
     return {
-      startLocation,
       associatedComments,
+      location,
       name,
       typeParameters,
-      typeDefinition,
       extendsOrImplementsNodes,
+      members,
     };
   }
 

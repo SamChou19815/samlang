@@ -112,6 +112,7 @@ describe('samlang-core/parser', () => {
     expectBadAST('{ val a =  }');
     expectBadAST('{ val  = 3 }');
     expectBadAST('{ val a = /* empty */ }');
+    expectBadAST('{ val a = /* empty */');
     expectBadAST('{ val a = int }');
     expectBadAST('{ val a:  = 3; a }');
     expectBadAST('{ val a: <int> = 3; a }');

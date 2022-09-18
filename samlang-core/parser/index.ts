@@ -6,7 +6,7 @@ import lexSamlangProgram from './samlang-lexer';
 import SamlangModuleParser from './samlang-parser';
 
 export type DefaultBuiltinClasses = 'Builtins';
-export const DEFAULT_BUILTIN_CLASSES: DefaultBuiltinClasses[] = ['Builtins'];
+const DEFAULT_BUILTIN_CLASSES: DefaultBuiltinClasses[] = ['Builtins'];
 const builtinClassesSet = new Set(DEFAULT_BUILTIN_CLASSES);
 
 export function parseSamlangModuleFromText(
