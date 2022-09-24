@@ -177,8 +177,9 @@ class SsaBuilder extends LocalStackedContext<Location> {
       case 'StatementBlockExpression':
         this.withNestedScope(() => {
           const { statements, expression: finalExpression } = expression.block;
-          statements.forEach(({ pattern, assignedExpression }) => {
+          statements.forEach(({ pattern, typeAnnotation, assignedExpression }) => {
             this.visitExpression(assignedExpression);
+            if (typeAnnotation != null) this.visitType(typeAnnotation);
             switch (pattern.type) {
               case 'ObjectPattern':
                 pattern.destructedNames.forEach((name) =>
