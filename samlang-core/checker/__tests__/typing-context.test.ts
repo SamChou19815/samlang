@@ -153,19 +153,7 @@ describe('typing-context', () => {
       ModuleReferenceCollections.hashMapOf<ModuleTypingContext>([
         ModuleReference.DUMMY,
         {
-          typeDefinitions: new Map<string, TypeDefinitionTypingContext>([
-            [
-              'A',
-              {
-                type: 'variant',
-                names: ['a', 'b'],
-                mappings: new Map([
-                  ['a', { isPublic: true, type: AstBuilder.IdType('A') }],
-                  ['b', { isPublic: false, type: AstBuilder.IdType('B') }],
-                ]),
-              },
-            ],
-          ]),
+          typeDefinitions: new Map(),
           interfaces: new Map<string, InterfaceTypingContext>([
             [
               'A',
