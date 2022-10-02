@@ -9,7 +9,6 @@ import {
   prettyPrintType,
   SamlangIdentifierType,
   SamlangModule,
-  SourceClassDefinition,
   SourceId,
   SourceIdentifierType,
   TypeDefinition,
@@ -23,88 +22,104 @@ import {
 import type { MemberTypeInformation, TypeDefinitionTypingContext } from '../typing-context';
 import { memberTypeInformationToString } from '../typing-context';
 
-const module0Reference = ModuleReference(['Module0']);
-const module1Reference = ModuleReference(['Module1']);
-
-const typeDefinition: TypeDefinition = {
-  location: Location.DUMMY,
-  type: 'object',
-  names: [],
-  mappings: new Map(),
-};
-
-const class0: SourceClassDefinition = {
-  location: Location.DUMMY,
-  associatedComments: [],
-  name: SourceId('Class0'),
-  typeParameters: [],
-  typeDefinition,
-  extendsOrImplementsNodes: [],
-  members: [],
-};
-const class1: SourceClassDefinition = {
-  location: Location.DUMMY,
-  associatedComments: [],
-  name: SourceId('Class1'),
-  typeParameters: [],
-  typeDefinition,
-  extendsOrImplementsNodes: [],
-  members: [
-    {
-      associatedComments: [],
-      location: Location.DUMMY,
-      isPublic: true,
-      isMethod: true,
-      name: SourceId('m1'),
-      typeParameters: [],
-      type: AstBuilder.FunType([], AstBuilder.IntType),
-      parameters: [],
-      body: AstBuilder.FALSE,
-    },
-    {
-      associatedComments: [],
-      location: Location.DUMMY,
-      isPublic: false,
-      isMethod: false,
-      name: SourceId('f1'),
-      typeParameters: [],
-      type: AstBuilder.FunType([], AstBuilder.IntType),
-      parameters: [],
-      body: AstBuilder.FALSE,
-    },
-  ],
-};
-const class2: SourceClassDefinition = {
-  location: Location.DUMMY,
-  associatedComments: [],
-  name: SourceId('Class2'),
-  typeParameters: [],
-  typeDefinition,
-  extendsOrImplementsNodes: [],
-  members: [],
-};
-
-const module0: SamlangModule = { imports: [], classes: [class0], interfaces: [] };
-const module1: SamlangModule = {
-  imports: [
-    {
-      location: Location.DUMMY,
-      importedModule: module0Reference,
-      importedModuleLocation: Location.DUMMY,
-      importedMembers: [SourceId('Class0'), SourceId('BAD_CLASS_THAT_DOESNT_EXIST')],
-    },
-  ],
-  classes: [class1, class2],
-  interfaces: [],
-};
-
-const testSources = ModuleReferenceCollections.mapOf(
-  [module0Reference, module0],
-  [module1Reference, module1],
-);
-
 describe('global-typing-context-builder', () => {
   it('can handle imports and definitions', () => {
+    const module0Reference = ModuleReference(['Module0']);
+    const module1Reference = ModuleReference(['Module1']);
+
+    const testSources = ModuleReferenceCollections.mapOf<SamlangModule>(
+      [
+        module0Reference,
+        {
+          imports: [],
+          classes: [
+            {
+              location: Location.DUMMY,
+              associatedComments: [],
+              name: SourceId('Class0'),
+              typeParameters: [],
+              typeDefinition: {
+                location: Location.DUMMY,
+                type: 'object',
+                names: [],
+                mappings: new Map(),
+              },
+              extendsOrImplementsNodes: [],
+              members: [],
+            },
+          ],
+          interfaces: [],
+        },
+      ],
+      [
+        module1Reference,
+        {
+          imports: [
+            {
+              location: Location.DUMMY,
+              importedModule: module0Reference,
+              importedModuleLocation: Location.DUMMY,
+              importedMembers: [SourceId('Class0'), SourceId('BAD_CLASS_THAT_DOESNT_EXIST')],
+            },
+          ],
+          classes: [
+            {
+              location: Location.DUMMY,
+              associatedComments: [],
+              name: SourceId('Class1'),
+              typeParameters: [],
+              typeDefinition: {
+                location: Location.DUMMY,
+                type: 'object',
+                names: [],
+                mappings: new Map(),
+              },
+              extendsOrImplementsNodes: [],
+              members: [
+                {
+                  associatedComments: [],
+                  location: Location.DUMMY,
+                  isPublic: true,
+                  isMethod: true,
+                  name: SourceId('m1'),
+                  typeParameters: [],
+                  type: AstBuilder.FunType([], AstBuilder.IntType),
+                  parameters: [],
+                  body: AstBuilder.FALSE,
+                },
+                {
+                  associatedComments: [],
+                  location: Location.DUMMY,
+                  isPublic: false,
+                  isMethod: false,
+                  name: SourceId('f1'),
+                  typeParameters: [],
+                  type: AstBuilder.FunType([], AstBuilder.IntType),
+                  parameters: [],
+                  body: AstBuilder.FALSE,
+                },
+              ],
+            },
+            {
+              location: Location.DUMMY,
+              associatedComments: [],
+              name: SourceId('Class2'),
+              typeParameters: [],
+              typeDefinition: {
+                location: Location.DUMMY,
+                type: 'object',
+                names: [],
+                mappings: new Map(),
+              },
+              extendsOrImplementsNodes: [],
+              members: [],
+            },
+          ],
+          interfaces: [],
+        },
+      ],
+    );
+
     const actualGlobalTypingContext = buildGlobalTypingContext(
       testSources,
       createGlobalErrorCollector().getErrorReporter(),
