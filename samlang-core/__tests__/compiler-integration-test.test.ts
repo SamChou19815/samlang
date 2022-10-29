@@ -6,20 +6,20 @@ import {
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_THROW,
   encodeMainFunctionName,
-} from '../ast/common-names';
-import { ModuleReference } from '../ast/common-nodes';
-import { prettyPrintMidIRSourcesAsJSSources } from '../ast/mir-nodes';
-import { typeCheckSourceHandles } from '../checker';
+} from "../ast/common-names";
+import { ModuleReference } from "../ast/common-nodes";
+import { prettyPrintMidIRSourcesAsJSSources } from "../ast/mir-nodes";
+import { typeCheckSourceHandles } from "../checker";
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToWasmModule,
-} from '../compiler';
-import samlangGeneratedWebAssemblyLoader from '../loader';
-import { optimizeHighIRSourcesAccordingToConfiguration } from '../optimization';
-import { runnableSamlangProgramTestCases } from '../test-programs';
+} from "../compiler";
+import samlangGeneratedWebAssemblyLoader from "../loader";
+import { optimizeHighIRSourcesAccordingToConfiguration } from "../optimization";
+import { runnableSamlangProgramTestCases } from "../test-programs";
 
-describe('compiler-integration-tests', () => {
+describe("compiler-integration-tests", () => {
   const { checkedSources, compileTimeErrors } = typeCheckSourceHandles(
     runnableSamlangProgramTestCases.map((it) => [
       ModuleReference([it.testCaseName]),
@@ -40,7 +40,7 @@ describe('compiler-integration-tests', () => {
       expectedStandardOut,
     ]),
   );
-  it('MIR[all]', () => {
+  it("MIR[all]", () => {
     let jsCode = `let printed;
 const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([,a], [,b]) => [1,a + b];
 const ${ENCODED_FUNCTION_NAME_PRINTLN} = ([,line]) => { printed += line; printed += "\\n" };;
@@ -60,7 +60,7 @@ result['${testCaseName}'] = printed;
 
 `;
     });
-    jsCode += 'result';
+    jsCode += "result";
 
     let evalResult: unknown;
     try {
@@ -72,10 +72,10 @@ result['${testCaseName}'] = printed;
     expect(evalResult).toEqual(expectedResult);
   });
 
-  it('WASM[all]', () => {
+  it("WASM[all]", () => {
     const wasmModule = lowerMidIRSourcesToWasmModule(midIROptimizedSingleSource);
 
-    let printed = '';
+    let printed = "";
     const mainFunctions = samlangGeneratedWebAssemblyLoader(
       wasmModule.emitBinary(),
       (pointerToString) => ({
@@ -92,7 +92,7 @@ result['${testCaseName}'] = printed;
         const mainFunctionName = encodeMainFunctionName(ModuleReference([testCaseName]));
         mainFunctions[mainFunctionName]?.();
         const result = printed;
-        printed = '';
+        printed = "";
         return [testCaseName, result];
       }),
     );

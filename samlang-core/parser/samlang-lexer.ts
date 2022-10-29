@@ -1,13 +1,13 @@
-import { Location, ModuleReference, Position } from '../ast/common-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { assert, checkNotNull } from '../utils';
+import { Location, ModuleReference, Position } from "../ast/common-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { assert, checkNotNull } from "../utils";
 
 const characterIsWhitespace = (character: string): boolean => /\s/.test(character);
 const characterIsNumber = (character: string): boolean =>
-  character.length === 1 && '0' <= character && character <= '9';
+  character.length === 1 && "0" <= character && character <= "9";
 const characterIsLetter = (character: string): boolean =>
   character.length === 1 &&
-  (('A' <= character && character <= 'Z') || ('a' <= character && character <= 'z'));
+  (("A" <= character && character <= "Z") || ("a" <= character && character <= "z"));
 
 class EOF extends Error {}
 
@@ -23,7 +23,7 @@ class CharacterStream {
 
   private advanceCharacter(character: string): void {
     this.position += 1;
-    if (character === '\n') {
+    if (character === "\n") {
       this.lineNumber += 1;
       this.columnNumber = 0;
     } else {
@@ -68,11 +68,11 @@ class CharacterStream {
 
   /** @returns comment string including // or null if it's not a line comment. */
   peekLineComment(): string | null {
-    if (this.source.substr(this.position, 2) !== '//') return null;
+    if (this.source.substr(this.position, 2) !== "//") return null;
     let commentLength = 0;
     while (true) {
       const character = this.source[this.position + 2 + commentLength];
-      if (character == null || character === '\n') break;
+      if (character == null || character === "\n") break;
       commentLength += 1;
     }
     return this.source.substr(this.position, 2 + commentLength);
@@ -80,12 +80,12 @@ class CharacterStream {
 
   /** @returns comment string including /* or null if it's not a block comment. */
   peekBlockComment(): string | null {
-    if (this.source.substr(this.position, 2) !== '/*') return null;
+    if (this.source.substr(this.position, 2) !== "/*") return null;
     let commentLength = 0;
     while (true) {
       const twoChars = this.source.substr(this.position + 2 + commentLength, 2);
       if (twoChars.length !== 2) return null;
-      if (twoChars === '*/') {
+      if (twoChars === "*/") {
         break;
       }
       commentLength += 1;
@@ -95,10 +95,10 @@ class CharacterStream {
   }
 
   peekInteger(): string | null {
-    if (this.source[this.position] === '0') return '0';
+    if (this.source[this.position] === "0") return "0";
     let position = this.position;
     while (true) {
-      if (characterIsNumber(this.source[position] ?? '')) {
+      if (characterIsNumber(this.source[position] ?? "")) {
         position += 1;
       } else if (position === this.position) {
         return null;
@@ -112,7 +112,7 @@ class CharacterStream {
     if (!characterIsLetter(checkNotNull(this.source[this.position]))) return null;
     let position = this.position + 1;
     while (true) {
-      const character = this.source[position] ?? '';
+      const character = this.source[position] ?? "";
       if (characterIsNumber(character) || characterIsLetter(character)) {
         position += 1;
       } else {
@@ -130,7 +130,7 @@ class CharacterStream {
       if (character === '"') {
         let escapeCount = 0;
         for (let i = position - 1; i >= this.position + 1; i -= 1) {
-          if (this.source[i] !== '\\') break;
+          if (this.source[i] !== "\\") break;
           escapeCount += 1;
         }
         // We don't validate escaping here.
@@ -140,7 +140,7 @@ class CharacterStream {
           return this.source.substring(this.position, position + 1);
         }
       }
-      if (character === '\n') return null;
+      if (character === "\n") return null;
       position += 1;
     }
   }
@@ -148,185 +148,185 @@ class CharacterStream {
 
 export type SamlangKeywordString =
   // Imports
-  | 'import'
-  | 'from'
+  | "import"
+  | "from"
   // Declarations
-  | 'class'
-  | 'val'
-  | 'function'
-  | 'method'
-  | 'as'
+  | "class"
+  | "val"
+  | "function"
+  | "method"
+  | "as"
   // Visibility modifiers
-  | 'private'
-  | 'protected'
-  | 'internal'
-  | 'public'
+  | "private"
+  | "protected"
+  | "internal"
+  | "public"
   // Control Flow
-  | 'if'
-  | 'then'
-  | 'else'
-  | 'match'
-  | 'return'
+  | "if"
+  | "then"
+  | "else"
+  | "match"
+  | "return"
   // Type Keywords
-  | 'int'
-  | 'string'
-  | 'bool'
-  | 'unit'
+  | "int"
+  | "string"
+  | "bool"
+  | "unit"
   // Some Important Literals
-  | 'true'
-  | 'false'
-  | 'this'
+  | "true"
+  | "false"
+  | "this"
   // Forbidden Names
-  | 'self'
-  | 'const'
-  | 'let'
-  | 'var'
-  | 'type'
-  | 'interface'
-  | 'constructor'
-  | 'destructor'
-  | 'functor'
-  | 'extends'
-  | 'implements'
-  | 'export'
-  | 'assert';
+  | "self"
+  | "const"
+  | "let"
+  | "var"
+  | "type"
+  | "interface"
+  | "constructor"
+  | "destructor"
+  | "functor"
+  | "extends"
+  | "implements"
+  | "export"
+  | "assert";
 
 const SAMLANG_KEYWORDS: SamlangKeywordString[] = [
   // Imports
-  'import',
-  'from',
+  "import",
+  "from",
   // Declarations
-  'class',
-  'val',
-  'function',
-  'method',
-  'as',
+  "class",
+  "val",
+  "function",
+  "method",
+  "as",
   // Visibility modifiers
-  'private',
-  'protected',
-  'internal',
-  'public',
+  "private",
+  "protected",
+  "internal",
+  "public",
   // Control Flow
-  'if',
-  'then',
-  'else',
-  'match',
-  'return',
+  "if",
+  "then",
+  "else",
+  "match",
+  "return",
   // Type Keywords
-  'int',
-  'string',
-  'bool',
-  'unit',
+  "int",
+  "string",
+  "bool",
+  "unit",
   // Some Important Literals
-  'true',
-  'false',
-  'this',
+  "true",
+  "false",
+  "this",
   // Forbidden Names
-  'self',
-  'const',
-  'let',
-  'var',
-  'type',
-  'interface',
-  'constructor',
-  'destructor',
-  'functor',
-  'extends',
-  'implements',
-  'export',
-  'assert',
+  "self",
+  "const",
+  "let",
+  "var",
+  "type",
+  "interface",
+  "constructor",
+  "destructor",
+  "functor",
+  "extends",
+  "implements",
+  "export",
+  "assert",
 ];
 
 export type SamlangOperatorString =
-  | '_'
+  | "_"
   // Parentheses
-  | '('
-  | ')'
-  | '{'
-  | '}'
-  | '['
-  | ']'
+  | "("
+  | ")"
+  | "{"
+  | "}"
+  | "["
+  | "]"
   // Separators
-  | '?'
-  | ';'
-  | ':'
-  | '::'
-  | ','
-  | '.'
-  | '|'
-  | '->'
+  | "?"
+  | ";"
+  | ":"
+  | "::"
+  | ","
+  | "."
+  | "|"
+  | "->"
   // Operators
-  | '='
-  | '!'
-  | '*'
-  | '/'
-  | '%'
-  | '+'
-  | '-'
-  | '=='
-  | '<'
-  | '<='
-  | '>'
-  | '>='
-  | '!='
-  | '&&'
-  | '||'
-  | '...';
+  | "="
+  | "!"
+  | "*"
+  | "/"
+  | "%"
+  | "+"
+  | "-"
+  | "=="
+  | "<"
+  | "<="
+  | ">"
+  | ">="
+  | "!="
+  | "&&"
+  | "||"
+  | "...";
 
 const SAMLANG_OPERATORS: SamlangOperatorString[] = [
-  '_',
+  "_",
   // Parentheses
-  '(',
-  ')',
-  '{',
-  '}',
-  '[',
-  ']',
+  "(",
+  ")",
+  "{",
+  "}",
+  "[",
+  "]",
   // Separators
-  '?',
-  ';',
-  ':',
-  '::',
-  ',',
-  '.',
-  '|',
-  '->',
+  "?",
+  ";",
+  ":",
+  "::",
+  ",",
+  ".",
+  "|",
+  "->",
   // Operators
-  '=',
-  '!',
-  '*',
-  '/',
-  '%',
-  '+',
-  '-',
-  '==',
-  '<',
-  '<=',
-  '>',
-  '>=',
-  '!=',
-  '&&',
-  '||',
-  '...',
+  "=",
+  "!",
+  "*",
+  "/",
+  "%",
+  "+",
+  "-",
+  "==",
+  "<",
+  "<=",
+  ">",
+  ">=",
+  "!=",
+  "&&",
+  "||",
+  "...",
 ];
 // Sort by length reversed to enforce longest-rule-win rule.
 SAMLANG_OPERATORS.sort((a, b) => b.length - a.length);
 
 export type SamlangVariableTokenContent = {
   readonly __type__:
-    | 'UpperId'
-    | 'LowerId'
-    | 'StringLiteral'
-    | 'IntLiteral'
-    | 'LineComment'
-    | 'BlockComment'
-    | 'Error';
+    | "UpperId"
+    | "LowerId"
+    | "StringLiteral"
+    | "IntLiteral"
+    | "LineComment"
+    | "BlockComment"
+    | "Error";
   readonly content: string;
 };
 export type SamlangTokenContent =
   | SamlangKeywordString
   | SamlangOperatorString
-  | 'EOF'
+  | "EOF"
   | SamlangVariableTokenContent;
 
 export type SamlangToken = {
@@ -335,8 +335,8 @@ export type SamlangToken = {
 };
 
 export function samlangTokenContentToString(content: SamlangTokenContent): string {
-  if (typeof content === 'string') return content;
-  if (content.__type__ === 'Error') return `ERROR: ${content.content}`;
+  if (typeof content === "string") return content;
+  if (content.__type__ === "Error") return `ERROR: ${content.content}`;
   return content.content;
 }
 
@@ -348,19 +348,19 @@ function stringHasValidEscape(string: string): boolean {
   let hasUnprocessedEscape = false;
   for (let i = 0; i < string.length; i += 1) {
     const character = string[i];
-    if (character === '\\') {
+    if (character === "\\") {
       hasUnprocessedEscape = !hasUnprocessedEscape;
       continue;
     }
     if (hasUnprocessedEscape) {
       switch (character) {
-        case 't':
-        case 'v':
-        case '0':
-        case 'b':
-        case 'f':
-        case 'n':
-        case 'r':
+        case "t":
+        case "v":
+        case "0":
+        case "b":
+        case "f":
+        case "n":
+        case "r":
         case '"':
           hasUnprocessedEscape = false;
           break;
@@ -385,32 +385,32 @@ function getNextToken(
     if (lineComment != null) {
       return {
         location: stream.consumeAndGetLocation(start, lineComment.length),
-        content: { __type__: 'LineComment', content: lineComment },
+        content: { __type__: "LineComment", content: lineComment },
       };
     }
     const blockComment = stream.peekBlockComment();
     if (blockComment != null) {
       return {
         location: stream.consumeAndGetLocation(start, blockComment.length),
-        content: { __type__: 'BlockComment', content: blockComment },
+        content: { __type__: "BlockComment", content: blockComment },
       };
     }
     const integer = stream.peekInteger();
     if (integer != null) {
       return {
         location: stream.consumeAndGetLocation(start, integer.length),
-        content: { __type__: 'IntLiteral', content: integer },
+        content: { __type__: "IntLiteral", content: integer },
       };
     }
     const string = stream.peekString();
     if (string != null) {
       const location = stream.consumeAndGetLocation(start, string.length);
       if (!stringHasValidEscape(string)) {
-        errorReporter.reportSyntaxError(location, 'Invalid escape in string.');
+        errorReporter.reportSyntaxError(location, "Invalid escape in string.");
       }
       return {
         location,
-        content: { __type__: 'StringLiteral', content: string },
+        content: { __type__: "StringLiteral", content: string },
       };
     }
 
@@ -424,7 +424,7 @@ function getNextToken(
       return {
         location,
         content: {
-          __type__: 'A' <= firstLetter && firstLetter <= 'Z' ? 'UpperId' : 'LowerId',
+          __type__: "A" <= firstLetter && firstLetter <= "Z" ? "UpperId" : "LowerId",
           content: identifier,
         },
       };
@@ -441,10 +441,10 @@ function getNextToken(
 
     const errorTokenContent = stream.peekUntilWhitespace();
     const errorLocation = stream.consumeAndGetLocation(start, errorTokenContent.length);
-    errorReporter.reportSyntaxError(errorLocation, 'Invalid token.');
+    errorReporter.reportSyntaxError(errorLocation, "Invalid token.");
     return {
       location: errorLocation,
-      content: { __type__: 'Error', content: errorTokenContent },
+      content: { __type__: "Error", content: errorTokenContent },
     };
   } catch (e) {
     assert(e instanceof EOF);
@@ -466,29 +466,29 @@ export default function lexSamlangProgram(
 
     // Validate that the int token is between min and max int.
     // We have to do it here since we need access of the previous token.
-    if (typeof token.content !== 'string' && token.content.__type__ === 'IntLiteral') {
+    if (typeof token.content !== "string" && token.content.__type__ === "IntLiteral") {
       const intLiteralString = token.content.content;
       const parsedInt = parseInt(intLiteralString, 10);
       if (parsedInt > MAX_INT_PLUS_ONE) {
-        errorReporter.reportSyntaxError(token.location, 'Not a 32-bit integer.');
+        errorReporter.reportSyntaxError(token.location, "Not a 32-bit integer.");
         token = {
           location: token.location,
-          content: { __type__: 'IntLiteral', content: intLiteralString },
+          content: { __type__: "IntLiteral", content: intLiteralString },
         };
       } else if (parsedInt === MAX_INT_PLUS_ONE) {
         const previousToken = tokens[tokens.length - 1]?.content;
-        if (previousToken == null || previousToken !== '-') {
-          errorReporter.reportSyntaxError(token.location, 'Not a 32-bit integer.');
+        if (previousToken == null || previousToken !== "-") {
+          errorReporter.reportSyntaxError(token.location, "Not a 32-bit integer.");
           token = {
             location: token.location,
-            content: { __type__: 'IntLiteral', content: intLiteralString },
+            content: { __type__: "IntLiteral", content: intLiteralString },
           };
         } else {
           tokens.pop();
           // Merge - and MAX_INT_PLUS_ONE into MIN_INT
           token = {
             location: token.location,
-            content: { __type__: 'IntLiteral', content: `-${intLiteralString}` },
+            content: { __type__: "IntLiteral", content: `-${intLiteralString}` },
           };
         }
       }

@@ -9,8 +9,8 @@ import {
   HIR_VARIABLE,
   HIR_WHILE,
   HIR_ZERO,
-} from '../ast/hir-nodes';
-import { assert, zip3 } from '../utils';
+} from "../ast/hir-nodes";
+import { assert, zip3 } from "../utils";
 
 class OptimizationResourceAllocator {
   private tailrecTemporaryID = 0;
@@ -42,9 +42,9 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
   ): HighIRExpression => branchValue;
 
   switch (lastStatement.__type__) {
-    case 'HighIRFunctionCallStatement':
+    case "HighIRFunctionCallStatement":
       if (
-        lastStatement.functionExpression.__type__ === 'HighIRVariableExpression' ||
+        lastStatement.functionExpression.__type__ === "HighIRVariableExpression" ||
         lastStatement.functionExpression.name !== functionName
       ) {
         return null;
@@ -64,7 +64,7 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
                 // Stick in some dummy value. It will later be optimized away by constant propagation.
                 HIR_BINARY({
                   name: expectedReturnCollector,
-                  operator: '+',
+                  operator: "+",
                   e1: HIR_ZERO,
                   e2: HIR_ZERO,
                 }),
@@ -72,7 +72,7 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
         functionArguments: lastStatement.functionArguments,
       };
 
-    case 'HighIRIfElseStatement': {
+    case "HighIRIfElseStatement": {
       const relaventFinalAssignment = lastStatement.finalAssignments.find(
         (it) => it.name === expectedReturnCollector,
       );
@@ -81,8 +81,8 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
         if (relaventFinalAssignment == null) return null;
         const { branch1Value, branch2Value } = relaventFinalAssignment;
         newExpectedReturnCollector = [
-          branch1Value.__type__ === 'HighIRVariableExpression' ? branch1Value.name : null,
-          branch2Value.__type__ === 'HighIRVariableExpression' ? branch2Value.name : null,
+          branch1Value.__type__ === "HighIRVariableExpression" ? branch1Value.name : null,
+          branch2Value.__type__ === "HighIRVariableExpression" ? branch2Value.name : null,
         ];
       }
       const s1Result = tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
@@ -101,7 +101,7 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
       );
       if (s1Result == null && s2Result == null) return null;
       if (s1Result == null) {
-        assert(s2Result != null, 'If you see this, then boolean algebra must be broken.');
+        assert(s2Result != null, "If you see this, then boolean algebra must be broken.");
         return {
           statements: [
             ...statements.slice(0, statements.length - 1),
@@ -119,7 +119,7 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
         };
       }
       if (s2Result == null) {
-        assert(s1Result != null, 'If you see this, then boolean algebra must be broken.');
+        assert(s1Result != null, "If you see this, then boolean algebra must be broken.");
         return {
           statements: [
             ...statements.slice(0, statements.length - 1),
@@ -179,8 +179,8 @@ export default function optimizeHighIRFunctionByTailRecursionRewrite({
   returnValue,
 }: HighIRFunction): HighIRFunction | null {
   if (
-    returnValue.__type__ === 'HighIRStringNameExpression' ||
-    returnValue.__type__ === 'HighIRFunctionNameExpression'
+    returnValue.__type__ === "HighIRStringNameExpression" ||
+    returnValue.__type__ === "HighIRFunctionNameExpression"
   ) {
     return null;
   }
@@ -189,12 +189,12 @@ export default function optimizeHighIRFunctionByTailRecursionRewrite({
     body,
     name,
     type.argumentTypes,
-    returnValue.__type__ === 'HighIRIntLiteralExpression' ? null : returnValue.name,
+    returnValue.__type__ === "HighIRIntLiteralExpression" ? null : returnValue.name,
     allocator,
   );
   if (result == null) return null;
   const { statements, functionArguments } = result;
-  if (returnValue.__type__ === 'HighIRIntLiteralExpression') {
+  if (returnValue.__type__ === "HighIRIntLiteralExpression") {
     return {
       name,
       parameters: parameters.map(getTailRecursionParameterName),

@@ -1,2 +1,2 @@
-import samlangGeneratedWebAssemblyLoader from '@dev-sam/samlang-core/loader';
+import samlangGeneratedWebAssemblyLoader from "@dev-sam/samlang-core/loader";
 export default samlangGeneratedWebAssemblyLoader;

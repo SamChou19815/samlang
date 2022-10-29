@@ -1,14 +1,14 @@
-import { SamlangType, SourceFunctionType, SourceIdentifierType } from '../ast/samlang-nodes';
+import { SamlangType, SourceFunctionType, SourceIdentifierType } from "../ast/samlang-nodes";
 
 export default function performTypeSubstitution(
   type: SamlangType,
   mapping: ReadonlyMap<string, SamlangType>,
 ): SamlangType {
   switch (type.__type__) {
-    case 'UnknownType':
-    case 'PrimitiveType':
+    case "UnknownType":
+    case "PrimitiveType":
       return type;
-    case 'IdentifierType':
+    case "IdentifierType":
       if (type.typeArguments.length === 0) {
         return mapping.get(type.identifier) ?? type;
       }
@@ -18,7 +18,7 @@ export default function performTypeSubstitution(
         type.identifier,
         type.typeArguments.map((it) => performTypeSubstitution(it, mapping)),
       );
-    case 'FunctionType':
+    case "FunctionType":
       return SourceFunctionType(
         type.reason,
         type.argumentTypes.map((it) => performTypeSubstitution(it, mapping)),

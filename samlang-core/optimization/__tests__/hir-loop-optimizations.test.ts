@@ -17,11 +17,11 @@ import {
   HIR_VARIABLE,
   HIR_WHILE,
   HIR_ZERO,
-} from '../../ast/hir-nodes';
+} from "../../ast/hir-nodes";
 import optimizeHighIRFunctionWithAllLoopOptimizations, {
   optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING,
-} from '../hir-loop-optimizations';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
+} from "../hir-loop-optimizations";
+import OptimizationResourceAllocator from "../optimization-resource-allocator";
 
 function assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
   highIRWhileStatement: HighIRWhileStatement,
@@ -33,7 +33,7 @@ function assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
       new OptimizationResourceAllocator(),
     )
       .map((it) => debugPrintHighIRStatement(it))
-      .join('\n'),
+      .join("\n"),
   ).toBe(expected);
 }
 
@@ -45,10 +45,10 @@ function assertOptimizeHighIRStatementsWithAllLoopOptimizations(
   const { body, returnValue: optimizedReturnValue } =
     optimizeHighIRFunctionWithAllLoopOptimizations(
       {
-        name: '',
+        name: "",
         typeParameters: [],
         parameters: [],
-        type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
+        type: { __type__: "FunctionType", argumentTypes: [], returnType: HIR_INT_TYPE },
         body: statements,
         returnValue,
       },
@@ -56,86 +56,86 @@ function assertOptimizeHighIRStatementsWithAllLoopOptimizations(
     );
 
   expect(
-    `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
+    `${body.map((it) => debugPrintHighIRStatement(it)).join("\n")}\n` +
       `return ${debugPrintHighIRExpression(optimizedReturnValue)};`,
   ).toBe(expected);
 }
 
-const VARIABLE_I = HIR_VARIABLE('i', HIR_INT_TYPE);
-const VARIABLE_J = HIR_VARIABLE('j', HIR_INT_TYPE);
-const VARIABLE_TMP_I = HIR_VARIABLE('tmp_i', HIR_INT_TYPE);
-const VARIABLE_TMP_J = HIR_VARIABLE('tmp_j', HIR_INT_TYPE);
-const VARIABLE_TMP_K = HIR_VARIABLE('tmp_k', HIR_INT_TYPE);
+const VARIABLE_I = HIR_VARIABLE("i", HIR_INT_TYPE);
+const VARIABLE_J = HIR_VARIABLE("j", HIR_INT_TYPE);
+const VARIABLE_TMP_I = HIR_VARIABLE("tmp_i", HIR_INT_TYPE);
+const VARIABLE_TMP_J = HIR_VARIABLE("tmp_j", HIR_INT_TYPE);
+const VARIABLE_TMP_K = HIR_VARIABLE("tmp_k", HIR_INT_TYPE);
 
 const optimizableWhile1 = HIR_WHILE({
   loopVariables: [
-    { name: 'i', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
-    { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
+    { name: "i", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
+    { name: "j", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
   ],
   statements: [
-    HIR_BINARY({ name: 'cc', operator: '>=', e1: VARIABLE_I, e2: HIR_INT(10) }),
+    HIR_BINARY({ name: "cc", operator: ">=", e1: VARIABLE_I, e2: HIR_INT(10) }),
     HIR_SINGLE_IF({
-      booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+      booleanExpression: HIR_VARIABLE("cc", HIR_BOOL_TYPE),
       invertCondition: false,
       statements: [HIR_BREAK(VARIABLE_J)],
     }),
-    HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-    HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_J, e2: HIR_INT(10) }),
+    HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ONE }),
+    HIR_BINARY({ name: "tmp_j", operator: "+", e1: VARIABLE_J, e2: HIR_INT(10) }),
   ],
-  breakCollector: { name: 'bc', type: HIR_INT_TYPE },
+  breakCollector: { name: "bc", type: HIR_INT_TYPE },
 });
 
 const optimizableWhile2 = HIR_WHILE({
   loopVariables: [
-    { name: 'i', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
-    { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
+    { name: "i", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
+    { name: "j", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
   ],
   statements: [
-    HIR_BINARY({ name: 'cc', operator: '>=', e1: VARIABLE_I, e2: HIR_INT(10) }),
+    HIR_BINARY({ name: "cc", operator: ">=", e1: VARIABLE_I, e2: HIR_INT(10) }),
     HIR_SINGLE_IF({
-      booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+      booleanExpression: HIR_VARIABLE("cc", HIR_BOOL_TYPE),
       invertCondition: false,
       statements: [HIR_BREAK(VARIABLE_J)],
     }),
-    HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-    HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_TMP_I, e2: HIR_INT(10) }),
+    HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ONE }),
+    HIR_BINARY({ name: "tmp_j", operator: "+", e1: VARIABLE_TMP_I, e2: HIR_INT(10) }),
   ],
-  breakCollector: { name: 'bc', type: HIR_INT_TYPE },
+  breakCollector: { name: "bc", type: HIR_INT_TYPE },
 });
 
 const optimizableWhile3 = HIR_WHILE({
   loopVariables: [
-    { name: 'i', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
-    { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
-    { name: 'k', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_K },
+    { name: "i", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
+    { name: "j", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
+    { name: "k", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_K },
   ],
   statements: [
-    HIR_BINARY({ name: 'cc', operator: '>=', e1: VARIABLE_I, e2: HIR_INT(10) }),
+    HIR_BINARY({ name: "cc", operator: ">=", e1: VARIABLE_I, e2: HIR_INT(10) }),
     HIR_SINGLE_IF({
-      booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+      booleanExpression: HIR_VARIABLE("cc", HIR_BOOL_TYPE),
       invertCondition: false,
       statements: [HIR_BREAK(VARIABLE_J)],
     }),
-    HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-    HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_TMP_I, e2: HIR_INT(9) }),
-    HIR_BINARY({ name: 'tmp_k', operator: '+', e1: VARIABLE_TMP_I, e2: HIR_INT(9) }),
+    HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ONE }),
+    HIR_BINARY({ name: "tmp_j", operator: "+", e1: VARIABLE_TMP_I, e2: HIR_INT(9) }),
+    HIR_BINARY({ name: "tmp_k", operator: "+", e1: VARIABLE_TMP_I, e2: HIR_INT(9) }),
   ],
-  breakCollector: { name: 'bc', type: HIR_INT_TYPE },
+  breakCollector: { name: "bc", type: HIR_INT_TYPE },
 });
 
-describe('mir-loop-optimizations', () => {
-  it('optimizeHighIRWhileStatementWithAllLoopOptimizations works', () => {
+describe("mir-loop-optimizations", () => {
+  it("optimizeHighIRWhileStatementWithAllLoopOptimizations works", () => {
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
       HIR_WHILE({
         loopVariables: [],
-        statements: [HIR_BINARY({ name: 'a', operator: '+', e1: HIR_ZERO, e2: HIR_ZERO })],
+        statements: [HIR_BINARY({ name: "a", operator: "+", e1: HIR_ZERO, e2: HIR_ZERO })],
       }),
-      'let a: int = 0 + 0;\nwhile (true) {\n}',
+      "let a: int = 0 + 0;\nwhile (true) {\n}",
     );
 
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
       optimizableWhile1,
-      'let _loop_0: int = 10 * 10;\nlet bc: int = (_loop_0: int) + 0;',
+      "let _loop_0: int = 10 * 10;\nlet bc: int = (_loop_0: int) + 0;",
     );
 
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
@@ -189,30 +189,30 @@ while (true) {
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
       HIR_WHILE({
         loopVariables: [
-          { name: 'i', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
-          { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
+          { name: "i", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
+          { name: "j", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
         ],
         statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_INT(10) }),
+          HIR_BINARY({ name: "cc", operator: "<", e1: VARIABLE_I, e2: HIR_INT(10) }),
           HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+            booleanExpression: HIR_VARIABLE("cc", HIR_BOOL_TYPE),
             invertCondition: false,
             statements: [HIR_BREAK(VARIABLE_J)],
           }),
           HIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
+            name: "tmp_i",
+            operator: "+",
             e1: VARIABLE_I,
-            e2: HIR_VARIABLE('a', HIR_INT_TYPE),
+            e2: HIR_VARIABLE("a", HIR_INT_TYPE),
           }),
           HIR_BINARY({
-            name: 'tmp_j',
-            operator: '*',
+            name: "tmp_j",
+            operator: "*",
             e1: VARIABLE_I,
             e2: HIR_INT(2),
           }),
         ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
+        breakCollector: { name: "bc", type: HIR_INT_TYPE },
       }),
       `let j: int = 0;
 let i: int = 0;
@@ -234,18 +234,18 @@ while (true) {
     assertOptimizeHighIRWhileStatementWithAllLoopOptimizations(
       HIR_WHILE({
         loopVariables: [
-          { name: 'i', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
-          { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
+          { name: "i", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
+          { name: "j", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
         ],
         statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_INT(10) }),
+          HIR_BINARY({ name: "cc", operator: "<", e1: VARIABLE_I, e2: HIR_INT(10) }),
           HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+            booleanExpression: HIR_VARIABLE("cc", HIR_BOOL_TYPE),
             invertCondition: false,
             statements: [HIR_BREAK(VARIABLE_J)],
           }),
-          HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-          HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_TMP_I, e2: HIR_INT(10) }),
+          HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ONE }),
+          HIR_BINARY({ name: "tmp_j", operator: "+", e1: VARIABLE_TMP_I, e2: HIR_INT(10) }),
         ],
       }),
       `let _loop_0: int = 1 * 0;
@@ -265,7 +265,7 @@ while (true) {
     );
   });
 
-  it('optimizeHighIRStatementsWithAllLoopOptimizations works', () => {
+  it("optimizeHighIRStatementsWithAllLoopOptimizations works", () => {
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
       [
         HIR_IF_ELSE({
@@ -279,8 +279,8 @@ while (true) {
           ],
           s2: [
             HIR_BINARY({
-              name: 'tmp_j',
-              operator: '*',
+              name: "tmp_j",
+              operator: "*",
               e1: VARIABLE_I,
               e2: HIR_INT(2),
             }),
@@ -289,18 +289,18 @@ while (true) {
         }),
       ],
       HIR_ZERO,
-      'let tmp_j: int = (i: int) * 2;\nreturn 0;',
+      "let tmp_j: int = (i: int) * 2;\nreturn 0;",
     );
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
       [optimizableWhile1],
-      HIR_VARIABLE('bc', HIR_INT_TYPE),
-      '\nreturn 100;',
+      HIR_VARIABLE("bc", HIR_INT_TYPE),
+      "\nreturn 100;",
     );
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
       [optimizableWhile2],
-      HIR_VARIABLE('bc', HIR_INT_TYPE),
+      HIR_VARIABLE("bc", HIR_INT_TYPE),
       `let j: int = 16;
 let tmp_j: int = 17;
 let bc: int;
@@ -319,7 +319,7 @@ return (bc: int);`,
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
       [optimizableWhile3],
-      HIR_VARIABLE('bc', HIR_INT_TYPE),
+      HIR_VARIABLE("bc", HIR_INT_TYPE),
       `let j: int = 15;
 let i: int = 6;
 let tmp_j: int = 16;
@@ -346,34 +346,34 @@ return (bc: int);`,
       [
         HIR_WHILE({
           loopVariables: [
-            { name: 'i', type: HIR_INT_TYPE, initialValue: HIR_INT(4), loopValue: VARIABLE_TMP_I },
-            { name: 'acc', type: HIR_INT_TYPE, initialValue: HIR_ONE, loopValue: VARIABLE_TMP_J },
+            { name: "i", type: HIR_INT_TYPE, initialValue: HIR_INT(4), loopValue: VARIABLE_TMP_I },
+            { name: "acc", type: HIR_INT_TYPE, initialValue: HIR_ONE, loopValue: VARIABLE_TMP_J },
           ],
           statements: [
-            HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_INT(1) }),
+            HIR_BINARY({ name: "cc", operator: "<", e1: VARIABLE_I, e2: HIR_INT(1) }),
             HIR_SINGLE_IF({
-              booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+              booleanExpression: HIR_VARIABLE("cc", HIR_BOOL_TYPE),
               invertCondition: false,
-              statements: [HIR_BREAK(HIR_VARIABLE('acc', HIR_INT_TYPE))],
+              statements: [HIR_BREAK(HIR_VARIABLE("acc", HIR_INT_TYPE))],
             }),
             HIR_BINARY({
-              name: 'tmp_i',
-              operator: '+',
+              name: "tmp_i",
+              operator: "+",
               e1: VARIABLE_I,
               e2: HIR_INT(-1),
             }),
             HIR_BINARY({
-              name: 'tmp_j',
-              operator: '*',
+              name: "tmp_j",
+              operator: "*",
               e1: VARIABLE_I,
-              e2: HIR_VARIABLE('acc', HIR_INT_TYPE),
+              e2: HIR_VARIABLE("acc", HIR_INT_TYPE),
             }),
           ],
-          breakCollector: { name: 'bc', type: HIR_INT_TYPE },
+          breakCollector: { name: "bc", type: HIR_INT_TYPE },
         }),
       ],
-      HIR_VARIABLE('bc', HIR_INT_TYPE),
-      '\nreturn 24;',
+      HIR_VARIABLE("bc", HIR_INT_TYPE),
+      "\nreturn 24;",
     );
 
     assertOptimizeHighIRStatementsWithAllLoopOptimizations(
@@ -381,30 +381,30 @@ return (bc: int);`,
         HIR_WHILE({
           loopVariables: [
             {
-              name: 'i',
+              name: "i",
               type: HIR_INT_TYPE,
-              initialValue: HIR_VARIABLE('init_i', HIR_INT_TYPE),
+              initialValue: HIR_VARIABLE("init_i", HIR_INT_TYPE),
               loopValue: VARIABLE_TMP_I,
             },
           ],
           statements: [
             HIR_BINARY({
-              name: 'cc',
-              operator: '<',
+              name: "cc",
+              operator: "<",
               e1: VARIABLE_I,
-              e2: HIR_VARIABLE('L', HIR_INT_TYPE),
+              e2: HIR_VARIABLE("L", HIR_INT_TYPE),
             }),
             HIR_SINGLE_IF({
-              booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+              booleanExpression: HIR_VARIABLE("cc", HIR_BOOL_TYPE),
               invertCondition: true,
               statements: [HIR_BREAK(HIR_ZERO)],
             }),
-            HIR_BINARY({ name: 't', operator: '*', e1: VARIABLE_I, e2: HIR_INT(3) }),
+            HIR_BINARY({ name: "t", operator: "*", e1: VARIABLE_I, e2: HIR_INT(3) }),
             HIR_BINARY({
-              name: 'j',
-              operator: '+',
-              e1: HIR_VARIABLE('a', HIR_INT_TYPE),
-              e2: HIR_VARIABLE('t', HIR_INT_TYPE),
+              name: "j",
+              operator: "+",
+              e1: HIR_VARIABLE("a", HIR_INT_TYPE),
+              e2: HIR_VARIABLE("t", HIR_INT_TYPE),
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
@@ -412,8 +412,8 @@ return (bc: int);`,
               returnType: HIR_INT_TYPE,
             }),
             HIR_BINARY({
-              name: 'tmp_i',
-              operator: '+',
+              name: "tmp_i",
+              operator: "+",
               e1: VARIABLE_I,
               e2: HIR_INT(2),
             }),

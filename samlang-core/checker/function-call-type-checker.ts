@@ -1,4 +1,4 @@
-import type { SamlangReason } from '../ast/common-nodes';
+import type { SamlangReason } from "../ast/common-nodes";
 import {
   isTheSameType,
   SamlangExpression,
@@ -8,40 +8,40 @@ import {
   SourceUnknownType,
   TypeParameterSignature,
   typeReposition,
-} from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { assert, checkNotNull, zip } from '../utils';
-import contextualTypeMeet from './contextual-type-meet';
-import { solveMultipleTypeConstraints } from './type-constraints-solver';
-import performTypeSubstitution from './type-substitution';
+} from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { assert, checkNotNull, zip } from "../utils";
+import contextualTypeMeet from "./contextual-type-meet";
+import { solveMultipleTypeConstraints } from "./type-constraints-solver";
+import performTypeSubstitution from "./type-substitution";
 
 function argumentShouldBeTypeCheckedWithoutHint(expression: SamlangExpression): boolean {
   switch (expression.__type__) {
-    case 'LiteralExpression':
-    case 'ThisExpression':
-    case 'VariableExpression':
-    case 'ClassMemberExpression':
-    case 'FieldAccessExpression':
-    case 'MethodAccessExpression':
-    case 'FunctionCallExpression':
-    case 'UnaryExpression':
-    case 'BinaryExpression':
+    case "LiteralExpression":
+    case "ThisExpression":
+    case "VariableExpression":
+    case "ClassMemberExpression":
+    case "FieldAccessExpression":
+    case "MethodAccessExpression":
+    case "FunctionCallExpression":
+    case "UnaryExpression":
+    case "BinaryExpression":
       return true;
-    case 'IfElseExpression':
+    case "IfElseExpression":
       return (
         argumentShouldBeTypeCheckedWithoutHint(expression.e1) &&
         argumentShouldBeTypeCheckedWithoutHint(expression.e2)
       );
-    case 'MatchExpression':
+    case "MatchExpression":
       return expression.matchingList.every((it) =>
         argumentShouldBeTypeCheckedWithoutHint(it.expression),
       );
-    case 'StatementBlockExpression':
+    case "StatementBlockExpression":
       return (
         expression.block.expression == null ||
         argumentShouldBeTypeCheckedWithoutHint(expression.block.expression)
       );
-    case 'LambdaExpression': {
+    case "LambdaExpression": {
       return (
         expression.parameters.every(({ typeAnnotation }) => typeAnnotation != null) &&
         argumentShouldBeTypeCheckedWithoutHint(expression.body)
@@ -84,7 +84,7 @@ function solveTypeArguments(
     genericFunctionType,
     partiallySolvedSubstitution,
   );
-  assert(partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.__type__ === 'FunctionType');
+  assert(partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown.__type__ === "FunctionType");
   return partiallySolvedGenericTypeWithUnsolvedReplacedWithUnknown;
 }
 
@@ -100,7 +100,7 @@ export function validateTypeArguments(
       const substitutedBound = performTypeSubstitution(bound, substitutionMap);
       if (
         !isTheSameType(solvedTypeArgument, substitutedBound) &&
-        (substitutedBound.__type__ !== 'IdentifierType' ||
+        (substitutedBound.__type__ !== "IdentifierType" ||
           !isSubtype(solvedTypeArgument, substitutedBound))
       ) {
         errorReporter.reportUnexpectedSubtypeError(
@@ -133,7 +133,7 @@ export default function typeCheckFunctionCall(
   if (genericFunctionType.argumentTypes.length !== functionArguments.length) {
     errorReporter.reportArityMismatchError(
       functionCallReason.useLocation,
-      'arguments',
+      "arguments",
       genericFunctionType.argumentTypes.length,
       functionArguments.length,
     );
@@ -201,7 +201,7 @@ export default function typeCheckFunctionCall(
     genericFunctionType,
     fullySolvedSubstitution,
   );
-  assert(fullySolvedGenericType.__type__ === 'FunctionType');
+  assert(fullySolvedGenericType.__type__ === "FunctionType");
   const fullySolvedConcreteReturnType = contextualTypeMeet(
     returnTypeHint ?? SourceUnknownType(functionCallReason),
     typeReposition(fullySolvedGenericType.returnType, functionCallReason.useLocation),

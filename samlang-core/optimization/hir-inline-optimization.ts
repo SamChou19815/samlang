@@ -6,11 +6,11 @@ import {
   HighIRType,
   HIR_VARIABLE,
   HIR_ZERO,
-} from '../ast/hir-nodes';
-import { checkNotNull, filterMap, zip, zip3 } from '../utils';
-import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
-import { LocalValueContextForOptimization } from './hir-optimization-common';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
+} from "../ast/hir-nodes";
+import { checkNotNull, filterMap, zip, zip3 } from "../utils";
+import optimizeHighIRFunctionByConditionalConstantPropagation from "./hir-conditional-constant-propagation-optimization";
+import { LocalValueContextForOptimization } from "./hir-optimization-common";
+import type OptimizationResourceAllocator from "./optimization-resource-allocator";
 
 /** The threshold max tolerable cost of inlining.  */
 const INLINE_THRESHOLD = 20;
@@ -19,32 +19,32 @@ const PERFORM_INLINE_THRESHOLD = 1000;
 
 function estimateStatementInlineCost(statement: HighIRStatement): number {
   switch (statement.__type__) {
-    case 'HighIRIndexAccessStatement':
+    case "HighIRIndexAccessStatement":
       return 2;
-    case 'HighIRBinaryStatement':
+    case "HighIRBinaryStatement":
       return 1;
-    case 'HighIRFunctionCallStatement':
+    case "HighIRFunctionCallStatement":
       return 10;
-    case 'HighIRIfElseStatement':
+    case "HighIRIfElseStatement":
       return (
         1 +
         statement.s1.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0) +
         statement.s2.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0) +
         statement.finalAssignments.length * 2
       );
-    case 'HighIRSingleIfStatement':
+    case "HighIRSingleIfStatement":
       return 1 + statement.statements.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0);
-    case 'HighIRBreakStatement':
+    case "HighIRBreakStatement":
       return 1;
-    case 'HighIRWhileStatement':
+    case "HighIRWhileStatement":
       return (
         1 +
         statement.loopVariables.length * 2 +
         statement.statements.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0)
       );
-    case 'HighIRStructInitializationStatement':
+    case "HighIRStructInitializationStatement":
       return 1 + statement.expressionList.length;
-    case 'HighIRClosureInitializationStatement':
+    case "HighIRClosureInitializationStatement":
       return 3;
   }
 }
@@ -75,7 +75,7 @@ function inlineRewriteExpression(
   expression: HighIRExpression,
   context: LocalValueContextForOptimization,
 ): HighIRExpression {
-  if (expression.__type__ !== 'HighIRVariableExpression') return expression;
+  if (expression.__type__ !== "HighIRVariableExpression") return expression;
   const binded = context.getLocalValueType(expression.name);
   return binded ?? expression;
 }
@@ -87,7 +87,7 @@ function inlineRewriteForStatement(
   statement: HighIRStatement,
 ): HighIRStatement {
   function rewrite(expression: HighIRExpression): HighIRExpression {
-    if (expression.__type__ !== 'HighIRVariableExpression') return expression;
+    if (expression.__type__ !== "HighIRVariableExpression") return expression;
     const binded = context.getLocalValueType(expression.name);
     return binded ?? expression;
   }
@@ -99,20 +99,20 @@ function inlineRewriteForStatement(
   }
 
   switch (statement.__type__) {
-    case 'HighIRIndexAccessStatement':
+    case "HighIRIndexAccessStatement":
       return {
         ...statement,
         name: bindWithMangledName(statement.name, statement.type),
         pointerExpression: rewrite(statement.pointerExpression),
       };
-    case 'HighIRBinaryStatement':
+    case "HighIRBinaryStatement":
       return {
         ...statement,
         name: bindWithMangledName(statement.name, statement.type),
         e1: rewrite(statement.e1),
         e2: rewrite(statement.e2),
       };
-    case 'HighIRFunctionCallStatement': {
+    case "HighIRFunctionCallStatement": {
       const functionExpression = rewrite(
         statement.functionExpression,
       ) as HighIRFunctionNameExpression;
@@ -129,7 +129,7 @@ function inlineRewriteForStatement(
       };
     }
 
-    case 'HighIRIfElseStatement': {
+    case "HighIRIfElseStatement": {
       const booleanExpression = rewrite(statement.booleanExpression);
       const [s1, branch1Values] = context.withNestedScope(() => {
         const statements = filterMap(statement.s1, (it) =>
@@ -165,7 +165,7 @@ function inlineRewriteForStatement(
       };
     }
 
-    case 'HighIRSingleIfStatement': {
+    case "HighIRSingleIfStatement": {
       const booleanExpression = rewrite(statement.booleanExpression);
       const statements = context.withNestedScope(() =>
         filterMap(statement.statements, (it) =>
@@ -175,10 +175,10 @@ function inlineRewriteForStatement(
       return { ...statement, booleanExpression, statements };
     }
 
-    case 'HighIRBreakStatement':
+    case "HighIRBreakStatement":
       return { ...statement, breakValue: rewrite(statement.breakValue) };
 
-    case 'HighIRWhileStatement': {
+    case "HighIRWhileStatement": {
       const loopVariablesWithoutLoopValue = statement.loopVariables.map(
         ({ name, type, initialValue }) => ({
           name: bindWithMangledName(name, type),
@@ -206,14 +206,14 @@ function inlineRewriteForStatement(
       return { ...statement, loopVariables, statements, breakCollector };
     }
 
-    case 'HighIRStructInitializationStatement':
+    case "HighIRStructInitializationStatement":
       return {
         ...statement,
         structVariableName: bindWithMangledName(statement.structVariableName, statement.type),
         expressionList: statement.expressionList.map(rewrite),
       };
 
-    case 'HighIRClosureInitializationStatement':
+    case "HighIRClosureInitializationStatement":
       return {
         ...statement,
         closureVariableName: bindWithMangledName(
@@ -233,9 +233,9 @@ function performInlineRewriteOnFunction(
 ): HighIRFunction {
   function rewrite(statement: HighIRStatement): readonly HighIRStatement[] {
     switch (statement.__type__) {
-      case 'HighIRFunctionCallStatement': {
+      case "HighIRFunctionCallStatement": {
         const { functionExpression, functionArguments, returnType, returnCollector } = statement;
-        if (functionExpression.__type__ !== 'HighIRFunctionNameExpression') return [statement];
+        if (functionExpression.__type__ !== "HighIRFunctionNameExpression") return [statement];
         const functionName = functionExpression.name;
         if (!functionsThatCanBeInlined.has(functionName) || functionName === highIRFunction.name) {
           return [statement];
@@ -268,8 +268,8 @@ function performInlineRewriteOnFunction(
         return [
           ...rewrittenBody,
           {
-            __type__: 'HighIRBinaryStatement',
-            operator: '+',
+            __type__: "HighIRBinaryStatement",
+            operator: "+",
             name: returnCollector,
             type: returnType,
             e1: inlineRewriteExpression(returnValueOfFunctionToBeInlined, context),
@@ -277,12 +277,12 @@ function performInlineRewriteOnFunction(
           },
         ];
       }
-      case 'HighIRIfElseStatement':
+      case "HighIRIfElseStatement":
         return [
           { ...statement, s1: statement.s1.flatMap(rewrite), s2: statement.s2.flatMap(rewrite) },
         ];
-      case 'HighIRSingleIfStatement':
-      case 'HighIRWhileStatement':
+      case "HighIRSingleIfStatement":
+      case "HighIRWhileStatement":
         return [{ ...statement, statements: statement.statements.flatMap(rewrite) }];
       default:
         return [statement];

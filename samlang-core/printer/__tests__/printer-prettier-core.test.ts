@@ -1,4 +1,4 @@
-import { checkNotNull } from '../../utils';
+import { checkNotNull } from "../../utils";
 import {
   PrettierDocument,
   PRETTIER_CONCAT,
@@ -11,23 +11,23 @@ import {
   PRETTIER_NO_SPACE_BRACKET,
   PRETTIER_TEXT,
   prettyPrintAccordingToPrettierAlgorithm,
-} from '../printer-prettier-core';
+} from "../printer-prettier-core";
 
-describe('printer-prettier-core', () => {
-  it('prettier concat constructor test', () => {
+describe("printer-prettier-core", () => {
+  it("prettier concat constructor test", () => {
     expect(PRETTIER_CONCAT()).toEqual(PRETTIER_NIL);
-    expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'))).toEqual(PRETTIER_TEXT('a'));
-    expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'))).toEqual(PRETTIER_TEXT('a'));
-    expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_TEXT('b'), PRETTIER_TEXT('c'))).toEqual(
-      PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_CONCAT(PRETTIER_TEXT('b'), PRETTIER_TEXT('c'))),
+    expect(PRETTIER_CONCAT(PRETTIER_TEXT("a"))).toEqual(PRETTIER_TEXT("a"));
+    expect(PRETTIER_CONCAT(PRETTIER_TEXT("a"))).toEqual(PRETTIER_TEXT("a"));
+    expect(PRETTIER_CONCAT(PRETTIER_TEXT("a"), PRETTIER_TEXT("b"), PRETTIER_TEXT("c"))).toEqual(
+      PRETTIER_CONCAT(PRETTIER_TEXT("a"), PRETTIER_CONCAT(PRETTIER_TEXT("b"), PRETTIER_TEXT("c"))),
     );
   });
 
-  it('PRETTIER_MULTILINE_COMMENT test', () => {
+  it("PRETTIER_MULTILINE_COMMENT test", () => {
     expect(
       prettyPrintAccordingToPrettierAlgorithm(
         20,
-        PRETTIER_MULTILINE_COMMENT('/**', 'this is a test haha foo bar oh noooooo'),
+        PRETTIER_MULTILINE_COMMENT("/**", "this is a test haha foo bar oh noooooo"),
       ),
     ).toBe(`/**
  * this is a test
@@ -36,13 +36,13 @@ describe('printer-prettier-core', () => {
  */
 `);
     expect(
-      prettyPrintAccordingToPrettierAlgorithm(20, PRETTIER_MULTILINE_COMMENT('/**', 'test test')),
-    ).toBe('/** test test */\n');
+      prettyPrintAccordingToPrettierAlgorithm(20, PRETTIER_MULTILINE_COMMENT("/**", "test test")),
+    ).toBe("/** test test */\n");
 
     expect(
       prettyPrintAccordingToPrettierAlgorithm(
         1,
-        PRETTIER_MULTILINE_COMMENT('/**', 'this is a test haha foo bar oh noooooo'),
+        PRETTIER_MULTILINE_COMMENT("/**", "this is a test haha foo bar oh noooooo"),
       ),
     ).toBe(`/**
  * this
@@ -59,21 +59,21 @@ describe('printer-prettier-core', () => {
 `);
   });
 
-  it('prettier hard-line test', () => {
+  it("prettier hard-line test", () => {
     // With a hardline, it forces the entire group to be unable to flatten.
     expect(
       prettyPrintAccordingToPrettierAlgorithm(
         100,
         PRETTIER_GROUP(
           PRETTIER_CONCAT(
-            PRETTIER_TEXT('a'),
+            PRETTIER_TEXT("a"),
             PRETTIER_LINE,
             PRETTIER_NEST(
               2,
-              PRETTIER_CONCAT(PRETTIER_TEXT('c'), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT('d')),
+              PRETTIER_CONCAT(PRETTIER_TEXT("c"), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT("d")),
             ),
             PRETTIER_LINE,
-            PRETTIER_TEXT('b'),
+            PRETTIER_TEXT("b"),
           ),
         ),
       ),
@@ -84,19 +84,19 @@ b
 `);
   });
 
-  it('prettier-core tree test', () => {
+  it("prettier-core tree test", () => {
     type Tree = { readonly name: string; readonly children: readonly Tree[] };
 
     function showTrees(trees: readonly Tree[]): PrettierDocument {
       const [first, ...rest] = trees;
       const firstDocument = showTree(checkNotNull(first));
       if (rest.length === 0) return firstDocument;
-      return PRETTIER_CONCAT(firstDocument, PRETTIER_TEXT(','), PRETTIER_LINE, showTrees(rest));
+      return PRETTIER_CONCAT(firstDocument, PRETTIER_TEXT(","), PRETTIER_LINE, showTrees(rest));
     }
 
     function showBracket(trees: readonly Tree[]): PrettierDocument {
       if (trees.length === 0) return PRETTIER_NIL;
-      return PRETTIER_NO_SPACE_BRACKET('[', showTrees(trees), ']');
+      return PRETTIER_NO_SPACE_BRACKET("[", showTrees(trees), "]");
     }
 
     function showTree({ name, children }: Tree): PrettierDocument {
@@ -104,22 +104,22 @@ b
     }
 
     const exampleTree: Tree = {
-      name: 'aaa',
+      name: "aaa",
       children: [
         {
-          name: 'bbbbb',
+          name: "bbbbb",
           children: [
-            { name: 'ccc', children: [] },
-            { name: 'dd', children: [] },
+            { name: "ccc", children: [] },
+            { name: "dd", children: [] },
           ],
         },
-        { name: 'eee', children: [] },
+        { name: "eee", children: [] },
         {
-          name: 'ffff',
+          name: "ffff",
           children: [
-            { name: 'gg', children: [] },
-            { name: 'hhh', children: [] },
-            { name: 'ii', children: [] },
+            { name: "gg", children: [] },
+            { name: "hhh", children: [] },
+            { name: "ii", children: [] },
           ],
         },
       ],

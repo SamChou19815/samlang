@@ -1,27 +1,27 @@
-import { resolve } from 'path';
+import { resolve } from "path";
 import loadSamlangProjectConfiguration, {
   fileSystemLoader_EXPOSED_FOR_TESTING,
   parseSamlangProjectConfiguration,
-} from '../configuration';
+} from "../configuration";
 
-describe('samlang-cli/configuration', () => {
-  describe('parser', () => {
-    it('Parser can parse good configurations', () => {
-      expect(parseSamlangProjectConfiguration('{}')).toEqual({
-        sourceDirectory: '.',
-        outputDirectory: 'out',
+describe("samlang-cli/configuration", () => {
+  describe("parser", () => {
+    it("Parser can parse good configurations", () => {
+      expect(parseSamlangProjectConfiguration("{}")).toEqual({
+        sourceDirectory: ".",
+        outputDirectory: "out",
         entryPoints: [],
       });
 
       expect(parseSamlangProjectConfiguration('{"sourceDirectory": "source"}')).toEqual({
-        sourceDirectory: 'source',
-        outputDirectory: 'out',
+        sourceDirectory: "source",
+        outputDirectory: "out",
         entryPoints: [],
       });
 
       expect(parseSamlangProjectConfiguration('{"outputDirectory": "out-out"}')).toEqual({
-        sourceDirectory: '.',
-        outputDirectory: 'out-out',
+        sourceDirectory: ".",
+        outputDirectory: "out-out",
         entryPoints: [],
       });
 
@@ -33,20 +33,20 @@ describe('samlang-cli/configuration', () => {
         }
         `),
       ).toEqual({
-        sourceDirectory: 'source',
-        outputDirectory: 'output',
-        entryPoints: ['a', 'b'],
+        sourceDirectory: "source",
+        outputDirectory: "output",
+        entryPoints: ["a", "b"],
       });
     });
 
-    it('Parser can reject bad configurations', () => {
-      expect(parseSamlangProjectConfiguration('')).toBeNull();
-      expect(parseSamlangProjectConfiguration('null')).toBeNull();
-      expect(parseSamlangProjectConfiguration('undefined')).toBeNull();
-      expect(parseSamlangProjectConfiguration('1')).toBeNull();
+    it("Parser can reject bad configurations", () => {
+      expect(parseSamlangProjectConfiguration("")).toBeNull();
+      expect(parseSamlangProjectConfiguration("null")).toBeNull();
+      expect(parseSamlangProjectConfiguration("undefined")).toBeNull();
+      expect(parseSamlangProjectConfiguration("1")).toBeNull();
       expect(parseSamlangProjectConfiguration('"undefined"')).toBeNull();
-      expect(parseSamlangProjectConfiguration('{')).toBeNull();
-      expect(parseSamlangProjectConfiguration('}')).toBeNull();
+      expect(parseSamlangProjectConfiguration("{")).toBeNull();
+      expect(parseSamlangProjectConfiguration("}")).toBeNull();
       expect(parseSamlangProjectConfiguration('{ "sourceDirectory": 3 }')).toBeNull();
       expect(parseSamlangProjectConfiguration('{ "outputDirectory": 3 }')).toBeNull();
       expect(parseSamlangProjectConfiguration('{ "entryPoints": "3" }')).toBeNull();
@@ -54,11 +54,11 @@ describe('samlang-cli/configuration', () => {
     });
   });
 
-  describe('loader', () => {
-    it('When there is no configuration, say so.', () => {
+  describe("loader", () => {
+    it("When there is no configuration, say so.", () => {
       expect(
         loadSamlangProjectConfiguration({
-          startPath: '/Users/sam',
+          startPath: "/Users/sam",
           pathExistanceTester() {
             return false;
           },
@@ -66,13 +66,13 @@ describe('samlang-cli/configuration', () => {
             return null;
           },
         }),
-      ).toBe('NO_CONFIGURATION');
+      ).toBe("NO_CONFIGURATION");
     });
 
-    it('When the configuration file is unreadable, say so.', () => {
+    it("When the configuration file is unreadable, say so.", () => {
       expect(
         loadSamlangProjectConfiguration({
-          startPath: '/Users/sam',
+          startPath: "/Users/sam",
           pathExistanceTester() {
             return true;
           },
@@ -80,60 +80,60 @@ describe('samlang-cli/configuration', () => {
             return null;
           },
         }),
-      ).toBe('UNREADABLE_CONFIGURATION_FILE');
+      ).toBe("UNREADABLE_CONFIGURATION_FILE");
     });
 
-    it('When the configuration file is unparsable, say so.', () => {
+    it("When the configuration file is unparsable, say so.", () => {
       expect(
         loadSamlangProjectConfiguration({
-          startPath: '/Users/sam',
+          startPath: "/Users/sam",
           pathExistanceTester() {
             return true;
           },
           fileReader() {
-            return 'bad file haha';
+            return "bad file haha";
           },
         }),
-      ).toBe('UNPARSABLE_CONFIGURATION_FILE');
+      ).toBe("UNPARSABLE_CONFIGURATION_FILE");
     });
 
-    it('When the configuration file is good, say so', () => {
+    it("When the configuration file is good, say so", () => {
       expect(
         loadSamlangProjectConfiguration({
-          startPath: '/Users/sam',
+          startPath: "/Users/sam",
           pathExistanceTester() {
             return true;
           },
           fileReader() {
-            return '{}';
+            return "{}";
           },
         }),
       ).toBeTruthy();
     });
 
-    it('Real filesystem bad configuration file integration test.', () => {
+    it("Real filesystem bad configuration file integration test.", () => {
       expect(
         loadSamlangProjectConfiguration({
           ...fileSystemLoader_EXPOSED_FOR_TESTING,
-          startPath: resolve('./samlang-cli/fixtures/bad-configuration-file'),
+          startPath: resolve("./samlang-cli/fixtures/bad-configuration-file"),
         }),
-      ).toBe('UNREADABLE_CONFIGURATION_FILE');
+      ).toBe("UNREADABLE_CONFIGURATION_FILE");
     });
 
-    it('Real filesystem bad start path integration test.', () => {
+    it("Real filesystem bad start path integration test.", () => {
       expect(
         loadSamlangProjectConfiguration({
           ...fileSystemLoader_EXPOSED_FOR_TESTING,
-          startPath: '/',
+          startPath: "/",
         }),
-      ).toBe('NO_CONFIGURATION');
+      ).toBe("NO_CONFIGURATION");
     });
 
-    it('Real filesystem integration test.', () => {
+    it("Real filesystem integration test.", () => {
       expect(loadSamlangProjectConfiguration()).toEqual({
-        sourceDirectory: resolve(process.env.PWD || ''),
-        outputDirectory: resolve(process.env.PWD || '', 'out'),
-        entryPoints: ['tests.AllTests'],
+        sourceDirectory: resolve(process.env.PWD || ""),
+        outputDirectory: resolve(process.env.PWD || "", "out"),
+        entryPoints: ["tests.AllTests"],
       });
     });
   });

@@ -1,12 +1,12 @@
-import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
-import { HighIRStatement, HIR_BINARY, HIR_INT_TYPE, HIR_VARIABLE } from '../ast/hir-nodes';
-import { checkNotNull, filterMap } from '../utils';
+import createHighIRFlexibleOrderOperatorNode from "../ast/hir-flexible-op";
+import { HighIRStatement, HIR_BINARY, HIR_INT_TYPE, HIR_VARIABLE } from "../ast/hir-nodes";
+import { checkNotNull, filterMap } from "../utils";
 import {
   GeneralBasicInductionVariable,
   HighIROptimizableWhileLoop,
   mergeInvariantMultiplicationForLoopOptimization,
-} from './hir-loop-induction-analysis';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
+} from "./hir-loop-induction-analysis";
+import type OptimizationResourceAllocator from "./optimization-resource-allocator";
 
 export default function highIRLoopStrengthReductionOptimization(
   {
@@ -49,7 +49,7 @@ export default function highIRLoopStrengthReductionOptimization(
         HIR_BINARY({
           name: newInitialValueTempTemporary,
           ...createHighIRFlexibleOrderOperatorNode(
-            '*',
+            "*",
             derivedInductionVariable.multiplier,
             associatedBasicInductionVariable.initialValue,
           ),
@@ -57,7 +57,7 @@ export default function highIRLoopStrengthReductionOptimization(
         HIR_BINARY({
           name: newInitialValueName,
           ...createHighIRFlexibleOrderOperatorNode(
-            '+',
+            "+",
             derivedInductionVariable.immediate,
             HIR_VARIABLE(newInitialValueTempTemporary, HIR_INT_TYPE),
           ),

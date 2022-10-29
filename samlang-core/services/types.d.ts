@@ -1,4 +1,4 @@
-import { Location, ModuleReference, Position } from '../ast/types';
+import { Location, ModuleReference, Position } from "../ast/types";
 
 export type CompletionItemKind = 2 | 3 | 5;
 export type InsertTextFormat = 1 | 2;
@@ -36,7 +36,7 @@ export interface LanguageServices {
     moduleReference: ModuleReference,
     position: Position,
     newName: string,
-  ): 'Invalid' | string | null;
+  ): "Invalid" | string | null;
 
   formatEntireDocument(moduleReference: ModuleReference): string | null;
 }

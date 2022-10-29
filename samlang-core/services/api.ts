@@ -5,7 +5,7 @@ import {
   Position,
   Sources,
   TypedComment,
-} from '../ast/common-nodes';
+} from "../ast/common-nodes";
 import {
   prettyPrintType,
   SamlangExpression,
@@ -14,29 +14,29 @@ import {
   SamlangModule,
   SourceClassDefinition,
   SourceClassMemberDefinition,
-} from '../ast/samlang-nodes';
-import { GlobalTypingContext, MemberTypeInformation, typeCheckSources } from '../checker';
-import type { InterfaceTypingContext } from '../checker/typing-context';
-import { CompileTimeError, createGlobalErrorCollector } from '../errors';
-import { parseSamlangModuleFromText } from '../parser';
-import prettyPrintSamlangModule from '../printer';
-import { assert, checkNotNull, filterMap } from '../utils';
+} from "../ast/samlang-nodes";
+import { GlobalTypingContext, MemberTypeInformation, typeCheckSources } from "../checker";
+import type { InterfaceTypingContext } from "../checker/typing-context";
+import { CompileTimeError, createGlobalErrorCollector } from "../errors";
+import { parseSamlangModuleFromText } from "../parser";
+import prettyPrintSamlangModule from "../printer";
+import { assert, checkNotNull, filterMap } from "../utils";
 import {
   LocationLookup,
   ReadOnlyLocationLookup,
   SamlangExpressionLocationLookupBuilder,
-} from './location-service';
+} from "./location-service";
 import type {
   AutoCompletionItem,
   CompletionItemKind,
   LanguageServices,
   LanguageServiceState,
-} from './types';
+} from "./types";
 import {
   applyRenamingWithDefinitionAndUse,
   ReadonlyVariableDefinitionLookup,
   VariableDefinitionLookup,
-} from './variable-definition-service';
+} from "./variable-definition-service";
 
 export class LanguageServiceStateImpl implements LanguageServiceState {
   private readonly rawSources = ModuleReferenceCollections.hashMapOf<string>();
@@ -161,7 +161,7 @@ class InsertTextFormats {
 }
 
 const getLastDocComment = (associatedComments?: readonly TypedComment[]): string | undefined =>
-  [...(associatedComments ?? [])].reverse().find((it) => it.type === 'doc')?.text;
+  [...(associatedComments ?? [])].reverse().find((it) => it.type === "doc")?.text;
 
 class LanguageServicesImpl implements LanguageServices {
   constructor(public readonly state: LanguageServiceStateImpl) {}
@@ -170,15 +170,15 @@ class LanguageServicesImpl implements LanguageServices {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;
     let functionReference: readonly [ModuleReference, string, string] | undefined;
-    if (expression.__type__ === 'ClassMemberExpression') {
+    if (expression.__type__ === "ClassMemberExpression") {
       functionReference = [
         expression.moduleReference,
         expression.className.name,
         expression.memberName.name,
       ];
-    } else if (expression.__type__ === 'MethodAccessExpression') {
+    } else if (expression.__type__ === "MethodAccessExpression") {
       const thisType = expression.expression.type;
-      assert(thisType.__type__ === 'IdentifierType');
+      assert(thisType.__type__ === "IdentifierType");
       functionReference = [
         thisType.moduleReference,
         thisType.identifier,
@@ -192,19 +192,19 @@ class LanguageServicesImpl implements LanguageServices {
         ?.classes?.find((it) => it.name.name === className)
         ?.members?.find((it) => it.name.name === functionName);
       if (relevantFunction == null) return null;
-      const typeContent = { language: 'samlang', value: prettyPrintType(expression.type) };
+      const typeContent = { language: "samlang", value: prettyPrintType(expression.type) };
       const document = getLastDocComment(relevantFunction.associatedComments);
       return {
         contents:
           document == null
             ? [typeContent]
-            : [typeContent, { language: 'markdown', value: document }],
+            : [typeContent, { language: "markdown", value: document }],
         location: expression.location,
       };
     }
     const type = prettyPrintType(expression.type);
-    if (type.startsWith('class ')) {
-      const moduleParts = type.substring(6).split('.');
+    if (type.startsWith("class ")) {
+      const moduleParts = type.substring(6).split(".");
       const expressionClassName = checkNotNull(moduleParts.pop());
       const expressionModuleReference = ModuleReference(moduleParts);
       const document = getLastDocComment(
@@ -212,16 +212,16 @@ class LanguageServicesImpl implements LanguageServices {
           .getRawModule(expressionModuleReference)
           ?.classes.find((it) => it.name.name === expressionClassName)?.associatedComments,
       );
-      const typeContent = { language: 'samlang', value: `class ${expressionClassName}` };
+      const typeContent = { language: "samlang", value: `class ${expressionClassName}` };
       return {
         contents:
           document == null
             ? [typeContent]
-            : [typeContent, { language: 'markdown', value: document }],
+            : [typeContent, { language: "markdown", value: document }],
         location: expression.location,
       };
     }
-    return { contents: [{ language: 'samlang', value: type }], location: expression.location };
+    return { contents: [{ language: "samlang", value: type }], location: expression.location };
   }
 
   queryFoldingRanges(moduleReference: ModuleReference): readonly Location[] | null {
@@ -240,13 +240,13 @@ class LanguageServicesImpl implements LanguageServices {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;
     switch (expression.__type__) {
-      case 'LiteralExpression':
-      case 'ThisExpression':
+      case "LiteralExpression":
+      case "ThisExpression":
         return null;
-      case 'VariableExpression': {
+      case "VariableExpression": {
         if (
-          expression.type.__type__ === 'IdentifierType' &&
-          expression.type.identifier.startsWith('class ')
+          expression.type.__type__ === "IdentifierType" &&
+          expression.type.identifier.startsWith("class ")
         ) {
           const nullableClassDefinition = this.getClassDefinition(moduleReference, expression.name);
           if (nullableClassDefinition == null) return null;
@@ -258,13 +258,13 @@ class LanguageServicesImpl implements LanguageServices {
             ?.definitionLocation ?? null
         );
       }
-      case 'ClassMemberExpression':
+      case "ClassMemberExpression":
         return this.findClassMemberLocation(
           moduleReference,
           expression.className.name,
           expression.memberName.name,
         );
-      case 'FieldAccessExpression': {
+      case "FieldAccessExpression": {
         const [, classDefinition] = checkNotNull(
           this.getClassDefinition(
             moduleReference,
@@ -273,19 +273,19 @@ class LanguageServicesImpl implements LanguageServices {
         );
         return classDefinition.typeDefinition.location;
       }
-      case 'MethodAccessExpression':
+      case "MethodAccessExpression":
         return this.findClassMemberLocation(
           moduleReference,
           (expression.expression.type as SamlangIdentifierType).identifier,
           expression.methodName.name,
         );
-      case 'UnaryExpression':
-      case 'FunctionCallExpression':
-      case 'BinaryExpression':
-      case 'IfElseExpression':
-      case 'MatchExpression':
-      case 'LambdaExpression':
-      case 'StatementBlockExpression':
+      case "UnaryExpression":
+      case "FunctionCallExpression":
+      case "BinaryExpression":
+      case "IfElseExpression":
+      case "MatchExpression":
+      case "LambdaExpression":
+      case "StatementBlockExpression":
         return null;
     }
   }
@@ -330,7 +330,7 @@ class LanguageServicesImpl implements LanguageServices {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     const classOfExpression = this.state.classLocationLookup.get(moduleReference, position);
     if (expression == null || classOfExpression == null) return [];
-    if (expression.__type__ === 'ClassMemberExpression') {
+    if (expression.__type__ === "ClassMemberExpression") {
       const relevantClassType = this.getInterfaceType(
         expression.moduleReference,
         expression.className.name,
@@ -346,10 +346,10 @@ class LanguageServicesImpl implements LanguageServices {
     }
     let type: SamlangIdentifierType;
     switch (expression.__type__) {
-      case 'FieldAccessExpression':
-      case 'MethodAccessExpression': {
+      case "FieldAccessExpression":
+      case "MethodAccessExpression": {
         const objectExpressionType = expression.expression.type;
-        assert(objectExpressionType.__type__ === 'IdentifierType');
+        assert(objectExpressionType.__type__ === "IdentifierType");
         type = objectExpressionType;
         break;
       }
@@ -365,7 +365,7 @@ class LanguageServicesImpl implements LanguageServices {
     if (relevantInterfaceType == null) return [];
     const completionResults: AutoCompletionItem[] = [];
     const isInsideClass = classOfExpression === type.identifier;
-    if (isInsideClass && relevantTypeDefinition?.type === 'object') {
+    if (isInsideClass && relevantTypeDefinition?.type === "object") {
       for (const [name, fieldType] of relevantTypeDefinition.mappings) {
         completionResults.push({
           label: name,
@@ -422,7 +422,7 @@ class LanguageServicesImpl implements LanguageServices {
   private static prettyPrintTypeInformation(typeInformation: MemberTypeInformation): string {
     return typeInformation.typeParameters.length === 0
       ? prettyPrintType(typeInformation.type)
-      : `<${typeInformation.typeParameters.map((it) => it.name).join(', ')}>(${prettyPrintType(
+      : `<${typeInformation.typeParameters.map((it) => it.name).join(", ")}>(${prettyPrintType(
           typeInformation.type,
         )})`;
   }
@@ -431,7 +431,7 @@ class LanguageServicesImpl implements LanguageServices {
     argumentTypes,
     returnType,
   }: SamlangFunctionType) {
-    const argumentPart = argumentTypes.map((it, id) => `a${id}: ${prettyPrintType(it)}`).join(', ');
+    const argumentPart = argumentTypes.map((it, id) => `a${id}: ${prettyPrintType(it)}`).join(", ");
     return `(${argumentPart}): ${prettyPrintType(returnType)}`;
   }
 
@@ -441,21 +441,21 @@ class LanguageServicesImpl implements LanguageServices {
     for (let i = 0; i < argumentLength; i += 1) {
       items.push(`$${i}`);
     }
-    return [`${name}(${items.join(', ')})$${items.length}`, true];
+    return [`${name}(${items.join(", ")})$${items.length}`, true];
   }
 
   renameVariable(
     moduleReference: ModuleReference,
     position: Position,
     newName: string,
-  ): 'Invalid' | string | null {
+  ): "Invalid" | string | null {
     const trimmedNewName = newName.trim();
-    if (!/[a-z][A-Za-z0-9]*/.test(trimmedNewName)) return 'Invalid';
+    if (!/[a-z][A-Za-z0-9]*/.test(trimmedNewName)) return "Invalid";
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
-    if (expression == null || expression.__type__ !== 'VariableExpression') return null;
+    if (expression == null || expression.__type__ !== "VariableExpression") return null;
     if (
-      expression.type.__type__ === 'IdentifierType' &&
-      expression.type.identifier.startsWith('class ')
+      expression.type.__type__ === "IdentifierType" &&
+      expression.type.identifier.startsWith("class ")
     ) {
       return null;
     }
@@ -476,7 +476,7 @@ class LanguageServicesImpl implements LanguageServices {
   formatEntireDocument(moduleReference: ModuleReference): string | null {
     const moduleToFormat = this.state.getRawModule(moduleReference);
     if (moduleToFormat == null) return null;
-    if (this.state.getErrors(moduleReference).some((it) => it.errorType === 'SyntaxError')) {
+    if (this.state.getErrors(moduleReference).some((it) => it.errorType === "SyntaxError")) {
       return null;
     }
     return prettyPrintSamlangModule(100, moduleToFormat);

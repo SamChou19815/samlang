@@ -5,7 +5,7 @@ import {
   ModuleReferenceCollections,
   SourceReason,
   Sources,
-} from '../ast/common-nodes';
+} from "../ast/common-nodes";
 import {
   isTheSameType,
   SamlangFunctionType,
@@ -17,18 +17,18 @@ import {
   SourceIdentifierType,
   SourceInterfaceDeclaration,
   TypeParameterSignature,
-} from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { checkNotNull, HashMap, ReadonlyHashMap, zip } from '../utils';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from './builtins';
-import performTypeSubstitution from './type-substitution';
+} from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { checkNotNull, HashMap, ReadonlyHashMap, zip } from "../utils";
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from "./builtins";
+import performTypeSubstitution from "./type-substitution";
 import type {
   GlobalTypingContext,
   InterfaceTypingContext,
   MemberTypeInformation,
   ModuleTypingContext,
   TypeDefinitionTypingContext,
-} from './typing-context';
+} from "./typing-context";
 
 interface UnoptimizedInterfaceTypingContext {
   readonly functions: ReadonlyMap<string, MemberTypeInformation>;
@@ -151,7 +151,7 @@ function checkClassMemberTypeConformance(
   if (expected.typeParameters.length !== actual.typeParameters.length) {
     errorReporter.reportArityMismatchError(
       actual.type.reason.useLocation,
-      'type parameters',
+      "type parameters",
       expected.typeParameters.length,
       actual.typeParameters.length,
     );
@@ -220,8 +220,8 @@ export function getFullyInlinedMultipleInterfaceContext(
     ) {
       errorReporter.reportUnexpectedTypeKindError(
         instantiatedInterfaceType.reason.useLocation,
-        'interface type',
-        'class type',
+        "interface type",
+        "class type",
       );
     } else if (
       !unoptimizedGlobalTypingContext
@@ -266,18 +266,18 @@ function checkModuleMemberInterfaceConformance(
   ): void {
     // We first filter out incompatible kind
     if (expectedIsMethod && !actual.isMethod) {
-      errorReporter.reportUnexpectedTypeKindError(actual.location, 'method', 'function');
+      errorReporter.reportUnexpectedTypeKindError(actual.location, "method", "function");
       return;
     }
     if (!expectedIsMethod && actual.isMethod) {
-      errorReporter.reportUnexpectedTypeKindError(actual.location, 'function', 'method');
+      errorReporter.reportUnexpectedTypeKindError(actual.location, "function", "method");
       return;
     }
     if (!actual.isPublic) {
       errorReporter.reportUnexpectedTypeKindError(
         actual.location,
-        'public class member',
-        'private class member',
+        "public class member",
+        "private class member",
       );
     }
     checkClassMemberTypeConformance(
@@ -436,8 +436,8 @@ export function buildGlobalTypingContext(
     );
     const { typeDefinition } = classDefinition;
     const typeDefinitionReason = SourceReason(typeDefinition.location, typeDefinition.location);
-    if (typeDefinition.type === 'object') {
-      functions.set('init', {
+    if (typeDefinition.type === "object") {
+      functions.set("init", {
         isPublic: true,
         typeParameters,
         type: SourceFunctionType(

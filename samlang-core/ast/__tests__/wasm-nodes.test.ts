@@ -1,4 +1,4 @@
-import { ENCODED_FUNCTION_NAME_PRINTLN, ENCODED_FUNCTION_NAME_THROW } from '../common-names';
+import { ENCODED_FUNCTION_NAME_PRINTLN, ENCODED_FUNCTION_NAME_THROW } from "../common-names";
 import {
   prettyPrintWebAssemblyModule,
   WasmBinary,
@@ -13,10 +13,10 @@ import {
   WasmLocalSet,
   WasmLoop,
   WasmStore,
-} from '../wasm-nodes';
+} from "../wasm-nodes";
 
-describe('wasm-nodes', () => {
-  it('prettyPrintWebAssemblyModule test', () => {
+describe("wasm-nodes", () => {
+  it("prettyPrintWebAssemblyModule test", () => {
     expect(
       prettyPrintWebAssemblyModule({
         functionTypeParameterCounts: [0, 1, 2, 3],
@@ -24,47 +24,47 @@ describe('wasm-nodes', () => {
           { constantPointer: 1024, ints: [0, 0] },
           { constantPointer: 323, ints: [3, 2] },
         ],
-        exportedFunctions: ['main'],
+        exportedFunctions: ["main"],
         functions: [
           {
-            name: 'main',
-            parameters: ['a', 'b'],
-            localVariables: ['c', 'd'],
+            name: "main",
+            parameters: ["a", "b"],
+            localVariables: ["c", "d"],
             instructions: [
               WasmIfElse(
                 WasmConst(1),
                 [
                   WasmConst(1),
                   WasmDrop(WasmConst(0)),
-                  WasmLocalGet('a'),
-                  WasmLocalSet('b', WasmConst(0)),
+                  WasmLocalGet("a"),
+                  WasmLocalSet("b", WasmConst(0)),
                 ],
                 [
-                  WasmBinary(WasmConst(0), '+', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '-', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '*', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '/', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '%', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '^', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '<', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '<=', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '>', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '>=', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '==', WasmConst(0)),
-                  WasmBinary(WasmConst(0), '!=', WasmConst(0)),
+                  WasmBinary(WasmConst(0), "+", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "-", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "*", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "/", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "%", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "^", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "<", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "<=", WasmConst(0)),
+                  WasmBinary(WasmConst(0), ">", WasmConst(0)),
+                  WasmBinary(WasmConst(0), ">=", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "==", WasmConst(0)),
+                  WasmBinary(WasmConst(0), "!=", WasmConst(0)),
                 ],
               ),
-              WasmJump('aa'),
+              WasmJump("aa"),
               WasmLoop({
-                continueLabel: 'cl',
-                exitLabel: 'el',
+                continueLabel: "cl",
+                exitLabel: "el",
                 instructions: [
                   WasmLoad(WasmConst(0), 0),
                   WasmLoad(WasmConst(0), 3),
                   WasmStore(WasmConst(0), 0, WasmConst(0)),
                   WasmStore(WasmConst(0), 3, WasmConst(0)),
-                  WasmDirectCall('main', [WasmConst(0)]),
-                  WasmIndirectCall(WasmConst(0), 'dff', [WasmConst(0)]),
+                  WasmDirectCall("main", [WasmConst(0)]),
+                  WasmIndirectCall(WasmConst(0), "dff", [WasmConst(0)]),
                 ],
               }),
             ],

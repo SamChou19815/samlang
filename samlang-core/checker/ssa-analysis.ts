@@ -1,4 +1,4 @@
-import { Location, LocationCollections } from '../ast/common-nodes';
+import { Location, LocationCollections } from "../ast/common-nodes";
 import type {
   SamlangExpression,
   SamlangModule,
@@ -6,11 +6,11 @@ import type {
   SourceClassMemberDeclaration,
   SourceIdentifier,
   SourceInterfaceDeclaration,
-} from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { checkNotNull, LocalStackedContext, ReadonlyHashMap, ReadonlyHashSet } from '../utils';
+} from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { checkNotNull, LocalStackedContext, ReadonlyHashMap, ReadonlyHashSet } from "../utils";
 
-type SimplifiedSourceIdentifier = Omit<SourceIdentifier, 'associatedComments'>;
+type SimplifiedSourceIdentifier = Omit<SourceIdentifier, "associatedComments">;
 
 class SsaBuilder extends LocalStackedContext<Location> {
   unboundNames = new Set<string>();
@@ -86,7 +86,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
         );
         this.withNestedScope(() => {
           if (typeDefinition != null) {
-            this.define({ name: 'this', location: interfaceDeclaration.location });
+            this.define({ name: "this", location: interfaceDeclaration.location });
           }
           this.defineAll(interfaceDeclaration.typeParameters.map((it) => it.name));
           this.visitMembers(interfaceDeclaration.members.filter((it) => it.isMethod));
@@ -119,39 +119,39 @@ class SsaBuilder extends LocalStackedContext<Location> {
 
   visitExpression = (expression: SamlangExpression): void => {
     switch (expression.__type__) {
-      case 'LiteralExpression':
+      case "LiteralExpression":
         return;
-      case 'ClassMemberExpression':
+      case "ClassMemberExpression":
         expression.typeArguments.forEach(this.visitType);
         return;
-      case 'ThisExpression':
-        this.use({ name: 'this', location: expression.location });
+      case "ThisExpression":
+        this.use({ name: "this", location: expression.location });
         return;
-      case 'VariableExpression':
+      case "VariableExpression":
         this.use({ name: expression.name, location: expression.location });
         return;
-      case 'FieldAccessExpression':
-      case 'MethodAccessExpression':
+      case "FieldAccessExpression":
+      case "MethodAccessExpression":
         this.visitExpression(expression.expression);
         expression.typeArguments.forEach(this.visitType);
         return;
-      case 'UnaryExpression':
+      case "UnaryExpression":
         this.visitExpression(expression.expression);
         return;
-      case 'FunctionCallExpression':
+      case "FunctionCallExpression":
         this.visitExpression(expression.functionExpression);
         expression.functionArguments.forEach(this.visitExpression);
         return;
-      case 'BinaryExpression':
+      case "BinaryExpression":
         this.visitExpression(expression.e1);
         this.visitExpression(expression.e2);
         return;
-      case 'IfElseExpression':
+      case "IfElseExpression":
         this.visitExpression(expression.boolExpression);
         this.visitExpression(expression.e1);
         this.visitExpression(expression.e2);
         return;
-      case 'MatchExpression':
+      case "MatchExpression":
         this.visitExpression(expression.matchedExpression);
         expression.matchingList.forEach((matchItem) => {
           this.withNestedScope(() => {
@@ -163,7 +163,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
           });
         });
         return;
-      case 'LambdaExpression': {
+      case "LambdaExpression": {
         const [, captured] = this.withNestedScopeReturnCaptured(() => {
           expression.parameters.forEach(({ name, typeAnnotation }) => {
             this.define(name);
@@ -174,22 +174,22 @@ class SsaBuilder extends LocalStackedContext<Location> {
         this.lambdaCaptures.set(expression.location, captured);
         return;
       }
-      case 'StatementBlockExpression':
+      case "StatementBlockExpression":
         this.withNestedScope(() => {
           const { statements, expression: finalExpression } = expression.block;
           statements.forEach(({ pattern, typeAnnotation, assignedExpression }) => {
             this.visitExpression(assignedExpression);
             if (typeAnnotation != null) this.visitType(typeAnnotation);
             switch (pattern.type) {
-              case 'ObjectPattern':
+              case "ObjectPattern":
                 pattern.destructedNames.forEach((name) =>
                   this.define(name.alias ?? name.fieldName),
                 );
                 return;
-              case 'VariablePattern':
+              case "VariablePattern":
                 this.define(pattern);
                 return;
-              case 'WildCardPattern':
+              case "WildCardPattern":
                 return;
             }
           });
@@ -203,13 +203,13 @@ class SsaBuilder extends LocalStackedContext<Location> {
 
   visitType = (type: SamlangType) => {
     switch (type.__type__) {
-      case 'PrimitiveType':
+      case "PrimitiveType":
         return;
-      case 'IdentifierType':
+      case "IdentifierType":
         this.use({ name: type.identifier, location: type.reason.useLocation });
         type.typeArguments.forEach(this.visitType);
         return;
-      case 'FunctionType':
+      case "FunctionType":
         type.argumentTypes.forEach(this.visitType);
         this.visitType(type.returnType);
         return;

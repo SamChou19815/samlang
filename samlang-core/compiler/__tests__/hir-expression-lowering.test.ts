@@ -1,5 +1,5 @@
-import { Location, ModuleReference } from '../../ast/common-nodes';
-import { AND, CONCAT, MUL, OR, PLUS } from '../../ast/common-operators';
+import { Location, ModuleReference } from "../../ast/common-nodes";
+import { AND, CONCAT, MUL, OR, PLUS } from "../../ast/common-operators";
 import {
   debugPrintHighIRExpression,
   debugPrintHighIRSources,
@@ -8,7 +8,7 @@ import {
   HIR_BOOL_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_INT_TYPE,
-} from '../../ast/hir-nodes';
+} from "../../ast/hir-nodes";
 import {
   AstBuilder,
   SamlangExpression,
@@ -27,12 +27,12 @@ import {
   SourceExpressionUnary,
   SourceExpressionVariable,
   SourceId,
-} from '../../ast/samlang-nodes';
-import lowerSamlangExpression from '../hir-expression-lowering';
-import HighIRStringManager from '../hir-string-manager';
-import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from '../hir-type-conversion';
+} from "../../ast/samlang-nodes";
+import lowerSamlangExpression from "../hir-expression-lowering";
+import HighIRStringManager from "../hir-string-manager";
+import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from "../hir-type-conversion";
 
-const DUMMY_IDENTIFIER_TYPE = AstBuilder.IdType('Dummy');
+const DUMMY_IDENTIFIER_TYPE = AstBuilder.IdType("Dummy");
 const THIS = SourceExpressionThis({ type: DUMMY_IDENTIFIER_TYPE });
 
 function expectCorrectlyLowered(
@@ -44,31 +44,31 @@ function expectCorrectlyLowered(
   const stringManager = new HighIRStringManager();
   const { statements, expression, syntheticFunctions } = lowerSamlangExpression(
     /* moduleReference */ ModuleReference.DUMMY,
-    /* encodedFunctionName */ 'ENCODED_FUNCTION_NAME',
+    /* encodedFunctionName */ "ENCODED_FUNCTION_NAME",
     [
-      ['_this', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy')],
-      ['foo', HIR_INT_TYPE],
-      ['bar', HIR_BOOL_TYPE],
-      ['closure', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Closure')],
-      ['closure_unit_return', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Closure')],
-      ['captured_a', HIR_INT_TYPE],
+      ["_this", HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("__DUMMY___Dummy")],
+      ["foo", HIR_INT_TYPE],
+      ["bar", HIR_BOOL_TYPE],
+      ["closure", HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("Closure")],
+      ["closure_unit_return", HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("Closure")],
+      ["captured_a", HIR_INT_TYPE],
     ],
     /* typeDefinitionMapping */ new Map([
       [
-        '__DUMMY___Foo',
+        "__DUMMY___Foo",
         {
-          identifier: '__DUMMY___Foo',
-          type: 'object',
+          identifier: "__DUMMY___Foo",
+          type: "object",
           typeParameters: [],
           names: [],
           mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
         },
       ],
       [
-        '__DUMMY___Dummy',
+        "__DUMMY___Dummy",
         {
-          identifier: '__DUMMY___Dummy',
-          type: 'object',
+          identifier: "__DUMMY___Dummy",
+          type: "object",
           typeParameters: [],
           names: [],
           mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
@@ -88,41 +88,41 @@ function expectCorrectlyLowered(
   };
   expect(
     `${debugPrintHighIRSources(syntheticModule)}
-${statements.map((it) => debugPrintHighIRStatement(it)).join('\n')}
+${statements.map((it) => debugPrintHighIRStatement(it)).join("\n")}
 return ${debugPrintHighIRExpression(expression)};`.trim(),
   ).toBe(expectedString);
 }
 
-describe('hir-expression-lowering', () => {
-  it('Literal lowering works.', () => {
-    expectCorrectlyLowered(AstBuilder.FALSE, 'return 0;');
-    expectCorrectlyLowered(AstBuilder.TRUE, 'return 1;');
-    expectCorrectlyLowered(AstBuilder.ZERO, 'return 0;');
+describe("hir-expression-lowering", () => {
+  it("Literal lowering works.", () => {
+    expectCorrectlyLowered(AstBuilder.FALSE, "return 0;");
+    expectCorrectlyLowered(AstBuilder.TRUE, "return 1;");
+    expectCorrectlyLowered(AstBuilder.ZERO, "return 0;");
     expectCorrectlyLowered(
-      SourceExpressionString('foo'),
+      SourceExpressionString("foo"),
       "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
     );
   });
 
-  it('This lowering works.', () => {
-    expectCorrectlyLowered(THIS, 'return (_this: __DUMMY___Dummy);');
+  it("This lowering works.", () => {
+    expectCorrectlyLowered(THIS, "return (_this: __DUMMY___Dummy);");
   });
 
-  it('Variable lowering works.', () => {
+  it("Variable lowering works.", () => {
     expectCorrectlyLowered(
-      SourceExpressionVariable({ type: AstBuilder.UnitType, name: 'foo' }),
-      'return (foo: int);',
+      SourceExpressionVariable({ type: AstBuilder.UnitType, name: "foo" }),
+      "return (foo: int);",
     );
   });
 
-  it('ClassMember lowering works.', () => {
+  it("ClassMember lowering works.", () => {
     expectCorrectlyLowered(
       SourceExpressionClassMember({
         type: AstBuilder.FunType([AstBuilder.IntType], AstBuilder.IntType),
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
-        className: SourceId('A'),
-        memberName: SourceId('b'),
+        className: SourceId("A"),
+        memberName: SourceId("b"),
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___A$b_with_context: (int, int) -> int), context: 0 };
@@ -130,26 +130,26 @@ return (_t0: $SyntheticIDType0);`,
     );
   });
 
-  it('FieldAccess lowering works.', () => {
+  it("FieldAccess lowering works.", () => {
     expectCorrectlyLowered(
       SourceExpressionFieldAccess({
         type: AstBuilder.UnitType,
         expression: THIS,
         typeArguments: [],
-        fieldName: SourceId('foo'),
+        fieldName: SourceId("foo"),
         fieldOrder: 0,
       }),
-      'let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);',
+      "let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);",
     );
   });
 
-  it('MethodAccess lowering works.', () => {
+  it("MethodAccess lowering works.", () => {
     expectCorrectlyLowered(
       SourceExpressionMethodAccess({
         type: AstBuilder.FunType([AstBuilder.IntType], AstBuilder.IntType),
         expression: THIS,
         typeArguments: [],
-        methodName: SourceId('foo'),
+        methodName: SourceId("foo"),
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy$foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
@@ -157,28 +157,28 @@ return (_t0: $SyntheticIDType0);`,
     );
   });
 
-  it('Unary lowering works.', () => {
+  it("Unary lowering works.", () => {
     expectCorrectlyLowered(
       SourceExpressionUnary({
         type: AstBuilder.UnitType,
-        operator: '!',
+        operator: "!",
         expression: THIS,
       }),
-      'let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);',
+      "let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);",
     );
 
     expectCorrectlyLowered(
       SourceExpressionUnary({
         type: AstBuilder.UnitType,
-        operator: '-',
+        operator: "-",
         expression: THIS,
       }),
-      'let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);',
+      "let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
     );
   });
 
-  describe('FunctionCall family lowering works', () => {
-    it('1/n: class member call with return', () => {
+  describe("FunctionCall family lowering works", () => {
+    it("1/n: class member call with return", () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
           type: AstBuilder.IntType,
@@ -188,9 +188,9 @@ return (_t0: $SyntheticIDType0);`,
               AstBuilder.IntType,
             ),
             typeArguments: [],
-            moduleReference: ModuleReference(['ModuleModule']),
-            className: SourceId('ImportedClass'),
-            memberName: SourceId('bar'),
+            moduleReference: ModuleReference(["ModuleModule"]),
+            className: SourceId("ImportedClass"),
+            memberName: SourceId("bar"),
           }),
           functionArguments: [THIS, THIS],
         }),
@@ -199,7 +199,7 @@ return (_t0: int);`,
       );
     });
 
-    it('2/n class member call without return', () => {
+    it("2/n class member call without return", () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
           type: AstBuilder.UnitType,
@@ -207,8 +207,8 @@ return (_t0: int);`,
             type: AstBuilder.FunType([AstBuilder.IntType], AstBuilder.UnitType),
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
-            className: SourceId('C'),
-            memberName: SourceId('m1'),
+            className: SourceId("C"),
+            memberName: SourceId("m1"),
           }),
           functionArguments: [SourceExpressionInt(0)],
         }),
@@ -217,7 +217,7 @@ return 0;`,
       );
     });
 
-    it('3/n class member call with return', () => {
+    it("3/n class member call with return", () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
           type: DUMMY_IDENTIFIER_TYPE,
@@ -225,8 +225,8 @@ return 0;`,
             type: AstBuilder.FunType([AstBuilder.IntType], DUMMY_IDENTIFIER_TYPE),
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
-            className: SourceId('C'),
-            memberName: SourceId('m2'),
+            className: SourceId("C"),
+            memberName: SourceId("m2"),
           }),
           functionArguments: [SourceExpressionInt(0)],
         }),
@@ -235,7 +235,7 @@ return (_t0: __DUMMY___Dummy);`,
       );
     });
 
-    it('4/n method call with return', () => {
+    it("4/n method call with return", () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
           type: AstBuilder.IntType,
@@ -246,7 +246,7 @@ return (_t0: __DUMMY___Dummy);`,
             ),
             typeArguments: [],
             expression: THIS,
-            methodName: SourceId('fooBar'),
+            methodName: SourceId("fooBar"),
           }),
           functionArguments: [THIS, THIS],
         }),
@@ -255,13 +255,13 @@ return (_t0: int);`,
       );
     });
 
-    it('5/n closure call with return', () => {
+    it("5/n closure call with return", () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
           type: AstBuilder.IntType,
           functionExpression: SourceExpressionVariable({
             type: AstBuilder.FunType([AstBuilder.BoolType], AstBuilder.IntType),
-            name: 'closure',
+            name: "closure",
           }),
           functionArguments: [AstBuilder.TRUE],
         }),
@@ -270,13 +270,13 @@ return (_t0: int);`,
       );
     });
 
-    it('6/n closure call without return', () => {
+    it("6/n closure call without return", () => {
       expectCorrectlyLowered(
         SourceExpressionFunctionCall({
           type: AstBuilder.UnitType,
           functionExpression: SourceExpressionVariable({
             type: AstBuilder.FunType([AstBuilder.BoolType], AstBuilder.UnitType),
-            name: 'closure_unit_return',
+            name: "closure_unit_return",
           }),
           functionArguments: [AstBuilder.TRUE],
         }),
@@ -286,8 +286,8 @@ return 0;`,
     });
   });
 
-  describe('Binary lowering works.', () => {
-    it('Normal +', () => {
+  describe("Binary lowering works.", () => {
+    it("Normal +", () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
           type: AstBuilder.IntType,
@@ -296,11 +296,11 @@ return 0;`,
           e1: THIS,
           e2: THIS,
         }),
-        'let _t0: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t0: int);',
+        "let _t0: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
       );
     });
 
-    it('Normal *', () => {
+    it("Normal *", () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
           type: AstBuilder.IntType,
@@ -309,18 +309,18 @@ return 0;`,
           e1: THIS,
           e2: THIS,
         }),
-        'let _t0: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t0: int);',
+        "let _t0: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
       );
     });
 
-    it('Short circuiting &&', () => {
+    it("Short circuiting &&", () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
           type: AstBuilder.BoolType,
           operatorPrecedingComments: [],
           operator: AND,
-          e1: SourceExpressionVariable({ type: AstBuilder.BoolType, name: 'foo' }),
-          e2: SourceExpressionVariable({ type: AstBuilder.BoolType, name: 'bar' }),
+          e1: SourceExpressionVariable({ type: AstBuilder.BoolType, name: "foo" }),
+          e2: SourceExpressionVariable({ type: AstBuilder.BoolType, name: "bar" }),
         }),
         `let _t0: bool;
 if (foo: int) {
@@ -337,9 +337,9 @@ return (_t0: bool);`,
           operatorPrecedingComments: [],
           operator: AND,
           e1: AstBuilder.TRUE,
-          e2: SourceExpressionVariable({ type: AstBuilder.IntType, name: 'foo' }),
+          e2: SourceExpressionVariable({ type: AstBuilder.IntType, name: "foo" }),
         }),
-        'return (foo: int);',
+        "return (foo: int);",
       );
 
       expectCorrectlyLowered(
@@ -348,13 +348,13 @@ return (_t0: bool);`,
           operatorPrecedingComments: [],
           operator: AND,
           e1: AstBuilder.FALSE,
-          e2: SourceExpressionVariable({ type: AstBuilder.IntType, name: 'foo' }),
+          e2: SourceExpressionVariable({ type: AstBuilder.IntType, name: "foo" }),
         }),
-        'return 0;',
+        "return 0;",
       );
     });
 
-    it('Short circuiting ||', () => {
+    it("Short circuiting ||", () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
           type: AstBuilder.BoolType,
@@ -363,7 +363,7 @@ return (_t0: bool);`,
           e1: AstBuilder.TRUE,
           e2: SourceExpressionInt(65536),
         }),
-        'return 1;',
+        "return 1;",
       );
 
       expectCorrectlyLowered(
@@ -374,7 +374,7 @@ return (_t0: bool);`,
           e1: AstBuilder.FALSE,
           e2: SourceExpressionInt(65536),
         }),
-        'return 65536;',
+        "return 65536;",
       );
 
       expectCorrectlyLowered(
@@ -382,8 +382,8 @@ return (_t0: bool);`,
           type: AstBuilder.BoolType,
           operatorPrecedingComments: [],
           operator: OR,
-          e1: SourceExpressionVariable({ type: AstBuilder.BoolType, name: 'foo' }),
-          e2: SourceExpressionVariable({ type: AstBuilder.BoolType, name: 'bar' }),
+          e1: SourceExpressionVariable({ type: AstBuilder.BoolType, name: "foo" }),
+          e2: SourceExpressionVariable({ type: AstBuilder.BoolType, name: "bar" }),
         }),
         `let _t0: bool;
 if (foo: int) {
@@ -395,7 +395,7 @@ return (_t0: bool);`,
       );
     });
 
-    it('Normal string concat', () => {
+    it("Normal string concat", () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
           type: AstBuilder.StringType,
@@ -409,27 +409,27 @@ return (_t0: string);`,
       );
     });
 
-    it('Optimizing string concat', () => {
+    it("Optimizing string concat", () => {
       expectCorrectlyLowered(
         SourceExpressionBinary({
           type: AstBuilder.StringType,
           operatorPrecedingComments: [],
           operator: CONCAT,
-          e1: SourceExpressionString('hello '),
-          e2: SourceExpressionString('world'),
+          e1: SourceExpressionString("hello "),
+          e2: SourceExpressionString("world"),
         }),
         "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;",
       );
     });
   });
 
-  describe('Lambda lowering works', () => {
-    it('1/n', () => {
+  describe("Lambda lowering works", () => {
+    it("1/n", () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
           type: AstBuilder.FunType([AstBuilder.UnitType], AstBuilder.UnitType),
-          parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.UnitType }],
-          captured: new Map([['captured_a', AstBuilder.UnitType]]),
+          parameters: [{ name: SourceId("a"), typeAnnotation: AstBuilder.UnitType }],
+          captured: new Map([["captured_a", AstBuilder.UnitType]]),
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> int
@@ -445,12 +445,12 @@ return (_t0: $SyntheticIDType1);`,
       );
     });
 
-    it('2/n', () => {
+    it("2/n", () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
           type: AstBuilder.FunType([AstBuilder.UnitType], AstBuilder.IntType),
-          parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.UnitType }],
-          captured: new Map([['captured_a', AstBuilder.UnitType]]),
+          parameters: [{ name: SourceId("a"), typeAnnotation: AstBuilder.UnitType }],
+          captured: new Map([["captured_a", AstBuilder.UnitType]]),
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> int
@@ -466,12 +466,12 @@ return (_t0: $SyntheticIDType1);`,
       );
     });
 
-    it('3/n', () => {
+    it("3/n", () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
           type: AstBuilder.FunType([AstBuilder.UnitType], DUMMY_IDENTIFIER_TYPE),
-          parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.UnitType }],
-          captured: new Map([['captured_a', AstBuilder.UnitType]]),
+          parameters: [{ name: SourceId("a"), typeAnnotation: AstBuilder.UnitType }],
+          captured: new Map([["captured_a", AstBuilder.UnitType]]),
           body: THIS,
         }),
         `closure type $SyntheticIDType1 = (int) -> __DUMMY___Dummy
@@ -487,11 +487,11 @@ return (_t0: $SyntheticIDType1);`,
       );
     });
 
-    it('4/n', () => {
+    it("4/n", () => {
       expectCorrectlyLowered(
         SourceExpressionLambda({
           type: AstBuilder.FunType([AstBuilder.UnitType], DUMMY_IDENTIFIER_TYPE),
-          parameters: [{ name: SourceId('a'), typeAnnotation: AstBuilder.UnitType }],
+          parameters: [{ name: SourceId("a"), typeAnnotation: AstBuilder.UnitType }],
           captured: new Map(),
           body: THIS,
         }),
@@ -506,7 +506,7 @@ return (_t0: $SyntheticIDType0);`,
     });
   });
 
-  it('IfElse lowering works', () => {
+  it("IfElse lowering works", () => {
     expectCorrectlyLowered(
       SourceExpressionIfElse({
         type: DUMMY_IDENTIFIER_TYPE,
@@ -524,8 +524,8 @@ return (_t0: __DUMMY___Dummy);`,
     );
   });
 
-  describe('Match lowering works', () => {
-    it('1/n', () => {
+  describe("Match lowering works", () => {
+    it("1/n", () => {
       expectCorrectlyLowered(
         SourceExpressionMatch({
           type: DUMMY_IDENTIFIER_TYPE,
@@ -533,14 +533,14 @@ return (_t0: __DUMMY___Dummy);`,
           matchingList: [
             {
               location: Location.DUMMY,
-              tag: SourceId('Foo'),
+              tag: SourceId("Foo"),
               tagOrder: 0,
-              dataVariable: [SourceId('bar'), AstBuilder.IntType],
+              dataVariable: [SourceId("bar"), AstBuilder.IntType],
               expression: THIS,
             },
             {
               location: Location.DUMMY,
-              tag: SourceId('Bar'),
+              tag: SourceId("Bar"),
               tagOrder: 1,
               expression: THIS,
             },
@@ -559,7 +559,7 @@ return (_t2: __DUMMY___Dummy);`,
       );
     });
 
-    it('2/n', () => {
+    it("2/n", () => {
       expectCorrectlyLowered(
         SourceExpressionMatch({
           type: DUMMY_IDENTIFIER_TYPE,
@@ -567,20 +567,20 @@ return (_t2: __DUMMY___Dummy);`,
           matchingList: [
             {
               location: Location.DUMMY,
-              tag: SourceId('Foo'),
+              tag: SourceId("Foo"),
               tagOrder: 0,
               expression: THIS,
             },
             {
               location: Location.DUMMY,
-              tag: SourceId('Bar'),
+              tag: SourceId("Bar"),
               tagOrder: 1,
-              dataVariable: [SourceId('bar'), DUMMY_IDENTIFIER_TYPE],
-              expression: SourceExpressionVariable({ type: DUMMY_IDENTIFIER_TYPE, name: 'bar' }),
+              dataVariable: [SourceId("bar"), DUMMY_IDENTIFIER_TYPE],
+              expression: SourceExpressionVariable({ type: DUMMY_IDENTIFIER_TYPE, name: "bar" }),
             },
             {
               location: Location.DUMMY,
-              tag: SourceId('Baz'),
+              tag: SourceId("Baz"),
               tagOrder: 2,
               expression: THIS,
             },
@@ -607,8 +607,8 @@ return (_t4: __DUMMY___Dummy);`,
     });
   });
 
-  describe('StatementBlockExpression lowering works', () => {
-    it('All syntax forms', () => {
+  describe("StatementBlockExpression lowering works", () => {
+    it("All syntax forms", () => {
       expectCorrectlyLowered(
         SourceExpressionStatementBlock({
           type: AstBuilder.UnitType,
@@ -617,7 +617,7 @@ return (_t4: __DUMMY___Dummy);`,
             statements: [
               {
                 location: Location.DUMMY,
-                pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
+                pattern: { location: Location.DUMMY, type: "VariablePattern", name: "a" },
                 typeAnnotation: AstBuilder.UnitType,
                 assignedExpression: SourceExpressionStatementBlock({
                   type: AstBuilder.UnitType,
@@ -628,20 +628,20 @@ return (_t4: __DUMMY___Dummy);`,
                         location: Location.DUMMY,
                         pattern: {
                           location: Location.DUMMY,
-                          type: 'ObjectPattern',
+                          type: "ObjectPattern",
                           destructedNames: [
                             {
                               location: Location.DUMMY,
-                              fieldName: SourceId('a'),
+                              fieldName: SourceId("a"),
                               type: AstBuilder.IntType,
                               fieldOrder: 0,
                             },
                             {
                               location: Location.DUMMY,
-                              fieldName: SourceId('b'),
+                              fieldName: SourceId("b"),
                               type: AstBuilder.IntType,
                               fieldOrder: 1,
-                              alias: SourceId('c'),
+                              alias: SourceId("c"),
                             },
                           ],
                         },
@@ -651,7 +651,7 @@ return (_t4: __DUMMY___Dummy);`,
                       },
                       {
                         location: Location.DUMMY,
-                        pattern: { location: Location.DUMMY, type: 'WildCardPattern' },
+                        pattern: { location: Location.DUMMY, type: "WildCardPattern" },
                         typeAnnotation: DUMMY_IDENTIFIER_TYPE,
                         assignedExpression: THIS,
                         associatedComments: [],
@@ -659,7 +659,7 @@ return (_t4: __DUMMY___Dummy);`,
                     ],
                     expression: SourceExpressionVariable({
                       type: AstBuilder.UnitType,
-                      name: 'a',
+                      name: "a",
                     }),
                   },
                 }),
@@ -674,7 +674,7 @@ return 0;`,
       );
     });
 
-    it('Copy propagation', () => {
+    it("Copy propagation", () => {
       expectCorrectlyLowered(
         SourceExpressionStatementBlock({
           type: AstBuilder.UnitType,
@@ -683,25 +683,25 @@ return 0;`,
             statements: [
               {
                 location: Location.DUMMY,
-                pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
+                pattern: { location: Location.DUMMY, type: "VariablePattern", name: "a" },
                 typeAnnotation: AstBuilder.UnitType,
-                assignedExpression: SourceExpressionString('foo'),
+                assignedExpression: SourceExpressionString("foo"),
                 associatedComments: [],
               },
               {
                 location: Location.DUMMY,
-                pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'b' },
+                pattern: { location: Location.DUMMY, type: "VariablePattern", name: "b" },
                 typeAnnotation: AstBuilder.UnitType,
                 assignedExpression: SourceExpressionVariable({
                   type: AstBuilder.StringType,
-                  name: 'a',
+                  name: "a",
                 }),
                 associatedComments: [],
               },
             ],
             expression: SourceExpressionVariable({
               type: AstBuilder.StringType,
-              name: 'b',
+              name: "b",
             }),
           },
         }),
@@ -709,7 +709,7 @@ return 0;`,
       );
     });
 
-    it('Shadowing', () => {
+    it("Shadowing", () => {
       expectCorrectlyLowered(
         SourceExpressionStatementBlock({
           type: AstBuilder.StringType,
@@ -719,7 +719,7 @@ return 0;`,
               {
                 location: Location.DUMMY,
                 typeAnnotation: AstBuilder.StringType,
-                pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
+                pattern: { location: Location.DUMMY, type: "VariablePattern", name: "a" },
                 assignedExpression: SourceExpressionStatementBlock({
                   type: AstBuilder.UnitType,
                   block: {
@@ -728,14 +728,14 @@ return 0;`,
                       {
                         location: Location.DUMMY,
                         typeAnnotation: AstBuilder.IntType,
-                        pattern: { location: Location.DUMMY, type: 'VariablePattern', name: 'a' },
+                        pattern: { location: Location.DUMMY, type: "VariablePattern", name: "a" },
                         assignedExpression: THIS,
                         associatedComments: [],
                       },
                     ],
                     expression: SourceExpressionVariable({
                       type: AstBuilder.StringType,
-                      name: 'a',
+                      name: "a",
                     }),
                   },
                 }),
@@ -744,11 +744,11 @@ return 0;`,
             ],
             expression: SourceExpressionVariable({
               type: AstBuilder.StringType,
-              name: 'a',
+              name: "a",
             }),
           },
         }),
-        'return (_this: __DUMMY___Dummy);',
+        "return (_this: __DUMMY___Dummy);",
       );
     });
   });

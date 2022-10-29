@@ -1,4 +1,4 @@
-import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
+import createHighIRFlexibleOrderOperatorNode from "../ast/hir-flexible-op";
 import {
   HighIRStatement,
   HIR_BINARY,
@@ -6,9 +6,9 @@ import {
   HIR_INT_TYPE,
   HIR_VARIABLE,
   HIR_ZERO,
-} from '../ast/hir-nodes';
-import type { HighIROptimizableWhileLoop } from './hir-loop-induction-analysis';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
+} from "../ast/hir-nodes";
+import type { HighIROptimizableWhileLoop } from "./hir-loop-induction-analysis";
+import type OptimizationResourceAllocator from "./optimization-resource-allocator";
 
 function analyzeNumberOfIterationsToBreakLessThanGuard(
   initialGuardValue: number,
@@ -30,29 +30,29 @@ function analyzeNumberOfIterationsToBreakLessThanGuard(
 export function analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING(
   initialGuardValue: number,
   guardIncrementAmount: number,
-  operator: '<' | '<=' | '>' | '>=',
+  operator: "<" | "<=" | ">" | ">=",
   guardedValue: number,
 ): number | null {
   switch (operator) {
-    case '<':
+    case "<":
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         initialGuardValue,
         guardIncrementAmount,
         guardedValue,
       );
-    case '<=':
+    case "<=":
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         initialGuardValue,
         guardIncrementAmount,
         guardedValue + 1,
       );
-    case '>':
+    case ">":
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         -initialGuardValue,
         -guardIncrementAmount,
         -guardedValue,
       );
-    case '>=':
+    case ">=":
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         -initialGuardValue,
         -guardIncrementAmount,
@@ -74,9 +74,9 @@ export default function highIRLoopAlgebraicOptimization(
   allocator: OptimizationResourceAllocator,
 ): readonly HighIRStatement[] | null {
   if (
-    basicInductionVariableWithLoopGuard.initialValue.__type__ !== 'HighIRIntLiteralExpression' ||
-    basicInductionVariableWithLoopGuard.incrementAmount.__type__ !== 'HighIRIntLiteralExpression' ||
-    basicInductionVariableWithLoopGuard.guardExpression.__type__ !== 'HighIRIntLiteralExpression' ||
+    basicInductionVariableWithLoopGuard.initialValue.__type__ !== "HighIRIntLiteralExpression" ||
+    basicInductionVariableWithLoopGuard.incrementAmount.__type__ !== "HighIRIntLiteralExpression" ||
+    basicInductionVariableWithLoopGuard.guardExpression.__type__ !== "HighIRIntLiteralExpression" ||
     loopVariablesThatAreNotBasicInductionVariables.length !== 0 ||
     derivedInductionVariables.length !== 0 ||
     statements.length !== 0
@@ -98,15 +98,15 @@ export default function highIRLoopAlgebraicOptimization(
     // Therefore, it is safe to remove everything.
     return [];
   }
-  if (breakCollector.value.__type__ !== 'HighIRVariableExpression') {
+  if (breakCollector.value.__type__ !== "HighIRVariableExpression") {
     // Now we know that the break value is a constant, so we can directly return the assignment
     // without looping around.
     return [
       {
-        __type__: 'HighIRBinaryStatement',
+        __type__: "HighIRBinaryStatement",
         name: breakCollector.name,
         type: breakCollector.type,
-        operator: '+',
+        operator: "+",
         e1: breakCollector.value,
         e2: HIR_ZERO,
       },
@@ -117,10 +117,10 @@ export default function highIRLoopAlgebraicOptimization(
     // We simply want the final value of the basicInductionVariableWithLoopGuard.
     return [
       {
-        __type__: 'HighIRBinaryStatement',
+        __type__: "HighIRBinaryStatement",
         name: breakCollector.name,
         type: breakCollector.type,
-        operator: '+',
+        operator: "+",
         e1: HIR_INT(basicInductionVariableWithLoopGuardFinalValue),
         e2: HIR_ZERO,
       },
@@ -134,10 +134,10 @@ export default function highIRLoopAlgebraicOptimization(
     // without looping around.
     return [
       {
-        __type__: 'HighIRBinaryStatement',
+        __type__: "HighIRBinaryStatement",
         name: breakCollector.name,
         type: breakCollector.type,
-        operator: '+',
+        operator: "+",
         e1: breakCollector.value,
         e2: HIR_ZERO,
       },
@@ -148,7 +148,7 @@ export default function highIRLoopAlgebraicOptimization(
     HIR_BINARY({
       name: incrementTemporary,
       ...createHighIRFlexibleOrderOperatorNode(
-        '*',
+        "*",
         relevantGeneralInductionVariable.incrementAmount,
         HIR_INT(numberOfLoopIterations),
       ),
@@ -156,7 +156,7 @@ export default function highIRLoopAlgebraicOptimization(
     HIR_BINARY({
       name: breakCollector.name,
       ...createHighIRFlexibleOrderOperatorNode(
-        '+',
+        "+",
         relevantGeneralInductionVariable.initialValue,
         HIR_VARIABLE(incrementTemporary, HIR_INT_TYPE),
       ),

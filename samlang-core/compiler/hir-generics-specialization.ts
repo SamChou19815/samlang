@@ -19,13 +19,13 @@ import {
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
   HIR_STRUCT_INITIALIZATION,
-} from '../ast/hir-nodes';
-import { assert, checkNotNull, zip } from '../utils';
+} from "../ast/hir-nodes";
+import { assert, checkNotNull, zip } from "../utils";
 import {
   encodeHighIRNameAfterGenericsSpecialization,
   highIRTypeApplication,
   solveTypeArguments,
-} from './hir-type-conversion';
+} from "./hir-type-conversion";
 
 class GenericsSpecializationRewriter {
   private readonly originalClosureTypeDefinitions: ReadonlyMap<string, HighIRClosureTypeDefinition>;
@@ -78,7 +78,7 @@ class GenericsSpecializationRewriter {
     genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): HighIRStatement {
     switch (statement.__type__) {
-      case 'HighIRIndexAccessStatement':
+      case "HighIRIndexAccessStatement":
         return HIR_INDEX_ACCESS({
           name: statement.name,
           type: this.rewriteType(statement.type, genericsReplacementMap),
@@ -88,21 +88,21 @@ class GenericsSpecializationRewriter {
           ),
           index: statement.index,
         });
-      case 'HighIRBinaryStatement':
+      case "HighIRBinaryStatement":
         return HIR_BINARY({
           name: statement.name,
           operator: statement.operator,
           e1: this.rewriteExpression(statement.e1, genericsReplacementMap),
           e2: this.rewriteExpression(statement.e2, genericsReplacementMap),
         });
-      case 'HighIRFunctionCallStatement': {
+      case "HighIRFunctionCallStatement": {
         const functionExpression = this.rewriteExpression(
           statement.functionExpression,
           genericsReplacementMap,
         );
         assert(
-          functionExpression.__type__ === 'HighIRFunctionNameExpression' ||
-            functionExpression.__type__ === 'HighIRVariableExpression',
+          functionExpression.__type__ === "HighIRFunctionNameExpression" ||
+            functionExpression.__type__ === "HighIRVariableExpression",
         );
         return HIR_FUNCTION_CALL({
           functionExpression,
@@ -113,7 +113,7 @@ class GenericsSpecializationRewriter {
           returnCollector: statement.returnCollector,
         });
       }
-      case 'HighIRIfElseStatement':
+      case "HighIRIfElseStatement":
         return HIR_IF_ELSE({
           booleanExpression: this.rewriteExpression(
             statement.booleanExpression,
@@ -130,13 +130,13 @@ class GenericsSpecializationRewriter {
             }),
           ),
         });
-      case 'HighIRSingleIfStatement':
-      case 'HighIRBreakStatement':
-      case 'HighIRWhileStatement':
+      case "HighIRSingleIfStatement":
+      case "HighIRBreakStatement":
+      case "HighIRWhileStatement":
         throw new Error(`${statement.__type__} should not appear before tailrec optimization.`);
-      case 'HighIRStructInitializationStatement': {
+      case "HighIRStructInitializationStatement": {
         const type = this.rewriteType(statement.type, genericsReplacementMap);
-        assert(type.__type__ === 'IdentifierType');
+        assert(type.__type__ === "IdentifierType");
         return HIR_STRUCT_INITIALIZATION({
           structVariableName: statement.structVariableName,
           type,
@@ -145,9 +145,9 @@ class GenericsSpecializationRewriter {
           ),
         });
       }
-      case 'HighIRClosureInitializationStatement': {
+      case "HighIRClosureInitializationStatement": {
         const closureType = this.rewriteType(statement.closureType, genericsReplacementMap);
-        assert(closureType.__type__ === 'IdentifierType');
+        assert(closureType.__type__ === "IdentifierType");
         return HIR_CLOSURE_INITIALIZATION({
           closureVariableName: statement.closureVariableName,
           closureType,
@@ -166,14 +166,14 @@ class GenericsSpecializationRewriter {
     genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): HighIRExpression {
     switch (expression.__type__) {
-      case 'HighIRIntLiteralExpression':
+      case "HighIRIntLiteralExpression":
         return expression;
-      case 'HighIRVariableExpression':
+      case "HighIRVariableExpression":
         return { ...expression, type: this.rewriteType(expression.type, genericsReplacementMap) };
-      case 'HighIRStringNameExpression':
+      case "HighIRStringNameExpression":
         this.usedStringNames.add(expression.name);
         return expression;
-      case 'HighIRFunctionNameExpression': {
+      case "HighIRFunctionNameExpression": {
         const functionType = HIR_FUNCTION_TYPE(
           expression.type.argumentTypes.map((it) => this.rewriteType(it, genericsReplacementMap)),
           this.rewriteType(expression.type.returnType, genericsReplacementMap),
@@ -196,12 +196,12 @@ class GenericsSpecializationRewriter {
     functionTypeArguments: readonly HighIRType[],
     genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): string {
-    if (originalName.startsWith('$GENERICS$_')) {
-      const [genericClassName, functionName] = originalName.slice('$GENERICS$_'.length).split('$');
+    if (originalName.startsWith("$GENERICS$_")) {
+      const [genericClassName, functionName] = originalName.slice("$GENERICS$_".length).split("$");
       const replacementClass = checkNotNull(
         genericsReplacementMap.get(checkNotNull(genericClassName)),
       );
-      assert(replacementClass.__type__ === 'IdentifierType');
+      assert(replacementClass.__type__ === "IdentifierType");
       assert(functionName != null);
       const replacementClassType = checkNotNull(
         this.specializedHighIRIdentifierTypeMapping.get(replacementClass.name),
@@ -246,14 +246,14 @@ class GenericsSpecializationRewriter {
     genericsReplacementMap: ReadonlyMap<string, HighIRType>,
   ): HighIRType {
     switch (type.__type__) {
-      case 'PrimitiveType':
+      case "PrimitiveType":
         return type;
-      case 'FunctionType':
+      case "FunctionType":
         return HIR_FUNCTION_TYPE(
           type.argumentTypes.map((it) => this.rewriteType(it, genericsReplacementMap)),
           this.rewriteType(type.returnType, genericsReplacementMap),
         );
-      case 'IdentifierType':
+      case "IdentifierType":
         return this.rewriteHighIRIdentifierType(type, genericsReplacementMap);
     }
   }
@@ -306,7 +306,7 @@ class GenericsSpecializationRewriter {
             ),
             new Map(),
           );
-          assert(rewrittenFunctionType.__type__ === 'FunctionType');
+          assert(rewrittenFunctionType.__type__ === "FunctionType");
           this.specializedClosureTypeDefinitions.set(encodedName, {
             identifier: encodedName,
             typeParameters: [],

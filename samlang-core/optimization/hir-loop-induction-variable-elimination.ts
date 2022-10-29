@@ -1,17 +1,17 @@
-import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
+import createHighIRFlexibleOrderOperatorNode from "../ast/hir-flexible-op";
 import {
   HighIRExpression,
   HighIRStatement,
   HIR_BINARY,
   HIR_INT_TYPE,
   HIR_VARIABLE,
-} from '../ast/hir-nodes';
-import { checkNotNull } from '../utils';
+} from "../ast/hir-nodes";
+import { checkNotNull } from "../utils";
 import {
   HighIROptimizableWhileLoop,
   mergeInvariantMultiplicationForLoopOptimization,
-} from './hir-loop-induction-analysis';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
+} from "./hir-loop-induction-analysis";
+import type OptimizationResourceAllocator from "./optimization-resource-allocator";
 
 export default function highIRLoopInductionVariableEliminationOptimization(
   {
@@ -30,24 +30,24 @@ export default function highIRLoopInductionVariableEliminationOptimization(
   const expressionUsesBasicInductionVariableWithLoopGuard = (
     expression: HighIRExpression,
   ): boolean =>
-    expression.__type__ === 'HighIRVariableExpression' &&
+    expression.__type__ === "HighIRVariableExpression" &&
     expression.name === basicInductionVariableWithLoopGuard.name;
 
   function statementUsesBasicInductionVariableWithLoopGuard(statement: HighIRStatement): boolean {
     switch (statement.__type__) {
-      case 'HighIRIndexAccessStatement':
+      case "HighIRIndexAccessStatement":
         return expressionUsesBasicInductionVariableWithLoopGuard(statement.pointerExpression);
-      case 'HighIRBinaryStatement':
+      case "HighIRBinaryStatement":
         return (
           expressionUsesBasicInductionVariableWithLoopGuard(statement.e1) ||
           expressionUsesBasicInductionVariableWithLoopGuard(statement.e2)
         );
-      case 'HighIRFunctionCallStatement':
+      case "HighIRFunctionCallStatement":
         return (
           expressionUsesBasicInductionVariableWithLoopGuard(statement.functionExpression) ||
           statement.functionArguments.some(expressionUsesBasicInductionVariableWithLoopGuard)
         );
-      case 'HighIRIfElseStatement':
+      case "HighIRIfElseStatement":
         return (
           expressionUsesBasicInductionVariableWithLoopGuard(statement.booleanExpression) ||
           statement.s1.some(statementUsesBasicInductionVariableWithLoopGuard) ||
@@ -58,14 +58,14 @@ export default function highIRLoopInductionVariableEliminationOptimization(
               expressionUsesBasicInductionVariableWithLoopGuard(it.branch2Value),
           )
         );
-      case 'HighIRSingleIfStatement':
+      case "HighIRSingleIfStatement":
         return (
           expressionUsesBasicInductionVariableWithLoopGuard(statement.booleanExpression) ||
           statement.statements.some(statementUsesBasicInductionVariableWithLoopGuard)
         );
-      case 'HighIRBreakStatement':
+      case "HighIRBreakStatement":
         return expressionUsesBasicInductionVariableWithLoopGuard(statement.breakValue);
-      case 'HighIRWhileStatement':
+      case "HighIRWhileStatement":
         return (
           statement.loopVariables.some(
             (it) =>
@@ -73,9 +73,9 @@ export default function highIRLoopInductionVariableEliminationOptimization(
               expressionUsesBasicInductionVariableWithLoopGuard(it.loopValue),
           ) || statement.statements.some(statementUsesBasicInductionVariableWithLoopGuard)
         );
-      case 'HighIRStructInitializationStatement':
+      case "HighIRStructInitializationStatement":
         return statement.expressionList.some(expressionUsesBasicInductionVariableWithLoopGuard);
-      case 'HighIRClosureInitializationStatement':
+      case "HighIRClosureInitializationStatement":
         return expressionUsesBasicInductionVariableWithLoopGuard(statement.context);
     }
   }
@@ -112,7 +112,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
     HIR_BINARY({
       name: newInitialValueTempTemporary,
       ...createHighIRFlexibleOrderOperatorNode(
-        '*',
+        "*",
         onlyRelevantDerivedInductionVariable.multiplier,
         basicInductionVariableWithLoopGuard.initialValue,
       ),
@@ -120,7 +120,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
     HIR_BINARY({
       name: newInitialValueName,
       ...createHighIRFlexibleOrderOperatorNode(
-        '+',
+        "+",
         onlyRelevantDerivedInductionVariable.immediate,
         HIR_VARIABLE(newInitialValueTempTemporary, HIR_INT_TYPE),
       ),
@@ -128,7 +128,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
     HIR_BINARY({
       name: newGuardValueTempTemporary,
       ...createHighIRFlexibleOrderOperatorNode(
-        '*',
+        "*",
         onlyRelevantDerivedInductionVariable.multiplier,
         basicInductionVariableWithLoopGuard.guardExpression,
       ),
@@ -136,7 +136,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
     HIR_BINARY({
       name: newGuardValueName,
       ...createHighIRFlexibleOrderOperatorNode(
-        '+',
+        "+",
         onlyRelevantDerivedInductionVariable.immediate,
         HIR_VARIABLE(newGuardValueTempTemporary, HIR_INT_TYPE),
       ),
@@ -150,7 +150,7 @@ export default function highIRLoopInductionVariableEliminationOptimization(
         name: onlyRelevantDerivedInductionVariable.name,
         initialValue: HIR_VARIABLE(newInitialValueName, HIR_INT_TYPE),
         incrementAmount: addedInvariantExpressionInLoop,
-        guardOperator: '<',
+        guardOperator: "<",
         guardExpression: HIR_VARIABLE(newGuardValueName, HIR_INT_TYPE),
       },
       generalInductionVariables,

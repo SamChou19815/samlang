@@ -1,34 +1,34 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as vscode from 'vscode';
-import { LanguageClient, TransportKind } from 'vscode-languageclient/node';
+import * as fs from "fs";
+import * as path from "path";
+import * as vscode from "vscode";
+import { LanguageClient, TransportKind } from "vscode-languageclient/node";
 
 let languageClient: LanguageClient | undefined;
 
 export function activate(): void {
-  const serverModule = vscode.workspace.getConfiguration().get('samlang.programPath');
-  if (typeof serverModule !== 'string') {
+  const serverModule = vscode.workspace.getConfiguration().get("samlang.programPath");
+  if (typeof serverModule !== "string") {
     throw new Error(`Invalid LSP program path: ${serverModule}.`);
   }
   const resolvedServerModules = (vscode.workspace.workspaceFolders ?? [])
     .map((folder) => path.join(folder.uri.fsPath, serverModule))
     .filter((it) => fs.existsSync(it));
-  if (resolvedServerModules.length > 1) throw new Error('Too many samlang LSP programs found.');
+  if (resolvedServerModules.length > 1) throw new Error("Too many samlang LSP programs found.");
   const absoluteServerModule = resolvedServerModules[0];
-  if (absoluteServerModule == null) throw new Error('No valid samlang LSP program found.');
+  if (absoluteServerModule == null) throw new Error("No valid samlang LSP program found.");
 
   languageClient = new LanguageClient(
-    'samlang',
-    'samlang Language Client',
+    "samlang",
+    "samlang Language Client",
     {
       run: { module: absoluteServerModule, transport: TransportKind.ipc },
       debug: {
         module: absoluteServerModule,
         transport: TransportKind.ipc,
-        options: { execArgv: ['--nolazy', '--inspect=6009', '--stack_size=1024'] },
+        options: { execArgv: ["--nolazy", "--inspect=6009", "--stack_size=1024"] },
       },
     },
-    { documentSelector: [{ scheme: 'file', language: 'samlang' }] },
+    { documentSelector: [{ scheme: "file", language: "samlang" }] },
   );
 
   languageClient.start();
@@ -43,6 +43,6 @@ export function deactivate(): void {
       // eslint-disable-next-line no-console
       .catch((error) => console.error(error))
       // eslint-disable-next-line no-console
-      .then(() => console.error('samlang client dead.'));
+      .then(() => console.error("samlang client dead."));
   }
 }

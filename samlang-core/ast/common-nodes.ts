@@ -3,42 +3,42 @@ import {
   CollectionsConstructors,
   createCollectionConstructors,
   ReadonlyHashMap,
-} from '../utils';
+} from "../utils";
 import type {
   Location as ILocation,
   ModuleReference as IModuleReference,
   Position as IPosition,
-} from './types';
+} from "./types";
 
 /** SECTION 1: Literals */
 
 /** A boolean literal, like `true` or `false`.  */
-export type BoolLiteral = { readonly type: 'BoolLiteral'; readonly value: boolean };
+export type BoolLiteral = { readonly type: "BoolLiteral"; readonly value: boolean };
 /** An int literal, like 42. */
-export type IntLiteral = { readonly type: 'IntLiteral'; readonly value: number };
+export type IntLiteral = { readonly type: "IntLiteral"; readonly value: number };
 
 /** A string literal, like `"Answer to life, universe, and everything"`. */
-export type StringLiteral = { readonly type: 'StringLiteral'; readonly value: string };
+export type StringLiteral = { readonly type: "StringLiteral"; readonly value: string };
 export type Literal = IntLiteral | StringLiteral | BoolLiteral;
 
-export const TRUE: BoolLiteral = { type: 'BoolLiteral', value: true };
-export const FALSE: BoolLiteral = { type: 'BoolLiteral', value: false };
+export const TRUE: BoolLiteral = { type: "BoolLiteral", value: true };
+export const FALSE: BoolLiteral = { type: "BoolLiteral", value: false };
 
 export const intLiteralOf = (value: number): IntLiteral => ({
-  type: 'IntLiteral',
+  type: "IntLiteral",
   value,
 });
 export const stringLiteralOf = (value: string): StringLiteral => ({
-  type: 'StringLiteral',
+  type: "StringLiteral",
   value,
 });
 
 export function prettyPrintLiteral(literal: Literal): string {
   switch (literal.type) {
-    case 'BoolLiteral':
-    case 'IntLiteral':
+    case "BoolLiteral":
+    case "IntLiteral":
       return String(literal.value);
-    case 'StringLiteral':
+    case "StringLiteral":
       return `"${literal.value}"`;
   }
 }
@@ -72,13 +72,13 @@ export function ModuleReference(parts: readonly string[]): ModuleReference {
  */
 ModuleReference.ROOT = ModuleReference([]);
 /** A dummy module reference for testing. */
-ModuleReference.DUMMY = ModuleReference(['__DUMMY__']);
+ModuleReference.DUMMY = ModuleReference(["__DUMMY__"]);
 
 export const moduleReferenceToString = (moduleReference: ModuleReference): string =>
-  moduleReference.join('.');
+  moduleReference.join(".");
 
 export const moduleReferenceToFileName = (moduleReference: ModuleReference): string =>
-  `${moduleReference.join('/')}.sam`;
+  `${moduleReference.join("/")}.sam`;
 
 export const ModuleReferenceCollections: CollectionsConstructors<ModuleReference> =
   createCollectionConstructors(moduleReferenceToString);
@@ -147,7 +147,7 @@ export const BuiltinReason: SamlangReason = DummySourceReason;
 /** SECTION 4: MISC */
 
 export type TypedComment = {
-  readonly type: 'line' | 'block' | 'doc';
+  readonly type: "line" | "block" | "doc";
   /** The text in the comment, excluding the comment markers. */
   readonly text: string;
 };

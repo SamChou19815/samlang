@@ -1,10 +1,10 @@
-import { BuiltinReason, Location, ModuleReference } from '../ast/common-nodes';
-import { CustomizedReasonAstBuilder, SamlangType } from '../ast/samlang-nodes';
+import { BuiltinReason, Location, ModuleReference } from "../ast/common-nodes";
+import { CustomizedReasonAstBuilder, SamlangType } from "../ast/samlang-nodes";
 import type {
   InterfaceTypingContext,
   MemberTypeInformation,
   TypeDefinitionTypingContext,
-} from './typing-context';
+} from "./typing-context";
 
 const AST = new CustomizedReasonAstBuilder(BuiltinReason, ModuleReference.ROOT);
 
@@ -50,24 +50,24 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: {
   typeDefinitions: new Map(),
   interfaces: new Map([
     [
-      'Builtins',
+      "Builtins",
       {
         isConcrete: true,
         typeParameters: [],
         typeDefinition: {
           location: Location.DUMMY,
-          type: 'object',
+          type: "object",
           names: [],
           mappings: new Map(),
         },
         extendsOrImplements: null,
         superTypes: [],
         functions: new Map([
-          createBuiltinFunction('stringToInt', [AST.StringType], AST.IntType),
-          createBuiltinFunction('intToString', [AST.IntType], AST.StringType),
-          createBuiltinFunction('println', [AST.StringType], AST.UnitType),
-          createBuiltinFunction('panic', [AST.StringType], AST.IdType('T'), ['T']),
-          createBuiltinFunction('stringConcat', [AST.StringType, AST.StringType], AST.StringType),
+          createBuiltinFunction("stringToInt", [AST.StringType], AST.IntType),
+          createBuiltinFunction("intToString", [AST.IntType], AST.StringType),
+          createBuiltinFunction("println", [AST.StringType], AST.UnitType),
+          createBuiltinFunction("panic", [AST.StringType], AST.IdType("T"), ["T"]),
+          createBuiltinFunction("stringConcat", [AST.StringType, AST.StringType], AST.StringType),
         ]),
         methods: new Map(),
       },

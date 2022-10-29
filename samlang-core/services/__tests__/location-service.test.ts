@@ -1,27 +1,27 @@
-import { Location, ModuleReference, Position } from '../../ast/common-nodes';
-import type { SamlangExpression } from '../../ast/samlang-nodes';
-import { typeCheckSourceHandles } from '../../checker';
-import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
+import { Location, ModuleReference, Position } from "../../ast/common-nodes";
+import type { SamlangExpression } from "../../ast/samlang-nodes";
+import { typeCheckSourceHandles } from "../../checker";
+import { LocationLookup, SamlangExpressionLocationLookupBuilder } from "../location-service";
 
-describe('location-service', () => {
-  it('LocationLookupTest self consistent test', () => {
+describe("location-service", () => {
+  it("LocationLookupTest self consistent test", () => {
     const lookup = new LocationLookup<string>();
     const farPosition = Position(100, 100);
-    const moduleReference = ModuleReference(['foo']);
+    const moduleReference = ModuleReference(["foo"]);
     const location = new Location(moduleReference, Position(1, 1), Position(2, 2));
-    lookup.set(location, 'exist');
+    lookup.set(location, "exist");
     expect(lookup.getBestLocation(moduleReference, location.start)).toEqual(location);
     expect(lookup.getBestLocation(moduleReference, location.end)).toEqual(location);
     expect(lookup.getBestLocation(moduleReference, farPosition)).toBeNull();
-    expect(lookup.getBestLocation(ModuleReference(['oof']), farPosition)).toBeNull();
-    expect(lookup.get(moduleReference, location.start)).toBe('exist');
-    expect(lookup.get(moduleReference, location.end)).toBe('exist');
+    expect(lookup.getBestLocation(ModuleReference(["oof"]), farPosition)).toBeNull();
+    expect(lookup.get(moduleReference, location.start)).toBe("exist");
+    expect(lookup.get(moduleReference, location.end)).toBe("exist");
     expect(lookup.get(moduleReference, farPosition)).toBeNull();
   });
 
-  it('LocationLookupTest favors small range test', () => {
+  it("LocationLookupTest favors small range test", () => {
     const lookup = new LocationLookup<number>();
-    const moduleReference = ModuleReference(['foo']);
+    const moduleReference = ModuleReference(["foo"]);
     const smallLocation = new Location(moduleReference, Position(2, 1), Position(3, 2));
     const bigLocation = new Location(moduleReference, Position(1, 1), Position(30, 2));
     lookup.set(smallLocation, 1);
@@ -34,8 +34,8 @@ describe('location-service', () => {
     expect(lookup.get(moduleReference, Position(100, 100))).toBeNull();
   });
 
-  it('SamlangExpressionLocationLookupBuilder test', () => {
-    const moduleReference = ModuleReference(['foo']);
+  it("SamlangExpressionLocationLookupBuilder test", () => {
+    const moduleReference = ModuleReference(["foo"]);
     const { checkedSources, compileTimeErrors } = typeCheckSourceHandles([
       [
         moduleReference,

@@ -1,4 +1,4 @@
-import { ENCODED_FUNCTION_NAME_FREE } from '../ast/common-names';
+import { ENCODED_FUNCTION_NAME_FREE } from "../ast/common-names";
 import type {
   HighIRExpression,
   HighIRFunction,
@@ -7,7 +7,7 @@ import type {
   HighIRStatement,
   HighIRType,
   HighIRTypeDefinition,
-} from '../ast/hir-nodes';
+} from "../ast/hir-nodes";
 import {
   isTheSameMidIRType,
   MidIRExpression,
@@ -39,18 +39,18 @@ import {
   MIR_VARIABLE,
   MIR_WHILE,
   MIR_ZERO,
-} from '../ast/mir-nodes';
-import { assert, checkNotNull, filterMap } from '../utils';
-import optimizeMidIRSourcesByEliminatingUnusedOnes from './mir-unused-name-elimination';
+} from "../ast/mir-nodes";
+import { assert, checkNotNull, filterMap } from "../utils";
+import optimizeMidIRSourcesByEliminatingUnusedOnes from "./mir-unused-name-elimination";
 
 function lowerHighIRType(type: HighIRType): MidIRType {
   switch (type.__type__) {
-    case 'PrimitiveType':
+    case "PrimitiveType":
       return type;
-    case 'IdentifierType':
+    case "IdentifierType":
       assert(type.typeArguments.length === 0);
       return MIR_IDENTIFIER_TYPE(type.name);
-    case 'FunctionType':
+    case "FunctionType":
       return lowerHighIRFunctionType(type);
   }
 }
@@ -58,10 +58,10 @@ function lowerHighIRType(type: HighIRType): MidIRType {
 const unknownMemberDestructorType = MIR_FUNCTION_TYPE([MIR_ANY_TYPE], MIR_INT_TYPE);
 
 const referenceTypeName = (type: MidIRType): string | null =>
-  type.__type__ === 'IdentifierType'
+  type.__type__ === "IdentifierType"
     ? type.name
-    : type.__type__ === 'PrimitiveType' && type.type === 'string'
-    ? 'string'
+    : type.__type__ === "PrimitiveType" && type.type === "string"
+    ? "string"
     : null;
 
 const lowerHighIRFunctionType = (type: HighIRFunctionType): MidIRFunctionType =>
@@ -69,16 +69,16 @@ const lowerHighIRFunctionType = (type: HighIRFunctionType): MidIRFunctionType =>
 
 function lowerHighIRExpression(expression: HighIRExpression): MidIRExpression {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
+    case "HighIRIntLiteralExpression":
       return {
-        __type__: 'MidIRIntLiteralExpression',
+        __type__: "MidIRIntLiteralExpression",
         type: lowerHighIRType(expression.type),
         value: expression.value,
       };
-    case 'HighIRVariableExpression':
+    case "HighIRVariableExpression":
       return MIR_VARIABLE(expression.name, lowerHighIRType(expression.type));
-    case 'HighIRStringNameExpression':
-    case 'HighIRFunctionNameExpression':
+    case "HighIRStringNameExpression":
+    case "HighIRFunctionNameExpression":
       return MIR_NAME(expression.name, lowerHighIRType(expression.type));
   }
 }
@@ -86,10 +86,10 @@ function lowerHighIRExpression(expression: HighIRExpression): MidIRExpression {
 const decRefFunctionName = (name: string) => `__decRef_${name}`;
 
 const defRefFunctionArgumentType = (typeName: string) =>
-  typeName === 'string' ? MIR_STRING_TYPE : MIR_IDENTIFIER_TYPE(typeName);
+  typeName === "string" ? MIR_STRING_TYPE : MIR_IDENTIFIER_TYPE(typeName);
 
 const variableOfMidIRExpression = (expression: MidIRExpression): string | null =>
-  expression.__type__ === 'MidIRVariableExpression' ? expression.name : null;
+  expression.__type__ === "MidIRVariableExpression" ? expression.name : null;
 
 class HighIRToMidIRLoweringManager {
   constructor(
@@ -114,7 +114,7 @@ class HighIRToMidIRLoweringManager {
         this.generateSingleDestructorFunction(
           typeDefinition.identifier,
           (pointerExpression, destructMemberStatements) => {
-            if (typeDefinition.type === 'object') {
+            if (typeDefinition.type === "object") {
               typeDefinition.mappings.forEach((type, index) => {
                 const typeName = referenceTypeName(type);
                 if (!typeName) return;
@@ -140,7 +140,7 @@ class HighIRToMidIRLoweringManager {
               if (typeDefinition.mappings.some((type) => Boolean(referenceTypeName(type)))) {
                 destructMemberStatements.push(
                   MIR_INDEX_ACCESS({
-                    name: 'tag',
+                    name: "tag",
                     type: MIR_INT_TYPE,
                     pointerExpression,
                     index: 1,
@@ -191,8 +191,8 @@ class HighIRToMidIRLoweringManager {
                 destructMemberStatements.push(
                   MIR_BINARY({
                     name: `tagComparison${index}`,
-                    operator: '==',
-                    e1: MIR_VARIABLE('tag', MIR_INT_TYPE),
+                    operator: "==",
+                    e1: MIR_VARIABLE("tag", MIR_INT_TYPE),
                     e2: MIR_INT(index + 1),
                   }),
                   MIR_SINGLE_IF({
@@ -215,20 +215,20 @@ class HighIRToMidIRLoweringManager {
           (pointerExpression, destructMemberStatements) => {
             destructMemberStatements.push(
               MIR_INDEX_ACCESS({
-                name: 'destructor',
+                name: "destructor",
                 type: unknownMemberDestructorType,
                 pointerExpression,
                 index: 1,
               }),
               MIR_INDEX_ACCESS({
-                name: 'context',
+                name: "context",
                 type: MIR_ANY_TYPE,
                 pointerExpression,
                 index: 3,
               }),
               MIR_FUNCTION_CALL({
-                functionExpression: MIR_VARIABLE('destructor', unknownMemberDestructorType),
-                functionArguments: [MIR_VARIABLE('context', MIR_ANY_TYPE)],
+                functionExpression: MIR_VARIABLE("destructor", unknownMemberDestructorType),
+                functionArguments: [MIR_VARIABLE("context", MIR_ANY_TYPE)],
                 returnType: MIR_INT_TYPE,
               }),
             );
@@ -237,11 +237,11 @@ class HighIRToMidIRLoweringManager {
       );
     }
 
-    functions.push(this.generateSingleDestructorFunction('string', () => {}));
+    functions.push(this.generateSingleDestructorFunction("string", () => {}));
 
     functions.push({
-      name: decRefFunctionName('nothing'),
-      parameters: ['o'],
+      name: decRefFunctionName("nothing"),
+      parameters: ["o"],
       type: unknownMemberDestructorType,
       body: [],
       returnValue: MIR_ZERO,
@@ -257,7 +257,7 @@ class HighIRToMidIRLoweringManager {
       destructMemberStatements: MidIRStatement[],
     ) => void,
   ): MidIRFunction {
-    const parameter = MIR_VARIABLE('o', defRefFunctionArgumentType(typeName));
+    const parameter = MIR_VARIABLE("o", defRefFunctionArgumentType(typeName));
     const destructMemberStatements: MidIRStatement[] = [];
     getDestructMemberStatements(parameter, destructMemberStatements);
     destructMemberStatements.push(
@@ -277,42 +277,42 @@ class HighIRToMidIRLoweringManager {
             }),
             MIR_FUNCTION_CALL({
               functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
-              functionArguments: [MIR_VARIABLE('pointer_casted', MIR_ANY_TYPE)],
+              functionArguments: [MIR_VARIABLE("pointer_casted", MIR_ANY_TYPE)],
               returnType: MIR_INT_TYPE,
             }),
           ]),
     );
-    if (typeName !== 'string') {
+    if (typeName !== "string") {
       return {
         name: decRefFunctionName(typeName),
         parameters: [parameter.name],
         type: MIR_FUNCTION_TYPE([parameter.type], MIR_INT_TYPE),
         body: [
           /* currentRefCount = parameter[0] */ MIR_INDEX_ACCESS({
-            name: 'currentRefCount',
+            name: "currentRefCount",
             type: MIR_INT_TYPE,
             pointerExpression: parameter,
             index: 0,
           }),
           /* decrementedRefCount = currentRefCount - 1 */ MIR_BINARY({
-            name: 'decrementedRefCount',
-            operator: '-',
-            e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+            name: "decrementedRefCount",
+            operator: "-",
+            e1: MIR_VARIABLE("currentRefCount", MIR_INT_TYPE),
             e2: MIR_ONE,
           }),
           /* parameter[0] = decrementedRefCount */ MIR_INDEX_ASSIGN({
-            assignedExpression: MIR_VARIABLE('decrementedRefCount', MIR_INT_TYPE),
+            assignedExpression: MIR_VARIABLE("decrementedRefCount", MIR_INT_TYPE),
             pointerExpression: parameter,
             index: 0,
           }),
           /* dead = currentRefCount <= 1 */ MIR_BINARY({
-            name: 'dead',
-            operator: '<=',
-            e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+            name: "dead",
+            operator: "<=",
+            e1: MIR_VARIABLE("currentRefCount", MIR_INT_TYPE),
             e2: MIR_ONE,
           }),
           /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
-            booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
+            booleanExpression: MIR_VARIABLE("dead", MIR_BOOL_TYPE),
             invertCondition: false,
             statements: destructMemberStatements,
           }),
@@ -326,40 +326,40 @@ class HighIRToMidIRLoweringManager {
       type: MIR_FUNCTION_TYPE([parameter.type], MIR_INT_TYPE),
       body: [
         /* currentRefCount = parameter[0] */ MIR_INDEX_ACCESS({
-          name: 'currentRefCount',
+          name: "currentRefCount",
           type: MIR_INT_TYPE,
           pointerExpression: parameter,
           index: 0,
         }),
         /* performGC = currentRefCount > 0 */ MIR_BINARY({
-          name: 'performGC',
-          operator: '>',
-          e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+          name: "performGC",
+          operator: ">",
+          e1: MIR_VARIABLE("currentRefCount", MIR_INT_TYPE),
           e2: MIR_ZERO,
         }),
         MIR_SINGLE_IF({
-          booleanExpression: MIR_VARIABLE('performGC', MIR_BOOL_TYPE),
+          booleanExpression: MIR_VARIABLE("performGC", MIR_BOOL_TYPE),
           invertCondition: false,
           statements: [
             /* decrementedRefCount = currentRefCount - 1 */ MIR_BINARY({
-              name: 'decrementedRefCount',
-              operator: '-',
-              e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+              name: "decrementedRefCount",
+              operator: "-",
+              e1: MIR_VARIABLE("currentRefCount", MIR_INT_TYPE),
               e2: MIR_ONE,
             }),
             /* parameter[0] = decrementedRefCount */ MIR_INDEX_ASSIGN({
-              assignedExpression: MIR_VARIABLE('decrementedRefCount', MIR_INT_TYPE),
+              assignedExpression: MIR_VARIABLE("decrementedRefCount", MIR_INT_TYPE),
               pointerExpression: parameter,
               index: 0,
             }),
             /* dead = currentRefCount <= 1 */ MIR_BINARY({
-              name: 'dead',
-              operator: '<=',
-              e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+              name: "dead",
+              operator: "<=",
+              e1: MIR_VARIABLE("currentRefCount", MIR_INT_TYPE),
               e2: MIR_ONE,
             }),
             /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
-              booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
+              booleanExpression: MIR_VARIABLE("dead", MIR_BOOL_TYPE),
               invertCondition: false,
               statements: destructMemberStatements,
             }),
@@ -402,7 +402,7 @@ class HighIRToMidIRLoweringManager {
     const variableToDecreaseReferenceCount: Variable[] = [];
     loweredStatements.forEach((loweredStatement) => {
       switch (loweredStatement.__type__) {
-        case 'MidIRFunctionCallStatement': {
+        case "MidIRFunctionCallStatement": {
           const typeName = referenceTypeName(loweredStatement.returnType);
           if (typeName) {
             variableToDecreaseReferenceCount.push({
@@ -412,13 +412,13 @@ class HighIRToMidIRLoweringManager {
           }
           return;
         }
-        case 'MidIRIfElseStatement':
+        case "MidIRIfElseStatement":
           loweredStatement.finalAssignments.forEach(({ name, type }) => {
             const typeName = referenceTypeName(type);
             if (typeName) variableToDecreaseReferenceCount.push({ variableName: name, typeName });
           });
           return;
-        case 'MidIRWhileStatement':
+        case "MidIRWhileStatement":
           if (loweredStatement.breakCollector) {
             const typeName = referenceTypeName(loweredStatement.breakCollector.type);
             if (typeName) {
@@ -427,7 +427,7 @@ class HighIRToMidIRLoweringManager {
             }
           }
           return;
-        case 'MidIRStructInitializationStatement': {
+        case "MidIRStructInitializationStatement": {
           const typeName = checkNotNull(referenceTypeName(loweredStatement.type));
           variableToDecreaseReferenceCount.push({
             variableName: loweredStatement.structVariableName,
@@ -458,7 +458,7 @@ class HighIRToMidIRLoweringManager {
 
   private lowerHighIRStatement = (statement: HighIRStatement): readonly MidIRStatement[] => {
     switch (statement.__type__) {
-      case 'HighIRBinaryStatement':
+      case "HighIRBinaryStatement":
         return [
           MIR_BINARY({
             name: statement.name,
@@ -467,17 +467,17 @@ class HighIRToMidIRLoweringManager {
             e2: lowerHighIRExpression(statement.e2),
           }),
         ];
-      case 'HighIRIndexAccessStatement': {
+      case "HighIRIndexAccessStatement": {
         const pointerExpression = lowerHighIRExpression(statement.pointerExpression);
         const { name, index } = statement;
         const pointerType = pointerExpression.type;
-        assert(pointerType.__type__ === 'IdentifierType');
+        assert(pointerType.__type__ === "IdentifierType");
         const variableType = lowerHighIRType(statement.type);
         const typeDefinition = checkNotNull(
           this.typeDefinitions.get(pointerType.name),
           `Missing ${pointerType.name}`,
         );
-        if (typeDefinition.type === 'object') {
+        if (typeDefinition.type === "object") {
           return [
             MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: index + 1 }),
           ];
@@ -486,7 +486,7 @@ class HighIRToMidIRLoweringManager {
         switch (index) {
           case 0:
             // Access the tag case
-            assert(variableType.__type__ === 'PrimitiveType' && variableType.type === 'int');
+            assert(variableType.__type__ === "PrimitiveType" && variableType.type === "int");
             return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: 1 })];
           case 1: {
             // Access the data case, might need cast
@@ -505,13 +505,13 @@ class HighIRToMidIRLoweringManager {
           }
         }
       }
-      case 'HighIRFunctionCallStatement': {
+      case "HighIRFunctionCallStatement": {
         const loweredReturnType = lowerHighIRType(statement.returnType);
         const returnCollector =
           statement.returnCollector ??
           (referenceTypeName(loweredReturnType) ? this.tempAllocator() : undefined);
         const statements: MidIRStatement[] = [];
-        if (statement.functionExpression.__type__ === 'HighIRFunctionNameExpression') {
+        if (statement.functionExpression.__type__ === "HighIRFunctionNameExpression") {
           statements.push(
             MIR_FUNCTION_CALL({
               functionExpression: lowerHighIRExpression(statement.functionExpression),
@@ -523,7 +523,7 @@ class HighIRToMidIRLoweringManager {
         } else {
           const closureHighIRType = statement.functionExpression.type;
           assert(
-            closureHighIRType.__type__ === 'IdentifierType' &&
+            closureHighIRType.__type__ === "IdentifierType" &&
               closureHighIRType.typeArguments.length === 0,
           );
           const functionType = checkNotNull(
@@ -565,7 +565,7 @@ class HighIRToMidIRLoweringManager {
         }
         return statements;
       }
-      case 'HighIRIfElseStatement': {
+      case "HighIRIfElseStatement": {
         const finalAssignments = statement.finalAssignments.map(
           ({ name, type, branch1Value, branch2Value }) => ({
             name,
@@ -593,7 +593,7 @@ class HighIRToMidIRLoweringManager {
           }),
         ];
       }
-      case 'HighIRSingleIfStatement':
+      case "HighIRSingleIfStatement":
         return [
           MIR_SINGLE_IF({
             booleanExpression: lowerHighIRExpression(statement.booleanExpression),
@@ -601,9 +601,9 @@ class HighIRToMidIRLoweringManager {
             statements: this.lowerHighIRStatementBlock(statement.statements, new Set()),
           }),
         ];
-      case 'HighIRBreakStatement':
+      case "HighIRBreakStatement":
         return [MIR_BREAK(lowerHighIRExpression(statement.breakValue))];
-      case 'HighIRWhileStatement': {
+      case "HighIRWhileStatement": {
         const loopVariables = statement.loopVariables.map(
           ({ name, type, initialValue, loopValue }) => ({
             name,
@@ -629,14 +629,14 @@ class HighIRToMidIRLoweringManager {
           }),
         ];
       }
-      case 'HighIRStructInitializationStatement': {
+      case "HighIRStructInitializationStatement": {
         const structVariableName = statement.structVariableName;
         const type = lowerHighIRType(statement.type);
         const typeDefinition = this.typeDefinitions.get(statement.type.name);
         assert(typeDefinition != null, `Missing typedef ${statement.type.name}`);
         const statements: MidIRStatement[] = [];
         const expressionList =
-          typeDefinition.type === 'object'
+          typeDefinition.type === "object"
             ? statement.expressionList.map((expression) => {
                 const lowered = lowerHighIRExpression(expression);
                 this.addReferenceCountingIfTypeAllowed(statements, lowered);
@@ -658,7 +658,7 @@ class HighIRToMidIRLoweringManager {
         statements.push(MIR_STRUCT_INITIALIZATION({ structVariableName, type, expressionList }));
         return statements;
       }
-      case 'HighIRClosureInitializationStatement': {
+      case "HighIRClosureInitializationStatement": {
         const closureType = lowerHighIRType(statement.closureType);
         const originalFunctionType = lowerHighIRFunctionType(statement.functionName.type);
         const typeErasedClosureType = MIR_FUNCTION_TYPE(
@@ -693,7 +693,7 @@ class HighIRToMidIRLoweringManager {
         const contextTypeName = referenceTypeName(context.type);
         if (contextTypeName == null) {
           destructorFunctionSlot = MIR_NAME(
-            decRefFunctionName('nothing'),
+            decRefFunctionName("nothing"),
             unknownMemberDestructorType,
           );
         } else {
@@ -735,7 +735,7 @@ class HighIRToMidIRLoweringManager {
     if (typeName == null) return;
     const count = this.tempAllocator();
     const newCount = this.tempAllocator();
-    if (typeName !== 'string') {
+    if (typeName !== "string") {
       collector.push(
         MIR_INDEX_ACCESS({
           name: count,
@@ -745,7 +745,7 @@ class HighIRToMidIRLoweringManager {
         }),
         MIR_BINARY({
           name: newCount,
-          operator: '+',
+          operator: "+",
           e1: MIR_VARIABLE(count, MIR_INT_TYPE),
           e2: MIR_ONE,
         }),
@@ -767,7 +767,7 @@ class HighIRToMidIRLoweringManager {
       }),
       MIR_BINARY({
         name: notSpecial,
-        operator: '>',
+        operator: ">",
         e1: MIR_VARIABLE(count, MIR_INT_TYPE),
         e2: MIR_ZERO,
       }),
@@ -777,7 +777,7 @@ class HighIRToMidIRLoweringManager {
         statements: [
           MIR_BINARY({
             name: newCount,
-            operator: '+',
+            operator: "+",
             e1: MIR_VARIABLE(count, MIR_INT_TYPE),
             e2: MIR_ONE,
           }),
@@ -820,7 +820,7 @@ function generalizedLowerHighIRSourcesToMidIRSources(
   const typeDefinitionMapForLowering = new Map(
     sources.typeDefinitions.map((it) => {
       const mappings =
-        it.type === 'object' ? it.mappings.map(lowerHighIRType) : [MIR_INT_TYPE, MIR_ANY_TYPE];
+        it.type === "object" ? it.mappings.map(lowerHighIRType) : [MIR_INT_TYPE, MIR_ANY_TYPE];
       mappings.unshift(MIR_INT_TYPE);
       typeDefinitions.push({ identifier: it.identifier, mappings });
       return [it.identifier, it];

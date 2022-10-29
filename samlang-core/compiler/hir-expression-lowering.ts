@@ -2,8 +2,8 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeFunctionNameGlobally,
   encodeGenericFunctionNameGlobally,
-} from '../ast/common-names';
-import type { ModuleReference } from '../ast/common-nodes';
+} from "../ast/common-names";
+import type { ModuleReference } from "../ast/common-nodes";
 import {
   HighIRExpression,
   HighIRFunction,
@@ -31,7 +31,7 @@ import {
   HIR_TRUE,
   HIR_VARIABLE,
   HIR_ZERO,
-} from '../ast/hir-nodes';
+} from "../ast/hir-nodes";
 import type {
   BinaryExpression,
   ClassMemberExpression,
@@ -46,14 +46,14 @@ import type {
   SamlangType,
   StatementBlockExpression,
   UnaryExpression,
-} from '../ast/samlang-nodes';
-import { assert, checkNotNull, LocalStackedContext, zip } from '../utils';
-import type HighIRStringManager from './hir-string-manager';
+} from "../ast/samlang-nodes";
+import { assert, checkNotNull, LocalStackedContext, zip } from "../utils";
+import type HighIRStringManager from "./hir-string-manager";
 import {
   collectUsedGenericTypes,
   highIRTypeApplication,
   SamlangTypeLoweringManager,
-} from './hir-type-conversion';
+} from "./hir-type-conversion";
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -69,8 +69,8 @@ type HighIRExpressionLoweringResultWithSyntheticFunctions = {
 class HighIRLoweringContext extends LocalStackedContext<HighIRExpression> {
   addLocalValueType(name: string, value: HighIRExpression, onCollision: () => void): void {
     if (
-      value.__type__ !== 'HighIRStringNameExpression' &&
-      value.__type__ !== 'HighIRFunctionNameExpression'
+      value.__type__ !== "HighIRStringNameExpression" &&
+      value.__type__ !== "HighIRFunctionNameExpression"
     ) {
       super.addLocalValueType(name, value, onCollision);
       return;
@@ -180,7 +180,7 @@ class HighIRExpressionLoweringManager {
   }
 
   private getFunctionTypeWithoutContext(type: SamlangType): HighIRFunctionType {
-    assert(type.__type__ === 'FunctionType');
+    assert(type.__type__ === "FunctionType");
     return this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel(type)[1];
   }
 
@@ -189,13 +189,13 @@ class HighIRExpressionLoweringManager {
     favoredTempVariable: string | null,
   ): HighIRExpressionLoweringResult => {
     switch (expression.__type__) {
-      case 'LiteralExpression':
+      case "LiteralExpression":
         switch (expression.literal.type) {
-          case 'BoolLiteral':
+          case "BoolLiteral":
             return { statements: [], expression: expression.literal.value ? HIR_TRUE : HIR_FALSE };
-          case 'IntLiteral':
+          case "IntLiteral":
             return { statements: [], expression: HIR_INT(expression.literal.value) };
-          case 'StringLiteral': {
+          case "StringLiteral": {
             return {
               statements: [],
               expression: HIR_STRING_NAME(
@@ -204,29 +204,29 @@ class HighIRExpressionLoweringManager {
             };
           }
         }
-      case 'ThisExpression':
-        return { statements: [], expression: this.resolveVariable('_this') };
-      case 'VariableExpression':
+      case "ThisExpression":
+        return { statements: [], expression: this.resolveVariable("_this") };
+      case "VariableExpression":
         return { statements: [], expression: this.resolveVariable(expression.name) };
-      case 'ClassMemberExpression':
+      case "ClassMemberExpression":
         return this.lowerClassMember(expression, favoredTempVariable);
-      case 'FieldAccessExpression':
+      case "FieldAccessExpression":
         return this.lowerFieldAccess(expression, favoredTempVariable);
-      case 'MethodAccessExpression':
+      case "MethodAccessExpression":
         return this.lowerMethodAccess(expression, favoredTempVariable);
-      case 'UnaryExpression':
+      case "UnaryExpression":
         return this.lowerUnary(expression, favoredTempVariable);
-      case 'FunctionCallExpression':
+      case "FunctionCallExpression":
         return this.lowerFunctionCall(expression, favoredTempVariable);
-      case 'BinaryExpression':
+      case "BinaryExpression":
         return this.lowerBinary(expression, favoredTempVariable);
-      case 'IfElseExpression':
+      case "IfElseExpression":
         return this.lowerIfElse(expression, favoredTempVariable);
-      case 'MatchExpression':
+      case "MatchExpression":
         return this.lowerMatch(expression);
-      case 'LambdaExpression':
+      case "LambdaExpression":
         return this.lowerLambda(expression, favoredTempVariable);
-      case 'StatementBlockExpression':
+      case "StatementBlockExpression":
         return this.lowerStatementBlock(expression, favoredTempVariable);
     }
   };
@@ -345,19 +345,19 @@ class HighIRExpressionLoweringManager {
     const result = this.lower(expression.expression, null);
     const valueName = this.allocateTemporaryVariable(favoredTempVariable);
     switch (expression.operator) {
-      case '!':
+      case "!":
         return {
           statements: [
             ...result.statements,
-            HIR_BINARY({ name: valueName, operator: '^', e1: result.expression, e2: HIR_TRUE }),
+            HIR_BINARY({ name: valueName, operator: "^", e1: result.expression, e2: HIR_TRUE }),
           ],
           expression: HIR_VARIABLE(valueName, HIR_BOOL_TYPE),
         };
-      case '-':
+      case "-":
         return {
           statements: [
             ...result.statements,
-            HIR_BINARY({ name: valueName, operator: '-', e1: HIR_ZERO, e2: result.expression }),
+            HIR_BINARY({ name: valueName, operator: "-", e1: HIR_ZERO, e2: result.expression }),
           ],
           expression: HIR_VARIABLE(valueName, HIR_INT_TYPE),
         };
@@ -371,12 +371,12 @@ class HighIRExpressionLoweringManager {
     const loweredStatements: HighIRStatement[] = [];
     const functionExpression = expression.functionExpression;
     const isVoidReturn =
-      expression.type.__type__ === 'PrimitiveType' && expression.type.name === 'unit';
+      expression.type.__type__ === "PrimitiveType" && expression.type.name === "unit";
     const returnCollectorName = this.allocateTemporaryVariable(favoredTempVariable);
     let functionReturnCollectorType: HighIRType;
     let functionCall: HighIRStatement;
     switch (functionExpression.__type__) {
-      case 'ClassMemberExpression': {
+      case "ClassMemberExpression": {
         const functionName = this.encodeFunctionNameGloballyConsideringGenerics(
           functionExpression.moduleReference,
           functionExpression.className.name,
@@ -400,8 +400,8 @@ class HighIRExpressionLoweringManager {
         });
         break;
       }
-      case 'MethodAccessExpression': {
-        assert(functionExpression.expression.type.__type__ === 'IdentifierType');
+      case "MethodAccessExpression": {
+        assert(functionExpression.expression.type.__type__ === "IdentifierType");
         const functionName = this.encodeFunctionNameGloballyConsideringGenerics(
           functionExpression.expression.type.moduleReference,
           functionExpression.expression.type.identifier,
@@ -416,7 +416,7 @@ class HighIRExpressionLoweringManager {
           null,
           loweredStatements,
         );
-        assert(highIRFunctionExpression.type.__type__ === 'IdentifierType');
+        assert(highIRFunctionExpression.type.__type__ === "IdentifierType");
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_FUNCTION_NAME(
             functionName,
@@ -446,8 +446,8 @@ class HighIRExpressionLoweringManager {
           null,
           loweredStatements,
         );
-        assert(loweredFunctionExpression.__type__ === 'HighIRVariableExpression');
-        assert(functionExpression.type.__type__ === 'FunctionType');
+        assert(loweredFunctionExpression.__type__ === "HighIRVariableExpression");
+        assert(functionExpression.type.__type__ === "FunctionType");
         const returnType = this.typeLoweringManager.lowerSamlangType(
           functionExpression.type.returnType,
         );
@@ -478,10 +478,10 @@ class HighIRExpressionLoweringManager {
     expression: SamlangExpression,
     favoredTempVariable: string | null,
   ): HighIRExpressionLoweringResult {
-    if (expression.__type__ === 'LiteralExpression' && expression.literal.type === 'BoolLiteral') {
+    if (expression.__type__ === "LiteralExpression" && expression.literal.type === "BoolLiteral") {
       return { statements: [], expression: expression.literal.value ? HIR_TRUE : HIR_FALSE };
     }
-    if (expression.__type__ !== 'BinaryExpression') {
+    if (expression.__type__ !== "BinaryExpression") {
       return this.lower(expression, favoredTempVariable);
     }
     const {
@@ -490,11 +490,11 @@ class HighIRExpressionLoweringManager {
       e2,
     } = expression;
     switch (operatorSymbol) {
-      case '&&': {
+      case "&&": {
         const temp = this.allocateTemporaryVariable(favoredTempVariable);
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1, null);
         const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2, null);
-        if (e1Result.expression.__type__ === 'HighIRIntLiteralExpression') {
+        if (e1Result.expression.__type__ === "HighIRIntLiteralExpression") {
           return e1Result.expression.value
             ? {
                 statements: [...e1Result.statements, ...e2Result.statements],
@@ -522,11 +522,11 @@ class HighIRExpressionLoweringManager {
           expression: HIR_VARIABLE(temp, HIR_BOOL_TYPE),
         };
       }
-      case '||': {
+      case "||": {
         const temp = this.allocateTemporaryVariable(favoredTempVariable);
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1, null);
         const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2, null);
-        if (e1Result.expression.__type__ === 'HighIRIntLiteralExpression') {
+        if (e1Result.expression.__type__ === "HighIRIntLiteralExpression") {
           return e1Result.expression.value
             ? { statements: e1Result.statements, expression: HIR_TRUE }
             : {
@@ -554,12 +554,12 @@ class HighIRExpressionLoweringManager {
           expression: HIR_VARIABLE(temp, HIR_BOOL_TYPE),
         };
       }
-      case '::': {
+      case "::": {
         if (
-          expression.e1.__type__ === 'LiteralExpression' &&
-          expression.e1.literal.type === 'StringLiteral' &&
-          expression.e2.__type__ === 'LiteralExpression' &&
-          expression.e2.literal.type === 'StringLiteral'
+          expression.e1.__type__ === "LiteralExpression" &&
+          expression.e1.literal.type === "StringLiteral" &&
+          expression.e2.__type__ === "LiteralExpression" &&
+          expression.e2.literal.type === "StringLiteral"
         ) {
           return {
             statements: [],
@@ -670,7 +670,7 @@ class HighIRExpressionLoweringManager {
       null,
       loweredStatements,
     );
-    assert(matchedExpression.type.__type__ === 'IdentifierType');
+    assert(matchedExpression.type.__type__ === "IdentifierType");
     const matchedExpressionTypeMapping = this.resolveTypeMappingOfIdentifierType(
       matchedExpression.type,
     );
@@ -723,7 +723,7 @@ class HighIRExpressionLoweringManager {
             s: [
               HIR_BINARY({
                 name: comparisonTemporary,
-                operator: '==',
+                operator: "==",
                 e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
                 e2: HIR_INT(oneCase.tagOrder),
               }),
@@ -816,7 +816,7 @@ class HighIRExpressionLoweringManager {
         HIR_INDEX_ACCESS({
           name: variableName,
           type,
-          pointerExpression: HIR_VARIABLE('_context', contextType),
+          pointerExpression: HIR_VARIABLE("_context", contextType),
           index,
         }),
       );
@@ -825,7 +825,7 @@ class HighIRExpressionLoweringManager {
     const parameters = expression.parameters.map(({ name }) => name);
     const [typeParameters, functionTypeWithoutContext] =
       this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel({
-        __type__: 'FunctionType',
+        __type__: "FunctionType",
         argumentTypes: expression.type.argumentTypes,
         returnType: expression.type.returnType,
       });
@@ -849,7 +849,7 @@ class HighIRExpressionLoweringManager {
     return {
       name: functionName,
       typeParameters,
-      parameters: ['_context', ...expression.parameters.map(({ name: { name } }) => name)],
+      parameters: ["_context", ...expression.parameters.map(({ name: { name } }) => name)],
       type: HIR_FUNCTION_TYPE(
         [contextType, ...functionTypeWithoutContext.argumentTypes],
         functionTypeWithoutContext.returnType,
@@ -871,14 +871,14 @@ class HighIRExpressionLoweringManager {
     const loweredFinalExpression = this.varibleContext.withNestedScope(() => {
       blockStatements.forEach(({ pattern, assignedExpression }) => {
         switch (pattern.type) {
-          case 'ObjectPattern': {
+          case "ObjectPattern": {
             const loweredAssignedExpression = this.loweredAndAddStatements(
               assignedExpression,
               null,
               loweredStatements,
             );
             const identifierType = loweredAssignedExpression.type;
-            assert(identifierType.__type__ === 'IdentifierType');
+            assert(identifierType.__type__ === "IdentifierType");
             pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
               const fieldType = checkNotNull(
                 this.resolveTypeMappingOfIdentifierType(identifierType)[fieldOrder],
@@ -899,7 +899,7 @@ class HighIRExpressionLoweringManager {
             });
             break;
           }
-          case 'VariablePattern': {
+          case "VariablePattern": {
             const loweredAssignedExpression = this.loweredAndAddStatements(
               assignedExpression,
               pattern.name,
@@ -908,7 +908,7 @@ class HighIRExpressionLoweringManager {
             this.varibleContext.bind(pattern.name, loweredAssignedExpression);
             break;
           }
-          case 'WildCardPattern':
+          case "WildCardPattern":
             this.loweredAndAddStatements(assignedExpression, null, loweredStatements);
             break;
         }
@@ -948,7 +948,7 @@ export default function lowerSamlangExpression(
     typeLoweringManager,
     stringManager,
   );
-  if (expression.__type__ === 'StatementBlockExpression') manager.depth = -1;
+  if (expression.__type__ === "StatementBlockExpression") manager.depth = -1;
   const result = manager.lower(expression, null);
   return { ...result, syntheticFunctions: manager.syntheticFunctions };
 }

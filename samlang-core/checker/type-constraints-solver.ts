@@ -1,9 +1,9 @@
-import { moduleReferenceToString, SourceReason } from '../ast/common-nodes';
-import { SamlangType, SourceUnknownType, TypeParameterSignature } from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { zip } from '../utils';
-import contextualTypeMeet from './contextual-type-meet';
-import performTypeSubstitution from './type-substitution';
+import { moduleReferenceToString, SourceReason } from "../ast/common-nodes";
+import { SamlangType, SourceUnknownType, TypeParameterSignature } from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { zip } from "../utils";
+import contextualTypeMeet from "./contextual-type-meet";
+import performTypeSubstitution from "./type-substitution";
 
 function solveTypeConstraintsInternal(
   concreteType: SamlangType,
@@ -13,11 +13,11 @@ function solveTypeConstraintsInternal(
 ): void {
   // Unknown types, which might come from expressions that need to be contextually typed (e.g. lambda),
   // do not participate in constraint solving.
-  if (concreteType.__type__ === 'UnknownType') return;
+  if (concreteType.__type__ === "UnknownType") return;
   switch (genericType.__type__) {
-    case 'PrimitiveType':
+    case "PrimitiveType":
       return;
-    case 'IdentifierType':
+    case "IdentifierType":
       if (
         typeParameters.has(genericType.identifier) &&
         !partiallySolved.has(genericType.identifier)
@@ -26,7 +26,7 @@ function solveTypeConstraintsInternal(
         return;
       }
       if (
-        concreteType.__type__ === 'IdentifierType' &&
+        concreteType.__type__ === "IdentifierType" &&
         moduleReferenceToString(concreteType.moduleReference) ===
           moduleReferenceToString(genericType.moduleReference) &&
         concreteType.identifier === genericType.identifier &&
@@ -37,9 +37,9 @@ function solveTypeConstraintsInternal(
         );
       }
       return;
-    case 'FunctionType':
+    case "FunctionType":
       if (
-        concreteType.__type__ === 'FunctionType' &&
+        concreteType.__type__ === "FunctionType" &&
         concreteType.argumentTypes.length === genericType.argumentTypes.length
       ) {
         zip(concreteType.argumentTypes, genericType.argumentTypes).map(([g, s]) =>

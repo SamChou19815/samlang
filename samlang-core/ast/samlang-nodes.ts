@@ -1,4 +1,4 @@
-import { zip } from '../utils';
+import { zip } from "../utils";
 import {
   defReasonToUseReason,
   DummySourceReason,
@@ -14,8 +14,8 @@ import {
   stringLiteralOf,
   TRUE,
   TypedComment,
-} from './common-nodes';
-import type { BinaryOperator } from './common-operators';
+} from "./common-nodes";
+import type { BinaryOperator } from "./common-operators";
 
 interface SamlangBaseType {
   readonly __type__: string;
@@ -23,23 +23,23 @@ interface SamlangBaseType {
 }
 
 export interface SamlangUnknownType extends SamlangBaseType {
-  readonly __type__: 'UnknownType';
+  readonly __type__: "UnknownType";
 }
 
 export interface SamlangPrimitiveType extends SamlangBaseType {
-  readonly __type__: 'PrimitiveType';
-  readonly name: 'unit' | 'bool' | 'int' | 'string';
+  readonly __type__: "PrimitiveType";
+  readonly name: "unit" | "bool" | "int" | "string";
 }
 
 export interface SamlangIdentifierType extends SamlangBaseType {
-  readonly __type__: 'IdentifierType';
+  readonly __type__: "IdentifierType";
   readonly moduleReference: ModuleReference;
   readonly identifier: string;
   readonly typeArguments: readonly SamlangType[];
 }
 
 export interface SamlangFunctionType extends SamlangBaseType {
-  readonly __type__: 'FunctionType';
+  readonly __type__: "FunctionType";
   readonly argumentTypes: readonly SamlangType[];
   readonly returnType: SamlangType;
 }
@@ -56,27 +56,27 @@ export interface TypeParameterSignature {
 }
 
 export const SourceUnitType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  __type__: 'PrimitiveType',
+  __type__: "PrimitiveType",
   reason,
-  name: 'unit',
+  name: "unit",
 });
 export const SourceBoolType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  __type__: 'PrimitiveType',
+  __type__: "PrimitiveType",
   reason,
-  name: 'bool',
+  name: "bool",
 });
 export const SourceIntType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  __type__: 'PrimitiveType',
+  __type__: "PrimitiveType",
   reason,
-  name: 'int',
+  name: "int",
 });
 export const SourceStringType = (reason: SamlangReason): SamlangPrimitiveType => ({
-  __type__: 'PrimitiveType',
+  __type__: "PrimitiveType",
   reason,
-  name: 'string',
+  name: "string",
 });
 export const SourceUnknownType = (reason: SamlangReason): SamlangUnknownType => ({
-  __type__: 'UnknownType',
+  __type__: "UnknownType",
   reason,
 });
 
@@ -86,7 +86,7 @@ export const SourceIdentifierType = (
   identifier: string,
   typeArguments: readonly SamlangType[] = [],
 ): SamlangIdentifierType => ({
-  __type__: 'IdentifierType',
+  __type__: "IdentifierType",
   reason,
   moduleReference,
   identifier,
@@ -98,7 +98,7 @@ export const SourceFunctionType = (
   argumentTypes: readonly SamlangType[],
   returnType: SamlangType,
 ): SamlangFunctionType => ({
-  __type__: 'FunctionType',
+  __type__: "FunctionType",
   reason,
   argumentTypes,
   returnType,
@@ -106,17 +106,17 @@ export const SourceFunctionType = (
 
 export function prettyPrintType(type: SamlangType): string {
   switch (type.__type__) {
-    case 'UnknownType':
-      return 'unknown';
-    case 'PrimitiveType':
+    case "UnknownType":
+      return "unknown";
+    case "PrimitiveType":
       return type.name;
-    case 'IdentifierType':
+    case "IdentifierType":
       if (type.typeArguments.length === 0) {
         return type.identifier;
       }
-      return `${type.identifier}<${type.typeArguments.map(prettyPrintType).join(', ')}>`;
-    case 'FunctionType':
-      return `(${type.argumentTypes.map(prettyPrintType).join(', ')}) -> ${prettyPrintType(
+      return `${type.identifier}<${type.typeArguments.map(prettyPrintType).join(", ")}>`;
+    case "FunctionType":
+      return `(${type.argumentTypes.map(prettyPrintType).join(", ")}) -> ${prettyPrintType(
         type.returnType,
       )}`;
   }
@@ -128,18 +128,18 @@ export function prettyPrintTypeParamaters(
   const tparams = typeParameters.map((it) =>
     it.bound != null ? `${it.name}: ${prettyPrintType(it.bound)}` : it.name,
   );
-  return tparams.length > 0 ? `<${tparams.join(', ')}>` : '';
+  return tparams.length > 0 ? `<${tparams.join(", ")}>` : "";
 }
 
 export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
   switch (t1.__type__) {
-    case 'UnknownType':
-      return t2.__type__ === 'UnknownType';
-    case 'PrimitiveType':
-      return t2.__type__ === 'PrimitiveType' && t1.name === t2.name;
-    case 'IdentifierType':
+    case "UnknownType":
+      return t2.__type__ === "UnknownType";
+    case "PrimitiveType":
+      return t2.__type__ === "PrimitiveType" && t1.name === t2.name;
+    case "IdentifierType":
       return (
-        t2.__type__ === 'IdentifierType' &&
+        t2.__type__ === "IdentifierType" &&
         moduleReferenceToString(t1.moduleReference) ===
           moduleReferenceToString(t2.moduleReference) &&
         t1.identifier === t2.identifier &&
@@ -148,9 +148,9 @@ export function isTheSameType(t1: SamlangType, t2: SamlangType): boolean {
           isTheSameType(t1Element, t2Element),
         )
       );
-    case 'FunctionType':
+    case "FunctionType":
       return (
-        t2.__type__ === 'FunctionType' &&
+        t2.__type__ === "FunctionType" &&
         isTheSameType(t1.returnType, t2.returnType) &&
         t1.argumentTypes.length === t2.argumentTypes.length &&
         zip(t1.argumentTypes, t2.argumentTypes).every(([t1Element, t2Element]) =>
@@ -191,25 +191,25 @@ interface BaseExpression extends Node {
 
 type ExpressionConstructorArgumentObject<E extends BaseExpression> = Omit<
   E,
-  '__type__' | 'location' | 'precedence' | 'associatedComments'
+  "__type__" | "location" | "precedence" | "associatedComments"
 > & { readonly location?: Location; readonly associatedComments?: readonly TypedComment[] };
 
 export interface LiteralExpression extends BaseExpression {
-  readonly __type__: 'LiteralExpression';
+  readonly __type__: "LiteralExpression";
   readonly literal: Literal;
 }
 
 export interface ThisExpression extends BaseExpression {
-  readonly __type__: 'ThisExpression';
+  readonly __type__: "ThisExpression";
 }
 
 export interface VariableExpression extends BaseExpression {
-  readonly __type__: 'VariableExpression';
+  readonly __type__: "VariableExpression";
   readonly name: string;
 }
 
 export interface ClassMemberExpression extends BaseExpression {
-  readonly __type__: 'ClassMemberExpression';
+  readonly __type__: "ClassMemberExpression";
   readonly typeArguments: readonly SamlangType[];
   readonly moduleReference: ModuleReference;
   readonly className: SourceIdentifier;
@@ -217,7 +217,7 @@ export interface ClassMemberExpression extends BaseExpression {
 }
 
 export interface FieldAccessExpression extends BaseExpression {
-  readonly __type__: 'FieldAccessExpression';
+  readonly __type__: "FieldAccessExpression";
   readonly expression: SamlangExpression;
   readonly typeArguments: readonly SamlangType[];
   readonly fieldName: SourceIdentifier;
@@ -225,26 +225,26 @@ export interface FieldAccessExpression extends BaseExpression {
 }
 
 export interface MethodAccessExpression extends BaseExpression {
-  readonly __type__: 'MethodAccessExpression';
+  readonly __type__: "MethodAccessExpression";
   readonly expression: SamlangExpression;
   readonly typeArguments: readonly SamlangType[];
   readonly methodName: SourceIdentifier;
 }
 
 export interface UnaryExpression extends BaseExpression {
-  readonly __type__: 'UnaryExpression';
-  readonly operator: '!' | '-';
+  readonly __type__: "UnaryExpression";
+  readonly operator: "!" | "-";
   readonly expression: SamlangExpression;
 }
 
 export interface FunctionCallExpression extends BaseExpression {
-  readonly __type__: 'FunctionCallExpression';
+  readonly __type__: "FunctionCallExpression";
   readonly functionExpression: SamlangExpression;
   readonly functionArguments: readonly SamlangExpression[];
 }
 
 export interface BinaryExpression extends BaseExpression {
-  readonly __type__: 'BinaryExpression';
+  readonly __type__: "BinaryExpression";
   readonly operatorPrecedingComments: readonly TypedComment[];
   readonly operator: BinaryOperator;
   readonly e1: SamlangExpression;
@@ -252,7 +252,7 @@ export interface BinaryExpression extends BaseExpression {
 }
 
 export interface IfElseExpression extends BaseExpression {
-  readonly __type__: 'IfElseExpression';
+  readonly __type__: "IfElseExpression";
   readonly boolExpression: SamlangExpression;
   readonly e1: SamlangExpression;
   readonly e2: SamlangExpression;
@@ -267,13 +267,13 @@ export interface VariantPatternToExpression {
 }
 
 export interface MatchExpression extends BaseExpression {
-  readonly __type__: 'MatchExpression';
+  readonly __type__: "MatchExpression";
   readonly matchedExpression: SamlangExpression;
   readonly matchingList: readonly VariantPatternToExpression[];
 }
 
 export interface LambdaExpression extends BaseExpression {
-  readonly __type__: 'LambdaExpression';
+  readonly __type__: "LambdaExpression";
   readonly type: SamlangFunctionType;
   readonly parameters: readonly {
     readonly name: SourceIdentifier;
@@ -292,17 +292,17 @@ export interface ObjectPatternDestucturedName {
 }
 
 export interface ObjectPattern extends Node {
-  readonly type: 'ObjectPattern';
+  readonly type: "ObjectPattern";
   readonly destructedNames: readonly ObjectPatternDestucturedName[];
 }
 
 export interface VariablePattern extends Node {
-  readonly type: 'VariablePattern';
+  readonly type: "VariablePattern";
   readonly name: string;
 }
 
 export interface WildCardPattern extends Node {
-  readonly type: 'WildCardPattern';
+  readonly type: "WildCardPattern";
 }
 
 export type Pattern = ObjectPattern | VariablePattern | WildCardPattern;
@@ -320,7 +320,7 @@ export interface StatementBlock extends Node {
 }
 
 export interface StatementBlockExpression extends BaseExpression {
-  readonly __type__: 'StatementBlockExpression';
+  readonly __type__: "StatementBlockExpression";
   readonly block: StatementBlock;
 }
 
@@ -343,7 +343,7 @@ export const SourceExpressionTrue = (
   location: Location,
   associatedComments: readonly TypedComment[],
 ): LiteralExpression => ({
-  __type__: 'LiteralExpression',
+  __type__: "LiteralExpression",
   location,
   type: SourceBoolType(SourceReason(location, null)),
   precedence: 0,
@@ -355,7 +355,7 @@ export const SourceExpressionFalse = (
   location: Location,
   associatedComments: readonly TypedComment[],
 ): LiteralExpression => ({
-  __type__: 'LiteralExpression',
+  __type__: "LiteralExpression",
   location,
   type: SourceBoolType(SourceReason(location, null)),
   precedence: 0,
@@ -368,7 +368,7 @@ export const SourceExpressionInt = (
   location: Location = Location.DUMMY,
   associatedComments: readonly TypedComment[] = [],
 ): LiteralExpression => ({
-  __type__: 'LiteralExpression',
+  __type__: "LiteralExpression",
   location,
   type: SourceIntType(SourceReason(location, null)),
   precedence: 0,
@@ -381,7 +381,7 @@ export const SourceExpressionString = (
   location: Location = Location.DUMMY,
   associatedComments: readonly TypedComment[] = [],
 ): LiteralExpression => ({
-  __type__: 'LiteralExpression',
+  __type__: "LiteralExpression",
   location,
   type: SourceStringType(SourceReason(location, null)),
   precedence: 0,
@@ -394,7 +394,7 @@ export const SourceExpressionThis = ({
   type,
   associatedComments = [],
 }: ExpressionConstructorArgumentObject<ThisExpression>): ThisExpression => ({
-  __type__: 'ThisExpression',
+  __type__: "ThisExpression",
   location,
   type,
   precedence: 0,
@@ -407,7 +407,7 @@ export const SourceExpressionVariable = ({
   associatedComments = [],
   name,
 }: ExpressionConstructorArgumentObject<VariableExpression>): VariableExpression => ({
-  __type__: 'VariableExpression',
+  __type__: "VariableExpression",
   location,
   type,
   precedence: 0,
@@ -424,7 +424,7 @@ export const SourceExpressionClassMember = ({
   className,
   memberName,
 }: ExpressionConstructorArgumentObject<ClassMemberExpression>): ClassMemberExpression => ({
-  __type__: 'ClassMemberExpression',
+  __type__: "ClassMemberExpression",
   location,
   type,
   precedence: 1,
@@ -444,7 +444,7 @@ export const SourceExpressionFieldAccess = ({
   fieldName,
   fieldOrder,
 }: ExpressionConstructorArgumentObject<FieldAccessExpression>): FieldAccessExpression => ({
-  __type__: 'FieldAccessExpression',
+  __type__: "FieldAccessExpression",
   location,
   type,
   precedence: 2,
@@ -463,7 +463,7 @@ export const SourceExpressionMethodAccess = ({
   typeArguments,
   methodName,
 }: ExpressionConstructorArgumentObject<MethodAccessExpression>): MethodAccessExpression => ({
-  __type__: 'MethodAccessExpression',
+  __type__: "MethodAccessExpression",
   location,
   type,
   precedence: 2,
@@ -480,7 +480,7 @@ export const SourceExpressionUnary = ({
   operator,
   expression,
 }: ExpressionConstructorArgumentObject<UnaryExpression>): UnaryExpression => ({
-  __type__: 'UnaryExpression',
+  __type__: "UnaryExpression",
   location,
   type,
   precedence: 3,
@@ -496,7 +496,7 @@ export const SourceExpressionFunctionCall = ({
   functionExpression,
   functionArguments,
 }: ExpressionConstructorArgumentObject<FunctionCallExpression>): FunctionCallExpression => ({
-  __type__: 'FunctionCallExpression',
+  __type__: "FunctionCallExpression",
   location,
   type,
   precedence: 2,
@@ -514,7 +514,7 @@ export const SourceExpressionBinary = ({
   e1,
   e2,
 }: ExpressionConstructorArgumentObject<BinaryExpression>): BinaryExpression => ({
-  __type__: 'BinaryExpression',
+  __type__: "BinaryExpression",
   location,
   type,
   precedence: 5 + operator.precedence,
@@ -533,7 +533,7 @@ export const SourceExpressionIfElse = ({
   e1,
   e2,
 }: ExpressionConstructorArgumentObject<IfElseExpression>): IfElseExpression => ({
-  __type__: 'IfElseExpression',
+  __type__: "IfElseExpression",
   location,
   type,
   precedence: 11,
@@ -550,7 +550,7 @@ export const SourceExpressionMatch = ({
   matchedExpression,
   matchingList,
 }: ExpressionConstructorArgumentObject<MatchExpression>): MatchExpression => ({
-  __type__: 'MatchExpression',
+  __type__: "MatchExpression",
   location,
   type,
   precedence: 12,
@@ -567,7 +567,7 @@ export const SourceExpressionLambda = ({
   captured,
   body,
 }: ExpressionConstructorArgumentObject<LambdaExpression>): LambdaExpression => ({
-  __type__: 'LambdaExpression',
+  __type__: "LambdaExpression",
   location,
   type,
   precedence: 13,
@@ -583,7 +583,7 @@ export const SourceExpressionStatementBlock = ({
   associatedComments = [],
   block,
 }: ExpressionConstructorArgumentObject<StatementBlockExpression>): StatementBlockExpression => ({
-  __type__: 'StatementBlockExpression',
+  __type__: "StatementBlockExpression",
   location,
   type,
   precedence: 2,
@@ -593,7 +593,7 @@ export const SourceExpressionStatementBlock = ({
 
 export const sourceExpressionWithNewType = <E extends SamlangExpression>(
   expression: E,
-  type: E['type'],
+  type: E["type"],
 ): E => ({ ...expression, type });
 
 export interface SourceAnnotatedVariable {
@@ -645,7 +645,7 @@ export interface SourceFieldType {
 }
 
 export interface TypeDefinition extends Node {
-  readonly type: 'object' | 'variant';
+  readonly type: "object" | "variant";
   /** A list of fields. Used for ordering during codegen. */
   readonly names: readonly SourceIdentifier[];
   readonly mappings: ReadonlyMap<string, SourceFieldType>;

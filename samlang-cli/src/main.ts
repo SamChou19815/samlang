@@ -4,23 +4,23 @@ import {
   compileSamlangSources,
   ModuleReference,
   reformatSamlangSources,
-} from '@dev-sam/samlang-core';
-import { mkdir, writeFile } from 'fs/promises';
-import { join, sep } from 'path';
-import cliMainRunner, { CLIRunners } from './cli';
-import type { SamlangProjectConfiguration } from './configuration';
-import ASCII_ART_SAMLANG_LOGO from './logo';
-import { collectSources, getConfiguration } from './utils';
+} from "@dev-sam/samlang-core";
+import { mkdir, writeFile } from "fs/promises";
+import { join, sep } from "path";
+import cliMainRunner, { CLIRunners } from "./cli";
+import type { SamlangProjectConfiguration } from "./configuration";
+import ASCII_ART_SAMLANG_LOGO from "./logo";
+import { collectSources, getConfiguration } from "./utils";
 
 async function compileEverything(configuration: SamlangProjectConfiguration): Promise<void> {
   const entryModuleReferences = configuration.entryPoints.map((entryPoint) =>
-    ModuleReference(entryPoint.split('.')),
+    ModuleReference(entryPoint.split(".")),
   );
   const result = compileSamlangSources(
     collectSources(configuration, (parts) => ModuleReference(parts)),
     entryModuleReferences,
   );
-  if (result.__type__ === 'ERROR') {
+  if (result.__type__ === "ERROR") {
     console.error(`Found ${result.errors.length} error(s).`);
     result.errors.forEach((it) => console.error(it));
     process.exit(1);
@@ -37,7 +37,7 @@ async function compileEverything(configuration: SamlangProjectConfiguration): Pr
 const runners: CLIRunners = {
   async format(needHelp) {
     if (needHelp) {
-      console.log('samlang format: Format your codebase according to sconfig.json.');
+      console.log("samlang format: Format your codebase according to sconfig.json.");
     } else {
       await Promise.all(
         reformatSamlangSources(
@@ -50,7 +50,7 @@ const runners: CLIRunners = {
   },
   async compile(needHelp) {
     if (needHelp) {
-      console.log('samlang compile: Compile your codebase according to sconfig.json.');
+      console.log("samlang compile: Compile your codebase according to sconfig.json.");
     } else {
       await compileEverything(getConfiguration());
     }

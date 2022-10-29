@@ -3,11 +3,11 @@
 // @origin https://github.com/SamChou19815/samlang/pull/65
 // @origin https://github.com/SamChou19815/samlang/pull/67
 
-import { typeCheckSourceHandles } from '../../checker';
+import { typeCheckSourceHandles } from "../../checker";
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
-} from '../../compiler';
+} from "../../compiler";
 import {
   ENCODED_FUNCTION_NAME_FREE,
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
@@ -16,8 +16,8 @@ import {
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_THROW,
   encodeMainFunctionName,
-} from '../common-names';
-import { ModuleReference } from '../common-nodes';
+} from "../common-names";
+import { ModuleReference } from "../common-nodes";
 import {
   MIR_BINARY,
   MIR_CAST,
@@ -34,11 +34,11 @@ import {
   MIR_ZERO,
   prettyPrintMidIRFunction,
   prettyPrintMidIRSourcesAsJSSources,
-} from '../mir-nodes';
+} from "../mir-nodes";
 
-describe('printer-js', () => {
-  it('compile hello world to JS integration test', () => {
-    const moduleReference = ModuleReference(['Test']);
+describe("printer-js", () => {
+  it("compile hello world to JS integration test", () => {
+    const moduleReference = ModuleReference(["Test"]);
     const sourceCode = `
     class Main {
         function main(): unit = Builtins.println("Hello "::"World!")
@@ -58,27 +58,27 @@ function _Test_Main$main() {
     );
   });
 
-  it('HIR function to JS string test', () => {
+  it("HIR function to JS string test", () => {
     expect(
       prettyPrintMidIRFunction(
         {
-          name: 'baz',
-          parameters: ['d', 't', 'i'],
+          name: "baz",
+          parameters: ["d", "t", "i"],
           type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
           body: [
             MIR_IF_ELSE({
-              booleanExpression: MIR_VARIABLE('m', MIR_INT_TYPE),
+              booleanExpression: MIR_VARIABLE("m", MIR_INT_TYPE),
               s1: [
                 MIR_FUNCTION_CALL({
                   functionArguments: [],
-                  functionExpression: MIR_NAME('func', MIR_INT_TYPE),
-                  returnCollector: 'val',
+                  functionExpression: MIR_NAME("func", MIR_INT_TYPE),
+                  returnCollector: "val",
                   returnType: MIR_INT_TYPE,
                 }),
               ],
               s2: [
                 MIR_CAST({
-                  name: 'foo',
+                  name: "foo",
                   type: MIR_INT_TYPE,
                   assignedExpression: MIR_INT(19815),
                 }),
@@ -86,57 +86,57 @@ function _Test_Main$main() {
               finalAssignments: [],
             }),
             MIR_STRUCT_INITIALIZATION({
-              structVariableName: 'st',
+              structVariableName: "st",
               type: MIR_INT_TYPE,
               expressionList: [MIR_ZERO, MIR_INT(13)],
             }),
             MIR_CAST({
-              name: 'b',
+              name: "b",
               type: MIR_INT_TYPE,
               assignedExpression: MIR_INT(1857),
             }),
             MIR_CAST({
-              name: 'm',
+              name: "m",
               type: MIR_INT_TYPE,
               assignedExpression: MIR_INT(1305),
             }),
             MIR_INDEX_ACCESS({
-              name: 'a',
+              name: "a",
               type: MIR_INT_TYPE,
-              pointerExpression: MIR_VARIABLE('samlang', MIR_INT_TYPE),
+              pointerExpression: MIR_VARIABLE("samlang", MIR_INT_TYPE),
               index: 3,
             }),
             MIR_BINARY({
-              name: 'key',
-              operator: '!=',
-              e1: MIR_VARIABLE('ts', MIR_INT_TYPE),
+              name: "key",
+              operator: "!=",
+              e1: MIR_VARIABLE("ts", MIR_INT_TYPE),
               e2: MIR_INT(7),
             }),
             MIR_FUNCTION_CALL({
-              functionArguments: [MIR_VARIABLE('hw', MIR_STRING_TYPE)],
+              functionArguments: [MIR_VARIABLE("hw", MIR_STRING_TYPE)],
               functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
-              returnCollector: 'res',
+              returnCollector: "res",
               returnType: MIR_INT_TYPE,
             }),
             MIR_FUNCTION_CALL({
-              functionArguments: [MIR_VARIABLE('five', MIR_STRING_TYPE)],
+              functionArguments: [MIR_VARIABLE("five", MIR_STRING_TYPE)],
               functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_STRING_TO_INT, MIR_INT_TYPE),
-              returnCollector: 'res',
+              returnCollector: "res",
               returnType: MIR_INT_TYPE,
             }),
             MIR_FUNCTION_CALL({
               functionArguments: [MIR_INT(5)],
               functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING, MIR_INT_TYPE),
-              returnCollector: 'res',
+              returnCollector: "res",
               returnType: MIR_INT_TYPE,
             }),
             MIR_FUNCTION_CALL({
               functionArguments: [
-                MIR_VARIABLE('five', MIR_STRING_TYPE),
-                MIR_VARIABLE('four', MIR_STRING_TYPE),
+                MIR_VARIABLE("five", MIR_STRING_TYPE),
+                MIR_VARIABLE("four", MIR_STRING_TYPE),
               ],
               functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT, MIR_INT_TYPE),
-              returnCollector: 'res',
+              returnCollector: "res",
               returnType: MIR_INT_TYPE,
             }),
           ],
@@ -168,7 +168,7 @@ function baz(d, t, i) {
   });
 
   const setupIntegration = (sourceCode: string): string => {
-    const moduleReference = ModuleReference(['Test']);
+    const moduleReference = ModuleReference(["Test"]);
     const { checkedSources, compileTimeErrors } = typeCheckSourceHandles([
       [moduleReference, sourceCode],
     ]);
@@ -186,13 +186,13 @@ function baz(d, t, i) {
     const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
     const ${ENCODED_FUNCTION_NAME_FREE} = (v) => {};
     ${printed}
-    ${printed.includes(mainFunctionName) ? `${mainFunctionName}();` : ''}
+    ${printed.includes(mainFunctionName) ? `${mainFunctionName}();` : ""}
     printed`;
     // eslint-disable-next-line no-eval
     return eval(jsCode);
   };
 
-  it('confirm samlang & equivalent JS have same print output', () => {
+  it("confirm samlang & equivalent JS have same print output", () => {
     expect(
       setupIntegration(
         `
@@ -203,7 +203,7 @@ function baz(d, t, i) {
       }
       `,
       ),
-    ).toBe('Hello World!\n');
+    ).toBe("Hello World!\n");
 
     expect(
       setupIntegration(
@@ -213,7 +213,7 @@ function baz(d, t, i) {
       }
       `,
       ),
-    ).toBe('');
+    ).toBe("");
     expect(
       setupIntegration(
         `
@@ -223,7 +223,7 @@ function baz(d, t, i) {
       }
       `,
       ),
-    ).toBe('49\n');
+    ).toBe("49\n");
     expect(
       setupIntegration(
         `
@@ -236,7 +236,7 @@ function baz(d, t, i) {
       }
       `,
       ),
-    ).toBe('Not the meaning of life... keep looking\n');
+    ).toBe("Not the meaning of life... keep looking\n");
     expect(
       setupIntegration(
         `

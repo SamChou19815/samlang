@@ -2,8 +2,8 @@ import {
   encodeFunctionNameGlobally,
   encodeMainFunctionName,
   encodeSamlangType,
-} from '../ast/common-names';
-import type { ModuleReference, Sources } from '../ast/common-nodes';
+} from "../ast/common-names";
+import type { ModuleReference, Sources } from "../ast/common-nodes";
 import {
   HighIRFunction,
   HighIRSources,
@@ -17,26 +17,26 @@ import {
   HIR_INT_TYPE,
   HIR_STRUCT_INITIALIZATION,
   HIR_VARIABLE,
-} from '../ast/hir-nodes';
+} from "../ast/hir-nodes";
 import type {
   SamlangExpression,
   SamlangModule,
   SamlangType,
   SourceAnnotatedVariable,
-} from '../ast/samlang-nodes';
-import { checkNotNull, zip } from '../utils';
-import lowerSamlangExpression from './hir-expression-lowering';
-import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
-import HighIRStringManager from './hir-string-manager';
-import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-rewrite';
-import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from './hir-type-conversion';
-import deduplicateHighIRTypes from './hir-type-deduplication';
+} from "../ast/samlang-nodes";
+import { checkNotNull, zip } from "../utils";
+import lowerSamlangExpression from "./hir-expression-lowering";
+import performGenericsSpecializationOnHighIRSources from "./hir-generics-specialization";
+import HighIRStringManager from "./hir-string-manager";
+import optimizeHighIRFunctionByTailRecursionRewrite from "./hir-tail-recursion-rewrite";
+import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from "./hir-type-conversion";
+import deduplicateHighIRTypes from "./hir-type-deduplication";
 
 function companionFunctionWithContext(originalFunction: HighIRFunction): HighIRFunction {
   return {
     name: `${originalFunction.name}_with_context`,
     typeParameters: originalFunction.typeParameters,
-    parameters: ['_context', ...originalFunction.parameters],
+    parameters: ["_context", ...originalFunction.parameters],
     type: HIR_FUNCTION_TYPE(
       [HIR_INT_TYPE, ...originalFunction.type.argumentTypes],
       originalFunction.type.returnType,
@@ -53,10 +53,10 @@ function companionFunctionWithContext(originalFunction: HighIRFunction): HighIRF
           originalFunction.type.argumentTypes,
         ).map(([name, type]) => HIR_VARIABLE(name, type)),
         returnType: originalFunction.type.returnType,
-        returnCollector: '_ret',
+        returnCollector: "_ret",
       }),
     ],
-    returnValue: HIR_VARIABLE('_ret', originalFunction.type.returnType),
+    returnValue: HIR_VARIABLE("_ret", originalFunction.type.returnType),
   };
 }
 
@@ -67,16 +67,16 @@ function lowerSamlangConstructorsToHighIRFunctions(
 ) {
   const typeName = encodeSamlangType(moduleReference, className);
   const typeDefinition = checkNotNull(typeDefinitionMapping.get(typeName), `Missing ${typeName}`);
-  const structVariableName = '_struct';
+  const structVariableName = "_struct";
   const structType = HIR_IDENTIFIER_TYPE(
     typeName,
     typeDefinition.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS),
   );
   const originalConstructorFunctions: readonly HighIRFunction[] =
-    typeDefinition.type === 'object'
+    typeDefinition.type === "object"
       ? [
           {
-            name: encodeFunctionNameGlobally(moduleReference, className, 'init'),
+            name: encodeFunctionNameGlobally(moduleReference, className, "init"),
             parameters: typeDefinition.mappings.map((_, order) => `_f${order}`),
             typeParameters: typeDefinition.typeParameters,
             type: HIR_FUNCTION_TYPE(typeDefinition.mappings, structType),
@@ -98,14 +98,14 @@ function lowerSamlangConstructorsToHighIRFunctions(
             className,
             checkNotNull(typeDefinition.names[tagOrder]),
           ),
-          parameters: ['_data'],
+          parameters: ["_data"],
           typeParameters: typeDefinition.typeParameters,
           type: HIR_FUNCTION_TYPE([dataType], structType),
           body: [
             HIR_STRUCT_INITIALIZATION({
               structVariableName,
               type: structType,
-              expressionList: [HIR_INT(tagOrder), HIR_VARIABLE('_data', dataType)],
+              expressionList: [HIR_INT(tagOrder), HIR_VARIABLE("_data", dataType)],
             }),
           ],
           returnValue: HIR_VARIABLE(structVariableName, structType),
@@ -184,7 +184,7 @@ function compileSamlangMethodToHighIRFunctions(
   const typeLoweringManager = new SamlangTypeLoweringManager(typeParametersSet, typeSynthesizer);
   const mainFunctionParameterWithTypes = [
     [
-      '_this',
+      "_this",
       HIR_IDENTIFIER_TYPE(
         encodeSamlangType(moduleReference, className),
         classTypeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS),
@@ -235,10 +235,10 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
         ).lowerSamlangTypeDefinition(moduleReference, className.name, typeDefinition),
       );
       if (
-        className.name === 'Main' &&
+        className.name === "Main" &&
         members.some(
           (member) =>
-            member.name.name === 'main' &&
+            member.name.name === "main" &&
             member.parameters.length === 0 &&
             member.typeParameters.length === 0,
         )

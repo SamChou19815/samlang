@@ -1,79 +1,79 @@
-import { parseSamlangExpressionFromText, parseSamlangModuleFromText, parseSources } from '..';
-import { ModuleReference, moduleReferenceToString } from '../../ast/common-nodes';
-import type { SamlangExpression } from '../../ast/samlang-nodes';
-import { createGlobalErrorCollector } from '../../errors';
+import { parseSamlangExpressionFromText, parseSamlangModuleFromText, parseSources } from "..";
+import { ModuleReference, moduleReferenceToString } from "../../ast/common-nodes";
+import type { SamlangExpression } from "../../ast/samlang-nodes";
+import { createGlobalErrorCollector } from "../../errors";
 
-describe('samlang-core/parser', () => {
-  it('Can parse good expressions.', () => {
+describe("samlang-core/parser", () => {
+  it("Can parse good expressions.", () => {
     const globalErrorCollector = createGlobalErrorCollector();
     const errorReporter = globalErrorCollector.getErrorReporter();
 
-    function expectASTWithTheSameKind(text: string, expected: SamlangExpression['__type__']): void {
+    function expectASTWithTheSameKind(text: string, expected: SamlangExpression["__type__"]): void {
       expect(
         parseSamlangExpressionFromText(text, ModuleReference.DUMMY, errorReporter)?.__type__,
       ).toBe(expected);
     }
 
-    expectASTWithTheSameKind('true /* nothing here */', 'LiteralExpression');
-    expectASTWithTheSameKind('true', 'LiteralExpression');
-    expectASTWithTheSameKind('false', 'LiteralExpression');
-    expectASTWithTheSameKind('42', 'LiteralExpression');
-    expectASTWithTheSameKind('-2147483648', 'LiteralExpression');
-    expectASTWithTheSameKind('2147483647', 'LiteralExpression');
-    expectASTWithTheSameKind('"Hello World!"', 'LiteralExpression');
-    expectASTWithTheSameKind('this', 'ThisExpression');
-    expectASTWithTheSameKind('abc', 'VariableExpression');
-    expectASTWithTheSameKind('SomeClass.foo', 'ClassMemberExpression');
-    expectASTWithTheSameKind('SomeClass.foo<A,B>', 'ClassMemberExpression');
-    expectASTWithTheSameKind('SomeClass.foo<A>', 'ClassMemberExpression');
-    expectASTWithTheSameKind('V.Variant({})', 'FunctionCallExpression');
-    expectASTWithTheSameKind('V.Variant(3)', 'FunctionCallExpression');
-    expectASTWithTheSameKind('V.Variant<T>(3)', 'FunctionCallExpression');
-    expectASTWithTheSameKind('foo.bar', 'FieldAccessExpression');
-    expectASTWithTheSameKind('foo.bar<int, bool>', 'FieldAccessExpression');
-    expectASTWithTheSameKind('!false', 'UnaryExpression');
-    expectASTWithTheSameKind('-42', 'UnaryExpression');
-    expectASTWithTheSameKind('haha(3, 4, false, "oh no")', 'FunctionCallExpression');
-    expectASTWithTheSameKind('haha()', 'FunctionCallExpression');
-    expectASTWithTheSameKind('3 * 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 / 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 % 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 + 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 - 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 < 4', 'BinaryExpression');
-    expectASTWithTheSameKind('/* hi */ 3 < 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 /* hi */ < 4', 'BinaryExpression');
-    expectASTWithTheSameKind('(i /* */ < j && i > 0)', 'BinaryExpression');
-    expectASTWithTheSameKind('3 <= 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 > 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 >= 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 == 4', 'BinaryExpression');
-    expectASTWithTheSameKind('3 != 4', 'BinaryExpression');
-    expectASTWithTheSameKind('true && false', 'BinaryExpression');
-    expectASTWithTheSameKind('false || true', 'BinaryExpression');
-    expectASTWithTheSameKind('"hello"::"world"', 'BinaryExpression');
-    expectASTWithTheSameKind('if (true) then 3 else bar', 'IfElseExpression');
-    expectASTWithTheSameKind('match (this) { | None _ -> 0 | Some d -> d }', 'MatchExpression');
-    expectASTWithTheSameKind('(a, b: int, c: Type) -> 3', 'LambdaExpression');
-    expectASTWithTheSameKind('() -> 3', 'LambdaExpression');
-    expectASTWithTheSameKind('(foo) -> 3', 'LambdaExpression');
-    expectASTWithTheSameKind('(foo: bool) -> 3', 'LambdaExpression');
-    expectASTWithTheSameKind('{ val a = 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val a: () -> int = () -> 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val a = 3 val b = 3 }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val a = 3; a }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val a: int = 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val a: unit = {}; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val {foo, bar as baz}: Type = 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val _: Int<bool> = 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val _: HAHAHA = 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ val _: (int, bool) -> string = 3; }', 'StatementBlockExpression');
-    expectASTWithTheSameKind('{ }', 'StatementBlockExpression');
+    expectASTWithTheSameKind("true /* nothing here */", "LiteralExpression");
+    expectASTWithTheSameKind("true", "LiteralExpression");
+    expectASTWithTheSameKind("false", "LiteralExpression");
+    expectASTWithTheSameKind("42", "LiteralExpression");
+    expectASTWithTheSameKind("-2147483648", "LiteralExpression");
+    expectASTWithTheSameKind("2147483647", "LiteralExpression");
+    expectASTWithTheSameKind('"Hello World!"', "LiteralExpression");
+    expectASTWithTheSameKind("this", "ThisExpression");
+    expectASTWithTheSameKind("abc", "VariableExpression");
+    expectASTWithTheSameKind("SomeClass.foo", "ClassMemberExpression");
+    expectASTWithTheSameKind("SomeClass.foo<A,B>", "ClassMemberExpression");
+    expectASTWithTheSameKind("SomeClass.foo<A>", "ClassMemberExpression");
+    expectASTWithTheSameKind("V.Variant({})", "FunctionCallExpression");
+    expectASTWithTheSameKind("V.Variant(3)", "FunctionCallExpression");
+    expectASTWithTheSameKind("V.Variant<T>(3)", "FunctionCallExpression");
+    expectASTWithTheSameKind("foo.bar", "FieldAccessExpression");
+    expectASTWithTheSameKind("foo.bar<int, bool>", "FieldAccessExpression");
+    expectASTWithTheSameKind("!false", "UnaryExpression");
+    expectASTWithTheSameKind("-42", "UnaryExpression");
+    expectASTWithTheSameKind('haha(3, 4, false, "oh no")', "FunctionCallExpression");
+    expectASTWithTheSameKind("haha()", "FunctionCallExpression");
+    expectASTWithTheSameKind("3 * 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 / 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 % 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 + 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 - 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 < 4", "BinaryExpression");
+    expectASTWithTheSameKind("/* hi */ 3 < 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 /* hi */ < 4", "BinaryExpression");
+    expectASTWithTheSameKind("(i /* */ < j && i > 0)", "BinaryExpression");
+    expectASTWithTheSameKind("3 <= 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 > 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 >= 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 == 4", "BinaryExpression");
+    expectASTWithTheSameKind("3 != 4", "BinaryExpression");
+    expectASTWithTheSameKind("true && false", "BinaryExpression");
+    expectASTWithTheSameKind("false || true", "BinaryExpression");
+    expectASTWithTheSameKind('"hello"::"world"', "BinaryExpression");
+    expectASTWithTheSameKind("if (true) then 3 else bar", "IfElseExpression");
+    expectASTWithTheSameKind("match (this) { | None _ -> 0 | Some d -> d }", "MatchExpression");
+    expectASTWithTheSameKind("(a, b: int, c: Type) -> 3", "LambdaExpression");
+    expectASTWithTheSameKind("() -> 3", "LambdaExpression");
+    expectASTWithTheSameKind("(foo) -> 3", "LambdaExpression");
+    expectASTWithTheSameKind("(foo: bool) -> 3", "LambdaExpression");
+    expectASTWithTheSameKind("{ val a = 3; }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val a: () -> int = () -> 3; }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val a = 3 val b = 3 }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val a = 3; a }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val a: int = 3; }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val a: unit = {}; }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val {foo, bar as baz}: Type = 3; }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val _: Int<bool> = 3; }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val _: HAHAHA = 3; }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ val _: (int, bool) -> string = 3; }", "StatementBlockExpression");
+    expectASTWithTheSameKind("{ }", "StatementBlockExpression");
 
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   });
 
-  it('Can report bad expressions.', () => {
+  it("Can report bad expressions.", () => {
     function expectBadAST(text: string): void {
       const globalErrorCollector = createGlobalErrorCollector();
       const errorReporter = globalErrorCollector.getErrorReporter();
@@ -81,47 +81,47 @@ describe('samlang-core/parser', () => {
       expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
     }
 
-    expectBadAST('/* nothing here */');
-    expectBadAST('// haha');
-    expectBadAST('_sdfsdfdsf');
-    expectBadAST('9223372036854775808');
-    expectBadAST('-9223372036854775889223372036854775808');
-    expectBadAST('SomeClass.<>foo');
-    expectBadAST('SomeClass.<foo');
-    expectBadAST('SomeClass.');
-    expectBadAST('ForTests.assertIntEquals(2444a, 1)');
-    expectBadAST('.');
-    expectBadAST(',');
-    expectBadAST('[]');
-    expectBadAST('{: }');
-    expectBadAST('{ hello / }');
-    expectBadAST('{: bar}');
-    expectBadAST('{foo: }');
-    expectBadAST('Variant');
-    expectBadAST('foo.Bar');
-    expectBadAST('foo.');
-    expectBadAST('if (true) then 3');
-    expectBadAST('if (true) else 4');
-    expectBadAST('if (true)');
-    expectBadAST('match (this) { | None _  }');
-    expectBadAST('match (this) { |  _ -> }');
-    expectBadAST('match (this) { |  -> }');
-    expectBadAST('(: int) -> 3');
-    expectBadAST('(:) -> 3');
-    expectBadAST('(a:) -> 3');
-    expectBadAST('{ val a =  }');
-    expectBadAST('{ val  = 3 }');
-    expectBadAST('{ val a = /* empty */ }');
-    expectBadAST('{ val a = /* empty */');
-    expectBadAST('{ val a = int }');
-    expectBadAST('{ val a:  = 3; a }');
-    expectBadAST('{ val a: <int> = 3; a }');
-    expectBadAST('{ val {foo, as baz}: Type = 3; }');
-    expectBadAST('{ val {foo, bar as }: Type = 3; }');
-    expectBadAST('{ val a: () ->  = 3; a }');
+    expectBadAST("/* nothing here */");
+    expectBadAST("// haha");
+    expectBadAST("_sdfsdfdsf");
+    expectBadAST("9223372036854775808");
+    expectBadAST("-9223372036854775889223372036854775808");
+    expectBadAST("SomeClass.<>foo");
+    expectBadAST("SomeClass.<foo");
+    expectBadAST("SomeClass.");
+    expectBadAST("ForTests.assertIntEquals(2444a, 1)");
+    expectBadAST(".");
+    expectBadAST(",");
+    expectBadAST("[]");
+    expectBadAST("{: }");
+    expectBadAST("{ hello / }");
+    expectBadAST("{: bar}");
+    expectBadAST("{foo: }");
+    expectBadAST("Variant");
+    expectBadAST("foo.Bar");
+    expectBadAST("foo.");
+    expectBadAST("if (true) then 3");
+    expectBadAST("if (true) else 4");
+    expectBadAST("if (true)");
+    expectBadAST("match (this) { | None _  }");
+    expectBadAST("match (this) { |  _ -> }");
+    expectBadAST("match (this) { |  -> }");
+    expectBadAST("(: int) -> 3");
+    expectBadAST("(:) -> 3");
+    expectBadAST("(a:) -> 3");
+    expectBadAST("{ val a =  }");
+    expectBadAST("{ val  = 3 }");
+    expectBadAST("{ val a = /* empty */ }");
+    expectBadAST("{ val a = /* empty */");
+    expectBadAST("{ val a = int }");
+    expectBadAST("{ val a:  = 3; a }");
+    expectBadAST("{ val a: <int> = 3; a }");
+    expectBadAST("{ val {foo, as baz}: Type = 3; }");
+    expectBadAST("{ val {foo, bar as }: Type = 3; }");
+    expectBadAST("{ val a: () ->  = 3; a }");
   });
 
-  it('Can parse good programs.', () => {
+  it("Can parse good programs.", () => {
     const globalErrorCollector = createGlobalErrorCollector();
     const errorReporter = globalErrorCollector.getErrorReporter();
 
@@ -196,20 +196,20 @@ describe('samlang-core/parser', () => {
         members: it.importedMembers.map(({ name }) => name),
         importedModule: moduleReferenceToString(it.importedModule),
       })),
-    ).toEqual([{ importedModule: 'Path.To', members: ['Foo', 'Bar'] }]);
+    ).toEqual([{ importedModule: "Path.To", members: ["Foo", "Bar"] }]);
     expect(parsed.classes.map((it) => it.name.name)).toEqual([
-      'Main',
-      'Main',
-      'Util',
-      'Util',
-      'A',
-      'Option',
-      'TypeInference',
-      'Developer',
+      "Main",
+      "Main",
+      "Util",
+      "Util",
+      "A",
+      "Option",
+      "TypeInference",
+      "Developer",
     ]);
   });
 
-  it('Can handle bad programs.', () => {
+  it("Can handle bad programs.", () => {
     const globalErrorCollector = createGlobalErrorCollector();
     const errorReporter = globalErrorCollector.getErrorReporter();
 
@@ -244,7 +244,7 @@ describe('samlang-core/parser', () => {
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   });
 
-  it('Can handle really bad programs.', () => {
+  it("Can handle really bad programs.", () => {
     const globalErrorCollector = createGlobalErrorCollector();
     const errorReporter = globalErrorCollector.getErrorReporter();
 
@@ -274,27 +274,27 @@ describe('samlang-core/parser', () => {
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   });
 
-  it('Can handle complete trash', () => {
+  it("Can handle complete trash", () => {
     const globalErrorCollector = createGlobalErrorCollector();
     const errorReporter = globalErrorCollector.getErrorReporter();
 
-    parseSamlangModuleFromText('This is not a program.', ModuleReference.DUMMY, errorReporter);
+    parseSamlangModuleFromText("This is not a program.", ModuleReference.DUMMY, errorReporter);
     expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([
-      '__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces: This',
-      '__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces: is',
-      '__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes and interfaces: not',
-      '__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes and interfaces: a',
-      '__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes and interfaces: program',
-      '__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes and interfaces: .',
+      "__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces: This",
+      "__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces: is",
+      "__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes and interfaces: not",
+      "__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes and interfaces: a",
+      "__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes and interfaces: program",
+      "__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes and interfaces: .",
     ]);
   });
 
-  it('parseSources test', () => {
+  it("parseSources test", () => {
     expect(
       parseSources([
-        [ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
+        [ModuleReference(["Test1"]), "class Main { function main(): unit = {} }"],
         // with syntax error
-        [ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
+        [ModuleReference(["Test2"]), "class Main { function main(): unt = {} }"],
       ]).length,
     ).toBe(1);
   });

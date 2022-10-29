@@ -3,16 +3,16 @@ import {
   ModuleReference,
   ModuleReferenceCollections,
   Position,
-} from '../../ast/common-nodes';
-import { createGlobalErrorCollector } from '../../errors';
-import { parseSamlangModuleFromText } from '../../parser';
-import prettyPrintSamlangModule from '../../printer';
-import { checkNotNull } from '../../utils';
+} from "../../ast/common-nodes";
+import { createGlobalErrorCollector } from "../../errors";
+import { parseSamlangModuleFromText } from "../../parser";
+import prettyPrintSamlangModule from "../../printer";
+import { checkNotNull } from "../../utils";
 import {
   applyRenamingWithDefinitionAndUse,
   ModuleScopedVariableDefinitionLookup,
   VariableDefinitionLookup,
-} from '../variable-definition-service';
+} from "../variable-definition-service";
 
 function prepareLookup(source: string): ModuleScopedVariableDefinitionLookup {
   const moduleReference = ModuleReference.DUMMY;
@@ -32,7 +32,7 @@ function query(lookup: ModuleScopedVariableDefinitionLookup, location: Location)
   const { definitionLocation, useLocations } = defAndUse;
   const locToString = (l: Location) => {
     const s = l.toString();
-    return s.substring(s.indexOf(':') + 1);
+    return s.substring(s.indexOf(":") + 1);
   };
   return {
     definition: locToString(definitionLocation),
@@ -40,8 +40,8 @@ function query(lookup: ModuleScopedVariableDefinitionLookup, location: Location)
   };
 }
 
-describe('variable-definition-service', () => {
-  it('ModuleScopedVariableDefinitionLookup basic test', () => {
+describe("variable-definition-service", () => {
+  it("ModuleScopedVariableDefinitionLookup basic test", () => {
     const source = `
 class Main {
   function test(a: int, b: bool): unit = { }
@@ -50,7 +50,7 @@ class Main {
     expect(prepareLookup(source).findAllDefinitionAndUses(Location.DUMMY)).toBeNull();
   });
 
-  it('ModuleScopedVariableDefinitionLookup look up tests', () => {
+  it("ModuleScopedVariableDefinitionLookup look up tests", () => {
     const source = `
 class Main {
   function test(a: int, b: bool): unit = {
@@ -72,43 +72,43 @@ class Main {
     expect(
       query(lookup, new Location(ModuleReference.DUMMY, Position(3, 12), Position(3, 13))),
     ).toEqual({
-      definition: '3:17-3:18',
-      uses: ['4:13-4:14'],
+      definition: "3:17-3:18",
+      uses: ["4:13-4:14"],
     });
     expect(
       query(lookup, new Location(ModuleReference.DUMMY, Position(3, 8), Position(3, 9))),
     ).toEqual({
-      definition: '4:9-4:10',
+      definition: "4:9-4:10",
       uses: [],
     });
     expect(
       query(lookup, new Location(ModuleReference.DUMMY, Position(7, 12), Position(7, 13))),
     ).toEqual({
-      definition: '6:10-6:11',
-      uses: ['8:13-8:14', '9:59-9:60'],
+      definition: "6:10-6:11",
+      uses: ["8:13-8:14", "9:59-9:60"],
     });
     expect(
       query(lookup, new Location(ModuleReference.DUMMY, Position(7, 16), Position(7, 17))),
     ).toEqual({
-      definition: '6:18-6:19',
-      uses: ['7:24-7:25', '8:17-8:18', '9:45-9:46', '9:75-9:76', '10:24-10:25'],
+      definition: "6:18-6:19",
+      uses: ["7:24-7:25", "8:17-8:18", "9:45-9:46", "9:75-9:76", "10:24-10:25"],
     });
     expect(
       query(lookup, new Location(ModuleReference.DUMMY, Position(8, 22), Position(8, 23))),
     ).toEqual({
-      definition: '9:23-9:24',
-      uses: ['9:37-9:38'],
+      definition: "9:23-9:24",
+      uses: ["9:37-9:38"],
     });
     expect(
       query(lookup, new Location(ModuleReference.DUMMY, Position(11, 19), Position(11, 21))),
     ).toEqual({
-      definition: '12:14-12:16',
-      uses: ['12:20-12:22'],
+      definition: "12:14-12:16",
+      uses: ["12:20-12:22"],
     });
   });
 
-  it('VariableDefinitionLookup and applyRenamingWithDefinitionAndUse integration test 1', () => {
-    const moduleReference = ModuleReference(['Test']);
+  it("VariableDefinitionLookup and applyRenamingWithDefinitionAndUse integration test 1", () => {
+    const moduleReference = ModuleReference(["Test"]);
     const errorCollector = createGlobalErrorCollector();
     const parsedModule = parseSamlangModuleFromText(
       `
@@ -136,12 +136,12 @@ class Main {
 
     expect(
       lookup.findAllDefinitionAndUses(
-        new Location(ModuleReference(['Test1']), Location.DUMMY.start, Location.DUMMY.end),
+        new Location(ModuleReference(["Test1"]), Location.DUMMY.start, Location.DUMMY.end),
       ),
     ).toBeNull();
     expect(
       lookup.findAllDefinitionAndUses(
-        new Location(ModuleReference(['Test']), Location.DUMMY.start, Location.DUMMY.end),
+        new Location(ModuleReference(["Test"]), Location.DUMMY.start, Location.DUMMY.end),
       ),
     ).toBeNull();
 
@@ -152,13 +152,13 @@ class Main {
           applyRenamingWithDefinitionAndUse(
             parsedModule,
             checkNotNull(lookup.findAllDefinitionAndUses(location)),
-            'renAmeD',
+            "renAmeD",
           ),
         ),
       ).toBe(expected);
 
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(3, 12), Position(3, 13)),
+      new Location(ModuleReference(["Test"]), Position(3, 12), Position(3, 13)),
       `class Main {
   function test(renAmeD: int, b: bool): unit = {
     val c = renAmeD;
@@ -178,7 +178,7 @@ class Main {
 `,
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(3, 8), Position(3, 9)),
+      new Location(ModuleReference(["Test"]), Position(3, 8), Position(3, 9)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val renAmeD = a;
@@ -198,7 +198,7 @@ class Main {
 `,
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(5, 35), Position(5, 36)),
+      new Location(ModuleReference(["Test"]), Position(5, 35), Position(5, 36)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -218,7 +218,7 @@ class Main {
 `,
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(7, 12), Position(7, 13)),
+      new Location(ModuleReference(["Test"]), Position(7, 12), Position(7, 13)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -238,7 +238,7 @@ class Main {
 `,
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(7, 16), Position(7, 17)),
+      new Location(ModuleReference(["Test"]), Position(7, 16), Position(7, 17)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -258,7 +258,7 @@ class Main {
 `,
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(8, 22), Position(8, 23)),
+      new Location(ModuleReference(["Test"]), Position(8, 22), Position(8, 23)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -278,7 +278,7 @@ class Main {
 `,
     );
     assertCorrectlyRewritten(
-      new Location(ModuleReference(['Test']), Position(11, 19), Position(11, 21)),
+      new Location(ModuleReference(["Test"]), Position(11, 19), Position(11, 21)),
       `class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -299,8 +299,8 @@ class Main {
     );
   });
 
-  it('VariableDefinitionLookup and applyRenamingWithDefinitionAndUse integration test 2', () => {
-    const moduleReference = ModuleReference(['Test']);
+  it("VariableDefinitionLookup and applyRenamingWithDefinitionAndUse integration test 2", () => {
+    const moduleReference = ModuleReference(["Test"]);
     const errorCollector = createGlobalErrorCollector();
     const parsedModule = parseSamlangModuleFromText(
       `
@@ -324,10 +324,10 @@ class Main {
           parsedModule,
           checkNotNull(
             lookup.findAllDefinitionAndUses(
-              new Location(ModuleReference(['Test']), Position(3, 12), Position(3, 13)),
+              new Location(ModuleReference(["Test"]), Position(3, 12), Position(3, 13)),
             ),
           ),
-          'renAmeD',
+          "renAmeD",
         ),
       ),
     ).toBe(`class Main {

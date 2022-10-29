@@ -1,4 +1,4 @@
-import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
+import createHighIRFlexibleOrderOperatorNode from "../ast/hir-flexible-op";
 import {
   HighIRFunction,
   HighIRStatement,
@@ -11,21 +11,21 @@ import {
   HIR_VARIABLE,
   HIR_WHILE,
   HIR_ZERO,
-} from '../ast/hir-nodes';
-import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
+} from "../ast/hir-nodes";
+import optimizeHighIRStatementsByConditionalConstantPropagation from "./hir-conditional-constant-propagation-optimization";
 import {
   collectUseFromHighIRExpression,
   collectUseFromHighIRStatement,
-} from './hir-dead-code-elimination-optimization';
-import highIRLoopAlgebraicOptimization from './hir-loop-algebraic-optimization';
+} from "./hir-dead-code-elimination-optimization";
+import highIRLoopAlgebraicOptimization from "./hir-loop-algebraic-optimization";
 import extractOptimizableWhileLoop, {
   HighIROptimizableWhileLoop,
   invertGuardOperator,
-} from './hir-loop-induction-analysis';
-import highIRLoopInductionVariableEliminationOptimization from './hir-loop-induction-variable-elimination';
-import optimizeHighIRWhileStatementByLoopInvariantCodeMotion from './hir-loop-invariant-code-motion';
-import highIRLoopStrengthReductionOptimization from './hir-loop-strength-reduction';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
+} from "./hir-loop-induction-analysis";
+import highIRLoopInductionVariableEliminationOptimization from "./hir-loop-induction-variable-elimination";
+import optimizeHighIRWhileStatementByLoopInvariantCodeMotion from "./hir-loop-invariant-code-motion";
+import highIRLoopStrengthReductionOptimization from "./hir-loop-strength-reduction";
+import type OptimizationResourceAllocator from "./optimization-resource-allocator";
 
 function expandOptimizableWhileLoop(
   {
@@ -82,14 +82,14 @@ function expandOptimizableWhileLoop(
       ...statements,
       HIR_BINARY({
         name: basicInductionVariableWithLoopGuardLoopValueCollector,
-        operator: '+',
+        operator: "+",
         e1: HIR_VARIABLE(basicInductionVariableWithLoopGuard.name, HIR_INT_TYPE),
         e2: basicInductionVariableWithLoopGuard.incrementAmount,
       }),
       ...generalBasicInductionVariablesWithLoopValueCollectors.map(([v, collector]) =>
         HIR_BINARY({
           name: collector,
-          operator: '+',
+          operator: "+",
           e1: HIR_VARIABLE(v.name, HIR_INT_TYPE),
           e2: v.incrementAmount,
         }),
@@ -100,7 +100,7 @@ function expandOptimizableWhileLoop(
           HIR_BINARY({
             name: step1Temp,
             ...createHighIRFlexibleOrderOperatorNode(
-              '*',
+              "*",
               HIR_VARIABLE(derivedInductionVariable.baseName, HIR_INT_TYPE),
               derivedInductionVariable.multiplier,
             ),
@@ -108,7 +108,7 @@ function expandOptimizableWhileLoop(
           HIR_BINARY({
             name: derivedInductionVariable.name,
             ...createHighIRFlexibleOrderOperatorNode(
-              '+',
+              "+",
               HIR_VARIABLE(step1Temp, HIR_INT_TYPE),
               derivedInductionVariable.immediate,
             ),
@@ -165,7 +165,7 @@ export function optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR
     ...strengthReductionResult.optimizableWhileLoop,
     statements: strengthReductionResult.optimizableWhileLoop.statements.filter(
       (it) =>
-        it.__type__ !== 'HighIRBinaryStatement' ||
+        it.__type__ !== "HighIRBinaryStatement" ||
         !alreadyHandledInductionVariableNames.has(it.name),
     ),
   };
@@ -178,7 +178,7 @@ function recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(
   allocator: OptimizationResourceAllocator,
 ): readonly HighIRStatement[] {
   switch (statement.__type__) {
-    case 'HighIRIfElseStatement':
+    case "HighIRIfElseStatement":
       return [
         {
           ...statement,
@@ -190,7 +190,7 @@ function recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(
           ),
         },
       ];
-    case 'HighIRSingleIfStatement':
+    case "HighIRSingleIfStatement":
       return [
         {
           ...statement,
@@ -199,7 +199,7 @@ function recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(
           ),
         },
       ];
-    case 'HighIRWhileStatement': {
+    case "HighIRWhileStatement": {
       const optimizedStatements = statement.statements.flatMap((it) =>
         recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator),
       );

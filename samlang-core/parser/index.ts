@@ -1,12 +1,12 @@
-import type { ModuleReference } from '../ast/common-nodes';
-import type { SamlangExpression, SamlangModule } from '../ast/samlang-nodes';
-import { createGlobalErrorCollector, GlobalErrorReporter } from '../errors';
-import { filterMap } from '../utils';
-import lexSamlangProgram from './samlang-lexer';
-import SamlangModuleParser from './samlang-parser';
+import type { ModuleReference } from "../ast/common-nodes";
+import type { SamlangExpression, SamlangModule } from "../ast/samlang-nodes";
+import { createGlobalErrorCollector, GlobalErrorReporter } from "../errors";
+import { filterMap } from "../utils";
+import lexSamlangProgram from "./samlang-lexer";
+import SamlangModuleParser from "./samlang-parser";
 
-export type DefaultBuiltinClasses = 'Builtins';
-const DEFAULT_BUILTIN_CLASSES: DefaultBuiltinClasses[] = ['Builtins'];
+export type DefaultBuiltinClasses = "Builtins";
+const DEFAULT_BUILTIN_CLASSES: DefaultBuiltinClasses[] = ["Builtins"];
 const builtinClassesSet = new Set(DEFAULT_BUILTIN_CLASSES);
 
 export function parseSamlangModuleFromText(

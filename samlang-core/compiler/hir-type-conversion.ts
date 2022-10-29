@@ -1,5 +1,5 @@
-import { encodeSamlangType } from '../ast/common-names';
-import type { ModuleReference } from '../ast/common-nodes';
+import { encodeSamlangType } from "../ast/common-names";
+import type { ModuleReference } from "../ast/common-nodes";
 import {
   HighIRClosureTypeDefinition,
   HighIRFunctionType,
@@ -13,14 +13,14 @@ import {
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
   prettyPrintHighIRType,
-} from '../ast/hir-nodes';
+} from "../ast/hir-nodes";
 import type {
   SamlangFunctionType,
   SamlangPrimitiveType,
   SamlangType,
   TypeDefinition,
-} from '../ast/samlang-nodes';
-import { assert, checkNotNull, zip } from '../utils';
+} from "../ast/samlang-nodes";
+import { assert, checkNotNull, zip } from "../utils";
 
 /** A helper class to generate an identifier type for each struct type. */
 export class HighIRTypeSynthesizer {
@@ -50,7 +50,7 @@ export class HighIRTypeSynthesizer {
     functionType: HighIRFunctionType,
     typeParameters: readonly string[],
   ): HighIRClosureTypeDefinition {
-    const key = `${prettyPrintHighIRType(functionType)}_${typeParameters.join(',')}`;
+    const key = `${prettyPrintHighIRType(functionType)}_${typeParameters.join(",")}`;
     const existingIdentifier = this.reverseFunctionMap.get(key);
     if (existingIdentifier != null) {
       return checkNotNull(
@@ -70,7 +70,7 @@ export class HighIRTypeSynthesizer {
     mappings: readonly HighIRType[],
     typeParameters: readonly string[],
   ): HighIRTypeDefinition {
-    const key = `${mappings.map(prettyPrintHighIRType).join(',')}_${typeParameters.join(',')}`;
+    const key = `${mappings.map(prettyPrintHighIRType).join(",")}_${typeParameters.join(",")}`;
     const existingIdentifier = this.reverseTupleMap.get(key);
     if (existingIdentifier != null) {
       return checkNotNull(
@@ -83,7 +83,7 @@ export class HighIRTypeSynthesizer {
     this.reverseTupleMap.set(key, identifier);
     const typeDefinition: HighIRTypeDefinition = {
       identifier,
-      type: 'object',
+      type: "object",
       typeParameters,
       names: mappings.map((_, index) => `_n${index}`),
       mappings,
@@ -100,13 +100,13 @@ export function collectUsedGenericTypes(
   const collector = new Set<string>();
   function visit(t: HighIRType) {
     switch (t.__type__) {
-      case 'PrimitiveType':
+      case "PrimitiveType":
         return;
-      case 'IdentifierType':
+      case "IdentifierType":
         if (genericTypes.has(t.name) && t.typeArguments.length === 0) collector.add(t.name);
         t.typeArguments.forEach(visit);
         return;
-      case 'FunctionType':
+      case "FunctionType":
         t.argumentTypes.forEach(visit);
         visit(t.returnType);
         return;
@@ -126,24 +126,24 @@ export function solveTypeArguments(
 
   function solve(t1: HighIRType, t2: HighIRType): void {
     switch (t1.__type__) {
-      case 'PrimitiveType':
-        assert(t2.__type__ === 'PrimitiveType', `t2 has type ${t2.__type__}`);
+      case "PrimitiveType":
+        assert(t2.__type__ === "PrimitiveType", `t2 has type ${t2.__type__}`);
         assert(t1.type === t2.type, `t1=${t1.type}, t2=${t2.type}`);
         return;
-      case 'IdentifierType':
+      case "IdentifierType":
         if (t1.typeArguments.length === 0 && genericTypeParameterSet.has(t1.name)) {
           solved.set(t1.name, t2);
           return;
         }
-        assert(t2.__type__ === 'IdentifierType', `t2 has type ${t2.__type__}`);
+        assert(t2.__type__ === "IdentifierType", `t2 has type ${t2.__type__}`);
         assert(t1.name === t2.name, `${t1.name} ${t2.name}`);
         // Things might already been specialized.
         assert(t1.typeArguments.length === t2.typeArguments.length);
         zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
         return;
-      case 'FunctionType':
+      case "FunctionType":
         assert(
-          t2.__type__ === 'FunctionType' && t1.argumentTypes.length === t2.argumentTypes.length,
+          t2.__type__ === "FunctionType" && t1.argumentTypes.length === t2.argumentTypes.length,
         );
         zip(t1.argumentTypes, t2.argumentTypes).forEach(([a1, a2]) => solve(a1, a2));
         solve(t1.returnType, t2.returnType);
@@ -162,9 +162,9 @@ export const highIRTypeApplication = (
   replacementMap: ReadonlyMap<string, HighIRType>,
 ): HighIRType => {
   switch (type.__type__) {
-    case 'PrimitiveType':
+    case "PrimitiveType":
       return type;
-    case 'IdentifierType':
+    case "IdentifierType":
       if (type.typeArguments.length !== 0) {
         return HIR_IDENTIFIER_TYPE(
           type.name,
@@ -172,7 +172,7 @@ export const highIRTypeApplication = (
         );
       }
       return replacementMap.get(type.name) ?? type;
-    case 'FunctionType':
+    case "FunctionType":
       return HIR_FUNCTION_TYPE(
         type.argumentTypes.map((it) => highIRTypeApplication(it, replacementMap)),
         highIRTypeApplication(type.returnType, replacementMap),
@@ -183,16 +183,16 @@ export const highIRTypeApplication = (
 /** A encoder ensures that all the characters are good for function names. */
 function encodeHighIRTypeForGenericsSpecialization(type: HighIRType): string {
   switch (type.__type__) {
-    case 'PrimitiveType':
+    case "PrimitiveType":
       return type.type;
-    case 'IdentifierType':
+    case "IdentifierType":
       assert(
         type.typeArguments.length === 0,
-        'The identifier type argument should already be specialized.',
+        "The identifier type argument should already be specialized.",
       );
       return type.name;
-    case 'FunctionType':
-      assert(false, 'Function type should never appear in generics specialization positions.');
+    case "FunctionType":
+      assert(false, "Function type should never appear in generics specialization positions.");
   }
 }
 
@@ -202,16 +202,16 @@ export const encodeHighIRNameAfterGenericsSpecialization = (
 ): string =>
   typeArguments.length === 0
     ? name
-    : `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join('_')}`;
+    : `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join("_")}`;
 
 function lowerSamlangPrimitiveType(type: SamlangPrimitiveType): HighIRPrimitiveType {
   switch (type.name) {
-    case 'bool':
+    case "bool":
       return HIR_BOOL_TYPE;
-    case 'int':
-    case 'unit':
+    case "int":
+    case "unit":
       return HIR_INT_TYPE;
-    case 'string':
+    case "string":
       return HIR_STRING_TYPE;
   }
 }
@@ -223,11 +223,11 @@ export class SamlangTypeLoweringManager {
   ) {}
 
   lowerSamlangType = (type: SamlangType): HighIRType => {
-    assert(type.__type__ !== 'UnknownType', type.reason.useLocation.toString());
+    assert(type.__type__ !== "UnknownType", type.reason.useLocation.toString());
     switch (type.__type__) {
-      case 'PrimitiveType':
+      case "PrimitiveType":
         return lowerSamlangPrimitiveType(type);
-      case 'IdentifierType':
+      case "IdentifierType":
         if (this.genericTypes.has(type.identifier)) {
           return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(type.identifier);
         }
@@ -235,7 +235,7 @@ export class SamlangTypeLoweringManager {
           encodeSamlangType(type.moduleReference, type.identifier),
           type.typeArguments.map(this.lowerSamlangType),
         );
-      case 'FunctionType': {
+      case "FunctionType": {
         const rewrittenFunctionType = HIR_FUNCTION_TYPE(
           type.argumentTypes.map(this.lowerSamlangType),
           this.lowerSamlangType(type.returnType),
@@ -270,7 +270,7 @@ export class SamlangTypeLoweringManager {
   });
 
   lowerSamlangFunctionTypeForTopLevel(
-    type: Omit<SamlangFunctionType, 'reason'>,
+    type: Omit<SamlangFunctionType, "reason">,
   ): [readonly string[], HighIRFunctionType] {
     const hirFunctionType = HIR_FUNCTION_TYPE(
       type.argumentTypes.map(this.lowerSamlangType),

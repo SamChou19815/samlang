@@ -1,10 +1,10 @@
-import binaryen from 'binaryen';
-import type { MidIRSources } from '../ast/mir-nodes';
-import { prettyPrintWebAssemblyModule } from '../ast/wasm-nodes';
-import compileSamlangSourcesToHighIRSources from './hir-toplevel-lowering';
-import LIBSAM_WAT from './libsam.wat';
-import lowerHighIRSourcesToMidIRSources from './mir-sources-lowering';
-import lowerMidIRSourcesToWasmModuleInInternalAST from './wasm-module-lowering';
+import binaryen from "binaryen";
+import type { MidIRSources } from "../ast/mir-nodes";
+import { prettyPrintWebAssemblyModule } from "../ast/wasm-nodes";
+import compileSamlangSourcesToHighIRSources from "./hir-toplevel-lowering";
+import LIBSAM_WAT from "./libsam.wat";
+import lowerHighIRSourcesToMidIRSources from "./mir-sources-lowering";
+import lowerMidIRSourcesToWasmModuleInInternalAST from "./wasm-module-lowering";
 
 interface BinaryenModule {
   emitBinary(): Uint8Array;

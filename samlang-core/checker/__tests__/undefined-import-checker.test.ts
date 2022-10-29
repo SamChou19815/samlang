@@ -3,10 +3,10 @@ import {
   ModuleReference,
   ModuleReferenceCollections,
   Sources,
-} from '../../ast/common-nodes';
-import { SamlangModule, SourceClassDefinition, SourceId } from '../../ast/samlang-nodes';
-import { createGlobalErrorCollector } from '../../errors';
-import checkUndefinedImportsError from '../undefined-imports-checker';
+} from "../../ast/common-nodes";
+import { SamlangModule, SourceClassDefinition, SourceId } from "../../ast/samlang-nodes";
+import { createGlobalErrorCollector } from "../../errors";
+import checkUndefinedImportsError from "../undefined-imports-checker";
 
 const createMockClass = (name: string): SourceClassDefinition => ({
   location: Location.DUMMY,
@@ -15,7 +15,7 @@ const createMockClass = (name: string): SourceClassDefinition => ({
   typeParameters: [],
   extendsOrImplementsNodes: [],
   members: [],
-  typeDefinition: { location: Location.DUMMY, type: 'object', names: [], mappings: new Map() },
+  typeDefinition: { location: Location.DUMMY, type: "object", names: [], mappings: new Map() },
 });
 
 const createMockModule = (
@@ -63,49 +63,49 @@ function checkErrors(
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual(errors);
 }
 
-describe('undefined-import-checker', () => {
-  it('Empty sources have no errors.', () => checkErrors([], []));
+describe("undefined-import-checker", () => {
+  it("Empty sources have no errors.", () => checkErrors([], []));
 
-  it('No import sources have no errors.', () => {
+  it("No import sources have no errors.", () => {
     checkErrors(
       [
-        createMockModule('A'),
-        createMockModule('B', [], ['Foo']),
-        createMockModule('C', [], ['Bar']),
+        createMockModule("A"),
+        createMockModule("B", [], ["Foo"]),
+        createMockModule("C", [], ["Bar"]),
       ],
       [],
     );
   });
 
-  it('Cyclic dependency causes no errors.', () => {
+  it("Cyclic dependency causes no errors.", () => {
     checkErrors(
       [
-        createMockModule('A', [['B', ['Bar']]], ['Foo']),
-        createMockModule('B', [['A', ['Foo']]], ['Bar']),
+        createMockModule("A", [["B", ["Bar"]]], ["Foo"]),
+        createMockModule("B", [["A", ["Foo"]]], ["Bar"]),
       ],
       [],
     );
   });
 
-  it('Missing classes cause errors.', () => {
+  it("Missing classes cause errors.", () => {
     checkErrors(
       [
-        createMockModule('A', [['B', ['Foo', 'Bar']]]),
-        createMockModule('B', [['A', ['Foo', 'Bar']]]),
+        createMockModule("A", [["B", ["Foo", "Bar"]]]),
+        createMockModule("B", [["A", ["Foo", "Bar"]]]),
       ],
       [
-        'A.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.',
-        'A.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
-        'B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.',
-        'B.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
+        "A.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.",
+        "A.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.",
+        "B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.",
+        "B.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.",
       ],
     );
   });
 
-  it('Importing missing module causes errors.', () => {
+  it("Importing missing module causes errors.", () => {
     checkErrors(
-      [createMockModule('A', [['B', []]])],
-      ['A.sam:0:0-0:0: [UnresolvedName]: Name `B` is not resolved.'],
+      [createMockModule("A", [["B", []]])],
+      ["A.sam:0:0-0:0: [UnresolvedName]: Name `B` is not resolved."],
     );
   });
 });

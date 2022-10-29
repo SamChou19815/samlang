@@ -4,7 +4,7 @@ import {
   ModuleReference,
   Position,
   SourceReason,
-} from '../common-nodes';
+} from "../common-nodes";
 import {
   AstBuilder,
   isTheSameType,
@@ -15,34 +15,34 @@ import {
   SourceIntType,
   SourceUnknownType,
   typeReposition,
-} from '../samlang-nodes';
+} from "../samlang-nodes";
 
-describe('samlang-nodes', () => {
-  it('prettyPrint is working.', () => {
-    expect(prettyPrintType(AstBuilder.UnitType)).toBe('unit');
-    expect(prettyPrintType(AstBuilder.BoolType)).toBe('bool');
-    expect(prettyPrintType(AstBuilder.IntType)).toBe('int');
-    expect(prettyPrintType(AstBuilder.StringType)).toBe('string');
-    expect(prettyPrintType(SourceUnknownType(DummySourceReason))).toBe('unknown');
-    expect(prettyPrintType(AstBuilder.IdType('Foo'))).toBe('Foo');
+describe("samlang-nodes", () => {
+  it("prettyPrint is working.", () => {
+    expect(prettyPrintType(AstBuilder.UnitType)).toBe("unit");
+    expect(prettyPrintType(AstBuilder.BoolType)).toBe("bool");
+    expect(prettyPrintType(AstBuilder.IntType)).toBe("int");
+    expect(prettyPrintType(AstBuilder.StringType)).toBe("string");
+    expect(prettyPrintType(SourceUnknownType(DummySourceReason))).toBe("unknown");
+    expect(prettyPrintType(AstBuilder.IdType("Foo"))).toBe("Foo");
     expect(
       prettyPrintType(
-        AstBuilder.IdType('Foo', [
+        AstBuilder.IdType("Foo", [
           AstBuilder.UnitType,
           AstBuilder.IntType,
-          AstBuilder.IdType('Bar'),
+          AstBuilder.IdType("Bar"),
         ]),
       ),
-    ).toBe('Foo<unit, int, Bar>');
-    expect(prettyPrintType(AstBuilder.FunType([], AstBuilder.UnitType))).toBe('() -> unit');
+    ).toBe("Foo<unit, int, Bar>");
+    expect(prettyPrintType(AstBuilder.FunType([], AstBuilder.UnitType))).toBe("() -> unit");
     expect(prettyPrintType(AstBuilder.FunType([AstBuilder.IntType], AstBuilder.BoolType))).toBe(
-      '(int) -> bool',
+      "(int) -> bool",
     );
     expect(
       prettyPrintType(
         AstBuilder.FunType([AstBuilder.IntType, AstBuilder.BoolType], AstBuilder.BoolType),
       ),
-    ).toBe('(int, bool) -> bool');
+    ).toBe("(int, bool) -> bool");
     expect(
       prettyPrintType(
         AstBuilder.FunType(
@@ -50,26 +50,26 @@ describe('samlang-nodes', () => {
           AstBuilder.BoolType,
         ),
       ),
-    ).toBe('(() -> unit, bool) -> bool');
+    ).toBe("(() -> unit, bool) -> bool");
     expect(
       prettyPrintTypeParameter({
-        name: SourceId('Foo'),
+        name: SourceId("Foo"),
         bound: null,
         associatedComments: [],
         location: Location.DUMMY,
       }),
-    ).toBe('Foo');
+    ).toBe("Foo");
     expect(
       prettyPrintTypeParameter({
-        name: SourceId('Foo'),
-        bound: AstBuilder.IdType('Bar'),
+        name: SourceId("Foo"),
+        bound: AstBuilder.IdType("Bar"),
         associatedComments: [],
         location: Location.DUMMY,
       }),
-    ).toBe('Foo: Bar');
+    ).toBe("Foo: Bar");
   });
 
-  it('type reposition test', () => {
+  it("type reposition test", () => {
     expect(
       typeReposition(
         SourceIntType(
@@ -80,10 +80,10 @@ describe('samlang-nodes', () => {
         ),
         new Location(ModuleReference.DUMMY, Position(5, 6), Position(7, 8)),
       ).reason.useLocation.toString(),
-    ).toBe('__DUMMY__.sam:6:7-8:9');
+    ).toBe("__DUMMY__.sam:6:7-8:9");
   });
 
-  it('type equality test', () => {
+  it("type equality test", () => {
     expect(
       isTheSameType(SourceUnknownType(DummySourceReason), SourceUnknownType(DummySourceReason)),
     ).toBeTruthy();
@@ -106,38 +106,38 @@ describe('samlang-nodes', () => {
 
     expect(
       isTheSameType(
-        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType("A", [AstBuilder.IntType, AstBuilder.BoolType]),
         AstBuilder.UnitType,
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
-        AstBuilder.IdType('B'),
+        AstBuilder.IdType("A", [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType("B"),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
-        AstBuilder.IdType('A'),
+        AstBuilder.IdType("A", [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType("A"),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
-        AstBuilder.IdType('A', [AstBuilder.IntType]),
+        AstBuilder.IdType("A", [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType("A", [AstBuilder.IntType]),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        AstBuilder.IdType('A', [AstBuilder.BoolType, AstBuilder.IntType]),
-        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType("A", [AstBuilder.BoolType, AstBuilder.IntType]),
+        AstBuilder.IdType("A", [AstBuilder.IntType, AstBuilder.BoolType]),
       ),
     ).toBeFalsy();
     expect(
       isTheSameType(
-        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
-        SourceIdentifierType(DummySourceReason, ModuleReference(['AAA']), 'A', [
+        AstBuilder.IdType("A", [AstBuilder.IntType, AstBuilder.BoolType]),
+        SourceIdentifierType(DummySourceReason, ModuleReference(["AAA"]), "A", [
           AstBuilder.IntType,
           AstBuilder.BoolType,
         ]),
@@ -145,8 +145,8 @@ describe('samlang-nodes', () => {
     ).toBeFalsy();
     expect(
       isTheSameType(
-        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
-        AstBuilder.IdType('A', [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType("A", [AstBuilder.IntType, AstBuilder.BoolType]),
+        AstBuilder.IdType("A", [AstBuilder.IntType, AstBuilder.BoolType]),
       ),
     ).toBeTruthy();
 

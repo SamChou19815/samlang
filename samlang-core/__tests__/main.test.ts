@@ -5,40 +5,40 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_THROW,
-} from '../ast/common-names';
-import { ModuleReference } from '../ast/common-nodes';
-import { compileSamlangSources, compileSingleSamlangSource, reformatSamlangSources } from '../main';
+} from "../ast/common-names";
+import { ModuleReference } from "../ast/common-nodes";
+import { compileSamlangSources, compileSingleSamlangSource, reformatSamlangSources } from "../main";
 
-describe('samlang-core/index', () => {
-  it('reformatSamlangSources works', () => {
-    expect(reformatSamlangSources([[ModuleReference(['A']), 'class Main {}']])[0]?.[1]).toBe(
-      'class Main\n',
+describe("samlang-core/index", () => {
+  it("reformatSamlangSources works", () => {
+    expect(reformatSamlangSources([[ModuleReference(["A"]), "class Main {}"]])[0]?.[1]).toBe(
+      "class Main\n",
     );
   });
 
-  it('compileSamlangSources fails when there are no valid entry point.', () => {
-    expect(compileSamlangSources([], [ModuleReference(['A'])])).toEqual({
-      __type__: 'ERROR',
-      errors: ['Invalid entry point: A does not exist.'],
+  it("compileSamlangSources fails when there are no valid entry point.", () => {
+    expect(compileSamlangSources([], [ModuleReference(["A"])])).toEqual({
+      __type__: "ERROR",
+      errors: ["Invalid entry point: A does not exist."],
     });
   });
 
-  it('compileSingleSamlangSource works when program with type error.', () => {
+  it("compileSingleSamlangSource works when program with type error.", () => {
     expect(compileSingleSamlangSource('class Main { function main(): string = 42 + "" }')).toEqual({
-      __type__: 'ERROR',
+      __type__: "ERROR",
       errors: [
-        'Demo.sam:1:40-1:47: [UnexpectedType]: Expected: `string`, actual: `int`.',
-        'Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.',
+        "Demo.sam:1:40-1:47: [UnexpectedType]: Expected: `string`, actual: `int`.",
+        "Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.",
       ],
     });
   });
 
-  it('compileSingleSamlangSource works when given good program.', () => {
+  it("compileSingleSamlangSource works when given good program.", () => {
     const result = compileSingleSamlangSource(
       'class Main { function main(): unit = Builtins.println("hello world") }',
     );
-    if (result.__type__ === 'ERROR') {
-      throw new Error(result.errors.join('\n'));
+    if (result.__type__ === "ERROR") {
+      throw new Error(result.errors.join("\n"));
     }
     expect(result.emittedTSCode).toBe(`type Str = [number, string];
 const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
@@ -55,6 +55,6 @@ function _Demo_Main$main(): number {
 
 _Demo_Main$main();
 `);
-    expect(result.interpreterResult).toBe('hello world\n');
+    expect(result.interpreterResult).toBe("hello world\n");
   });
 });

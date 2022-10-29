@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const { existsSync } = require('fs');
-const Module = require('module');
-const { resolve } = require('path');
+const { existsSync } = require("fs");
+const Module = require("module");
+const { resolve } = require("path");
 
-const { registerHook } = require('./api');
+const { registerHook } = require("./api");
 
 function main() {
   const [nodeArg, _, scriptArg, ...rest] = process.argv;
@@ -14,7 +14,7 @@ function main() {
     Module.runMain();
   } else {
     // eslint-disable-next-line no-console
-    console.log('Usage: esr <source-file> [file-options]');
+    console.log("Usage: esr <source-file> [file-options]");
     process.exit(1);
   }
 }

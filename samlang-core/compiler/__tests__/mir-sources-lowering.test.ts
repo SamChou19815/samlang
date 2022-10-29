@@ -6,7 +6,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_THROW,
-} from '../../ast/common-names';
+} from "../../ast/common-names";
 import {
   HighIRSources,
   HIR_BINARY,
@@ -27,11 +27,11 @@ import {
   HIR_VARIABLE,
   HIR_WHILE,
   HIR_ZERO,
-} from '../../ast/hir-nodes';
-import { prettyPrintMidIRSourcesAsTSSources } from '../../ast/mir-nodes';
-import lowerHighIRSourcesToMidIRSources from '../mir-sources-lowering';
+} from "../../ast/hir-nodes";
+import { prettyPrintMidIRSourcesAsTSSources } from "../../ast/mir-nodes";
+import lowerHighIRSourcesToMidIRSources from "../mir-sources-lowering";
 
-type SimplifiedSources = Omit<HighIRSources, 'globalVariables' | 'mainFunctionNames'>;
+type SimplifiedSources = Omit<HighIRSources, "globalVariables" | "mainFunctionNames">;
 
 const assertLowered = (sources: SimplifiedSources, expected: string) =>
   expect(
@@ -44,8 +44,8 @@ const assertLowered = (sources: SimplifiedSources, expected: string) =>
     ),
   ).toBe(expected);
 
-describe('mir-sources-lowering', () => {
-  it('lowerHighIRSourcesToMidIRSources smoke test', () => {
+describe("mir-sources-lowering", () => {
+  it("lowerHighIRSourcesToMidIRSources smoke test", () => {
     assertLowered(
       { closureTypes: [], typeDefinitions: [], functions: [] },
       `type Str = [number, string];
@@ -60,89 +60,89 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: any): number => { v.length = 0; return
   });
 
   const commonComprehensiveSources = ((): SimplifiedSources => {
-    const closureType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC');
-    const objType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Object');
-    const variantType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Variant');
+    const closureType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("CC");
+    const objType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("Object");
+    const variantType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("Variant");
     return {
       closureTypes: [
         {
-          identifier: 'CC',
+          identifier: "CC",
           typeParameters: [],
           functionType: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         },
       ],
       typeDefinitions: [
         {
-          identifier: 'Object',
-          type: 'object',
+          identifier: "Object",
+          type: "object",
           typeParameters: [],
           names: [],
           mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
         },
         {
-          identifier: 'Variant',
-          type: 'variant',
+          identifier: "Variant",
+          type: "variant",
           typeParameters: [],
           names: [],
           mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
         },
         {
-          identifier: 'Object2',
-          type: 'object',
+          identifier: "Object2",
+          type: "object",
           typeParameters: [],
           names: [],
-          mappings: [HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo')],
+          mappings: [HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("Foo")],
         },
         {
-          identifier: 'Variant2',
-          type: 'variant',
+          identifier: "Variant2",
+          type: "variant",
           typeParameters: [],
           names: [],
           mappings: [HIR_STRING_TYPE],
         },
         {
-          identifier: 'Variant3',
-          type: 'variant',
+          identifier: "Variant3",
+          type: "variant",
           typeParameters: [],
           names: [],
-          mappings: [HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo')],
+          mappings: [HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("Foo")],
         },
       ],
       functions: [
         {
-          name: 'cc',
+          name: "cc",
           parameters: [],
           typeParameters: [],
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_VARIABLE('cc', closureType),
+              functionExpression: HIR_VARIABLE("cc", closureType),
               functionArguments: [HIR_ZERO],
               returnType: HIR_INT_TYPE,
             }),
             HIR_INDEX_ACCESS({
-              name: 'v1',
+              name: "v1",
               type: HIR_INT_TYPE,
               index: 0,
-              pointerExpression: HIR_VARIABLE('a', objType),
+              pointerExpression: HIR_VARIABLE("a", objType),
             }),
             HIR_INDEX_ACCESS({
-              name: 'v2',
+              name: "v2",
               type: HIR_INT_TYPE,
               index: 0,
-              pointerExpression: HIR_VARIABLE('b', variantType),
+              pointerExpression: HIR_VARIABLE("b", variantType),
             }),
             HIR_INDEX_ACCESS({
-              name: 'v3',
+              name: "v3",
               type: HIR_INT_TYPE,
               index: 1,
-              pointerExpression: HIR_VARIABLE('b', variantType),
+              pointerExpression: HIR_VARIABLE("b", variantType),
             }),
             HIR_INDEX_ACCESS({
-              name: 'v4',
+              name: "v4",
               type: HIR_STRING_TYPE,
               index: 1,
-              pointerExpression: HIR_VARIABLE('b', variantType),
+              pointerExpression: HIR_VARIABLE("b", variantType),
             }),
             HIR_WHILE({
               loopVariables: [],
@@ -156,7 +156,7 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: any): number => { v.length = 0; return
             }),
             HIR_WHILE({
               loopVariables: [
-                { name: '_', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+                { name: "_", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
               ],
               statements: [
                 HIR_SINGLE_IF({
@@ -165,50 +165,50 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: any): number => { v.length = 0; return
                   statements: [HIR_BREAK(HIR_ZERO)],
                 }),
               ],
-              breakCollector: { name: '_', type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('_') },
+              breakCollector: { name: "_", type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("_") },
             }),
           ],
           returnValue: HIR_ZERO,
         },
         {
-          name: 'main',
+          name: "main",
           parameters: [],
           typeParameters: [],
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
-            HIR_BINARY({ name: 'v1', operator: '+', e1: HIR_ZERO, e2: HIR_ZERO }),
+            HIR_BINARY({ name: "v1", operator: "+", e1: HIR_ZERO, e2: HIR_ZERO }),
             HIR_STRUCT_INITIALIZATION({
-              structVariableName: 'O',
+              structVariableName: "O",
               type: objType,
               expressionList: [
                 HIR_ZERO,
-                HIR_VARIABLE('obj', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Obj')),
+                HIR_VARIABLE("obj", HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("Obj")),
               ],
             }),
             HIR_STRUCT_INITIALIZATION({
-              structVariableName: 'v1',
+              structVariableName: "v1",
               type: variantType,
               expressionList: [HIR_ZERO, HIR_ZERO],
             }),
             HIR_STRUCT_INITIALIZATION({
-              structVariableName: 'v2',
+              structVariableName: "v2",
               type: variantType,
-              expressionList: [HIR_ZERO, HIR_STRING_NAME('G1')],
+              expressionList: [HIR_ZERO, HIR_STRING_NAME("G1")],
             }),
             HIR_CLOSURE_INITIALIZATION({
-              closureVariableName: 'c1',
+              closureVariableName: "c1",
               closureType,
               functionName: HIR_FUNCTION_NAME(
-                'aaa',
+                "aaa",
                 HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
               ),
-              context: HIR_STRING_NAME('G1'),
+              context: HIR_STRING_NAME("G1"),
             }),
             HIR_CLOSURE_INITIALIZATION({
-              closureVariableName: 'c2',
+              closureVariableName: "c2",
               closureType,
               functionName: HIR_FUNCTION_NAME(
-                'bbb',
+                "bbb",
                 HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
               ),
               context: HIR_ZERO,
@@ -227,40 +227,40 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: any): number => { v.length = 0; return
               s1: [
                 HIR_FUNCTION_CALL({
                   functionExpression: HIR_FUNCTION_NAME(
-                    'main',
+                    "main",
                     HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
                   ),
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_INT_TYPE,
                 }),
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_FUNCTION_NAME('cc', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                  functionExpression: HIR_FUNCTION_NAME("cc", HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_INT_TYPE,
                 }),
               ],
               s2: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_VARIABLE('cc', closureType),
+                  functionExpression: HIR_VARIABLE("cc", closureType),
                   functionArguments: [HIR_ZERO],
-                  returnType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC'),
+                  returnType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("CC"),
                 }),
                 HIR_CLOSURE_INITIALIZATION({
-                  closureVariableName: 'c3',
+                  closureVariableName: "c3",
                   closureType,
                   functionName: HIR_FUNCTION_NAME(
-                    'aaa',
+                    "aaa",
                     HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
                   ),
-                  context: HIR_VARIABLE('G1', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC')),
+                  context: HIR_VARIABLE("G1", HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("CC")),
                 }),
               ],
               finalAssignments: [
                 {
-                  name: 'finalV',
+                  name: "finalV",
                   type: HIR_INT_TYPE,
-                  branch1Value: HIR_VARIABLE('v1', HIR_INT_TYPE),
-                  branch2Value: HIR_VARIABLE('v2', HIR_INT_TYPE),
+                  branch1Value: HIR_VARIABLE("v1", HIR_INT_TYPE),
+                  branch2Value: HIR_VARIABLE("v2", HIR_INT_TYPE),
                 },
               ],
             }),
@@ -271,7 +271,7 @@ const ${ENCODED_FUNCTION_NAME_FREE} = (v: any): number => { v.length = 0; return
     };
   })();
 
-  it('lowerHighIRSourcesToMidIRSources comprehensive test with reference counting', () => {
+  it("lowerHighIRSourcesToMidIRSources comprehensive test with reference counting", () => {
     assertLowered(
       commonComprehensiveSources,
       `type Str = [number, string];

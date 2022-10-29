@@ -1,13 +1,13 @@
-import { DummySourceReason } from '../../ast/common-nodes';
+import { DummySourceReason } from "../../ast/common-nodes";
 import {
   AstBuilder,
   prettyPrintType,
   SamlangType,
   SourceUnknownType,
   TypeParameterSignature,
-} from '../../ast/samlang-nodes';
-import { createGlobalErrorCollector } from '../../errors';
-import { solveTypeConstraints } from '../type-constraints-solver';
+} from "../../ast/samlang-nodes";
+import { createGlobalErrorCollector } from "../../errors";
+import { solveTypeConstraints } from "../type-constraints-solver";
 
 function solve(
   concrete: SamlangType,
@@ -25,43 +25,43 @@ function solve(
   const result = Object.fromEntries(
     Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)]),
   );
-  if (globalCollector.hasErrors) result.hasError = 'true';
+  if (globalCollector.hasErrors) result.hasError = "true";
   return result;
 }
 
-describe('type-constraint-solver', () => {
-  it('primitive types', () => {
+describe("type-constraint-solver", () => {
+  it("primitive types", () => {
     expect(solve(AstBuilder.IntType, AstBuilder.UnitType, [])).toEqual({
-      hasError: 'true',
+      hasError: "true",
     });
 
-    expect(solve(AstBuilder.IntType, AstBuilder.UnitType, [{ name: 'T', bound: null }])).toEqual({
-      T: 'unknown',
-      hasError: 'true',
+    expect(solve(AstBuilder.IntType, AstBuilder.UnitType, [{ name: "T", bound: null }])).toEqual({
+      T: "unknown",
+      hasError: "true",
     });
   });
 
-  it('identifier type', () => {
-    expect(solve(AstBuilder.IntType, AstBuilder.IdType('T'), [{ name: 'T', bound: null }])).toEqual(
-      { T: 'int' },
+  it("identifier type", () => {
+    expect(solve(AstBuilder.IntType, AstBuilder.IdType("T"), [{ name: "T", bound: null }])).toEqual(
+      { T: "int" },
     );
 
     expect(
-      solve(AstBuilder.IntType, AstBuilder.IdType('Bar', [AstBuilder.IntType]), [
-        { name: 'Foo', bound: null },
+      solve(AstBuilder.IntType, AstBuilder.IdType("Bar", [AstBuilder.IntType]), [
+        { name: "Foo", bound: null },
       ]),
-    ).toEqual({ Foo: 'unknown', hasError: 'true' });
+    ).toEqual({ Foo: "unknown", hasError: "true" });
 
     expect(
       solve(
-        AstBuilder.IdType('Foo', [AstBuilder.IdType('Bar', [AstBuilder.IdType('Baz')])]),
-        AstBuilder.IdType('Foo', [AstBuilder.IdType('Bar', [AstBuilder.IdType('T')])]),
-        [{ name: 'T', bound: null }],
+        AstBuilder.IdType("Foo", [AstBuilder.IdType("Bar", [AstBuilder.IdType("Baz")])]),
+        AstBuilder.IdType("Foo", [AstBuilder.IdType("Bar", [AstBuilder.IdType("T")])]),
+        [{ name: "T", bound: null }],
       ),
-    ).toEqual({ T: 'Baz' });
+    ).toEqual({ T: "Baz" });
   });
 
-  it('function type', () => {
+  it("function type", () => {
     expect(
       solve(
         AstBuilder.FunType(
@@ -69,34 +69,34 @@ describe('type-constraint-solver', () => {
           AstBuilder.UnitType,
         ),
         AstBuilder.FunType(
-          [AstBuilder.IdType('A'), AstBuilder.IdType('B'), AstBuilder.IdType('A')],
-          AstBuilder.IdType('C'),
+          [AstBuilder.IdType("A"), AstBuilder.IdType("B"), AstBuilder.IdType("A")],
+          AstBuilder.IdType("C"),
         ),
         [
-          { name: 'A', bound: null },
-          { name: 'B', bound: null },
-          { name: 'C', bound: null },
+          { name: "A", bound: null },
+          { name: "B", bound: null },
+          { name: "C", bound: null },
         ],
       ),
-    ).toEqual({ A: 'int', B: 'bool', C: 'unit', hasError: 'true' });
+    ).toEqual({ A: "int", B: "bool", C: "unit", hasError: "true" });
 
     expect(
       solve(
         AstBuilder.IntType,
         AstBuilder.FunType(
-          [AstBuilder.IdType('A'), AstBuilder.IdType('B'), AstBuilder.IdType('A')],
-          AstBuilder.IdType('C'),
+          [AstBuilder.IdType("A"), AstBuilder.IdType("B"), AstBuilder.IdType("A")],
+          AstBuilder.IdType("C"),
         ),
         [
-          { name: 'A', bound: null },
-          { name: 'B', bound: null },
-          { name: 'C', bound: null },
+          { name: "A", bound: null },
+          { name: "B", bound: null },
+          { name: "C", bound: null },
         ],
       ),
-    ).toEqual({ A: 'unknown', B: 'unknown', C: 'unknown', hasError: 'true' });
+    ).toEqual({ A: "unknown", B: "unknown", C: "unknown", hasError: "true" });
   });
 
-  it('integration test 1', () => {
+  it("integration test 1", () => {
     const errorCollector = createGlobalErrorCollector();
     const { solvedSubstitution, solvedGenericType, solvedContextuallyTypedConcreteType } =
       solveTypeConstraints(
@@ -112,24 +112,24 @@ describe('type-constraint-solver', () => {
         ),
         AstBuilder.FunType(
           [
-            AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.IdType('A')),
-            AstBuilder.IdType('B'),
+            AstBuilder.FunType([AstBuilder.IdType("A")], AstBuilder.IdType("A")),
+            AstBuilder.IdType("B"),
           ],
           AstBuilder.UnitType,
         ),
         [
-          { name: 'A', bound: null },
-          { name: 'B', bound: null },
+          { name: "A", bound: null },
+          { name: "B", bound: null },
         ],
         errorCollector.getErrorReporter(),
       );
 
     expect(
       Object.fromEntries(Array.from(solvedSubstitution, ([k, t]) => [k, prettyPrintType(t)])),
-    ).toEqual({ A: 'unknown', B: 'int' });
-    expect(prettyPrintType(solvedGenericType)).toBe('((unknown) -> unknown, int) -> unit');
+    ).toEqual({ A: "unknown", B: "int" });
+    expect(prettyPrintType(solvedGenericType)).toBe("((unknown) -> unknown, int) -> unit");
     expect(prettyPrintType(solvedContextuallyTypedConcreteType)).toBe(
-      '((unknown) -> unknown, int) -> unit',
+      "((unknown) -> unknown, int) -> unit",
     );
     expect(
       errorCollector
@@ -139,7 +139,7 @@ describe('type-constraint-solver', () => {
     ).toEqual([]);
   });
 
-  it('integration test 2', () => {
+  it("integration test 2", () => {
     const errorCollector = createGlobalErrorCollector();
     const { solvedSubstitution, solvedGenericType, solvedContextuallyTypedConcreteType } =
       solveTypeConstraints(
@@ -155,20 +155,20 @@ describe('type-constraint-solver', () => {
         ),
         AstBuilder.FunType(
           [
-            AstBuilder.FunType([AstBuilder.IdType('A')], AstBuilder.IdType('A')),
-            AstBuilder.IdType('B'),
+            AstBuilder.FunType([AstBuilder.IdType("A")], AstBuilder.IdType("A")),
+            AstBuilder.IdType("B"),
           ],
           AstBuilder.UnitType,
         ),
-        [{ name: 'B', bound: null }],
+        [{ name: "B", bound: null }],
         errorCollector.getErrorReporter(),
       );
 
     expect(
       Object.fromEntries(Array.from(solvedSubstitution).map(([k, t]) => [k, prettyPrintType(t)])),
-    ).toEqual({ B: 'int' });
-    expect(prettyPrintType(solvedGenericType)).toBe('((A) -> A, int) -> unit');
-    expect(prettyPrintType(solvedContextuallyTypedConcreteType)).toBe('((A) -> A, int) -> unit');
+    ).toEqual({ B: "int" });
+    expect(prettyPrintType(solvedGenericType)).toBe("((A) -> A, int) -> unit");
+    expect(prettyPrintType(solvedContextuallyTypedConcreteType)).toBe("((A) -> A, int) -> unit");
     expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   });
 });

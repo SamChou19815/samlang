@@ -1,12 +1,12 @@
-import type { HighIRFunction, HighIRSources } from '../ast/hir-nodes';
-import optimizeHighIRFunctionByCommonSubExpressionElimination from './hir-common-subexpression-elimination-optimization';
-import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
-import optimizeHighIRFunctionByDeadCodeElimination from './hir-dead-code-elimination-optimization';
-import optimizeHighIRFunctionsByInlining from './hir-inline-optimization';
-import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
-import optimizeHighIRFunctionWithAllLoopOptimizations from './hir-loop-optimizations';
-import optimizeHighIRSourcesByEliminatingUnusedOnes from './hir-unused-name-elimination-optimization';
-import OptimizationResourceAllocator from './optimization-resource-allocator';
+import type { HighIRFunction, HighIRSources } from "../ast/hir-nodes";
+import optimizeHighIRFunctionByCommonSubExpressionElimination from "./hir-common-subexpression-elimination-optimization";
+import optimizeHighIRFunctionByConditionalConstantPropagation from "./hir-conditional-constant-propagation-optimization";
+import optimizeHighIRFunctionByDeadCodeElimination from "./hir-dead-code-elimination-optimization";
+import optimizeHighIRFunctionsByInlining from "./hir-inline-optimization";
+import optimizeHighIRFunctionByLocalValueNumbering from "./hir-local-value-numbering-optimization";
+import optimizeHighIRFunctionWithAllLoopOptimizations from "./hir-loop-optimizations";
+import optimizeHighIRSourcesByEliminatingUnusedOnes from "./hir-unused-name-elimination-optimization";
+import OptimizationResourceAllocator from "./optimization-resource-allocator";
 
 export type OptimizationConfiguration = {
   doesPerformLocalValueNumbering?: boolean;
