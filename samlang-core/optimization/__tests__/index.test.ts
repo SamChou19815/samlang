@@ -1,16 +1,16 @@
-import { optimizeHighIRSourcesAccordingToConfiguration } from '..';
-import type { HighIRSources } from '../../ast/hir-nodes';
-import { HIR_FUNCTION_TYPE, HIR_INT_TYPE, HIR_ZERO } from '../../ast/hir-nodes';
+import { optimizeHighIRSourcesAccordingToConfiguration } from "..";
+import type { HighIRSources } from "../../ast/hir-nodes";
+import { HIR_FUNCTION_TYPE, HIR_INT_TYPE, HIR_ZERO } from "../../ast/hir-nodes";
 
-describe('samlang-core/optimization', () => {
-  it('optimizeHighIRSourcesAccordingToConfiguration coverage tests', () => {
+describe("samlang-core/optimization", () => {
+  it("optimizeHighIRSourcesAccordingToConfiguration coverage tests", () => {
     const sources: HighIRSources = {
       globalVariables: [],
       typeDefinitions: [],
       closureTypes: [],
       functions: [
         {
-          name: 'main',
+          name: "main",
           parameters: [],
           typeParameters: [],
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
@@ -18,7 +18,7 @@ describe('samlang-core/optimization', () => {
           returnValue: HIR_ZERO,
         },
       ],
-      mainFunctionNames: ['main'],
+      mainFunctionNames: ["main"],
     };
 
     expect(optimizeHighIRSourcesAccordingToConfiguration(sources)).toEqual(sources);

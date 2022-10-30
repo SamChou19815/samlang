@@ -5,7 +5,7 @@ export type SamlangProgramCheckerTestSource = {
 
 export const samlangProgramCheckerTestSources: readonly SamlangProgramCheckerTestSource[] = [
   {
-    testName: 'access-builtin',
+    testName: "access-builtin",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -18,7 +18,7 @@ class Main {
 `,
   },
   {
-    testName: 'access-private-member',
+    testName: "access-private-member",
     sourceCode: `
 class A {
   private function b(): int = 3
@@ -37,7 +37,7 @@ class Main {
 `,
   },
   {
-    testName: 'add-panic-to-class',
+    testName: "add-panic-to-class",
     sourceCode: `
 class A(val a: int) {
   function create(): A = A.init(42)
@@ -51,7 +51,7 @@ class Main {
 `,
   },
   {
-    testName: 'add-with-class',
+    testName: "add-with-class",
     sourceCode: `
 class A(val a: int) {
   function create(): A = A.init(42)
@@ -63,7 +63,7 @@ class Main {
 `,
   },
   {
-    testName: 'allowed-cyclic-classes',
+    testName: "allowed-cyclic-classes",
     sourceCode: `
 class A {
   function a(): int = B.b()
@@ -79,7 +79,7 @@ class Main {
 `,
   },
   {
-    testName: 'bounded-generics',
+    testName: "bounded-generics",
     sourceCode: `
 interface Comparable<T> {
   method compare(other: T): int
@@ -112,11 +112,11 @@ class ImplTArg<T> : T {} // error: T not resolved
 `,
   },
   {
-    testName: 'complete-trash',
+    testName: "complete-trash",
     sourceCode: `This is a bad source.`,
   },
   {
-    testName: 'forty-two',
+    testName: "forty-two",
     sourceCode: `
 class Main {
   function main(): int = 42
@@ -124,7 +124,7 @@ class Main {
 `,
   },
   {
-    testName: 'hello-world',
+    testName: "hello-world",
     sourceCode: `
 class Main {
   function main(): string = "Hello World!"
@@ -132,7 +132,7 @@ class Main {
 `,
   },
   {
-    testName: 'illegal-binary-operations',
+    testName: "illegal-binary-operations",
     sourceCode: `
 class Box<T>(val value: T) {
   function <T> empty(): Box<T> = Box.init(Builtins.panic<T>("PANIC"))
@@ -164,7 +164,7 @@ class Main {
 `,
   },
   {
-    testName: 'illegal-private-field-access',
+    testName: "illegal-private-field-access",
     sourceCode: `
 class Fields(val a: int, private val b: bool) {
   function get(): Fields = {
@@ -187,7 +187,7 @@ class Main {
 `,
   },
   {
-    testName: 'illegal-shadow',
+    testName: "illegal-shadow",
     sourceCode: `
 class A {}
 class A {}
@@ -215,7 +215,7 @@ class Main {
 `,
   },
   {
-    testName: 'illegal-this',
+    testName: "illegal-this",
     sourceCode: `
 
 class Main {
@@ -226,7 +226,7 @@ class Main {
 `,
   },
   {
-    testName: 'insufficient-type-info',
+    testName: "insufficient-type-info",
     sourceCode: `
 class NotEnoughTypeInfo {
   function <T> randomFunction(): T = Builtins.panic("I can be any type!")
@@ -240,7 +240,7 @@ class Main {
 `,
   },
   {
-    testName: 'insufficient-type-info-none',
+    testName: "insufficient-type-info-none",
     sourceCode: `
 class Option<T>(Some(T), None(bool)) {
   function <T> none(): Option<T> = Option.None(true)
@@ -254,7 +254,7 @@ class Main {
 `,
   },
   {
-    testName: 'invalid-property-declaration-syntax',
+    testName: "invalid-property-declaration-syntax",
     sourceCode: `
 class Main(a: int, val b: int) {
   function main(): int = 42
@@ -262,7 +262,7 @@ class Main(a: int, val b: int) {
 `,
   },
   {
-    testName: 'lots-of-fields-and-methods',
+    testName: "lots-of-fields-and-methods",
     sourceCode: `
 class SamObject<T>(val sam: T, val good: bool, val linesOfCode: int) {
   function <T> create(sam: T): SamObject<T> = SamObject.init(sam, true, 100000)
@@ -283,7 +283,7 @@ class Main {
 `,
   },
   {
-    testName: 'min-int',
+    testName: "min-int",
     sourceCode: `
 class Main {
   function main(): int = -2147483648
@@ -291,7 +291,7 @@ class Main {
 `,
   },
   {
-    testName: 'multiple-type-errors',
+    testName: "multiple-type-errors",
     sourceCode: `
 class Main {
   function main(): int = 233333 + "foo" + "bar" + 42
@@ -299,7 +299,7 @@ class Main {
 `,
   },
   {
-    testName: 'overengineered-helloworld',
+    testName: "overengineered-helloworld",
     sourceCode: `
 class HelloWorld(val message: string) {
   private method getMessage(): string = {
@@ -319,7 +319,7 @@ class Main {
 `,
   },
   {
-    testName: 'overengineered-helloworld-2',
+    testName: "overengineered-helloworld-2",
     sourceCode: `
 class NewYear2019<T>(val message: T) {
   function create(): NewYear2019<string> = NewYear2019.init("Hello World!")
@@ -334,7 +334,7 @@ class Main {
 `,
   },
   {
-    testName: 'overflow-int',
+    testName: "overflow-int",
     sourceCode: `
 class Main {
   function main(): int = 999999999999999999999999999999
@@ -342,7 +342,7 @@ class Main {
 `,
   },
   {
-    testName: 'pipe',
+    testName: "pipe",
     sourceCode: `
 class Main {
   function <A, B, C> pipe(a: A, f1: (A)->B, f2: (B)->C): C = f2(f1(a))
@@ -354,7 +354,7 @@ class Main {
 `,
   },
   {
-    testName: 'polymorphic-option',
+    testName: "polymorphic-option",
     sourceCode: `
 class Option<T>(Some(T), None(bool)) {
   function <T> none(): Option<T> = Option.None(true)
@@ -376,7 +376,7 @@ class Main {
 `,
   },
   {
-    testName: 'sam-in-samlang-list',
+    testName: "sam-in-samlang-list",
     sourceCode: `
 class Pair<A, B>(val a: A, val b: B) {}
 class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
@@ -401,7 +401,7 @@ class Main {
 `,
   },
   {
-    testName: 'simple-mismatch',
+    testName: "simple-mismatch",
     sourceCode: `
 class Main {
   // should be type bool!
@@ -410,7 +410,7 @@ class Main {
 `,
   },
   {
-    testName: 'simple-type-inference-annotated',
+    testName: "simple-type-inference-annotated",
     sourceCode: `
 /**
  * From Cornell CS4110's Type Checking Lecture.
@@ -424,7 +424,7 @@ class Main {
 `,
   },
   {
-    testName: 'undefined-type',
+    testName: "undefined-type",
     sourceCode: `
 class Main {
   function main(): HelloWorld = 1
@@ -432,7 +432,7 @@ class Main {
 `,
   },
   {
-    testName: 'undefined-variable',
+    testName: "undefined-variable",
     sourceCode: `
 class Main {
   function main(): string = helloWorld
@@ -449,8 +449,8 @@ export type WellTypedSamlangProgramTestCase = {
 
 export const runnableSamlangProgramTestCases: readonly WellTypedSamlangProgramTestCase[] = [
   {
-    testCaseName: 'AndOrInsideIf',
-    expectedStandardOut: 'one\n',
+    testCaseName: "AndOrInsideIf",
+    expectedStandardOut: "one\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -474,8 +474,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'BlockInIfElse',
-    expectedStandardOut: '',
+    testCaseName: "BlockInIfElse",
+    expectedStandardOut: "",
     sourceCode: `
 class Main {
   function main(): unit =
@@ -506,8 +506,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'Builtins',
-    expectedStandardOut: '42!\n',
+    testCaseName: "Builtins",
+    expectedStandardOut: "42!\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -518,8 +518,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CFTest1',
-    expectedStandardOut: '1205\n',
+    testCaseName: "CFTest1",
+    expectedStandardOut: "1205\n",
     sourceCode: `
 class Main {
   function main(): unit = Builtins.println(Builtins.intToString(
@@ -529,8 +529,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CFTest2',
-    expectedStandardOut: '37\n',
+    testCaseName: "CFTest2",
+    expectedStandardOut: "37\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -544,8 +544,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CFTest3',
-    expectedStandardOut: '7\n',
+    testCaseName: "CFTest3",
+    expectedStandardOut: "7\n",
     sourceCode: `
 class Main {
   function main(): unit = Builtins.println(Builtins.intToString(1 + 2 * 3 - 4 / 5 % 10000000 / 1234))
@@ -553,8 +553,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'ConcatString',
-    expectedStandardOut: 'Hello World!\n',
+    testCaseName: "ConcatString",
+    expectedStandardOut: "Hello World!\n",
     sourceCode: `
 class Main {
   function main(): unit = Builtins.println("Hello "::"World!")
@@ -562,8 +562,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CorrectOp',
-    expectedStandardOut: 'OK\n',
+    testCaseName: "CorrectOp",
+    expectedStandardOut: "OK\n",
     sourceCode: `
 class Main {
   function crash(a: string, b: string): unit = {
@@ -639,8 +639,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CreateVariants',
-    expectedStandardOut: 'hello\n',
+    testCaseName: "CreateVariants",
+    expectedStandardOut: "hello\n",
     sourceCode: `
 class Pair<A, B>(val a: A, val b: B) {}
 
@@ -650,8 +650,8 @@ class Main { function main(): unit = { val _: List = List.of(1); Builtins.printl
 `,
   },
   {
-    testCaseName: 'CSETest1',
-    expectedStandardOut: '30\n12\n15\n',
+    testCaseName: "CSETest1",
+    expectedStandardOut: "30\n12\n15\n",
     sourceCode: `
 class Main {
   function printInt(i: int): unit = Builtins.println(Builtins.intToString(i))
@@ -667,8 +667,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CSETest2',
-    expectedStandardOut: 'OK\n',
+    testCaseName: "CSETest2",
+    expectedStandardOut: "OK\n",
     sourceCode: `
 class Main {
   function printInt(i: int): unit = Builtins.println(Builtins.intToString(i))
@@ -692,8 +692,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CSETest3',
-    expectedStandardOut: '2181\n',
+    testCaseName: "CSETest3",
+    expectedStandardOut: "2181\n",
     sourceCode: `
 class Main {
   function log(x: int, b: int): int =
@@ -723,8 +723,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CSETest4',
-    expectedStandardOut: '141\n',
+    testCaseName: "CSETest4",
+    expectedStandardOut: "141\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -736,8 +736,8 @@ class Main {
 }`,
   },
   {
-    testCaseName: 'CSETest5',
-    expectedStandardOut: '2\n',
+    testCaseName: "CSETest5",
+    expectedStandardOut: "2\n",
     sourceCode: `
 class Main {
   function test(totalOddNumbers: int, i: int): int = {
@@ -759,8 +759,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'CSETest6',
-    expectedStandardOut: 'OK\n',
+    testCaseName: "CSETest6",
+    expectedStandardOut: "OK\n",
     sourceCode: `
 class Main {
   function printInt(i: int): unit = Builtins.println(Builtins.intToString(i))
@@ -786,8 +786,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'DifferentClassesDemo',
-    expectedStandardOut: 'OK\n',
+    testCaseName: "DifferentClassesDemo",
+    expectedStandardOut: "OK\n",
     sourceCode: `
 class Math {
   function plus(a: int, b: int): int = a + b
@@ -879,8 +879,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'DifferentExpressionsDemo',
-    expectedStandardOut: '42\n',
+    testCaseName: "DifferentExpressionsDemo",
+    expectedStandardOut: "42\n",
     sourceCode: `
 class Foo(val a: int) {
   function bar(): int = 3
@@ -942,8 +942,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'Empty',
-    expectedStandardOut: '',
+    testCaseName: "Empty",
+    expectedStandardOut: "",
     sourceCode: `
 class Main {
   function main(): unit = {}
@@ -951,7 +951,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'EvaluationOrder',
+    testCaseName: "EvaluationOrder",
     expectedStandardOut: `0
 1
 2
@@ -1022,8 +1022,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'FunctionCallNeverIgnored',
-    expectedStandardOut: 'hi\n',
+    testCaseName: "FunctionCallNeverIgnored",
+    expectedStandardOut: "hi\n",
     sourceCode: `
 class Main {
   function hi(): int = {
@@ -1038,8 +1038,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'GenericObjectTest',
-    expectedStandardOut: '2\n42\n',
+    testCaseName: "GenericObjectTest",
+    expectedStandardOut: "2\n42\n",
     sourceCode: `
 class GenericObject<T1, T2>(val v1: T1, val v2: T2) {
   function main(): unit = {
@@ -1060,8 +1060,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'IfElseConsistency',
-    expectedStandardOut: '3\n3\nOK\n',
+    testCaseName: "IfElseConsistency",
+    expectedStandardOut: "3\n3\nOK\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -1079,8 +1079,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'IfElseUnreachable1',
-    expectedStandardOut: 'success\n',
+    testCaseName: "IfElseUnreachable1",
+    expectedStandardOut: "success\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -1099,8 +1099,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'IfElseUnreachable2',
-    expectedStandardOut: 'success\n',
+    testCaseName: "IfElseUnreachable2",
+    expectedStandardOut: "success\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -1119,8 +1119,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'LoopOptimization',
-    expectedStandardOut: '100\n106\n112\n118\n124\n',
+    testCaseName: "LoopOptimization",
+    expectedStandardOut: "100\n106\n112\n118\n124\n",
     sourceCode: `
 class Main {
   function printInt(n: int): unit = Builtins.println(Builtins.intToString(n))
@@ -1140,8 +1140,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'MapButIgnore',
-    expectedStandardOut: '',
+    testCaseName: "MapButIgnore",
+    expectedStandardOut: "",
     sourceCode: `
 class Option<T>(None(unit), Some(T)) {
   method <R> mapButIgnore(f: (T) -> R): unit = {
@@ -1164,8 +1164,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'MathFunctions',
-    expectedStandardOut: '24\n55\n',
+    testCaseName: "MathFunctions",
+    expectedStandardOut: "24\n55\n",
     sourceCode: `
 class Main {
   function factorial(n: int): int =
@@ -1185,8 +1185,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'MutuallyRecursive',
-    expectedStandardOut: 'OK\n',
+    testCaseName: "MutuallyRecursive",
+    expectedStandardOut: "OK\n",
     sourceCode: `
 class Main {
   function isEven(n: int): bool = if n == 0 then true else Main.isOdd(n-1)
@@ -1198,8 +1198,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'OptionalSemicolon',
-    expectedStandardOut: '-7\n',
+    testCaseName: "OptionalSemicolon",
+    expectedStandardOut: "-7\n",
     sourceCode: `
 class Main(val a: int, val b: bool) {
   function main(): unit = {
@@ -1217,7 +1217,7 @@ class Main(val a: int, val b: bool) {
 `,
   },
   {
-    testCaseName: 'ShortCircuitAndOr',
+    testCaseName: "ShortCircuitAndOr",
     expectedStandardOut: `0
 1
 false
@@ -1314,8 +1314,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'SortableList',
-    expectedStandardOut: '1\n2\n3\n4\n',
+    testCaseName: "SortableList",
+    expectedStandardOut: "1\n2\n3\n4\n",
     sourceCode: `
 class Pair<A, B>(val a: A, val b: B)
 
@@ -1390,8 +1390,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'StringGlobalConstant',
-    expectedStandardOut: 'OK\n',
+    testCaseName: "StringGlobalConstant",
+    expectedStandardOut: "OK\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -1407,8 +1407,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'TooMuchInterference',
-    expectedStandardOut: '0\n',
+    testCaseName: "TooMuchInterference",
+    expectedStandardOut: "0\n",
     sourceCode: `
 class Main {
   function main(): unit = {
@@ -1476,8 +1476,8 @@ class Main {
 `,
   },
   {
-    testCaseName: 'VariousSyntaxForms',
-    expectedStandardOut: '84\n',
+    testCaseName: "VariousSyntaxForms",
+    expectedStandardOut: "84\n",
     sourceCode: `
 class Clazz(val t: int) {
     function of(): Clazz = Clazz.init(42)

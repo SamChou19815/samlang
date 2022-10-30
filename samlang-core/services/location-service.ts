@@ -6,14 +6,14 @@ import {
   moduleReferenceToString,
   Position,
   SourceReason,
-} from '../ast/common-nodes';
+} from "../ast/common-nodes";
 import {
   SamlangExpression,
   SamlangModule,
   SourceExpressionVariable,
   SourceIdentifierType,
-} from '../ast/samlang-nodes';
-import type { HashMap } from '../utils';
+} from "../ast/samlang-nodes";
+import type { HashMap } from "../utils";
 
 export interface ReadOnlyLocationLookup<E> {
   get(moduleReference: ModuleReference, position: Position): E | null;
@@ -106,12 +106,12 @@ export class SamlangExpressionLocationLookupBuilder {
 
   private buildRecursively(expression: SamlangExpression) {
     switch (expression.__type__) {
-      case 'LiteralExpression':
-      case 'VariableExpression':
-      case 'ThisExpression':
+      case "LiteralExpression":
+      case "VariableExpression":
+      case "ThisExpression":
         this.buildSingleExpression(expression);
         return;
-      case 'ClassMemberExpression': {
+      case "ClassMemberExpression": {
         const {
           moduleReference: modRef,
           className: { name: className, location: classNameLocation },
@@ -130,45 +130,45 @@ export class SamlangExpressionLocationLookupBuilder {
         this.buildSingleExpression(expression);
         return;
       }
-      case 'FieldAccessExpression':
-      case 'MethodAccessExpression':
-      case 'UnaryExpression':
+      case "FieldAccessExpression":
+      case "MethodAccessExpression":
+      case "UnaryExpression":
         this.buildRecursively(expression.expression);
         this.buildSingleExpression(expression);
         return;
-      case 'FunctionCallExpression':
+      case "FunctionCallExpression":
         this.buildRecursively(expression.functionExpression);
         expression.functionArguments.forEach((it) => this.buildRecursively(it));
         this.buildSingleExpression(expression);
         return;
-      case 'BinaryExpression':
+      case "BinaryExpression":
         this.buildRecursively(expression.e1);
         this.buildRecursively(expression.e2);
         this.buildSingleExpression(expression);
         return;
-      case 'IfElseExpression':
+      case "IfElseExpression":
         this.buildRecursively(expression.boolExpression);
         this.buildRecursively(expression.e1);
         this.buildRecursively(expression.e2);
         this.buildSingleExpression(expression);
         return;
-      case 'MatchExpression':
+      case "MatchExpression":
         this.buildRecursively(expression.matchedExpression);
         expression.matchingList.forEach((it) => this.buildRecursively(it.expression));
         this.buildSingleExpression(expression);
         return;
-      case 'LambdaExpression':
+      case "LambdaExpression":
         this.buildRecursively(expression.body);
         this.buildSingleExpression(expression);
         return;
-      case 'StatementBlockExpression':
+      case "StatementBlockExpression":
         expression.block.statements.forEach(({ assignedExpression, pattern }) => {
           this.buildRecursively(assignedExpression);
           const assignedExpressionType = assignedExpression.type;
           switch (pattern.type) {
-            case 'ObjectPattern':
+            case "ObjectPattern":
               return;
-            case 'VariablePattern':
+            case "VariablePattern":
               this.buildSingleExpression(
                 SourceExpressionVariable({
                   location: pattern.location,
@@ -177,11 +177,11 @@ export class SamlangExpressionLocationLookupBuilder {
                 }),
               );
               return;
-            case 'WildCardPattern':
+            case "WildCardPattern":
               this.buildSingleExpression(
                 SourceExpressionVariable({
                   location: pattern.location,
-                  name: '_',
+                  name: "_",
                   type: assignedExpressionType,
                 }),
               );

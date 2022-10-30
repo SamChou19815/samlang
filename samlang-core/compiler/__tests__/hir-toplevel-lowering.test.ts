@@ -1,6 +1,6 @@
-import { Location, ModuleReference, ModuleReferenceCollections } from '../../ast/common-nodes';
-import { EQ, MINUS, MUL } from '../../ast/common-operators';
-import { debugPrintHighIRSources } from '../../ast/hir-nodes';
+import { Location, ModuleReference, ModuleReferenceCollections } from "../../ast/common-nodes";
+import { EQ, MINUS, MUL } from "../../ast/common-operators";
+import { debugPrintHighIRSources } from "../../ast/hir-nodes";
 import {
   AstBuilder,
   SamlangModule,
@@ -12,28 +12,28 @@ import {
   SourceExpressionThis,
   SourceExpressionVariable,
   SourceId,
-} from '../../ast/samlang-nodes';
+} from "../../ast/samlang-nodes";
 import compileSamlangSourcesToHighIRSources, {
   compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,
-} from '../hir-toplevel-lowering';
+} from "../hir-toplevel-lowering";
 
 const THIS = SourceExpressionThis({
-  type: AstBuilder.IdType('Dummy'),
+  type: AstBuilder.IdType("Dummy"),
 });
 
-describe('mir-toplevel-lowering', () => {
-  it('compileSamlangSourcesToHighIRSourcesWithGenericsPreserved integration test', () => {
+describe("mir-toplevel-lowering", () => {
+  it("compileSamlangSourcesToHighIRSourcesWithGenericsPreserved integration test", () => {
     const sourceModule: SamlangModule = {
       imports: [],
       classes: [
         {
           location: Location.DUMMY,
           associatedComments: [],
-          name: SourceId('Main'),
+          name: SourceId("Main"),
           typeParameters: [],
           typeDefinition: {
             location: Location.DUMMY,
-            type: 'object',
+            type: "object",
             names: [],
             mappings: new Map(),
           },
@@ -44,7 +44,7 @@ describe('mir-toplevel-lowering', () => {
               location: Location.DUMMY,
               isPublic: true,
               isMethod: false,
-              name: SourceId('main'),
+              name: SourceId("main"),
               typeParameters: [],
               parameters: [],
               type: AstBuilder.FunType([], AstBuilder.UnitType),
@@ -54,8 +54,8 @@ describe('mir-toplevel-lowering', () => {
                   type: AstBuilder.FunType([], AstBuilder.IntType),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
-                  className: SourceId('Class1'),
-                  memberName: SourceId('infiniteLoop'),
+                  className: SourceId("Class1"),
+                  memberName: SourceId("infiniteLoop"),
                 }),
                 functionArguments: [],
               }),
@@ -65,10 +65,10 @@ describe('mir-toplevel-lowering', () => {
               location: Location.DUMMY,
               isPublic: true,
               isMethod: false,
-              name: SourceId('loopy'),
+              name: SourceId("loopy"),
               typeParameters: [
                 {
-                  name: SourceId('T'),
+                  name: SourceId("T"),
                   bound: null,
                   associatedComments: [],
                   location: Location.DUMMY,
@@ -82,8 +82,8 @@ describe('mir-toplevel-lowering', () => {
                   type: AstBuilder.FunType([], AstBuilder.IntType),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
-                  className: SourceId('T'),
-                  memberName: SourceId('loopy'),
+                  className: SourceId("T"),
+                  memberName: SourceId("loopy"),
                 }),
                 functionArguments: [],
               }),
@@ -93,13 +93,13 @@ describe('mir-toplevel-lowering', () => {
         {
           location: Location.DUMMY,
           associatedComments: [],
-          name: SourceId('Class1'),
+          name: SourceId("Class1"),
           typeParameters: [],
           typeDefinition: {
             location: Location.DUMMY,
-            type: 'object',
-            names: [SourceId('a')],
-            mappings: new Map([['a', { isPublic: true, type: AstBuilder.IntType }]]),
+            type: "object",
+            names: [SourceId("a")],
+            mappings: new Map([["a", { isPublic: true, type: AstBuilder.IntType }]]),
           },
           extendsOrImplementsNodes: [],
           members: [
@@ -108,11 +108,11 @@ describe('mir-toplevel-lowering', () => {
               location: Location.DUMMY,
               isPublic: true,
               isMethod: true,
-              name: SourceId('foo'),
+              name: SourceId("foo"),
               typeParameters: [],
               parameters: [
                 {
-                  name: 'a',
+                  name: "a",
                   nameLocation: Location.DUMMY,
                   type: AstBuilder.IntType,
                   typeLocation: Location.DUMMY,
@@ -126,7 +126,7 @@ describe('mir-toplevel-lowering', () => {
               location: Location.DUMMY,
               isPublic: true,
               isMethod: false,
-              name: SourceId('infiniteLoop'),
+              name: SourceId("infiniteLoop"),
               typeParameters: [],
               parameters: [],
               type: AstBuilder.FunType([], AstBuilder.UnitType),
@@ -136,8 +136,8 @@ describe('mir-toplevel-lowering', () => {
                   type: AstBuilder.FunType([], AstBuilder.IntType),
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
-                  className: SourceId('Class1'),
-                  memberName: SourceId('infiniteLoop'),
+                  className: SourceId("Class1"),
+                  memberName: SourceId("infiniteLoop"),
                 }),
                 functionArguments: [],
               }),
@@ -147,17 +147,17 @@ describe('mir-toplevel-lowering', () => {
               location: Location.DUMMY,
               isPublic: true,
               isMethod: false,
-              name: SourceId('factorial'),
+              name: SourceId("factorial"),
               typeParameters: [],
               parameters: [
                 {
-                  name: 'n',
+                  name: "n",
                   nameLocation: Location.DUMMY,
                   type: AstBuilder.IntType,
                   typeLocation: Location.DUMMY,
                 },
                 {
-                  name: 'acc',
+                  name: "acc",
                   nameLocation: Location.DUMMY,
                   type: AstBuilder.IntType,
                   typeLocation: Location.DUMMY,
@@ -175,7 +175,7 @@ describe('mir-toplevel-lowering', () => {
                   operator: EQ,
                   e1: SourceExpressionVariable({
                     type: AstBuilder.IntType,
-                    name: 'n',
+                    name: "n",
                   }),
                   e2: SourceExpressionInt(0),
                 }),
@@ -189,8 +189,8 @@ describe('mir-toplevel-lowering', () => {
                     ),
                     typeArguments: [],
                     moduleReference: ModuleReference.DUMMY,
-                    className: SourceId('Class1'),
-                    memberName: SourceId('factorial'),
+                    className: SourceId("Class1"),
+                    memberName: SourceId("factorial"),
                   }),
                   functionArguments: [
                     SourceExpressionBinary({
@@ -199,7 +199,7 @@ describe('mir-toplevel-lowering', () => {
                       operator: MINUS,
                       e1: SourceExpressionVariable({
                         type: AstBuilder.IntType,
-                        name: 'n',
+                        name: "n",
                       }),
                       e2: SourceExpressionInt(1),
                     }),
@@ -209,11 +209,11 @@ describe('mir-toplevel-lowering', () => {
                       operator: MUL,
                       e1: SourceExpressionVariable({
                         type: AstBuilder.IntType,
-                        name: 'n',
+                        name: "n",
                       }),
                       e2: SourceExpressionVariable({
                         type: AstBuilder.IntType,
-                        name: 'acc',
+                        name: "acc",
                       }),
                     }),
                   ],
@@ -225,11 +225,11 @@ describe('mir-toplevel-lowering', () => {
         {
           location: Location.DUMMY,
           associatedComments: [],
-          name: SourceId('Class2'),
+          name: SourceId("Class2"),
           typeParameters: [],
           typeDefinition: {
             location: Location.DUMMY,
-            type: 'variant',
+            type: "variant",
             names: [],
             mappings: new Map(),
           },
@@ -239,21 +239,21 @@ describe('mir-toplevel-lowering', () => {
         {
           location: Location.DUMMY,
           associatedComments: [],
-          name: SourceId('Class3'),
+          name: SourceId("Class3"),
           typeParameters: [
-            { name: SourceId('T'), bound: null, associatedComments: [], location: Location.DUMMY },
+            { name: SourceId("T"), bound: null, associatedComments: [], location: Location.DUMMY },
           ],
           typeDefinition: {
             location: Location.DUMMY,
-            type: 'object',
-            names: [SourceId('a')],
+            type: "object",
+            names: [SourceId("a")],
             mappings: new Map([
               [
-                'a',
+                "a",
                 {
                   isPublic: true,
                   type: AstBuilder.FunType(
-                    [AstBuilder.IdType('A', [AstBuilder.IntType]), AstBuilder.IdType('T')],
+                    [AstBuilder.IdType("A", [AstBuilder.IntType]), AstBuilder.IdType("T")],
                     AstBuilder.IntType,
                   ),
                 },
@@ -269,7 +269,7 @@ describe('mir-toplevel-lowering', () => {
 
     const sources = ModuleReferenceCollections.mapOf(
       [ModuleReference.DUMMY, sourceModule],
-      [ModuleReference(['Foo']), { imports: [], classes: [], interfaces: [] }],
+      [ModuleReference(["Foo"]), { imports: [], classes: [], interfaces: [] }],
     );
 
     expect(

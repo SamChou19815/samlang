@@ -2,7 +2,7 @@
 // @origin https://github.com/SamChou19815/samlang/pull/32
 // @origin https://github.com/SamChou19815/samlang/pull/34
 
-import { DummySourceReason, Location, ModuleReference, Position } from '../../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference, Position } from "../../ast/common-nodes";
 import {
   AND,
   CONCAT,
@@ -18,7 +18,7 @@ import {
   NE,
   OR,
   PLUS,
-} from '../../ast/common-operators';
+} from "../../ast/common-operators";
 import {
   AstBuilder,
   ObjectPattern,
@@ -45,8 +45,8 @@ import {
   VariablePattern,
   VariantPatternToExpression,
   WildCardPattern,
-} from '../../ast/samlang-nodes';
-import { checkNotNull } from '../../utils';
+} from "../../ast/samlang-nodes";
+import { checkNotNull } from "../../utils";
 import ExpressionInterpreter, {
   ClassValue,
   createDefaultInterpretationContext,
@@ -55,123 +55,123 @@ import ExpressionInterpreter, {
   InterpretationContext,
   PanicException,
   Value,
-} from '../expression-interpreter';
+} from "../expression-interpreter";
 
-describe('expression-interpreter', () => {
-  it('Throws Panic Exception', () => {
+describe("expression-interpreter", () => {
+  it("Throws Panic Exception", () => {
     try {
-      throw new PanicException('panic!');
+      throw new PanicException("panic!");
     } catch (e) {
-      expect((e as PanicException).message).toBe('panic!');
+      expect((e as PanicException).message).toBe("panic!");
     }
   });
 
-  it('value equality test', () => {
-    expect({ type: 'unit' }).toEqual({ type: 'unit' });
-    expect({ type: 'unit' }).not.toEqual({ type: 'bool', value: true });
-    expect({ type: 'unit' }).not.toEqual({ type: 'int', value: 1 });
-    expect({ type: 'unit' }).not.toEqual({ type: 'string', value: 'string' });
-    expect({ type: 'unit' }).not.toEqual({ type: 'object', objectContent: new Map() });
-    expect({ type: 'unit' }).not.toEqual({ type: 'variant', tag: 'tag', data: { type: 'unit' } });
+  it("value equality test", () => {
+    expect({ type: "unit" }).toEqual({ type: "unit" });
+    expect({ type: "unit" }).not.toEqual({ type: "bool", value: true });
+    expect({ type: "unit" }).not.toEqual({ type: "int", value: 1 });
+    expect({ type: "unit" }).not.toEqual({ type: "string", value: "string" });
+    expect({ type: "unit" }).not.toEqual({ type: "object", objectContent: new Map() });
+    expect({ type: "unit" }).not.toEqual({ type: "variant", tag: "tag", data: { type: "unit" } });
 
-    expect({ type: 'bool', value: true }).toEqual({ type: 'bool', value: true });
-    expect({ type: 'bool', value: false }).toEqual({ type: 'bool', value: false });
-    expect({ type: 'bool', value: true }).not.toEqual({ type: 'bool', value: false });
-    expect({ type: 'bool', value: false }).not.toEqual({ type: 'bool', value: true });
+    expect({ type: "bool", value: true }).toEqual({ type: "bool", value: true });
+    expect({ type: "bool", value: false }).toEqual({ type: "bool", value: false });
+    expect({ type: "bool", value: true }).not.toEqual({ type: "bool", value: false });
+    expect({ type: "bool", value: false }).not.toEqual({ type: "bool", value: true });
 
-    expect({ type: 'int', value: 1 }).toEqual({ type: 'int', value: 1 });
-    expect({ type: 'int', value: 1 }).not.toEqual({ type: 'int', value: 2 });
+    expect({ type: "int", value: 1 }).toEqual({ type: "int", value: 1 });
+    expect({ type: "int", value: 1 }).not.toEqual({ type: "int", value: 2 });
 
-    expect({ type: 'string', value: 'string' }).toEqual({ type: 'string', value: 'string' });
-    expect({ type: 'string', value: 'string' }).not.toEqual({
-      type: 'string',
-      value: 'not a string',
+    expect({ type: "string", value: "string" }).toEqual({ type: "string", value: "string" });
+    expect({ type: "string", value: "string" }).not.toEqual({
+      type: "string",
+      value: "not a string",
     });
 
-    expect({ type: 'string', value: 'string' }).toEqual({ type: 'string', value: 'string' });
-    expect({ type: 'string', value: 'string' }).not.toEqual({
-      type: 'string',
-      value: 'not a string',
+    expect({ type: "string", value: "string" }).toEqual({ type: "string", value: "string" });
+    expect({ type: "string", value: "string" }).not.toEqual({
+      type: "string",
+      value: "not a string",
     });
 
-    expect({ type: 'object', objectContent: new Map() }).toEqual({
-      type: 'object',
+    expect({ type: "object", objectContent: new Map() }).toEqual({
+      type: "object",
       objectContent: new Map(),
     });
     const objectContent1 = new Map<string, Value>();
-    objectContent1.set('field1', { type: 'unit' });
+    objectContent1.set("field1", { type: "unit" });
     const objectContent2 = new Map<string, Value>();
-    objectContent2.set('field1', 1);
-    expect({ type: 'object', objectContent: objectContent1 }).not.toEqual({
-      type: 'object',
+    objectContent2.set("field1", 1);
+    expect({ type: "object", objectContent: objectContent1 }).not.toEqual({
+      type: "object",
       objectContent: objectContent2,
     });
-    objectContent2.set('field2', { type: 'unit' });
-    expect({ type: 'object', objectContent: objectContent1 }).not.toEqual({
-      type: 'object',
+    objectContent2.set("field2", { type: "unit" });
+    expect({ type: "object", objectContent: objectContent1 }).not.toEqual({
+      type: "object",
       objectContent: objectContent2,
     });
 
-    expect({ type: 'variant', tag: 'tag', data: { type: 'unit' } }).toEqual({
-      type: 'variant',
-      tag: 'tag',
-      data: { type: 'unit' },
+    expect({ type: "variant", tag: "tag", data: { type: "unit" } }).toEqual({
+      type: "variant",
+      tag: "tag",
+      data: { type: "unit" },
     });
-    expect({ type: 'variant', tag: 'tag', data: { type: 'unit' } }).not.toEqual({
-      type: 'variant',
-      tag: 'diff tag',
-      data: { type: 'unit' },
+    expect({ type: "variant", tag: "tag", data: { type: "unit" } }).not.toEqual({
+      type: "variant",
+      tag: "diff tag",
+      data: { type: "unit" },
     });
-    expect({ type: 'variant', tag: 'tag', data: { type: 'unit' } }).not.toEqual({
-      type: 'variant',
-      tag: 'diff tag',
-      data: { type: 'int', value: 1 },
+    expect({ type: "variant", tag: "tag", data: { type: "unit" } }).not.toEqual({
+      type: "variant",
+      tag: "diff tag",
+      data: { type: "int", value: 1 },
     });
 
     const samlangExpression = AstBuilder.TRUE;
     expect({
-      type: 'functionValue',
+      type: "functionValue",
       arguments: [],
       body: samlangExpression,
       context: { classes: new Map(), localValues: new Map() },
     }).toEqual({
-      type: 'functionValue',
+      type: "functionValue",
       arguments: [],
       body: samlangExpression,
       context: { classes: new Map(), localValues: new Map() },
     });
     expect({
-      type: 'functionValue',
-      arguments: ['param'],
+      type: "functionValue",
+      arguments: ["param"],
       body: samlangExpression,
       context: { classes: new Map(), localValues: new Map() },
     }).not.toEqual({
-      type: 'functionValue',
+      type: "functionValue",
       arguments: [],
       body: samlangExpression,
       context: { classes: new Map(), localValues: new Map() },
     });
   });
 
-  it('empty context equality check', () => {
+  it("empty context equality check", () => {
     expect(EMPTY).toEqual(EMPTY);
   });
 
-  it('non-empty context equality check', () => {
+  it("non-empty context equality check", () => {
     const testFunctions = new Map<string, FunctionValue>();
     const testMethods = new Map<string, FunctionValue>();
     const samlangExpression = AstBuilder.TRUE;
     const functionValue: FunctionValue = {
-      type: 'functionValue',
+      type: "functionValue",
       arguments: [],
       body: samlangExpression,
       context: EMPTY,
     };
-    testFunctions.set('function1', functionValue);
-    testMethods.set('method1', functionValue);
+    testFunctions.set("function1", functionValue);
+    testMethods.set("method1", functionValue);
     const testClassValue = { functions: testFunctions, methods: testMethods };
-    const testClasses = new Map([['class1', testClassValue]]);
-    const testLocalValues = new Map<string, Value>([['v1', { type: 'unit' }]]);
+    const testClasses = new Map([["class1", testClassValue]]);
+    const testLocalValues = new Map<string, Value>([["v1", { type: "unit" }]]);
     const testContext = { classes: testClasses, localValues: testLocalValues };
 
     expect(testContext).toEqual(testContext);
@@ -186,18 +186,18 @@ describe('expression-interpreter', () => {
   );
   const intLiteralExpression: SamlangExpression = SourceExpressionInt(5, exampleLocation);
   const intLiteralValue: Value = 5;
-  const stringLiteralExpression: SamlangExpression = SourceExpressionString('value');
-  const stringLiteralValue: Value = 'value';
+  const stringLiteralExpression: SamlangExpression = SourceExpressionString("value");
+  const stringLiteralValue: Value = "value";
   const boolLiteralExpression = AstBuilder.TRUE;
   const boolLiteralValue: Value = true;
   const classMemberFunction: Value = {
-    type: 'functionValue',
+    type: "functionValue",
     arguments: [],
     body: SourceExpressionInt(5, exampleLocation),
     context: EMPTY,
   };
   const functionType: SamlangFunctionType = {
-    __type__: 'FunctionType',
+    __type__: "FunctionType",
     reason: DummySourceReason,
     argumentTypes: [AstBuilder.UnitType],
     returnType: AstBuilder.StringType,
@@ -208,8 +208,8 @@ describe('expression-interpreter', () => {
       type: functionType,
       typeArguments: [],
       moduleReference: ModuleReference.DUMMY,
-      className: SourceId('Clazz'),
-      memberName: SourceId('init'),
+      className: SourceId("Clazz"),
+      memberName: SourceId("init"),
     }),
     functionArguments: [intLiteralExpression],
   });
@@ -221,30 +221,30 @@ describe('expression-interpreter', () => {
     body: stringLiteralExpression,
   });
 
-  it('literal expressions evaluate correctly', () => {
+  it("literal expressions evaluate correctly", () => {
     expect(interpreter.eval(intLiteralExpression)).toEqual(intLiteralValue);
     expect(interpreter.eval(stringLiteralExpression)).toEqual(stringLiteralValue);
     expect(interpreter.eval(boolLiteralExpression)).toEqual(boolLiteralValue);
   });
 
-  it('this expressions evaluate correctly', () => {
+  it("this expressions evaluate correctly", () => {
     const thisExpression = SourceExpressionThis({
       location: exampleLocation,
       type: AstBuilder.BoolType,
     });
-    const thisLocalValues = new Map<string, Value>([['this', true]]);
+    const thisLocalValues = new Map<string, Value>([["this", true]]);
     const thisContext = { classes: new Map<string, ClassValue>(), localValues: thisLocalValues };
     expect(interpreter.eval(thisExpression, thisContext)).toEqual(boolLiteralValue);
-    expect(() => interpreter.eval(thisExpression)).toThrow('Missing `this`');
+    expect(() => interpreter.eval(thisExpression)).toThrow("Missing `this`");
   });
 
-  it('variable expressions evaluate correctly', () => {
+  it("variable expressions evaluate correctly", () => {
     const variableExpression = SourceExpressionVariable({
       location: exampleLocation,
       type: AstBuilder.BoolType,
-      name: 'test',
+      name: "test",
     });
-    const variableLocalValues = new Map<string, Value>([['test', boolLiteralValue]]);
+    const variableLocalValues = new Map<string, Value>([["test", boolLiteralValue]]);
     const variableContext = {
       classes: new Map<string, ClassValue>(),
       localValues: variableLocalValues,
@@ -255,20 +255,20 @@ describe('expression-interpreter', () => {
     );
   });
 
-  it('class member expressions evaluate correctly', () => {
+  it("class member expressions evaluate correctly", () => {
     const classMemberExpression = SourceExpressionClassMember({
       location: exampleLocation,
       type: AstBuilder.BoolType,
       typeArguments: [AstBuilder.BoolType],
       moduleReference: ModuleReference.DUMMY,
-      className: SourceId('myClass'),
-      memberName: SourceId('func'),
+      className: SourceId("myClass"),
+      memberName: SourceId("func"),
     });
     const classMemberClasses = new Map<string, ClassValue>([
       [
-        'myClass',
+        "myClass",
         {
-          functions: new Map([['func', classMemberFunction]]),
+          functions: new Map([["func", classMemberFunction]]),
           methods: new Map(),
         },
       ],
@@ -277,38 +277,38 @@ describe('expression-interpreter', () => {
     expect(interpreter.eval(classMemberExpression, classMemberContext)).toEqual(
       classMemberFunction,
     );
-    expect(() => interpreter.eval(classMemberExpression)).toThrow('');
+    expect(() => interpreter.eval(classMemberExpression)).toThrow("");
   });
 
-  it('object constructor expression evaluates correctly', () => {
+  it("object constructor expression evaluates correctly", () => {
     const objectConstructorExpressionEmpty = SourceExpressionFunctionCall({
       type: AstBuilder.IntType,
       functionExpression: SourceExpressionClassMember({
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
-        className: SourceId('Clazz'),
-        memberName: SourceId('init'),
+        className: SourceId("Clazz"),
+        memberName: SourceId("init"),
       }),
       functionArguments: [intLiteralExpression],
     });
     const objectContentNonEmpty = new Map();
-    objectContentNonEmpty.set('test', intLiteralValue);
+    objectContentNonEmpty.set("test", intLiteralValue);
     const context: InterpretationContext = {
       classes: new Map([
         [
-          'Clazz',
+          "Clazz",
           {
             functions: new Map([
               [
-                'init',
+                "init",
                 {
-                  type: 'functionValue',
-                  arguments: ['test'],
+                  type: "functionValue",
+                  arguments: ["test"],
                   body: (localContext) => ({
-                    type: 'object',
+                    type: "object",
                     objectContent: new Map([
-                      ['test', checkNotNull(localContext.localValues.get('test'))],
+                      ["test", checkNotNull(localContext.localValues.get("test"))],
                     ]),
                   }),
                   context: EMPTY,
@@ -323,38 +323,38 @@ describe('expression-interpreter', () => {
     };
     expect(() => interpreter.eval(objectConstructorExpressionEmpty)).toThrow();
     expect(interpreter.eval(objectConstructorExpressionNonEmpty, context)).toEqual({
-      type: 'object',
+      type: "object",
       objectContent: objectContentNonEmpty,
     });
   });
 
-  it('variant expression evaluates correctly', () => {
+  it("variant expression evaluates correctly", () => {
     const variantExpression = SourceExpressionFunctionCall({
       type: AstBuilder.IntType,
       functionExpression: SourceExpressionClassMember({
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
-        className: SourceId('Clazz'),
-        memberName: SourceId('tag'),
+        className: SourceId("Clazz"),
+        memberName: SourceId("tag"),
       }),
       functionArguments: [intLiteralExpression],
     });
     const context: InterpretationContext = {
       classes: new Map([
         [
-          'Clazz',
+          "Clazz",
           {
             functions: new Map([
               [
-                'tag',
+                "tag",
                 {
-                  type: 'functionValue',
-                  arguments: ['data'],
+                  type: "functionValue",
+                  arguments: ["data"],
                   body: (localContext) => ({
-                    type: 'variant',
-                    tag: 'tag',
-                    data: checkNotNull(localContext.localValues.get('data')),
+                    type: "variant",
+                    tag: "tag",
+                    data: checkNotNull(localContext.localValues.get("data")),
                   }),
                   context: EMPTY,
                 },
@@ -367,19 +367,19 @@ describe('expression-interpreter', () => {
       localValues: new Map(),
     };
     expect(interpreter.eval(variantExpression, context)).toEqual({
-      type: 'variant',
-      tag: 'tag',
+      type: "variant",
+      tag: "tag",
       data: 5,
     });
   });
 
-  it('field access expression evaluates correctly', () => {
+  it("field access expression evaluates correctly", () => {
     const fieldAccessExpression = SourceExpressionFieldAccess({
       location: exampleLocation,
       type: AstBuilder.IntType,
       expression: objectConstructorExpressionNonEmpty,
       typeArguments: [],
-      fieldName: SourceId('test'),
+      fieldName: SourceId("test"),
       fieldOrder: 0,
     });
     const fieldAccessExpressionFail = SourceExpressionFieldAccess({
@@ -387,24 +387,24 @@ describe('expression-interpreter', () => {
       type: AstBuilder.IntType,
       expression: stringLiteralExpression,
       typeArguments: [],
-      fieldName: SourceId('test'),
+      fieldName: SourceId("test"),
       fieldOrder: 0,
     });
     const context: InterpretationContext = {
       classes: new Map([
         [
-          'Clazz',
+          "Clazz",
           {
             functions: new Map([
               [
-                'init',
+                "init",
                 {
-                  type: 'functionValue',
-                  arguments: ['test'],
+                  type: "functionValue",
+                  arguments: ["test"],
                   body: (localContext) => ({
-                    type: 'object',
+                    type: "object",
                     objectContent: new Map([
-                      ['test', checkNotNull(localContext.localValues.get('test'))],
+                      ["test", checkNotNull(localContext.localValues.get("test"))],
                     ]),
                   }),
                   context: EMPTY,
@@ -418,19 +418,19 @@ describe('expression-interpreter', () => {
       localValues: new Map(),
     };
     expect(interpreter.eval(fieldAccessExpression, context)).toEqual(intLiteralValue);
-    expect(() => interpreter.eval(fieldAccessExpressionFail, context)).toThrow('');
+    expect(() => interpreter.eval(fieldAccessExpressionFail, context)).toThrow("");
   });
 
-  it('method access expression evaluates correctly', () => {
-    const identifier = AstBuilder.IdType('method', []);
+  it("method access expression evaluates correctly", () => {
+    const identifier = AstBuilder.IdType("method", []);
     const identifierExpression = SourceExpressionFunctionCall({
       type: identifier,
       functionExpression: SourceExpressionClassMember({
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
-        className: SourceId('Clazz'),
-        memberName: SourceId('tag'),
+        className: SourceId("Clazz"),
+        memberName: SourceId("tag"),
       }),
       functionArguments: [intLiteralExpression],
     });
@@ -439,29 +439,29 @@ describe('expression-interpreter', () => {
       type: identifier,
       expression: identifierExpression,
       typeArguments: [],
-      methodName: SourceId('method'),
+      methodName: SourceId("method"),
     });
     const methodAccessClasses: Map<string, ClassValue> = new Map([
       [
-        'method',
+        "method",
         {
           functions: new Map(),
-          methods: new Map([['method', classMemberFunction]]),
+          methods: new Map([["method", classMemberFunction]]),
         },
       ],
       [
-        'Clazz',
+        "Clazz",
         {
           functions: new Map([
             [
-              'tag',
+              "tag",
               {
-                type: 'functionValue',
-                arguments: ['data'],
+                type: "functionValue",
+                arguments: ["data"],
                 body: (localContext) => ({
-                  type: 'variant',
-                  tag: 'tag',
-                  data: checkNotNull(localContext.localValues.get('data')),
+                  type: "variant",
+                  tag: "tag",
+                  data: checkNotNull(localContext.localValues.get("data")),
                 }),
                 context: EMPTY,
               },
@@ -478,30 +478,30 @@ describe('expression-interpreter', () => {
     expect(interpreter.eval(methodAccessExpression, methodAccessContext)).toEqual(
       classMemberFunction,
     );
-    methodAccessClasses.delete('method');
-    expect(() => interpreter.eval(methodAccessExpression, methodAccessContext)).toThrow('');
-    methodAccessClasses.delete('Clazz');
-    expect(() => interpreter.eval(methodAccessExpression, methodAccessContext)).toThrow('');
+    methodAccessClasses.delete("method");
+    expect(() => interpreter.eval(methodAccessExpression, methodAccessContext)).toThrow("");
+    methodAccessClasses.delete("Clazz");
+    expect(() => interpreter.eval(methodAccessExpression, methodAccessContext)).toThrow("");
   });
 
-  it('unary expression evaluates correctly', () => {
+  it("unary expression evaluates correctly", () => {
     const unaryExpressionNeg = SourceExpressionUnary({
       location: exampleLocation,
       type: AstBuilder.IntType,
-      operator: '-',
+      operator: "-",
       expression: intLiteralExpression,
     });
     const unaryExpressionNot = SourceExpressionUnary({
       location: exampleLocation,
       type: AstBuilder.IntType,
-      operator: '!',
+      operator: "!",
       expression: boolLiteralExpression,
     });
     expect(interpreter.eval(unaryExpressionNeg)).toEqual(-5);
     expect(interpreter.eval(unaryExpressionNot)).toEqual(false);
   });
 
-  it('panic expression evaluates correctly', () => {
+  it("panic expression evaluates correctly", () => {
     const panicExpression = SourceExpressionFunctionCall({
       location: exampleLocation,
       type: AstBuilder.StringType,
@@ -509,16 +509,16 @@ describe('expression-interpreter', () => {
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
-        className: SourceId('Builtins'),
-        memberName: SourceId('panic'),
+        className: SourceId("Builtins"),
+        memberName: SourceId("panic"),
       }),
       functionArguments: [stringLiteralExpression],
     });
     const context: InterpretationContext = createDefaultInterpretationContext(() => {});
-    expect(() => interpreter.eval(panicExpression, context)).toThrow('value');
+    expect(() => interpreter.eval(panicExpression, context)).toThrow("value");
   });
 
-  it('built in function call expression evaluates correctly', () => {
+  it("built in function call expression evaluates correctly", () => {
     const stringToIntFunctionCall = SourceExpressionFunctionCall({
       location: exampleLocation,
       type: AstBuilder.StringType,
@@ -526,8 +526,8 @@ describe('expression-interpreter', () => {
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
-        className: SourceId('Builtins'),
-        memberName: SourceId('stringToInt'),
+        className: SourceId("Builtins"),
+        memberName: SourceId("stringToInt"),
       }),
       functionArguments: [intLiteralExpression],
     });
@@ -538,8 +538,8 @@ describe('expression-interpreter', () => {
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
-        className: SourceId('Builtins'),
-        memberName: SourceId('stringToInt'),
+        className: SourceId("Builtins"),
+        memberName: SourceId("stringToInt"),
       }),
       functionArguments: [stringLiteralExpression],
     });
@@ -550,10 +550,10 @@ describe('expression-interpreter', () => {
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
-        className: SourceId('Builtins'),
-        memberName: SourceId('intToString'),
+        className: SourceId("Builtins"),
+        memberName: SourceId("intToString"),
       }),
-      functionArguments: [SourceExpressionString('5')],
+      functionArguments: [SourceExpressionString("5")],
     });
     const printlnFunctionCall = SourceExpressionFunctionCall({
       location: exampleLocation,
@@ -562,8 +562,8 @@ describe('expression-interpreter', () => {
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
-        className: SourceId('Builtins'),
-        memberName: SourceId('println'),
+        className: SourceId("Builtins"),
+        memberName: SourceId("println"),
       }),
       functionArguments: [stringLiteralExpression],
     });
@@ -572,15 +572,15 @@ describe('expression-interpreter', () => {
     expect(() => interpreter.eval(stringToIntFunctionCallFail, context)).toThrow(
       `Cannot convert \`${stringLiteralExpression.literal.value}\` to int.`,
     );
-    expect(interpreter.eval(intToStringFunctionCall, context)).toEqual('5');
-    expect(interpreter.eval(printlnFunctionCall, context)).toEqual({ type: 'unit' });
+    expect(interpreter.eval(intToStringFunctionCall, context)).toEqual("5");
+    expect(interpreter.eval(printlnFunctionCall, context)).toEqual({ type: "unit" });
   });
 
-  it('function expression evaluates correctly', () => {
+  it("function expression evaluates correctly", () => {
     const functionExpressionWithArgs = SourceExpressionLambda({
       location: exampleLocation,
       type: functionType,
-      parameters: [{ name: SourceId('arg1'), typeAnnotation: AstBuilder.StringType }],
+      parameters: [{ name: SourceId("arg1"), typeAnnotation: AstBuilder.StringType }],
       captured: new Map(),
       body: stringLiteralExpression,
     });
@@ -600,7 +600,7 @@ describe('expression-interpreter', () => {
     expect(interpreter.eval(functionCallExpressionWithArgs)).toEqual(stringLiteralValue);
   });
 
-  it('binary expression evaluates correctly', () => {
+  it("binary expression evaluates correctly", () => {
     const binExpressionMul = SourceExpressionBinary({
       type: AstBuilder.IntType,
       location: exampleLocation,
@@ -763,9 +763,9 @@ describe('expression-interpreter', () => {
     });
     expect(interpreter.eval(binExpressionMul)).toEqual(25);
     expect(interpreter.eval(binExpressionDiv)).toEqual(1);
-    expect(() => interpreter.eval(binExpressionDiv0)).toThrow('Division by zero!');
+    expect(() => interpreter.eval(binExpressionDiv0)).toThrow("Division by zero!");
     expect(interpreter.eval(binExpressionMod)).toEqual(0);
-    expect(() => interpreter.eval(binExpressionMod0)).toThrow('Mod by zero!');
+    expect(() => interpreter.eval(binExpressionMod0)).toThrow("Mod by zero!");
     expect(interpreter.eval(binExpressionAdd)).toEqual(10);
     expect(interpreter.eval(binExpressionSub)).toEqual(0);
     expect(interpreter.eval(binExpressionLt)).toEqual(false);
@@ -773,49 +773,49 @@ describe('expression-interpreter', () => {
     expect(interpreter.eval(binExpressionGt)).toEqual(false);
     expect(interpreter.eval(binExpressionGe)).toEqual(true);
     expect(interpreter.eval(binExpressionEq)).toEqual(true);
-    expect(() => interpreter.eval(binExpressionEqfn)).toThrow('Cannot compare functions!');
+    expect(() => interpreter.eval(binExpressionEqfn)).toThrow("Cannot compare functions!");
     expect(interpreter.eval(binExpressionNe)).toEqual(false);
-    expect(() => interpreter.eval(binExpressionNefn)).toThrow('Cannot compare functions!');
+    expect(() => interpreter.eval(binExpressionNefn)).toThrow("Cannot compare functions!");
     expect(interpreter.eval(binExpressionAnd)).toEqual(true);
     expect(interpreter.eval(binExpressionAndFalse)).toEqual(false);
     expect(interpreter.eval(binExpressionOr)).toEqual(true);
     expect(interpreter.eval(binExpressionOrFalse)).toEqual(true);
-    expect(interpreter.eval(binExpressionConcat)).toEqual('valuevalue');
+    expect(interpreter.eval(binExpressionConcat)).toEqual("valuevalue");
   });
 
-  it('if else expression evaluates correctly', () => {
+  it("if else expression evaluates correctly", () => {
     const ifElseExpressionTrue = SourceExpressionIfElse({
       type: AstBuilder.StringType,
       location: exampleLocation,
       boolExpression: boolLiteralExpression,
-      e1: SourceExpressionString('true branch'),
-      e2: SourceExpressionString('false branch'),
+      e1: SourceExpressionString("true branch"),
+      e2: SourceExpressionString("false branch"),
     });
     const ifElseExpressionFalse = SourceExpressionIfElse({
       type: AstBuilder.StringType,
       location: exampleLocation,
       boolExpression: AstBuilder.FALSE,
-      e1: SourceExpressionString('true branch'),
-      e2: SourceExpressionString('false branch'),
+      e1: SourceExpressionString("true branch"),
+      e2: SourceExpressionString("false branch"),
     });
-    expect(interpreter.eval(ifElseExpressionTrue)).toEqual('true branch');
-    expect(interpreter.eval(ifElseExpressionFalse)).toEqual('false branch');
+    expect(interpreter.eval(ifElseExpressionTrue)).toEqual("true branch");
+    expect(interpreter.eval(ifElseExpressionFalse)).toEqual("false branch");
   });
 
-  it('matching list evaluates correctly', () => {
+  it("matching list evaluates correctly", () => {
     const matchingList: VariantPatternToExpression[] = [
       {
         location: exampleLocation,
-        tag: SourceId('tag'),
+        tag: SourceId("tag"),
         tagOrder: 0,
         expression: stringLiteralExpression,
-        dataVariable: [SourceId('data'), AstBuilder.IntType],
+        dataVariable: [SourceId("data"), AstBuilder.IntType],
       },
     ];
     const matchingListNoData: VariantPatternToExpression[] = [
       {
         location: exampleLocation,
-        tag: SourceId('tag'),
+        tag: SourceId("tag"),
         tagOrder: 0,
         expression: stringLiteralExpression,
       },
@@ -826,8 +826,8 @@ describe('expression-interpreter', () => {
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
-        className: SourceId('Clazz'),
-        memberName: SourceId('tag'),
+        className: SourceId("Clazz"),
+        memberName: SourceId("tag"),
       }),
       functionArguments: [intLiteralExpression],
     });
@@ -852,18 +852,18 @@ describe('expression-interpreter', () => {
     const context: InterpretationContext = {
       classes: new Map([
         [
-          'Clazz',
+          "Clazz",
           {
             functions: new Map([
               [
-                'tag',
+                "tag",
                 {
-                  type: 'functionValue',
-                  arguments: ['data'],
+                  type: "functionValue",
+                  arguments: ["data"],
                   body: (localContext) => ({
-                    type: 'variant',
-                    tag: 'tag',
-                    data: checkNotNull(localContext.localValues.get('data')),
+                    type: "variant",
+                    tag: "tag",
+                    data: checkNotNull(localContext.localValues.get("data")),
                   }),
                   context: EMPTY,
                 },
@@ -877,12 +877,12 @@ describe('expression-interpreter', () => {
     };
     expect(interpreter.eval(matchExpression, context)).toEqual(stringLiteralValue);
     expect(interpreter.eval(matchExpressionNoData, context)).toEqual(stringLiteralValue);
-    expect(() => interpreter.eval(matchExpressionFail, context)).toThrow('');
+    expect(() => interpreter.eval(matchExpressionFail, context)).toThrow("");
   });
 
-  it('lambda expression evaluates correctly', () => {
+  it("lambda expression evaluates correctly", () => {
     const lambdaFunctionType: SamlangFunctionType = {
-      __type__: 'FunctionType',
+      __type__: "FunctionType",
       reason: DummySourceReason,
       argumentTypes: [AstBuilder.UnitType],
       returnType: AstBuilder.IntType,
@@ -895,42 +895,42 @@ describe('expression-interpreter', () => {
       body: intLiteralExpression,
     });
     expect(interpreter.eval(lambdaExpression)).toEqual({
-      type: 'functionValue',
+      type: "functionValue",
       arguments: [],
       body: intLiteralExpression,
       context: EMPTY,
     });
   });
 
-  it('statement block expression evalutes correctly', () => {
+  it("statement block expression evalutes correctly", () => {
     const objectDestructedNames: ObjectPatternDestucturedName = {
-      fieldName: SourceId('test'),
+      fieldName: SourceId("test"),
       type: AstBuilder.IntType,
       fieldOrder: 0,
-      alias: SourceId('f'),
+      alias: SourceId("f"),
       location: exampleLocation,
     };
     const objectDestructedNamesNoAlias: ObjectPatternDestucturedName = {
-      fieldName: SourceId('test'),
+      fieldName: SourceId("test"),
       type: AstBuilder.IntType,
       fieldOrder: 0,
       location: exampleLocation,
     };
     const objectDestructedNamesFail: ObjectPatternDestucturedName = {
-      fieldName: SourceId('test'),
+      fieldName: SourceId("test"),
       type: AstBuilder.IntType,
       fieldOrder: 0,
-      alias: SourceId('f'),
+      alias: SourceId("f"),
       location: exampleLocation,
     };
     const objectPattern: ObjectPattern = {
       location: exampleLocation,
-      type: 'ObjectPattern',
+      type: "ObjectPattern",
       destructedNames: [objectDestructedNames, objectDestructedNamesNoAlias],
     };
     const objectPatternFail: ObjectPattern = {
       location: exampleLocation,
-      type: 'ObjectPattern',
+      type: "ObjectPattern",
       destructedNames: [objectDestructedNamesFail],
     };
     const objectExpression: SamlangExpression = SourceExpressionFunctionCall({
@@ -939,8 +939,8 @@ describe('expression-interpreter', () => {
         type: functionType,
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
-        className: SourceId('Clazz'),
-        memberName: SourceId('init'),
+        className: SourceId("Clazz"),
+        memberName: SourceId("init"),
       }),
       functionArguments: [intLiteralExpression],
     });
@@ -958,36 +958,36 @@ describe('expression-interpreter', () => {
       typeAnnotation: AstBuilder.IntType,
       assignedExpression: objectExpression,
     };
-    const variableLocalValues = new Map<string, Value>([['var', true]]);
+    const variableLocalValues = new Map<string, Value>([["var", true]]);
     const variableContext: InterpretationContext = {
       classes: new Map([
         [
-          'Clazz',
+          "Clazz",
           {
             functions: new Map([
               [
-                'init',
+                "init",
                 {
-                  type: 'functionValue',
-                  arguments: ['test'],
+                  type: "functionValue",
+                  arguments: ["test"],
                   body: (localContext) => ({
-                    type: 'object',
+                    type: "object",
                     objectContent: new Map([
-                      ['test', checkNotNull(localContext.localValues.get('test'))],
+                      ["test", checkNotNull(localContext.localValues.get("test"))],
                     ]),
                   }),
                   context: EMPTY,
                 },
               ],
               [
-                'tag',
+                "tag",
                 {
-                  type: 'functionValue',
-                  arguments: ['data'],
+                  type: "functionValue",
+                  arguments: ["data"],
                   body: (localContext) => ({
-                    type: 'variant',
-                    tag: 'tag',
-                    data: checkNotNull(localContext.localValues.get('data')),
+                    type: "variant",
+                    tag: "tag",
+                    data: checkNotNull(localContext.localValues.get("data")),
                   }),
                   context: EMPTY,
                 },
@@ -1001,13 +1001,13 @@ describe('expression-interpreter', () => {
     };
     const variablePattern: VariablePattern = {
       location: exampleLocation,
-      type: 'VariablePattern',
-      name: 'var',
+      type: "VariablePattern",
+      name: "var",
     };
     const variableExpression: SamlangExpression = SourceExpressionVariable({
       location: exampleLocation,
       type: AstBuilder.IntType,
-      name: 'var',
+      name: "var",
     });
     const variableStatement: SamlangValStatement = {
       associatedComments: [],
@@ -1016,7 +1016,7 @@ describe('expression-interpreter', () => {
       typeAnnotation: AstBuilder.IntType,
       assignedExpression: variableExpression,
     };
-    const wildCardPattern: WildCardPattern = { type: 'WildCardPattern', location: exampleLocation };
+    const wildCardPattern: WildCardPattern = { type: "WildCardPattern", location: exampleLocation };
     const wildCardStatement: SamlangValStatement = {
       associatedComments: [],
       pattern: wildCardPattern,
@@ -1061,8 +1061,8 @@ describe('expression-interpreter', () => {
           {
             associatedComments: [],
             pattern: {
-              type: 'VariablePattern',
-              name: 'diffVar',
+              type: "VariablePattern",
+              name: "diffVar",
               location: exampleLocation,
             },
             typeAnnotation: AstBuilder.IntType,
@@ -1106,10 +1106,10 @@ describe('expression-interpreter', () => {
         expression: variableExpression,
       },
     });
-    expect(interpreter.eval(statementBlockExpression, variableContext)).toEqual({ type: 'unit' });
-    expect(() => interpreter.eval(nestedBlockExpressionFail)).toThrow('Missing variable var');
+    expect(interpreter.eval(statementBlockExpression, variableContext)).toEqual({ type: "unit" });
+    expect(() => interpreter.eval(nestedBlockExpressionFail)).toThrow("Missing variable var");
     expect(interpreter.eval(statementBlockExpressionWithBlockExpression)).toEqual(5);
     expect(interpreter.eval(nestedBlockExpressionPass)).toEqual(5);
-    expect(() => interpreter.eval(statementBlockExpressionFail)).toThrow('');
+    expect(() => interpreter.eval(statementBlockExpressionFail)).toThrow("");
   });
 });

@@ -7,8 +7,8 @@ import {
   SourceClassDefinition,
   SourceExpressionLambda,
   SourceId,
-} from '../ast/samlang-nodes';
-import { checkNotNull } from '../utils';
+} from "../ast/samlang-nodes";
+import { checkNotNull } from "../utils";
 import ExpressionInterpreter, {
   ClassValue,
   createDefaultInterpretationContext,
@@ -17,11 +17,11 @@ import ExpressionInterpreter, {
   InterpretationContext,
   PanicException,
   Value,
-} from './expression-interpreter';
+} from "./expression-interpreter";
 
 /** The interpreter used to evaluate an already type checked source with single module. */
 export default class ModuleInterpreter {
-  private printerCollector = '';
+  private printerCollector = "";
   private expressionInterpreter: ExpressionInterpreter = new ExpressionInterpreter();
 
   printed = (): string => this.printerCollector;
@@ -47,7 +47,7 @@ export default class ModuleInterpreter {
     try {
       return this.unsafeEval(module, context);
     } catch (e) {
-      throw new PanicException('Interpreter Error.');
+      throw new PanicException("Interpreter Error.");
     }
   };
 
@@ -59,11 +59,11 @@ export default class ModuleInterpreter {
       (newContext, classDefinition) => this.evalContext(classDefinition, newContext),
       context,
     );
-    const mainModule = fullCtx.classes.get('Main');
-    if (!mainModule) return { type: 'unit' };
-    const mainFunction = mainModule.functions.get('main');
-    if (!mainFunction) return { type: 'unit' };
-    if (mainFunction.arguments.length > 0) return { type: 'unit' };
+    const mainModule = fullCtx.classes.get("Main");
+    if (!mainModule) return { type: "unit" };
+    const mainFunction = mainModule.functions.get("main");
+    if (!mainFunction) return { type: "unit" };
+    if (mainFunction.arguments.length > 0) return { type: "unit" };
     return this.expressionInterpreter.eval(
       mainFunction.body as SamlangExpression,
       mainFunction.context,
@@ -109,28 +109,28 @@ export default class ModuleInterpreter {
     methods.forEach((_, key) => {
       checkNotNull(methods.get(key)).context = newContext;
     });
-    if (classDefinition.typeDefinition.type === 'object') {
-      functions.set('init', {
-        type: 'functionValue',
+    if (classDefinition.typeDefinition.type === "object") {
+      functions.set("init", {
+        type: "functionValue",
         arguments: [...classDefinition.typeDefinition.names.map((it) => it.name)],
         body: (localContext) => {
           const objectContent = new Map<string, Value>();
           classDefinition.typeDefinition.names.forEach(({ name }) => {
             objectContent.set(name, checkNotNull(localContext.localValues.get(name)));
           });
-          return { type: 'object', objectContent };
+          return { type: "object", objectContent };
         },
         context: EMPTY,
       });
     } else {
       classDefinition.typeDefinition.names.forEach(({ name: tag }) => {
         functions.set(tag, {
-          type: 'functionValue',
-          arguments: ['data'],
+          type: "functionValue",
+          arguments: ["data"],
           body: (localContext) => ({
-            type: 'variant',
+            type: "variant",
             tag,
-            data: checkNotNull(localContext.localValues.get('data')),
+            data: checkNotNull(localContext.localValues.get("data")),
           }),
           context: EMPTY,
         });

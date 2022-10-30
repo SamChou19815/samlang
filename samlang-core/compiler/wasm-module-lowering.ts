@@ -1,10 +1,10 @@
-import { ENCODED_FUNCTION_NAME_MALLOC } from '../ast/common-names';
+import { ENCODED_FUNCTION_NAME_MALLOC } from "../ast/common-names";
 import type {
   MidIRExpression,
   MidIRFunction,
   MidIRSources,
   MidIRStatement,
-} from '../ast/mir-nodes';
+} from "../ast/mir-nodes";
 import {
   WasmBinary,
   WasmConst,
@@ -24,8 +24,8 @@ import {
   WebAssemblyInlineInstruction,
   WebAssemblyInstruction,
   WebAssemblyModule,
-} from '../ast/wasm-nodes';
-import { checkNotNull } from '../utils';
+} from "../ast/wasm-nodes";
+import { checkNotNull } from "../utils";
 
 class WasmResourceAllocator {
   private nextLabelId = 0;
@@ -81,11 +81,11 @@ class WasmFunctionLoweringManager {
 
   private lowerMidIRStatement(s: MidIRStatement): WebAssemblyInstruction[] {
     switch (s.__type__) {
-      case 'MidIRIndexAccessStatement':
+      case "MidIRIndexAccessStatement":
         return [
           this.SET(s.name, WasmLoad(this.lowerMidIRExpression(s.pointerExpression), s.index)),
         ];
-      case 'MidIRIndexAssignStatement':
+      case "MidIRIndexAssignStatement":
         return [
           WasmStore(
             this.lowerMidIRExpression(s.pointerExpression),
@@ -93,7 +93,7 @@ class WasmFunctionLoweringManager {
             this.lowerMidIRExpression(s.assignedExpression),
           ),
         ];
-      case 'MidIRBinaryStatement':
+      case "MidIRBinaryStatement":
         return [
           this.SET(
             s.name,
@@ -104,10 +104,10 @@ class WasmFunctionLoweringManager {
             ),
           ),
         ];
-      case 'MidIRFunctionCallStatement': {
+      case "MidIRFunctionCallStatement": {
         const argumentInstructions = s.functionArguments.map((it) => this.lowerMidIRExpression(it));
         const functionCall =
-          s.functionExpression.__type__ === 'MidIRNameExpression'
+          s.functionExpression.__type__ === "MidIRNameExpression"
             ? WasmDirectCall(s.functionExpression.name, argumentInstructions)
             : WasmIndirectCall(
                 this.lowerMidIRExpression(s.functionExpression),
@@ -120,7 +120,7 @@ class WasmFunctionLoweringManager {
             : this.SET(s.returnCollector, functionCall),
         ];
       }
-      case 'MidIRIfElseStatement': {
+      case "MidIRIfElseStatement": {
         const condition = this.lowerMidIRExpression(s.booleanExpression);
         const s1 = [
           ...s.s1.flatMap((it) => this.lowerMidIRStatement(it)),
@@ -136,14 +136,14 @@ class WasmFunctionLoweringManager {
         ];
         if (s1.length === 0) {
           if (s2.length === 0) return [];
-          return [WasmIfElse(WasmBinary(condition, '^', WasmConst(1)), s2, [])];
+          return [WasmIfElse(WasmBinary(condition, "^", WasmConst(1)), s2, [])];
         }
         return [WasmIfElse(condition, s1, s2)];
       }
-      case 'MidIRSingleIfStatement': {
+      case "MidIRSingleIfStatement": {
         let condition = this.lowerMidIRExpression(s.booleanExpression);
         if (s.invertCondition) {
-          condition = WasmBinary(condition, '^', WasmConst(1));
+          condition = WasmBinary(condition, "^", WasmConst(1));
         }
         return [
           WasmIfElse(
@@ -153,7 +153,7 @@ class WasmFunctionLoweringManager {
           ),
         ];
       }
-      case 'MidIRBreakStatement': {
+      case "MidIRBreakStatement": {
         const { breakCollector, exitLabel } = checkNotNull(this.currentLoopContext);
         if (breakCollector == null) return [WasmJump(exitLabel)];
         return [
@@ -161,10 +161,10 @@ class WasmFunctionLoweringManager {
           WasmJump(exitLabel),
         ];
       }
-      case 'MidIRWhileStatement': {
+      case "MidIRWhileStatement": {
         const savedCurrentLoopContext = this.currentLoopContext;
-        const continueLabel = this.allocator.allocateLabelWithAnnotation('loop_continue');
-        const exitLabel = this.allocator.allocateLabelWithAnnotation('loop_exit');
+        const continueLabel = this.allocator.allocateLabelWithAnnotation("loop_continue");
+        const exitLabel = this.allocator.allocateLabelWithAnnotation("loop_exit");
         this.currentLoopContext = { breakCollector: s.breakCollector?.name, exitLabel };
         const instructions = [
           ...s.loopVariables.map((it) =>
@@ -185,9 +185,9 @@ class WasmFunctionLoweringManager {
         this.currentLoopContext = savedCurrentLoopContext;
         return instructions;
       }
-      case 'MidIRCastStatement':
+      case "MidIRCastStatement":
         return [this.SET(s.name, this.lowerMidIRExpression(s.assignedExpression))];
-      case 'MidIRStructInitializationStatement': {
+      case "MidIRStructInitializationStatement": {
         const instructions: WebAssemblyInstruction[] = [
           this.SET(
             s.structVariableName,
@@ -206,18 +206,18 @@ class WasmFunctionLoweringManager {
 
   private lowerMidIRExpression(e: MidIRExpression): WebAssemblyInlineInstruction {
     switch (e.__type__) {
-      case 'MidIRIntLiteralExpression':
+      case "MidIRIntLiteralExpression":
         return WasmConst(e.value);
-      case 'MidIRNameExpression':
+      case "MidIRNameExpression":
         return WasmConst(
           checkNotNull(
-            (e.type.__type__ === 'FunctionType'
+            (e.type.__type__ === "FunctionType"
               ? this.functionIndexMapping
               : this.globalVariablesToPointerMapping
             ).get(e.name),
           ),
         );
-      case 'MidIRVariableExpression':
+      case "MidIRVariableExpression":
         return this.GET(e.name);
     }
   }

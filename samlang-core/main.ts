@@ -1,18 +1,18 @@
-import { encodeMainFunctionName } from './ast/common-names';
-import { ModuleReference, moduleReferenceToString } from './ast/common-nodes';
-import { prettyPrintMidIRSourcesAsTSSources } from './ast/mir-nodes';
-import { typeCheckSourceHandles } from './checker';
+import { encodeMainFunctionName } from "./ast/common-names";
+import { ModuleReference, moduleReferenceToString } from "./ast/common-nodes";
+import { prettyPrintMidIRSourcesAsTSSources } from "./ast/mir-nodes";
+import { typeCheckSourceHandles } from "./checker";
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToWasmModule,
-} from './compiler';
-import type { SamlangSingleSourceCompilationResult, SamlangSourcesCompilationResult } from './dist';
-import samlangGeneratedWebAssemblyLoader from './loader';
-import { optimizeHighIRSourcesAccordingToConfiguration } from './optimization';
-import { parseSources } from './parser';
-import prettyPrintSamlangModule from './printer';
-import { assert } from './utils';
+} from "./compiler";
+import type { SamlangSingleSourceCompilationResult, SamlangSourcesCompilationResult } from "./dist";
+import samlangGeneratedWebAssemblyLoader from "./loader";
+import { optimizeHighIRSourcesAccordingToConfiguration } from "./optimization";
+import { parseSources } from "./parser";
+import prettyPrintSamlangModule from "./printer";
+import { assert } from "./utils";
 
 export function reformatSamlangSources(
   sourceHandles: readonly (readonly [ModuleReference, string])[],
@@ -23,8 +23,8 @@ export function reformatSamlangSources(
   ]);
 }
 
-const EMITTED_WASM_FILE = '__all__.wasm';
-const EMITTED_WAT_FILE = '__all__.wat';
+const EMITTED_WASM_FILE = "__all__.wasm";
+const EMITTED_WAT_FILE = "__all__.wat";
 
 export function compileSamlangSources(
   sourceHandles: readonly (readonly [ModuleReference, string])[],
@@ -40,7 +40,7 @@ export function compileSamlangSources(
     }
   });
   if (errors.length > 0) {
-    return { __type__: 'ERROR', errors };
+    return { __type__: "ERROR", errors };
   }
 
   const midIRSources = lowerHighIRSourcesToMidIRSources(
@@ -53,7 +53,7 @@ export function compileSamlangSources(
   entryModuleReferences.forEach((moduleReference) => {
     const mainFunctionName = encodeMainFunctionName(moduleReference);
     const tsCode = `${commonTSCode}\n${mainFunctionName}();\n`;
-    const wasmJSCode = `// @${'generated'}
+    const wasmJSCode = `// @${"generated"}
 const binary = require('fs').readFileSync(require('path').join(__dirname, '${EMITTED_WASM_FILE}'));
 require('@dev-sam/samlang-cli/loader')(binary).${mainFunctionName}();
 `;
@@ -64,18 +64,18 @@ require('@dev-sam/samlang-cli/loader')(binary).${mainFunctionName}();
   emittedCode[EMITTED_WAT_FILE] = wasmModule.emitText();
   wasmModule.dispose();
 
-  return { __type__: 'OK', emittedCode };
+  return { __type__: "OK", emittedCode };
 }
 
 function interpretWebAssemblyModule(
   emittedWasmBinary: Uint8Array,
   mainFunctionName: string,
 ): string {
-  let printed = '';
+  let printed = "";
   const functions = samlangGeneratedWebAssemblyLoader(emittedWasmBinary, (pointerToString) => ({
     __Builtins$println(p: number) {
       printed += pointerToString(p);
-      printed += '\n';
+      printed += "\n";
       return 0;
     },
   }));
@@ -86,21 +86,21 @@ function interpretWebAssemblyModule(
 export function compileSingleSamlangSource(
   programString: string,
 ): SamlangSingleSourceCompilationResult {
-  const demoModuleReference = ModuleReference(['Demo']);
+  const demoModuleReference = ModuleReference(["Demo"]);
   const result = compileSamlangSources(
     [[demoModuleReference, programString]],
     [demoModuleReference],
   );
-  if (result.__type__ === 'ERROR') return result;
-  const emittedTSCode = result.emittedCode['Demo.ts'];
+  if (result.__type__ === "ERROR") return result;
+  const emittedTSCode = result.emittedCode["Demo.ts"];
   const emittedWasmBinary = result.emittedCode[EMITTED_WASM_FILE];
-  assert(typeof emittedTSCode === 'string', typeof emittedTSCode);
+  assert(typeof emittedTSCode === "string", typeof emittedTSCode);
   assert(emittedWasmBinary instanceof Uint8Array);
   const interpreterResult = interpretWebAssemblyModule(
     emittedWasmBinary,
     encodeMainFunctionName(demoModuleReference),
   );
-  return { __type__: 'OK', emittedTSCode, interpreterResult };
+  return { __type__: "OK", emittedTSCode, interpreterResult };
 }
 
-export { Location, ModuleReference } from './ast/common-nodes';
+export { Location, ModuleReference } from "./ast/common-nodes";

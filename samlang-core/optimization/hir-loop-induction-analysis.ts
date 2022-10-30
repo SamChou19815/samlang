@@ -1,4 +1,4 @@
-import type { IROperator } from '../ast/common-operators';
+import type { IROperator } from "../ast/common-operators";
 import {
   GeneralHighIRLoopVariables,
   HighIRBinaryStatement,
@@ -11,9 +11,9 @@ import {
   HIR_INT,
   HIR_ONE,
   HIR_ZERO,
-} from '../ast/hir-nodes';
-import { assert, checkNotNull, filterMap, isNotNull } from '../utils';
-import { internalOptimizeHighIRStatementsByDCE } from './hir-dead-code-elimination-optimization';
+} from "../ast/hir-nodes";
+import { assert, checkNotNull, filterMap, isNotNull } from "../utils";
+import { internalOptimizeHighIRStatementsByDCE } from "./hir-dead-code-elimination-optimization";
 
 export type PotentialLoopInvariantExpression =
   | HighIRIntLiteralExpression
@@ -23,7 +23,7 @@ type BasicInductionVariableWithLoopGuard = {
   readonly name: string;
   readonly initialValue: HighIRExpression;
   readonly incrementAmount: PotentialLoopInvariantExpression;
-  readonly guardOperator: '<' | '<=' | '>' | '>=';
+  readonly guardOperator: "<" | "<=" | ">" | ">=";
   readonly guardExpression: PotentialLoopInvariantExpression;
 };
 
@@ -60,19 +60,19 @@ export type HighIROptimizableWhileLoop = {
 
 function statementContainsBreak(statement: HighIRStatement): boolean {
   switch (statement.__type__) {
-    case 'HighIRIndexAccessStatement':
-    case 'HighIRBinaryStatement':
-    case 'HighIRFunctionCallStatement':
-    case 'HighIRStructInitializationStatement':
-    case 'HighIRClosureInitializationStatement':
+    case "HighIRIndexAccessStatement":
+    case "HighIRBinaryStatement":
+    case "HighIRFunctionCallStatement":
+    case "HighIRStructInitializationStatement":
+    case "HighIRClosureInitializationStatement":
       return false;
-    case 'HighIRBreakStatement':
+    case "HighIRBreakStatement":
       return true;
-    case 'HighIRIfElseStatement':
+    case "HighIRIfElseStatement":
       return statementsContainsBreak(statement.s1) || statementsContainsBreak(statement.s2);
-    case 'HighIRSingleIfStatement':
+    case "HighIRSingleIfStatement":
       return statementsContainsBreak(statement.statements);
-    case 'HighIRWhileStatement':
+    case "HighIRWhileStatement":
       // Although it might contain break, the break never affects the outer loop,
       return false;
   }
@@ -86,15 +86,15 @@ function mergeInvariantAdditionForLoopOptimization(
   addedValue: PotentialLoopInvariantExpression,
 ): PotentialLoopInvariantExpression | null {
   if (
-    existingValue.__type__ === 'HighIRIntLiteralExpression' &&
-    addedValue.__type__ === 'HighIRIntLiteralExpression'
+    existingValue.__type__ === "HighIRIntLiteralExpression" &&
+    addedValue.__type__ === "HighIRIntLiteralExpression"
   ) {
     return HIR_INT(existingValue.value + addedValue.value);
   }
-  if (addedValue.__type__ === 'HighIRIntLiteralExpression' && addedValue.value === 0) {
+  if (addedValue.__type__ === "HighIRIntLiteralExpression" && addedValue.value === 0) {
     return existingValue;
   }
-  if (existingValue.__type__ === 'HighIRIntLiteralExpression' && existingValue.value === 0) {
+  if (existingValue.__type__ === "HighIRIntLiteralExpression" && existingValue.value === 0) {
     return addedValue;
   }
   return null;
@@ -105,15 +105,15 @@ export function mergeInvariantMultiplicationForLoopOptimization(
   addedValue: PotentialLoopInvariantExpression,
 ): PotentialLoopInvariantExpression | null {
   if (
-    existingValue.__type__ === 'HighIRIntLiteralExpression' &&
-    addedValue.__type__ === 'HighIRIntLiteralExpression'
+    existingValue.__type__ === "HighIRIntLiteralExpression" &&
+    addedValue.__type__ === "HighIRIntLiteralExpression"
   ) {
     return HIR_INT(existingValue.value * addedValue.value);
   }
-  if (addedValue.__type__ === 'HighIRIntLiteralExpression' && addedValue.value === 1) {
+  if (addedValue.__type__ === "HighIRIntLiteralExpression" && addedValue.value === 1) {
     return existingValue;
   }
-  if (existingValue.__type__ === 'HighIRIntLiteralExpression' && existingValue.value === 1) {
+  if (existingValue.__type__ === "HighIRIntLiteralExpression" && existingValue.value === 1) {
     return addedValue;
   }
   return null;
@@ -121,10 +121,10 @@ export function mergeInvariantMultiplicationForLoopOptimization(
 
 function mergeConstantOperationIntoDerivedInductionVariable(
   existing: DerivedInductionVariable,
-  operator: '+' | '*',
+  operator: "+" | "*",
   loopInvariantExpression: PotentialLoopInvariantExpression,
 ): DerivedInductionVariable | null {
-  if (operator === '+') {
+  if (operator === "+") {
     const mergedImmediate = mergeInvariantAdditionForLoopOptimization(
       existing.immediate,
       loopInvariantExpression,
@@ -132,11 +132,11 @@ function mergeConstantOperationIntoDerivedInductionVariable(
     if (mergedImmediate == null) return null;
     return { ...existing, immediate: mergedImmediate };
   }
-  if (loopInvariantExpression.__type__ === 'HighIRIntLiteralExpression') {
+  if (loopInvariantExpression.__type__ === "HighIRIntLiteralExpression") {
     const loopInvariantExpressionValue = loopInvariantExpression.value;
     if (
-      existing.multiplier.__type__ === 'HighIRIntLiteralExpression' &&
-      existing.immediate.__type__ === 'HighIRIntLiteralExpression'
+      existing.multiplier.__type__ === "HighIRIntLiteralExpression" &&
+      existing.immediate.__type__ === "HighIRIntLiteralExpression"
     ) {
       return {
         baseName: existing.baseName,
@@ -148,8 +148,8 @@ function mergeConstantOperationIntoDerivedInductionVariable(
     return null;
   }
   if (
-    existing.multiplier.__type__ === 'HighIRIntLiteralExpression' &&
-    existing.immediate.__type__ === 'HighIRIntLiteralExpression' &&
+    existing.multiplier.__type__ === "HighIRIntLiteralExpression" &&
+    existing.immediate.__type__ === "HighIRIntLiteralExpression" &&
     existing.multiplier.value === 1 &&
     existing.immediate.value === 1
   ) {
@@ -185,12 +185,12 @@ function tryMergeIntoDerivedInductionVariableWithoutSwap(
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
   binaryStatement: HighIRBinaryStatement,
 ): boolean {
-  if (binaryStatement.e1.__type__ !== 'HighIRVariableExpression') return false;
+  if (binaryStatement.e1.__type__ !== "HighIRVariableExpression") return false;
   const existing = existingSet.get(binaryStatement.e1.name);
   if (existing == null) return false;
   if (
-    binaryStatement.e2.__type__ === 'HighIRVariableExpression' &&
-    binaryStatement.operator === '+'
+    binaryStatement.e2.__type__ === "HighIRVariableExpression" &&
+    binaryStatement.operator === "+"
   ) {
     const anotherVariable = existingSet.get(binaryStatement.e2.name);
     if (anotherVariable != null) {
@@ -205,15 +205,15 @@ function tryMergeIntoDerivedInductionVariableWithoutSwap(
     }
   }
   if (
-    binaryStatement.e2.__type__ === 'HighIRStringNameExpression' ||
-    binaryStatement.e2.__type__ === 'HighIRFunctionNameExpression' ||
+    binaryStatement.e2.__type__ === "HighIRStringNameExpression" ||
+    binaryStatement.e2.__type__ === "HighIRFunctionNameExpression" ||
     !expressionIsLoopInvariant(binaryStatement.e2)
   ) {
     return false;
   }
   switch (binaryStatement.operator) {
-    case '+':
-    case '*': {
+    case "+":
+    case "*": {
       const merged = mergeConstantOperationIntoDerivedInductionVariable(
         existing,
         binaryStatement.operator,
@@ -243,8 +243,8 @@ function tryMergeIntoDerivedInductionVariable(
     return;
   }
   switch (binaryStatement.operator) {
-    case '+':
-    case '*':
+    case "+":
+    case "*":
       break;
     default:
       return;
@@ -258,7 +258,7 @@ function tryMergeIntoDerivedInductionVariable(
 
 type LoopGuardStructure = {
   readonly potentialBasicInductionVariableNameWithLoopGuard: string;
-  readonly guardOperator: '<' | '<=' | '>' | '>=';
+  readonly guardOperator: "<" | "<=" | ">" | ">=";
   readonly guardExpression: PotentialLoopInvariantExpression;
   readonly restStatements: readonly HighIRStatement[];
   readonly breakCollector?: {
@@ -268,31 +268,31 @@ type LoopGuardStructure = {
   };
 };
 
-export function invertGuardOperator(operator: '<' | '<=' | '>' | '>='): '<' | '<=' | '>' | '>=' {
+export function invertGuardOperator(operator: "<" | "<=" | ">" | ">="): "<" | "<=" | ">" | ">=" {
   switch (operator) {
-    case '<':
-      return '>=';
-    case '<=':
-      return '>';
-    case '>':
-      return '<=';
-    case '>=':
-      return '<';
+    case "<":
+      return ">=";
+    case "<=":
+      return ">";
+    case ">":
+      return "<=";
+    case ">=":
+      return "<";
   }
 }
 
 export function getGuardOperator_EXPOSED_FOR_TESTING(
   operator: IROperator,
   invertCondition: boolean,
-): '<' | '<=' | '>' | '>=' | null {
+): "<" | "<=" | ">" | ">=" | null {
   switch (operator) {
-    case '<':
+    case "<":
       break;
-    case '<=':
+    case "<=":
       break;
-    case '>':
+    case ">":
       break;
-    case '>=':
+    case ">=":
       break;
     default:
       return null;
@@ -310,11 +310,11 @@ export function extractLoopGuardStructure_EXPOSED_FOR_TESTING(
   if (
     firstBinaryStatement == null ||
     secondSingleIfStatement == null ||
-    firstBinaryStatement.__type__ !== 'HighIRBinaryStatement' ||
-    firstBinaryStatement.e1.__type__ !== 'HighIRVariableExpression' ||
+    firstBinaryStatement.__type__ !== "HighIRBinaryStatement" ||
+    firstBinaryStatement.e1.__type__ !== "HighIRVariableExpression" ||
     !expressionIsLoopInvariant(firstBinaryStatement.e2) ||
-    secondSingleIfStatement.__type__ !== 'HighIRSingleIfStatement' ||
-    secondSingleIfStatement.booleanExpression.__type__ !== 'HighIRVariableExpression' ||
+    secondSingleIfStatement.__type__ !== "HighIRSingleIfStatement" ||
+    secondSingleIfStatement.booleanExpression.__type__ !== "HighIRVariableExpression" ||
     firstBinaryStatement.name !== secondSingleIfStatement.booleanExpression.name ||
     secondSingleIfStatement.statements.length !== 1 ||
     statementsContainsBreak(restStatements)
@@ -322,7 +322,7 @@ export function extractLoopGuardStructure_EXPOSED_FOR_TESTING(
     return null;
   }
   const onlyBreakStatement = checkNotNull(secondSingleIfStatement.statements[0]);
-  if (onlyBreakStatement.__type__ !== 'HighIRBreakStatement') return null;
+  if (onlyBreakStatement.__type__ !== "HighIRBreakStatement") return null;
   const guardOperator = getGuardOperator_EXPOSED_FOR_TESTING(
     firstBinaryStatement.operator,
     secondSingleIfStatement.invertCondition,
@@ -331,8 +331,8 @@ export function extractLoopGuardStructure_EXPOSED_FOR_TESTING(
   const potentialBasicInductionVariableNameWithLoopGuard = firstBinaryStatement.e1.name;
   const guardExpression = firstBinaryStatement.e2;
   assert(
-    guardExpression.__type__ !== 'HighIRStringNameExpression' &&
-      guardExpression.__type__ !== 'HighIRFunctionNameExpression',
+    guardExpression.__type__ !== "HighIRStringNameExpression" &&
+      guardExpression.__type__ !== "HighIRFunctionNameExpression",
   );
 
   const breakCollector =
@@ -364,7 +364,7 @@ export function extractBasicInductionVariables_EXPOSED_FOR_TESTING(
   const allBasicInductionVariables: GeneralBasicInductionVariableWithLoopValueCollector[] = [];
   const loopVariablesThatAreNotBasicInductionVariables: GeneralHighIRLoopVariables[] = [];
   loopVariables.forEach((loopVariable) => {
-    if (loopVariable.loopValue.__type__ !== 'HighIRVariableExpression') {
+    if (loopVariable.loopValue.__type__ !== "HighIRVariableExpression") {
       loopVariablesThatAreNotBasicInductionVariables.push(loopVariable);
       return;
     }
@@ -372,15 +372,15 @@ export function extractBasicInductionVariables_EXPOSED_FOR_TESTING(
     const incrementAmount = restStatements
       .map((statement) => {
         if (
-          statement.__type__ === 'HighIRBinaryStatement' &&
+          statement.__type__ === "HighIRBinaryStatement" &&
           statement.name === basicInductionLoopIncrementCollector &&
-          statement.e1.__type__ === 'HighIRVariableExpression' &&
+          statement.e1.__type__ === "HighIRVariableExpression" &&
           statement.e1.name === loopVariable.name &&
           expressionIsLoopInvariant(statement.e2)
         ) {
           assert(
-            statement.e2.__type__ !== 'HighIRStringNameExpression' &&
-              statement.e2.__type__ !== 'HighIRFunctionNameExpression',
+            statement.e2.__type__ !== "HighIRStringNameExpression" &&
+              statement.e2.__type__ !== "HighIRFunctionNameExpression",
           );
           return statement.e2;
         }
@@ -426,7 +426,7 @@ export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
     });
   });
   restStatements.forEach((it) => {
-    if (it.__type__ !== 'HighIRBinaryStatement') return;
+    if (it.__type__ !== "HighIRBinaryStatement") return;
     tryMergeIntoDerivedInductionVariable(
       existingDerivedInductionVariableSet,
       expressionIsLoopInvariant,
@@ -437,7 +437,7 @@ export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
     allBasicInductionVariables.map((it) => it.loopValueCollector),
   );
   return filterMap(restStatements, (it) => {
-    if (it.__type__ !== 'HighIRBinaryStatement') return null;
+    if (it.__type__ !== "HighIRBinaryStatement") return null;
     const derivedInductionVariable = existingDerivedInductionVariableSet.get(it.name);
     if (derivedInductionVariable == null) return null;
     if (inductionLoopVariablesCollectorNames.has(it.name)) return null;
@@ -451,7 +451,7 @@ export function removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(
 ): readonly HighIRStatement[] {
   const liveVariableSet = new Set<string>();
   otherLoopVariables.forEach((it) => {
-    if (it.loopValue.__type__ !== 'HighIRVariableExpression') return;
+    if (it.loopValue.__type__ !== "HighIRVariableExpression") return;
     liveVariableSet.add(it.loopValue.name);
   });
   return internalOptimizeHighIRStatementsByDCE(restStatements, liveVariableSet);
@@ -462,13 +462,13 @@ export function expressionIsLoopInvariant_EXPOSED_FOR_TESTING(
   nonLoopInvariantVariables: ReadonlySet<string>,
 ): boolean {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
+    case "HighIRIntLiteralExpression":
       return true;
-    case 'HighIRStringNameExpression':
-    case 'HighIRFunctionNameExpression':
+    case "HighIRStringNameExpression":
+    case "HighIRFunctionNameExpression":
       // We are doing algebraic operations here. Name is hopeless.
       return false;
-    case 'HighIRVariableExpression':
+    case "HighIRVariableExpression":
       return !nonLoopInvariantVariables.has(expression.name);
   }
 }
@@ -536,7 +536,7 @@ export default function extractOptimizableWhileLoop(
   const optimizedStatements = removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(
     loopVariablesThatAreNotBasicInductionVariables.filter(
       (it) =>
-        it.loopValue.__type__ !== 'HighIRVariableExpression' ||
+        it.loopValue.__type__ !== "HighIRVariableExpression" ||
         !derivedInductionVariableNames.has(it.loopValue.name),
     ),
     restStatements,

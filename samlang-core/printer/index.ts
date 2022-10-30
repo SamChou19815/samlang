@@ -3,7 +3,7 @@ import {
   prettyPrintTypeParameter,
   SamlangIdentifierType,
   SamlangModule,
-} from '../ast/samlang-nodes';
+} from "../ast/samlang-nodes";
 import {
   PRETTIER_CONCAT,
   PRETTIER_LINE,
@@ -11,22 +11,22 @@ import {
   PRETTIER_NIL,
   PRETTIER_TEXT,
   prettyPrintAccordingToPrettierAlgorithm,
-} from './printer-prettier-core';
+} from "./printer-prettier-core";
 import {
   createBracesSurroundedDocument,
   createCommaSeparatedList,
   createParenthesisSurroundedDocument,
-} from './printer-prettier-library';
+} from "./printer-prettier-library";
 import {
   createPrettierDocumentForAssociatedComments,
   createPrettierDocumentsFromSamlangInterfaceMember,
-} from './printer-source-level';
+} from "./printer-source-level";
 
 function extendsOrImplementsNodesToString(
   extendsOrImplementsNodes: readonly SamlangIdentifierType[],
 ): string {
-  if (extendsOrImplementsNodes.length === 0) return '';
-  return ` : ${extendsOrImplementsNodes.map(prettyPrintType).join(', ')}`;
+  if (extendsOrImplementsNodes.length === 0) return "";
+  return ` : ${extendsOrImplementsNodes.map(prettyPrintType).join(", ")}`;
 }
 
 export default function prettyPrintSamlangModule(
@@ -38,15 +38,15 @@ export default function prettyPrintSamlangModule(
       prettyPrintAccordingToPrettierAlgorithm(
         availableWidth,
         PRETTIER_CONCAT(
-          PRETTIER_TEXT('import '),
+          PRETTIER_TEXT("import "),
           createBracesSurroundedDocument(
             createCommaSeparatedList(oneImport.importedMembers, ({ name }) => PRETTIER_TEXT(name)),
           ),
-          PRETTIER_TEXT(` from ${oneImport.importedModule.join('.')}`),
+          PRETTIER_TEXT(` from ${oneImport.importedModule.join(".")}`),
         ),
       ),
     )
-    .join('');
+    .join("");
 
   const interfaces = samlangModule.interfaces.map((interfaceDeclaration) => {
     const documents = [
@@ -55,8 +55,8 @@ export default function prettyPrintSamlangModule(
       PRETTIER_TEXT(`interface ${interfaceDeclaration.name.name}`),
       PRETTIER_TEXT(
         interfaceDeclaration.typeParameters.length === 0
-          ? ''
-          : `<${interfaceDeclaration.typeParameters.map(prettyPrintTypeParameter).join(', ')}>`,
+          ? ""
+          : `<${interfaceDeclaration.typeParameters.map(prettyPrintTypeParameter).join(", ")}>`,
       ),
       PRETTIER_TEXT(
         extendsOrImplementsNodesToString(interfaceDeclaration.extendsOrImplementsNodes),
@@ -74,7 +74,7 @@ export default function prettyPrintSamlangModule(
       availableWidth,
       PRETTIER_CONCAT(...documents),
     ).trimEnd();
-    interfaceString += ' {';
+    interfaceString += " {";
 
     interfaceDeclaration.members.forEach((member) => {
       interfaceString += prettyPrintAccordingToPrettierAlgorithm(
@@ -88,15 +88,15 @@ export default function prettyPrintSamlangModule(
         ),
       );
     });
-    interfaceString += '}';
+    interfaceString += "}";
 
     return interfaceString;
   });
 
   const classes = samlangModule.classes.map((classDefinition) => {
     const typeMappingItems = Array.from(classDefinition.typeDefinition.mappings, ([name, type]) => {
-      if (classDefinition.typeDefinition.type === 'object') {
-        const modifier = type.isPublic ? '' : 'private ';
+      if (classDefinition.typeDefinition.type === "object") {
+        const modifier = type.isPublic ? "" : "private ";
         return `${modifier}val ${name}: ${prettyPrintType(type.type)}`;
       }
       return `${name}(${prettyPrintType(type.type)})`;
@@ -108,8 +108,8 @@ export default function prettyPrintSamlangModule(
       PRETTIER_TEXT(`class ${classDefinition.name.name}`),
       PRETTIER_TEXT(
         classDefinition.typeParameters.length === 0
-          ? ''
-          : `<${classDefinition.typeParameters.map(prettyPrintTypeParameter).join(', ')}>`,
+          ? ""
+          : `<${classDefinition.typeParameters.map(prettyPrintTypeParameter).join(", ")}>`,
       ),
       typeMappingItems.length === 0
         ? PRETTIER_NIL
@@ -130,7 +130,7 @@ export default function prettyPrintSamlangModule(
       availableWidth,
       PRETTIER_CONCAT(...documents),
     ).trimEnd();
-    classString += ' {';
+    classString += " {";
 
     classDefinition.members.forEach((member) => {
       classString += prettyPrintAccordingToPrettierAlgorithm(
@@ -144,10 +144,10 @@ export default function prettyPrintSamlangModule(
         ),
       );
     });
-    classString += '}';
+    classString += "}";
 
     return classString;
   });
-  const untrimmed = `${imports}\n${[...interfaces, ...classes].join('\n\n')}`;
+  const untrimmed = `${imports}\n${[...interfaces, ...classes].join("\n\n")}`;
   return `${untrimmed.trim()}\n`;
 }

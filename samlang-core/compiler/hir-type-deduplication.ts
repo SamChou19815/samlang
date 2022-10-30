@@ -16,8 +16,8 @@ import {
   HIR_INDEX_ACCESS,
   HIR_STRUCT_INITIALIZATION,
   prettyPrintHighIRType,
-} from '../ast/hir-nodes';
-import { assert } from '../utils';
+} from "../ast/hir-nodes";
+import { assert } from "../utils";
 
 class HighIRTypeDeduplicator {
   private readonly closureTypeDefinitionCanonicalNameMapping = new Map<string, string>();
@@ -41,7 +41,7 @@ class HighIRTypeDeduplicator {
       assert(typeDefinition.typeParameters.length === 0);
       const key = `${typeDefinition.type}_${typeDefinition.mappings
         .map(prettyPrintHighIRType)
-        .join('_')}`;
+        .join("_")}`;
       let canonicalName = this.typeDefinitionMapping.get(key)?.identifier;
       if (canonicalName == null) {
         canonicalName = typeDefinition.identifier;
@@ -89,7 +89,7 @@ class HighIRTypeDeduplicator {
   }: HighIRFunction): HighIRFunction => {
     assert(typeParameters.length === 0);
     const rewrittenType = this.rewriteType(type);
-    assert(rewrittenType.__type__ === 'FunctionType');
+    assert(rewrittenType.__type__ === "FunctionType");
     return {
       name,
       parameters,
@@ -102,25 +102,25 @@ class HighIRTypeDeduplicator {
 
   private rewriteStatement = (statement: HighIRStatement): HighIRStatement => {
     switch (statement.__type__) {
-      case 'HighIRIndexAccessStatement':
+      case "HighIRIndexAccessStatement":
         return HIR_INDEX_ACCESS({
           name: statement.name,
           type: this.rewriteType(statement.type),
           pointerExpression: this.rewriteExpression(statement.pointerExpression),
           index: statement.index,
         });
-      case 'HighIRBinaryStatement':
+      case "HighIRBinaryStatement":
         return HIR_BINARY({
           name: statement.name,
           operator: statement.operator,
           e1: this.rewriteExpression(statement.e1),
           e2: this.rewriteExpression(statement.e2),
         });
-      case 'HighIRFunctionCallStatement': {
+      case "HighIRFunctionCallStatement": {
         const functionExpression = this.rewriteExpression(statement.functionExpression);
         assert(
-          functionExpression.__type__ === 'HighIRFunctionNameExpression' ||
-            functionExpression.__type__ === 'HighIRVariableExpression',
+          functionExpression.__type__ === "HighIRFunctionNameExpression" ||
+            functionExpression.__type__ === "HighIRVariableExpression",
         );
         return HIR_FUNCTION_CALL({
           functionExpression,
@@ -129,7 +129,7 @@ class HighIRTypeDeduplicator {
           returnCollector: statement.returnCollector,
         });
       }
-      case 'HighIRIfElseStatement':
+      case "HighIRIfElseStatement":
         return HIR_IF_ELSE({
           booleanExpression: this.rewriteExpression(statement.booleanExpression),
           s1: statement.s1.map(this.rewriteStatement),
@@ -143,24 +143,24 @@ class HighIRTypeDeduplicator {
             }),
           ),
         });
-      case 'HighIRSingleIfStatement':
-      case 'HighIRBreakStatement':
-      case 'HighIRWhileStatement':
+      case "HighIRSingleIfStatement":
+      case "HighIRBreakStatement":
+      case "HighIRWhileStatement":
         throw new Error(`${statement.__type__} should not appear before tailrec optimization.`);
-      case 'HighIRStructInitializationStatement': {
+      case "HighIRStructInitializationStatement": {
         const type = this.rewriteType(statement.type);
-        assert(type.__type__ === 'IdentifierType');
+        assert(type.__type__ === "IdentifierType");
         return HIR_STRUCT_INITIALIZATION({
           structVariableName: statement.structVariableName,
           type,
           expressionList: statement.expressionList.map(this.rewriteExpression),
         });
       }
-      case 'HighIRClosureInitializationStatement': {
+      case "HighIRClosureInitializationStatement": {
         const closureType = this.rewriteType(statement.closureType);
-        assert(closureType.__type__ === 'IdentifierType');
+        assert(closureType.__type__ === "IdentifierType");
         const functionName = this.rewriteExpression(statement.functionName);
-        assert(functionName.__type__ === 'HighIRFunctionNameExpression');
+        assert(functionName.__type__ === "HighIRFunctionNameExpression");
         return HIR_CLOSURE_INITIALIZATION({
           closureVariableName: statement.closureVariableName,
           closureType,
@@ -173,15 +173,15 @@ class HighIRTypeDeduplicator {
 
   private rewriteExpression = (expression: HighIRExpression): HighIRExpression => {
     switch (expression.__type__) {
-      case 'HighIRIntLiteralExpression':
+      case "HighIRIntLiteralExpression":
         return expression;
-      case 'HighIRVariableExpression':
+      case "HighIRVariableExpression":
         return { ...expression, type: this.rewriteType(expression.type) };
-      case 'HighIRStringNameExpression':
+      case "HighIRStringNameExpression":
         return expression;
-      case 'HighIRFunctionNameExpression': {
+      case "HighIRFunctionNameExpression": {
         const type = this.rewriteType(expression.type);
-        assert(type.__type__ === 'FunctionType');
+        assert(type.__type__ === "FunctionType");
         return HIR_FUNCTION_NAME(
           expression.name,
           type,
@@ -193,9 +193,9 @@ class HighIRTypeDeduplicator {
 
   private rewriteType = (type: HighIRType): HighIRType => {
     switch (type.__type__) {
-      case 'PrimitiveType':
+      case "PrimitiveType":
         return type;
-      case 'IdentifierType': {
+      case "IdentifierType": {
         assert(type.typeArguments.length === 0);
         const name =
           this.closureTypeDefinitionCanonicalNameMapping.get(type.name) ??
@@ -203,7 +203,7 @@ class HighIRTypeDeduplicator {
           type.name;
         return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(name);
       }
-      case 'FunctionType':
+      case "FunctionType":
         return HIR_FUNCTION_TYPE(
           type.argumentTypes.map(this.rewriteType),
           this.rewriteType(type.returnType),

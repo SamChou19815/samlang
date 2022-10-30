@@ -3,7 +3,7 @@
  * but commonly used enough that deserves its own file
  */
 
-import { checkNotNull } from '../utils';
+import { checkNotNull } from "../utils";
 import {
   PrettierDocument,
   PRETTIER_CONCAT,
@@ -13,7 +13,7 @@ import {
   PRETTIER_NO_SPACE_BRACKET,
   PRETTIER_SPACED_BRACKET,
   PRETTIER_TEXT,
-} from './printer-prettier-core';
+} from "./printer-prettier-core";
 
 export const createCommaSeparatedList = <E>(
   elements: readonly E[],
@@ -25,7 +25,7 @@ export const createCommaSeparatedList = <E>(
   for (let i = elements.length - 2; i >= 0; i -= 1) {
     base = PRETTIER_CONCAT(
       documentCreator(checkNotNull(elements[i])),
-      PRETTIER_TEXT(','),
+      PRETTIER_TEXT(","),
       PRETTIER_LINE,
       base,
     );
@@ -34,17 +34,17 @@ export const createCommaSeparatedList = <E>(
 };
 
 export const createParenthesisSurroundedDocument = (document: PrettierDocument): PrettierDocument =>
-  PRETTIER_NO_SPACE_BRACKET('(', document, ')');
+  PRETTIER_NO_SPACE_BRACKET("(", document, ")");
 
 export const createBracesSurroundedDocument = (document: PrettierDocument): PrettierDocument =>
-  PRETTIER_SPACED_BRACKET('{', document, '}');
+  PRETTIER_SPACED_BRACKET("{", document, "}");
 
 export const createBracesSurroundedBlockDocument = (
   documents: readonly PrettierDocument[],
 ): PrettierDocument =>
   PRETTIER_CONCAT(
-    PRETTIER_TEXT('{'),
+    PRETTIER_TEXT("{"),
     PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, ...documents)),
     PRETTIER_LINE,
-    PRETTIER_TEXT('}'),
+    PRETTIER_TEXT("}"),
   );

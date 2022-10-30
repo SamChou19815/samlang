@@ -1,7 +1,7 @@
 // @ts-check
 
-const { createHash } = require('crypto');
-const { transpileESM } = require('./api');
+const { createHash } = require("crypto");
+const { transpileESM } = require("./api");
 
 /** @type {Map<string, import('esbuild').TransformResult>} */
 const processCache = new Map();
@@ -14,7 +14,7 @@ function process(/** @type {string} */ src, /** @type {string} */ filename) {
 }
 
 function getCacheKey(/** @type {string} */ src, /** @type {string} */ filename) {
-  return createHash('md5').update(filename).update(src).digest('hex');
+  return createHash("md5").update(filename).update(src).digest("hex");
 }
 
 module.exports = { process, getCacheKey };

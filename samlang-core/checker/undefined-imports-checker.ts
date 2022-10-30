@@ -1,7 +1,7 @@
-import { moduleReferenceToString, Sources } from '../ast/common-nodes';
-import type { SamlangModule, SourceModuleMembersImport } from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { filterMap } from '../utils';
+import { moduleReferenceToString, Sources } from "../ast/common-nodes";
+import type { SamlangModule, SourceModuleMembersImport } from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { filterMap } from "../utils";
 
 class UndefinedImportChecker {
   constructor(

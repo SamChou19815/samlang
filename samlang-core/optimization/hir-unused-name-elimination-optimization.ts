@@ -4,11 +4,11 @@ import type {
   HighIRSources,
   HighIRStatement,
   HighIRType,
-} from '../ast/hir-nodes';
-import { checkNotNull } from '../utils';
+} from "../ast/hir-nodes";
+import { checkNotNull } from "../utils";
 
 function collectForTypeSet(type: HighIRType, typeSet: Set<string>): void {
-  if (type.__type__ === 'IdentifierType') typeSet.add(type.name);
+  if (type.__type__ === "IdentifierType") typeSet.add(type.name);
 }
 
 function collectUsedNamesFromExpression(
@@ -17,11 +17,11 @@ function collectUsedNamesFromExpression(
   expression: HighIRExpression,
 ): void {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRVariableExpression':
+    case "HighIRIntLiteralExpression":
+    case "HighIRVariableExpression":
       break;
-    case 'HighIRStringNameExpression':
-    case 'HighIRFunctionNameExpression':
+    case "HighIRStringNameExpression":
+    case "HighIRFunctionNameExpression":
       nameSet.add(expression.name);
       break;
   }
@@ -34,23 +34,23 @@ function collectUsedNamesFromStatement(
   statement: HighIRStatement,
 ): void {
   switch (statement.__type__) {
-    case 'HighIRIndexAccessStatement':
+    case "HighIRIndexAccessStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.pointerExpression);
       collectForTypeSet(statement.type, typeSet);
       break;
-    case 'HighIRBinaryStatement':
+    case "HighIRBinaryStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.e1);
       collectUsedNamesFromExpression(nameSet, typeSet, statement.e2);
       collectForTypeSet(statement.type, typeSet);
       break;
-    case 'HighIRFunctionCallStatement':
+    case "HighIRFunctionCallStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.functionExpression);
       statement.functionArguments.forEach((it) =>
         collectUsedNamesFromExpression(nameSet, typeSet, it),
       );
       collectForTypeSet(statement.returnType, typeSet);
       break;
-    case 'HighIRIfElseStatement':
+    case "HighIRIfElseStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.booleanExpression);
       statement.s1.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
       statement.s2.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
@@ -60,14 +60,14 @@ function collectUsedNamesFromStatement(
         collectForTypeSet(finalAssignment.type, typeSet);
       });
       break;
-    case 'HighIRSingleIfStatement':
+    case "HighIRSingleIfStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.booleanExpression);
       statement.statements.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
       break;
-    case 'HighIRBreakStatement':
+    case "HighIRBreakStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.breakValue);
       break;
-    case 'HighIRWhileStatement':
+    case "HighIRWhileStatement":
       statement.loopVariables.forEach((it) => {
         collectForTypeSet(it.type, typeSet);
         collectUsedNamesFromExpression(nameSet, typeSet, it.initialValue);
@@ -78,13 +78,13 @@ function collectUsedNamesFromStatement(
         collectForTypeSet(statement.breakCollector.type, typeSet);
       }
       break;
-    case 'HighIRStructInitializationStatement':
+    case "HighIRStructInitializationStatement":
       statement.expressionList.forEach((it) =>
         collectUsedNamesFromExpression(nameSet, typeSet, it),
       );
       collectForTypeSet(statement.type, typeSet);
       break;
-    case 'HighIRClosureInitializationStatement':
+    case "HighIRClosureInitializationStatement":
       nameSet.add(statement.functionName.name);
       collectUsedNamesFromExpression(nameSet, typeSet, statement.context);
       collectForTypeSet(statement.functionName.type, typeSet);

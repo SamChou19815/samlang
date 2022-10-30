@@ -1,5 +1,5 @@
-import type { IROperator } from '../ast/common-operators';
-import createHighIRFlexibleOrderOperatorNode from '../ast/hir-flexible-op';
+import type { IROperator } from "../ast/common-operators";
+import createHighIRFlexibleOrderOperatorNode from "../ast/hir-flexible-op";
 import {
   debugPrintHighIRExpression,
   HighIRBinaryStatement,
@@ -22,44 +22,44 @@ import {
   HIR_VARIABLE,
   HIR_WHILE,
   HIR_ZERO,
-} from '../ast/hir-nodes';
-import { assert, checkNotNull, filterMap, ignore, LocalStackedContext, zip3 } from '../utils';
+} from "../ast/hir-nodes";
+import { assert, checkNotNull, filterMap, ignore, LocalStackedContext, zip3 } from "../utils";
 import {
   ifElseOrNull,
   LocalValueContextForOptimization,
   singleIfOrNull,
-} from './hir-optimization-common';
+} from "./hir-optimization-common";
 
 const longOfBool = (b: boolean) => (b ? 1 : 0);
 
 function evaluateBinaryExpression(operator: IROperator, v1: number, v2: number): number | null {
   switch (operator) {
-    case '+':
+    case "+":
       return v1 + v2;
-    case '-':
+    case "-":
       return v1 - v2;
-    case '*':
+    case "*":
       return v1 * v2;
-    case '/': {
+    case "/": {
       if (v2 === 0) return null;
       const result = v1 / v2;
       return result >= 0 ? Math.floor(result) : Math.ceil(result);
     }
-    case '%':
+    case "%":
       return v2 === 0 ? null : v1 % v2;
-    case '^':
+    case "^":
       return v1 ^ v2;
-    case '<':
+    case "<":
       return longOfBool(v1 < v2);
-    case '<=':
+    case "<=":
       return longOfBool(v1 <= v2);
-    case '>':
+    case ">":
       return longOfBool(v1 > v2);
-    case '>=':
+    case ">=":
       return longOfBool(v1 >= v2);
-    case '==':
+    case "==":
       return longOfBool(v1 === v2);
-    case '!=':
+    case "!=":
       return longOfBool(v1 !== v2);
   }
 }
@@ -76,31 +76,31 @@ function mergeBinaryExpression(
   outerConstant: number,
 ): BinaryExpression | null {
   switch (outerOperator) {
-    case '+':
-      if (inner.operator === '+') {
+    case "+":
+      if (inner.operator === "+") {
         return {
-          operator: '+',
+          operator: "+",
           e1: inner.e1,
           e2: HIR_INT(inner.e2.value + outerConstant),
         };
       }
       return null;
-    case '*':
-      if (inner.operator === '*') {
+    case "*":
+      if (inner.operator === "*") {
         return {
-          operator: '*',
+          operator: "*",
           e1: inner.e1,
           e2: HIR_INT(inner.e2.value * outerConstant),
         };
       }
       return null;
-    case '<':
-    case '<=':
-    case '>':
-    case '>=':
-    case '==':
-    case '!=':
-      if (inner.operator === '+') {
+    case "<":
+    case "<=":
+    case ">":
+    case ">=":
+    case "==":
+    case "!=":
+      if (inner.operator === "+") {
         return {
           operator: outerOperator,
           e1: inner.e1,
@@ -120,11 +120,11 @@ function optimizeHighIRExpression(
   expression: HighIRExpression,
 ): HighIRExpression {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRStringNameExpression':
-    case 'HighIRFunctionNameExpression':
+    case "HighIRIntLiteralExpression":
+    case "HighIRStringNameExpression":
+    case "HighIRFunctionNameExpression":
       return expression;
-    case 'HighIRVariableExpression': {
+    case "HighIRVariableExpression": {
       const binded = valueContext.getLocalValueType(expression.name);
       return binded ?? expression;
     }
@@ -171,7 +171,7 @@ function optimizeHighIRStatement(
           }),
         ];
       }
-      if (lastStatementOfFirstRunOptimizedStatements.__type__ !== 'HighIRBreakStatement') {
+      if (lastStatementOfFirstRunOptimizedStatements.__type__ !== "HighIRBreakStatement") {
         return null;
       }
       return firstRunOptimizedStatements;
@@ -180,10 +180,10 @@ function optimizeHighIRStatement(
     const lastStatementOfFirstRunOptimizedStatements = checkNotNull(
       firstIterationOptimizationTrial[firstIterationOptimizationTrial.length - 1],
     );
-    if (lastStatementOfFirstRunOptimizedStatements.__type__ !== 'HighIRBreakStatement') {
+    if (lastStatementOfFirstRunOptimizedStatements.__type__ !== "HighIRBreakStatement") {
       assert(
         firstIterationOptimizationTrial.length === 1 &&
-          lastStatementOfFirstRunOptimizedStatements.__type__ === 'HighIRWhileStatement',
+          lastStatementOfFirstRunOptimizedStatements.__type__ === "HighIRWhileStatement",
       );
       if (maxDepth === 0) return firstIterationOptimizationTrial;
       return tryOptimizeLoopByRunForSomeIterations(
@@ -201,7 +201,7 @@ function optimizeHighIRStatement(
   };
 
   switch (statement.__type__) {
-    case 'HighIRIndexAccessStatement': {
+    case "HighIRIndexAccessStatement": {
       const pointerExpression = optimizeExpression(statement.pointerExpression);
       const { name, type, index } = statement;
       const computed = indexAccessExpressionContext.getLocalValueType(
@@ -212,38 +212,38 @@ function optimizeHighIRStatement(
       return [];
     }
 
-    case 'HighIRBinaryStatement': {
+    case "HighIRBinaryStatement": {
       const e1 = optimizeExpression(statement.e1);
       const e2 = optimizeExpression(statement.e2);
       const { name, operator } = statement;
-      if (e2.__type__ === 'HighIRIntLiteralExpression') {
+      if (e2.__type__ === "HighIRIntLiteralExpression") {
         const v2 = e2.value;
         if (v2 === 0) {
-          if (operator === '+') {
+          if (operator === "+") {
             valueContext.bind(name, e1);
             return [];
           }
-          if (operator === '*') {
+          if (operator === "*") {
             valueContext.bind(name, HIR_ZERO);
             return [];
           }
         }
         if (v2 === 1) {
-          if (operator === '%') {
+          if (operator === "%") {
             valueContext.bind(name, HIR_ZERO);
             return [];
           }
-          if (operator === '*' || operator === '/') {
+          if (operator === "*" || operator === "/") {
             valueContext.bind(name, e1);
             return [];
           }
         }
-        if (e1.__type__ === 'HighIRIntLiteralExpression') {
+        if (e1.__type__ === "HighIRIntLiteralExpression") {
           const v1 = e1.value;
           const value = evaluateBinaryExpression(operator, v1, v2);
           if (value != null) {
             valueContext.bind(name, {
-              __type__: 'HighIRIntLiteralExpression',
+              __type__: "HighIRIntLiteralExpression",
               value,
               type: statement.type,
             });
@@ -252,15 +252,15 @@ function optimizeHighIRStatement(
         }
       }
       if (
-        e1.__type__ === 'HighIRVariableExpression' &&
-        e2.__type__ === 'HighIRVariableExpression' &&
+        e1.__type__ === "HighIRVariableExpression" &&
+        e2.__type__ === "HighIRVariableExpression" &&
         e1.name === e2.name
       ) {
-        if (operator === '-' || operator === '%') {
+        if (operator === "-" || operator === "%") {
           valueContext.bind(name, HIR_ZERO);
           return [];
         }
-        if (operator === '/') {
+        if (operator === "/") {
           valueContext.bind(name, HIR_ONE);
           return [];
         }
@@ -270,8 +270,8 @@ function optimizeHighIRStatement(
         ...createHighIRFlexibleOrderOperatorNode(statement.operator, e1, e2),
       };
       if (
-        partiallyOptimizedStatement.e1.__type__ === 'HighIRVariableExpression' &&
-        partiallyOptimizedStatement.e2.__type__ === 'HighIRIntLiteralExpression'
+        partiallyOptimizedStatement.e1.__type__ === "HighIRVariableExpression" &&
+        partiallyOptimizedStatement.e2.__type__ === "HighIRIntLiteralExpression"
       ) {
         const existingBinaryForE1 = binaryExpressionContext.getLocalValueType(
           partiallyOptimizedStatement.e1.name,
@@ -297,7 +297,7 @@ function optimizeHighIRStatement(
       return [partiallyOptimizedStatement];
     }
 
-    case 'HighIRFunctionCallStatement':
+    case "HighIRFunctionCallStatement":
       return [
         HIR_FUNCTION_CALL({
           functionExpression: optimizeExpression(
@@ -309,9 +309,9 @@ function optimizeHighIRStatement(
         }),
       ];
 
-    case 'HighIRIfElseStatement': {
+    case "HighIRIfElseStatement": {
       const booleanExpression = optimizeExpression(statement.booleanExpression);
-      if (booleanExpression.__type__ === 'HighIRIntLiteralExpression') {
+      if (booleanExpression.__type__ === "HighIRIntLiteralExpression") {
         const isTrue = Boolean(booleanExpression.value);
         const statements = optimizeHighIRStatements(
           isTrue ? statement.s1 : statement.s2,
@@ -368,9 +368,9 @@ function optimizeHighIRStatement(
       return ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignments }));
     }
 
-    case 'HighIRSingleIfStatement': {
+    case "HighIRSingleIfStatement": {
       const booleanExpression = optimizeExpression(statement.booleanExpression);
-      if (booleanExpression.__type__ === 'HighIRIntLiteralExpression') {
+      if (booleanExpression.__type__ === "HighIRIntLiteralExpression") {
         const isTrue = Boolean(booleanExpression.value ^ Number(statement.invertCondition));
         if (isTrue) {
           return optimizeHighIRStatements(
@@ -397,10 +397,10 @@ function optimizeHighIRStatement(
       );
     }
 
-    case 'HighIRBreakStatement':
+    case "HighIRBreakStatement":
       return [HIR_BREAK(optimizeExpression(statement.breakValue))];
 
-    case 'HighIRWhileStatement': {
+    case "HighIRWhileStatement": {
       const filteredLoopVariables = filterMap(statement.loopVariables, (it) => {
         if (
           debugPrintHighIRExpression(it.initialValue) === debugPrintHighIRExpression(it.loopValue)
@@ -431,7 +431,7 @@ function optimizeHighIRStatement(
         filteredLoopVariables,
       ).map(([initialValue, loopValue, variable]) => ({ ...variable, initialValue, loopValue }));
       const lastStatement = statements[statements.length - 1];
-      if (lastStatement != null && lastStatement.__type__ === 'HighIRBreakStatement') {
+      if (lastStatement != null && lastStatement.__type__ === "HighIRBreakStatement") {
         // Now we know that the loop will only loop once!
         loopVariables.forEach((it) => valueContext.bind(it.name, it.initialValue));
         const movedStatements = optimizeHighIRStatements(
@@ -456,7 +456,7 @@ function optimizeHighIRStatement(
       return tryOptimizeLoopByRunForSomeIterations(optimizedWhile) ?? [optimizedWhile];
     }
 
-    case 'HighIRStructInitializationStatement':
+    case "HighIRStructInitializationStatement":
       return [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: statement.structVariableName,
@@ -472,7 +472,7 @@ function optimizeHighIRStatement(
         }),
       ];
 
-    case 'HighIRClosureInitializationStatement':
+    case "HighIRClosureInitializationStatement":
       return [
         HIR_CLOSURE_INITIALIZATION({
           closureVariableName: statement.closureVariableName,
@@ -501,7 +501,7 @@ function optimizeHighIRStatements(
     for (let j = 0; j < optimized.length; j += 1) {
       const s = checkNotNull(optimized[j]);
       collector.push(s);
-      if (s.__type__ === 'HighIRBreakStatement') break outer;
+      if (s.__type__ === "HighIRBreakStatement") break outer;
     }
   }
   return collector;

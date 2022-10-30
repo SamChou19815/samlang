@@ -3,9 +3,9 @@ import {
   LocationCollections,
   ModuleReferenceCollections,
   Sources,
-} from '../ast/common-nodes';
-import { Pattern, SamlangExpression, SamlangModule, SourceId } from '../ast/samlang-nodes';
-import { assert, error, LocalStackedContext } from '../utils';
+} from "../ast/common-nodes";
+import { Pattern, SamlangExpression, SamlangModule, SourceId } from "../ast/samlang-nodes";
+import { assert, error, LocalStackedContext } from "../utils";
 
 export type DefinitionAndUses = {
   readonly definitionLocation: Location;
@@ -44,34 +44,34 @@ export class ModuleScopedVariableDefinitionLookup {
     manager: ScopedDefinitionManager,
   ): void {
     switch (expression.__type__) {
-      case 'LiteralExpression':
-      case 'ThisExpression':
-      case 'ClassMemberExpression':
+      case "LiteralExpression":
+      case "ThisExpression":
+      case "ClassMemberExpression":
         return;
-      case 'VariableExpression':
+      case "VariableExpression":
         this.addDefinitionAndUse(manager.getLocalValueType(expression.name), expression.location);
         return;
-      case 'FieldAccessExpression':
-      case 'MethodAccessExpression':
-      case 'UnaryExpression':
+      case "FieldAccessExpression":
+      case "MethodAccessExpression":
+      case "UnaryExpression":
         this.collectDefinitionAndUseWithDefinitionManager(expression.expression, manager);
         return;
-      case 'FunctionCallExpression':
+      case "FunctionCallExpression":
         this.collectDefinitionAndUseWithDefinitionManager(expression.functionExpression, manager);
         expression.functionArguments.forEach((it) =>
           this.collectDefinitionAndUseWithDefinitionManager(it, manager),
         );
         return;
-      case 'BinaryExpression':
+      case "BinaryExpression":
         this.collectDefinitionAndUseWithDefinitionManager(expression.e1, manager);
         this.collectDefinitionAndUseWithDefinitionManager(expression.e2, manager);
         return;
-      case 'IfElseExpression':
+      case "IfElseExpression":
         this.collectDefinitionAndUseWithDefinitionManager(expression.boolExpression, manager);
         this.collectDefinitionAndUseWithDefinitionManager(expression.e1, manager);
         this.collectDefinitionAndUseWithDefinitionManager(expression.e2, manager);
         return;
-      case 'MatchExpression':
+      case "MatchExpression":
         this.collectDefinitionAndUseWithDefinitionManager(expression.matchedExpression, manager);
         expression.matchingList.forEach((matchItem) => {
           manager.withNestedScope(() => {
@@ -83,7 +83,7 @@ export class ModuleScopedVariableDefinitionLookup {
           });
         });
         return;
-      case 'LambdaExpression':
+      case "LambdaExpression":
         manager.withNestedScope(() => {
           expression.parameters.forEach(({ name: { name, location } }) =>
             this.defineVariable(name, location, manager),
@@ -91,13 +91,13 @@ export class ModuleScopedVariableDefinitionLookup {
           this.collectDefinitionAndUseWithDefinitionManager(expression.body, manager);
         });
         return;
-      case 'StatementBlockExpression':
+      case "StatementBlockExpression":
         manager.withNestedScope(() => {
           const { statements, expression: finalExpression } = expression.block;
           statements.forEach(({ pattern, assignedExpression }) => {
             this.collectDefinitionAndUseWithDefinitionManager(assignedExpression, manager);
             switch (pattern.type) {
-              case 'ObjectPattern':
+              case "ObjectPattern":
                 pattern.destructedNames.forEach((name) => {
                   if (name.alias == null) {
                     this.defineVariable(name.fieldName.name, name.fieldName.location, manager);
@@ -107,10 +107,10 @@ export class ModuleScopedVariableDefinitionLookup {
                   }
                 });
                 return;
-              case 'VariablePattern':
+              case "VariablePattern":
                 this.defineVariable(pattern.name, pattern.location, manager);
                 return;
-              case 'WildCardPattern':
+              case "WildCardPattern":
                 return;
             }
           });
@@ -176,15 +176,15 @@ function applyExpressionRenamingWithDefinitionAndUse(
 ): SamlangExpression {
   const relevantInRange = getRelevantInRanges(expression.location, definitionAndUses);
   if (relevantInRange.length === 0) return expression;
-  assert(expression.__type__ !== 'LiteralExpression');
-  assert(expression.__type__ !== 'ThisExpression');
-  assert(expression.__type__ !== 'ClassMemberExpression');
+  assert(expression.__type__ !== "LiteralExpression");
+  assert(expression.__type__ !== "ThisExpression");
+  assert(expression.__type__ !== "ClassMemberExpression");
   switch (expression.__type__) {
-    case 'VariableExpression':
+    case "VariableExpression":
       return { ...expression, name: newName };
-    case 'FieldAccessExpression':
-    case 'MethodAccessExpression':
-    case 'UnaryExpression':
+    case "FieldAccessExpression":
+    case "MethodAccessExpression":
+    case "UnaryExpression":
       return {
         ...expression,
         expression: applyExpressionRenamingWithDefinitionAndUse(
@@ -193,7 +193,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
           newName,
         ),
       };
-    case 'FunctionCallExpression':
+    case "FunctionCallExpression":
       return {
         ...expression,
         functionExpression: applyExpressionRenamingWithDefinitionAndUse(
@@ -205,13 +205,13 @@ function applyExpressionRenamingWithDefinitionAndUse(
           applyExpressionRenamingWithDefinitionAndUse(it, definitionAndUses, newName),
         ),
       };
-    case 'BinaryExpression':
+    case "BinaryExpression":
       return {
         ...expression,
         e1: applyExpressionRenamingWithDefinitionAndUse(expression.e1, definitionAndUses, newName),
         e2: applyExpressionRenamingWithDefinitionAndUse(expression.e2, definitionAndUses, newName),
       };
-    case 'IfElseExpression':
+    case "IfElseExpression":
       return {
         ...expression,
         boolExpression: applyExpressionRenamingWithDefinitionAndUse(
@@ -222,7 +222,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
         e1: applyExpressionRenamingWithDefinitionAndUse(expression.e1, definitionAndUses, newName),
         e2: applyExpressionRenamingWithDefinitionAndUse(expression.e2, definitionAndUses, newName),
       };
-    case 'MatchExpression':
+    case "MatchExpression":
       return {
         ...expression,
         matchedExpression: applyExpressionRenamingWithDefinitionAndUse(
@@ -258,7 +258,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
           };
         }),
       };
-    case 'LambdaExpression':
+    case "LambdaExpression":
       return {
         ...expression,
         parameters: expression.parameters.map(({ name, typeAnnotation }) => ({
@@ -274,7 +274,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
           newName,
         ),
       };
-    case 'StatementBlockExpression':
+    case "StatementBlockExpression":
       return {
         ...expression,
         block: {
@@ -287,7 +287,7 @@ function applyExpressionRenamingWithDefinitionAndUse(
             );
             let pattern: Pattern;
             switch (statement.pattern.type) {
-              case 'ObjectPattern':
+              case "ObjectPattern":
                 pattern = {
                   ...statement.pattern,
                   destructedNames: statement.pattern.destructedNames.map(
@@ -324,14 +324,14 @@ function applyExpressionRenamingWithDefinitionAndUse(
                   ),
                 };
                 break;
-              case 'VariablePattern':
+              case "VariablePattern":
                 pattern =
                   statement.pattern.location.toString() ===
                   definitionAndUses.definitionLocation.toString()
                     ? { ...statement.pattern, name: newName }
                     : statement.pattern;
                 break;
-              case 'WildCardPattern':
+              case "WildCardPattern":
                 pattern = statement.pattern;
                 break;
             }

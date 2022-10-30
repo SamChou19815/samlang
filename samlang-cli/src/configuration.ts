@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
 export type SamlangProjectConfiguration = {
   readonly sourceDirectory: string;
@@ -12,17 +12,17 @@ export function parseSamlangProjectConfiguration(
 ): SamlangProjectConfiguration | null {
   try {
     const json: unknown = JSON.parse(configurationString);
-    if (typeof json !== 'object' || json === null) return null;
+    if (typeof json !== "object" || json === null) return null;
     const {
-      sourceDirectory = '.',
-      outputDirectory = 'out',
+      sourceDirectory = ".",
+      outputDirectory = "out",
       entryPoints = [],
     } = json as { [k: string]: unknown };
-    if (typeof sourceDirectory !== 'string' || typeof outputDirectory !== 'string') return null;
+    if (typeof sourceDirectory !== "string" || typeof outputDirectory !== "string") return null;
     if (!Array.isArray(entryPoints)) return null;
     const validatedEntryPoints: string[] = [];
     entryPoints.forEach((entryPoint) => {
-      if (typeof entryPoint === 'string') validatedEntryPoints.push(entryPoint);
+      if (typeof entryPoint === "string") validatedEntryPoints.push(entryPoint);
     });
     if (validatedEntryPoints.length !== entryPoints.length) return null;
     return { sourceDirectory, outputDirectory, entryPoints: validatedEntryPoints };
@@ -39,7 +39,7 @@ type ConfigurationLoader = {
 };
 
 export const fileSystemLoader_EXPOSED_FOR_TESTING: ConfigurationLoader = {
-  startPath: path.resolve('.'),
+  startPath: path.resolve("."),
   pathExistanceTester: fs.existsSync,
   fileReader: (p) => {
     try {
@@ -52,9 +52,9 @@ export const fileSystemLoader_EXPOSED_FOR_TESTING: ConfigurationLoader = {
 
 type ConfigurationLoadingResult =
   | SamlangProjectConfiguration
-  | 'UNREADABLE_CONFIGURATION_FILE'
-  | 'UNPARSABLE_CONFIGURATION_FILE'
-  | 'NO_CONFIGURATION';
+  | "UNREADABLE_CONFIGURATION_FILE"
+  | "UNPARSABLE_CONFIGURATION_FILE"
+  | "NO_CONFIGURATION";
 
 export default function loadSamlangProjectConfiguration({
   startPath,
@@ -62,16 +62,16 @@ export default function loadSamlangProjectConfiguration({
   fileReader,
 }: ConfigurationLoader = fileSystemLoader_EXPOSED_FOR_TESTING): ConfigurationLoadingResult {
   let configurationDirectory = startPath;
-  while (configurationDirectory !== '/') {
-    const configurationPath = path.join(configurationDirectory, 'sconfig.json');
+  while (configurationDirectory !== "/") {
+    const configurationPath = path.join(configurationDirectory, "sconfig.json");
     if (pathExistanceTester(configurationPath)) {
       const content = fileReader(configurationPath);
       if (content == null) {
-        return 'UNREADABLE_CONFIGURATION_FILE';
+        return "UNREADABLE_CONFIGURATION_FILE";
       }
       const configuration = parseSamlangProjectConfiguration(content);
       return configuration === null
-        ? 'UNPARSABLE_CONFIGURATION_FILE'
+        ? "UNPARSABLE_CONFIGURATION_FILE"
         : {
             sourceDirectory: path.resolve(configurationDirectory, configuration.sourceDirectory),
             outputDirectory: path.resolve(configurationDirectory, configuration.outputDirectory),
@@ -80,5 +80,5 @@ export default function loadSamlangProjectConfiguration({
     }
     configurationDirectory = path.dirname(configurationDirectory);
   }
-  return 'NO_CONFIGURATION';
+  return "NO_CONFIGURATION";
 }

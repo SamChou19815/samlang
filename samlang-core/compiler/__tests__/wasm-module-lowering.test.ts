@@ -1,4 +1,4 @@
-import { ENCODED_FUNCTION_NAME_PRINTLN, ENCODED_FUNCTION_NAME_THROW } from '../../ast/common-names';
+import { ENCODED_FUNCTION_NAME_PRINTLN, ENCODED_FUNCTION_NAME_THROW } from "../../ast/common-names";
 import {
   MIR_BINARY,
   MIR_BREAK,
@@ -17,32 +17,32 @@ import {
   MIR_WHILE,
   MIR_ZERO,
   MIR_ZERO as ZERO,
-} from '../../ast/mir-nodes';
-import { prettyPrintWebAssemblyModule } from '../../ast/wasm-nodes';
-import lowerMidIRSourcesToWasmModule from '../wasm-module-lowering';
+} from "../../ast/mir-nodes";
+import { prettyPrintWebAssemblyModule } from "../../ast/wasm-nodes";
+import lowerMidIRSourcesToWasmModule from "../wasm-module-lowering";
 
-describe('wasm-module-lowering', () => {
-  it('lowerMidIRSourcesToWasmModule test 1', () => {
+describe("wasm-module-lowering", () => {
+  it("lowerMidIRSourcesToWasmModule test 1", () => {
     expect(
       prettyPrintWebAssemblyModule(
         lowerMidIRSourcesToWasmModule({
           globalVariables: [
-            { name: 'FOO', content: 'foo' },
-            { name: 'BAR', content: 'bar' },
+            { name: "FOO", content: "foo" },
+            { name: "BAR", content: "bar" },
           ],
           typeDefinitions: [],
-          mainFunctionNames: ['main'],
+          mainFunctionNames: ["main"],
           functions: [
             {
-              name: 'main',
-              parameters: ['bar'],
+              name: "main",
+              parameters: ["bar"],
               type: MIR_FUNCTION_TYPE([], INT),
               body: [
                 MIR_IF_ELSE({ booleanExpression: MIR_FALSE, s1: [], s2: [], finalAssignments: [] }),
                 MIR_IF_ELSE({
                   booleanExpression: MIR_FALSE,
                   s1: [],
-                  s2: [MIR_CAST({ name: 'c', type: INT, assignedExpression: ZERO })],
+                  s2: [MIR_CAST({ name: "c", type: INT, assignedExpression: ZERO })],
                   finalAssignments: [],
                 }),
                 MIR_IF_ELSE({
@@ -50,15 +50,15 @@ describe('wasm-module-lowering', () => {
                   s1: [
                     MIR_WHILE({
                       loopVariables: [
-                        { name: 'i', type: INT, initialValue: ZERO, loopValue: ZERO },
+                        { name: "i", type: INT, initialValue: ZERO, loopValue: ZERO },
                       ],
-                      statements: [MIR_CAST({ name: 'c', type: INT, assignedExpression: ZERO })],
+                      statements: [MIR_CAST({ name: "c", type: INT, assignedExpression: ZERO })],
                     }),
                   ],
                   s2: [
                     MIR_WHILE({
                       loopVariables: [],
-                      breakCollector: { name: 'b', type: INT },
+                      breakCollector: { name: "b", type: INT },
                       statements: [
                         MIR_SINGLE_IF({
                           booleanExpression: MIR_FALSE,
@@ -80,35 +80,35 @@ describe('wasm-module-lowering', () => {
                   ],
                   finalAssignments: [
                     {
-                      name: 'f',
+                      name: "f",
                       type: INT,
-                      branch1Value: MIR_NAME('FOO', INT),
-                      branch2Value: MIR_NAME('main', MIR_FUNCTION_TYPE([], INT)),
+                      branch1Value: MIR_NAME("FOO", INT),
+                      branch2Value: MIR_NAME("main", MIR_FUNCTION_TYPE([], INT)),
                     },
                   ],
                 }),
-                MIR_BINARY({ name: 'bin', operator: '+', e1: MIR_VARIABLE('f', INT), e2: ZERO }),
+                MIR_BINARY({ name: "bin", operator: "+", e1: MIR_VARIABLE("f", INT), e2: ZERO }),
                 MIR_FUNCTION_CALL({
-                  functionExpression: MIR_NAME('main', MIR_FUNCTION_TYPE([], INT)),
+                  functionExpression: MIR_NAME("main", MIR_FUNCTION_TYPE([], INT)),
                   functionArguments: [ZERO],
                   returnType: INT,
                 }),
                 MIR_FUNCTION_CALL({
-                  functionExpression: MIR_VARIABLE('f', INT),
+                  functionExpression: MIR_VARIABLE("f", INT),
                   functionArguments: [ZERO],
                   returnType: INT,
-                  returnCollector: 'rc',
+                  returnCollector: "rc",
                 }),
-                MIR_INDEX_ACCESS({ name: 'v', type: INT, pointerExpression: ZERO, index: 3 }),
+                MIR_INDEX_ACCESS({ name: "v", type: INT, pointerExpression: ZERO, index: 3 }),
                 MIR_INDEX_ASSIGN({
-                  assignedExpression: MIR_VARIABLE('v', INT),
+                  assignedExpression: MIR_VARIABLE("v", INT),
                   pointerExpression: ZERO,
                   index: 3,
                 }),
                 MIR_STRUCT_INITIALIZATION({
-                  structVariableName: 's',
+                  structVariableName: "s",
                   type: INT,
-                  expressionList: [ZERO, MIR_VARIABLE('v', INT)],
+                  expressionList: [ZERO, MIR_VARIABLE("v", INT)],
                 }),
               ],
               returnValue: ZERO,

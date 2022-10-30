@@ -1,9 +1,9 @@
-import { Location, ModuleReference } from '../../ast/common-nodes';
-import { createGlobalErrorCollector } from '../../errors';
-import SamlangParser, { BaseParser } from '../samlang-parser';
+import { Location, ModuleReference } from "../../ast/common-nodes";
+import { createGlobalErrorCollector } from "../../errors";
+import SamlangParser, { BaseParser } from "../samlang-parser";
 
-describe('samlang-parser', () => {
-  it('BaseParser test', () => {
+describe("samlang-parser", () => {
+  it("BaseParser test", () => {
     class P extends BaseParser {
       constructor() {
         super([], ModuleReference.DUMMY, createGlobalErrorCollector().getErrorReporter());
@@ -19,7 +19,7 @@ describe('samlang-parser', () => {
     parser.test();
   });
 
-  it('SamlangParser empty robustness test', () => {
+  it("SamlangParser empty robustness test", () => {
     const parser = new SamlangParser(
       [],
       createGlobalErrorCollector().getErrorReporter(),
@@ -37,9 +37,9 @@ describe('samlang-parser', () => {
     parser.parseType();
   });
 
-  it('SamlangParser error robustness test', () => {
+  it("SamlangParser error robustness test", () => {
     const parser = new SamlangParser(
-      [{ location: Location.DUMMY, content: { __type__: 'Error', content: 'fooooo' } }],
+      [{ location: Location.DUMMY, content: { __type__: "Error", content: "fooooo" } }],
       createGlobalErrorCollector().getErrorReporter(),
       ModuleReference.DUMMY,
       new Set(),

@@ -1,22 +1,22 @@
-import { AstBuilder } from '../../ast/samlang-nodes';
-import { memberTypeInformationToString } from '../typing-context';
+import { AstBuilder } from "../../ast/samlang-nodes";
+import { memberTypeInformationToString } from "../typing-context";
 
-describe('builtins', () => {
-  it('memberTypeInformationToString tests', () => {
+describe("builtins", () => {
+  it("memberTypeInformationToString tests", () => {
     expect(
-      memberTypeInformationToString('foo', {
+      memberTypeInformationToString("foo", {
         isPublic: false,
         typeParameters: [],
         type: AstBuilder.FunType([], AstBuilder.IntType),
       }),
-    ).toBe('private foo() -> int');
+    ).toBe("private foo() -> int");
 
     expect(
-      memberTypeInformationToString('bar', {
+      memberTypeInformationToString("bar", {
         isPublic: true,
-        typeParameters: [{ name: 'T', bound: AstBuilder.IdType('A') }],
+        typeParameters: [{ name: "T", bound: AstBuilder.IdType("A") }],
         type: AstBuilder.FunType([], AstBuilder.IntType),
       }),
-    ).toBe('public bar<T: A>() -> int');
+    ).toBe("public bar<T: A>() -> int");
   });
 });

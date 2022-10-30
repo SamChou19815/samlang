@@ -1,4 +1,4 @@
-import { DummySourceReason, ModuleReference, SourceReason } from '../ast/common-nodes';
+import { DummySourceReason, ModuleReference, SourceReason } from "../ast/common-nodes";
 import {
   BinaryExpression,
   ClassMemberExpression,
@@ -47,19 +47,19 @@ import {
   typeReposition,
   UnaryExpression,
   VariableExpression,
-} from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { assert, checkNotNull, filterMap, zip } from '../utils';
-import contextualTypeMeet from './contextual-type-meet';
-import typeCheckFunctionCall, { validateTypeArguments } from './function-call-type-checker';
-import performSSAAnalysisOnSamlangModule from './ssa-analysis';
-import { solveTypeConstraints } from './type-constraints-solver';
-import performTypeSubstitution from './type-substitution';
+} from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { assert, checkNotNull, filterMap, zip } from "../utils";
+import contextualTypeMeet from "./contextual-type-meet";
+import typeCheckFunctionCall, { validateTypeArguments } from "./function-call-type-checker";
+import performSSAAnalysisOnSamlangModule from "./ssa-analysis";
+import { solveTypeConstraints } from "./type-constraints-solver";
+import performTypeSubstitution from "./type-substitution";
 import {
   GlobalTypingContext,
   LocationBasedLocalTypingContext,
   TypingContext,
-} from './typing-context';
+} from "./typing-context";
 
 class ExpressionTypeChecker {
   constructor(private readonly context: TypingContext) {}
@@ -69,33 +69,33 @@ class ExpressionTypeChecker {
     hint: SamlangType | null,
   ): SamlangExpression => {
     assert(
-      expression.__type__ !== 'MethodAccessExpression',
-      'Raw parsed expression does not contain this!',
+      expression.__type__ !== "MethodAccessExpression",
+      "Raw parsed expression does not contain this!",
     );
     switch (expression.__type__) {
-      case 'LiteralExpression':
+      case "LiteralExpression":
         return this.typeCheckLiteral(expression, hint);
-      case 'ThisExpression':
+      case "ThisExpression":
         return this.typeCheckThis(expression, hint);
-      case 'VariableExpression':
+      case "VariableExpression":
         return this.typeCheckVariable(expression, hint);
-      case 'ClassMemberExpression':
+      case "ClassMemberExpression":
         return this.typeCheckClassMember(expression, hint);
-      case 'FieldAccessExpression':
+      case "FieldAccessExpression":
         return this.typeCheckFieldAccess(expression, hint);
-      case 'UnaryExpression':
+      case "UnaryExpression":
         return this.typeCheckUnary(expression, hint);
-      case 'FunctionCallExpression':
+      case "FunctionCallExpression":
         return this.typeCheckFunctionCall(expression, hint);
-      case 'BinaryExpression':
+      case "BinaryExpression":
         return this.typeCheckBinary(expression, hint);
-      case 'IfElseExpression':
+      case "IfElseExpression":
         return this.typeCheckIfElse(expression, hint);
-      case 'MatchExpression':
+      case "MatchExpression":
         return this.typeCheckMatch(expression, hint);
-      case 'LambdaExpression':
+      case "LambdaExpression":
         return this.typeCheckLambda(expression, hint);
-      case 'StatementBlockExpression':
+      case "StatementBlockExpression":
         return this.typeCheckStatementBlock(expression, hint);
     }
   };
@@ -198,7 +198,7 @@ class ExpressionTypeChecker {
       }
       this.context.errorReporter.reportArityMismatchError(
         expression.location,
-        'type arguments',
+        "type arguments",
         classFunctionTypeInformation.typeParameters.length,
         expression.typeArguments.length,
       );
@@ -218,7 +218,7 @@ class ExpressionTypeChecker {
     // Now we know we have some type parameters that cannot be locally resolved.
     if (hint != null) {
       // We either rely on hints.
-      if (hint.__type__ === 'FunctionType') {
+      if (hint.__type__ === "FunctionType") {
         if (hint.argumentTypes.length === classFunctionTypeInformation.type.argumentTypes.length) {
           // Hint matches the shape and can be useful.
           const { solvedGenericType, solvedSubstitution } = solveTypeConstraints(
@@ -249,7 +249,7 @@ class ExpressionTypeChecker {
         }
         this.context.errorReporter.reportArityMismatchError(
           expression.location,
-          'parameter',
+          "parameter",
           hint.argumentTypes.length,
           classFunctionTypeInformation.type.argumentTypes.length,
         );
@@ -257,7 +257,7 @@ class ExpressionTypeChecker {
         this.context.errorReporter.reportUnexpectedTypeKindError(
           expression.location,
           prettyPrintType(hint),
-          'function',
+          "function",
         );
       }
     }
@@ -298,9 +298,9 @@ class ExpressionTypeChecker {
     const type = this.typeMeet(hint, performTypeSubstitution(expression.type, substitutionMap));
     let expressionWithPatchedTypeArguments: SamlangExpression;
     switch (expression.__type__) {
-      case 'ClassMemberExpression':
-      case 'FieldAccessExpression':
-      case 'MethodAccessExpression':
+      case "ClassMemberExpression":
+      case "FieldAccessExpression":
+      case "MethodAccessExpression":
         expressionWithPatchedTypeArguments = {
           ...expression,
           typeArguments: expression.typeArguments.map((it) =>
@@ -336,10 +336,10 @@ class ExpressionTypeChecker {
     unsolvedTypeParameters: readonly TypeParameterSignature[];
   } {
     const checkedExpression = this.typeCheck(expression.expression, null);
-    if (checkedExpression.type.__type__ !== 'IdentifierType') {
+    if (checkedExpression.type.__type__ !== "IdentifierType") {
       this.context.errorReporter.reportUnexpectedTypeKindError(
         checkedExpression.location,
-        'identifier',
+        "identifier",
         checkedExpression.type,
       );
       const partiallyCheckedExpression = SourceExpressionFieldAccess({
@@ -393,7 +393,7 @@ class ExpressionTypeChecker {
         }
         this.context.errorReporter.reportArityMismatchError(
           expression.location,
-          'type arguments',
+          "type arguments",
           methodTypeInformation.typeParameters.length,
           expression.typeArguments.length,
         );
@@ -413,7 +413,7 @@ class ExpressionTypeChecker {
       // Now we know we have some type parameters that cannot be locally resolved.
       if (hint != null) {
         // We either rely on hints.
-        if (hint.__type__ === 'FunctionType') {
+        if (hint.__type__ === "FunctionType") {
           if (hint.argumentTypes.length === methodTypeInformation.type.argumentTypes.length) {
             // Hint matches the shape and can be useful.
             const { solvedGenericType, solvedSubstitution } = solveTypeConstraints(
@@ -443,7 +443,7 @@ class ExpressionTypeChecker {
           }
           this.context.errorReporter.reportArityMismatchError(
             expression.location,
-            'parameter',
+            "parameter",
             hint.argumentTypes.length,
             methodTypeInformation.type.argumentTypes.length,
           );
@@ -451,7 +451,7 @@ class ExpressionTypeChecker {
           this.context.errorReporter.reportUnexpectedTypeKindError(
             expression.location,
             prettyPrintType(hint),
-            'function',
+            "function",
           );
         }
       }
@@ -474,14 +474,14 @@ class ExpressionTypeChecker {
       if (expression.typeArguments.length !== 0) {
         this.context.errorReporter.reportArityMismatchError(
           expression.location,
-          'type arguments',
+          "type arguments",
           0,
           expression.typeArguments.length,
         );
       }
       const { names: fieldNames, mappings: fieldMappings } = this.context.resolveTypeDefinition(
         checkedExpression.type,
-        'object',
+        "object",
       );
       const fieldType = fieldMappings.get(expression.fieldName.name);
       if (fieldType == null) {
@@ -537,7 +537,7 @@ class ExpressionTypeChecker {
   ): SamlangExpression {
     const { partiallyCheckedExpression, unsolvedTypeParameters } =
       this.typeCheckFieldOrMethodAccessWithPotentiallyUnresolvedTypeParameters(expression, hint);
-    if (partiallyCheckedExpression.__type__ === 'FieldAccessExpression') {
+    if (partiallyCheckedExpression.__type__ === "FieldAccessExpression") {
       return partiallyCheckedExpression;
     }
     return this.replaceUndecidedTypeParameterWithUnknownAndUpdateType(
@@ -566,7 +566,7 @@ class ExpressionTypeChecker {
     let checkedFunctionExpressionWithUnresolvedGenericType: SamlangExpression;
     let typeParameters: readonly TypeParameterSignature[];
     switch (expression.functionExpression.__type__) {
-      case 'ClassMemberExpression': {
+      case "ClassMemberExpression": {
         const { partiallyCheckedExpression, unsolvedTypeParameters } =
           this.typeCheckClassMemberWithPotentiallyUnresolvedTypeParameters(
             expression.functionExpression,
@@ -576,7 +576,7 @@ class ExpressionTypeChecker {
         typeParameters = unsolvedTypeParameters;
         break;
       }
-      case 'FieldAccessExpression': {
+      case "FieldAccessExpression": {
         const { partiallyCheckedExpression, unsolvedTypeParameters } =
           this.typeCheckFieldOrMethodAccessWithPotentiallyUnresolvedTypeParameters(
             expression.functionExpression,
@@ -594,7 +594,7 @@ class ExpressionTypeChecker {
         typeParameters = [];
         break;
     }
-    if (checkedFunctionExpressionWithUnresolvedGenericType.type.__type__ === 'UnknownType') {
+    if (checkedFunctionExpressionWithUnresolvedGenericType.type.__type__ === "UnknownType") {
       return SourceExpressionFunctionCall({
         location: expression.location,
         type: this.bestEffortUnknownType(hint, expression),
@@ -607,10 +607,10 @@ class ExpressionTypeChecker {
         functionArguments: expression.functionArguments,
       });
     }
-    if (checkedFunctionExpressionWithUnresolvedGenericType.type.__type__ !== 'FunctionType') {
+    if (checkedFunctionExpressionWithUnresolvedGenericType.type.__type__ !== "FunctionType") {
       this.context.errorReporter.reportUnexpectedTypeKindError(
         expression.location,
-        'function',
+        "function",
         checkedFunctionExpressionWithUnresolvedGenericType.type,
       );
       return SourceExpressionFunctionCall({
@@ -642,9 +642,9 @@ class ExpressionTypeChecker {
     );
     let expressionWithPatchedTypeArguments: SamlangExpression;
     switch (fullyResolvedCheckedFunctionExpression.__type__) {
-      case 'ClassMemberExpression':
-      case 'FieldAccessExpression':
-      case 'MethodAccessExpression':
+      case "ClassMemberExpression":
+      case "FieldAccessExpression":
+      case "MethodAccessExpression":
         expressionWithPatchedTypeArguments = {
           ...fullyResolvedCheckedFunctionExpression,
           typeArguments: fullyResolvedCheckedFunctionExpression.typeArguments.map((it) =>
@@ -671,15 +671,15 @@ class ExpressionTypeChecker {
   ): SamlangExpression {
     let checkedExpression: SamlangExpression;
     switch (expression.operator.symbol) {
-      case '*':
-      case '/':
-      case '%':
-      case '+':
-      case '-':
-      case '<':
-      case '<=':
-      case '>':
-      case '>=':
+      case "*":
+      case "/":
+      case "%":
+      case "+":
+      case "-":
+      case "<":
+      case "<=":
+      case ">":
+      case ">=":
         checkedExpression = SourceExpressionBinary({
           location: expression.location,
           type: expression.type,
@@ -695,8 +695,8 @@ class ExpressionTypeChecker {
           ),
         });
         break;
-      case '&&':
-      case '||':
+      case "&&":
+      case "||":
         checkedExpression = SourceExpressionBinary({
           location: expression.location,
           type: expression.type,
@@ -712,7 +712,7 @@ class ExpressionTypeChecker {
           ),
         });
         break;
-      case '::':
+      case "::":
         checkedExpression = SourceExpressionBinary({
           location: expression.location,
           type: expression.type,
@@ -728,8 +728,8 @@ class ExpressionTypeChecker {
           ),
         });
         break;
-      case '==':
-      case '!=': {
+      case "==":
+      case "!=": {
         const e1 = this.typeCheck(expression.e1, null);
         const e2 = this.typeCheck(expression.e2, e1.type);
         checkedExpression = SourceExpressionBinary({
@@ -770,10 +770,10 @@ class ExpressionTypeChecker {
   private typeCheckMatch(expression: MatchExpression, hint: SamlangType | null): SamlangExpression {
     const checkedMatchedExpression = this.typeCheck(expression.matchedExpression, null);
     const checkedMatchedExpressionType = checkedMatchedExpression.type;
-    if (checkedMatchedExpressionType.__type__ !== 'IdentifierType') {
+    if (checkedMatchedExpressionType.__type__ !== "IdentifierType") {
       this.context.errorReporter.reportUnexpectedTypeKindError(
         checkedMatchedExpression.location,
-        'identifier',
+        "identifier",
         checkedMatchedExpressionType,
       );
       return SourceExpressionMatch({
@@ -786,7 +786,7 @@ class ExpressionTypeChecker {
     }
     const { names: variantNames, mappings: variantMappings } = this.context.resolveTypeDefinition(
       checkedMatchedExpressionType,
-      'variant',
+      "variant",
     );
     const unusedMappings = new Map(variantMappings);
     const checkedMatchingList = filterMap(
@@ -860,7 +860,7 @@ class ExpressionTypeChecker {
     hint: SamlangType | null,
   ): readonly SamlangType[] {
     if (hint != null) {
-      if (hint.__type__ === 'FunctionType') {
+      if (hint.__type__ === "FunctionType") {
         if (hint.argumentTypes.length === expression.parameters.length) {
           return zip(hint.argumentTypes, expression.parameters).map(
             ([parameterHint, parameter]) => {
@@ -876,7 +876,7 @@ class ExpressionTypeChecker {
         } else {
           this.context.errorReporter.reportArityMismatchError(
             expression.location,
-            'function arguments',
+            "function arguments",
             hint.argumentTypes.length,
             expression.parameters.length,
           );
@@ -892,7 +892,7 @@ class ExpressionTypeChecker {
     return expression.parameters.map(({ name, typeAnnotation }) => {
       const type = typeAnnotation ?? SourceUnknownType(SourceReason(name.location, null));
       this.context.validateTypeInstantiationStrictly(type);
-      if (type.__type__ === 'UnknownType') {
+      if (type.__type__ === "UnknownType") {
         this.context.errorReporter.reportInsufficientTypeInferenceContextError(name.location);
       }
       this.context.localTypingContext.write(name.location, type);
@@ -905,7 +905,7 @@ class ExpressionTypeChecker {
     hint: SamlangType | null,
   ): SamlangExpression {
     const argumentTypes = this.inferLambdaParameterTypes(expression, hint);
-    const bodyTypeHint = hint != null && hint.__type__ === 'FunctionType' ? hint.returnType : null;
+    const bodyTypeHint = hint != null && hint.__type__ === "FunctionType" ? hint.returnType : null;
     const body = this.typeCheck(expression.body, bodyTypeHint);
     const captured = this.context.localTypingContext.getCaptured(expression.location);
     const type = SourceFunctionType(
@@ -957,11 +957,11 @@ class ExpressionTypeChecker {
     const checkedAssignedExpressionType = checkedAssignedExpression.type;
     let checkedPattern: Pattern;
     switch (pattern.type) {
-      case 'ObjectPattern': {
-        if (checkedAssignedExpressionType.__type__ !== 'IdentifierType') {
+      case "ObjectPattern": {
+        if (checkedAssignedExpressionType.__type__ !== "IdentifierType") {
           this.context.errorReporter.reportUnexpectedTypeKindError(
             assignedExpression.location,
-            'identifier',
+            "identifier",
             checkedAssignedExpressionType,
           );
           return {
@@ -974,7 +974,7 @@ class ExpressionTypeChecker {
         }
         const { names: fieldNames, mappings: fieldMappings } = this.context.resolveTypeDefinition(
           checkedAssignedExpressionType,
-          'object',
+          "object",
         );
         const fieldOrderMapping = new Map(fieldNames.map((name, index) => [name, index]));
         const destructedNames: ObjectPatternDestucturedName[] = [];
@@ -1022,16 +1022,16 @@ class ExpressionTypeChecker {
             location: destructedName.location,
           });
         }
-        checkedPattern = { location, type: 'ObjectPattern', destructedNames };
+        checkedPattern = { location, type: "ObjectPattern", destructedNames };
         break;
       }
 
-      case 'VariablePattern':
+      case "VariablePattern":
         this.context.localTypingContext.write(pattern.location, checkedAssignedExpressionType);
         checkedPattern = pattern;
         break;
 
-      case 'WildCardPattern':
+      case "WildCardPattern":
         checkedPattern = pattern;
         break;
     }

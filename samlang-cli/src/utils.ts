@@ -1,14 +1,14 @@
-import type { ModuleReference } from '@dev-sam/samlang-core';
-import * as fs from 'fs';
-import * as path from 'path';
-import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from './configuration';
+import type { ModuleReference } from "@dev-sam/samlang-core";
+import * as fs from "fs";
+import * as path from "path";
+import loadSamlangProjectConfiguration, { SamlangProjectConfiguration } from "./configuration";
 
 export function getConfiguration(): SamlangProjectConfiguration {
   const configuration = loadSamlangProjectConfiguration();
   if (
-    configuration === 'NO_CONFIGURATION' ||
-    configuration === 'UNPARSABLE_CONFIGURATION_FILE' ||
-    configuration === 'UNREADABLE_CONFIGURATION_FILE'
+    configuration === "NO_CONFIGURATION" ||
+    configuration === "UNPARSABLE_CONFIGURATION_FILE" ||
+    configuration === "UNREADABLE_CONFIGURATION_FILE"
   ) {
     // eslint-disable-next-line no-console
     console.error(configuration);
@@ -52,7 +52,7 @@ export function collectSources(
   }
 
   walk(sourcePath, (file) => {
-    if (!file.endsWith('.sam')) return;
+    if (!file.endsWith(".sam")) return;
     sources.push([filePathToModuleReference(sourcePath, file), fs.readFileSync(file).toString()]);
   });
 

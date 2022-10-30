@@ -1,4 +1,4 @@
-import { Location, ModuleReference, SourceReason, TypedComment } from '../ast/common-nodes';
+import { Location, ModuleReference, SourceReason, TypedComment } from "../ast/common-nodes";
 import {
   AND,
   BinaryOperator,
@@ -15,7 +15,7 @@ import {
   NE,
   OR,
   PLUS,
-} from '../ast/common-operators';
+} from "../ast/common-operators";
 import {
   Pattern,
   SamlangExpression,
@@ -55,15 +55,15 @@ import {
   SourceUnknownType,
   TypeDefinition,
   VariantPatternToExpression,
-} from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { checkNotNull } from '../utils';
+} from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { checkNotNull } from "../utils";
 import {
   SamlangKeywordString,
   SamlangOperatorString,
   SamlangToken,
   samlangTokenContentToString,
-} from './samlang-lexer';
+} from "./samlang-lexer";
 
 /** @internal */
 export class BaseParser {
@@ -88,15 +88,15 @@ export class BaseParser {
         this.tokens.length === 0
           ? Location.DUMMY
           : checkNotNull(this.tokens[this.tokens.length - 1]).location,
-      content: 'EOF',
+      content: "EOF",
     };
   }
 
   protected peek(): SamlangToken {
     while (true) {
       const peeked = this.simplePeek();
-      if (typeof peeked.content === 'string') return peeked;
-      if (peeked.content.__type__ === 'BlockComment' || peeked.content.__type__ === 'LineComment') {
+      if (typeof peeked.content === "string") return peeked;
+      if (peeked.content.__type__ === "BlockComment" || peeked.content.__type__ === "LineComment") {
         this.consume();
       } else {
         return peeked;
@@ -109,7 +109,7 @@ export class BaseParser {
     if (this.position >= tokens.length) {
       const position = tokens[tokens.length - 1]?.location.end ?? { line: 0, character: 0 };
       const location = new Location(this.moduleReference, position, position);
-      this.report(location, 'Unexpected end of file.');
+      this.report(location, "Unexpected end of file.");
       return;
     }
     this.position += 1;
@@ -121,8 +121,8 @@ export class BaseParser {
       this.position -= 1;
       const content = checkNotNull(this.tokens[this.position]).content;
       if (
-        typeof content === 'string' ||
-        (content.__type__ !== 'BlockComment' && content.__type__ !== 'LineComment')
+        typeof content === "string" ||
+        (content.__type__ !== "BlockComment" && content.__type__ !== "LineComment")
       ) {
         leftOver -= 1;
       }
@@ -133,8 +133,8 @@ export class BaseParser {
     let i = this.position - 1;
     while (i >= 0) {
       const token = checkNotNull(this.tokens[i]).content;
-      if (typeof token === 'string') break;
-      if (token.__type__ !== 'LineComment' && token.__type__ !== 'BlockComment') break;
+      if (typeof token === "string") break;
+      if (token.__type__ !== "LineComment" && token.__type__ !== "BlockComment") break;
       i -= 1;
     }
     this.position = i + 1;
@@ -152,22 +152,22 @@ export class BaseParser {
 
   protected assertAndPeekLowerId(): { readonly location: Location; readonly variable: string } {
     const { location, content } = this.peek();
-    if (typeof content !== 'string' && content.__type__ === 'LowerId') {
+    if (typeof content !== "string" && content.__type__ === "LowerId") {
       this.consume();
       return { location, variable: content.content };
     }
     this.report(location, `Expected: lowerId, actual: ${samlangTokenContentToString(content)}.`);
-    return { location, variable: 'MISSING' };
+    return { location, variable: "MISSING" };
   }
 
   protected assertAndPeekUpperId(): { readonly location: Location; readonly variable: string } {
     const { location, content } = this.peek();
-    if (typeof content !== 'string' && content.__type__ === 'UpperId') {
+    if (typeof content !== "string" && content.__type__ === "UpperId") {
       this.consume();
       return { location, variable: content.content };
     }
     this.report(location, `Expected: upperId, actual: ${samlangTokenContentToString(content)}.`);
-    return { location, variable: 'MISSING' };
+    return { location, variable: "MISSING" };
   }
 
   protected report(location: Location, reason: string): void {
@@ -175,7 +175,7 @@ export class BaseParser {
   }
 
   protected parsePunctuationSeparatedList = <T>(
-    punctuation: ',' | '.' | '*',
+    punctuation: "," | "." | "*",
     parser: () => T,
   ): T[] => {
     const collector: T[] = [];
@@ -188,15 +188,15 @@ export class BaseParser {
   };
 
   protected parseCommaSeparatedList = <T>(parser: () => T): T[] =>
-    this.parsePunctuationSeparatedList(',', parser);
+    this.parsePunctuationSeparatedList(",", parser);
 
   protected assertAndConsumeIdentifier() {
     const peeked = this.peek();
     this.consume();
-    if (typeof peeked.content !== 'string') {
+    if (typeof peeked.content !== "string") {
       switch (peeked.content.__type__) {
-        case 'UpperId':
-        case 'LowerId':
+        case "UpperId":
+        case "LowerId":
           return { identifier: peeked.content.content, location: peeked.location };
         default:
           break;
@@ -206,7 +206,7 @@ export class BaseParser {
       peeked.location,
       `Expected: identifier, actual: ${samlangTokenContentToString(peeked.content)}.`,
     );
-    return { identifier: 'MISSING', location: peeked.location };
+    return { identifier: "MISSING", location: peeked.location };
   }
 }
 
@@ -214,11 +214,11 @@ const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 
 const postProcessBlockComment = (blockComment: string): string =>
   blockComment
-    .split('\n')
+    .split("\n")
     .map((line) => line.trimStart())
-    .map((line) => (line.startsWith('*') ? line.substring(1).trim() : line.trimEnd()))
+    .map((line) => (line.startsWith("*") ? line.substring(1).trim() : line.trimEnd()))
     .filter((line) => line.length > 0)
-    .join(' ');
+    .join(" ");
 
 export default class SamlangModuleParser extends BaseParser {
   private classSourceMap = new Map<string, ModuleReference>();
@@ -239,16 +239,16 @@ export default class SamlangModuleParser extends BaseParser {
 
   parseModule = (): SamlangModule => {
     const imports: SourceModuleMembersImport[] = [];
-    while (this.peek().content === 'import') {
+    while (this.peek().content === "import") {
       const importStart = this.peek().location;
       this.consume();
-      this.assertAndConsume('{');
+      this.assertAndConsume("{");
       const importedMembers = this.parseCommaSeparatedList(this.parseUpperId);
-      this.assertAndConsume('}');
-      this.assertAndConsume('from');
+      this.assertAndConsume("}");
+      this.assertAndConsume("from");
       const importLocationStart = this.peek().location;
       const importedModule = ModuleReference(
-        this.parsePunctuationSeparatedList('.', () => this.assertAndConsumeIdentifier().identifier),
+        this.parsePunctuationSeparatedList(".", () => this.assertAndConsumeIdentifier().identifier),
       );
       const importedModuleLocation = importLocationStart.union(this.lastLocation());
       importedMembers.forEach(({ name: variable }) =>
@@ -264,13 +264,13 @@ export default class SamlangModuleParser extends BaseParser {
 
     const classes: SourceClassDefinition[] = [];
     const interfaces: SourceInterfaceDeclaration[] = [];
-    ParseClassesAndInterfaces: while (this.peek().content !== 'EOF') {
+    ParseClassesAndInterfaces: while (this.peek().content !== "EOF") {
       let potentialGarbagePeeked = this.peek();
       while (
-        potentialGarbagePeeked.content !== 'class' &&
-        potentialGarbagePeeked.content !== 'interface'
+        potentialGarbagePeeked.content !== "class" &&
+        potentialGarbagePeeked.content !== "interface"
       ) {
-        if (potentialGarbagePeeked.content === 'EOF') break ParseClassesAndInterfaces;
+        if (potentialGarbagePeeked.content === "EOF") break ParseClassesAndInterfaces;
         this.report(
           potentialGarbagePeeked.location,
           `Unexpected token among the classes and interfaces: ${samlangTokenContentToString(
@@ -292,7 +292,7 @@ export default class SamlangModuleParser extends BaseParser {
   ) {
     const peeked = this.peek().content;
     this.unconsumeComments();
-    if (peeked === 'class') {
+    if (peeked === "class") {
       classes.push(this.parseClass());
     } else {
       interfaces.push(this.parseInterface());
@@ -301,29 +301,29 @@ export default class SamlangModuleParser extends BaseParser {
 
   parseClass(): SourceClassDefinition {
     const associatedComments = this.collectPrecedingComments();
-    let location = this.assertAndConsume('class');
+    let location = this.assertAndConsume("class");
     const name = this.parseUpperId();
     location = location.union(name.location);
     let typeParameters: readonly SourceTypeParameter[];
     let typeParameterLocationStart: Location | undefined;
     let typeParameterLocationEnd: Location | undefined;
-    if (this.peek().content === '<') {
+    if (this.peek().content === "<") {
       typeParameterLocationStart = this.peek().location;
       this.consume();
       typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
-      typeParameterLocationEnd = this.assertAndConsume('>');
+      typeParameterLocationEnd = this.assertAndConsume(">");
     } else {
       typeParameters = [];
     }
     let typeDefinition: TypeDefinition;
     let extendsOrImplementsNodes: readonly SamlangIdentifierType[] = [];
     if (
-      this.peek().content === '{' ||
-      this.peek().content === ':' ||
+      this.peek().content === "{" ||
+      this.peek().content === ":" ||
       this.peekedClassedOrInterfaceStart()
     ) {
-      if (this.peek().content === ':') {
-        this.assertAndConsume(':');
+      if (this.peek().content === ":") {
+        this.assertAndConsume(":");
         extendsOrImplementsNodes = this.parseCommaSeparatedList(() =>
           this.parseIdentifierType(this.parseUpperId()),
         );
@@ -337,14 +337,14 @@ export default class SamlangModuleParser extends BaseParser {
         typeParameterLocationEnd == null ? location : location.union(typeParameterLocationEnd);
       typeDefinition = {
         location: this.peek().location,
-        type: 'object',
+        type: "object",
         names: [],
         mappings: new Map(),
       };
     } else {
-      const typeDefinitionLocationStart = this.assertAndConsume('(');
+      const typeDefinitionLocationStart = this.assertAndConsume("(");
       const innerTypeDefinition = this.parseTypeDefinitionInner();
-      const typeDefinitionLocationEnd = this.assertAndConsume(')');
+      const typeDefinitionLocationEnd = this.assertAndConsume(")");
       typeDefinition = {
         location: (typeParameterLocationStart ?? typeDefinitionLocationStart).union(
           typeDefinitionLocationEnd,
@@ -352,8 +352,8 @@ export default class SamlangModuleParser extends BaseParser {
         ...innerTypeDefinition,
       };
       location = location.union(typeDefinitionLocationEnd);
-      if (this.peek().content === ':') {
-        this.assertAndConsume(':');
+      if (this.peek().content === ":") {
+        this.assertAndConsume(":");
         extendsOrImplementsNodes = this.parseCommaSeparatedList(() =>
           this.parseIdentifierType(this.parseUpperId()),
         );
@@ -365,15 +365,15 @@ export default class SamlangModuleParser extends BaseParser {
     }
     const members: SourceClassMemberDefinition[] = [];
     if (!this.peekedClassedOrInterfaceStart()) {
-      this.assertAndConsume('{');
+      this.assertAndConsume("{");
       while (
-        this.peek().content === 'private' ||
-        this.peek().content === 'function' ||
-        this.peek().content === 'method'
+        this.peek().content === "private" ||
+        this.peek().content === "function" ||
+        this.peek().content === "method"
       ) {
         members.push(this.parseSourceClassMemberDefinition());
       }
-      location = location.union(this.assertAndConsume('}'));
+      location = location.union(this.assertAndConsume("}"));
     }
     return {
       location,
@@ -388,19 +388,19 @@ export default class SamlangModuleParser extends BaseParser {
 
   parseInterface(): SourceInterfaceDeclaration {
     const associatedComments = this.collectPrecedingComments();
-    let location = this.assertAndConsume('interface');
+    let location = this.assertAndConsume("interface");
     const name = this.parseUpperId();
     let typeParameters: readonly SourceTypeParameter[];
-    if (this.peek().content === '<') {
+    if (this.peek().content === "<") {
       this.consume();
       typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
-      location = location.union(this.assertAndConsume('>'));
+      location = location.union(this.assertAndConsume(">"));
     } else {
       typeParameters = [];
     }
     let extendsOrImplementsNodes: readonly SamlangIdentifierType[] = [];
-    if (this.peek().content === ':') {
-      this.assertAndConsume(':');
+    if (this.peek().content === ":") {
+      this.assertAndConsume(":");
       extendsOrImplementsNodes = this.parseCommaSeparatedList(() =>
         this.parseIdentifierType(this.parseUpperId()),
       );
@@ -410,12 +410,12 @@ export default class SamlangModuleParser extends BaseParser {
       );
     }
     const members: SourceClassMemberDeclaration[] = [];
-    if (this.peek().content === '{') {
-      this.assertAndConsume('{');
-      while (this.peek().content === 'function' || this.peek().content === 'method') {
+    if (this.peek().content === "{") {
+      this.assertAndConsume("{");
+      while (this.peek().content === "function" || this.peek().content === "method") {
         members.push(this.parseSourceClassMemberDeclaration());
       }
-      location = location.union(this.assertAndConsume('}'));
+      location = location.union(this.assertAndConsume("}"));
     }
     return {
       associatedComments,
@@ -427,40 +427,40 @@ export default class SamlangModuleParser extends BaseParser {
     };
   }
 
-  private parseTypeDefinitionInner = (): Omit<TypeDefinition, 'location'> => {
+  private parseTypeDefinitionInner = (): Omit<TypeDefinition, "location"> => {
     const firstPeeked = this.peek().content;
-    if (typeof firstPeeked !== 'string' && firstPeeked.__type__ === 'UpperId') {
+    if (typeof firstPeeked !== "string" && firstPeeked.__type__ === "UpperId") {
       const mappings = new Map<string, SourceFieldType>();
       const names = this.parseCommaSeparatedList(() => {
         const name = this.parseUpperId();
-        this.assertAndConsume('(');
+        this.assertAndConsume("(");
         const type = this.parseType();
-        this.assertAndConsume(')');
+        this.assertAndConsume(")");
         mappings.set(name.name, { type, isPublic: false });
         return name;
       });
-      return { type: 'variant', names, mappings };
+      return { type: "variant", names, mappings };
     } else {
       const mappings = new Map<string, SourceFieldType>();
       const names = this.parseCommaSeparatedList(() => {
         let isPublic = true;
-        if (this.peek().content === 'private') {
+        if (this.peek().content === "private") {
           isPublic = false;
           this.consume();
         }
-        this.assertAndConsume('val');
+        this.assertAndConsume("val");
         const name = this.parseLowerId();
-        this.assertAndConsume(':');
+        this.assertAndConsume(":");
         const type = this.parseType();
         mappings.set(name.name, { type, isPublic });
         return name;
       });
-      return { type: 'object', names, mappings };
+      return { type: "object", names, mappings };
     }
   };
 
   private peekedClassedOrInterfaceStart(): boolean {
-    return this.peek().content === 'class' || this.peek().content === 'interface';
+    return this.peek().content === "class" || this.peek().content === "interface";
   }
 
   parseSourceClassMemberDeclaration = (): SourceClassMemberDeclaration => {
@@ -471,7 +471,7 @@ export default class SamlangModuleParser extends BaseParser {
     const { location, ...common } = this.parseSourceClassMemberDeclarationCommon(
       /* allowPrivate */ true,
     );
-    this.assertAndConsume('=');
+    this.assertAndConsume("=");
     const body = this.parseExpression();
     return { ...common, location: location.union(body.location), body };
   };
@@ -486,7 +486,7 @@ export default class SamlangModuleParser extends BaseParser {
     let isPublic = true;
     let isMethod = true;
     let peeked: SamlangToken;
-    if (allowPrivate && this.peek().content === 'private') {
+    if (allowPrivate && this.peek().content === "private") {
       isPublic = false;
       startLocation = this.peek().location;
       this.consume();
@@ -495,35 +495,35 @@ export default class SamlangModuleParser extends BaseParser {
       peeked = this.peek();
       startLocation = peeked.location;
     }
-    if (peeked.content === 'function') {
+    if (peeked.content === "function") {
       isMethod = false;
       this.consume();
     } else {
-      this.assertAndConsume('method');
+      this.assertAndConsume("method");
     }
     let typeParameters: SourceTypeParameter[];
-    if (this.peek().content === '<') {
+    if (this.peek().content === "<") {
       this.consume();
       typeParameters = this.parseCommaSeparatedList(this.parseTypeParameter);
-      this.assertAndConsume('>');
+      this.assertAndConsume(">");
     } else {
       typeParameters = [];
     }
     const name = this.parseLowerId();
-    const functionTypeLocationStart = this.assertAndConsume('(');
+    const functionTypeLocationStart = this.assertAndConsume("(");
     const parameters =
-      this.peek().content === ')'
+      this.peek().content === ")"
         ? []
         : this.parseCommaSeparatedList(() => {
             const lowerId = this.assertAndPeekLowerId();
-            this.assertAndConsume(':');
+            this.assertAndConsume(":");
             const typeStartLocation = this.peek().location;
             const type = this.parseType();
             const typeLocation = typeStartLocation.union(this.lastLocation());
             return { name: lowerId.variable, nameLocation: lowerId.location, type, typeLocation };
           });
-    this.assertAndConsume(')');
-    this.assertAndConsume(':');
+    this.assertAndConsume(")");
+    this.assertAndConsume(":");
     const returnType = this.parseType();
     const functionTypeLocation = functionTypeLocationStart.union(returnType.reason.useLocation);
     return {
@@ -547,18 +547,18 @@ export default class SamlangModuleParser extends BaseParser {
     const comments: TypedComment[] = [];
     while (true) {
       const token = this.simplePeek().content;
-      if (typeof token === 'string') break;
-      if (token.__type__ === 'LineComment') {
+      if (typeof token === "string") break;
+      if (token.__type__ === "LineComment") {
         this.consume();
-        comments.push({ type: 'line', text: token.content.substring(2).trim() });
+        comments.push({ type: "line", text: token.content.substring(2).trim() });
         continue;
       }
-      if (token.__type__ !== 'BlockComment') break;
+      if (token.__type__ !== "BlockComment") break;
       this.consume();
-      const isDocComment = token.content.startsWith('/**');
+      const isDocComment = token.content.startsWith("/**");
       const rawText = token.content;
       comments.push({
-        type: isDocComment ? 'doc' : 'block',
+        type: isDocComment ? "doc" : "block",
         text: postProcessBlockComment(
           isDocComment
             ? rawText.substring(3, rawText.length - 2)
@@ -573,7 +573,7 @@ export default class SamlangModuleParser extends BaseParser {
     const associatedComments = this.collectPrecedingComments();
     const name = this.parseUpperId();
     let bound: SamlangType | null = null;
-    if (this.peek().content === ':') {
+    if (this.peek().content === ":") {
       this.consume();
       bound = this.parseIdentifierType(this.parseUpperId());
     }
@@ -611,7 +611,7 @@ export default class SamlangModuleParser extends BaseParser {
   private parseCommaSeparatedExpressions = (): SamlangExpression[] => {
     const collector: SamlangExpression[] = [];
     collector.push(this.parseExpressionWithEndingComments());
-    while (this.peek().content === ',') {
+    while (this.peek().content === ",") {
       this.consume();
       collector.push(this.parseExpressionWithEndingComments());
     }
@@ -621,17 +621,17 @@ export default class SamlangModuleParser extends BaseParser {
   private parseMatch = (): SamlangExpression => {
     const associatedComments = this.collectPrecedingComments();
     const peeked = this.peek();
-    if (peeked.content !== 'match') return this.parseIfElse();
+    if (peeked.content !== "match") return this.parseIfElse();
     this.consume();
-    this.assertAndConsume('(');
+    this.assertAndConsume("(");
     const matchedExpression = this.parseExpressionWithEndingComments();
-    this.assertAndConsume(')');
-    this.assertAndConsume('{');
+    this.assertAndConsume(")");
+    this.assertAndConsume("{");
     const matchingList = [this.parsePatternToExpression()];
-    while (this.peek().content === '|') {
+    while (this.peek().content === "|") {
       matchingList.push(this.parsePatternToExpression());
     }
-    const endLocation = this.assertAndConsume('}');
+    const endLocation = this.assertAndConsume("}");
     const location = peeked.location.union(endLocation);
     return SourceExpressionMatch({
       location,
@@ -643,16 +643,16 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   private parsePatternToExpression = (): VariantPatternToExpression => {
-    const startLocation = this.assertAndConsume('|');
+    const startLocation = this.assertAndConsume("|");
     const tag = this.parseUpperId();
     let dataVariable: readonly [SourceIdentifier, SamlangType] | undefined;
-    if (this.peek().content === '_') {
+    if (this.peek().content === "_") {
       this.consume();
     } else {
       const name = this.parseLowerId();
       dataVariable = [name, SourceUnknownType(SourceReason(name.location, null))];
     }
-    this.assertAndConsume('->');
+    this.assertAndConsume("->");
     const expression = this.parseExpression();
     return {
       location: startLocation.union(expression.location),
@@ -666,12 +666,12 @@ export default class SamlangModuleParser extends BaseParser {
   private parseIfElse = (): SamlangExpression => {
     const associatedComments = this.collectPrecedingComments();
     const peeked = this.peek();
-    if (peeked.content !== 'if') return this.parseDisjunction();
+    if (peeked.content !== "if") return this.parseDisjunction();
     this.consume();
     const boolExpression = this.parseExpression();
-    this.assertAndConsume('then');
+    this.assertAndConsume("then");
     const e1 = this.parseExpression();
-    this.assertAndConsume('else');
+    this.assertAndConsume("else");
     const e2 = this.parseExpression();
     const location = peeked.location.union(e2.location);
     return SourceExpressionIfElse({
@@ -686,7 +686,7 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseDisjunction = (): SamlangExpression => {
     let e = this.parseConjunction();
-    while (this.peek().content === '||') {
+    while (this.peek().content === "||") {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseConjunction();
@@ -706,7 +706,7 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseConjunction = (): SamlangExpression => {
     let e = this.parseComparison();
-    while (this.peek().content === '&&') {
+    while (this.peek().content === "&&") {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseComparison();
@@ -730,34 +730,34 @@ export default class SamlangModuleParser extends BaseParser {
       const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
       if (
-        peeked !== '<' &&
-        peeked !== '<=' &&
-        peeked !== '>' &&
-        peeked !== '>=' &&
-        peeked !== '==' &&
-        peeked !== '!='
+        peeked !== "<" &&
+        peeked !== "<=" &&
+        peeked !== ">" &&
+        peeked !== ">=" &&
+        peeked !== "==" &&
+        peeked !== "!="
       ) {
         break;
       }
       this.consume();
       let operator: BinaryOperator;
       switch (peeked) {
-        case '<':
+        case "<":
           operator = LT;
           break;
-        case '<=':
+        case "<=":
           operator = LE;
           break;
-        case '>':
+        case ">":
           operator = GT;
           break;
-        case '>=':
+        case ">=":
           operator = GE;
           break;
-        case '==':
+        case "==":
           operator = EQ;
           break;
-        case '!=':
+        case "!=":
           operator = NE;
           break;
       }
@@ -781,14 +781,14 @@ export default class SamlangModuleParser extends BaseParser {
     while (true) {
       const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
-      if (peeked !== '+' && peeked !== '-') break;
+      if (peeked !== "+" && peeked !== "-") break;
       this.consume();
       let operator: BinaryOperator;
       switch (peeked) {
-        case '+':
+        case "+":
           operator = PLUS;
           break;
-        case '-':
+        case "-":
           operator = MINUS;
           break;
       }
@@ -812,17 +812,17 @@ export default class SamlangModuleParser extends BaseParser {
     while (true) {
       const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
-      if (peeked !== '*' && peeked !== '/' && peeked !== '%') break;
+      if (peeked !== "*" && peeked !== "/" && peeked !== "%") break;
       this.consume();
       let operator: BinaryOperator;
       switch (peeked) {
-        case '*':
+        case "*":
           operator = MUL;
           break;
-        case '/':
+        case "/":
           operator = DIV;
           break;
-        case '%':
+        case "%":
           operator = MOD;
           break;
       }
@@ -843,7 +843,7 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseConcat = (): SamlangExpression => {
     let e = this.parseUnaryExpression();
-    while (this.peek().content === '::') {
+    while (this.peek().content === "::") {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseUnaryExpression();
@@ -865,7 +865,7 @@ export default class SamlangModuleParser extends BaseParser {
     const associatedComments = this.collectPrecedingComments();
     const peeked = this.peek();
 
-    if (peeked.content === '!') {
+    if (peeked.content === "!") {
       this.consume();
       const expression = this.parseFunctionCallOrFieldAccess();
       const location = peeked.location.union(expression.location);
@@ -873,11 +873,11 @@ export default class SamlangModuleParser extends BaseParser {
         location,
         type: SourceBoolType(SourceReason(location, null)),
         associatedComments,
-        operator: '!',
+        operator: "!",
         expression,
       });
     }
-    if (peeked.content === '-') {
+    if (peeked.content === "-") {
       this.consume();
       const expression = this.parseFunctionCallOrFieldAccess();
       const location = peeked.location.union(expression.location);
@@ -885,7 +885,7 @@ export default class SamlangModuleParser extends BaseParser {
         location,
         type: SourceIntType(SourceReason(location, null)),
         associatedComments,
-        operator: '-',
+        operator: "-",
         expression,
       });
     }
@@ -899,23 +899,23 @@ export default class SamlangModuleParser extends BaseParser {
     // Treat function arguments or field name as postfix.
     // Then use Kleene star trick to parse.
     let functionExpression = this.parseBaseExpression();
-    while (this.peek().content === '.' || this.peek().content === '(') {
-      if (this.peek().content === '.') {
+    while (this.peek().content === "." || this.peek().content === "(") {
+      if (this.peek().content === ".") {
         const fieldPrecedingComments = this.collectPrecedingComments();
         this.consume();
         fieldPrecedingComments.push(...this.collectPrecedingComments());
         const { location: fieldLocation, variable: fieldName } = this.assertAndPeekLowerId();
         const typeArguments: SamlangType[] = [];
         let location = functionExpression.location.union(fieldLocation);
-        if (this.peek().content === '<') {
+        if (this.peek().content === "<") {
           fieldPrecedingComments.push(...this.collectPrecedingComments());
-          this.assertAndConsume('<');
+          this.assertAndConsume("<");
           typeArguments.push(this.parseType());
-          while (this.peek().content === ',') {
+          while (this.peek().content === ",") {
             this.consume();
             typeArguments.push(this.parseType());
           }
-          location = location.union(this.assertAndConsume('>'));
+          location = location.union(this.assertAndConsume(">"));
         }
         functionExpression = SourceExpressionFieldAccess({
           location,
@@ -932,8 +932,8 @@ export default class SamlangModuleParser extends BaseParser {
       } else {
         this.consume();
         const functionArguments =
-          this.peek().content === ')' ? [] : this.parseCommaSeparatedExpressions();
-        const endLocation = this.assertAndConsume(')');
+          this.peek().content === ")" ? [] : this.parseCommaSeparatedExpressions();
+        const endLocation = this.assertAndConsume(")");
         const location = startLocation.union(endLocation);
         functionExpression = SourceExpressionFunctionCall({
           location,
@@ -952,15 +952,15 @@ export default class SamlangModuleParser extends BaseParser {
     const associatedComments = this.collectPrecedingComments();
     const peeked = this.peek();
 
-    if (peeked.content === 'true') {
+    if (peeked.content === "true") {
       this.consume();
       return SourceExpressionTrue(peeked.location, associatedComments);
     }
-    if (peeked.content === 'false') {
+    if (peeked.content === "false") {
       this.consume();
       return SourceExpressionFalse(peeked.location, associatedComments);
     }
-    if (peeked.content === 'this') {
+    if (peeked.content === "this") {
       this.consume();
       return SourceExpressionThis({
         location: peeked.location,
@@ -969,8 +969,8 @@ export default class SamlangModuleParser extends BaseParser {
       });
     }
 
-    if (typeof peeked.content !== 'string') {
-      if (peeked.content.__type__ === 'IntLiteral') {
+    if (typeof peeked.content !== "string") {
+      if (peeked.content.__type__ === "IntLiteral") {
         this.consume();
         return SourceExpressionInt(
           parseInt(peeked.content.content, 10),
@@ -979,7 +979,7 @@ export default class SamlangModuleParser extends BaseParser {
         );
       }
 
-      if (peeked.content.__type__ === 'StringLiteral') {
+      if (peeked.content.__type__ === "StringLiteral") {
         this.consume();
         const literalText = peeked.content.content;
         return SourceExpressionString(
@@ -989,7 +989,7 @@ export default class SamlangModuleParser extends BaseParser {
         );
       }
 
-      if (peeked.content.__type__ === 'LowerId') {
+      if (peeked.content.__type__ === "LowerId") {
         this.consume();
         return SourceExpressionVariable({
           location: peeked.location,
@@ -999,11 +999,11 @@ export default class SamlangModuleParser extends BaseParser {
         });
       }
 
-      if (peeked.content.__type__ === 'UpperId') {
+      if (peeked.content.__type__ === "UpperId") {
         this.consume();
         const className = peeked.content.content;
         const nextPeeked = this.peek();
-        if (nextPeeked.content === '.') {
+        if (nextPeeked.content === ".") {
           const memberPrecedingComments = this.collectPrecedingComments();
           this.consume();
           memberPrecedingComments.push(...this.collectPrecedingComments());
@@ -1011,15 +1011,15 @@ export default class SamlangModuleParser extends BaseParser {
             this.assertAndConsumeIdentifier();
           let location = peeked.location.union(memberNameLocation);
           const typeArguments: SamlangType[] = [];
-          if (this.peek().content === '<') {
+          if (this.peek().content === "<") {
             memberPrecedingComments.push(...this.collectPrecedingComments());
-            this.assertAndConsume('<');
+            this.assertAndConsume("<");
             typeArguments.push(this.parseType());
-            while (this.peek().content === ',') {
+            while (this.peek().content === ",") {
               this.consume();
               typeArguments.push(this.parseType());
             }
-            location = location.union(this.assertAndConsume('>'));
+            location = location.union(this.assertAndConsume(">"));
           }
           return SourceExpressionClassMember({
             location,
@@ -1037,13 +1037,13 @@ export default class SamlangModuleParser extends BaseParser {
       }
     }
 
-    if (peeked.content === '(') {
+    if (peeked.content === "(") {
       this.consume();
-      if (this.peek().content === ')') {
+      if (this.peek().content === ")") {
         associatedComments.push(...this.collectPrecedingComments());
         this.consume();
         associatedComments.push(...this.collectPrecedingComments());
-        this.assertAndConsume('->');
+        this.assertAndConsume("->");
         const body = this.parseExpression();
         const location = peeked.location.union(body.location);
         return SourceExpressionLambda({
@@ -1057,17 +1057,17 @@ export default class SamlangModuleParser extends BaseParser {
       }
       const lowerIdentifierForLambdaPeeked = this.peek();
       if (
-        typeof lowerIdentifierForLambdaPeeked.content !== 'string' &&
-        lowerIdentifierForLambdaPeeked.content.__type__ === 'LowerId'
+        typeof lowerIdentifierForLambdaPeeked.content !== "string" &&
+        lowerIdentifierForLambdaPeeked.content.__type__ === "LowerId"
       ) {
         this.consume();
         const next = this.peek();
-        if (next.content === ',' || next.content === ':') {
+        if (next.content === "," || next.content === ":") {
           this.unconsume();
           const parameters = this.parseCommaSeparatedList(
             (): { name: SourceIdentifier; typeAnnotation: SamlangType | null } => {
               const name = this.parseLowerId();
-              if (this.peek().content === ':') {
+              if (this.peek().content === ":") {
                 this.consume();
                 const typeAnnotation = this.parseType();
                 return { name, typeAnnotation };
@@ -1075,8 +1075,8 @@ export default class SamlangModuleParser extends BaseParser {
               return { name, typeAnnotation: null };
             },
           );
-          this.assertAndConsume(')');
-          this.assertAndConsume('->');
+          this.assertAndConsume(")");
+          this.assertAndConsume("->");
           const body = this.parseExpression();
           const location = peeked.location.union(body.location);
           return SourceExpressionLambda({
@@ -1094,9 +1094,9 @@ export default class SamlangModuleParser extends BaseParser {
             captured: new Map(),
             body,
           });
-        } else if (next.content === ')') {
+        } else if (next.content === ")") {
           this.consume();
-          if (this.peek().content === '->') {
+          if (this.peek().content === "->") {
             associatedComments.push(...this.collectPrecedingComments());
             this.consume();
             const body = this.parseExpression();
@@ -1130,18 +1130,18 @@ export default class SamlangModuleParser extends BaseParser {
         this.unconsume();
       }
       const nestedExpression = this.parseExpressionWithEndingComments();
-      this.assertAndConsume(')');
+      this.assertAndConsume(")");
       return nestedExpression;
     }
 
-    if (peeked.content === '{') {
+    if (peeked.content === "{") {
       this.consume();
 
       const statements: SamlangValStatement[] = [];
-      while (this.peek().content === 'val') {
+      while (this.peek().content === "val") {
         statements.push(this.parseStatement());
       }
-      if (this.peek().content === '}') {
+      if (this.peek().content === "}") {
         const location = peeked.location.union(this.peek().location);
         this.consume();
         return SourceExpressionStatementBlock({
@@ -1152,7 +1152,7 @@ export default class SamlangModuleParser extends BaseParser {
         });
       }
       const expression = this.parseExpression();
-      const location = peeked.location.union(this.assertAndConsume('}'));
+      const location = peeked.location.union(this.assertAndConsume("}"));
       return SourceExpressionStatementBlock({
         location,
         type: SourceUnknownType(SourceReason(location, null)),
@@ -1171,17 +1171,17 @@ export default class SamlangModuleParser extends BaseParser {
 
   parseStatement = (): SamlangValStatement => {
     const associatedComments = this.collectPrecedingComments();
-    const startLocation = this.assertAndConsume('val');
+    const startLocation = this.assertAndConsume("val");
     const pattern = this.parsePattern();
     let typeAnnotation: SamlangType | null = null;
-    if (this.peek().content === ':') {
+    if (this.peek().content === ":") {
       this.consume();
       typeAnnotation = this.parseType();
     }
-    this.assertAndConsume('=');
+    this.assertAndConsume("=");
     const assignedExpression = this.parseExpression();
     let location: Location;
-    if (this.peek().content === ';') {
+    if (this.peek().content === ";") {
       location = startLocation.union(this.peek().location);
       this.consume();
     } else {
@@ -1192,13 +1192,13 @@ export default class SamlangModuleParser extends BaseParser {
 
   parsePattern = (): Pattern => {
     const peeked = this.peek();
-    if (peeked.content === '{') {
+    if (peeked.content === "{") {
       this.consume();
       const destructedNames = this.parseCommaSeparatedList(() => {
         const fieldName = this.parseLowerId();
         let location = fieldName.location;
         let alias: SourceIdentifier | undefined;
-        if (this.peek().content === 'as') {
+        if (this.peek().content === "as") {
           this.consume();
           alias = this.parseLowerId();
           location = location.union(alias.location);
@@ -1211,20 +1211,20 @@ export default class SamlangModuleParser extends BaseParser {
           location,
         };
       });
-      const endLocation = this.assertAndConsume('}');
+      const endLocation = this.assertAndConsume("}");
       return {
         location: peeked.location.union(endLocation),
-        type: 'ObjectPattern',
+        type: "ObjectPattern",
         destructedNames,
       };
     }
-    if (peeked.content === '_') {
+    if (peeked.content === "_") {
       this.consume();
-      return { location: peeked.location, type: 'WildCardPattern' };
+      return { location: peeked.location, type: "WildCardPattern" };
     }
     return {
       location: peeked.location,
-      type: 'VariablePattern',
+      type: "VariablePattern",
       name: this.assertAndPeekLowerId().variable,
     };
   };
@@ -1233,39 +1233,39 @@ export default class SamlangModuleParser extends BaseParser {
     const peeked = this.peek();
 
     if (
-      peeked.content === 'unit' ||
-      peeked.content === 'bool' ||
-      peeked.content === 'int' ||
-      peeked.content === 'string'
+      peeked.content === "unit" ||
+      peeked.content === "bool" ||
+      peeked.content === "int" ||
+      peeked.content === "string"
     ) {
       this.consume();
       return {
-        __type__: 'PrimitiveType',
+        __type__: "PrimitiveType",
         reason: SourceReason(peeked.location, peeked.location),
         name: peeked.content,
       };
     }
-    if (typeof peeked.content !== 'string' && peeked.content.__type__ === 'UpperId') {
+    if (typeof peeked.content !== "string" && peeked.content.__type__ === "UpperId") {
       this.consume();
       return this.parseIdentifierType(
         SourceId(peeked.content.content, { location: peeked.location }),
       );
     }
-    if (peeked.content === '(') {
+    if (peeked.content === "(") {
       this.consume();
       let argumentTypes: readonly SamlangType[];
-      if (this.peek().content === ')') {
+      if (this.peek().content === ")") {
         this.consume();
         argumentTypes = [];
       } else {
         argumentTypes = this.parseCommaSeparatedList(this.parseType);
-        this.assertAndConsume(')');
+        this.assertAndConsume(")");
       }
-      this.assertAndConsume('->');
+      this.assertAndConsume("->");
       const returnType = this.parseType();
       const location = peeked.location.union(returnType.reason.useLocation);
       return {
-        __type__: 'FunctionType',
+        __type__: "FunctionType",
         reason: SourceReason(location, location),
         argumentTypes,
         returnType,
@@ -1281,15 +1281,15 @@ export default class SamlangModuleParser extends BaseParser {
   private parseIdentifierType(identifier: SourceIdentifier): SamlangIdentifierType {
     let typeArguments: readonly SamlangType[];
     let location = identifier.location;
-    if (this.peek().content === '<') {
+    if (this.peek().content === "<") {
       this.consume();
       typeArguments = this.parseCommaSeparatedList(this.parseType);
-      location = location.union(this.assertAndConsume('>'));
+      location = location.union(this.assertAndConsume(">"));
     } else {
       typeArguments = [];
     }
     return {
-      __type__: 'IdentifierType',
+      __type__: "IdentifierType",
       reason: SourceReason(location, location),
       moduleReference: this.resolveClass(identifier.name),
       identifier: identifier.name,

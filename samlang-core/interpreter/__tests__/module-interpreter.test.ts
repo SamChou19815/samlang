@@ -1,7 +1,7 @@
 // @author meganyin13
 // @origin https://github.com/SamChou19815/samlang/pull/35
 
-import { DummySourceReason, Location, ModuleReference, Position } from '../../ast/common-nodes';
+import { DummySourceReason, Location, ModuleReference, Position } from "../../ast/common-nodes";
 import {
   AstBuilder,
   SamlangModule,
@@ -12,67 +12,67 @@ import {
   SourceExpressionInt,
   SourceExpressionString,
   SourceId,
-} from '../../ast/samlang-nodes';
-import { EMPTY, InterpretationContext, Value } from '../expression-interpreter';
-import ModuleInterpreter from '../module-interpreter';
+} from "../../ast/samlang-nodes";
+import { EMPTY, InterpretationContext, Value } from "../expression-interpreter";
+import ModuleInterpreter from "../module-interpreter";
 
-describe('module-interpreter', () => {
+describe("module-interpreter", () => {
   const moduleInterpreter = new ModuleInterpreter();
 
   const moduleEmpty: SamlangModule = { imports: [], classes: [], interfaces: [] };
 
   const exampleClassDef: SourceClassDefinition = {
     associatedComments: [],
-    name: SourceId('class', {
+    name: SourceId("class", {
       location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
     }),
     typeParameters: [
-      { name: SourceId('param'), bound: null, associatedComments: [], location: Location.DUMMY },
+      { name: SourceId("param"), bound: null, associatedComments: [], location: Location.DUMMY },
     ],
     members: [],
     location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
       location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
-      type: 'object',
-      names: [SourceId('types')],
-      mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
+      type: "object",
+      names: [SourceId("types")],
+      mappings: new Map([["types", { type: AstBuilder.IntType, isPublic: true }]]),
     },
     extendsOrImplementsNodes: [],
   };
 
   const mainClassDef: SourceClassDefinition = {
     associatedComments: [],
-    name: SourceId('Main', {
+    name: SourceId("Main", {
       location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
     }),
     typeParameters: [
-      { name: SourceId('main'), bound: null, associatedComments: [], location: Location.DUMMY },
+      { name: SourceId("main"), bound: null, associatedComments: [], location: Location.DUMMY },
     ],
     members: [],
     location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
       location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
-      type: 'object',
-      names: [SourceId('types')],
-      mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
+      type: "object",
+      names: [SourceId("types")],
+      mappings: new Map([["types", { type: AstBuilder.IntType, isPublic: true }]]),
     },
     extendsOrImplementsNodes: [],
   };
   const mainVariantDef: SourceClassDefinition = {
     associatedComments: [],
-    name: SourceId('Main', {
+    name: SourceId("Main", {
       location: new Location(ModuleReference.DUMMY, Position(5, 2), Position(7, 6)),
     }),
     typeParameters: [
-      { name: SourceId('main'), bound: null, associatedComments: [], location: Location.DUMMY },
+      { name: SourceId("main"), bound: null, associatedComments: [], location: Location.DUMMY },
     ],
     members: [],
     location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     typeDefinition: {
       location: new Location(ModuleReference.DUMMY, Position(1, 2), Position(3, 4)),
-      type: 'variant',
-      names: [SourceId('types')],
-      mappings: new Map([['types', { type: AstBuilder.IntType, isPublic: true }]]),
+      type: "variant",
+      names: [SourceId("types")],
+      mappings: new Map([["types", { type: AstBuilder.IntType, isPublic: true }]]),
     },
     extendsOrImplementsNodes: [],
   };
@@ -82,14 +82,14 @@ describe('module-interpreter', () => {
     location: new Location(ModuleReference.DUMMY, Position(1, 10), Position(3, 4)),
     isPublic: true,
     isMethod: false,
-    name: SourceId('main', {
+    name: SourceId("main", {
       location: new Location(ModuleReference.DUMMY, Position(12, 34), Position(34, 45)),
     }),
     typeParameters: [
-      { name: SourceId('param'), bound: null, associatedComments: [], location: Location.DUMMY },
+      { name: SourceId("param"), bound: null, associatedComments: [], location: Location.DUMMY },
     ],
     type: {
-      __type__: 'FunctionType',
+      __type__: "FunctionType",
       reason: DummySourceReason,
       argumentTypes: [AstBuilder.IntType],
       returnType: AstBuilder.IntType,
@@ -110,12 +110,12 @@ describe('module-interpreter', () => {
         type: AstBuilder.IntType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
-        className: SourceId('Builtins'),
-        memberName: SourceId('println'),
+        className: SourceId("Builtins"),
+        memberName: SourceId("println"),
       }),
       functionArguments: [
         SourceExpressionString(
-          'Hello world',
+          "Hello world",
           new Location(ModuleReference.DUMMY, Position(183, 23), Position(203, 21)),
         ),
       ],
@@ -136,8 +136,8 @@ describe('module-interpreter', () => {
         type: AstBuilder.IntType,
         typeArguments: [],
         moduleReference: ModuleReference.ROOT,
-        className: SourceId('Builtins'),
-        memberName: SourceId('panic'),
+        className: SourceId("Builtins"),
+        memberName: SourceId("panic"),
       }),
       functionArguments: [
         SourceExpressionInt(
@@ -152,7 +152,7 @@ describe('module-interpreter', () => {
     ...memberMainFunctionNoArgs,
     parameters: [
       {
-        name: 'param',
+        name: "param",
         nameLocation: new Location(ModuleReference.DUMMY, Position(231, 34), Position(88, 78)),
         type: AstBuilder.IntType,
         typeLocation: new Location(ModuleReference.DUMMY, Position(123, 98), Position(124, 78)),
@@ -227,41 +227,41 @@ describe('module-interpreter', () => {
     interfaces: [],
   };
 
-  it('module evaluates correctly', () => {
-    expect(moduleInterpreter.eval(moduleEmpty)).toEqual({ type: 'unit' });
-    expect(moduleInterpreter.eval(moduleNoMainClass)).toEqual({ type: 'unit' });
-    expect(moduleInterpreter.eval(moduleWithMainClassNoMainFunction)).toEqual({ type: 'unit' });
+  it("module evaluates correctly", () => {
+    expect(moduleInterpreter.eval(moduleEmpty)).toEqual({ type: "unit" });
+    expect(moduleInterpreter.eval(moduleNoMainClass)).toEqual({ type: "unit" });
+    expect(moduleInterpreter.eval(moduleWithMainClassNoMainFunction)).toEqual({ type: "unit" });
     expect(moduleInterpreter.eval(moduleWithMainClassAndMainFunctionNoArgs)).toEqual(2);
     expect(moduleInterpreter.eval(moduleWithMainClassAndMainMethodNoArgs)).toEqual({
-      type: 'unit',
+      type: "unit",
     });
-    expect(() => moduleInterpreter.eval(modulePanic)).toThrow('Interpreter Error.');
+    expect(() => moduleInterpreter.eval(modulePanic)).toThrow("Interpreter Error.");
     expect(moduleInterpreter.eval(moduleWithMainClassAndMainFunctionWithArgs)).toEqual({
-      type: 'unit',
+      type: "unit",
     });
   });
 
-  it('synthetic functions setup correctly', () => {
+  it("synthetic functions setup correctly", () => {
     (
-      moduleInterpreter.evalContext(mainClassDef, EMPTY).classes.get('Main')?.functions.get('init')
+      moduleInterpreter.evalContext(mainClassDef, EMPTY).classes.get("Main")?.functions.get("init")
         ?.body as (c: InterpretationContext) => Value
-    )({ ...EMPTY, localValues: new Map([['types', 1]]) });
+    )({ ...EMPTY, localValues: new Map([["types", 1]]) });
     (
       moduleInterpreter
         .evalContext(mainVariantDef, EMPTY)
-        .classes.get('Main')
-        ?.functions.get('types')?.body as (c: InterpretationContext) => Value
-    )({ ...EMPTY, localValues: new Map([['data', 1]]) });
+        .classes.get("Main")
+        ?.functions.get("types")?.body as (c: InterpretationContext) => Value
+    )({ ...EMPTY, localValues: new Map([["data", 1]]) });
   });
 
-  it('module runs correctly', () => {
-    expect(moduleInterpreter.run(moduleEmpty)).toEqual('');
-    expect(moduleInterpreter.run(moduleNoMainClass)).toEqual('');
-    expect(moduleInterpreter.run(moduleWithMainClassNoMainFunction)).toEqual('');
-    expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionNoArgs)).toEqual('');
-    expect(moduleInterpreter.run(moduleWithMainClassAndMainMethodNoArgs)).toEqual('');
-    expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionWithArgs)).toEqual('');
-    expect(() => moduleInterpreter.run(modulePanic)).toThrow('Interpreter Error.');
-    expect(moduleInterpreter.run(modulePrint)).toEqual('Hello world\n');
+  it("module runs correctly", () => {
+    expect(moduleInterpreter.run(moduleEmpty)).toEqual("");
+    expect(moduleInterpreter.run(moduleNoMainClass)).toEqual("");
+    expect(moduleInterpreter.run(moduleWithMainClassNoMainFunction)).toEqual("");
+    expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionNoArgs)).toEqual("");
+    expect(moduleInterpreter.run(moduleWithMainClassAndMainMethodNoArgs)).toEqual("");
+    expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionWithArgs)).toEqual("");
+    expect(() => moduleInterpreter.run(modulePanic)).toThrow("Interpreter Error.");
+    expect(moduleInterpreter.run(modulePrint)).toEqual("Hello world\n");
   });
 });

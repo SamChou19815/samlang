@@ -40,7 +40,6 @@
   },
   "prettier": {
     "printWidth": 100,
-    "singleQuote": true,
     "endOfLine": "lf",
     "trailingComma": "all",
     "pluginSearchDirs": [

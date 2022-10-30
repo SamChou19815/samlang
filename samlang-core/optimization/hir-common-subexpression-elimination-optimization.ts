@@ -1,8 +1,8 @@
-import { HighIRFunction, HighIRStatement, HIR_BINARY, HIR_INDEX_ACCESS } from '../ast/hir-nodes';
-import { createCollectionConstructors, filterMap, HashSet, ReadonlyHashSet } from '../utils';
-import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
-import { BindedValue, bindedValueToString } from './hir-optimization-common';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
+import { HighIRFunction, HighIRStatement, HIR_BINARY, HIR_INDEX_ACCESS } from "../ast/hir-nodes";
+import { createCollectionConstructors, filterMap, HashSet, ReadonlyHashSet } from "../utils";
+import optimizeHighIRFunctionByLocalValueNumbering from "./hir-local-value-numbering-optimization";
+import { BindedValue, bindedValueToString } from "./hir-optimization-common";
+import type OptimizationResourceAllocator from "./optimization-resource-allocator";
 
 class ExpressionWrapper {
   constructor(readonly value: BindedValue) {}
@@ -26,14 +26,14 @@ function produceHoistedStatement(
   value: BindedValue,
 ): HighIRStatement {
   switch (value.__type__) {
-    case 'IndexAccess':
+    case "IndexAccess":
       return HIR_INDEX_ACCESS({
         name: allocator.allocateCSEHoistedTemporary(),
         type: value.type,
         pointerExpression: value.pointerExpression,
         index: value.index,
       });
-    case 'Binary':
+    case "Binary":
       return HIR_BINARY({
         name: allocator.allocateCSEHoistedTemporary(),
         operator: value.operator,
@@ -49,10 +49,10 @@ function optimizeHighIRStatement(
   set: HashSet<ExpressionWrapper>,
 ): readonly HighIRStatement[] {
   switch (statement.__type__) {
-    case 'HighIRIndexAccessStatement':
+    case "HighIRIndexAccessStatement":
       set.add(
         new ExpressionWrapper({
-          __type__: 'IndexAccess',
+          __type__: "IndexAccess",
           type: statement.type,
           pointerExpression: statement.pointerExpression,
           index: statement.index,
@@ -60,10 +60,10 @@ function optimizeHighIRStatement(
       );
       return [statement];
 
-    case 'HighIRBinaryStatement':
+    case "HighIRBinaryStatement":
       set.add(
         new ExpressionWrapper({
-          __type__: 'Binary',
+          __type__: "Binary",
           operator: statement.operator,
           e1: statement.e1,
           e2: statement.e2,
@@ -71,15 +71,15 @@ function optimizeHighIRStatement(
       );
       return [statement];
 
-    case 'HighIRFunctionCallStatement':
-    case 'HighIRSingleIfStatement':
-    case 'HighIRBreakStatement':
-    case 'HighIRWhileStatement': // handle similar optimization in loop-invariant code motion
-    case 'HighIRStructInitializationStatement':
-    case 'HighIRClosureInitializationStatement':
+    case "HighIRFunctionCallStatement":
+    case "HighIRSingleIfStatement":
+    case "HighIRBreakStatement":
+    case "HighIRWhileStatement": // handle similar optimization in loop-invariant code motion
+    case "HighIRStructInitializationStatement":
+    case "HighIRClosureInitializationStatement":
       return [statement];
 
-    case 'HighIRIfElseStatement': {
+    case "HighIRIfElseStatement": {
       const { statements: s1, set: set1 } = optimizeHighIRStatementsWithSet(
         statement.s1,
         allocator,

@@ -4,7 +4,7 @@ import {
   ModuleReference,
   moduleReferenceToString,
   SourceReason,
-} from '../ast/common-nodes';
+} from "../ast/common-nodes";
 import {
   isTheSameType,
   prettyPrintType,
@@ -17,11 +17,11 @@ import {
   SourceUnknownType,
   TypeParameterSignature,
   typeReposition,
-} from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { checkNotNull, ReadonlyHashMap, zip } from '../utils';
-import type { SsaAnalysisResult } from './ssa-analysis';
-import performTypeSubstitution from './type-substitution';
+} from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { checkNotNull, ReadonlyHashMap, zip } from "../utils";
+import type { SsaAnalysisResult } from "./ssa-analysis";
+import performTypeSubstitution from "./type-substitution";
 
 export class LocationBasedLocalTypingContext {
   private typeMap = LocationCollections.hashMapOf<SamlangType>();
@@ -47,7 +47,7 @@ export class LocationBasedLocalTypingContext {
     const capturedEntries = this.ssaAnalysisResult.lambdaCaptures.forceGet(lambdaLocation);
     for (const [name, location] of capturedEntries) {
       const firstLetter = name.charAt(0);
-      if ('A' <= firstLetter && firstLetter <= 'Z') continue;
+      if ("A" <= firstLetter && firstLetter <= "Z") continue;
       map.set(name, this.typeMap.forceGet(location));
     }
     return map;
@@ -93,7 +93,7 @@ export function memberTypeInformationToString(
   name: string,
   { isPublic, typeParameters, type }: MemberTypeInformation,
 ): string {
-  const accessString = isPublic ? 'public' : 'private';
+  const accessString = isPublic ? "public" : "private";
   const tparamString = prettyPrintTypeParamaters(typeParameters);
   return `${accessString} ${name}${tparamString}${prettyPrintType(type)}`;
 }
@@ -107,7 +107,7 @@ export interface InterfaceTypingContext {
 }
 
 export interface TypeDefinitionTypingContext {
-  readonly type: 'object' | 'variant';
+  readonly type: "object" | "variant";
   readonly names: readonly string[];
   readonly mappings: ReadonlyMap<string, SourceFieldType>;
 }
@@ -170,7 +170,7 @@ export class TypingContext {
   }
 
   public isSubtype = (lower: SamlangType, upper: SamlangIdentifierType): boolean => {
-    if (lower.__type__ !== 'IdentifierType') return false;
+    if (lower.__type__ !== "IdentifierType") return false;
     const interfaceTypingContext = this.getInterfaceInformation(
       lower.moduleReference,
       lower.identifier,
@@ -202,8 +202,8 @@ export class TypingContext {
     enforceConcreteTypes: boolean,
   ): void {
     // if (type.__type__ !== 'IdentifierType') return;
-    if (type.__type__ === 'PrimitiveType' || type.__type__ === 'UnknownType') return;
-    if (type.__type__ === 'FunctionType') {
+    if (type.__type__ === "PrimitiveType" || type.__type__ === "UnknownType") return;
+    if (type.__type__ === "FunctionType") {
       type.argumentTypes.forEach((it) => this.validateTypeInstantiationCustomized(it, true));
       this.validateTypeInstantiationCustomized(type.returnType, true);
       return;
@@ -213,7 +213,7 @@ export class TypingContext {
       if (type.typeArguments.length !== 0) {
         this.errorReporter.reportArityMismatchError(
           type.reason.useLocation,
-          'type arguments',
+          "type arguments",
           0,
           type.typeArguments.length,
         );
@@ -231,14 +231,14 @@ export class TypingContext {
     if (!interfaceInformation.isConcrete && enforceConcreteTypes) {
       this.errorReporter.reportUnexpectedTypeKindError(
         type.reason.useLocation,
-        'non-abstract type',
+        "non-abstract type",
         type,
       );
     }
     if (interfaceInformation.typeParameters.length !== type.typeArguments.length) {
       this.errorReporter.reportArityMismatchError(
         type.reason.useLocation,
-        'type arguments',
+        "type arguments",
         interfaceInformation.typeParameters.length,
         type.typeArguments.length,
       );
@@ -306,7 +306,7 @@ export class TypingContext {
 
   public resolveTypeDefinition(
     { moduleReference, identifier, typeArguments }: SamlangIdentifierType,
-    typeDefinitionType: 'object' | 'variant',
+    typeDefinitionType: "object" | "variant",
   ): {
     readonly names: readonly string[];
     readonly mappings: ReadonlyMap<string, SourceFieldType>;

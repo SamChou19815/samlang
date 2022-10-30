@@ -1,18 +1,18 @@
-import { moduleReferenceToString } from '../ast/common-nodes';
-import { isTheSameType, SamlangType } from '../ast/samlang-nodes';
-import type { GlobalErrorReporter } from '../errors';
-import { zip } from '../utils';
+import { moduleReferenceToString } from "../ast/common-nodes";
+import { isTheSameType, SamlangType } from "../ast/samlang-nodes";
+import type { GlobalErrorReporter } from "../errors";
+import { zip } from "../utils";
 
 function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType): SamlangType {
-  if (general.__type__ === 'UnknownType') return specific;
-  if (specific.__type__ === 'UnknownType') return { ...general, reason: specific.reason };
+  if (general.__type__ === "UnknownType") return specific;
+  if (specific.__type__ === "UnknownType") return { ...general, reason: specific.reason };
   switch (general.__type__) {
-    case 'PrimitiveType':
+    case "PrimitiveType":
       if (!isTheSameType(general, specific)) throw new Error();
       return specific;
-    case 'IdentifierType':
+    case "IdentifierType":
       if (
-        specific.__type__ === 'IdentifierType' &&
+        specific.__type__ === "IdentifierType" &&
         moduleReferenceToString(general.moduleReference) ===
           moduleReferenceToString(specific.moduleReference) &&
         general.identifier === specific.identifier &&
@@ -26,9 +26,9 @@ function contextualTypeMeetWithThrow(general: SamlangType, specific: SamlangType
         };
       }
       throw new Error();
-    case 'FunctionType':
+    case "FunctionType":
       if (
-        specific.__type__ === 'FunctionType' &&
+        specific.__type__ === "FunctionType" &&
         general.argumentTypes.length === specific.argumentTypes.length
       ) {
         return {

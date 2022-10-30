@@ -1,10 +1,10 @@
-import { Location, ModuleReference, ModuleReferenceCollections } from './ast/common-nodes';
+import { Location, ModuleReference, ModuleReferenceCollections } from "./ast/common-nodes";
 import {
   prettyPrintType,
   prettyPrintTypeParamaters,
   SamlangType,
   TypeParameterSignature,
-} from './ast/samlang-nodes';
+} from "./ast/samlang-nodes";
 
 export abstract class CompileTimeError {
   constructor(
@@ -20,14 +20,14 @@ export abstract class CompileTimeError {
 
 class SyntaxError extends CompileTimeError {
   constructor(location: Location, reason: string) {
-    super('SyntaxError', location, reason);
+    super("SyntaxError", location, reason);
   }
 }
 
 class UnexpectedTypeError extends CompileTimeError {
   constructor(location: Location, expected: SamlangType, actual: SamlangType) {
     super(
-      'UnexpectedType',
+      "UnexpectedType",
       location,
       (() => {
         const expectedType = prettyPrintType(expected);
@@ -41,7 +41,7 @@ class UnexpectedTypeError extends CompileTimeError {
 class UnexpectedSubtypeError extends CompileTimeError {
   constructor(location: Location, expected: SamlangType, actual: SamlangType) {
     super(
-      'UnexpectedSubType',
+      "UnexpectedSubType",
       location,
       (() => {
         const expectedType = prettyPrintType(expected);
@@ -54,14 +54,14 @@ class UnexpectedSubtypeError extends CompileTimeError {
 
 class UnresolvedNameError extends CompileTimeError {
   constructor(location: Location, unresolvedName: string) {
-    super('UnresolvedName', location, `Name \`${unresolvedName}\` is not resolved.`);
+    super("UnresolvedName", location, `Name \`${unresolvedName}\` is not resolved.`);
   }
 }
 
 class TypeParameterMismatchError extends CompileTimeError {
   constructor(location: Location, expected: readonly TypeParameterSignature[]) {
     super(
-      'TypeParameterNameMismatch',
+      "TypeParameterNameMismatch",
       location,
       `Type parameter name mismatch. Expected exact match of \`${prettyPrintTypeParamaters(
         expected,
@@ -73,9 +73,9 @@ class TypeParameterMismatchError extends CompileTimeError {
 class MissingDefinitionsError extends CompileTimeError {
   constructor(location: Location, missingDefinitions: readonly string[]) {
     super(
-      'MissingDefinitions',
+      "MissingDefinitions",
       location,
-      `Missing definitions for [${missingDefinitions.join(', ')}].`,
+      `Missing definitions for [${missingDefinitions.join(", ")}].`,
     );
   }
 }
@@ -83,10 +83,10 @@ class MissingDefinitionsError extends CompileTimeError {
 class UnexpectedTypeKindError extends CompileTimeError {
   constructor(location: Location, expectedTypeKind: string, actualType: string | SamlangType) {
     super(
-      'UnexpectedTypeKind',
+      "UnexpectedTypeKind",
       location,
       `Expected kind: \`${expectedTypeKind}\`, actual: \`${
-        typeof actualType === 'string' ? actualType : prettyPrintType(actualType)
+        typeof actualType === "string" ? actualType : prettyPrintType(actualType)
       }\`.`,
     );
   }
@@ -95,7 +95,7 @@ class UnexpectedTypeKindError extends CompileTimeError {
 class ArityMismatchError extends CompileTimeError {
   constructor(location: Location, kind: string, expectedSize: number, actualSize: number) {
     super(
-      'ArityMismatchError',
+      "ArityMismatchError",
       location,
       `Incorrect ${kind} size. Expected: ${expectedSize}, actual: ${actualSize}.`,
     );
@@ -105,9 +105,9 @@ class ArityMismatchError extends CompileTimeError {
 class InsufficientTypeInferenceContextError extends CompileTimeError {
   constructor(location: Location) {
     super(
-      'InsufficientTypeInferenceContext',
+      "InsufficientTypeInferenceContext",
       location,
-      'There is not enough context information to decide the type of this expression.',
+      "There is not enough context information to decide the type of this expression.",
     );
   }
 }
@@ -115,7 +115,7 @@ class InsufficientTypeInferenceContextError extends CompileTimeError {
 class CollisionError extends CompileTimeError {
   constructor(location: Location, collidedName: string) {
     super(
-      'Collision',
+      "Collision",
       location,
       `Name \`${collidedName}\` collides with a previously defined name.`,
     );
@@ -125,9 +125,9 @@ class CollisionError extends CompileTimeError {
 class NonExhausiveMatchError extends CompileTimeError {
   constructor(location: Location, missingTags: readonly string[]) {
     super(
-      'NonExhausiveMatch',
+      "NonExhausiveMatch",
       location,
-      `The following tags are not considered in the match: [${missingTags.join(', ')}].`,
+      `The following tags are not considered in the match: [${missingTags.join(", ")}].`,
     );
   }
 }
@@ -135,7 +135,7 @@ class NonExhausiveMatchError extends CompileTimeError {
 class CyclicTypeDefinitionError extends CompileTimeError {
   constructor(type: SamlangType) {
     super(
-      'CyclicTypeDefinition',
+      "CyclicTypeDefinition",
       type.reason.useLocation,
       `Type \`${prettyPrintType(type)}\` has a cyclic definition.`,
     );

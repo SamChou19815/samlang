@@ -1,13 +1,13 @@
-const { build } = require('esbuild');
+const { build } = require("esbuild");
 
 build({
-  entryPoints: ['src/extension.ts'],
+  entryPoints: ["src/extension.ts"],
   bundle: true,
   minify: true,
   sourcemap: true,
-  platform: 'node',
-  target: 'node14',
-  logLevel: 'error',
-  outfile: 'out/extension.js',
-  external: ['vscode'],
+  platform: "node",
+  target: "node14",
+  logLevel: "error",
+  outfile: "out/extension.js",
+  external: ["vscode"],
 });

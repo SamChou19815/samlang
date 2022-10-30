@@ -3,7 +3,7 @@ export interface Position {
   readonly character: number;
 }
 
-export type ModuleReference = readonly string[] & { __BRAND__: 'ModuleReference' };
+export type ModuleReference = readonly string[] & { __BRAND__: "ModuleReference" };
 export function ModuleReference(parts: readonly string[]): ModuleReference;
 
 export class Location {

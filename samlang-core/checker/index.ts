@@ -1,15 +1,15 @@
-import { ModuleReference, ModuleReferenceCollections, Sources } from '../ast/common-nodes';
-import type { SamlangModule } from '../ast/samlang-nodes';
+import { ModuleReference, ModuleReferenceCollections, Sources } from "../ast/common-nodes";
+import type { SamlangModule } from "../ast/samlang-nodes";
 import {
   CompileTimeError,
   createGlobalErrorCollector,
   ReadonlyGlobalErrorCollector,
-} from '../errors';
-import { parseSamlangModuleFromText } from '../parser';
-import { buildGlobalTypingContext } from './global-typing-context-builder';
-import { typeCheckSamlangModule } from './main-type-checker';
-import type { GlobalTypingContext, MemberTypeInformation } from './typing-context';
-import checkUndefinedImportsError from './undefined-imports-checker';
+} from "../errors";
+import { parseSamlangModuleFromText } from "../parser";
+import { buildGlobalTypingContext } from "./global-typing-context-builder";
+import { typeCheckSamlangModule } from "./main-type-checker";
+import type { GlobalTypingContext, MemberTypeInformation } from "./typing-context";
+import checkUndefinedImportsError from "./undefined-imports-checker";
 
 export type { GlobalTypingContext as GlobalTypingContext, MemberTypeInformation };
 
@@ -73,7 +73,7 @@ export function typeCheckSingleModuleSource(
   samlangModule: SamlangModule,
   errorCollector: ReadonlyGlobalErrorCollector,
 ): SamlangModule {
-  const moduleReference = ModuleReference(['Test']);
+  const moduleReference = ModuleReference(["Test"]);
   const checkedModule = typeCheckSources(
     ModuleReferenceCollections.mapOf([moduleReference, samlangModule]),
     errorCollector,

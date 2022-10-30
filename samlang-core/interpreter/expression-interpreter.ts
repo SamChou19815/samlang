@@ -1,12 +1,12 @@
 // @author meganyin13
 // @origin https://github.com/SamChou19815/samlang/pull/32
 
-import type { SamlangExpression, SamlangIdentifierType } from '../ast/samlang-nodes';
-import { checkNotNull } from '../utils';
+import type { SamlangExpression, SamlangIdentifierType } from "../ast/samlang-nodes";
+import { checkNotNull } from "../utils";
 
 export default class ExpressionInterpreter {
   // eslint-disable-next-line class-methods-use-this
-  private blameTypeChecker = (message = ''): never => {
+  private blameTypeChecker = (message = ""): never => {
     throw Error(message);
   };
 
@@ -15,46 +15,46 @@ export default class ExpressionInterpreter {
     context: InterpretationContext = EMPTY,
   ): Value => {
     switch (expression.__type__) {
-      case 'LiteralExpression':
+      case "LiteralExpression":
         return expression.literal.value;
-      case 'ThisExpression':
-        return context.localValues.get('this') ?? this.blameTypeChecker('Missing `this`');
-      case 'VariableExpression':
+      case "ThisExpression":
+        return context.localValues.get("this") ?? this.blameTypeChecker("Missing `this`");
+      case "VariableExpression":
         return (
           context.localValues.get(expression.name) ??
           this.blameTypeChecker(`Missing variable ${expression.name}`)
         );
-      case 'ClassMemberExpression':
+      case "ClassMemberExpression":
         return (
           context.classes
             .get(expression.className.name)
             ?.functions?.get(expression.memberName.name) ?? this.blameTypeChecker()
         );
-      case 'FieldAccessExpression': {
+      case "FieldAccessExpression": {
         const thisValue = this.eval(expression.expression, context) as ObjectValue;
         return thisValue.objectContent?.get(expression.fieldName.name) ?? this.blameTypeChecker();
       }
-      case 'MethodAccessExpression': {
+      case "MethodAccessExpression": {
         const identifier = (expression.expression.type as SamlangIdentifierType).identifier;
         const thisValue = this.eval(expression.expression, context);
         const methodValue =
           context.classes.get(identifier)?.methods?.get(expression.methodName.name) ??
           this.blameTypeChecker();
         const localValues = new Map(context.localValues);
-        localValues.set('this', thisValue);
+        localValues.set("this", thisValue);
         methodValue.context = { classes: context.classes, localValues };
         return methodValue;
       }
-      case 'UnaryExpression': {
+      case "UnaryExpression": {
         const v = this.eval(expression.expression);
         switch (expression.operator) {
-          case '-':
+          case "-":
             return -v;
-          case '!':
+          case "!":
             return !v;
         }
       }
-      case 'FunctionCallExpression': {
+      case "FunctionCallExpression": {
         const functionVal = this.eval(expression.functionExpression, context) as FunctionValue;
         const args = functionVal.arguments;
         const body = functionVal.body;
@@ -65,106 +65,106 @@ export default class ExpressionInterpreter {
           bodyLocalValues.set(arg, checkNotNull(argValues[i]));
         });
         const bodyContext = { classes: ctx.classes, localValues: new Map(bodyLocalValues) };
-        if (typeof body === 'function') return body(bodyContext);
+        if (typeof body === "function") return body(bodyContext);
         return this.eval(body, bodyContext);
       }
-      case 'BinaryExpression': {
+      case "BinaryExpression": {
         switch (expression.operator.symbol) {
-          case '*': {
+          case "*": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             return v1 * v2;
           }
-          case '/': {
+          case "/": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             if (v2 === 0) {
-              throw new PanicException('Division by zero!');
+              throw new PanicException("Division by zero!");
             }
             return Math.floor(v1 / v2);
           }
-          case '%': {
+          case "%": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             if (v2 === 0) {
-              throw new PanicException('Mod by zero!');
+              throw new PanicException("Mod by zero!");
             }
             return v1 % v2;
           }
-          case '+': {
+          case "+": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             return v1 + v2;
           }
-          case '-': {
+          case "-": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             return v1 - v2;
           }
-          case '<': {
+          case "<": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             return v1 < v2;
           }
-          case '<=': {
+          case "<=": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             return v1 <= v2;
           }
-          case '>': {
+          case ">": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             return v1 > v2;
           }
-          case '>=': {
+          case ">=": {
             const v1 = this.eval(expression.e1) as number;
             const v2 = this.eval(expression.e2) as number;
             return v1 >= v2;
           }
-          case '==': {
+          case "==": {
             const v1 = this.eval(expression.e1);
             const v2 = this.eval(expression.e2);
             if (
-              (v1 as FunctionValue).type === 'functionValue' ||
-              (v2 as FunctionValue).type === 'functionValue'
+              (v1 as FunctionValue).type === "functionValue" ||
+              (v2 as FunctionValue).type === "functionValue"
             ) {
-              throw new PanicException('Cannot compare functions!');
+              throw new PanicException("Cannot compare functions!");
             }
             return v1 === v2;
           }
-          case '!=': {
+          case "!=": {
             const v1 = this.eval(expression.e1);
             const v2 = this.eval(expression.e2);
             if (
-              (v1 as FunctionValue).type === 'functionValue' ||
-              (v2 as FunctionValue).type === 'functionValue'
+              (v1 as FunctionValue).type === "functionValue" ||
+              (v2 as FunctionValue).type === "functionValue"
             ) {
-              throw new PanicException('Cannot compare functions!');
+              throw new PanicException("Cannot compare functions!");
             }
             return v1 !== v2;
           }
-          case '&&': {
+          case "&&": {
             const v1 = this.eval(expression.e1) as boolean;
             return v1 && this.eval(expression.e2, context);
           }
-          case '||': {
+          case "||": {
             const v1 = this.eval(expression.e1) as boolean;
             return v1 || this.eval(expression.e2, context);
           }
-          case '::': {
+          case "::": {
             const v1 = this.eval(expression.e1) as string;
             const v2 = this.eval(expression.e2) as string;
             return v1 + v2;
           }
         }
       }
-      case 'IfElseExpression': {
+      case "IfElseExpression": {
         return this.eval(
           (this.eval(expression.boolExpression) as boolean) ? expression.e1 : expression.e2,
           context,
         );
       }
-      case 'MatchExpression': {
+      case "MatchExpression": {
         const matchedValue = this.eval(expression.matchedExpression, context) as VariantValue;
         const matchedPattern =
           expression.matchingList.find((el) => el.tag.name === matchedValue.tag) ??
@@ -177,14 +177,14 @@ export default class ExpressionInterpreter {
         }
         return this.eval(matchedPattern.expression, ctx);
       }
-      case 'LambdaExpression':
+      case "LambdaExpression":
         return {
-          type: 'functionValue',
+          type: "functionValue",
           arguments: expression.parameters.map((param) => param.name.name),
           body: expression.body,
           context,
         };
-      case 'StatementBlockExpression': {
+      case "StatementBlockExpression": {
         const { block } = expression;
         const contextForStatementBlock = {
           classes: context.classes,
@@ -194,7 +194,7 @@ export default class ExpressionInterpreter {
           const assignedValue = this.eval(statement.assignedExpression, contextForStatementBlock);
           const p = statement.pattern;
           switch (p.type) {
-            case 'ObjectPattern': {
+            case "ObjectPattern": {
               const { objectContent } = assignedValue as ObjectValue;
               p.destructedNames.forEach(({ fieldName, alias }) => {
                 const v = checkNotNull(objectContent.get(fieldName.name));
@@ -202,16 +202,16 @@ export default class ExpressionInterpreter {
               });
               break;
             }
-            case 'VariablePattern':
+            case "VariablePattern":
               contextForStatementBlock.localValues.set(p.name, assignedValue);
               break;
-            case 'WildCardPattern':
+            case "WildCardPattern":
               break;
           }
         });
         const finalExpression = block.expression;
         return finalExpression === undefined
-          ? { type: 'unit' }
+          ? { type: "unit" }
           : this.eval(finalExpression, contextForStatementBlock);
       }
     }
@@ -252,16 +252,16 @@ export const createDefaultInterpretationContext = (
 ): InterpretationContext => ({
   classes: new Map([
     [
-      'Builtins',
+      "Builtins",
       {
         functions: new Map([
           [
-            'stringToInt',
+            "stringToInt",
             {
-              type: 'functionValue',
-              arguments: ['v'],
+              type: "functionValue",
+              arguments: ["v"],
               body: (localContext) => {
-                const value = localContext.localValues.get('v') as string;
+                const value = localContext.localValues.get("v") as string;
                 const parsedValue = parseInt(value, 10);
                 if (!Number.isNaN(parsedValue)) {
                   return parsedValue;
@@ -272,37 +272,37 @@ export const createDefaultInterpretationContext = (
             },
           ],
           [
-            'intToString',
+            "intToString",
             {
-              type: 'functionValue',
-              arguments: ['v'],
+              type: "functionValue",
+              arguments: ["v"],
               body: (localContext) => {
-                const argumentValue = localContext.localValues.get('v') as number;
+                const argumentValue = localContext.localValues.get("v") as number;
                 return argumentValue.toString();
               },
               context: EMPTY,
             },
           ],
           [
-            'println',
+            "println",
             {
-              type: 'functionValue',
-              arguments: ['v'],
+              type: "functionValue",
+              arguments: ["v"],
               body: (localContext) => {
-                const value = localContext.localValues.get('v') as string;
+                const value = localContext.localValues.get("v") as string;
                 collectPrinted(value);
-                return { type: 'unit' };
+                return { type: "unit" };
               },
               context: EMPTY,
             },
           ],
           [
-            'panic',
+            "panic",
             {
-              type: 'functionValue',
-              arguments: ['v'],
+              type: "functionValue",
+              arguments: ["v"],
               body: (localContext) => {
-                const value = localContext.localValues.get('v') as string;
+                const value = localContext.localValues.get("v") as string;
                 throw new PanicException(value);
               },
               context: EMPTY,
@@ -339,22 +339,22 @@ export type Value =
   | FunctionValue;
 
 export type UnitValue = {
-  readonly type: 'unit';
+  readonly type: "unit";
 };
 
 export type ObjectValue = {
-  readonly type: 'object';
+  readonly type: "object";
   readonly objectContent: Map<string, Value>;
 };
 
 export type VariantValue = {
-  readonly type: 'variant';
+  readonly type: "variant";
   readonly tag: string;
   data: Value;
 };
 
 export type FunctionValue = {
-  readonly type: 'functionValue';
+  readonly type: "functionValue";
   readonly arguments: string[];
   readonly body: SamlangExpression | ((context: InterpretationContext) => Value);
   context: InterpretationContext;

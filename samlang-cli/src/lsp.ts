@@ -1,6 +1,6 @@
-import { ModuleReference, moduleReferenceToFileName } from '@dev-sam/samlang-core/ast/common-nodes';
-import createSamlangLanguageService from '@dev-sam/samlang-core/services';
-import { join, relative, resolve, sep } from 'path';
+import { ModuleReference, moduleReferenceToFileName } from "@dev-sam/samlang-core/ast/common-nodes";
+import createSamlangLanguageService from "@dev-sam/samlang-core/services";
+import { join, relative, resolve, sep } from "path";
 import {
   createConnection,
   DiagnosticSeverity,
@@ -8,8 +8,8 @@ import {
   Range,
   ResponseError,
   TextDocumentSyncKind,
-} from 'vscode-languageserver/node';
-import { collectSources, getConfiguration } from './utils';
+} from "vscode-languageserver/node";
+import { collectSources, getConfiguration } from "./utils";
 
 const ENTIRE_DOCUMENT_RANGE: Range = {
   start: { line: 0, character: 0 },
@@ -31,7 +31,7 @@ function startSamlangLanguageServer() {
   function uriToModuleReference(uri: string): ModuleReference {
     const relativePath = relative(
       configuration.sourceDirectory,
-      uri.startsWith('file://') ? uri.substring('file://'.length) : uri,
+      uri.startsWith("file://") ? uri.substring("file://".length) : uri,
     );
     return ModuleReference(relativePath.substring(0, relativePath.length - 4).split(sep));
   }
@@ -50,21 +50,21 @@ function startSamlangLanguageServer() {
           range: error.location,
           severity: DiagnosticSeverity.Error,
           message: error.toString(),
-          source: 'samlang',
+          source: "samlang",
         })),
       });
     });
   }
 
   connection.onInitialize((): InitializeResult => {
-    connection.console.info('[lsp] onInitialize');
+    connection.console.info("[lsp] onInitialize");
     return {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Full,
         hoverProvider: true,
         definitionProvider: {},
         foldingRangeProvider: true,
-        completionProvider: { triggerCharacters: ['.'], resolveProvider: false },
+        completionProvider: { triggerCharacters: ["."], resolveProvider: false },
         renameProvider: true,
         // documentFormattingProvider: {},
       },
@@ -72,12 +72,12 @@ function startSamlangLanguageServer() {
   });
 
   connection.onInitialized(() => {
-    connection.console.info('[lsp] onInitialized');
+    connection.console.info("[lsp] onInitialized");
     publishDiagnostics();
   });
 
   connection.onDidChangeTextDocument((parameters) => {
-    connection.console.info('[lsp] onDidChangeTextDocument');
+    connection.console.info("[lsp] onDidChangeTextDocument");
     const moduleReference = uriToModuleReference(parameters.textDocument.uri);
     const sourceCode = parameters.contentChanges[0]?.text;
     if (sourceCode == null) return;
@@ -86,7 +86,7 @@ function startSamlangLanguageServer() {
   });
 
   connection.onHover((parameters) => {
-    connection.console.info('[lsp] onHover');
+    connection.console.info("[lsp] onHover");
     return service.queryForHover(
       uriToModuleReference(parameters.textDocument.uri),
       parameters.position,
@@ -94,7 +94,7 @@ function startSamlangLanguageServer() {
   });
 
   connection.onDefinition((parameters) => {
-    connection.console.info('[lsp] onDefinition');
+    connection.console.info("[lsp] onDefinition");
     const location = service.queryDefinitionLocation(
       uriToModuleReference(parameters.textDocument.uri),
       parameters.position,
@@ -108,7 +108,7 @@ function startSamlangLanguageServer() {
   });
 
   connection.onFoldingRanges((parameters) => {
-    connection.console.info('[lsp] onFoldingRanges');
+    connection.console.info("[lsp] onFoldingRanges");
     const foldingRangeResult = service.queryFoldingRanges(
       uriToModuleReference(parameters.textDocument.uri),
     );
@@ -117,7 +117,7 @@ function startSamlangLanguageServer() {
   });
 
   connection.onCompletion((parameters) => {
-    connection.console.info('[lsp] onCompletion');
+    connection.console.info("[lsp] onCompletion");
     return service.autoComplete(
       uriToModuleReference(parameters.textDocument.uri),
       parameters.position,
@@ -125,14 +125,14 @@ function startSamlangLanguageServer() {
   });
 
   connection.onRenameRequest((parameters) => {
-    connection.console.info('[lsp] onRenameRequest');
+    connection.console.info("[lsp] onRenameRequest");
     const result = service.renameVariable(
       uriToModuleReference(parameters.textDocument.uri),
       parameters.position,
       parameters.newName,
     );
     if (result == null) return null;
-    if (result === 'Invalid') return new ResponseError(1, 'Invalid identifier.');
+    if (result === "Invalid") return new ResponseError(1, "Invalid identifier.");
     return {
       documentChanges: [
         {
@@ -157,7 +157,7 @@ function startSamlangLanguageServer() {
 
   connection.listen();
   // eslint-disable-next-line no-console
-  console.error('samlang language service listening...');
+  console.error("samlang language service listening...");
 }
 
 startSamlangLanguageServer();

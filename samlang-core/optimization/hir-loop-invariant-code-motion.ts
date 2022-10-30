@@ -3,8 +3,8 @@ import {
   HighIRStatement,
   HighIRWhileStatement,
   HIR_WHILE,
-} from '../ast/hir-nodes';
-import { filterMap } from '../utils';
+} from "../ast/hir-nodes";
+import { filterMap } from "../utils";
 
 type LoopInvariantCodeMotionOptimizationResult = {
   readonly hoistedStatementsBeforeWhile: readonly HighIRStatement[];
@@ -21,7 +21,7 @@ export default function optimizeHighIRWhileStatementByLoopInvariantCodeMotion({
 
   function expressionIsNotLoopInvariant(expression: HighIRExpression): boolean {
     return (
-      expression.__type__ === 'HighIRVariableExpression' &&
+      expression.__type__ === "HighIRVariableExpression" &&
       nonLoopInvariantVariables.has(expression.name)
     );
   }
@@ -29,14 +29,14 @@ export default function optimizeHighIRWhileStatementByLoopInvariantCodeMotion({
   const hoistedStatementsBeforeWhile: HighIRStatement[] = [];
   const innerStatements = filterMap(statements, (statement) => {
     switch (statement.__type__) {
-      case 'HighIRIndexAccessStatement':
+      case "HighIRIndexAccessStatement":
         if (expressionIsNotLoopInvariant(statement.pointerExpression)) {
           nonLoopInvariantVariables.add(statement.name);
           return statement;
         }
         hoistedStatementsBeforeWhile.push(statement);
         return null;
-      case 'HighIRBinaryStatement':
+      case "HighIRBinaryStatement":
         if (
           expressionIsNotLoopInvariant(statement.e1) ||
           expressionIsNotLoopInvariant(statement.e2)
@@ -46,32 +46,32 @@ export default function optimizeHighIRWhileStatementByLoopInvariantCodeMotion({
         }
         hoistedStatementsBeforeWhile.push(statement);
         return null;
-      case 'HighIRStructInitializationStatement':
+      case "HighIRStructInitializationStatement":
         if (statement.expressionList.some((it) => expressionIsNotLoopInvariant(it))) {
           nonLoopInvariantVariables.add(statement.structVariableName);
           return statement;
         }
         hoistedStatementsBeforeWhile.push(statement);
         return null;
-      case 'HighIRClosureInitializationStatement':
+      case "HighIRClosureInitializationStatement":
         if (expressionIsNotLoopInvariant(statement.context)) {
           nonLoopInvariantVariables.add(statement.closureVariableName);
           return statement;
         }
         hoistedStatementsBeforeWhile.push(statement);
         return null;
-      case 'HighIRFunctionCallStatement':
+      case "HighIRFunctionCallStatement":
         if (statement.returnCollector != null) {
           nonLoopInvariantVariables.add(statement.returnCollector);
         }
         return statement;
-      case 'HighIRIfElseStatement':
+      case "HighIRIfElseStatement":
         statement.finalAssignments.forEach((it) => nonLoopInvariantVariables.add(it.name));
         return statement;
-      case 'HighIRSingleIfStatement':
-      case 'HighIRBreakStatement':
+      case "HighIRSingleIfStatement":
+      case "HighIRBreakStatement":
         return statement;
-      case 'HighIRWhileStatement':
+      case "HighIRWhileStatement":
         if (statement.breakCollector != null) {
           nonLoopInvariantVariables.add(statement.breakCollector.name);
         }

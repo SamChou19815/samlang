@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 
-import { spawnSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import { spawnSync } from "child_process";
+import fs from "fs";
+import path from "path";
 
 function read(filename: string) {
   return fs.readFileSync(filename).toString();
@@ -12,7 +12,7 @@ function runWithErrorCheck(command: string, args: readonly string[] = []) {
   const startTime = new Date().getTime();
   const result = spawnSync(command, args, {
     shell: true,
-    stdio: ['pipe', 'pipe', 'inherit'],
+    stdio: ["pipe", "pipe", "inherit"],
   });
   const resultString =
     result.status === 0
@@ -22,11 +22,11 @@ function runWithErrorCheck(command: string, args: readonly string[] = []) {
   return { resultString, time };
 }
 
-const basePath = './out';
+const basePath = "./out";
 
 function compare(expected: string, actual: string) {
   if (expected === actual) return true;
-  console.log('Inconsistency:');
+  console.log("Inconsistency:");
   console.log(`Actual:\n${actual}`);
   return false;
 }
@@ -37,19 +37,19 @@ function timed(runner: () => void): number {
   return new Date().getTime() - start;
 }
 
-console.error('Bundling...');
-const bundleTime = timed(() => runWithErrorCheck('pnpm', ['bundle']));
+console.error("Bundling...");
+const bundleTime = timed(() => runWithErrorCheck("pnpm", ["bundle"]));
 console.error(`Bundled in ${bundleTime}ms!`);
-console.error('Compiling...');
-runWithErrorCheck('rm', ['-rf', basePath]);
-const compileTime = timed(() => runWithErrorCheck('./samlang-dev'));
+console.error("Compiling...");
+runWithErrorCheck("rm", ["-rf", basePath]);
+const compileTime = timed(() => runWithErrorCheck("./samlang-dev"));
 console.error(`Compiled in ${compileTime}ms!`);
-console.error('Checking generated TS code...');
-const r1 = runWithErrorCheck('pnpm', ['esr', path.join(basePath, 'tests.AllTests.ts')]);
-if (!compare(read('./tests/snapshot.txt'), r1.resultString)) process.exit(1);
+console.error("Checking generated TS code...");
+const r1 = runWithErrorCheck("pnpm", ["esr", path.join(basePath, "tests.AllTests.ts")]);
+if (!compare(read("./tests/snapshot.txt"), r1.resultString)) process.exit(1);
 console.error(`Generated TS code is good and takes ${r1.time}ms to run.`);
 
-console.error('Checking generated WebAssembly code...');
-const r2 = runWithErrorCheck('node', [path.join(basePath, 'tests.AllTests.wasm.js')]);
-if (!compare(read('./tests/snapshot.txt'), r2.resultString)) process.exit(1);
+console.error("Checking generated WebAssembly code...");
+const r2 = runWithErrorCheck("node", [path.join(basePath, "tests.AllTests.wasm.js")]);
+if (!compare(read("./tests/snapshot.txt"), r2.resultString)) process.exit(1);
 console.error(`Generated WebAssembly code is good and takes ${r2.time}ms to run.`);

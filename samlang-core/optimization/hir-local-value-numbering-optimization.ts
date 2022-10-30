@@ -10,14 +10,14 @@ import {
   HIR_SINGLE_IF,
   HIR_STRUCT_INITIALIZATION,
   HIR_WHILE,
-} from '../ast/hir-nodes';
-import { error, filterMap, LocalStackedContext, zip, zip3 } from '../utils';
+} from "../ast/hir-nodes";
+import { error, filterMap, LocalStackedContext, zip, zip3 } from "../utils";
 import {
   BinaryBindedValue,
   BindedValue,
   bindedValueToString,
   IndexAccessBindedValue,
-} from './hir-optimization-common';
+} from "./hir-optimization-common";
 
 class LocalVariableContext extends LocalStackedContext<string> {
   addLocalValueType(name: string, value: string, onCollision: () => void): void {
@@ -44,11 +44,11 @@ function optimizeHighIRExpression(
   variableContext: LocalVariableContext,
 ): HighIRExpression {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRStringNameExpression':
-    case 'HighIRFunctionNameExpression':
+    case "HighIRIntLiteralExpression":
+    case "HighIRStringNameExpression":
+    case "HighIRFunctionNameExpression":
       return expression;
-    case 'HighIRVariableExpression': {
+    case "HighIRVariableExpression": {
       const binded = variableContext.getLocalValueType(expression.name);
       return { ...expression, name: binded ?? expression.name };
     }
@@ -64,10 +64,10 @@ function optimizeHighIRStatement(
     optimizeHighIRExpression(expression, variableContext);
 
   switch (statement.__type__) {
-    case 'HighIRIndexAccessStatement': {
+    case "HighIRIndexAccessStatement": {
       const pointerExpression = getExpressionUnderContext(statement.pointerExpression);
       const value: IndexAccessBindedValue = {
-        __type__: 'IndexAccess',
+        __type__: "IndexAccess",
         type: statement.type,
         pointerExpression,
         index: statement.index,
@@ -81,10 +81,10 @@ function optimizeHighIRStatement(
       return null;
     }
 
-    case 'HighIRBinaryStatement': {
+    case "HighIRBinaryStatement": {
       const e1 = getExpressionUnderContext(statement.e1);
       const e2 = getExpressionUnderContext(statement.e2);
-      const value: BinaryBindedValue = { __type__: 'Binary', operator: statement.operator, e1, e2 };
+      const value: BinaryBindedValue = { __type__: "Binary", operator: statement.operator, e1, e2 };
       const binded = bindedValueContext.get(value);
       if (binded == null) {
         bindedValueContext.bind(value, statement.name);
@@ -94,7 +94,7 @@ function optimizeHighIRStatement(
       return null;
     }
 
-    case 'HighIRFunctionCallStatement':
+    case "HighIRFunctionCallStatement":
       return HIR_FUNCTION_CALL({
         functionExpression: getExpressionUnderContext(
           statement.functionExpression,
@@ -104,7 +104,7 @@ function optimizeHighIRStatement(
         returnCollector: statement.returnCollector,
       });
 
-    case 'HighIRIfElseStatement': {
+    case "HighIRIfElseStatement": {
       const booleanExpression = getExpressionUnderContext(statement.booleanExpression);
       const [s1, branch1Values] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
@@ -150,7 +150,7 @@ function optimizeHighIRStatement(
       });
     }
 
-    case 'HighIRSingleIfStatement': {
+    case "HighIRSingleIfStatement": {
       const booleanExpression = getExpressionUnderContext(statement.booleanExpression);
       const statements = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() =>
@@ -164,10 +164,10 @@ function optimizeHighIRStatement(
       });
     }
 
-    case 'HighIRBreakStatement':
+    case "HighIRBreakStatement":
       return HIR_BREAK(getExpressionUnderContext(statement.breakValue));
 
-    case 'HighIRWhileStatement': {
+    case "HighIRWhileStatement": {
       const loopVariableWithoutLoopValues = statement.loopVariables.map(
         ({ name, type, initialValue }) => ({
           name,
@@ -194,14 +194,14 @@ function optimizeHighIRStatement(
       return HIR_WHILE({ loopVariables, statements, breakCollector: statement.breakCollector });
     }
 
-    case 'HighIRStructInitializationStatement':
+    case "HighIRStructInitializationStatement":
       return HIR_STRUCT_INITIALIZATION({
         structVariableName: statement.structVariableName,
         type: statement.type,
         expressionList: statement.expressionList.map(getExpressionUnderContext),
       });
 
-    case 'HighIRClosureInitializationStatement':
+    case "HighIRClosureInitializationStatement":
       return HIR_CLOSURE_INITIALIZATION({
         closureVariableName: statement.closureVariableName,
         closureType: statement.closureType,

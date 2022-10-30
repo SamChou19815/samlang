@@ -1,5 +1,5 @@
-import { jest } from '@jest/globals';
-import cliMainRunner, { CLIRunners, parseCLIArguments } from '../cli';
+import { jest } from "@jest/globals";
+import cliMainRunner, { CLIRunners, parseCLIArguments } from "../cli";
 
 function assertCalled(commandLineArguments: readonly string[], called: keyof CLIRunners): void {
   const runner: CLIRunners = {
@@ -15,27 +15,27 @@ function assertCalled(commandLineArguments: readonly string[], called: keyof CLI
   });
 }
 
-describe('samlang-cli/cli', () => {
-  it('Can correctly parse', () => {
-    expect(parseCLIArguments([])).toEqual({ type: 'compile', needHelp: false });
-    expect(parseCLIArguments(['format'])).toEqual({ type: 'format', needHelp: false });
-    expect(parseCLIArguments(['compile'])).toEqual({ type: 'compile', needHelp: false });
-    expect(parseCLIArguments(['format', '--help'])).toEqual({ type: 'format', needHelp: true });
-    expect(parseCLIArguments(['compile', '--help'])).toEqual({ type: 'compile', needHelp: true });
-    expect(parseCLIArguments(['compile', '-h'])).toEqual({ type: 'compile', needHelp: true });
-    expect(parseCLIArguments(['version'])).toEqual({ type: 'version' });
-    expect(parseCLIArguments(['dfasfsdf'])).toEqual({ type: 'help' });
-    expect(parseCLIArguments(['help'])).toEqual({ type: 'help' });
+describe("samlang-cli/cli", () => {
+  it("Can correctly parse", () => {
+    expect(parseCLIArguments([])).toEqual({ type: "compile", needHelp: false });
+    expect(parseCLIArguments(["format"])).toEqual({ type: "format", needHelp: false });
+    expect(parseCLIArguments(["compile"])).toEqual({ type: "compile", needHelp: false });
+    expect(parseCLIArguments(["format", "--help"])).toEqual({ type: "format", needHelp: true });
+    expect(parseCLIArguments(["compile", "--help"])).toEqual({ type: "compile", needHelp: true });
+    expect(parseCLIArguments(["compile", "-h"])).toEqual({ type: "compile", needHelp: true });
+    expect(parseCLIArguments(["version"])).toEqual({ type: "version" });
+    expect(parseCLIArguments(["dfasfsdf"])).toEqual({ type: "help" });
+    expect(parseCLIArguments(["help"])).toEqual({ type: "help" });
   });
 
-  it('Commands are correctly triggered', () => {
-    assertCalled([], 'compile');
-    assertCalled(['format'], 'format');
-    assertCalled(['compile'], 'compile');
-    assertCalled(['format', '--help'], 'format');
-    assertCalled(['compile', '--help'], 'compile');
-    assertCalled(['compile', '-h'], 'compile');
-    assertCalled(['dfasfsdf'], 'help');
-    assertCalled(['help'], 'help');
+  it("Commands are correctly triggered", () => {
+    assertCalled([], "compile");
+    assertCalled(["format"], "format");
+    assertCalled(["compile"], "compile");
+    assertCalled(["format", "--help"], "format");
+    assertCalled(["compile", "--help"], "compile");
+    assertCalled(["compile", "-h"], "compile");
+    assertCalled(["dfasfsdf"], "help");
+    assertCalled(["help"], "help");
   });
 });

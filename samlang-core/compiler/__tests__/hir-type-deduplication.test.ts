@@ -17,20 +17,20 @@ import {
   HIR_VARIABLE,
   HIR_WHILE,
   HIR_ZERO,
-} from '../../ast/hir-nodes';
-import deduplicateHighIRTypes from '../hir-type-deduplication';
+} from "../../ast/hir-nodes";
+import deduplicateHighIRTypes from "../hir-type-deduplication";
 
-describe('hir-type-deduplication', () => {
-  it('deduplicateHighIRTypes asserts on unsupported statements', () => {
+describe("hir-type-deduplication", () => {
+  it("deduplicateHighIRTypes asserts on unsupported statements", () => {
     expect(() =>
       deduplicateHighIRTypes({
         globalVariables: [],
         closureTypes: [],
         typeDefinitions: [],
-        mainFunctionNames: ['main'],
+        mainFunctionNames: ["main"],
         functions: [
           {
-            name: 'main',
+            name: "main",
             parameters: [],
             typeParameters: [],
             type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
@@ -52,10 +52,10 @@ describe('hir-type-deduplication', () => {
         globalVariables: [],
         closureTypes: [],
         typeDefinitions: [],
-        mainFunctionNames: ['main'],
+        mainFunctionNames: ["main"],
         functions: [
           {
-            name: 'main',
+            name: "main",
             parameters: [],
             typeParameters: [],
             type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
@@ -71,10 +71,10 @@ describe('hir-type-deduplication', () => {
         globalVariables: [],
         closureTypes: [],
         typeDefinitions: [],
-        mainFunctionNames: ['main'],
+        mainFunctionNames: ["main"],
         functions: [
           {
-            name: 'main',
+            name: "main",
             parameters: [],
             typeParameters: [],
             type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
@@ -86,34 +86,34 @@ describe('hir-type-deduplication', () => {
     ).toThrow();
   });
 
-  it('deduplicateHighIRTypes works', () => {
+  it("deduplicateHighIRTypes works", () => {
     expect(
       debugPrintHighIRSources(
         deduplicateHighIRTypes({
           globalVariables: [],
           closureTypes: [
             {
-              identifier: 'A',
+              identifier: "A",
               typeParameters: [],
               functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
             },
             {
-              identifier: 'B',
+              identifier: "B",
               typeParameters: [],
               functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
             },
           ],
           typeDefinitions: [
             {
-              identifier: 'C',
-              type: 'object',
+              identifier: "C",
+              type: "object",
               typeParameters: [],
               names: [],
               mappings: [HIR_INT_TYPE, HIR_STRING_TYPE],
             },
             {
-              identifier: 'D',
-              type: 'object',
+              identifier: "D",
+              type: "object",
               typeParameters: [],
               names: [],
               mappings: [HIR_INT_TYPE, HIR_STRING_TYPE],
@@ -122,7 +122,7 @@ describe('hir-type-deduplication', () => {
           mainFunctionNames: [],
           functions: [
             {
-              name: 'main',
+              name: "main",
               parameters: [],
               typeParameters: [],
               type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
@@ -131,48 +131,48 @@ describe('hir-type-deduplication', () => {
                   booleanExpression: HIR_TRUE,
                   s1: [
                     HIR_BINARY({
-                      name: '_',
-                      operator: '+',
+                      name: "_",
+                      operator: "+",
                       e1: HIR_ZERO,
                       e2: HIR_ZERO,
                     }),
                     HIR_FUNCTION_CALL({
                       functionExpression: HIR_FUNCTION_NAME(
-                        'f',
+                        "f",
                         HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
                       ),
                       functionArguments: [HIR_ZERO],
                       returnType: HIR_INT_TYPE,
                     }),
                     HIR_INDEX_ACCESS({
-                      name: '_',
-                      type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
+                      name: "_",
+                      type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("B"),
                       pointerExpression: HIR_ZERO,
                       index: 0,
                     }),
                   ],
                   s2: [
                     HIR_STRUCT_INITIALIZATION({
-                      structVariableName: '_',
-                      type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('D'),
+                      structVariableName: "_",
+                      type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("D"),
                       expressionList: [HIR_ZERO],
                     }),
                     HIR_CLOSURE_INITIALIZATION({
-                      closureVariableName: '_',
-                      closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('C'),
+                      closureVariableName: "_",
+                      closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("C"),
                       functionName: HIR_FUNCTION_NAME(
-                        'f',
+                        "f",
                         HIR_FUNCTION_TYPE(
-                          [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('E')],
+                          [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("E")],
                           HIR_INT_TYPE,
                         ),
                       ),
-                      context: HIR_VARIABLE('v', HIR_INT_TYPE),
+                      context: HIR_VARIABLE("v", HIR_INT_TYPE),
                     }),
                   ],
                   finalAssignments: [
                     {
-                      name: '_',
+                      name: "_",
                       type: HIR_INT_TYPE,
                       branch1Value: HIR_ZERO,
                       branch2Value: HIR_ZERO,

@@ -1,27 +1,27 @@
 type ParsedCLIAction =
-  | { readonly type: 'format' | 'compile' | 'lsp'; readonly needHelp: boolean }
-  | { readonly type: 'version' }
-  | { readonly type: 'help' };
+  | { readonly type: "format" | "compile" | "lsp"; readonly needHelp: boolean }
+  | { readonly type: "version" }
+  | { readonly type: "help" };
 
 function doesNeedHelp(commandLineArguments: readonly string[]): boolean {
-  return commandLineArguments.includes('--help') || commandLineArguments.includes('-h');
+  return commandLineArguments.includes("--help") || commandLineArguments.includes("-h");
 }
 
 export function parseCLIArguments(commandLineArguments: readonly string[]): ParsedCLIAction {
   if (commandLineArguments.length === 0) {
-    return { type: 'compile', needHelp: false };
+    return { type: "compile", needHelp: false };
   }
 
-  let type: 'format' | 'compile';
+  let type: "format" | "compile";
   switch (commandLineArguments[0]) {
-    case 'format':
-    case 'compile':
+    case "format":
+    case "compile":
       type = commandLineArguments[0];
       break;
-    case 'version':
-      return { type: 'version' };
+    case "version":
+      return { type: "version" };
     default:
-      return { type: 'help' };
+      return { type: "help" };
   }
 
   return { type, needHelp: doesNeedHelp(commandLineArguments) };
@@ -39,13 +39,13 @@ export default async function cliMainRunner(
 ): Promise<void> {
   const action = parseCLIArguments(commandLineArguments);
   switch (action.type) {
-    case 'format':
+    case "format":
       await runners.format(action.needHelp);
       return;
-    case 'compile':
+    case "compile":
       await runners.compile(action.needHelp);
       return;
-    case 'help':
+    case "help":
       await runners.help();
       return;
   }

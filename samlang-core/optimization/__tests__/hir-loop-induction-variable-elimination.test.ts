@@ -17,31 +17,31 @@ import {
   HIR_VARIABLE,
   HIR_WHILE,
   HIR_ZERO,
-} from '../../ast/hir-nodes';
-import highIRLoopInductionVariableEliminationOptimization from '../hir-loop-induction-variable-elimination';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
+} from "../../ast/hir-nodes";
+import highIRLoopInductionVariableEliminationOptimization from "../hir-loop-induction-variable-elimination";
+import OptimizationResourceAllocator from "../optimization-resource-allocator";
 
-describe('hir-loop-induction-variable-elimination', () => {
-  it('highIRLoopInductionVariableEliminationOptimization rejects unoptimizable loops', () => {
+describe("hir-loop-induction-variable-elimination", () => {
+  it("highIRLoopInductionVariableEliminationOptimization rejects unoptimizable loops", () => {
     const allocator = new OptimizationResourceAllocator();
 
     expect(
       highIRLoopInductionVariableEliminationOptimization(
         {
           basicInductionVariableWithLoopGuard: {
-            name: 'i',
+            name: "i",
             initialValue: HIR_ONE,
             incrementAmount: HIR_INT(2),
-            guardOperator: '<',
+            guardOperator: "<",
             guardExpression: HIR_INT(10),
           },
           generalInductionVariables: [],
           loopVariablesThatAreNotBasicInductionVariables: [
             {
-              name: '',
+              name: "",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('i', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("i", HIR_INT_TYPE),
             },
           ],
           derivedInductionVariables: [],
@@ -55,17 +55,17 @@ describe('hir-loop-induction-variable-elimination', () => {
       highIRLoopInductionVariableEliminationOptimization(
         {
           basicInductionVariableWithLoopGuard: {
-            name: 'i',
+            name: "i",
             initialValue: HIR_ONE,
             incrementAmount: HIR_INT(2),
-            guardOperator: '<',
+            guardOperator: "<",
             guardExpression: HIR_INT(10),
           },
           generalInductionVariables: [],
           loopVariablesThatAreNotBasicInductionVariables: [],
           derivedInductionVariables: [],
           statements: [],
-          breakCollector: { name: '', type: HIR_INT_TYPE, value: HIR_VARIABLE('i', HIR_INT_TYPE) },
+          breakCollector: { name: "", type: HIR_INT_TYPE, value: HIR_VARIABLE("i", HIR_INT_TYPE) },
         },
         allocator,
       ),
@@ -75,10 +75,10 @@ describe('hir-loop-induction-variable-elimination', () => {
       highIRLoopInductionVariableEliminationOptimization(
         {
           basicInductionVariableWithLoopGuard: {
-            name: 'i',
+            name: "i",
             initialValue: HIR_ONE,
             incrementAmount: HIR_INT(2),
-            guardOperator: '<',
+            guardOperator: "<",
             guardExpression: HIR_INT(10),
           },
           generalInductionVariables: [],
@@ -86,12 +86,12 @@ describe('hir-loop-induction-variable-elimination', () => {
           derivedInductionVariables: [],
           statements: [
             HIR_INDEX_ACCESS({
-              name: '',
+              name: "",
               type: HIR_INT_TYPE,
               pointerExpression: HIR_ZERO,
               index: 3,
             }),
-            HIR_BINARY({ name: '', operator: '!=', e1: HIR_ZERO, e2: HIR_ZERO }),
+            HIR_BINARY({ name: "", operator: "!=", e1: HIR_ZERO, e2: HIR_ZERO }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
               functionArguments: [HIR_ZERO],
@@ -108,24 +108,24 @@ describe('hir-loop-induction-variable-elimination', () => {
               ],
               s2: [
                 HIR_CLOSURE_INITIALIZATION({
-                  closureVariableName: '_',
-                  closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
-                  functionName: HIR_FUNCTION_NAME('1', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+                  closureVariableName: "_",
+                  closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("I"),
+                  functionName: HIR_FUNCTION_NAME("1", HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
                   context: HIR_ZERO,
                 }),
               ],
               finalAssignments: [
-                { name: '', type: HIR_INT_TYPE, branch1Value: HIR_ZERO, branch2Value: HIR_ZERO },
+                { name: "", type: HIR_INT_TYPE, branch1Value: HIR_ZERO, branch2Value: HIR_ZERO },
               ],
             }),
             HIR_WHILE({
               loopVariables: [
-                { name: '', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+                { name: "", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
               ],
               statements: [
                 HIR_STRUCT_INITIALIZATION({
-                  structVariableName: '',
-                  type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
+                  structVariableName: "",
+                  type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("I"),
                   expressionList: [HIR_ZERO],
                 }),
               ],
@@ -140,23 +140,23 @@ describe('hir-loop-induction-variable-elimination', () => {
       highIRLoopInductionVariableEliminationOptimization(
         {
           basicInductionVariableWithLoopGuard: {
-            name: 'i',
+            name: "i",
             initialValue: HIR_ONE,
-            incrementAmount: HIR_VARIABLE('const', HIR_INT_TYPE),
-            guardOperator: '<',
+            incrementAmount: HIR_VARIABLE("const", HIR_INT_TYPE),
+            guardOperator: "<",
             guardExpression: HIR_INT(10),
           },
           generalInductionVariables: [],
           loopVariablesThatAreNotBasicInductionVariables: [
             {
-              name: 'j',
+              name: "j",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
             },
           ],
           derivedInductionVariables: [
-            { name: 'tmp_j', baseName: 'i', multiplier: HIR_INT(3), immediate: HIR_INT(5) },
+            { name: "tmp_j", baseName: "i", multiplier: HIR_INT(3), immediate: HIR_INT(5) },
           ],
           statements: [],
         },
@@ -168,24 +168,24 @@ describe('hir-loop-induction-variable-elimination', () => {
       highIRLoopInductionVariableEliminationOptimization(
         {
           basicInductionVariableWithLoopGuard: {
-            name: 'i',
+            name: "i",
             initialValue: HIR_ONE,
             incrementAmount: HIR_INT(2),
-            guardOperator: '<',
+            guardOperator: "<",
             guardExpression: HIR_INT(10),
           },
           generalInductionVariables: [],
           loopVariablesThatAreNotBasicInductionVariables: [
             {
-              name: 'j',
+              name: "j",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
             },
           ],
           derivedInductionVariables: [
-            { name: 'tmp_j', baseName: 'i', multiplier: HIR_INT(3), immediate: HIR_INT(5) },
-            { name: 'tmp_k', baseName: 'i', multiplier: HIR_INT(3), immediate: HIR_INT(5) },
+            { name: "tmp_j", baseName: "i", multiplier: HIR_INT(3), immediate: HIR_INT(5) },
+            { name: "tmp_k", baseName: "i", multiplier: HIR_INT(3), immediate: HIR_INT(5) },
           ],
           statements: [],
         },
@@ -194,28 +194,28 @@ describe('hir-loop-induction-variable-elimination', () => {
     ).toBeNull();
   });
 
-  it('highIRLoopInductionVariableEliminationOptimization optimizes good loops 1/n', () => {
+  it("highIRLoopInductionVariableEliminationOptimization optimizes good loops 1/n", () => {
     expect(
       highIRLoopInductionVariableEliminationOptimization(
         {
           basicInductionVariableWithLoopGuard: {
-            name: 'i',
+            name: "i",
             initialValue: HIR_ONE,
             incrementAmount: HIR_INT(2),
-            guardOperator: '<',
+            guardOperator: "<",
             guardExpression: HIR_INT(10),
           },
           generalInductionVariables: [],
           loopVariablesThatAreNotBasicInductionVariables: [
             {
-              name: 'j',
+              name: "j",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
             },
           ],
           derivedInductionVariables: [
-            { name: 'tmp_j', baseName: 'i', multiplier: HIR_INT(3), immediate: HIR_INT(5) },
+            { name: "tmp_j", baseName: "i", multiplier: HIR_INT(3), immediate: HIR_INT(5) },
           ],
           statements: [],
         },
@@ -223,36 +223,36 @@ describe('hir-loop-induction-variable-elimination', () => {
       ),
     ).toEqual({
       prefixStatements: [
-        HIR_BINARY({ name: '_loop_0', operator: '*', e1: HIR_INT(3), e2: HIR_ONE }),
+        HIR_BINARY({ name: "_loop_0", operator: "*", e1: HIR_INT(3), e2: HIR_ONE }),
         HIR_BINARY({
-          name: '_loop_1',
-          operator: '+',
-          e1: HIR_VARIABLE('_loop_0', HIR_INT_TYPE),
+          name: "_loop_1",
+          operator: "+",
+          e1: HIR_VARIABLE("_loop_0", HIR_INT_TYPE),
           e2: HIR_INT(5),
         }),
-        HIR_BINARY({ name: '_loop_2', operator: '*', e1: HIR_INT(10), e2: HIR_INT(3) }),
+        HIR_BINARY({ name: "_loop_2", operator: "*", e1: HIR_INT(10), e2: HIR_INT(3) }),
         HIR_BINARY({
-          name: '_loop_3',
-          operator: '+',
-          e1: HIR_VARIABLE('_loop_2', HIR_INT_TYPE),
+          name: "_loop_3",
+          operator: "+",
+          e1: HIR_VARIABLE("_loop_2", HIR_INT_TYPE),
           e2: HIR_INT(5),
         }),
       ],
       optimizableWhileLoop: {
         basicInductionVariableWithLoopGuard: {
-          name: 'tmp_j',
-          initialValue: HIR_VARIABLE('_loop_1', HIR_INT_TYPE),
+          name: "tmp_j",
+          initialValue: HIR_VARIABLE("_loop_1", HIR_INT_TYPE),
           incrementAmount: HIR_INT(6),
-          guardOperator: '<',
-          guardExpression: HIR_VARIABLE('_loop_3', HIR_INT_TYPE),
+          guardOperator: "<",
+          guardExpression: HIR_VARIABLE("_loop_3", HIR_INT_TYPE),
         },
         generalInductionVariables: [],
         loopVariablesThatAreNotBasicInductionVariables: [
           {
-            name: 'j',
+            name: "j",
             type: HIR_INT_TYPE,
             initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+            loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
           },
         ],
         derivedInductionVariables: [],
@@ -261,31 +261,31 @@ describe('hir-loop-induction-variable-elimination', () => {
     });
   });
 
-  it('highIRLoopInductionVariableEliminationOptimization optimizes good loops 2/n', () => {
+  it("highIRLoopInductionVariableEliminationOptimization optimizes good loops 2/n", () => {
     expect(
       highIRLoopInductionVariableEliminationOptimization(
         {
           basicInductionVariableWithLoopGuard: {
-            name: 'i',
+            name: "i",
             initialValue: HIR_ONE,
             incrementAmount: HIR_INT(1),
-            guardOperator: '<',
+            guardOperator: "<",
             guardExpression: HIR_INT(10),
           },
           generalInductionVariables: [],
           loopVariablesThatAreNotBasicInductionVariables: [
             {
-              name: 'j',
+              name: "j",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
             },
           ],
           derivedInductionVariables: [
             {
-              name: 'tmp_j',
-              baseName: 'i',
-              multiplier: HIR_VARIABLE('a', HIR_INT_TYPE),
+              name: "tmp_j",
+              baseName: "i",
+              multiplier: HIR_VARIABLE("a", HIR_INT_TYPE),
               immediate: HIR_INT(5),
             },
           ],
@@ -296,45 +296,45 @@ describe('hir-loop-induction-variable-elimination', () => {
     ).toEqual({
       prefixStatements: [
         HIR_BINARY({
-          name: '_loop_0',
-          operator: '*',
-          e1: HIR_VARIABLE('a', HIR_INT_TYPE),
+          name: "_loop_0",
+          operator: "*",
+          e1: HIR_VARIABLE("a", HIR_INT_TYPE),
           e2: HIR_ONE,
         }),
         HIR_BINARY({
-          name: '_loop_1',
-          operator: '+',
-          e1: HIR_VARIABLE('_loop_0', HIR_INT_TYPE),
+          name: "_loop_1",
+          operator: "+",
+          e1: HIR_VARIABLE("_loop_0", HIR_INT_TYPE),
           e2: HIR_INT(5),
         }),
         HIR_BINARY({
-          name: '_loop_2',
-          operator: '*',
-          e1: HIR_VARIABLE('a', HIR_INT_TYPE),
+          name: "_loop_2",
+          operator: "*",
+          e1: HIR_VARIABLE("a", HIR_INT_TYPE),
           e2: HIR_INT(10),
         }),
         HIR_BINARY({
-          name: '_loop_3',
-          operator: '+',
-          e1: HIR_VARIABLE('_loop_2', HIR_INT_TYPE),
+          name: "_loop_3",
+          operator: "+",
+          e1: HIR_VARIABLE("_loop_2", HIR_INT_TYPE),
           e2: HIR_INT(5),
         }),
       ],
       optimizableWhileLoop: {
         basicInductionVariableWithLoopGuard: {
-          name: 'tmp_j',
-          initialValue: HIR_VARIABLE('_loop_1', HIR_INT_TYPE),
-          incrementAmount: HIR_VARIABLE('a', HIR_INT_TYPE),
-          guardOperator: '<',
-          guardExpression: HIR_VARIABLE('_loop_3', HIR_INT_TYPE),
+          name: "tmp_j",
+          initialValue: HIR_VARIABLE("_loop_1", HIR_INT_TYPE),
+          incrementAmount: HIR_VARIABLE("a", HIR_INT_TYPE),
+          guardOperator: "<",
+          guardExpression: HIR_VARIABLE("_loop_3", HIR_INT_TYPE),
         },
         generalInductionVariables: [],
         loopVariablesThatAreNotBasicInductionVariables: [
           {
-            name: 'j',
+            name: "j",
             type: HIR_INT_TYPE,
             initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+            loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
           },
         ],
         derivedInductionVariables: [],
@@ -343,30 +343,30 @@ describe('hir-loop-induction-variable-elimination', () => {
     });
   });
 
-  it('highIRLoopInductionVariableEliminationOptimization optimizes good loops 3/n', () => {
+  it("highIRLoopInductionVariableEliminationOptimization optimizes good loops 3/n", () => {
     expect(
       highIRLoopInductionVariableEliminationOptimization(
         {
           basicInductionVariableWithLoopGuard: {
-            name: 'i',
+            name: "i",
             initialValue: HIR_ONE,
-            incrementAmount: HIR_VARIABLE('a', HIR_INT_TYPE),
-            guardOperator: '<',
+            incrementAmount: HIR_VARIABLE("a", HIR_INT_TYPE),
+            guardOperator: "<",
             guardExpression: HIR_INT(10),
           },
           generalInductionVariables: [],
           loopVariablesThatAreNotBasicInductionVariables: [
             {
-              name: 'j',
+              name: "j",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
             },
           ],
           derivedInductionVariables: [
             {
-              name: 'tmp_j',
-              baseName: 'i',
+              name: "tmp_j",
+              baseName: "i",
               multiplier: HIR_ONE,
               immediate: HIR_INT(5),
             },
@@ -378,45 +378,45 @@ describe('hir-loop-induction-variable-elimination', () => {
     ).toEqual({
       prefixStatements: [
         HIR_BINARY({
-          name: '_loop_0',
-          operator: '*',
+          name: "_loop_0",
+          operator: "*",
           e1: HIR_ONE,
           e2: HIR_ONE,
         }),
         HIR_BINARY({
-          name: '_loop_1',
-          operator: '+',
-          e1: HIR_VARIABLE('_loop_0', HIR_INT_TYPE),
+          name: "_loop_1",
+          operator: "+",
+          e1: HIR_VARIABLE("_loop_0", HIR_INT_TYPE),
           e2: HIR_INT(5),
         }),
         HIR_BINARY({
-          name: '_loop_2',
-          operator: '*',
+          name: "_loop_2",
+          operator: "*",
           e1: HIR_INT(10),
           e2: HIR_ONE,
         }),
         HIR_BINARY({
-          name: '_loop_3',
-          operator: '+',
-          e1: HIR_VARIABLE('_loop_2', HIR_INT_TYPE),
+          name: "_loop_3",
+          operator: "+",
+          e1: HIR_VARIABLE("_loop_2", HIR_INT_TYPE),
           e2: HIR_INT(5),
         }),
       ],
       optimizableWhileLoop: {
         basicInductionVariableWithLoopGuard: {
-          name: 'tmp_j',
-          initialValue: HIR_VARIABLE('_loop_1', HIR_INT_TYPE),
-          incrementAmount: HIR_VARIABLE('a', HIR_INT_TYPE),
-          guardOperator: '<',
-          guardExpression: HIR_VARIABLE('_loop_3', HIR_INT_TYPE),
+          name: "tmp_j",
+          initialValue: HIR_VARIABLE("_loop_1", HIR_INT_TYPE),
+          incrementAmount: HIR_VARIABLE("a", HIR_INT_TYPE),
+          guardOperator: "<",
+          guardExpression: HIR_VARIABLE("_loop_3", HIR_INT_TYPE),
         },
         generalInductionVariables: [],
         loopVariablesThatAreNotBasicInductionVariables: [
           {
-            name: 'j',
+            name: "j",
             type: HIR_INT_TYPE,
             initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+            loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
           },
         ],
         derivedInductionVariables: [],

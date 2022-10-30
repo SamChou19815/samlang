@@ -19,167 +19,167 @@ import {
   HIR_VARIABLE,
   HIR_WHILE,
   HIR_ZERO,
-} from '../../ast/hir-nodes';
-import optimizeHighIRWhileStatementByLoopInvariantCodeMotion from '../hir-loop-invariant-code-motion';
+} from "../../ast/hir-nodes";
+import optimizeHighIRWhileStatementByLoopInvariantCodeMotion from "../hir-loop-invariant-code-motion";
 
-describe('hir-loop-invariant-code-motion', () => {
-  it('optimizeHighIRWhileStatementByLoopInvariantCodeMotion works', () => {
+describe("hir-loop-invariant-code-motion", () => {
+  it("optimizeHighIRWhileStatementByLoopInvariantCodeMotion works", () => {
     const { hoistedStatementsBeforeWhile, optimizedWhileStatement, nonLoopInvariantVariables } =
       optimizeHighIRWhileStatementByLoopInvariantCodeMotion(
         HIR_WHILE({
           loopVariables: [
             {
-              name: 'i',
+              name: "i",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_i", HIR_INT_TYPE),
             },
             {
-              name: 'j',
+              name: "j",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_j", HIR_INT_TYPE),
             },
             {
-              name: 'x',
+              name: "x",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_x", HIR_INT_TYPE),
             },
             {
-              name: 'y',
+              name: "y",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_y", HIR_INT_TYPE),
             },
             {
-              name: 'z',
+              name: "z",
               type: HIR_INT_TYPE,
               initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_z', HIR_INT_TYPE),
+              loopValue: HIR_VARIABLE("tmp_z", HIR_INT_TYPE),
             },
           ],
           statements: [
             HIR_BINARY({
-              name: 'cc',
-              operator: '<',
-              e1: HIR_VARIABLE('i', HIR_INT_TYPE),
+              name: "cc",
+              operator: "<",
+              e1: HIR_VARIABLE("i", HIR_INT_TYPE),
               e2: HIR_ZERO,
             }),
             HIR_SINGLE_IF({
-              booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+              booleanExpression: HIR_VARIABLE("cc", HIR_BOOL_TYPE),
               invertCondition: false,
               statements: [HIR_BREAK(HIR_ZERO)],
             }),
             HIR_BINARY({
-              name: 'tmp_i',
-              operator: '+',
-              e1: HIR_VARIABLE('i', HIR_INT_TYPE),
+              name: "tmp_i",
+              operator: "+",
+              e1: HIR_VARIABLE("i", HIR_INT_TYPE),
               e2: HIR_ONE,
             }),
             HIR_BINARY({
-              name: 'tmp_j',
-              operator: '+',
-              e1: HIR_VARIABLE('j', HIR_INT_TYPE),
+              name: "tmp_j",
+              operator: "+",
+              e1: HIR_VARIABLE("j", HIR_INT_TYPE),
               e2: HIR_INT(3),
             }),
             HIR_BINARY({
-              name: 'tmp_x',
-              operator: '*',
-              e1: HIR_VARIABLE('i', HIR_INT_TYPE),
+              name: "tmp_x",
+              operator: "*",
+              e1: HIR_VARIABLE("i", HIR_INT_TYPE),
               e2: HIR_INT(5),
             }),
             HIR_BINARY({
-              name: 'tmp_y',
-              operator: '+',
-              e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+              name: "tmp_y",
+              operator: "+",
+              e1: HIR_VARIABLE("tmp_x", HIR_INT_TYPE),
               e2: HIR_INT(6),
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-              functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
+              functionArguments: [HIR_VARIABLE("tmp_x", HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_ZERO as unknown as HighIRFunctionNameExpression,
-              functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
+              functionArguments: [HIR_VARIABLE("tmp_x", HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
-              returnCollector: 'fc',
+              returnCollector: "fc",
             }),
             HIR_BINARY({
-              name: 'tmp_z',
-              operator: '+',
-              e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
-              e2: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
+              name: "tmp_z",
+              operator: "+",
+              e1: HIR_VARIABLE("tmp_x", HIR_INT_TYPE),
+              e2: HIR_VARIABLE("tmp_y", HIR_INT_TYPE),
             }),
             HIR_BINARY({
-              name: 'c',
-              operator: '-',
-              e1: HIR_VARIABLE('a', HIR_INT_TYPE),
-              e2: HIR_VARIABLE('b', HIR_INT_TYPE),
+              name: "c",
+              operator: "-",
+              e1: HIR_VARIABLE("a", HIR_INT_TYPE),
+              e2: HIR_VARIABLE("b", HIR_INT_TYPE),
             }),
             HIR_INDEX_ACCESS({
-              name: 'd',
+              name: "d",
               type: HIR_INT_TYPE,
-              pointerExpression: HIR_VARIABLE('c', HIR_INT_TYPE),
+              pointerExpression: HIR_VARIABLE("c", HIR_INT_TYPE),
               index: 0,
             }),
             HIR_INDEX_ACCESS({
-              name: 'e',
+              name: "e",
               type: HIR_INT_TYPE,
-              pointerExpression: HIR_VARIABLE('x', HIR_INT_TYPE),
+              pointerExpression: HIR_VARIABLE("x", HIR_INT_TYPE),
               index: 0,
             }),
             HIR_BINARY({
-              name: 'f',
-              operator: '+',
-              e2: HIR_VARIABLE('b', HIR_INT_TYPE),
-              e1: HIR_VARIABLE('x', HIR_INT_TYPE),
+              name: "f",
+              operator: "+",
+              e2: HIR_VARIABLE("b", HIR_INT_TYPE),
+              e1: HIR_VARIABLE("x", HIR_INT_TYPE),
             }),
             HIR_CLOSURE_INITIALIZATION({
-              closureVariableName: 'g',
-              closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
-              functionName: HIR_FUNCTION_NAME('f', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              context: HIR_VARIABLE('x', HIR_INT_TYPE),
+              closureVariableName: "g",
+              closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("I"),
+              functionName: HIR_FUNCTION_NAME("f", HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              context: HIR_VARIABLE("x", HIR_INT_TYPE),
             }),
             HIR_CLOSURE_INITIALIZATION({
-              closureVariableName: 'h',
-              closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
-              functionName: HIR_FUNCTION_NAME('f', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-              context: HIR_VARIABLE('d', HIR_INT_TYPE),
+              closureVariableName: "h",
+              closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("I"),
+              functionName: HIR_FUNCTION_NAME("f", HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              context: HIR_VARIABLE("d", HIR_INT_TYPE),
             }),
             HIR_STRUCT_INITIALIZATION({
-              structVariableName: 'kk',
-              type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
+              structVariableName: "kk",
+              type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("I"),
               expressionList: [HIR_ZERO],
             }),
             HIR_STRUCT_INITIALIZATION({
-              structVariableName: 'kk2',
-              type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
-              expressionList: [HIR_VARIABLE('g', HIR_INT_TYPE)],
+              structVariableName: "kk2",
+              type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS("I"),
+              expressionList: [HIR_VARIABLE("g", HIR_INT_TYPE)],
             }),
             HIR_IF_ELSE({
               booleanExpression: HIR_ZERO,
               s1: [],
               s2: [],
               finalAssignments: [
-                { name: 'bad', type: HIR_INT_TYPE, branch1Value: HIR_ZERO, branch2Value: HIR_ZERO },
+                { name: "bad", type: HIR_INT_TYPE, branch1Value: HIR_ZERO, branch2Value: HIR_ZERO },
               ],
             }),
             HIR_WHILE({ loopVariables: [], statements: [] }),
             HIR_WHILE({
               loopVariables: [],
               statements: [],
-              breakCollector: { name: 'zzzz', type: HIR_INT_TYPE },
+              breakCollector: { name: "zzzz", type: HIR_INT_TYPE },
             }),
           ],
-          breakCollector: { name: 'bc', type: HIR_INT_TYPE },
+          breakCollector: { name: "bc", type: HIR_INT_TYPE },
         }),
       );
 
     const jointDebugPrint = [...hoistedStatementsBeforeWhile, optimizedWhileStatement]
       .map((it) => debugPrintHighIRStatement(it))
-      .join('\n');
+      .join("\n");
     expect(jointDebugPrint).toBe(`let c: int = (a: int) - (b: int);
 let d: int = (c: int)[0];
 let h: I = Closure { fun: (f: () -> int), context: (d: int) };
@@ -225,24 +225,24 @@ while (true) {
   z = (tmp_z: int);
 }`);
     expect(Array.from(nonLoopInvariantVariables).sort((a, b) => a.localeCompare(b))).toEqual([
-      'bad',
-      'cc',
-      'e',
-      'f',
-      'fc',
-      'g',
-      'i',
-      'j',
-      'kk2',
-      'tmp_i',
-      'tmp_j',
-      'tmp_x',
-      'tmp_y',
-      'tmp_z',
-      'x',
-      'y',
-      'z',
-      'zzzz',
+      "bad",
+      "cc",
+      "e",
+      "f",
+      "fc",
+      "g",
+      "i",
+      "j",
+      "kk2",
+      "tmp_i",
+      "tmp_j",
+      "tmp_x",
+      "tmp_y",
+      "tmp_z",
+      "x",
+      "y",
+      "z",
+      "zzzz",
     ]);
   });
 });

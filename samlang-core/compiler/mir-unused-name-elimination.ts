@@ -4,11 +4,11 @@ import type {
   MidIRSources,
   MidIRStatement,
   MidIRType,
-} from '../ast/mir-nodes';
-import { checkNotNull } from '../utils';
+} from "../ast/mir-nodes";
+import { checkNotNull } from "../utils";
 
 function collectForTypeSet(type: MidIRType, typeSet: Set<string>): void {
-  if (type.__type__ === 'IdentifierType') typeSet.add(type.name);
+  if (type.__type__ === "IdentifierType") typeSet.add(type.name);
 }
 
 function collectUsedNamesFromExpression(
@@ -17,10 +17,10 @@ function collectUsedNamesFromExpression(
   expression: MidIRExpression,
 ): void {
   switch (expression.__type__) {
-    case 'MidIRIntLiteralExpression':
-    case 'MidIRVariableExpression':
+    case "MidIRIntLiteralExpression":
+    case "MidIRVariableExpression":
       break;
-    case 'MidIRNameExpression':
+    case "MidIRNameExpression":
       nameSet.add(expression.name);
       break;
   }
@@ -33,23 +33,23 @@ function collectUsedNamesFromStatement(
   statement: MidIRStatement,
 ): void {
   switch (statement.__type__) {
-    case 'MidIRIndexAccessStatement':
+    case "MidIRIndexAccessStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.pointerExpression);
       collectForTypeSet(statement.type, typeSet);
       break;
-    case 'MidIRBinaryStatement':
+    case "MidIRBinaryStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.e1);
       collectUsedNamesFromExpression(nameSet, typeSet, statement.e2);
       collectForTypeSet(statement.type, typeSet);
       break;
-    case 'MidIRFunctionCallStatement':
+    case "MidIRFunctionCallStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.functionExpression);
       statement.functionArguments.forEach((it) =>
         collectUsedNamesFromExpression(nameSet, typeSet, it),
       );
       collectForTypeSet(statement.returnType, typeSet);
       break;
-    case 'MidIRIfElseStatement':
+    case "MidIRIfElseStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.booleanExpression);
       statement.s1.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
       statement.s2.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
@@ -59,14 +59,14 @@ function collectUsedNamesFromStatement(
         collectForTypeSet(finalAssignment.type, typeSet);
       });
       break;
-    case 'MidIRSingleIfStatement':
+    case "MidIRSingleIfStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.booleanExpression);
       statement.statements.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
       break;
-    case 'MidIRBreakStatement':
+    case "MidIRBreakStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.breakValue);
       break;
-    case 'MidIRWhileStatement':
+    case "MidIRWhileStatement":
       statement.loopVariables.forEach((it) => {
         collectForTypeSet(it.type, typeSet);
         collectUsedNamesFromExpression(nameSet, typeSet, it.initialValue);
@@ -77,11 +77,11 @@ function collectUsedNamesFromStatement(
         collectForTypeSet(statement.breakCollector.type, typeSet);
       }
       break;
-    case 'MidIRCastStatement':
+    case "MidIRCastStatement":
       collectUsedNamesFromExpression(nameSet, typeSet, statement.assignedExpression);
       collectForTypeSet(statement.type, typeSet);
       break;
-    case 'MidIRStructInitializationStatement':
+    case "MidIRStructInitializationStatement":
       statement.expressionList.forEach((it) =>
         collectUsedNamesFromExpression(nameSet, typeSet, it),
       );
