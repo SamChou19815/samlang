@@ -12,7 +12,6 @@ import { checkNotNull } from "../utils";
 import ExpressionInterpreter, {
   ClassValue,
   createDefaultInterpretationContext,
-  EMPTY,
   FunctionValue,
   InterpretationContext,
   PanicException,
@@ -60,14 +59,17 @@ export default class ModuleInterpreter {
       context,
     );
     const mainModule = fullCtx.classes.get("Main");
-    if (!mainModule) return { type: "unit" };
+    if (!mainModule) {
+      return { type: "unit" };
+    }
     const mainFunction = mainModule.functions.get("main");
-    if (!mainFunction) return { type: "unit" };
-    if (mainFunction.arguments.length > 0) return { type: "unit" };
-    return this.expressionInterpreter.eval(
-      mainFunction.body as SamlangExpression,
-      mainFunction.context,
-    );
+    if (!mainFunction) {
+      return { type: "unit" };
+    }
+    if (mainFunction.arguments.length > 0) {
+      return { type: "unit" };
+    }
+    return this.expressionInterpreter.eval(mainFunction.body as SamlangExpression, fullCtx);
   };
 
   evalContext = (
@@ -102,13 +104,6 @@ export default class ModuleInterpreter {
       ...context,
       classes: new Map([...Array.from(context.classes), [classDefinition.name.name, newModule]]),
     };
-    // patch the functions and methods with correct context.
-    functions.forEach((_, key) => {
-      checkNotNull(functions.get(key)).context = newContext;
-    });
-    methods.forEach((_, key) => {
-      checkNotNull(methods.get(key)).context = newContext;
-    });
     if (classDefinition.typeDefinition.type === "object") {
       functions.set("init", {
         type: "functionValue",
@@ -120,7 +115,7 @@ export default class ModuleInterpreter {
           });
           return { type: "object", objectContent };
         },
-        context: EMPTY,
+        captured: new Map(),
       });
     } else {
       classDefinition.typeDefinition.names.forEach(({ name: tag }) => {
@@ -132,7 +127,7 @@ export default class ModuleInterpreter {
             tag,
             data: checkNotNull(localContext.localValues.get("data")),
           }),
-          context: EMPTY,
+          captured: new Map(),
         });
       });
     }

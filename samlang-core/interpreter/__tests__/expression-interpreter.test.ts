@@ -51,7 +51,6 @@ import ExpressionInterpreter, {
   ClassValue,
   createDefaultInterpretationContext,
   EMPTY,
-  FunctionValue,
   InterpretationContext,
   PanicException,
   Value,
@@ -64,117 +63,6 @@ describe("expression-interpreter", () => {
     } catch (e) {
       expect((e as PanicException).message).toBe("panic!");
     }
-  });
-
-  it("value equality test", () => {
-    expect({ type: "unit" }).toEqual({ type: "unit" });
-    expect({ type: "unit" }).not.toEqual({ type: "bool", value: true });
-    expect({ type: "unit" }).not.toEqual({ type: "int", value: 1 });
-    expect({ type: "unit" }).not.toEqual({ type: "string", value: "string" });
-    expect({ type: "unit" }).not.toEqual({ type: "object", objectContent: new Map() });
-    expect({ type: "unit" }).not.toEqual({ type: "variant", tag: "tag", data: { type: "unit" } });
-
-    expect({ type: "bool", value: true }).toEqual({ type: "bool", value: true });
-    expect({ type: "bool", value: false }).toEqual({ type: "bool", value: false });
-    expect({ type: "bool", value: true }).not.toEqual({ type: "bool", value: false });
-    expect({ type: "bool", value: false }).not.toEqual({ type: "bool", value: true });
-
-    expect({ type: "int", value: 1 }).toEqual({ type: "int", value: 1 });
-    expect({ type: "int", value: 1 }).not.toEqual({ type: "int", value: 2 });
-
-    expect({ type: "string", value: "string" }).toEqual({ type: "string", value: "string" });
-    expect({ type: "string", value: "string" }).not.toEqual({
-      type: "string",
-      value: "not a string",
-    });
-
-    expect({ type: "string", value: "string" }).toEqual({ type: "string", value: "string" });
-    expect({ type: "string", value: "string" }).not.toEqual({
-      type: "string",
-      value: "not a string",
-    });
-
-    expect({ type: "object", objectContent: new Map() }).toEqual({
-      type: "object",
-      objectContent: new Map(),
-    });
-    const objectContent1 = new Map<string, Value>();
-    objectContent1.set("field1", { type: "unit" });
-    const objectContent2 = new Map<string, Value>();
-    objectContent2.set("field1", 1);
-    expect({ type: "object", objectContent: objectContent1 }).not.toEqual({
-      type: "object",
-      objectContent: objectContent2,
-    });
-    objectContent2.set("field2", { type: "unit" });
-    expect({ type: "object", objectContent: objectContent1 }).not.toEqual({
-      type: "object",
-      objectContent: objectContent2,
-    });
-
-    expect({ type: "variant", tag: "tag", data: { type: "unit" } }).toEqual({
-      type: "variant",
-      tag: "tag",
-      data: { type: "unit" },
-    });
-    expect({ type: "variant", tag: "tag", data: { type: "unit" } }).not.toEqual({
-      type: "variant",
-      tag: "diff tag",
-      data: { type: "unit" },
-    });
-    expect({ type: "variant", tag: "tag", data: { type: "unit" } }).not.toEqual({
-      type: "variant",
-      tag: "diff tag",
-      data: { type: "int", value: 1 },
-    });
-
-    const samlangExpression = AstBuilder.TRUE;
-    expect({
-      type: "functionValue",
-      arguments: [],
-      body: samlangExpression,
-      context: { classes: new Map(), localValues: new Map() },
-    }).toEqual({
-      type: "functionValue",
-      arguments: [],
-      body: samlangExpression,
-      context: { classes: new Map(), localValues: new Map() },
-    });
-    expect({
-      type: "functionValue",
-      arguments: ["param"],
-      body: samlangExpression,
-      context: { classes: new Map(), localValues: new Map() },
-    }).not.toEqual({
-      type: "functionValue",
-      arguments: [],
-      body: samlangExpression,
-      context: { classes: new Map(), localValues: new Map() },
-    });
-  });
-
-  it("empty context equality check", () => {
-    expect(EMPTY).toEqual(EMPTY);
-  });
-
-  it("non-empty context equality check", () => {
-    const testFunctions = new Map<string, FunctionValue>();
-    const testMethods = new Map<string, FunctionValue>();
-    const samlangExpression = AstBuilder.TRUE;
-    const functionValue: FunctionValue = {
-      type: "functionValue",
-      arguments: [],
-      body: samlangExpression,
-      context: EMPTY,
-    };
-    testFunctions.set("function1", functionValue);
-    testMethods.set("method1", functionValue);
-    const testClassValue = { functions: testFunctions, methods: testMethods };
-    const testClasses = new Map([["class1", testClassValue]]);
-    const testLocalValues = new Map<string, Value>([["v1", { type: "unit" }]]);
-    const testContext = { classes: testClasses, localValues: testLocalValues };
-
-    expect(testContext).toEqual(testContext);
   });
 
   const interpreter = new ExpressionInterpreter();
@@ -194,7 +82,7 @@ describe("expression-interpreter", () => {
     type: "functionValue",
     arguments: [],
     body: SourceExpressionInt(5, exampleLocation),
-    context: EMPTY,
+    captured: new Map([["this", { data: 5, tag: "tag", type: "variant" }]]),
   };
   const functionType: SamlangFunctionType = {
     __type__: "FunctionType",
@@ -311,7 +199,7 @@ describe("expression-interpreter", () => {
                       ["test", checkNotNull(localContext.localValues.get("test"))],
                     ]),
                   }),
-                  context: EMPTY,
+                  captured: new Map(),
                 },
               ],
             ]),
@@ -356,7 +244,7 @@ describe("expression-interpreter", () => {
                     tag: "tag",
                     data: checkNotNull(localContext.localValues.get("data")),
                   }),
-                  context: EMPTY,
+                  captured: new Map(),
                 },
               ],
             ]),
@@ -407,7 +295,7 @@ describe("expression-interpreter", () => {
                       ["test", checkNotNull(localContext.localValues.get("test"))],
                     ]),
                   }),
-                  context: EMPTY,
+                  captured: new Map(),
                 },
               ],
             ]),
@@ -463,7 +351,7 @@ describe("expression-interpreter", () => {
                   tag: "tag",
                   data: checkNotNull(localContext.localValues.get("data")),
                 }),
-                context: EMPTY,
+                captured: new Map([["this", { data: 5, tag: "tag", type: "variant" }]]),
               },
             ],
           ]),
@@ -581,7 +469,7 @@ describe("expression-interpreter", () => {
       location: exampleLocation,
       type: functionType,
       parameters: [{ name: SourceId("arg1"), typeAnnotation: AstBuilder.StringType }],
-      captured: new Map(),
+      captured: new Map([["a", AstBuilder.StringType]]),
       body: stringLiteralExpression,
     });
     const functionCallExpressionNoArgs = SourceExpressionFunctionCall({
@@ -597,7 +485,12 @@ describe("expression-interpreter", () => {
       functionArguments: [stringLiteralExpression],
     });
     expect(interpreter.eval(functionCallExpressionNoArgs)).toEqual(stringLiteralValue);
-    expect(interpreter.eval(functionCallExpressionWithArgs)).toEqual(stringLiteralValue);
+    expect(
+      interpreter.eval(functionCallExpressionWithArgs, {
+        ...EMPTY,
+        localValues: new Map([["a", 1]]),
+      }),
+    ).toEqual(stringLiteralValue);
   });
 
   it("binary expression evaluates correctly", () => {
@@ -865,7 +758,7 @@ describe("expression-interpreter", () => {
                     tag: "tag",
                     data: checkNotNull(localContext.localValues.get("data")),
                   }),
-                  context: EMPTY,
+                  captured: new Map(),
                 },
               ],
             ]),
@@ -898,7 +791,7 @@ describe("expression-interpreter", () => {
       type: "functionValue",
       arguments: [],
       body: intLiteralExpression,
-      context: EMPTY,
+      captured: new Map(),
     });
   });
 
@@ -976,7 +869,7 @@ describe("expression-interpreter", () => {
                       ["test", checkNotNull(localContext.localValues.get("test"))],
                     ]),
                   }),
-                  context: EMPTY,
+                  captured: new Map(),
                 },
               ],
               [
@@ -989,7 +882,7 @@ describe("expression-interpreter", () => {
                     tag: "tag",
                     data: checkNotNull(localContext.localValues.get("data")),
                   }),
-                  context: EMPTY,
+                  captured: new Map(),
                 },
               ],
             ]),
