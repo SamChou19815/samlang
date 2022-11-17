@@ -40,10 +40,7 @@ export default class ExpressionInterpreter {
         const methodValue =
           context.classes.get(identifier)?.methods?.get(expression.methodName.name) ??
           this.blameTypeChecker();
-        const localValues = new Map(context.localValues);
-        localValues.set("this", thisValue);
-        methodValue.context = { classes: context.classes, localValues };
-        return methodValue;
+        return { ...methodValue, captured: new Map([["this", thisValue]]) };
       }
       case "UnaryExpression": {
         const v = this.eval(expression.expression);
@@ -58,14 +55,14 @@ export default class ExpressionInterpreter {
         const functionVal = this.eval(expression.functionExpression, context) as FunctionValue;
         const args = functionVal.arguments;
         const body = functionVal.body;
-        const ctx = functionVal.context;
         const argValues = expression.functionArguments.map((arg) => this.eval(arg, context));
-        const bodyLocalValues = new Map(ctx.localValues);
-        args.forEach((arg, i) => {
-          bodyLocalValues.set(arg, checkNotNull(argValues[i]));
-        });
-        const bodyContext = { classes: ctx.classes, localValues: new Map(bodyLocalValues) };
-        if (typeof body === "function") return body(bodyContext);
+        const bodyLocalValues = new Map(context.localValues);
+        args.forEach((arg, i) => bodyLocalValues.set(arg, checkNotNull(argValues[i])));
+        functionVal.captured.forEach((v, name) => bodyLocalValues.set(name, v));
+        const bodyContext = { classes: context.classes, localValues: new Map(bodyLocalValues) };
+        if (typeof body === "function") {
+          return body(bodyContext);
+        }
         return this.eval(body, bodyContext);
       }
       case "BinaryExpression": {
@@ -182,7 +179,12 @@ export default class ExpressionInterpreter {
           type: "functionValue",
           arguments: expression.parameters.map((param) => param.name.name),
           body: expression.body,
-          context,
+          captured: new Map(
+            Array.from(expression.captured, ([name]) => [
+              name,
+              checkNotNull(context.localValues.get(name)),
+            ]),
+          ),
         };
       case "StatementBlockExpression": {
         const { block } = expression;
@@ -202,9 +204,10 @@ export default class ExpressionInterpreter {
               });
               break;
             }
-            case "VariablePattern":
+            case "VariablePattern": {
               contextForStatementBlock.localValues.set(p.name, assignedValue);
               break;
+            }
             case "WildCardPattern":
               break;
           }
@@ -268,7 +271,7 @@ export const createDefaultInterpretationContext = (
                 }
                 throw new PanicException(`Cannot convert \`${value}\` to int.`);
               },
-              context: EMPTY,
+              captured: new Map(),
             },
           ],
           [
@@ -280,7 +283,7 @@ export const createDefaultInterpretationContext = (
                 const argumentValue = localContext.localValues.get("v") as number;
                 return argumentValue.toString();
               },
-              context: EMPTY,
+              captured: new Map(),
             },
           ],
           [
@@ -293,7 +296,7 @@ export const createDefaultInterpretationContext = (
                 collectPrinted(value);
                 return { type: "unit" };
               },
-              context: EMPTY,
+              captured: new Map(),
             },
           ],
           [
@@ -305,7 +308,7 @@ export const createDefaultInterpretationContext = (
                 const value = localContext.localValues.get("v") as string;
                 throw new PanicException(value);
               },
-              context: EMPTY,
+              captured: new Map(),
             },
           ],
         ]),
@@ -357,5 +360,5 @@ export type FunctionValue = {
   readonly type: "functionValue";
   readonly arguments: string[];
   readonly body: SamlangExpression | ((context: InterpretationContext) => Value);
-  context: InterpretationContext;
+  readonly captured: ReadonlyMap<string, Value>;
 };
