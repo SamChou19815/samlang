@@ -113,7 +113,7 @@ class ImplTArg<T> : T {} // error: T not resolved
   },
   {
     testName: "complete-trash",
-    sourceCode: `This is a bad source.`,
+    sourceCode: "This is a bad source.",
   },
   {
     testName: "forty-two",

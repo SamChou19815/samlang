@@ -47,9 +47,10 @@ function lowerHighIRType(type: HighIRType): MidIRType {
   switch (type.__type__) {
     case "PrimitiveType":
       return type;
-    case "IdentifierType":
+    case "IdentifierType": {
       assert(type.typeArguments.length === 0);
       return MIR_IDENTIFIER_TYPE(type.name);
+    }
     case "FunctionType":
       return lowerHighIRFunctionType(type);
   }
@@ -117,7 +118,9 @@ class HighIRToMidIRLoweringManager {
             if (typeDefinition.type === "object") {
               typeDefinition.mappings.forEach((type, index) => {
                 const typeName = referenceTypeName(type);
-                if (!typeName) return;
+                if (!typeName) {
+                  return;
+                }
                 const loweredType = lowerHighIRType(type);
                 destructMemberStatements.push(
                   MIR_INDEX_ACCESS({
@@ -149,7 +152,9 @@ class HighIRToMidIRLoweringManager {
               }
               typeDefinition.mappings.forEach((type, index) => {
                 const typeName = referenceTypeName(type);
-                if (!typeName) return;
+                if (!typeName) {
+                  return;
+                }
                 const loweredType = lowerHighIRType(type);
                 const statements: MidIRStatement[] = [];
                 // Commented until runtime can deal with strings
@@ -271,7 +276,7 @@ class HighIRToMidIRLoweringManager {
           ]
         : [
             MIR_CAST({
-              name: `pointer_casted`,
+              name: "pointer_casted",
               type: MIR_ANY_TYPE,
               assignedExpression: parameter,
             }),
@@ -412,13 +417,16 @@ class HighIRToMidIRLoweringManager {
           }
           return;
         }
-        case "MidIRIfElseStatement":
+        case "MidIRIfElseStatement": {
           loweredStatement.finalAssignments.forEach(({ name, type }) => {
             const typeName = referenceTypeName(type);
-            if (typeName) variableToDecreaseReferenceCount.push({ variableName: name, typeName });
+            if (typeName) {
+              variableToDecreaseReferenceCount.push({ variableName: name, typeName });
+            }
           });
           return;
-        case "MidIRWhileStatement":
+        }
+        case "MidIRWhileStatement": {
           if (loweredStatement.breakCollector) {
             const typeName = referenceTypeName(loweredStatement.breakCollector.type);
             if (typeName) {
@@ -427,6 +435,7 @@ class HighIRToMidIRLoweringManager {
             }
           }
           return;
+        }
         case "MidIRStructInitializationStatement": {
           const typeName = checkNotNull(referenceTypeName(loweredStatement.type));
           variableToDecreaseReferenceCount.push({
@@ -484,10 +493,11 @@ class HighIRToMidIRLoweringManager {
         }
         assert(index === 0 || index === 1, `Invalid index for variant access: ${index}`);
         switch (index) {
-          case 0:
+          case 0: {
             // Access the tag case
             assert(variableType.__type__ === "PrimitiveType" && variableType.type === "int");
             return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: 1 })];
+          }
           case 1: {
             // Access the data case, might need cast
             if (this.isTheSameLoweredType(variableType)) {
@@ -646,8 +656,12 @@ class HighIRToMidIRLoweringManager {
                 const lowered = lowerHighIRExpression(expression);
                 assert(index === 0 || index === 1, `Invalid index for variant access: ${index}`);
                 this.addReferenceCountingIfTypeAllowed(statements, lowered);
-                if (index === 0) return lowered;
-                if (this.isTheSameLoweredType(lowered.type)) return lowered;
+                if (index === 0) {
+                  return lowered;
+                }
+                if (this.isTheSameLoweredType(lowered.type)) {
+                  return lowered;
+                }
                 const temp = this.tempAllocator();
                 statements.push(
                   MIR_CAST({ name: temp, type: MIR_ANY_TYPE, assignedExpression: lowered }),
@@ -732,7 +746,9 @@ class HighIRToMidIRLoweringManager {
     expression: MidIRExpression,
   ): void {
     const typeName = referenceTypeName(expression.type);
-    if (typeName == null) return;
+    if (typeName == null) {
+      return;
+    }
     const count = this.tempAllocator();
     const newCount = this.tempAllocator();
     if (typeName !== "string") {

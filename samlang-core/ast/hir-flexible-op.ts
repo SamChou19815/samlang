@@ -67,18 +67,30 @@ export default function createHighIRFlexibleOrderOperatorNode(
     case "==":
     case "!=":
       return compareHighIR(e1, e2) > 0 ? { operator, e1, e2 } : { operator, e2: e1, e1: e2 };
-    case "<":
-      if (compareHighIR(e1, e2) < 0) return { operator: ">", e1: e2, e2: e1 };
+    case "<": {
+      if (compareHighIR(e1, e2) < 0) {
+        return { operator: ">", e1: e2, e2: e1 };
+      }
       break;
-    case "<=":
-      if (compareHighIR(e1, e2) < 0) return { operator: ">=", e1: e2, e2: e1 };
+    }
+    case "<=": {
+      if (compareHighIR(e1, e2) < 0) {
+        return { operator: ">=", e1: e2, e2: e1 };
+      }
       break;
-    case ">":
-      if (compareHighIR(e1, e2) < 0) return { operator: "<", e1: e2, e2: e1 };
+    }
+    case ">": {
+      if (compareHighIR(e1, e2) < 0) {
+        return { operator: "<", e1: e2, e2: e1 };
+      }
       break;
-    case ">=":
-      if (compareHighIR(e1, e2) < 0) return { operator: "<=", e1: e2, e2: e1 };
+    }
+    case ">=": {
+      if (compareHighIR(e1, e2) < 0) {
+        return { operator: "<=", e1: e2, e2: e1 };
+      }
       break;
+    }
     default:
       break;
   }

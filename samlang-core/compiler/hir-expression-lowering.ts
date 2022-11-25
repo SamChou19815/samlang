@@ -47,7 +47,7 @@ import type {
   StatementBlockExpression,
   UnaryExpression,
 } from "../ast/samlang-nodes";
-import { assert, checkNotNull, LocalStackedContext, zip } from "../utils";
+import { assert, checkNotNull, ignore, LocalStackedContext, zip } from "../utils";
 import type HighIRStringManager from "./hir-string-manager";
 import {
   collectUsedGenericTypes,
@@ -67,19 +67,15 @@ type HighIRExpressionLoweringResultWithSyntheticFunctions = {
 };
 
 class HighIRLoweringContext extends LocalStackedContext<HighIRExpression> {
-  addLocalValueType(name: string, value: HighIRExpression, onCollision: () => void): void {
+  bind(name: string, value: HighIRExpression): void {
     if (
       value.__type__ !== "HighIRStringNameExpression" &&
       value.__type__ !== "HighIRFunctionNameExpression"
     ) {
-      super.addLocalValueType(name, value, onCollision);
+      super.addLocalValueType(name, value, ignore);
       return;
     }
-    super.addLocalValueType(name, this.getLocalValueType(value.name) ?? value, onCollision);
-  }
-
-  bind(name: string, value: HighIRExpression): void {
-    this.addLocalValueType(name, value, () => {});
+    super.addLocalValueType(name, this.getLocalValueType(value.name) ?? value, ignore);
   }
 }
 
@@ -109,7 +105,9 @@ class HighIRExpressionLoweringManager {
   }
 
   private allocateTemporaryVariable(favoredTempVariable: string | null): string {
-    if (favoredTempVariable != null) return favoredTempVariable;
+    if (favoredTempVariable != null) {
+      return favoredTempVariable;
+    }
     const variableName = `_t${this.nextTemporaryVariableId}`;
     this.nextTemporaryVariableId += 1;
     return variableName;
@@ -908,12 +906,15 @@ class HighIRExpressionLoweringManager {
             this.varibleContext.bind(pattern.name, loweredAssignedExpression);
             break;
           }
-          case "WildCardPattern":
+          case "WildCardPattern": {
             this.loweredAndAddStatements(assignedExpression, null, loweredStatements);
             break;
+          }
         }
       });
-      if (finalExpression == null) return HIR_ZERO;
+      if (finalExpression == null) {
+        return HIR_ZERO;
+      }
       return this.loweredAndAddStatements(finalExpression, favoredTempVariable, loweredStatements);
     });
     this.blockID += 1;
@@ -948,7 +949,9 @@ export default function lowerSamlangExpression(
     typeLoweringManager,
     stringManager,
   );
-  if (expression.__type__ === "StatementBlockExpression") manager.depth = -1;
+  if (expression.__type__ === "StatementBlockExpression") {
+    manager.depth = -1;
+  }
   const result = manager.lower(expression, null);
   return { ...result, syntheticFunctions: manager.syntheticFunctions };
 }

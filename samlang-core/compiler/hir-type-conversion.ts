@@ -102,14 +102,18 @@ export function collectUsedGenericTypes(
     switch (t.__type__) {
       case "PrimitiveType":
         return;
-      case "IdentifierType":
-        if (genericTypes.has(t.name) && t.typeArguments.length === 0) collector.add(t.name);
+      case "IdentifierType": {
+        if (genericTypes.has(t.name) && t.typeArguments.length === 0) {
+          collector.add(t.name);
+        }
         t.typeArguments.forEach(visit);
         return;
-      case "FunctionType":
+      }
+      case "FunctionType": {
         t.argumentTypes.forEach(visit);
         visit(t.returnType);
         return;
+      }
     }
   }
   visit(highIRType);
@@ -126,11 +130,12 @@ export function solveTypeArguments(
 
   function solve(t1: HighIRType, t2: HighIRType): void {
     switch (t1.__type__) {
-      case "PrimitiveType":
+      case "PrimitiveType": {
         assert(t2.__type__ === "PrimitiveType", `t2 has type ${t2.__type__}`);
         assert(t1.type === t2.type, `t1=${t1.type}, t2=${t2.type}`);
         return;
-      case "IdentifierType":
+      }
+      case "IdentifierType": {
         if (t1.typeArguments.length === 0 && genericTypeParameterSet.has(t1.name)) {
           solved.set(t1.name, t2);
           return;
@@ -141,13 +146,15 @@ export function solveTypeArguments(
         assert(t1.typeArguments.length === t2.typeArguments.length);
         zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
         return;
-      case "FunctionType":
+      }
+      case "FunctionType": {
         assert(
           t2.__type__ === "FunctionType" && t1.argumentTypes.length === t2.argumentTypes.length,
         );
         zip(t1.argumentTypes, t2.argumentTypes).forEach(([a1, a2]) => solve(a1, a2));
         solve(t1.returnType, t2.returnType);
         return;
+      }
     }
   }
 
@@ -164,7 +171,7 @@ export const highIRTypeApplication = (
   switch (type.__type__) {
     case "PrimitiveType":
       return type;
-    case "IdentifierType":
+    case "IdentifierType": {
       if (type.typeArguments.length !== 0) {
         return HIR_IDENTIFIER_TYPE(
           type.name,
@@ -172,6 +179,7 @@ export const highIRTypeApplication = (
         );
       }
       return replacementMap.get(type.name) ?? type;
+    }
     case "FunctionType":
       return HIR_FUNCTION_TYPE(
         type.argumentTypes.map((it) => highIRTypeApplication(it, replacementMap)),
@@ -185,12 +193,13 @@ function encodeHighIRTypeForGenericsSpecialization(type: HighIRType): string {
   switch (type.__type__) {
     case "PrimitiveType":
       return type.type;
-    case "IdentifierType":
+    case "IdentifierType": {
       assert(
         type.typeArguments.length === 0,
         "The identifier type argument should already be specialized.",
       );
       return type.name;
+    }
     case "FunctionType":
       assert(false, "Function type should never appear in generics specialization positions.");
   }
@@ -227,7 +236,7 @@ export class SamlangTypeLoweringManager {
     switch (type.__type__) {
       case "PrimitiveType":
         return lowerSamlangPrimitiveType(type);
-      case "IdentifierType":
+      case "IdentifierType": {
         if (this.genericTypes.has(type.identifier)) {
           return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(type.identifier);
         }
@@ -235,6 +244,7 @@ export class SamlangTypeLoweringManager {
           encodeSamlangType(type.moduleReference, type.identifier),
           type.typeArguments.map(this.lowerSamlangType),
         );
+      }
       case "FunctionType": {
         const rewrittenFunctionType = HIR_FUNCTION_TYPE(
           type.argumentTypes.map(this.lowerSamlangType),

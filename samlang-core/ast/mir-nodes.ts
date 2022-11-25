@@ -262,18 +262,20 @@ export function MIR_BINARY({
     case "/":
     case "%":
     case "+":
-    case "-":
+    case "-": {
       type = MIR_INT_TYPE;
       break;
+    }
     case "^":
     case "<":
     case ">":
     case "<=":
     case ">=":
     case "==":
-    case "!=":
+    case "!=": {
       type = MIR_BOOL_TYPE;
       break;
+    }
   }
   if (operator === "-" && e2.__type__ === "MidIRIntLiteralExpression") {
     const negOfE2Constant = -e2.value;
@@ -392,11 +394,12 @@ export const MIR_STRUCT_INITIALIZATION = ({
 
 function prettyPrintMidIRExpression(expression: MidIRExpression): string {
   switch (expression.__type__) {
-    case "MidIRIntLiteralExpression":
+    case "MidIRIntLiteralExpression": {
       if (expression.type.__type__ === "PrimitiveType" && expression.type.type === "bool") {
         return String(Boolean(expression.value));
       }
       return expression.value.toString();
+    }
     case "MidIRVariableExpression":
     case "MidIRNameExpression":
       return expression.name;
@@ -435,7 +438,9 @@ export function prettyPrintMidIRFunction(
   let breakCollector: string | undefined = undefined;
 
   function prettyPrintMidIRTypeAnnotation(type: MidIRType) {
-    if (!typed) return "";
+    if (!typed) {
+      return "";
+    }
     return `: ${prettyPrintMidIRType(type)}`;
   }
 
@@ -484,7 +489,7 @@ export function prettyPrintMidIRFunction(
         );
         break;
       }
-      case "MidIRIfElseStatement":
+      case "MidIRIfElseStatement": {
         s.finalAssignments.forEach((final) => {
           statementStringCollector.push(
             "  ".repeat(level),
@@ -502,7 +507,7 @@ export function prettyPrintMidIRFunction(
           statementStringCollector.push("  ".repeat(level), `${finalAssignment.name} = ${v1};\n`);
         });
         level -= 1;
-        statementStringCollector.push("  ".repeat(level), `} else {\n`);
+        statementStringCollector.push("  ".repeat(level), "} else {\n");
         level += 1;
         s.s2.forEach(prettyPrintMidIRStatementAsJSStatement);
         s.finalAssignments.forEach((finalAssignment) => {
@@ -512,7 +517,8 @@ export function prettyPrintMidIRFunction(
         level -= 1;
         statementStringCollector.push("  ".repeat(level), "}\n");
         break;
-      case "MidIRSingleIfStatement":
+      }
+      case "MidIRSingleIfStatement": {
         statementStringCollector.push(
           "  ".repeat(level),
           `if (${s.invertCondition ? "!" : ""}${prettyPrintMidIRExpression(
@@ -522,9 +528,10 @@ export function prettyPrintMidIRFunction(
         level += 1;
         s.statements.forEach(prettyPrintMidIRStatementAsJSStatement);
         level -= 1;
-        statementStringCollector.push("  ".repeat(level), `}\n`);
+        statementStringCollector.push("  ".repeat(level), "}\n");
         break;
-      case "MidIRBreakStatement":
+      }
+      case "MidIRBreakStatement": {
         if (breakCollector != null) {
           statementStringCollector.push(
             "  ".repeat(level),
@@ -533,6 +540,7 @@ export function prettyPrintMidIRFunction(
         }
         statementStringCollector.push("  ".repeat(level), "break;\n");
         break;
+      }
       case "MidIRWhileStatement": {
         s.loopVariables.forEach((v) => {
           const type = prettyPrintMidIRTypeAnnotation(v.type);
@@ -550,7 +558,7 @@ export function prettyPrintMidIRFunction(
             `let ${s.breakCollector.name}${type};\n`,
           );
         }
-        statementStringCollector.push("  ".repeat(level), `while (true) {\n`);
+        statementStringCollector.push("  ".repeat(level), "while (true) {\n");
         level += 1;
         s.statements.forEach(prettyPrintMidIRStatementAsJSStatement);
         s.loopVariables.forEach((v) => {

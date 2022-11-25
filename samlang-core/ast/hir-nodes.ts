@@ -462,7 +462,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         );
         return;
       }
-      case "HighIRIfElseStatement":
+      case "HighIRIfElseStatement": {
         s.finalAssignments.forEach((finalAssignment) => {
           const type = prettyPrintHighIRType(finalAssignment.type);
           collector.push("  ".repeat(level), `let ${finalAssignment.name}: ${type};\n`);
@@ -478,7 +478,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
           collector.push("  ".repeat(level), `${finalAssignment.name} = ${v1};\n`);
         });
         level -= 1;
-        collector.push("  ".repeat(level), `} else {\n`);
+        collector.push("  ".repeat(level), "} else {\n");
         level += 1;
         s.s2.forEach(printer);
         s.finalAssignments.forEach((finalAssignment) => {
@@ -486,9 +486,10 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
           collector.push("  ".repeat(level), `${finalAssignment.name} = ${v2};\n`);
         });
         level -= 1;
-        collector.push("  ".repeat(level), `}\n`);
+        collector.push("  ".repeat(level), "}\n");
         return;
-      case "HighIRSingleIfStatement":
+      }
+      case "HighIRSingleIfStatement": {
         collector.push(
           "  ".repeat(level),
           `if ${s.invertCondition ? "!" : ""}${debugPrintHighIRExpression(
@@ -498,15 +499,17 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         level += 1;
         s.statements.forEach(printer);
         level -= 1;
-        collector.push("  ".repeat(level), `}\n`);
+        collector.push("  ".repeat(level), "}\n");
         break;
-      case "HighIRBreakStatement":
+      }
+      case "HighIRBreakStatement": {
         collector.push(
           "  ".repeat(level),
           `${breakCollector} = ${debugPrintHighIRExpression(s.breakValue)};\n`,
         );
         collector.push("  ".repeat(level), "break;\n");
         break;
+      }
       case "HighIRWhileStatement": {
         s.loopVariables.forEach((v) => {
           const type = prettyPrintHighIRType(v.type);
@@ -521,7 +524,7 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
           const { name, type } = s.breakCollector;
           collector.push("  ".repeat(level), `let ${name}: ${prettyPrintHighIRType(type)};\n`);
         }
-        collector.push("  ".repeat(level), `while (true) {\n`);
+        collector.push("  ".repeat(level), "while (true) {\n");
         level += 1;
         s.statements.forEach(printer);
         s.loopVariables.forEach((v) => {
