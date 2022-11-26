@@ -35,14 +35,16 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
   allocator: OptimizationResourceAllocator,
 ): RewriteResult | null {
   const lastStatement = statements[statements.length - 1];
-  if (lastStatement == null) return null;
+  if (lastStatement == null) {
+    return null;
+  }
 
   const getBreakValueFromBranchValue = (
     branchValue: HighIRExpression = HIR_ZERO,
   ): HighIRExpression => branchValue;
 
   switch (lastStatement.__type__) {
-    case "HighIRFunctionCallStatement":
+    case "HighIRFunctionCallStatement": {
       if (
         lastStatement.functionExpression.__type__ === "HighIRVariableExpression" ||
         lastStatement.functionExpression.name !== functionName
@@ -71,6 +73,7 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
               ],
         functionArguments: lastStatement.functionArguments,
       };
+    }
 
     case "HighIRIfElseStatement": {
       const relaventFinalAssignment = lastStatement.finalAssignments.find(
@@ -78,7 +81,9 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
       );
       let newExpectedReturnCollector: readonly [string | null, string | null] = [null, null];
       if (expectedReturnCollector != null) {
-        if (relaventFinalAssignment == null) return null;
+        if (relaventFinalAssignment == null) {
+          return null;
+        }
         const { branch1Value, branch2Value } = relaventFinalAssignment;
         newExpectedReturnCollector = [
           branch1Value.__type__ === "HighIRVariableExpression" ? branch1Value.name : null,
@@ -99,7 +104,9 @@ function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
         newExpectedReturnCollector[1],
         allocator,
       );
-      if (s1Result == null && s2Result == null) return null;
+      if (s1Result == null && s2Result == null) {
+        return null;
+      }
       if (s1Result == null) {
         assert(s2Result != null, "If you see this, then boolean algebra must be broken.");
         return {
@@ -192,7 +199,9 @@ export default function optimizeHighIRFunctionByTailRecursionRewrite({
     returnValue.__type__ === "HighIRIntLiteralExpression" ? null : returnValue.name,
     allocator,
   );
-  if (result == null) return null;
+  if (result == null) {
+    return null;
+  }
   const { statements, functionArguments } = result;
   if (returnValue.__type__ === "HighIRIntLiteralExpression") {
     return {

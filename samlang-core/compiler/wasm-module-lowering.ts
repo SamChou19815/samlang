@@ -135,7 +135,9 @@ class WasmFunctionLoweringManager {
           ),
         ];
         if (s1.length === 0) {
-          if (s2.length === 0) return [];
+          if (s2.length === 0) {
+            return [];
+          }
           return [WasmIfElse(WasmBinary(condition, "^", WasmConst(1)), s2, [])];
         }
         return [WasmIfElse(condition, s1, s2)];
@@ -155,7 +157,9 @@ class WasmFunctionLoweringManager {
       }
       case "MidIRBreakStatement": {
         const { breakCollector, exitLabel } = checkNotNull(this.currentLoopContext);
-        if (breakCollector == null) return [WasmJump(exitLabel)];
+        if (breakCollector == null) {
+          return [WasmJump(exitLabel)];
+        }
         return [
           this.SET(breakCollector, this.lowerMidIRExpression(s.breakValue)),
           WasmJump(exitLabel),

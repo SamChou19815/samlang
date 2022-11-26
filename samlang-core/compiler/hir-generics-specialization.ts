@@ -170,9 +170,10 @@ class GenericsSpecializationRewriter {
         return expression;
       case "HighIRVariableExpression":
         return { ...expression, type: this.rewriteType(expression.type, genericsReplacementMap) };
-      case "HighIRStringNameExpression":
+      case "HighIRStringNameExpression": {
         this.usedStringNames.add(expression.name);
         return expression;
+      }
       case "HighIRFunctionNameExpression": {
         const functionType = HIR_FUNCTION_TYPE(
           expression.type.argumentTypes.map((it) => this.rewriteType(it, genericsReplacementMap)),
@@ -215,7 +216,9 @@ class GenericsSpecializationRewriter {
       );
     }
     const existingFunction = this.originalFunctions.get(originalName);
-    if (existingFunction == null) return originalName;
+    if (existingFunction == null) {
+      return originalName;
+    }
     const encodedSpecializedFunctionName = encodeHighIRNameAfterGenericsSpecialization(
       originalName,
       functionTypeArguments,
@@ -264,7 +267,9 @@ class GenericsSpecializationRewriter {
   ): HighIRType {
     if (type.typeArguments.length === 0) {
       const replacement = genericsReplacementMap.get(type.name);
-      if (replacement != null) return replacement;
+      if (replacement != null) {
+        return replacement;
+      }
     }
     const concreteType = {
       ...type,
