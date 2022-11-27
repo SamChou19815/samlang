@@ -1,0 +1,4 @@
+[alias]
+t = "llvm-cov nextest"
+tc = "llvm-cov nextest --fail-under-lines 100 --fail-uncovered-lines 0 --fail-uncovered-functions 0"
+th = "llvm-cov nextest --html --show-missing-lines"
