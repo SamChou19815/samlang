@@ -1,6 +1,7 @@
 # Native compiler output
 *.o
 samlang-runtime/*.wasm
+rust-rewrite/target
 
 # Libraries
 samlang-runtime/compiled-wasi-libc
