@@ -13,6 +13,7 @@ mod tests {
   #[test]
   fn boilterplate() {
     assert!(PrimitiveType::Int.eq(&PrimitiveType::Int));
+    assert!(STRING_TYPE.as_fn().is_none());
 
     assert!(!format!("{:?}", Expression::Variable(rcs("a"), Type::Id(rcs("A"))).clone()).is_empty());
     assert!(!format!("{:?}", Expression::Name(rcs("a"), STRING_TYPE).clone()).is_empty());
@@ -35,9 +36,11 @@ mod tests {
   fn print_types_and_expressions_tests() {
     assert_eq!("boolean", BOOL_TYPE.clone().pretty_print());
     assert_eq!("number", INT_TYPE.pretty_print());
-    assert_eq!("string", STRING_TYPE.pretty_print());
+    assert_eq!("Str", STRING_TYPE.pretty_print());
     assert_eq!("any", ANY_TYPE.pretty_print());
     assert_eq!("0", ZERO.clone().pretty_print());
+    assert_eq!("true", TRUE.clone().pretty_print());
+    assert_eq!("false", FALSE.clone().pretty_print());
     assert_eq!("a", Expression::Variable(rcs("a"), STRING_TYPE).pretty_print());
     assert_eq!("a", Expression::Name(rcs("a"), STRING_TYPE).pretty_print());
     assert_eq!("(t0: number) => number", Type::new_fn(vec![(INT_TYPE)], INT_TYPE).pretty_print());
@@ -115,6 +118,7 @@ mod tests {
           pointer_expression: Expression::Variable(rcs("big"), Type::new_id("FooBar")),
           index: 0,
         },
+        Statement::IndexedAssign { assigned_expression: ZERO, pointer_expression: ZERO, index: 0 },
         Statement::Cast { name: rcs("c"), type_: BOOL_TYPE, assigned_expression: ZERO },
         Statement::Break(ZERO),
       ],
@@ -134,7 +138,7 @@ mod tests {
     };
     let expected = r#"function f(v1: number): number {
   let bar: number;
-  if 0 {
+  if (0) {
     let baz: FooBar = [meggo];
     let dd: boolean = 0 < 0;
     let dd: boolean = 0 <= 0;
@@ -144,13 +148,13 @@ mod tests {
     let dd: boolean = 0 != 0;
     let dd: boolean = 0 ^ 0;
     while (true) {
-      if 0 {
+      if (0) {
       }
     }
     let _: number = 0;
     let _: number;
     while (true) {
-      if !0 {
+      if (!0) {
         _ = 0;
         break;
       }
@@ -168,6 +172,7 @@ mod tests {
     stresso(d);
     d(d);
     let f: number = big[0];
+    0[0] = 0;
     let c = 0 as boolean;
     break;
     bar = b2;
