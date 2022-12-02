@@ -3,6 +3,7 @@ use super::{
   hir::{GlobalVariable, Operator},
 };
 use crate::common::{rcs, Str};
+use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -27,7 +28,7 @@ impl ToString for PrimitiveType {
     match self {
       PrimitiveType::Bool => "boolean".to_string(),
       PrimitiveType::Int => "number".to_string(),
-      PrimitiveType::String => "string".to_string(),
+      PrimitiveType::String => "Str".to_string(),
       PrimitiveType::Any => "any".to_string(),
     }
   }
@@ -54,7 +55,7 @@ impl FunctionType {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Type {
   Primitive(PrimitiveType),
   Id(Str),
@@ -127,6 +128,12 @@ impl Expression {
 
   pub(crate) fn pretty_print(&self) -> String {
     match self {
+      Expression::IntLiteral(0, t) if t.as_primitive().unwrap().eq(&PrimitiveType::Bool) => {
+        "false".to_string()
+      }
+      Expression::IntLiteral(_, t) if t.as_primitive().unwrap().eq(&PrimitiveType::Bool) => {
+        "true".to_string()
+      }
       Expression::IntLiteral(i, _) => i.to_string(),
       Expression::Name(n, _) | Expression::Variable(n, _) => n.to_string(),
     }
@@ -134,17 +141,9 @@ impl Expression {
 }
 
 pub(crate) const FALSE: Expression = Expression::IntLiteral(0, BOOL_TYPE);
-pub(crate) const TRUE: Expression = Expression::IntLiteral(0, BOOL_TYPE);
+pub(crate) const TRUE: Expression = Expression::IntLiteral(1, BOOL_TYPE);
 pub(crate) const ZERO: Expression = Expression::IntLiteral(0, INT_TYPE);
-pub(crate) const ONE: Expression = Expression::IntLiteral(0, INT_TYPE);
-
-pub(crate) struct Binary {
-  pub(crate) name: Str,
-  pub(crate) type_: Type,
-  pub(crate) operator: Operator,
-  pub(crate) e1: Expression,
-  pub(crate) e2: Expression,
-}
+pub(crate) const ONE: Expression = Expression::IntLiteral(1, INT_TYPE);
 
 pub(crate) struct GenenalLoopVariables {
   pub(crate) name: Str,
@@ -154,10 +153,21 @@ pub(crate) struct GenenalLoopVariables {
 }
 
 pub(crate) enum Statement {
-  Binary(Binary),
+  Binary {
+    name: Str,
+    type_: Type,
+    operator: Operator,
+    e1: Expression,
+    e2: Expression,
+  },
   IndexedAccess {
     name: Str,
     type_: Type,
+    pointer_expression: Expression,
+    index: usize,
+  },
+  IndexedAssign {
+    assigned_expression: Expression,
     pointer_expression: Expression,
     index: usize,
   },
@@ -197,28 +207,28 @@ pub(crate) enum Statement {
 }
 
 impl Statement {
-  fn binary_unwrapped(
-    name: &'static str,
-    operator: Operator,
-    e1: Expression,
-    e2: Expression,
-  ) -> Binary {
-    let type_ = if operator.result_is_int() { INT_TYPE } else { BOOL_TYPE };
-    match (operator, &e2) {
-      (Operator::MINUS, Expression::IntLiteral(n, _)) if *n != -2147483648 => {
-        Binary { name: rcs(name), type_, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
-      }
-      _ => Binary { name: rcs(name), type_, operator, e1, e2 },
-    }
-  }
-
   pub(crate) fn binary(
     name: &'static str,
     operator: Operator,
     e1: Expression,
     e2: Expression,
   ) -> Statement {
-    Statement::Binary(Self::binary_unwrapped(name, operator, e1, e2))
+    Self::binary_str(rcs(name), operator, e1, e2)
+  }
+
+  pub(crate) fn binary_str(
+    name: Str,
+    operator: Operator,
+    e1: Expression,
+    e2: Expression,
+  ) -> Statement {
+    let type_ = if operator.result_is_int() { INT_TYPE } else { BOOL_TYPE };
+    match (operator, &e2) {
+      (Operator::MINUS, Expression::IntLiteral(n, _)) if *n != -2147483648 => {
+        Statement::Binary { name, type_, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
+      }
+      _ => Statement::Binary { name, type_, operator, e1, e2 },
+    }
   }
 
   fn pretty_print_internal(
@@ -228,20 +238,14 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
-      Statement::Binary(s) => {
-        let type_ = s.type_.pretty_print();
-        let e1 = s.e1.pretty_print();
-        let e2 = s.e2.pretty_print();
-        let expr_str = format!("{} {} {}", e1, s.operator.to_string(), e2);
+      Statement::Binary { name, type_, operator, e1, e2 } => {
+        let type_ = type_.pretty_print();
+        let e1 = e1.pretty_print();
+        let e2 = e2.pretty_print();
+        let expr_str = format!("{} {} {}", e1, operator.to_string(), e2);
         let wrapped =
-          if s.operator == Operator::DIV { format!("Math.floor({})", expr_str) } else { expr_str };
-        collector.push(format!(
-          "{}let {}: {} = { };\n",
-          "  ".repeat(level),
-          s.name,
-          type_,
-          wrapped
-        ));
+          if *operator == Operator::DIV { format!("Math.floor({})", expr_str) } else { expr_str };
+        collector.push(format!("{}let {}: {} = { };\n", "  ".repeat(level), name, type_, wrapped));
       }
       Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         collector.push(format!(
@@ -251,6 +255,15 @@ impl Statement {
           type_.pretty_print(),
           pointer_expression.pretty_print(),
           index
+        ));
+      }
+      Statement::IndexedAssign { assigned_expression, pointer_expression, index } => {
+        collector.push(format!(
+          "{}{}[{}] = {};\n",
+          "  ".repeat(level),
+          pointer_expression.pretty_print(),
+          index,
+          assigned_expression.pretty_print(),
         ));
       }
       Statement::Call { callee, arguments, return_type, return_collector } => {
@@ -271,7 +284,7 @@ impl Statement {
         for (n, t, _, _) in final_assignments {
           collector.push(format!("{}let {}: {};\n", "  ".repeat(level), n, t.pretty_print()));
         }
-        collector.push(format!("{}if {} {{\n", "  ".repeat(level), condition.pretty_print()));
+        collector.push(format!("{}if ({}) {{\n", "  ".repeat(level), condition.pretty_print()));
         for s in s1 {
           s.pretty_print_internal(level + 1, break_collector, collector);
         }
@@ -290,7 +303,7 @@ impl Statement {
       Statement::SingleIf { condition, invert_condition, statements } => {
         let invert_str = if *invert_condition { "!" } else { "" };
         collector.push(format!(
-          "{}if {}{} {{\n",
+          "{}if ({}{}) {{\n",
           "  ".repeat(level),
           invert_str,
           condition.pretty_print()
