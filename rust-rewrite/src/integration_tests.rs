@@ -2,8 +2,11 @@
 mod tests {
   use crate::{
     ast::ModuleReference,
-    checker::{type_check_single_module_source, type_check_source_handles},
+    checker::{
+      type_check_single_module_source, type_check_source_handles, TypeCheckSourceHandlesResult,
+    },
     common::rcs,
+    compiler,
     errors::ErrorSet,
     interpreter,
     parser::parse_source_module_from_text,
@@ -1672,5 +1675,20 @@ class Main {
       let actual_std = interpreter::run(&checked_module);
       assert_eq!(expected_std, actual_std);
     }
+  }
+
+  #[test]
+  fn compiler_tests() {
+    let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
+      type_check_source_handles(
+        compiler_integration_tests()
+          .iter()
+          .map(|case| (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code))
+          .collect(),
+      );
+    assert!(compile_time_errors.is_empty());
+    let _wasm_module = compiler::compile_mir_to_wasm(&compiler::compile_hir_to_mir(
+      compiler::compile_sources_to_hir(&checked_sources),
+    ));
   }
 }

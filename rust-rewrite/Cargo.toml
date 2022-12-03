@@ -8,6 +8,7 @@ enum-as-inner = "0.5.1"
 enum-iterator = "1.2.0"
 itertools = "0.10.4"
 regex = "1.7.0"
+wat = "1.0.52"
 
 [dev-dependencies]
 pretty_assertions = "1.3.0"

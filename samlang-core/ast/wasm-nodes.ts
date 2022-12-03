@@ -298,10 +298,11 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
       case "WebAssemblyLoadInstruction":
       case "WebAssemblyStoreInstruction":
       case "WebAssemblyFunctionDirectCallInstruction":
-      case "WebAssemblyFunctionIndirectCallInstruction":
+      case "WebAssemblyFunctionIndirectCallInstruction": {
         collector.push("  ".repeat(level), `${i2s(s)}\n`);
         return;
-      case "WebAssemblyIfElseInstruction":
+      }
+      case "WebAssemblyIfElseInstruction": {
         collector.push("  ".repeat(level), `(if ${i2s(s.condition)} (then\n`);
         level += 1;
         s.s1.forEach(printInstruction);
@@ -314,10 +315,12 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
         }
         collector.push("  ".repeat(level), "))\n");
         return;
-      case "WebAssemblyUnconditionalJumpInstruction":
+      }
+      case "WebAssemblyUnconditionalJumpInstruction": {
         collector.push("  ".repeat(level), `(br $${s.label})\n`);
         return;
-      case "WebAssemblyLoopInstruction":
+      }
+      case "WebAssemblyLoopInstruction": {
         collector.push("  ".repeat(level), `(loop $${s.continueLabel}\n`);
         collector.push("  ".repeat(level + 1), `(block $${s.exitLabel}\n`);
         level += 2;
@@ -326,6 +329,7 @@ export function prettyPrintWebAssemblyModule(wasmModule: WebAssemblyModule): str
         collector.push("  ".repeat(level + 1), ")\n");
         collector.push("  ".repeat(level), ")\n");
         return;
+      }
     }
   }
 
