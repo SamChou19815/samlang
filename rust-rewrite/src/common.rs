@@ -37,6 +37,24 @@ pub(crate) fn rc_string(s: String) -> Str {
   Str(Rc::from(s))
 }
 
+#[inline(always)]
+fn byte_digit_to_char(byte: u8) -> char {
+  let u = if byte < 10 { '0' as u8 + byte } else { 'a' as u8 + byte - 10 };
+  u as char
+}
+
+pub(crate) fn int_vec_to_data_string(array: &Vec<i32>) -> String {
+  let mut collector = vec![];
+  for i in array {
+    for b in i.to_le_bytes() {
+      collector.push('\\');
+      collector.push(byte_digit_to_char(b / 16));
+      collector.push(byte_digit_to_char(b % 16));
+    }
+  }
+  String::from_iter(collector.iter())
+}
+
 pub(crate) struct LocalStackedContext<V: Clone> {
   local_values_stack: Vec<HashMap<Str, V>>,
   captured_values_stack: Vec<HashMap<Str, V>>,
@@ -99,7 +117,7 @@ impl<V: Clone> LocalStackedContext<V> {
 
 #[cfg(test)]
 mod tests {
-  use super::{rcs, LocalStackedContext};
+  use super::{int_vec_to_data_string, rcs, LocalStackedContext};
   use itertools::Itertools;
   use std::collections::HashSet;
 
@@ -115,6 +133,18 @@ mod tests {
 
     let mut set = HashSet::new();
     set.insert(rcs("sam"));
+  }
+
+  #[test]
+  fn int_vec_to_data_string_tests() {
+    assert_eq!(
+      "\\01\\00\\00\\00\\02\\00\\00\\00\\03\\00\\00\\00\\04\\00\\00\\00",
+      int_vec_to_data_string(&vec![1, 2, 3, 4])
+    );
+    assert_eq!(
+      "\\01\\00\\00\\00\\7c\\00\\00\\00\\b3\\11\\00\\00\\21\\00\\00\\00",
+      int_vec_to_data_string(&vec![1, 124, 4531, 33])
+    );
   }
 
   #[test]

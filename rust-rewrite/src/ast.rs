@@ -11,3 +11,5 @@ pub(crate) mod mir;
 mod mir_tests;
 pub(crate) mod source;
 mod source_tests;
+pub mod wasm;
+mod wasm_tests;

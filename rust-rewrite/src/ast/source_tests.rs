@@ -366,13 +366,12 @@ mod expressions_tests {
 
 #[cfg(test)]
 mod toplevel_tests {
-  use std::collections::HashMap;
-
   use crate::{
     ast::{source::*, Location, Reason},
     common::rc,
   };
   use pretty_assertions::assert_eq;
+  use std::collections::HashMap;
 
   #[test]
   fn boilterplate() {

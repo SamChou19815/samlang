@@ -810,7 +810,7 @@ impl<'a> LoweringManager<'a> {
   }
 }
 
-pub(super) fn compile_hir_to_mir(sources: hir::Sources) -> mir::Sources {
+pub(crate) fn compile_hir_to_mir(sources: hir::Sources) -> mir::Sources {
   let mut type_defs = vec![];
   let mut closure_def_map = BTreeMap::new();
   let mut type_def_map = BTreeMap::new();

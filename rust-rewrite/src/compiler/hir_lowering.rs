@@ -1347,7 +1347,7 @@ fn optimize_by_tail_rec_rewrite(sources: hir::Sources) -> hir::Sources {
   }
 }
 
-pub(super) fn compile_sources_to_hir(
+pub(crate) fn compile_sources_to_hir(
   sources: &HashMap<ModuleReference, source::Module>,
 ) -> hir::Sources {
   optimize_by_tail_rec_rewrite(hir_type_deduplication::deduplicate(
