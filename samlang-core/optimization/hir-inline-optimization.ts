@@ -83,7 +83,6 @@ function inlineRewriteExpression(
 function inlineRewriteForStatement(
   prefix: string,
   context: LocalValueContextForOptimization,
-  returnCollector: Readonly<{ name: string; type: HighIRType }> | undefined,
   statement: HighIRStatement,
 ): HighIRStatement {
   function rewrite(expression: HighIRExpression): HighIRExpression {
@@ -133,7 +132,7 @@ function inlineRewriteForStatement(
       const booleanExpression = rewrite(statement.booleanExpression);
       const [s1, branch1Values] = context.withNestedScope(() => {
         const statements = filterMap(statement.s1, (it) =>
-          inlineRewriteForStatement(prefix, context, returnCollector, it),
+          inlineRewriteForStatement(prefix, context, it),
         );
         return [
           statements,
@@ -142,7 +141,7 @@ function inlineRewriteForStatement(
       });
       const [s2, branch2Values] = context.withNestedScope(() => {
         const statements = filterMap(statement.s2, (it) =>
-          inlineRewriteForStatement(prefix, context, returnCollector, it),
+          inlineRewriteForStatement(prefix, context, it),
         );
         return [
           statements,
@@ -168,9 +167,7 @@ function inlineRewriteForStatement(
     case "HighIRSingleIfStatement": {
       const booleanExpression = rewrite(statement.booleanExpression);
       const statements = context.withNestedScope(() =>
-        filterMap(statement.statements, (it) =>
-          inlineRewriteForStatement(prefix, context, returnCollector, it),
-        ),
+        filterMap(statement.statements, (it) => inlineRewriteForStatement(prefix, context, it)),
       );
       return { ...statement, booleanExpression, statements };
     }
@@ -187,7 +184,7 @@ function inlineRewriteForStatement(
         }),
       );
       const statements = statement.statements.map((it) =>
-        inlineRewriteForStatement(prefix, context, returnCollector, it),
+        inlineRewriteForStatement(prefix, context, it),
       );
       const loopVariablesLoopValues = statement.loopVariables.map((it) => rewrite(it.loopValue));
       const breakCollector =
@@ -256,12 +253,7 @@ function performInlineRewriteOnFunction(
         );
         // Inline step 2: Add in body code and change return statements
         const rewrittenBody = filterMap(mainBodyStatementsOfFunctionToBeInlined, (it) =>
-          inlineRewriteForStatement(
-            temporaryPrefix,
-            context,
-            returnCollector != null ? { name: returnCollector, type: returnType } : undefined,
-            it,
-          ),
+          inlineRewriteForStatement(temporaryPrefix, context, it),
         );
         if (returnCollector == null) return rewrittenBody;
         // Using this to move the value around, will be optimized away eventually.

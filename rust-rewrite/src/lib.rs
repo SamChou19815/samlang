@@ -8,4 +8,5 @@ mod compiler;
 mod errors;
 mod integration_tests;
 mod interpreter;
+mod optimization;
 mod parser;
