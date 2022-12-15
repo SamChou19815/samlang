@@ -3,6 +3,7 @@ mod tests {
   use super::super::hir::*;
   use crate::common::rcs;
   use pretty_assertions::assert_eq;
+  use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
   #[test]
   fn boilterplate() {
@@ -37,7 +38,66 @@ mod tests {
     .is_empty());
     assert!(PrimitiveType::Int.eq(&PrimitiveType::Int));
     assert_eq!(PrimitiveType::Int, PrimitiveType::Int);
+    Expression::FunctionName(FunctionName {
+      name: rcs(""),
+      type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+      type_arguments: vec![INT_TYPE],
+    })
+    .as_callee();
+    Expression::var_name("", INT_TYPE).as_callee();
+    Expression::StringName(rcs("")).as_callee();
+    ZERO.as_callee();
     Expression::var_name("a", INT_TYPE).as_function_name();
+    Statement::Break(ZERO).as_binary();
+    Statement::binary("name", Operator::DIV, ZERO, ZERO).clone().as_binary();
+    Statement::Call {
+      callee: Callee::FunctionName(FunctionName {
+        name: rcs(""),
+        type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        type_arguments: vec![INT_TYPE],
+      }),
+      arguments: vec![],
+      return_type: INT_TYPE,
+      return_collector: None,
+    }
+    .clone()
+    .as_binary();
+
+    assert!(
+      Expression::var_name(
+        "a",
+        Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
+      ) == Expression::var_name(
+        "a",
+        Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
+      )
+    );
+    assert!(Expression::var_name(
+      "a",
+      Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
+    )
+    .eq(&Expression::var_name(
+      "a",
+      Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
+    )));
+    assert!(Type::new_fn(
+      vec![INT_TYPE],
+      Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")])
+    )
+    .eq(
+      &(Type::new_fn(
+        vec![INT_TYPE],
+        Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")])
+      ))
+    ));
+    let mut hasher = DefaultHasher::new();
+    Expression::var_name(
+      "a",
+      Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")])),
+    )
+    .hash(&mut hasher);
+    Operator::DIV.hash(&mut hasher);
+    FunctionName::new("", Type::new_fn_unwrapped(vec![], INT_TYPE)).hash(&mut hasher);
   }
 
   #[test]
@@ -186,7 +246,7 @@ mod tests {
         Expression::var_name("b2", INT_TYPE),
       )],
     };
-    assert!(!format!("{:?}", stmt).is_empty());
+    assert!(!format!("{:?}", stmt.clone()).is_empty());
     let expected = r#"let bar: int;
 if 0 {
   let baz: FooBar = [meggo];

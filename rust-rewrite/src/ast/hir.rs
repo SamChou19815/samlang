@@ -3,7 +3,7 @@ use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use std::cmp::Ordering;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum PrimitiveType {
   Bool,
   Int,
@@ -20,7 +20,7 @@ impl ToString for PrimitiveType {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct IdType {
   pub(crate) name: Str,
   pub(crate) type_arguments: Vec<Type>,
@@ -40,7 +40,7 @@ impl IdType {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct FunctionType {
   pub(crate) argument_types: Vec<Type>,
   pub(crate) return_type: Box<Type>,
@@ -56,7 +56,7 @@ impl FunctionType {
   }
 }
 
-#[derive(Debug, Clone, EnumAsInner)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, EnumAsInner)]
 pub(crate) enum Type {
   Primitive(PrimitiveType),
   Id(IdType),
@@ -156,7 +156,7 @@ impl TypeDefinition {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum Operator {
   MUL,
   DIV,
@@ -206,7 +206,7 @@ impl ToString for Operator {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub(crate) struct VariableName {
   pub(crate) name: Str,
   pub(crate) type_: Type,
@@ -222,7 +222,7 @@ impl VariableName {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub(crate) struct FunctionName {
   pub(crate) name: Str,
   pub(crate) type_: FunctionType,
@@ -247,7 +247,7 @@ impl FunctionName {
   }
 }
 
-#[derive(Debug, Clone, EnumAsInner)]
+#[derive(Debug, Clone, Hash, EnumAsInner)]
 pub(crate) enum Expression {
   IntLiteral(i32, /* is_int */ bool),
   StringName(Str),
@@ -328,6 +328,14 @@ impl Expression {
       Expression::Variable(v) => v.debug_print(),
     }
   }
+
+  pub(crate) fn as_callee(self) -> Option<Callee> {
+    match self {
+      Expression::IntLiteral(_, _) | Expression::StringName(_) => None,
+      Expression::FunctionName(n) => Some(Callee::FunctionName(n)),
+      Expression::Variable(v) => Some(Callee::Variable(v)),
+    }
+  }
 }
 
 pub(crate) const FALSE: Expression = Expression::IntLiteral(0, false);
@@ -335,7 +343,7 @@ pub(crate) const TRUE: Expression = Expression::IntLiteral(1, false);
 pub(crate) const ZERO: Expression = Expression::IntLiteral(0, true);
 pub(crate) const ONE: Expression = Expression::IntLiteral(1, true);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Binary {
   pub(crate) name: Str,
   pub(crate) type_: Type,
@@ -344,7 +352,7 @@ pub(crate) struct Binary {
   pub(crate) e2: Expression,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Callee {
   FunctionName(FunctionName),
   Variable(VariableName),
@@ -359,7 +367,7 @@ impl Callee {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct GenenalLoopVariables {
   pub(crate) name: Str,
   pub(crate) type_: Type,
@@ -367,7 +375,7 @@ pub(crate) struct GenenalLoopVariables {
   pub(crate) loop_value: Expression,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Statement {
   Binary(Binary),
   IndexedAccess {

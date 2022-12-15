@@ -1,0 +1,11 @@
+mod common_subexpression_elimination;
+mod conditional_constant_propagation;
+mod conditional_constant_propagation_tests;
+mod dead_code_elimination;
+mod dead_code_elimination_tests;
+mod inlining;
+mod inlining_tests;
+mod local_value_numbering;
+mod local_value_numbering_tests;
+mod optimization_common;
+mod unused_name_elimination;
