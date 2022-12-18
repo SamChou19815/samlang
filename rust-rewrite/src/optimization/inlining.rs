@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::ast::hir::{
-  Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariables, Operator, Statement,
+  Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement,
   Type, VariableName, ZERO,
 };
 use crate::common::{rc_string, Str};
@@ -80,7 +80,7 @@ mod estimator {
   mod tests {
     use crate::{
       ast::hir::{
-        Callee, Function, FunctionName, GenenalLoopVariables, Operator, Statement, Type, INT_TYPE,
+        Callee, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type, INT_TYPE,
         ZERO,
       },
       common::rcs,
@@ -139,7 +139,7 @@ mod estimator {
             statements: vec![Statement::binary("b0", Operator::PLUS, ZERO, ZERO)],
           },
           Statement::While {
-            loop_variables: vec![GenenalLoopVariables {
+            loop_variables: vec![GenenalLoopVariable {
               name: rcs(""),
               type_: INT_TYPE,
               initial_value: ZERO,
@@ -264,25 +264,21 @@ fn inline_rewrite_stmt(
     Statement::While { loop_variables, statements, break_collector } => {
       let loop_variables_with_all_but_loop_value_rewritten = loop_variables
         .into_iter()
-        .map(|GenenalLoopVariables { name, type_, initial_value, loop_value }| {
-          GenenalLoopVariables {
-            name: bind_with_mangled_name(cx, prefix, name, type_),
-            type_: type_.clone(),
-            initial_value: inline_rewrite_expr(initial_value, cx),
-            loop_value: loop_value.clone(),
-          }
+        .map(|GenenalLoopVariable { name, type_, initial_value, loop_value }| GenenalLoopVariable {
+          name: bind_with_mangled_name(cx, prefix, name, type_),
+          type_: type_.clone(),
+          initial_value: inline_rewrite_expr(initial_value, cx),
+          loop_value: loop_value.clone(),
         })
         .collect_vec();
       let statements = inline_rewrite_stmts(cx, prefix, statements);
       let loop_variables = loop_variables_with_all_but_loop_value_rewritten
         .into_iter()
-        .map(|GenenalLoopVariables { name, type_, initial_value, loop_value }| {
-          GenenalLoopVariables {
-            name,
-            type_,
-            initial_value,
-            loop_value: inline_rewrite_expr(&loop_value, cx),
-          }
+        .map(|GenenalLoopVariable { name, type_, initial_value, loop_value }| GenenalLoopVariable {
+          name,
+          type_,
+          initial_value,
+          loop_value: inline_rewrite_expr(&loop_value, cx),
         })
         .collect_vec();
       let break_collector = if let Some(VariableName { name, type_ }) = break_collector {

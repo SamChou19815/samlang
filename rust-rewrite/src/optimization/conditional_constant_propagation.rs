@@ -331,7 +331,7 @@ fn optimize_stmt(
         .into_iter()
         .zip(loop_variable_loop_values)
         .zip(filtered_loop_variables)
-        .map(|((initial_value, loop_value), variable)| GenenalLoopVariables {
+        .map(|((initial_value, loop_value), variable)| GenenalLoopVariable {
           name: variable.name.clone(),
           type_: variable.type_.clone(),
           initial_value,
@@ -411,7 +411,7 @@ fn optimize_stmts(
 }
 
 fn try_optimize_loop_for_some_iterations(
-  loop_variables: Vec<GenenalLoopVariables>,
+  loop_variables: Vec<GenenalLoopVariable>,
   stmts: Vec<Statement>,
   break_collector: Option<VariableName>,
   value_cx: &mut LocalValueContextForOptimization,
@@ -439,8 +439,8 @@ fn try_optimize_loop_for_some_iterations(
     // Empty loop in first run except new loop values, so we can change the initial values!
     let advanced_loop_variables = loop_variables
       .into_iter()
-      .map(|GenenalLoopVariables { name, type_, initial_value: _, loop_value }| {
-        GenenalLoopVariables {
+      .map(|GenenalLoopVariable { name, type_, initial_value: _, loop_value }| {
+        GenenalLoopVariable {
           name,
           type_,
           initial_value: optimize_expr(value_cx, &loop_value),

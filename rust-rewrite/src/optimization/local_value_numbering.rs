@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use crate::{
-  ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariables, Statement, VariableName},
+  ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement, VariableName},
   common::{rc_string, LocalStackedContext, Str},
 };
 
@@ -137,7 +137,7 @@ fn optimize_stmt(
       let loop_variables = loop_variables_without_loop_values
         .into_iter()
         .zip(loop_variables_loop_values)
-        .map(|((name, type_, initial_value), loop_value)| GenenalLoopVariables {
+        .map(|((name, type_, initial_value), loop_value)| GenenalLoopVariable {
           name,
           type_,
           initial_value,

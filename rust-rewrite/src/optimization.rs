@@ -7,5 +7,6 @@ mod inlining;
 mod inlining_tests;
 mod local_value_numbering;
 mod local_value_numbering_tests;
+mod loop_induction_analysis;
 mod optimization_common;
 mod unused_name_elimination;

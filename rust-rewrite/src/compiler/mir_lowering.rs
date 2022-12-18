@@ -608,7 +608,7 @@ impl<'a> LoweringManager<'a> {
       hir::Statement::While { loop_variables, statements, break_collector } => {
         let loop_variables = loop_variables
           .into_iter()
-          .map(|hir::GenenalLoopVariables { name, type_, initial_value, loop_value }| {
+          .map(|hir::GenenalLoopVariable { name, type_, initial_value, loop_value }| {
             mir::GenenalLoopVariables {
               name,
               type_: lower_type(type_),
@@ -871,7 +871,7 @@ mod tests {
     ast::{
       common_names,
       hir::{
-        Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariables,
+        Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
         Operator, Sources, Statement, Type, TypeDefinition, VariableName, BOOL_TYPE, INT_TYPE,
         STRING_TYPE, TRUE, ZERO,
       },
@@ -1018,7 +1018,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               break_collector: None,
             },
             Statement::While {
-              loop_variables: vec![GenenalLoopVariables {
+              loop_variables: vec![GenenalLoopVariable {
                 name: rcs("_"),
                 type_: INT_TYPE,
                 initial_value: ZERO,

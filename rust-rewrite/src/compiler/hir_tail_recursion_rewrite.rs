@@ -1,6 +1,6 @@
 use crate::{
   ast::hir::{
-    Callee, Expression, Function, GenenalLoopVariables, Operator, Statement, Type, VariableName,
+    Callee, Expression, Function, GenenalLoopVariable, Operator, Statement, Type, VariableName,
     ZERO,
   },
   common::{rc_string, Str},
@@ -188,7 +188,7 @@ fn optimize_function_by_tailrec_rewrite_aux(function: Function) -> Result<Functi
       .iter()
       .zip(type_.argument_types.iter())
       .zip(args)
-      .map(|((n, t), loop_value)| GenenalLoopVariables {
+      .map(|((n, t), loop_value)| GenenalLoopVariable {
         name: n.clone(),
         type_: t.clone(),
         initial_value: Expression::var_name_str(tail_rec_param_name(n), t.clone()),

@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-  ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariables, Operator, Statement},
+  ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Operator, Statement},
   common::Str,
 };
 use std::collections::HashSet;
@@ -15,7 +15,7 @@ fn collect_use_from_expression(expression: &Expression, set: &mut HashSet<Str>) 
 }
 
 fn collect_use_from_while_parts(
-  loop_variables: &Vec<GenenalLoopVariables>,
+  loop_variables: &Vec<GenenalLoopVariable>,
   stmts: &Vec<Statement>,
   set: &mut HashSet<Str>,
 ) {
