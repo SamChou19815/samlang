@@ -2,7 +2,7 @@
 mod tests {
   use crate::{
     ast::hir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariables, Operator, Statement, Type,
+      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, BOOL_TYPE, FALSE, INT_TYPE, ONE, TRUE, ZERO,
     },
     common::rcs,
@@ -233,7 +233,7 @@ return 0;"#,
   fn while_tests() {
     assert_correctly_optimized(
       vec![Statement::While {
-        loop_variables: vec![GenenalLoopVariables {
+        loop_variables: vec![GenenalLoopVariable {
           name: rcs("n"),
           type_: INT_TYPE,
           initial_value: Expression::int(10),
@@ -293,7 +293,7 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![Statement::While {
-        loop_variables: vec![GenenalLoopVariables {
+        loop_variables: vec![GenenalLoopVariable {
           name: rcs("n"),
           type_: INT_TYPE,
           initial_value: Expression::int(10),

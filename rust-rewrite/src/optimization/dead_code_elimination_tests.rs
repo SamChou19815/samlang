@@ -2,7 +2,7 @@
 mod tests {
   use crate::{
     ast::hir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariables, Operator, Statement, Type,
+      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, BOOL_TYPE, INT_TYPE, ONE, ZERO,
     },
     common::rcs,
@@ -337,13 +337,13 @@ return 0;"#,
     assert_correctly_optimized(
       vec![Statement::While {
         loop_variables: vec![
-          GenenalLoopVariables {
+          GenenalLoopVariable {
             name: rcs("n"),
             type_: INT_TYPE,
             initial_value: Expression::int(10),
             loop_value: Expression::var_name("_tmp_n", INT_TYPE),
           },
-          GenenalLoopVariables {
+          GenenalLoopVariable {
             name: rcs("unused"),
             type_: INT_TYPE,
             initial_value: Expression::int(10),
@@ -434,13 +434,13 @@ return 0;"#,
     assert_correctly_optimized(
       vec![Statement::While {
         loop_variables: vec![
-          GenenalLoopVariables {
+          GenenalLoopVariable {
             name: rcs("n"),
             type_: INT_TYPE,
             initial_value: Expression::int(10),
             loop_value: Expression::var_name("_tmp_n", INT_TYPE),
           },
-          GenenalLoopVariables {
+          GenenalLoopVariable {
             name: rcs("n1"),
             type_: INT_TYPE,
             initial_value: Expression::int(10),
@@ -475,7 +475,7 @@ return 0;"#,
   fn while_test_3() {
     assert_correctly_optimized(
       vec![Statement::While {
-        loop_variables: vec![GenenalLoopVariables {
+        loop_variables: vec![GenenalLoopVariable {
           name: rcs("n"),
           type_: INT_TYPE,
           initial_value: Expression::int(10),
@@ -504,7 +504,7 @@ return (v: int);"#,
   fn while_test_4() {
     assert_correctly_optimized(
       vec![Statement::While {
-        loop_variables: vec![GenenalLoopVariables {
+        loop_variables: vec![GenenalLoopVariable {
           name: rcs("n"),
           type_: INT_TYPE,
           initial_value: Expression::int(10),

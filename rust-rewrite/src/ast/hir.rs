@@ -368,11 +368,22 @@ impl Callee {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct GenenalLoopVariables {
+pub(crate) struct GenenalLoopVariable {
   pub(crate) name: Str,
   pub(crate) type_: Type,
   pub(crate) initial_value: Expression,
   pub(crate) loop_value: Expression,
+}
+
+impl ToString for GenenalLoopVariable {
+  fn to_string(&self) -> String {
+    format!(
+      "{{name: {}, initial_value: {}, loop_value: {}}}",
+      self.name,
+      self.initial_value.debug_print(),
+      self.loop_value.debug_print()
+    )
+  }
 }
 
 #[derive(Debug, Clone, EnumAsInner)]
@@ -403,7 +414,7 @@ pub(crate) enum Statement {
   },
   Break(Expression),
   While {
-    loop_variables: Vec<GenenalLoopVariables>,
+    loop_variables: Vec<GenenalLoopVariable>,
     statements: Vec<Statement>,
     break_collector: Option<VariableName>,
   },

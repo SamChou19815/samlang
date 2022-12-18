@@ -2,7 +2,7 @@
 mod tests {
   use crate::{
     ast::hir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariables, Operator, Statement, Type,
+      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, BOOL_TYPE, INT_TYPE, ONE, ZERO,
     },
     common::rcs,
@@ -31,7 +31,7 @@ mod tests {
     let mut stmts = vec![];
     for _ in 0..100 {
       stmts.push(Statement::While {
-        loop_variables: vec![GenenalLoopVariables {
+        loop_variables: vec![GenenalLoopVariable {
           name: rcs(""),
           type_: INT_TYPE,
           initial_value: ZERO,
@@ -695,7 +695,7 @@ function main(): int {
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::While {
-          loop_variables: vec![GenenalLoopVariables {
+          loop_variables: vec![GenenalLoopVariable {
             name: rcs("n"),
             type_: INT_TYPE,
             initial_value: Expression::int(10),
@@ -727,7 +727,7 @@ function main(): int {
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::While {
-            loop_variables: vec![GenenalLoopVariables {
+            loop_variables: vec![GenenalLoopVariable {
               name: rcs("n"),
               type_: INT_TYPE,
               initial_value: Expression::int(10),

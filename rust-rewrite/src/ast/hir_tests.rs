@@ -31,6 +31,14 @@ mod tests {
     assert!(!format!("{:?}", FALSE.type_()).is_empty());
     assert!(!format!("{:?}", Expression::var_name("a", INT_TYPE).type_().as_fn()).is_empty());
     assert!(!format!("{:?}", Expression::StringName(rcs("a")).type_().as_id()).is_empty());
+    assert!(!GenenalLoopVariable {
+      name: rcs(""),
+      type_: INT_TYPE,
+      initial_value: ZERO,
+      loop_value: ZERO
+    }
+    .to_string()
+    .is_empty());
     assert!(!format!(
       "{:?}",
       Expression::fn_name("a", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).type_()
@@ -185,7 +193,7 @@ mod tests {
           break_collector: None,
         },
         Statement::While {
-          loop_variables: vec![GenenalLoopVariables {
+          loop_variables: vec![GenenalLoopVariable {
             name: rcs("_"),
             type_: INT_TYPE,
             initial_value: ZERO,
