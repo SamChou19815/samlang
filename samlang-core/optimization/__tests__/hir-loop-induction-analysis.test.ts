@@ -1,5 +1,4 @@
 import {
-  HighIRExpression,
   HighIRFunctionNameExpression,
   HIR_BINARY,
   HIR_BOOL_TYPE,
@@ -35,13 +34,6 @@ const VARIABLE_TMP_I = HIR_VARIABLE("tmp_i", HIR_INT_TYPE);
 const VARIABLE_TMP_J = HIR_VARIABLE("tmp_j", HIR_INT_TYPE);
 const VARIABLE_OUTSIDE = HIR_VARIABLE("outside", HIR_INT_TYPE);
 
-const mockExpressionIsLoopInvariant = (e: HighIRExpression): boolean =>
-  e.__type__ === "HighIRIntLiteralExpression";
-
-const mockExpressionIsLoopInvariantWithOutside = (e: HighIRExpression): boolean =>
-  e.__type__ === "HighIRIntLiteralExpression" ||
-  (e.__type__ === "HighIRVariableExpression" && e.name === VARIABLE_OUTSIDE.name);
-
 describe("hir-loop-induction-analysis", () => {
   it("expressionIsLoopInvariant test", () => {
     expect(expressionIsLoopInvariant_EXPOSED_FOR_TESTING(HIR_STRING_NAME("ss"), new Set())).toBe(
@@ -71,7 +63,7 @@ describe("hir-loop-induction-analysis", () => {
     expect(
       extractLoopGuardStructure_EXPOSED_FOR_TESTING(
         HIR_WHILE({ loopVariables: [], statements: [] }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -92,7 +84,7 @@ describe("hir-loop-induction-analysis", () => {
             }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -109,7 +101,7 @@ describe("hir-loop-induction-analysis", () => {
             }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -126,7 +118,7 @@ describe("hir-loop-induction-analysis", () => {
             }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(),
       ),
     ).toBeNull();
 
@@ -144,7 +136,7 @@ describe("hir-loop-induction-analysis", () => {
             HIR_SINGLE_IF({ booleanExpression: HIR_ZERO, invertCondition: false, statements: [] }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -157,7 +149,7 @@ describe("hir-loop-induction-analysis", () => {
             HIR_SINGLE_IF({ booleanExpression: HIR_ZERO, invertCondition: false, statements: [] }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -174,7 +166,7 @@ describe("hir-loop-induction-analysis", () => {
             }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -191,7 +183,7 @@ describe("hir-loop-induction-analysis", () => {
             }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -251,7 +243,7 @@ describe("hir-loop-induction-analysis", () => {
             HIR_BREAK(HIR_ZERO),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -274,7 +266,7 @@ describe("hir-loop-induction-analysis", () => {
             }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
 
@@ -298,7 +290,7 @@ describe("hir-loop-induction-analysis", () => {
             HIR_BINARY({ name: "cc", operator: "+", e1: VARIABLE_I, e2: HIR_ZERO }),
           ],
         }),
-        mockExpressionIsLoopInvariant,
+        new Set(["", "a", "b", "cc"]),
       ),
     ).toBeNull();
   });
@@ -457,7 +449,7 @@ describe("hir-loop-induction-analysis", () => {
           { name: "j", type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
         ],
         [],
-        () => true,
+        new Set(),
       ),
     ).toBeNull();
 
@@ -472,7 +464,7 @@ describe("hir-loop-induction-analysis", () => {
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ONE }),
           HIR_BINARY({ name: "tmp_j", operator: "+", e1: VARIABLE_J, e2: HIR_INT(3) }),
         ],
-        (e) => e.__type__ === "HighIRIntLiteralExpression",
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual({
       loopVariablesThatAreNotBasicInductionVariables: [],
@@ -657,7 +649,7 @@ describe("hir-loop-induction-analysis", () => {
           }),
           HIR_BINARY({ name: "tmp_useless_6", operator: "+", e1: VARIABLE_I, e2: VARIABLE_J }),
         ],
-        mockExpressionIsLoopInvariant,
+        new Set(["", "i", "j", "tmp_i", "tmp_j", "tmp_x", "tmp_y", "tmp_useless_1"]),
       ),
     ).toEqual([
       { name: "tmp_x", baseName: "i", multiplier: HIR_INT(5), immediate: HIR_INT(5) },
@@ -679,9 +671,9 @@ describe("hir-loop-induction-analysis", () => {
         ],
         [
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ONE }),
-          HIR_BINARY({ name: "tmp_x", operator: "+", e1: VARIABLE_TMP_I, e2: VARIABLE_OUTSIDE }),
+          HIR_BINARY({ name: "tmp_j", operator: "+", e1: VARIABLE_TMP_I, e2: VARIABLE_OUTSIDE }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual([]);
   });
@@ -706,7 +698,7 @@ describe("hir-loop-induction-analysis", () => {
             e2: HIR_STRING_NAME("outside"),
           }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual([]);
   });
@@ -726,7 +718,7 @@ describe("hir-loop-induction-analysis", () => {
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
           HIR_BINARY({ name: "tmp_j", operator: "+", e1: VARIABLE_TMP_I, e2: HIR_ZERO }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual([{ name: "tmp_j", baseName: "i", multiplier: HIR_ONE, immediate: VARIABLE_OUTSIDE }]);
   });
@@ -746,7 +738,7 @@ describe("hir-loop-induction-analysis", () => {
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ZERO }),
           HIR_BINARY({ name: "tmp_j", operator: "+", e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual([{ name: "tmp_j", baseName: "i", multiplier: HIR_ONE, immediate: VARIABLE_OUTSIDE }]);
   });
@@ -766,7 +758,7 @@ describe("hir-loop-induction-analysis", () => {
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
           HIR_BINARY({ name: "tmp_j", operator: "*", e1: VARIABLE_TMP_I, e2: HIR_ONE }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual([{ name: "tmp_j", baseName: "i", multiplier: HIR_ONE, immediate: VARIABLE_OUTSIDE }]);
   });
@@ -786,7 +778,7 @@ describe("hir-loop-induction-analysis", () => {
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
           HIR_BINARY({ name: "tmp_j", operator: "*", e1: VARIABLE_TMP_I, e2: HIR_INT(2) }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual([]);
   });
@@ -806,7 +798,7 @@ describe("hir-loop-induction-analysis", () => {
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ONE }),
           HIR_BINARY({ name: "tmp_j", operator: "*", e1: VARIABLE_TMP_I, e2: VARIABLE_OUTSIDE }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual([
       { name: "tmp_j", baseName: "i", multiplier: VARIABLE_OUTSIDE, immediate: VARIABLE_OUTSIDE },
@@ -828,7 +820,7 @@ describe("hir-loop-induction-analysis", () => {
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_INT(2) }),
           HIR_BINARY({ name: "tmp_j", operator: "*", e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j"]),
       ),
     ).toEqual([]);
   });
@@ -848,7 +840,7 @@ describe("hir-loop-induction-analysis", () => {
           HIR_BINARY({ name: "tmp_i", operator: "+", e1: VARIABLE_I, e2: HIR_ONE }),
           HIR_BINARY({ name: "t1", operator: "+", e1: VARIABLE_TMP_I, e2: HIR_ONE }),
         ],
-        mockExpressionIsLoopInvariantWithOutside,
+        new Set(["", "i", "j", "tmp_i", "tmp_j", "t1"]),
       ),
     ).toEqual([{ name: "t1", baseName: "i", multiplier: HIR_ONE, immediate: HIR_INT(2) }]);
   });
