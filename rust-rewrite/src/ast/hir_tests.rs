@@ -105,6 +105,7 @@ mod tests {
     )
     .hash(&mut hasher);
     Operator::DIV.hash(&mut hasher);
+    Statement::binary_flexible_unwrapped(rcs(""), Operator::DIV, ZERO, ZERO);
     FunctionName::new("", Type::new_fn_unwrapped(vec![], INT_TYPE)).hash(&mut hasher);
   }
 

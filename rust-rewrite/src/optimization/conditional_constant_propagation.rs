@@ -194,8 +194,8 @@ fn optimize_stmt(
         }
         _ => {}
       }
-      let (operator, e1, e2) = Statement::flexible_order_binary(operator, e1, e2);
-      let partially_optimized_binary = Statement::binary_unwrapped(name.clone(), operator, e1, e2);
+      let partially_optimized_binary =
+        Statement::binary_flexible_unwrapped(name.clone(), operator, e1, e2);
       if let Binary {
         name,
         type_,
@@ -431,7 +431,7 @@ fn try_optimize_loop_for_some_iterations(
       pop_scope(value_cx, index_access_cx, binary_expr_cx);
       return Result::Err(vec![Statement::While {
         loop_variables,
-        statements: first_run_optimized_stmts,
+        statements: stmts,
         break_collector,
       }]);
     }

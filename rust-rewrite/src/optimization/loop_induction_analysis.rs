@@ -14,7 +14,7 @@ pub(super) enum PotentialLoopInvariantExpression {
 }
 
 impl PotentialLoopInvariantExpression {
-  fn to_expression(&self) -> Expression {
+  pub(super) fn to_expression(&self) -> Expression {
     match self {
       PotentialLoopInvariantExpression::Int(i) => Expression::IntLiteral(*i, true),
       PotentialLoopInvariantExpression::Var(n) => Expression::Variable(n.clone()),
@@ -45,6 +45,15 @@ impl GuardOperator {
       GuardOperator::GE => GuardOperator::LT,
     }
   }
+
+  pub(super) fn to_op(&self) -> Operator {
+    match self {
+      GuardOperator::LT => Operator::LT,
+      GuardOperator::LE => Operator::LE,
+      GuardOperator::GT => Operator::GT,
+      GuardOperator::GE => Operator::GE,
+    }
+  }
 }
 
 pub(super) struct BasicInductionVariableWithLoopGuard {
@@ -53,6 +62,16 @@ pub(super) struct BasicInductionVariableWithLoopGuard {
   pub(super) increment_amount: PotentialLoopInvariantExpression,
   pub(super) guard_operator: GuardOperator,
   pub(super) guard_expression: PotentialLoopInvariantExpression,
+}
+
+impl BasicInductionVariableWithLoopGuard {
+  pub(super) fn as_general_basic_induction_variable(&self) -> GeneralBasicInductionVariable {
+    GeneralBasicInductionVariable {
+      name: self.name.clone(),
+      initial_value: self.initial_value.clone(),
+      increment_amount: self.increment_amount.clone(),
+    }
+  }
 }
 
 impl ToString for BasicInductionVariableWithLoopGuard {
@@ -68,6 +87,7 @@ impl ToString for BasicInductionVariableWithLoopGuard {
   }
 }
 
+#[derive(Clone)]
 pub(super) struct GeneralBasicInductionVariable {
   pub(super) name: Str,
   pub(super) initial_value: Expression,
@@ -112,6 +132,7 @@ struct DerivedInductionVariable {
   immediate: PotentialLoopInvariantExpression,
 }
 
+#[derive(Clone)]
 pub(super) struct DerivedInductionVariableWithName {
   pub(super) name: Str,
   pub(super) base_name: Str,
@@ -636,16 +657,36 @@ mod tests {
   use pretty_assertions::assert_eq;
 
   #[test]
-  fn guard_operator_test() {
-    get_guard_operator(Operator::LT, false).unwrap().invert().clone().invert();
-    get_guard_operator(Operator::LE, false).unwrap().invert().clone().invert();
-    get_guard_operator(Operator::GE, false).unwrap().invert().clone().invert();
-    get_guard_operator(Operator::GT, false).unwrap().invert().clone().invert();
-    get_guard_operator(Operator::LT, true).unwrap().invert().clone().invert();
-    get_guard_operator(Operator::LE, true).unwrap().invert().clone().invert();
-    get_guard_operator(Operator::GE, true).unwrap().invert().clone().invert();
-    get_guard_operator(Operator::GT, true).unwrap().invert().clone().invert();
+  fn boilterplate() {
+    get_guard_operator(Operator::LT, false).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(Operator::LE, false).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(Operator::GE, false).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(Operator::GT, false).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(Operator::LT, true).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(Operator::LE, true).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(Operator::GE, true).unwrap().invert().clone().invert().to_op();
+    get_guard_operator(Operator::GT, true).unwrap().invert().clone().invert().to_op();
     assert!(get_guard_operator(Operator::EQ, true).is_none());
+
+    assert!(!BasicInductionVariableWithLoopGuard {
+      name: rcs(""),
+      initial_value: ZERO,
+      increment_amount: PotentialLoopInvariantExpression::Int(0),
+      guard_operator: GuardOperator::GE,
+      guard_expression: PotentialLoopInvariantExpression::Int(0),
+    }
+    .as_general_basic_induction_variable()
+    .clone()
+    .to_string()
+    .is_empty());
+    DerivedInductionVariableWithName {
+      name: rcs(""),
+      base_name: rcs(""),
+      multiplier: PotentialLoopInvariantExpression::Int(0),
+      immediate: PotentialLoopInvariantExpression::Int(0),
+    }
+    .clone()
+    .to_string();
   }
 
   #[test]
