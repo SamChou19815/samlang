@@ -447,6 +447,16 @@ impl Statement {
     }
   }
 
+  pub(crate) fn binary_flexible_unwrapped(
+    name: Str,
+    operator: Operator,
+    e1: Expression,
+    e2: Expression,
+  ) -> Binary {
+    let (operator, e1, e2) = Self::flexible_order_binary(operator, e1, e2);
+    Self::binary_unwrapped(name, operator, e1, e2)
+  }
+
   pub(crate) fn binary(
     name: &'static str,
     operator: Operator,

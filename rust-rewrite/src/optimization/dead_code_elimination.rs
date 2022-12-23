@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use super::optimization_common;
 
-fn collect_use_from_expression(expression: &Expression, set: &mut HashSet<Str>) {
+pub(super) fn collect_use_from_expression(expression: &Expression, set: &mut HashSet<Str>) {
   if let Expression::Variable(v) = expression {
     set.insert(v.name.clone());
   }
