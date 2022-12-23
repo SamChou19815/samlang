@@ -116,7 +116,8 @@ impl<'a> SourceParser<'a> {
       match content {
         TokenContent::BlockComment(_) | TokenContent::LineComment(_) => {
           if i == 0 {
-            break;
+            self.position = 0;
+            return;
           }
           i -= 1
         }
@@ -1244,7 +1245,8 @@ impl<'a> SourceParser<'a> {
       match self.simple_peek().1 {
         TokenContent::LineComment(text) => {
           self.consume();
-          comments.push(Comment { kind: CommentKind::LINE, text: text.clone() });
+          let text = rc_string(text.chars().skip(3).collect::<String>());
+          comments.push(Comment { kind: CommentKind::LINE, text });
         }
         TokenContent::BlockComment(text) => {
           self.consume();

@@ -87,6 +87,27 @@ mod type_tests {
         .pretty_print()
     );
 
+    assert_eq!(
+      "A",
+      TypeParameter {
+        loc: Location::dummy(),
+        associated_comments: rc(vec![]),
+        name: Id::from("A"),
+        bound: Option::None
+      }
+      .pretty_print()
+    );
+    assert_eq!(
+      "A: B",
+      TypeParameter {
+        loc: Location::dummy(),
+        associated_comments: rc(vec![]),
+        name: Id::from("A"),
+        bound: Option::Some(rc(builder.simple_id_type_unwrapped("B")))
+      }
+      .pretty_print()
+    );
+
     assert_eq!("A", TypeParameterSignature { name: rcs("A"), bound: Option::None }.pretty_print());
     assert_eq!(
       "A : B",
@@ -243,6 +264,55 @@ mod expressions_tests {
     common::boxed,
   };
   use std::collections::HashMap;
+
+  #[test]
+  fn precedence_boilerplate_tests() {
+    let builder = test_builder::create();
+    let common = builder.expr_common(builder.bool_type());
+
+    builder.zero_expr().precedence();
+    E::ClassFn(ClassFunction {
+      common: common.clone(),
+      type_arguments: vec![],
+      module_reference: ModuleReference::dummy(),
+      class_name: Id::from("name"),
+      fn_name: Id::from("name"),
+    })
+    .precedence();
+    E::Block(Block { common: common.clone(), statements: vec![], expression: None }).precedence();
+    E::Call(Call { common: common.clone(), callee: boxed(builder.zero_expr()), arguments: vec![] })
+      .precedence();
+    E::Unary(Unary {
+      common: common.clone(),
+      operator: UnaryOperator::NEG,
+      argument: boxed(builder.true_expr()),
+    })
+    .precedence();
+    E::Binary(Binary {
+      common: common.clone(),
+      operator_preceding_comments: vec![],
+      operator: BinaryOperator::AND,
+      e1: boxed(builder.zero_expr()),
+      e2: boxed(builder.zero_expr()),
+    })
+    .precedence();
+    E::IfElse(IfElse {
+      common: common.clone(),
+      condition: boxed(builder.zero_expr()),
+      e1: boxed(builder.zero_expr()),
+      e2: boxed(builder.zero_expr()),
+    })
+    .precedence();
+    E::Match(Match { common: common.clone(), matched: boxed(builder.zero_expr()), cases: vec![] })
+      .precedence();
+    E::Lambda(Lambda {
+      common: common.clone(),
+      parameters: vec![OptionallyAnnotatedId { name: Id::from("name"), annotation: None }],
+      captured: HashMap::new(),
+      body: boxed(builder.zero_expr()),
+    })
+    .precedence();
+  }
 
   #[test]
   fn common_test() {

@@ -11,3 +11,4 @@ wat = "1.0.52"
 
 [dev-dependencies]
 pretty_assertions = "1.3.0"
+wasmi = "0.20.0"

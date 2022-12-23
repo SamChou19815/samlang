@@ -609,7 +609,7 @@ impl<'a> LoweringManager<'a> {
         let loop_variables = loop_variables
           .into_iter()
           .map(|hir::GenenalLoopVariable { name, type_, initial_value, loop_value }| {
-            mir::GenenalLoopVariables {
+            mir::GenenalLoopVariable {
               name,
               type_: lower_type(type_),
               initial_value: lower_expression(initial_value),

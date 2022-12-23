@@ -1,5 +1,5 @@
 use crate::{
-  ast::mir::{Expression, Function, GenenalLoopVariables, Sources, Statement, Type},
+  ast::mir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type},
   common::Str,
 };
 use itertools::Itertools;
@@ -64,7 +64,7 @@ fn collect_used_names_from_statement(
     }
     Statement::Break(e) => collect_used_names_from_expression(name_set, type_set, e),
     Statement::While { loop_variables, statements, break_collector } => {
-      for GenenalLoopVariables { name: _, type_, initial_value, loop_value } in loop_variables {
+      for GenenalLoopVariable { name: _, type_, initial_value, loop_value } in loop_variables {
         collect_for_type_set(type_, type_set);
         collect_used_names_from_expression(name_set, type_set, initial_value);
         collect_used_names_from_expression(name_set, type_set, loop_value);
@@ -170,7 +170,7 @@ mod tests {
     ast::{
       hir::GlobalVariable,
       mir::{
-        Expression, Function, GenenalLoopVariables, Sources, Statement, Type, TypeDefinition,
+        Expression, Function, GenenalLoopVariable, Sources, Statement, Type, TypeDefinition,
         INT_TYPE, ZERO,
       },
     },
@@ -257,7 +257,7 @@ mod tests {
               statements: vec![Statement::Break(ZERO)],
             },
             Statement::While {
-              loop_variables: vec![GenenalLoopVariables {
+              loop_variables: vec![GenenalLoopVariable {
                 name: rcs("f"),
                 type_: INT_TYPE,
                 initial_value: ZERO,
