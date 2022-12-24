@@ -280,7 +280,7 @@ mod tests {
     ast::{
       hir::{GlobalVariable, Operator},
       mir::{
-        Expression, Function, GenenalLoopVariables, Sources, Statement, Type, FALSE, INT_TYPE, ZERO,
+        Expression, Function, GenenalLoopVariable, Sources, Statement, Type, FALSE, INT_TYPE, ZERO,
       },
     },
     common::rcs,
@@ -323,7 +323,7 @@ mod tests {
           Statement::IfElse {
             condition: FALSE,
             s1: vec![Statement::While {
-              loop_variables: vec![GenenalLoopVariables {
+              loop_variables: vec![GenenalLoopVariable {
                 name: rcs("i"),
                 type_: INT_TYPE,
                 initial_value: ZERO,

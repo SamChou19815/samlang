@@ -1,18 +1,20 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::ModuleReference,
+    ast::{common_names, ModuleReference},
     checker::{
       type_check_single_module_source, type_check_source_handles, TypeCheckSourceHandlesResult,
     },
-    common::rcs,
+    common::{rc_string, rcs},
     compiler,
     errors::ErrorSet,
-    interpreter,
+    interpreter, optimization,
     parser::parse_source_module_from_text,
+    printer,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use wasmi::*;
 
   struct CheckerTestSource<'a> {
     test_name: &'a str,
@@ -1672,23 +1674,132 @@ class Main {
         &mut error_set,
       );
       let checked_module = type_check_single_module_source(parsed_module, &mut error_set);
-      let actual_std = interpreter::run(&checked_module);
+      let actual_std = interpreter::run_source_module(&checked_module);
       assert_eq!(expected_std, actual_std);
     }
   }
 
   #[test]
+  fn formatter_tests() {
+    let TypeCheckSourceHandlesResult { checked_sources, .. } = type_check_source_handles(
+      compiler_integration_tests()
+        .iter()
+        .map(|case| (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code))
+        .collect(),
+    );
+    for (mod_ref, module) in checked_sources {
+      let raw = printer::pretty_print_source_module(100, &module);
+      let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
+        type_check_source_handles(vec![(mod_ref, &raw)]);
+      assert!(compile_time_errors.is_empty());
+      assert!(checked_sources.len() == 1);
+    }
+  }
+
+  type HostState = Vec<String>;
+
+  #[test]
   fn compiler_tests() {
+    let tests = compiler_integration_tests();
     let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
       type_check_source_handles(
-        compiler_integration_tests()
+        tests
           .iter()
           .map(|case| (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code))
           .collect(),
       );
     assert!(compile_time_errors.is_empty());
-    let _wasm_module = compiler::compile_mir_to_wasm(&compiler::compile_hir_to_mir(
-      compiler::compile_sources_to_hir(&checked_sources),
-    ));
+    let unoptimized_hir_sources = compiler::compile_sources_to_hir(&checked_sources);
+    let optimized_hir_sources = optimization::optimize_sources(
+      unoptimized_hir_sources,
+      &optimization::ALL_ENABLED_CONFIGURATION,
+    );
+    let mir_sources = compiler::compile_hir_to_mir(optimized_hir_sources);
+    for test in &tests {
+      let main_function = rc_string(common_names::encode_main_function_name(
+        &ModuleReference::ordinary(vec![rcs(test.name)]),
+      ));
+      let actual = interpreter::run_mir_sources(&mir_sources, main_function);
+      assert_eq!(test.expected_std, actual);
+      // Replace with the following line for debugging
+      // assert_eq!(test.expected_std, actual, "{}", test.name);
+    }
+
+    let wasm_module = compiler::compile_mir_to_wasm(&mir_sources);
+    let engine = Engine::default();
+    let module = Module::new(&engine, &mut &wasm_module[..]).unwrap();
+    let mut store = Store::new(&engine, vec![]);
+    let memory =
+      Memory::new(store.as_context_mut(), MemoryType::new(2, Some(65536)).unwrap()).unwrap();
+    let mut linker = <Linker<HostState>>::new();
+    let builtin_println = move |mut caller: Caller<'_, HostState>, param: i32| -> i32 {
+      let string = pointer_to_string(&caller, &memory, param);
+      caller.host_data_mut().push(string);
+      return 0;
+    };
+    let instance = linker
+      .define("env", "memory", memory)
+      .unwrap()
+      .define(
+        "builtins",
+        &common_names::encoded_fn_name_println(),
+        Func::wrap(&mut store, builtin_println),
+      )
+      .unwrap()
+      .define(
+        "builtins",
+        &&common_names::encoded_fn_name_panic(),
+        Func::wrap(&mut store, wasm_builtin_panic),
+      )
+      .unwrap()
+      .instantiate(&mut store, &module)
+      .unwrap()
+      .start(&mut store)
+      .unwrap();
+    let mut expected_str = String::new();
+    for test in &tests {
+      let main_function_name = rc_string(common_names::encode_main_function_name(
+        &ModuleReference::ordinary(vec![rcs(test.name)]),
+      ));
+      expected_str.push_str(test.name);
+      expected_str.push_str(":\n");
+      store.state_mut().push(test.name.to_string() + ":");
+
+      let main_function =
+        Extern::into_func(instance.get_export(&store, &main_function_name).unwrap())
+          .unwrap()
+          .typed::<(), i32>(&mut store)
+          .unwrap();
+      main_function.call(&mut store, ()).unwrap();
+
+      expected_str.push_str(&test.expected_std);
+      expected_str.push_str("\n\n");
+      store.state_mut().push("\n".to_string());
+    }
+    assert_eq!(expected_str.trim(), store.state().join("\n").trim())
+  }
+
+  #[should_panic]
+  #[test]
+  fn wasm_builtin_panic_test() {
+    let engine = Engine::default();
+    let mut store = Store::new(&engine, vec![]);
+    wasm_builtin_panic(Caller::from(&mut store), 0);
+  }
+
+  fn wasm_builtin_panic(_: Caller<'_, HostState>, _: i32) -> i32 {
+    panic!("Ouch");
+  }
+
+  fn pointer_to_string(caller: &Caller<'_, HostState>, mem: &Memory, param: i32) -> String {
+    let mut len_bytes = [0; 4];
+    let ptr = usize::try_from(param).unwrap();
+    mem.read(caller.as_context(), ptr + 4, &mut len_bytes).unwrap();
+    let length = usize::try_from(i32::from_le_bytes(len_bytes)).unwrap();
+    let mut str_bytes = vec![0; length * 4];
+    mem.read(caller.as_context(), ptr + 8, &mut str_bytes).unwrap();
+    // We sadly use 4 bytes to store 1 byte of data :(
+    str_bytes = str_bytes.into_iter().filter(|c| *c != 0).collect();
+    String::from_utf8(str_bytes).unwrap()
   }
 }

@@ -525,6 +525,19 @@ pub(crate) mod expr {
       self.common().type_.clone()
     }
 
+    pub(crate) fn precedence(&self) -> i32 {
+      match self {
+        E::Literal(_, _) | E::This(_) | E::Id(_, _) => 0,
+        E::ClassFn(_) => 1,
+        E::FieldAccess(_) | E::MethodAccess(_) | E::Call(_) | E::Block(_) => 2,
+        E::Unary(_) => 3,
+        E::Binary(b) => 5 + b.operator.precedence(),
+        E::IfElse(_) => 11,
+        E::Match(_) => 12,
+        E::Lambda(_) => 13,
+      }
+    }
+
     pub(crate) fn mod_common<F: FnOnce(ExpressionCommon) -> ExpressionCommon>(self, f: F) -> E {
       match self {
         E::Literal(common, l) => E::Literal(f(common), l),
@@ -587,6 +600,16 @@ pub(crate) struct TypeParameter {
   pub(crate) associated_comments: Rc<Vec<Comment>>,
   pub(crate) name: Id,
   pub(crate) bound: Option<Rc<IdType>>,
+}
+
+impl TypeParameter {
+  pub(crate) fn pretty_print(&self) -> String {
+    if let Some(bound) = &self.bound {
+      format!("{}: {}", self.name.name, bound.pretty_print())
+    } else {
+      self.name.name.to_string()
+    }
+  }
 }
 
 pub(crate) struct ClassMemberDeclaration {

@@ -145,7 +145,7 @@ pub(crate) const TRUE: Expression = Expression::IntLiteral(1, BOOL_TYPE);
 pub(crate) const ZERO: Expression = Expression::IntLiteral(0, INT_TYPE);
 pub(crate) const ONE: Expression = Expression::IntLiteral(1, INT_TYPE);
 
-pub(crate) struct GenenalLoopVariables {
+pub(crate) struct GenenalLoopVariable {
   pub(crate) name: Str,
   pub(crate) type_: Type,
   pub(crate) initial_value: Expression,
@@ -190,7 +190,7 @@ pub(crate) enum Statement {
   },
   Break(Expression),
   While {
-    loop_variables: Vec<GenenalLoopVariables>,
+    loop_variables: Vec<GenenalLoopVariable>,
     statements: Vec<Statement>,
     break_collector: Option<(Str, Type)>,
   },

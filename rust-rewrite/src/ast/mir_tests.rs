@@ -73,7 +73,7 @@ mod tests {
           break_collector: None,
         },
         Statement::While {
-          loop_variables: vec![GenenalLoopVariables {
+          loop_variables: vec![GenenalLoopVariable {
             name: rcs("_"),
             type_: INT_TYPE,
             initial_value: ZERO,

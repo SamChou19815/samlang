@@ -10,3 +10,4 @@ mod integration_tests;
 mod interpreter;
 mod optimization;
 mod parser;
+mod printer;

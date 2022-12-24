@@ -11,7 +11,7 @@ import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from "../.
 import { checkNotNull } from "../../utils";
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from "../printer-source-level";
 
-function reprintExpression(rawSourceWithTypeAnnotation: string, width = 40): string {
+function reprintExpression(rawSourceWithTypeAnnotation: string): string {
   const errorCollector = createGlobalErrorCollector();
   const expression = checkNotNull(
     parseSamlangExpressionFromText(
@@ -22,10 +22,10 @@ function reprintExpression(rawSourceWithTypeAnnotation: string, width = 40): str
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
-  return prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(width, expression).trimEnd();
+  return prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(40, expression).trimEnd();
 }
 
-function reprintModule(rawSourceWithTypeAnnotation: string, width = 40): string {
+function reprintModule(rawSourceWithTypeAnnotation: string): string {
   const errorCollector = createGlobalErrorCollector();
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
@@ -34,7 +34,7 @@ function reprintModule(rawSourceWithTypeAnnotation: string, width = 40): string 
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
-  return `\n${prettyPrintSamlangModule(width, samlangModule).trimEnd()}`;
+  return `\n${prettyPrintSamlangModule(40, samlangModule).trimEnd()}`;
 }
 
 describe("printer-source-level", () => {

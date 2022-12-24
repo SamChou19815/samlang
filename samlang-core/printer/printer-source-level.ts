@@ -200,13 +200,13 @@ function createPrettierDocumentFromSamlangExpression(
       case "IfElseExpression":
         return createDocumentIfElseExpression(expression);
       case "MatchExpression": {
-        const list = expression.matchingList
-          .map(({ tag, dataVariable, expression: finalExpression }) => [
+        const list = expression.matchingList.flatMap(
+          ({ tag, dataVariable, expression: finalExpression }) => [
             PRETTIER_TEXT(`| ${tag.name} ${dataVariable?.[0].name ?? "_"} -> `),
             createDocumentForSubExpressionConsideringPrecedenceLevel(finalExpression),
             PRETTIER_LINE,
-          ])
-          .flat();
+          ],
+        );
         return PRETTIER_CONCAT(
           PRETTIER_TEXT("match "),
           createParenthesisSurroundedDocument(
@@ -230,8 +230,8 @@ function createPrettierDocumentFromSamlangExpression(
         );
       case "StatementBlockExpression": {
         const { statements, expression: finalExpression } = expression.block;
-        const segments = statements
-          .map(({ pattern, typeAnnotation, assignedExpression, associatedComments }) => {
+        const segments = statements.flatMap(
+          ({ pattern, typeAnnotation, assignedExpression, associatedComments }) => {
             let patternDocument: PrettierDocument;
             switch (pattern.type) {
               case "ObjectPattern":
@@ -264,8 +264,8 @@ function createPrettierDocumentFromSamlangExpression(
               PRETTIER_TEXT(";"),
               PRETTIER_EXTENSION_LINE_HARD,
             ];
-          })
-          .flat();
+          },
+        );
         const finalExpressionDocument =
           finalExpression == null
             ? null
