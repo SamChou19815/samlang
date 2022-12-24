@@ -190,12 +190,10 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(
-      !format!("{:?}", CompileTimeError(Location::dummy(), "ddd".to_string()).clone()).is_empty()
-    );
+    assert!(!format!("{:?}", CompileTimeError(Location::dummy(), "ddd".to_string())).is_empty());
     assert!(
       CompileTimeError(Location::dummy(), "ddd".to_string())
-        == CompileTimeError(Location::dummy(), "ddd".to_string()).clone()
+        == CompileTimeError(Location::dummy(), "ddd".to_string())
     );
   }
 
@@ -233,9 +231,7 @@ mod tests {
       .error_messages()
       .into_iter()
       .map(|s| {
-        s.chars().collect::<Vec<_>>()["__DUMMY__.sam:0:0-0:0: ".len()..]
-          .into_iter()
-          .collect::<String>()
+        s.chars().collect::<Vec<_>>()["__DUMMY__.sam:0:0-0:0: ".len()..].iter().collect::<String>()
       })
       .collect::<Vec<_>>();
     let expected_errors = vec![

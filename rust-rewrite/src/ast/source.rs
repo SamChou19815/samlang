@@ -91,7 +91,7 @@ impl ISourceType for IdType {
     if type_arguments.is_empty() {
       id.to_string()
     } else {
-      format!("{}<{}>", id, join(type_arguments.into_iter().map(|t| t.pretty_print()), ", "))
+      format!("{}<{}>", id, join(type_arguments.iter().map(|t| t.pretty_print()), ", "))
     }
   }
 
@@ -245,7 +245,7 @@ impl TypeParameterSignature {
     if list.is_empty() {
       "".to_string()
     } else {
-      format!("<{}>", list.into_iter().map(|t| t.pretty_print()).collect::<Vec<_>>().join(", "))
+      format!("<{}>", list.iter().map(|t| t.pretty_print()).collect::<Vec<_>>().join(", "))
     }
   }
 }

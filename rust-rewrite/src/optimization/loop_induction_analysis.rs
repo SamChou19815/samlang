@@ -46,7 +46,7 @@ impl GuardOperator {
     }
   }
 
-  pub(super) fn to_op(&self) -> Operator {
+  pub(super) fn to_op(self) -> Operator {
     match self {
       GuardOperator::LT => Operator::LT,
       GuardOperator::LE => Operator::LE,
@@ -180,7 +180,7 @@ fn stmt_contains_break(stmt: &Statement) -> bool {
   }
 }
 
-fn stmts_contains_break(statements: &Vec<Statement>) -> bool {
+fn stmts_contains_break(statements: &[Statement]) -> bool {
   statements.iter().any(stmt_contains_break)
 }
 
@@ -226,39 +226,37 @@ fn merge_constant_operation_into_derived_induction_variable(
         immediate: merged_immediate,
       },
     )
-  } else {
-    if let PotentialLoopInvariantExpression::Int(loop_invariant_expression_value) =
-      loop_invariant_expression
-    {
-      if *loop_invariant_expression_value == 1 {
-        Some(existing.clone())
-      } else {
-        match existing {
-          DerivedInductionVariable {
-            base_name,
-            multiplier: PotentialLoopInvariantExpression::Int(m),
-            immediate: PotentialLoopInvariantExpression::Int(i),
-          } => Some(DerivedInductionVariable {
-            base_name: base_name.clone(),
-            multiplier: PotentialLoopInvariantExpression::Int(m * loop_invariant_expression_value),
-            immediate: PotentialLoopInvariantExpression::Int(i * loop_invariant_expression_value),
-          }),
-          _ => None,
-        }
-      }
+  } else if let PotentialLoopInvariantExpression::Int(loop_invariant_expression_value) =
+    loop_invariant_expression
+  {
+    if *loop_invariant_expression_value == 1 {
+      Some(existing.clone())
     } else {
       match existing {
         DerivedInductionVariable {
           base_name,
-          multiplier: PotentialLoopInvariantExpression::Int(1),
-          immediate: PotentialLoopInvariantExpression::Int(1),
+          multiplier: PotentialLoopInvariantExpression::Int(m),
+          immediate: PotentialLoopInvariantExpression::Int(i),
         } => Some(DerivedInductionVariable {
           base_name: base_name.clone(),
-          multiplier: loop_invariant_expression.clone(),
-          immediate: loop_invariant_expression.clone(),
+          multiplier: PotentialLoopInvariantExpression::Int(m * loop_invariant_expression_value),
+          immediate: PotentialLoopInvariantExpression::Int(i * loop_invariant_expression_value),
         }),
         _ => None,
       }
+    }
+  } else {
+    match existing {
+      DerivedInductionVariable {
+        base_name,
+        multiplier: PotentialLoopInvariantExpression::Int(1),
+        immediate: PotentialLoopInvariantExpression::Int(1),
+      } => Some(DerivedInductionVariable {
+        base_name: base_name.clone(),
+        multiplier: loop_invariant_expression.clone(),
+        immediate: loop_invariant_expression.clone(),
+      }),
+      _ => None,
     }
   }
 }
@@ -353,7 +351,7 @@ fn try_merge_into_derived_induction_variable_without_swap(
       }
     }
   }
-  return false;
+  false
 }
 
 fn try_merge_into_derived_induction_variable(

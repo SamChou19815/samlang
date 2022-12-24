@@ -245,8 +245,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     class_name: &Str,
     function_name: &str,
   ) -> String {
-    if self.type_lowering_manager.generic_types.contains(&class_name) {
-      common_names::encode_generic_function_name_globally(&class_name, &function_name)
+    if self.type_lowering_manager.generic_types.contains(class_name) {
+      common_names::encode_generic_function_name_globally(class_name, function_name)
     } else {
       common_names::encode_function_name_globally(module_reference, class_name, function_name)
     }
@@ -270,8 +270,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         .collect_vec(),
       return_type: original_function_type.return_type.clone(),
     };
-    let closure_type =
-      self.get_synthetic_identifier_type_from_closure(original_function_type.clone());
+    let closure_type = self.get_synthetic_identifier_type_from_closure(original_function_type);
     let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
     let final_variable_expr = hir::Expression::var_name_str(
       closure_variable_name.clone(),
@@ -764,7 +763,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn create_synthetic_lambda_function(
     &mut self,
     expression: &source::expr::Lambda,
-    captured: &Vec<(Str, hir::Expression)>,
+    captured: &[(Str, hir::Expression)],
     context_type: &hir::Type,
   ) -> hir::Function {
     let mut lambda_stmts = vec![];
@@ -937,8 +936,8 @@ impl<'a> ExpressionLoweringManager<'a> {
         }
         source::expr::Pattern::Id(_, id) => {
           let e =
-            self.lowered_and_add_statements(&s.assigned_expression, Some(&id), &mut lowered_stmts);
-          self.variable_cx.bind(&id, e);
+            self.lowered_and_add_statements(&s.assigned_expression, Some(id), &mut lowered_stmts);
+          self.variable_cx.bind(id, e);
         }
         source::expr::Pattern::Wildcard(_) => {
           self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
@@ -946,7 +945,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
     }
     let final_expr = if let Some(e) = &expression.expression {
-      self.lowered_and_add_statements(&e, favored_temp_variable, &mut lowered_stmts)
+      self.lowered_and_add_statements(e, favored_temp_variable, &mut lowered_stmts)
     } else {
       hir::ZERO
     };
@@ -1029,7 +1028,7 @@ fn lower_constructors(
   class_name: &Str,
   type_definition_mapping: &HashMap<Str, hir::TypeDefinition>,
 ) -> Vec<hir::Function> {
-  let type_name = rc_string(common_names::encode_samlang_type(module_reference, &class_name));
+  let type_name = rc_string(common_names::encode_samlang_type(module_reference, class_name));
   let type_def = type_definition_mapping.get(&type_name).unwrap();
   let struct_var_name = "_struct";
   let struct_type = hir::IdType {
@@ -1117,7 +1116,7 @@ fn compile_source_fn(
   member_name: &Str,
   type_definition_mapping: &HashMap<Str, hir::TypeDefinition>,
   member_tparams: Vec<Str>,
-  member_params: &Vec<source::AnnotatedId>,
+  member_params: &[source::AnnotatedId],
   member_return_type: &source::Type,
   member_body: &source::expr::E,
   type_lowering_manager: &mut TypeLoweringManager,
@@ -1125,8 +1124,8 @@ fn compile_source_fn(
 ) -> (Vec<hir::Function>, hir::Function) {
   let encoded_name = rc_string(common_names::encode_function_name_globally(
     module_reference,
-    &class_name,
-    &member_name,
+    class_name,
+    member_name,
   ));
   let tparams_set: HashSet<_> = member_tparams.into_iter().collect();
   let tparams = tparams_set.iter().sorted().cloned().collect_vec();
@@ -1172,7 +1171,7 @@ fn compile_source_method(
   type_definition_mapping: &HashMap<Str, hir::TypeDefinition>,
   class_tparams: Vec<Str>,
   member_tparams: Vec<Str>,
-  member_params: &Vec<source::AnnotatedId>,
+  member_params: &[source::AnnotatedId],
   member_return_type: &source::Type,
   member_body: &source::expr::E,
   type_lowering_manager: &mut TypeLoweringManager,
@@ -1180,8 +1179,8 @@ fn compile_source_method(
 ) -> Vec<hir::Function> {
   let encoded_name = rc_string(common_names::encode_function_name_globally(
     module_reference,
-    &class_name,
-    &member_name,
+    class_name,
+    member_name,
   ));
   let tparams = class_tparams.iter().cloned().chain(member_tparams).sorted().collect_vec();
   let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
@@ -1228,7 +1227,7 @@ fn compile_source_method(
   compiled_functions_to_add
 }
 
-fn lower_tparams(type_parameters: &Vec<source::TypeParameter>) -> Vec<Str> {
+fn lower_tparams(type_parameters: &[source::TypeParameter]) -> Vec<Str> {
   type_parameters.iter().map(|it| it.name.name.clone()).collect_vec()
 }
 

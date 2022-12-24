@@ -329,7 +329,7 @@ impl Expression {
     }
   }
 
-  pub(crate) fn as_callee(self) -> Option<Callee> {
+  pub(crate) fn to_callee(self) -> Option<Callee> {
     match self {
       Expression::IntLiteral(_, _) | Expression::StringName(_) => None,
       Expression::FunctionName(n) => Some(Callee::FunctionName(n)),

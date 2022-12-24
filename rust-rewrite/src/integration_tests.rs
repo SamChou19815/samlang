@@ -1735,7 +1735,7 @@ class Main {
     let builtin_println = move |mut caller: Caller<'_, HostState>, param: i32| -> i32 {
       let string = pointer_to_string(&caller, &memory, param);
       caller.host_data_mut().push(string);
-      return 0;
+      0
     };
     let instance = linker
       .define("env", "memory", memory)
@@ -1748,7 +1748,7 @@ class Main {
       .unwrap()
       .define(
         "builtins",
-        &&common_names::encoded_fn_name_panic(),
+        &common_names::encoded_fn_name_panic(),
         Func::wrap(&mut store, wasm_builtin_panic),
       )
       .unwrap()
@@ -1772,7 +1772,7 @@ class Main {
           .unwrap();
       main_function.call(&mut store, ()).unwrap();
 
-      expected_str.push_str(&test.expected_std);
+      expected_str.push_str(test.expected_std);
       expected_str.push_str("\n\n");
       store.state_mut().push("\n".to_string());
     }
@@ -1799,7 +1799,7 @@ class Main {
     let mut str_bytes = vec![0; length * 4];
     mem.read(caller.as_context(), ptr + 8, &mut str_bytes).unwrap();
     // We sadly use 4 bytes to store 1 byte of data :(
-    str_bytes = str_bytes.into_iter().filter(|c| *c != 0).collect();
+    str_bytes.retain(|c| *c != 0);
     String::from_utf8(str_bytes).unwrap()
   }
 }

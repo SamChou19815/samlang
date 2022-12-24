@@ -99,7 +99,7 @@ fn generate_single_destructor_function<F: FnOnce(Str, mir::Type, &mut Vec<mir::S
     type_name,
   );
   mir::Function {
-    name: dec_ref_fn_name(&type_name),
+    name: dec_ref_fn_name(type_name),
     parameters: vec![parameter_name],
     type_: mir::Type::new_fn_unwrapped(vec![parameter_type], mir::INT_TYPE),
     body,
@@ -365,7 +365,7 @@ impl<'a> LoweringManager<'a> {
         stmts.push(mir::Statement::IndexedAccess {
           name: rcs("context"),
           type_: mir::ANY_TYPE,
-          pointer_expression: pointer_expression.clone(),
+          pointer_expression,
           index: 3,
         });
         stmts.push(mir::Statement::Call {
@@ -430,11 +430,13 @@ impl<'a> LoweringManager<'a> {
             }
           }
         }
-        mir::Statement::While { loop_variables: _, statements: _, break_collector } => {
-          if let Some((n, t)) = break_collector {
-            if let Some(type_name) = reference_type_name(t) {
-              variable_to_decrease_reference_count.push((n.clone(), type_name.clone()));
-            }
+        mir::Statement::While {
+          loop_variables: _,
+          statements: _,
+          break_collector: Some((n, t)),
+        } => {
+          if let Some(type_name) = reference_type_name(t) {
+            variable_to_decrease_reference_count.push((n.clone(), type_name.clone()));
           }
         }
         mir::Statement::StructInit { struct_variable_name, type_, expression_list: _ } => {
@@ -483,42 +485,40 @@ impl<'a> LoweringManager<'a> {
             pointer_expression: pointer_expr,
             index: index + 1,
           }]
+        } else if index == 0 {
+          // Access the tag
+          assert!(variable_type.as_primitive().unwrap().eq(&mir::PrimitiveType::Int));
+          vec![mir::Statement::IndexedAccess {
+            name,
+            type_: variable_type,
+            pointer_expression: pointer_expr,
+            index: 1,
+          }]
         } else {
-          if index == 0 {
-            // Access the tag
-            assert!(variable_type.as_primitive().unwrap().eq(&mir::PrimitiveType::Int));
+          // Access the data, might need cast
+          assert!(index == 1);
+          if variable_type.is_the_same_type(&mir::ANY_TYPE) {
             vec![mir::Statement::IndexedAccess {
               name,
               type_: variable_type,
               pointer_expression: pointer_expr,
-              index: 1,
+              index: 2,
             }]
           } else {
-            // Access the data, might need cast
-            assert!(index == 1);
-            if variable_type.is_the_same_type(&mir::ANY_TYPE) {
-              vec![mir::Statement::IndexedAccess {
-                name,
-                type_: variable_type,
+            let temp = self.alloc_temp();
+            vec![
+              mir::Statement::IndexedAccess {
+                name: temp.clone(),
+                type_: mir::ANY_TYPE,
                 pointer_expression: pointer_expr,
                 index: 2,
-              }]
-            } else {
-              let temp = self.alloc_temp();
-              vec![
-                mir::Statement::IndexedAccess {
-                  name: temp.clone(),
-                  type_: mir::ANY_TYPE,
-                  pointer_expression: pointer_expr,
-                  index: 2,
-                },
-                mir::Statement::Cast {
-                  name,
-                  type_: variable_type,
-                  assigned_expression: mir::Expression::Variable(temp, mir::ANY_TYPE),
-                },
-              ]
-            }
+              },
+              mir::Statement::Cast {
+                name,
+                type_: variable_type,
+                assigned_expression: mir::Expression::Variable(temp, mir::ANY_TYPE),
+              },
+            ]
           }
         }
       }

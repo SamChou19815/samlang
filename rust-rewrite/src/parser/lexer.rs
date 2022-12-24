@@ -71,7 +71,7 @@ mod char_stream {
         }
         position += 1;
       }
-      self.source[self.pos..position].into_iter().collect()
+      self.source[self.pos..position].iter().collect()
     }
 
     pub(super) fn peek_next_constant_token(&self, token: &str) -> bool {
@@ -79,22 +79,20 @@ mod char_stream {
       if self.pos + l > self.source.len() {
         return false;
       }
-      self.source[self.pos..(self.pos + l)].into_iter().collect::<String>() == token
+      self.source[self.pos..(self.pos + l)].iter().collect::<String>() == token
     }
 
     /// Returns comment string including // or null if it's not a line comment.
     pub(super) fn peek_line_comment(&self) -> Option<String> {
       if self.pos + 2 > self.source.len()
-        || self.source[self.pos..(self.pos + 2)].into_iter().collect::<String>() != "//"
+        || self.source[self.pos..(self.pos + 2)].iter().collect::<String>() != "//"
       {
         return Option::None;
       }
       let mut comment_length = 2;
       loop {
         if self.pos + comment_length >= self.source.len() {
-          return Option::Some(
-            self.source[self.pos..(self.pos + comment_length)].into_iter().collect(),
-          );
+          return Option::Some(self.source[self.pos..(self.pos + comment_length)].iter().collect());
         }
         let c = self.source[self.pos + comment_length];
         if c == '\n' {
@@ -102,13 +100,13 @@ mod char_stream {
         }
         comment_length += 1;
       }
-      Option::Some(self.source[self.pos..(self.pos + comment_length)].into_iter().collect())
+      Option::Some(self.source[self.pos..(self.pos + comment_length)].iter().collect())
     }
 
     /// Returns comment string including /* or null if it's not a block comment.
     pub(super) fn peek_block_comment(&self) -> Option<String> {
       if self.pos + 2 > self.source.len()
-        || self.source[self.pos..(self.pos + 2)].into_iter().collect::<String>() != "/*"
+        || self.source[self.pos..(self.pos + 2)].iter().collect::<String>() != "/*"
       {
         return Option::None;
       }
@@ -125,7 +123,7 @@ mod char_stream {
         comment_length += 1;
       }
       comment_length += 2;
-      Option::Some(self.source[self.pos..(self.pos + comment_length)].into_iter().collect())
+      Option::Some(self.source[self.pos..(self.pos + comment_length)].iter().collect())
     }
 
     pub(super) fn peek_int(&self) -> Option<String> {
@@ -140,7 +138,7 @@ mod char_stream {
         } else if pos == self.pos {
           return Option::None;
         } else {
-          return Option::Some(self.source[self.pos..pos].into_iter().collect());
+          return Option::Some(self.source[self.pos..pos].iter().collect());
         }
       }
     }
@@ -155,7 +153,7 @@ mod char_stream {
         if c.is_ascii_alphanumeric() {
           pos += 1;
         } else {
-          return Option::Some(self.source[self.pos..pos].into_iter().collect());
+          return Option::Some(self.source[self.pos..pos].iter().collect());
         }
       }
     }
@@ -182,7 +180,7 @@ mod char_stream {
           if escape_count % 2 == 0 {
             // When there are even number of escapes, the quote is not escaped,
             // so it's the ending quote.
-            return Option::Some(self.source[self.pos..(pos + 1)].into_iter().collect());
+            return Option::Some(self.source[self.pos..(pos + 1)].iter().collect());
           }
         }
         if c == '\n' {
@@ -405,7 +403,7 @@ impl ToString for Token {
 
 fn string_has_valid_escape(s: &str) -> bool {
   let mut has_unprocessed_escape = false;
-  for c in s.chars().into_iter() {
+  for c in s.chars() {
     if c == '\\' {
       has_unprocessed_escape = !has_unprocessed_escape;
       continue;
@@ -419,7 +417,7 @@ fn string_has_valid_escape(s: &str) -> bool {
       }
     }
   }
-  return true;
+  true
 }
 
 fn get_next_token(
@@ -455,7 +453,7 @@ fn get_next_token(
 
       if let Option::Some(s) = &stream.peek_str() {
         let loc = stream.consume_and_get_loc(start, s.len());
-        if !string_has_valid_escape(&s) {
+        if !string_has_valid_escape(s) {
           error_set.report_syntax_error(&loc, "Invalid escape in string.")
         }
         return Option::Some(Token(loc, TokenContent::StringLiteral(rc_string(s.clone()))));
@@ -463,7 +461,7 @@ fn get_next_token(
 
       if let Option::Some(s) = &stream.peek_id() {
         let loc = stream.consume_and_get_loc(start, s.len());
-        if let Option::Some(k) = all::<Keyword>().find(|k| k.to_string() == s.to_string()) {
+        if let Option::Some(k) = all::<Keyword>().find(|k| k.to_string() == *s) {
           return Option::Some(Token(loc, TokenContent::Keyword(k)));
         }
         let content = if s.chars().next().unwrap().is_ascii_uppercase() {
@@ -487,10 +485,7 @@ fn get_next_token(
       let error_token_content = &stream.peek_until_whitespace();
       let error_loc = stream.consume_and_get_loc(start, error_token_content.len());
       error_set.report_syntax_error(&error_loc, "Invalid token.");
-      return Option::Some(Token(
-        error_loc,
-        TokenContent::Error(rc_string(error_token_content.clone())),
-      ));
+      Option::Some(Token(error_loc, TokenContent::Error(rc_string(error_token_content.clone()))))
     }
   }
 }
@@ -519,16 +514,15 @@ pub(super) fn lex_source_program(
               error_set.report_syntax_error(&loc, "Not a 32-bit integer.");
             } else if i64 == maxi32_plus1 {
               let prev_index = tokens.len() - 1;
-              match tokens.get(prev_index) {
-                Option::Some(Token(prev_loc, TokenContent::Operator(TokenOp::MINUS))) => {
-                  // Merge - and MAX_INT_PLUS_ONE into MIN_INT
-                  tokens[prev_index] = Token(
-                    prev_loc.union(&loc),
-                    TokenContent::IntLiteral(rc_string(format!("-{}", s))),
-                  );
-                  continue;
-                }
-                _ => {}
+              if let Option::Some(Token(prev_loc, TokenContent::Operator(TokenOp::MINUS))) =
+                tokens.get(prev_index)
+              {
+                // Merge - and MAX_INT_PLUS_ONE into MIN_INT
+                tokens[prev_index] = Token(
+                  prev_loc.union(&loc),
+                  TokenContent::IntLiteral(rc_string(format!("-{}", s))),
+                );
+                continue;
               }
             }
           }

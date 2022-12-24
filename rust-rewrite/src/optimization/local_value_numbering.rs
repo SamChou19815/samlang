@@ -11,7 +11,7 @@ type LocalContext = LocalStackedContext<Str>;
 impl LocalContext {
   fn lvn_bind_var(&mut self, name: &Str, value: Str) {
     let value = self.get(name).cloned().unwrap_or(value);
-    assert!(self.insert(&name, value));
+    assert!(self.insert(name, value));
   }
 
   fn lvn_bind_value(&mut self, value: &BindedValue, name: Str) {

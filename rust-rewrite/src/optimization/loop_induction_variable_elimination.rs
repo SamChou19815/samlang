@@ -66,7 +66,7 @@ fn stmt_uses_basic_induction_var(
 }
 
 fn stmts_uses_basic_induction_var(
-  stmts: &Vec<Statement>,
+  stmts: &[Statement],
   v: &BasicInductionVariableWithLoopGuard,
 ) -> bool {
   stmts.iter().any(|stmt| stmt_uses_basic_induction_var(stmt, v))

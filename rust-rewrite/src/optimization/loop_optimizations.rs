@@ -26,7 +26,7 @@ fn expand_optimizable_while_loop(
   let basic_induction_variable_with_loop_guard_value_collector = allocator.alloc_loop_temp();
   let break_value = if let Some((_, _, e)) = &break_collector { e } else { &ZERO };
   let mut useful_used_set = HashSet::from([basic_induction_variable_with_loop_guard.name.clone()]);
-  dead_code_elimination::collect_use_from_expression(&break_value, &mut useful_used_set);
+  dead_code_elimination::collect_use_from_expression(break_value, &mut useful_used_set);
   for v in &loop_variables_that_are_not_basic_induction_variables {
     dead_code_elimination::collect_use_from_expression(&v.loop_value, &mut useful_used_set);
   }

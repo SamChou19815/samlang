@@ -23,7 +23,7 @@ impl Deref for Str {
   type Target = String;
 
   fn deref(&self) -> &Self::Target {
-    &*self.0
+    &self.0
   }
 }
 
@@ -39,7 +39,7 @@ pub(crate) fn rc_string(s: String) -> Str {
 
 #[inline(always)]
 fn byte_digit_to_char(byte: u8) -> char {
-  let u = if byte < 10 { '0' as u8 + byte } else { 'a' as u8 + byte - 10 };
+  let u = if byte < 10 { b'0' + byte } else { b'a' + byte - 10 };
   u as char
 }
 
@@ -70,7 +70,7 @@ impl<V: Clone> LocalStackedContext<V> {
 
   pub(crate) fn get(&mut self, name: &Str) -> Option<&V> {
     let closest_stack_value = self.local_values_stack.last().unwrap().get(name);
-    if let Some(_) = closest_stack_value {
+    if closest_stack_value.is_some() {
       return closest_stack_value;
     }
     for level in (0..(self.local_values_stack.len() - 1)).rev() {
@@ -82,7 +82,7 @@ impl<V: Clone> LocalStackedContext<V> {
         return Some(v);
       }
     }
-    return None;
+    None
   }
 
   pub(crate) fn insert(&mut self, name: &Str, value: V) -> bool {

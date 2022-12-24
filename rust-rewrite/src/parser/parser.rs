@@ -20,11 +20,11 @@ fn unescape_quotes(source: &str) -> String {
 fn post_process_block_comment(block_comment: &str) -> Str {
   rc_string(
     block_comment
-      .split("\n")
+      .split('\n')
       .into_iter()
       .map(|line| {
         let l = line.trim_start();
-        if l.starts_with("*") {
+        if l.starts_with('*') {
           l.chars().skip(1).collect::<String>().trim().to_string()
         } else {
           l.trim_end().to_string()
@@ -360,7 +360,7 @@ impl<'a> SourceParser<'a> {
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
     }
     InterfaceDeclarationCommon {
-      loc: loc.clone(),
+      loc,
       associated_comments: rc(associated_comments),
       name,
       type_parameters,
@@ -405,7 +405,7 @@ impl<'a> SourceParser<'a> {
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
     }
     InterfaceDeclarationCommon {
-      loc: loc.clone(),
+      loc,
       associated_comments: rc(associated_comments),
       name,
       type_parameters,
@@ -487,7 +487,7 @@ impl<'a> SourceParser<'a> {
       if allow_private {
         is_public = false;
       } else {
-        self.report(&peeked_loc, "Unexpected `private`");
+        self.report(peeked_loc, "Unexpected `private`");
       }
       self.consume();
       peeked = self.peek();
@@ -569,7 +569,7 @@ impl<'a> SourceParser<'a> {
       expr::ExpressionCommon {
         loc: c.loc.clone(),
         associated_comments: rc(associated_comments),
-        type_: c.type_.clone(),
+        type_: c.type_,
       }
     })
   }
@@ -994,7 +994,7 @@ impl<'a> SourceParser<'a> {
             type_: rc(Type::Unknown(Reason::new(loc, None))),
           },
           type_arguments,
-          module_reference: self.resolve_class(&class_name),
+          module_reference: self.resolve_class(class_name),
           class_name: Id {
             loc: peeked_loc.clone(),
             associated_comments: rc(vec![]),
@@ -1014,12 +1014,12 @@ impl<'a> SourceParser<'a> {
       self.consume();
       // () -> ...
       if let Token(_, TokenContent::Operator(TokenOp::RPAREN)) = self.peek() {
-        let mut comments = associated_comments.clone();
+        let mut comments = associated_comments;
         self.consume();
         comments.append(&mut self.collect_preceding_comments());
         self.assert_and_consume_operator(TokenOp::ARROW);
         let body = self.parse_expression();
-        let loc = peeked_loc.union(&body.loc());
+        let loc = peeked_loc.union(body.loc());
         return expr::E::Lambda(expr::Lambda {
           common: expr::ExpressionCommon {
             loc: loc.clone(),
@@ -1082,7 +1082,7 @@ impl<'a> SourceParser<'a> {
           TokenContent::Operator(TokenOp::RPAREN) => {
             self.consume();
             if let Token(_, TokenContent::Operator(TokenOp::ARROW)) = self.peek() {
-              let mut comments = associated_comments.clone();
+              let mut comments = associated_comments;
               comments.append(&mut self.collect_preceding_comments());
               self.consume();
               let body = self.parse_expression();
@@ -1151,9 +1151,9 @@ impl<'a> SourceParser<'a> {
       let loc = peeked_loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
       return expr::E::Block(expr::Block {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: rc(associated_comments),
-          type_: expression.type_().clone(),
+          type_: expression.type_(),
         },
         statements,
         expression: Some(boxed(expression)),
@@ -1162,14 +1162,14 @@ impl<'a> SourceParser<'a> {
 
     // Error case
     self.report(&peeked.0, &format!("Expected: expression, actual: {}", peeked.1.to_string()));
-    return expr::E::Literal(
+    expr::E::Literal(
       expr::ExpressionCommon {
         loc: peeked.0.clone(),
         associated_comments: rc(associated_comments),
         type_: rc(Type::int_type(Reason::new(peeked.0.clone(), None))),
       },
       Literal::Int(0),
-    );
+    )
   }
 
   pub(super) fn parse_statement(&mut self) -> expr::DeclarationStatement {
@@ -1203,7 +1203,7 @@ impl<'a> SourceParser<'a> {
         let (alias, loc) = if let Token(_, TokenContent::Keyword(Keyword::AS)) = s.peek() {
           s.consume();
           let alias = s.parse_lower_id();
-          let loc = (&field_name.loc).union(&alias.loc);
+          let loc = field_name.loc.union(&alias.loc);
           (Some(alias), loc)
         } else {
           (None, field_name.loc.clone())
@@ -1223,7 +1223,7 @@ impl<'a> SourceParser<'a> {
       self.consume();
       return expr::Pattern::Wildcard(peeked_loc.clone());
     }
-    expr::Pattern::Id(peeked.0.clone(), self.assert_and_peek_lower_id().1.clone())
+    expr::Pattern::Id(peeked.0.clone(), self.assert_and_peek_lower_id().1)
   }
 
   fn parse_upper_id(&mut self) -> Id {
@@ -1256,14 +1256,14 @@ impl<'a> SourceParser<'a> {
             comments.push(Comment {
               kind: CommentKind::DOC,
               text: post_process_block_comment(
-                &chars[3..(chars.len() - 2)].into_iter().collect::<String>(),
+                &chars[3..(chars.len() - 2)].iter().collect::<String>(),
               ),
             })
           } else {
             comments.push(Comment {
               kind: CommentKind::BLOCK,
               text: post_process_block_comment(
-                &chars[2..(chars.len() - 2)].into_iter().collect::<String>(),
+                &chars[2..(chars.len() - 2)].iter().collect::<String>(),
               ),
             })
           }
@@ -1316,7 +1316,7 @@ impl<'a> SourceParser<'a> {
         let return_type = self.parse_type();
         let location = peeked.0.union(&return_type.get_reason().use_loc);
         rc(Type::Fn(FunctionType {
-          reason: Reason::new(location.clone(), Option::Some(location.clone())),
+          reason: Reason::new(location.clone(), Option::Some(location)),
           argument_types,
           return_type,
         }))
@@ -1339,7 +1339,7 @@ impl<'a> SourceParser<'a> {
         (vec![], identifier.loc.clone())
       };
     IdType {
-      reason: Reason::new(location.clone(), Option::Some(location.clone())),
+      reason: Reason::new(location.clone(), Option::Some(location)),
       module_reference: self.resolve_class(&identifier.name),
       id: identifier.name.clone(),
       type_arguments,

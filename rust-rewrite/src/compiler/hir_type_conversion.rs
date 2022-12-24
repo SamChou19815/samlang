@@ -132,9 +132,9 @@ pub(super) fn collect_used_generic_types(
 ) -> HashSet<Str> {
   let mut collector = HashSet::new();
   for t in &function_type.argument_types {
-    collect_used_generic_types_visitor(t, &generic_types, &mut collector);
+    collect_used_generic_types_visitor(t, generic_types, &mut collector);
   }
-  collect_used_generic_types_visitor(&function_type.return_type, &generic_types, &mut collector);
+  collect_used_generic_types_visitor(&function_type.return_type, generic_types, &mut collector);
   collector
 }
 
@@ -150,7 +150,6 @@ fn solve_type_arguments_visit(
       if id1.type_arguments.is_empty() && generic_type_parameter_set.contains(&id1.name) =>
     {
       solved.insert(id1.name.clone(), t2.clone());
-      return;
     }
     (Type::Id(id1), Type::Id(id2)) => {
       solve_type_arguments_visit_id(generic_type_parameter_set, solved, id1, id2)
@@ -304,7 +303,7 @@ impl TypeLoweringManager {
           type_parameters.iter().map(|it| Type::new_id_str_no_targs(it.clone())).collect_vec();
         let closure_type_definition =
           self.type_synthesizer.synthesize_closure_type(rewritten_function_type, type_parameters);
-        Type::new_id_str(closure_type_definition.identifier.clone(), type_args)
+        Type::new_id_str(closure_type_definition.identifier, type_args)
       }
     }
   }
@@ -314,7 +313,7 @@ impl TypeLoweringManager {
     for t in source_types {
       types.push(self.lower_source_type(t));
     }
-    return types;
+    types
   }
 
   pub(super) fn lower_source_type_definition(
@@ -341,11 +340,11 @@ impl TypeLoweringManager {
 
   pub(super) fn lower_source_function_type_for_toplevel(
     &mut self,
-    argument_types: &Vec<Rc<source::Type>>,
+    argument_types: &[Rc<source::Type>],
     return_type: &source::Type,
   ) -> (Vec<Str>, FunctionType) {
     let function_type = Type::new_fn_unwrapped(
-      argument_types.iter().map(|it| self.lower_source_type(&it)).collect_vec(),
+      argument_types.iter().map(|it| self.lower_source_type(it)).collect_vec(),
       self.lower_source_type(return_type),
     );
     let type_parameters = Vec::from_iter(

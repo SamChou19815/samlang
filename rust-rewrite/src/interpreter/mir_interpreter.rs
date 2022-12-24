@@ -97,7 +97,7 @@ fn eval_expr(mem: &mut Memory, expr: &Expression) -> i32 {
   }
 }
 
-fn eval_arguments(mem: &mut Memory, arguments: &Vec<Expression>) -> Vec<i32> {
+fn eval_arguments(mem: &mut Memory, arguments: &[Expression]) -> Vec<i32> {
   arguments.iter().map(|e| eval_expr(mem, e)).collect()
 }
 
@@ -225,42 +225,39 @@ fn eval_fun_call(
   mem: &mut Memory,
   id_to_functions: &HashMap<i32, &Function>,
   callee: &Expression,
-  arguments: &Vec<Expression>,
+  arguments: &[Expression],
 ) -> i32 {
-  match callee {
-    Expression::Name(s, _) => {
-      let name = s.to_string();
-      if name.eq(&common_names::encoded_fn_name_free()) {
-        let argument_vs = eval_arguments(mem, arguments);
-        assert!(argument_vs.len() == 1);
-        mem.free(argument_vs[0]);
-        return 0;
-      } else if name.eq(&common_names::encoded_fn_name_string_to_int()) {
-        let argument_vs = eval_arguments(mem, arguments);
-        assert!(argument_vs.len() == 1);
-        return mem.get_string(argument_vs[0]).parse::<i32>().unwrap();
-      } else if name.eq(&common_names::encoded_fn_name_int_to_string()) {
-        let argument_vs = eval_arguments(mem, arguments);
-        assert!(argument_vs.len() == 1);
-        return mem.add_string(argument_vs[0].to_string());
-      } else if name.eq(&common_names::encoded_fn_name_string_concat()) {
-        let argument_vs = eval_arguments(mem, arguments);
-        assert!(argument_vs.len() == 2);
-        let s = format!("{}{}", mem.get_string(argument_vs[0]), mem.get_string(argument_vs[1]));
-        return mem.add_string(s);
-      } else if name.eq(&common_names::encoded_fn_name_println()) {
-        let argument_vs = eval_arguments(mem, arguments);
-        assert!(argument_vs.len() == 1);
-        let s = mem.get_string(argument_vs[0]).clone();
-        mem.println_collector.push(s);
-        return 0;
-      } else if name.eq(&common_names::encoded_fn_name_panic()) {
-        let argument_vs = eval_arguments(mem, arguments);
-        assert!(argument_vs.len() == 1);
-        panic!("{}", mem.get_string(argument_vs[0]));
-      }
+  if let Expression::Name(s, _) = callee {
+    let name = s.to_string();
+    if name.eq(&common_names::encoded_fn_name_free()) {
+      let argument_vs = eval_arguments(mem, arguments);
+      assert!(argument_vs.len() == 1);
+      mem.free(argument_vs[0]);
+      return 0;
+    } else if name.eq(&common_names::encoded_fn_name_string_to_int()) {
+      let argument_vs = eval_arguments(mem, arguments);
+      assert!(argument_vs.len() == 1);
+      return mem.get_string(argument_vs[0]).parse::<i32>().unwrap();
+    } else if name.eq(&common_names::encoded_fn_name_int_to_string()) {
+      let argument_vs = eval_arguments(mem, arguments);
+      assert!(argument_vs.len() == 1);
+      return mem.add_string(argument_vs[0].to_string());
+    } else if name.eq(&common_names::encoded_fn_name_string_concat()) {
+      let argument_vs = eval_arguments(mem, arguments);
+      assert!(argument_vs.len() == 2);
+      let s = format!("{}{}", mem.get_string(argument_vs[0]), mem.get_string(argument_vs[1]));
+      return mem.add_string(s);
+    } else if name.eq(&common_names::encoded_fn_name_println()) {
+      let argument_vs = eval_arguments(mem, arguments);
+      assert!(argument_vs.len() == 1);
+      let s = mem.get_string(argument_vs[0]).clone();
+      mem.println_collector.push(s);
+      return 0;
+    } else if name.eq(&common_names::encoded_fn_name_panic()) {
+      let argument_vs = eval_arguments(mem, arguments);
+      assert!(argument_vs.len() == 1);
+      panic!("{}", mem.get_string(argument_vs[0]));
     }
-    _ => {}
   }
   let callee_v = eval_expr(mem, callee);
   let argument_vs = eval_arguments(mem, arguments);
@@ -282,13 +279,12 @@ pub(super) fn run(sources: &Sources, main_function: Str) -> String {
   let mut id_to_functions = HashMap::new();
   let mut global_names_to_address = HashMap::new();
   let mut global_name_id = 0;
-  let mut string_id = 0;
 
-  for v in &sources.global_variables {
+  for (string_id, v) in sources.global_variables.iter().enumerate() {
+    let string_id = i32::try_from(string_id).unwrap();
     string_id_to_string.insert(string_id, v.content.to_string());
     Memory::write_int(&mut heap, global_name_id + 4, string_id);
     global_names_to_address.insert(v.name.clone(), global_name_id);
-    string_id += 1;
     global_name_id += 8;
   }
   for f in &sources.functions {
@@ -305,7 +301,7 @@ pub(super) fn run(sources: &Sources, main_function: Str) -> String {
     println_collector: vec![],
   };
 
-  eval_fun_call(&mut mem, &id_to_functions, &Expression::Name(main_function, INT_TYPE), &vec![]);
+  eval_fun_call(&mut mem, &id_to_functions, &Expression::Name(main_function, INT_TYPE), &[]);
 
   let mut sb = String::new();
   for line in mem.println_collector {
