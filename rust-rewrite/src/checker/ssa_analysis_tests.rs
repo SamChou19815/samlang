@@ -49,7 +49,7 @@ mod tests {
   o1 + o3
 }"#;
     let expr = parser::parse_source_expression_from_text(
-      &expr_str,
+      expr_str,
       &ModuleReference::dummy(),
       &mut error_set,
     );
@@ -80,8 +80,8 @@ def_to_use_map:
     assert_eq!(
       vec!["a"],
       cx.get_captured(&Location::from_pos(10, 4, 10, 56))
-        .iter()
-        .map(|(l, _)| l.to_string())
+        .keys()
+        .map(|l| l.to_string())
         .collect::<Vec<_>>()
     );
   }
@@ -113,11 +113,8 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
 class MultiInvalidDef<T, T> {}
 "#;
-    let module = parser::parse_source_module_from_text(
-      &program_str,
-      &ModuleReference::dummy(),
-      &mut error_set,
-    );
+    let module =
+      parser::parse_source_module_from_text(program_str, &ModuleReference::dummy(), &mut error_set);
     assert!(!error_set.has_errors());
     let expected = r#"
 Unbound names: []

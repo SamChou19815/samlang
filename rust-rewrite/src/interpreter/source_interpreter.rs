@@ -10,9 +10,9 @@ use std::{collections::HashMap, ops::Deref};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Value {
-  UnitValue,
-  IntValue(i32),
-  BooleanValue(bool),
+  Unit,
+  Int(i32),
+  Boolean(bool),
   StringPointer(i32),
   ObjectPointer(i32),
   VariantPointer(i32),
@@ -21,7 +21,7 @@ enum Value {
 
 impl Value {
   fn int_value(&self) -> i32 {
-    if let Value::IntValue(i) = self {
+    if let Value::Int(i) = self {
       *i
     } else {
       panic!("Expect int but nope")
@@ -29,7 +29,7 @@ impl Value {
   }
 
   fn bool_value(&self) -> bool {
-    if let Value::BooleanValue(b) = self {
+    if let Value::Boolean(b) = self {
       *b
     } else {
       panic!("Expect bool but nope")
@@ -38,7 +38,7 @@ impl Value {
 
   fn string_value<'a>(&self, cx: &'a InterpretationContext) -> &'a Str {
     if let Value::StringPointer(s) = self {
-      cx.string_heap.get(&s).unwrap()
+      cx.string_heap.get(s).unwrap()
     } else {
       panic!("Expect string but nope")
     }
@@ -46,7 +46,7 @@ impl Value {
 
   fn object_value<'a>(&self, cx: &'a InterpretationContext) -> &'a HashMap<Str, Value> {
     if let Value::ObjectPointer(s) = self {
-      cx.object_heap.get(&s).unwrap()
+      cx.object_heap.get(s).unwrap()
     } else {
       panic!("Expect object but nope")
     }
@@ -54,7 +54,7 @@ impl Value {
 
   fn variant_value<'a>(&self, cx: &'a InterpretationContext) -> &'a (Str, Value) {
     if let Value::VariantPointer(s) = self {
-      cx.variant_heap.get(&s).unwrap()
+      cx.variant_heap.get(s).unwrap()
     } else {
       panic!("Expect object but nope")
     }
@@ -62,7 +62,7 @@ impl Value {
 
   fn function_value<'a>(&self, cx: &'a InterpretationContext) -> &'a FunctionValue {
     if let Value::FunctionPointer(s) = self {
-      cx.function_heap.get(&s).unwrap()
+      cx.function_heap.get(s).unwrap()
     } else {
       panic!("Expect object but nope")
     }
@@ -134,8 +134,8 @@ fn new_fn(cx: &mut InterpretationContext, f: FunctionValue) -> Value {
 fn eval_expr(cx: &mut InterpretationContext, expr: &expr::E) -> Value {
   match expr {
     expr::E::Literal(_, l) => match l {
-      Literal::Bool(b) => Value::BooleanValue(*b),
-      Literal::Int(i) => Value::IntValue(*i),
+      Literal::Bool(b) => Value::Boolean(*b),
+      Literal::Int(i) => Value::Int(*i),
       Literal::String(s) => new_str(cx, s.clone()),
     },
     expr::E::This(_) => *cx.local_values.get(&rcs("this")).expect("Missing `this`"),
@@ -181,8 +181,8 @@ fn eval_expr(cx: &mut InterpretationContext, expr: &expr::E) -> Value {
     expr::E::Unary(e) => {
       let v = eval_expr(cx, &e.argument);
       match e.operator {
-        expr::UnaryOperator::NOT => Value::BooleanValue(!v.bool_value()),
-        expr::UnaryOperator::NEG => Value::IntValue(-v.int_value()),
+        expr::UnaryOperator::NOT => Value::Boolean(!v.bool_value()),
+        expr::UnaryOperator::NEG => Value::Int(-v.int_value()),
       }
     }
     expr::E::Call(e) => {
@@ -212,7 +212,7 @@ fn eval_expr(cx: &mut InterpretationContext, expr: &expr::E) -> Value {
         FunctionImpl::StringToInt => {
           let v = cx.local_values.get(&rcs("v")).cloned().unwrap();
           let s = v.string_value(cx);
-          Value::IntValue(s.parse::<i32>().unwrap())
+          Value::Int(s.parse::<i32>().unwrap())
         }
         FunctionImpl::IntToString => {
           let v = cx.local_values.get(&rcs("v")).unwrap().int_value().to_string();
@@ -222,7 +222,7 @@ fn eval_expr(cx: &mut InterpretationContext, expr: &expr::E) -> Value {
           let v = cx.local_values.get(&rcs("v")).cloned().unwrap();
           let s = v.string_value(cx);
           cx.printed.push(s.to_string());
-          Value::UnitValue
+          Value::Unit
         }
         FunctionImpl::Panic => {
           let v = cx.local_values.get(&rcs("v")).cloned().unwrap();
@@ -234,39 +234,39 @@ fn eval_expr(cx: &mut InterpretationContext, expr: &expr::E) -> Value {
     }
     expr::E::Binary(e) => match e.operator {
       expr::BinaryOperator::MUL => {
-        Value::IntValue(eval_expr(cx, &e.e1).int_value() * eval_expr(cx, &e.e2).int_value())
+        Value::Int(eval_expr(cx, &e.e1).int_value() * eval_expr(cx, &e.e2).int_value())
       }
       expr::BinaryOperator::DIV => {
-        Value::IntValue(eval_expr(cx, &e.e1).int_value() / eval_expr(cx, &e.e2).int_value())
+        Value::Int(eval_expr(cx, &e.e1).int_value() / eval_expr(cx, &e.e2).int_value())
       }
       expr::BinaryOperator::MOD => {
-        Value::IntValue(eval_expr(cx, &e.e1).int_value() % eval_expr(cx, &e.e2).int_value())
+        Value::Int(eval_expr(cx, &e.e1).int_value() % eval_expr(cx, &e.e2).int_value())
       }
       expr::BinaryOperator::PLUS => {
-        Value::IntValue(eval_expr(cx, &e.e1).int_value() + eval_expr(cx, &e.e2).int_value())
+        Value::Int(eval_expr(cx, &e.e1).int_value() + eval_expr(cx, &e.e2).int_value())
       }
       expr::BinaryOperator::MINUS => {
-        Value::IntValue(eval_expr(cx, &e.e1).int_value() - eval_expr(cx, &e.e2).int_value())
+        Value::Int(eval_expr(cx, &e.e1).int_value() - eval_expr(cx, &e.e2).int_value())
       }
       expr::BinaryOperator::LT => {
-        Value::BooleanValue(eval_expr(cx, &e.e1).int_value() < eval_expr(cx, &e.e2).int_value())
+        Value::Boolean(eval_expr(cx, &e.e1).int_value() < eval_expr(cx, &e.e2).int_value())
       }
       expr::BinaryOperator::LE => {
-        Value::BooleanValue(eval_expr(cx, &e.e1).int_value() <= eval_expr(cx, &e.e2).int_value())
+        Value::Boolean(eval_expr(cx, &e.e1).int_value() <= eval_expr(cx, &e.e2).int_value())
       }
       expr::BinaryOperator::GT => {
-        Value::BooleanValue(eval_expr(cx, &e.e1).int_value() > eval_expr(cx, &e.e2).int_value())
+        Value::Boolean(eval_expr(cx, &e.e1).int_value() > eval_expr(cx, &e.e2).int_value())
       }
       expr::BinaryOperator::GE => {
-        Value::BooleanValue(eval_expr(cx, &e.e1).int_value() >= eval_expr(cx, &e.e2).int_value())
+        Value::Boolean(eval_expr(cx, &e.e1).int_value() >= eval_expr(cx, &e.e2).int_value())
       }
-      expr::BinaryOperator::EQ => Value::BooleanValue(eval_expr(cx, &e.e1) == eval_expr(cx, &e.e2)),
-      expr::BinaryOperator::NE => Value::BooleanValue(eval_expr(cx, &e.e1) != eval_expr(cx, &e.e2)),
+      expr::BinaryOperator::EQ => Value::Boolean(eval_expr(cx, &e.e1) == eval_expr(cx, &e.e2)),
+      expr::BinaryOperator::NE => Value::Boolean(eval_expr(cx, &e.e1) != eval_expr(cx, &e.e2)),
       expr::BinaryOperator::AND => {
-        Value::BooleanValue(eval_expr(cx, &e.e1).bool_value() && eval_expr(cx, &e.e2).bool_value())
+        Value::Boolean(eval_expr(cx, &e.e1).bool_value() && eval_expr(cx, &e.e2).bool_value())
       }
       expr::BinaryOperator::OR => {
-        Value::BooleanValue(eval_expr(cx, &e.e1).bool_value() || eval_expr(cx, &e.e2).bool_value())
+        Value::Boolean(eval_expr(cx, &e.e1).bool_value() || eval_expr(cx, &e.e2).bool_value())
       }
       expr::BinaryOperator::CONCAT => {
         let v1 = eval_expr(cx, &e.e1);
@@ -299,9 +299,9 @@ fn eval_expr(cx: &mut InterpretationContext, expr: &expr::E) -> Value {
     }
     expr::E::Lambda(e) => {
       let mut captured = HashMap::new();
-      for (name, _) in &e.captured {
+      for name in e.captured.keys() {
         captured
-          .insert(name.clone(), *cx.local_values.get(&name).expect(&format!("Missing {}", name)));
+          .insert(name.clone(), *cx.local_values.get(name).expect(&format!("Missing {}", name)));
       }
       new_fn(
         cx,
@@ -337,11 +337,8 @@ fn eval_expr(cx: &mut InterpretationContext, expr: &expr::E) -> Value {
           expr::Pattern::Wildcard(_) => {}
         }
       }
-      let v = if let Some(final_expr) = &e.expression {
-        eval_expr(cx, &final_expr)
-      } else {
-        Value::UnitValue
-      };
+      let v =
+        if let Some(final_expr) = &e.expression { eval_expr(cx, final_expr) } else { Value::Unit };
       cx.local_values.pop_scope();
       v
     }
@@ -452,7 +449,7 @@ pub(super) fn run(module: &Module) -> String {
     sb.push_str(&printed);
     sb.push('\n');
   }
-  return sb;
+  sb
 }
 
 #[cfg(test)]
@@ -498,53 +495,53 @@ mod tests {
 
   #[test]
   fn value_tests() {
-    assert!(!format!("{:?}", Value::IntValue(1)).is_empty());
+    assert!(!format!("{:?}", Value::Int(1)).is_empty());
   }
 
   #[should_panic]
   #[test]
   fn value_panic_test_1() {
-    Value::IntValue(1).bool_value();
+    Value::Int(1).bool_value();
   }
 
   #[should_panic]
   #[test]
   fn value_panic_test_2() {
-    Value::BooleanValue(true).int_value();
+    Value::Boolean(true).int_value();
   }
 
   #[should_panic]
   #[test]
   fn value_panic_test_3() {
-    Value::IntValue(1).string_value(&empty_cx());
+    Value::Int(1).string_value(&empty_cx());
   }
 
   #[should_panic]
   #[test]
   fn value_panic_test_4() {
-    Value::IntValue(1).object_value(&empty_cx());
+    Value::Int(1).object_value(&empty_cx());
   }
 
   #[should_panic]
   #[test]
   fn value_panic_test_5() {
-    Value::IntValue(1).variant_value(&empty_cx());
+    Value::Int(1).variant_value(&empty_cx());
   }
 
   #[should_panic]
   #[test]
   fn value_panic_test_6() {
-    Value::IntValue(1).function_value(&empty_cx());
+    Value::Int(1).function_value(&empty_cx());
   }
 
   #[test]
   fn literal_tests() {
     assert_eq!(
-      Value::IntValue(1),
+      Value::Int(1),
       eval_expr_simple(&expr::E::Literal(dummy_expr_common(), Literal::Int(1)))
     );
     assert_eq!(
-      Value::BooleanValue(true),
+      Value::Boolean(true),
       eval_expr_simple(&expr::E::Literal(dummy_expr_common(), Literal::Bool(true)))
     );
     eval_expr_simple(&expr::E::Literal(dummy_expr_common(), Literal::String(rcs("a"))));
@@ -565,13 +562,10 @@ mod tests {
   #[test]
   fn this_variable_passing_tests() {
     let mut cx = empty_cx();
-    cx.local_values.insert(&rcs("a"), Value::IntValue(1));
-    cx.local_values.insert(&rcs("this"), Value::IntValue(1));
-    assert_eq!(Value::IntValue(1), eval_expr(&mut cx, &expr::E::This(dummy_expr_common())));
-    assert_eq!(
-      Value::IntValue(1),
-      eval_expr(&mut cx, &expr::E::Id(dummy_expr_common(), Id::from("a")))
-    );
+    cx.local_values.insert(&rcs("a"), Value::Int(1));
+    cx.local_values.insert(&rcs("this"), Value::Int(1));
+    assert_eq!(Value::Int(1), eval_expr(&mut cx, &expr::E::This(dummy_expr_common())));
+    assert_eq!(Value::Int(1), eval_expr(&mut cx, &expr::E::Id(dummy_expr_common(), Id::from("a"))));
   }
 
   #[should_panic]

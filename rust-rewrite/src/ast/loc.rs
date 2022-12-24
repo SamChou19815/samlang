@@ -49,7 +49,7 @@ impl ModuleReference {
     match &*self.0 {
       ModuleReferenceEnum::Root => "".to_string(),
       ModuleReferenceEnum::Ordinary(parts) => {
-        parts.into_iter().map(|it| it.replace("-", "_")).collect::<Vec<String>>().join("$")
+        parts.iter().map(|it| it.replace('-', "_")).collect::<Vec<String>>().join("$")
       }
     }
   }
@@ -103,11 +103,7 @@ impl Location {
   }
 
   pub(crate) fn to_string_without_file(&self) -> String {
-    format!(
-      "{}-{}",
-      format!("{}:{}", self.start.0 + 1, self.start.1 + 1),
-      format!("{}:{}", self.end.0 + 1, self.end.1 + 1)
-    )
+    format!("{}:{}-{}:{}", self.start.0 + 1, self.start.1 + 1, self.end.0 + 1, self.end.1 + 1)
   }
 }
 

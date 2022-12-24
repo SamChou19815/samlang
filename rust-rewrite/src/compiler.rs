@@ -20,5 +20,5 @@ pub(crate) fn compile_mir_to_wasm(sources: &crate::ast::mir::Sources) -> Vec<u8>
     include_str!("libsam.wat"),
     wasm_lowering::compile_mir_to_wasm(sources).pretty_print()
   );
-  wat::parse_str(&whole_module_string).unwrap()
+  wat::parse_str(whole_module_string).unwrap()
 }

@@ -89,13 +89,11 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
         allocator,
       );
       match (s1_result, s2_result) {
-        (Err(s1), Err(s2)) => {
-          return Err(
-            rest_stmts_iterator
-              .chain(vec![Statement::IfElse { condition, s1, s2, final_assignments }])
-              .collect_vec(),
-          )
-        }
+        (Err(s1), Err(s2)) => Err(
+          rest_stmts_iterator
+            .chain(vec![Statement::IfElse { condition, s1, s2, final_assignments }])
+            .collect_vec(),
+        ),
         (Err(s1), Ok(RewriteResult { stmts, args })) => Ok(RewriteResult {
           stmts: rest_stmts_iterator
             .chain(vec![Statement::SingleIf {

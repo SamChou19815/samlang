@@ -41,11 +41,7 @@ impl Document {
         }
       }
       Document::Nest(indentation, d) => {
-        if let Some(d) = d.flatten() {
-          Some(Document::Nest(*indentation, Rc::new(d)))
-        } else {
-          None
-        }
+        d.flatten().map(|d| Document::Nest(*indentation, Rc::new(d)))
       }
       Document::Text(s) => Some(Document::Text(s.clone())),
       Document::Line => Some(Document::Text(rcs(" "))),
@@ -94,7 +90,7 @@ impl Document {
 
   pub(super) fn line_comment(text: &str) -> Document {
     let mut multiline_docs = vec![Self::Text(rcs("// "))];
-    for word in text.split(" ") {
+    for word in text.split(' ') {
       multiline_docs.push(Self::Union(
         Rc::new(Self::Text(rc_string(format!("{} ", word)))),
         Rc::new(Self::concat(vec![
@@ -113,7 +109,7 @@ impl Document {
   pub(super) fn multiline_comment(starter: &str, text: &str) -> Document {
     let mut multiline_docs =
       vec![Self::Text(rc_string(starter.to_string())), Self::LineHard, Self::Text(rcs(" * "))];
-    for word in text.split(" ") {
+    for word in text.split(' ') {
       multiline_docs.push(Self::Union(
         Rc::new(Self::Text(rc_string(format!("{} ", word)))),
         Rc::new(Self::concat(vec![
@@ -241,7 +237,7 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
   }
 
   let mut post_processed =
-    string_builder.split("\n").into_iter().map(|line| line.trim_end()).join("\n");
+    string_builder.split('\n').into_iter().map(|line| line.trim_end()).join("\n");
   post_processed.push('\n');
   post_processed
 }

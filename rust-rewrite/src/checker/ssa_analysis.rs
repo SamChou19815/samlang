@@ -90,7 +90,7 @@ impl<'a> SsaAnalysisState<'a> {
         self.context.pop_scope();
         // Visit instance methods
         self.context.push_scope();
-        if let Some(_) = type_definition {
+        if type_definition.is_some() {
           self.define_id(&rcs("this"), toplevel.loc());
         }
         for tparam in type_parameters {
@@ -120,7 +120,7 @@ impl<'a> SsaAnalysisState<'a> {
       Toplevel::Interface(d) => {
         for m in &d.members {
           if m.is_method == is_method {
-            self.visit_member_declaration(&m, None);
+            self.visit_member_declaration(m, None);
           }
         }
       }
@@ -157,26 +157,26 @@ impl<'a> SsaAnalysisState<'a> {
       expr::E::Id(_, id) => self.use_id(&id.name, &id.loc),
       expr::E::ClassFn(e) => {
         for targ in &e.type_arguments {
-          self.visit_type(&targ);
+          self.visit_type(targ);
         }
       }
       expr::E::FieldAccess(e) => {
         self.visit_expression(&e.object);
         for targ in &e.type_arguments {
-          self.visit_type(&targ);
+          self.visit_type(targ);
         }
       }
       expr::E::MethodAccess(e) => {
         self.visit_expression(&e.object);
         for targ in &e.type_arguments {
-          self.visit_type(&targ);
+          self.visit_type(targ);
         }
       }
       expr::E::Unary(e) => self.visit_expression(&e.argument),
       expr::E::Call(e) => {
         self.visit_expression(&e.callee);
         for arg in &e.arguments {
-          self.visit_expression(&arg);
+          self.visit_expression(arg);
         }
       }
       expr::E::Binary(e) => {
@@ -263,12 +263,10 @@ impl<'a> SsaAnalysisState<'a> {
   }
 
   fn define_id(&mut self, name: &Str, loc: &Location) {
-    if !self.context.insert(name, loc.clone()) {
-      if !self.invalid_defines.contains(loc) {
-        // Never error on an illegal define twice, since they might be visited multiple times.
-        self.error_set.report_collision_error(loc, name);
-        self.invalid_defines.insert(loc.clone());
-      }
+    if !self.context.insert(name, loc.clone()) && !self.invalid_defines.contains(loc) {
+      // Never error on an illegal define twice, since they might be visited multiple times.
+      self.error_set.report_collision_error(loc, name);
+      self.invalid_defines.insert(loc.clone());
     }
   }
 
@@ -277,7 +275,7 @@ impl<'a> SsaAnalysisState<'a> {
       self.use_define_map.insert(loc.clone(), definition.clone());
     } else {
       self.unbound_names.insert(name.clone());
-      self.error_set.report_unresolved_name_error(loc, &name);
+      self.error_set.report_unresolved_name_error(loc, name);
     }
   }
 }
@@ -296,7 +294,7 @@ impl ToString for SsaAnalysisResult {
       "Unbound names: [{}]\nInvalid defines: [{}]\nLambda Capture Locs: [{}]\ndef_to_use_map:\n{}",
       self.unbound_names.iter().map(Str::to_string).join(", "),
       self.invalid_defines.iter().map(Location::to_string_without_file).sorted().join(", "),
-      self.lambda_captures.iter().map(|(k, _)| k.to_string_without_file()).sorted().join(", "),
+      self.lambda_captures.keys().map(|k| k.to_string_without_file()).sorted().join(", "),
       self
         .def_to_use_map
         .iter()

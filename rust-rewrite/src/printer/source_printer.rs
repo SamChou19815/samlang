@@ -9,7 +9,7 @@ use crate::{
 use itertools::Itertools;
 use std::rc::Rc;
 
-fn comma_sep_list<E, F: Fn(&E) -> Document>(elements: &Vec<E>, doc_creator: F) -> Document {
+fn comma_sep_list<E, F: Fn(&E) -> Document>(elements: &[E], doc_creator: F) -> Document {
   let mut iter = elements.iter().rev();
   if let Some(last) = iter.next() {
     let mut base = doc_creator(last);
@@ -198,12 +198,12 @@ impl expr::E {
           }
         }
         // Safest rule
-        return Document::concat(vec![
+        Document::concat(vec![
           self.create_doc_for_subexpression_considering_precedence_level(&e.e1, true),
           operator_preceding_comments_docs,
           operator_doc,
           self.create_doc_for_subexpression_considering_precedence_level(&e.e2, true),
-        ]);
+        ])
       }
 
       expr::E::Match(e) => {

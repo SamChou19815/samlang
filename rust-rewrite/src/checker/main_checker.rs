@@ -125,21 +125,20 @@ impl<'a> TypingContext<'a> {
     subst_map: &HashMap<Str, Rc<Type>>,
   ) {
     for type_param in type_params {
-      match (&type_param.bound, subst_map.get(&type_param.name)) {
-        (Some(bound), Some(solved_type_argument)) => {
-          let substituted_bound =
-            perform_type_substitution(&Type::Id(bound.deref().clone()), subst_map);
-          if !solved_type_argument.is_the_same_type(&substituted_bound)
-            && !self.is_subtype(solved_type_argument, &substituted_bound)
-          {
-            self.error_set.report_unexpected_subtype_error(
-              &solved_type_argument.get_reason().use_loc,
-              substituted_bound.deref(),
-              solved_type_argument.deref(),
-            );
-          }
+      if let (Some(bound), Some(solved_type_argument)) =
+        (&type_param.bound, subst_map.get(&type_param.name))
+      {
+        let substituted_bound =
+          perform_type_substitution(&Type::Id(bound.deref().clone()), subst_map);
+        if !solved_type_argument.is_the_same_type(&substituted_bound)
+          && !self.is_subtype(solved_type_argument, &substituted_bound)
+        {
+          self.error_set.report_unexpected_subtype_error(
+            &solved_type_argument.get_reason().use_loc,
+            substituted_bound.deref(),
+            solved_type_argument.deref(),
+          );
         }
-        _ => {}
       }
     }
   }
@@ -426,7 +425,7 @@ impl<'a> TypingContext<'a> {
           &checked_expression.type_().pretty_print(),
         );
         let unknown_type = rc(
-          self.type_meet(hint, &Type::Unknown(Reason::new((&expression.common.loc).clone(), None))),
+          self.type_meet(hint, &Type::Unknown(Reason::new(expression.common.loc.clone(), None))),
         );
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(unknown_type),
@@ -558,7 +557,7 @@ impl<'a> TypingContext<'a> {
         object: Box::new(checked_expression),
         method_name: expression.field_name,
       });
-      return (partially_checked_expr, method_type_info.type_parameters.clone());
+      (partially_checked_expr, method_type_info.type_parameters.clone())
     } else {
       // Now it should be checked as field access.
       if !expression.type_arguments.is_empty() {
@@ -597,13 +596,13 @@ impl<'a> TypingContext<'a> {
           field_name: expression.field_name,
           field_order: order as i32,
         });
-        return (partially_checked_expr, vec![]);
+        (partially_checked_expr, vec![])
       } else {
         self
           .error_set
           .report_unresolved_name_error(&expression.field_name.loc, &expression.field_name.name);
         let unknown_type = rc(
-          self.type_meet(hint, &Type::Unknown(Reason::new((&expression.common.loc).clone(), None))),
+          self.type_meet(hint, &Type::Unknown(Reason::new(expression.common.loc.clone(), None))),
         );
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(rc(self.type_meet(hint, &unknown_type))),
@@ -612,7 +611,7 @@ impl<'a> TypingContext<'a> {
           field_name: expression.field_name,
           field_order: expression.field_order,
         });
-        return (partially_checked_expr, vec![]);
+        (partially_checked_expr, vec![])
       }
     }
   }
@@ -849,11 +848,11 @@ impl<'a> TypingContext<'a> {
       }),
       e => e,
     };
-    return expr::E::Call(expr::Call {
+    expr::E::Call(expr::Call {
       common: expression.common.with_new_type(rc(solved_return_type)),
       callee: Box::new(callee_with_patched_targs),
       arguments: checked_arguments,
-    });
+    })
   }
 
   fn check_binary(&mut self, expression: expr::Binary, hint: Option<&Type>) -> expr::E {
@@ -959,8 +958,8 @@ impl<'a> TypingContext<'a> {
       }
     };
     let (variant_names, variant_mappings) =
-      self.resolve_type_definition(&checked_matched_id_type, false);
-    let mut unused_mappings = variant_mappings.clone();
+      self.resolve_type_definition(checked_matched_id_type, false);
+    let mut unused_mappings = variant_mappings;
     let mut checked_cases = vec![];
     let mut matching_list_types = vec![];
     for expr::VariantPatternToExpression { loc, tag, tag_order: _, data_variable, body } in
@@ -990,12 +989,12 @@ impl<'a> TypingContext<'a> {
       });
     }
     if !unused_mappings.is_empty() {
-      let missing_tags = unused_mappings.iter().map(|(k, _)| k.to_string()).sorted().collect_vec();
+      let missing_tags = unused_mappings.keys().map(|k| k.to_string()).sorted().collect_vec();
       self.error_set.report_non_exhausive_match_error(&expression.common.loc, missing_tags);
     }
     let final_type = matching_list_types.iter().fold(
       rc(self.type_meet(hint, &Type::Unknown(Reason::new(expression.common.loc.clone(), None)))),
-      |general, specific| rc(self.type_meet(Some(&general), &specific)),
+      |general, specific| rc(self.type_meet(Some(&general), specific)),
     );
     expr::E::Match(expr::Match {
       common: expression.common.with_new_type(final_type),
@@ -1022,7 +1021,7 @@ impl<'a> TypingContext<'a> {
               } else {
                 rc(Type::Unknown(Reason::new(parameter.name.loc.clone(), None)))
               };
-              let type_ = rc(self.type_meet(Some(&parameter_hint), &annot));
+              let type_ = rc(self.type_meet(Some(parameter_hint), &annot));
               self.local_typing_context.write(parameter.name.loc.clone(), type_.clone());
               type_
             })
@@ -1153,7 +1152,7 @@ impl<'a> TypingContext<'a> {
         expr::Pattern::Object(pattern_loc, checked_destructured_names)
       }
       expr::Pattern::Id(loc, name) => {
-        self.local_typing_context.write(loc.clone(), checked_assigned_expr_type.clone());
+        self.local_typing_context.write(loc.clone(), checked_assigned_expr_type);
         expr::Pattern::Id(loc, name)
       }
       expr::Pattern::Wildcard(loc) => expr::Pattern::Wildcard(loc),
@@ -1176,8 +1175,7 @@ impl<'a> TypingContext<'a> {
     }
     let statements =
       expression.statements.into_iter().map(|it| self.check_statement(it)).collect_vec();
-    let checked_final_expr =
-      if let Some(e) = expression.expression { Some(Box::new(self.check(*e, hint))) } else { None };
+    let checked_final_expr = expression.expression.map(|e| Box::new(self.check(*e, hint)));
     let type_ = if let Some(e) = &checked_final_expr {
       e.type_()
     } else {
@@ -1200,7 +1198,7 @@ pub(super) fn type_check_expression(
 }
 
 fn type_params_to_type_params_sig(
-  type_parameters: &Vec<TypeParameter>,
+  type_parameters: &[TypeParameter],
 ) -> Vec<TypeParameterSignature> {
   type_parameters
     .iter()
@@ -1233,7 +1231,7 @@ fn validate_signature_types(
     cx.validate_type_instantiation_allow_abstract_types(&Type::Id(node.deref().clone()));
   }
   if let Some(type_definition) = toplevel.type_definition() {
-    for (_, field_type) in &type_definition.mappings {
+    for field_type in type_definition.mappings.values() {
       cx.validate_type_instantiation_strictly(&field_type.type_);
     }
   }

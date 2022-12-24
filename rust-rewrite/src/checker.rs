@@ -37,7 +37,7 @@ pub(crate) fn type_check_sources(
     build_global_typing_context(&sources, error_set, create_builtin_module_typing_context());
   let mut checked_sources = HashMap::new();
   for (_, module) in sources.iter() {
-    check_undefined_imports_error(&sources, error_set, &module);
+    check_undefined_imports_error(&sources, error_set, module);
   }
   for (module_reference, module) in sources {
     let checked = type_check_module(&module_reference, module, &global_cx, error_set);

@@ -71,9 +71,9 @@ pub(super) fn optimize(
   } = &optimizable_while_loop.basic_induction_variable_with_loop_guard else {
     return None;
   };
-  if optimizable_while_loop.loop_variables_that_are_not_basic_induction_variables.len() > 0
-    || optimizable_while_loop.derived_induction_variables.len() > 0
-    || optimizable_while_loop.statements.len() > 0
+  if !optimizable_while_loop.loop_variables_that_are_not_basic_induction_variables.is_empty()
+    || !optimizable_while_loop.derived_induction_variables.is_empty()
+    || !optimizable_while_loop.statements.is_empty()
   {
     return None;
   }

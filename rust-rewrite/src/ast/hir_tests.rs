@@ -51,10 +51,10 @@ mod tests {
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       type_arguments: vec![INT_TYPE],
     })
-    .as_callee();
-    Expression::var_name("", INT_TYPE).as_callee();
-    Expression::StringName(rcs("")).as_callee();
-    ZERO.as_callee();
+    .to_callee();
+    Expression::var_name("", INT_TYPE).to_callee();
+    Expression::StringName(rcs("")).to_callee();
+    ZERO.to_callee();
     Expression::var_name("a", INT_TYPE).as_function_name();
     Statement::Break(ZERO).as_binary();
     Statement::binary("name", Operator::DIV, ZERO, ZERO).clone().as_binary();

@@ -82,12 +82,10 @@ fn recursive_compute_interface_members_chain(
         .type_parameters
         .iter()
         .map(|tparam| {
-          let bound = match &tparam.bound {
-            None => None,
-            Some(t) => {
-              Some(rc(perform_id_type_substitution_asserting_id_type_return(t, &subst_mapping)))
-            }
-          };
+          let bound = tparam
+            .bound
+            .as_ref()
+            .map(|t| rc(perform_id_type_substitution_asserting_id_type_return(t, &subst_mapping)));
           TypeParameterSignature { name: tparam.name.clone(), bound }
         })
         .collect_vec();
@@ -245,15 +243,15 @@ fn get_fully_inlined_multiple_interface_context(
     super_types_acc.extend(inlined.super_types.into_iter());
   }
 
-  return InterfaceInliningCollector {
+  InterfaceInliningCollector {
     functions: rc(functions_acc),
     methods: rc(methods_acc),
     super_types: super_types_acc,
-  };
+  }
 }
 
 fn ast_type_params_to_sig_type_params(
-  type_parameters: &Vec<TypeParameter>,
+  type_parameters: &[TypeParameter],
 ) -> Vec<TypeParameterSignature> {
   type_parameters
     .iter()
@@ -298,7 +296,7 @@ fn check_module_member_interface_conformance(
   error_set: &mut ErrorSet,
 ) -> InterfaceInliningCollector {
   let fully_inlined_interface_context = get_fully_inlined_multiple_interface_context(
-    &actual_interface.extends_or_implements_nodes(),
+    actual_interface.extends_or_implements_nodes(),
     unoptimized_global_typing_context,
     error_set,
   );
@@ -310,20 +308,20 @@ fn check_module_member_interface_conformance(
   let mut missing_members = vec![];
   for (name, expected_member) in fully_inlined_interface_context.functions.iter() {
     if let Some(actual_member) = actual_members_map.get(name) {
-      check_class_member_conformance_with_ast(false, expected_member, &actual_member, error_set);
+      check_class_member_conformance_with_ast(false, expected_member, actual_member, error_set);
     } else {
       missing_members.push(name.to_string());
     }
   }
   for (name, expected_member) in fully_inlined_interface_context.methods.iter() {
     if let Some(actual_member) = actual_members_map.get(name) {
-      check_class_member_conformance_with_ast(true, expected_member, &actual_member, error_set);
+      check_class_member_conformance_with_ast(true, expected_member, actual_member, error_set);
     } else {
       missing_members.push(name.to_string());
     }
   }
   if actual_interface.is_class() && !missing_members.is_empty() {
-    error_set.report_missing_definition_error(&actual_interface.loc(), missing_members);
+    error_set.report_missing_definition_error(actual_interface.loc(), missing_members);
   }
 
   fully_inlined_interface_context
@@ -743,10 +741,10 @@ mod tests {
     let mut fun_strs = vec![];
     let mut met_strs = vec![];
     for (name, info) in collector.functions.iter() {
-      fun_strs.push(info.pretty_print(&name));
+      fun_strs.push(info.pretty_print(name));
     }
     for (name, info) in collector.methods.iter() {
-      met_strs.push(info.pretty_print(&name));
+      met_strs.push(info.pretty_print(name));
     }
     fun_strs.sort();
     met_strs.sort();

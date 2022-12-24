@@ -41,7 +41,7 @@ impl LocalTypingContext {
     let mut map = HashMap::new();
     for (name, loc) in self.ssa_analysis_result.lambda_captures.get(lambda_loc).unwrap() {
       let first_letter = name.chars().next().unwrap();
-      if 'A' <= first_letter && first_letter <= 'Z' {
+      if ('A'..='Z').contains(&first_letter) {
         // We captured a type id, which we don't care.
         continue;
       }
@@ -150,11 +150,11 @@ impl ToString for InterfaceTypingContext {
     ));
     lines.push("functions:".to_string());
     for (name, info) in self.functions.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}: {}", name.to_string(), info.to_string()));
+      lines.push(format!("{}: {}", name, info.to_string()));
     }
     lines.push("methods:".to_string());
     for (name, info) in self.methods.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}: {}", name.to_string(), info.to_string()));
+      lines.push(format!("{}: {}", name, info.to_string()));
     }
     lines.join("\n")
   }
@@ -193,11 +193,11 @@ impl ToString for ModuleTypingContext {
     let mut lines = vec![];
     lines.push("type_definitions:".to_string());
     for (name, def) in self.type_definitions.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}:[{}]", name.to_string(), def.to_string()));
+      lines.push(format!("{}:[{}]", name, def.to_string()));
     }
     lines.push("\ninterfaces:".to_string());
     for (name, i) in self.interfaces.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}: {}", name.to_string(), i.to_string()));
+      lines.push(format!("{}: {}", name, i.to_string()));
     }
     lines.join("\n")
   }
@@ -331,16 +331,14 @@ impl<'a> TypingContext<'a> {
       self.available_type_parameters.iter().find(|it| it.name == *identifier)
     {
       if let Some(relevant_tparam_bound) = &relevant_type_parameter.bound {
-        if let Some(interface_context) = self
+        self
           .dangerously_get_information_without_considering_type_parameters_in_bound(
             &relevant_tparam_bound.module_reference,
             &relevant_tparam_bound.id,
           )
-        {
-          Some(rc(instantiate_interface_context(interface_context, &relevant_tparam_bound)))
-        } else {
-          None
-        }
+          .map(|interface_context| {
+            rc(instantiate_interface_context(interface_context, relevant_tparam_bound))
+          })
       } else {
         Some(rc(InterfaceTypingContext {
           is_concrete: true,
@@ -389,7 +387,7 @@ impl<'a> TypingContext<'a> {
         }
       }
     }
-    return false;
+    false
   }
 
   pub(crate) fn validate_type_instantiation_allow_abstract_types(&mut self, t: &Type) {

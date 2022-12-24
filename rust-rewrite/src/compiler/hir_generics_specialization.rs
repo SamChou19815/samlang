@@ -46,7 +46,7 @@ impl Rewriter {
 
   fn rewrite_stmts(
     &mut self,
-    stmts: &Vec<Statement>,
+    stmts: &[Statement],
     generics_replacement_map: &HashMap<Str, Type>,
   ) -> Vec<Statement> {
     stmts.iter().map(|stmt| self.rewrite_stmt(stmt, generics_replacement_map)).collect_vec()
@@ -135,7 +135,7 @@ impl Rewriter {
 
   fn rewrite_expressions(
     &mut self,
-    expressions: &Vec<Expression>,
+    expressions: &[Expression],
     generics_replacement_map: &HashMap<Str, Type>,
   ) -> Vec<Expression> {
     expressions.iter().map(|e| self.rewrite_expr(e, generics_replacement_map)).collect_vec()
@@ -168,7 +168,7 @@ impl Rewriter {
     generics_replacement_map: &HashMap<Str, Type>,
   ) -> FunctionName {
     let fn_type = self.rewrite_fn_type(type_, generics_replacement_map);
-    let rewritten_targs = self.rewrite_types(&type_arguments, generics_replacement_map);
+    let rewritten_targs = self.rewrite_types(type_arguments, generics_replacement_map);
     let rewritten_name =
       self.rewrite_fn_name(name, fn_type.clone(), rewritten_targs, generics_replacement_map);
     FunctionName { name: rewritten_name, type_: fn_type, type_arguments: vec![] }
@@ -183,7 +183,7 @@ impl Rewriter {
   ) -> Str {
     if original_name.starts_with("$GENERICS$_") {
       let to_be_splitted = original_name.chars().skip("$GENERICS$_".len()).collect::<String>();
-      let mut splitted = to_be_splitted.split("$");
+      let mut splitted = to_be_splitted.split('$');
       let generic_class_name = rc_string(splitted.next().unwrap().to_string());
       let fn_name = splitted.next().unwrap().to_string();
       let replacement_class =
@@ -221,7 +221,7 @@ impl Rewriter {
 
   fn rewrite_types(
     &mut self,
-    types: &Vec<Type>,
+    types: &[Type],
     generics_replacement_map: &HashMap<Str, Type>,
   ) -> Vec<Type> {
     types.iter().map(|t| self.rewrite_type(t, generics_replacement_map)).collect_vec()
@@ -253,7 +253,7 @@ impl Rewriter {
       &concrete_type.name,
       &concrete_type.type_arguments,
     ));
-    if let None = self.specialized_type_definitions.get(&encoded_name) {
+    if self.specialized_type_definitions.get(&encoded_name).is_none() {
       if let Some(type_def) = self.original_type_defs.get(&concrete_type.name).cloned() {
         let solved_targs_replacement_map: HashMap<Str, Type> = type_def
           .type_parameters
@@ -291,7 +291,7 @@ impl Rewriter {
             mappings: rewritten_mappings,
           }),
         );
-      } else if let None = self.specialized_closure_definitions.get(&encoded_name) {
+      } else if self.specialized_closure_definitions.get(&encoded_name).is_none() {
         let closure_def = self
           .original_closure_defs
           .get(&concrete_type.name)
@@ -337,7 +337,7 @@ impl Rewriter {
       }
     }
     self.specialized_id_type_mappings.insert(encoded_name.clone(), concrete_type.name);
-    return Type::new_id_str_no_targs(encoded_name);
+    Type::new_id_str_no_targs(encoded_name)
   }
 
   fn rewrite_fn_type(
@@ -648,9 +648,9 @@ sources.mains = [main]
             body: vec![Statement::StructInit {
               struct_variable_name: rcs("v"),
               type_: type_ia.clone().into_id().unwrap(),
-              expression_list: vec![Expression::int(0), Expression::var_name("a", type_a.clone())],
+              expression_list: vec![Expression::int(0), Expression::var_name("a", type_a)],
             }],
-            return_value: Expression::var_name("v", type_ia.clone()),
+            return_value: Expression::var_name("v", type_ia),
           },
           Function {
             name: rcs("creatorIB"),
@@ -660,9 +660,9 @@ sources.mains = [main]
             body: vec![Statement::StructInit {
               struct_variable_name: rcs("v"),
               type_: type_ib.clone().into_id().unwrap(),
-              expression_list: vec![Expression::int(1), Expression::var_name("b", type_b.clone())],
+              expression_list: vec![Expression::int(1), Expression::var_name("b", type_b)],
             }],
-            return_value: Expression::var_name("v", type_ib.clone()),
+            return_value: Expression::var_name("v", type_ib),
           },
           Function {
             name: rcs("main"),
@@ -728,7 +728,7 @@ sources.mains = [main]
                 Statement::IndexedAccess {
                   name: rcs("v1"),
                   type_: INT_TYPE,
-                  pointer_expression: Expression::var_name("a", type_i.clone()),
+                  pointer_expression: Expression::var_name("a", type_i),
                   index: 0,
                 },
               ],
@@ -751,7 +751,7 @@ sources.mains = [main]
                 Statement::IndexedAccess {
                   name: rcs("v2"),
                   type_: INT_TYPE,
-                  pointer_expression: Expression::var_name("j", type_j.clone()),
+                  pointer_expression: Expression::var_name("j", type_j),
                   index: 0,
                 },
                 Statement::ClosureInit {

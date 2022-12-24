@@ -147,10 +147,10 @@ impl<'a> LoweringManager<'a> {
           let e = self.lower_expr(e);
           vec![
             wasm::Instruction::Inline(self.set(&c, e)),
-            wasm::Instruction::UnconditionalJump(exit_label.clone()),
+            wasm::Instruction::UnconditionalJump(exit_label),
           ]
         } else {
-          vec![wasm::Instruction::UnconditionalJump(exit_label.clone())]
+          vec![wasm::Instruction::UnconditionalJump(exit_label)]
         }
       }
       mir::Statement::While { loop_variables, statements, break_collector } => {

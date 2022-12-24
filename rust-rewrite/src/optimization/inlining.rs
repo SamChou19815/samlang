@@ -176,7 +176,7 @@ fn inline_rewrite_expr(expr: &Expression, cx: &mut LocalValueContextForOptimizat
 }
 
 fn inline_rewrite_expressions(
-  expressions: &Vec<Expression>,
+  expressions: &[Expression],
   cx: &mut LocalValueContextForOptimization,
 ) -> Vec<Expression> {
   expressions.iter().map(|e| inline_rewrite_expr(e, cx)).collect()
@@ -185,7 +185,7 @@ fn inline_rewrite_expressions(
 fn inline_rewrite_callee(callee: &Callee, cx: &mut LocalValueContextForOptimization) -> Callee {
   match callee {
     Callee::FunctionName(n) => Callee::FunctionName(n.clone()),
-    Callee::Variable(v) => inline_rewrite_variable(v, cx).as_callee().unwrap(),
+    Callee::Variable(v) => inline_rewrite_variable(v, cx).to_callee().unwrap(),
   }
 }
 
@@ -196,7 +196,7 @@ fn bind_with_mangled_name(
   type_: &Type,
 ) -> Str {
   let mangled_name = rc_string(format!("{}{}", prefix, name));
-  cx.checked_bind(&name, Expression::var_name_str(mangled_name.clone(), type_.clone()));
+  cx.checked_bind(name, Expression::var_name_str(mangled_name.clone(), type_.clone()));
   mangled_name
 }
 
@@ -224,11 +224,8 @@ fn inline_rewrite_stmt(
     Statement::Call { callee, arguments, return_type, return_collector } => {
       let callee = inline_rewrite_callee(callee, cx);
       let arguments = inline_rewrite_expressions(arguments, cx);
-      let return_collector = if let Some(c) = return_collector {
-        Some(bind_with_mangled_name(cx, prefix, c, return_type))
-      } else {
-        None
-      };
+      let return_collector =
+        return_collector.as_ref().map(|c| bind_with_mangled_name(cx, prefix, c, return_type));
       Statement::Call { callee, arguments, return_type: return_type.clone(), return_collector }
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
@@ -263,7 +260,7 @@ fn inline_rewrite_stmt(
     Statement::Break(e) => Statement::Break(inline_rewrite_expr(e, cx)),
     Statement::While { loop_variables, statements, break_collector } => {
       let loop_variables_with_all_but_loop_value_rewritten = loop_variables
-        .into_iter()
+        .iter()
         .map(|GenenalLoopVariable { name, type_, initial_value, loop_value }| GenenalLoopVariable {
           name: bind_with_mangled_name(cx, prefix, name, type_),
           type_: type_.clone(),
@@ -322,7 +319,7 @@ fn inline_rewrite_stmt(
 fn inline_rewrite_stmts(
   cx: &mut LocalValueContextForOptimization,
   prefix: &str,
-  stmts: &Vec<Statement>,
+  stmts: &[Statement],
 ) -> Vec<Statement> {
   stmts.iter().map(|s| inline_rewrite_stmt(cx, prefix, s)).collect()
 }
@@ -421,7 +418,7 @@ fn perform_inline_rewrite_on_function_stmt(
 }
 
 fn perform_inline_rewrite_on_function_stmts(
-  statements: &Vec<Statement>,
+  statements: &[Statement],
   current_fn_name: &Str,
   functions_that_can_be_inlined: &HashSet<Str>,
   all_functions: &HashMap<Str, Function>,
