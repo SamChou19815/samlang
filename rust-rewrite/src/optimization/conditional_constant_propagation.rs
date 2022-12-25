@@ -111,7 +111,7 @@ fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression
 fn optimize_callee(value_cx: &mut LocalStackedContext<Expression>, callee: &Callee) -> Callee {
   match callee {
     Callee::FunctionName(n) => Callee::FunctionName(n.clone()),
-    Callee::Variable(v) => optimize_variable_name(value_cx, v).to_callee().unwrap(),
+    Callee::Variable(v) => optimize_variable_name(value_cx, v).convert_to_callee().unwrap(),
   }
 }
 
@@ -400,7 +400,7 @@ fn optimize_stmts(
   'outer: for stmt in stmts {
     let optimized = optimize_stmt(stmt, value_cx, index_access_cx, binary_expr_cx);
     for s in optimized {
-      let is_break = if let Statement::Break(_) = &s { true } else { false };
+      let is_break = matches!(&s, Statement::Break(_));
       collector.push(s);
       if is_break {
         break 'outer;

@@ -32,6 +32,9 @@ jobs:
       - name: Format Check
         working-directory: rust-rewrite
         run: cargo fmt --all -- --check
+      - name: Lint
+        working-directory: rust-rewrite
+        run: cargo lint
       - name: Test
         working-directory: rust-rewrite
         run: cargo tc

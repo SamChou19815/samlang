@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 mod lexer;
 mod lexer_test;
-mod parser;
+mod source_parser;
 
 fn builtin_classes() -> HashSet<String> {
   let mut set = HashSet::new();
@@ -19,7 +19,7 @@ pub(crate) fn parse_source_module_from_text(
   module_reference: &ModuleReference,
   error_set: &mut ErrorSet,
 ) -> source::Module {
-  let mut parser = parser::SourceParser::new(
+  let mut parser = source_parser::SourceParser::new(
     lexer::lex_source_program(text, module_reference.clone(), error_set),
     error_set,
     module_reference,
@@ -33,7 +33,7 @@ pub(crate) fn parse_source_expression_from_text(
   module_reference: &ModuleReference,
   error_set: &mut ErrorSet,
 ) -> source::expr::E {
-  let mut parser = parser::SourceParser::new(
+  let mut parser = source_parser::SourceParser::new(
     lexer::lex_source_program(text, module_reference.clone(), error_set),
     error_set,
     module_reference,

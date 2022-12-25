@@ -33,7 +33,7 @@ impl ResourceAllocator {
   }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq)]
 pub(super) struct IndexAccessBindedValue {
   pub(super) type_: Type,
   pub(super) pointer_expression: Expression,
@@ -46,7 +46,7 @@ impl ToString for IndexAccessBindedValue {
   }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq)]
 pub(super) struct BinaryBindedValue {
   pub(super) operator: Operator,
   pub(super) e1: Expression,
@@ -59,7 +59,7 @@ impl ToString for BinaryBindedValue {
   }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq)]
 pub(super) enum BindedValue {
   IndexedAccess(IndexAccessBindedValue),
   Binary(BinaryBindedValue),
@@ -126,7 +126,6 @@ mod tests {
   use super::*;
   use crate::common::rcs;
   use pretty_assertions::assert_eq;
-  use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
   #[test]
   fn boilterplate() {
@@ -143,7 +142,6 @@ mod tests {
     assert!(single_if_or_null(ZERO, false, vec![]).is_empty());
     assert!(!single_if_or_null(ZERO, false, vec![Statement::Break(ZERO)]).is_empty());
 
-    let mut hasher = DefaultHasher::new();
     let bv1 = BindedValue::IndexedAccess(IndexAccessBindedValue {
       type_: INT_TYPE,
       pointer_expression: ZERO,
@@ -153,8 +151,6 @@ mod tests {
       BindedValue::Binary(BinaryBindedValue { operator: Operator::PLUS, e1: ZERO, e2: ZERO });
     assert_eq!("0[0]", bv1.clone().to_string());
     assert_eq!("(0+0)", bv2.clone().to_string());
-    bv1.hash(&mut hasher);
-    bv2.hash(&mut hasher);
     assert!(bv1.eq(&bv1));
     assert!(bv2.eq(&bv2));
   }

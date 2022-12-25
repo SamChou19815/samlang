@@ -152,12 +152,11 @@ fn eval_expr(cx: &mut InterpretationContext, expr: &expr::E) -> Value {
         .expect(&format!("Missing function: {}", e.fn_name.name))
         .clone(),
     ),
-    expr::E::FieldAccess(e) => eval_expr(cx, &e.object)
+    expr::E::FieldAccess(e) => *eval_expr(cx, &e.object)
       .object_value(cx)
       .get(&e.field_name.name)
       .expect(&format!("Missing field: {}", e.field_name.name))
-      .deref()
-      .clone(),
+      .deref(),
     expr::E::MethodAccess(e) => {
       let obj_type = e.object.type_();
       let id_type = obj_type.as_id().unwrap();
