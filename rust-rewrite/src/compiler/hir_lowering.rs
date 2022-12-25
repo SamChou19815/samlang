@@ -1110,123 +1110,6 @@ fn lower_constructors(
   functions
 }
 
-fn compile_source_fn(
-  module_reference: &ModuleReference,
-  class_name: &Str,
-  member_name: &Str,
-  type_definition_mapping: &HashMap<Str, hir::TypeDefinition>,
-  member_tparams: Vec<Str>,
-  member_params: &[source::AnnotatedId],
-  member_return_type: &source::Type,
-  member_body: &source::expr::E,
-  type_lowering_manager: &mut TypeLoweringManager,
-  string_manager: &mut StringManager,
-) -> (Vec<hir::Function>, hir::Function) {
-  let encoded_name = rc_string(common_names::encode_function_name_globally(
-    module_reference,
-    class_name,
-    member_name,
-  ));
-  let tparams_set: HashSet<_> = member_tparams.into_iter().collect();
-  let tparams = tparams_set.iter().sorted().cloned().collect_vec();
-  type_lowering_manager.generic_types = tparams_set;
-  let main_function_parameter_with_types = member_params
-    .iter()
-    .map(|id| (id.name.name.clone(), type_lowering_manager.lower_source_type(&id.annotation)))
-    .collect_vec();
-  let LoweringResultWithSyntheticFunctions {
-    statements,
-    expression,
-    synthetic_functions: mut compiled_functions_to_add,
-  } = lower_source_expression(
-    module_reference,
-    &encoded_name,
-    main_function_parameter_with_types.clone(),
-    type_definition_mapping,
-    type_lowering_manager,
-    string_manager,
-    member_body,
-  );
-  let main_fn_type = hir::Type::new_fn_unwrapped(
-    main_function_parameter_with_types.iter().map(|(_, t)| t.clone()).collect_vec(),
-    type_lowering_manager.lower_source_type(member_return_type),
-  );
-  let original_f = hir::Function {
-    name: encoded_name,
-    parameters: main_function_parameter_with_types.into_iter().map(|(n, _)| n).collect_vec(),
-    type_parameters: tparams,
-    type_: main_fn_type,
-    body: statements,
-    return_value: expression,
-  };
-  let companion = companion_fn_with_cx(&original_f);
-  compiled_functions_to_add.push(original_f);
-  (compiled_functions_to_add, companion)
-}
-
-fn compile_source_method(
-  module_reference: &ModuleReference,
-  class_name: &Str,
-  member_name: &Str,
-  type_definition_mapping: &HashMap<Str, hir::TypeDefinition>,
-  class_tparams: Vec<Str>,
-  member_tparams: Vec<Str>,
-  member_params: &[source::AnnotatedId],
-  member_return_type: &source::Type,
-  member_body: &source::expr::E,
-  type_lowering_manager: &mut TypeLoweringManager,
-  string_manager: &mut StringManager,
-) -> Vec<hir::Function> {
-  let encoded_name = rc_string(common_names::encode_function_name_globally(
-    module_reference,
-    class_name,
-    member_name,
-  ));
-  let tparams = class_tparams.iter().cloned().chain(member_tparams).sorted().collect_vec();
-  let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
-  type_lowering_manager.generic_types = tparams_set;
-  let main_function_parameter_with_types = vec![(
-    rcs("_this"),
-    hir::Type::new_id_str(
-      rc_string(encode_samlang_type(module_reference, class_name)),
-      class_tparams.into_iter().map(Type::new_id_str_no_targs).collect_vec(),
-    ),
-  )]
-  .into_iter()
-  .chain(
-    member_params
-      .iter()
-      .map(|id| (id.name.name.clone(), type_lowering_manager.lower_source_type(&id.annotation))),
-  )
-  .collect_vec();
-  let LoweringResultWithSyntheticFunctions {
-    statements,
-    expression,
-    synthetic_functions: mut compiled_functions_to_add,
-  } = lower_source_expression(
-    module_reference,
-    &encoded_name,
-    main_function_parameter_with_types.clone(),
-    type_definition_mapping,
-    type_lowering_manager,
-    string_manager,
-    member_body,
-  );
-  let main_fn_type = hir::Type::new_fn_unwrapped(
-    main_function_parameter_with_types.iter().map(|(_, t)| t.clone()).collect_vec(),
-    type_lowering_manager.lower_source_type(member_return_type),
-  );
-  compiled_functions_to_add.push(hir::Function {
-    name: encoded_name,
-    parameters: main_function_parameter_with_types.into_iter().map(|(n, _)| n).collect_vec(),
-    type_parameters: tparams,
-    type_: main_fn_type,
-    body: statements,
-    return_value: expression,
-  });
-  compiled_functions_to_add
-}
-
 fn lower_tparams(type_parameters: &[source::TypeParameter]) -> Vec<Str> {
   type_parameters.iter().map(|it| it.name.name.clone()).collect_vec()
 }
@@ -1275,34 +1158,106 @@ fn compile_sources_with_generics_preserved(
           &type_def_mappings,
         ));
         for member in &c.members {
+          let encoded_name = rc_string(common_names::encode_function_name_globally(
+            module_reference,
+            &c.name.name,
+            &member.decl.name.name,
+          ));
+          let class_tparams = lower_tparams(&c.type_parameters);
           if member.decl.is_method {
-            compiled_functions.append(&mut compile_source_method(
+            let tparams = class_tparams
+              .iter()
+              .cloned()
+              .chain(lower_tparams(&member.decl.type_parameters))
+              .sorted()
+              .collect_vec();
+            let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
+            type_lowering_manager.generic_types = tparams_set;
+            let main_function_parameter_with_types = vec![(
+              rcs("_this"),
+              hir::Type::new_id_str(
+                rc_string(encode_samlang_type(module_reference, &c.name.name)),
+                class_tparams.into_iter().map(Type::new_id_str_no_targs).collect_vec(),
+              ),
+            )]
+            .into_iter()
+            .chain(member.decl.parameters.iter().map(|id| {
+              (id.name.name.clone(), type_lowering_manager.lower_source_type(&id.annotation))
+            }))
+            .collect_vec();
+            let LoweringResultWithSyntheticFunctions {
+              statements,
+              expression,
+              synthetic_functions: mut compiled_functions_to_add,
+            } = lower_source_expression(
               module_reference,
-              &c.name.name,
-              &member.decl.name.name,
+              &encoded_name,
+              main_function_parameter_with_types.clone(),
               &type_def_mappings,
-              lower_tparams(&c.type_parameters),
-              lower_tparams(&member.decl.type_parameters),
-              &member.decl.parameters,
-              &member.decl.type_.return_type,
-              &member.body,
               &mut type_lowering_manager,
               &mut string_manager,
-            ));
-          } else {
-            let (mut fs, companion) = compile_source_fn(
-              module_reference,
-              &c.name.name,
-              &member.decl.name.name,
-              &type_def_mappings,
-              lower_tparams(&member.decl.type_parameters),
-              &member.decl.parameters,
-              &member.decl.type_.return_type,
               &member.body,
-              &mut type_lowering_manager,
-              &mut string_manager,
             );
-            compiled_functions.append(&mut fs);
+            let main_fn_type = hir::Type::new_fn_unwrapped(
+              main_function_parameter_with_types.iter().map(|(_, t)| t.clone()).collect_vec(),
+              type_lowering_manager.lower_source_type(&member.decl.type_.return_type),
+            );
+            compiled_functions_to_add.push(hir::Function {
+              name: encoded_name,
+              parameters: main_function_parameter_with_types
+                .into_iter()
+                .map(|(n, _)| n)
+                .collect_vec(),
+              type_parameters: tparams,
+              type_: main_fn_type,
+              body: statements,
+              return_value: expression,
+            });
+            compiled_functions.append(&mut compiled_functions_to_add);
+          } else {
+            let tparams_set: HashSet<_> =
+              lower_tparams(&member.decl.type_parameters).into_iter().collect();
+            let tparams = tparams_set.iter().sorted().cloned().collect_vec();
+            type_lowering_manager.generic_types = tparams_set;
+            let main_function_parameter_with_types = member
+              .decl
+              .parameters
+              .iter()
+              .map(|id| {
+                (id.name.name.clone(), type_lowering_manager.lower_source_type(&id.annotation))
+              })
+              .collect_vec();
+            let LoweringResultWithSyntheticFunctions {
+              statements,
+              expression,
+              synthetic_functions: mut compiled_functions_to_add,
+            } = lower_source_expression(
+              module_reference,
+              &encoded_name,
+              main_function_parameter_with_types.clone(),
+              &type_def_mappings,
+              &mut type_lowering_manager,
+              &mut string_manager,
+              &member.body,
+            );
+            let main_fn_type = hir::Type::new_fn_unwrapped(
+              main_function_parameter_with_types.iter().map(|(_, t)| t.clone()).collect_vec(),
+              type_lowering_manager.lower_source_type(&member.decl.type_.return_type),
+            );
+            let original_f = hir::Function {
+              name: encoded_name,
+              parameters: main_function_parameter_with_types
+                .into_iter()
+                .map(|(n, _)| n)
+                .collect_vec(),
+              type_parameters: tparams,
+              type_: main_fn_type,
+              body: statements,
+              return_value: expression,
+            };
+            let companion = companion_fn_with_cx(&original_f);
+            compiled_functions.append(&mut compiled_functions_to_add);
+            compiled_functions.push(original_f);
             compiled_functions_with_added_dummy_cx.push(companion);
           }
         }

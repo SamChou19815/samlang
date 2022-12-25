@@ -185,7 +185,7 @@ fn inline_rewrite_expressions(
 fn inline_rewrite_callee(callee: &Callee, cx: &mut LocalValueContextForOptimization) -> Callee {
   match callee {
     Callee::FunctionName(n) => Callee::FunctionName(n.clone()),
-    Callee::Variable(v) => inline_rewrite_variable(v, cx).to_callee().unwrap(),
+    Callee::Variable(v) => inline_rewrite_variable(v, cx).convert_to_callee().unwrap(),
   }
 }
 

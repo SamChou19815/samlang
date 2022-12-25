@@ -23,8 +23,8 @@ fn analyze_number_of_iterations_to_break_less_than_guard(
     return None;
   }
   let difference = guarded_value - initial_guard_value;
-  let count = difference / guard_increment_amount
-    + (if difference % guard_increment_amount == 0 { 0 } else { 1 });
+  let count =
+    difference / guard_increment_amount + ((difference % guard_increment_amount != 0) as i32);
   Some(count)
 }
 

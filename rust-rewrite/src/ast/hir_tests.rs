@@ -51,10 +51,10 @@ mod tests {
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       type_arguments: vec![INT_TYPE],
     })
-    .to_callee();
-    Expression::var_name("", INT_TYPE).to_callee();
-    Expression::StringName(rcs("")).to_callee();
-    ZERO.to_callee();
+    .convert_to_callee();
+    Expression::var_name("", INT_TYPE).convert_to_callee();
+    Expression::StringName(rcs("")).convert_to_callee();
+    ZERO.convert_to_callee();
     Expression::var_name("a", INT_TYPE).as_function_name();
     Statement::Break(ZERO).as_binary();
     Statement::binary("name", Operator::DIV, ZERO, ZERO).clone().as_binary();
@@ -99,14 +99,8 @@ mod tests {
       ))
     ));
     let mut hasher = DefaultHasher::new();
-    Expression::var_name(
-      "a",
-      Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")])),
-    )
-    .hash(&mut hasher);
     Operator::DIV.hash(&mut hasher);
     Statement::binary_flexible_unwrapped(rcs(""), Operator::DIV, ZERO, ZERO);
-    FunctionName::new("", Type::new_fn_unwrapped(vec![], INT_TYPE)).hash(&mut hasher);
   }
 
   #[test]

@@ -1,9 +1,9 @@
 use crate::common::{rcs, Str};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
-use std::cmp::Ordering;
+use std::{cmp::Ordering, hash::Hash};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PrimitiveType {
   Bool,
   Int,
@@ -20,7 +20,7 @@ impl ToString for PrimitiveType {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct IdType {
   pub(crate) name: Str,
   pub(crate) type_arguments: Vec<Type>,
@@ -40,7 +40,7 @@ impl IdType {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FunctionType {
   pub(crate) argument_types: Vec<Type>,
   pub(crate) return_type: Box<Type>,
@@ -56,7 +56,7 @@ impl FunctionType {
   }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, EnumAsInner)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
 pub(crate) enum Type {
   Primitive(PrimitiveType),
   Id(IdType),
@@ -206,7 +206,7 @@ impl ToString for Operator {
   }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub(crate) struct VariableName {
   pub(crate) name: Str,
   pub(crate) type_: Type,
@@ -222,7 +222,7 @@ impl VariableName {
   }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub(crate) struct FunctionName {
   pub(crate) name: Str,
   pub(crate) type_: FunctionType,
@@ -247,7 +247,7 @@ impl FunctionName {
   }
 }
 
-#[derive(Debug, Clone, Hash, EnumAsInner)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Expression {
   IntLiteral(i32, /* is_int */ bool),
   StringName(Str),
@@ -329,7 +329,7 @@ impl Expression {
     }
   }
 
-  pub(crate) fn to_callee(self) -> Option<Callee> {
+  pub(crate) fn convert_to_callee(self) -> Option<Callee> {
     match self {
       Expression::IntLiteral(_, _) | Expression::StringName(_) => None,
       Expression::FunctionName(n) => Some(Callee::FunctionName(n)),

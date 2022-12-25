@@ -112,7 +112,7 @@ fn get_other_functions_used_by_given_function(function: &Function) -> (HashSet<S
 
 fn analyze_used_function_names_and_type_names(
   functions: &Vec<Function>,
-  entry_points: &Vec<Str>,
+  entry_points: &[Str],
 ) -> (HashSet<Str>, HashSet<Str>) {
   let mut used_functions_map = HashMap::new();
   for f in functions {
@@ -120,7 +120,7 @@ fn analyze_used_function_names_and_type_names(
   }
 
   let mut used_names: HashSet<_> = entry_points.iter().cloned().collect();
-  let mut stack = entry_points.clone();
+  let mut stack = entry_points.iter().cloned().collect_vec();
   while !stack.is_empty() {
     let fn_name = stack.pop().unwrap();
     if let Some((used_by_this_function, _)) = used_functions_map.get(&fn_name) {

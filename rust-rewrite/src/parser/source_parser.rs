@@ -349,13 +349,10 @@ impl<'a> SourceParser<'a> {
     let mut members = vec![];
     if !self.peeked_class_or_interface_start() {
       self.assert_and_consume_operator(TokenOp::LBRACE);
-      loop {
-        match self.peek().1 {
-          TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) => {
-            members.push(self.parse_class_member_definition());
-          }
-          _ => break,
-        }
+      while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
+        self.peek().1
+      {
+        members.push(self.parse_class_member_definition());
       }
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
     }
@@ -394,13 +391,10 @@ impl<'a> SourceParser<'a> {
     let mut members = vec![];
     if let TokenContent::Operator(TokenOp::LBRACE) = self.peek().1 {
       self.consume();
-      loop {
-        match self.peek().1 {
-          TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) => {
-            members.push(self.parse_class_member_declaration());
-          }
-          _ => break,
-        }
+      while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
+        self.peek().1
+      {
+        members.push(self.parse_class_member_declaration());
       }
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
     }
@@ -457,10 +451,7 @@ impl<'a> SourceParser<'a> {
   }
 
   fn peeked_class_or_interface_start(&mut self) -> bool {
-    match self.peek().1 {
-      TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE) => true,
-      _ => false,
-    }
+    matches!(self.peek().1, TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE))
   }
 
   pub(super) fn parse_class_member_definition(&mut self) -> ClassMemberDefinition {

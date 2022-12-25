@@ -498,7 +498,7 @@ pub(super) fn lex_source_program(
   let mut stream = char_stream::CharacterStream::new(module_reference, source);
   let mut tokens: Vec<Token> = vec![];
   let mut known_sorted_operators = all::<TokenOp>().collect::<Vec<_>>();
-  known_sorted_operators.sort_by(|a, b| b.to_string().len().cmp(&a.to_string().len()));
+  known_sorted_operators.sort_by_key(|op| -(op.to_string().len() as i64));
 
   loop {
     match get_next_token(&mut stream, error_set, &known_sorted_operators) {

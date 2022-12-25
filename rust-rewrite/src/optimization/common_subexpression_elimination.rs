@@ -6,11 +6,11 @@ use super::{
 };
 use crate::ast::hir::{Binary, Function, Statement};
 use itertools::Itertools;
-use std::{collections::HashSet, vec};
+use std::{collections::BTreeSet, vec};
 
 fn intersection_of(
-  set1: HashSet<BindedValue>,
-  others: Vec<HashSet<BindedValue>>,
+  set1: BTreeSet<BindedValue>,
+  others: Vec<BTreeSet<BindedValue>>,
 ) -> Vec<BindedValue> {
   set1.into_iter().filter(|e| others.iter().all(|it| it.contains(e))).sorted().collect()
 }
@@ -34,7 +34,7 @@ fn produce_hoisted_stmt(allocator: &mut ResourceAllocator, value: BindedValue) -
 fn optimize_stmt(
   stmt: Statement,
   allocator: &mut ResourceAllocator,
-  set: &mut HashSet<BindedValue>,
+  set: &mut BTreeSet<BindedValue>,
 ) -> Vec<Statement> {
   match stmt {
     // handle similar optimization in loop-invariant code motion for while
@@ -84,8 +84,8 @@ fn optimize_stmt(
 fn optimize_stmts(
   stmts: Vec<Statement>,
   allocator: &mut ResourceAllocator,
-) -> (Vec<Statement>, HashSet<BindedValue>) {
-  let mut set = HashSet::new();
+) -> (Vec<Statement>, BTreeSet<BindedValue>) {
+  let mut set = BTreeSet::new();
   let mut collector = vec![];
   for stmt in stmts.into_iter().rev() {
     collector.append(&mut optimize_stmt(stmt, allocator, &mut set));
