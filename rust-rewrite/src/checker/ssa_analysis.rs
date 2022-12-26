@@ -19,6 +19,7 @@ struct SsaAnalysisState<'a> {
   unbound_names: HashSet<Str>,
   invalid_defines: HashSet<Location>,
   use_define_map: HashMap<Location, Location>,
+  def_locs: HashSet<Location>,
   lambda_captures: HashMap<Location, HashMap<Str, Location>>,
   context: LocalStackedContext<Location>,
   error_set: &'a mut ErrorSet,
@@ -30,6 +31,7 @@ impl<'a> SsaAnalysisState<'a> {
       unbound_names: HashSet::new(),
       invalid_defines: HashSet::new(),
       use_define_map: HashMap::new(),
+      def_locs: HashSet::new(),
       lambda_captures: HashMap::new(),
       context: LocalStackedContext::new(),
       error_set,
@@ -268,6 +270,7 @@ impl<'a> SsaAnalysisState<'a> {
       self.error_set.report_collision_error(loc, name);
       self.invalid_defines.insert(loc.clone());
     }
+    self.def_locs.insert(loc.clone());
   }
 
   fn use_id(&mut self, name: &Str, loc: &Location) {
@@ -280,12 +283,12 @@ impl<'a> SsaAnalysisState<'a> {
   }
 }
 
-pub(super) struct SsaAnalysisResult {
-  pub(super) unbound_names: HashSet<Str>,
-  pub(super) invalid_defines: HashSet<Location>,
-  pub(super) use_define_map: HashMap<Location, Location>,
-  pub(super) def_to_use_map: HashMap<Location, Vec<Location>>,
-  pub(super) lambda_captures: HashMap<Location, HashMap<Str, Location>>,
+pub(crate) struct SsaAnalysisResult {
+  pub(crate) unbound_names: HashSet<Str>,
+  pub(crate) invalid_defines: HashSet<Location>,
+  pub(crate) use_define_map: HashMap<Location, Location>,
+  pub(crate) def_to_use_map: HashMap<Location, Vec<Location>>,
+  pub(crate) lambda_captures: HashMap<Location, HashMap<Str, Location>>,
 }
 
 impl ToString for SsaAnalysisResult {
@@ -312,12 +315,11 @@ impl ToString for SsaAnalysisResult {
 impl SsaAnalysisResult {
   fn from(state: SsaAnalysisState) -> SsaAnalysisResult {
     let mut def_to_use_map: HashMap<Location, Vec<Location>> = HashMap::new();
+    for loc in state.def_locs {
+      def_to_use_map.insert(loc.clone(), vec![loc]);
+    }
     for (use_loc, def_loc) in &state.use_define_map {
-      if let Some(uses) = def_to_use_map.get_mut(def_loc) {
-        uses.push(use_loc.clone());
-      } else {
-        def_to_use_map.insert(def_loc.clone(), vec![use_loc.clone()]);
-      }
+      def_to_use_map.get_mut(def_loc).unwrap().push(use_loc.clone());
     }
     SsaAnalysisResult {
       unbound_names: state.unbound_names,
@@ -338,7 +340,7 @@ pub(super) fn perform_ssa_analysis_on_expression(
   SsaAnalysisResult::from(state)
 }
 
-pub(super) fn perform_ssa_analysis_on_module(
+pub(crate) fn perform_ssa_analysis_on_module(
   module: &Module,
   error_set: &mut ErrorSet,
 ) -> SsaAnalysisResult {

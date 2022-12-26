@@ -212,19 +212,19 @@ mod tests {
     // identifier type
     solver_test(
       &builder.int_type(),
-      &&&builder.simple_id_type("T"),
+      &builder.simple_id_type("T"),
       vec![],
       &HashMap::from([("has_error", "true")]),
     );
     solver_test(
       &builder.int_type(),
-      &&builder.general_id_type("T", vec![builder.int_type()]),
+      &builder.general_id_type("T", vec![builder.int_type()]),
       vec![],
       &HashMap::from([("has_error", "true")]),
     );
     solver_test(
-      &&builder.simple_id_type("T"),
-      &&builder.general_id_type("T", vec![builder.int_type()]),
+      &builder.simple_id_type("T"),
+      &builder.general_id_type("T", vec![builder.int_type()]),
       vec![],
       &HashMap::from([("has_error", "true")]),
     );

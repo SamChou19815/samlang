@@ -33,7 +33,6 @@ interface I { function test(): int }
     expect(state.globalTypingContext.size).toBe(2);
     expect(state.expressionLocationLookup).toBeTruthy();
     expect(state.classLocationLookup).toBeTruthy();
-    expect(state.classMemberLocationLookup).toBeTruthy();
     expect(state.getCheckedModule(ModuleReference(["test"]))).toBeTruthy();
     expect(state.getCheckedModule(ModuleReference(["test2"]))).toBeUndefined();
 

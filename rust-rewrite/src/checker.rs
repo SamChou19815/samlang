@@ -1,7 +1,6 @@
 use self::{
-  global_typing_context_builder::build_global_typing_context,
-  main_checker::type_check_module,
-  typing_context::{create_builtin_module_typing_context, GlobalTypingContext},
+  global_typing_context_builder::build_global_typing_context, main_checker::type_check_module,
+  typing_context::create_builtin_module_typing_context,
   undefined_imports_checker::check_undefined_imports_error,
 };
 use crate::{
@@ -28,6 +27,9 @@ mod typing_context;
 mod typing_context_tests;
 /** Responsible for checking undefined imports. */
 mod undefined_imports_checker;
+
+pub(crate) use ssa_analysis::{perform_ssa_analysis_on_module, SsaAnalysisResult};
+pub(crate) use typing_context::GlobalTypingContext;
 
 pub(crate) fn type_check_sources(
   sources: HashMap<ModuleReference, Module>,

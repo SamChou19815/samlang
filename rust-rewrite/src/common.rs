@@ -123,7 +123,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(rcs("foo").clone() < rcs("zuck"));
+    assert!(rcs("foo") < rcs("zuck"));
     assert!(rcs("foo").cmp(&rcs("zuck")).is_lt());
     assert!(rcs("foo").partial_cmp(&rcs("zuck")).is_some());
     assert!(rcs("foo") == rcs("foo"));

@@ -738,13 +738,13 @@ mod tests {
     };
     let builder = source::test_builder::create();
 
-    let (tparams1, f1) = manager
-      .lower_source_function_type_for_toplevel(&vec![builder.int_type()], &builder.bool_type());
+    let (tparams1, f1) =
+      manager.lower_source_function_type_for_toplevel(&[builder.int_type()], &builder.bool_type());
     assert!(tparams1.is_empty());
     assert_eq!("(int) -> bool", f1.pretty_print());
 
     let (tparams2, f2) = manager.lower_source_function_type_for_toplevel(
-      &vec![builder.fun_type(vec![builder.int_type()], builder.bool_type())],
+      &[builder.fun_type(vec![builder.int_type()], builder.bool_type())],
       &builder.bool_type(),
     );
     assert!(tparams2.is_empty());

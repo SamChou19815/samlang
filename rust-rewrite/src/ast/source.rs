@@ -7,7 +7,7 @@ use enum_as_inner::EnumAsInner;
 use itertools::join;
 use std::{collections::HashMap, rc::Rc};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) enum CommentKind {
   LINE,
   BLOCK,
@@ -612,6 +612,7 @@ impl TypeParameter {
   }
 }
 
+#[derive(Clone)]
 pub(crate) struct ClassMemberDeclaration {
   pub(crate) loc: Location,
   pub(crate) associated_comments: Rc<Vec<Comment>>,
@@ -628,6 +629,7 @@ pub(crate) struct ClassMemberDefinition {
   pub(crate) body: expr::E,
 }
 
+#[derive(Clone)]
 pub(crate) struct InterfaceDeclarationCommon<D, M> {
   pub(crate) loc: Location,
   pub(crate) associated_comments: Rc<Vec<Comment>>,
@@ -654,6 +656,7 @@ impl ToString for FieldType {
   }
 }
 
+#[derive(Clone)]
 pub(crate) struct TypeDefinition {
   pub(crate) loc: Location,
   pub(crate) is_object: bool,
@@ -735,6 +738,7 @@ impl Toplevel {
   }
 }
 
+#[derive(Clone)]
 pub(crate) struct ModuleMembersImport {
   pub(crate) loc: Location,
   pub(crate) imported_members: Vec<Id>,
@@ -819,7 +823,7 @@ pub(crate) mod test_builder {
       rc(Type::Fn(FunctionType { reason: self.reason.clone(), argument_types, return_type }))
     }
 
-    pub(crate) fn expr_common<'a>(&self, type_: Rc<Type>) -> expr::ExpressionCommon {
+    pub(crate) fn expr_common(&self, type_: Rc<Type>) -> expr::ExpressionCommon {
       expr::ExpressionCommon { loc: Location::dummy(), associated_comments: rc(vec![]), type_ }
     }
 

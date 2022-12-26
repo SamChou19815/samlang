@@ -236,10 +236,13 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
     }
   }
 
-  let mut post_processed =
-    string_builder.split('\n').into_iter().map(|line| line.trim_end()).join("\n");
-  post_processed.push('\n');
-  post_processed
+  let concat = string_builder.split('\n').into_iter().map(|line| line.trim_end()).join("\n");
+  let post_processed = concat.trim_end();
+  if post_processed.is_empty() {
+    post_processed.to_string()
+  } else {
+    format!("{}\n", post_processed)
+  }
 }
 
 #[cfg(test)]
