@@ -90,7 +90,7 @@ mod tests {
 
   fn assert_expected_errors(sources: HashMap<ModuleReference, Module>, expected_errors: Vec<&str>) {
     let mut error_set = ErrorSet::new();
-    for (_, m) in &sources {
+    for m in sources.values() {
       super::check_undefined_imports_error(&sources, &mut error_set, m);
     }
     assert_eq!(expected_errors, error_set.error_messages());

@@ -34,6 +34,7 @@ mod type_tests {
   #[test]
   fn boilterplate() {
     assert!(PrimitiveTypeKind::Unit == PrimitiveTypeKind::Unit.clone());
+    assert!(CommentKind::DOC == CommentKind::DOC.clone());
 
     let builder = test_builder::create();
     builder.int_type().as_id();
@@ -437,7 +438,7 @@ mod expressions_tests {
 #[cfg(test)]
 mod toplevel_tests {
   use crate::{
-    ast::{source::*, Location, Reason},
+    ast::{source::*, Location, ModuleReference, Reason},
     common::rc,
   };
   use pretty_assertions::assert_eq;
@@ -479,6 +480,51 @@ mod toplevel_tests {
     );
 
     let builder = test_builder::create();
+
+    assert!(InterfaceDeclaration {
+      loc: Location::dummy(),
+      associated_comments: rc(vec![]),
+      name: Id::from(""),
+      type_parameters: vec![],
+      extends_or_implements_nodes: vec![],
+      type_definition: (),
+      members: vec![ClassMemberDeclaration {
+        loc: Location::dummy(),
+        associated_comments: rc(vec![]),
+        is_public: true,
+        is_method: true,
+        name: Id::from(""),
+        type_parameters: rc(vec![]),
+        type_: FunctionType {
+          reason: Reason::dummy(),
+          argument_types: vec![],
+          return_type: builder.int_type()
+        },
+        parameters: rc(vec![])
+      }]
+    }
+    .clone()
+    .type_parameters
+    .is_empty());
+    assert!(ModuleMembersImport {
+      loc: Location::dummy(),
+      imported_members: vec![],
+      imported_module: ModuleReference::dummy(),
+      imported_module_loc: Location::dummy(),
+    }
+    .clone()
+    .imported_members
+    .is_empty());
+    assert!(TypeDefinition {
+      loc: Location::dummy(),
+      is_object: true,
+      names: vec![],
+      mappings: HashMap::new()
+    }
+    .clone()
+    .mappings
+    .is_empty());
+
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: rc(vec![]),

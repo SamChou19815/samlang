@@ -1,35 +1,23 @@
-import {
-  Location,
-  LocationCollections,
-  ModuleReferenceCollections,
-  Sources,
-} from "../ast/common-nodes";
+import { Location, ModuleReferenceCollections, Sources } from "../ast/common-nodes";
 import { Pattern, SamlangExpression, SamlangModule, SourceId } from "../ast/samlang-nodes";
-import { assert, error, LocalStackedContext } from "../utils";
+import performSSAAnalysisOnSamlangModule from "../checker/ssa-analysis";
+import { assert } from "../utils";
 
 export type DefinitionAndUses = {
   readonly definitionLocation: Location;
   readonly useLocations: readonly Location[];
 };
 
-class ScopedDefinitionManager extends LocalStackedContext<Location> {}
-
 export class ModuleScopedVariableDefinitionLookup {
   /** Mapping from definition's range to all the uses' range. */
-  private readonly definitionToUsesTable = LocationCollections.hashMapOf<Location[]>();
+  private readonly definitionToUsesTable;
   /** Mapping from a use to its definition. Here for faster lookup. */
-  private readonly useToDefinitionTable = LocationCollections.hashMapOf<Location>();
+  private readonly useToDefinitionTable;
 
   constructor(samlangModule: SamlangModule) {
-    samlangModule.classes.forEach((samlangClass) => {
-      samlangClass.members.forEach((classMember) => {
-        const manager = new ScopedDefinitionManager();
-        classMember.parameters.forEach(({ name, nameLocation }) => {
-          this.defineVariable(name, nameLocation, manager);
-        });
-        this.collectDefinitionAndUseWithDefinitionManager(classMember.body, manager);
-      });
-    });
+    const { definitionToUsesMap, useDefineMap } = performSSAAnalysisOnSamlangModule(samlangModule);
+    this.definitionToUsesTable = definitionToUsesMap;
+    this.useToDefinitionTable = useDefineMap;
   }
 
   public findAllDefinitionAndUses(location: Location): DefinitionAndUses | null {
@@ -37,100 +25,6 @@ export class ModuleScopedVariableDefinitionLookup {
     const useLocations = this.definitionToUsesTable.get(definitionLocation);
     if (useLocations == null) return null;
     return { definitionLocation, useLocations };
-  }
-
-  private collectDefinitionAndUseWithDefinitionManager(
-    expression: SamlangExpression,
-    manager: ScopedDefinitionManager,
-  ): void {
-    switch (expression.__type__) {
-      case "LiteralExpression":
-      case "ThisExpression":
-      case "ClassMemberExpression":
-        return;
-      case "VariableExpression":
-        this.addDefinitionAndUse(manager.getLocalValueType(expression.name), expression.location);
-        return;
-      case "FieldAccessExpression":
-      case "MethodAccessExpression":
-      case "UnaryExpression":
-        this.collectDefinitionAndUseWithDefinitionManager(expression.expression, manager);
-        return;
-      case "FunctionCallExpression":
-        this.collectDefinitionAndUseWithDefinitionManager(expression.functionExpression, manager);
-        expression.functionArguments.forEach((it) =>
-          this.collectDefinitionAndUseWithDefinitionManager(it, manager),
-        );
-        return;
-      case "BinaryExpression":
-        this.collectDefinitionAndUseWithDefinitionManager(expression.e1, manager);
-        this.collectDefinitionAndUseWithDefinitionManager(expression.e2, manager);
-        return;
-      case "IfElseExpression":
-        this.collectDefinitionAndUseWithDefinitionManager(expression.boolExpression, manager);
-        this.collectDefinitionAndUseWithDefinitionManager(expression.e1, manager);
-        this.collectDefinitionAndUseWithDefinitionManager(expression.e2, manager);
-        return;
-      case "MatchExpression":
-        this.collectDefinitionAndUseWithDefinitionManager(expression.matchedExpression, manager);
-        expression.matchingList.forEach((matchItem) => {
-          manager.withNestedScope(() => {
-            if (matchItem.dataVariable != null) {
-              const [{ name: variable, location }] = matchItem.dataVariable;
-              this.defineVariable(variable, location, manager);
-            }
-            this.collectDefinitionAndUseWithDefinitionManager(matchItem.expression, manager);
-          });
-        });
-        return;
-      case "LambdaExpression":
-        manager.withNestedScope(() => {
-          expression.parameters.forEach(({ name: { name, location } }) =>
-            this.defineVariable(name, location, manager),
-          );
-          this.collectDefinitionAndUseWithDefinitionManager(expression.body, manager);
-        });
-        return;
-      case "StatementBlockExpression":
-        manager.withNestedScope(() => {
-          const { statements, expression: finalExpression } = expression.block;
-          statements.forEach(({ pattern, assignedExpression }) => {
-            this.collectDefinitionAndUseWithDefinitionManager(assignedExpression, manager);
-            switch (pattern.type) {
-              case "ObjectPattern":
-                pattern.destructedNames.forEach((name) => {
-                  if (name.alias == null) {
-                    this.defineVariable(name.fieldName.name, name.fieldName.location, manager);
-                  } else {
-                    const { name: alias, location: aliasLocation } = name.alias;
-                    this.defineVariable(alias, aliasLocation, manager);
-                  }
-                });
-                return;
-              case "VariablePattern":
-                this.defineVariable(pattern.name, pattern.location, manager);
-                return;
-              case "WildCardPattern":
-                return;
-            }
-          });
-          if (finalExpression != null) {
-            this.collectDefinitionAndUseWithDefinitionManager(finalExpression, manager);
-          }
-        });
-        return;
-    }
-  }
-
-  private defineVariable(variable: string, location: Location, manager: ScopedDefinitionManager) {
-    manager.addLocalValueType(variable, location, error);
-    this.definitionToUsesTable.set(location, []);
-  }
-
-  private addDefinitionAndUse(definition: Location | undefined, use: Location) {
-    if (definition == null) return;
-    this.definitionToUsesTable.forceGet(definition).push(use);
-    this.useToDefinitionTable.set(use, definition);
   }
 }
 

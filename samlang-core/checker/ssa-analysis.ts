@@ -23,7 +23,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
     super();
   }
 
-  define = ({ name, location }: SimplifiedSourceIdentifier) =>
+  define = ({ name, location }: SimplifiedSourceIdentifier) => {
     this.addLocalValueType(name, location, () => {
       if (!this.invalidDefines.has(location)) {
         // Never error on an illegal define twice, since they might be visited multiple times.
@@ -31,6 +31,8 @@ class SsaBuilder extends LocalStackedContext<Location> {
       }
       this.invalidDefines.add(location);
     });
+    this.definitionToUsesMap.set(location, [location]);
+  };
 
   defineAll = (ids: readonly SimplifiedSourceIdentifier[]) => ids.forEach(this.define);
 
@@ -41,12 +43,7 @@ class SsaBuilder extends LocalStackedContext<Location> {
       this.errorReporter?.reportUnresolvedNameError(location, name);
     } else {
       this.useDefineMap.set(location, definition);
-      const uses = this.definitionToUsesMap.get(definition);
-      if (uses == null) {
-        this.definitionToUsesMap.set(definition, [location]);
-      } else {
-        uses.push(location);
-      }
+      checkNotNull(this.definitionToUsesMap.get(definition)).push(location);
     }
   };
 

@@ -1,11 +1,9 @@
-use std::collections::HashSet;
-
-use itertools::Itertools;
-
 use crate::ast::{
   source::{ISourceType, Type, TypeParameterSignature},
   Location, ModuleReference,
 };
+use itertools::Itertools;
+use std::collections::HashSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct CompileTimeError(pub(crate) Location, pub(crate) String);

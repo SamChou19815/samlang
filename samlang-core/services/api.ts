@@ -13,7 +13,6 @@ import {
   SamlangIdentifierType,
   SamlangModule,
   SourceClassDefinition,
-  SourceClassMemberDefinition,
 } from "../ast/samlang-nodes";
 import { GlobalTypingContext, MemberTypeInformation, typeCheckSources } from "../checker";
 import type { InterfaceTypingContext } from "../checker/typing-context";
@@ -46,7 +45,6 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
   private _globalTypingContext: GlobalTypingContext = ModuleReferenceCollections.mapOf();
   private _expressionLocationLookup = new LocationLookup<SamlangExpression>();
   private _classLocationLookup = new LocationLookup<string>();
-  private _classMemberLocationLookup = new LocationLookup<SourceClassMemberDefinition>();
   private _variableDefinitionLookup: VariableDefinitionLookup = new VariableDefinitionLookup();
 
   constructor(sourceHandles: readonly (readonly [ModuleReference, string])[]) {
@@ -83,10 +81,6 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
 
   get classLocationLookup(): ReadOnlyLocationLookup<string> {
     return this._classLocationLookup;
-  }
-
-  get classMemberLocationLookup(): ReadOnlyLocationLookup<SourceClassMemberDefinition> {
-    return this._classMemberLocationLookup;
   }
 
   get variableDefinitionLookup(): ReadonlyVariableDefinitionLookup {
@@ -140,9 +134,6 @@ export class LanguageServiceStateImpl implements LanguageServiceState {
       locationLookupBuilder.rebuild(moduleReference, checkedModule);
       checkedModule.classes.forEach((classDefinition) => {
         this._classLocationLookup.set(classDefinition.location, classDefinition.name.name);
-        classDefinition.members.forEach((member) => {
-          this._classMemberLocationLookup.set(member.location, member);
-        });
       });
     });
     this._variableDefinitionLookup.rebuild(checkedModules);
