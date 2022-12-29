@@ -13,7 +13,11 @@ use crate::{
   errors::ErrorSet,
 };
 use itertools::Itertools;
-use std::{collections::HashMap, ops::Deref, rc::Rc};
+use std::{
+  collections::{BTreeMap, HashMap},
+  ops::Deref,
+  rc::Rc,
+};
 
 pub(crate) struct LocalTypingContext {
   type_map: HashMap<Location, Rc<Type>>,
@@ -133,8 +137,8 @@ impl MemberTypeInformation {
 
 pub(crate) struct InterfaceTypingContext {
   pub(crate) is_concrete: bool,
-  pub(crate) functions: Rc<HashMap<Str, Rc<MemberTypeInformation>>>,
-  pub(crate) methods: Rc<HashMap<Str, Rc<MemberTypeInformation>>>,
+  pub(crate) functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  pub(crate) methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
   pub(crate) type_parameters: Vec<TypeParameterSignature>,
   pub(crate) super_types: Vec<IdType>,
 }
@@ -184,8 +188,8 @@ impl ToString for TypeDefinitionTypingContext {
 }
 
 pub(crate) struct ModuleTypingContext {
-  pub(crate) type_definitions: HashMap<Str, TypeDefinitionTypingContext>,
-  pub(crate) interfaces: HashMap<Str, Rc<InterfaceTypingContext>>,
+  pub(crate) type_definitions: BTreeMap<Str, TypeDefinitionTypingContext>,
+  pub(crate) interfaces: BTreeMap<Str, Rc<InterfaceTypingContext>>,
 }
 
 impl ToString for ModuleTypingContext {
@@ -205,15 +209,15 @@ impl ToString for ModuleTypingContext {
 
 pub(crate) fn create_builtin_module_typing_context() -> ModuleTypingContext {
   ModuleTypingContext {
-    type_definitions: HashMap::new(),
-    interfaces: HashMap::from([(
+    type_definitions: BTreeMap::new(),
+    interfaces: BTreeMap::from([(
       rcs("Builtins"),
       rc(InterfaceTypingContext {
         is_concrete: true,
         type_parameters: vec![],
         super_types: vec![],
-        methods: rc(HashMap::new()),
-        functions: rc(HashMap::from([
+        methods: rc(BTreeMap::new()),
+        functions: rc(BTreeMap::from([
           MemberTypeInformation::create_builtin_function(
             "stringToInt",
             vec![rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
@@ -272,7 +276,7 @@ fn instantiate_interface_context(
   {
     subst_map.insert(tparam.name.clone(), targ.clone());
   }
-  let mut methods = HashMap::new();
+  let mut methods = BTreeMap::new();
   for (name, info) in potentially_not_instantiated_interface_information.methods.iter() {
     methods.insert(
       name.clone(),
@@ -342,8 +346,8 @@ impl<'a> TypingContext<'a> {
       } else {
         Some(rc(InterfaceTypingContext {
           is_concrete: true,
-          functions: rc(HashMap::new()),
-          methods: rc(HashMap::new()),
+          functions: rc(BTreeMap::new()),
+          methods: rc(BTreeMap::new()),
           type_parameters: vec![],
           super_types: vec![],
         }))

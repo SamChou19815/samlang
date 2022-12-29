@@ -49,19 +49,23 @@ fn build_expression_lookup_from_expr_single(lookup: &mut LocationLookup<expr::E>
   lookup.set(expr.loc().clone(), expr.clone());
 }
 
-fn build_synthetic_class_name_id(lookup: &mut LocationLookup<expr::E>, class_id: &Id) {
+fn build_synthetic_class_name_id(
+  lookup: &mut LocationLookup<expr::E>,
+  class_id_module_reference: &ModuleReference,
+  class_id: &Id,
+) {
   build_expression_lookup_from_expr_single(
     lookup,
     &expr::E::Id(
       expr::ExpressionCommon {
         loc: class_id.loc.clone(),
-        associated_comments: rc(vec![]),
+        associated_comments: class_id.associated_comments.clone(),
         type_: rc(Type::Id(IdType {
           reason: Reason::new(class_id.loc.clone(), Some(class_id.loc.clone())),
           module_reference: class_id.loc.module_reference.clone(),
           id: rc_string(format!(
             "class {}.{}",
-            class_id.loc.module_reference.to_string(),
+            class_id_module_reference.to_string(),
             class_id.name
           )),
           type_arguments: vec![],
@@ -82,7 +86,7 @@ fn build_expression_lookup_from_expr_recursive(
     }
     expr::E::ClassFn(e) => {
       build_expression_lookup_from_expr_single(lookup, expr);
-      build_synthetic_class_name_id(lookup, &e.class_name);
+      build_synthetic_class_name_id(lookup, &e.module_reference, &e.class_name);
     }
     expr::E::FieldAccess(e) => {
       build_expression_lookup_from_expr_recursive(lookup, &e.object);
@@ -159,7 +163,7 @@ pub(super) fn rebuild_expression_lookup_for_module(
   lookup.purge(module_reference);
   for toplevel in &module.toplevels {
     if let Toplevel::Class(c) = toplevel {
-      build_synthetic_class_name_id(lookup, &c.name);
+      build_synthetic_class_name_id(lookup, module_reference, &c.name);
       for member in &c.members {
         build_expression_lookup_from_expr_single(
           lookup,

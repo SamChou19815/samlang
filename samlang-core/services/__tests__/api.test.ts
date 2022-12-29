@@ -1,4 +1,4 @@
-import { Location, ModuleReference, Position } from "../../ast/common-nodes";
+import { ModuleReference, Position } from "../../ast/common-nodes";
 import createSamlangLanguageService, { LanguageServiceStateImpl } from "../api";
 
 class InsertTextFormats {
@@ -289,50 +289,39 @@ class Test1(val a: int) {
     expect(service.queryDefinitionLocation(moduleReference1, Position(4, 46))).toBeNull();
     expect(service.queryDefinitionLocation(moduleReference1, Position(4, 59))).toBeNull();
     expect(service.queryDefinitionLocation(moduleReference1, Position(4, 60))).toBeNull();
-
-    const actualLocation0 = service.queryDefinitionLocation(moduleReference1, Position(4, 34));
-    expect(actualLocation0?.toString()).toEqual(
-      new Location(moduleReference1, Position(2, 0), Position(14, 1)).toString(),
-    );
-
-    const actualLocation1 = service.queryDefinitionLocation(moduleReference1, Position(4, 40));
-    expect(actualLocation1?.toString()).toEqual(
-      new Location(moduleReference1, Position(4, 2), Position(4, 59)).toString(),
-    );
-
-    const actualLocation21 = service.queryDefinitionLocation(moduleReference1, Position(4, 47));
-    expect(actualLocation21?.toString()).toEqual(
-      new Location(moduleReference1, Position(4, 16), Position(4, 17)).toString(),
-    );
-
-    const actualLocation22 = service.queryDefinitionLocation(moduleReference1, Position(4, 51));
-    expect(actualLocation22?.toString()).toEqual(
-      new Location(moduleReference2, Position(0, 12), Position(0, 44)).toString(),
-    );
-
-    const actualLocation3 = service.queryDefinitionLocation(moduleReference1, Position(5, 30));
-    expect(actualLocation3?.toString()).toEqual(
-      new Location(moduleReference3, Position(0, 0), Position(0, 49)).toString(),
-    );
-
-    const actualLocation4 = service.queryDefinitionLocation(moduleReference1, Position(6, 28));
-    expect(actualLocation4?.toString()).toEqual(
-      new Location(moduleReference1, Position(2, 0), Position(14, 1)).toString(),
-    );
-
     expect(service.queryDefinitionLocation(moduleReference1, Position(6, 35))).toBeNull();
+    expect(service.queryDefinitionLocation(moduleReference1, Position(11, 15))).toBeNull();
 
-    const actualLocation5 = service.queryDefinitionLocation(moduleReference1, Position(6, 41));
-    expect(actualLocation5?.toString()).toEqual(
-      new Location(moduleReference1, Position(2, 11), Position(2, 23)).toString(),
+    expect(service.queryDefinitionLocation(moduleReference1, Position(4, 34))?.toString()).toEqual(
+      "Test1.sam:3:1-15:2",
     );
 
-    const actualLocation6 = service.queryDefinitionLocation(moduleReference1, Position(10, 15));
-    expect(actualLocation6?.toString()).toEqual(
-      new Location(moduleReference1, Position(9, 10), Position(9, 11)).toString(),
+    expect(service.queryDefinitionLocation(moduleReference1, Position(4, 40))?.toString()).toEqual(
+      "Test1.sam:5:3-5:60",
     );
-    const actualLocation7 = service.queryDefinitionLocation(moduleReference1, Position(11, 15));
-    expect(actualLocation7).toBeNull();
+
+    expect(service.queryDefinitionLocation(moduleReference1, Position(4, 47))?.toString()).toEqual(
+      "Test1.sam:5:17-5:18",
+    );
+    expect(service.queryDefinitionLocation(moduleReference1, Position(4, 51))?.toString()).toEqual(
+      "Test2.sam:1:13-1:45",
+    );
+
+    expect(service.queryDefinitionLocation(moduleReference1, Position(5, 30))?.toString()).toEqual(
+      "Test3.sam:1:1-1:50",
+    );
+
+    expect(service.queryDefinitionLocation(moduleReference1, Position(6, 28))?.toString()).toEqual(
+      "Test1.sam:3:1-15:2",
+    );
+
+    expect(service.queryDefinitionLocation(moduleReference1, Position(6, 41))?.toString()).toEqual(
+      "Test1.sam:3:12-3:24",
+    );
+
+    expect(service.queryDefinitionLocation(moduleReference1, Position(10, 15))?.toString()).toEqual(
+      "Test1.sam:10:11-10:12",
+    );
   });
 
   it("LanguageServices.queryDefinitionLocation test 2", () => {

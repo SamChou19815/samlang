@@ -29,7 +29,9 @@ mod typing_context_tests;
 mod undefined_imports_checker;
 
 pub(crate) use ssa_analysis::{perform_ssa_analysis_on_module, SsaAnalysisResult};
-pub(crate) use typing_context::GlobalTypingContext;
+pub(crate) use typing_context::{
+  GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation,
+};
 
 pub(crate) fn type_check_sources(
   sources: HashMap<ModuleReference, Module>,
