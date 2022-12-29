@@ -20,27 +20,27 @@ use crate::{
 };
 use itertools::Itertools;
 use std::{
-  collections::{HashMap, HashSet},
+  collections::{BTreeMap, HashMap, HashSet},
   ops::Deref,
   rc::Rc,
 };
 
 struct UnoptimizedInterfaceTypingContext {
-  functions: Rc<HashMap<Str, Rc<MemberTypeInformation>>>,
-  methods: Rc<HashMap<Str, Rc<MemberTypeInformation>>>,
+  functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
   type_parameters: Vec<TypeParameterSignature>,
   extends_or_implements: Vec<IdType>,
 }
 
 struct UnoptimizedModuleTypingContext {
-  type_definitions: HashMap<Str, TypeDefinitionTypingContext>,
-  interfaces: HashMap<Str, UnoptimizedInterfaceTypingContext>,
-  classes: HashMap<Str, UnoptimizedInterfaceTypingContext>,
+  type_definitions: BTreeMap<Str, TypeDefinitionTypingContext>,
+  interfaces: BTreeMap<Str, UnoptimizedInterfaceTypingContext>,
+  classes: BTreeMap<Str, UnoptimizedInterfaceTypingContext>,
 }
 
 struct InterfaceInliningCollector {
-  functions: Rc<HashMap<Str, Rc<MemberTypeInformation>>>,
-  methods: Rc<HashMap<Str, Rc<MemberTypeInformation>>>,
+  functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
   super_types: Vec<IdType>,
 }
 
@@ -76,7 +76,7 @@ fn recursive_compute_interface_members_chain(
     {
       subst_mapping.insert(tparam.name.clone(), targ.clone());
     }
-    let mut inlined_methods = HashMap::new();
+    let mut inlined_methods = BTreeMap::new();
     for (name, method) in interface_context.methods.iter() {
       let type_parameters = method
         .type_parameters
@@ -131,8 +131,8 @@ fn get_fully_inlined_interface_context(
     &mut visited,
     error_set,
   );
-  let mut functions = HashMap::new();
-  let mut methods = HashMap::new();
+  let mut functions = BTreeMap::new();
+  let mut methods = BTreeMap::new();
   let mut super_types = vec![];
   for one_collector in collector {
     // Shadowing is allowed, as long as type matches.
@@ -189,8 +189,8 @@ fn check_class_member_conformance_with_signature(
 }
 
 fn validate_and_patch_member_map(
-  existing_map: &mut HashMap<Str, Rc<MemberTypeInformation>>,
-  newly_inlined_map: &HashMap<Str, Rc<MemberTypeInformation>>,
+  existing_map: &mut BTreeMap<Str, Rc<MemberTypeInformation>>,
+  newly_inlined_map: &BTreeMap<Str, Rc<MemberTypeInformation>>,
   error_set: &mut ErrorSet,
 ) {
   for (name, info) in newly_inlined_map {
@@ -206,8 +206,8 @@ fn get_fully_inlined_multiple_interface_context(
   unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   error_set: &mut ErrorSet,
 ) -> InterfaceInliningCollector {
-  let mut functions_acc = HashMap::new();
-  let mut methods_acc = HashMap::new();
+  let mut functions_acc = BTreeMap::new();
+  let mut methods_acc = BTreeMap::new();
   let mut super_types_acc = vec![];
 
   for instantiated_interface_type in instantiated_interface_types {
@@ -338,7 +338,7 @@ fn optimize_global_typing_context_with_interface_conformance_checking(
 
   for (module_reference, module) in sources {
     let module_typing_context = unoptimized_global_typing_context.get(module_reference).unwrap();
-    let mut optimized_interfaces = HashMap::new();
+    let mut optimized_interfaces = BTreeMap::new();
     for toplevel in &module.toplevels {
       let collector = check_module_member_interface_conformance(
         &unoptimized_global_typing_context,
@@ -384,8 +384,8 @@ fn optimize_global_typing_context_with_interface_conformance_checking(
 fn build_unoptimized_interface_typing_context(
   toplevel: &Toplevel,
 ) -> UnoptimizedInterfaceTypingContext {
-  let mut functions = HashMap::new();
-  let mut methods = HashMap::new();
+  let mut functions = BTreeMap::new();
+  let mut methods = BTreeMap::new();
   for member in toplevel.members_iter() {
     let type_info = rc(MemberTypeInformation {
       is_public: member.is_public,
@@ -414,9 +414,9 @@ pub(super) fn build_global_typing_context(
   let mut unoptimized_global_typing_context = HashMap::new();
 
   for (module_reference, Module { imports: _, toplevels }) in sources {
-    let mut interfaces = HashMap::new();
-    let mut classes = HashMap::new();
-    let mut type_definitions = HashMap::new();
+    let mut interfaces = BTreeMap::new();
+    let mut classes = BTreeMap::new();
+    let mut type_definitions = BTreeMap::new();
 
     for toplevel in toplevels {
       match toplevel {
@@ -762,22 +762,22 @@ mod tests {
     let unoptimized_global_cx = HashMap::from([(
       ModuleReference::dummy(),
       UnoptimizedModuleTypingContext {
-        type_definitions: HashMap::new(),
-        classes: HashMap::from([(
+        type_definitions: BTreeMap::new(),
+        classes: BTreeMap::from([(
           rcs("C"),
           UnoptimizedInterfaceTypingContext {
-            functions: rc(HashMap::new()),
-            methods: rc(HashMap::new()),
+            functions: rc(BTreeMap::new()),
+            methods: rc(BTreeMap::new()),
             type_parameters: vec![],
             extends_or_implements: vec![],
           },
         )]),
-        interfaces: HashMap::from([
+        interfaces: BTreeMap::from([
           (
             rcs("IUseNonExistent"),
             UnoptimizedInterfaceTypingContext {
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::new()),
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::new()),
               type_parameters: vec![
                 TypeParameterSignature { name: rcs("A"), bound: None },
                 TypeParameterSignature { name: rcs("B"), bound: None },
@@ -796,8 +796,8 @@ mod tests {
                 TypeParameterSignature { name: rcs("B"), bound: None },
               ],
               extends_or_implements: vec![],
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::from([(
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::from([(
                 rcs("m1"),
                 rc(MemberTypeInformation {
                   is_public: true,
@@ -825,7 +825,7 @@ mod tests {
                 "IBase",
                 vec![builder.int_type(), builder.simple_id_type("B")],
               )],
-              functions: rc(HashMap::from([(
+              functions: rc(BTreeMap::from([(
                 rcs("f1"),
                 rc(MemberTypeInformation {
                   is_public: true,
@@ -837,7 +837,7 @@ mod tests {
                   },
                 }),
               )])),
-              methods: rc(HashMap::from([(
+              methods: rc(BTreeMap::from([(
                 rcs("m1"),
                 rc(MemberTypeInformation {
                   is_public: true,
@@ -865,8 +865,8 @@ mod tests {
                 "ILevel1",
                 vec![builder.simple_id_type("A"), builder.int_type()],
               )],
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::from([(
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::from([(
                 rcs("m2"),
                 rc(MemberTypeInformation {
                   is_public: true,
@@ -883,8 +883,8 @@ mod tests {
           (
             rcs("ICyclic1"),
             UnoptimizedInterfaceTypingContext {
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::new()),
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::new()),
               type_parameters: vec![],
               extends_or_implements: vec![builder.simple_id_type_unwrapped("ICyclic2")],
             },
@@ -892,8 +892,8 @@ mod tests {
           (
             rcs("ICyclic2"),
             UnoptimizedInterfaceTypingContext {
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::new()),
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::new()),
               type_parameters: vec![],
               extends_or_implements: vec![builder.simple_id_type_unwrapped("ICyclic1")],
             },
@@ -903,7 +903,7 @@ mod tests {
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![],
               extends_or_implements: vec![],
-              functions: rc(HashMap::from([(
+              functions: rc(BTreeMap::from([(
                 rcs("f"),
                 rc(MemberTypeInformation {
                   is_public: true,
@@ -915,7 +915,7 @@ mod tests {
                   },
                 }),
               )])),
-              methods: rc(HashMap::from([(
+              methods: rc(BTreeMap::from([(
                 rcs("m"),
                 rc(MemberTypeInformation {
                   is_public: true,
@@ -934,7 +934,7 @@ mod tests {
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![],
               extends_or_implements: vec![],
-              functions: rc(HashMap::from([(
+              functions: rc(BTreeMap::from([(
                 rcs("f"),
                 rc(MemberTypeInformation {
                   is_public: true,
@@ -946,7 +946,7 @@ mod tests {
                   },
                 }),
               )])),
-              methods: rc(HashMap::from([(
+              methods: rc(BTreeMap::from([(
                 rcs("m"),
                 rc(MemberTypeInformation {
                   is_public: true,
@@ -1043,14 +1043,14 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
     let unoptimized_global_cx = HashMap::from([(
       ModuleReference::dummy(),
       UnoptimizedModuleTypingContext {
-        type_definitions: HashMap::new(),
-        classes: HashMap::new(),
-        interfaces: HashMap::from([(
+        type_definitions: BTreeMap::new(),
+        classes: BTreeMap::new(),
+        interfaces: BTreeMap::from([(
           rcs("IBase"),
           UnoptimizedInterfaceTypingContext {
             type_parameters: vec![],
             extends_or_implements: vec![],
-            functions: rc(HashMap::from([
+            functions: rc(BTreeMap::from([
               (
                 rcs("f1"),
                 rc(MemberTypeInformation {
@@ -1076,7 +1076,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 }),
               ),
             ])),
-            methods: rc(HashMap::from([
+            methods: rc(BTreeMap::from([
               (
                 rcs("m1"),
                 rc(MemberTypeInformation {

@@ -20,7 +20,7 @@ mod tests {
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
   };
   use pretty_assertions::assert_eq;
-  use std::collections::{HashMap, HashSet};
+  use std::collections::{BTreeMap, HashMap, HashSet};
 
   #[test]
   #[should_panic]
@@ -69,7 +69,7 @@ mod tests {
       (
         ModuleReference::dummy(),
         ModuleTypingContext {
-          type_definitions: HashMap::from([
+          type_definitions: BTreeMap::from([
             (
               rcs("Test"),
               TypeDefinitionTypingContext {
@@ -155,12 +155,12 @@ mod tests {
               },
             ),
           ]),
-          interfaces: HashMap::from([
+          interfaces: BTreeMap::from([
             (
               rcs("Test"),
               rc(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(HashMap::from([
+                functions: rc(BTreeMap::from([
                   (
                     rcs("init"),
                     rc(MemberTypeInformation {
@@ -267,7 +267,7 @@ mod tests {
                     }),
                   ),
                 ])),
-                methods: rc(HashMap::from([
+                methods: rc(BTreeMap::from([
                   (
                     rcs("baz"),
                     rc(MemberTypeInformation {
@@ -313,7 +313,7 @@ mod tests {
               rcs("Test2"),
               rc(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(HashMap::from([
+                functions: rc(BTreeMap::from([
                   (
                     rcs("Foo"),
                     rc(MemberTypeInformation {
@@ -339,7 +339,7 @@ mod tests {
                     }),
                   ),
                 ])),
-                methods: rc(HashMap::new()),
+                methods: rc(BTreeMap::new()),
                 type_parameters: vec![],
                 super_types: vec![],
               }),
@@ -348,8 +348,8 @@ mod tests {
               rcs("Test3"),
               rc(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(HashMap::new()),
-                methods: rc(HashMap::new()),
+                functions: rc(BTreeMap::new()),
+                methods: rc(BTreeMap::new()),
                 type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
                 super_types: vec![],
               }),
@@ -358,7 +358,7 @@ mod tests {
               rcs("Test4"),
               rc(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(HashMap::from([
+                functions: rc(BTreeMap::from([
                   (
                     rcs("Foo"),
                     rc(MemberTypeInformation {
@@ -386,7 +386,7 @@ mod tests {
                     }),
                   ),
                 ])),
-                methods: rc(HashMap::new()),
+                methods: rc(BTreeMap::new()),
                 type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
                 super_types: vec![],
               }),
@@ -395,7 +395,7 @@ mod tests {
               rcs("A"),
               rc(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(HashMap::from([(
+                functions: rc(BTreeMap::from([(
                   rcs("init"),
                   rc(MemberTypeInformation {
                     is_public: true,
@@ -407,7 +407,7 @@ mod tests {
                     },
                   }),
                 )])),
-                methods: rc(HashMap::new()),
+                methods: rc(BTreeMap::new()),
                 type_parameters: vec![],
                 super_types: vec![],
               }),
@@ -416,7 +416,7 @@ mod tests {
               rcs("B"),
               rc(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(HashMap::from([(
+                functions: rc(BTreeMap::from([(
                   rcs("init"),
                   rc(MemberTypeInformation {
                     is_public: true,
@@ -428,7 +428,7 @@ mod tests {
                     },
                   }),
                 )])),
-                methods: rc(HashMap::new()),
+                methods: rc(BTreeMap::new()),
                 type_parameters: vec![],
                 super_types: vec![],
               }),
@@ -437,7 +437,7 @@ mod tests {
               rcs("C"),
               rc(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(HashMap::from([(
+                functions: rc(BTreeMap::from([(
                   rcs("init"),
                   rc(MemberTypeInformation {
                     is_public: true,
@@ -449,7 +449,7 @@ mod tests {
                     },
                   }),
                 )])),
-                methods: rc(HashMap::new()),
+                methods: rc(BTreeMap::new()),
                 type_parameters: vec![],
                 super_types: vec![],
               }),

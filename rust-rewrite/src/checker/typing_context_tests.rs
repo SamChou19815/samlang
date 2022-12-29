@@ -16,7 +16,7 @@ mod tests {
     errors::ErrorSet,
   };
   use pretty_assertions::assert_eq;
-  use std::collections::{HashMap, HashSet};
+  use std::collections::{BTreeMap, HashMap, HashSet};
 
   fn empty_local_typing_context() -> LocalTypingContext {
     LocalTypingContext::new(SsaAnalysisResult {
@@ -58,8 +58,8 @@ m2: public () -> unknown
         is_concrete: true,
         type_parameters: vec![],
         super_types: vec![],
-        functions: rc(HashMap::new()),
-        methods: rc(HashMap::from([
+        functions: rc(BTreeMap::new()),
+        methods: rc(BTreeMap::from([
           (
             rcs("m1",),
             rc(MemberTypeInformation {
@@ -136,8 +136,8 @@ m2: public () -> unknown
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleTypingContext {
-        type_definitions: HashMap::new(),
-        interfaces: HashMap::from([(
+        type_definitions: BTreeMap::new(),
+        interfaces: BTreeMap::from([(
           rcs("A"),
           rc(InterfaceTypingContext {
             is_concrete: true,
@@ -146,8 +146,8 @@ m2: public () -> unknown
               "B",
               vec![builder.simple_id_type("T"), builder.int_type()],
             )],
-            functions: rc(HashMap::new()),
-            methods: rc(HashMap::new()),
+            functions: rc(BTreeMap::new()),
+            methods: rc(BTreeMap::new()),
           }),
         )]),
       },
@@ -191,8 +191,8 @@ m2: public () -> unknown
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleTypingContext {
-        type_definitions: HashMap::new(),
-        interfaces: HashMap::from([
+        type_definitions: BTreeMap::new(),
+        interfaces: BTreeMap::from([
           (
             rcs("A"),
             rc(InterfaceTypingContext {
@@ -205,8 +205,8 @@ m2: public () -> unknown
                 },
               ],
               super_types: vec![],
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::new()),
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::new()),
             }),
           ),
           (
@@ -215,8 +215,8 @@ m2: public () -> unknown
               is_concrete: false,
               type_parameters: vec![],
               super_types: vec![builder.simple_id_type_unwrapped("B")],
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::new()),
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::new()),
             }),
           ),
         ]),
@@ -274,8 +274,8 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleTypingContext {
-        type_definitions: HashMap::new(),
-        interfaces: HashMap::from([
+        type_definitions: BTreeMap::new(),
+        interfaces: BTreeMap::from([
           (
             rcs("A"),
             rc(InterfaceTypingContext {
@@ -285,7 +285,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                 TypeParameterSignature { name: rcs("B"), bound: None },
               ],
               super_types: vec![],
-              functions: rc(HashMap::from([
+              functions: rc(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
                   "f1",
                   vec![],
@@ -299,7 +299,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                   vec!["C"],
                 ),
               ])),
-              methods: rc(HashMap::from([
+              methods: rc(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
                   "m1",
                   vec![builder.simple_id_type("A"), builder.simple_id_type("B")],
@@ -324,7 +324,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                 TypeParameterSignature { name: rcs("F"), bound: None },
               ],
               super_types: vec![],
-              functions: rc(HashMap::from([
+              functions: rc(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
                   "f1",
                   vec![],
@@ -338,7 +338,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                   vec!["C"],
                 ),
               ])),
-              methods: rc(HashMap::from([
+              methods: rc(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
                   "m1",
                   vec![],
@@ -471,7 +471,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleTypingContext {
-        type_definitions: HashMap::from([
+        type_definitions: BTreeMap::from([
           (
             rcs("A"),
             TypeDefinitionTypingContext {
@@ -492,7 +492,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
             },
           ),
         ]),
-        interfaces: HashMap::from([
+        interfaces: BTreeMap::from([
           (
             rcs("A"),
             rc(InterfaceTypingContext {
@@ -502,8 +502,8 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                 TypeParameterSignature { name: rcs("B"), bound: None },
               ],
               super_types: vec![],
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::new()),
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::new()),
             }),
           ),
           (
@@ -515,8 +515,8 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                 TypeParameterSignature { name: rcs("F"), bound: None },
               ],
               super_types: vec![],
-              functions: rc(HashMap::new()),
-              methods: rc(HashMap::new()),
+              functions: rc(BTreeMap::new()),
+              methods: rc(BTreeMap::new()),
             }),
           ),
         ]),
