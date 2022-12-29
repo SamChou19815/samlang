@@ -557,6 +557,7 @@ mod toplevel_tests {
     });
     class.members_iter().next();
     class.loc();
+    class.associated_comments();
     assert!(class.is_class());
     let interface = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
@@ -582,6 +583,7 @@ mod toplevel_tests {
     });
     interface.members_iter().next();
     interface.loc();
+    interface.associated_comments();
     assert!(!interface.is_class());
   }
 }

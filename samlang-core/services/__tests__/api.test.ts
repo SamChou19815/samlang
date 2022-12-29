@@ -385,14 +385,14 @@ class Main {
     expect(
       service.queryFoldingRanges(testModuleReference)?.map((loc) => loc.toString()),
     ).toMatchObject([
-      new Location(testModuleReference, Position(1, 0), Position(1, 39)).toString(),
-      new Location(testModuleReference, Position(3, 2), Position(4, 31)).toString(),
-      new Location(testModuleReference, Position(5, 2), Position(6, 28)).toString(),
-      new Location(testModuleReference, Position(2, 0), Position(7, 1)).toString(),
-      new Location(testModuleReference, Position(12, 2), Position(16, 3)).toString(),
-      new Location(testModuleReference, Position(8, 0), Position(17, 1)).toString(),
-      new Location(testModuleReference, Position(19, 2), Position(19, 46)).toString(),
-      new Location(testModuleReference, Position(18, 0), Position(20, 1)).toString(),
+      "Test.sam:2:1-2:40",
+      "Test.sam:4:3-5:32",
+      "Test.sam:6:3-7:29",
+      "Test.sam:3:1-8:2",
+      "Test.sam:13:3-17:4",
+      "Test.sam:9:1-18:2",
+      "Test.sam:20:3-20:47",
+      "Test.sam:19:1-21:2",
     ]);
     expect(service.queryFoldingRanges(ModuleReference(["dsafadfasd"]))).toBe(null);
   });
