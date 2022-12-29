@@ -702,6 +702,13 @@ impl Toplevel {
     }
   }
 
+  pub(crate) fn associated_comments(&self) -> &Vec<Comment> {
+    match self {
+      Toplevel::Interface(i) => &i.associated_comments,
+      Toplevel::Class(c) => &c.associated_comments,
+    }
+  }
+
   pub(crate) fn name(&self) -> &Id {
     match self {
       Toplevel::Interface(i) => &i.name,
