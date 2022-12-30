@@ -1,7 +1,7 @@
 use crate::{
   ast::hir::{
-    Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariable, Sources, Statement,
-    Type,
+    Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
+    Sources, Statement, Type, TypeDefinition,
   },
   common::Str,
 };
@@ -45,8 +45,11 @@ fn collect_used_names_from_statement(
       collect_for_type_set(type_, type_set);
     }
     Statement::Call { callee, arguments, return_type, return_collector: _ } => {
-      if let Callee::FunctionName(n) = callee {
-        name_set.insert(n.name.clone());
+      match callee {
+        Callee::FunctionName(n) => {
+          name_set.insert(n.name.clone());
+        }
+        Callee::Variable(v) => collect_for_type_set(&v.type_, type_set),
       }
       for e in arguments {
         collect_used_names_from_expression(name_set, type_set, e);
@@ -118,11 +121,26 @@ fn get_other_functions_used_by_given_function(function: &Function) -> (HashSet<S
 
 fn analyze_used_function_names_and_type_names(
   functions: &Vec<Function>,
+  closure_types: &[ClosureTypeDefinition],
+  type_definitions: &[TypeDefinition],
   entry_points: &[Str],
 ) -> (HashSet<Str>, HashSet<Str>) {
   let mut used_functions_map = HashMap::new();
   for f in functions {
     used_functions_map.insert(f.name.clone(), get_other_functions_used_by_given_function(f));
+  }
+  let mut type_def_map = HashMap::new();
+  for d in closure_types {
+    let mut type_set = HashSet::new();
+    collect_for_type_set(&Type::Fn(d.function_type.clone()), &mut type_set);
+    type_def_map.insert(d.identifier.clone(), type_set);
+  }
+  for d in type_definitions {
+    let mut type_set = HashSet::new();
+    for t in &d.mappings {
+      collect_for_type_set(t, &mut type_set);
+    }
+    type_def_map.insert(d.identifier.clone(), type_set);
   }
 
   let mut used_names: HashSet<_> = entry_points.iter().cloned().collect();
@@ -140,10 +158,22 @@ fn analyze_used_function_names_and_type_names(
   }
 
   let mut used_types = HashSet::new();
+  let mut used_types_todo_stack = vec![];
   for used_name in &used_names {
     if let Some((_, types)) = used_functions_map.get(used_name) {
       for t in types {
+        if let Some(more_used_types) = type_def_map.get(t) {
+          used_types_todo_stack.append(&mut more_used_types.iter().cloned().collect())
+        }
         used_types.insert(t.clone());
+      }
+    }
+  }
+  while let Some(additional_used_type) = used_types_todo_stack.pop() {
+    if !used_types.contains(&additional_used_type) {
+      used_types.insert(additional_used_type.clone());
+      for t in type_def_map.get(&additional_used_type).into_iter().flatten() {
+        used_types_todo_stack.push(t.clone());
       }
     }
   }
@@ -151,11 +181,15 @@ fn analyze_used_function_names_and_type_names(
   (used_names, used_types)
 }
 
-pub(super) fn optimize_sources(
-  Sources { global_variables,closure_types, type_definitions, main_function_names, functions }: Sources,
-) -> Sources {
-  let (used_names, used_types) =
-    analyze_used_function_names_and_type_names(&functions, &main_function_names);
+pub(super) fn optimize_sources(sources: Sources) -> Sources {
+  let Sources { global_variables, closure_types, type_definitions, main_function_names, functions } =
+    sources;
+  let (used_names, used_types) = analyze_used_function_names_and_type_names(
+    &functions,
+    &closure_types,
+    &type_definitions,
+    &main_function_names,
+  );
   Sources {
     global_variables: global_variables
       .into_iter()
@@ -211,7 +245,14 @@ mod tests {
           identifier: rcs("Foo"),
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![INT_TYPE],
+          mappings: vec![INT_TYPE, Type::new_id_no_targs("Foo"), Type::new_id_no_targs("Bar")],
+        },
+        TypeDefinition {
+          is_object: true,
+          identifier: rcs("Bar"),
+          type_parameters: vec![],
+          names: vec![],
+          mappings: vec![Type::new_id_no_targs("Bar")],
         },
         TypeDefinition {
           is_object: true,
@@ -267,6 +308,12 @@ mod tests {
                 "baz",
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
               )),
+              arguments: vec![Expression::StringName(rcs("haha"))],
+              return_type: INT_TYPE,
+              return_collector: None,
+            },
+            Statement::Call {
+              callee: Callee::Variable(VariableName::new("baz", INT_TYPE)),
               arguments: vec![Expression::StringName(rcs("haha"))],
               return_type: INT_TYPE,
               return_collector: None,
@@ -338,7 +385,7 @@ mod tests {
       optimized.global_variables.iter().map(|it| it.name.as_str()).collect_vec()
     );
     assert_eq!(
-      vec!["Foo"],
+      vec!["Foo", "Bar"],
       optimized.type_definitions.iter().map(|it| it.identifier.as_str()).collect_vec()
     );
     assert_eq!(

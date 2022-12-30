@@ -1,4 +1,4 @@
-mod api;
+pub mod api;
 mod api_tests;
 mod location_lookup;
 mod variable_definition;

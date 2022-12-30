@@ -1,3 +1,4 @@
 #!/bin/bash
 
 node ./samlang-cli/bin/index.js "$@"
+# ./rust-rewrite/target/release/samlang-cli "$@"

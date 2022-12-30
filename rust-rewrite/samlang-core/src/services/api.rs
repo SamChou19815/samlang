@@ -21,43 +21,43 @@ use itertools::Itertools;
 use std::{collections::HashMap, rc::Rc};
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum CompletionItemKind {
+pub enum CompletionItemKind {
   Method = 2,
   Function = 3,
   Field = 5,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum InsertTextFormat {
+pub enum InsertTextFormat {
   PlainText = 1,
   Snippet = 2,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct TypeQueryContent {
-  pub(crate) language: &'static str,
-  pub(crate) value: String,
+pub struct TypeQueryContent {
+  pub language: &'static str,
+  pub value: String,
 }
 
-pub(crate) struct TypeQueryResult {
-  pub(crate) contents: Vec<TypeQueryContent>,
-  pub(crate) location: Location,
+pub struct TypeQueryResult {
+  pub contents: Vec<TypeQueryContent>,
+  pub location: Location,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct AutoCompletionItem {
-  pub(crate) label: String,
-  pub(crate) insert_text: String,
-  pub(crate) insert_text_format: InsertTextFormat,
-  pub(crate) kind: CompletionItemKind,
-  pub(crate) detail: String,
+pub struct AutoCompletionItem {
+  pub label: String,
+  pub insert_text: String,
+  pub insert_text_format: InsertTextFormat,
+  pub kind: CompletionItemKind,
+  pub detail: String,
 }
 
 fn get_last_doc_comment(comments: &[Comment]) -> Option<&Str> {
   comments.iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| &c.text)
 }
 
-pub(crate) struct LanguageServices<'a> {
+pub struct LanguageServices<'a> {
   raw_sources: HashMap<ModuleReference, &'a str>,
   checked_modules: HashMap<ModuleReference, Module>,
   errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
@@ -70,7 +70,7 @@ pub(crate) struct LanguageServices<'a> {
 impl<'a> LanguageServices<'a> {
   // Section 1: Init
 
-  pub(crate) fn new(source_handles: Vec<(ModuleReference, &'a str)>) -> LanguageServices<'a> {
+  pub fn new(source_handles: Vec<(ModuleReference, &'a str)>) -> LanguageServices<'a> {
     let mut state = LanguageServices {
       raw_sources: source_handles.into_iter().collect(),
       checked_modules: HashMap::new(),
@@ -126,11 +126,11 @@ impl<'a> LanguageServices<'a> {
 
   // Section 2: Getters and Setters
 
-  pub(crate) fn all_modules_with_error(&self) -> Vec<&ModuleReference> {
+  pub fn all_modules_with_error(&self) -> Vec<&ModuleReference> {
     self.errors.keys().into_iter().collect()
   }
 
-  pub(crate) fn get_errors(&self, module_reference: &ModuleReference) -> &[CompileTimeError] {
+  pub fn get_errors(&self, module_reference: &ModuleReference) -> &[CompileTimeError] {
     if let Some(errors) = self.errors.get(module_reference) {
       errors
     } else {
@@ -138,19 +138,19 @@ impl<'a> LanguageServices<'a> {
     }
   }
 
-  pub(crate) fn update(&mut self, module_reference: ModuleReference, source_code: &'a str) {
+  pub fn update(&mut self, module_reference: ModuleReference, source_code: &'a str) {
     self.raw_sources.insert(module_reference, source_code);
     self.init();
   }
 
-  pub(crate) fn remove(&mut self, module_reference: &ModuleReference) {
+  pub fn remove(&mut self, module_reference: &ModuleReference) {
     self.raw_sources.remove(module_reference);
     self.init();
   }
 
   // Section 3: LSP Providers
 
-  pub(crate) fn query_for_hover(
+  pub fn query_for_hover(
     &self,
     module_reference: &ModuleReference,
     position: Position,
@@ -244,10 +244,7 @@ impl<'a> LanguageServices<'a> {
     TypeQueryResult { contents, location }
   }
 
-  pub(crate) fn query_folding_ranges(
-    &self,
-    module_reference: &ModuleReference,
-  ) -> Option<Vec<Location>> {
+  pub fn query_folding_ranges(&self, module_reference: &ModuleReference) -> Option<Vec<Location>> {
     let module = self.checked_modules.get(module_reference)?;
     Some(
       module
@@ -263,7 +260,7 @@ impl<'a> LanguageServices<'a> {
     )
   }
 
-  pub(crate) fn query_definition_location(
+  pub fn query_definition_location(
     &self,
     module_reference: &ModuleReference,
     position: Position,
@@ -286,7 +283,7 @@ impl<'a> LanguageServices<'a> {
         _ => self
           .variable_definition_lookup
           .find_all_definition_and_uses(&common.loc)
-          .map(|it| it.definition_location.clone()),
+          .map(|it| it.definition_location),
       },
       expr::E::ClassFn(e) => self
         .find_class_member(&e.module_reference, &e.class_name.name, &e.fn_name.name)
@@ -306,7 +303,7 @@ impl<'a> LanguageServices<'a> {
     }
   }
 
-  pub(crate) fn auto_complete(
+  pub fn auto_complete(
     &self,
     module_reference: &ModuleReference,
     position: Position,
@@ -328,7 +325,7 @@ impl<'a> LanguageServices<'a> {
           .functions
           .iter()
           .map(|(name, info)| {
-            Self::get_completion_result_from_type_info(&name, &info, CompletionItemKind::Function)
+            Self::get_completion_result_from_type_info(name, info, CompletionItemKind::Function)
           })
           .collect(),
       );
@@ -379,7 +376,7 @@ impl<'a> LanguageServices<'a> {
     module_reference: &ModuleReference,
     class_name: &Str,
   ) -> Option<&Rc<InterfaceTypingContext>> {
-    self.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(&class_name))
+    self.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(class_name))
   }
 
   fn get_completion_result_from_type_info(
@@ -433,7 +430,7 @@ impl<'a> LanguageServices<'a> {
     }
   }
 
-  pub(crate) fn rename_variable(
+  pub fn rename_variable(
     &self,
     module_reference: &ModuleReference,
     position: Position,
@@ -458,10 +455,7 @@ impl<'a> LanguageServices<'a> {
     ))
   }
 
-  pub(crate) fn format_entire_document(
-    &self,
-    module_reference: &ModuleReference,
-  ) -> Option<String> {
+  pub fn format_entire_document(&self, module_reference: &ModuleReference) -> Option<String> {
     let module = self.checked_modules.get(module_reference)?;
     if self.get_errors(module_reference).iter().any(|e| e.to_string().contains("SyntaxError")) {
       None
