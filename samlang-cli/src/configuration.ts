@@ -5,6 +5,7 @@ export type SamlangProjectConfiguration = {
   readonly sourceDirectory: string;
   readonly outputDirectory: string;
   readonly entryPoints: readonly string[];
+  readonly ignores: readonly string[];
 };
 
 export function parseSamlangProjectConfiguration(
@@ -17,6 +18,7 @@ export function parseSamlangProjectConfiguration(
       sourceDirectory = ".",
       outputDirectory = "out",
       entryPoints = [],
+      ignores = [],
     } = json as { [k: string]: unknown };
     if (typeof sourceDirectory !== "string" || typeof outputDirectory !== "string") return null;
     if (!Array.isArray(entryPoints)) return null;
@@ -24,8 +26,19 @@ export function parseSamlangProjectConfiguration(
     entryPoints.forEach((entryPoint) => {
       if (typeof entryPoint === "string") validatedEntryPoints.push(entryPoint);
     });
+    if (!Array.isArray(ignores)) return null;
     if (validatedEntryPoints.length !== entryPoints.length) return null;
-    return { sourceDirectory, outputDirectory, entryPoints: validatedEntryPoints };
+    const validatedIgnores: string[] = [];
+    ignores.forEach((ignore) => {
+      if (typeof ignore === "string") validatedIgnores.push(ignore);
+    });
+    if (validatedIgnores.length !== ignores.length) return null;
+    return {
+      sourceDirectory,
+      outputDirectory,
+      entryPoints: validatedEntryPoints,
+      ignores: validatedIgnores,
+    };
   } catch {
     return null;
   }
@@ -76,6 +89,7 @@ export default function loadSamlangProjectConfiguration({
             sourceDirectory: path.resolve(configurationDirectory, configuration.sourceDirectory),
             outputDirectory: path.resolve(configurationDirectory, configuration.outputDirectory),
             entryPoints: configuration.entryPoints,
+            ignores: configuration.ignores,
           };
     }
     configurationDirectory = path.dirname(configurationDirectory);

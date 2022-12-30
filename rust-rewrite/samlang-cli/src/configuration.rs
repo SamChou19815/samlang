@@ -6,6 +6,7 @@ pub(super) struct ProjectConfiguration {
   pub(super) source_directory: String,
   pub(super) output_directory: String,
   pub(super) entry_points: Vec<String>,
+  pub(super) ignores: Vec<String>,
 }
 
 pub(super) enum ConfigurationLoadingFailure {
@@ -24,26 +25,28 @@ impl ConfigurationLoadingFailure {
   }
 }
 
+fn parse_string_field(parsed: &Value, field: &str, default: &str) -> Option<String> {
+  Some(if let Some(s) = parsed.get(field) { s.as_str()? } else { default }.to_string())
+}
+
+fn parse_string_array_field(parsed: &Value, field: &str) -> Option<Vec<String>> {
+  let mut parsed_array = vec![];
+  if let Some(array) = parsed.get(field) {
+    for elem in array.as_array()? {
+      parsed_array.push(elem.as_str()?.to_string());
+    }
+  }
+  Some(parsed_array)
+}
+
 fn parse_configuration(configuration_string: &str) -> Option<ProjectConfiguration> {
   let parsed: Value = serde_json::from_str(configuration_string).ok()?;
   parsed.as_object()?;
-  let source_directory = if let Some(s) = parsed.get("sourceDirectory") {
-    s.as_str()?.to_string()
-  } else {
-    ".".to_string()
-  };
-  let output_directory = if let Some(s) = parsed.get("outputDirectory") {
-    s.as_str()?.to_string()
-  } else {
-    "out".to_string()
-  };
-  let mut entry_points = vec![];
-  if let Some(array) = parsed.get("entryPoints") {
-    for elem in array.as_array()? {
-      entry_points.push(elem.as_str()?.to_string());
-    }
-  }
-  Some(ProjectConfiguration { source_directory, output_directory, entry_points })
+  let source_directory = parse_string_field(&parsed, "sourceDirectory", ".")?;
+  let output_directory = parse_string_field(&parsed, "outputDirectory", "out")?;
+  let entry_points = parse_string_array_field(&parsed, "entryPoints")?;
+  let ignores = parse_string_array_field(&parsed, "ignores")?;
+  Some(ProjectConfiguration { source_directory, output_directory, entry_points, ignores })
 }
 
 fn load_project_configuration_custom_start_path(
@@ -91,7 +94,8 @@ mod tests {
       ProjectConfiguration {
         source_directory: "".to_string(),
         output_directory: "out".to_string(),
-        entry_points: vec![]
+        entry_points: vec![],
+        ignores: vec![],
       }
     )
     .is_empty());
@@ -99,7 +103,8 @@ mod tests {
       ProjectConfiguration {
         source_directory: ".".to_string(),
         output_directory: "out".to_string(),
-        entry_points: vec![]
+        entry_points: vec![],
+        ignores: vec![],
       },
       parse_configuration("{}").unwrap()
     );
@@ -107,7 +112,8 @@ mod tests {
       ProjectConfiguration {
         source_directory: "source".to_string(),
         output_directory: "out".to_string(),
-        entry_points: vec![]
+        entry_points: vec![],
+        ignores: vec![],
       },
       parse_configuration("{\"sourceDirectory\": \"source\"}").unwrap()
     );
@@ -115,7 +121,8 @@ mod tests {
       ProjectConfiguration {
         source_directory: ".".to_string(),
         output_directory: "out-out".to_string(),
-        entry_points: vec![]
+        entry_points: vec![],
+        ignores: vec![],
       },
       parse_configuration("{\"outputDirectory\": \"out-out\"}").unwrap()
     );
@@ -123,13 +130,15 @@ mod tests {
       ProjectConfiguration {
         source_directory: "source".to_string(),
         output_directory: "output".to_string(),
-        entry_points: vec!["a".to_string(), "b".to_string()]
+        entry_points: vec!["a".to_string(), "b".to_string()],
+        ignores: vec!["c".to_string(), "d".to_string()],
       },
       parse_configuration(
         r#"{
           "sourceDirectory": "source",
           "outputDirectory": "output",
-          "entryPoints": ["a", "b"]
+          "entryPoints": ["a", "b"],
+          "ignores": ["c", "d"]
         }"#
       )
       .unwrap()
@@ -149,6 +158,7 @@ mod tests {
     assert!(parse_configuration("{ \"outputDirectory\": 3 }").is_none());
     assert!(parse_configuration("{ \"entryPoints\": \"3\" }").is_none());
     assert!(parse_configuration("{ \"entryPoints\": [1, \"\"] }").is_none());
+    assert!(parse_configuration("{ \"ignores\": [1, \"\"] }").is_none());
   }
 
   #[test]

@@ -18,7 +18,7 @@ export function getConfiguration(): SamlangProjectConfiguration {
 }
 
 export function collectSources(
-  { sourceDirectory }: SamlangProjectConfiguration,
+  { sourceDirectory, ignores }: SamlangProjectConfiguration,
   moduleReferenceCreator: (parts: readonly string[]) => ModuleReference,
 ): readonly (readonly [ModuleReference, string])[] {
   const sourcePath = path.resolve(sourceDirectory);
@@ -35,16 +35,18 @@ export function collectSources(
 
   function walk(startPath: string, visitor: (file: string) => void): void {
     function recursiveVisit(p: string): void {
-      const stats = fs.lstatSync(p);
-      if (stats.isFile()) {
-        visitor(p);
-        return;
-      }
+      if (ignores.every((ignore) => !p.includes(ignore))) {
+        const stats = fs.lstatSync(p);
+        if (stats.isFile()) {
+          visitor(p);
+          return;
+        }
 
-      if (stats.isDirectory()) {
-        fs.readdirSync(p).forEach((relativeChildPath) =>
-          recursiveVisit(path.join(p, relativeChildPath)),
-        );
+        if (stats.isDirectory()) {
+          fs.readdirSync(p).forEach((relativeChildPath) =>
+            recursiveVisit(path.join(p, relativeChildPath)),
+          );
+        }
       }
     }
 
