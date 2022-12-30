@@ -43,10 +43,16 @@ mod utils {
   }
 
   fn walk(
+    ignores: &Vec<String>,
     absolute_source_path: &Path,
     start_path: &Path,
     sources: &mut Vec<(samlang_core::ast::ModuleReference, String)>,
   ) {
+    for ignore in ignores {
+      if start_path.to_str().map(|s| s.contains(ignore)).unwrap_or(false) {
+        return;
+      }
+    }
     if start_path.is_file() && start_path.to_str().unwrap().ends_with(".sam") {
       if let (Some(mod_ref), Ok(src)) = (
         file_path_to_module_reference(absolute_source_path, start_path),
@@ -57,7 +63,7 @@ mod utils {
     } else if start_path.is_dir() {
       if let Ok(read_dir_result) = fs::read_dir(start_path) {
         for entry in read_dir_result.into_iter().flatten() {
-          walk(absolute_source_path, entry.path().as_path(), sources);
+          walk(ignores, absolute_source_path, entry.path().as_path(), sources);
         }
       }
     }
@@ -71,7 +77,7 @@ mod utils {
       fs::canonicalize(PathBuf::from(configuration.source_directory.clone()))
     {
       let start_path = absolute_source_path.as_path();
-      walk(start_path, start_path, &mut sources);
+      walk(&configuration.ignores, start_path, start_path, &mut sources);
     }
     sources
   }
