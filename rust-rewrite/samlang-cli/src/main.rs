@@ -118,9 +118,15 @@ mod runners {
           )
         })
         .collect::<Vec<_>>();
+      let enable_profiling = std::env::var("PROFILE").is_ok();
+      let collected_sources =
+        samlang_core::measure_time(enable_profiling, "Collect sources", || {
+          utils::collect_sources(&configuration)
+        });
       match samlang_core::compile_sources(
-        utils::collect_sources(&configuration),
+        collected_sources,
         entry_module_references,
+        enable_profiling,
       ) {
         Ok(samlang_core::SourcesCompilationResult { text_code_results, wasm_file }) => {
           if fs::create_dir_all(configuration.output_directory.clone()).is_ok() {
@@ -128,11 +134,17 @@ mod runners {
               fs::write(PathBuf::from(configuration.output_directory.clone()).join(file), content)
                 .unwrap();
             }
-            fs::write(
-              PathBuf::from(configuration.output_directory.clone()).join("__all__.wasm"),
-              wasm_file,
-            )
-            .unwrap();
+            let unoptimized_wasm_path = PathBuf::from(configuration.output_directory.clone())
+              .join("__all_unoptimized__.wasm");
+            fs::write(unoptimized_wasm_path.clone(), wasm_file).unwrap();
+            samlang_core::measure_time(enable_profiling, "Optimize WASM", || {
+              wasm_opt::OptimizationOptions::new_opt_level_1()
+                .run(
+                  unoptimized_wasm_path,
+                  PathBuf::from(configuration.output_directory.clone()).join("__all__.wasm"),
+                )
+                .unwrap()
+            });
           }
         }
         Err(errors) => {

@@ -1,1 +1,4 @@
-{ "entryPoints": ["tests.AllTests"], "ignores": [".git", "coverage", "node_modules"] }
+{
+  "entryPoints": ["tests.AllTests"],
+  "ignores": [".git", "coverage", "target", "node_modules"]
+}
