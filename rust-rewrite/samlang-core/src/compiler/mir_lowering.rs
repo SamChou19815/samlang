@@ -547,7 +547,8 @@ impl<'a> LoweringManager<'a> {
           }) => {
             let temp_fn = self.alloc_temp();
             let temp_cx = self.alloc_temp();
-            let fn_type = self.closure_defs.get(&closure_hir_type.as_id().unwrap().name).unwrap();
+            let closure_type_name = &closure_hir_type.as_id().unwrap().name;
+            let fn_type = self.closure_defs.get(closure_type_name).expect(closure_type_name);
             let pointer_expr =
               mir::Expression::Variable(closure_var_name, lower_type(closure_hir_type));
             statements.push(mir::Statement::IndexedAccess {

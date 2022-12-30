@@ -6,7 +6,7 @@ use itertools::Itertools;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct CompileTimeError(pub(crate) Location, pub(crate) String);
+pub struct CompileTimeError(pub(crate) Location, pub(crate) String);
 
 impl ToString for CompileTimeError {
   fn to_string(&self) -> String {

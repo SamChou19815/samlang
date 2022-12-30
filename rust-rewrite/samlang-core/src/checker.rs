@@ -57,12 +57,12 @@ pub(crate) struct TypeCheckSourceHandlesResult {
 }
 
 pub(crate) fn type_check_source_handles(
-  source_handles: Vec<(ModuleReference, &str)>,
+  source_handles: Vec<(ModuleReference, String)>,
 ) -> TypeCheckSourceHandlesResult {
   let mut error_set = ErrorSet::new();
   let mut parsed_sources = HashMap::new();
   for (module_reference, source) in source_handles {
-    let parsed = parse_source_module_from_text(source, &module_reference, &mut error_set);
+    let parsed = parse_source_module_from_text(&source, &module_reference, &mut error_set);
     parsed_sources.insert(module_reference, parsed);
   }
   let (checked_sources, global_typing_context) = type_check_sources(parsed_sources, &mut error_set);

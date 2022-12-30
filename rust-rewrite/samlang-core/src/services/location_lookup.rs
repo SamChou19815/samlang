@@ -296,7 +296,8 @@ mod tests {
     function main(): unit = Builtins.println(Builtins.intToString(Main.identity(
       Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
     )))
-  }"#,
+  }"#
+        .to_string(),
     )]);
 
     assert!(r.compile_time_errors.is_empty());

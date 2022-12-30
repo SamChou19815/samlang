@@ -1,7 +1,7 @@
 pub(crate) mod common_names;
 
 mod loc;
-pub(crate) use loc::{Location, ModuleReference, Position};
+pub use loc::{Location, ModuleReference, Position};
 mod reason;
 pub(crate) use reason::Reason;
 

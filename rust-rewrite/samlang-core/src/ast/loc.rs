@@ -1,4 +1,4 @@
-use crate::common::{rc, rcs, Str};
+use crate::common::{rc, rc_string, rcs, Str};
 use itertools::join;
 use std::{collections::HashMap, rc::Rc};
 
@@ -36,6 +36,10 @@ impl ModuleReference {
 
   pub(crate) fn ordinary(parts: Vec<Str>) -> ModuleReference {
     ModuleReference(rc(ModuleReferenceEnum::Ordinary(parts)))
+  }
+
+  pub fn from_string_parts(parts: Vec<String>) -> ModuleReference {
+    ModuleReference(rc(ModuleReferenceEnum::Ordinary(parts.into_iter().map(rc_string).collect())))
   }
 
   pub fn to_filename(&self) -> String {
@@ -137,7 +141,7 @@ mod tests {
   fn module_reference_to_string_tests() {
     assert_eq!("__DUMMY__", ModuleReference::dummy().to_string());
     assert_eq!("", ModuleReference::root().to_string());
-    assert_eq!("Foo", ModuleReference::ordinary(vec![rcs("Foo")]).to_string());
+    assert_eq!("Foo", ModuleReference::from_string_parts(vec!["Foo".to_string()]).to_string());
     assert_eq!("Foo.Bar", ModuleReference::ordinary(vec![rcs("Foo"), rcs("Bar")]).to_string());
   }
 

@@ -518,7 +518,7 @@ class Main {
     let result = type_check_source_handles(
       sources
         .iter()
-        .map(|it| (ModuleReference::ordinary(vec![rcs(it.test_name)]), it.source_code))
+        .map(|it| (ModuleReference::ordinary(vec![rcs(it.test_name)]), it.source_code.to_string()))
         .collect_vec(),
     );
 
@@ -1200,6 +1200,22 @@ class Main {
 "#,
       },
       CompilerTestCase {
+        name: "LambdaCall",
+        expected_std: "",
+        source_code: r#"
+class Option<T>(Some(T), None(bool)) {
+  method <R> map(f: (T) -> R): Option<R> =
+    match (this) { | None _ -> Option.None(true) | Some t -> Option.Some(f(t)) }
+}
+
+class Main {
+  function main(): unit = {
+    val c = Option.Some(3).map((x: int) -> "empty");
+  }
+}
+"#,
+      },
+      CompilerTestCase {
         name: "LoopOptimization",
         expected_std: "100\n106\n112\n118\n124\n",
         source_code: r#"
@@ -1684,13 +1700,13 @@ class Main {
     let TypeCheckSourceHandlesResult { checked_sources, .. } = type_check_source_handles(
       compiler_integration_tests()
         .iter()
-        .map(|case| (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code))
+        .map(|case| (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code.to_string()))
         .collect(),
     );
     for (mod_ref, module) in checked_sources {
       let raw = printer::pretty_print_source_module(100, &module);
       let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
-        type_check_source_handles(vec![(mod_ref, &raw)]);
+        type_check_source_handles(vec![(mod_ref, raw)]);
       assert!(compile_time_errors.is_empty());
       assert!(checked_sources.len() == 1);
     }
@@ -1705,7 +1721,9 @@ class Main {
       type_check_source_handles(
         tests
           .iter()
-          .map(|case| (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code))
+          .map(|case| {
+            (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code.to_string())
+          })
           .collect(),
       );
     assert!(compile_time_errors.is_empty());
@@ -1725,7 +1743,7 @@ class Main {
       // assert_eq!(test.expected_std, actual, "{}", test.name);
     }
 
-    let wasm_module = compiler::compile_mir_to_wasm(&mir_sources);
+    let (_, wasm_module) = compiler::compile_mir_to_wasm(&mir_sources);
     let engine = Engine::default();
     let module = Module::new(&engine, &mut &wasm_module[..]).unwrap();
     let mut store = Store::new(&engine, vec![]);

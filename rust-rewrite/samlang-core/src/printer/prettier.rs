@@ -143,67 +143,56 @@ enum DocumentList {
 fn generate_best_doc(
   collector: &mut Vec<IntermediateDocumentTokenForPrinting>,
   available_width: usize,
-  consumed: usize,
-  enforce_consumed: bool,
-  list: &DocumentList,
+  mut consumed: usize,
+  mut enforce_consumed: bool,
+  mut list: Rc<DocumentList>,
 ) -> bool {
-  if enforce_consumed && consumed > available_width {
-    return false;
-  }
-  let (indentation, document, rest) = if let DocumentList::Cons(i, d, r) = list {
-    (i, d, r)
-  } else {
-    return true;
-  };
-  match document.as_ref() {
-    Document::Nil => {
-      generate_best_doc(collector, available_width, consumed, enforce_consumed, rest)
+  loop {
+    if enforce_consumed && consumed > available_width {
+      return false;
     }
-    Document::Concat(d1, d2) => generate_best_doc(
-      collector,
-      available_width,
-      consumed,
-      enforce_consumed,
-      &DocumentList::Cons(
-        *indentation,
-        d1.clone(),
-        Rc::new(DocumentList::Cons(*indentation, d2.clone(), rest.clone())),
-      ),
-    ),
-    Document::Nest(i, d) => generate_best_doc(
-      collector,
-      available_width,
-      consumed,
-      enforce_consumed,
-      &DocumentList::Cons(indentation + i, d.clone(), rest.clone()),
-    ),
-    Document::Text(s) => {
-      collector.push(IntermediateDocumentTokenForPrinting::Text(s.clone()));
-      generate_best_doc(collector, available_width, consumed + s.len(), enforce_consumed, rest)
-    }
-    Document::Line | Document::LineFlattenToNil | Document::LineHard => {
-      collector.push(IntermediateDocumentTokenForPrinting::Line(*indentation));
-      generate_best_doc(collector, available_width, *indentation, false, rest)
-    }
-    Document::Union(d1, d2) => {
-      let prev_length = collector.len();
-      if generate_best_doc(
-        collector,
-        available_width,
-        consumed,
-        true,
-        &DocumentList::Cons(*indentation, d1.clone(), rest.clone()),
-      ) {
-        true
-      } else {
-        collector.truncate(prev_length);
-        generate_best_doc(
+    let (indentation, document, rest) = if let DocumentList::Cons(i, d, r) = list.as_ref() {
+      (i, d, r)
+    } else {
+      return true;
+    };
+    match document.as_ref() {
+      Document::Nil => list = rest.clone(),
+      Document::Concat(d1, d2) => {
+        list = Rc::new(DocumentList::Cons(
+          *indentation,
+          d1.clone(),
+          Rc::new(DocumentList::Cons(*indentation, d2.clone(), rest.clone())),
+        ));
+      }
+      Document::Nest(i, d) => {
+        list = Rc::new(DocumentList::Cons(indentation + i, d.clone(), rest.clone()))
+      }
+      Document::Text(s) => {
+        collector.push(IntermediateDocumentTokenForPrinting::Text(s.clone()));
+        consumed += s.len();
+        list = rest.clone();
+      }
+      Document::Line | Document::LineFlattenToNil | Document::LineHard => {
+        collector.push(IntermediateDocumentTokenForPrinting::Line(*indentation));
+        consumed = *indentation;
+        enforce_consumed = false;
+        list = rest.clone();
+      }
+      Document::Union(d1, d2) => {
+        let prev_length = collector.len();
+        if generate_best_doc(
           collector,
           available_width,
           consumed,
-          enforce_consumed,
-          &DocumentList::Cons(*indentation, d2.clone(), rest.clone()),
-        )
+          true,
+          Rc::new(DocumentList::Cons(*indentation, d1.clone(), rest.clone())),
+        ) {
+          return true;
+        } else {
+          collector.truncate(prev_length);
+          list = Rc::new(DocumentList::Cons(*indentation, d2.clone(), rest.clone()));
+        }
       }
     }
   }
@@ -218,7 +207,7 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
     available_width,
     0,
     false,
-    &DocumentList::Cons(0, Rc::new(document), Rc::new(DocumentList::Nil)),
+    Rc::new(DocumentList::Cons(0, Rc::new(document), Rc::new(DocumentList::Nil))),
   );
 
   let mut string_builder = String::new();

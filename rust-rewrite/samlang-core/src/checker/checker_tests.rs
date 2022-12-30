@@ -1501,7 +1501,9 @@ class Main {
 
     assert_eq!(
       1,
-      type_check_source_handles(vec![(ModuleReference::dummy(), source)]).compile_time_errors.len()
+      type_check_source_handles(vec![(ModuleReference::dummy(), source.to_string())])
+        .compile_time_errors
+        .len()
     );
 
     let mut error_set = ErrorSet::new();
