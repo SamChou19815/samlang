@@ -19,6 +19,6 @@ pub(crate) fn compile_mir_to_wasm(sources: &crate::ast::mir::Sources) -> (String
     include_str!("libsam.wat"),
     wasm_lowering::compile_mir_to_wasm(sources).pretty_print()
   );
-  let wat = wabt::wat2wasm(&whole_module_string).unwrap();
+  let wat = wat::parse_str(&whole_module_string).unwrap();
   (whole_module_string, wat)
 }

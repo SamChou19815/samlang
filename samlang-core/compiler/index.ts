@@ -16,9 +16,7 @@ function lowerMidIRSourcesToWasmModule(midIRSources: MidIRSources): BinaryenModu
   const unoptimizedWasmModule = prettyPrintWebAssemblyModule(
     lowerMidIRSourcesToWasmModuleInInternalAST(midIRSources),
   );
-  const wasmModule = binaryen.parseText(`(module\n${LIBSAM_WAT}\n${unoptimizedWasmModule}\n)\n`);
-  wasmModule.optimize();
-  return wasmModule;
+  return binaryen.parseText(`(module\n${LIBSAM_WAT}\n${unoptimizedWasmModule}\n)\n`);
 }
 
 export {
