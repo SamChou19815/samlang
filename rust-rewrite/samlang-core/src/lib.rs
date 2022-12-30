@@ -1,6 +1,7 @@
 #![allow(dead_code, clippy::upper_case_acronyms, clippy::or_fun_call, clippy::expect_fun_call)]
 #![cfg_attr(coverage_nightly, feature(no_coverage))]
 
+pub use common::measure_time;
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
@@ -38,12 +39,15 @@ const EMITTED_WAT_FILE: &str = "__all__.wat";
 pub fn compile_sources(
   source_handles: Vec<(ast::ModuleReference, String)>,
   entry_module_references: Vec<ast::ModuleReference>,
+  enable_profiling: bool,
 ) -> Result<SourcesCompilationResult, Vec<String>> {
   let checker::TypeCheckSourceHandlesResult {
     checked_sources,
     global_typing_context: _,
     compile_time_errors,
-  } = checker::type_check_source_handles(source_handles);
+  } = measure_time(enable_profiling, "Type checking", || {
+    checker::type_check_source_handles(source_handles)
+  });
   let mut errors = compile_time_errors.iter().map(|it| it.to_string()).sorted().collect_vec();
   for module_reference in &entry_module_references {
     if !checked_sources.contains_key(module_reference) {
@@ -57,12 +61,22 @@ pub fn compile_sources(
     return Err(errors);
   }
 
-  let mid_ir_sources = compiler::compile_hir_to_mir(optimization::optimize_sources(
-    compiler::compile_sources_to_hir(&checked_sources),
-    &optimization::ALL_ENABLED_CONFIGURATION,
-  ));
+  let unoptimized_hir_sources = measure_time(enable_profiling, "Compile to HIR", || {
+    compiler::compile_sources_to_hir(&checked_sources)
+  });
+  let optimized_hir_sources = measure_time(enable_profiling, "Optimize HIR", || {
+    optimization::optimize_sources(
+      unoptimized_hir_sources,
+      &optimization::ALL_ENABLED_CONFIGURATION,
+    )
+  });
+  let mid_ir_sources = measure_time(enable_profiling, "Compile to MIR", || {
+    compiler::compile_hir_to_mir(optimized_hir_sources)
+  });
   let common_ts_code = mid_ir_sources.pretty_print();
-  let (wat_text, wasm_file) = compiler::compile_mir_to_wasm(&mid_ir_sources);
+  let (wat_text, wasm_file) = measure_time(enable_profiling, "Compile to WASM", || {
+    compiler::compile_mir_to_wasm(&mid_ir_sources)
+  });
 
   let mut text_code_results = BTreeMap::new();
   for module_reference in &entry_module_references {
@@ -99,7 +113,8 @@ mod tests {
       vec!["Invalid entry point: A does not exist.".to_string()],
       super::compile_sources(
         vec![],
-        vec![crate::ast::ModuleReference::from_string_parts(vec!["A".to_string()])]
+        vec![crate::ast::ModuleReference::from_string_parts(vec!["A".to_string()])],
+        false,
       )
       .err()
       .unwrap()
@@ -115,7 +130,8 @@ mod tests {
           crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()]),
           "class Main { function main(): string = 42 + \"\" }".to_string()
         )],
-        vec![crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()])]
+        vec![crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()])],
+        false,
       )
       .err()
       .unwrap()
@@ -126,7 +142,8 @@ mod tests {
         crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()]),
         "class Main { function main(): unit = Builtins.println(\"hello world\") }".to_string()
       )],
-      vec![crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()])]
+      vec![crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()])],
+      false,
     )
     .is_ok());
   }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, ops::Deref, rc::Rc};
+use std::{collections::HashMap, fmt::Display, ops::Deref, rc::Rc, time::Instant};
 
 #[inline(always)]
 pub(crate) fn boxed<T>(v: T) -> Box<T> {
@@ -24,6 +24,18 @@ impl Deref for Str {
 
   fn deref(&self) -> &Self::Target {
     &self.0
+  }
+}
+
+pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F) -> R {
+  if enabled {
+    let now = Instant::now();
+    let result = f();
+    let time = now.elapsed().as_millis();
+    eprintln!("{} takes {}ms.", name, time);
+    result
+  } else {
+    f()
   }
 }
 
@@ -117,9 +129,11 @@ impl<V: Clone> LocalStackedContext<V> {
 
 #[cfg(test)]
 mod tests {
-  use super::{int_vec_to_data_string, rcs, LocalStackedContext};
+  use super::{int_vec_to_data_string, measure_time, rcs, LocalStackedContext};
   use itertools::Itertools;
   use std::collections::HashSet;
+
+  fn test_closure() {}
 
   #[test]
   fn boilterplate() {
@@ -130,6 +144,9 @@ mod tests {
     assert!(!format!("{:?}", rcs("debug")).is_empty());
     assert_eq!(rcs("zuck"), rcs("zuck"));
     assert_eq!(Some('h'), rcs("hiya").chars().next());
+
+    measure_time(true, "", test_closure);
+    measure_time(false, "", test_closure);
 
     let mut set = HashSet::new();
     set.insert(rcs("sam"));
