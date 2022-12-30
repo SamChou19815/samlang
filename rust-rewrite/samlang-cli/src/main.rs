@@ -134,17 +134,11 @@ mod runners {
               fs::write(PathBuf::from(configuration.output_directory.clone()).join(file), content)
                 .unwrap();
             }
-            let unoptimized_wasm_path = PathBuf::from(configuration.output_directory.clone())
-              .join("__all_unoptimized__.wasm");
-            fs::write(unoptimized_wasm_path.clone(), wasm_file).unwrap();
-            samlang_core::measure_time(enable_profiling, "Optimize WASM", || {
-              wasm_opt::OptimizationOptions::new_opt_level_1()
-                .run(
-                  unoptimized_wasm_path,
-                  PathBuf::from(configuration.output_directory.clone()).join("__all__.wasm"),
-                )
-                .unwrap()
-            });
+            fs::write(
+              PathBuf::from(configuration.output_directory.clone()).join("__all__.wasm"),
+              wasm_file,
+            )
+            .unwrap();
           }
         }
         Err(errors) => {
