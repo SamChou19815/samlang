@@ -20,14 +20,7 @@ export function activate(): void {
   languageClient = new LanguageClient(
     "samlang",
     "samlang Language Client",
-    {
-      run: { module: absoluteServerModule, transport: TransportKind.ipc },
-      debug: {
-        module: absoluteServerModule,
-        transport: TransportKind.ipc,
-        options: { execArgv: ["--nolazy", "--inspect=6009", "--stack_size=1024"] },
-      },
-    },
+    { command: absoluteServerModule, args: ["lsp"], transport: TransportKind.stdio },
     { documentSelector: [{ scheme: "file", language: "samlang" }] },
   );
 

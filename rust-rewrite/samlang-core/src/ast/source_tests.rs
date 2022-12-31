@@ -28,7 +28,8 @@ mod type_tests {
   use super::super::source::*;
   use crate::ast::loc::Location;
   use crate::ast::reason::Reason;
-  use crate::common::{rc, rcs};
+  use crate::common::rcs;
+  use std::sync::Arc;
   use std::vec;
 
   #[test]
@@ -92,7 +93,7 @@ mod type_tests {
       "A",
       TypeParameter {
         loc: Location::dummy(),
-        associated_comments: rc(vec![]),
+        associated_comments: Arc::new(vec![]),
         name: Id::from("A"),
         bound: Option::None
       }
@@ -102,9 +103,9 @@ mod type_tests {
       "A: B",
       TypeParameter {
         loc: Location::dummy(),
-        associated_comments: rc(vec![]),
+        associated_comments: Arc::new(vec![]),
         name: Id::from("A"),
-        bound: Option::Some(rc(builder.simple_id_type_unwrapped("B")))
+        bound: Option::Some(Arc::new(builder.simple_id_type_unwrapped("B")))
       }
       .pretty_print()
     );
@@ -114,7 +115,7 @@ mod type_tests {
       "A : B",
       TypeParameterSignature {
         name: rcs("A"),
-        bound: Option::Some(rc(builder.simple_id_type_unwrapped("B")))
+        bound: Option::Some(Arc::new(builder.simple_id_type_unwrapped("B")))
       }
       .clone()
       .pretty_print()
@@ -126,7 +127,7 @@ mod type_tests {
       TypeParameterSignature::pretty_print_list(&vec![
         TypeParameterSignature {
           name: rcs("A"),
-          bound: Option::Some(rc(builder.simple_id_type_unwrapped("B")))
+          bound: Option::Some(Arc::new(builder.simple_id_type_unwrapped("B")))
         },
         TypeParameterSignature { name: rcs("C"), bound: Option::None }
       ])
@@ -437,12 +438,9 @@ mod expressions_tests {
 
 #[cfg(test)]
 mod toplevel_tests {
-  use crate::{
-    ast::{source::*, Location, ModuleReference, Reason},
-    common::rc,
-  };
+  use crate::ast::{source::*, Location, ModuleReference, Reason};
   use pretty_assertions::assert_eq;
-  use std::collections::HashMap;
+  use std::{collections::HashMap, sync::Arc};
 
   #[test]
   fn boilterplate() {
@@ -450,7 +448,7 @@ mod toplevel_tests {
       "name",
       TypeParameter {
         loc: Location::dummy(),
-        associated_comments: rc(vec![]),
+        associated_comments: Arc::new(vec![]),
         name: Id::from("name"),
         bound: None
       }
@@ -462,7 +460,7 @@ mod toplevel_tests {
 
     assert_eq!(
       "s",
-      AnnotatedId { name: Id::from("s"), annotation: rc(Type::int_type(Reason::dummy())) }
+      AnnotatedId { name: Id::from("s"), annotation: Arc::new(Type::int_type(Reason::dummy())) }
         .name
         .name
         .as_str()
@@ -470,11 +468,11 @@ mod toplevel_tests {
 
     assert_eq!(
       "int",
-      FieldType { is_public: true, type_: rc(Type::int_type(Reason::dummy())) }.to_string()
+      FieldType { is_public: true, type_: Arc::new(Type::int_type(Reason::dummy())) }.to_string()
     );
     assert_eq!(
       "(private) int",
-      FieldType { is_public: false, type_: rc(Type::int_type(Reason::dummy())) }
+      FieldType { is_public: false, type_: Arc::new(Type::int_type(Reason::dummy())) }
         .clone()
         .to_string()
     );
@@ -483,24 +481,24 @@ mod toplevel_tests {
 
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
-      associated_comments: rc(vec![]),
+      associated_comments: Arc::new(vec![]),
       name: Id::from(""),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
       members: vec![ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: rc(vec![]),
+        associated_comments: Arc::new(vec![]),
         is_public: true,
         is_method: true,
         name: Id::from(""),
-        type_parameters: rc(vec![]),
+        type_parameters: Arc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
           argument_types: vec![],
           return_type: builder.int_type()
         },
-        parameters: rc(vec![])
+        parameters: Arc::new(vec![])
       }]
     }
     .clone()
@@ -527,7 +525,7 @@ mod toplevel_tests {
 
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
-      associated_comments: rc(vec![]),
+      associated_comments: Arc::new(vec![]),
       name: Id::from("name"),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
@@ -540,17 +538,17 @@ mod toplevel_tests {
       members: vec![ClassMemberDefinition {
         decl: ClassMemberDeclaration {
           loc: Location::dummy(),
-          associated_comments: rc(vec![]),
+          associated_comments: Arc::new(vec![]),
           is_public: true,
           is_method: true,
           name: Id::from(""),
-          type_parameters: rc(vec![]),
+          type_parameters: Arc::new(vec![]),
           type_: FunctionType {
             reason: Reason::dummy(),
             argument_types: vec![],
             return_type: builder.int_type(),
           },
-          parameters: rc(vec![]),
+          parameters: Arc::new(vec![]),
         },
         body: builder.true_expr(),
       }],
@@ -561,24 +559,24 @@ mod toplevel_tests {
     assert!(class.is_class());
     let interface = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
-      associated_comments: rc(vec![]),
+      associated_comments: Arc::new(vec![]),
       name: Id::from("name"),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
       members: vec![ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: rc(vec![]),
+        associated_comments: Arc::new(vec![]),
         is_public: true,
         is_method: true,
         name: Id::from(""),
-        type_parameters: rc(vec![]),
+        type_parameters: Arc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
           argument_types: vec![],
           return_type: builder.int_type(),
         },
-        parameters: rc(vec![]),
+        parameters: Arc::new(vec![]),
       }],
     });
     interface.members_iter().next();

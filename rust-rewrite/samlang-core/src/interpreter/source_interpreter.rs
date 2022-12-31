@@ -460,11 +460,11 @@ mod tests {
       Location, ModuleReference, Reason,
     },
     checker::type_check_single_module_source,
-    common::rc,
     errors::ErrorSet,
     parser::parse_source_module_from_text,
   };
   use pretty_assertions::assert_eq;
+  use std::sync::Arc;
 
   fn empty_cx() -> InterpretationContext {
     InterpretationContext {
@@ -482,8 +482,8 @@ mod tests {
   fn dummy_expr_common() -> expr::ExpressionCommon {
     expr::ExpressionCommon {
       loc: Location::dummy(),
-      associated_comments: rc(vec![]),
-      type_: rc(Type::int_type(Reason::dummy())),
+      associated_comments: Arc::new(vec![]),
+      type_: Arc::new(Type::int_type(Reason::dummy())),
     }
   }
 
@@ -574,7 +574,7 @@ mod tests {
       imports: vec![],
       toplevels: vec![Toplevel::Interface(InterfaceDeclarationCommon {
         loc: Location::dummy(),
-        associated_comments: rc(vec![]),
+        associated_comments: Arc::new(vec![]),
         name: Id::from(""),
         type_parameters: vec![],
         extends_or_implements_nodes: vec![],

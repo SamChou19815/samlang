@@ -1315,7 +1315,7 @@ pub(crate) fn compile_sources_to_hir(
 mod tests {
   use crate::{
     ast::{hir, source, Location, ModuleReference, Reason},
-    common::{rc, rcs},
+    common::rcs,
     compiler::{
       hir_string_manager::StringManager,
       hir_type_conversion::{SynthesizedTypes, TypeLoweringManager, TypeSynthesizer},
@@ -1323,7 +1323,10 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
-  use std::collections::{HashMap, HashSet};
+  use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+  };
 
   fn assert_expr_correctly_lowered(source_expr: &source::expr::E, expected_str: &str) {
     let mut type_lowering_manager = TypeLoweringManager {
@@ -1399,7 +1402,7 @@ mod tests {
 
   fn dummy_source_this() -> source::expr::E {
     let builder = source::test_builder::create();
-    source::expr::E::This(builder.expr_common(rc(dummy_source_id_type())))
+    source::expr::E::This(builder.expr_common(Arc::new(dummy_source_id_type())))
   }
 
   #[test]
@@ -1507,10 +1510,11 @@ return (_t0: int);"#,
     // Function call 3/n: class fn call with return
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(rc(dummy_source_id_type())),
+        common: builder.expr_common(Arc::new(dummy_source_id_type())),
         callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-          common: builder
-            .expr_common(builder.fun_type(vec![builder.int_type()], rc(dummy_source_id_type()))),
+          common: builder.expr_common(
+            builder.fun_type(vec![builder.int_type()], Arc::new(dummy_source_id_type())),
+          ),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
           class_name: source::Id::from("C"),
@@ -1525,8 +1529,9 @@ return (_t0: int);"#,
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.unit_type()),
         callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-          common: builder
-            .expr_common(builder.fun_type(vec![builder.int_type()], rc(dummy_source_id_type()))),
+          common: builder.expr_common(
+            builder.fun_type(vec![builder.int_type()], Arc::new(dummy_source_id_type())),
+          ),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
           class_name: source::Id::from("GENERIC_TYPE"),
@@ -1539,10 +1544,10 @@ return (_t0: int);"#,
     // Function call 5/n: method call with return
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(rc(dummy_source_id_type())),
+        common: builder.expr_common(Arc::new(dummy_source_id_type())),
         callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
           common: builder.expr_common(builder.fun_type(
-            vec![rc(dummy_source_id_type()), rc(dummy_source_id_type())],
+            vec![Arc::new(dummy_source_id_type()), Arc::new(dummy_source_id_type())],
             builder.int_type(),
           )),
           type_arguments: vec![],
@@ -1865,8 +1870,9 @@ return (_t0: $SyntheticIDType1);"#,
 
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
-        common: builder
-          .expr_common(builder.fun_type(vec![builder.unit_type()], rc(dummy_source_id_type()))),
+        common: builder.expr_common(
+          builder.fun_type(vec![builder.unit_type()], Arc::new(dummy_source_id_type())),
+        ),
         parameters: vec![source::OptionallyAnnotatedId {
           name: source::Id::from("a"),
           annotation: Some(builder.unit_type()),
@@ -1888,8 +1894,9 @@ return (_t0: $SyntheticIDType1);"#,
 
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
-        common: builder
-          .expr_common(builder.fun_type(vec![builder.unit_type()], rc(dummy_source_id_type()))),
+        common: builder.expr_common(
+          builder.fun_type(vec![builder.unit_type()], Arc::new(dummy_source_id_type())),
+        ),
         parameters: vec![source::OptionallyAnnotatedId {
           name: source::Id::from("a"),
           annotation: Some(builder.unit_type()),
@@ -1913,7 +1920,7 @@ return (_t0: $SyntheticIDType0);"#,
 
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: builder.expr_common(rc(dummy_source_id_type())),
+        common: builder.expr_common(Arc::new(dummy_source_id_type())),
         condition: Box::new(dummy_source_this()),
         e1: Box::new(dummy_source_this()),
         e2: Box::new(dummy_source_this()),
@@ -1929,7 +1936,7 @@ return (_t0: __DUMMY___Dummy);"#,
 
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
-        common: builder.expr_common(rc(dummy_source_id_type())),
+        common: builder.expr_common(Arc::new(dummy_source_id_type())),
         matched: Box::new(dummy_source_this()),
         cases: vec![
           source::expr::VariantPatternToExpression {
@@ -1962,7 +1969,7 @@ return (_t2: __DUMMY___Dummy);"#,
 
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
-        common: builder.expr_common(rc(dummy_source_id_type())),
+        common: builder.expr_common(Arc::new(dummy_source_id_type())),
         matched: Box::new(dummy_source_this()),
         cases: vec![
           source::expr::VariantPatternToExpression {
@@ -1976,8 +1983,8 @@ return (_t2: __DUMMY___Dummy);"#,
             loc: Location::dummy(),
             tag: source::Id::from("Bar"),
             tag_order: 1,
-            data_variable: Some((source::Id::from("bar"), rc(dummy_source_id_type()))),
-            body: Box::new(builder.id_expr("bar", rc(dummy_source_id_type()))),
+            data_variable: Some((source::Id::from("bar"), Arc::new(dummy_source_id_type()))),
+            body: Box::new(builder.id_expr("bar", Arc::new(dummy_source_id_type()))),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
@@ -2045,14 +2052,14 @@ return (_t4: __DUMMY___Dummy);"#,
                     },
                   ],
                 ),
-                annotation: Some(rc(dummy_source_id_type())),
+                annotation: Some(Arc::new(dummy_source_id_type())),
                 assigned_expression: Box::new(dummy_source_this()),
               },
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
                 associated_comments: vec![],
                 pattern: source::expr::Pattern::Wildcard(Location::dummy()),
-                annotation: Some(rc(dummy_source_id_type())),
+                annotation: Some(Arc::new(dummy_source_id_type())),
                 assigned_expression: Box::new(dummy_source_this()),
               },
             ],
@@ -2092,14 +2099,14 @@ return 0;"#,
                 },
               ],
             ),
-            annotation: Some(rc(dummy_source_id_type())),
+            annotation: Some(Arc::new(dummy_source_id_type())),
             assigned_expression: Box::new(dummy_source_this()),
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: vec![],
             pattern: source::expr::Pattern::Wildcard(Location::dummy()),
-            annotation: Some(rc(dummy_source_id_type())),
+            annotation: Some(Arc::new(dummy_source_id_type())),
             assigned_expression: Box::new(dummy_source_this()),
           },
         ],
@@ -2197,7 +2204,7 @@ return 0;"#,
       toplevels: vec![
         source::Toplevel::Interface(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: rc(vec![]),
+          associated_comments: Arc::new(vec![]),
           name: source::Id::from("I"),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
@@ -2206,7 +2213,7 @@ return 0;"#,
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: rc(vec![]),
+          associated_comments: Arc::new(vec![]),
           name: source::Id::from("Main"),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
@@ -2220,17 +2227,17 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: rc(vec![]),
+                associated_comments: Arc::new(vec![]),
                 is_public: true,
                 is_method: false,
                 name: source::Id::from("main"),
-                type_parameters: rc(vec![]),
+                type_parameters: Arc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![],
                   return_type: builder.unit_type(),
                 },
-                parameters: rc(vec![]),
+                parameters: Arc::new(vec![]),
               },
               body: source::expr::E::Call(source::expr::Call {
                 common: builder.expr_common(builder.unit_type()),
@@ -2247,13 +2254,13 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: rc(vec![]),
+                associated_comments: Arc::new(vec![]),
                 is_public: true,
                 is_method: false,
                 name: source::Id::from("loopy"),
-                type_parameters: rc(vec![source::TypeParameter {
+                type_parameters: Arc::new(vec![source::TypeParameter {
                   loc: Location::dummy(),
-                  associated_comments: rc(vec![]),
+                  associated_comments: Arc::new(vec![]),
                   name: source::Id::from("T"),
                   bound: None,
                 }]),
@@ -2262,7 +2269,7 @@ return 0;"#,
                   argument_types: vec![],
                   return_type: builder.unit_type(),
                 },
-                parameters: rc(vec![]),
+                parameters: Arc::new(vec![]),
               },
               body: source::expr::E::Call(source::expr::Call {
                 common: builder.expr_common(builder.unit_type()),
@@ -2280,7 +2287,7 @@ return 0;"#,
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: rc(vec![]),
+          associated_comments: Arc::new(vec![]),
           name: source::Id::from("Class1"),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
@@ -2297,17 +2304,17 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: rc(vec![]),
+                associated_comments: Arc::new(vec![]),
                 is_public: true,
                 is_method: true,
                 name: source::Id::from("foo"),
-                type_parameters: rc(vec![]),
+                type_parameters: Arc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![builder.int_type()],
                   return_type: builder.int_type(),
                 },
-                parameters: rc(vec![source::AnnotatedId {
+                parameters: Arc::new(vec![source::AnnotatedId {
                   name: source::Id::from("a"),
                   annotation: builder.int_type(),
                 }]),
@@ -2317,17 +2324,17 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: rc(vec![]),
+                associated_comments: Arc::new(vec![]),
                 is_public: true,
                 is_method: false,
                 name: source::Id::from("infiniteLoop"),
-                type_parameters: rc(vec![]),
+                type_parameters: Arc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![],
                   return_type: builder.unit_type(),
                 },
-                parameters: rc(vec![]),
+                parameters: Arc::new(vec![]),
               },
               body: source::expr::E::Call(source::expr::Call {
                 common: builder.expr_common(builder.unit_type()),
@@ -2344,17 +2351,17 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: rc(vec![]),
+                associated_comments: Arc::new(vec![]),
                 is_public: true,
                 is_method: false,
                 name: source::Id::from("factorial"),
-                type_parameters: rc(vec![]),
+                type_parameters: Arc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![builder.int_type(), builder.int_type()],
                   return_type: builder.int_type(),
                 },
-                parameters: rc(vec![
+                parameters: Arc::new(vec![
                   source::AnnotatedId {
                     name: source::Id::from("n"),
                     annotation: builder.int_type(),
@@ -2410,7 +2417,7 @@ return 0;"#,
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: rc(vec![]),
+          associated_comments: Arc::new(vec![]),
           name: source::Id::from("Class2"),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
@@ -2427,11 +2434,11 @@ return 0;"#,
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: rc(vec![]),
+          associated_comments: Arc::new(vec![]),
           name: source::Id::from("Class3"),
           type_parameters: vec![source::TypeParameter {
             loc: Location::dummy(),
-            associated_comments: rc(vec![]),
+            associated_comments: Arc::new(vec![]),
             name: source::Id::from("T"),
             bound: None,
           }],

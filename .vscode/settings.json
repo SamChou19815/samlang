@@ -1,4 +1,4 @@
 {
-  "samlang.programPath": "samlang-cli/bin/lsp.js",
+  "samlang.programPath": "./rust-rewrite/target/release/samlang-cli",
   "files.associations": { "*.h": "c" }
 }

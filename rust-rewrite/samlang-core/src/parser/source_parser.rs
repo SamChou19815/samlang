@@ -1,7 +1,6 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
 use crate::{
   ast::{source::*, Location, ModuleReference, Position, Reason},
-  common::rc,
   common::{boxed, rc_string, rcs, Str},
   errors::ErrorSet,
 };
@@ -9,7 +8,7 @@ use itertools::Itertools;
 use std::{
   cmp,
   collections::{HashMap, HashSet},
-  rc::Rc,
+  sync::Arc,
   vec,
 };
 
@@ -358,7 +357,7 @@ impl<'a> SourceParser<'a> {
     }
     InterfaceDeclarationCommon {
       loc,
-      associated_comments: rc(associated_comments),
+      associated_comments: Arc::new(associated_comments),
       name,
       type_parameters,
       extends_or_implements_nodes,
@@ -400,7 +399,7 @@ impl<'a> SourceParser<'a> {
     }
     InterfaceDeclarationCommon {
       loc,
-      associated_comments: rc(associated_comments),
+      associated_comments: Arc::new(associated_comments),
       name,
       type_parameters,
       extends_or_implements_nodes,
@@ -517,17 +516,17 @@ impl<'a> SourceParser<'a> {
     let fun_type_loc = fun_type_loc_start.union(&return_type.get_reason().use_loc);
     ClassMemberDeclaration {
       loc: start_loc.union(&fun_type_loc),
-      associated_comments: rc(associated_comments),
+      associated_comments: Arc::new(associated_comments),
       is_public,
       is_method,
       name,
-      type_parameters: rc(type_parameters),
+      type_parameters: Arc::new(type_parameters),
       type_: FunctionType {
         reason: Reason::new(fun_type_loc.clone(), Some(fun_type_loc)),
         argument_types: parameters.iter().map(|it| it.annotation.clone()).collect_vec(),
         return_type,
       },
-      parameters: rc(parameters),
+      parameters: Arc::new(parameters),
     }
   }
 
@@ -539,11 +538,16 @@ impl<'a> SourceParser<'a> {
       let id = self.parse_upper_id();
       let bound = self.parse_identifier_type(&id);
       let loc = name.loc.union(&bound.reason.use_loc);
-      (Some(rc(bound)), loc)
+      (Some(Arc::new(bound)), loc)
     } else {
       (None, name.loc.clone())
     };
-    TypeParameter { loc, associated_comments: rc(associated_comments), name: name.clone(), bound }
+    TypeParameter {
+      loc,
+      associated_comments: Arc::new(associated_comments),
+      name: name.clone(),
+      bound,
+    }
   }
 
   pub(super) fn parse_expression(&mut self) -> expr::E {
@@ -559,7 +563,7 @@ impl<'a> SourceParser<'a> {
       associated_comments.append(&mut copied_new_comments);
       expr::ExpressionCommon {
         loc: c.loc.clone(),
-        associated_comments: rc(associated_comments),
+        associated_comments: Arc::new(associated_comments),
         type_: c.type_,
       }
     })
@@ -581,8 +585,8 @@ impl<'a> SourceParser<'a> {
       expr::E::Match(expr::Match {
         common: expr::ExpressionCommon {
           loc: loc.clone(),
-          associated_comments: rc(associated_comments),
-          type_: rc(Type::Unknown(Reason::new(loc, None))),
+          associated_comments: Arc::new(associated_comments),
+          type_: Arc::new(Type::Unknown(Reason::new(loc, None))),
         },
         matched: boxed(match_expression),
         cases: matching_list,
@@ -600,7 +604,7 @@ impl<'a> SourceParser<'a> {
       None
     } else {
       let name = self.parse_lower_id();
-      Some((name.clone(), rc(Type::Unknown(Reason::new(name.loc, None)))))
+      Some((name.clone(), Arc::new(Type::Unknown(Reason::new(name.loc, None)))))
     };
     self.assert_and_consume_operator(TokenOp::ARROW);
     let expression = self.parse_expression();
@@ -626,8 +630,8 @@ impl<'a> SourceParser<'a> {
       return expr::E::IfElse(expr::IfElse {
         common: expr::ExpressionCommon {
           loc: loc.clone(),
-          associated_comments: rc(associated_comments),
-          type_: rc(Type::Unknown(Reason::new(loc, None))),
+          associated_comments: Arc::new(associated_comments),
+          type_: Arc::new(Type::Unknown(Reason::new(loc, None))),
         },
         condition: boxed(condition),
         e1: boxed(e1),
@@ -647,8 +651,8 @@ impl<'a> SourceParser<'a> {
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
           loc: loc.clone(),
-          associated_comments: rc(vec![]),
-          type_: rc(Type::bool_type(Reason::new(loc, None))),
+          associated_comments: Arc::new(vec![]),
+          type_: Arc::new(Type::bool_type(Reason::new(loc, None))),
         },
         operator_preceding_comments,
         operator: expr::BinaryOperator::OR,
@@ -669,8 +673,8 @@ impl<'a> SourceParser<'a> {
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
           loc: loc.clone(),
-          associated_comments: rc(vec![]),
-          type_: rc(Type::bool_type(Reason::new(loc, None))),
+          associated_comments: Arc::new(vec![]),
+          type_: Arc::new(Type::bool_type(Reason::new(loc, None))),
         },
         operator_preceding_comments,
         operator: expr::BinaryOperator::AND,
@@ -700,8 +704,8 @@ impl<'a> SourceParser<'a> {
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
           loc: loc.clone(),
-          associated_comments: rc(vec![]),
-          type_: rc(Type::bool_type(Reason::new(loc, None))),
+          associated_comments: Arc::new(vec![]),
+          type_: Arc::new(Type::bool_type(Reason::new(loc, None))),
         },
         operator_preceding_comments,
         operator,
@@ -727,8 +731,8 @@ impl<'a> SourceParser<'a> {
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
           loc: loc.clone(),
-          associated_comments: rc(vec![]),
-          type_: rc(Type::int_type(Reason::new(loc, None))),
+          associated_comments: Arc::new(vec![]),
+          type_: Arc::new(Type::int_type(Reason::new(loc, None))),
         },
         operator_preceding_comments,
         operator,
@@ -755,8 +759,8 @@ impl<'a> SourceParser<'a> {
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
           loc: loc.clone(),
-          associated_comments: rc(vec![]),
-          type_: rc(Type::int_type(Reason::new(loc, None))),
+          associated_comments: Arc::new(vec![]),
+          type_: Arc::new(Type::int_type(Reason::new(loc, None))),
         },
         operator_preceding_comments,
         operator,
@@ -777,8 +781,8 @@ impl<'a> SourceParser<'a> {
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
           loc: loc.clone(),
-          associated_comments: rc(vec![]),
-          type_: rc(Type::string_type(Reason::new(loc, None))),
+          associated_comments: Arc::new(vec![]),
+          type_: Arc::new(Type::string_type(Reason::new(loc, None))),
         },
         operator_preceding_comments,
         operator: expr::BinaryOperator::CONCAT,
@@ -800,8 +804,8 @@ impl<'a> SourceParser<'a> {
         expr::E::Unary(expr::Unary {
           common: expr::ExpressionCommon {
             loc: loc.clone(),
-            associated_comments: rc(associated_comments),
-            type_: rc(Type::bool_type(Reason::new(loc, None))),
+            associated_comments: Arc::new(associated_comments),
+            type_: Arc::new(Type::bool_type(Reason::new(loc, None))),
           },
           operator: expr::UnaryOperator::NOT,
           argument: boxed(argument),
@@ -814,8 +818,8 @@ impl<'a> SourceParser<'a> {
         expr::E::Unary(expr::Unary {
           common: expr::ExpressionCommon {
             loc: loc.clone(),
-            associated_comments: rc(associated_comments),
-            type_: rc(Type::int_type(Reason::new(loc, None))),
+            associated_comments: Arc::new(associated_comments),
+            type_: Arc::new(Type::int_type(Reason::new(loc, None))),
           },
           operator: expr::UnaryOperator::NEG,
           argument: boxed(argument),
@@ -849,14 +853,14 @@ impl<'a> SourceParser<'a> {
           function_expression = expr::E::FieldAccess(expr::FieldAccess {
             common: expr::ExpressionCommon {
               loc: loc.clone(),
-              associated_comments: rc(vec![]),
-              type_: rc(Type::Unknown(Reason::new(loc, None))),
+              associated_comments: Arc::new(vec![]),
+              type_: Arc::new(Type::Unknown(Reason::new(loc, None))),
             },
             type_arguments,
             object: boxed(function_expression),
             field_name: Id {
               loc: field_loc,
-              associated_comments: rc(field_preceding_comments),
+              associated_comments: Arc::new(field_preceding_comments),
               name: field_name,
             },
             field_order: -1,
@@ -877,8 +881,8 @@ impl<'a> SourceParser<'a> {
           function_expression = expr::E::Call(expr::Call {
             common: expr::ExpressionCommon {
               loc: loc.clone(),
-              associated_comments: rc(vec![]),
-              type_: rc(Type::Unknown(Reason::new(loc, None))),
+              associated_comments: Arc::new(vec![]),
+              type_: Arc::new(Type::Unknown(Reason::new(loc, None))),
             },
             callee: boxed(function_expression),
             arguments: function_arguments,
@@ -898,8 +902,8 @@ impl<'a> SourceParser<'a> {
       return expr::E::Literal(
         expr::ExpressionCommon {
           loc: peeked_loc.clone(),
-          associated_comments: rc(associated_comments),
-          type_: rc(Type::bool_type(Reason::new(peeked_loc.clone(), None))),
+          associated_comments: Arc::new(associated_comments),
+          type_: Arc::new(Type::bool_type(Reason::new(peeked_loc.clone(), None))),
         },
         Literal::Bool(true),
       );
@@ -909,8 +913,8 @@ impl<'a> SourceParser<'a> {
       return expr::E::Literal(
         expr::ExpressionCommon {
           loc: peeked_loc.clone(),
-          associated_comments: rc(associated_comments),
-          type_: rc(Type::bool_type(Reason::new(peeked_loc.clone(), None))),
+          associated_comments: Arc::new(associated_comments),
+          type_: Arc::new(Type::bool_type(Reason::new(peeked_loc.clone(), None))),
         },
         Literal::Bool(false),
       );
@@ -920,8 +924,8 @@ impl<'a> SourceParser<'a> {
       return expr::E::Literal(
         expr::ExpressionCommon {
           loc: peeked_loc.clone(),
-          associated_comments: rc(associated_comments),
-          type_: rc(Type::int_type(Reason::new(peeked_loc.clone(), None))),
+          associated_comments: Arc::new(associated_comments),
+          type_: Arc::new(Type::int_type(Reason::new(peeked_loc.clone(), None))),
         },
         Literal::Int(i.parse::<i32>().unwrap_or(0)),
       );
@@ -933,8 +937,8 @@ impl<'a> SourceParser<'a> {
       return expr::E::Literal(
         expr::ExpressionCommon {
           loc: peeked_loc.clone(),
-          associated_comments: rc(associated_comments),
-          type_: rc(Type::string_type(Reason::new(peeked_loc.clone(), None))),
+          associated_comments: Arc::new(associated_comments),
+          type_: Arc::new(Type::string_type(Reason::new(peeked_loc.clone(), None))),
         },
         Literal::String(rc_string(str_lit)),
       );
@@ -944,18 +948,18 @@ impl<'a> SourceParser<'a> {
       return expr::E::Id(
         expr::ExpressionCommon {
           loc: peeked_loc.clone(),
-          associated_comments: rc(associated_comments),
-          type_: rc(Type::Unknown(Reason::new(peeked_loc.clone(), None))),
+          associated_comments: Arc::new(associated_comments),
+          type_: Arc::new(Type::Unknown(Reason::new(peeked_loc.clone(), None))),
         },
-        Id { loc: peeked_loc.clone(), associated_comments: rc(vec![]), name: name.clone() },
+        Id { loc: peeked_loc.clone(), associated_comments: Arc::new(vec![]), name: name.clone() },
       );
     }
     if let Token(peeked_loc, TokenContent::Keyword(Keyword::THIS)) = peeked {
       self.consume();
       return expr::E::This(expr::ExpressionCommon {
         loc: peeked_loc.clone(),
-        associated_comments: rc(associated_comments),
-        type_: rc(Type::Unknown(Reason::new(peeked_loc.clone(), None))),
+        associated_comments: Arc::new(associated_comments),
+        type_: Arc::new(Type::Unknown(Reason::new(peeked_loc.clone(), None))),
       });
     }
 
@@ -981,19 +985,19 @@ impl<'a> SourceParser<'a> {
         return expr::E::ClassFn(expr::ClassFunction {
           common: expr::ExpressionCommon {
             loc: loc.clone(),
-            associated_comments: rc(associated_comments),
-            type_: rc(Type::Unknown(Reason::new(loc, None))),
+            associated_comments: Arc::new(associated_comments),
+            type_: Arc::new(Type::Unknown(Reason::new(loc, None))),
           },
           type_arguments,
           module_reference: self.resolve_class(class_name),
           class_name: Id {
             loc: peeked_loc.clone(),
-            associated_comments: rc(vec![]),
+            associated_comments: Arc::new(vec![]),
             name: class_name.clone(),
           },
           fn_name: Id {
             loc: member_name_loc,
-            associated_comments: rc(member_preceding_comments),
+            associated_comments: Arc::new(member_preceding_comments),
             name: function_name,
           },
         });
@@ -1014,8 +1018,8 @@ impl<'a> SourceParser<'a> {
         return expr::E::Lambda(expr::Lambda {
           common: expr::ExpressionCommon {
             loc: loc.clone(),
-            associated_comments: rc(comments),
-            type_: rc(Type::Fn(FunctionType {
+            associated_comments: Arc::new(comments),
+            type_: Arc::new(Type::Fn(FunctionType {
               reason: Reason::new(loc, None),
               argument_types: vec![],
               return_type: body.type_(),
@@ -1050,15 +1054,15 @@ impl<'a> SourceParser<'a> {
             return expr::E::Lambda(expr::Lambda {
               common: expr::ExpressionCommon {
                 loc: loc.clone(),
-                associated_comments: rc(associated_comments),
-                type_: rc(Type::Fn(FunctionType {
+                associated_comments: Arc::new(associated_comments),
+                type_: Arc::new(Type::Fn(FunctionType {
                   reason: Reason::new(loc.clone(), Some(loc)),
                   argument_types: parameters
                     .iter()
                     .map(|it| {
                       it.annotation
                         .clone()
-                        .unwrap_or(rc(Type::Unknown(Reason::new(it.name.loc.clone(), None))))
+                        .unwrap_or(Arc::new(Type::Unknown(Reason::new(it.name.loc.clone(), None))))
                     })
                     .collect_vec(),
                   return_type: body.type_(),
@@ -1082,17 +1086,17 @@ impl<'a> SourceParser<'a> {
               return expr::E::Lambda(expr::Lambda {
                 common: expr::ExpressionCommon {
                   loc: loc.clone(),
-                  associated_comments: rc(comments),
-                  type_: rc(Type::Fn(FunctionType {
+                  associated_comments: Arc::new(comments),
+                  type_: Arc::new(Type::Fn(FunctionType {
                     reason: Reason::new(loc.clone(), Some(loc)),
-                    argument_types: vec![rc(parameter_type)],
+                    argument_types: vec![Arc::new(parameter_type)],
                     return_type: body.type_(),
                   })),
                 },
                 parameters: vec![OptionallyAnnotatedId {
                   name: Id {
                     loc: loc_id_for_lambda,
-                    associated_comments: rc(vec![]),
+                    associated_comments: Arc::new(vec![]),
                     name: id_for_lambda,
                   },
                   annotation: None,
@@ -1129,8 +1133,8 @@ impl<'a> SourceParser<'a> {
         return expr::E::Block(expr::Block {
           common: expr::ExpressionCommon {
             loc: loc.clone(),
-            associated_comments: rc(associated_comments),
-            type_: rc(Type::unit_type(Reason::new(loc, None))),
+            associated_comments: Arc::new(associated_comments),
+            type_: Arc::new(Type::unit_type(Reason::new(loc, None))),
           },
           statements,
           expression: None,
@@ -1143,7 +1147,7 @@ impl<'a> SourceParser<'a> {
       return expr::E::Block(expr::Block {
         common: expr::ExpressionCommon {
           loc,
-          associated_comments: rc(associated_comments),
+          associated_comments: Arc::new(associated_comments),
           type_: expression.type_(),
         },
         statements,
@@ -1156,8 +1160,8 @@ impl<'a> SourceParser<'a> {
     expr::E::Literal(
       expr::ExpressionCommon {
         loc: peeked.0.clone(),
-        associated_comments: rc(associated_comments),
-        type_: rc(Type::int_type(Reason::new(peeked.0.clone(), None))),
+        associated_comments: Arc::new(associated_comments),
+        type_: Arc::new(Type::int_type(Reason::new(peeked.0.clone(), None))),
       },
       Literal::Int(0),
     )
@@ -1204,7 +1208,7 @@ impl<'a> SourceParser<'a> {
           field_name,
           field_order: 0,
           alias,
-          type_: rc(Type::Unknown(Reason::new(loc, None))),
+          type_: Arc::new(Type::Unknown(Reason::new(loc, None))),
         }
       });
       let end_location = self.assert_and_consume_operator(TokenOp::RBRACE);
@@ -1220,13 +1224,13 @@ impl<'a> SourceParser<'a> {
   fn parse_upper_id(&mut self) -> Id {
     let associated_comments = self.collect_preceding_comments();
     let (loc, name) = self.assert_and_peek_upper_id();
-    Id { loc, associated_comments: rc(associated_comments), name }
+    Id { loc, associated_comments: Arc::new(associated_comments), name }
   }
 
   fn parse_lower_id(&mut self) -> Id {
     let associated_comments = self.collect_preceding_comments();
     let (loc, name) = self.assert_and_peek_lower_id();
-    Id { loc, associated_comments: rc(associated_comments), name }
+    Id { loc, associated_comments: Arc::new(associated_comments), name }
   }
 
   fn collect_preceding_comments(&mut self) -> Vec<Comment> {
@@ -1265,30 +1269,30 @@ impl<'a> SourceParser<'a> {
     comments
   }
 
-  pub(super) fn parse_type(&mut self) -> Rc<Type> {
+  pub(super) fn parse_type(&mut self) -> Arc<Type> {
     let peeked = &self.peek();
     match &peeked.1 {
       TokenContent::Keyword(Keyword::UNIT) => {
         self.consume();
-        rc(Type::unit_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Arc::new(Type::unit_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
       }
       TokenContent::Keyword(Keyword::BOOL) => {
         self.consume();
-        rc(Type::bool_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Arc::new(Type::bool_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
       }
       TokenContent::Keyword(Keyword::INT) => {
         self.consume();
-        rc(Type::int_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Arc::new(Type::int_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
       }
       TokenContent::Keyword(Keyword::STRING) => {
         self.consume();
-        rc(Type::string_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Arc::new(Type::string_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
       }
       TokenContent::UpperId(name) => {
         self.consume();
-        rc(Type::Id(self.parse_identifier_type(&Id {
+        Arc::new(Type::Id(self.parse_identifier_type(&Id {
           loc: peeked.0.clone(),
-          associated_comments: rc(vec![]),
+          associated_comments: Arc::new(vec![]),
           name: name.clone(),
         })))
       }
@@ -1306,7 +1310,7 @@ impl<'a> SourceParser<'a> {
         self.assert_and_consume_operator(TokenOp::ARROW);
         let return_type = self.parse_type();
         let location = peeked.0.union(&return_type.get_reason().use_loc);
-        rc(Type::Fn(FunctionType {
+        Arc::new(Type::Fn(FunctionType {
           reason: Reason::new(location.clone(), Option::Some(location)),
           argument_types,
           return_type,
@@ -1314,7 +1318,7 @@ impl<'a> SourceParser<'a> {
       }
       content => {
         self.report(&peeked.0, &format!("Expecting: type, actual: {}", content.to_string()));
-        rc(Type::Unknown(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Arc::new(Type::Unknown(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
       }
     }
   }

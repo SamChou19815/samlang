@@ -7,7 +7,7 @@ use crate::{
   common::{rc_string, rcs, Str},
 };
 use itertools::Itertools;
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 fn comma_sep_list<E, F: Fn(&E) -> Document>(elements: &[E], doc_creator: F) -> Document {
   let mut iter = elements.iter().rev();
@@ -70,7 +70,7 @@ fn associated_comments_doc(
   }
 }
 
-fn optional_targs(type_args: &Vec<Rc<Type>>) -> String {
+fn optional_targs(type_args: &Vec<Arc<Type>>) -> String {
   if type_args.is_empty() {
     "".to_string()
   } else {

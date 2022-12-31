@@ -7,10 +7,10 @@ use crate::{
     Location, ModuleReference,
   },
   checker::{perform_ssa_analysis_on_module, SsaAnalysisResult},
-  common::{rc, rc_string},
+  common::rc_string,
   errors::ErrorSet,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 pub(super) struct DefinitionAndUses {
   pub(super) definition_location: Location,
@@ -285,7 +285,7 @@ pub(super) fn apply_renaming(
                     name: name.clone(),
                     type_parameters: type_parameters.clone(),
                     type_: type_.clone(),
-                    parameters: rc(
+                    parameters: Arc::new(
                       parameters
                         .iter()
                         .map(|AnnotatedId { name, annotation }| AnnotatedId {
