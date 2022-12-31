@@ -2,10 +2,10 @@ use super::{
   loc::{Location, ModuleReference},
   reason::Reason,
 };
-use crate::common::{rc, rcs, Str};
+use crate::common::{rcs, Str};
 use enum_as_inner::EnumAsInner;
 use itertools::join;
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) enum CommentKind {
@@ -82,7 +82,7 @@ pub(crate) struct IdType {
   pub(crate) reason: Reason,
   pub(crate) module_reference: ModuleReference,
   pub(crate) id: Str,
-  pub(crate) type_arguments: Vec<Rc<Type>>,
+  pub(crate) type_arguments: Vec<Arc<Type>>,
 }
 
 impl ISourceType for IdType {
@@ -119,8 +119,8 @@ impl IdType {
 #[derive(Clone)]
 pub(crate) struct FunctionType {
   pub(crate) reason: Reason,
-  pub(crate) argument_types: Vec<Rc<Type>>,
-  pub(crate) return_type: Rc<Type>,
+  pub(crate) argument_types: Vec<Arc<Type>>,
+  pub(crate) return_type: Arc<Type>,
 }
 
 impl ISourceType for FunctionType {
@@ -230,7 +230,7 @@ impl Type {
 #[derive(Clone)]
 pub(crate) struct TypeParameterSignature {
   pub(crate) name: Str,
-  pub(crate) bound: Option<Rc<IdType>>,
+  pub(crate) bound: Option<Arc<IdType>>,
 }
 
 impl TypeParameterSignature {
@@ -253,42 +253,43 @@ impl TypeParameterSignature {
 #[derive(Clone)]
 pub(crate) struct Id {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: Rc<Vec<Comment>>,
+  pub(crate) associated_comments: Arc<Vec<Comment>>,
   pub(crate) name: Str,
 }
 
 impl Id {
   pub(crate) fn from(name: &'static str) -> Id {
-    Id { loc: Location::dummy(), associated_comments: rc(vec![]), name: rcs(name) }
+    Id { loc: Location::dummy(), associated_comments: Arc::new(vec![]), name: rcs(name) }
   }
 }
 
 #[derive(Clone)]
 pub(crate) struct OptionallyAnnotatedId {
   pub(crate) name: Id,
-  pub(crate) annotation: Option<Rc<Type>>,
+  pub(crate) annotation: Option<Arc<Type>>,
 }
 
 pub(crate) struct AnnotatedId {
   pub(crate) name: Id,
-  pub(crate) annotation: Rc<Type>,
+  pub(crate) annotation: Arc<Type>,
 }
 
 pub(crate) mod expr {
   use super::super::loc::{Location, ModuleReference};
   use super::{Comment, Id, Literal, OptionallyAnnotatedId, Type};
   use crate::common::Str;
-  use std::{collections::HashMap, rc::Rc};
+  use std::collections::HashMap;
+  use std::sync::Arc;
 
   #[derive(Clone)]
   pub(crate) struct ExpressionCommon {
     pub(crate) loc: Location,
-    pub(crate) associated_comments: Rc<Vec<Comment>>,
-    pub(crate) type_: Rc<Type>,
+    pub(crate) associated_comments: Arc<Vec<Comment>>,
+    pub(crate) type_: Arc<Type>,
   }
 
   impl ExpressionCommon {
-    pub(crate) fn with_new_type(self, type_: Rc<Type>) -> ExpressionCommon {
+    pub(crate) fn with_new_type(self, type_: Arc<Type>) -> ExpressionCommon {
       ExpressionCommon { loc: self.loc, associated_comments: self.associated_comments, type_ }
     }
   }
@@ -296,7 +297,7 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct ClassFunction {
     pub(crate) common: ExpressionCommon,
-    pub(crate) type_arguments: Vec<Rc<Type>>,
+    pub(crate) type_arguments: Vec<Arc<Type>>,
     pub(crate) module_reference: ModuleReference,
     pub(crate) class_name: Id,
     pub(crate) fn_name: Id,
@@ -305,7 +306,7 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct FieldAccess {
     pub(crate) common: ExpressionCommon,
-    pub(crate) type_arguments: Vec<Rc<Type>>,
+    pub(crate) type_arguments: Vec<Arc<Type>>,
     pub(crate) object: Box<E>,
     pub(crate) field_name: Id,
     pub(crate) field_order: i32,
@@ -314,7 +315,7 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct MethodAccess {
     pub(crate) common: ExpressionCommon,
-    pub(crate) type_arguments: Vec<Rc<Type>>,
+    pub(crate) type_arguments: Vec<Arc<Type>>,
     pub(crate) object: Box<E>,
     pub(crate) method_name: Id,
   }
@@ -430,7 +431,7 @@ pub(crate) mod expr {
     pub(crate) loc: Location,
     pub(crate) tag: Id,
     pub(crate) tag_order: usize,
-    pub(crate) data_variable: Option<(Id, Rc<Type>)>,
+    pub(crate) data_variable: Option<(Id, Arc<Type>)>,
     pub(crate) body: Box<E>,
   }
 
@@ -445,7 +446,7 @@ pub(crate) mod expr {
   pub(crate) struct Lambda {
     pub(crate) common: ExpressionCommon,
     pub(crate) parameters: Vec<OptionallyAnnotatedId>,
-    pub(crate) captured: HashMap<Str, Rc<Type>>,
+    pub(crate) captured: HashMap<Str, Arc<Type>>,
     pub(crate) body: Box<E>,
   }
 
@@ -455,7 +456,7 @@ pub(crate) mod expr {
     pub(crate) field_order: usize,
     pub(crate) field_name: Id,
     pub(crate) alias: Option<Id>,
-    pub(crate) type_: Rc<Type>,
+    pub(crate) type_: Arc<Type>,
   }
 
   #[derive(Clone)]
@@ -470,7 +471,7 @@ pub(crate) mod expr {
     pub(crate) loc: Location,
     pub(crate) associated_comments: Vec<Comment>,
     pub(crate) pattern: Pattern,
-    pub(crate) annotation: Option<Rc<Type>>,
+    pub(crate) annotation: Option<Arc<Type>>,
     pub(crate) assigned_expression: Box<E>,
   }
 
@@ -521,7 +522,7 @@ pub(crate) mod expr {
       &self.common().loc
     }
 
-    pub(crate) fn type_(&self) -> Rc<Type> {
+    pub(crate) fn type_(&self) -> Arc<Type> {
       self.common().type_.clone()
     }
 
@@ -597,9 +598,9 @@ pub(crate) mod expr {
 #[derive(Clone)]
 pub(crate) struct TypeParameter {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: Rc<Vec<Comment>>,
+  pub(crate) associated_comments: Arc<Vec<Comment>>,
   pub(crate) name: Id,
-  pub(crate) bound: Option<Rc<IdType>>,
+  pub(crate) bound: Option<Arc<IdType>>,
 }
 
 impl TypeParameter {
@@ -615,13 +616,13 @@ impl TypeParameter {
 #[derive(Clone)]
 pub(crate) struct ClassMemberDeclaration {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: Rc<Vec<Comment>>,
+  pub(crate) associated_comments: Arc<Vec<Comment>>,
   pub(crate) is_public: bool,
   pub(crate) is_method: bool,
   pub(crate) name: Id,
-  pub(crate) type_parameters: Rc<Vec<TypeParameter>>,
+  pub(crate) type_parameters: Arc<Vec<TypeParameter>>,
   pub(crate) type_: FunctionType,
-  pub(crate) parameters: Rc<Vec<AnnotatedId>>,
+  pub(crate) parameters: Arc<Vec<AnnotatedId>>,
 }
 
 pub(crate) struct ClassMemberDefinition {
@@ -632,7 +633,7 @@ pub(crate) struct ClassMemberDefinition {
 #[derive(Clone)]
 pub(crate) struct InterfaceDeclarationCommon<D, M> {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: Rc<Vec<Comment>>,
+  pub(crate) associated_comments: Arc<Vec<Comment>>,
   pub(crate) name: Id,
   pub(crate) type_parameters: Vec<TypeParameter>,
   /** The node after colon, interpreted as extends in interfaces and implements in classes. */
@@ -646,7 +647,7 @@ pub(crate) type InterfaceDeclaration = InterfaceDeclarationCommon<(), ClassMembe
 #[derive(Clone)]
 pub(crate) struct FieldType {
   pub(crate) is_public: bool,
-  pub(crate) type_: Rc<Type>,
+  pub(crate) type_: Arc<Type>,
 }
 
 impl ToString for FieldType {
@@ -760,14 +761,13 @@ pub(crate) struct Module {
 
 #[cfg(test)]
 pub(crate) mod test_builder {
-  use crate::common::{rc, rcs};
+  use crate::common::rcs;
 
   use super::super::{
     loc::{Location, ModuleReference},
     reason::Reason,
   };
   use super::*;
-  use std::{rc::Rc, str};
 
   pub(crate) struct CustomizedAstBuilder {
     reason: Reason,
@@ -775,17 +775,17 @@ pub(crate) mod test_builder {
   }
 
   impl CustomizedAstBuilder {
-    pub(crate) fn unit_type(&self) -> Rc<Type> {
-      rc(Type::unit_type(self.reason.clone()))
+    pub(crate) fn unit_type(&self) -> Arc<Type> {
+      Arc::new(Type::unit_type(self.reason.clone()))
     }
-    pub(crate) fn bool_type(&self) -> Rc<Type> {
-      rc(Type::bool_type(self.reason.clone()))
+    pub(crate) fn bool_type(&self) -> Arc<Type> {
+      Arc::new(Type::bool_type(self.reason.clone()))
     }
-    pub(crate) fn int_type(&self) -> Rc<Type> {
-      rc(Type::int_type(self.reason.clone()))
+    pub(crate) fn int_type(&self) -> Arc<Type> {
+      Arc::new(Type::int_type(self.reason.clone()))
     }
-    pub(crate) fn string_type(&self) -> Rc<Type> {
-      rc(Type::string_type(self.reason.clone()))
+    pub(crate) fn string_type(&self) -> Arc<Type> {
+      Arc::new(Type::string_type(self.reason.clone()))
     }
 
     pub(crate) fn simple_id_type_unwrapped(&self, id: &'static str) -> IdType {
@@ -800,7 +800,7 @@ pub(crate) mod test_builder {
     pub(crate) fn general_id_type_unwrapped(
       &self,
       id: &'static str,
-      type_arguments: Vec<Rc<Type>>,
+      type_arguments: Vec<Arc<Type>>,
     ) -> IdType {
       IdType {
         reason: self.reason.clone(),
@@ -810,28 +810,32 @@ pub(crate) mod test_builder {
       }
     }
 
-    pub(crate) fn simple_id_type(&self, id: &'static str) -> Rc<Type> {
-      rc(Type::Id(self.simple_id_type_unwrapped(id)))
+    pub(crate) fn simple_id_type(&self, id: &'static str) -> Arc<Type> {
+      Arc::new(Type::Id(self.simple_id_type_unwrapped(id)))
     }
 
     pub(crate) fn general_id_type(
       &self,
       id: &'static str,
-      type_arguments: Vec<Rc<Type>>,
-    ) -> Rc<Type> {
-      rc(Type::Id(self.general_id_type_unwrapped(id, type_arguments)))
+      type_arguments: Vec<Arc<Type>>,
+    ) -> Arc<Type> {
+      Arc::new(Type::Id(self.general_id_type_unwrapped(id, type_arguments)))
     }
 
     pub(crate) fn fun_type(
       &self,
-      argument_types: Vec<Rc<Type>>,
-      return_type: Rc<Type>,
-    ) -> Rc<Type> {
-      rc(Type::Fn(FunctionType { reason: self.reason.clone(), argument_types, return_type }))
+      argument_types: Vec<Arc<Type>>,
+      return_type: Arc<Type>,
+    ) -> Arc<Type> {
+      Arc::new(Type::Fn(FunctionType { reason: self.reason.clone(), argument_types, return_type }))
     }
 
-    pub(crate) fn expr_common(&self, type_: Rc<Type>) -> expr::ExpressionCommon {
-      expr::ExpressionCommon { loc: Location::dummy(), associated_comments: rc(vec![]), type_ }
+    pub(crate) fn expr_common(&self, type_: Arc<Type>) -> expr::ExpressionCommon {
+      expr::ExpressionCommon {
+        loc: Location::dummy(),
+        associated_comments: Arc::new(vec![]),
+        type_,
+      }
     }
 
     pub(crate) fn true_expr(&self) -> expr::E {
@@ -854,7 +858,7 @@ pub(crate) mod test_builder {
       expr::E::Literal(self.expr_common(self.string_type()), Literal::string_literal(rcs(s)))
     }
 
-    pub(crate) fn id_expr(&self, id: &'static str, type_: Rc<Type>) -> expr::E {
+    pub(crate) fn id_expr(&self, id: &'static str, type_: Arc<Type>) -> expr::E {
       expr::E::Id(self.expr_common(type_), Id::from(id))
     }
   }

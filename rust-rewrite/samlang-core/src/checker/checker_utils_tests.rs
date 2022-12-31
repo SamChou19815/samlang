@@ -6,10 +6,10 @@ mod tests {
       source::{test_builder, ISourceType, Type, TypeParameterSignature},
       Reason,
     },
-    common::{rc, rcs},
+    common::rcs,
     errors::ErrorSet,
   };
-  use std::collections::HashMap;
+  use std::{collections::HashMap, sync::Arc};
 
   fn meet(t1: &Type, t2: &Type) -> String {
     let mut error_set = ErrorSet::new();
@@ -56,7 +56,7 @@ mod tests {
     assert_eq!(
       meet(
         &builder.general_id_type("A", vec![builder.simple_id_type("B")]),
-        &builder.general_id_type("A", vec![rc(Type::Unknown(Reason::dummy()))]),
+        &builder.general_id_type("A", vec![Arc::new(Type::Unknown(Reason::dummy()))]),
       ),
       "A<B>"
     );
@@ -108,8 +108,10 @@ mod tests {
     assert_eq!(
       meet(
         &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
-        &builder
-          .fun_type(vec![rc(Type::Unknown(Reason::dummy()))], rc(Type::Unknown(Reason::dummy()))),
+        &builder.fun_type(
+          vec![Arc::new(Type::Unknown(Reason::dummy()))],
+          Arc::new(Type::Unknown(Reason::dummy()))
+        ),
       ),
       "(int) -> bool"
     );
@@ -151,7 +153,7 @@ mod tests {
     assert_eq!(
       "A",
       perform_id_type_substitution_asserting_id_type_return(
-        &rc(builder.simple_id_type_unwrapped("A"),),
+        &builder.simple_id_type_unwrapped("A"),
         &HashMap::new()
       )
       .pretty_print()
@@ -163,7 +165,7 @@ mod tests {
     let builder = test_builder::create();
 
     perform_id_type_substitution_asserting_id_type_return(
-      &rc(builder.simple_id_type_unwrapped("A")),
+      &builder.simple_id_type_unwrapped("A"),
       &HashMap::from([(rcs("A"), builder.int_type())]),
     );
   }
@@ -292,8 +294,10 @@ mod tests {
     } = solve_type_constraints(
       &builder.fun_type(
         vec![
-          builder
-            .fun_type(vec![rc(Type::Unknown(Reason::dummy()))], rc(Type::Unknown(Reason::dummy()))),
+          builder.fun_type(
+            vec![Arc::new(Type::Unknown(Reason::dummy()))],
+            Arc::new(Type::Unknown(Reason::dummy())),
+          ),
           builder.int_type(),
         ],
         builder.unit_type(),
@@ -332,8 +336,10 @@ mod tests {
     } = solve_type_constraints(
       &builder.fun_type(
         vec![
-          builder
-            .fun_type(vec![rc(Type::Unknown(Reason::dummy()))], rc(Type::Unknown(Reason::dummy()))),
+          builder.fun_type(
+            vec![Arc::new(Type::Unknown(Reason::dummy()))],
+            Arc::new(Type::Unknown(Reason::dummy())),
+          ),
           builder.int_type(),
         ],
         builder.unit_type(),

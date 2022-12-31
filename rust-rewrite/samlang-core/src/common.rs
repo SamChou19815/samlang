@@ -1,17 +1,12 @@
-use std::{collections::HashMap, fmt::Display, ops::Deref, rc::Rc, time::Instant};
+use std::{collections::HashMap, fmt::Display, ops::Deref, sync::Arc, time::Instant};
 
 #[inline(always)]
 pub(crate) fn boxed<T>(v: T) -> Box<T> {
   Box::from(v)
 }
 
-#[inline(always)]
-pub(crate) fn rc<T>(v: T) -> Rc<T> {
-  Rc::from(v)
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct Str(Rc<String>);
+pub(crate) struct Str(Arc<String>);
 
 impl Display for Str {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -41,12 +36,12 @@ pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F
 
 #[inline(always)]
 pub(crate) fn rcs(s: &'static str) -> Str {
-  Str(Rc::from(String::from(s)))
+  Str(Arc::from(String::from(s)))
 }
 
 #[inline(always)]
 pub(crate) fn rc_string(s: String) -> Str {
-  Str(Rc::from(s))
+  Str(Arc::from(s))
 }
 
 #[inline(always)]

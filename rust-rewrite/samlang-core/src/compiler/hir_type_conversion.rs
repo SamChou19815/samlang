@@ -9,7 +9,7 @@ use crate::{
 use itertools::Itertools;
 use std::{
   collections::{BTreeMap, HashMap, HashSet},
-  rc::Rc,
+  sync::Arc,
 };
 
 pub(crate) struct SynthesizedTypes {
@@ -308,7 +308,7 @@ impl TypeLoweringManager {
     }
   }
 
-  pub(super) fn lower_source_types(&mut self, source_types: &Vec<Rc<source::Type>>) -> Vec<Type> {
+  pub(super) fn lower_source_types(&mut self, source_types: &Vec<Arc<source::Type>>) -> Vec<Type> {
     let mut types = vec![];
     for t in source_types {
       types.push(self.lower_source_type(t));
@@ -340,7 +340,7 @@ impl TypeLoweringManager {
 
   pub(super) fn lower_source_function_type_for_toplevel(
     &mut self,
-    argument_types: &[Rc<source::Type>],
+    argument_types: &[Arc<source::Type>],
     return_type: &source::Type,
   ) -> (Vec<Str>, FunctionType) {
     let function_type = Type::new_fn_unwrapped(

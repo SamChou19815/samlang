@@ -34,10 +34,11 @@ class Test {
   function test(): int = "haha"
 }
 interface I { function test(): int }
-"#,
+"#
+      .to_string(),
     );
 
-    assert_eq!(1, service.all_modules_with_error().len());
+    assert_eq!(1, service.all_modules().len());
     assert!(service.get_errors(&ModuleReference::root()).is_empty());
     assert_eq!(
       vec!["test.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`."],
@@ -50,7 +51,6 @@ interface I { function test(): int }
 
     service.remove(&ModuleReference::ordinary(vec![rcs("test")]));
 
-    assert!(service.all_modules_with_error().is_empty());
     assert!(service.get_errors(&ModuleReference::ordinary(vec![rcs("test")])).is_empty());
   }
 
@@ -63,7 +63,8 @@ interface I { function test(): int }
 class Test1 {
   function test(): int = "haha"
 }
-"#,
+"#
+        .to_string(),
       ),
       (
         ModuleReference::ordinary(vec![rcs("Test2")]),
@@ -73,7 +74,8 @@ import { Test1, Test2 } from Test1
 class Test2 {
   function test(): string = 3
 }
-"#,
+"#
+        .to_string(),
       ),
     ]);
 
@@ -106,7 +108,8 @@ class Test1 {
   function test(): int = "haha"
 }
 class Test2 {}
-"#,
+"#
+      .to_string(),
     );
     assert_eq!(
       vec!["Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`."],
@@ -135,7 +138,8 @@ class Test2 {}
 class Test1 {
   function test(): int = 3
 }
-"#,
+"#
+      .to_string(),
     );
     assert!(service.get_errors(&ModuleReference::ordinary(vec![rcs("Test1")])).is_empty());
     assert_eq!(
@@ -160,7 +164,8 @@ import { Test1, Test2 } from Test1
 class Test2 {
   function test(): string = "haha"
 }
-"#,
+"#
+      .to_string(),
     );
     assert!(service.get_errors(&ModuleReference::ordinary(vec![rcs("Test1")])).is_empty());
     assert_eq!(
@@ -184,7 +189,8 @@ import { Test1 } from Test1
 class Test2 {
   function test(): string = "haha"
 }
-"#,
+"#
+      .to_string(),
     );
     assert!(service.get_errors(&ModuleReference::ordinary(vec![rcs("Test1")])).is_empty());
     assert!(service.get_errors(&ModuleReference::ordinary(vec![rcs("Test2")])).is_empty());
@@ -202,7 +208,8 @@ class Test1 {
 
   function test2(): int = Test1.test()
 }
-"#,
+"#
+        .to_string(),
       ),
       (
         ModuleReference::ordinary(vec![rcs("Test2")]),
@@ -212,11 +219,12 @@ class Test1(val a: int) {
 
   function test2(): int = Test1.init(3).test()
 }
-"#,
+"#
+        .to_string(),
       ),
       (
         ModuleReference::ordinary(vec![rcs("Test3")]),
-        "class Test1 { function test(): int = NonExisting.test() }",
+        "class Test1 { function test(): int = NonExisting.test() }".to_string(),
       ),
     ]);
 
@@ -285,7 +293,8 @@ class Test1 {
 
   function test2(): int = Test1.test()
 }
-"#,
+"#
+        .to_string(),
       ),
       (
         ModuleReference::ordinary(vec![rcs("Test2")]),
@@ -295,7 +304,8 @@ class Test2(val a: int) {
 
   function test2(): int = Test1.test()
 }
-"#,
+"#
+        .to_string(),
       ),
     ]);
 
@@ -316,7 +326,8 @@ class Test1 {
 
   function test2(): int = Builtins.stringToInt("")
 }
-"#,
+"#
+        .to_string(),
       ),
       (
         ModuleReference::ordinary(vec![rcs("Test2")]),
@@ -326,7 +337,8 @@ class Test2(val a: int) {
 
   function test2(): int = Builtins.panic("")
 }
-"#,
+"#
+        .to_string(),
       ),
     ]);
 
@@ -358,7 +370,8 @@ class Test2(val a: int) {
     a + b + c
   }
 }
-"#,
+"#
+      .to_string(),
     )]);
 
     assert!(service
@@ -371,11 +384,11 @@ class Test2(val a: int) {
     let service = LanguageServices::new(vec![
       (
         ModuleReference::ordinary(vec![rcs("Test3")]),
-        "class ABC { function a(): unit = { val _ = 1; } }",
+        "class ABC { function a(): unit = { val _ = 1; } }".to_string(),
       ),
       (
         ModuleReference::ordinary(vec![rcs("Test2")]),
-        "class TTT { method test(): int = this.test() }",
+        "class TTT { method test(): int = this.test() }".to_string(),
       ),
       (
         ModuleReference::ordinary(vec![rcs("Test1")]),
@@ -394,14 +407,11 @@ class Test1(val a: int) {
     };
   }
 }
-"#,
+"#
+        .to_string(),
       ),
     ]);
 
-    assert_eq!(
-      vec!["Test1"],
-      service.all_modules_with_error().iter().map(|it| it.to_string()).collect_vec()
-    );
     assert_eq!(
       vec!["Test1.sam:12:15-12:16: [UnresolvedName]: Name `c` is not resolved."],
       service
@@ -516,7 +526,8 @@ class Developer(
 class Main {
   function main(): Developer = Developer.sam()
 }
-"#,
+"#
+      .to_string(),
     )]);
 
     assert_eq!(
@@ -566,7 +577,8 @@ class Developer(
 class Main {
   function main(): Developer = Developer.sam()
 }
-"#,
+"#
+      .to_string(),
     )]);
 
     assert!(service.auto_complete(&mod_ref, Position(4, 5)).is_empty());
@@ -679,7 +691,8 @@ class Developer(
 class Main {
   function main(): Developer = Developer.sam()
 }
-"#,
+"#
+      .to_string(),
     )]);
 
     assert_eq!(
@@ -713,7 +726,7 @@ class Main {
   #[test]
   fn autocomplete_test_3() {
     let mod_ref = ModuleReference::ordinary(vec![rcs("Test")]);
-    let service = LanguageServices::new(vec![(mod_ref.clone(), ".")]);
+    let service = LanguageServices::new(vec![(mod_ref.clone(), ".".to_string())]);
     assert!(service.auto_complete(&mod_ref, Position(0, 1)).is_empty());
   }
 
@@ -726,7 +739,8 @@ class Main {
 class Main {
   function main(): Developer = Developer.
 }
-"#,
+"#
+      .to_string(),
     )]);
     assert!(service.auto_complete(&mod_ref, Position(2, 41)).is_empty());
   }
@@ -740,7 +754,8 @@ class Main {
 class Main {
   function main(a: Developer): Developer = a.
 }
-"#,
+"#
+      .to_string(),
     )]);
     assert!(service.auto_complete(&mod_ref, Position(2, 45)).is_empty());
   }
@@ -758,7 +773,8 @@ class Developer {
   private method f(): unit = {}
   method b(): unit = {}
 }
-"#,
+"#
+      .to_string(),
     )]);
     assert_eq!(
       vec![AutoCompletionItem {
@@ -793,7 +809,8 @@ class Test1 {
 
   function test2(): int = Test1.test()
 }
-"#,
+"#
+      .to_string(),
     )]);
 
     assert!(service.rename_variable(&mod_ref, Position(100, 100), "a").is_none());
@@ -810,7 +827,8 @@ class Test1 {
 class Test {
   function main(): unit = { val a = b; }
 }
-"#,
+"#
+      .to_string(),
     )]);
 
     assert!(service.rename_variable(&mod_ref, Position(2, 36), "a").is_none());
@@ -843,7 +861,8 @@ class Test {
 class Main {
   function main(): Developer = Developer.sam()
 }
-"#,
+"#
+      .to_string(),
     )]);
 
     assert_eq!(
@@ -870,7 +889,8 @@ class Developer(
     { name: projects:  }.
   }
 }
-"#,
+"#
+      .to_string(),
     )]);
 
     assert!(service.format_entire_document(&mod_ref).is_none());

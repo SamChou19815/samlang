@@ -18,7 +18,7 @@ use crate::{
   printer,
 };
 use itertools::Itertools;
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CompletionItemKind {
@@ -57,8 +57,8 @@ fn get_last_doc_comment(comments: &[Comment]) -> Option<&Str> {
   comments.iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| &c.text)
 }
 
-pub struct LanguageServices<'a> {
-  raw_sources: HashMap<ModuleReference, &'a str>,
+pub struct LanguageServices {
+  raw_sources: HashMap<ModuleReference, String>,
   checked_modules: HashMap<ModuleReference, Module>,
   errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
   global_cx: GlobalTypingContext,
@@ -67,10 +67,10 @@ pub struct LanguageServices<'a> {
   variable_definition_lookup: VariableDefinitionLookup,
 }
 
-impl<'a> LanguageServices<'a> {
+impl LanguageServices {
   // Section 1: Init
 
-  pub fn new(source_handles: Vec<(ModuleReference, &'a str)>) -> LanguageServices<'a> {
+  pub fn new(source_handles: Vec<(ModuleReference, String)>) -> LanguageServices {
     let mut state = LanguageServices {
       raw_sources: source_handles.into_iter().collect(),
       checked_modules: HashMap::new(),
@@ -126,8 +126,8 @@ impl<'a> LanguageServices<'a> {
 
   // Section 2: Getters and Setters
 
-  pub fn all_modules_with_error(&self) -> Vec<&ModuleReference> {
-    self.errors.keys().into_iter().collect()
+  pub fn all_modules(&self) -> Vec<&ModuleReference> {
+    self.raw_sources.keys().into_iter().collect()
   }
 
   pub fn get_errors(&self, module_reference: &ModuleReference) -> &[CompileTimeError] {
@@ -138,7 +138,7 @@ impl<'a> LanguageServices<'a> {
     }
   }
 
-  pub fn update(&mut self, module_reference: ModuleReference, source_code: &'a str) {
+  pub fn update(&mut self, module_reference: ModuleReference, source_code: String) {
     self.raw_sources.insert(module_reference, source_code);
     self.init();
   }
@@ -375,7 +375,7 @@ impl<'a> LanguageServices<'a> {
     &self,
     module_reference: &ModuleReference,
     class_name: &Str,
-  ) -> Option<&Rc<InterfaceTypingContext>> {
+  ) -> Option<&Arc<InterfaceTypingContext>> {
     self.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(class_name))
   }
 
@@ -456,11 +456,16 @@ impl<'a> LanguageServices<'a> {
   }
 
   pub fn format_entire_document(&self, module_reference: &ModuleReference) -> Option<String> {
-    let module = self.checked_modules.get(module_reference)?;
-    if self.get_errors(module_reference).iter().any(|e| e.to_string().contains("SyntaxError")) {
+    let mut error_set = ErrorSet::new();
+    let module = parse_source_module_from_text(
+      self.raw_sources.get(module_reference)?,
+      module_reference,
+      &mut error_set,
+    );
+    if error_set.has_errors() {
       None
     } else {
-      Some(printer::pretty_print_source_module(100, module))
+      Some(printer::pretty_print_source_module(100, &module))
     }
   }
 }

@@ -29,14 +29,14 @@ pub(super) fn check_undefined_imports_error(
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashMap, vec};
+  use std::{collections::HashMap, sync::Arc, vec};
 
   use crate::{
     ast::{
       source::{Id, InterfaceDeclarationCommon, Module, ModuleMembersImport, Toplevel},
       Location, ModuleReference,
     },
-    common::{rc, rcs},
+    common::rcs,
     errors::ErrorSet,
   };
   use itertools::Itertools;
@@ -45,7 +45,7 @@ mod tests {
   fn mock_class(name: &'static str) -> Toplevel {
     Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
-      associated_comments: rc(vec![]),
+      associated_comments: Arc::new(vec![]),
       name: Id::from(name),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
@@ -71,7 +71,7 @@ mod tests {
             for m in imported_member_strs {
               imported_members.push(Id {
                 loc: loc.clone(),
-                associated_comments: rc(vec![]),
+                associated_comments: Arc::new(vec![]),
                 name: rcs(m),
               });
             }

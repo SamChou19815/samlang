@@ -9,18 +9,18 @@ use crate::{
     },
     Location, ModuleReference, Reason,
   },
-  common::{rc, rcs, Str},
+  common::{rcs, Str},
   errors::ErrorSet,
 };
 use itertools::Itertools;
 use std::{
   collections::{BTreeMap, HashMap},
   ops::Deref,
-  rc::Rc,
+  sync::Arc,
 };
 
 pub(crate) struct LocalTypingContext {
-  type_map: HashMap<Location, Rc<Type>>,
+  type_map: HashMap<Location, Arc<Type>>,
   ssa_analysis_result: SsaAnalysisResult,
 }
 
@@ -37,11 +37,11 @@ impl LocalTypingContext {
     }
   }
 
-  pub(super) fn write(&mut self, loc: Location, t: Rc<Type>) {
+  pub(super) fn write(&mut self, loc: Location, t: Arc<Type>) {
     self.type_map.insert(loc, t);
   }
 
-  pub(super) fn get_captured(&self, lambda_loc: &Location) -> HashMap<Str, Rc<Type>> {
+  pub(super) fn get_captured(&self, lambda_loc: &Location) -> HashMap<Str, Arc<Type>> {
     let mut map = HashMap::new();
     for (name, loc) in self.ssa_analysis_result.lambda_captures.get(lambda_loc).unwrap() {
       let first_letter = name.chars().next().unwrap();
@@ -73,13 +73,13 @@ impl MemberTypeInformation {
   fn create_custom_builtin_function(
     name: &'static str,
     is_public: bool,
-    argument_types: Vec<Rc<Type>>,
-    return_type: Rc<Type>,
+    argument_types: Vec<Arc<Type>>,
+    return_type: Arc<Type>,
     type_parameters: Vec<&'static str>,
-  ) -> (Str, Rc<MemberTypeInformation>) {
+  ) -> (Str, Arc<MemberTypeInformation>) {
     (
       rcs(name),
-      rc(MemberTypeInformation {
+      Arc::new(MemberTypeInformation {
         is_public,
         type_parameters: type_parameters
           .into_iter()
@@ -92,10 +92,10 @@ impl MemberTypeInformation {
 
   pub(super) fn create_builtin_function(
     name: &'static str,
-    argument_types: Vec<Rc<Type>>,
-    return_type: Rc<Type>,
+    argument_types: Vec<Arc<Type>>,
+    return_type: Arc<Type>,
     type_parameters: Vec<&'static str>,
-  ) -> (Str, Rc<MemberTypeInformation>) {
+  ) -> (Str, Arc<MemberTypeInformation>) {
     MemberTypeInformation::create_custom_builtin_function(
       name,
       true,
@@ -107,10 +107,10 @@ impl MemberTypeInformation {
 
   pub(super) fn create_private_builtin_function(
     name: &'static str,
-    argument_types: Vec<Rc<Type>>,
-    return_type: Rc<Type>,
+    argument_types: Vec<Arc<Type>>,
+    return_type: Arc<Type>,
     type_parameters: Vec<&'static str>,
-  ) -> (Str, Rc<MemberTypeInformation>) {
+  ) -> (Str, Arc<MemberTypeInformation>) {
     MemberTypeInformation::create_custom_builtin_function(
       name,
       false,
@@ -137,8 +137,8 @@ impl MemberTypeInformation {
 
 pub(crate) struct InterfaceTypingContext {
   pub(crate) is_concrete: bool,
-  pub(crate) functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
-  pub(crate) methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  pub(crate) functions: Arc<BTreeMap<Str, Arc<MemberTypeInformation>>>,
+  pub(crate) methods: Arc<BTreeMap<Str, Arc<MemberTypeInformation>>>,
   pub(crate) type_parameters: Vec<TypeParameterSignature>,
   pub(crate) super_types: Vec<IdType>,
 }
@@ -189,7 +189,7 @@ impl ToString for TypeDefinitionTypingContext {
 
 pub(crate) struct ModuleTypingContext {
   pub(crate) type_definitions: BTreeMap<Str, TypeDefinitionTypingContext>,
-  pub(crate) interfaces: BTreeMap<Str, Rc<InterfaceTypingContext>>,
+  pub(crate) interfaces: BTreeMap<Str, Arc<InterfaceTypingContext>>,
 }
 
 impl ToString for ModuleTypingContext {
@@ -212,34 +212,34 @@ pub(crate) fn create_builtin_module_typing_context() -> ModuleTypingContext {
     type_definitions: BTreeMap::new(),
     interfaces: BTreeMap::from([(
       rcs("Builtins"),
-      rc(InterfaceTypingContext {
+      Arc::new(InterfaceTypingContext {
         is_concrete: true,
         type_parameters: vec![],
         super_types: vec![],
-        methods: rc(BTreeMap::new()),
-        functions: rc(BTreeMap::from([
+        methods: Arc::new(BTreeMap::new()),
+        functions: Arc::new(BTreeMap::from([
           MemberTypeInformation::create_builtin_function(
             "stringToInt",
-            vec![rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
-            rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
+            vec![Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
+            Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
             vec![],
           ),
           MemberTypeInformation::create_builtin_function(
             "intToString",
-            vec![rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
-            rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
+            vec![Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
+            Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
             vec![],
           ),
           MemberTypeInformation::create_builtin_function(
             "println",
-            vec![rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
-            rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
+            vec![Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
+            Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
             vec![],
           ),
           MemberTypeInformation::create_builtin_function(
             "panic",
-            vec![rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
-            rc(Type::Id(IdType {
+            vec![Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
+            Arc::new(Type::Id(IdType {
               reason: Reason::builtin(),
               module_reference: ModuleReference::root(),
               id: rcs("T"),
@@ -250,10 +250,10 @@ pub(crate) fn create_builtin_module_typing_context() -> ModuleTypingContext {
           MemberTypeInformation::create_builtin_function(
             "stringConcat",
             vec![
-              rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
-              rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
+              Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
+              Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
             ],
-            rc(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
+            Arc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
             vec![],
           ),
         ])),
@@ -265,7 +265,7 @@ pub(crate) fn create_builtin_module_typing_context() -> ModuleTypingContext {
 pub(crate) type GlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
 
 fn instantiate_interface_context(
-  potentially_not_instantiated_interface_information: Rc<InterfaceTypingContext>,
+  potentially_not_instantiated_interface_information: Arc<InterfaceTypingContext>,
   id_type: &IdType,
 ) -> InterfaceTypingContext {
   let mut subst_map = HashMap::new();
@@ -280,7 +280,7 @@ fn instantiate_interface_context(
   for (name, info) in potentially_not_instantiated_interface_information.methods.iter() {
     methods.insert(
       name.clone(),
-      rc(MemberTypeInformation {
+      Arc::new(MemberTypeInformation {
         is_public: info.is_public,
         type_parameters: info.type_parameters.clone(),
         type_: perform_fn_type_substitution(&info.type_, &subst_map),
@@ -292,7 +292,7 @@ fn instantiate_interface_context(
   InterfaceTypingContext {
     is_concrete: potentially_not_instantiated_interface_information.is_concrete,
     functions: potentially_not_instantiated_interface_information.functions.clone(),
-    methods: rc(methods),
+    methods: Arc::new(methods),
     type_parameters: vec![],
     super_types,
   }
@@ -330,7 +330,7 @@ impl<'a> TypingContext<'a> {
     &self,
     module_reference: &ModuleReference,
     identifier: &Str,
-  ) -> Option<Rc<InterfaceTypingContext>> {
+  ) -> Option<Arc<InterfaceTypingContext>> {
     if let Some(relevant_type_parameter) =
       self.available_type_parameters.iter().find(|it| it.name == *identifier)
     {
@@ -341,13 +341,13 @@ impl<'a> TypingContext<'a> {
             &relevant_tparam_bound.id,
           )
           .map(|interface_context| {
-            rc(instantiate_interface_context(interface_context, relevant_tparam_bound))
+            Arc::new(instantiate_interface_context(interface_context, relevant_tparam_bound))
           })
       } else {
-        Some(rc(InterfaceTypingContext {
+        Some(Arc::new(InterfaceTypingContext {
           is_concrete: true,
-          functions: rc(BTreeMap::new()),
-          methods: rc(BTreeMap::new()),
+          functions: Arc::new(BTreeMap::new()),
+          methods: Arc::new(BTreeMap::new()),
           type_parameters: vec![],
           super_types: vec![],
         }))
@@ -364,7 +364,7 @@ impl<'a> TypingContext<'a> {
     &self,
     module_reference: &ModuleReference,
     identifier: &Str,
-  ) -> Option<Rc<InterfaceTypingContext>> {
+  ) -> Option<Arc<InterfaceTypingContext>> {
     self.global_typing_context.get(module_reference)?.interfaces.get(identifier).cloned()
   }
 
@@ -483,7 +483,7 @@ impl<'a> TypingContext<'a> {
     module_reference: &ModuleReference,
     class_name: &Str,
     method_name: &Str,
-    class_type_arguments: Vec<Rc<Type>>,
+    class_type_arguments: Vec<Arc<Type>>,
     use_loc: Location,
   ) -> Option<MemberTypeInformation> {
     let relevant_class = self.get_interface_information(module_reference, class_name)?;

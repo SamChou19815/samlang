@@ -15,12 +15,15 @@ mod tests {
         TypeDefinitionTypingContext, TypingContext,
       },
     },
-    common::{rc, rcs, Str},
+    common::{rcs, Str},
     errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
   };
   use pretty_assertions::assert_eq;
-  use std::collections::{BTreeMap, HashMap, HashSet};
+  use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    sync::Arc,
+  };
 
   #[test]
   #[should_panic]
@@ -50,7 +53,7 @@ mod tests {
       expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
-          associated_comments: rc(vec![]),
+          associated_comments: Arc::new(vec![]),
           type_: builder.bool_type(),
         },
         type_arguments: vec![],
@@ -158,12 +161,12 @@ mod tests {
           interfaces: BTreeMap::from([
             (
               rcs("Test"),
-              rc(InterfaceTypingContext {
+              Arc::new(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(BTreeMap::from([
+                functions: Arc::new(BTreeMap::from([
                   (
                     rcs("init"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -175,7 +178,7 @@ mod tests {
                   ),
                   (
                     rcs("helloWorld"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -187,7 +190,7 @@ mod tests {
                   ),
                   (
                     rcs("helloWorldWithTypeParameters"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature { name: rcs("A"), bound: None }],
                       type_: FunctionType {
@@ -199,7 +202,7 @@ mod tests {
                   ),
                   (
                     rcs("generic1"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![
                         TypeParameterSignature { name: rcs("A"), bound: None },
@@ -220,7 +223,7 @@ mod tests {
                   ),
                   (
                     rcs("generic2"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature { name: rcs("T"), bound: None }],
                       type_: FunctionType {
@@ -235,7 +238,7 @@ mod tests {
                   ),
                   (
                     rcs("generic3"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![
                         TypeParameterSignature { name: rcs("A"), bound: None },
@@ -253,7 +256,7 @@ mod tests {
                   ),
                   (
                     rcs("generic4"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -267,10 +270,10 @@ mod tests {
                     }),
                   ),
                 ])),
-                methods: rc(BTreeMap::from([
+                methods: Arc::new(BTreeMap::from([
                   (
                     rcs("baz"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -282,7 +285,7 @@ mod tests {
                   ),
                   (
                     rcs("bazWithTypeParam"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature { name: rcs("A"), bound: None }],
                       type_: FunctionType {
@@ -294,7 +297,7 @@ mod tests {
                   ),
                   (
                     rcs("bazWithUsefulTypeParam"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature { name: rcs("A"), bound: None }],
                       type_: FunctionType {
@@ -311,12 +314,12 @@ mod tests {
             ),
             (
               rcs("Test2"),
-              rc(InterfaceTypingContext {
+              Arc::new(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(BTreeMap::from([
+                functions: Arc::new(BTreeMap::from([
                   (
                     rcs("Foo"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -328,7 +331,7 @@ mod tests {
                   ),
                   (
                     rcs("Bar"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -339,29 +342,29 @@ mod tests {
                     }),
                   ),
                 ])),
-                methods: rc(BTreeMap::new()),
+                methods: Arc::new(BTreeMap::new()),
                 type_parameters: vec![],
                 super_types: vec![],
               }),
             ),
             (
               rcs("Test3"),
-              rc(InterfaceTypingContext {
+              Arc::new(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(BTreeMap::new()),
-                methods: rc(BTreeMap::new()),
+                functions: Arc::new(BTreeMap::new()),
+                methods: Arc::new(BTreeMap::new()),
                 type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
                 super_types: vec![],
               }),
             ),
             (
               rcs("Test4"),
-              rc(InterfaceTypingContext {
+              Arc::new(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(BTreeMap::from([
+                functions: Arc::new(BTreeMap::from([
                   (
                     rcs("Foo"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
                       type_: FunctionType {
@@ -374,7 +377,7 @@ mod tests {
                   ),
                   (
                     rcs("Bar"),
-                    rc(MemberTypeInformation {
+                    Arc::new(MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
                       type_: FunctionType {
@@ -386,18 +389,18 @@ mod tests {
                     }),
                   ),
                 ])),
-                methods: rc(BTreeMap::new()),
+                methods: Arc::new(BTreeMap::new()),
                 type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
                 super_types: vec![],
               }),
             ),
             (
               rcs("A"),
-              rc(InterfaceTypingContext {
+              Arc::new(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(BTreeMap::from([(
+                functions: Arc::new(BTreeMap::from([(
                   rcs("init"),
-                  rc(MemberTypeInformation {
+                  Arc::new(MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
@@ -407,18 +410,18 @@ mod tests {
                     },
                   }),
                 )])),
-                methods: rc(BTreeMap::new()),
+                methods: Arc::new(BTreeMap::new()),
                 type_parameters: vec![],
                 super_types: vec![],
               }),
             ),
             (
               rcs("B"),
-              rc(InterfaceTypingContext {
+              Arc::new(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(BTreeMap::from([(
+                functions: Arc::new(BTreeMap::from([(
                   rcs("init"),
-                  rc(MemberTypeInformation {
+                  Arc::new(MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
@@ -428,18 +431,18 @@ mod tests {
                     },
                   }),
                 )])),
-                methods: rc(BTreeMap::new()),
+                methods: Arc::new(BTreeMap::new()),
                 type_parameters: vec![],
                 super_types: vec![],
               }),
             ),
             (
               rcs("C"),
-              rc(InterfaceTypingContext {
+              Arc::new(InterfaceTypingContext {
                 is_concrete: true,
-                functions: rc(BTreeMap::from([(
+                functions: Arc::new(BTreeMap::from([(
                   rcs("init"),
-                  rc(MemberTypeInformation {
+                  Arc::new(MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
@@ -449,7 +452,7 @@ mod tests {
                     },
                   }),
                 )])),
-                methods: rc(BTreeMap::new()),
+                methods: Arc::new(BTreeMap::new()),
                 type_parameters: vec![],
                 super_types: vec![],
               }),

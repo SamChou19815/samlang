@@ -6,7 +6,7 @@ use crate::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
     IdType, Sources, Statement, Type, TypeDefinition, VariableName,
   },
-  common::{rc, rc_string, Str},
+  common::{rc_string, Str},
 };
 use itertools::Itertools;
 use std::{
@@ -211,7 +211,9 @@ impl Rewriter {
           function_type,
           &existing_fn.type_parameters.iter().cloned().zip(function_type_arguments).collect(),
         );
-        self.specialized_functions.insert(encoded_specialized_fn_name.clone(), rc(rewritten_fn));
+        self
+          .specialized_functions
+          .insert(encoded_specialized_fn_name.clone(), Rc::new(rewritten_fn));
       }
       encoded_specialized_fn_name
     } else {
@@ -283,7 +285,7 @@ impl Rewriter {
           .collect_vec();
         self.specialized_type_definitions.insert(
           encoded_name.clone(),
-          rc(TypeDefinition {
+          Rc::new(TypeDefinition {
             identifier: encoded_name.clone(),
             is_object: type_def.is_object,
             type_parameters: vec![],
@@ -328,7 +330,7 @@ impl Rewriter {
           .unwrap();
         self.specialized_closure_definitions.insert(
           encoded_name.clone(),
-          rc(ClosureTypeDefinition {
+          Rc::new(ClosureTypeDefinition {
             identifier: encoded_name.clone(),
             type_parameters: vec![],
             function_type: rewritten_fn_type,
@@ -362,13 +364,13 @@ pub(super) fn perform_generics_specialization(
   let mut rewriter = Rewriter {
     original_closure_defs: closure_types
       .into_iter()
-      .map(|it| (it.identifier.clone(), rc(it)))
+      .map(|it| (it.identifier.clone(), Rc::new(it)))
       .collect(),
     original_type_defs: type_definitions
       .into_iter()
-      .map(|it| (it.identifier.clone(), rc(it)))
+      .map(|it| (it.identifier.clone(), Rc::new(it)))
       .collect(),
-    original_functions: functions.into_iter().map(|it| (it.name.clone(), rc(it))).collect(),
+    original_functions: functions.into_iter().map(|it| (it.name.clone(), Rc::new(it))).collect(),
     used_string_names: HashSet::new(),
     specialized_id_type_mappings: HashMap::new(),
     specialized_closure_definitions: BTreeMap::new(),
@@ -383,7 +385,7 @@ pub(super) fn perform_generics_specialization(
       original_fn.type_.clone(),
       &HashMap::new(),
     );
-    rewriter.specialized_functions.insert(main_fn_name.clone(), rc(rewritten));
+    rewriter.specialized_functions.insert(main_fn_name.clone(), Rc::new(rewritten));
   }
   let Rewriter {
     used_string_names,
