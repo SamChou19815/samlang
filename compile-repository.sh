@@ -2,12 +2,14 @@
 
 set -e
 
+echo "===== Compile Repository Integration Tests ====="
+echo ""
 echo "==================== Step 1 ===================="
 echo -n "Compiling samlang CLI..."
 if [[ -z "${RUST}" ]]; then
   time pnpm bundle > /dev/null
 else
-  time cargo b -p samlang-cli --release 2> /dev/null
+  time cargo b -p samlang-cli 2> /dev/null
 fi
 echo "Compiled samlang CLI."
 
