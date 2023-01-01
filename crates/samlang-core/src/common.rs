@@ -34,17 +34,14 @@ pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F
   }
 }
 
-#[inline(always)]
 pub(crate) fn rcs(s: &'static str) -> Str {
   Str(Arc::from(String::from(s)))
 }
 
-#[inline(always)]
 pub(crate) fn rc_string(s: String) -> Str {
   Str(Arc::from(s))
 }
 
-#[inline(always)]
 fn byte_digit_to_char(byte: u8) -> char {
   let u = if byte < 10 { b'0' + byte } else { b'a' + byte - 10 };
   u as char

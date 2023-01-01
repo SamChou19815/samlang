@@ -466,7 +466,7 @@ fn try_optimize_loop_for_some_iterations(
   } else if max_depth == 0 {
     Result::Ok(first_run_optimized_stmts)
   } else {
-    assert!(first_run_optimized_stmts.len() == 1);
+    debug_assert!(first_run_optimized_stmts.len() == 1);
     let (loop_variables, stmts, break_collector) =
       first_run_optimized_stmts.remove(0).into_while().unwrap();
     try_optimize_loop_for_some_iterations(
