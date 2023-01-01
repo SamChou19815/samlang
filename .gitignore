@@ -2,6 +2,7 @@
 *.o
 samlang-runtime/*.wasm
 rust-rewrite/target
+rust-rewrite/samlang-wasm/samlang-core
 
 # Libraries
 samlang-runtime/compiled-wasi-libc
