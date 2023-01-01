@@ -3,5 +3,5 @@
 if [[ -z "${RUST}" ]]; then
   node ./samlang-cli/bin/index.js "$@"
 else
-  ./target/release/samlang-cli "$@"
+  ./target/debug/samlang-cli "$@"
 fi
