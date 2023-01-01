@@ -12,7 +12,7 @@ echo "Compiling samlang CLIs..."
 pnpm bundle > /dev/null
 cargo b -p samlang-cli --release 2> /dev/null
 
-N=100
+N=500
 
 echo "Run with TS-Based CLI..."
 time repeat $N ./samlang-dev

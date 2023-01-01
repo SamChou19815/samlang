@@ -49,7 +49,13 @@ mod utils {
     sources: &mut Vec<(samlang_core::ast::ModuleReference, String)>,
   ) {
     for ignore in ignores {
-      if start_path.to_str().map(|s| s.contains(ignore)).unwrap_or(false) {
+      if start_path
+        .strip_prefix(absolute_source_path)
+        .ok()
+        .and_then(|s| s.to_str())
+        .map(|s| s.contains(ignore))
+        .unwrap_or(false)
+      {
         return;
       }
     }
@@ -408,7 +414,7 @@ mod runners {
         .collect::<Vec<_>>();
       let enable_profiling = std::env::var("PROFILE").is_ok();
       let collected_sources =
-        samlang_core::measure_time(enable_profiling, "Collect sources", || {
+        samlang_core::measure_time(enable_profiling, "Collecting sources", || {
           utils::collect_sources(&configuration)
         });
       match samlang_core::compile_sources(
