@@ -127,69 +127,71 @@ fn optimize_while_statement_with_all_loop_optimizations(
     optimized_while_statement,
     non_loop_invariant_variables,
   } = loop_invariant_code_motion::optimize(while_stmt);
-  if let Some(optimizable_while_loop) = loop_induction_analysis::extract_optimizable_while_loop(
-    optimized_while_statement.clone(),
+  match loop_induction_analysis::extract_optimizable_while_loop(
+    optimized_while_statement,
     &non_loop_invariant_variables,
   ) {
-    if let Some(mut stmts) =
-      loop_algebraic_optimization::optimize(&optimizable_while_loop, allocator)
-    {
-      final_stmts.append(&mut stmts);
-      return final_stmts;
-    }
+    Ok(optimizable_while_loop) => {
+      if let Some(mut stmts) =
+        loop_algebraic_optimization::optimize(&optimizable_while_loop, allocator)
+      {
+        final_stmts.append(&mut stmts);
+        return final_stmts;
+      }
 
-    let optimizable_while_loop =
-      match loop_induction_variable_elimination::optimize(optimizable_while_loop, allocator) {
-        Ok(loop_induction_variable_elimination::LoopInductionVariableEliminationResult {
-          mut prefix_statements,
-          optimizable_while_loop: l,
-        }) => {
-          final_stmts.append(&mut prefix_statements);
-          l
-        }
-        Err(l) => l,
-      };
+      let optimizable_while_loop =
+        match loop_induction_variable_elimination::optimize(optimizable_while_loop, allocator) {
+          Ok(loop_induction_variable_elimination::LoopInductionVariableEliminationResult {
+            mut prefix_statements,
+            optimizable_while_loop: l,
+          }) => {
+            final_stmts.append(&mut prefix_statements);
+            l
+          }
+          Err(l) => l,
+        };
 
-    let loop_strength_reduction::LoopStrengthReductionOptimizationResult {
-      mut prefix_statements,
-      optimizable_while_loop:
+      let loop_strength_reduction::LoopStrengthReductionOptimizationResult {
+        mut prefix_statements,
+        optimizable_while_loop:
+          OptimizableWhileLoop {
+            basic_induction_variable_with_loop_guard,
+            general_induction_variables,
+            loop_variables_that_are_not_basic_induction_variables,
+            derived_induction_variables,
+            statements,
+            break_collector,
+          },
+      } = loop_strength_reduction::optimize(optimizable_while_loop, allocator);
+      final_stmts.append(&mut prefix_statements);
+
+      let already_handled_induction_variable_names =
+        general_induction_variables.iter().map(|v| v.name.clone()).collect::<HashSet<_>>();
+      final_stmts.push(expand_optimizable_while_loop(
         OptimizableWhileLoop {
           basic_induction_variable_with_loop_guard,
           general_induction_variables,
           loop_variables_that_are_not_basic_induction_variables,
           derived_induction_variables,
-          statements,
+          statements: statements
+            .into_iter()
+            .filter(|s| {
+              !s.as_binary()
+                .map(|b| already_handled_induction_variable_names.contains(&b.name))
+                .unwrap_or(false)
+            })
+            .collect(),
           break_collector,
         },
-    } = loop_strength_reduction::optimize(optimizable_while_loop, allocator);
-    final_stmts.append(&mut prefix_statements);
+        allocator,
+      ));
 
-    let already_handled_induction_variable_names =
-      general_induction_variables.iter().map(|v| v.name.clone()).collect::<HashSet<_>>();
-    final_stmts.push(expand_optimizable_while_loop(
-      OptimizableWhileLoop {
-        basic_induction_variable_with_loop_guard,
-        general_induction_variables,
-        loop_variables_that_are_not_basic_induction_variables,
-        derived_induction_variables,
-        statements: statements
-          .into_iter()
-          .filter(|s| {
-            !s.as_binary()
-              .map(|b| already_handled_induction_variable_names.contains(&b.name))
-              .unwrap_or(false)
-          })
-          .collect(),
-        break_collector,
-      },
-      allocator,
-    ));
-
-    final_stmts
-  } else {
-    let (loop_variables, statements, break_collector) = optimized_while_statement;
-    final_stmts.push(Statement::While { loop_variables, statements, break_collector });
-    final_stmts
+      final_stmts
+    }
+    Err((loop_variables, statements, break_collector)) => {
+      final_stmts.push(Statement::While { loop_variables, statements, break_collector });
+      final_stmts
+    }
   }
 }
 

@@ -383,7 +383,6 @@ struct LoopGuardStructure {
   potential_basic_induction_variable_with_loop_guard: Str,
   guard_operator: GuardOperator,
   guard_expression: PotentialLoopInvariantExpression,
-  rest_statements: Vec<Statement>,
   break_collector: Option<(Str, Type, Expression)>,
 }
 
@@ -399,41 +398,32 @@ fn get_guard_operator(operator: Operator, invert_condition: bool) -> Option<Guar
 }
 
 fn extract_loop_guard_structure(
-  (stmts, original_break_collector): (Vec<Statement>, Option<VariableName>),
+  (stmts, original_break_collector): (&Vec<Statement>, &Option<VariableName>),
   non_loop_invariant_variables: &HashSet<Str>,
 ) -> Option<LoopGuardStructure> {
-  let (first_binary_stmt, second_single_if_stmt, rest_statements) = {
-    let mut iter = stmts.into_iter();
-    let first = iter.next()?;
-    let second = iter.next()?;
-    let rest = iter.collect_vec();
-    (first, second, rest)
-  };
+  let (first_binary_stmt, second_single_if_stmt) =
+    (stmts.get(0).and_then(Statement::as_binary), stmts.get(1).and_then(Statement::as_single_if));
   match (first_binary_stmt, second_single_if_stmt) {
     (
-      Statement::Binary(Binary { name, type_: _, operator, e1: Expression::Variable(e1_var), e2 }),
-      Statement::SingleIf {
-        condition: Expression::Variable(condition_var),
-        invert_condition,
-        statements: single_if_stmts,
-      },
+      Some(Binary { name, type_: _, operator, e1: Expression::Variable(e1_var), e2 }),
+      Some((Expression::Variable(condition_var), invert_condition, single_if_stmts)),
     ) if name.eq(&condition_var.name)
       && single_if_stmts.len() == 1
-      && stmts_contains_break(&single_if_stmts)
-      && !stmts_contains_break(&rest_statements) =>
+      && stmts_contains_break(single_if_stmts)
+      && !stmts_contains_break(&stmts[2..]) =>
     {
       if let (Some(guard_operator), Some(guard_expression)) = (
-        get_guard_operator(operator, invert_condition),
-        get_loop_invariant_expression_opt(&e2, non_loop_invariant_variables),
+        get_guard_operator(*operator, *invert_condition),
+        get_loop_invariant_expression_opt(e2, non_loop_invariant_variables),
       ) {
-        let potential_basic_induction_variable_with_loop_guard = e1_var.name;
-        let break_collector = original_break_collector
-          .map(|v| (v.name, v.type_, single_if_stmts[0].as_break().unwrap().clone()));
+        let potential_basic_induction_variable_with_loop_guard = e1_var.name.clone();
+        let break_collector = original_break_collector.as_ref().map(|v| {
+          (v.name.clone(), v.type_.clone(), single_if_stmts[0].as_break().unwrap().clone())
+        });
         Some(LoopGuardStructure {
           potential_basic_induction_variable_with_loop_guard,
           guard_operator,
           guard_expression,
-          rest_statements,
           break_collector,
         })
       } else {
@@ -454,7 +444,7 @@ struct ExtractedBasicInductionVariables {
 fn extract_basic_induction_variables(
   potential_basic_induction_variable_name_with_loop_guard: &Str,
   loop_variables: &Vec<GenenalLoopVariable>,
-  rest_stmts: &Vec<Statement>,
+  rest_stmts: &[Statement],
   non_loop_invariant_variables: &HashSet<Str>,
 ) -> Option<ExtractedBasicInductionVariables> {
   let mut all_basic_induction_variables = vec![];
@@ -507,7 +497,7 @@ fn extract_basic_induction_variables(
 
 fn extract_derived_induction_variables(
   all_basic_induction_variables: &Vec<GeneralBasicInductionVariableWithLoopValueCollector>,
-  rest_stmts: &Vec<Statement>,
+  rest_stmts: &[Statement],
   non_loop_invariant_variables: &HashSet<Str>,
 ) -> Vec<DerivedInductionVariableWithName> {
   let mut existing_derived_induction_variable_set = HashMap::new();
@@ -566,34 +556,43 @@ fn remove_dead_code_inside_loop(
   dead_code_elimination::optimize_stmts(rest_stmts, &mut live_variable_set)
 }
 
+type ExtractOptimizableWhileLoopTuple =
+  (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>);
+
 pub(super) fn extract_optimizable_while_loop(
-  (loop_variables, stmts, original_break_collector): (
-    Vec<GenenalLoopVariable>,
-    Vec<Statement>,
-    Option<VariableName>,
-  ),
+  (loop_variables, stmts, original_break_collector): ExtractOptimizableWhileLoopTuple,
   non_loop_invariant_variables: &HashSet<Str>,
-) -> Option<OptimizableWhileLoop> {
+) -> Result<OptimizableWhileLoop, ExtractOptimizableWhileLoopTuple> {
   // Phase 1: Check the structure for loop guard.
   let LoopGuardStructure {
     potential_basic_induction_variable_with_loop_guard,
     guard_operator,
     guard_expression,
-    rest_statements,
     break_collector,
-  } =
-    extract_loop_guard_structure((stmts, original_break_collector), non_loop_invariant_variables)?;
+  } = match extract_loop_guard_structure(
+    (&stmts, &original_break_collector),
+    non_loop_invariant_variables,
+  ) {
+    Some(r) => r,
+    None => {
+      return Err((loop_variables, stmts, original_break_collector));
+    }
+  };
   // Phase 2: Extract basic induction variables.
   let ExtractedBasicInductionVariables {
     loop_variables_that_are_not_basic_induction_variables,
     all_basic_induction_variables,
     basic_induction_variable_with_associated_loop_guard,
-  } = extract_basic_induction_variables(
+  } = if let Some(r) = extract_basic_induction_variables(
     &potential_basic_induction_variable_with_loop_guard,
     &loop_variables,
-    &rest_statements,
+    &stmts[2..],
     non_loop_invariant_variables,
-  )?;
+  ) {
+    r
+  } else {
+    return Err((loop_variables, stmts, original_break_collector));
+  };
   let basic_induction_variable_with_loop_guard = BasicInductionVariableWithLoopGuard {
     name: basic_induction_variable_with_associated_loop_guard.name,
     initial_value: basic_induction_variable_with_associated_loop_guard.initial_value,
@@ -614,7 +613,7 @@ pub(super) fn extract_optimizable_while_loop(
   // Phase 3: Compute all the derived induction variables.
   let derived_induction_variables = extract_derived_induction_variables(
     &all_basic_induction_variables,
-    &rest_statements,
+    &stmts[2..],
     non_loop_invariant_variables,
   );
   let derived_induction_variable_names =
@@ -632,10 +631,10 @@ pub(super) fn extract_optimizable_while_loop(
       })
       .cloned()
       .collect(),
-    rest_statements,
+    stmts.into_iter().skip(2).collect(),
   );
 
-  Some(OptimizableWhileLoop {
+  Ok(OptimizableWhileLoop {
     basic_induction_variable_with_loop_guard,
     general_induction_variables,
     loop_variables_that_are_not_basic_induction_variables,
@@ -1262,11 +1261,11 @@ mod tests {
   fn extract_loop_guard_structure_rejection_rests() {
     let non_loop_invariant_variables = HashSet::from([rcs(""), rcs("a"), rcs("b"), rcs("cc")]);
 
-    assert!(extract_loop_guard_structure((vec![], None), &non_loop_invariant_variables).is_none());
+    assert!(extract_loop_guard_structure((&vec![], &None), &non_loop_invariant_variables).is_none());
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::StructInit {
             struct_variable_name: rcs(""),
             type_: Type::new_id_no_targs_unwrapped("T"),
@@ -1278,7 +1277,7 @@ mod tests {
             expression_list: vec![],
           }
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1286,8 +1285,8 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![Statement::binary("cc", Operator::LT, Expression::var_name("i", INT_TYPE), ZERO),],
-        None
+        &vec![Statement::binary("cc", Operator::LT, Expression::var_name("i", INT_TYPE), ZERO),],
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1295,7 +1294,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::StructInit {
             struct_variable_name: rcs(""),
             type_: Type::new_id_no_targs_unwrapped("T"),
@@ -1307,7 +1306,7 @@ mod tests {
             expression_list: vec![],
           }
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1315,7 +1314,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("", Operator::PLUS, ZERO, ZERO),
           Statement::StructInit {
             struct_variable_name: rcs(""),
@@ -1323,7 +1322,7 @@ mod tests {
             expression_list: vec![],
           }
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1331,7 +1330,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::PLUS, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::StructInit {
             struct_variable_name: rcs(""),
@@ -1339,7 +1338,7 @@ mod tests {
             expression_list: vec![],
           }
         ],
-        None
+        &None
       ),
       &HashSet::new()
     )
@@ -1347,7 +1346,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::PLUS, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::StructInit {
             struct_variable_name: rcs(""),
@@ -1356,7 +1355,7 @@ mod tests {
           },
           Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1364,11 +1363,11 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::PLUS, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1376,7 +1375,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::PLUS, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::SingleIf {
             condition: ZERO,
@@ -1384,7 +1383,7 @@ mod tests {
             statements: vec![Statement::Break(ZERO)]
           }
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1392,7 +1391,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::LT, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::SingleIf {
             condition: ZERO,
@@ -1400,7 +1399,7 @@ mod tests {
             statements: vec![Statement::Break(ZERO)]
           }
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1408,7 +1407,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::LT, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::SingleIf {
             condition: Expression::var_name("cc", BOOL_TYPE),
@@ -1457,7 +1456,7 @@ mod tests {
           },
           Statement::Break(ZERO)
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1465,7 +1464,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::EQ, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::SingleIf {
             condition: Expression::var_name("cc", BOOL_TYPE),
@@ -1473,7 +1472,7 @@ mod tests {
             statements: vec![Statement::Break(ZERO)]
           },
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1481,7 +1480,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::LT, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::SingleIf {
             condition: Expression::var_name("cc", BOOL_TYPE),
@@ -1493,7 +1492,7 @@ mod tests {
             }]
           },
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1501,7 +1500,7 @@ mod tests {
 
     assert!(extract_loop_guard_structure(
       (
-        vec![
+        &vec![
           Statement::binary("cc", Operator::LT, Expression::var_name("i", INT_TYPE), ZERO),
           Statement::SingleIf {
             condition: Expression::StringName(rcs("cc")),
@@ -1513,7 +1512,7 @@ mod tests {
             }]
           },
         ],
-        None
+        &None
       ),
       &non_loop_invariant_variables
     )
@@ -1537,7 +1536,7 @@ mod tests {
       ),
       &HashSet::new()
     )
-    .is_none());
+    .is_err());
 
     assert!(extract_optimizable_while_loop(
       (
@@ -1555,7 +1554,7 @@ mod tests {
       ),
       &HashSet::new()
     )
-    .is_none());
+    .is_err());
 
     assert!(extract_optimizable_while_loop(
       (
@@ -1573,7 +1572,7 @@ mod tests {
       ),
       &HashSet::new()
     )
-    .is_none());
+    .is_err());
 
     assert!(extract_optimizable_while_loop(
       (
@@ -1591,7 +1590,7 @@ mod tests {
       ),
       &HashSet::new()
     )
-    .is_none());
+    .is_err());
   }
 
   #[test]
