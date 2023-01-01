@@ -7,7 +7,6 @@
     "format:check": "prettier --check '**/*.{ts,js,yml}'",
     "bundle": "turbo run bundle",
     "check": "turbo run check",
-    "compile-rust": "cd rust-rewrite && cargo b -p samlang-cli --release 2> /dev/null",
     "test": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "test:single": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-vm-modules jest -t",
     "test:integration": "esr compile-repository.ts",

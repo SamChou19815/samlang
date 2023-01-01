@@ -27,14 +27,14 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            rust-rewrite/target/
+            target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Format Check
-        working-directory: rust-rewrite
         run: cargo fmt --all -- --check
       - name: Lint
-        working-directory: rust-rewrite
         run: cargo lint
       - name: Test
-        working-directory: rust-rewrite
-        run: cargo tc
+        run: |
+          cargo tc
+          RUST=1 ./compile-repository.sh
+          cd crates/samlang-wasm && ./setup-generated-package.sh

@@ -7,7 +7,7 @@ echo -n "Compiling samlang CLI..."
 if [[ -z "${RUST}" ]]; then
   time pnpm bundle > /dev/null
 else
-  cd rust-rewrite && time cargo b -p samlang-cli --release 2> /dev/null && cd ..
+  time cargo b -p samlang-cli --release 2> /dev/null
 fi
 echo "Compiled samlang CLI."
 

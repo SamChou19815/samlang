@@ -1,4 +1,4 @@
 {
-  "samlang.programPath": "./rust-rewrite/target/release/samlang-cli",
+  "samlang.programPath": "./target/release/samlang-cli",
   "files.associations": { "*.h": "c" }
 }
