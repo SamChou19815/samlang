@@ -9,12 +9,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      # - uses: actions/checkout@v3
+      - uses: SamChou19815/infra/actions/setup-node-project@main
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
-          components: rustfmt
+          components: rustfmt, clippy, llvm-tools-preview
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Install nextest
@@ -27,14 +28,15 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            rust-rewrite/target/
+            target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Format Check
-        working-directory: rust-rewrite
         run: cargo fmt --all -- --check
       - name: Lint
-        working-directory: rust-rewrite
         run: cargo lint
       - name: Test
-        working-directory: rust-rewrite
-        run: cargo tc
+        run: |
+          cargo tc
+          RUST=1 ./compile-repository.sh
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          cd crates/samlang-wasm && ./setup-generated-package.sh

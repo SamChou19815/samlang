@@ -144,7 +144,7 @@ mod lsp {
       if let Ok(path) = fs::canonicalize(
         self.absolute_source_path.join(PathBuf::from(module_reference.to_filename())),
       ) {
-        match Url::from_file_path(&path) {
+        match Url::from_file_path(path) {
           Ok(url) => url,
           Err(_) => panic!("{}", module_reference.to_filename()),
         }
@@ -171,7 +171,7 @@ mod lsp {
         self
           .client
           .publish_diagnostics(
-            self.convert_module_reference_to_url(&module_reference),
+            self.convert_module_reference_to_url(module_reference),
             diagnostics,
             None,
           )
@@ -423,7 +423,7 @@ mod runners {
                 .unwrap();
             }
             fs::write(
-              PathBuf::from(configuration.output_directory.clone()).join("__all__.wasm"),
+              PathBuf::from(&configuration.output_directory).join("__all__.wasm"),
               wasm_file,
             )
             .unwrap();

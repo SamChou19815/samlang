@@ -2,31 +2,33 @@
 
 set -e
 
+echo "===== Compile Repository Integration Tests ====="
+echo ""
 echo "==================== Step 1 ===================="
-echo -n "Compiling samlang CLI..."
+echo "Compiling samlang CLI..."
 if [[ -z "${RUST}" ]]; then
-  time pnpm bundle > /dev/null
+  pnpm bundle > /dev/null
 else
-  cd rust-rewrite && time cargo b -p samlang-cli --release 2> /dev/null && cd ..
+  cargo b -p samlang-cli 2> /dev/null
 fi
 echo "Compiled samlang CLI."
 
 echo "==================== Step 2 ===================="
-echo -n "Compiling samlang source code..."
+echo "Compiling samlang source code..."
 rm -rf out
-time ./samlang-dev
+./samlang-dev
 echo "Compiled samlang source code."
 
 echo "==================== Step 3 ===================="
-echo -n "Checking generated TS code..."
-time pnpm esr out/tests.AllTests.ts > actual.txt
+echo "Checking generated TS code..."
+pnpm esr out/tests.AllTests.ts > actual.txt
 diff tests/snapshot.txt actual.txt
 rm actual.txt
 echo "Generated TS code is good."
 
 echo "==================== Step 4 ===================="
-echo -n "Checking generated WebAssembly code..."
-time node out/tests.AllTests.wasm.js > actual.txt
+echo "Checking generated WebAssembly code..."
+node out/tests.AllTests.wasm.js > actual.txt
 diff tests/snapshot.txt actual.txt
 rm actual.txt
 echo "Generated WebAssembly code is good."

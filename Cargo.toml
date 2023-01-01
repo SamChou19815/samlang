@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+  "crates/samlang-core",
+  "crates/samlang-cli",
+  "crates/samlang-wasm",
+]

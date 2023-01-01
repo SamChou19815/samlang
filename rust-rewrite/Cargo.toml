@@ -1,7 +1,0 @@
-[workspace]
-
-members = [
-  "samlang-core",
-  "samlang-cli",
-  "samlang-wasm",
-]
