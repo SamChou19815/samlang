@@ -326,7 +326,8 @@ if 0 {
           index: 0,
         }],
         return_value: ZERO,
-      }],
+      }
+      .clone()],
     };
     assert!(!format!("{:?}", sources1).is_empty());
     let expected1 = r#"const dev_meggo = 'vibez';

@@ -10,7 +10,7 @@ use crate::{
   common::rc_string,
   errors::ErrorSet,
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc};
 
 pub(super) struct DefinitionAndUses {
   pub(super) definition_location: Location,
@@ -285,7 +285,7 @@ pub(super) fn apply_renaming(
                     name: name.clone(),
                     type_parameters: type_parameters.clone(),
                     type_: type_.clone(),
-                    parameters: Arc::new(
+                    parameters: Rc::new(
                       parameters
                         .iter()
                         .map(|AnnotatedId { name, annotation }| AnnotatedId {

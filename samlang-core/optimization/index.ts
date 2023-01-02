@@ -38,14 +38,14 @@ function optimizeHighIRFunctionForOneRound(
       allocator,
     );
   }
-  if (doesPerformLocalValueNumbering) {
-    optimizedFunction = optimizeHighIRFunctionByLocalValueNumbering(optimizedFunction);
-  }
   if (doesPerformCommonSubExpressionElimination) {
     optimizedFunction = optimizeHighIRFunctionByCommonSubExpressionElimination(
       optimizedFunction,
       allocator,
     );
+  }
+  if (doesPerformLocalValueNumbering) {
+    optimizedFunction = optimizeHighIRFunctionByLocalValueNumbering(optimizedFunction);
   }
   return optimizeHighIRFunctionByDeadCodeElimination(optimizedFunction);
 }
@@ -56,7 +56,7 @@ function optimizeFunctionForRounds(
   optimizationConfiguration: OptimizationConfiguration,
 ): HighIRFunction {
   let optimizedFunction = highIRFunction;
-  for (let j = 0; j < 5; j += 1) {
+  for (let j = 0; j < 2; j += 1) {
     optimizedFunction = optimizeHighIRFunctionForOneRound(
       optimizedFunction,
       allocator,

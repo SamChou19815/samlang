@@ -1,21 +1,22 @@
-use itertools::Itertools;
-
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use crate::{
   ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement, VariableName},
   common::{rc_string, LocalStackedContext, Str},
 };
+use itertools::Itertools;
 
 type LocalContext = LocalStackedContext<Str>;
 
 impl LocalContext {
   fn lvn_bind_var(&mut self, name: &Str, value: Str) {
     let value = self.get(name).cloned().unwrap_or(value);
-    assert!(self.insert(name, value));
+    let inserted = self.insert(name, value);
+    debug_assert!(inserted);
   }
 
   fn lvn_bind_value(&mut self, value: &BindedValue, name: Str) {
-    assert!(self.insert(&rc_string(value.to_string()), name));
+    let inserted = self.insert(&rc_string(value.to_string()), name);
+    debug_assert!(inserted);
   }
 }
 

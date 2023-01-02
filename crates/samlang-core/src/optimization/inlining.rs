@@ -7,7 +7,6 @@ use crate::ast::hir::{
 use crate::common::{rc_string, Str};
 use std::collections::{HashMap, HashSet};
 
-use super::conditional_constant_propagation;
 use super::optimization_common::{LocalValueContextForOptimization, ResourceAllocator};
 
 mod estimator {
@@ -325,10 +324,9 @@ fn inline_rewrite_stmts(
 }
 
 fn perform_inline_rewrite_on_function_stmt(
-  stmt: &Statement,
+  stmt: Statement,
   current_fn_name: &Str,
-  functions_that_can_be_inlined: &HashSet<Str>,
-  all_functions: &HashMap<Str, Function>,
+  functions_that_can_be_inlined: &HashMap<Str, Function>,
   allocator: &mut ResourceAllocator,
 ) -> Vec<Statement> {
   match stmt {
@@ -337,13 +335,13 @@ fn perform_inline_rewrite_on_function_stmt(
       arguments,
       return_type,
       return_collector,
-    } if functions_that_can_be_inlined.contains(name) && name.ne(current_fn_name) => {
+    } if functions_that_can_be_inlined.contains_key(&name) && name.ne(current_fn_name) => {
       let Function {
         parameters: parameters_of_function_to_be_inlined,
         body: main_body_stmts_of_function_to_be_inlined,
         return_value: return_value_of_function_to_be_inlined,
         ..
-      } = all_functions.get(name).unwrap();
+      } = functions_that_can_be_inlined.get(&name).unwrap();
       let temporary_prefix = allocator.alloc_inlining_temp_prefix();
       let mut cx = LocalValueContextForOptimization::new();
       // Inline step 1: Bind args to args temp
@@ -356,8 +354,8 @@ fn perform_inline_rewrite_on_function_stmt(
       if let Some(c) = return_collector {
         // Using this to move the value around, will be optimized away eventually.
         rewritten_body.push(Statement::Binary(Binary {
-          name: c.clone(),
-          type_: return_type.clone(),
+          name: c,
+          type_: return_type,
           operator: Operator::PLUS,
           e1: inline_rewrite_expr(return_value_of_function_to_be_inlined, &mut cx),
           e2: ZERO,
@@ -368,70 +366,64 @@ fn perform_inline_rewrite_on_function_stmt(
 
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       vec![Statement::IfElse {
-        condition: condition.clone(),
+        condition,
         s1: perform_inline_rewrite_on_function_stmts(
           s1,
           current_fn_name,
           functions_that_can_be_inlined,
-          all_functions,
           allocator,
         ),
         s2: perform_inline_rewrite_on_function_stmts(
           s2,
           current_fn_name,
           functions_that_can_be_inlined,
-          all_functions,
           allocator,
         ),
-        final_assignments: final_assignments.clone(),
+        final_assignments,
       }]
     }
     Statement::SingleIf { condition, invert_condition, statements } => {
       vec![Statement::SingleIf {
-        condition: condition.clone(),
-        invert_condition: *invert_condition,
+        condition,
+        invert_condition,
         statements: perform_inline_rewrite_on_function_stmts(
           statements,
           current_fn_name,
           functions_that_can_be_inlined,
-          all_functions,
           allocator,
         ),
       }]
     }
     Statement::While { loop_variables, statements, break_collector } => {
       vec![Statement::While {
-        loop_variables: loop_variables.clone(),
+        loop_variables,
         statements: perform_inline_rewrite_on_function_stmts(
           statements,
           current_fn_name,
           functions_that_can_be_inlined,
-          all_functions,
           allocator,
         ),
-        break_collector: break_collector.clone(),
+        break_collector,
       }]
     }
 
-    _ => vec![stmt.clone()],
+    _ => vec![stmt],
   }
 }
 
 fn perform_inline_rewrite_on_function_stmts(
-  statements: &[Statement],
+  statements: Vec<Statement>,
   current_fn_name: &Str,
-  functions_that_can_be_inlined: &HashSet<Str>,
-  all_functions: &HashMap<Str, Function>,
+  functions_that_can_be_inlined: &HashMap<Str, Function>,
   allocator: &mut ResourceAllocator,
 ) -> Vec<Statement> {
   statements
-    .iter()
+    .into_iter()
     .flat_map(|s| {
       perform_inline_rewrite_on_function_stmt(
         s,
         current_fn_name,
         functions_that_can_be_inlined,
-        all_functions,
         allocator,
       )
     })
@@ -439,26 +431,24 @@ fn perform_inline_rewrite_on_function_stmts(
 }
 
 fn perform_inline_rewrite_on_function(
-  function: &Function,
-  functions_that_can_be_inlined: &HashSet<Str>,
-  all_functions: &HashMap<Str, Function>,
+  function: Function,
+  functions_that_can_be_inlined: &HashMap<Str, Function>,
   allocator: &mut ResourceAllocator,
 ) -> Function {
   let body = perform_inline_rewrite_on_function_stmts(
-    &function.body,
+    function.body,
     &function.name,
     functions_that_can_be_inlined,
-    all_functions,
     allocator,
   );
-  conditional_constant_propagation::optimize_function(Function {
+  Function {
     name: function.name.clone(),
     parameters: function.parameters.clone(),
     type_parameters: function.type_parameters.clone(),
     type_: function.type_.clone(),
     body,
     return_value: function.return_value.clone(),
-  })
+  }
 }
 
 pub(super) fn optimize_functions(
@@ -471,26 +461,35 @@ pub(super) fn optimize_functions(
     if estimator_result.functions_that_can_be_inlined.is_empty() {
       return temp_functions;
     }
-    let mut all_functions = HashMap::new();
+    let mut functions_that_can_be_inlined = HashMap::new();
+    let mut all_other_functions = vec![];
     let mut names = vec![];
     for f in temp_functions {
       names.push(f.name.clone());
-      all_functions.insert(f.name.clone(), f);
+      if estimator_result.functions_that_can_be_inlined.contains(&f.name) {
+        functions_that_can_be_inlined.insert(f.name.clone(), f);
+      } else {
+        all_other_functions.push(f);
+      }
     }
     let mut inlined = vec![];
-    for n in names {
-      if estimator_result.functions_that_can_perform_inlining.contains(&n) {
+    for f in all_other_functions {
+      if estimator_result.functions_that_can_perform_inlining.contains(&f.name) {
         inlined.push(perform_inline_rewrite_on_function(
-          all_functions.get(&n).unwrap(),
-          &estimator_result.functions_that_can_be_inlined,
-          &all_functions,
+          f,
+          &functions_that_can_be_inlined,
           allocator,
         ))
       } else {
-        // If a function cannot perform inlining, it cannot be inlined as well,
-        // so it's safe to remove.
-        inlined.push(all_functions.remove(&n).unwrap());
+        inlined.push(f);
       }
+    }
+    for f in functions_that_can_be_inlined.values() {
+      inlined.push(perform_inline_rewrite_on_function(
+        f.clone(),
+        &functions_that_can_be_inlined,
+        allocator,
+      ))
     }
     inlined.sort_by(|a, b| a.name.cmp(&b.name));
     temp_functions = inlined;

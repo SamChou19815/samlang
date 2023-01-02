@@ -9,7 +9,7 @@ mod tests {
     common::rcs,
     errors::ErrorSet,
   };
-  use std::{collections::HashMap, sync::Arc};
+  use std::{collections::HashMap, rc::Rc};
 
   fn meet(t1: &Type, t2: &Type) -> String {
     let mut error_set = ErrorSet::new();
@@ -56,7 +56,7 @@ mod tests {
     assert_eq!(
       meet(
         &builder.general_id_type("A", vec![builder.simple_id_type("B")]),
-        &builder.general_id_type("A", vec![Arc::new(Type::Unknown(Reason::dummy()))]),
+        &builder.general_id_type("A", vec![Rc::new(Type::Unknown(Reason::dummy()))]),
       ),
       "A<B>"
     );
@@ -109,8 +109,8 @@ mod tests {
       meet(
         &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
         &builder.fun_type(
-          vec![Arc::new(Type::Unknown(Reason::dummy()))],
-          Arc::new(Type::Unknown(Reason::dummy()))
+          vec![Rc::new(Type::Unknown(Reason::dummy()))],
+          Rc::new(Type::Unknown(Reason::dummy()))
         ),
       ),
       "(int) -> bool"
@@ -295,8 +295,8 @@ mod tests {
       &builder.fun_type(
         vec![
           builder.fun_type(
-            vec![Arc::new(Type::Unknown(Reason::dummy()))],
-            Arc::new(Type::Unknown(Reason::dummy())),
+            vec![Rc::new(Type::Unknown(Reason::dummy()))],
+            Rc::new(Type::Unknown(Reason::dummy())),
           ),
           builder.int_type(),
         ],
@@ -337,8 +337,8 @@ mod tests {
       &builder.fun_type(
         vec![
           builder.fun_type(
-            vec![Arc::new(Type::Unknown(Reason::dummy()))],
-            Arc::new(Type::Unknown(Reason::dummy())),
+            vec![Rc::new(Type::Unknown(Reason::dummy()))],
+            Rc::new(Type::Unknown(Reason::dummy())),
           ),
           builder.int_type(),
         ],

@@ -675,7 +675,7 @@ impl Statement {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Function {
   pub(crate) name: Str,
   pub(crate) parameters: Vec<Str>,

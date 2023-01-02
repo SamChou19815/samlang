@@ -50,11 +50,11 @@ fn optimize_function_for_one_round(
   if configuration.does_perform_loop_optimization {
     optimized_fn = loop_optimizations::optimize_function(optimized_fn, allocator);
   }
-  if configuration.does_perform_local_value_numbering {
-    optimized_fn = local_value_numbering::optimize_function(optimized_fn);
-  }
   if configuration.does_perform_common_sub_expression_elimination {
     optimized_fn = common_subexpression_elimination::optimize_function(optimized_fn, allocator);
+  }
+  if configuration.does_perform_local_value_numbering {
+    optimized_fn = local_value_numbering::optimize_function(optimized_fn);
   }
   dead_code_elimination::optimize_function(optimized_fn)
 }
@@ -65,7 +65,7 @@ fn optimize_function_for_rounds(
   configuration: &OptimizationConfiguration,
 ) -> Function {
   let mut optimized_fn = function;
-  for _ in 0..5 {
+  for _ in 0..2 {
     optimized_fn = optimize_function_for_one_round(optimized_fn, allocator, configuration);
   }
   conditional_constant_propagation::optimize_function(dead_code_elimination::optimize_function(

@@ -1,4 +1,4 @@
 {
   "entryPoints": ["tests.AllTests"],
-  "ignores": [".git", "coverage", "target", "node_modules"]
+  "ignores": [".git", "coverage", "crates", "samlang-", "target", "jest-", "node_modules"]
 }

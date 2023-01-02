@@ -21,8 +21,12 @@ mod tests {
   fn assert_correctly_inlined(functions: Vec<Function>, expected: &str) {
     let actual =
       super::super::inlining::optimize_functions(functions, &mut ResourceAllocator::new())
-        .iter()
-        .map(Function::debug_print)
+        .into_iter()
+        .map(|f| {
+          Function::debug_print(&super::super::conditional_constant_propagation::optimize_function(
+            f,
+          ))
+        })
         .join("\n");
     assert_eq!(expected, actual);
   }

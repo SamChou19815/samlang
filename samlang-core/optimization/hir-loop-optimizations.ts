@@ -12,7 +12,6 @@ import {
   HIR_WHILE,
   HIR_ZERO,
 } from "../ast/hir-nodes";
-import optimizeHighIRStatementsByConditionalConstantPropagation from "./hir-conditional-constant-propagation-optimization";
 import {
   collectUseFromHighIRExpression,
   collectUseFromHighIRStatement,
@@ -217,10 +216,10 @@ export default function optimizeHighIRFunctionWithAllLoopOptimizations(
   highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator,
 ): HighIRFunction {
-  return optimizeHighIRStatementsByConditionalConstantPropagation({
+  return {
     ...highIRFunction,
     body: highIRFunction.body.flatMap((it) =>
       recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator),
     ),
-  });
+  };
 }

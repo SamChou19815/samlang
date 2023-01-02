@@ -1,6 +1,6 @@
 use crate::common::{rc_string, rcs, Str};
 use itertools::join;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc};
 
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Position(pub i32, pub i32);
@@ -14,7 +14,7 @@ enum ModuleReferenceEnum {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ModuleReference(Arc<ModuleReferenceEnum>);
+pub struct ModuleReference(Rc<ModuleReferenceEnum>);
 
 impl ToString for ModuleReference {
   fn to_string(&self) -> String {
@@ -27,19 +27,19 @@ impl ToString for ModuleReference {
 
 impl ModuleReference {
   pub(crate) fn dummy() -> ModuleReference {
-    ModuleReference(Arc::new(ModuleReferenceEnum::Ordinary(vec![rcs("__DUMMY__")])))
+    ModuleReference(Rc::new(ModuleReferenceEnum::Ordinary(vec![rcs("__DUMMY__")])))
   }
 
   pub(crate) fn root() -> ModuleReference {
-    ModuleReference(Arc::new(ModuleReferenceEnum::Root))
+    ModuleReference(Rc::new(ModuleReferenceEnum::Root))
   }
 
   pub(crate) fn ordinary(parts: Vec<Str>) -> ModuleReference {
-    ModuleReference(Arc::new(ModuleReferenceEnum::Ordinary(parts)))
+    ModuleReference(Rc::new(ModuleReferenceEnum::Ordinary(parts)))
   }
 
   pub fn from_string_parts(parts: Vec<String>) -> ModuleReference {
-    ModuleReference(Arc::new(ModuleReferenceEnum::Ordinary(
+    ModuleReference(Rc::new(ModuleReferenceEnum::Ordinary(
       parts.into_iter().map(rc_string).collect(),
     )))
   }

@@ -18,6 +18,7 @@ import {
   HIR_WHILE,
   HIR_ZERO,
 } from "../../ast/hir-nodes";
+import optimizeHighIRFunctionByConditionalConstantPropagation from "../hir-conditional-constant-propagation-optimization";
 import optimizeHighIRFunctionWithAllLoopOptimizations, {
   optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING,
 } from "../hir-loop-optimizations";
@@ -43,16 +44,18 @@ function assertOptimizeHighIRStatementsWithAllLoopOptimizations(
   expected: string,
 ): void {
   const { body, returnValue: optimizedReturnValue } =
-    optimizeHighIRFunctionWithAllLoopOptimizations(
-      {
-        name: "",
-        typeParameters: [],
-        parameters: [],
-        type: { __type__: "FunctionType", argumentTypes: [], returnType: HIR_INT_TYPE },
-        body: statements,
-        returnValue,
-      },
-      new OptimizationResourceAllocator(),
+    optimizeHighIRFunctionByConditionalConstantPropagation(
+      optimizeHighIRFunctionWithAllLoopOptimizations(
+        {
+          name: "",
+          typeParameters: [],
+          parameters: [],
+          type: { __type__: "FunctionType", argumentTypes: [], returnType: HIR_INT_TYPE },
+          body: statements,
+          returnValue,
+        },
+        new OptimizationResourceAllocator(),
+      ),
     );
 
   expect(

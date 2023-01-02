@@ -1,6 +1,5 @@
 import { HighIRFunction, HighIRStatement, HIR_BINARY, HIR_INDEX_ACCESS } from "../ast/hir-nodes";
 import { createCollectionConstructors, filterMap, HashSet, ReadonlyHashSet } from "../utils";
-import optimizeHighIRFunctionByLocalValueNumbering from "./hir-local-value-numbering-optimization";
 import { BindedValue, bindedValueToString } from "./hir-optimization-common";
 import type OptimizationResourceAllocator from "./optimization-resource-allocator";
 
@@ -117,8 +116,8 @@ export default function optimizeHighIRFunctionByCommonSubExpressionElimination(
   highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator,
 ): HighIRFunction {
-  return optimizeHighIRFunctionByLocalValueNumbering({
+  return {
     ...highIRFunction,
     body: optimizeHighIRStatementsWithSet(highIRFunction.body, allocator).statements,
-  });
+  };
 }

@@ -22,12 +22,12 @@ use itertools::Itertools;
 use std::{
   collections::{BTreeMap, HashMap, HashSet},
   ops::Deref,
-  sync::Arc,
+  rc::Rc,
 };
 
 struct UnoptimizedInterfaceTypingContext {
-  functions: Arc<BTreeMap<Str, Arc<MemberTypeInformation>>>,
-  methods: Arc<BTreeMap<Str, Arc<MemberTypeInformation>>>,
+  functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
   type_parameters: Vec<TypeParameterSignature>,
   extends_or_implements: Vec<IdType>,
 }
@@ -39,8 +39,8 @@ struct UnoptimizedModuleTypingContext {
 }
 
 struct InterfaceInliningCollector {
-  functions: Arc<BTreeMap<Str, Arc<MemberTypeInformation>>>,
-  methods: Arc<BTreeMap<Str, Arc<MemberTypeInformation>>>,
+  functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
   super_types: Vec<IdType>,
 }
 
@@ -83,7 +83,7 @@ fn recursive_compute_interface_members_chain(
         .iter()
         .map(|tparam| {
           let bound = tparam.bound.as_ref().map(|t| {
-            Arc::new(perform_id_type_substitution_asserting_id_type_return(t, &subst_mapping))
+            Rc::new(perform_id_type_substitution_asserting_id_type_return(t, &subst_mapping))
           });
           TypeParameterSignature { name: tparam.name.clone(), bound }
         })
@@ -91,7 +91,7 @@ fn recursive_compute_interface_members_chain(
       let type_ = perform_fn_type_substitution(&method.type_, &subst_mapping);
       inlined_methods.insert(
         name.clone(),
-        Arc::new(MemberTypeInformation { is_public: method.is_public, type_parameters, type_ }),
+        Rc::new(MemberTypeInformation { is_public: method.is_public, type_parameters, type_ }),
       );
     }
     let base_interface_types = interface_context
@@ -110,7 +110,7 @@ fn recursive_compute_interface_members_chain(
     }
     collector.push(InterfaceInliningCollector {
       functions: interface_context.functions.clone(),
-      methods: Arc::new(inlined_methods),
+      methods: Rc::new(inlined_methods),
       super_types: base_interface_types,
     });
   }
@@ -141,8 +141,8 @@ fn get_fully_inlined_interface_context(
   }
   super_types.push(instantiated_interface_type.clone());
   InterfaceInliningCollector {
-    functions: Arc::new(functions),
-    methods: Arc::new(methods),
+    functions: Rc::new(functions),
+    methods: Rc::new(methods),
     super_types,
   }
 }
@@ -192,8 +192,8 @@ fn check_class_member_conformance_with_signature(
 }
 
 fn validate_and_patch_member_map(
-  existing_map: &mut BTreeMap<Str, Arc<MemberTypeInformation>>,
-  newly_inlined_map: &BTreeMap<Str, Arc<MemberTypeInformation>>,
+  existing_map: &mut BTreeMap<Str, Rc<MemberTypeInformation>>,
+  newly_inlined_map: &BTreeMap<Str, Rc<MemberTypeInformation>>,
   error_set: &mut ErrorSet,
 ) {
   for (name, info) in newly_inlined_map {
@@ -247,8 +247,8 @@ fn get_fully_inlined_multiple_interface_context(
   }
 
   InterfaceInliningCollector {
-    functions: Arc::new(functions_acc),
-    methods: Arc::new(methods_acc),
+    functions: Rc::new(functions_acc),
+    methods: Rc::new(methods_acc),
     super_types: super_types_acc,
   }
 }
@@ -363,10 +363,10 @@ fn optimize_global_typing_context_with_interface_conformance_checking(
       }
       optimized_interfaces.insert(
         toplevel.name().name.clone(),
-        Arc::new(InterfaceTypingContext {
+        Rc::new(InterfaceTypingContext {
           is_concrete: toplevel.is_class(),
-          functions: Arc::new(functions),
-          methods: Arc::new(methods),
+          functions: Rc::new(functions),
+          methods: Rc::new(methods),
           type_parameters: unoptimized_class_typing_context.type_parameters.clone(),
           super_types: collector.super_types,
         }),
@@ -390,7 +390,7 @@ fn build_unoptimized_interface_typing_context(
   let mut functions = BTreeMap::new();
   let mut methods = BTreeMap::new();
   for member in toplevel.members_iter() {
-    let type_info = Arc::new(MemberTypeInformation {
+    let type_info = Rc::new(MemberTypeInformation {
       is_public: member.is_public,
       type_parameters: ast_type_params_to_sig_type_params(&member.type_parameters),
       type_: member.type_.clone(),
@@ -402,8 +402,8 @@ fn build_unoptimized_interface_typing_context(
     }
   }
   UnoptimizedInterfaceTypingContext {
-    functions: Arc::new(functions),
-    methods: Arc::new(methods),
+    functions: Rc::new(functions),
+    methods: Rc::new(methods),
     type_parameters: ast_type_params_to_sig_type_params(toplevel.type_parameters()),
     extends_or_implements: toplevel.extends_or_implements_nodes().clone(),
   }
@@ -436,7 +436,7 @@ pub(super) fn build_global_typing_context(
             type_parameters,
             extends_or_implements,
           } = build_unoptimized_interface_typing_context(toplevel);
-          let class_type = Arc::new(Type::Id(IdType {
+          let class_type = Rc::new(Type::Id(IdType {
             reason: Reason::new(class.name.loc.clone(), Some(class.name.loc.clone())),
             module_reference: module_reference.clone(),
             id: class.name.name.clone(),
@@ -444,7 +444,7 @@ pub(super) fn build_global_typing_context(
               .type_parameters
               .iter()
               .map(|it| {
-                Arc::new(Type::Id(IdType {
+                Rc::new(Type::Id(IdType {
                   reason: Reason::new(it.loc.clone(), Some(it.loc.clone())),
                   module_reference: module_reference.clone(),
                   id: it.name.name.clone(),
@@ -459,7 +459,7 @@ pub(super) fn build_global_typing_context(
           if type_def.is_object {
             functions_with_ctors.insert(
               rcs("init"),
-              Arc::new(MemberTypeInformation {
+              Rc::new(MemberTypeInformation {
                 is_public: true,
                 type_parameters: ast_type_params_to_sig_type_params(&class.type_parameters),
                 type_: FunctionType {
@@ -478,7 +478,7 @@ pub(super) fn build_global_typing_context(
             for (tag, FieldType { type_, is_public: _ }) in &type_def.mappings {
               functions_with_ctors.insert(
                 tag.clone(),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: ast_type_params_to_sig_type_params(&class.type_parameters),
                   type_: FunctionType {
@@ -493,7 +493,7 @@ pub(super) fn build_global_typing_context(
           classes.insert(
             class.name.name.clone(),
             UnoptimizedInterfaceTypingContext {
-              functions: Arc::new(functions_with_ctors),
+              functions: Rc::new(functions_with_ctors),
               methods,
               type_parameters,
               extends_or_implements,
@@ -557,17 +557,17 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Arc::new(vec![]),
+        associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: true,
         name: Id::from(""),
-        type_parameters: Arc::new(vec![]),
+        type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
           argument_types: vec![],
           return_type: builder.int_type(),
         },
-        parameters: Arc::new(vec![]),
+        parameters: Rc::new(vec![]),
       },
       &mut error_set,
     );
@@ -584,17 +584,17 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Arc::new(vec![]),
+        associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: false,
         name: Id::from(""),
-        type_parameters: Arc::new(vec![]),
+        type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
           argument_types: vec![],
           return_type: builder.int_type(),
         },
-        parameters: Arc::new(vec![]),
+        parameters: Rc::new(vec![]),
       },
       &mut error_set,
     );
@@ -611,17 +611,17 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Arc::new(vec![]),
+        associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
         name: Id::from(""),
-        type_parameters: Arc::new(vec![]),
+        type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
           argument_types: vec![],
           return_type: builder.bool_type(),
         },
-        parameters: Arc::new(vec![]),
+        parameters: Rc::new(vec![]),
       },
       &mut error_set,
     );
@@ -631,7 +631,7 @@ mod tests {
         is_public: true,
         type_parameters: vec![TypeParameterSignature {
           name: rcs("A"),
-          bound: Some(Arc::new(builder.simple_id_type_unwrapped("B"))),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped("B"))),
         }],
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -641,22 +641,22 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Arc::new(vec![]),
+        associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
         name: Id::from(""),
-        type_parameters: Arc::new(vec![TypeParameter {
+        type_parameters: Rc::new(vec![TypeParameter {
           loc: Location::dummy(),
-          associated_comments: Arc::new(vec![]),
+          associated_comments: Rc::new(vec![]),
           name: Id::from("A"),
-          bound: Some(Arc::new(builder.simple_id_type_unwrapped("B"))),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped("B"))),
         }]),
         type_: FunctionType {
           reason: Reason::dummy(),
           argument_types: vec![],
           return_type: builder.int_type(),
         },
-        parameters: Arc::new(vec![]),
+        parameters: Rc::new(vec![]),
       },
       &mut error_set,
     );
@@ -669,11 +669,11 @@ mod tests {
           TypeParameterSignature { name: rcs("A"), bound: None },
           TypeParameterSignature {
             name: rcs("C"),
-            bound: Some(Arc::new(builder.simple_id_type_unwrapped("A"))),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
           },
           TypeParameterSignature {
             name: rcs("D"),
-            bound: Some(Arc::new(builder.simple_id_type_unwrapped("A"))),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
           },
         ],
         type_: FunctionType {
@@ -684,28 +684,28 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Arc::new(vec![]),
+        associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
         name: Id::from(""),
-        type_parameters: Arc::new(vec![
+        type_parameters: Rc::new(vec![
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: Arc::new(vec![]),
+            associated_comments: Rc::new(vec![]),
             name: Id::from("B"),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: Arc::new(vec![]),
+            associated_comments: Rc::new(vec![]),
             name: Id::from("C"),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: Arc::new(vec![]),
+            associated_comments: Rc::new(vec![]),
             name: Id::from("D"),
-            bound: Some(Arc::new(builder.simple_id_type_unwrapped("B"))),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped("B"))),
           },
         ]),
         type_: FunctionType {
@@ -713,7 +713,7 @@ mod tests {
           argument_types: vec![],
           return_type: builder.bool_type(),
         },
-        parameters: Arc::new(vec![]),
+        parameters: Rc::new(vec![]),
       },
       &mut error_set,
     );
@@ -769,8 +769,8 @@ mod tests {
         classes: BTreeMap::from([(
           rcs("C"),
           UnoptimizedInterfaceTypingContext {
-            functions: Arc::new(BTreeMap::new()),
-            methods: Arc::new(BTreeMap::new()),
+            functions: Rc::new(BTreeMap::new()),
+            methods: Rc::new(BTreeMap::new()),
             type_parameters: vec![],
             extends_or_implements: vec![],
           },
@@ -779,8 +779,8 @@ mod tests {
           (
             rcs("IUseNonExistent"),
             UnoptimizedInterfaceTypingContext {
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::new()),
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![
                 TypeParameterSignature { name: rcs("A"), bound: None },
                 TypeParameterSignature { name: rcs("B"), bound: None },
@@ -799,14 +799,14 @@ mod tests {
                 TypeParameterSignature { name: rcs("B"), bound: None },
               ],
               extends_or_implements: vec![],
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::from([(
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::from([(
                 rcs("m1"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature {
                     name: rcs("C"),
-                    bound: Some(Arc::new(builder.simple_id_type_unwrapped("A"))),
+                    bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
                   }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
@@ -828,9 +828,9 @@ mod tests {
                 "IBase",
                 vec![builder.int_type(), builder.simple_id_type("B")],
               )],
-              functions: Arc::new(BTreeMap::from([(
+              functions: Rc::new(BTreeMap::from([(
                 rcs("f1"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature { name: rcs("C"), bound: None }],
                   type_: FunctionType {
@@ -840,13 +840,13 @@ mod tests {
                   },
                 }),
               )])),
-              methods: Arc::new(BTreeMap::from([(
+              methods: Rc::new(BTreeMap::from([(
                 rcs("m1"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature {
                     name: rcs("C"),
-                    bound: Some(Arc::new(builder.simple_id_type_unwrapped("A"))),
+                    bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
                   }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
@@ -868,10 +868,10 @@ mod tests {
                 "ILevel1",
                 vec![builder.simple_id_type("A"), builder.int_type()],
               )],
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::from([(
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::from([(
                 rcs("m2"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature { name: rcs("C"), bound: None }],
                   type_: FunctionType {
@@ -886,8 +886,8 @@ mod tests {
           (
             rcs("ICyclic1"),
             UnoptimizedInterfaceTypingContext {
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::new()),
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![],
               extends_or_implements: vec![builder.simple_id_type_unwrapped("ICyclic2")],
             },
@@ -895,8 +895,8 @@ mod tests {
           (
             rcs("ICyclic2"),
             UnoptimizedInterfaceTypingContext {
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::new()),
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![],
               extends_or_implements: vec![builder.simple_id_type_unwrapped("ICyclic1")],
             },
@@ -906,9 +906,9 @@ mod tests {
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![],
               extends_or_implements: vec![],
-              functions: Arc::new(BTreeMap::from([(
+              functions: Rc::new(BTreeMap::from([(
                 rcs("f"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
                   type_: FunctionType {
@@ -918,9 +918,9 @@ mod tests {
                   },
                 }),
               )])),
-              methods: Arc::new(BTreeMap::from([(
+              methods: Rc::new(BTreeMap::from([(
                 rcs("m"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
                   type_: FunctionType {
@@ -937,9 +937,9 @@ mod tests {
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![],
               extends_or_implements: vec![],
-              functions: Arc::new(BTreeMap::from([(
+              functions: Rc::new(BTreeMap::from([(
                 rcs("f"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
                   type_: FunctionType {
@@ -949,9 +949,9 @@ mod tests {
                   },
                 }),
               )])),
-              methods: Arc::new(BTreeMap::from([(
+              methods: Rc::new(BTreeMap::from([(
                 rcs("m"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
                   type_: FunctionType {
@@ -1053,10 +1053,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           UnoptimizedInterfaceTypingContext {
             type_parameters: vec![],
             extends_or_implements: vec![],
-            functions: Arc::new(BTreeMap::from([
+            functions: Rc::new(BTreeMap::from([
               (
                 rcs("f1"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
                   type_: FunctionType {
@@ -1068,7 +1068,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               ),
               (
                 rcs("f2"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
                   type_: FunctionType {
@@ -1079,10 +1079,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 }),
               ),
             ])),
-            methods: Arc::new(BTreeMap::from([
+            methods: Rc::new(BTreeMap::from([
               (
                 rcs("m1"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
                   type_: FunctionType {
@@ -1094,7 +1094,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               ),
               (
                 rcs("m2"),
-                Arc::new(MemberTypeInformation {
+                Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
                   type_: FunctionType {
@@ -1115,7 +1115,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
       &unoptimized_global_cx,
       &Toplevel::Class(InterfaceDeclarationCommon {
         loc: Location::dummy(),
-        associated_comments: Arc::new(vec![]),
+        associated_comments: Rc::new(vec![]),
         name: Id::from("A"),
         type_parameters: vec![],
         extends_or_implements_nodes: vec![builder.simple_id_type_unwrapped("IBase")],
@@ -1129,34 +1129,34 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           ClassMemberDefinition {
             decl: ClassMemberDeclaration {
               loc: Location::dummy(),
-              associated_comments: Arc::new(vec![]),
+              associated_comments: Rc::new(vec![]),
               is_public: true,
               is_method: false,
               name: Id::from("f1"),
-              type_parameters: Arc::new(vec![]),
+              type_parameters: Rc::new(vec![]),
               type_: FunctionType {
                 reason: Reason::dummy(),
                 argument_types: vec![],
                 return_type: builder.int_type(),
               },
-              parameters: Arc::new(vec![]),
+              parameters: Rc::new(vec![]),
             },
             body: builder.false_expr(),
           },
           ClassMemberDefinition {
             decl: ClassMemberDeclaration {
               loc: Location::dummy(),
-              associated_comments: Arc::new(vec![]),
+              associated_comments: Rc::new(vec![]),
               is_public: true,
               is_method: true,
               name: Id::from("m1"),
-              type_parameters: Arc::new(vec![]),
+              type_parameters: Rc::new(vec![]),
               type_: FunctionType {
                 reason: Reason::dummy(),
                 argument_types: vec![],
                 return_type: builder.int_type(),
               },
-              parameters: Arc::new(vec![]),
+              parameters: Rc::new(vec![]),
             },
             body: builder.false_expr(),
           },
@@ -1179,11 +1179,11 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           imports: vec![],
           toplevels: vec![Toplevel::Class(InterfaceDeclarationCommon {
             loc: Location::dummy(),
-            associated_comments: Arc::new(vec![]),
+            associated_comments: Rc::new(vec![]),
             name: Id::from("Class0"),
             type_parameters: vec![TypeParameter {
               loc: Location::dummy(),
-              associated_comments: Arc::new(vec![]),
+              associated_comments: Rc::new(vec![]),
               name: Id::from("T"),
               bound: None,
             }],
@@ -1213,7 +1213,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           toplevels: vec![
             Toplevel::Class(InterfaceDeclarationCommon {
               loc: Location::dummy(),
-              associated_comments: Arc::new(vec![]),
+              associated_comments: Rc::new(vec![]),
               name: Id::from("Class1"),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
@@ -1230,34 +1230,34 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 ClassMemberDefinition {
                   decl: ClassMemberDeclaration {
                     loc: Location::dummy(),
-                    associated_comments: Arc::new(vec![]),
+                    associated_comments: Rc::new(vec![]),
                     is_public: true,
                     is_method: true,
                     name: Id::from("m1"),
-                    type_parameters: Arc::new(vec![]),
+                    type_parameters: Rc::new(vec![]),
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
                       return_type: builder.int_type(),
                     },
-                    parameters: Arc::new(vec![]),
+                    parameters: Rc::new(vec![]),
                   },
                   body: builder.false_expr(),
                 },
                 ClassMemberDefinition {
                   decl: ClassMemberDeclaration {
                     loc: Location::dummy(),
-                    associated_comments: Arc::new(vec![]),
+                    associated_comments: Rc::new(vec![]),
                     is_public: false,
                     is_method: false,
                     name: Id::from("f1"),
-                    type_parameters: Arc::new(vec![]),
+                    type_parameters: Rc::new(vec![]),
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
                       return_type: builder.int_type(),
                     },
-                    parameters: Arc::new(vec![]),
+                    parameters: Rc::new(vec![]),
                   },
                   body: builder.false_expr(),
                 },
@@ -1265,7 +1265,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             }),
             Toplevel::Interface(InterfaceDeclarationCommon {
               loc: Location::dummy(),
-              associated_comments: Arc::new(vec![]),
+              associated_comments: Rc::new(vec![]),
               name: Id::from("Interface2"),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
@@ -1274,29 +1274,29 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             }),
             Toplevel::Interface(InterfaceDeclarationCommon {
               loc: Location::dummy(),
-              associated_comments: Arc::new(vec![]),
+              associated_comments: Rc::new(vec![]),
               name: Id::from("Interface3"),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
               type_definition: (),
               members: vec![ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: Arc::new(vec![]),
+                associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
                 name: Id::from("m1"),
-                type_parameters: Arc::new(vec![]),
+                type_parameters: Rc::new(vec![]),
                 type_: FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![],
                   return_type: builder.int_type(),
                 },
-                parameters: Arc::new(vec![]),
+                parameters: Rc::new(vec![]),
               }],
             }),
             Toplevel::Class(InterfaceDeclarationCommon {
               loc: Location::dummy(),
-              associated_comments: Arc::new(vec![]),
+              associated_comments: Rc::new(vec![]),
               name: Id::from("Class2"),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![builder.simple_id_type_unwrapped("Interface3")],

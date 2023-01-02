@@ -12,7 +12,9 @@ echo "Compiling samlang CLIs..."
 pnpm bundle > /dev/null
 cargo b -p samlang-cli --release 2> /dev/null
 
+N=100
+
 echo "Run with TS-Based CLI..."
-time repeat 10 ./samlang-dev
+time repeat $N ./samlang-dev
 echo "Run with Rust-Based CLI..."
-time RUST=1 repeat 10 ./target/release/samlang-cli
+time RUST=1 repeat $N ./target/release/samlang-cli

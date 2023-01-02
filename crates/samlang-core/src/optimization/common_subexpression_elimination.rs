@@ -1,8 +1,5 @@
-use super::{
-  local_value_numbering,
-  optimization_common::{
-    BinaryBindedValue, BindedValue, IndexAccessBindedValue, ResourceAllocator,
-  },
+use super::optimization_common::{
+  BinaryBindedValue, BindedValue, IndexAccessBindedValue, ResourceAllocator,
 };
 use crate::ast::hir::{Binary, Function, Statement};
 use itertools::Itertools;
@@ -96,14 +93,14 @@ fn optimize_stmts(
 
 pub(super) fn optimize_function(function: Function, allocator: &mut ResourceAllocator) -> Function {
   let Function { name, parameters, type_parameters, type_, body, return_value } = function;
-  local_value_numbering::optimize_function(Function {
+  Function {
     name,
     parameters,
     type_parameters,
     type_,
     body: optimize_stmts(body, allocator).0,
     return_value,
-  })
+  }
 }
 
 #[cfg(test)]
@@ -120,7 +117,7 @@ mod tests {
   use pretty_assertions::assert_eq;
 
   fn assert_correctly_optimized(stmts: Vec<Statement>, expected: &str) {
-    let actual = super::optimize_function(
+    let actual = super::super::local_value_numbering::optimize_function(super::optimize_function(
       Function {
         name: rcs(""),
         parameters: vec![],
@@ -130,7 +127,7 @@ mod tests {
         return_value: ZERO,
       },
       &mut ResourceAllocator::new(),
-    )
+    ))
     .body
     .iter()
     .map(Statement::debug_print)
