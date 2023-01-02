@@ -21,6 +21,7 @@ import {
   HIR_WHILE,
   HIR_ZERO,
 } from "../../ast/hir-nodes";
+import optimizeHighIRFunctionByConditionalConstantPropagation from "../hir-conditional-constant-propagation-optimization";
 import optimizeHighIRFunctionsByInlining, {
   estimateFunctionInlineCost_EXPOSED_FOR_TESTING,
 } from "../hir-inline-optimization";
@@ -138,6 +139,7 @@ describe("hir-inline-optimization", () => {
   const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: string): void => {
     expect(
       optimizeHighIRFunctionsByInlining(functions, new OptimizationResourceAllocator())
+        .map(optimizeHighIRFunctionByConditionalConstantPropagation)
         .map(debugPrintHighIRFunction)
         .join("\n"),
     ).toBe(expected);

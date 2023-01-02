@@ -7,7 +7,6 @@ use crate::ast::hir::{
 use crate::common::{rc_string, Str};
 use std::collections::{HashMap, HashSet};
 
-use super::conditional_constant_propagation;
 use super::optimization_common::{LocalValueContextForOptimization, ResourceAllocator};
 
 mod estimator {
@@ -442,14 +441,14 @@ fn perform_inline_rewrite_on_function(
     functions_that_can_be_inlined,
     allocator,
   );
-  conditional_constant_propagation::optimize_function(Function {
+  Function {
     name: function.name.clone(),
     parameters: function.parameters.clone(),
     type_parameters: function.type_parameters.clone(),
     type_: function.type_.clone(),
     body,
     return_value: function.return_value.clone(),
-  })
+  }
 }
 
 pub(super) fn optimize_functions(

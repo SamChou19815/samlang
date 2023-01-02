@@ -8,7 +8,6 @@ import {
   HIR_ZERO,
 } from "../ast/hir-nodes";
 import { checkNotNull, filterMap, zip, zip3 } from "../utils";
-import optimizeHighIRFunctionByConditionalConstantPropagation from "./hir-conditional-constant-propagation-optimization";
 import { LocalValueContextForOptimization } from "./hir-optimization-common";
 import type OptimizationResourceAllocator from "./optimization-resource-allocator";
 
@@ -281,10 +280,10 @@ function performInlineRewriteOnFunction(
     }
   }
 
-  return optimizeHighIRFunctionByConditionalConstantPropagation({
+  return {
     ...highIRFunction,
     body: [...highIRFunction.body.flatMap(rewrite)],
-  });
+  };
 }
 
 export default function optimizeHighIRFunctionsByInlining(

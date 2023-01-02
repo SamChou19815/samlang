@@ -14,20 +14,23 @@ import {
   HIR_ZERO,
 } from "../../ast/hir-nodes";
 import optimizeHighIRFunctionByCommonSubExpressionElimination from "../hir-common-subexpression-elimination-optimization";
+import optimizeHighIRFunctionByLocalValueNumbering from "../hir-local-value-numbering-optimization";
 import OptimizationResourceAllocator from "../optimization-resource-allocator";
 
 function assertCorrectlyOptimized(statements: HighIRStatement[], expected: string): void {
   expect(
-    optimizeHighIRFunctionByCommonSubExpressionElimination(
-      {
-        name: "",
-        parameters: [],
-        typeParameters: [],
-        type: { __type__: "FunctionType", argumentTypes: [], returnType: HIR_INT_TYPE },
-        body: statements,
-        returnValue: HIR_ZERO,
-      },
-      new OptimizationResourceAllocator(),
+    optimizeHighIRFunctionByLocalValueNumbering(
+      optimizeHighIRFunctionByCommonSubExpressionElimination(
+        {
+          name: "",
+          parameters: [],
+          typeParameters: [],
+          type: { __type__: "FunctionType", argumentTypes: [], returnType: HIR_INT_TYPE },
+          body: statements,
+          returnValue: HIR_ZERO,
+        },
+        new OptimizationResourceAllocator(),
+      ),
     )
       .body.map((it) => debugPrintHighIRStatement(it))
       .join("\n"),

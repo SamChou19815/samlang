@@ -1,7 +1,5 @@
-use itertools::Itertools;
-
 use super::{
-  conditional_constant_propagation, dead_code_elimination, loop_algebraic_optimization,
+  dead_code_elimination, loop_algebraic_optimization,
   loop_induction_analysis::{self, OptimizableWhileLoop},
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
   optimization_common::ResourceAllocator,
@@ -10,6 +8,7 @@ use crate::ast::hir::{
   Expression, Function, GenenalLoopVariable, Operator, Statement, VariableName, BOOL_TYPE,
   INT_TYPE, ZERO,
 };
+use itertools::Itertools;
 use std::collections::HashSet;
 
 fn expand_optimizable_while_loop(
@@ -224,15 +223,14 @@ fn optimize_stmts(stmts: Vec<Statement>, allocator: &mut ResourceAllocator) -> V
 
 pub(super) fn optimize_function(function: Function, allocator: &mut ResourceAllocator) -> Function {
   let Function { name, parameters, type_parameters, type_, body, return_value } = function;
-  let optimized_fn = Function {
+  Function {
     name,
     parameters,
     type_parameters,
     type_,
     body: optimize_stmts(body, allocator),
     return_value,
-  };
-  conditional_constant_propagation::optimize_function(optimized_fn)
+  }
 }
 
 #[cfg(test)]
@@ -263,17 +261,18 @@ mod tests {
   }
 
   fn assert_stmts_optimized(stmts: Vec<Statement>, return_value: Expression, expected: &str) {
-    let Function { body, return_value, .. } = super::optimize_function(
-      Function {
-        name: rcs(""),
-        parameters: vec![],
-        type_parameters: vec![],
-        type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-        body: stmts,
-        return_value,
-      },
-      &mut ResourceAllocator::new(),
-    );
+    let Function { body, return_value, .. } =
+      super::super::conditional_constant_propagation::optimize_function(super::optimize_function(
+        Function {
+          name: rcs(""),
+          parameters: vec![],
+          type_parameters: vec![],
+          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          body: stmts,
+          return_value,
+        },
+        &mut ResourceAllocator::new(),
+      ));
     let actual = format!(
       "{}\nreturn {};",
       body.iter().map(Statement::debug_print).join("\n"),

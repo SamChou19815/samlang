@@ -1,10 +1,9 @@
-use itertools::Itertools;
-
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use crate::{
   ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement, VariableName},
   common::{rc_string, LocalStackedContext, Str},
 };
+use itertools::Itertools;
 
 type LocalContext = LocalStackedContext<Str>;
 

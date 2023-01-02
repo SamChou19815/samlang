@@ -1,5 +1,3 @@
-use crate::ast::hir::{Binary, Expression, Operator, Statement, INT_TYPE, ZERO};
-
 use super::{
   loop_induction_analysis::{
     BasicInductionVariableWithLoopGuard, GuardOperator, OptimizableWhileLoop,
@@ -7,6 +5,7 @@ use super::{
   },
   optimization_common::ResourceAllocator,
 };
+use crate::ast::hir::{Binary, Expression, Operator, Statement, INT_TYPE, ZERO};
 
 fn analyze_number_of_iterations_to_break_less_than_guard(
   initial_guard_value: i32,
