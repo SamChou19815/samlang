@@ -30,7 +30,7 @@ pub(super) const ALL_ENABLED_CONFIGURATION: OptimizationConfiguration = Optimiza
   does_perform_local_value_numbering: true,
   does_perform_common_sub_expression_elimination: true,
   does_perform_loop_optimization: true,
-  does_perform_inlining: false,
+  does_perform_inlining: true,
 };
 
 pub(super) const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration =
@@ -38,7 +38,7 @@ pub(super) const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration =
     does_perform_local_value_numbering: false,
     does_perform_common_sub_expression_elimination: false,
     does_perform_loop_optimization: false,
-    does_perform_inlining: true,
+    does_perform_inlining: false,
   };
 
 fn optimize_function_for_one_round(
