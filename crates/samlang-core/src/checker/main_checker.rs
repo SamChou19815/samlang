@@ -21,7 +21,7 @@ use crate::{
   errors::ErrorSet,
 };
 use itertools::Itertools;
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 fn arguments_should_be_checked_without_hint(e: &expr::E) -> bool {
   match e {
@@ -88,7 +88,7 @@ fn solve_type_arguments(
     if !partially_solved_substitution.contains_key(&type_parameter.name) {
       // Fill in unknown for unsolved types.
       partially_solved_substitution
-        .insert(type_parameter.name.clone(), Arc::new(Type::Unknown(function_call_reason.clone())));
+        .insert(type_parameter.name.clone(), Rc::new(Type::Unknown(function_call_reason.clone())));
     }
   }
   perform_fn_type_substitution(generic_function_type, &partially_solved_substitution)
@@ -97,7 +97,7 @@ fn solve_type_arguments(
 struct FunctionCallTypeCheckingResult {
   solved_generic_type: FunctionType,
   solved_return_type: Type,
-  solved_substitution: HashMap<Str, Arc<Type>>,
+  solved_substitution: HashMap<Str, Rc<Type>>,
   checked_arguments: Vec<expr::E>,
 }
 
@@ -122,7 +122,7 @@ impl<'a> TypingContext<'a> {
   fn validate_type_arguments(
     &mut self,
     type_params: &Vec<TypeParameterSignature>,
-    subst_map: &HashMap<Str, Arc<Type>>,
+    subst_map: &HashMap<Str, Rc<Type>>,
   ) {
     for type_param in type_params {
       if let (Some(bound), Some(solved_type_argument)) =
@@ -172,7 +172,7 @@ impl<'a> TypingContext<'a> {
   }
 
   fn check_this(&mut self, common: expr::ExpressionCommon, hint: Option<&Type>) -> expr::E {
-    let type_ = Arc::new(self.type_meet(hint, &self.local_typing_context.read(&common.loc)));
+    let type_ = Rc::new(self.type_meet(hint, &self.local_typing_context.read(&common.loc)));
     expr::E::This(common.with_new_type(type_))
   }
 
@@ -182,7 +182,7 @@ impl<'a> TypingContext<'a> {
     id: Id,
     hint: Option<&Type>,
   ) -> expr::E {
-    let type_ = Arc::new(self.type_meet(hint, &self.local_typing_context.read(&common.loc)));
+    let type_ = Rc::new(self.type_meet(hint, &self.local_typing_context.read(&common.loc)));
     expr::E::Id(common.with_new_type(type_), id)
   }
 
@@ -216,7 +216,7 @@ impl<'a> TypingContext<'a> {
             )),
           );
           let partially_checked_expr = expr::ClassFunction {
-            common: expression.common.with_new_type(Arc::new(type_)),
+            common: expression.common.with_new_type(Rc::new(type_)),
             type_arguments: expression.type_arguments,
             module_reference: expression.module_reference,
             class_name: expression.class_name,
@@ -233,7 +233,7 @@ impl<'a> TypingContext<'a> {
       } else if class_function_type_information.type_parameters.is_empty() {
         // No type parameter to solve
         let partially_checked_expr = expr::ClassFunction {
-          common: expression.common.with_new_type(Arc::new(
+          common: expression.common.with_new_type(Rc::new(
             self.type_meet(hint, &Type::Fn(class_function_type_information.type_)),
           )),
           type_arguments: expression.type_arguments,
@@ -303,12 +303,12 @@ impl<'a> TypingContext<'a> {
       let partially_checked_expr = expr::ClassFunction {
         common: expression
           .common
-          .with_new_type(Arc::new(Type::Fn(class_function_type_information.type_.clone()))),
+          .with_new_type(Rc::new(Type::Fn(class_function_type_information.type_.clone()))),
         type_arguments: class_function_type_information
           .type_parameters
           .iter()
           .map(|it| {
-            Arc::new(Type::Id(IdType {
+            Rc::new(Type::Id(IdType {
               reason: Reason::dummy(),
               module_reference: self.current_module_reference.clone(),
               id: it.name.clone(),
@@ -329,7 +329,7 @@ impl<'a> TypingContext<'a> {
         &expression.common.loc,
         &format!("{}.{}", expression.class_name.name, expression.fn_name.name),
       );
-      let type_ = Arc::new(
+      let type_ = Rc::new(
         self.type_meet(hint, &Type::Unknown(Reason::new(expression.common.loc.clone(), None))),
       );
       (
@@ -357,10 +357,10 @@ impl<'a> TypingContext<'a> {
     let mut subst_map = HashMap::new();
     for tparam in unresolved_type_parameters {
       subst_map
-        .insert(tparam.name.clone(), Arc::new(self.best_effort_unknown_type(None, &expression)));
+        .insert(tparam.name.clone(), Rc::new(self.best_effort_unknown_type(None, &expression)));
     }
     let type_ =
-      Arc::new(self.type_meet(hint, &perform_type_substitution(&expression.type_(), &subst_map)));
+      Rc::new(self.type_meet(hint, &perform_type_substitution(&expression.type_(), &subst_map)));
     match expression {
       expr::E::ClassFn(e) => expr::E::ClassFn(expr::ClassFunction {
         common: e.common.with_new_type(type_),
@@ -426,7 +426,7 @@ impl<'a> TypingContext<'a> {
           "identifier",
           &checked_expression.type_().pretty_print(),
         );
-        let unknown_type = Arc::new(
+        let unknown_type = Rc::new(
           self.type_meet(hint, &Type::Unknown(Reason::new(expression.common.loc.clone(), None))),
         );
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
@@ -459,7 +459,7 @@ impl<'a> TypingContext<'a> {
             subst_map.insert(tparam.name.clone(), targ.clone());
           }
           self.validate_type_arguments(&method_type_info.type_parameters, &subst_map);
-          let type_ = Arc::new(self.type_meet(
+          let type_ = Rc::new(self.type_meet(
             hint,
             &Type::Fn(perform_fn_type_substitution(&method_type_info.type_, &subst_map)),
           ));
@@ -480,7 +480,7 @@ impl<'a> TypingContext<'a> {
       }
       if method_type_info.type_parameters.is_empty() {
         // No type parameter to solve
-        let type_ = Arc::new(self.type_meet(hint, &Type::Fn(method_type_info.type_)));
+        let type_ = Rc::new(self.type_meet(hint, &Type::Fn(method_type_info.type_)));
         let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
           common: expression.common.with_new_type(type_),
           type_arguments: expression.type_arguments,
@@ -543,12 +543,12 @@ impl<'a> TypingContext<'a> {
       }
       // When hint is bad or there is no hint, we need to give up and let context help us more.
       let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
-        common: expression.common.with_new_type(Arc::new(Type::Fn(method_type_info.type_))),
+        common: expression.common.with_new_type(Rc::new(Type::Fn(method_type_info.type_))),
         type_arguments: method_type_info
           .type_parameters
           .iter()
           .map(|it| {
-            Arc::new(Type::Id(IdType {
+            Rc::new(Type::Id(IdType {
               reason: Reason::dummy(),
               module_reference: self.current_module_reference.clone(),
               id: it.name.clone(),
@@ -572,7 +572,7 @@ impl<'a> TypingContext<'a> {
       }
       let (field_names, field_mappings) = self.resolve_type_definition(&obj_type, true);
       if let Some(field_type) = field_mappings.get(&expression.field_name.name) {
-        let type_ = Arc::new(
+        let type_ = Rc::new(
           self.type_meet(hint, &field_type.type_.reposition(expression.common.loc.clone())),
         );
         if obj_type.id.clone() != self.current_class.clone() && !field_type.is_public {
@@ -604,11 +604,11 @@ impl<'a> TypingContext<'a> {
         self
           .error_set
           .report_unresolved_name_error(&expression.field_name.loc, &expression.field_name.name);
-        let unknown_type = Arc::new(
+        let unknown_type = Rc::new(
           self.type_meet(hint, &Type::Unknown(Reason::new(expression.common.loc.clone(), None))),
         );
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
-          common: expression.common.with_new_type(Arc::new(self.type_meet(hint, &unknown_type))),
+          common: expression.common.with_new_type(Rc::new(self.type_meet(hint, &unknown_type))),
           type_arguments: expression.type_arguments,
           object: Box::new(checked_expression),
           field_name: expression.field_name,
@@ -734,7 +734,7 @@ impl<'a> TypingContext<'a> {
     }
     for type_parameter in still_unresolved_type_parameters {
       fully_solved_substitution
-        .insert(type_parameter.name.clone(), Arc::new(Type::Unknown(function_call_reason.clone())));
+        .insert(type_parameter.name.clone(), Rc::new(Type::Unknown(function_call_reason.clone())));
     }
     let fully_solved_generic_type =
       perform_fn_type_substitution(generic_function_type, &fully_solved_substitution);
@@ -775,7 +775,7 @@ impl<'a> TypingContext<'a> {
     let callee_function_type = match &*partially_checked_callee_type {
       Type::Unknown(_) => {
         let loc = expression.common.loc.clone();
-        let type_ = Arc::new(self.type_meet(hint, &Type::Unknown(Reason::new(loc, None))));
+        let type_ = Rc::new(self.type_meet(hint, &Type::Unknown(Reason::new(loc, None))));
         return expr::E::Call(expr::Call {
           common: expression.common.with_new_type(type_),
           callee: Box::new(self.replace_undecided_tparam_with_unknown_and_update_type(
@@ -794,7 +794,7 @@ impl<'a> TypingContext<'a> {
           &t.pretty_print(),
         );
         let loc = expression.common.loc.clone();
-        let type_ = Arc::new(self.type_meet(hint, &Type::Unknown(Reason::new(loc, None))));
+        let type_ = Rc::new(self.type_meet(hint, &Type::Unknown(Reason::new(loc, None))));
         return expr::E::Call(expr::Call {
           common: expression.common.with_new_type(type_),
           callee: Box::new(self.replace_undecided_tparam_with_unknown_and_update_type(
@@ -819,7 +819,7 @@ impl<'a> TypingContext<'a> {
       hint,
     );
     let fully_resolved_checked_callee = partially_checked_callee
-      .mod_common(|c| c.with_new_type(Arc::new(Type::Fn(solved_generic_type))));
+      .mod_common(|c| c.with_new_type(Rc::new(Type::Fn(solved_generic_type))));
     let callee_with_patched_targs = match fully_resolved_checked_callee {
       expr::E::ClassFn(class_fn) => expr::E::ClassFn(expr::ClassFunction {
         common: class_fn.common,
@@ -852,7 +852,7 @@ impl<'a> TypingContext<'a> {
       e => e,
     };
     expr::E::Call(expr::Call {
-      common: expression.common.with_new_type(Arc::new(solved_return_type)),
+      common: expression.common.with_new_type(Rc::new(solved_return_type)),
       callee: Box::new(callee_with_patched_targs),
       arguments: checked_arguments,
     })
@@ -933,7 +933,7 @@ impl<'a> TypingContext<'a> {
     let e2 = Box::new(self.check(*expression.e2, Some(&e1.type_())));
     let type_ = e2.type_().reposition(expression.common.loc.clone());
     expr::E::IfElse(expr::IfElse {
-      common: expression.common.with_new_type(Arc::new(type_)),
+      common: expression.common.with_new_type(Rc::new(type_)),
       condition,
       e1,
       e2,
@@ -954,7 +954,7 @@ impl<'a> TypingContext<'a> {
         let type_ =
           self.type_meet(hint, &Type::Unknown(Reason::new(expression.common.loc.clone(), None)));
         return expr::E::Match(expr::Match {
-          common: expression.common.with_new_type(Arc::new(type_)),
+          common: expression.common.with_new_type(Rc::new(type_)),
           matched: Box::new(checked_matched),
           cases: expression.cases,
         });
@@ -996,10 +996,10 @@ impl<'a> TypingContext<'a> {
       self.error_set.report_non_exhausive_match_error(&expression.common.loc, missing_tags);
     }
     let final_type = matching_list_types.iter().fold(
-      Arc::new(
+      Rc::new(
         self.type_meet(hint, &Type::Unknown(Reason::new(expression.common.loc.clone(), None))),
       ),
-      |general, specific| Arc::new(self.type_meet(Some(&general), specific)),
+      |general, specific| Rc::new(self.type_meet(Some(&general), specific)),
     );
     expr::E::Match(expr::Match {
       common: expression.common.with_new_type(final_type),
@@ -1012,7 +1012,7 @@ impl<'a> TypingContext<'a> {
     &mut self,
     expression: &expr::Lambda,
     hint: Option<&Type>,
-  ) -> Vec<Arc<Type>> {
+  ) -> Vec<Rc<Type>> {
     if let Some(hint) = hint {
       if let Type::Fn(fun_hint) = hint {
         if fun_hint.argument_types.len() == expression.parameters.len() {
@@ -1024,9 +1024,9 @@ impl<'a> TypingContext<'a> {
               let annot = if let Some(annot) = &parameter.annotation {
                 annot.clone()
               } else {
-                Arc::new(Type::Unknown(Reason::new(parameter.name.loc.clone(), None)))
+                Rc::new(Type::Unknown(Reason::new(parameter.name.loc.clone(), None)))
               };
-              let type_ = Arc::new(self.type_meet(Some(parameter_hint), &annot));
+              let type_ = Rc::new(self.type_meet(Some(parameter_hint), &annot));
               self.local_typing_context.write(parameter.name.loc.clone(), type_.clone());
               type_
             })
@@ -1053,7 +1053,7 @@ impl<'a> TypingContext<'a> {
         annot.clone()
       } else {
         self.error_set.report_insufficient_type_inference_context_error(&name.loc);
-        Arc::new(Type::Unknown(Reason::new(name.loc.clone(), None)))
+        Rc::new(Type::Unknown(Reason::new(name.loc.clone(), None)))
       };
       self.validate_type_instantiation_strictly(&type_);
       self.local_typing_context.write(name.loc.clone(), type_.clone());
@@ -1075,7 +1075,7 @@ impl<'a> TypingContext<'a> {
       return_type: body.type_(),
     });
     expr::E::Lambda(expr::Lambda {
-      common: expression.common.with_new_type(Arc::new(type_)),
+      common: expression.common.with_new_type(Rc::new(type_)),
       parameters: expression.parameters,
       captured,
       body: Box::new(body),
@@ -1184,7 +1184,7 @@ impl<'a> TypingContext<'a> {
     let type_ = if let Some(e) = &checked_final_expr {
       e.type_()
     } else {
-      Arc::new(Type::Primitive(
+      Rc::new(Type::Primitive(
         Reason::new(expression.common.loc.clone(), None),
         PrimitiveTypeKind::Unit,
       ))
@@ -1288,7 +1288,7 @@ pub(super) fn type_check_module(
           .type_parameters
           .iter()
           .map(|it| {
-            Arc::new(Type::Id(IdType {
+            Rc::new(Type::Id(IdType {
               reason: Reason::new(it.loc.clone(), Some(it.loc.clone())),
               module_reference: module_reference.clone(),
               id: it.name.name.clone(),
@@ -1297,7 +1297,7 @@ pub(super) fn type_check_module(
           })
           .collect_vec(),
       });
-      local_cx.write(c.loc.clone(), Arc::new(type_));
+      local_cx.write(c.loc.clone(), Rc::new(type_));
     }
     for member in toplevel.members_iter() {
       for param in member.parameters.iter() {

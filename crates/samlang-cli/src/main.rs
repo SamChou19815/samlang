@@ -92,8 +92,7 @@ mod utils {
 mod lsp {
   use super::*;
   use samlang_core::services;
-  use std::sync::Arc;
-  use tokio::sync::Mutex;
+  use tokio::sync::RwLock;
   use tower_lsp::jsonrpc::Result;
   use tower_lsp::lsp_types::*;
   use tower_lsp::{Client, LanguageServer};
@@ -112,8 +111,33 @@ mod lsp {
   pub(super) struct Backend {
     client: Client,
     absolute_source_path: PathBuf,
-    service: Arc<Mutex<services::api::LanguageServices>>,
+    service: RwLock<WrappedService>,
   }
+
+  struct WrappedService(services::api::LanguageServices);
+
+  impl WrappedService {
+    fn update(&mut self, absolute_source_path: &Path, url: &Url, source: String) {
+      self.0.update(convert_url_to_module_reference_helper(absolute_source_path, url), source)
+    }
+  }
+
+  fn convert_url_to_module_reference_helper(
+    absolute_source_path: &Path,
+    url: &Url,
+  ) -> samlang_core::ast::ModuleReference {
+    let url_str = url.as_str();
+    let url_protocol_stripped_str = PathBuf::from(if url_str.starts_with("file://") {
+      url_str.chars().skip("file://".len()).collect::<String>()
+    } else {
+      url_str.to_string()
+    });
+    utils::file_path_to_module_reference(absolute_source_path, url_protocol_stripped_str.as_path())
+      .unwrap()
+  }
+
+  unsafe impl Send for WrappedService {}
+  unsafe impl Sync for WrappedService {}
 
   const ENTIRE_DOCUMENT_RANGE: Range = Range {
     start: Position { line: 0, character: 0 },
@@ -126,21 +150,11 @@ mod lsp {
       absolute_source_path: PathBuf,
       service: services::api::LanguageServices,
     ) -> Backend {
-      Backend { client, absolute_source_path, service: Arc::new(Mutex::new(service)) }
+      Backend { client, absolute_source_path, service: RwLock::new(WrappedService(service)) }
     }
 
     fn convert_url_to_module_reference(&self, url: &Url) -> samlang_core::ast::ModuleReference {
-      let url_str = url.as_str();
-      let url_protocol_stripped_str = PathBuf::from(if url_str.starts_with("file://") {
-        url_str.chars().skip("file://".len()).collect::<String>()
-      } else {
-        url_str.to_string()
-      });
-      utils::file_path_to_module_reference(
-        self.absolute_source_path.as_path(),
-        url_protocol_stripped_str.as_path(),
-      )
-      .unwrap()
+      convert_url_to_module_reference_helper(&self.absolute_source_path, url)
     }
 
     fn convert_module_reference_to_url(
@@ -160,10 +174,11 @@ mod lsp {
     }
 
     async fn publish_diagnostics(&self) {
-      let cloned_locked_service = self.service.clone();
-      let service = cloned_locked_service.lock().await;
-      for module_reference in service.all_modules() {
+      let service = self.service.read().await;
+      let mut to_publish = vec![];
+      for module_reference in service.0.all_modules() {
         let diagnostics = service
+          .0
           .get_errors(module_reference)
           .iter()
           .map(|e| Diagnostic {
@@ -174,14 +189,10 @@ mod lsp {
             ..Default::default()
           })
           .collect::<Vec<_>>();
-        self
-          .client
-          .publish_diagnostics(
-            self.convert_module_reference_to_url(module_reference),
-            diagnostics,
-            None,
-          )
-          .await;
+        to_publish.push((self.convert_module_reference_to_url(module_reference), diagnostics));
+      }
+      for (url, diagnostics) in to_publish {
+        self.client.publish_diagnostics(url, diagnostics, None).await;
       }
     }
   }
@@ -222,9 +233,12 @@ mod lsp {
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
       self.client.log_message(MessageType::INFO, "[lsp] did_change_watched_files").await;
-      let module_reference = self.convert_url_to_module_reference(&params.text_document.uri);
       if let Some(TextDocumentContentChangeEvent { text, .. }) = params.content_changes.pop() {
-        self.service.lock().await.update(module_reference, text);
+        self.service.write().await.update(
+          &self.absolute_source_path,
+          &params.text_document.uri,
+          text,
+        );
         self.publish_diagnostics().await;
       }
     }
@@ -234,8 +248,9 @@ mod lsp {
       Ok(
         self
           .service
-          .lock()
+          .read()
           .await
+          .0
           .query_for_hover(
             &self.convert_url_to_module_reference(
               &params.text_document_position_params.text_document.uri,
@@ -267,8 +282,9 @@ mod lsp {
       Ok(
         self
           .service
-          .lock()
+          .read()
           .await
+          .0
           .query_definition_location(
             &self.convert_url_to_module_reference(
               &params.text_document_position_params.text_document.uri,
@@ -289,8 +305,9 @@ mod lsp {
       Ok(
         self
           .service
-          .lock()
+          .read()
           .await
+          .0
           .query_folding_ranges(&self.convert_url_to_module_reference(&params.text_document.uri))
           .map(|ranges| {
             ranges
@@ -312,8 +329,9 @@ mod lsp {
       Ok(Some(CompletionResponse::Array(
         self
           .service
-          .lock()
+          .read()
           .await
+          .0
           .auto_complete(
             &self.convert_url_to_module_reference(&params.text_document_position.text_document.uri),
             lsp_pos_to_samlang_pos(params.text_document_position.position),
@@ -343,8 +361,9 @@ mod lsp {
       Ok(
         self
           .service
-          .lock()
+          .read()
           .await
+          .0
           .rename_variable(
             &self.convert_url_to_module_reference(&params.text_document_position.text_document.uri),
             lsp_pos_to_samlang_pos(params.text_document_position.position),
@@ -369,8 +388,9 @@ mod lsp {
       Ok(
         self
           .service
-          .lock()
+          .read()
           .await
+          .0
           .format_entire_document(&self.convert_url_to_module_reference(&params.text_document.uri))
           .map(|new_text| vec![TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text }]),
       )

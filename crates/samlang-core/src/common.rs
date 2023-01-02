@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, ops::Deref, sync::Arc, time::Instant};
+use std::{collections::HashMap, fmt::Display, ops::Deref, rc::Rc, time::Instant};
 
 #[inline(always)]
 pub(crate) fn boxed<T>(v: T) -> Box<T> {
@@ -6,7 +6,7 @@ pub(crate) fn boxed<T>(v: T) -> Box<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct Str(Arc<String>);
+pub(crate) struct Str(Rc<String>);
 
 impl Display for Str {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -35,11 +35,11 @@ pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F
 }
 
 pub(crate) fn rcs(s: &'static str) -> Str {
-  Str(Arc::from(String::from(s)))
+  Str(Rc::new(String::from(s)))
 }
 
 pub(crate) fn rc_string(s: String) -> Str {
-  Str(Arc::from(s))
+  Str(Rc::new(s))
 }
 
 fn byte_digit_to_char(byte: u8) -> char {

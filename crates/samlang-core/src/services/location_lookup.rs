@@ -5,7 +5,7 @@ use crate::{
   },
   common::{rc_string, rcs},
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc};
 
 pub(super) struct LocationLookup<E>(HashMap<ModuleReference, HashMap<Location, E>>);
 
@@ -60,7 +60,7 @@ fn build_synthetic_class_name_id(
       expr::ExpressionCommon {
         loc: class_id.loc.clone(),
         associated_comments: class_id.associated_comments.clone(),
-        type_: Arc::new(Type::Id(IdType {
+        type_: Rc::new(Type::Id(IdType {
           reason: Reason::new(class_id.loc.clone(), Some(class_id.loc.clone())),
           module_reference: class_id.loc.module_reference.clone(),
           id: rc_string(format!(
@@ -145,10 +145,10 @@ fn build_expression_lookup_from_expr_recursive(
           &expr::E::Id(
             expr::ExpressionCommon {
               loc: pat_loc.clone(),
-              associated_comments: Arc::new(vec![]),
+              associated_comments: Rc::new(vec![]),
               type_,
             },
-            Id { loc: pat_loc.clone(), associated_comments: Arc::new(vec![]), name },
+            Id { loc: pat_loc.clone(), associated_comments: Rc::new(vec![]), name },
           ),
         );
       }
@@ -174,8 +174,8 @@ pub(super) fn rebuild_expression_lookup_for_module(
           &expr::E::Id(
             expr::ExpressionCommon {
               loc: member.decl.name.loc.clone(),
-              associated_comments: Arc::new(vec![]),
-              type_: Arc::new(Type::Fn(member.decl.type_.clone())),
+              associated_comments: Rc::new(vec![]),
+              type_: Rc::new(Type::Fn(member.decl.type_.clone())),
             },
             member.decl.name.clone(),
           ),

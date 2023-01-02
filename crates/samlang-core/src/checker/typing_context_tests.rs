@@ -18,7 +18,7 @@ mod tests {
   use pretty_assertions::assert_eq;
   use std::{
     collections::{BTreeMap, HashMap, HashSet},
-    sync::Arc,
+    rc::Rc,
   };
 
   fn empty_local_typing_context() -> LocalTypingContext {
@@ -61,29 +61,29 @@ m2: public () -> unknown
         is_concrete: true,
         type_parameters: vec![],
         super_types: vec![],
-        functions: Arc::new(BTreeMap::new()),
-        methods: Arc::new(BTreeMap::from([
+        functions: Rc::new(BTreeMap::new()),
+        methods: Rc::new(BTreeMap::from([
           (
             rcs("m1",),
-            Arc::new(MemberTypeInformation {
+            Rc::new(MemberTypeInformation {
               is_public: true,
               type_parameters: vec![],
               type_: FunctionType {
                 reason: Reason::dummy(),
                 argument_types: vec![],
-                return_type: Arc::new(Type::Unknown(Reason::dummy()))
+                return_type: Rc::new(Type::Unknown(Reason::dummy()))
               }
             })
           ),
           (
             rcs("m2",),
-            Arc::new(MemberTypeInformation {
+            Rc::new(MemberTypeInformation {
               is_public: true,
               type_parameters: vec![],
               type_: FunctionType {
                 reason: Reason::dummy(),
                 argument_types: vec![],
-                return_type: Arc::new(Type::Unknown(Reason::dummy()))
+                return_type: Rc::new(Type::Unknown(Reason::dummy()))
               }
             })
           )
@@ -142,15 +142,15 @@ m2: public () -> unknown
         type_definitions: BTreeMap::new(),
         interfaces: BTreeMap::from([(
           rcs("A"),
-          Arc::new(InterfaceTypingContext {
+          Rc::new(InterfaceTypingContext {
             is_concrete: true,
             type_parameters: vec![TypeParameterSignature { name: rcs("T"), bound: None }],
             super_types: vec![builder.general_id_type_unwrapped(
               "B",
               vec![builder.simple_id_type("T"), builder.int_type()],
             )],
-            functions: Arc::new(BTreeMap::new()),
-            methods: Arc::new(BTreeMap::new()),
+            functions: Rc::new(BTreeMap::new()),
+            methods: Rc::new(BTreeMap::new()),
           }),
         )]),
       },
@@ -198,28 +198,28 @@ m2: public () -> unknown
         interfaces: BTreeMap::from([
           (
             rcs("A"),
-            Arc::new(InterfaceTypingContext {
+            Rc::new(InterfaceTypingContext {
               is_concrete: true,
               type_parameters: vec![
                 TypeParameterSignature { name: rcs("T1"), bound: None },
                 TypeParameterSignature {
                   name: rcs("T2"),
-                  bound: Some(Arc::new(builder.simple_id_type_unwrapped("B"))),
+                  bound: Some(Rc::new(builder.simple_id_type_unwrapped("B"))),
                 },
               ],
               super_types: vec![],
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::new()),
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::new()),
             }),
           ),
           (
             rcs("B"),
-            Arc::new(InterfaceTypingContext {
+            Rc::new(InterfaceTypingContext {
               is_concrete: false,
               type_parameters: vec![],
               super_types: vec![builder.simple_id_type_unwrapped("B")],
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::new()),
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::new()),
             }),
           ),
         ]),
@@ -235,7 +235,7 @@ m2: public () -> unknown
         TypeParameterSignature { name: rcs("TPARAM"), bound: None },
         TypeParameterSignature {
           name: rcs("T2"),
-          bound: Some(Arc::new(builder.simple_id_type_unwrapped("A"))),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
         },
       ],
     );
@@ -281,14 +281,14 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
         interfaces: BTreeMap::from([
           (
             rcs("A"),
-            Arc::new(InterfaceTypingContext {
+            Rc::new(InterfaceTypingContext {
               is_concrete: true,
               type_parameters: vec![
                 TypeParameterSignature { name: rcs("A"), bound: None },
                 TypeParameterSignature { name: rcs("B"), bound: None },
               ],
               super_types: vec![],
-              functions: Arc::new(BTreeMap::from([
+              functions: Rc::new(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
                   "f1",
                   vec![],
@@ -302,7 +302,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                   vec!["C"],
                 ),
               ])),
-              methods: Arc::new(BTreeMap::from([
+              methods: Rc::new(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
                   "m1",
                   vec![builder.simple_id_type("A"), builder.simple_id_type("B")],
@@ -320,14 +320,14 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
           ),
           (
             rcs("B"),
-            Arc::new(InterfaceTypingContext {
+            Rc::new(InterfaceTypingContext {
               is_concrete: false,
               type_parameters: vec![
                 TypeParameterSignature { name: rcs("E"), bound: None },
                 TypeParameterSignature { name: rcs("F"), bound: None },
               ],
               super_types: vec![],
-              functions: Arc::new(BTreeMap::from([
+              functions: Rc::new(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
                   "f1",
                   vec![],
@@ -341,7 +341,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                   vec!["C"],
                 ),
               ])),
-              methods: Arc::new(BTreeMap::from([
+              methods: Rc::new(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
                   "m1",
                   vec![],
@@ -369,12 +369,12 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
       vec![
         TypeParameterSignature {
           name: rcs("TT1"),
-          bound: Some(Arc::new(builder.simple_id_type_unwrapped("A"))),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
         },
         TypeParameterSignature { name: rcs("TT2"), bound: None },
         TypeParameterSignature {
           name: rcs("TT3"),
-          bound: Some(Arc::new(builder.simple_id_type_unwrapped("sdfasdfasfs"))),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped("sdfasdfasfs"))),
         },
       ],
     );
@@ -498,28 +498,28 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
         interfaces: BTreeMap::from([
           (
             rcs("A"),
-            Arc::new(InterfaceTypingContext {
+            Rc::new(InterfaceTypingContext {
               is_concrete: true,
               type_parameters: vec![
                 TypeParameterSignature { name: rcs("A"), bound: None },
                 TypeParameterSignature { name: rcs("B"), bound: None },
               ],
               super_types: vec![],
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::new()),
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::new()),
             }),
           ),
           (
             rcs("B"),
-            Arc::new(InterfaceTypingContext {
+            Rc::new(InterfaceTypingContext {
               is_concrete: false,
               type_parameters: vec![
                 TypeParameterSignature { name: rcs("E"), bound: None },
                 TypeParameterSignature { name: rcs("F"), bound: None },
               ],
               super_types: vec![],
-              functions: Arc::new(BTreeMap::new()),
-              methods: Arc::new(BTreeMap::new()),
+              functions: Rc::new(BTreeMap::new()),
+              methods: Rc::new(BTreeMap::new()),
             }),
           ),
         ]),

@@ -18,7 +18,7 @@ use crate::{
   printer,
 };
 use itertools::Itertools;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CompletionItemKind {
@@ -375,7 +375,7 @@ impl LanguageServices {
     &self,
     module_reference: &ModuleReference,
     class_name: &Str,
-  ) -> Option<&Arc<InterfaceTypingContext>> {
+  ) -> Option<&Rc<InterfaceTypingContext>> {
     self.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(class_name))
   }
 

@@ -464,7 +464,7 @@ mod tests {
     parser::parse_source_module_from_text,
   };
   use pretty_assertions::assert_eq;
-  use std::sync::Arc;
+  use std::rc::Rc;
 
   fn empty_cx() -> InterpretationContext {
     InterpretationContext {
@@ -482,8 +482,8 @@ mod tests {
   fn dummy_expr_common() -> expr::ExpressionCommon {
     expr::ExpressionCommon {
       loc: Location::dummy(),
-      associated_comments: Arc::new(vec![]),
-      type_: Arc::new(Type::int_type(Reason::dummy())),
+      associated_comments: Rc::new(vec![]),
+      type_: Rc::new(Type::int_type(Reason::dummy())),
     }
   }
 
@@ -574,7 +574,7 @@ mod tests {
       imports: vec![],
       toplevels: vec![Toplevel::Interface(InterfaceDeclarationCommon {
         loc: Location::dummy(),
-        associated_comments: Arc::new(vec![]),
+        associated_comments: Rc::new(vec![]),
         name: Id::from(""),
         type_parameters: vec![],
         extends_or_implements_nodes: vec![],
