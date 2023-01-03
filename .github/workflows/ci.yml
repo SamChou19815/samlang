@@ -28,53 +28,39 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
       - name: Format Check
         run: cargo fmt --all -- --check
       - name: Lint
         run: cargo lint
-      - name: Build & Run Unit Tests
-        run: cargo tc
-  build-linux:
-    runs-on: ubuntu-latest
+      - name: Build & Test
+        run: cargo tc && ./compile-repository.sh
+  build-per-os:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-12, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
-      - name: Build
-        run: cargo b -p samlang-cli --release
-      - name: Compile samlang source code
-        run: ./target/release/samlang-cli
-      - name: Check generated TS code
-        run: |
-          corepack enable
-          pnpm install > /dev/null 2> /dev/null
-          pnpm esbuild out/tests.AllTests.ts | node | diff tests/snapshot.txt -
-      - name: Check generated WASM code
-        run: node out/tests.AllTests.wasm.js | diff tests/snapshot.txt -
-  build-macos:
-    runs-on: macos-12
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - name: Cache Cargo
+        uses: actions/cache@v3
         with:
-          profile: minimal
-          toolchain: stable
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ matrix.os }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run: cargo b -p samlang-cli --release
       - name: Compile samlang source code
         run: ./target/release/samlang-cli
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/upload-artifact@v3
         with:
-          profile: minimal
-          toolchain: stable
-      - name: Build
-        run: cargo b -p samlang-cli --release
-      - name: Compile samlang source code
-        run: ./target/release/samlang-cli
+          name: samlang-cli-${{ matrix.os }}
+          path: ./target/release/samlang-cli
