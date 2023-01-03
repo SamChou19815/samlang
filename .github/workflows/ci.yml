@@ -6,25 +6,92 @@ on:
   pull_request:
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
+  build-per-os:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-12, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: SamChou19815/infra/actions/setup-node-project@main
-      - name: Format Check
-        run: pnpm format:check
-      - name: Lint
-        run: pnpm lint
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run: cargo b -p samlang-cli --release
+      - name: Compile samlang source code on Unix
+        if: matrix.os != 'windows-latest'
+        run: ./target/release/samlang-cli
+      - name: Compile samlang source code on Windows
+        if: matrix.os == 'windows-latest'
+        run: ./target/release/samlang-cli.exe
+      - uses: actions/upload-artifact@v3
+        if: matrix.os != 'windows-latest'
+        with:
+          name: samlang-cli-${{ matrix.os }}
+          path: ./target/release/samlang-cli
+      - uses: actions/upload-artifact@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          name: samlang-cli-${{ matrix.os }}
+          path: ./target/release/samlang-cli.exe
   build:
+    needs: build-per-os
     runs-on: ubuntu-latest
     steps:
-      - uses: SamChou19815/infra/actions/setup-node-project@main
-      - name: Compile
-        run: pnpm check
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: samlang-cli-ubuntu-latest
+          path: samlang-cli/linux/
+      - uses: actions/download-artifact@v3
+        with:
+          name: samlang-cli-macos-12
+          path: samlang-cli/macos/
+      - uses: actions/download-artifact@v3
+        with:
+          name: samlang-cli-windows-latest
+          path: samlang-cli/windows/
+      - uses: actions/upload-artifact@v3
+        with:
+          name: samlang-cli
+          path: ./samlang-cli
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: SamChou19815/infra/actions/setup-node-project@main
-      - name: Test
-        run: pnpm test
-      - name: Compile samlang Programs
-        run: ./compile-repository.sh
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt, clippy, llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: cargo-test-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format Check
+        run: cargo fmt --all -- --check
+      - name: Lint
+        run: cargo lint
+      - name: Build & Test
+        run: cargo tc && ./compile-repository.sh

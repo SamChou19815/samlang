@@ -23,12 +23,7 @@ build
 bundles
 
 ## Cache
-.turbo
-.eslintcache
 tsconfig.tsbuildinfo
-
-## Converage
-coverage
 
 ## Logs
 *.log

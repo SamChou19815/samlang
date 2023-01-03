@@ -1,12 +1,22 @@
 {
-  "extends": "../configurations/tsconfig.base.json",
-  "include": ["src"],
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "forceConsistentCasingInFileNames": true,
+    "importsNotUsedAsValues": "error",
+    "isolatedModules": false,
+    "lib": ["esnext", "dom"],
+    "moduleResolution": "node",
+    "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": [],
     "module": "commonjs",
     "target": "es2019",
     "outDir": "out",
     "sourceMap": true,
     "strict": true,
     "esModuleInterop": false
-  }
+  },
+  "include": ["src"]
 }
