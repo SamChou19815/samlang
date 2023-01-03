@@ -2,11 +2,6 @@
   "name": "@dev-sam/samlang-cli",
   "version": "0.7.0",
   "license": "AGPLv3",
-  "files": [
-    "bin",
-    "loader.js",
-    "loader.d.ts"
-  ],
   "bin": {
     "samlang": "./bin/index.js"
   }

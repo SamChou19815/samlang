@@ -7,35 +7,6 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: rustfmt, clippy, llvm-tools-preview
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Install nextest
-        uses: taiki-e/install-action@nextest
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: cargo-build-${{ hashFiles('**/Cargo.lock') }}
-      - name: Format Check
-        run: cargo fmt --all -- --check
-      - name: Lint
-        run: cargo lint
-      - name: Build & Test
-        run: cargo tc && ./compile-repository.sh
-  build-per-os:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-12, windows-latest]
@@ -58,9 +29,50 @@ jobs:
           key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
         run: cargo b -p samlang-cli --release
-      - name: Compile samlang source code
+      - name: Compile samlang source code on Unix
+        if: matrix.os != 'windows-latest'
         run: ./target/release/samlang-cli
-      - uses: actions/upload-artifact@v3
+      - name: Compile samlang source code on WindowsUnix
+        if: matrix.os == 'windows-latest'
+        run: ./target/release/samlang-cli.exe
+      - name: Upload artifact on Unix
+        if: matrix.os != 'windows-latest'
+        uses: actions/upload-artifact@v3
         with:
           name: samlang-cli-${{ matrix.os }}
           path: ./target/release/samlang-cli
+      - name: Upload artifact on Windows
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: samlang-cli-${{ matrix.os }}
+          path: ./target/release/samlang-cli.exe
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt, clippy, llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: cargo-test-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format Check
+        run: cargo fmt --all -- --check
+      - name: Lint
+        run: cargo lint
+      - name: Build & Test
+        run: cargo tc && ./compile-repository.sh
