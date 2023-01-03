@@ -19,16 +19,12 @@ echo "==================== Step 3 ===================="
 echo "Checking generated TS code..."
 corepack enable
 pnpm install > /dev/null 2> /dev/null
-pnpm esbuild out/tests.AllTests.ts | node > actual.txt
-diff tests/snapshot.txt actual.txt
-rm actual.txt
+pnpm esbuild out/tests.AllTests.ts | node | diff tests/snapshot.txt -
 echo "Generated TS code is good."
 
 echo "==================== Step 4 ===================="
 echo "Checking generated WebAssembly code..."
-node out/tests.AllTests.wasm.js > actual.txt
-diff tests/snapshot.txt actual.txt
-rm actual.txt
+node out/tests.AllTests.wasm.js | diff tests/snapshot.txt -
 echo "Generated WebAssembly code is good."
 
 echo "==================== PASSED ===================="

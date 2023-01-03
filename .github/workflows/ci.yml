@@ -1,0 +1,80 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt, clippy, llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format Check
+        run: cargo fmt --all -- --check
+      - name: Lint
+        run: cargo lint
+      - name: Build & Run Unit Tests
+        run: cargo tc
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Build
+        run: cargo b -p samlang-cli --release
+      - name: Compile samlang source code
+        run: ./target/release/samlang-cli
+      - name: Check generated TS code
+        run: |
+          corepack enable
+          pnpm install > /dev/null 2> /dev/null
+          pnpm esbuild out/tests.AllTests.ts | node | diff tests/snapshot.txt -
+      - name: Check generated WASM code
+        run: node out/tests.AllTests.wasm.js | diff tests/snapshot.txt -
+  build-macos:
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Build
+        run: cargo b -p samlang-cli --release
+      - name: Compile samlang source code
+        run: ./target/release/samlang-cli
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Build
+        run: cargo b -p samlang-cli --release
+      - name: Compile samlang source code
+        run: ./target/release/samlang-cli
