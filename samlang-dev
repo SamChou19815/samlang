@@ -1,7 +1,3 @@
 #!/bin/bash
 
-if [[ -z "${RUST}" ]]; then
-  node ./samlang-cli/bin/index.js "$@"
-else
-  ./target/debug/samlang-cli "$@"
-fi
+./target/debug/samlang-cli "$@"

@@ -9,8 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # - uses: actions/checkout@v3
-      - uses: SamChou19815/infra/actions/setup-node-project@main
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -37,6 +36,4 @@ jobs:
       - name: Test
         run: |
           cargo tc
-          RUST=1 ./compile-repository.sh
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-          cd crates/samlang-wasm && ./setup-generated-package.sh
+          ./compile-repository.sh

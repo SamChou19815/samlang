@@ -1,6 +1,3 @@
 packages:
-  - jest-esbuild-transformer
-  - jest-raw-loader
   - samlang-cli
-  - samlang-core
   - samlang-vscode

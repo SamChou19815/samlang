@@ -1,72 +1,9 @@
 {
   "packageManager": "pnpm@7.13.3",
   "private": true,
-  "scripts": {
-    "lint": "eslint . --cache",
-    "format": "prettier --write '**/*.{ts,js,yml}'",
-    "format:check": "prettier --check '**/*.{ts,js,yml}'",
-    "bundle": "turbo run bundle",
-    "check": "turbo run check",
-    "test": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "test:single": "NODE_NO_WARNINGS=1 NODE_OPTIONS=--experimental-vm-modules jest -t",
-    "test:integration": "esr compile-repository.ts",
-    "core": "pnpm --filter @dev-sam/samlang-core",
-    "cli": "pnpm --filter @dev-sam/samlang-cli",
-    "vscode": "pnpm --filter samlang-vscode",
-    "bump": "pnpm up -r @types/jest @types/node prettier jest esbuild husky lint-staged turbo eslint typescript \"@typescript-eslint/*\""
-  },
   "devDependencies": {
-    "@dev-sam/eslint-config-common": "0.23.0",
-    "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0",
-    "@dev-sam/jest-raw-loader": "workspace:0.0.1",
     "@dev-sam/samlang-cli": "workspace:0.7.0",
-    "@jest/globals": "^29.1.2",
-    "@types/jest": "^29.2.2",
     "@types/node": "^18.11.9",
-    "@typescript-eslint/eslint-plugin": "^5.42.0",
-    "@typescript-eslint/parser": "^5.42.0",
-    "esbuild": "^0.15.13",
-    "eslint": "^8.26.0",
-    "husky": "^8.0.1",
-    "jest": "^29.2.2",
-    "lint-staged": "^13.0.3",
-    "prettier": "^2.7.1",
-    "prettier-plugin-organize-imports": "^3.1.1",
-    "turbo": "^1.6.3",
-    "typescript": "^4.8.4"
-  },
-  "eslintConfig": {
-    "extends": "@dev-sam/common"
-  },
-  "prettier": {
-    "printWidth": 100,
-    "endOfLine": "lf",
-    "trailingComma": "all",
-    "pluginSearchDirs": [
-      "."
-    ]
-  },
-  "jest": {
-    "transform": {
-      "\\.ts$": "@dev-sam/jest-esbuild-transformer",
-      "\\.wat$": "@dev-sam/jest-raw-loader"
-    },
-    "coverageProvider": "v8",
-    "coverageThreshold": {
-      "global": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 0
-      }
-    },
-    "extensionsToTreatAsEsm": [
-      ".ts"
-    ]
-  },
-  "lint-staged": {
-    "**/*.{ts,js,yml}": [
-      "pnpm prettier --write"
-    ]
+    "esbuild": "^0.16.13"
   }
 }

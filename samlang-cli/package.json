@@ -7,17 +7,7 @@
     "loader.js",
     "loader.d.ts"
   ],
-  "scripts": {
-    "check": "tsc --incremental --noEmit",
-    "bundle": "node build.js"
-  },
   "bin": {
     "samlang": "./bin/index.js"
-  },
-  "dependencies": {
-    "@dev-sam/samlang-core": "workspace:^0.7.0"
-  },
-  "devDependencies": {
-    "vscode-languageserver": "^8.0.2"
   }
 }
