@@ -53,19 +53,19 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: samlang-cli-ubuntu-latest
-          path: samlang-cli/linux/
+          path: packages/samlang-cli/linux/
       - uses: actions/download-artifact@v3
         with:
           name: samlang-cli-macos-12
-          path: samlang-cli/macos/
+          path: packages/samlang-cli/macos/
       - uses: actions/download-artifact@v3
         with:
           name: samlang-cli-windows-latest
-          path: samlang-cli/windows/
+          path: packages/samlang-cli/windows/
       - uses: actions/upload-artifact@v3
         with:
           name: samlang-cli
-          path: ./samlang-cli
+          path: ./packages/samlang-cli
   test:
     runs-on: ubuntu-latest
     steps:
