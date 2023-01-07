@@ -1,10 +1,9 @@
-function samlangGeneratedWebAssemblyLoader(
-  /** @type {ArrayBufferView | ArrayBuffer} */ bytes,
-  builtinsPatch = () => ({})
+// @ts-check
+
+export default async function interpretWebAssemblyModule(
+  /** @type {ArrayBufferView | ArrayBuffer} */ emittedWasmBinary
 ) {
   const memory = new WebAssembly.Memory({ initial: 2, maximum: 65536 });
-  const codeModule = new WebAssembly.Module(bytes);
-
   function pointerToString(/** @type {number} */ p) {
     const mem = new Uint32Array(memory.buffer);
     const start = p / 4;
@@ -13,22 +12,26 @@ function samlangGeneratedWebAssemblyLoader(
     return String.fromCharCode(...characterCodes);
   }
 
+  let printed = '';
+
   const builtins = {
     __Builtins$println(p) {
-      // eslint-disable-next-line no-console
-      console.log(pointerToString(p));
+      printed += pointerToString(p);
+      printed += '\n';
       return 0;
     },
     __Builtins$panic(p) {
       throw new Error(pointerToString(p));
     },
-    ...builtinsPatch(pointerToString),
   };
 
-  return {
-    ...builtins,
-    ...new WebAssembly.Instance(codeModule, { env: { memory }, builtins }).exports,
-  };
+  const codeModule = await WebAssembly.instantiate(emittedWasmBinary, {
+    env: { memory },
+    builtins,
+  });
+
+  /** @type {any} */
+  const exports = codeModule.instance.exports;
+  exports['_Demo_Main$main']?.();
+  return printed;
 }
-
-module.exports = samlangGeneratedWebAssemblyLoader;

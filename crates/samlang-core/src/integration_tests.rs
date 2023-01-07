@@ -406,11 +406,11 @@ class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
   function <T> of(t: T): List<T> =
     List.Cons(Pair.init(t, List.Nil<T>({})))
   method cons(t: T): List<T> =
-    List.Cons(Pair.init(t, this))
+    List.Cons(Pair.init(t, this,))
 }
 class Developer(
   val name: string, val github: string,
-  val projects: List<string>
+  val projects: List<string>,
 ) {
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...");

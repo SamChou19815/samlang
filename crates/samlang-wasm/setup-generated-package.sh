@@ -2,28 +2,76 @@
 
 set -e
 
-# Build
-wasm-pack build --out-dir samlang-core
+GENERATED=generated
 
-# Cleanup outputs
-rm samlang-core/.gitignore
+# Build
+wasm-pack build --out-dir samlang-demo --no-typescript
+
+# Add necessary files
 echo '{
-  "name": "@dev-sam/samlang-core",
-  "version": "0.8.0",
+  "//": "Sync from samlang repo",
+  "name": "samlang-demo",
+  "version": "0.0.1",
   "license": "AGPLv3",
-  "module": "index.mjs",
   "type": "module",
   "types": "index.d.ts",
   "sideEffects": false
-}' > samlang-core/package.json
-mv samlang-core/samlang_wasm.d.ts samlang-core/index.d.ts
-rm samlang-core/samlang_wasm_bg.wasm.d.ts
-echo 'export * from "./samlang_wasm_bg.js";' > samlang-core/index.js
-rm samlang-core/samlang_wasm.js
+}' > samlang-demo/package.json
+
+echo "// @$GENERATED
+
+type Range = {
+  startLineNumber: number;
+  startColumn: number;
+  endLineNumber: number;
+  endColumn: number;
+};
+
+export type CompilationResult = string | { tsCode: string; interpreterResult: string };
+
+export function compile(source: string): Promise<CompilationResult>;
+
+export function queryType(
+  source: string,
+  line: number,
+  column: number,
+): Promise<{ contents: Array<{ language: string; value: string }>; range: Range } | null>;
+
+export function queryDefinitionLocation(
+  source: string,
+  line: number,
+  column: number,
+): Promise<Range | null>;
+
+export function autoComplete(
+  source: string,
+  line: number,
+  column: number,
+): Promise<Array<{
+  range: Range;
+  label: string;
+  insertText: string;
+  detail: string;
+  insertTextFormat: number;
+  kind: number;
+}>>;" > samlang-demo/index.d.ts
+
+node bundle.cjs
+
+# Cleanup outputs
+rm samlang-demo/.gitignore samlang-demo/*.wasm samlang-demo/*.js
+mv out.js samlang-demo/index.js
 
 # Run tests
-cp test-samlang-wasm.mjs samlang-core && \
-  cd samlang-core && \
-  node --experimental-wasm-modules test-samlang-wasm.mjs && \
+cp test-samlang-wasm.mjs samlang-demo && \
+  cd samlang-demo && \
+  node test-samlang-wasm.mjs && \
   cd ../ && \
-  rm samlang-core/test-samlang-wasm.mjs
+  rm samlang-demo/test-samlang-wasm.mjs
+
+# Pack and sync
+cd samlang-demo && npm pack && cd ../
+if [[ -z "${CI}" ]]
+then
+  mv samlang-demo/samlang-demo-0.0.1.tgz ../../../website/packages/samlang/samlang-demo-0.0.1.tgz
+fi

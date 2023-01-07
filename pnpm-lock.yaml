@@ -7,10 +7,12 @@ importers:
       '@dev-sam/samlang-cli': workspace:0.8.0
       '@types/node': ^18.11.9
       esbuild: ^0.16.13
+      esbuild-plugin-wasm: ^1.0.0
     devDependencies:
       '@dev-sam/samlang-cli': link:packages/samlang-cli
       '@types/node': 18.11.9
       esbuild: 0.16.13
+      esbuild-plugin-wasm: 1.0.0
 
   packages/samlang-cli:
     specifiers: {}
@@ -244,6 +246,11 @@ packages:
 
   /concat-map/0.0.1:
     resolution: {integrity: sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=}
+    dev: true
+
+  /esbuild-plugin-wasm/1.0.0:
+    resolution: {integrity: sha512-iXIf3hwfqorExG66/eNr3U8JakIZuge70nMNQtinvxbzdljQ/RjvwaBiGPqF/DvuIumUApbe3zj2kqHLVyc7uQ==}
+    engines: {node: '>=0.10.0'}
     dev: true
 
   /esbuild/0.16.13:

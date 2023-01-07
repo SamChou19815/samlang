@@ -1,23 +1,48 @@
-import assert from "assert";
-import * as samlang from "./index.js";
+import * as samlang from './index.js';
 
-assert(samlang.reformat_source("class  Foo {}") === "class Foo\n");
-assert(samlang.reformat_source("class") === "class");
-assert(samlang.compile_single_source("class").errors.length > 0);
-assert(samlang.compile_single_source("class Foo {}").errors.length === 0);
-assert(new samlang.LanguageService("class Foo {}").get_errors() === "");
-assert(new samlang.LanguageService("class").get_errors().length > 0);
-assert(
-  JSON.stringify(new samlang.LanguageService("class Foo {}").query_type(0, 7)) ===
-    '{"contents":[{"language":"samlang","value":"class Foo"}],"range":{"startLineNumber":1,"startColumn":7,"endLineNumber":1,"endColumn":10}}',
+function assertEqual(actual, expected) {
+  if (actual !== expected) {
+    throw new Error(`Actual:\n${actual}\nExpected:\n${expected}`);
+  }
+}
+
+assertEqual(typeof (await samlang.compile('class')), 'string');
+const { tsCode, interpreterResult } = await samlang.compile(
+  'class Main { function main(): unit = Builtins.println("Hi") }'
 );
-assert(
-  JSON.stringify(new samlang.LanguageService("class Foo {}").query_definition(0, 7)) ===
-    '{"startLineNumber":1,"startColumn":1,"endLineNumber":1,"endColumn":13}',
+assertEqual(interpreterResult, 'Hi\n');
+assertEqual(
+  tsCode,
+  `type Str = [number, string];
+const __Builtins$stringConcat = ([, a]: Str, [, b]: Str): Str => [1, a + b];
+const __Builtins$println = ([, line]: Str): number => { console.log(line); return 0; };
+const __Builtins$stringToInt = ([, v]: Str): number => parseInt(v, 10);
+const __Builtins$intToString = (v: number): Str => [1, String(v)];
+const __Builtins$panic = ([, v]: Str): number => { throw Error(v); };
+const _builtin_free = (v: any): number => { v.length = 0; return 0 };
+const GLOBAL_STRING_0: Str = [0, \`Hi\`];
+function _Demo_Main$main(): number {
+  __Builtins$println(GLOBAL_STRING_0);
+  return 0;
+}
+
+_Demo_Main$main();
+`
 );
-assert(
+
+assertEqual(
+  JSON.stringify(await samlang.queryType('class Foo {}', 1, 8)),
+  '{"contents":[{"language":"samlang","value":"class Foo"}],"range":{"startLineNumber":1,"startColumn":7,"endLineNumber":1,"endColumn":10}}'
+);
+assertEqual(
+  JSON.stringify(await samlang.queryDefinitionLocation('class Foo {}', 1, 8)),
+  '{"startLineNumber":1,"startColumn":1,"endLineNumber":1,"endColumn":13}'
+);
+
+assertEqual(
   JSON.stringify(
-    new samlang.LanguageService(`
+    await samlang.autoComplete(
+      `
 class Main {
   function main(a: Developer): Developer = a.
 }
@@ -25,7 +50,10 @@ class Developer {
   private method f(): unit = {}
   method b(): unit = {}
 }
-`).autocomplete(2, 45),
-  ) ===
-    '[{"label":"b(): unit","insertText":"b()","insertTextFormat":1,"kind":2,"detail":"() -> unit"}]',
+`,
+      3,
+      46
+    )
+  ),
+  '[{"range":{"startLineNumber":3,"startColumn":46,"endLineNumber":3,"endColumn":46},"label":"b(): unit","insertText":"b()","insertTextRules":1,"kind":2,"detail":"() -> unit"}]'
 );
