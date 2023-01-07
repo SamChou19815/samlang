@@ -196,6 +196,7 @@ impl<'a> SourceParser<'a> {
   fn parse_punctuation_separated_list<T, F: FnMut(&mut Self) -> T>(
     &mut self,
     punctuation: TokenOp,
+    end_token: Option<TokenOp>,
     parser: &mut F,
   ) -> Vec<T> {
     let mut collector = vec![parser(self)];
@@ -204,13 +205,23 @@ impl<'a> SourceParser<'a> {
         break;
       }
       self.consume();
+      match self.peek() {
+        Token(_, TokenContent::Operator(token_op)) if end_token == Some(token_op) => {
+          return collector
+        }
+        _ => {}
+      }
       collector.push(parser(self));
     }
     collector
   }
 
-  fn parse_comma_separated_list<T, F: FnMut(&mut Self) -> T>(&mut self, parser: &mut F) -> Vec<T> {
-    self.parse_punctuation_separated_list(TokenOp::COMMA, parser)
+  fn parse_comma_separated_list<T, F: FnMut(&mut Self) -> T>(
+    &mut self,
+    end_token: Option<TokenOp>,
+    parser: &mut F,
+  ) -> Vec<T> {
+    self.parse_punctuation_separated_list(TokenOp::COMMA, end_token, parser)
   }
 
   // SECTION 2: Source Parser
@@ -236,15 +247,16 @@ impl<'a> SourceParser<'a> {
     while let Token(import_start, TokenContent::Keyword(Keyword::IMPORT)) = self.peek() {
       self.consume();
       self.assert_and_consume_operator(TokenOp::LBRACE);
-      let imported_members = self.parse_comma_separated_list(&mut SourceParser::parse_upper_id);
+      let imported_members =
+        self.parse_comma_separated_list(Some(TokenOp::RBRACE), &mut SourceParser::parse_upper_id);
       self.assert_and_consume_operator(TokenOp::RBRACE);
       self.assert_and_consume_keyword(Keyword::FROM);
       let import_loc_start = self.peek().0;
-      let imported_module = ModuleReference::ordinary(
-        self.parse_punctuation_separated_list(TokenOp::DOT, &mut |s: &mut Self| {
-          s.assert_and_consume_identifier().1
-        }),
-      );
+      let imported_module = ModuleReference::ordinary(self.parse_punctuation_separated_list(
+        TokenOp::DOT,
+        None,
+        &mut |s: &mut Self| s.assert_and_consume_identifier().1,
+      ));
       let imported_module_loc = import_loc_start.union(&self.last_location());
       for variable in imported_members.iter() {
         self.class_source_map.insert(variable.name.to_string(), imported_module.clone());
@@ -302,7 +314,8 @@ impl<'a> SourceParser<'a> {
     let (type_param_loc_start, type_param_loc_end, type_parameters) =
       if let Token(loc_start, TokenContent::Operator(TokenOp::LT)) = self.peek() {
         self.consume();
-        let type_params = self.parse_comma_separated_list(&mut SourceParser::parse_type_parameter);
+        let type_params = self
+          .parse_comma_separated_list(Some(TokenOp::GT), &mut SourceParser::parse_type_parameter);
         let loc_end = self.assert_and_consume_operator(TokenOp::GT);
         (Some(loc_start), Some(loc_end), type_params)
       } else {
@@ -372,7 +385,8 @@ impl<'a> SourceParser<'a> {
     let name = self.parse_upper_id();
     let type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
       self.consume();
-      let type_params = self.parse_comma_separated_list(&mut SourceParser::parse_type_parameter);
+      let type_params =
+        self.parse_comma_separated_list(Some(TokenOp::GT), &mut SourceParser::parse_type_parameter);
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
       type_params
     } else {
@@ -409,7 +423,7 @@ impl<'a> SourceParser<'a> {
   }
 
   fn parse_extends_or_implements_nodes(&mut self) -> Vec<IdType> {
-    self.parse_comma_separated_list(&mut |s: &mut Self| {
+    self.parse_comma_separated_list(None, &mut |s: &mut Self| {
       let id = s.parse_upper_id();
       s.parse_identifier_type(&id)
     })
@@ -419,27 +433,29 @@ impl<'a> SourceParser<'a> {
     let mut mappings = HashMap::new();
     let mut names = vec![];
     let (name_with_types, is_object) = if let TokenContent::UpperId(_) = self.peek().1 {
-      let name_with_types = self.parse_comma_separated_list(&mut |s: &mut Self| {
-        let name = s.parse_upper_id();
-        s.assert_and_consume_operator(TokenOp::LPAREN);
-        let type_ = s.parse_type();
-        s.assert_and_consume_operator(TokenOp::RPAREN);
-        (name, FieldType { is_public: false, type_ })
-      });
+      let name_with_types =
+        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+          let name = s.parse_upper_id();
+          s.assert_and_consume_operator(TokenOp::LPAREN);
+          let type_ = s.parse_type();
+          s.assert_and_consume_operator(TokenOp::RPAREN);
+          (name, FieldType { is_public: false, type_ })
+        });
       (name_with_types, false)
     } else {
-      let name_with_types = self.parse_comma_separated_list(&mut |s: &mut Self| {
-        let mut is_public = true;
-        if let TokenContent::Keyword(Keyword::PRIVATE) = s.peek().1 {
-          is_public = false;
-          s.consume();
-        }
-        s.assert_and_consume_keyword(Keyword::VAL);
-        let name = s.parse_lower_id();
-        s.assert_and_consume_operator(TokenOp::COLON);
-        let type_ = s.parse_type();
-        (name, FieldType { is_public, type_ })
-      });
+      let name_with_types =
+        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+          let mut is_public = true;
+          if let TokenContent::Keyword(Keyword::PRIVATE) = s.peek().1 {
+            is_public = false;
+            s.consume();
+          }
+          s.assert_and_consume_keyword(Keyword::VAL);
+          let name = s.parse_lower_id();
+          s.assert_and_consume_operator(TokenOp::COLON);
+          let type_ = s.parse_type();
+          (name, FieldType { is_public, type_ })
+        });
       (name_with_types, true)
     };
     for (name, field_type) in name_with_types {
@@ -491,8 +507,9 @@ impl<'a> SourceParser<'a> {
     }
     let type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
       self.consume();
-      let type_params =
-        self.parse_comma_separated_list(&mut |s: &mut Self| s.parse_type_parameter());
+      let type_params = self.parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| {
+        s.parse_type_parameter()
+      });
       self.assert_and_consume_operator(TokenOp::GT);
       type_params
     } else {
@@ -503,7 +520,7 @@ impl<'a> SourceParser<'a> {
     let parameters = if let TokenContent::Operator(TokenOp::RPAREN) = self.peek().1 {
       vec![]
     } else {
-      self.parse_comma_separated_list(&mut |s: &mut Self| {
+      self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
         let name = s.parse_lower_id();
         s.assert_and_consume_operator(TokenOp::COLON);
         let type_ = s.parse_type();
@@ -844,7 +861,8 @@ impl<'a> SourceParser<'a> {
           let type_arguments = if let Token(_, TokenContent::Operator(TokenOp::LT)) = self.peek() {
             field_preceding_comments.append(&mut self.collect_preceding_comments());
             self.assert_and_consume_operator(TokenOp::LT);
-            let type_args = self.parse_comma_separated_list(&mut |s: &mut Self| s.parse_type());
+            let type_args = self
+              .parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| s.parse_type());
             loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
             type_args
           } else {
@@ -872,7 +890,7 @@ impl<'a> SourceParser<'a> {
             if let Token(_, TokenContent::Operator(TokenOp::RPAREN)) = self.peek() {
               vec![]
             } else {
-              self.parse_comma_separated_list(&mut |s: &mut Self| {
+              self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
                 s.parse_expression_with_ending_comments()
               })
             };
@@ -976,7 +994,8 @@ impl<'a> SourceParser<'a> {
         let type_arguments = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
           member_preceding_comments.append(&mut self.collect_preceding_comments());
           self.assert_and_consume_operator(TokenOp::LT);
-          let type_args = self.parse_comma_separated_list(&mut |s: &mut Self| s.parse_type());
+          let type_args =
+            self.parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| s.parse_type());
           loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
           type_args
         } else {
@@ -1038,15 +1057,16 @@ impl<'a> SourceParser<'a> {
           // (...) -> ...
           TokenContent::Operator(TokenOp::COMMA) | TokenContent::Operator(TokenOp::COLON) => {
             self.unconsume();
-            let parameters = self.parse_comma_separated_list(&mut |s: &mut Self| {
-              let name = s.parse_lower_id();
-              if let Token(_, TokenContent::Operator(TokenOp::COLON)) = s.peek() {
-                s.consume();
-                OptionallyAnnotatedId { name, annotation: Some(s.parse_type()) }
-              } else {
-                OptionallyAnnotatedId { name, annotation: None }
-              }
-            });
+            let parameters =
+              self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+                let name = s.parse_lower_id();
+                if let Token(_, TokenContent::Operator(TokenOp::COLON)) = s.peek() {
+                  s.consume();
+                  OptionallyAnnotatedId { name, annotation: Some(s.parse_type()) }
+                } else {
+                  OptionallyAnnotatedId { name, annotation: None }
+                }
+              });
             self.assert_and_consume_operator(TokenOp::RPAREN);
             self.assert_and_consume_operator(TokenOp::ARROW);
             let body = self.parse_expression();
@@ -1193,24 +1213,25 @@ impl<'a> SourceParser<'a> {
     let peeked = &self.peek();
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
       self.consume();
-      let destructured_names = self.parse_comma_separated_list(&mut |s: &mut Self| {
-        let field_name = s.parse_lower_id();
-        let (alias, loc) = if let Token(_, TokenContent::Keyword(Keyword::AS)) = s.peek() {
-          s.consume();
-          let alias = s.parse_lower_id();
-          let loc = field_name.loc.union(&alias.loc);
-          (Some(alias), loc)
-        } else {
-          (None, field_name.loc.clone())
-        };
-        expr::ObjectPatternDestucturedName {
-          loc: loc.clone(),
-          field_name,
-          field_order: 0,
-          alias,
-          type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
-        }
-      });
+      let destructured_names =
+        self.parse_comma_separated_list(Some(TokenOp::RBRACE), &mut |s: &mut Self| {
+          let field_name = s.parse_lower_id();
+          let (alias, loc) = if let Token(_, TokenContent::Keyword(Keyword::AS)) = s.peek() {
+            s.consume();
+            let alias = s.parse_lower_id();
+            let loc = field_name.loc.union(&alias.loc);
+            (Some(alias), loc)
+          } else {
+            (None, field_name.loc.clone())
+          };
+          expr::ObjectPatternDestucturedName {
+            loc: loc.clone(),
+            field_name,
+            field_order: 0,
+            alias,
+            type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
+          }
+        });
       let end_location = self.assert_and_consume_operator(TokenOp::RBRACE);
       return expr::Pattern::Object(peeked_loc.union(&end_location), destructured_names);
     }
@@ -1303,7 +1324,8 @@ impl<'a> SourceParser<'a> {
           self.consume();
           vec![]
         } else {
-          let types = self.parse_comma_separated_list(&mut |s: &mut Self| s.parse_type());
+          let types = self
+            .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| s.parse_type());
           self.assert_and_consume_operator(TokenOp::RPAREN);
           types
         };
@@ -1327,7 +1349,8 @@ impl<'a> SourceParser<'a> {
     let (type_arguments, location) =
       if let Token(_, TokenContent::Operator(TokenOp::LT)) = self.peek() {
         self.consume();
-        let types = self.parse_comma_separated_list(&mut |s: &mut Self| s.parse_type());
+        let types =
+          self.parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| s.parse_type());
         let location = identifier.loc.union(&self.assert_and_consume_operator(TokenOp::GT));
         (types, location)
       } else {

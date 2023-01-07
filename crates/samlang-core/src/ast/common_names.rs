@@ -62,6 +62,10 @@ mod tests {
 
     assert_eq!("___DUMMY___Main$main", encode_main_function_name(&ModuleReference::dummy()));
     assert_eq!(
+      "_Demo_Main$main",
+      encode_main_function_name(&ModuleReference::ordinary(vec![rcs("Demo")]))
+    );
+    assert_eq!(
       "_Foo$Bar_Main$main",
       encode_main_function_name(&ModuleReference::ordinary(vec![rcs("Foo"), rcs("Bar"),]))
     );

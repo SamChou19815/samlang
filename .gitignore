@@ -2,7 +2,7 @@
 *.o
 samlang-runtime/*.wasm
 target
-crates/samlang-wasm/samlang-core
+crates/samlang-wasm/samlang-demo
 
 # Libraries
 samlang-runtime/compiled-wasi-libc

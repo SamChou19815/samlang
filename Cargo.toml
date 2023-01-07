@@ -5,3 +5,7 @@ members = [
   "crates/samlang-cli",
   "crates/samlang-wasm",
 ]
+
+[profile.release]
+lto = true
+strip = true
