@@ -28,23 +28,16 @@ jobs:
             target/
           key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
       - name: Build
-        run: cargo b -p samlang-cli --release
-      - name: Compile samlang source code on Unix
-        if: matrix.os != 'windows-latest'
-        run: ./target/release/samlang-cli
-      - name: Compile samlang source code on Windows
-        if: matrix.os == 'windows-latest'
-        run: ./target/release/samlang-cli.exe
+        run: node platform-independent-build.js
+      - name: Compile samlang source code
+        run: |
+          corepack enable
+          pnpm install > /dev/null 2> /dev/null
+          pnpm samlang
       - uses: actions/upload-artifact@v3
-        if: matrix.os != 'windows-latest'
         with:
           name: samlang-cli-${{ matrix.os }}
-          path: ./target/release/samlang-cli
-      - uses: actions/upload-artifact@v3
-        if: matrix.os == 'windows-latest'
-        with:
-          name: samlang-cli-${{ matrix.os }}
-          path: ./target/release/samlang-cli.exe
+          path: packages/samlang-cli/bin
   build:
     needs: build-per-os
     runs-on: ubuntu-latest
@@ -62,6 +55,13 @@ jobs:
         with:
           name: samlang-cli-windows-latest
           path: packages/samlang-cli/windows/
+      - name: Move artifacts
+        run: |
+          cd packages/samlang-cli
+          mv linux/* bin
+          mv macos/* bin
+          mv windows/* bin
+          rm -rf linux macos windows
       - uses: actions/upload-artifact@v3
         with:
           name: samlang-cli
