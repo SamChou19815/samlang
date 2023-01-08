@@ -32,6 +32,7 @@ switch (process.platform) {
     // Assuming we are on windows
     build();
     cpSync('target/release/samlang-cli.exe', 'packages/samlang-cli/bin/samlang-cli-windows.exe');
+    break;
   default:
     throw new Error(`Unsupported platform: ${process.platform}`);
 }
