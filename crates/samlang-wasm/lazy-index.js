@@ -6,8 +6,13 @@ const singleton = import('./samlang-demo/samlang_wasm.js');
 
 export async function compile(source) {
   try {
-    const { ts_code, wasm_bytes } = (await singleton).compile(source);
-    return { tsCode: ts_code, interpreterResult: await interpret(wasm_bytes) };
+    const compilationResult = (await singleton).compile(source);
+    const result = {
+      tsCode: compilationResult.ts_code,
+      interpreterResult: await interpret(compilationResult.wasm_bytes),
+    };
+    compilationResult.free();
+    return result;
   } catch (e) {
     return e;
   }
