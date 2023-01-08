@@ -27,12 +27,11 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build
-        run: node platform-independent-build.js
-      - name: Compile samlang source code
+      - name: Build samlang and compile samlang source code
         run: |
           corepack enable
-          pnpm install > /dev/null 2> /dev/null
+          pnpm install
+          node platform-independent-build.js
           pnpm samlang
       - uses: actions/upload-artifact@v3
         with:
