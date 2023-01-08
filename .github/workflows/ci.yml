@@ -13,10 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: dtolnay/rust-toolchain@stable
       - name: Cache Cargo
         uses: actions/cache@v3
         with:
@@ -27,24 +24,16 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build
-        run: cargo b -p samlang-cli --release
-      - name: Compile samlang source code on Unix
-        if: matrix.os != 'windows-latest'
-        run: ./target/release/samlang-cli
-      - name: Compile samlang source code on Windows
-        if: matrix.os == 'windows-latest'
-        run: ./target/release/samlang-cli.exe
+      - name: Build samlang and compile samlang source code
+        run: |
+          corepack enable
+          pnpm install
+          node platform-independent-build.js
+          pnpm samlang
       - uses: actions/upload-artifact@v3
-        if: matrix.os != 'windows-latest'
         with:
           name: samlang-cli-${{ matrix.os }}
-          path: ./target/release/samlang-cli
-      - uses: actions/upload-artifact@v3
-        if: matrix.os == 'windows-latest'
-        with:
-          name: samlang-cli-${{ matrix.os }}
-          path: ./target/release/samlang-cli.exe
+          path: packages/samlang-cli/bin
   build:
     needs: build-per-os
     runs-on: ubuntu-latest
@@ -62,6 +51,13 @@ jobs:
         with:
           name: samlang-cli-windows-latest
           path: packages/samlang-cli/windows/
+      - name: Move artifacts
+        run: |
+          cd packages/samlang-cli
+          mv linux/* bin
+          mv macos/* bin
+          mv windows/* bin
+          rm -rf linux macos windows
       - uses: actions/upload-artifact@v3
         with:
           name: samlang-cli
@@ -70,10 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
           components: rustfmt, clippy, llvm-tools-preview
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
