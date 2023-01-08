@@ -17,7 +17,9 @@ switch (process.platform) {
     cpSync('target/release/samlang-cli', 'packages/samlang-cli/bin/samlang-cli-linux');
     break;
   case 'darwin':
-    build('aarch64-apple-darwin');
+    spawnSync('rustup', ['target', 'add', 'aarch64-apple-darwin'], { stdio: 'inherit' });
+    spawnSync('rustup', ['target', 'add', 'x86_64-apple-darwin'], { stdio: 'inherit' });
+    build('aarch64-apple-darwin');  
     build('x86_64-apple-darwin');
     cpSync(
       'target/aarch64-apple-darwin/release/samlang-cli',
