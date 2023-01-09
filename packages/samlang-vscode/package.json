@@ -2,7 +2,7 @@
   "name": "vscode-samlang",
   "displayName": "vscode-samlang",
   "description": "samlang for VSCode",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "publisher": "dev-sam",
   "repository": {
     "url": "https://github.com/SamChou19815/samlang"
