@@ -1,9 +1,8 @@
-name: CI
+name: Main
 on:
   push:
     branches:
       - main
-  pull_request:
 
 jobs:
   build-per-os:
@@ -62,30 +61,3 @@ jobs:
         with:
           name: samlang-cli
           path: ./packages/samlang-cli
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy, llvm-tools-preview
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Install nextest
-        uses: taiki-e/install-action@nextest
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: cargo-test-${{ hashFiles('**/Cargo.lock') }}
-      - name: Format Check
-        run: cargo fmt --all -- --check
-      - name: Lint
-        run: cargo lint
-      - name: Build & Test
-        run: cargo tc && ./compile-repository.sh
