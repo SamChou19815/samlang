@@ -1,9 +1,8 @@
-name: CI
+name: Main
 on:
   push:
     branches:
       - main
-  pull_request:
 
 jobs:
   build-per-os:
@@ -34,8 +33,31 @@ jobs:
         with:
           name: samlang-cli-${{ matrix.os }}
           path: packages/samlang-cli/bin
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: cargo-build-wasm-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build and Validate
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          corepack enable
+          pnpm install
+          pnpm build:samlang-wasm
   build:
-    needs: build-per-os
+    needs:
+      - build-per-os
+      - build-wasm
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -62,30 +84,3 @@ jobs:
         with:
           name: samlang-cli
           path: ./packages/samlang-cli
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy, llvm-tools-preview
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Install nextest
-        uses: taiki-e/install-action@nextest
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: cargo-test-${{ hashFiles('**/Cargo.lock') }}
-      - name: Format Check
-        run: cargo fmt --all -- --check
-      - name: Lint
-        run: cargo lint
-      - name: Build & Test
-        run: cargo tc && ./compile-repository.sh
