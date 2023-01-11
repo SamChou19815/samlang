@@ -33,8 +33,31 @@ jobs:
         with:
           name: samlang-cli-${{ matrix.os }}
           path: packages/samlang-cli/bin
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: cargo-build-wasm-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build and Validate
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          corepack enable
+          pnpm install
+          pnpm build:samlang-wasm
   build:
-    needs: build-per-os
+    needs:
+      - build-per-os
+      - build-wasm
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

@@ -17,13 +17,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: cargo-build-wasm-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build samlang-demo
-        run: |
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-          corepack enable
-          pnpm install
-          pnpm build:samlang-wasm
+          key: cargo-build-debug-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build and Validate
+        run: ./compile-repository.sh
   test:
     runs-on: ubuntu-latest
     steps:
@@ -49,5 +45,5 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Lint
         run: cargo lint
-      - name: Build & Test
-        run: cargo tc && ./compile-repository.sh
+      - name: Test
+        run: cargo tc
