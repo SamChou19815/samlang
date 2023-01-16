@@ -1,4 +1,5 @@
 {
   "samlang.programPath": "./target/release/samlang-cli",
-  "files.associations": { "*.h": "c" }
+  "files.associations": { "*.h": "c" },
+  "rust-analyzer.checkOnSave.command": "clippy"
 }
