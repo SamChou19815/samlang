@@ -46,7 +46,7 @@ jobs:
           key: cargo-test-${{ hashFiles('**/Cargo.lock') }}
       - name: Format Check
         run: cargo fmt --all -- --check
-      - name: Lint
-        run: cargo lint
       - name: Test
         run: cargo tc
+      - name: Lint
+        run: cargo lint

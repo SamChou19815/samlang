@@ -1400,7 +1400,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
     let mut error_set = ErrorSet::new();
     let builtin_cx = create_builtin_module_typing_context(&mut heap);
     let actual_global_cx =
-      build_global_typing_context(&test_sources, &mut heap, &mut error_set, builtin_cx);
+      build_global_typing_context(&test_sources, &heap, &mut error_set, builtin_cx);
     assert_eq!(3, actual_global_cx.len());
 
     assert_eq!(
