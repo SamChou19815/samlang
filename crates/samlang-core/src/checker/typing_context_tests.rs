@@ -12,7 +12,7 @@ mod tests {
         MemberTypeInformation, ModuleTypingContext, TypeDefinitionTypingContext, TypingContext,
       },
     },
-    common::rcs,
+    common::{rcs, Heap, PStr},
     errors::ErrorSet,
   };
   use pretty_assertions::assert_eq;
@@ -33,20 +33,26 @@ mod tests {
 
   #[test]
   fn boilterplate() {
+    let mut heap = Heap::new();
+
     assert_eq!(
       r#"
 class  : []
 functions:
-intToString: public (int) -> string
-panic: public <T>(string) -> T
-println: public (string) -> unit
-stringConcat: public (string, string) -> string
 stringToInt: public (string) -> int
+intToString: public (int) -> string
+println: public (string) -> unit
+panic: public <T>(string) -> T
+stringConcat: public (string, string) -> string
 methods:
 
 "#
       .trim(),
-      create_builtin_module_typing_context().interfaces.get(&rcs("Builtins")).unwrap().to_string()
+      create_builtin_module_typing_context(&mut heap)
+        .interfaces
+        .get(&heap.alloc_str("Builtins"))
+        .unwrap()
+        .to_string(&heap)
     );
     assert_eq!(
       r#"
@@ -64,7 +70,7 @@ m2: public () -> unknown
         functions: Rc::new(BTreeMap::new()),
         methods: Rc::new(BTreeMap::from([
           (
-            rcs("m1",),
+            PStr::permanent("m1"),
             Rc::new(MemberTypeInformation {
               is_public: true,
               type_parameters: vec![],
@@ -76,7 +82,7 @@ m2: public () -> unknown
             })
           ),
           (
-            rcs("m2",),
+            PStr::permanent("m2"),
             Rc::new(MemberTypeInformation {
               is_public: true,
               type_parameters: vec![],
@@ -89,7 +95,7 @@ m2: public () -> unknown
           )
         ])),
       }
-      .to_string()
+      .to_string(&heap)
     );
 
     let builder = test_builder::create();
@@ -97,37 +103,38 @@ m2: public () -> unknown
       "a:bool, b:(private) bool",
       TypeDefinitionTypingContext {
         is_object: true,
-        names: vec![rcs("a"), rcs("b")],
+        names: vec![PStr::permanent("a"), PStr::permanent("b")],
         mappings: HashMap::from([
-          (rcs("a"), FieldType { is_public: true, type_: builder.bool_type() }),
-          (rcs("b"), FieldType { is_public: false, type_: builder.bool_type() })
+          (PStr::permanent("a"), FieldType { is_public: true, type_: builder.bool_type() }),
+          (PStr::permanent("b"), FieldType { is_public: false, type_: builder.bool_type() })
         ])
       }
-      .to_string()
+      .to_string(&heap)
     );
     assert_eq!(
       "A(bool)",
       TypeDefinitionTypingContext {
         is_object: false,
-        names: vec![rcs("A")],
+        names: vec![PStr::permanent("A")],
         mappings: HashMap::from([(
-          rcs("A"),
+          PStr::permanent("A"),
           FieldType { is_public: true, type_: builder.bool_type() }
         )])
       }
-      .to_string()
+      .to_string(&heap)
     );
 
     assert_eq!(
       "private a() -> bool",
       MemberTypeInformation::create_private_builtin_function(
+        &mut heap,
         "a",
         vec![],
         builder.bool_type(),
         vec![]
       )
       .1
-      .pretty_print("a")
+      .pretty_print("a", &heap)
     );
   }
 
@@ -141,13 +148,16 @@ m2: public () -> unknown
       ModuleTypingContext {
         type_definitions: BTreeMap::new(),
         interfaces: BTreeMap::from([(
-          rcs("A"),
+          PStr::permanent("A"),
           Rc::new(InterfaceTypingContext {
             is_concrete: true,
-            type_parameters: vec![TypeParameterSignature { name: rcs("T"), bound: None }],
+            type_parameters: vec![TypeParameterSignature {
+              name: PStr::permanent("T"),
+              bound: None,
+            }],
             super_types: vec![builder.general_id_type_unwrapped(
-              "B",
-              vec![builder.simple_id_type("T"), builder.int_type()],
+              PStr::permanent("B"),
+              vec![builder.simple_id_type(PStr::permanent("T")), builder.int_type()],
             )],
             functions: Rc::new(BTreeMap::new()),
             methods: Rc::new(BTreeMap::new()),
@@ -160,29 +170,38 @@ m2: public () -> unknown
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      rcs("A"),
+      PStr::permanent("A"),
       vec![],
     );
 
     // Non-id lower type
-    assert!(!cx.is_subtype(&builder.int_type(), &builder.simple_id_type("B")));
+    assert!(!cx.is_subtype(&builder.int_type(), &builder.simple_id_type(PStr::permanent("B"))));
     // Non-existent type
-    assert!(!cx.is_subtype(&builder.simple_id_type("B"), &builder.simple_id_type("B")));
+    assert!(!cx.is_subtype(
+      &builder.simple_id_type(PStr::permanent("B")),
+      &builder.simple_id_type(PStr::permanent("B"))
+    ));
     // Type-args length mismatch
-    assert!(!cx.is_subtype(&builder.simple_id_type("A"), &builder.simple_id_type("B")));
+    assert!(!cx.is_subtype(
+      &builder.simple_id_type(PStr::permanent("A")),
+      &builder.simple_id_type(PStr::permanent("B"))
+    ));
     // Type-args mismatch
     assert!(!cx.is_subtype(
-      &builder.general_id_type("A", vec![builder.int_type()]),
-      &builder.general_id_type("B", vec![builder.string_type(), builder.int_type()])
+      &builder.general_id_type(PStr::permanent("A"), vec![builder.int_type()]),
+      &builder
+        .general_id_type(PStr::permanent("B"), vec![builder.string_type(), builder.int_type()])
     ));
     assert!(!cx.is_subtype(
-      &builder.general_id_type("A", vec![builder.int_type()]),
-      &builder.general_id_type("B", vec![builder.string_type(), builder.string_type()])
+      &builder.general_id_type(PStr::permanent("A"), vec![builder.int_type()]),
+      &builder
+        .general_id_type(PStr::permanent("B"), vec![builder.string_type(), builder.string_type()])
     ));
     // Good
     assert!(cx.is_subtype(
-      &builder.general_id_type("A", vec![builder.string_type()]),
-      &builder.general_id_type("B", vec![builder.string_type(), builder.int_type()])
+      &builder.general_id_type(PStr::permanent("A"), vec![builder.string_type()]),
+      &builder
+        .general_id_type(PStr::permanent("B"), vec![builder.string_type(), builder.int_type()])
     ));
   }
 
@@ -190,6 +209,7 @@ m2: public () -> unknown
   fn validate_type_instantiation_tests() {
     let builder = test_builder::create();
     let mut local_cx = empty_local_typing_context();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
@@ -197,14 +217,14 @@ m2: public () -> unknown
         type_definitions: BTreeMap::new(),
         interfaces: BTreeMap::from([
           (
-            rcs("A"),
+            PStr::permanent("A"),
             Rc::new(InterfaceTypingContext {
               is_concrete: true,
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("T1"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("T1"), bound: None },
                 TypeParameterSignature {
-                  name: rcs("T2"),
-                  bound: Some(Rc::new(builder.simple_id_type_unwrapped("B"))),
+                  name: PStr::permanent("T2"),
+                  bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B")))),
                 },
               ],
               super_types: vec![],
@@ -213,11 +233,11 @@ m2: public () -> unknown
             }),
           ),
           (
-            rcs("B"),
+            PStr::permanent("B"),
             Rc::new(InterfaceTypingContext {
               is_concrete: false,
               type_parameters: vec![],
-              super_types: vec![builder.simple_id_type_unwrapped("B")],
+              super_types: vec![builder.simple_id_type_unwrapped(PStr::permanent("B"))],
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::new()),
             }),
@@ -230,34 +250,50 @@ m2: public () -> unknown
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      rcs("A"),
+      PStr::permanent("A"),
       vec![
-        TypeParameterSignature { name: rcs("TPARAM"), bound: None },
+        TypeParameterSignature { name: PStr::permanent("TPARAM"), bound: None },
         TypeParameterSignature {
-          name: rcs("T2"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
+          name: PStr::permanent("T2"),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
         },
       ],
     );
 
-    cx.validate_type_instantiation_allow_abstract_types(&builder.int_type());
+    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.int_type());
     cx.validate_type_instantiation_allow_abstract_types(
+      &heap,
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
-    cx.validate_type_instantiation_allow_abstract_types(&Type::Unknown(Reason::dummy()));
-    cx.validate_type_instantiation_allow_abstract_types(&builder.simple_id_type("TPARAM"));
+    cx.validate_type_instantiation_allow_abstract_types(&heap, &Type::Unknown(Reason::dummy()));
     cx.validate_type_instantiation_allow_abstract_types(
-      &builder.general_id_type("TPARAM", vec![builder.int_type()]),
-    );
-    cx.validate_type_instantiation_allow_abstract_types(&builder.simple_id_type("T"));
-    cx.validate_type_instantiation_allow_abstract_types(&builder.simple_id_type("A"));
-    cx.validate_type_instantiation_allow_abstract_types(
-      &builder.general_id_type("A", vec![builder.int_type(), builder.int_type()]),
+      &heap,
+      &builder.simple_id_type(PStr::permanent("TPARAM")),
     );
     cx.validate_type_instantiation_allow_abstract_types(
-      &builder.general_id_type("A", vec![builder.int_type(), builder.simple_id_type("B")]),
+      &heap,
+      &builder.general_id_type(PStr::permanent("TPARAM"), vec![builder.int_type()]),
     );
-    cx.validate_type_instantiation_strictly(&builder.simple_id_type("B"));
+    cx.validate_type_instantiation_allow_abstract_types(
+      &heap,
+      &builder.simple_id_type(PStr::permanent("T")),
+    );
+    cx.validate_type_instantiation_allow_abstract_types(
+      &heap,
+      &builder.simple_id_type(PStr::permanent("A")),
+    );
+    cx.validate_type_instantiation_allow_abstract_types(
+      &heap,
+      &builder.general_id_type(PStr::permanent("A"), vec![builder.int_type(), builder.int_type()]),
+    );
+    cx.validate_type_instantiation_allow_abstract_types(
+      &heap,
+      &builder.general_id_type(
+        PStr::permanent("A"),
+        vec![builder.int_type(), builder.simple_id_type(PStr::permanent("B"))],
+      ),
+    );
+    cx.validate_type_instantiation_strictly(&heap, &builder.simple_id_type(PStr::permanent("B")));
 
     let expected_errors = r#"
 __DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.
@@ -273,6 +309,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
   fn get_members_test() {
     let builder = test_builder::create();
     let mut local_cx = empty_local_typing_context();
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
@@ -280,22 +317,24 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
         type_definitions: BTreeMap::new(),
         interfaces: BTreeMap::from([
           (
-            rcs("A"),
+            heap.alloc_str("A"),
             Rc::new(InterfaceTypingContext {
               is_concrete: true,
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("A"), bound: None },
-                TypeParameterSignature { name: rcs("B"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
               ],
               super_types: vec![],
               functions: Rc::new(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
+                  &mut heap,
                   "f1",
                   vec![],
                   builder.int_type(),
                   vec!["C"],
                 ),
                 MemberTypeInformation::create_private_builtin_function(
+                  &mut heap,
                   "f2",
                   vec![],
                   builder.int_type(),
@@ -304,12 +343,17 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
               ])),
               methods: Rc::new(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
+                  &mut heap,
                   "m1",
-                  vec![builder.simple_id_type("A"), builder.simple_id_type("B")],
+                  vec![
+                    builder.simple_id_type(PStr::permanent("A")),
+                    builder.simple_id_type(PStr::permanent("B")),
+                  ],
                   builder.int_type(),
                   vec!["C"],
                 ),
                 MemberTypeInformation::create_builtin_function(
+                  &mut heap,
                   "m2",
                   vec![],
                   builder.int_type(),
@@ -319,22 +363,24 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
             }),
           ),
           (
-            rcs("B"),
+            heap.alloc_str("B"),
             Rc::new(InterfaceTypingContext {
               is_concrete: false,
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("E"), bound: None },
-                TypeParameterSignature { name: rcs("F"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("E"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("F"), bound: None },
               ],
               super_types: vec![],
               functions: Rc::new(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
+                  &mut heap,
                   "f1",
                   vec![],
                   builder.int_type(),
                   vec!["C"],
                 ),
                 MemberTypeInformation::create_private_builtin_function(
+                  &mut heap,
                   "f2",
                   vec![],
                   builder.int_type(),
@@ -343,12 +389,14 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
               ])),
               methods: Rc::new(BTreeMap::from([
                 MemberTypeInformation::create_builtin_function(
+                  &mut heap,
                   "m1",
                   vec![],
                   builder.int_type(),
                   vec!["C"],
                 ),
                 MemberTypeInformation::create_private_builtin_function(
+                  &mut heap,
                   "m2",
                   vec![],
                   builder.int_type(),
@@ -365,16 +413,16 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      rcs("A"),
+      heap.alloc_str("A"),
       vec![
         TypeParameterSignature {
-          name: rcs("TT1"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
+          name: heap.alloc_str("TT1"),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("A")))),
         },
-        TypeParameterSignature { name: rcs("TT2"), bound: None },
+        TypeParameterSignature { name: heap.alloc_str("TT2"), bound: None },
         TypeParameterSignature {
-          name: rcs("TT3"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped("sdfasdfasfs"))),
+          name: heap.alloc_str("TT3"),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("sdfasdfasfs")))),
         },
       ],
     );
@@ -382,87 +430,185 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
     assert!(cx
       .get_function_type(
         &ModuleReference::ordinary(vec![rcs("A")]),
-        &rcs("A"),
-        &rcs("f1"),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("f1"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("A"), &rcs("f1"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("f1"),
+        Location::dummy()
+      )
       .is_some());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("A"), &rcs("f2"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("f2"),
+        Location::dummy()
+      )
       .is_some());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("A"), &rcs("f3"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("f3"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("A"), &rcs("m1"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("m1"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("A"), &rcs("m2"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("m2"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("A"), &rcs("m3"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("m3"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("B"), &rcs("f1"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("B"),
+        &heap.alloc_str("f1"),
+        Location::dummy()
+      )
       .is_some());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("B"), &rcs("f2"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("B"),
+        &heap.alloc_str("f2"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("B"), &rcs("f3"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("B"),
+        &heap.alloc_str("f3"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("B"), &rcs("m1"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("B"),
+        &heap.alloc_str("m1"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("B"), &rcs("m2"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("B"),
+        &heap.alloc_str("m2"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("B"), &rcs("m3"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("B"),
+        &heap.alloc_str("m3"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_method_type(&ModuleReference::dummy(), &rcs("B"), &rcs("m2"), vec![], Location::dummy(),)
+      .get_method_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("B"),
+        &heap.alloc_str("m2"),
+        vec![],
+        Location::dummy(),
+      )
       .is_none());
     assert!(cx
-      .get_method_type(&ModuleReference::dummy(), &rcs("B"), &rcs("m3"), vec![], Location::dummy(),)
+      .get_method_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("B"),
+        &heap.alloc_str("m3"),
+        vec![],
+        Location::dummy(),
+      )
       .is_none());
     assert!(cx
-      .get_method_type(&ModuleReference::dummy(), &rcs("C"), &rcs("m3"), vec![], Location::dummy(),)
+      .get_method_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("C"),
+        &heap.alloc_str("m3"),
+        vec![],
+        Location::dummy(),
+      )
       .is_none());
 
     assert_eq!(
       "public <C>(int, int) -> int",
       cx.get_method_type(
         &ModuleReference::dummy(),
-        &rcs("A"),
-        &rcs("m1"),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("m1"),
         vec![builder.int_type(), builder.int_type()],
         Location::dummy(),
       )
       .unwrap()
-      .to_string()
+      .to_string(&heap)
     );
     assert_eq!(
       "private <C>() -> int",
-      cx.get_function_type(&ModuleReference::dummy(), &rcs("A"), &rcs("f2"), Location::dummy(),)
-        .unwrap()
-        .to_string()
+      cx.get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("A"),
+        &heap.alloc_str("f2"),
+        Location::dummy(),
+      )
+      .unwrap()
+      .to_string(&heap)
     );
     assert_eq!(
       "public <C>() -> int",
-      cx.get_function_type(&ModuleReference::dummy(), &rcs("TT1"), &rcs("f1"), Location::dummy())
-        .unwrap()
-        .to_string()
+      cx.get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("TT1"),
+        &heap.alloc_str("f1"),
+        Location::dummy()
+      )
+      .unwrap()
+      .to_string(&heap)
     );
 
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("TT2"), &rcs("f1"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("TT2"),
+        &heap.alloc_str("f1"),
+        Location::dummy()
+      )
       .is_none());
     assert!(cx
-      .get_function_type(&ModuleReference::dummy(), &rcs("TT3"), &rcs("f1"), Location::dummy())
+      .get_function_type(
+        &ModuleReference::dummy(),
+        &heap.alloc_str("TT3"),
+        &heap.alloc_str("f1"),
+        Location::dummy()
+      )
       .is_none());
   }
 
@@ -470,24 +616,37 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
   fn resolve_type_definitions_test() {
     let builder = test_builder::create();
     let mut local_cx = empty_local_typing_context();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleTypingContext {
         type_definitions: BTreeMap::from([
           (
-            rcs("A"),
+            PStr::permanent("A"),
             TypeDefinitionTypingContext {
               is_object: false,
-              names: vec![rcs("a"), rcs("b")],
+              names: vec![PStr::permanent("a"), PStr::permanent("b")],
               mappings: HashMap::from([
-                (rcs("a"), FieldType { is_public: true, type_: builder.simple_id_type("A") }),
-                (rcs("b"), FieldType { is_public: false, type_: builder.simple_id_type("B") }),
+                (
+                  PStr::permanent("a"),
+                  FieldType {
+                    is_public: true,
+                    type_: builder.simple_id_type(PStr::permanent("A")),
+                  },
+                ),
+                (
+                  PStr::permanent("b"),
+                  FieldType {
+                    is_public: false,
+                    type_: builder.simple_id_type(PStr::permanent("B")),
+                  },
+                ),
               ]),
             },
           ),
           (
-            rcs("B"),
+            PStr::permanent("B"),
             TypeDefinitionTypingContext {
               is_object: true,
               names: vec![],
@@ -497,12 +656,12 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
         ]),
         interfaces: BTreeMap::from([
           (
-            rcs("A"),
+            PStr::permanent("A"),
             Rc::new(InterfaceTypingContext {
               is_concrete: true,
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("A"), bound: None },
-                TypeParameterSignature { name: rcs("B"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
               ],
               super_types: vec![],
               functions: Rc::new(BTreeMap::new()),
@@ -510,12 +669,12 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
             }),
           ),
           (
-            rcs("B"),
+            PStr::permanent("B"),
             Rc::new(InterfaceTypingContext {
               is_concrete: false,
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("E"), bound: None },
-                TypeParameterSignature { name: rcs("F"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("E"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("F"), bound: None },
               ],
               super_types: vec![],
               functions: Rc::new(BTreeMap::new()),
@@ -530,42 +689,54 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      rcs("A"),
+      PStr::permanent("A"),
       vec![],
     );
 
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type_unwrapped("A", vec![builder.int_type(), builder.int_type()]),
+        &builder.general_id_type_unwrapped(
+          PStr::permanent("A"),
+          vec![builder.int_type(), builder.int_type()]
+        ),
         true,
       )
       .0
       .is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type_unwrapped("A", vec![builder.int_type(), builder.int_type()]),
+        &builder.general_id_type_unwrapped(
+          PStr::permanent("A"),
+          vec![builder.int_type(), builder.int_type()]
+        ),
         true,
       )
       .0
       .is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type_unwrapped("C", vec![builder.int_type(), builder.int_type()]),
+        &builder.general_id_type_unwrapped(
+          PStr::permanent("C"),
+          vec![builder.int_type(), builder.int_type()]
+        ),
         true,
       )
       .0
       .is_empty());
 
     let (_, resolved) = cx.resolve_type_definition(
-      &builder.general_id_type_unwrapped("A", vec![builder.int_type(), builder.int_type()]),
+      &builder.general_id_type_unwrapped(
+        PStr::permanent("A"),
+        vec![builder.int_type(), builder.int_type()],
+      ),
       false,
     );
     assert_eq!(2, resolved.len());
-    let resolved_a = resolved.get(&rcs("a")).unwrap();
-    let resolved_b = resolved.get(&rcs("b")).unwrap();
+    let resolved_a = resolved.get(&PStr::permanent("a")).unwrap();
+    let resolved_b = resolved.get(&PStr::permanent("b")).unwrap();
     assert_eq!(true, resolved_a.is_public);
     assert_eq!(false, resolved_b.is_public);
-    assert_eq!("int", resolved_a.type_.pretty_print());
-    assert_eq!("int", resolved_b.type_.pretty_print());
+    assert_eq!("int", resolved_a.type_.pretty_print(&heap));
+    assert_eq!("int", resolved_b.type_.pretty_print(&heap));
   }
 }

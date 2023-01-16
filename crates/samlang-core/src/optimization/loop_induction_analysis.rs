@@ -754,7 +754,6 @@ mod tests {
         immediate: PotentialLoopInvariantExpression::Int(1),
       },
     )
-    .clone()
     .unwrap();
     assert_eq!(3, *successful.multiplier.as_int().unwrap());
     assert_eq!(2, *successful.immediate.as_int().unwrap());
@@ -800,7 +799,7 @@ mod tests {
           loop_value: ZERO
         },
       ],
-      &vec![],
+      &[],
       &HashSet::new()
     )
     .is_none());

@@ -1,7 +1,4 @@
-use crate::ast::{
-  source::{ISourceType, Type, TypeParameterSignature},
-  Location, ModuleReference,
-};
+use crate::ast::{Location, ModuleReference};
 use itertools::Itertools;
 use std::collections::HashSet;
 
@@ -54,33 +51,29 @@ impl ErrorSet {
     self.report_error("SyntaxError", loc, reason.to_string())
   }
 
-  pub(crate) fn report_unexpected_type_error<T1: ISourceType, T2: ISourceType>(
+  pub(crate) fn report_unexpected_type_error(
     &mut self,
     loc: &Location,
-    expected: &T1,
-    actual: &T2,
+    expected: String,
+    actual: String,
   ) {
     self.report_error(
       "UnexpectedType",
       loc,
-      format!("Expected: `{}`, actual: `{}`.", expected.pretty_print(), actual.pretty_print()),
+      format!("Expected: `{}`, actual: `{}`.", expected, actual),
     )
   }
 
-  pub(crate) fn report_unexpected_subtype_error<T1: ISourceType, T2: ISourceType>(
+  pub(crate) fn report_unexpected_subtype_error(
     &mut self,
     loc: &Location,
-    expected: &T1,
-    actual: &T2,
+    expected: String,
+    actual: String,
   ) {
     self.report_error(
       "UnexpectedSubtype",
       loc,
-      format!(
-        "Expected: subtype of `{}`, actual: `{}`.",
-        expected.pretty_print(),
-        actual.pretty_print()
-      ),
+      format!("Expected: subtype of `{}`, actual: `{}`.", expected, actual),
     )
   }
 
@@ -101,18 +94,15 @@ impl ErrorSet {
     self.report_error("UnresolvedName", loc, format!("Name `{}` is not resolved.", name))
   }
 
-  pub(crate) fn report_type_parameter_mismatch_error(
-    &mut self,
-    loc: &Location,
-    expected: &Vec<TypeParameterSignature>,
-  ) {
+  pub(crate) fn report_unresolved_synthetic_name_error(&mut self, loc: &Location, name: &str) {
+    self.report_error("UnresolvedName", loc, format!("Name `{}` is not resolved.", name))
+  }
+
+  pub(crate) fn report_type_parameter_mismatch_error(&mut self, loc: &Location, expected: String) {
     self.report_error(
       "TypeParameterNameMismatch",
       loc,
-      format!(
-        "Type parameter name mismatch. Expected exact match of `{}`.",
-        TypeParameterSignature::pretty_print_list(expected)
-      ),
+      format!("Type parameter name mismatch. Expected exact match of `{}`.", expected),
     )
   }
 
@@ -170,21 +160,23 @@ impl ErrorSet {
     )
   }
 
-  pub(crate) fn report_cyclic_type_definition_error(&mut self, type_: &Type) {
+  pub(crate) fn report_cyclic_type_definition_error(&mut self, type_loc: &Location, type_: &str) {
     self.report_error(
       "CyclicTypeDefinition",
-      &type_.get_reason().use_loc,
-      format!("Type `{}` has a cyclic definition.", type_.pretty_print()),
+      type_loc,
+      format!("Type `{}` has a cyclic definition.", type_),
     );
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use std::ops::Deref;
-
   use super::*;
-  use crate::ast::source::test_builder;
+  use crate::{
+    ast::source::{test_builder, ISourceType},
+    common::Heap,
+  };
+  use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {
@@ -197,22 +189,23 @@ mod tests {
 
   #[test]
   fn error_message_tests() {
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let builder = test_builder::create();
 
     error_set.report_syntax_error(&Location::dummy(), "bad code");
     error_set.report_unexpected_type_error(
       &Location::dummy(),
-      builder.int_type().deref(),
-      builder.bool_type().deref(),
+      builder.int_type().pretty_print(&heap),
+      builder.bool_type().pretty_print(&heap),
     );
     error_set.report_unexpected_subtype_error(
       &Location::dummy(),
-      builder.int_type().deref(),
-      builder.bool_type().deref(),
+      builder.int_type().pretty_print(&heap),
+      builder.bool_type().pretty_print(&heap),
     );
     error_set.report_unresolved_name_error(&Location::dummy(), "global");
-    error_set.report_type_parameter_mismatch_error(&Location::dummy(), &vec![]);
+    error_set.report_type_parameter_mismatch_error(&Location::dummy(), "".to_string());
     error_set.report_unexpected_type_kind_error(&Location::dummy(), "array", "object");
     error_set.report_arity_mismatch_error(&Location::dummy(), "pair", 1, 2);
     error_set.report_insufficient_type_inference_context_error(&Location::dummy());
@@ -223,7 +216,10 @@ mod tests {
       &Location::dummy(),
       vec!["foo".to_string(), "bar".to_string()],
     );
-    error_set.report_cyclic_type_definition_error(&builder.int_type());
+    error_set.report_cyclic_type_definition_error(
+      &builder.int_type().get_reason().use_loc,
+      &builder.int_type().pretty_print(&heap),
+    );
 
     let actual_errors = error_set
       .error_messages()

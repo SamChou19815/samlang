@@ -1,23 +1,29 @@
 #[cfg(test)]
 mod tests {
   use super::super::lexer::*;
-  use crate::ast::{Location, ModuleReference};
+  use crate::{
+    ast::{Location, ModuleReference},
+    common::Heap,
+    errors::ErrorSet,
+  };
 
   #[test]
   fn boilterplate() {
-    assert_eq!("EOF", TokenContent::EOF.to_string());
+    let heap = Heap::new();
+    assert_eq!("EOF", TokenContent::EOF.pretty_print(&heap));
     assert!(Keyword::MATCH == Keyword::MATCH.clone());
     assert!(TokenOp::EQ == TokenOp::EQ.clone());
     assert_eq!(
       "__DUMMY__.sam:0:0-0:0: as",
-      Token(Location::dummy(), TokenContent::Keyword(Keyword::AS)).clone().to_string()
+      Token(Location::dummy(), TokenContent::Keyword(Keyword::AS)).clone().to_string(&heap)
     );
   }
 
   fn lex(source: &str) -> Vec<String> {
-    lex_source_program(source, ModuleReference::root(), &mut crate::errors::ErrorSet::new())
+    let mut heap = Heap::new();
+    lex_source_program(source, ModuleReference::root(), &mut heap, &mut ErrorSet::new())
       .into_iter()
-      .map(|t| t.to_string())
+      .map(|t| t.to_string(&heap))
       .collect()
   }
 

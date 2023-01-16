@@ -9,7 +9,7 @@ use crate::{
     },
     Location, ModuleReference, Reason,
   },
-  common::{rcs, Str},
+  common::{Heap, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -41,15 +41,15 @@ impl LocalTypingContext {
     self.type_map.insert(loc, t);
   }
 
-  pub(super) fn get_captured(&self, lambda_loc: &Location) -> HashMap<Str, Rc<Type>> {
+  pub(super) fn get_captured(&self, heap: &Heap, lambda_loc: &Location) -> HashMap<PStr, Rc<Type>> {
     let mut map = HashMap::new();
     for (name, loc) in self.ssa_analysis_result.lambda_captures.get(lambda_loc).unwrap() {
-      let first_letter = name.chars().next().unwrap();
+      let first_letter = name.as_str(heap).chars().next().unwrap();
       if ('A'..='Z').contains(&first_letter) {
         // We captured a type id, which we don't care.
         continue;
       }
-      map.insert(name.clone(), self.type_map.get(loc).unwrap().clone());
+      map.insert(*name, self.type_map.get(loc).unwrap().clone());
     }
     map
   }
@@ -61,29 +61,30 @@ pub(crate) struct MemberTypeInformation {
   pub(crate) type_: FunctionType,
 }
 
-impl ToString for MemberTypeInformation {
-  fn to_string(&self) -> String {
+impl MemberTypeInformation {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let access_str = if self.is_public { "public" } else { "private" };
-    let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters);
-    format!("{} {}{}", access_str, tparam_str, self.type_.pretty_print())
+    let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters, heap);
+    format!("{} {}{}", access_str, tparam_str, self.type_.pretty_print(heap))
   }
 }
 
 impl MemberTypeInformation {
   fn create_custom_builtin_function(
+    heap: &mut Heap,
     name: &'static str,
     is_public: bool,
     argument_types: Vec<Rc<Type>>,
     return_type: Rc<Type>,
     type_parameters: Vec<&'static str>,
-  ) -> (Str, Rc<MemberTypeInformation>) {
+  ) -> (PStr, Rc<MemberTypeInformation>) {
     (
-      rcs(name),
+      heap.alloc_str(name),
       Rc::new(MemberTypeInformation {
         is_public,
         type_parameters: type_parameters
           .into_iter()
-          .map(|name| TypeParameterSignature { name: rcs(name), bound: None })
+          .map(|name| TypeParameterSignature { name: heap.alloc_str(name), bound: None })
           .collect_vec(),
         type_: FunctionType { reason: Reason::builtin(), argument_types, return_type },
       }),
@@ -91,12 +92,14 @@ impl MemberTypeInformation {
   }
 
   pub(super) fn create_builtin_function(
+    heap: &mut Heap,
     name: &'static str,
     argument_types: Vec<Rc<Type>>,
     return_type: Rc<Type>,
     type_parameters: Vec<&'static str>,
-  ) -> (Str, Rc<MemberTypeInformation>) {
+  ) -> (PStr, Rc<MemberTypeInformation>) {
     MemberTypeInformation::create_custom_builtin_function(
+      heap,
       name,
       true,
       argument_types,
@@ -106,12 +109,14 @@ impl MemberTypeInformation {
   }
 
   pub(super) fn create_private_builtin_function(
+    heap: &mut Heap,
     name: &'static str,
     argument_types: Vec<Rc<Type>>,
     return_type: Rc<Type>,
     type_parameters: Vec<&'static str>,
-  ) -> (Str, Rc<MemberTypeInformation>) {
+  ) -> (PStr, Rc<MemberTypeInformation>) {
     MemberTypeInformation::create_custom_builtin_function(
+      heap,
       name,
       false,
       argument_types,
@@ -120,10 +125,10 @@ impl MemberTypeInformation {
     )
   }
 
-  pub(crate) fn pretty_print(&self, name: &str) -> String {
+  pub(crate) fn pretty_print(&self, name: &str, heap: &Heap) -> String {
     let access_str = if self.is_public { "public" } else { "private" };
-    let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters);
-    format!("{} {}{}{}", access_str, name, tparam_str, self.type_.pretty_print())
+    let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters, heap);
+    format!("{} {}{}{}", access_str, name, tparam_str, self.type_.pretty_print(heap))
   }
 
   fn reposition(&self, use_loc: Location) -> MemberTypeInformation {
@@ -137,28 +142,28 @@ impl MemberTypeInformation {
 
 pub(crate) struct InterfaceTypingContext {
   pub(crate) is_concrete: bool,
-  pub(crate) functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
-  pub(crate) methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  pub(crate) functions: Rc<BTreeMap<PStr, Rc<MemberTypeInformation>>>,
+  pub(crate) methods: Rc<BTreeMap<PStr, Rc<MemberTypeInformation>>>,
   pub(crate) type_parameters: Vec<TypeParameterSignature>,
   pub(crate) super_types: Vec<IdType>,
 }
 
-impl ToString for InterfaceTypingContext {
-  fn to_string(&self) -> String {
+impl InterfaceTypingContext {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     lines.push(format!(
       "{} {} : [{}]",
       if self.is_concrete { "class".to_string() } else { "interface".to_string() },
-      TypeParameterSignature::pretty_print_list(&self.type_parameters),
-      self.super_types.iter().map(|it| it.pretty_print()).join(", "),
+      TypeParameterSignature::pretty_print_list(&self.type_parameters, heap),
+      self.super_types.iter().map(|it| it.pretty_print(heap)).join(", "),
     ));
     lines.push("functions:".to_string());
     for (name, info) in self.functions.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}: {}", name, info.to_string()));
+      lines.push(format!("{}: {}", name.as_str(heap), info.to_string(heap)));
     }
     lines.push("methods:".to_string());
     for (name, info) in self.methods.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}: {}", name, info.to_string()));
+      lines.push(format!("{}: {}", name.as_str(heap), info.to_string(heap)));
     }
     lines.join("\n")
   }
@@ -167,20 +172,20 @@ impl ToString for InterfaceTypingContext {
 #[derive(Clone)]
 pub(crate) struct TypeDefinitionTypingContext {
   pub(crate) is_object: bool,
-  pub(crate) names: Vec<Str>,
-  pub(crate) mappings: HashMap<Str, FieldType>,
+  pub(crate) names: Vec<PStr>,
+  pub(crate) mappings: HashMap<PStr, FieldType>,
 }
 
-impl ToString for TypeDefinitionTypingContext {
-  fn to_string(&self) -> String {
+impl TypeDefinitionTypingContext {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let is_object = self.is_object;
     let mut collector = vec![];
     for name in &self.names {
       let field_type = self.mappings.get(name).unwrap();
       if is_object {
-        collector.push(format!("{}:{}", name, field_type.to_string()));
+        collector.push(format!("{}:{}", name.as_str(heap), field_type.to_string(heap)));
       } else {
-        collector.push(format!("{}({})", name, field_type.to_string()));
+        collector.push(format!("{}({})", name.as_str(heap), field_type.to_string(heap)));
       }
     }
     collector.join(", ")
@@ -188,30 +193,32 @@ impl ToString for TypeDefinitionTypingContext {
 }
 
 pub(crate) struct ModuleTypingContext {
-  pub(crate) type_definitions: BTreeMap<Str, TypeDefinitionTypingContext>,
-  pub(crate) interfaces: BTreeMap<Str, Rc<InterfaceTypingContext>>,
+  pub(crate) type_definitions: BTreeMap<PStr, TypeDefinitionTypingContext>,
+  pub(crate) interfaces: BTreeMap<PStr, Rc<InterfaceTypingContext>>,
 }
 
-impl ToString for ModuleTypingContext {
-  fn to_string(&self) -> String {
+impl ModuleTypingContext {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     lines.push("type_definitions:".to_string());
     for (name, def) in self.type_definitions.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}:[{}]", name, def.to_string()));
+      lines.push(format!("{}:[{}]", name.as_str(heap), def.to_string(heap)));
     }
     lines.push("\ninterfaces:".to_string());
     for (name, i) in self.interfaces.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}: {}", name, i.to_string()));
+      lines.push(format!("{}: {}", name.as_str(heap), i.to_string(heap)));
     }
     lines.join("\n")
   }
 }
 
-pub(crate) fn create_builtin_module_typing_context() -> ModuleTypingContext {
+pub(crate) fn create_builtin_module_typing_context(heap: &mut Heap) -> ModuleTypingContext {
+  heap.alloc_str("init");
+  let str_t = heap.alloc_str("T");
   ModuleTypingContext {
     type_definitions: BTreeMap::new(),
     interfaces: BTreeMap::from([(
-      rcs("Builtins"),
+      heap.alloc_str("Builtins"),
       Rc::new(InterfaceTypingContext {
         is_concrete: true,
         type_parameters: vec![],
@@ -219,35 +226,40 @@ pub(crate) fn create_builtin_module_typing_context() -> ModuleTypingContext {
         methods: Rc::new(BTreeMap::new()),
         functions: Rc::new(BTreeMap::from([
           MemberTypeInformation::create_builtin_function(
+            heap,
             "stringToInt",
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
             Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
             vec![],
           ),
           MemberTypeInformation::create_builtin_function(
+            heap,
             "intToString",
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
             Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
             vec![],
           ),
           MemberTypeInformation::create_builtin_function(
+            heap,
             "println",
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
             Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
             vec![],
           ),
           MemberTypeInformation::create_builtin_function(
+            heap,
             "panic",
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
             Rc::new(Type::Id(IdType {
               reason: Reason::builtin(),
               module_reference: ModuleReference::root(),
-              id: rcs("T"),
+              id: str_t,
               type_arguments: vec![],
             })),
             vec!["T"],
           ),
           MemberTypeInformation::create_builtin_function(
+            heap,
             "stringConcat",
             vec![
               Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
@@ -274,12 +286,12 @@ fn instantiate_interface_context(
     .iter()
     .zip(&id_type.type_arguments)
   {
-    subst_map.insert(tparam.name.clone(), targ.clone());
+    subst_map.insert(tparam.name, targ.clone());
   }
   let mut methods = BTreeMap::new();
   for (name, info) in potentially_not_instantiated_interface_information.methods.iter() {
     methods.insert(
-      name.clone(),
+      *name,
       Rc::new(MemberTypeInformation {
         is_public: info.is_public,
         type_parameters: info.type_parameters.clone(),
@@ -303,7 +315,7 @@ pub(crate) struct TypingContext<'a> {
   pub(crate) local_typing_context: &'a mut LocalTypingContext,
   pub(crate) error_set: &'a mut ErrorSet,
   pub(crate) current_module_reference: ModuleReference,
-  pub(crate) current_class: Str,
+  pub(crate) current_class: PStr,
   pub(crate) available_type_parameters: Vec<TypeParameterSignature>,
 }
 
@@ -313,7 +325,7 @@ impl<'a> TypingContext<'a> {
     local_typing_context: &'a mut LocalTypingContext,
     error_set: &'a mut ErrorSet,
     current_module_reference: ModuleReference,
-    current_class: Str,
+    current_class: PStr,
     available_type_parameters: Vec<TypeParameterSignature>,
   ) -> TypingContext<'a> {
     TypingContext {
@@ -329,7 +341,7 @@ impl<'a> TypingContext<'a> {
   fn get_interface_information(
     &self,
     module_reference: &ModuleReference,
-    identifier: &Str,
+    identifier: &PStr,
   ) -> Option<Rc<InterfaceTypingContext>> {
     if let Some(relevant_type_parameter) =
       self.available_type_parameters.iter().find(|it| it.name == *identifier)
@@ -363,7 +375,7 @@ impl<'a> TypingContext<'a> {
   fn dangerously_get_information_without_considering_type_parameters_in_bound(
     &self,
     module_reference: &ModuleReference,
-    identifier: &Str,
+    identifier: &PStr,
   ) -> Option<Rc<InterfaceTypingContext>> {
     self.global_typing_context.get(module_reference)?.interfaces.get(identifier).cloned()
   }
@@ -380,7 +392,7 @@ impl<'a> TypingContext<'a> {
         for (name, arg) in
           interface_typing_context.type_parameters.iter().zip(&lower_id_type.type_arguments)
         {
-          subst_map.insert(name.name.clone(), arg.clone());
+          subst_map.insert(name.name, arg.clone());
         }
         for potential_super_type in &interface_typing_context.super_types {
           let substituted_potential_super_type =
@@ -394,22 +406,27 @@ impl<'a> TypingContext<'a> {
     false
   }
 
-  pub(crate) fn validate_type_instantiation_allow_abstract_types(&mut self, t: &Type) {
-    self.validate_type_instantiation_customized(t, false)
+  pub(crate) fn validate_type_instantiation_allow_abstract_types(&mut self, heap: &Heap, t: &Type) {
+    self.validate_type_instantiation_customized(heap, t, false)
   }
 
-  pub(crate) fn validate_type_instantiation_strictly(&mut self, t: &Type) {
-    self.validate_type_instantiation_customized(t, true)
+  pub(crate) fn validate_type_instantiation_strictly(&mut self, heap: &Heap, t: &Type) {
+    self.validate_type_instantiation_customized(heap, t, true)
   }
 
-  fn validate_type_instantiation_customized(&mut self, t: &Type, enforce_concrete_types: bool) {
+  fn validate_type_instantiation_customized(
+    &mut self,
+    heap: &Heap,
+    t: &Type,
+    enforce_concrete_types: bool,
+  ) {
     let id_type = match t {
       Type::Unknown(_) | Type::Primitive(_, _) => return,
       Type::Fn(f) => {
         for arg in &f.argument_types {
-          self.validate_type_instantiation_customized(arg, true)
+          self.validate_type_instantiation_customized(heap, arg, true)
         }
-        self.validate_type_instantiation_customized(&f.return_type, true);
+        self.validate_type_instantiation_customized(heap, &f.return_type, true);
         return;
       }
       Type::Id(id_type) => id_type,
@@ -427,7 +444,7 @@ impl<'a> TypingContext<'a> {
       return;
     }
     for targ in &id_type.type_arguments {
-      self.validate_type_instantiation_customized(targ, true)
+      self.validate_type_instantiation_customized(heap, targ, true)
     }
     if let Some(interface_info) =
       self.get_interface_information(&id_type.module_reference, &id_type.id)
@@ -436,7 +453,7 @@ impl<'a> TypingContext<'a> {
         self.error_set.report_unexpected_type_kind_error(
           &id_type.reason.use_loc,
           "non-abstract type",
-          &id_type.pretty_print(),
+          &id_type.pretty_print(heap),
         )
       }
       if interface_info.type_parameters.len() != id_type.type_arguments.len() {
@@ -453,8 +470,8 @@ impl<'a> TypingContext<'a> {
           if !self.is_subtype(targ, &Type::Id(bound.deref().clone())) {
             self.error_set.report_unexpected_subtype_error(
               &targ.get_reason().use_loc,
-              bound.deref(),
-              targ.deref(),
+              bound.pretty_print(heap),
+              targ.pretty_print(heap),
             )
           }
         }
@@ -465,8 +482,8 @@ impl<'a> TypingContext<'a> {
   pub(crate) fn get_function_type(
     &self,
     module_reference: &ModuleReference,
-    class_name: &Str,
-    function_name: &Str,
+    class_name: &PStr,
+    function_name: &PStr,
     use_loc: Location,
   ) -> Option<MemberTypeInformation> {
     let relevant_class = self.get_interface_information(module_reference, class_name)?;
@@ -481,8 +498,8 @@ impl<'a> TypingContext<'a> {
   pub(crate) fn get_method_type(
     &self,
     module_reference: &ModuleReference,
-    class_name: &Str,
-    method_name: &Str,
+    class_name: &PStr,
+    method_name: &PStr,
     class_type_arguments: Vec<Rc<Type>>,
     use_loc: Location,
   ) -> Option<MemberTypeInformation> {
@@ -492,7 +509,7 @@ impl<'a> TypingContext<'a> {
       &IdType {
         reason: Reason::new(use_loc.clone(), None),
         module_reference: module_reference.clone(),
-        id: class_name.clone(),
+        id: *class_name,
         type_arguments: class_type_arguments,
       },
     );
@@ -504,16 +521,15 @@ impl<'a> TypingContext<'a> {
     }
   }
 
-  fn in_same_class(&self, module_reference: &ModuleReference, class_name: &Str) -> bool {
-    module_reference.clone() == self.current_module_reference
-      && class_name.clone() == self.current_class
+  fn in_same_class(&self, module_reference: &ModuleReference, class_name: &PStr) -> bool {
+    module_reference.clone() == self.current_module_reference && *class_name == self.current_class
   }
 
   pub(crate) fn resolve_type_definition(
     &self,
     id_type: &IdType,
     expect_object: bool,
-  ) -> (Vec<Str>, HashMap<Str, FieldType>) {
+  ) -> (Vec<PStr>, HashMap<PStr, FieldType>) {
     let relevant_type_parameters =
       if let Some(cx) = self.get_interface_information(&id_type.module_reference, &id_type.id) {
         cx.type_parameters.clone()
@@ -530,12 +546,12 @@ impl<'a> TypingContext<'a> {
       }
       let mut subst_map = HashMap::new();
       for (tparam, targ) in relevant_type_parameters.into_iter().zip(&id_type.type_arguments) {
-        subst_map.insert(tparam.name.clone(), targ.clone());
+        subst_map.insert(tparam.name, targ.clone());
       }
       let mut new_mappings = HashMap::new();
       for (name, field_type) in mappings {
         new_mappings.insert(
-          name.clone(),
+          *name,
           FieldType {
             is_public: field_type.is_public,
             type_: perform_type_substitution(&field_type.type_, &subst_map),

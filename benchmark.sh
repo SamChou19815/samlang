@@ -11,6 +11,6 @@ function repeat(){
 echo "Compiling samlang CLI..."
 cargo b -p samlang-cli --release 2> /dev/null
 
-N=100
+N=1000
 
 time RUST=1 repeat $N ./target/release/samlang-cli

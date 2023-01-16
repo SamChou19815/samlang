@@ -1,8 +1,76 @@
-use std::{collections::HashMap, fmt::Display, ops::Deref, rc::Rc, time::Instant};
+use std::{
+  collections::{HashMap, HashSet},
+  fmt::Display,
+  hash::Hash,
+  ops::Deref,
+  rc::Rc,
+  time::Instant,
+};
 
-#[inline(always)]
-pub(crate) fn boxed<T>(v: T) -> Box<T> {
-  Box::from(v)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum PStrInner {
+  Temp(u32),
+  Permanent(&'static str),
+}
+
+/// A string pointer free to be copied. However, we have to do GC manually.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) struct PStr(PStrInner);
+
+impl PStr {
+  pub(crate) fn permanent(str: &'static str) -> PStr {
+    PStr(PStrInner::Permanent(str))
+  }
+
+  pub(crate) fn as_str<'a>(&self, heap: &'a Heap) -> &'a str {
+    match &self.0 {
+      PStrInner::Temp(_) => {
+        if let Some(s) = heap.str_pointer_table.get(self) {
+          s
+        } else {
+          panic!("Use of freed string {:?}", self)
+        }
+      }
+      PStrInner::Permanent(s) => s,
+    }
+  }
+}
+
+/// Users of the string heap is responsible for calling retain at appropriate places to do GC.
+pub(crate) struct Heap {
+  interned_str: HashMap<Rc<str>, PStr>,
+  str_pointer_table: HashMap<PStr, Rc<str>>,
+  id: u32,
+}
+
+impl Heap {
+  pub(crate) fn new() -> Heap {
+    Heap { interned_str: HashMap::new(), str_pointer_table: HashMap::new(), id: 0 }
+  }
+
+  pub(crate) fn get_allocated_str_opt(&self, str: &str) -> Option<PStr> {
+    self.interned_str.get(&Rc::from(str)).cloned()
+  }
+
+  pub(crate) fn alloc_str(&mut self, str: &str) -> PStr {
+    let rc_str = Rc::from(str);
+    if let Some(id) = self.interned_str.get(&rc_str) {
+      *id
+    } else {
+      let id = self.id;
+      let p_str = PStr(PStrInner::Temp(id));
+      self.interned_str.insert(rc_str.clone(), p_str);
+      self.str_pointer_table.insert(p_str, rc_str);
+      self.id += 1;
+      p_str
+    }
+  }
+
+  pub(crate) fn retain(&mut self, retain_set: &HashSet<PStr>) {
+    self.str_pointer_table.retain(|p, _| retain_set.contains(p));
+    let str_retain_set = self.str_pointer_table.values().cloned().collect::<HashSet<_>>();
+    self.interned_str.retain(|p, _| str_retain_set.contains(p));
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -42,6 +110,10 @@ pub(crate) fn rc_string(s: String) -> Str {
   Str(Rc::new(s))
 }
 
+pub(crate) fn rc_pstr(heap: &Heap, s: PStr) -> Str {
+  Str(Rc::new(String::from(s.as_str(heap))))
+}
+
 fn byte_digit_to_char(byte: u8) -> char {
   let u = if byte < 10 { b'0' + byte } else { b'a' + byte - 10 };
   u as char
@@ -59,20 +131,20 @@ pub(crate) fn int_vec_to_data_string(array: &Vec<i32>) -> String {
   String::from_iter(collector.iter())
 }
 
-pub(crate) struct LocalStackedContext<V: Clone> {
-  local_values_stack: Vec<HashMap<Str, V>>,
-  captured_values_stack: Vec<HashMap<Str, V>>,
+pub(crate) struct LocalStackedContext<K: Clone + Eq + Hash, V: Clone> {
+  local_values_stack: Vec<HashMap<K, V>>,
+  captured_values_stack: Vec<HashMap<K, V>>,
 }
 
-impl<V: Clone> LocalStackedContext<V> {
-  pub(crate) fn new() -> LocalStackedContext<V> {
+impl<K: Clone + Eq + Hash, V: Clone> LocalStackedContext<K, V> {
+  pub(crate) fn new() -> LocalStackedContext<K, V> {
     LocalStackedContext {
       local_values_stack: vec![HashMap::new()],
       captured_values_stack: vec![HashMap::new()],
     }
   }
 
-  pub(crate) fn get(&mut self, name: &Str) -> Option<&V> {
+  pub(crate) fn get(&mut self, name: &K) -> Option<&V> {
     let closest_stack_value = self.local_values_stack.last().unwrap().get(name);
     if closest_stack_value.is_some() {
       return closest_stack_value;
@@ -89,7 +161,7 @@ impl<V: Clone> LocalStackedContext<V> {
     None
   }
 
-  pub(crate) fn insert(&mut self, name: &Str, value: V) -> bool {
+  pub(crate) fn insert(&mut self, name: &K, value: V) -> bool {
     let mut no_collision = true;
     for m in &self.local_values_stack {
       if m.contains_key(name) {
@@ -102,7 +174,7 @@ impl<V: Clone> LocalStackedContext<V> {
     no_collision
   }
 
-  pub(crate) fn insert_crash_on_error(&mut self, name: &Str, value: V) {
+  pub(crate) fn insert_crash_on_error(&mut self, name: &K, value: V) {
     if !self.insert(name, value) {
       panic!()
     }
@@ -113,7 +185,7 @@ impl<V: Clone> LocalStackedContext<V> {
     self.captured_values_stack.push(HashMap::new());
   }
 
-  pub(crate) fn pop_scope(&mut self) -> HashMap<Str, V> {
+  pub(crate) fn pop_scope(&mut self) -> HashMap<K, V> {
     self.local_values_stack.pop();
     self.captured_values_stack.pop().unwrap()
   }
@@ -121,9 +193,11 @@ impl<V: Clone> LocalStackedContext<V> {
 
 #[cfg(test)]
 mod tests {
-  use super::{int_vec_to_data_string, measure_time, rcs, LocalStackedContext};
+  use crate::common::PStr;
+
+  use super::{int_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext};
   use itertools::Itertools;
-  use std::collections::HashSet;
+  use std::{cmp::Ordering, collections::HashSet};
 
   fn test_closure() {}
 
@@ -142,6 +216,37 @@ mod tests {
 
     let mut set = HashSet::new();
     set.insert(rcs("sam"));
+  }
+
+  #[test]
+  fn p_str_tests() {
+    let mut heap = Heap::new();
+    let a1 = heap.alloc_str("a");
+    let b = heap.alloc_str("b");
+    let a2 = heap.alloc_str("a");
+    assert!(heap.get_allocated_str_opt("a").is_some());
+    assert!(heap.get_allocated_str_opt("d").is_none());
+    let c = PStr::permanent("c");
+    assert!(!format!("{:?}", b).is_empty());
+    assert!(!format!("{:?}", c.0.clone()).is_empty());
+    assert_eq!(a1.clone(), a2.clone());
+    assert_ne!(a1, b);
+    assert_ne!(a2, b);
+    assert_eq!(Ordering::Equal, a1.cmp(&a2));
+    assert_eq!(Some(Ordering::Equal), a1.partial_cmp(&a2));
+    heap.retain(&HashSet::from([a1, b]));
+    a1.as_str(&heap);
+    a2.as_str(&heap);
+    c.clone().as_str(&heap);
+  }
+
+  #[should_panic]
+  #[test]
+  fn p_str_gc_panic() {
+    let mut heap = Heap::new();
+    let a = heap.alloc_str("a");
+    heap.retain(&HashSet::new());
+    a.as_str(&heap);
   }
 
   #[test]

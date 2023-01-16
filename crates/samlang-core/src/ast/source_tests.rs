@@ -1,25 +1,33 @@
 #[cfg(test)]
 mod comments_tests {
   use super::super::source::*;
-  use crate::common::rcs;
+  use crate::common::PStr;
 
   #[test]
   fn boilterplate() {
-    assert_eq!("d", Comment { kind: CommentKind::BLOCK, text: rcs("d") }.clone().text.as_str())
+    assert!(!format!(
+      "{:?}",
+      Comment { kind: CommentKind::BLOCK, text: PStr::permanent("d") }.clone().text
+    )
+    .is_empty());
   }
 }
 
 #[cfg(test)]
 mod literal_tests {
   use super::super::source::*;
-  use crate::common::rcs;
+  use crate::common::{Heap, PStr};
 
   #[test]
   fn pretty_print_test() {
-    assert_eq!("true", Literal::true_literal().pretty_print());
-    assert_eq!("false", Literal::false_literal().pretty_print());
-    assert_eq!("0", Literal::int_literal(0).clone().pretty_print());
-    assert_eq!("\"hi\"", Literal::string_literal(rcs("hi")).clone().pretty_print());
+    let heap = Heap::new();
+    assert_eq!("true", Literal::true_literal().pretty_print(&heap));
+    assert_eq!("false", Literal::false_literal().pretty_print(&heap));
+    assert_eq!("0", Literal::int_literal(0).clone().pretty_print(&heap));
+    assert_eq!(
+      "\"hi\"",
+      Literal::string_literal(PStr::permanent("hi")).clone().pretty_print(&heap)
+    );
   }
 }
 
@@ -28,7 +36,7 @@ mod type_tests {
   use super::super::source::*;
   use crate::ast::loc::Location;
   use crate::ast::reason::Reason;
-  use crate::common::rcs;
+  use crate::common::{Heap, PStr};
   use std::rc::Rc;
   use std::vec;
 
@@ -40,32 +48,40 @@ mod type_tests {
     let builder = test_builder::create();
     builder.int_type().as_id();
     builder.int_type().as_fn();
-    builder.simple_id_type("").as_id();
+    builder.simple_id_type(PStr::permanent("")).as_id();
     builder.fun_type(vec![], builder.int_type()).as_fn();
   }
 
   #[test]
   fn pretty_print_tests() {
     let builder = test_builder::create();
+    let heap = Heap::new();
 
-    assert_eq!("unknown", Type::Unknown(Reason::dummy()).clone().pretty_print());
-    assert_eq!("unit", builder.unit_type().clone().pretty_print());
-    assert_eq!("int", builder.int_type().pretty_print());
-    assert_eq!("bool", builder.bool_type().pretty_print());
-    assert_eq!("string", builder.string_type().pretty_print());
-    assert_eq!("I", builder.simple_id_type("I").clone().pretty_print());
+    assert_eq!("unknown", Type::Unknown(Reason::dummy()).clone().pretty_print(&heap));
+    assert_eq!("unit", builder.unit_type().clone().pretty_print(&heap));
+    assert_eq!("int", builder.int_type().pretty_print(&heap));
+    assert_eq!("bool", builder.bool_type().pretty_print(&heap));
+    assert_eq!("string", builder.string_type().pretty_print(&heap));
+    assert_eq!("I", builder.simple_id_type(PStr::permanent("I")).clone().pretty_print(&heap));
     assert_eq!(
       "I",
-      builder.simple_id_type_unwrapped("I").reposition(Location::dummy()).clone().pretty_print()
+      builder
+        .simple_id_type_unwrapped(PStr::permanent("I"))
+        .reposition(Location::dummy())
+        .clone()
+        .pretty_print(&heap)
     );
     assert_eq!(
       "Foo<unit, Bar>",
       builder
-        .general_id_type("Foo", vec![builder.unit_type(), builder.simple_id_type("Bar")])
+        .general_id_type(
+          PStr::permanent("Foo"),
+          vec![builder.unit_type(), builder.simple_id_type(PStr::permanent("Bar"))]
+        )
         .clone()
-        .pretty_print()
+        .pretty_print(&heap)
     );
-    assert_eq!("() -> unit", builder.fun_type(vec![], builder.unit_type()).pretty_print());
+    assert_eq!("() -> unit", builder.fun_type(vec![], builder.unit_type()).pretty_print(&heap));
     assert_eq!(
       "() -> unit",
       FunctionType {
@@ -75,18 +91,18 @@ mod type_tests {
       }
       .clone()
       .reposition(Location::dummy())
-      .pretty_print()
+      .pretty_print(&heap)
     );
     assert_eq!(
       "(unit) -> unit",
-      builder.fun_type(vec![builder.unit_type()], builder.unit_type()).pretty_print()
+      builder.fun_type(vec![builder.unit_type()], builder.unit_type()).pretty_print(&heap)
     );
     assert_eq!(
       "(int, bool) -> unit",
       builder
         .fun_type(vec![builder.int_type(), builder.bool_type()], builder.unit_type())
         .clone()
-        .pretty_print()
+        .pretty_print(&heap)
     );
 
     assert_eq!(
@@ -94,43 +110,50 @@ mod type_tests {
       TypeParameter {
         loc: Location::dummy(),
         associated_comments: Rc::new(vec![]),
-        name: Id::from("A"),
+        name: Id::from(PStr::permanent("A")),
         bound: Option::None
       }
-      .pretty_print()
+      .pretty_print(&heap)
     );
     assert_eq!(
       "A: B",
       TypeParameter {
         loc: Location::dummy(),
         associated_comments: Rc::new(vec![]),
-        name: Id::from("A"),
-        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped("B")))
+        name: Id::from(PStr::permanent("A")),
+        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B"))))
       }
-      .pretty_print()
+      .pretty_print(&heap)
     );
 
-    assert_eq!("A", TypeParameterSignature { name: rcs("A"), bound: Option::None }.pretty_print());
+    assert_eq!(
+      "A",
+      TypeParameterSignature { name: PStr::permanent("A"), bound: Option::None }
+        .pretty_print(&heap)
+    );
     assert_eq!(
       "A : B",
       TypeParameterSignature {
-        name: rcs("A"),
-        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped("B")))
+        name: PStr::permanent("A"),
+        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B"))))
       }
       .clone()
-      .pretty_print()
+      .pretty_print(&heap)
     );
 
-    assert_eq!("", TypeParameterSignature::pretty_print_list(&vec![]));
+    assert_eq!("", TypeParameterSignature::pretty_print_list(&vec![], &heap));
     assert_eq!(
       "<A : B, C>",
-      TypeParameterSignature::pretty_print_list(&vec![
-        TypeParameterSignature {
-          name: rcs("A"),
-          bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped("B")))
-        },
-        TypeParameterSignature { name: rcs("C"), bound: Option::None }
-      ])
+      TypeParameterSignature::pretty_print_list(
+        &vec![
+          TypeParameterSignature {
+            name: PStr::permanent("A"),
+            bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B"))))
+          },
+          TypeParameterSignature { name: PStr::permanent("C"), bound: Option::None }
+        ],
+        &heap
+      )
     );
   }
 
@@ -156,7 +179,12 @@ mod type_tests {
     );
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
-      builder.simple_id_type("I").mod_reason(new_reason_f).get_reason().use_loc.to_string()
+      builder
+        .simple_id_type(PStr::permanent("I"))
+        .mod_reason(new_reason_f)
+        .get_reason()
+        .use_loc
+        .to_string()
     );
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
@@ -188,23 +216,27 @@ mod type_tests {
   fn test_equality_test() {
     let builder = test_builder::create();
 
-    assert!(!builder.unit_type().is_the_same_type(&builder.simple_id_type("A")));
+    assert!(!builder.unit_type().is_the_same_type(&builder.simple_id_type(PStr::permanent("A"))));
 
     assert!(Type::Unknown(Reason::dummy()).is_the_same_type(&Type::Unknown(Reason::dummy())));
     assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
     assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
 
-    assert!(builder.simple_id_type("A").is_the_same_type(&builder.simple_id_type("A")));
-    assert!(!builder.simple_id_type("A").is_the_same_type(&builder.simple_id_type("B")));
     assert!(builder
-      .general_id_type("A", vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_id_type("A", vec![builder.bool_type()])));
+      .simple_id_type(PStr::permanent("A"))
+      .is_the_same_type(&builder.simple_id_type(PStr::permanent("A"))));
     assert!(!builder
-      .general_id_type("A", vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_id_type("A", vec![builder.int_type()])));
+      .simple_id_type(PStr::permanent("A"))
+      .is_the_same_type(&builder.simple_id_type(PStr::permanent("B"))));
+    assert!(builder
+      .general_id_type(PStr::permanent("A"), vec![builder.bool_type()])
+      .is_the_same_type(&builder.general_id_type(PStr::permanent("A"), vec![builder.bool_type()])));
     assert!(!builder
-      .simple_id_type("A")
-      .is_the_same_type(&builder.general_id_type("A", vec![builder.bool_type()])));
+      .general_id_type(PStr::permanent("A"), vec![builder.bool_type()])
+      .is_the_same_type(&builder.general_id_type(PStr::permanent("A"), vec![builder.int_type()])));
+    assert!(!builder
+      .simple_id_type(PStr::permanent("A"))
+      .is_the_same_type(&builder.general_id_type(PStr::permanent("A"), vec![builder.bool_type()])));
 
     assert!(builder
       .fun_type(vec![builder.unit_type()], builder.string_type())
@@ -263,7 +295,7 @@ mod expressions_tests {
   use super::super::source::*;
   use crate::{
     ast::loc::{Location, ModuleReference},
-    common::boxed,
+    common::PStr,
   };
   use std::collections::HashMap;
 
@@ -277,41 +309,52 @@ mod expressions_tests {
       common: common.clone(),
       type_arguments: vec![],
       module_reference: ModuleReference::dummy(),
-      class_name: Id::from("name"),
-      fn_name: Id::from("name"),
+      class_name: Id::from(PStr::permanent("name")),
+      fn_name: Id::from(PStr::permanent("name")),
     })
     .precedence();
     E::Block(Block { common: common.clone(), statements: vec![], expression: None }).precedence();
-    E::Call(Call { common: common.clone(), callee: boxed(builder.zero_expr()), arguments: vec![] })
-      .precedence();
+    E::Call(Call {
+      common: common.clone(),
+      callee: Box::new(builder.zero_expr()),
+      arguments: vec![],
+    })
+    .precedence();
     E::Unary(Unary {
       common: common.clone(),
       operator: UnaryOperator::NEG,
-      argument: boxed(builder.true_expr()),
+      argument: Box::new(builder.true_expr()),
     })
     .precedence();
     E::Binary(Binary {
       common: common.clone(),
       operator_preceding_comments: vec![],
       operator: BinaryOperator::AND,
-      e1: boxed(builder.zero_expr()),
-      e2: boxed(builder.zero_expr()),
+      e1: Box::new(builder.zero_expr()),
+      e2: Box::new(builder.zero_expr()),
     })
     .precedence();
     E::IfElse(IfElse {
       common: common.clone(),
-      condition: boxed(builder.zero_expr()),
-      e1: boxed(builder.zero_expr()),
-      e2: boxed(builder.zero_expr()),
+      condition: Box::new(builder.zero_expr()),
+      e1: Box::new(builder.zero_expr()),
+      e2: Box::new(builder.zero_expr()),
     })
     .precedence();
-    E::Match(Match { common: common.clone(), matched: boxed(builder.zero_expr()), cases: vec![] })
-      .precedence();
+    E::Match(Match {
+      common: common.clone(),
+      matched: Box::new(builder.zero_expr()),
+      cases: vec![],
+    })
+    .precedence();
     E::Lambda(Lambda {
       common: common.clone(),
-      parameters: vec![OptionallyAnnotatedId { name: Id::from("name"), annotation: None }],
+      parameters: vec![OptionallyAnnotatedId {
+        name: Id::from(PStr::permanent("name")),
+        annotation: None,
+      }],
       captured: HashMap::new(),
-      body: boxed(builder.zero_expr()),
+      body: Box::new(builder.zero_expr()),
     })
     .precedence();
   }
@@ -323,14 +366,14 @@ mod expressions_tests {
     let mod_common = |c: ExpressionCommon| c.clone();
 
     builder.zero_expr().clone().mod_common(mod_common).common();
-    E::Id(common.clone(), Id::from("d")).clone().mod_common(mod_common).common();
+    E::Id(common.clone(), Id::from(PStr::permanent("d"))).clone().mod_common(mod_common).common();
     E::This(common.clone()).clone().mod_common(mod_common).common();
     E::ClassFn(ClassFunction {
       common: common.clone(),
       type_arguments: vec![],
       module_reference: ModuleReference::dummy(),
-      class_name: Id::from("name"),
-      fn_name: Id::from("name"),
+      class_name: Id::from(PStr::permanent("name")),
+      fn_name: Id::from(PStr::permanent("name")),
     })
     .clone()
     .mod_common(mod_common)
@@ -338,8 +381,8 @@ mod expressions_tests {
     E::FieldAccess(FieldAccess {
       common: common.clone(),
       type_arguments: vec![],
-      object: boxed(builder.true_expr()),
-      field_name: Id::from("name"),
+      object: Box::new(builder.true_expr()),
+      field_name: Id::from(PStr::permanent("name")),
       field_order: -1,
     })
     .clone()
@@ -348,8 +391,8 @@ mod expressions_tests {
     E::MethodAccess(MethodAccess {
       common: common.clone(),
       type_arguments: vec![],
-      object: boxed(builder.true_expr()),
-      method_name: Id::from("name"),
+      object: Box::new(builder.true_expr()),
+      method_name: Id::from(PStr::permanent("name")),
     })
     .clone()
     .mod_common(mod_common)
@@ -359,43 +402,47 @@ mod expressions_tests {
     E::Unary(Unary {
       common: common.clone(),
       operator: UnaryOperator::NEG,
-      argument: boxed(builder.true_expr()),
+      argument: Box::new(builder.true_expr()),
     })
     .clone()
     .mod_common(mod_common)
     .common();
-    E::Call(Call { common: common.clone(), callee: boxed(builder.zero_expr()), arguments: vec![] })
-      .clone()
-      .mod_common(mod_common)
-      .common();
+    E::Call(Call {
+      common: common.clone(),
+      callee: Box::new(builder.zero_expr()),
+      arguments: vec![],
+    })
+    .clone()
+    .mod_common(mod_common)
+    .common();
     E::Binary(Binary {
       common: common.clone(),
       operator_preceding_comments: vec![],
       operator: BinaryOperator::AND,
-      e1: boxed(builder.zero_expr()),
-      e2: boxed(builder.zero_expr()),
+      e1: Box::new(builder.zero_expr()),
+      e2: Box::new(builder.zero_expr()),
     })
     .clone()
     .mod_common(mod_common)
     .common();
     E::IfElse(IfElse {
       common: common.clone(),
-      condition: boxed(builder.zero_expr()),
-      e1: boxed(builder.zero_expr()),
-      e2: boxed(builder.zero_expr()),
+      condition: Box::new(builder.zero_expr()),
+      e1: Box::new(builder.zero_expr()),
+      e2: Box::new(builder.zero_expr()),
     })
     .clone()
     .mod_common(mod_common)
     .common();
     E::Match(Match {
       common: common.clone(),
-      matched: boxed(builder.zero_expr()),
+      matched: Box::new(builder.zero_expr()),
       cases: vec![VariantPatternToExpression {
         loc: Location::dummy(),
-        tag: Id::from("name"),
+        tag: Id::from(PStr::permanent("name")),
         tag_order: 1,
         data_variable: None,
-        body: boxed(builder.true_expr()),
+        body: Box::new(builder.true_expr()),
       }],
     })
     .clone()
@@ -403,9 +450,12 @@ mod expressions_tests {
     .common();
     E::Lambda(Lambda {
       common: common.clone(),
-      parameters: vec![OptionallyAnnotatedId { name: Id::from("name"), annotation: None }],
+      parameters: vec![OptionallyAnnotatedId {
+        name: Id::from(PStr::permanent("name")),
+        annotation: None,
+      }],
       captured: HashMap::new(),
-      body: boxed(builder.zero_expr()),
+      body: Box::new(builder.zero_expr()),
     })
     .clone()
     .mod_common(mod_common)
@@ -420,13 +470,13 @@ mod expressions_tests {
           vec![ObjectPatternDestucturedName {
             loc: Location::dummy(),
             field_order: 0,
-            field_name: Id::from("name"),
+            field_name: Id::from(PStr::permanent("name")),
             alias: None,
             type_: builder.bool_type(),
           }],
         ),
         annotation: None,
-        assigned_expression: boxed(builder.true_expr()),
+        assigned_expression: Box::new(builder.true_expr()),
       }],
       expression: None,
     })
@@ -438,43 +488,51 @@ mod expressions_tests {
 
 #[cfg(test)]
 mod toplevel_tests {
-  use crate::ast::{source::*, Location, ModuleReference, Reason};
+  use crate::{
+    ast::{source::*, Location, ModuleReference, Reason},
+    common::{Heap, PStr},
+  };
   use pretty_assertions::assert_eq;
   use std::{collections::HashMap, rc::Rc};
 
   #[test]
   fn boilterplate() {
+    let heap = Heap::new();
     assert_eq!(
       "name",
       TypeParameter {
         loc: Location::dummy(),
         associated_comments: Rc::new(vec![]),
-        name: Id::from("name"),
+        name: Id::from(PStr::permanent("name")),
         bound: None
       }
       .clone()
       .name
       .name
-      .as_str()
+      .as_str(&heap)
     );
 
     assert_eq!(
       "s",
-      AnnotatedId { name: Id::from("s"), annotation: Rc::new(Type::int_type(Reason::dummy())) }
-        .name
-        .name
-        .as_str()
+      AnnotatedId {
+        name: Id::from(PStr::permanent("s")),
+        annotation: Rc::new(Type::int_type(Reason::dummy()))
+      }
+      .name
+      .name
+      .as_str(&heap)
     );
 
     assert_eq!(
       "int",
-      FieldType { is_public: true, type_: Rc::new(Type::int_type(Reason::dummy())) }.to_string()
+      FieldType { is_public: true, type_: Rc::new(Type::int_type(Reason::dummy())) }
+        .to_string(&heap)
     );
     assert_eq!(
       "(private) int",
       FieldType { is_public: false, type_: Rc::new(Type::int_type(Reason::dummy())) }
         .clone()
-        .to_string()
+        .to_string(&heap)
     );
 
     let builder = test_builder::create();
@@ -482,7 +540,7 @@ mod toplevel_tests {
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
       associated_comments: Rc::new(vec![]),
-      name: Id::from(""),
+      name: Id::from(PStr::permanent("")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -491,7 +549,7 @@ mod toplevel_tests {
         associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: true,
-        name: Id::from(""),
+        name: Id::from(PStr::permanent("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -526,7 +584,7 @@ mod toplevel_tests {
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: Rc::new(vec![]),
-      name: Id::from("name"),
+      name: Id::from(PStr::permanent("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: TypeDefinition {
@@ -541,7 +599,7 @@ mod toplevel_tests {
           associated_comments: Rc::new(vec![]),
           is_public: true,
           is_method: true,
-          name: Id::from(""),
+          name: Id::from(PStr::permanent("")),
           type_parameters: Rc::new(vec![]),
           type_: FunctionType {
             reason: Reason::dummy(),
@@ -560,7 +618,7 @@ mod toplevel_tests {
     let interface = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: Rc::new(vec![]),
-      name: Id::from("name"),
+      name: Id::from(PStr::permanent("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -569,7 +627,7 @@ mod toplevel_tests {
         associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: true,
-        name: Id::from(""),
+        name: Id::from(PStr::permanent("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -589,6 +647,7 @@ mod toplevel_tests {
 #[cfg(test)]
 mod builder_tests {
   use super::super::source::test_builder;
+  use crate::common::PStr;
 
   #[test]
   fn boilterplate() {
@@ -597,7 +656,7 @@ mod builder_tests {
     builder.true_expr().common();
     builder.false_expr().type_();
     builder.zero_expr().loc();
-    builder.string_expr("ouch");
-    builder.id_expr("id", builder.simple_id_type("Id")).common();
+    builder.string_expr(PStr::permanent("ouch"));
+    builder.id_expr(PStr::permanent("id"), builder.simple_id_type(PStr::permanent("Id"))).common();
   }
 }

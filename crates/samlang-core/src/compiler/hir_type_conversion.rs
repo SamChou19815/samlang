@@ -4,7 +4,7 @@ use crate::{
     hir::{ClosureTypeDefinition, FunctionType, IdType, PrimitiveType, Type, TypeDefinition},
     source, ModuleReference,
   },
-  common::{rc_string, Str},
+  common::{rc_string, Heap, Str},
 };
 use itertools::Itertools;
 use std::{
@@ -270,7 +270,7 @@ pub(super) struct TypeLoweringManager {
 }
 
 impl TypeLoweringManager {
-  pub(super) fn lower_source_type(&mut self, type_: &source::Type) -> Type {
+  pub(super) fn lower_source_type(&mut self, heap: &Heap, type_: &source::Type) -> Type {
     match type_ {
       source::Type::Unknown(_) => panic!(),
       source::Type::Primitive(_, kind) => Type::Primitive(match kind {
@@ -280,19 +280,20 @@ impl TypeLoweringManager {
         source::PrimitiveTypeKind::String => PrimitiveType::String,
       }),
       source::Type::Id(id) => {
-        if self.generic_types.contains(&id.id) {
-          Type::new_id_str_no_targs(id.id.clone())
+        let id_string = rc_string(id.id.as_str(heap).to_string());
+        if self.generic_types.contains(&id_string) {
+          Type::new_id_str_no_targs(id_string)
         } else {
           Type::new_id_str(
-            rc_string(encode_samlang_type(&id.module_reference, &id.id)),
-            id.type_arguments.iter().map(|it| self.lower_source_type(it)).collect_vec(),
+            rc_string(encode_samlang_type(&id.module_reference, &id_string)),
+            id.type_arguments.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
           )
         }
       }
       source::Type::Fn(f) => {
         let rewritten_function_type = Type::new_fn_unwrapped(
-          f.argument_types.iter().map(|it| self.lower_source_type(it)).collect_vec(),
-          self.lower_source_type(&f.return_type),
+          f.argument_types.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
+          self.lower_source_type(heap, &f.return_type),
         );
         let type_parameters = Vec::from_iter(
           collect_used_generic_types(&rewritten_function_type, &self.generic_types)
@@ -308,16 +309,21 @@ impl TypeLoweringManager {
     }
   }
 
-  pub(super) fn lower_source_types(&mut self, source_types: &Vec<Rc<source::Type>>) -> Vec<Type> {
+  pub(super) fn lower_source_types(
+    &mut self,
+    heap: &Heap,
+    source_types: &Vec<Rc<source::Type>>,
+  ) -> Vec<Type> {
     let mut types = vec![];
     for t in source_types {
-      types.push(self.lower_source_type(t));
+      types.push(self.lower_source_type(heap, t));
     }
     types
   }
 
   pub(super) fn lower_source_type_definition(
     &mut self,
+    heap: &Heap,
     module_reference: &ModuleReference,
     identifier: &str,
     source_type_def: &source::TypeDefinition,
@@ -326,8 +332,9 @@ impl TypeLoweringManager {
     let mut names = vec![];
     let mut mappings = vec![];
     for n in &source_type_def.names {
-      names.push(n.name.clone());
-      mappings.push(self.lower_source_type(&source_type_def.mappings.get(&n.name).unwrap().type_));
+      names.push(rc_string(n.name.as_str(heap).to_string()));
+      mappings
+        .push(self.lower_source_type(heap, &source_type_def.mappings.get(&n.name).unwrap().type_));
     }
     TypeDefinition {
       identifier: rc_string(encode_samlang_type(module_reference, identifier)),
@@ -340,12 +347,13 @@ impl TypeLoweringManager {
 
   pub(super) fn lower_source_function_type_for_toplevel(
     &mut self,
+    heap: &Heap,
     argument_types: &[Rc<source::Type>],
     return_type: &source::Type,
   ) -> (Vec<Str>, FunctionType) {
     let function_type = Type::new_fn_unwrapped(
-      argument_types.iter().map(|it| self.lower_source_type(it)).collect_vec(),
-      self.lower_source_type(return_type),
+      argument_types.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
+      self.lower_source_type(heap, return_type),
     );
     let type_parameters = Vec::from_iter(
       collect_used_generic_types(&function_type, &self.generic_types).into_iter().sorted(),
@@ -362,7 +370,7 @@ mod tests {
       hir::{BOOL_TYPE, INT_TYPE, STRING_TYPE},
       Location, Reason,
     },
-    common::rcs,
+    common::{rcs, PStr},
   };
   use pretty_assertions::assert_eq;
 
@@ -619,26 +627,28 @@ mod tests {
   #[should_panic]
   #[test]
   fn type_lowering_manager_lower_source_type_panic_test() {
+    let heap = Heap::new();
     TypeLoweringManager { generic_types: HashSet::new(), type_synthesizer: TypeSynthesizer::new() }
-      .lower_source_type(&source::Type::Unknown(Reason::dummy()));
+      .lower_source_type(&heap, &source::Type::Unknown(Reason::dummy()));
   }
 
   #[test]
   fn type_lowering_manager_lower_source_type_tests() {
+    let heap = Heap::new();
     let mut manager = TypeLoweringManager {
       generic_types: HashSet::new(),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = source::test_builder::create();
 
-    assert_eq!("bool", manager.lower_source_type(&builder.bool_type()).pretty_print());
-    assert_eq!("int", manager.lower_source_type(&builder.unit_type()).pretty_print());
-    assert_eq!("int", manager.lower_source_type(&builder.int_type()).pretty_print());
-    assert_eq!("string", manager.lower_source_type(&builder.string_type()).pretty_print());
+    assert_eq!("bool", manager.lower_source_type(&heap, &builder.bool_type()).pretty_print());
+    assert_eq!("int", manager.lower_source_type(&heap, &builder.unit_type()).pretty_print());
+    assert_eq!("int", manager.lower_source_type(&heap, &builder.int_type()).pretty_print());
+    assert_eq!("string", manager.lower_source_type(&heap, &builder.string_type()).pretty_print());
     assert_eq!(
       "string",
       manager
-        .lower_source_types(&vec![builder.string_type()])
+        .lower_source_types(&heap, &vec![builder.string_type()])
         .iter()
         .map(|it| it.pretty_print())
         .join("")
@@ -647,7 +657,10 @@ mod tests {
     assert_eq!(
       "__DUMMY___A<int>",
       manager
-        .lower_source_type(&builder.general_id_type("A", vec![builder.int_type()]))
+        .lower_source_type(
+          &heap,
+          &builder.general_id_type(PStr::permanent("A"), vec![builder.int_type()])
+        )
         .pretty_print()
     );
 
@@ -659,8 +672,11 @@ mod tests {
       "$SyntheticIDType0<T>",
       manager2
         .lower_source_type(
-          &builder
-            .fun_type(vec![builder.simple_id_type("T"), builder.bool_type()], builder.int_type())
+          &heap,
+          &builder.fun_type(
+            vec![builder.simple_id_type(PStr::permanent("T")), builder.bool_type()],
+            builder.int_type()
+          )
         )
         .pretty_print()
     );
@@ -676,6 +692,7 @@ mod tests {
 
   #[test]
   fn type_lowering_manager_lower_type_definition_tests() {
+    let heap = Heap::new();
     let mut manager = TypeLoweringManager {
       generic_types: HashSet::from([rcs("A")]),
       type_synthesizer: TypeSynthesizer::new(),
@@ -683,29 +700,36 @@ mod tests {
     let builder = source::test_builder::create();
 
     let type_def = manager.lower_source_type_definition(
+      &heap,
       &ModuleReference::root(),
       "Foo",
       &source::TypeDefinition {
         loc: Location::dummy(),
         is_object: true,
-        names: vec![source::Id::from("a"), source::Id::from("b")],
+        names: vec![source::Id::from(PStr::permanent("a")), source::Id::from(PStr::permanent("b"))],
         mappings: HashMap::from([
           (
-            rcs("a"),
+            PStr::permanent("a"),
             source::FieldType {
               is_public: true,
               type_: builder.fun_type(
-                vec![builder.fun_type(vec![builder.simple_id_type("A")], builder.bool_type())],
+                vec![builder.fun_type(
+                  vec![builder.simple_id_type(PStr::permanent("A"))],
+                  builder.bool_type(),
+                )],
                 builder.bool_type(),
               ),
             },
           ),
           (
-            rcs("b"),
+            PStr::permanent("b"),
             source::FieldType {
               is_public: false,
               type_: builder.fun_type(
-                vec![builder.fun_type(vec![builder.simple_id_type("A")], builder.bool_type())],
+                vec![builder.fun_type(
+                  vec![builder.simple_id_type(PStr::permanent("A"))],
+                  builder.bool_type(),
+                )],
                 builder.bool_type(),
               ),
             },
@@ -732,18 +756,23 @@ mod tests {
 
   #[test]
   fn type_lowering_manager_lower_toplevel_functions_tests() {
+    let heap = Heap::new();
     let mut manager = TypeLoweringManager {
       generic_types: HashSet::from([rcs("A")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = source::test_builder::create();
 
-    let (tparams1, f1) =
-      manager.lower_source_function_type_for_toplevel(&[builder.int_type()], &builder.bool_type());
+    let (tparams1, f1) = manager.lower_source_function_type_for_toplevel(
+      &heap,
+      &[builder.int_type()],
+      &builder.bool_type(),
+    );
     assert!(tparams1.is_empty());
     assert_eq!("(int) -> bool", f1.pretty_print());
 
     let (tparams2, f2) = manager.lower_source_function_type_for_toplevel(
+      &heap,
       &[builder.fun_type(vec![builder.int_type()], builder.bool_type())],
       &builder.bool_type(),
     );

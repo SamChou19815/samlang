@@ -15,7 +15,7 @@ use crate::{
     source::{self, ClassMemberDefinition},
     ModuleReference,
   },
-  common::{self, rc_string, rcs, Str},
+  common::{self, rc_pstr, rc_string, rcs, Heap, Str},
 };
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
@@ -31,7 +31,7 @@ struct LoweringResultWithSyntheticFunctions {
   expression: hir::Expression,
 }
 
-type LoweringContext = common::LocalStackedContext<hir::Expression>;
+type LoweringContext = common::LocalStackedContext<Str, hir::Expression>;
 
 impl LoweringContext {
   fn bind(&mut self, name: &Str, value: hir::Expression) {
@@ -63,6 +63,7 @@ mod lowering_cx_boilterplate_tests {
 
 struct ExpressionLoweringManager<'a> {
   // Immutable states
+  heap: &'a Heap,
   module_reference: &'a ModuleReference,
   encoded_function_name: &'a str,
   defined_variables: Vec<(Str, hir::Type)>,
@@ -80,6 +81,7 @@ struct ExpressionLoweringManager<'a> {
 
 impl<'a> ExpressionLoweringManager<'a> {
   fn new(
+    heap: &'a Heap,
     module_reference: &'a ModuleReference,
     encoded_function_name: &'a str,
     defined_variables: Vec<(Str, hir::Type)>,
@@ -92,6 +94,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       variable_cx.bind(n, hir::Expression::var_name_str(n.clone(), t.clone()));
     }
     ExpressionLoweringManager {
+      heap,
       module_reference,
       encoded_function_name,
       defined_variables,
@@ -198,9 +201,11 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn get_function_type_without_context(&mut self, t: &source::Type) -> hir::FunctionType {
     let source::FunctionType { argument_types, return_type, .. } =
       t.as_fn().expect("Expecting function type");
-    let (_, t) = self
-      .type_lowering_manager
-      .lower_source_function_type_for_toplevel(argument_types, return_type);
+    let (_, t) = self.type_lowering_manager.lower_source_function_type_for_toplevel(
+      self.heap,
+      argument_types,
+      return_type,
+    );
     t
   }
 
@@ -218,14 +223,17 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
       source::expr::E::Literal(_, source::Literal::String(s)) => LoweringResult {
         statements: vec![],
-        expression: hir::Expression::StringName(self.string_manager.allocate(s).name),
+        expression: hir::Expression::StringName(
+          self.string_manager.allocate(&rc_pstr(self.heap, *s)).name,
+        ),
       },
       source::expr::E::This(_) => {
         LoweringResult { statements: vec![], expression: self.resolve_variable(&rcs("_this")) }
       }
-      source::expr::E::Id(_, id) => {
-        LoweringResult { statements: vec![], expression: self.resolve_variable(&id.name) }
-      }
+      source::expr::E::Id(_, id) => LoweringResult {
+        statements: vec![],
+        expression: self.resolve_variable(&rc_pstr(self.heap, id.name)),
+      },
       source::expr::E::ClassFn(e) => self.lower_class_fn(e, favored_temp_variable),
       source::expr::E::FieldAccess(e) => self.lower_field_access(e, favored_temp_variable),
       source::expr::E::MethodAccess(e) => self.lower_method_access(e, favored_temp_variable),
@@ -259,8 +267,8 @@ impl<'a> ExpressionLoweringManager<'a> {
   ) -> LoweringResult {
     let encoded_original_fn_name = self.encode_function_name_globally_considering_generics(
       &expression.module_reference,
-      &expression.class_name.name,
-      &expression.fn_name.name,
+      &rc_pstr(self.heap, expression.class_name.name),
+      &rc_pstr(self.heap, expression.fn_name.name),
     );
     let original_function_type = self.get_function_type_without_context(&expression.common.type_);
     let function_type = hir::FunctionType {
@@ -283,7 +291,9 @@ impl<'a> ExpressionLoweringManager<'a> {
       function_name: hir::FunctionName {
         name: rc_string(format!("{}_with_context", encoded_original_fn_name)),
         type_: function_type,
-        type_arguments: self.type_lowering_manager.lower_source_types(&expression.type_arguments),
+        type_arguments: self
+          .type_lowering_manager
+          .lower_source_types(self.heap, &expression.type_arguments),
       },
       context: hir::ZERO,
     }];
@@ -327,8 +337,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     let source_obj_id_type = source_obj_type.as_id().unwrap();
     let function_name = self.encode_function_name_globally_considering_generics(
       &source_obj_id_type.module_reference,
-      &source_obj_id_type.id,
-      &expression.method_name.name,
+      &rc_pstr(self.heap, source_obj_id_type.id),
+      expression.method_name.name.as_str(self.heap),
     );
     let LoweringResult { mut statements, expression: result_expr } =
       self.lower(&expression.object, None);
@@ -355,7 +365,9 @@ impl<'a> ExpressionLoweringManager<'a> {
       function_name: hir::FunctionName {
         name: rc_string(function_name),
         type_: method_type,
-        type_arguments: self.type_lowering_manager.lower_source_types(&expression.type_arguments),
+        type_arguments: self
+          .type_lowering_manager
+          .lower_source_types(self.heap, &expression.type_arguments),
       },
       context: result_expr,
     });
@@ -411,8 +423,8 @@ impl<'a> ExpressionLoweringManager<'a> {
       source::expr::E::ClassFn(source_callee) => {
         let fn_name = self.encode_function_name_globally_considering_generics(
           &source_callee.module_reference,
-          &source_callee.class_name.name,
-          &source_callee.fn_name.name,
+          &rc_pstr(self.heap, source_callee.class_name.name),
+          &rc_pstr(self.heap, source_callee.fn_name.name),
         );
         let fn_type_without_cx =
           self.get_function_type_without_context(&source_callee.common.type_);
@@ -424,7 +436,7 @@ impl<'a> ExpressionLoweringManager<'a> {
               type_: fn_type_without_cx.clone(),
               type_arguments: self
                 .type_lowering_manager
-                .lower_source_types(&source_callee.type_arguments),
+                .lower_source_types(self.heap, &source_callee.type_arguments),
             }),
             arguments: expression
               .arguments
@@ -445,8 +457,8 @@ impl<'a> ExpressionLoweringManager<'a> {
         let source_target_id_type = source_target_type.as_id().unwrap();
         let fn_name = self.encode_function_name_globally_considering_generics(
           &source_target_id_type.module_reference,
-          &source_target_id_type.id,
-          &source_callee.method_name.name,
+          &rc_pstr(self.heap, source_target_id_type.id),
+          &rc_pstr(self.heap, source_callee.method_name.name),
         );
         let fn_type_without_cx =
           self.get_function_type_without_context(&source_callee.common.type_);
@@ -471,7 +483,11 @@ impl<'a> ExpressionLoweringManager<'a> {
                 .type_arguments
                 .iter()
                 .cloned()
-                .chain(self.type_lowering_manager.lower_source_types(&source_callee.type_arguments))
+                .chain(
+                  self
+                    .type_lowering_manager
+                    .lower_source_types(self.heap, &source_callee.type_arguments),
+                )
                 .collect_vec(),
             }),
             arguments: vec![hir_target]
@@ -496,8 +512,9 @@ impl<'a> ExpressionLoweringManager<'a> {
           .unwrap();
         let source_callee_type = source_callee.type_();
         let source_callee_fn_type = source_callee_type.as_fn().unwrap();
-        let return_type =
-          self.type_lowering_manager.lower_source_type(&source_callee_fn_type.return_type);
+        let return_type = self
+          .type_lowering_manager
+          .lower_source_type(self.heap, &source_callee_fn_type.return_type);
         let lowered_args = expression
           .arguments
           .iter()
@@ -605,7 +622,10 @@ impl<'a> ExpressionLoweringManager<'a> {
           return LoweringResult {
             statements: vec![],
             expression: hir::Expression::StringName(
-              self.string_manager.allocate(&rc_string(format!("{}{}", s1, s2))).name,
+              self
+                .string_manager
+                .allocate(&rc_string(format!("{}{}", s1.as_str(self.heap), s2.as_str(self.heap))))
+                .name,
             ),
           };
         }
@@ -710,16 +730,16 @@ impl<'a> ExpressionLoweringManager<'a> {
       self.variable_cx.push_scope();
       if let Some((data_var_name, _)) = data_variable {
         let data_var_type = &matched_expr_type_mapping[*tag_order];
+        let name = rc_pstr(self.heap, data_var_name.name);
         local_stmts.push(hir::Statement::IndexedAccess {
-          name: data_var_name.name.clone(),
+          name: name.clone(),
           type_: data_var_type.clone(),
           pointer_expression: matched_expr.clone(),
           index: 1,
         });
-        self.variable_cx.bind(
-          &data_var_name.name,
-          hir::Expression::var_name_str(data_var_name.name.clone(), data_var_type.clone()),
-        );
+        self
+          .variable_cx
+          .bind(&name, hir::Expression::var_name_str(name.clone(), data_var_type.clone()));
       }
       let final_expr = self.lowered_and_add_statements(body, None, &mut local_stmts);
       self.variable_cx.pop_scope();
@@ -776,7 +796,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       });
     }
 
-    let parameters = expression.parameters.iter().map(|it| it.name.name.clone()).collect_vec();
+    let parameters = expression.parameters.iter().map(|it| it.name.name).collect_vec();
     let source_fn_type = expression.common.type_.as_fn().unwrap();
     let (
       type_parameters,
@@ -785,16 +805,19 @@ impl<'a> ExpressionLoweringManager<'a> {
         return_type: fun_type_without_cx_return_type,
       },
     ) = self.type_lowering_manager.lower_source_function_type_for_toplevel(
+      self.heap,
       &source_fn_type.argument_types,
       &source_fn_type.return_type,
     );
     let fn_name = self.allocate_synthetic_fn_name();
     let LoweringResult { statements: mut lowered_s, expression: lowered_e } =
       ExpressionLoweringManager::new(
+        self.heap,
         self.module_reference,
         &fn_name,
         parameters
           .into_iter()
+          .map(|n| rc_pstr(self.heap, n))
           .zip(fun_type_without_cx_argument_types.iter().cloned())
           .chain(self.defined_variables.iter().cloned())
           .chain(captured.iter().map(|(n, e)| (n.clone(), e.type_())))
@@ -810,7 +833,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       name: rc_string(fn_name),
       parameters: vec![rcs("_context")]
         .into_iter()
-        .chain(expression.parameters.iter().map(|it| it.name.name.clone()))
+        .chain(expression.parameters.iter().map(|it| rc_pstr(self.heap, it.name.name)))
         .collect_vec(),
       type_parameters,
       type_: hir::FunctionType {
@@ -830,8 +853,14 @@ impl<'a> ExpressionLoweringManager<'a> {
     expression: &source::expr::Lambda,
     favored_temp_variable: Option<&str>,
   ) -> LoweringResult {
-    let captured =
-      expression.captured.keys().map(|k| (k.clone(), self.resolve_variable(k))).collect_vec();
+    let captured = expression
+      .captured
+      .keys()
+      .map(|k| {
+        let k = rc_pstr(self.heap, *k);
+        (k.clone(), self.resolve_variable(&k))
+      })
+      .collect_vec();
 
     let mut lowered_stmts = vec![];
     let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
@@ -915,11 +944,14 @@ impl<'a> ExpressionLoweringManager<'a> {
             let field_type =
               &self.resolve_type_mapping_of_id_type(&id_type)[destructured_name.field_order];
             let mangled_name = self.get_renamed_variable_for_nesting(
-              if let Some(n) = &destructured_name.alias {
-                &n.name
-              } else {
-                &destructured_name.field_name.name
-              },
+              &rc_pstr(
+                self.heap,
+                if let Some(n) = &destructured_name.alias {
+                  n.name
+                } else {
+                  destructured_name.field_name.name
+                },
+              ),
               field_type,
             );
             self.variable_cx.bind(
@@ -935,9 +967,10 @@ impl<'a> ExpressionLoweringManager<'a> {
           }
         }
         source::expr::Pattern::Id(_, id) => {
+          let id = rc_pstr(self.heap, *id);
           let e =
-            self.lowered_and_add_statements(&s.assigned_expression, Some(id), &mut lowered_stmts);
-          self.variable_cx.bind(id, e);
+            self.lowered_and_add_statements(&s.assigned_expression, Some(&id), &mut lowered_stmts);
+          self.variable_cx.bind(&id, e);
         }
         source::expr::Pattern::Wildcard(_) => {
           self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
@@ -957,22 +990,9 @@ impl<'a> ExpressionLoweringManager<'a> {
 }
 
 fn lower_source_expression(
-  module_reference: &ModuleReference,
-  encoded_function_name: &str,
-  defined_variables: Vec<(Str, hir::Type)>,
-  type_definition_mapping: &HashMap<Str, hir::TypeDefinition>,
-  type_lowering_manager: &mut TypeLoweringManager,
-  string_manager: &mut StringManager,
+  mut manager: ExpressionLoweringManager,
   expression: &source::expr::E,
 ) -> LoweringResultWithSyntheticFunctions {
-  let mut manager = ExpressionLoweringManager::new(
-    module_reference,
-    encoded_function_name,
-    defined_variables,
-    type_definition_mapping,
-    type_lowering_manager,
-    string_manager,
-  );
   if let source::expr::E::Block(_) = expression {
     manager.depth -= 1;
   }
@@ -1110,11 +1130,12 @@ fn lower_constructors(
   functions
 }
 
-fn lower_tparams(type_parameters: &[source::TypeParameter]) -> Vec<Str> {
-  type_parameters.iter().map(|it| it.name.name.clone()).collect_vec()
+fn lower_tparams(heap: &Heap, type_parameters: &[source::TypeParameter]) -> Vec<Str> {
+  type_parameters.iter().map(|it| rc_string(it.name.name.as_str(heap).to_string())).collect_vec()
 }
 
 fn compile_sources_with_generics_preserved(
+  heap: &Heap,
   sources: &HashMap<ModuleReference, source::Module>,
 ) -> hir::Sources {
   let mut type_lowering_manager =
@@ -1125,15 +1146,16 @@ fn compile_sources_with_generics_preserved(
     for toplevel in &source_module.toplevels {
       if let source::Toplevel::Class(c) = &toplevel {
         type_lowering_manager.generic_types =
-          c.type_parameters.iter().map(|it| it.name.name.clone()).collect();
+          c.type_parameters.iter().map(|it| rc_pstr(heap, it.name.name)).collect();
         compiled_type_defs.push(type_lowering_manager.lower_source_type_definition(
+          heap,
           mod_ref,
-          &c.name.name,
+          c.name.name.as_str(heap),
           &c.type_definition,
         ));
-        if c.name.name.eq(&rcs("Main"))
+        if c.name.name.as_str(heap).eq("Main")
           && c.members.iter().any(|ClassMemberDefinition { decl, .. }| {
-            decl.name.name.eq(&rcs("main"))
+            decl.name.name.as_str(heap).eq("main")
               && decl.parameters.is_empty()
               && decl.type_parameters.is_empty()
           })
@@ -1154,21 +1176,21 @@ fn compile_sources_with_generics_preserved(
       if let source::Toplevel::Class(c) = &toplevel {
         compiled_functions.append(&mut lower_constructors(
           module_reference,
-          &c.name.name,
+          &rc_pstr(heap, c.name.name),
           &type_def_mappings,
         ));
         for member in &c.members {
           let encoded_name = rc_string(common_names::encode_function_name_globally(
             module_reference,
-            &c.name.name,
-            &member.decl.name.name,
+            &rc_pstr(heap, c.name.name),
+            &rc_pstr(heap, member.decl.name.name),
           ));
-          let class_tparams = lower_tparams(&c.type_parameters);
+          let class_tparams = lower_tparams(heap, &c.type_parameters);
           if member.decl.is_method {
             let tparams = class_tparams
               .iter()
               .cloned()
-              .chain(lower_tparams(&member.decl.type_parameters))
+              .chain(lower_tparams(heap, &member.decl.type_parameters))
               .sorted()
               .collect_vec();
             let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
@@ -1176,31 +1198,35 @@ fn compile_sources_with_generics_preserved(
             let main_function_parameter_with_types = vec![(
               rcs("_this"),
               hir::Type::new_id_str(
-                rc_string(encode_samlang_type(module_reference, &c.name.name)),
+                rc_string(encode_samlang_type(module_reference, c.name.name.as_str(heap))),
                 class_tparams.into_iter().map(Type::new_id_str_no_targs).collect_vec(),
               ),
             )]
             .into_iter()
             .chain(member.decl.parameters.iter().map(|id| {
-              (id.name.name.clone(), type_lowering_manager.lower_source_type(&id.annotation))
+              (
+                rc_pstr(heap, id.name.name),
+                type_lowering_manager.lower_source_type(heap, &id.annotation),
+              )
             }))
             .collect_vec();
-            let LoweringResultWithSyntheticFunctions {
-              statements,
-              expression,
-              synthetic_functions: mut compiled_functions_to_add,
-            } = lower_source_expression(
+            let manager = ExpressionLoweringManager::new(
+              heap,
               module_reference,
               &encoded_name,
               main_function_parameter_with_types.clone(),
               &type_def_mappings,
               &mut type_lowering_manager,
               &mut string_manager,
-              &member.body,
             );
+            let LoweringResultWithSyntheticFunctions {
+              statements,
+              expression,
+              synthetic_functions: mut compiled_functions_to_add,
+            } = lower_source_expression(manager, &member.body);
             let main_fn_type = hir::Type::new_fn_unwrapped(
               main_function_parameter_with_types.iter().map(|(_, t)| t.clone()).collect_vec(),
-              type_lowering_manager.lower_source_type(&member.decl.type_.return_type),
+              type_lowering_manager.lower_source_type(heap, &member.decl.type_.return_type),
             );
             compiled_functions_to_add.push(hir::Function {
               name: encoded_name,
@@ -1216,7 +1242,7 @@ fn compile_sources_with_generics_preserved(
             compiled_functions.append(&mut compiled_functions_to_add);
           } else {
             let tparams_set: HashSet<_> =
-              lower_tparams(&member.decl.type_parameters).into_iter().collect();
+              lower_tparams(heap, &member.decl.type_parameters).into_iter().collect();
             let tparams = tparams_set.iter().sorted().cloned().collect_vec();
             type_lowering_manager.generic_types = tparams_set;
             let main_function_parameter_with_types = member
@@ -1224,25 +1250,29 @@ fn compile_sources_with_generics_preserved(
               .parameters
               .iter()
               .map(|id| {
-                (id.name.name.clone(), type_lowering_manager.lower_source_type(&id.annotation))
+                (
+                  rc_pstr(heap, id.name.name),
+                  type_lowering_manager.lower_source_type(heap, &id.annotation),
+                )
               })
               .collect_vec();
-            let LoweringResultWithSyntheticFunctions {
-              statements,
-              expression,
-              synthetic_functions: mut compiled_functions_to_add,
-            } = lower_source_expression(
+            let manager = ExpressionLoweringManager::new(
+              heap,
               module_reference,
               &encoded_name,
               main_function_parameter_with_types.clone(),
               &type_def_mappings,
               &mut type_lowering_manager,
               &mut string_manager,
-              &member.body,
             );
+            let LoweringResultWithSyntheticFunctions {
+              statements,
+              expression,
+              synthetic_functions: mut compiled_functions_to_add,
+            } = lower_source_expression(manager, &member.body);
             let main_fn_type = hir::Type::new_fn_unwrapped(
               main_function_parameter_with_types.iter().map(|(_, t)| t.clone()).collect_vec(),
-              type_lowering_manager.lower_source_type(&member.decl.type_.return_type),
+              type_lowering_manager.lower_source_type(heap, &member.decl.type_.return_type),
             );
             let original_f = hir::Function {
               name: encoded_name,
@@ -1302,11 +1332,12 @@ fn optimize_by_tail_rec_rewrite(sources: hir::Sources) -> hir::Sources {
 }
 
 pub(crate) fn compile_sources_to_hir(
+  heap: &Heap,
   sources: &HashMap<ModuleReference, source::Module>,
 ) -> hir::Sources {
   optimize_by_tail_rec_rewrite(hir_type_deduplication::deduplicate(
     hir_generics_specialization::perform_generics_specialization(
-      compile_sources_with_generics_preserved(sources),
+      compile_sources_with_generics_preserved(heap, sources),
     ),
   ))
 }
@@ -1315,8 +1346,9 @@ pub(crate) fn compile_sources_to_hir(
 mod tests {
   use crate::{
     ast::{hir, source, Location, ModuleReference, Reason},
-    common::rcs,
+    common::{rcs, Heap, PStr},
     compiler::{
+      hir_lowering::ExpressionLoweringManager,
       hir_string_manager::StringManager,
       hir_type_conversion::{SynthesizedTypes, TypeLoweringManager, TypeSynthesizer},
     },
@@ -1329,49 +1361,53 @@ mod tests {
   };
 
   fn assert_expr_correctly_lowered(source_expr: &source::expr::E, expected_str: &str) {
+    let heap = Heap::new();
     let mut type_lowering_manager = TypeLoweringManager {
       generic_types: HashSet::from_iter(vec![rcs("GENERIC_TYPE")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let mut string_manager = StringManager::new();
+    let mod_ref = ModuleReference::dummy();
+    let type_def_mapping = HashMap::from([
+      (
+        rcs("__DUMMY___Foo"),
+        hir::TypeDefinition {
+          identifier: rcs("__DUMMY___Foo"),
+          is_object: true,
+          type_parameters: vec![],
+          names: vec![],
+          mappings: vec![hir::INT_TYPE, hir::INT_TYPE],
+        },
+      ),
+      (
+        rcs("__DUMMY___Dummy"),
+        hir::TypeDefinition {
+          identifier: rcs("__DUMMY___Dummy"),
+          is_object: true,
+          type_parameters: vec![],
+          names: vec![],
+          mappings: vec![hir::INT_TYPE, hir::INT_TYPE],
+        },
+      ),
+    ]);
+    let manager = ExpressionLoweringManager::new(
+      &heap,
+      &mod_ref,
+      "ENCODED_FUNCTION_NAME",
+      vec![
+        (rcs("_this"), hir::Type::new_id_no_targs("__DUMMY___Dummy")),
+        (rcs("foo"), hir::INT_TYPE),
+        (rcs("bar"), hir::BOOL_TYPE),
+        (rcs("closure"), hir::Type::new_id_no_targs("Closure")),
+        (rcs("closure_unit_return"), hir::Type::new_id_no_targs("Closure")),
+        (rcs("captured_a"), hir::INT_TYPE),
+      ],
+      &type_def_mapping,
+      &mut type_lowering_manager,
+      &mut string_manager,
+    );
     let super::LoweringResultWithSyntheticFunctions { statements, expression, synthetic_functions } =
-      super::lower_source_expression(
-        &ModuleReference::dummy(),
-        "ENCODED_FUNCTION_NAME",
-        vec![
-          (rcs("_this"), hir::Type::new_id_no_targs("__DUMMY___Dummy")),
-          (rcs("foo"), hir::INT_TYPE),
-          (rcs("bar"), hir::BOOL_TYPE),
-          (rcs("closure"), hir::Type::new_id_no_targs("Closure")),
-          (rcs("closure_unit_return"), hir::Type::new_id_no_targs("Closure")),
-          (rcs("captured_a"), hir::INT_TYPE),
-        ],
-        &HashMap::from([
-          (
-            rcs("__DUMMY___Foo"),
-            hir::TypeDefinition {
-              identifier: rcs("__DUMMY___Foo"),
-              is_object: true,
-              type_parameters: vec![],
-              names: vec![],
-              mappings: vec![hir::INT_TYPE, hir::INT_TYPE],
-            },
-          ),
-          (
-            rcs("__DUMMY___Dummy"),
-            hir::TypeDefinition {
-              identifier: rcs("__DUMMY___Dummy"),
-              is_object: true,
-              type_parameters: vec![],
-              names: vec![],
-              mappings: vec![hir::INT_TYPE, hir::INT_TYPE],
-            },
-          ),
-        ]),
-        &mut type_lowering_manager,
-        &mut string_manager,
-        source_expr,
-      );
+      super::lower_source_expression(manager, source_expr);
     let SynthesizedTypes { tuple_types, closure_types } =
       type_lowering_manager.type_synthesizer.synthesized_types();
     let global_variables = string_manager.all_global_variables();
@@ -1393,7 +1429,7 @@ mod tests {
 
   fn dummy_source_id_type_unwrapped() -> source::IdType {
     let builder = source::test_builder::create();
-    builder.simple_id_type_unwrapped("Dummy")
+    builder.simple_id_type_unwrapped(PStr::permanent("Dummy"))
   }
 
   fn dummy_source_id_type() -> source::Type {
@@ -1414,14 +1450,14 @@ mod tests {
     assert_expr_correctly_lowered(&builder.true_expr(), "return 1;");
     assert_expr_correctly_lowered(&builder.zero_expr(), "return 0;");
     assert_expr_correctly_lowered(
-      &builder.string_expr("foo"),
+      &builder.string_expr(PStr::permanent("foo")),
       "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
     );
 
     // This & variable lowering works.
     assert_expr_correctly_lowered(&dummy_source_this(), "return (_this: __DUMMY___Dummy);");
     assert_expr_correctly_lowered(
-      &builder.id_expr("foo", builder.unit_type()),
+      &builder.id_expr(PStr::permanent("foo"), builder.unit_type()),
       "return (foo: int);",
     );
   }
@@ -1436,8 +1472,8 @@ mod tests {
         common: builder.expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
         type_arguments: vec![],
         module_reference: ModuleReference::dummy(),
-        class_name: source::Id::from("A"),
-        fn_name: source::Id::from("b"),
+        class_name: source::Id::from(PStr::permanent("A")),
+        fn_name: source::Id::from(PStr::permanent("b")),
       }),
       r#"closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___A$b_with_context: (int, int) -> int), context: 0 };
@@ -1450,7 +1486,7 @@ return (_t0: $SyntheticIDType0);"#,
         common: builder.expr_common(builder.unit_type()),
         type_arguments: vec![],
         object: Box::new(dummy_source_this()),
-        field_name: source::Id::from("foo"),
+        field_name: source::Id::from(PStr::permanent("foo")),
         field_order: 0,
       }),
       "let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);",
@@ -1462,7 +1498,7 @@ return (_t0: $SyntheticIDType0);"#,
         common: builder.expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
         type_arguments: vec![],
         object: Box::new(dummy_source_this()),
-        method_name: source::Id::from("foo"),
+        method_name: source::Id::from(PStr::permanent("foo")),
       }),
       r#"closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy$foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
@@ -1483,8 +1519,8 @@ return (_t0: $SyntheticIDType0);"#,
             .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
           type_arguments: vec![],
           module_reference: ModuleReference::ordinary(vec![rcs("ModuleModule")]),
-          class_name: source::Id::from("ImportedClass"),
-          fn_name: source::Id::from("bar"),
+          class_name: source::Id::from(PStr::permanent("ImportedClass")),
+          fn_name: source::Id::from(PStr::permanent("bar")),
         })),
         arguments: vec![dummy_source_this(), dummy_source_this()],
       }),
@@ -1500,8 +1536,8 @@ return (_t0: int);"#,
             .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
-          class_name: source::Id::from("C"),
-          fn_name: source::Id::from("m1"),
+          class_name: source::Id::from(PStr::permanent("C")),
+          fn_name: source::Id::from(PStr::permanent("m1")),
         })),
         arguments: vec![builder.zero_expr()],
       }),
@@ -1517,8 +1553,8 @@ return (_t0: int);"#,
           ),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
-          class_name: source::Id::from("C"),
-          fn_name: source::Id::from("m2"),
+          class_name: source::Id::from(PStr::permanent("C")),
+          fn_name: source::Id::from(PStr::permanent("m2")),
         })),
         arguments: vec![builder.zero_expr()],
       }),
@@ -1534,8 +1570,8 @@ return (_t0: int);"#,
           ),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
-          class_name: source::Id::from("GENERIC_TYPE"),
-          fn_name: source::Id::from("m2"),
+          class_name: source::Id::from(PStr::permanent("GENERIC_TYPE")),
+          fn_name: source::Id::from(PStr::permanent("m2")),
         })),
         arguments: vec![builder.zero_expr()],
       }),
@@ -1552,7 +1588,7 @@ return (_t0: int);"#,
           )),
           type_arguments: vec![],
           object: Box::new(dummy_source_this()),
-          method_name: source::Id::from("fooBar"),
+          method_name: source::Id::from(PStr::permanent("fooBar")),
         })),
         arguments: vec![dummy_source_this(), dummy_source_this()],
       }),
@@ -1563,10 +1599,10 @@ return (_t0: int);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.int_type()),
-        callee: Box::new(
-          builder
-            .id_expr("closure", builder.fun_type(vec![builder.bool_type()], builder.int_type())),
-        ),
+        callee: Box::new(builder.id_expr(
+          PStr::permanent("closure"),
+          builder.fun_type(vec![builder.bool_type()], builder.int_type()),
+        )),
         arguments: vec![builder.true_expr()],
       }),
       r#"let _t0: int = (closure: Closure)(1);
@@ -1577,7 +1613,7 @@ return (_t0: int);"#,
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.unit_type()),
         callee: Box::new(builder.id_expr(
-          "closure_unit_return",
+          PStr::permanent("closure_unit_return"),
           builder.fun_type(vec![builder.bool_type()], builder.unit_type()),
         )),
         arguments: vec![builder.true_expr()],
@@ -1726,8 +1762,8 @@ return 0;"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::AND,
-        e1: Box::new(builder.id_expr("foo", builder.bool_type())),
-        e2: Box::new(builder.id_expr("bar", builder.bool_type())),
+        e1: Box::new(builder.id_expr(PStr::permanent("foo"), builder.bool_type())),
+        e2: Box::new(builder.id_expr(PStr::permanent("bar"), builder.bool_type())),
       }),
       r#"let _t0: bool;
 if (foo: int) {
@@ -1743,7 +1779,7 @@ return (_t0: bool);"#,
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::AND,
         e1: Box::new(builder.true_expr()),
-        e2: Box::new(builder.id_expr("foo", builder.int_type())),
+        e2: Box::new(builder.id_expr(PStr::permanent("foo"), builder.int_type())),
       }),
       "return (foo: int);",
     );
@@ -1753,7 +1789,7 @@ return (_t0: bool);"#,
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::AND,
         e1: Box::new(builder.false_expr()),
-        e2: Box::new(builder.id_expr("foo", builder.int_type())),
+        e2: Box::new(builder.id_expr(PStr::permanent("foo"), builder.int_type())),
       }),
       "return 0;",
     );
@@ -1783,8 +1819,8 @@ return (_t0: bool);"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::OR,
-        e1: Box::new(builder.id_expr("foo", builder.bool_type())),
-        e2: Box::new(builder.id_expr("bar", builder.bool_type())),
+        e1: Box::new(builder.id_expr(PStr::permanent("foo"), builder.bool_type())),
+        e2: Box::new(builder.id_expr(PStr::permanent("bar"), builder.bool_type())),
       }),
       r#"let _t0: bool;
 if (foo: int) {
@@ -1811,8 +1847,8 @@ return (_t0: string);"#,
         common: builder.expr_common(builder.string_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::CONCAT,
-        e1: Box::new(builder.string_expr("hello ")),
-        e2: Box::new(builder.string_expr("world")),
+        e1: Box::new(builder.string_expr(PStr::permanent("hello "))),
+        e2: Box::new(builder.string_expr(PStr::permanent("world"))),
       }),
       "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;",
     );
@@ -1827,10 +1863,10 @@ return (_t0: string);"#,
         common: builder
           .expr_common(builder.fun_type(vec![builder.unit_type()], builder.unit_type())),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from("a"),
+          name: source::Id::from(PStr::permanent("a")),
           annotation: Some(builder.unit_type()),
         }],
-        captured: HashMap::from([(rcs("captured_a"), builder.unit_type())]),
+        captured: HashMap::from([(PStr::permanent("captured_a"), builder.unit_type())]),
         body: Box::new(dummy_source_this()),
       }),
       r#"closure type $SyntheticIDType1 = (int) -> int
@@ -1850,10 +1886,10 @@ return (_t0: $SyntheticIDType1);"#,
         common: builder
           .expr_common(builder.fun_type(vec![builder.unit_type()], builder.int_type())),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from("a"),
+          name: source::Id::from(PStr::permanent("a")),
           annotation: Some(builder.unit_type()),
         }],
-        captured: HashMap::from([(rcs("captured_a"), builder.unit_type())]),
+        captured: HashMap::from([(PStr::permanent("captured_a"), builder.unit_type())]),
         body: Box::new(dummy_source_this()),
       }),
       r#"closure type $SyntheticIDType1 = (int) -> int
@@ -1874,10 +1910,10 @@ return (_t0: $SyntheticIDType1);"#,
           builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type())),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from("a"),
+          name: source::Id::from(PStr::permanent("a")),
           annotation: Some(builder.unit_type()),
         }],
-        captured: HashMap::from([(rcs("captured_a"), builder.unit_type())]),
+        captured: HashMap::from([(PStr::permanent("captured_a"), builder.unit_type())]),
         body: Box::new(dummy_source_this()),
       }),
       r#"closure type $SyntheticIDType1 = (int) -> __DUMMY___Dummy
@@ -1898,7 +1934,7 @@ return (_t0: $SyntheticIDType1);"#,
           builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type())),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from("a"),
+          name: source::Id::from(PStr::permanent("a")),
           annotation: Some(builder.unit_type()),
         }],
         captured: HashMap::new(),
@@ -1941,14 +1977,14 @@ return (_t0: __DUMMY___Dummy);"#,
         cases: vec![
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from("Foo"),
+            tag: source::Id::from(PStr::permanent("Foo")),
             tag_order: 0,
-            data_variable: Some((source::Id::from("bar"), builder.int_type())),
+            data_variable: Some((source::Id::from(PStr::permanent("bar")), builder.int_type())),
             body: Box::new(dummy_source_this()),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from("Bar"),
+            tag: source::Id::from(PStr::permanent("Bar")),
             tag_order: 1,
             data_variable: None,
             body: Box::new(dummy_source_this()),
@@ -1974,21 +2010,26 @@ return (_t2: __DUMMY___Dummy);"#,
         cases: vec![
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from("Foo"),
+            tag: source::Id::from(PStr::permanent("Foo")),
             tag_order: 0,
             data_variable: None,
             body: Box::new(dummy_source_this()),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from("Bar"),
+            tag: source::Id::from(PStr::permanent("Bar")),
             tag_order: 1,
-            data_variable: Some((source::Id::from("bar"), Rc::new(dummy_source_id_type()))),
-            body: Box::new(builder.id_expr("bar", Rc::new(dummy_source_id_type()))),
+            data_variable: Some((
+              source::Id::from(PStr::permanent("bar")),
+              Rc::new(dummy_source_id_type()),
+            )),
+            body: Box::new(
+              builder.id_expr(PStr::permanent("bar"), Rc::new(dummy_source_id_type())),
+            ),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from("Baz"),
+            tag: source::Id::from(PStr::permanent("Baz")),
             tag_order: 2,
             data_variable: None,
             body: Box::new(dummy_source_this()),
@@ -2025,7 +2066,7 @@ return (_t4: __DUMMY___Dummy);"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: vec![],
-          pattern: source::expr::Pattern::Id(Location::dummy(), rcs("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
           annotation: Some(builder.unit_type()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: builder.expr_common(builder.unit_type()),
@@ -2039,15 +2080,15 @@ return (_t4: __DUMMY___Dummy);"#,
                     source::expr::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 0,
-                      field_name: source::Id::from("a"),
+                      field_name: source::Id::from(PStr::permanent("a")),
                       alias: None,
                       type_: builder.int_type(),
                     },
                     source::expr::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 1,
-                      field_name: source::Id::from("b"),
-                      alias: Some(source::Id::from("c")),
+                      field_name: source::Id::from(PStr::permanent("b")),
+                      alias: Some(source::Id::from(PStr::permanent("c"))),
                       type_: builder.int_type(),
                     },
                   ],
@@ -2086,15 +2127,15 @@ return 0;"#,
                 source::expr::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 0,
-                  field_name: source::Id::from("a"),
+                  field_name: source::Id::from(PStr::permanent("a")),
                   alias: None,
                   type_: builder.int_type(),
                 },
                 source::expr::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 1,
-                  field_name: source::Id::from("b"),
-                  alias: Some(source::Id::from("c")),
+                  field_name: source::Id::from(PStr::permanent("b")),
+                  alias: Some(source::Id::from(PStr::permanent("c"))),
                   type_: builder.int_type(),
                 },
               ],
@@ -2123,7 +2164,7 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: vec![],
-          pattern: source::expr::Pattern::Id(Location::dummy(), rcs("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
           annotation: Some(builder.int_type()),
           assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
             common: builder.expr_common(builder.int_type()),
@@ -2132,13 +2173,13 @@ return 0;"#,
                 .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
               type_arguments: vec![],
               module_reference: ModuleReference::ordinary(vec![rcs("ModuleModule")]),
-              class_name: source::Id::from("ImportedClass"),
-              fn_name: source::Id::from("bar"),
+              class_name: source::Id::from(PStr::permanent("ImportedClass")),
+              fn_name: source::Id::from(PStr::permanent("bar")),
             })),
             arguments: vec![dummy_source_this(), dummy_source_this()],
           })),
         }],
-        expression: Some(Box::new(builder.id_expr("a", builder.string_type()))),
+        expression: Some(Box::new(builder.id_expr(PStr::permanent("a"), builder.string_type()))),
       }),
       "let a: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));\nreturn (a: int);",
     );
@@ -2150,19 +2191,21 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: vec![],
-            pattern: source::expr::Pattern::Id(Location::dummy(), rcs("a")),
+            pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
             annotation: Some(builder.unit_type()),
-            assigned_expression: Box::new(builder.string_expr("foo")),
+            assigned_expression: Box::new(builder.string_expr(PStr::permanent("foo"))),
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: vec![],
-            pattern: source::expr::Pattern::Id(Location::dummy(), rcs("b")),
+            pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("b")),
             annotation: Some(builder.unit_type()),
-            assigned_expression: Box::new(builder.id_expr("a", builder.string_type())),
+            assigned_expression: Box::new(
+              builder.id_expr(PStr::permanent("a"), builder.string_type()),
+            ),
           },
         ],
-        expression: Some(Box::new(builder.id_expr("b", builder.string_type()))),
+        expression: Some(Box::new(builder.id_expr(PStr::permanent("b"), builder.string_type()))),
       }),
       "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
     );
@@ -2173,21 +2216,23 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: vec![],
-          pattern: source::expr::Pattern::Id(Location::dummy(), rcs("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
           annotation: Some(builder.unit_type()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: builder.expr_common(builder.unit_type()),
             statements: vec![source::expr::DeclarationStatement {
               loc: Location::dummy(),
               associated_comments: vec![],
-              pattern: source::expr::Pattern::Id(Location::dummy(), rcs("a")),
+              pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
               annotation: Some(builder.int_type()),
               assigned_expression: Box::new(dummy_source_this()),
             }],
-            expression: Some(Box::new(builder.id_expr("a", builder.string_type()))),
+            expression: Some(Box::new(
+              builder.id_expr(PStr::permanent("a"), builder.string_type()),
+            )),
           })),
         }],
-        expression: Some(Box::new(builder.id_expr("a", builder.string_type()))),
+        expression: Some(Box::new(builder.id_expr(PStr::permanent("a"), builder.string_type()))),
       }),
       "return (_this: __DUMMY___Dummy);",
     );
@@ -2197,7 +2242,8 @@ return 0;"#,
   fn integration_tests() {
     let builder = source::test_builder::create();
 
-    let this_expr = &source::expr::E::This(builder.expr_common(builder.simple_id_type("Dummy")));
+    let this_expr =
+      &source::expr::E::This(builder.expr_common(builder.simple_id_type(PStr::permanent("Dummy"))));
 
     let source_module = source::Module {
       imports: vec![],
@@ -2205,7 +2251,7 @@ return 0;"#,
         source::Toplevel::Interface(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from("I"),
+          name: source::Id::from(PStr::permanent("I")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
           type_definition: (),
@@ -2214,7 +2260,7 @@ return 0;"#,
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from("Main"),
+          name: source::Id::from(PStr::permanent("Main")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition {
@@ -2230,7 +2276,7 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: source::Id::from("main"),
+                name: source::Id::from(PStr::permanent("main")),
                 type_parameters: Rc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
@@ -2245,8 +2291,8 @@ return 0;"#,
                   common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
-                  class_name: source::Id::from("Class1"),
-                  fn_name: source::Id::from("infiniteLoop"),
+                  class_name: source::Id::from(PStr::permanent("Class1")),
+                  fn_name: source::Id::from(PStr::permanent("infiniteLoop")),
                 })),
                 arguments: vec![],
               }),
@@ -2257,11 +2303,11 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: source::Id::from("loopy"),
+                name: source::Id::from(PStr::permanent("loopy")),
                 type_parameters: Rc::new(vec![source::TypeParameter {
                   loc: Location::dummy(),
                   associated_comments: Rc::new(vec![]),
-                  name: source::Id::from("T"),
+                  name: source::Id::from(PStr::permanent("T")),
                   bound: None,
                 }]),
                 type_: source::FunctionType {
@@ -2277,8 +2323,8 @@ return 0;"#,
                   common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
-                  class_name: source::Id::from("T"),
-                  fn_name: source::Id::from("loopy"),
+                  class_name: source::Id::from(PStr::permanent("T")),
+                  fn_name: source::Id::from(PStr::permanent("loopy")),
                 })),
                 arguments: vec![],
               }),
@@ -2288,15 +2334,15 @@ return 0;"#,
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from("Class1"),
+          name: source::Id::from(PStr::permanent("Class1")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition {
             loc: Location::dummy(),
             is_object: true,
-            names: vec![source::Id::from("a")],
+            names: vec![source::Id::from(PStr::permanent("a"))],
             mappings: HashMap::from([(
-              rcs("a"),
+              PStr::permanent("a"),
               source::FieldType { is_public: true, type_: builder.int_type() },
             )]),
           },
@@ -2307,7 +2353,7 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: true,
-                name: source::Id::from("foo"),
+                name: source::Id::from(PStr::permanent("foo")),
                 type_parameters: Rc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
@@ -2315,7 +2361,7 @@ return 0;"#,
                   return_type: builder.int_type(),
                 },
                 parameters: Rc::new(vec![source::AnnotatedId {
-                  name: source::Id::from("a"),
+                  name: source::Id::from(PStr::permanent("a")),
                   annotation: builder.int_type(),
                 }]),
               },
@@ -2327,7 +2373,7 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: source::Id::from("infiniteLoop"),
+                name: source::Id::from(PStr::permanent("infiniteLoop")),
                 type_parameters: Rc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
@@ -2342,8 +2388,8 @@ return 0;"#,
                   common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
-                  class_name: source::Id::from("Class1"),
-                  fn_name: source::Id::from("infiniteLoop"),
+                  class_name: source::Id::from(PStr::permanent("Class1")),
+                  fn_name: source::Id::from(PStr::permanent("infiniteLoop")),
                 })),
                 arguments: vec![],
               }),
@@ -2354,7 +2400,7 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: source::Id::from("factorial"),
+                name: source::Id::from(PStr::permanent("factorial")),
                 type_parameters: Rc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
@@ -2363,11 +2409,11 @@ return 0;"#,
                 },
                 parameters: Rc::new(vec![
                   source::AnnotatedId {
-                    name: source::Id::from("n"),
+                    name: source::Id::from(PStr::permanent("n")),
                     annotation: builder.int_type(),
                   },
                   source::AnnotatedId {
-                    name: source::Id::from("acc"),
+                    name: source::Id::from(PStr::permanent("acc")),
                     annotation: builder.int_type(),
                   },
                 ]),
@@ -2378,7 +2424,7 @@ return 0;"#,
                   common: builder.expr_common(builder.int_type()),
                   operator_preceding_comments: vec![],
                   operator: source::expr::BinaryOperator::EQ,
-                  e1: Box::new(builder.id_expr("n", builder.int_type())),
+                  e1: Box::new(builder.id_expr(PStr::permanent("n"), builder.int_type())),
                   e2: Box::new(builder.zero_expr()),
                 })),
                 e1: Box::new(builder.int_lit(1)),
@@ -2391,23 +2437,23 @@ return 0;"#,
                     ),
                     type_arguments: vec![],
                     module_reference: ModuleReference::dummy(),
-                    class_name: source::Id::from("Class1"),
-                    fn_name: source::Id::from("factorial"),
+                    class_name: source::Id::from(PStr::permanent("Class1")),
+                    fn_name: source::Id::from(PStr::permanent("factorial")),
                   })),
                   arguments: vec![
                     source::expr::E::Binary(source::expr::Binary {
                       common: builder.expr_common(builder.int_type()),
                       operator_preceding_comments: vec![],
                       operator: source::expr::BinaryOperator::MINUS,
-                      e1: Box::new(builder.id_expr("n", builder.int_type())),
+                      e1: Box::new(builder.id_expr(PStr::permanent("n"), builder.int_type())),
                       e2: Box::new(builder.int_lit(1)),
                     }),
                     source::expr::E::Binary(source::expr::Binary {
                       common: builder.expr_common(builder.int_type()),
                       operator_preceding_comments: vec![],
                       operator: source::expr::BinaryOperator::MUL,
-                      e1: Box::new(builder.id_expr("n", builder.int_type())),
-                      e2: Box::new(builder.id_expr("acc", builder.int_type())),
+                      e1: Box::new(builder.id_expr(PStr::permanent("n"), builder.int_type())),
+                      e2: Box::new(builder.id_expr(PStr::permanent("acc"), builder.int_type())),
                     }),
                   ],
                 })),
@@ -2418,15 +2464,15 @@ return 0;"#,
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from("Class2"),
+          name: source::Id::from(PStr::permanent("Class2")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition {
             loc: Location::dummy(),
             is_object: false,
-            names: vec![source::Id::from("Tag")],
+            names: vec![source::Id::from(PStr::permanent("Tag"))],
             mappings: HashMap::from([(
-              rcs("Tag"),
+              PStr::permanent("Tag"),
               source::FieldType { is_public: true, type_: builder.int_type() },
             )]),
           },
@@ -2435,26 +2481,26 @@ return 0;"#,
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from("Class3"),
+          name: source::Id::from(PStr::permanent("Class3")),
           type_parameters: vec![source::TypeParameter {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: source::Id::from("T"),
+            name: source::Id::from(PStr::permanent("T")),
             bound: None,
           }],
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition {
             loc: Location::dummy(),
             is_object: true,
-            names: vec![source::Id::from("a")],
+            names: vec![source::Id::from(PStr::permanent("a"))],
             mappings: HashMap::from([(
-              rcs("a"),
+              PStr::permanent("a"),
               source::FieldType {
                 is_public: true,
                 type_: builder.fun_type(
                   vec![
-                    builder.general_id_type("A", vec![builder.int_type()]),
-                    builder.simple_id_type("T"),
+                    builder.general_id_type(PStr::permanent("A"), vec![builder.int_type()]),
+                    builder.simple_id_type(PStr::permanent("T")),
                   ],
                   builder.int_type(),
                 ),
@@ -2586,10 +2632,11 @@ function ___DUMMY___Main$main(): int {
 
 sources.mains = [___DUMMY___Main$main]"#;
 
+    let heap = Heap::new();
     assert_eq!(
       generics_preserved_expected,
-      super::compile_sources_with_generics_preserved(&sources).debug_print()
+      super::compile_sources_with_generics_preserved(&heap, &sources).debug_print()
     );
-    assert_eq!(optimized_expected, super::compile_sources_to_hir(&sources).debug_print());
+    assert_eq!(optimized_expected, super::compile_sources_to_hir(&heap, &sources).debug_print());
   }
 }
