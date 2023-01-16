@@ -1,6 +1,6 @@
 use crate::{
   ast::{Location, ModuleReference},
-  common::{rc_string, Str},
+  common::{Heap, PStr},
   errors::ErrorSet,
 };
 use enum_iterator::{all, Sequence};
@@ -360,33 +360,33 @@ impl ToString for TokenOp {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(super) enum TokenContent {
   Keyword(Keyword),
   Operator(TokenOp),
   EOF,
-  UpperId(Str),
-  LowerId(Str),
-  StringLiteral(Str),
-  IntLiteral(Str),
-  LineComment(Str),
-  BlockComment(Str),
-  Error(Str),
+  UpperId(PStr),
+  LowerId(PStr),
+  StringLiteral(PStr),
+  IntLiteral(PStr),
+  LineComment(PStr),
+  BlockComment(PStr),
+  Error(PStr),
 }
 
-impl ToString for TokenContent {
-  fn to_string(&self) -> String {
+impl TokenContent {
+  pub(super) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       TokenContent::Keyword(k) => k.to_string(),
       TokenContent::Operator(o) => o.to_string(),
       TokenContent::EOF => "EOF".to_string(),
-      TokenContent::UpperId(id) => id.to_string(),
-      TokenContent::LowerId(id) => id.to_string(),
-      TokenContent::StringLiteral(s) => s.to_string(),
-      TokenContent::IntLiteral(i) => i.to_string(),
-      TokenContent::LineComment(c) => c.to_string(),
-      TokenContent::BlockComment(c) => c.to_string(),
-      TokenContent::Error(e) => format!("ERROR: {}", e),
+      TokenContent::UpperId(s)
+      | TokenContent::LowerId(s)
+      | TokenContent::StringLiteral(s)
+      | TokenContent::IntLiteral(s)
+      | TokenContent::LineComment(s)
+      | TokenContent::BlockComment(s) => s.as_str(heap).to_string(),
+      TokenContent::Error(e) => format!("ERROR: {}", e.as_str(heap)),
     }
   }
 }
@@ -394,10 +394,10 @@ impl ToString for TokenContent {
 #[derive(Clone)]
 pub(super) struct Token(pub(super) Location, pub(super) TokenContent);
 
-impl ToString for Token {
-  fn to_string(&self) -> String {
+impl Token {
+  pub(super) fn to_string(&self, heap: &Heap) -> String {
     let Token(loc, content) = self;
-    format!("{}: {}", loc.to_string(), content.to_string())
+    format!("{}: {}", loc.to_string(), content.pretty_print(heap))
   }
 }
 
@@ -422,6 +422,7 @@ fn string_has_valid_escape(s: &str) -> bool {
 
 fn get_next_token(
   stream: &mut char_stream::CharacterStream,
+  heap: &mut Heap,
   error_set: &mut ErrorSet,
   known_sorted_operators: &Vec<TokenOp>,
 ) -> Option<Token> {
@@ -433,21 +434,21 @@ fn get_next_token(
       if let Option::Some(s) = &stream.peek_line_comment() {
         return Option::Some(Token(
           stream.consume_and_get_loc(start, s.len()),
-          TokenContent::LineComment(rc_string(s.clone())),
+          TokenContent::LineComment(heap.alloc_str(s)),
         ));
       }
 
       if let Option::Some(s) = &stream.peek_block_comment() {
         return Option::Some(Token(
           stream.consume_and_get_loc(start, s.len()),
-          TokenContent::BlockComment(rc_string(s.clone())),
+          TokenContent::BlockComment(heap.alloc_str(s)),
         ));
       }
 
       if let Option::Some(s) = &stream.peek_int() {
         return Option::Some(Token(
           stream.consume_and_get_loc(start, s.len()),
-          TokenContent::IntLiteral(rc_string(s.clone())),
+          TokenContent::IntLiteral(heap.alloc_str(s)),
         ));
       }
 
@@ -456,7 +457,7 @@ fn get_next_token(
         if !string_has_valid_escape(s) {
           error_set.report_syntax_error(&loc, "Invalid escape in string.")
         }
-        return Option::Some(Token(loc, TokenContent::StringLiteral(rc_string(s.clone()))));
+        return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_str(s))));
       }
 
       if let Option::Some(s) = &stream.peek_id() {
@@ -465,9 +466,9 @@ fn get_next_token(
           return Option::Some(Token(loc, TokenContent::Keyword(k)));
         }
         let content = if s.chars().next().unwrap().is_ascii_uppercase() {
-          TokenContent::UpperId(rc_string(s.clone()))
+          TokenContent::UpperId(heap.alloc_str(s))
         } else {
-          TokenContent::LowerId(rc_string(s.clone()))
+          TokenContent::LowerId(heap.alloc_str(s))
         };
         return Option::Some(Token(loc, content));
       }
@@ -485,7 +486,7 @@ fn get_next_token(
       let error_token_content = &stream.peek_until_whitespace();
       let error_loc = stream.consume_and_get_loc(start, error_token_content.len());
       error_set.report_syntax_error(&error_loc, "Invalid token.");
-      Option::Some(Token(error_loc, TokenContent::Error(rc_string(error_token_content.clone()))))
+      Option::Some(Token(error_loc, TokenContent::Error(heap.alloc_str(error_token_content))))
     }
   }
 }
@@ -493,6 +494,7 @@ fn get_next_token(
 pub(super) fn lex_source_program(
   source: &str,
   module_reference: ModuleReference,
+  heap: &mut Heap,
   error_set: &mut ErrorSet,
 ) -> Vec<Token> {
   let mut stream = char_stream::CharacterStream::new(module_reference, source);
@@ -501,9 +503,10 @@ pub(super) fn lex_source_program(
   known_sorted_operators.sort_by_key(|op| -(op.to_string().len() as i64));
 
   loop {
-    match get_next_token(&mut stream, error_set, &known_sorted_operators) {
+    match get_next_token(&mut stream, heap, error_set, &known_sorted_operators) {
       Option::None => return tokens,
-      Option::Some(Token(loc, TokenContent::IntLiteral(s))) => {
+      Option::Some(Token(loc, TokenContent::IntLiteral(p_str))) => {
+        let s = p_str.as_str(heap);
         match s.parse::<i64>() {
           Result::Err(_) => {
             error_set.report_syntax_error(&loc, "Not a 32-bit integer.");
@@ -520,14 +523,14 @@ pub(super) fn lex_source_program(
                 // Merge - and MAX_INT_PLUS_ONE into MIN_INT
                 tokens[prev_index] = Token(
                   prev_loc.union(&loc),
-                  TokenContent::IntLiteral(rc_string(format!("-{}", s))),
+                  TokenContent::IntLiteral(heap.alloc_str(&format!("-{}", s))),
                 );
                 continue;
               }
             }
           }
         };
-        tokens.push(Token(loc, TokenContent::IntLiteral(s)));
+        tokens.push(Token(loc, TokenContent::IntLiteral(p_str)));
       }
       Option::Some(t) => {
         tokens.push(t);

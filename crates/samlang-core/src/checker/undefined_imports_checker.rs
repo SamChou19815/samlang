@@ -1,11 +1,13 @@
 use crate::{
   ast::{source::Module, ModuleReference},
+  common::Heap,
   errors::ErrorSet,
 };
 use std::collections::{HashMap, HashSet};
 
 pub(super) fn check_undefined_imports_error(
   sources: &HashMap<ModuleReference, Module>,
+  heap: &Heap,
   error_set: &mut ErrorSet,
   module: &Module,
 ) {
@@ -13,16 +15,18 @@ pub(super) fn check_undefined_imports_error(
     if let Some(available_members) = sources.get(&one_import.imported_module) {
       let mut available_members_set = HashSet::new();
       for c in available_members.toplevels.iter() {
-        available_members_set.insert(c.name().name.clone());
+        available_members_set.insert(c.name().name);
       }
       for id in one_import.imported_members.iter() {
         if !available_members_set.contains(&id.name) {
-          error_set.report_unresolved_name_error(&id.loc, &id.name);
+          error_set.report_unresolved_name_error(&id.loc, id.name.as_str(heap));
         }
       }
     } else {
-      error_set
-        .report_unresolved_name_error(&one_import.loc, &one_import.imported_module.to_string());
+      error_set.report_unresolved_synthetic_name_error(
+        &one_import.loc,
+        &one_import.imported_module.to_string(),
+      );
     }
   }
 }
@@ -36,7 +40,7 @@ mod tests {
       source::{Id, InterfaceDeclarationCommon, Module, ModuleMembersImport, Toplevel},
       Location, ModuleReference,
     },
-    common::rcs,
+    common::{rcs, Heap, PStr},
     errors::ErrorSet,
   };
   use itertools::Itertools;
@@ -46,7 +50,7 @@ mod tests {
     Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: Rc::new(vec![]),
-      name: Id::from(name),
+      name: Id::from(PStr::permanent(name)),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -72,7 +76,7 @@ mod tests {
               imported_members.push(Id {
                 loc: loc.clone(),
                 associated_comments: Rc::new(vec![]),
-                name: rcs(m),
+                name: PStr::permanent(m),
               });
             }
             ModuleMembersImport {
@@ -88,10 +92,14 @@ mod tests {
     )
   }
 
-  fn assert_expected_errors(sources: HashMap<ModuleReference, Module>, expected_errors: Vec<&str>) {
+  fn assert_expected_errors(
+    sources: HashMap<ModuleReference, Module>,
+    expected_errors: Vec<&'static str>,
+  ) {
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     for m in sources.values() {
-      super::check_undefined_imports_error(&sources, &mut error_set, m);
+      super::check_undefined_imports_error(&sources, &heap, &mut error_set, m);
     }
     assert_eq!(expected_errors, error_set.error_messages());
   }

@@ -15,7 +15,7 @@ mod tests {
         TypeDefinitionTypingContext, TypingContext,
       },
     },
-    common::{rcs, Str},
+    common::{rcs, Heap},
     errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
   };
@@ -28,6 +28,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn boilterplate() {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
 
     let mut local_cx = LocalTypingContext::new(SsaAnalysisResult {
@@ -37,19 +38,21 @@ mod tests {
       def_to_use_map: HashMap::new(),
       lambda_captures: HashMap::new(),
     });
-    let global_cx = sandbox_global_cx();
+    let global_cx = sandbox_global_cx(&mut heap);
+    let test_str = heap.alloc_str("Test");
     let mut cx = TypingContext::new(
       &global_cx,
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      rcs("Test"),
+      test_str,
       /* availableTypeParameters */ vec![],
     );
 
     let builder = test_builder::create();
     type_check_expression(
       &mut cx,
+      &heap,
       expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
@@ -58,31 +61,41 @@ mod tests {
         },
         type_arguments: vec![],
         object: Box::new(builder.true_expr()),
-        method_name: Id::from(""),
+        method_name: Id {
+          loc: Location::dummy(),
+          associated_comments: Rc::new(vec![]),
+          name: test_str,
+        },
       }),
       None,
     );
   }
 
-  fn sandbox_global_cx() -> GlobalTypingContext {
+  fn sandbox_global_cx(heap: &mut Heap) -> GlobalTypingContext {
     let builder = test_builder::create();
 
     HashMap::from([
-      (ModuleReference::root(), create_builtin_module_typing_context()),
+      (ModuleReference::root(), create_builtin_module_typing_context(heap)),
       (
         ModuleReference::dummy(),
         ModuleTypingContext {
           type_definitions: BTreeMap::from([
             (
-              rcs("Test"),
+              heap.alloc_str("Test"),
               TypeDefinitionTypingContext {
                 is_object: true,
-                names: vec![rcs("foo"), rcs("bar"), rcs("fff")],
+                names: vec![heap.alloc_str("foo"), heap.alloc_str("bar"), heap.alloc_str("fff")],
                 mappings: HashMap::from([
-                  (rcs("foo"), FieldType { is_public: true, type_: builder.bool_type() }),
-                  (rcs("bar"), FieldType { is_public: false, type_: builder.int_type() }),
                   (
-                    rcs("fff"),
+                    heap.alloc_str("foo"),
+                    FieldType { is_public: true, type_: builder.bool_type() },
+                  ),
+                  (
+                    heap.alloc_str("bar"),
+                    FieldType { is_public: false, type_: builder.int_type() },
+                  ),
+                  (
+                    heap.alloc_str("fff"),
                     FieldType {
                       is_public: false,
                       type_: builder.fun_type(vec![], builder.string_type()),
@@ -92,92 +105,110 @@ mod tests {
               },
             ),
             (
-              rcs("Test2"),
+              heap.alloc_str("Test2"),
               TypeDefinitionTypingContext {
                 is_object: false,
-                names: vec![rcs("Foo"), rcs("Bar")],
+                names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
                 mappings: HashMap::from([
-                  (rcs("Foo"), FieldType { is_public: true, type_: builder.bool_type() }),
-                  (rcs("Bar"), FieldType { is_public: true, type_: builder.int_type() }),
+                  (
+                    heap.alloc_str("Foo"),
+                    FieldType { is_public: true, type_: builder.bool_type() },
+                  ),
+                  (heap.alloc_str("Bar"), FieldType { is_public: true, type_: builder.int_type() }),
                 ]),
               },
             ),
             (
-              rcs("Test3"),
+              heap.alloc_str("Test3"),
               TypeDefinitionTypingContext {
                 is_object: true,
-                names: vec![rcs("foo"), rcs("bar")],
+                names: vec![heap.alloc_str("foo"), heap.alloc_str("bar")],
                 mappings: HashMap::from([
-                  (rcs("foo"), FieldType { is_public: true, type_: builder.simple_id_type("E") }),
-                  (rcs("bar"), FieldType { is_public: false, type_: builder.int_type() }),
+                  (
+                    heap.alloc_str("foo"),
+                    FieldType {
+                      is_public: true,
+                      type_: builder.simple_id_type(heap.alloc_str("E")),
+                    },
+                  ),
+                  (
+                    heap.alloc_str("bar"),
+                    FieldType { is_public: false, type_: builder.int_type() },
+                  ),
                 ]),
               },
             ),
             (
-              rcs("Test4"),
+              heap.alloc_str("Test4"),
               TypeDefinitionTypingContext {
                 is_object: false,
-                names: vec![rcs("Foo"), rcs("Bar")],
+                names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
                 mappings: HashMap::from([
-                  (rcs("Foo"), FieldType { is_public: true, type_: builder.simple_id_type("E") }),
-                  (rcs("Bar"), FieldType { is_public: true, type_: builder.int_type() }),
+                  (
+                    heap.alloc_str("Foo"),
+                    FieldType {
+                      is_public: true,
+                      type_: builder.simple_id_type(heap.alloc_str("E")),
+                    },
+                  ),
+                  (heap.alloc_str("Bar"), FieldType { is_public: true, type_: builder.int_type() }),
                 ]),
               },
             ),
             (
-              rcs("A"),
+              heap.alloc_str("A"),
               TypeDefinitionTypingContext {
                 is_object: true,
-                names: vec![rcs("a"), rcs("b")],
+                names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
                 mappings: HashMap::from([
-                  (rcs("a"), FieldType { is_public: true, type_: builder.int_type() }),
-                  (rcs("b"), FieldType { is_public: false, type_: builder.bool_type() }),
+                  (heap.alloc_str("a"), FieldType { is_public: true, type_: builder.int_type() }),
+                  (heap.alloc_str("b"), FieldType { is_public: false, type_: builder.bool_type() }),
                 ]),
               },
             ),
             (
-              rcs("B"),
+              heap.alloc_str("B"),
               TypeDefinitionTypingContext {
                 is_object: true,
-                names: vec![rcs("a"), rcs("b")],
+                names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
                 mappings: HashMap::from([
-                  (rcs("a"), FieldType { is_public: true, type_: builder.int_type() }),
-                  (rcs("b"), FieldType { is_public: false, type_: builder.bool_type() }),
+                  (heap.alloc_str("a"), FieldType { is_public: true, type_: builder.int_type() }),
+                  (heap.alloc_str("b"), FieldType { is_public: false, type_: builder.bool_type() }),
                 ]),
               },
             ),
             (
-              rcs("C"),
+              heap.alloc_str("C"),
               TypeDefinitionTypingContext {
                 is_object: false,
-                names: vec![rcs("a"), rcs("b")],
+                names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
                 mappings: HashMap::from([
-                  (rcs("a"), FieldType { is_public: true, type_: builder.int_type() }),
-                  (rcs("b"), FieldType { is_public: true, type_: builder.bool_type() }),
+                  (heap.alloc_str("a"), FieldType { is_public: true, type_: builder.int_type() }),
+                  (heap.alloc_str("b"), FieldType { is_public: true, type_: builder.bool_type() }),
                 ]),
               },
             ),
           ]),
           interfaces: BTreeMap::from([
             (
-              rcs("Test"),
+              heap.alloc_str("Test"),
               Rc::new(InterfaceTypingContext {
                 is_concrete: true,
                 functions: Rc::new(BTreeMap::from([
                   (
-                    rcs("init"),
+                    heap.alloc_str("init"),
                     Rc::new(MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.bool_type(), builder.int_type()],
-                        return_type: builder.simple_id_type("Test"),
+                        return_type: builder.simple_id_type(heap.alloc_str("Test")),
                       },
                     }),
                   ),
                   (
-                    rcs("helloWorld"),
+                    heap.alloc_str("helloWorld"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
@@ -189,73 +220,79 @@ mod tests {
                     }),
                   ),
                   (
-                    rcs("helloWorldWithTypeParameters"),
+                    heap.alloc_str("helloWorldWithTypeParameters"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
-                      type_parameters: vec![TypeParameterSignature { name: rcs("A"), bound: None }],
+                      type_parameters: vec![TypeParameterSignature {
+                        name: heap.alloc_str("A"),
+                        bound: None,
+                      }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type("A")],
+                        argument_types: vec![builder.simple_id_type(heap.alloc_str("A"))],
                         return_type: builder.unit_type(),
                       },
                     }),
                   ),
                   (
-                    rcs("generic1"),
+                    heap.alloc_str("generic1"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![
-                        TypeParameterSignature { name: rcs("A"), bound: None },
-                        TypeParameterSignature { name: rcs("B"), bound: None },
-                        TypeParameterSignature { name: rcs("C"), bound: None },
-                        TypeParameterSignature { name: rcs("D"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str("C"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str("D"), bound: None },
                       ],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![
-                          builder.simple_id_type("A"),
-                          builder.simple_id_type("B"),
-                          builder.simple_id_type("C"),
+                          builder.simple_id_type(heap.alloc_str("A")),
+                          builder.simple_id_type(heap.alloc_str("B")),
+                          builder.simple_id_type(heap.alloc_str("C")),
                         ],
-                        return_type: builder.simple_id_type("D"),
+                        return_type: builder.simple_id_type(heap.alloc_str("D")),
                       },
                     }),
                   ),
                   (
-                    rcs("generic2"),
+                    heap.alloc_str("generic2"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
-                      type_parameters: vec![TypeParameterSignature { name: rcs("T"), bound: None }],
+                      type_parameters: vec![TypeParameterSignature {
+                        name: heap.alloc_str("T"),
+                        bound: None,
+                      }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![
                           builder.fun_type(vec![builder.int_type()], builder.int_type()),
-                          builder.simple_id_type("T"),
+                          builder.simple_id_type(heap.alloc_str("T")),
                         ],
                         return_type: builder.bool_type(),
                       },
                     }),
                   ),
                   (
-                    rcs("generic3"),
+                    heap.alloc_str("generic3"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![
-                        TypeParameterSignature { name: rcs("A"), bound: None },
-                        TypeParameterSignature { name: rcs("B"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
                       ],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.fun_type(
-                          vec![builder.simple_id_type("A")],
-                          builder.simple_id_type("B"),
+                          vec![builder.simple_id_type(heap.alloc_str("A"))],
+                          builder.simple_id_type(heap.alloc_str("B")),
                         )],
                         return_type: builder.bool_type(),
                       },
                     }),
                   ),
                   (
-                    rcs("generic4"),
+                    heap.alloc_str("generic4"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
@@ -272,7 +309,7 @@ mod tests {
                 ])),
                 methods: Rc::new(BTreeMap::from([
                   (
-                    rcs("baz"),
+                    heap.alloc_str("baz"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
@@ -284,10 +321,13 @@ mod tests {
                     }),
                   ),
                   (
-                    rcs("bazWithTypeParam"),
+                    heap.alloc_str("bazWithTypeParam"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
-                      type_parameters: vec![TypeParameterSignature { name: rcs("A"), bound: None }],
+                      type_parameters: vec![TypeParameterSignature {
+                        name: heap.alloc_str("A"),
+                        bound: None,
+                      }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
@@ -296,13 +336,16 @@ mod tests {
                     }),
                   ),
                   (
-                    rcs("bazWithUsefulTypeParam"),
+                    heap.alloc_str("bazWithUsefulTypeParam"),
                     Rc::new(MemberTypeInformation {
                       is_public: false,
-                      type_parameters: vec![TypeParameterSignature { name: rcs("A"), bound: None }],
+                      type_parameters: vec![TypeParameterSignature {
+                        name: heap.alloc_str("A"),
+                        bound: None,
+                      }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type("A")],
+                        argument_types: vec![builder.simple_id_type(heap.alloc_str("A"))],
                         return_type: builder.bool_type(),
                       },
                     }),
@@ -313,31 +356,31 @@ mod tests {
               }),
             ),
             (
-              rcs("Test2"),
+              heap.alloc_str("Test2"),
               Rc::new(InterfaceTypingContext {
                 is_concrete: true,
                 functions: Rc::new(BTreeMap::from([
                   (
-                    rcs("Foo"),
+                    heap.alloc_str("Foo"),
                     Rc::new(MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.bool_type()],
-                        return_type: builder.simple_id_type("Test2"),
+                        return_type: builder.simple_id_type(heap.alloc_str("Test2")),
                       },
                     }),
                   ),
                   (
-                    rcs("Bar"),
+                    heap.alloc_str("Bar"),
                     Rc::new(MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
-                        return_type: builder.simple_id_type("Test2"),
+                        return_type: builder.simple_id_type(heap.alloc_str("Test2")),
                       },
                     }),
                   ),
@@ -348,65 +391,81 @@ mod tests {
               }),
             ),
             (
-              rcs("Test3"),
+              heap.alloc_str("Test3"),
               Rc::new(InterfaceTypingContext {
                 is_concrete: true,
                 functions: Rc::new(BTreeMap::new()),
                 methods: Rc::new(BTreeMap::new()),
-                type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
+                type_parameters: vec![TypeParameterSignature {
+                  name: heap.alloc_str("E"),
+                  bound: None,
+                }],
                 super_types: vec![],
               }),
             ),
             (
-              rcs("Test4"),
+              heap.alloc_str("Test4"),
               Rc::new(InterfaceTypingContext {
                 is_concrete: true,
                 functions: Rc::new(BTreeMap::from([
                   (
-                    rcs("Foo"),
+                    heap.alloc_str("Foo"),
                     Rc::new(MemberTypeInformation {
                       is_public: true,
-                      type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
+                      type_parameters: vec![TypeParameterSignature {
+                        name: heap.alloc_str("E"),
+                        bound: None,
+                      }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type("E")],
-                        return_type: builder
-                          .general_id_type("Test4", vec![builder.simple_id_type("E")]),
+                        argument_types: vec![builder.simple_id_type(heap.alloc_str("E"))],
+                        return_type: builder.general_id_type(
+                          heap.alloc_str("Test4"),
+                          vec![builder.simple_id_type(heap.alloc_str("E"))],
+                        ),
                       },
                     }),
                   ),
                   (
-                    rcs("Bar"),
+                    heap.alloc_str("Bar"),
                     Rc::new(MemberTypeInformation {
                       is_public: true,
-                      type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
+                      type_parameters: vec![TypeParameterSignature {
+                        name: heap.alloc_str("E"),
+                        bound: None,
+                      }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
-                        return_type: builder
-                          .general_id_type("Test4", vec![builder.simple_id_type("E")]),
+                        return_type: builder.general_id_type(
+                          heap.alloc_str("Test4"),
+                          vec![builder.simple_id_type(heap.alloc_str("E"))],
+                        ),
                       },
                     }),
                   ),
                 ])),
                 methods: Rc::new(BTreeMap::new()),
-                type_parameters: vec![TypeParameterSignature { name: rcs("E"), bound: None }],
+                type_parameters: vec![TypeParameterSignature {
+                  name: heap.alloc_str("E"),
+                  bound: None,
+                }],
                 super_types: vec![],
               }),
             ),
             (
-              rcs("A"),
+              heap.alloc_str("A"),
               Rc::new(InterfaceTypingContext {
                 is_concrete: true,
                 functions: Rc::new(BTreeMap::from([(
-                  rcs("init"),
+                  heap.alloc_str("init"),
                   Rc::new(MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type("A"),
+                      return_type: builder.simple_id_type(heap.alloc_str("A")),
                     },
                   }),
                 )])),
@@ -416,18 +475,18 @@ mod tests {
               }),
             ),
             (
-              rcs("B"),
+              heap.alloc_str("B"),
               Rc::new(InterfaceTypingContext {
                 is_concrete: true,
                 functions: Rc::new(BTreeMap::from([(
-                  rcs("init"),
+                  heap.alloc_str("init"),
                   Rc::new(MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type("B"),
+                      return_type: builder.simple_id_type(heap.alloc_str("B")),
                     },
                   }),
                 )])),
@@ -437,18 +496,18 @@ mod tests {
               }),
             ),
             (
-              rcs("C"),
+              heap.alloc_str("C"),
               Rc::new(InterfaceTypingContext {
                 is_concrete: true,
                 functions: Rc::new(BTreeMap::from([(
-                  rcs("init"),
+                  heap.alloc_str("init"),
                   Rc::new(MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type("C"),
+                      return_type: builder.simple_id_type(heap.alloc_str("C")),
                     },
                   }),
                 )])),
@@ -464,20 +523,25 @@ mod tests {
   }
 
   fn type_check_expr_in_sandbox(
+    heap: &mut Heap,
     source: &str,
     expected_type: &Type,
-    current_class: Str,
+    current_class: &'static str,
   ) -> Vec<String> {
     let mut error_set = ErrorSet::new();
 
     let parsed =
-      parse_source_expression_from_text(source, &ModuleReference::dummy(), &mut error_set);
+      parse_source_expression_from_text(source, &ModuleReference::dummy(), heap, &mut error_set);
     assert_eq!(Vec::<String>::new(), error_set.error_messages());
 
     let mut temp_ssa_error_set = ErrorSet::new();
-    let mut local_cx =
-      LocalTypingContext::new(perform_ssa_analysis_on_expression(&parsed, &mut temp_ssa_error_set));
-    let global_cx = sandbox_global_cx();
+    let global_cx = sandbox_global_cx(heap);
+    let mut local_cx = LocalTypingContext::new(perform_ssa_analysis_on_expression(
+      &parsed,
+      heap,
+      &mut temp_ssa_error_set,
+    ));
+    let current_class = heap.alloc_str(current_class);
     let mut cx = TypingContext::new(
       &global_cx,
       &mut local_cx,
@@ -487,11 +551,12 @@ mod tests {
       /* availableTypeParameters */ vec![],
     );
 
-    type_check_expression(&mut cx, parsed, Some(expected_type));
+    type_check_expression(&mut cx, heap, parsed, Some(expected_type));
     error_set.error_messages()
   }
 
   fn assert_errors_with_class(
+    heap: &mut Heap,
     source: &str,
     expected_type: &Type,
     expected_errors: Vec<&str>,
@@ -499,50 +564,61 @@ mod tests {
   ) {
     assert_eq!(
       expected_errors,
-      type_check_expr_in_sandbox(source, expected_type, rcs(current_class))
+      type_check_expr_in_sandbox(heap, source, expected_type, current_class)
     );
   }
 
-  fn assert_errors(source: &str, expected_type: &Type, expected_errors: Vec<&str>) {
-    assert_errors_with_class(source, expected_type, expected_errors, "Test");
+  fn assert_errors(
+    heap: &mut Heap,
+    source: &str,
+    expected_type: &Type,
+    expected_errors: Vec<&str>,
+  ) {
+    assert_errors_with_class(heap, source, expected_type, expected_errors, "Test");
   }
 
-  fn assert_checks(source: &str, expected_type: &Type) {
-    assert_errors_with_class(source, expected_type, vec![], "Test");
+  fn assert_checks(heap: &mut Heap, source: &str, expected_type: &Type) {
+    assert_errors_with_class(heap, source, expected_type, vec![], "Test");
   }
 
   #[test]
   fn simple_expressions_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
-    assert_checks("true", &builder.bool_type());
-    assert_checks("false", &builder.bool_type());
-    assert_checks("42", &builder.int_type());
-    assert_checks("\"a\"", &builder.string_type());
+    assert_checks(heap, "true", &builder.bool_type());
+    assert_checks(heap, "false", &builder.bool_type());
+    assert_checks(heap, "42", &builder.int_type());
+    assert_checks(heap, "\"a\"", &builder.string_type());
     assert_errors(
+      heap,
       "true",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:5: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "false",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "42",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:3: [UnexpectedType]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "\"a\"",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:4: [UnexpectedType]: Expected: `unit`, actual: `string`."],
     );
 
-    assert_checks("this", &builder.int_type());
-    assert_checks("{ val foo = 3; foo }", &builder.int_type());
+    assert_checks(heap, "this", &builder.int_type());
+    assert_checks(heap, "{ val foo = 3; foo }", &builder.int_type());
     assert_errors(
+      heap,
       "{ val foo = true; foo }",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:19-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`."],
@@ -551,18 +627,22 @@ mod tests {
 
   #[test]
   fn class_members_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
     assert_checks(
+      heap,
       "Test.helloWorldWithTypeParameters<int>",
       &builder.fun_type(vec![builder.int_type()], builder.unit_type()),
     );
     assert_checks(
+      heap,
       "Test.helloWorld",
       &builder.fun_type(vec![builder.string_type()], builder.unit_type()),
     );
 
     assert_errors(
+      heap,
       "Test.helloWorld<A>",
       &builder.fun_type(vec![builder.string_type()], builder.unit_type()),
       vec![
@@ -570,6 +650,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.helloWorldWithTypeParameters",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       vec![
@@ -579,6 +660,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.helloWorldWithTypeParameters",
       &builder.string_type(),
       vec![
@@ -588,6 +670,7 @@ mod tests {
       ]
     );
     assert_errors(
+      heap,
       "Test.helloWorldWithTypeParameters<int, string>",
       &builder.fun_type(vec![builder.int_type()], builder.unit_type()),
       vec![
@@ -595,6 +678,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.helloWorldWithTypeParameters<string>",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       vec![
@@ -602,6 +686,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.helloWorld2",
       &builder.fun_type(vec![builder.string_type()], builder.unit_type()),
       vec!["__DUMMY__.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved."],
@@ -610,63 +695,88 @@ mod tests {
 
   #[test]
   fn ctors_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
-    assert_checks("Test.init(true, 3)", &builder.simple_id_type("Test"));
-    assert_checks("{ val foo=true; Test.init(foo, 3) }", &builder.simple_id_type("Test"));
-    assert_errors_with_class("Test2.Foo(true)", &builder.simple_id_type("Test2"), vec![], "Test2");
-    assert_errors_with_class("Test2.Bar(42)", &builder.simple_id_type("Test2"), vec![], "Test2");
+    let test_str = heap.alloc_str("Test");
+    let test2_str = heap.alloc_str("Test2");
+    let test4_str = heap.alloc_str("Test4");
+
+    assert_checks(heap, "Test.init(true, 3)", &builder.simple_id_type(test_str));
+    assert_checks(heap, "{ val foo=true; Test.init(foo, 3) }", &builder.simple_id_type(test_str));
     assert_errors_with_class(
+      heap,
+      "Test2.Foo(true)",
+      &builder.simple_id_type(test2_str),
+      vec![],
+      "Test2",
+    );
+    assert_errors_with_class(
+      heap,
+      "Test2.Bar(42)",
+      &builder.simple_id_type(test2_str),
+      vec![],
+      "Test2",
+    );
+    assert_errors_with_class(
+      heap,
       "Test4.Foo(true)",
-      &builder.general_id_type("Test4", vec![builder.bool_type()]),
+      &builder.general_id_type(test4_str, vec![builder.bool_type()]),
       vec![],
       "Test4",
     );
     assert_errors_with_class(
+      heap,
       "Test4.Foo<bool>(true)",
-      &builder.general_id_type("Test4", vec![builder.bool_type()]),
+      &builder.general_id_type(test4_str, vec![builder.bool_type()]),
       vec![],
       "Test4",
     );
 
     assert_errors(
+      heap,
       "Test.Foo(true)",
-      &builder.simple_id_type("Test2"),
+      &builder.simple_id_type(test2_str),
       vec!["__DUMMY__.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved."],
     );
     assert_errors(
+      heap,
       "Test.Bar(42)",
-      &builder.simple_id_type("Test2"),
+      &builder.simple_id_type(test2_str),
       vec!["__DUMMY__.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved."],
     );
-    assert_errors(
+    assert_errors(heap,
       "Test4.Foo<int, bool>(true)",
-      &builder.general_id_type("Test4", vec![builder.bool_type()]),
+      &builder.general_id_type(test4_str, vec![builder.bool_type()]),
       vec![
         "__DUMMY__.sam:1:1-1:21: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.",
       ],
     );
     assert_errors(
+      heap,
       "Test4.Foo<int>(true)",
-      &builder.general_id_type("Test4", vec![builder.int_type()]),
+      &builder.general_id_type(test4_str, vec![builder.int_type()]),
       vec!["__DUMMY__.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "Test4.Foo<int>(true)",
-      &builder.general_id_type("Test4", vec![builder.bool_type()]),
+      &builder.general_id_type(test4_str, vec![builder.bool_type()]),
       vec![
         "__DUMMY__.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.",
         "__DUMMY__.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.",
       ],
     );
     assert_errors(
+      heap,
       "Test44.Bar(42)",
-      &builder.simple_id_type("Test2"),
+      &builder.simple_id_type(test2_str),
       vec!["__DUMMY__.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved."],
     );
     assert_errors_with_class(
+      heap,
       "Test2.Tars(42)",
-      &builder.simple_id_type("Test2"),
+      &builder.simple_id_type(test2_str),
       vec!["__DUMMY__.sam:1:1-1:11: [UnresolvedName]: Name `Test2.Tars` is not resolved."],
       "Test2",
     );
@@ -674,28 +784,34 @@ mod tests {
 
   #[test]
   fn field_and_method_access_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
-    assert_checks("Test.init(true, 3).foo", &builder.bool_type());
-    assert_checks("Test.init(true, 3).bar", &builder.int_type());
+    assert_checks(heap, "Test.init(true, 3).foo", &builder.bool_type());
+    assert_checks(heap, "Test.init(true, 3).bar", &builder.int_type());
     assert_checks(
+      heap,
       "Test.init(true, 3).baz",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
     assert_checks(
+      heap,
       "Test.init(true, 3).bazWithTypeParam",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
     assert_checks(
+      heap,
       "Test.init(true, 3).bazWithTypeParam<int>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
     assert_checks(
+      heap,
       "Test.init(true, 3).bazWithUsefulTypeParam<int>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
 
     assert_errors(
+      heap,
       "3.foo",
       &builder.int_type(),
       vec![
@@ -703,40 +819,46 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).bazz",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:20-1:24: [UnresolvedName]: Name `bazz` is not resolved."],
     );
     assert_errors(
+      heap,
       "{ val _ = (t3: Test3<bool>) -> t3.bar; }",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:35-1:38: [UnresolvedName]: Name `bar` is not resolved."],
     );
     assert_errors_with_class(
+      heap,
       "Test2.Foo(true).foo",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:17-1:20: [UnresolvedName]: Name `foo` is not resolved."],
       "Test2",
     );
-    assert_errors("Test.init(true, 3).foo<int>", &builder.bool_type(), vec![
+    assert_errors(heap, "Test.init(true, 3).foo<int>", &builder.bool_type(), vec![
       "__DUMMY__.sam:1:1-1:28: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.",
     ]);
     assert_errors(
+      heap,
       "Test.init(true, 3).foo",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).bar",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).baz",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`."],
     );
-    assert_errors(
+    assert_errors(heap,
       "Test.init(true, 3).baz<int>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
       vec![
@@ -744,6 +866,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).bazWithTypeParam",
       &builder.int_type(),
       vec![
@@ -753,6 +876,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).bazWithTypeParam",
       &builder.fun_type(vec![builder.int_type(), builder.int_type()], builder.bool_type()),
       vec![
@@ -762,6 +886,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).bazWithTypeParam<int, int>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
       vec![
@@ -769,6 +894,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).bazWithUsefulTypeParam<bool>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
       vec![
@@ -776,6 +902,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).baz",
       &builder.fun_type(vec![builder.bool_type()], builder.int_type()),
       vec![
@@ -783,15 +910,15 @@ mod tests {
       ],
     );
 
-    assert_errors("{ val _ = (t) -> t.foo; }", &builder.unit_type(), vec![
+    assert_errors(heap, "{ val _ = (t) -> t.foo; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
       "__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.",
     ]);
-    assert_errors("{ val _ = (t) -> t.bar; }", &builder.unit_type(), vec![
+    assert_errors(heap, "{ val _ = (t) -> t.bar; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
       "__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.",
     ]);
-    assert_errors("{ val _ = (t) -> t.baz; }", &builder.unit_type(), vec![
+    assert_errors(heap, "{ val _ = (t) -> t.baz; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
       "__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.",
     ]);
@@ -799,26 +926,30 @@ mod tests {
 
   #[test]
   fn function_call_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
-    assert_checks("Builtins.panic(\"\")", &builder.unit_type());
-    assert_checks("Builtins.panic(\"\")", &builder.bool_type());
-    assert_checks("Builtins.panic(\"\")", &builder.int_type());
-    assert_checks("Builtins.panic(\"\")", &builder.string_type());
+    assert_checks(heap, "Builtins.panic(\"\")", &builder.unit_type());
+    assert_checks(heap, "Builtins.panic(\"\")", &builder.bool_type());
+    assert_checks(heap, "Builtins.panic(\"\")", &builder.int_type());
+    assert_checks(heap, "Builtins.panic(\"\")", &builder.string_type());
     assert_checks(
+      heap,
       "Builtins.panic(\"\")",
       &builder.fun_type(vec![builder.int_type(), builder.bool_type()], builder.string_type()),
     );
-    assert_checks("Test.helloWorld(\"\")", &builder.unit_type());
-    assert_checks("Test.init(true, 3).fff()", &builder.string_type());
-    assert_checks("((i: int) -> true)(3)", &builder.bool_type());
+    assert_checks(heap, "Test.helloWorld(\"\")", &builder.unit_type());
+    assert_checks(heap, "Test.init(true, 3).fff()", &builder.string_type());
+    assert_checks(heap, "((i: int) -> true)(3)", &builder.bool_type());
 
     assert_errors(
+      heap,
       "Builtins.panic(3)",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:16-1:17: [UnexpectedType]: Expected: `string`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "3(3)",
       &builder.unit_type(),
       vec![
@@ -826,91 +957,104 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "Test.helloWorld(3)",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:17-1:18: [UnexpectedType]: Expected: `string`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).fff()",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:1-1:25: [UnexpectedType]: Expected: `int`, actual: `string`."],
     );
     assert_errors(
+      heap,
       "((i: int) -> true)({})",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:20-1:22: [UnexpectedType]: Expected: `int`, actual: `unit`."],
     );
     assert_errors(
+      heap,
       "Test.helloWorld(\"\")",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:1-1:20: [UnexpectedType]: Expected: `bool`, actual: `unit`."],
     );
     assert_errors(
+      heap,
       "Test.init(true, 3).baz(3)",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:1-1:26: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "((i: int) -> true)(3)",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:2-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
-    assert_errors("Test.init(true, 3).bazWithTypeParam(1)", &builder.bool_type(), vec![
+    assert_errors(heap, "Test.init(true, 3).bazWithTypeParam(1)", &builder.bool_type(), vec![
       "__DUMMY__.sam:1:1-1:39: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression."
     ]);
   }
 
   #[test]
   fn unary_binary_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
-    assert_checks("-(1)", &builder.int_type());
-    assert_checks("!true", &builder.bool_type());
-    assert_checks("!false", &builder.bool_type());
-    assert_checks("1 * 1", &builder.int_type());
-    assert_checks("1 - 1", &builder.int_type());
-    assert_checks("1 % 1", &builder.int_type());
-    assert_checks("1 + 1", &builder.int_type());
-    assert_checks("1 - 1", &builder.int_type());
-    assert_checks("1 < 1", &builder.bool_type());
-    assert_checks("1 <= 1", &builder.bool_type());
-    assert_checks("1 > 1", &builder.bool_type());
-    assert_checks("1 >= 1", &builder.bool_type());
-    assert_checks("true || false", &builder.bool_type());
-    assert_checks("false && true", &builder.bool_type());
-    assert_checks("\"false\" :: \"string\"", &builder.string_type());
-    assert_checks("1 == 1", &builder.bool_type());
-    assert_checks("true == false", &builder.bool_type());
-    assert_checks("false != true", &builder.bool_type());
-    assert_checks("\"\" != \"3\"", &builder.bool_type());
-    assert_checks("{ val _ = (t: string, f: string) -> t == f; }", &builder.unit_type());
+    assert_checks(heap, "-(1)", &builder.int_type());
+    assert_checks(heap, "!true", &builder.bool_type());
+    assert_checks(heap, "!false", &builder.bool_type());
+    assert_checks(heap, "1 * 1", &builder.int_type());
+    assert_checks(heap, "1 - 1", &builder.int_type());
+    assert_checks(heap, "1 % 1", &builder.int_type());
+    assert_checks(heap, "1 + 1", &builder.int_type());
+    assert_checks(heap, "1 - 1", &builder.int_type());
+    assert_checks(heap, "1 < 1", &builder.bool_type());
+    assert_checks(heap, "1 <= 1", &builder.bool_type());
+    assert_checks(heap, "1 > 1", &builder.bool_type());
+    assert_checks(heap, "1 >= 1", &builder.bool_type());
+    assert_checks(heap, "true || false", &builder.bool_type());
+    assert_checks(heap, "false && true", &builder.bool_type());
+    assert_checks(heap, "\"false\" :: \"string\"", &builder.string_type());
+    assert_checks(heap, "1 == 1", &builder.bool_type());
+    assert_checks(heap, "true == false", &builder.bool_type());
+    assert_checks(heap, "false != true", &builder.bool_type());
+    assert_checks(heap, "\"\" != \"3\"", &builder.bool_type());
+    assert_checks(heap, "{ val _ = (t: string, f: string) -> t == f; }", &builder.unit_type());
 
     assert_errors(
+      heap,
       "-(false)",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:3-1:8: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "!1",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:2-1:3: [UnexpectedType]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "-(1+1)",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "!true",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "!false",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "\"1\" * \"1\"",
       &builder.int_type(),
       vec![
@@ -919,26 +1063,31 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "\"1\" - 1",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`."],
     );
     assert_errors(
+      heap,
       "1 % \"1\"",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:5-1:8: [UnexpectedType]: Expected: `int`, actual: `string`."],
     );
     assert_errors(
+      heap,
       "1 + false",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:5-1:10: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "false - 1",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "\"\" < false",
       &builder.bool_type(),
       vec![
@@ -947,26 +1096,31 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "1 <= false",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "1 > \"\"",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:5-1:7: [UnexpectedType]: Expected: `int`, actual: `string`."],
     );
     assert_errors(
+      heap,
       "true >= 1",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:1-1:5: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "false || 4",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:10-1:11: [UnexpectedType]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "2 && 3",
       &builder.bool_type(),
       vec![
@@ -975,101 +1129,121 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "1 == false",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "true == 3",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "true != 3",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "\"\" != 3",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:7-1:8: [UnexpectedType]: Expected: `string`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "{ val _ = (t: int, f: bool) -> t == f; }",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:37-1:38: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "1 * 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "1 - 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "1 % 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "1 + 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "1 - 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "1 < 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "1 <= 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "1 > 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "1 >= 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "true || false",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "false && true",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "1 == 1",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "true == false",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "true != true",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:13: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "\"\" != \"3\"",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:1-1:10: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
@@ -1078,26 +1252,31 @@ mod tests {
 
   #[test]
   fn control_flow_expressions_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
-    assert_checks("if true then false else true", &builder.bool_type());
-    assert_checks("if false then 1 else 0", &builder.int_type());
-    assert_checks("if false then \"\" else \"\"", &builder.string_type());
+    assert_checks(heap, "if true then false else true", &builder.bool_type());
+    assert_checks(heap, "if false then 1 else 0", &builder.int_type());
+    assert_checks(heap, "if false then \"\" else \"\"", &builder.string_type());
     assert_checks(
+      heap,
       "{ val _ = (b: bool, t: int, f: int) -> if b then t else f; }",
       &builder.unit_type(),
     );
     assert_checks(
+      heap,
       "{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }",
       &builder.unit_type(),
     );
     assert_errors_with_class(
+      heap,
       "{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }",
       &builder.unit_type(),
       vec![],
       "Test2",
     );
     assert_errors_with_class(
+      heap,
       "{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar d -> 2 }; }",
       &builder.unit_type(),
       vec![],
@@ -1105,21 +1284,25 @@ mod tests {
     );
 
     assert_errors(
+      heap,
       "if true then false else 1",
       &builder.bool_type(),
       vec!["__DUMMY__.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "if false then 1 else false",
       &builder.int_type(),
       vec!["__DUMMY__.sam:1:22-1:27: [UnexpectedType]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
+      heap,
       "if false then \"\" else 3",
       &builder.string_type(),
       vec!["__DUMMY__.sam:1:23-1:24: [UnexpectedType]: Expected: `string`, actual: `int`."],
     );
     assert_errors(
+      heap,
       r#"{
   val _ = (b: bool, t: bool, f: int) -> (
     if b then t else f
@@ -1129,6 +1312,7 @@ mod tests {
       vec!["__DUMMY__.sam:3:22-3:23: [UnexpectedType]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
+      heap,
       "match (3) { | Foo _ -> 1 | Bar s -> 2 }",
       &builder.unit_type(),
       vec![
@@ -1136,6 +1320,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "match (Test.init(true, 3)) { | Foo _ -> 1 | Bar s -> 2 }",
       &builder.unit_type(),
       vec![
@@ -1144,7 +1329,7 @@ mod tests {
       ],
     );
     assert_errors_with_class(
-      "{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Baz s -> 2 }; }",
+      heap,"{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Baz s -> 2 }; }",
       &builder.unit_type(),
       vec![
         "__DUMMY__.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].",
@@ -1156,19 +1341,25 @@ mod tests {
 
   #[test]
   fn lambdas_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
     assert_checks(
+      heap,
       "{val _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) then b else c;}",
       &builder.unit_type(),
     );
-    assert_checks("(a) -> a", &builder.fun_type(vec![builder.int_type()], builder.int_type()));
+    assert_checks(
+      heap,
+      "(a) -> a",
+      &builder.fun_type(vec![builder.int_type()], builder.int_type()),
+    );
 
-    assert_errors("(a) -> a", &builder.fun_type(vec![], builder.int_type()), vec![
+    assert_errors(heap, "(a) -> a", &builder.fun_type(vec![], builder.int_type()), vec![
       "__DUMMY__.sam:1:1-1:9: [ArityMismatchError]: Incorrect function arguments size. Expected: 0, actual: 1.",
       "__DUMMY__.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
     ]);
-    assert_errors("(a) -> a", &builder.int_type(), vec![
+    assert_errors(heap, "(a) -> a", &builder.int_type(), vec![
       "__DUMMY__.sam:1:1-1:9: [UnexpectedType]: Expected: `int`, actual: `(unknown) -> unknown`.",
       "__DUMMY__.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
     ]);
@@ -1176,22 +1367,31 @@ mod tests {
 
   #[test]
   fn blocks_checker_test() {
+    let heap = &mut Heap::new();
     let builder = test_builder::create();
 
-    assert_errors_with_class("{val {a, b as c} = A.init();}", &builder.unit_type(), vec![], "A");
-    assert_checks("{val a = 1;}", &builder.unit_type());
-    assert_checks("{val a = 1; val b = true;}", &builder.unit_type());
-    assert_checks("{val a = 1; a}", &builder.int_type());
-    assert_checks("{1}", &builder.int_type());
-    assert_checks("{}", &builder.unit_type());
-    assert_checks("{{{{}}}}", &builder.unit_type());
+    assert_errors_with_class(
+      heap,
+      "{val {a, b as c} = A.init();}",
+      &builder.unit_type(),
+      vec![],
+      "A",
+    );
+    assert_checks(heap, "{val a = 1;}", &builder.unit_type());
+    assert_checks(heap, "{val a = 1; val b = true;}", &builder.unit_type());
+    assert_checks(heap, "{val a = 1; a}", &builder.int_type());
+    assert_checks(heap, "{1}", &builder.int_type());
+    assert_checks(heap, "{}", &builder.unit_type());
+    assert_checks(heap, "{{{{}}}}", &builder.unit_type());
 
     assert_errors(
+      heap,
       "{val {a, b as c} = A.init();}",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved."],
     );
     assert_errors(
+      heap,
       "{val {a, b as c} = C.init();}",
       &builder.unit_type(),
       vec![
@@ -1200,6 +1400,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "{val {a, b as c} = 1;}",
       &builder.unit_type(),
       vec![
@@ -1207,6 +1408,7 @@ mod tests {
       ],
     );
     assert_errors(
+      heap,
       "{val {a, d as c} = A.init();}",
       &builder.unit_type(),
       vec!["__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `d` is not resolved."],
@@ -1218,6 +1420,7 @@ mod tests {
     let builder = test_builder::create();
 
     assert_errors(
+      &mut Heap::new(),
       r#"{
   val _ = (() -> true)(1);
   val _: string = Test.generic1(
@@ -1247,6 +1450,7 @@ mod tests {
     let builder = test_builder::create();
 
     assert_checks(
+      &mut Heap::new(),
       r#"{
   val f = (a: int, b: int, c: int) -> {
     val f = (d: int, e: int) -> a + b + c + d + e;
@@ -1261,14 +1465,15 @@ mod tests {
   }
 
   fn assert_module_errors(sources: Vec<(&'static str, &str)>, expected_errors: Vec<&str>) {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let mut unchecked_sources = HashMap::new();
     for (mod_ref_str, source) in sources {
       let mod_ref = ModuleReference::ordinary(vec![rcs(mod_ref_str)]);
-      let parsed = parse_source_module_from_text(source, &mod_ref, &mut error_set);
+      let parsed = parse_source_module_from_text(source, &mod_ref, &mut heap, &mut error_set);
       unchecked_sources.insert(mod_ref, parsed);
     }
-    type_check_sources(unchecked_sources, &mut error_set);
+    type_check_sources(unchecked_sources, &mut heap, &mut error_set);
     assert_eq!(expected_errors, error_set.error_messages());
   }
 
@@ -1509,13 +1714,16 @@ class Main {
         .len()
     );
 
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     type_check_single_module_source(
       parse_source_module_from_text(
         source,
         &ModuleReference::ordinary(vec![rcs("Test")]),
+        &mut heap,
         &mut error_set,
       ),
+      &mut heap,
       &mut error_set,
     );
     assert_eq!(

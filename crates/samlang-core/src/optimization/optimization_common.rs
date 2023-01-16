@@ -86,7 +86,7 @@ impl Ord for BindedValue {
   }
 }
 
-pub(super) type LocalValueContextForOptimization = LocalStackedContext<Expression>;
+pub(super) type LocalValueContextForOptimization = LocalStackedContext<Str, Expression>;
 
 impl LocalValueContextForOptimization {
   pub(super) fn checked_bind(&mut self, name: &Str, expression: Expression) {
@@ -149,8 +149,10 @@ mod tests {
     });
     let bv2 =
       BindedValue::Binary(BinaryBindedValue { operator: Operator::PLUS, e1: ZERO, e2: ZERO });
-    assert_eq!("0[0]", bv1.clone().to_string());
-    assert_eq!("(0+0)", bv2.clone().to_string());
+    assert_eq!("0[0]", bv1.to_string());
+    assert_eq!("(0+0)", bv2.to_string());
+    let _ = bv1.clone();
+    let _ = bv2.clone();
     assert!(bv1.eq(&bv1));
     assert!(bv2.eq(&bv2));
   }

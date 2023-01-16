@@ -587,16 +587,16 @@ class Main {
         AutoCompletionItem {
           kind: CompletionItemKind::Function,
           insert_text_format: InsertTextFormat::Snippet,
-          detail: "<T>((Pair<T, List<T>>) -> List<T>)".to_string(),
-          insert_text: "Cons($0)$1".to_string(),
-          label: "Cons(a0: Pair<T, List<T>>): List<T>".to_string(),
+          detail: "<T>((unit) -> List<T>)".to_string(),
+          insert_text: "Nil($0)$1".to_string(),
+          label: "Nil(a0: unit): List<T>".to_string(),
         },
         AutoCompletionItem {
           kind: CompletionItemKind::Function,
           insert_text_format: InsertTextFormat::Snippet,
-          detail: "<T>((unit) -> List<T>)".to_string(),
-          insert_text: "Nil($0)$1".to_string(),
-          label: "Nil(a0: unit): List<T>".to_string(),
+          detail: "<T>((Pair<T, List<T>>) -> List<T>)".to_string(),
+          insert_text: "Cons($0)$1".to_string(),
+          label: "Cons(a0: Pair<T, List<T>>): List<T>".to_string(),
         },
         AutoCompletionItem {
           kind: CompletionItemKind::Function,

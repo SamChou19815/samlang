@@ -6,7 +6,7 @@ mod tests {
       Location, ModuleReference,
     },
     checker::{ssa_analysis, typing_context::LocalTypingContext},
-    common::boxed,
+    common::{Heap, PStr},
     errors::ErrorSet,
     parser,
   };
@@ -14,6 +14,7 @@ mod tests {
 
   #[test]
   fn method_access_coverage_hack() {
+    let heap = Heap::new();
     // method access can never be produced by the parser, but we need coverage anyways...
     let mut error_set = ErrorSet::new();
     let builder = test_builder::create();
@@ -21,16 +22,18 @@ mod tests {
       &expr::E::MethodAccess(expr::MethodAccess {
         common: builder.expr_common(builder.bool_type()),
         type_arguments: vec![builder.bool_type()],
-        object: boxed(builder.true_expr()),
-        method_name: Id::from("name"),
+        object: Box::new(builder.true_expr()),
+        method_name: Id::from(PStr::permanent("name")),
       }),
+      &heap,
       &mut error_set,
     )
-    .to_string();
+    .to_string(&heap);
   }
 
   #[test]
   fn expression_test() {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let expr_str = r#"{
   val a: int = 3;
@@ -51,6 +54,7 @@ mod tests {
     let expr = parser::parse_source_expression_from_text(
       expr_str,
       &ModuleReference::dummy(),
+      &mut heap,
       &mut error_set,
     );
     assert!(!error_set.has_errors());
@@ -70,25 +74,27 @@ def_to_use_map:
 7:13-7:14 -> [7:13-7:14, 7:18-7:19]
 "#
     .trim();
-    let analysis_result = ssa_analysis::perform_ssa_analysis_on_expression(&expr, &mut error_set);
-    assert_eq!(expected, analysis_result.to_string().trim());
+    let analysis_result =
+      ssa_analysis::perform_ssa_analysis_on_expression(&expr, &heap, &mut error_set);
+    assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
     let builder = test_builder::create();
     let mut cx = LocalTypingContext::new(analysis_result);
     cx.write(Location::from_pos(1, 6, 1, 7), builder.bool_type());
-    assert_eq!("bool", cx.read(&Location::from_pos(3, 10, 3, 11)).pretty_print());
-    assert_eq!("unknown", cx.read(&Location::from_pos(3, 10, 3, 12)).pretty_print());
+    assert_eq!("bool", cx.read(&Location::from_pos(3, 10, 3, 11)).pretty_print(&heap));
+    assert_eq!("unknown", cx.read(&Location::from_pos(3, 10, 3, 12)).pretty_print(&heap));
     assert_eq!(
       vec!["a"],
-      cx.get_captured(&Location::from_pos(10, 4, 10, 56))
+      cx.get_captured(&heap, &Location::from_pos(10, 4, 10, 56))
         .keys()
-        .map(|l| l.to_string())
+        .map(|l| l.as_str(&heap))
         .collect::<Vec<_>>()
     );
   }
 
   #[test]
   fn toplevel_tests() {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let program_str = r#"
 import { Pair } from tests.StdLib
@@ -114,8 +120,12 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
 class MultiInvalidDef<T, T> {}
 "#;
-    let module =
-      parser::parse_source_module_from_text(program_str, &ModuleReference::dummy(), &mut error_set);
+    let module = parser::parse_source_module_from_text(
+      program_str,
+      &ModuleReference::dummy(),
+      &mut heap,
+      &mut error_set,
+    );
     assert!(!error_set.has_errors());
     let expected = r#"
 Unbound names: []
@@ -158,12 +168,13 @@ def_to_use_map:
 7:18-7:23 -> [7:18-7:23]
 "#
     .trim();
-    let analysis_result = ssa_analysis::perform_ssa_analysis_on_module(&module, &mut error_set);
-    assert_eq!(expected, analysis_result.to_string().trim());
+    let analysis_result =
+      ssa_analysis::perform_ssa_analysis_on_module(&module, &heap, &mut error_set);
+    assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
     let builder = test_builder::create();
     let mut cx = LocalTypingContext::new(analysis_result);
     cx.write(Location::from_pos(13, 6, 13, 10), builder.bool_type());
-    assert!(cx.get_captured(&Location::from_pos(17, 39, 17, 54)).is_empty());
+    assert!(cx.get_captured(&heap, &Location::from_pos(17, 39, 17, 54)).is_empty());
   }
 }

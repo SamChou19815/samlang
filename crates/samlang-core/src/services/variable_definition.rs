@@ -4,41 +4,33 @@ use crate::{
       expr, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition, Id,
       Module, OptionallyAnnotatedId, Toplevel,
     },
-    Location, ModuleReference,
+    Location,
   },
   checker::{perform_ssa_analysis_on_module, SsaAnalysisResult},
-  common::rc_string,
+  common::{Heap, PStr},
   errors::ErrorSet,
 };
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 pub(super) struct DefinitionAndUses {
   pub(super) definition_location: Location,
   pub(super) use_locations: Vec<Location>,
 }
 
-pub(super) struct VariableDefinitionLookup(HashMap<ModuleReference, SsaAnalysisResult>);
+pub(super) struct VariableDefinitionLookup(SsaAnalysisResult);
 
 impl VariableDefinitionLookup {
-  pub(super) fn new(sources: &HashMap<ModuleReference, Module>) -> VariableDefinitionLookup {
+  pub(super) fn new(heap: &Heap, module: &Module) -> VariableDefinitionLookup {
     let mut error_set = ErrorSet::new();
-    VariableDefinitionLookup(
-      sources
-        .iter()
-        .map(|(mod_ref, module)| {
-          (mod_ref.clone(), perform_ssa_analysis_on_module(module, &mut error_set))
-        })
-        .collect::<HashMap<_, _>>(),
-    )
+    VariableDefinitionLookup(perform_ssa_analysis_on_module(module, heap, &mut error_set))
   }
 
   pub(super) fn find_all_definition_and_uses(
     &self,
     location: &Location,
   ) -> Option<DefinitionAndUses> {
-    let module_scoped_ssa = self.0.get(&location.module_reference)?;
-    let def_loc = module_scoped_ssa.use_define_map.get(location).unwrap_or(location);
-    let mut use_locations = module_scoped_ssa.def_to_use_map.get(def_loc)?.clone();
+    let def_loc = self.0.use_define_map.get(location).unwrap_or(location);
+    let mut use_locations = self.0.def_to_use_map.get(def_loc)?.clone();
     use_locations.sort_by_key(|l| l.to_string());
     Some(DefinitionAndUses { definition_location: def_loc.clone(), use_locations })
   }
@@ -60,15 +52,11 @@ fn get_relevant_in_ranges(
   locations
 }
 
-fn mod_id(id: &Id, new_name: &str) -> Id {
-  Id {
-    loc: id.loc.clone(),
-    associated_comments: id.associated_comments.clone(),
-    name: rc_string(new_name.to_string()),
-  }
+fn mod_id(id: &Id, new_name: PStr) -> Id {
+  Id { loc: id.loc.clone(), associated_comments: id.associated_comments.clone(), name: new_name }
 }
 
-fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: &str) -> Id {
+fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) -> Id {
   if id.loc.eq(&definition_and_uses.definition_location) {
     mod_id(id, new_name)
   } else {
@@ -79,7 +67,7 @@ fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: &str) 
 fn apply_expr_renaming(
   expr: &expr::E,
   definition_and_uses: &DefinitionAndUses,
-  new_name: &str,
+  new_name: PStr,
 ) -> expr::E {
   let relevant_in_range = get_relevant_in_ranges(expr.loc(), definition_and_uses);
   if relevant_in_range.is_empty() {
@@ -214,11 +202,8 @@ fn apply_expr_renaming(
                   .collect(),
               ),
               expr::Pattern::Id(l, name) => {
-                let name = if l.eq(&definition_and_uses.definition_location) {
-                  rc_string(new_name.to_string())
-                } else {
-                  name.clone()
-                };
+                let name =
+                  if l.eq(&definition_and_uses.definition_location) { new_name } else { *name };
                 expr::Pattern::Id(l.clone(), name)
               }
               expr::Pattern::Wildcard(_) => pattern.clone(),
@@ -243,7 +228,7 @@ fn apply_expr_renaming(
 pub(super) fn apply_renaming(
   Module { imports, toplevels }: &Module,
   definition_and_uses: &DefinitionAndUses,
-  new_name: &str,
+  new_name: PStr,
 ) -> Module {
   Module {
     imports: imports.clone(),
@@ -308,20 +293,18 @@ pub(super) fn apply_renaming(
 
 #[cfg(test)]
 mod tests {
-  use pretty_assertions::assert_eq;
-
   use super::{apply_expr_renaming, apply_renaming, DefinitionAndUses, VariableDefinitionLookup};
   use crate::{
     ast::{
       source::{expr, test_builder, Id, Module},
       Location, ModuleReference, Position,
     },
-    common::rcs,
+    common::{Heap, PStr},
     errors::ErrorSet,
     parser::parse_source_module_from_text,
     printer,
   };
-  use std::collections::HashMap;
+  use pretty_assertions::assert_eq;
 
   #[should_panic]
   #[test]
@@ -332,29 +315,33 @@ mod tests {
         common: builder.expr_common(builder.int_type()),
         type_arguments: vec![],
         object: Box::new(builder.zero_expr()),
-        method_name: Id::from(""),
+        method_name: Id::from(PStr::permanent("")),
       }),
       &DefinitionAndUses {
         definition_location: Location::dummy(),
         use_locations: vec![Location::dummy()],
       },
-      &rcs(""),
+      PStr::permanent(""),
     );
   }
 
-  fn parse(source: &str) -> Module {
+  fn parse(source: &str) -> (Heap, Module) {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let module = parse_source_module_from_text(source, &ModuleReference::dummy(), &mut error_set);
+    let module =
+      parse_source_module_from_text(source, &ModuleReference::dummy(), &mut heap, &mut error_set);
     assert!(!error_set.has_errors());
-    module
+    (heap, module)
   }
 
-  fn new_lookup(module: Module) -> VariableDefinitionLookup {
-    VariableDefinitionLookup::new(&HashMap::from([(ModuleReference::dummy(), module)]))
+  fn new_lookup(heap: &Heap, module: Module) -> VariableDefinitionLookup {
+    VariableDefinitionLookup::new(heap, &module)
   }
 
-  fn prepare_lookup(source: &str) -> VariableDefinitionLookup {
-    new_lookup(parse(source))
+  fn prepare_lookup(source: &str) -> (Heap, VariableDefinitionLookup) {
+    let (heap, module) = parse(source);
+    let lookup = new_lookup(&heap, module);
+    (heap, lookup)
   }
 
   fn loc_to_string(location: &Location) -> String {
@@ -370,18 +357,15 @@ mod tests {
 
   #[test]
   fn basic_test() {
-    assert!(query(
-      &prepare_lookup(
-        r#"class Main {
-  function test(a: int, b: bool): unit = { }
+    let (_, lookup) = prepare_lookup(
+      r#"class Main {
+function test(a: int, b: bool): unit = { }
 }
 
 interface Foo {}
 "#,
-      ),
-      Location::dummy()
-    )
-    .is_none());
+    );
+    assert!(query(&lookup, Location::dummy()).is_none());
   }
 
   fn assert_lookup(
@@ -412,7 +396,7 @@ class Main {
   }
 }
 "#;
-    let lookup = prepare_lookup(source);
+    let (_, lookup) = prepare_lookup(source);
 
     assert_lookup(
       &lookup,
@@ -456,7 +440,8 @@ class Main {
 
 interface Foo {}
 "#;
-    let lookup = prepare_lookup(source);
+    let (heap, lookup) = prepare_lookup(source);
+    let (_, parsed) = parse(source);
     assert_eq!(
       r#"class Main {
   function test(renAmeD: int, b: bool): unit = {
@@ -467,11 +452,12 @@ interface Foo {}
 interface Foo
 "#,
       printer::pretty_print_source_module(
+        &heap,
         60,
         &apply_renaming(
-          &parse(source),
+          &parsed,
           &lookup.find_all_definition_and_uses(&Location::from_pos(3, 12, 3, 13)).unwrap(),
-          &rcs("renAmeD")
+          PStr::permanent("renAmeD")
         )
       )
     );
@@ -479,18 +465,21 @@ interface Foo
 
   fn assert_correctly_rewritten(
     source: &str,
+    heap: &Heap,
     lookup: &VariableDefinitionLookup,
     location: Location,
     expected: &str,
   ) {
+    let (_, parsed) = parse(source);
     assert_eq!(
       expected,
       printer::pretty_print_source_module(
+        heap,
         60,
         &apply_renaming(
-          &parse(source),
+          &parsed,
           &lookup.find_all_definition_and_uses(&location).unwrap(),
-          &rcs("renAmeD")
+          PStr::permanent("renAmeD")
         )
       )
     );
@@ -513,7 +502,7 @@ class Main {
     }
   }
 }"#;
-    let lookup = prepare_lookup(source);
+    let (heap, lookup) = prepare_lookup(source);
 
     assert!(lookup
       .find_all_definition_and_uses(&Location {
@@ -532,6 +521,7 @@ class Main {
 
     assert_correctly_rewritten(
       source,
+      &heap,
       &lookup,
       Location::from_pos(3, 8, 3, 9),
       r#"class Main {
@@ -554,6 +544,7 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
+      &heap,
       &lookup,
       Location::from_pos(3, 12, 3, 13),
       r#"class Main {
@@ -576,6 +567,7 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
+      &heap,
       &lookup,
       Location::from_pos(5, 35, 5, 36),
       r#"class Main {
@@ -598,6 +590,7 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
+      &heap,
       &lookup,
       Location::from_pos(7, 12, 7, 13),
       r#"class Main {
@@ -620,6 +613,7 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
+      &heap,
       &lookup,
       Location::from_pos(7, 16, 7, 17),
       r#"class Main {
@@ -642,6 +636,7 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
+      &heap,
       &lookup,
       Location::from_pos(8, 22, 8, 23),
       r#"class Main {
@@ -664,6 +659,7 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
+      &heap,
       &lookup,
       Location::from_pos(11, 19, 11, 21),
       r#"class Main {

@@ -1,5 +1,6 @@
 use crate::{
   ast::{source, ModuleReference},
+  common::{Heap, PStr},
   errors::ErrorSet,
 };
 use std::collections::HashSet;
@@ -8,22 +9,23 @@ mod lexer;
 mod lexer_test;
 mod source_parser;
 
-fn builtin_classes() -> HashSet<String> {
-  let mut set = HashSet::new();
-  set.insert("Builtins".to_string());
-  set
+fn builtin_classes(heap: &mut Heap) -> HashSet<PStr> {
+  HashSet::from([heap.alloc_str("Builtins")])
 }
 
 pub(crate) fn parse_source_module_from_text(
   text: &str,
   module_reference: &ModuleReference,
+  heap: &mut Heap,
   error_set: &mut ErrorSet,
 ) -> source::Module {
+  let builtins = builtin_classes(heap);
   let mut parser = source_parser::SourceParser::new(
-    lexer::lex_source_program(text, module_reference.clone(), error_set),
+    lexer::lex_source_program(text, module_reference.clone(), heap, error_set),
+    heap,
     error_set,
     module_reference,
-    builtin_classes(),
+    builtins,
   );
   parser.parse_module()
 }
@@ -31,24 +33,28 @@ pub(crate) fn parse_source_module_from_text(
 pub(crate) fn parse_source_expression_from_text(
   text: &str,
   module_reference: &ModuleReference,
+  heap: &mut Heap,
   error_set: &mut ErrorSet,
 ) -> source::expr::E {
+  let builtins = builtin_classes(heap);
   let mut parser = source_parser::SourceParser::new(
-    lexer::lex_source_program(text, module_reference.clone(), error_set),
+    lexer::lex_source_program(text, module_reference.clone(), heap, error_set),
+    heap,
     error_set,
     module_reference,
-    builtin_classes(),
+    builtins,
   );
   parser.parse_expression()
 }
 
 pub(crate) fn parse_sources_with_invalid_modules_dropped(
   source_handles: Vec<(ModuleReference, &str)>,
+  heap: &mut Heap,
 ) -> Vec<(ModuleReference, source::Module)> {
   let mut error_set = ErrorSet::new();
   let mut parsed = vec![];
   for (mod_ref, source) in source_handles {
-    let module = parse_source_module_from_text(source, &mod_ref, &mut error_set);
+    let module = parse_source_module_from_text(source, &mod_ref, heap, &mut error_set);
     if !error_set.module_has_error(&mod_ref) {
       parsed.push((mod_ref.clone(), module));
     }
@@ -63,8 +69,9 @@ mod tests {
   use itertools::Itertools;
 
   fn expect_good_expr(text: &str) {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    parse_source_expression_from_text(text, &ModuleReference::dummy(), &mut error_set);
+    parse_source_expression_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
     assert_eq!("", error_set.error_messages().join("\n"));
   }
 
@@ -130,8 +137,9 @@ mod tests {
   }
 
   fn expect_bad_expr(text: &str) {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    parse_source_expression_from_text(text, &ModuleReference::dummy(), &mut error_set);
+    parse_source_expression_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
     assert_ne!("", error_set.error_messages().join("\n"));
   }
 
@@ -179,6 +187,7 @@ mod tests {
 
   #[test]
   fn test_can_parse_good_programs() {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let text = r#"
     // Adapted from website
@@ -246,7 +255,8 @@ mod tests {
       }
     }
 "#;
-    let parsed = &parse_source_module_from_text(text, &ModuleReference::dummy(), &mut error_set);
+    let parsed =
+      &parse_source_module_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
     let errors = error_set.error_messages();
     assert_eq!("", errors.join("\n"));
     assert_eq!(1, parsed.imports.len());
@@ -257,7 +267,7 @@ mod tests {
         .iter()
         .filter_map(|it| {
           match it {
-            source::Toplevel::Class(c) => Some(c.name.name.to_string()),
+            source::Toplevel::Class(c) => Some(c.name.name.as_str(&heap).to_string()),
             source::Toplevel::Interface(_) => None,
           }
         })
@@ -267,6 +277,7 @@ mod tests {
 
   #[test]
   fn test_can_handle_bad_programs() {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let text = r#"
     // Adapted from website
@@ -294,7 +305,8 @@ mod tests {
       }
     }
 "#;
-    let module = parse_source_module_from_text(text, &ModuleReference::dummy(), &mut error_set);
+    let module =
+      parse_source_module_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
 
     assert_eq!(1, module.imports.len());
     assert!(!error_set.errors().is_empty())
@@ -302,6 +314,7 @@ mod tests {
 
   #[test]
   fn test_can_handle_really_bad_programs() {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let text = r#"
     import {Foo} from 3.2
@@ -323,16 +336,18 @@ mod tests {
       }
     }
 "#;
-    parse_source_module_from_text(text, &ModuleReference::dummy(), &mut error_set);
+    parse_source_module_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
     assert!(!error_set.errors().is_empty())
   }
 
   #[test]
   fn test_can_handle_complete_trash() {
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     parse_source_module_from_text(
       "This is not a program.",
       &ModuleReference::dummy(),
+      &mut heap,
       &mut error_set,
     );
     let expected_errors =vec![
@@ -348,12 +363,13 @@ mod tests {
 
   #[test]
   fn parse_sources_test() {
+    let mut heap = Heap::new();
     let modules = vec![
       // good
       (ModuleReference::ordinary(vec![rcs("Test1")]), "class Main { function main(): unit = {} }"),
       // bad
       (ModuleReference::ordinary(vec![rcs("Test2")]), "class Main { function main(): unt = {} }"),
     ];
-    assert_eq!(1, parse_sources_with_invalid_modules_dropped(modules).len());
+    assert_eq!(1, parse_sources_with_invalid_modules_dropped(modules, &mut heap).len());
   }
 }

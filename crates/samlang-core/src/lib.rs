@@ -1,7 +1,9 @@
 #![allow(dead_code, clippy::upper_case_acronyms, clippy::or_fun_call, clippy::expect_fun_call)]
+#![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
 #![cfg_attr(coverage_nightly, feature(no_coverage))]
 
 pub use common::measure_time;
+use common::Heap;
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
@@ -18,13 +20,18 @@ mod printer;
 pub mod services;
 
 pub fn reformat_source(source: &str) -> String {
+  let mut heap = Heap::new();
   let mut error_set = errors::ErrorSet::new();
-  let module =
-    parser::parse_source_module_from_text(source, &ast::ModuleReference::dummy(), &mut error_set);
+  let module = parser::parse_source_module_from_text(
+    source,
+    &ast::ModuleReference::dummy(),
+    &mut heap,
+    &mut error_set,
+  );
   if error_set.has_errors() {
     source.to_string()
   } else {
-    printer::pretty_print_source_module(100, &module)
+    printer::pretty_print_source_module(&heap, 100, &module)
   }
 }
 
@@ -43,6 +50,7 @@ pub fn compile_sources(
 ) -> Result<SourcesCompilationResult, Vec<String>> {
   let checker::TypeCheckSourceHandlesResult {
     checked_sources,
+    heap,
     global_typing_context: _,
     compile_time_errors,
   } = measure_time(enable_profiling, "Type checking", || {
@@ -62,7 +70,7 @@ pub fn compile_sources(
   }
 
   let unoptimized_hir_sources = measure_time(enable_profiling, "Compile to HIR", || {
-    compiler::compile_sources_to_hir(&checked_sources)
+    compiler::compile_sources_to_hir(&heap, &checked_sources)
   });
   let optimized_hir_sources = measure_time(enable_profiling, "Optimize HIR", || {
     optimization::optimize_sources(

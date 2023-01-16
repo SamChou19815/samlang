@@ -15,7 +15,7 @@ use crate::{
     },
     ModuleReference, Reason,
   },
-  common::{rcs, Str},
+  common::{Heap, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -26,21 +26,21 @@ use std::{
 };
 
 struct UnoptimizedInterfaceTypingContext {
-  functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
-  methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  functions: Rc<BTreeMap<PStr, Rc<MemberTypeInformation>>>,
+  methods: Rc<BTreeMap<PStr, Rc<MemberTypeInformation>>>,
   type_parameters: Vec<TypeParameterSignature>,
   extends_or_implements: Vec<IdType>,
 }
 
 struct UnoptimizedModuleTypingContext {
-  type_definitions: BTreeMap<Str, TypeDefinitionTypingContext>,
-  interfaces: BTreeMap<Str, UnoptimizedInterfaceTypingContext>,
-  classes: BTreeMap<Str, UnoptimizedInterfaceTypingContext>,
+  type_definitions: BTreeMap<PStr, TypeDefinitionTypingContext>,
+  interfaces: BTreeMap<PStr, UnoptimizedInterfaceTypingContext>,
+  classes: BTreeMap<PStr, UnoptimizedInterfaceTypingContext>,
 }
 
 struct InterfaceInliningCollector {
-  functions: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
-  methods: Rc<BTreeMap<Str, Rc<MemberTypeInformation>>>,
+  functions: Rc<BTreeMap<PStr, Rc<MemberTypeInformation>>>,
+  methods: Rc<BTreeMap<PStr, Rc<MemberTypeInformation>>>,
   super_types: Vec<IdType>,
 }
 
@@ -48,22 +48,23 @@ fn recursive_compute_interface_members_chain(
   interface_type: &IdType,
   unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   collector: &mut Vec<InterfaceInliningCollector>,
-  visited: &mut HashMap<ModuleReference, HashSet<Str>>,
+  visited: &mut HashMap<ModuleReference, HashSet<PStr>>,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) {
   match visited.get_mut(&interface_type.module_reference) {
     Some(visited_types) if visited_types.contains(&interface_type.id) => {
-      error_set.report_cyclic_type_definition_error(&Type::Id(interface_type.clone()));
+      error_set.report_cyclic_type_definition_error(
+        &interface_type.reason.use_loc,
+        &interface_type.pretty_print(heap),
+      );
       return;
     }
     Some(visited_types) => {
-      visited_types.insert(interface_type.id.clone());
+      visited_types.insert(interface_type.id);
     }
     None => {
-      visited.insert(
-        interface_type.module_reference.clone(),
-        HashSet::from([interface_type.id.clone()]),
-      );
+      visited.insert(interface_type.module_reference.clone(), HashSet::from([interface_type.id]));
     }
   }
   if let Some(interface_context) = unoptimized_global_typing_context
@@ -74,7 +75,7 @@ fn recursive_compute_interface_members_chain(
     for (tparam, targ) in
       interface_context.type_parameters.iter().zip(&interface_type.type_arguments)
     {
-      subst_mapping.insert(tparam.name.clone(), targ.clone());
+      subst_mapping.insert(tparam.name, targ.clone());
     }
     let mut inlined_methods = BTreeMap::new();
     for (name, method) in interface_context.methods.iter() {
@@ -85,12 +86,12 @@ fn recursive_compute_interface_members_chain(
           let bound = tparam.bound.as_ref().map(|t| {
             Rc::new(perform_id_type_substitution_asserting_id_type_return(t, &subst_mapping))
           });
-          TypeParameterSignature { name: tparam.name.clone(), bound }
+          TypeParameterSignature { name: tparam.name, bound }
         })
         .collect_vec();
       let type_ = perform_fn_type_substitution(&method.type_, &subst_mapping);
       inlined_methods.insert(
-        name.clone(),
+        *name,
         Rc::new(MemberTypeInformation { is_public: method.is_public, type_parameters, type_ }),
       );
     }
@@ -105,6 +106,7 @@ fn recursive_compute_interface_members_chain(
         unoptimized_global_typing_context,
         collector,
         visited,
+        heap,
         error_set,
       );
     }
@@ -119,6 +121,7 @@ fn recursive_compute_interface_members_chain(
 fn get_fully_inlined_interface_context(
   instantiated_interface_type: &IdType,
   unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> InterfaceInliningCollector {
   let mut collector = vec![];
@@ -128,6 +131,7 @@ fn get_fully_inlined_interface_context(
     unoptimized_global_typing_context,
     &mut collector,
     &mut visited,
+    heap,
     error_set,
   );
   let mut functions = BTreeMap::new();
@@ -150,6 +154,7 @@ fn get_fully_inlined_interface_context(
 fn check_class_member_conformance_with_signature(
   expected: &MemberTypeInformation,
   actual: &MemberTypeInformation,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) {
   if expected.type_parameters.len() != actual.type_parameters.len() {
@@ -180,33 +185,35 @@ fn check_class_member_conformance_with_signature(
   if has_type_parameter_conformance_errors {
     error_set.report_type_parameter_mismatch_error(
       &actual.type_.reason.use_loc,
-      &expected.type_parameters,
+      TypeParameterSignature::pretty_print_list(&expected.type_parameters, heap),
     );
   } else if !expected.type_.is_the_same_type(&actual.type_) {
     error_set.report_unexpected_type_error(
       &actual.type_.reason.use_loc,
-      &expected.type_,
-      &actual.type_,
+      expected.type_.pretty_print(heap),
+      actual.type_.pretty_print(heap),
     );
   }
 }
 
 fn validate_and_patch_member_map(
-  existing_map: &mut BTreeMap<Str, Rc<MemberTypeInformation>>,
-  newly_inlined_map: &BTreeMap<Str, Rc<MemberTypeInformation>>,
+  existing_map: &mut BTreeMap<PStr, Rc<MemberTypeInformation>>,
+  newly_inlined_map: &BTreeMap<PStr, Rc<MemberTypeInformation>>,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) {
   for (name, info) in newly_inlined_map {
     if let Some(existing) = existing_map.get(name) {
-      check_class_member_conformance_with_signature(existing, info, error_set);
+      check_class_member_conformance_with_signature(existing, info, heap, error_set);
     }
-    existing_map.insert(name.clone(), info.clone());
+    existing_map.insert(*name, info.clone());
   }
 }
 
 fn get_fully_inlined_multiple_interface_context(
   instantiated_interface_types: &Vec<IdType>,
   unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> InterfaceInliningCollector {
   let mut functions_acc = BTreeMap::new();
@@ -226,23 +233,24 @@ fn get_fully_inlined_multiple_interface_context(
       } else if !module_cx.interfaces.contains_key(&instantiated_interface_type.id) {
         error_set.report_unresolved_name_error(
           &instantiated_interface_type.reason.use_loc,
-          &instantiated_interface_type.id,
+          instantiated_interface_type.id.as_str(heap),
         );
       }
     } else {
       error_set.report_unresolved_name_error(
         &instantiated_interface_type.reason.use_loc,
-        &instantiated_interface_type.id,
+        instantiated_interface_type.id.as_str(heap),
       );
     }
 
     let inlined = get_fully_inlined_interface_context(
       instantiated_interface_type,
       unoptimized_global_typing_context,
+      heap,
       error_set,
     );
-    validate_and_patch_member_map(&mut functions_acc, &inlined.functions, error_set);
-    validate_and_patch_member_map(&mut methods_acc, &inlined.methods, error_set);
+    validate_and_patch_member_map(&mut functions_acc, &inlined.functions, heap, error_set);
+    validate_and_patch_member_map(&mut methods_acc, &inlined.methods, heap, error_set);
     super_types_acc.extend(inlined.super_types.into_iter());
   }
 
@@ -258,7 +266,7 @@ fn ast_type_params_to_sig_type_params(
 ) -> Vec<TypeParameterSignature> {
   type_parameters
     .iter()
-    .map(|it| TypeParameterSignature { name: it.name.name.clone(), bound: it.bound.clone() })
+    .map(|it| TypeParameterSignature { name: it.name.name, bound: it.bound.clone() })
     .collect_vec()
 }
 
@@ -266,6 +274,7 @@ fn check_class_member_conformance_with_ast(
   expect_is_method: bool,
   expected: &MemberTypeInformation,
   actual: &ClassMemberDeclaration,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) {
   // We first filter out incompatible kind
@@ -290,37 +299,51 @@ fn check_class_member_conformance_with_ast(
     type_parameters: ast_type_params_to_sig_type_params(&actual.type_parameters),
     type_: actual.type_.clone(),
   };
-  check_class_member_conformance_with_signature(expected, &actual_sig, error_set);
+  check_class_member_conformance_with_signature(expected, &actual_sig, heap, error_set);
 }
 
 fn check_module_member_interface_conformance(
   unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   actual_interface: &Toplevel,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> InterfaceInliningCollector {
   let fully_inlined_interface_context = get_fully_inlined_multiple_interface_context(
     actual_interface.extends_or_implements_nodes(),
     unoptimized_global_typing_context,
+    heap,
     error_set,
   );
 
   let mut actual_members_map = HashMap::new();
   for member in actual_interface.members_iter() {
-    actual_members_map.insert(member.name.name.clone(), member);
+    actual_members_map.insert(member.name.name, member);
   }
   let mut missing_members = vec![];
   for (name, expected_member) in fully_inlined_interface_context.functions.iter() {
     if let Some(actual_member) = actual_members_map.get(name) {
-      check_class_member_conformance_with_ast(false, expected_member, actual_member, error_set);
+      check_class_member_conformance_with_ast(
+        false,
+        expected_member,
+        actual_member,
+        heap,
+        error_set,
+      );
     } else {
-      missing_members.push(name.to_string());
+      missing_members.push(name.as_str(heap).to_string());
     }
   }
   for (name, expected_member) in fully_inlined_interface_context.methods.iter() {
     if let Some(actual_member) = actual_members_map.get(name) {
-      check_class_member_conformance_with_ast(true, expected_member, actual_member, error_set);
+      check_class_member_conformance_with_ast(
+        true,
+        expected_member,
+        actual_member,
+        heap,
+        error_set,
+      );
     } else {
-      missing_members.push(name.to_string());
+      missing_members.push(name.as_str(heap).to_string());
     }
   }
   if actual_interface.is_class() && !missing_members.is_empty() {
@@ -334,6 +357,7 @@ fn optimize_global_typing_context_with_interface_conformance_checking(
   sources: &HashMap<ModuleReference, Module>,
   unoptimized_global_typing_context: HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   builtin_module_types: ModuleTypingContext,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> GlobalTypingContext {
   let mut optimized_global_typing_context = HashMap::new();
@@ -346,6 +370,7 @@ fn optimize_global_typing_context_with_interface_conformance_checking(
       let collector = check_module_member_interface_conformance(
         &unoptimized_global_typing_context,
         toplevel,
+        heap,
         error_set,
       );
       let unoptimized_class_typing_context = if toplevel.is_class() {
@@ -355,14 +380,14 @@ fn optimize_global_typing_context_with_interface_conformance_checking(
       };
       let mut functions = collector.functions.deref().clone();
       for (name, info) in unoptimized_class_typing_context.functions.iter() {
-        functions.insert(name.clone(), info.clone());
+        functions.insert(*name, info.clone());
       }
       let mut methods = collector.methods.deref().clone();
       for (name, info) in unoptimized_class_typing_context.methods.iter() {
-        methods.insert(name.clone(), info.clone());
+        methods.insert(*name, info.clone());
       }
       optimized_interfaces.insert(
-        toplevel.name().name.clone(),
+        toplevel.name().name,
         Rc::new(InterfaceTypingContext {
           is_concrete: toplevel.is_class(),
           functions: Rc::new(functions),
@@ -396,9 +421,9 @@ fn build_unoptimized_interface_typing_context(
       type_: member.type_.clone(),
     });
     if member.is_method {
-      methods.insert(member.name.name.clone(), type_info);
+      methods.insert(member.name.name, type_info);
     } else {
-      functions.insert(member.name.name.clone(), type_info);
+      functions.insert(member.name.name, type_info);
     }
   }
   UnoptimizedInterfaceTypingContext {
@@ -411,6 +436,7 @@ fn build_unoptimized_interface_typing_context(
 
 pub(super) fn build_global_typing_context(
   sources: &HashMap<ModuleReference, Module>,
+  heap: &Heap,
   error_set: &mut ErrorSet,
   builtin_module_types: ModuleTypingContext,
 ) -> GlobalTypingContext {
@@ -424,10 +450,8 @@ pub(super) fn build_global_typing_context(
     for toplevel in toplevels {
       match toplevel {
         Toplevel::Interface(interface) => {
-          interfaces.insert(
-            interface.name.name.clone(),
-            build_unoptimized_interface_typing_context(toplevel),
-          );
+          interfaces
+            .insert(interface.name.name, build_unoptimized_interface_typing_context(toplevel));
         }
         Toplevel::Class(class) => {
           let UnoptimizedInterfaceTypingContext {
@@ -439,7 +463,7 @@ pub(super) fn build_global_typing_context(
           let class_type = Rc::new(Type::Id(IdType {
             reason: Reason::new(class.name.loc.clone(), Some(class.name.loc.clone())),
             module_reference: module_reference.clone(),
-            id: class.name.name.clone(),
+            id: class.name.name,
             type_arguments: class
               .type_parameters
               .iter()
@@ -447,7 +471,7 @@ pub(super) fn build_global_typing_context(
                 Rc::new(Type::Id(IdType {
                   reason: Reason::new(it.loc.clone(), Some(it.loc.clone())),
                   module_reference: module_reference.clone(),
-                  id: it.name.name.clone(),
+                  id: it.name.name,
                   type_arguments: vec![],
                 }))
               })
@@ -458,7 +482,8 @@ pub(super) fn build_global_typing_context(
           let mut functions_with_ctors = functions.deref().clone();
           if type_def.is_object {
             functions_with_ctors.insert(
-              rcs("init"),
+              // init string should be pre-allocated during builtin_cx init
+              heap.get_allocated_str_opt("init").unwrap(),
               Rc::new(MemberTypeInformation {
                 is_public: true,
                 type_parameters: ast_type_params_to_sig_type_params(&class.type_parameters),
@@ -477,7 +502,7 @@ pub(super) fn build_global_typing_context(
             let type_def_reason = Reason::new(type_def.loc.clone(), Some(type_def.loc.clone()));
             for (tag, FieldType { type_, is_public: _ }) in &type_def.mappings {
               functions_with_ctors.insert(
-                tag.clone(),
+                *tag,
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: ast_type_params_to_sig_type_params(&class.type_parameters),
@@ -491,7 +516,7 @@ pub(super) fn build_global_typing_context(
             }
           }
           classes.insert(
-            class.name.name.clone(),
+            class.name.name,
             UnoptimizedInterfaceTypingContext {
               functions: Rc::new(functions_with_ctors),
               methods,
@@ -500,10 +525,10 @@ pub(super) fn build_global_typing_context(
             },
           );
           type_definitions.insert(
-            class.name.name.clone(),
+            class.name.name,
             TypeDefinitionTypingContext {
               is_object: type_def.is_object,
-              names: type_def.names.iter().map(|it| it.name.clone()).collect_vec(),
+              names: type_def.names.iter().map(|it| it.name).collect_vec(),
               mappings: type_def.mappings.clone(),
             },
           );
@@ -520,6 +545,7 @@ pub(super) fn build_global_typing_context(
     sources,
     unoptimized_global_typing_context,
     builtin_module_types,
+    heap,
     error_set,
   )
 }
@@ -536,11 +562,13 @@ mod tests {
       Location,
     },
     checker::typing_context::create_builtin_module_typing_context,
+    common::{rcs, Heap},
   };
   use pretty_assertions::assert_eq;
 
   #[test]
   fn check_class_member_conformance_with_ast_tests() {
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let builder = test_builder::create();
 
@@ -560,7 +588,7 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: true,
-        name: Id::from(""),
+        name: Id::from(PStr::permanent("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -569,6 +597,7 @@ mod tests {
         },
         parameters: Rc::new(vec![]),
       },
+      &heap,
       &mut error_set,
     );
     check_class_member_conformance_with_ast(
@@ -587,7 +616,7 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: false,
-        name: Id::from(""),
+        name: Id::from(PStr::permanent("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -596,13 +625,14 @@ mod tests {
         },
         parameters: Rc::new(vec![]),
       },
+      &heap,
       &mut error_set,
     );
     check_class_member_conformance_with_ast(
       true,
       &MemberTypeInformation {
         is_public: true,
-        type_parameters: vec![TypeParameterSignature { name: rcs("A"), bound: None }],
+        type_parameters: vec![TypeParameterSignature { name: PStr::permanent("A"), bound: None }],
         type_: FunctionType {
           reason: Reason::dummy(),
           argument_types: vec![],
@@ -614,7 +644,7 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
-        name: Id::from(""),
+        name: Id::from(PStr::permanent("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -623,6 +653,7 @@ mod tests {
         },
         parameters: Rc::new(vec![]),
       },
+      &heap,
       &mut error_set,
     );
     check_class_member_conformance_with_ast(
@@ -630,8 +661,8 @@ mod tests {
       &MemberTypeInformation {
         is_public: true,
         type_parameters: vec![TypeParameterSignature {
-          name: rcs("A"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped("B"))),
+          name: PStr::permanent("A"),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B")))),
         }],
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -644,12 +675,12 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
-        name: Id::from(""),
+        name: Id::from(PStr::permanent("")),
         type_parameters: Rc::new(vec![TypeParameter {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: Id::from("A"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped("B"))),
+          name: Id::from(PStr::permanent("A")),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B")))),
         }]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -658,6 +689,7 @@ mod tests {
         },
         parameters: Rc::new(vec![]),
       },
+      &heap,
       &mut error_set,
     );
 
@@ -666,14 +698,14 @@ mod tests {
       &MemberTypeInformation {
         is_public: true,
         type_parameters: vec![
-          TypeParameterSignature { name: rcs("A"), bound: None },
+          TypeParameterSignature { name: PStr::permanent("A"), bound: None },
           TypeParameterSignature {
-            name: rcs("C"),
-            bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
+            name: PStr::permanent("C"),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
           },
           TypeParameterSignature {
-            name: rcs("D"),
-            bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
+            name: PStr::permanent("D"),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
           },
         ],
         type_: FunctionType {
@@ -687,25 +719,25 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
-        name: Id::from(""),
+        name: Id::from(PStr::permanent("")),
         type_parameters: Rc::new(vec![
           TypeParameter {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: Id::from("B"),
+            name: Id::from(PStr::permanent("B")),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: Id::from("C"),
+            name: Id::from(PStr::permanent("C")),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: Id::from("D"),
-            bound: Some(Rc::new(builder.simple_id_type_unwrapped("B"))),
+            name: Id::from(PStr::permanent("D")),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B")))),
           },
         ]),
         type_: FunctionType {
@@ -715,6 +747,7 @@ mod tests {
         },
         parameters: Rc::new(vec![]),
       },
+      &heap,
       &mut error_set,
     );
 
@@ -732,6 +765,7 @@ mod tests {
   }
 
   fn inlined_cx_from_type(
+    heap: &Heap,
     unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
     id_types: Vec<IdType>,
   ) -> String {
@@ -739,15 +773,16 @@ mod tests {
     let collector = get_fully_inlined_multiple_interface_context(
       &id_types,
       unoptimized_global_typing_context,
+      heap,
       &mut error_set,
     );
     let mut fun_strs = vec![];
     let mut met_strs = vec![];
     for (name, info) in collector.functions.iter() {
-      fun_strs.push(info.pretty_print(name));
+      fun_strs.push(info.pretty_print(name.as_str(heap), heap));
     }
     for (name, info) in collector.methods.iter() {
-      met_strs.push(info.pretty_print(name));
+      met_strs.push(info.pretty_print(name.as_str(heap), heap));
     }
     fun_strs.sort();
     met_strs.sort();
@@ -755,7 +790,7 @@ mod tests {
       "functions:\n{}\nmethods:\n{}\nsuper_types: {}",
       fun_strs.join("\n"),
       met_strs.join("\n"),
-      collector.super_types.iter().map(|it| it.pretty_print()).join(", ")
+      collector.super_types.iter().map(|it| it.pretty_print(heap)).join(", ")
     )
   }
 
@@ -767,7 +802,7 @@ mod tests {
       UnoptimizedModuleTypingContext {
         type_definitions: BTreeMap::new(),
         classes: BTreeMap::from([(
-          rcs("C"),
+          PStr::permanent("C"),
           UnoptimizedInterfaceTypingContext {
             functions: Rc::new(BTreeMap::new()),
             methods: Rc::new(BTreeMap::new()),
@@ -777,137 +812,159 @@ mod tests {
         )]),
         interfaces: BTreeMap::from([
           (
-            rcs("IUseNonExistent"),
+            PStr::permanent("IUseNonExistent"),
             UnoptimizedInterfaceTypingContext {
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("A"), bound: None },
-                TypeParameterSignature { name: rcs("B"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
               ],
               extends_or_implements: vec![
-                builder.simple_id_type_unwrapped("not_exist"),
-                builder.simple_id_type_unwrapped("C"),
+                builder.simple_id_type_unwrapped(PStr::permanent("not_exist")),
+                builder.simple_id_type_unwrapped(PStr::permanent("C")),
               ],
             },
           ),
           (
-            rcs("IBase"),
+            PStr::permanent("IBase"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("A"), bound: None },
-                TypeParameterSignature { name: rcs("B"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
               ],
               extends_or_implements: vec![],
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::from([(
-                rcs("m1"),
+                PStr::permanent("m1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature {
-                    name: rcs("C"),
-                    bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
+                    name: PStr::permanent("C"),
+                    bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
                   }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
-                    argument_types: vec![builder.simple_id_type("A"), builder.simple_id_type("B")],
-                    return_type: builder.simple_id_type("C"),
+                    argument_types: vec![
+                      builder.simple_id_type(PStr::permanent("A")),
+                      builder.simple_id_type(PStr::permanent("B")),
+                    ],
+                    return_type: builder.simple_id_type(PStr::permanent("C")),
                   },
                 }),
               )])),
             },
           ),
           (
-            rcs("ILevel1"),
+            PStr::permanent("ILevel1"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("A"), bound: None },
-                TypeParameterSignature { name: rcs("B"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
               ],
               extends_or_implements: vec![builder.general_id_type_unwrapped(
-                "IBase",
-                vec![builder.int_type(), builder.simple_id_type("B")],
+                PStr::permanent("IBase"),
+                vec![builder.int_type(), builder.simple_id_type(PStr::permanent("B"))],
               )],
               functions: Rc::new(BTreeMap::from([(
-                rcs("f1"),
+                PStr::permanent("f1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
-                  type_parameters: vec![TypeParameterSignature { name: rcs("C"), bound: None }],
+                  type_parameters: vec![TypeParameterSignature {
+                    name: PStr::permanent("C"),
+                    bound: None,
+                  }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
-                    argument_types: vec![builder.simple_id_type("A"), builder.simple_id_type("B")],
-                    return_type: builder.simple_id_type("C"),
+                    argument_types: vec![
+                      builder.simple_id_type(PStr::permanent("A")),
+                      builder.simple_id_type(PStr::permanent("B")),
+                    ],
+                    return_type: builder.simple_id_type(PStr::permanent("C")),
                   },
                 }),
               )])),
               methods: Rc::new(BTreeMap::from([(
-                rcs("m1"),
+                PStr::permanent("m1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature {
-                    name: rcs("C"),
-                    bound: Some(Rc::new(builder.simple_id_type_unwrapped("A"))),
+                    name: PStr::permanent("C"),
+                    bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
                   }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
-                    argument_types: vec![builder.simple_id_type("A"), builder.simple_id_type("B")],
-                    return_type: builder.simple_id_type("C"),
+                    argument_types: vec![
+                      builder.simple_id_type(PStr::permanent("A")),
+                      builder.simple_id_type(PStr::permanent("B")),
+                    ],
+                    return_type: builder.simple_id_type(PStr::permanent("C")),
                   },
                 }),
               )])),
             },
           ),
           (
-            rcs("ILevel2"),
+            PStr::permanent("ILevel2"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![
-                TypeParameterSignature { name: rcs("A"), bound: None },
-                TypeParameterSignature { name: rcs("B"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
+                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
               ],
               extends_or_implements: vec![builder.general_id_type_unwrapped(
-                "ILevel1",
-                vec![builder.simple_id_type("A"), builder.int_type()],
+                PStr::permanent("ILevel1"),
+                vec![builder.simple_id_type(PStr::permanent("A")), builder.int_type()],
               )],
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::from([(
-                rcs("m2"),
+                PStr::permanent("m2"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
-                  type_parameters: vec![TypeParameterSignature { name: rcs("C"), bound: None }],
+                  type_parameters: vec![TypeParameterSignature {
+                    name: PStr::permanent("C"),
+                    bound: None,
+                  }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
-                    argument_types: vec![builder.simple_id_type("A"), builder.simple_id_type("B")],
-                    return_type: builder.simple_id_type("C"),
+                    argument_types: vec![
+                      builder.simple_id_type(PStr::permanent("A")),
+                      builder.simple_id_type(PStr::permanent("B")),
+                    ],
+                    return_type: builder.simple_id_type(PStr::permanent("C")),
                   },
                 }),
               )])),
             },
           ),
           (
-            rcs("ICyclic1"),
+            PStr::permanent("ICyclic1"),
             UnoptimizedInterfaceTypingContext {
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![],
-              extends_or_implements: vec![builder.simple_id_type_unwrapped("ICyclic2")],
+              extends_or_implements: vec![
+                builder.simple_id_type_unwrapped(PStr::permanent("ICyclic2"))
+              ],
             },
           ),
           (
-            rcs("ICyclic2"),
+            PStr::permanent("ICyclic2"),
             UnoptimizedInterfaceTypingContext {
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![],
-              extends_or_implements: vec![builder.simple_id_type_unwrapped("ICyclic1")],
+              extends_or_implements: vec![
+                builder.simple_id_type_unwrapped(PStr::permanent("ICyclic1"))
+              ],
             },
           ),
           (
-            rcs("ConflictExtends1"),
+            PStr::permanent("ConflictExtends1"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![],
               extends_or_implements: vec![],
               functions: Rc::new(BTreeMap::from([(
-                rcs("f"),
+                PStr::permanent("f"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -919,7 +976,7 @@ mod tests {
                 }),
               )])),
               methods: Rc::new(BTreeMap::from([(
-                rcs("m"),
+                PStr::permanent("m"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -933,12 +990,12 @@ mod tests {
             },
           ),
           (
-            rcs("ConflictExtends2"),
+            PStr::permanent("ConflictExtends2"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![],
               extends_or_implements: vec![],
               functions: Rc::new(BTreeMap::from([(
-                rcs("f"),
+                PStr::permanent("f"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -950,7 +1007,7 @@ mod tests {
                 }),
               )])),
               methods: Rc::new(BTreeMap::from([(
-                rcs("m"),
+                PStr::permanent("m"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -966,28 +1023,39 @@ mod tests {
         ]),
       },
     )]);
+    let heap = Heap::new();
 
     assert_eq!(
       "functions:\n\nmethods:\n\nsuper_types: C",
-      inlined_cx_from_type(&unoptimized_global_cx, vec![builder.simple_id_type_unwrapped("C")])
+      inlined_cx_from_type(
+        &heap,
+        &unoptimized_global_cx,
+        vec![builder.simple_id_type_unwrapped(PStr::permanent("C"))]
+      )
     );
     assert_eq!(
       "functions:\n\nmethods:\n\nsuper_types: I_not_exist",
       inlined_cx_from_type(
+        &heap,
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped("I_not_exist")]
+        vec![builder.simple_id_type_unwrapped(PStr::permanent("I_not_exist"))]
       )
     );
     assert_eq!(
       "functions:\n\nmethods:\n\nsuper_types: not_exist, C, IUseNonExistent",
       inlined_cx_from_type(
+        &heap,
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped("IUseNonExistent")]
+        vec![builder.simple_id_type_unwrapped(PStr::permanent("IUseNonExistent"))]
       )
     );
     assert_eq!(
       "functions:\n\nmethods:\n\nsuper_types: I",
-      inlined_cx_from_type(&unoptimized_global_cx, vec![builder.simple_id_type_unwrapped("I")])
+      inlined_cx_from_type(
+        &heap,
+        &unoptimized_global_cx,
+        vec![builder.simple_id_type_unwrapped(PStr::permanent("I"))]
+      )
     );
     assert_eq!(
       r#"
@@ -1000,33 +1068,39 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
 "#
       .trim(),
       inlined_cx_from_type(
+        &heap,
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped("ILevel2")]
+        vec![builder.simple_id_type_unwrapped(PStr::permanent("ILevel2"))]
       )
     );
 
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped("ICyclic1")],
+      &vec![builder.simple_id_type_unwrapped(PStr::permanent("ICyclic1"))],
       &unoptimized_global_cx,
+      &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped("ICyclic1")],
+      &vec![builder.simple_id_type_unwrapped(PStr::permanent("ICyclic1"))],
       &unoptimized_global_cx,
+      &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped("ICyclic2")],
+      &vec![builder.simple_id_type_unwrapped(PStr::permanent("ICyclic2"))],
       &unoptimized_global_cx,
+      &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
       &vec![
-        builder.simple_id_type_unwrapped("ConflictExtends1"),
-        builder.simple_id_type_unwrapped("ConflictExtends2"),
+        builder.simple_id_type_unwrapped(PStr::permanent("ConflictExtends1")),
+        builder.simple_id_type_unwrapped(PStr::permanent("ConflictExtends2")),
       ],
       &unoptimized_global_cx,
+      &heap,
       &mut error_set,
     );
 
@@ -1049,13 +1123,13 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
         type_definitions: BTreeMap::new(),
         classes: BTreeMap::new(),
         interfaces: BTreeMap::from([(
-          rcs("IBase"),
+          PStr::permanent("IBase"),
           UnoptimizedInterfaceTypingContext {
             type_parameters: vec![],
             extends_or_implements: vec![],
             functions: Rc::new(BTreeMap::from([
               (
-                rcs("f1"),
+                PStr::permanent("f1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1067,7 +1141,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 }),
               ),
               (
-                rcs("f2"),
+                PStr::permanent("f2"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1081,7 +1155,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             ])),
             methods: Rc::new(BTreeMap::from([
               (
-                rcs("m1"),
+                PStr::permanent("m1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1093,7 +1167,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 }),
               ),
               (
-                rcs("m2"),
+                PStr::permanent("m2"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1110,15 +1184,18 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
       },
     )]);
 
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     check_module_member_interface_conformance(
       &unoptimized_global_cx,
       &Toplevel::Class(InterfaceDeclarationCommon {
         loc: Location::dummy(),
         associated_comments: Rc::new(vec![]),
-        name: Id::from("A"),
+        name: Id::from(PStr::permanent("A")),
         type_parameters: vec![],
-        extends_or_implements_nodes: vec![builder.simple_id_type_unwrapped("IBase")],
+        extends_or_implements_nodes: vec![
+          builder.simple_id_type_unwrapped(PStr::permanent("IBase"))
+        ],
         type_definition: TypeDefinition {
           loc: Location::dummy(),
           is_object: true,
@@ -1132,7 +1209,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               associated_comments: Rc::new(vec![]),
               is_public: true,
               is_method: false,
-              name: Id::from("f1"),
+              name: Id::from(PStr::permanent("f1")),
               type_parameters: Rc::new(vec![]),
               type_: FunctionType {
                 reason: Reason::dummy(),
@@ -1149,7 +1226,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               associated_comments: Rc::new(vec![]),
               is_public: true,
               is_method: true,
-              name: Id::from("m1"),
+              name: Id::from(PStr::permanent("m1")),
               type_parameters: Rc::new(vec![]),
               type_: FunctionType {
                 reason: Reason::dummy(),
@@ -1162,6 +1239,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           },
         ],
       }),
+      &heap,
       &mut error_set,
     );
   }
@@ -1171,6 +1249,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
     let m0_ref = ModuleReference::ordinary(vec![rcs("Module0")]);
     let m1_ref = ModuleReference::ordinary(vec![rcs("Module1")]);
     let builder = test_builder::create();
+    let mut heap = Heap::new();
 
     let test_sources = HashMap::from([
       (
@@ -1180,20 +1259,20 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           toplevels: vec![Toplevel::Class(InterfaceDeclarationCommon {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: Id::from("Class0"),
+            name: Id::from(PStr::permanent("Class0")),
             type_parameters: vec![TypeParameter {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from("T"),
+              name: Id::from(PStr::permanent("T")),
               bound: None,
             }],
             extends_or_implements_nodes: vec![],
             type_definition: TypeDefinition {
               loc: Location::dummy(),
               is_object: false,
-              names: vec![Id::from("A")],
+              names: vec![Id::from(PStr::permanent("A"))],
               mappings: HashMap::from([(
-                rcs("A"),
+                PStr::permanent("A"),
                 FieldType { is_public: true, type_: builder.int_type() },
               )]),
             },
@@ -1206,7 +1285,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
         Module {
           imports: vec![ModuleMembersImport {
             loc: Location::dummy(),
-            imported_members: vec![Id::from("Class0"), Id::from("BAD_CLASS_THAT_DOESNT_EXIST")],
+            imported_members: vec![
+              Id::from(PStr::permanent("Class0")),
+              Id::from(PStr::permanent("BAD_CLASS_THAT_DOESNT_EXIST")),
+            ],
             imported_module: m0_ref.clone(),
             imported_module_loc: Location::dummy(),
           }],
@@ -1214,15 +1296,15 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             Toplevel::Class(InterfaceDeclarationCommon {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from("Class1"),
+              name: Id::from(PStr::permanent("Class1")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
               type_definition: TypeDefinition {
                 loc: Location::dummy(),
                 is_object: true,
-                names: vec![Id::from("a")],
+                names: vec![Id::from(PStr::permanent("a"))],
                 mappings: HashMap::from([(
-                  rcs("a"),
+                  PStr::permanent("a"),
                   FieldType { is_public: true, type_: builder.int_type() },
                 )]),
               },
@@ -1233,7 +1315,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     associated_comments: Rc::new(vec![]),
                     is_public: true,
                     is_method: true,
-                    name: Id::from("m1"),
+                    name: Id::from(PStr::permanent("m1")),
                     type_parameters: Rc::new(vec![]),
                     type_: FunctionType {
                       reason: Reason::dummy(),
@@ -1250,7 +1332,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     associated_comments: Rc::new(vec![]),
                     is_public: false,
                     is_method: false,
-                    name: Id::from("f1"),
+                    name: Id::from(PStr::permanent("f1")),
                     type_parameters: Rc::new(vec![]),
                     type_: FunctionType {
                       reason: Reason::dummy(),
@@ -1266,7 +1348,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             Toplevel::Interface(InterfaceDeclarationCommon {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from("Interface2"),
+              name: Id::from(PStr::permanent("Interface2")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
               type_definition: (),
@@ -1275,7 +1357,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             Toplevel::Interface(InterfaceDeclarationCommon {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from("Interface3"),
+              name: Id::from(PStr::permanent("Interface3")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
               type_definition: (),
@@ -1284,7 +1366,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: Id::from("m1"),
+                name: Id::from(PStr::permanent("m1")),
                 type_parameters: Rc::new(vec![]),
                 type_: FunctionType {
                   reason: Reason::dummy(),
@@ -1297,9 +1379,11 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             Toplevel::Class(InterfaceDeclarationCommon {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from("Class2"),
+              name: Id::from(PStr::permanent("Class2")),
               type_parameters: vec![],
-              extends_or_implements_nodes: vec![builder.simple_id_type_unwrapped("Interface3")],
+              extends_or_implements_nodes: vec![
+                builder.simple_id_type_unwrapped(PStr::permanent("Interface3"))
+              ],
               type_definition: TypeDefinition {
                 loc: Location::dummy(),
                 is_object: true,
@@ -1314,11 +1398,9 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
     ]);
 
     let mut error_set = ErrorSet::new();
-    let actual_global_cx = build_global_typing_context(
-      &test_sources,
-      &mut error_set,
-      create_builtin_module_typing_context(),
-    );
+    let builtin_cx = create_builtin_module_typing_context(&mut heap);
+    let actual_global_cx =
+      build_global_typing_context(&test_sources, &mut heap, &mut error_set, builtin_cx);
     assert_eq!(3, actual_global_cx.len());
 
     assert_eq!(
@@ -1330,7 +1412,7 @@ Class0: class <T> : []
 functions:
 A: public <T>(int) -> Class0<T>
 methods:"#,
-      actual_global_cx.get(&m0_ref).unwrap().to_string()
+      actual_global_cx.get(&m0_ref).unwrap().to_string(&heap)
     );
     assert_eq!(
       r#"type_definitions:
@@ -1340,8 +1422,8 @@ Class2:[]
 interfaces:
 Class1: class  : []
 functions:
-f1: private () -> int
 init: public (int) -> Class1
+f1: private () -> int
 methods:
 m1: public () -> int
 Class2: class  : [Interface3]
@@ -1355,7 +1437,7 @@ Interface3: interface  : []
 functions:
 m1: public () -> int
 methods:"#,
-      actual_global_cx.get(&m1_ref).unwrap().to_string()
+      actual_global_cx.get(&m1_ref).unwrap().to_string(&heap)
     );
   }
 }

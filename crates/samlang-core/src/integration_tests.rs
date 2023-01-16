@@ -5,7 +5,7 @@ mod tests {
     checker::{
       type_check_single_module_source, type_check_source_handles, TypeCheckSourceHandlesResult,
     },
-    common::{rc_string, rcs},
+    common::{rc_string, rcs, Heap},
     compiler,
     errors::ErrorSet,
     interpreter, optimization,
@@ -1683,28 +1683,31 @@ class Main {
       if name == "StringGlobalConstant" {
         continue;
       }
+      let mut heap = Heap::new();
       let mut error_set = ErrorSet::new();
       let parsed_module = parse_source_module_from_text(
         source_code,
         &ModuleReference::ordinary(vec![rcs("Test")]),
+        &mut heap,
         &mut error_set,
       );
-      let checked_module = type_check_single_module_source(parsed_module, &mut error_set);
-      let actual_std = interpreter::run_source_module(&checked_module);
+      let checked_module =
+        type_check_single_module_source(parsed_module, &mut heap, &mut error_set);
+      let actual_std = interpreter::run_source_module(&mut heap, &checked_module);
       assert_eq!(expected_std, actual_std);
     }
   }
 
   #[test]
   fn formatter_tests() {
-    let TypeCheckSourceHandlesResult { checked_sources, .. } = type_check_source_handles(
+    let TypeCheckSourceHandlesResult { checked_sources, heap, .. } = type_check_source_handles(
       compiler_integration_tests()
         .iter()
         .map(|case| (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code.to_string()))
         .collect(),
     );
     for (mod_ref, module) in checked_sources {
-      let raw = printer::pretty_print_source_module(100, &module);
+      let raw = printer::pretty_print_source_module(&heap, 100, &module);
       let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
         type_check_source_handles(vec![(mod_ref, raw)]);
       assert!(compile_time_errors.is_empty());
@@ -1717,7 +1720,7 @@ class Main {
   #[test]
   fn compiler_tests() {
     let tests = compiler_integration_tests();
-    let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
+    let TypeCheckSourceHandlesResult { checked_sources, heap, compile_time_errors, .. } =
       type_check_source_handles(
         tests
           .iter()
@@ -1727,7 +1730,7 @@ class Main {
           .collect(),
       );
     assert!(compile_time_errors.is_empty());
-    let unoptimized_hir_sources = compiler::compile_sources_to_hir(&checked_sources);
+    let unoptimized_hir_sources = compiler::compile_sources_to_hir(&heap, &checked_sources);
     let optimized_hir_sources = optimization::optimize_sources(
       unoptimized_hir_sources,
       &optimization::ALL_ENABLED_CONFIGURATION,

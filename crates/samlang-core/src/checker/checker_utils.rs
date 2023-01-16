@@ -3,7 +3,7 @@ use crate::{
     source::{FunctionType, ISourceType, IdType, Type, TypeParameterSignature},
     Reason,
   },
-  common::Str,
+  common::{Heap, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -42,7 +42,7 @@ fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
           return Some(Type::Id(IdType {
             reason: reason.clone(),
             module_reference: mod_ref2.clone(),
-            id: id2.clone(),
+            id: *id2,
             type_arguments,
           }));
         }
@@ -77,19 +77,24 @@ fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
 pub(super) fn contextual_type_meet(
   general: &Type,
   specific: &Type,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> Type {
   if let Some(t) = contextual_type_meet_opt(general, specific) {
     t
   } else {
-    error_set.report_unexpected_type_error(&specific.get_reason().use_loc, general, specific);
+    error_set.report_unexpected_type_error(
+      &specific.get_reason().use_loc,
+      general.pretty_print(heap),
+      specific.pretty_print(heap),
+    );
     specific.clone()
   }
 }
 
 pub(super) fn perform_fn_type_substitution(
   t: &FunctionType,
-  mapping: &HashMap<Str, Rc<Type>>,
+  mapping: &HashMap<PStr, Rc<Type>>,
 ) -> FunctionType {
   FunctionType {
     reason: t.reason.clone(),
@@ -102,7 +107,7 @@ pub(super) fn perform_fn_type_substitution(
   }
 }
 
-pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<Str, Rc<Type>>) -> Rc<Type> {
+pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type> {
   match t {
     Type::Unknown(_) | Type::Primitive(_, _) => Rc::new((*t).clone()),
     Type::Id(IdType { reason, module_reference, id, type_arguments }) => {
@@ -116,7 +121,7 @@ pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<Str, Rc<Type
         Rc::new(Type::Id(IdType {
           reason: reason.clone(),
           module_reference: module_reference.clone(),
-          id: id.clone(),
+          id: *id,
           type_arguments: type_arguments
             .iter()
             .map(|it| perform_type_substitution(it, mapping))
@@ -130,7 +135,7 @@ pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<Str, Rc<Type
 
 pub(super) fn perform_id_type_substitution_asserting_id_type_return(
   id_type: &IdType,
-  mapping: &HashMap<Str, Rc<Type>>,
+  mapping: &HashMap<PStr, Rc<Type>>,
 ) -> IdType {
   let t = perform_type_substitution(&Type::Id(id_type.clone()), mapping);
   if let Type::Id(new_id_type) = t.deref() {
@@ -144,8 +149,8 @@ pub(super) fn perform_id_type_substitution_asserting_id_type_return(
 fn solve_type_constraints_internal(
   concrete: &Type,
   generic: &Type,
-  type_parameters: &HashSet<Str>,
-  partially_solved: &mut HashMap<Str, Rc<Type>>,
+  type_parameters: &HashSet<PStr>,
+  partially_solved: &mut HashMap<PStr, Rc<Type>>,
 ) {
   // Unknown types, which might come from expressions that need to be contextually typed (e.g. lambda),
   // do not participate in constraint solving.
@@ -156,7 +161,7 @@ fn solve_type_constraints_internal(
     Type::Unknown(_) | Type::Primitive(_, _) => {}
     Type::Id(g) => {
       if type_parameters.contains(&g.id) && !partially_solved.contains_key(&g.id) {
-        partially_solved.insert(g.id.clone(), Rc::new((*concrete).clone()));
+        partially_solved.insert(g.id, Rc::new((*concrete).clone()));
         return;
       }
       if let Type::Id(c) = concrete {
@@ -194,11 +199,11 @@ pub(super) struct TypeConstraint<'a> {
 pub(super) fn solve_multiple_type_constrains(
   constraints: &Vec<TypeConstraint>,
   type_parameter_signatures: &Vec<TypeParameterSignature>,
-) -> HashMap<Str, Rc<Type>> {
+) -> HashMap<PStr, Rc<Type>> {
   let mut partially_solved = HashMap::new();
   let mut type_parameters = HashSet::new();
   for sig in type_parameter_signatures {
-    type_parameters.insert(sig.name.clone());
+    type_parameters.insert(sig.name);
   }
   for TypeConstraint { concrete_type, generic_type } in constraints {
     solve_type_constraints_internal(
@@ -212,7 +217,7 @@ pub(super) fn solve_multiple_type_constrains(
 }
 
 pub(super) struct TypeConstraintSolution {
-  pub(super) solved_substitution: HashMap<Str, Rc<Type>>,
+  pub(super) solved_substitution: HashMap<PStr, Rc<Type>>,
   pub(super) solved_generic_type: Rc<Type>,
   pub(super) solved_contextually_typed_concrete_type: Rc<Type>,
 }
@@ -221,6 +226,7 @@ pub(super) fn solve_type_constraints(
   concrete: &Type,
   generic: &Type,
   type_parameter_signatures: &Vec<TypeParameterSignature>,
+  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> TypeConstraintSolution {
   let mut solved_substitution = solve_multiple_type_constrains(
@@ -228,17 +234,14 @@ pub(super) fn solve_type_constraints(
     type_parameter_signatures,
   );
   for type_param in type_parameter_signatures {
-    if !solved_substitution.contains_key(&type_param.name) {
+    solved_substitution.entry(type_param.name).or_insert_with(|| {
       // Fill in unknown for unsolved types.
-      solved_substitution.insert(
-        type_param.name.clone(),
-        Rc::new(Type::Unknown(Reason::new(concrete.get_reason().use_loc.clone(), None))),
-      );
-    }
+      Rc::new(Type::Unknown(Reason::new(concrete.get_reason().use_loc.clone(), None)))
+    });
   }
   let solved_generic_type = perform_type_substitution(generic, &solved_substitution);
   let solved_contextually_typed_concrete_type =
-    Rc::new(contextual_type_meet(&solved_generic_type, concrete, error_set));
+    Rc::new(contextual_type_meet(&solved_generic_type, concrete, heap, error_set));
   TypeConstraintSolution {
     solved_substitution,
     solved_generic_type,

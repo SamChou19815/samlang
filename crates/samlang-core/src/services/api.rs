@@ -12,7 +12,7 @@ use crate::{
   checker::{
     type_check_sources, GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation,
   },
-  common::{rc_string, Str},
+  common::{rc_string, Heap, PStr},
   errors::{CompileTimeError, ErrorSet},
   parser::parse_source_module_from_text,
   printer,
@@ -53,32 +53,31 @@ pub struct AutoCompletionItem {
   pub detail: String,
 }
 
-fn get_last_doc_comment(comments: &[Comment]) -> Option<&Str> {
-  comments.iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| &c.text)
+fn get_last_doc_comment(comments: &[Comment]) -> Option<PStr> {
+  comments.iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| c.text)
 }
 
 pub struct LanguageServices {
+  heap: Heap,
   raw_sources: HashMap<ModuleReference, String>,
   checked_modules: HashMap<ModuleReference, Module>,
   errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
   global_cx: GlobalTypingContext,
   expression_loc_lookup: LocationLookup<expr::E>,
-  class_loc_lookup: LocationLookup<Str>,
-  variable_definition_lookup: VariableDefinitionLookup,
 }
 
 impl LanguageServices {
   // Section 1: Init
 
   pub fn new(source_handles: Vec<(ModuleReference, String)>) -> LanguageServices {
+    let heap = Heap::new();
     let mut state = LanguageServices {
+      heap,
       raw_sources: source_handles.into_iter().collect(),
       checked_modules: HashMap::new(),
       errors: HashMap::new(),
       global_cx: HashMap::new(),
       expression_loc_lookup: LocationLookup::new(),
-      class_loc_lookup: LocationLookup::new(),
-      variable_definition_lookup: VariableDefinitionLookup::new(&HashMap::new()),
     };
     state.init();
     state
@@ -91,9 +90,13 @@ impl LanguageServices {
         .raw_sources
         .iter()
         .map(|(mod_ref, text)| {
-          (mod_ref.clone(), parse_source_module_from_text(text, mod_ref, &mut error_set))
+          (
+            mod_ref.clone(),
+            parse_source_module_from_text(text, mod_ref, &mut self.heap, &mut error_set),
+          )
         })
         .collect(),
+      &mut self.heap,
       &mut error_set,
     );
     self.checked_modules = checked_modules;
@@ -111,17 +114,12 @@ impl LanguageServices {
   fn update_location_lookups(&mut self) {
     for (module_reference, module) in &self.checked_modules {
       location_lookup::rebuild_expression_lookup_for_module(
+        &mut self.heap,
         &mut self.expression_loc_lookup,
         module_reference,
         module,
       );
-      for toplevel in &module.toplevels {
-        if let Toplevel::Class(c) = toplevel {
-          self.class_loc_lookup.set(c.loc.clone(), c.name.name.clone());
-        }
-      }
     }
-    self.variable_definition_lookup = VariableDefinitionLookup::new(&self.checked_modules);
   }
 
   // Section 2: Getters and Setters
@@ -157,31 +155,33 @@ impl LanguageServices {
   ) -> Option<TypeQueryResult> {
     let expression = self.expression_loc_lookup.get(module_reference, position)?;
     let function_reference = if let expr::E::ClassFn(e) = expression {
-      Some((e.module_reference.clone(), e.class_name.name.clone(), &e.fn_name.name))
+      Some((e.module_reference.clone(), e.class_name.name, &e.fn_name.name))
     } else if let expr::E::MethodAccess(e) = expression {
       let t = e.object.type_();
       let this_type = t.as_id().unwrap();
-      Some((this_type.module_reference.clone(), this_type.id.clone(), &e.method_name.name))
+      Some((this_type.module_reference.clone(), this_type.id, &e.method_name.name))
     } else {
       None
     };
     if let Some((fetched_function_module_reference, class_name, fn_name)) = function_reference {
       let relevant_fn =
         self.find_class_member(&fetched_function_module_reference, &class_name, fn_name)?;
-      let type_content =
-        TypeQueryContent { language: "samlang", value: expression.type_().pretty_print() };
-      Some(Self::query_result_with_optional_document(
+      let type_content = TypeQueryContent {
+        language: "samlang",
+        value: expression.type_().pretty_print(&self.heap),
+      };
+      Some(self.query_result_with_optional_document(
         expression.loc().clone(),
         type_content,
         get_last_doc_comment(&relevant_fn.associated_comments),
       ))
     } else {
-      let type_ = expression.type_().pretty_print();
+      let type_ = expression.type_().pretty_print(&self.heap);
       if type_.starts_with("class ") {
         let (expr_class_name, toplevel) = self.find_toplevel_from_synthetic_class_type(&type_);
         let type_content =
           TypeQueryContent { language: "samlang", value: format!("class {}", expr_class_name) };
-        Some(Self::query_result_with_optional_document(
+        Some(self.query_result_with_optional_document(
           expression.loc().clone(),
           type_content,
           toplevel.and_then(|toplevel| get_last_doc_comment(toplevel.associated_comments())),
@@ -198,7 +198,7 @@ impl LanguageServices {
   fn find_toplevel(
     &self,
     module_reference: &ModuleReference,
-    class_name: &Str,
+    class_name: &PStr,
   ) -> Option<&Toplevel> {
     self
       .checked_modules
@@ -211,8 +211,8 @@ impl LanguageServices {
   fn find_class_member(
     &self,
     module_reference: &ModuleReference,
-    class_name: &Str,
-    member_name: &Str,
+    class_name: &PStr,
+    member_name: &PStr,
   ) -> Option<&ClassMemberDeclaration> {
     self
       .find_toplevel(module_reference, class_name)?
@@ -220,24 +220,36 @@ impl LanguageServices {
       .find(|it| it.name.name.eq(member_name))
   }
 
-  fn find_toplevel_from_synthetic_class_type(&self, class_type: &str) -> (Str, Option<&Toplevel>) {
+  fn find_toplevel_from_synthetic_class_type<'a>(
+    &self,
+    class_type: &'a str,
+  ) -> (String, Option<&Toplevel>) {
     let qualified_name = class_type.chars().skip(6).collect::<String>();
     let mut module_parts = qualified_name.split('.').collect_vec();
-    let class_name = rc_string(module_parts.pop().unwrap().to_string());
-    let module_reference = ModuleReference::ordinary(
-      module_parts.into_iter().map(|s| rc_string(s.to_string())).collect(),
-    );
-    let toplevel = self.find_toplevel(&module_reference, &class_name);
-    (class_name, toplevel)
+    let class_name = module_parts.pop().unwrap();
+    let class_name_pstr = self.heap.get_allocated_str_opt(class_name);
+    let toplevel = class_name_pstr.and_then(|class_name_pstr| {
+      self.find_toplevel(
+        &ModuleReference::ordinary(
+          module_parts.into_iter().map(|s| rc_string(s.to_string())).collect(),
+        ),
+        &class_name_pstr,
+      )
+    });
+    (class_name.to_string(), toplevel)
   }
 
   fn query_result_with_optional_document(
+    &self,
     location: Location,
     type_content: TypeQueryContent,
-    document_opt: Option<&Str>,
+    document_opt: Option<PStr>,
   ) -> TypeQueryResult {
     let contents = if let Some(document) = document_opt {
-      vec![type_content, TypeQueryContent { language: "markdown", value: document.to_string() }]
+      vec![
+        type_content,
+        TypeQueryContent { language: "markdown", value: document.as_str(&self.heap).to_string() },
+      ]
     } else {
       vec![type_content]
     };
@@ -277,13 +289,26 @@ impl LanguageServices {
       | expr::E::Lambda(_)
       | expr::E::Block(_) => None,
       expr::E::Id(common, _) => match common.type_.as_ref() {
-        Type::Id(id_type) if id_type.id.starts_with("class ") => {
-          Some(self.find_toplevel_from_synthetic_class_type(&id_type.id).1?.loc().clone())
+        Type::Id(id_type) if id_type.id.as_str(&self.heap).starts_with("class ") => Some(
+          self
+            .find_toplevel_from_synthetic_class_type(id_type.id.as_str(&self.heap))
+            .1?
+            .loc()
+            .clone(),
+        ),
+        _ => {
+          let mut temp_heap = Heap::new();
+          let mut error_set = ErrorSet::new();
+          let module = parse_source_module_from_text(
+            self.raw_sources.get(module_reference).unwrap(),
+            module_reference,
+            &mut temp_heap,
+            &mut error_set,
+          );
+          VariableDefinitionLookup::new(&self.heap, &module)
+            .find_all_definition_and_uses(&common.loc)
+            .map(|it| it.definition_location)
         }
-        _ => self
-          .variable_definition_lookup
-          .find_all_definition_and_uses(&common.loc)
-          .map(|it| it.definition_location),
       },
       expr::E::ClassFn(e) => self
         .find_class_member(&e.module_reference, &e.class_name.name, &e.fn_name.name)
@@ -311,13 +336,24 @@ impl LanguageServices {
     self.autocomplete_opt(module_reference, position).unwrap_or(vec![])
   }
 
+  fn find_class_name(&self, module_reference: &ModuleReference, position: Position) -> PStr {
+    let module = self.checked_modules.get(module_reference).unwrap();
+    module
+      .toplevels
+      .iter()
+      .find(|toplevel| toplevel.loc().contains_position(position))
+      .unwrap()
+      .name()
+      .name
+  }
+
   fn autocomplete_opt(
     &self,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Vec<AutoCompletionItem>> {
     let expression = self.expression_loc_lookup.get(module_reference, position)?;
-    let class_of_expr = self.class_loc_lookup.get(module_reference, position).unwrap();
+    let class_of_expr = self.find_class_name(module_reference, position);
     if let expr::E::ClassFn(e) = expression {
       return Some(
         self
@@ -325,7 +361,11 @@ impl LanguageServices {
           .functions
           .iter()
           .map(|(name, info)| {
-            Self::get_completion_result_from_type_info(name, info, CompletionItemKind::Function)
+            self.get_completion_result_from_type_info(
+              name.as_str(&self.heap),
+              info,
+              CompletionItemKind::Function,
+            )
           })
           .collect(),
       );
@@ -349,11 +389,11 @@ impl LanguageServices {
         for name in &def.names {
           let field_type = def.mappings.get(name).unwrap();
           completion_results.push(AutoCompletionItem {
-            label: name.to_string(),
-            insert_text: name.to_string(),
+            label: name.as_str(&self.heap).to_string(),
+            insert_text: name.as_str(&self.heap).to_string(),
             insert_text_format: InsertTextFormat::PlainText,
             kind: CompletionItemKind::Field,
-            detail: field_type.type_.pretty_print(),
+            detail: field_type.type_.pretty_print(&self.heap),
           });
         }
       }
@@ -361,8 +401,8 @@ impl LanguageServices {
     }
     for (name, info) in relevant_interface_type.methods.iter() {
       if is_inside_class || info.is_public {
-        completion_results.push(Self::get_completion_result_from_type_info(
-          name,
+        completion_results.push(self.get_completion_result_from_type_info(
+          name.as_str(&self.heap),
           info,
           CompletionItemKind::Method,
         ));
@@ -374,12 +414,13 @@ impl LanguageServices {
   fn get_interface_type(
     &self,
     module_reference: &ModuleReference,
-    class_name: &Str,
+    class_name: &PStr,
   ) -> Option<&Rc<InterfaceTypingContext>> {
     self.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(class_name))
   }
 
   fn get_completion_result_from_type_info(
+    &self,
     name: &str,
     type_information: &MemberTypeInformation,
     kind: CompletionItemKind,
@@ -395,25 +436,25 @@ impl LanguageServices {
           .argument_types
           .iter()
           .enumerate()
-          .map(|(id, t)| format!("a{}: {}", id, t.pretty_print()))
+          .map(|(id, t)| format!("a{}: {}", id, t.pretty_print(&self.heap)))
           .join(", "),
-        type_information.type_.return_type.pretty_print()
+        type_information.type_.return_type.pretty_print(&self.heap)
       ),
       insert_text,
       insert_text_format,
       kind,
-      detail: Self::pretty_print_type_info(type_information),
+      detail: self.pretty_print_type_info(type_information),
     }
   }
 
-  fn pretty_print_type_info(type_information: &MemberTypeInformation) -> String {
+  fn pretty_print_type_info(&self, type_information: &MemberTypeInformation) -> String {
     if type_information.type_parameters.is_empty() {
-      type_information.type_.pretty_print()
+      type_information.type_.pretty_print(&self.heap)
     } else {
       format!(
         "<{}>({})",
-        type_information.type_parameters.iter().map(|it| it.pretty_print()).join(", "),
-        type_information.type_.pretty_print()
+        type_information.type_parameters.iter().map(|it| it.pretty_print(&self.heap)).join(", "),
+        type_information.type_.pretty_print(&self.heap)
       )
     }
   }
@@ -444,28 +485,46 @@ impl LanguageServices {
     }
     let expr = self.expression_loc_lookup.get(module_reference, position)?;
     if !matches!(expr, expr::E::Id(_, _))
-      || expr.type_().as_id().map(|id| id.id.starts_with("class ")).unwrap_or(false)
+      || expr
+        .type_()
+        .as_id()
+        .map(|id| id.id.as_str(&self.heap).starts_with("class "))
+        .unwrap_or(false)
     {
       return None;
     }
-    let def_and_uses = self.variable_definition_lookup.find_all_definition_and_uses(expr.loc())?;
-    Some(printer::pretty_print_source_module(
-      100,
-      &apply_renaming(self.checked_modules.get(module_reference).unwrap(), &def_and_uses, new_name),
-    ))
+
+    let mut temp_heap = Heap::new();
+    let mut error_set = ErrorSet::new();
+    let module = parse_source_module_from_text(
+      self.raw_sources.get(module_reference).unwrap(),
+      module_reference,
+      &mut temp_heap,
+      &mut error_set,
+    );
+    let def_and_uses = VariableDefinitionLookup::new(&temp_heap, &module)
+      .find_all_definition_and_uses(expr.loc())?;
+    let renamed = apply_renaming(
+      self.checked_modules.get(module_reference).unwrap(),
+      &def_and_uses,
+      temp_heap.alloc_str(new_name),
+    );
+    Some(printer::pretty_print_source_module(&temp_heap, 100, &renamed))
   }
 
   pub fn format_entire_document(&self, module_reference: &ModuleReference) -> Option<String> {
+    let mut temp_heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let module = parse_source_module_from_text(
       self.raw_sources.get(module_reference)?,
       module_reference,
+      &mut temp_heap,
       &mut error_set,
     );
     if error_set.has_errors() {
       None
     } else {
-      Some(printer::pretty_print_source_module(100, &module))
+      Some(printer::pretty_print_source_module(&temp_heap, 100, &module))
     }
   }
 }

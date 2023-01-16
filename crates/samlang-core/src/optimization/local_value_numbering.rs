@@ -5,7 +5,7 @@ use crate::{
 };
 use itertools::Itertools;
 
-type LocalContext = LocalStackedContext<Str>;
+type LocalContext = LocalStackedContext<Str, Str>;
 
 impl LocalContext {
   fn lvn_bind_var(&mut self, name: &Str, value: Str) {

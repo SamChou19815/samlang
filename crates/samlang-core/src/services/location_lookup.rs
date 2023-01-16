@@ -3,7 +3,7 @@ use crate::{
     source::{expr, Id, IdType, Module, Toplevel, Type},
     Location, ModuleReference, Position, Reason,
   },
-  common::{rc_string, rcs},
+  common::{Heap, PStr},
 };
 use std::{collections::HashMap, rc::Rc};
 
@@ -50,6 +50,7 @@ fn build_expression_lookup_from_expr_single(lookup: &mut LocationLookup<expr::E>
 }
 
 fn build_synthetic_class_name_id(
+  heap: &mut Heap,
   lookup: &mut LocationLookup<expr::E>,
   class_id_module_reference: &ModuleReference,
   class_id: &Id,
@@ -63,10 +64,10 @@ fn build_synthetic_class_name_id(
         type_: Rc::new(Type::Id(IdType {
           reason: Reason::new(class_id.loc.clone(), Some(class_id.loc.clone())),
           module_reference: class_id.loc.module_reference.clone(),
-          id: rc_string(format!(
+          id: heap.alloc_str(&format!(
             "class {}.{}",
             class_id_module_reference.to_string(),
-            class_id.name
+            class_id.name.as_str(heap)
           )),
           type_arguments: vec![],
         })),
@@ -77,6 +78,7 @@ fn build_synthetic_class_name_id(
 }
 
 fn build_expression_lookup_from_expr_recursive(
+  heap: &mut Heap,
   lookup: &mut LocationLookup<expr::E>,
   expr: &expr::E,
 ) {
@@ -86,59 +88,59 @@ fn build_expression_lookup_from_expr_recursive(
     }
     expr::E::ClassFn(e) => {
       build_expression_lookup_from_expr_single(lookup, expr);
-      build_synthetic_class_name_id(lookup, &e.module_reference, &e.class_name);
+      build_synthetic_class_name_id(heap, lookup, &e.module_reference, &e.class_name);
     }
     expr::E::FieldAccess(e) => {
-      build_expression_lookup_from_expr_recursive(lookup, &e.object);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.object);
       build_expression_lookup_from_expr_single(lookup, expr);
     }
     expr::E::MethodAccess(e) => {
-      build_expression_lookup_from_expr_recursive(lookup, &e.object);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.object);
       build_expression_lookup_from_expr_single(lookup, expr);
     }
     expr::E::Unary(e) => {
-      build_expression_lookup_from_expr_recursive(lookup, &e.argument);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.argument);
       build_expression_lookup_from_expr_single(lookup, expr);
     }
     expr::E::Call(e) => {
-      build_expression_lookup_from_expr_recursive(lookup, &e.callee);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.callee);
       for e in &e.arguments {
-        build_expression_lookup_from_expr_recursive(lookup, e);
+        build_expression_lookup_from_expr_recursive(heap, lookup, e);
       }
       build_expression_lookup_from_expr_single(lookup, expr);
     }
     expr::E::Binary(e) => {
-      build_expression_lookup_from_expr_recursive(lookup, &e.e1);
-      build_expression_lookup_from_expr_recursive(lookup, &e.e2);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.e1);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.e2);
       build_expression_lookup_from_expr_single(lookup, expr);
     }
     expr::E::IfElse(e) => {
-      build_expression_lookup_from_expr_recursive(lookup, &e.condition);
-      build_expression_lookup_from_expr_recursive(lookup, &e.e1);
-      build_expression_lookup_from_expr_recursive(lookup, &e.e2);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.condition);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.e1);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.e2);
       build_expression_lookup_from_expr_single(lookup, expr);
     }
     expr::E::Match(e) => {
-      build_expression_lookup_from_expr_recursive(lookup, &e.matched);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.matched);
       for case in &e.cases {
-        build_expression_lookup_from_expr_recursive(lookup, &case.body);
+        build_expression_lookup_from_expr_recursive(heap, lookup, &case.body);
       }
       build_expression_lookup_from_expr_single(lookup, expr);
     }
     expr::E::Lambda(e) => {
-      build_expression_lookup_from_expr_recursive(lookup, &e.body);
+      build_expression_lookup_from_expr_recursive(heap, lookup, &e.body);
       build_expression_lookup_from_expr_single(lookup, expr);
     }
     expr::E::Block(e) => {
       for stmt in &e.statements {
-        build_expression_lookup_from_expr_recursive(lookup, &stmt.assigned_expression);
+        build_expression_lookup_from_expr_recursive(heap, lookup, &stmt.assigned_expression);
         let type_ = stmt.assigned_expression.type_().clone();
         let (pat_loc, name) = match &stmt.pattern {
           expr::Pattern::Object(_, _) => {
             continue;
           }
-          expr::Pattern::Id(pat_loc, n) => (pat_loc, n.clone()),
-          expr::Pattern::Wildcard(pat_loc) => (pat_loc, rcs("_")),
+          expr::Pattern::Id(pat_loc, n) => (pat_loc, *n),
+          expr::Pattern::Wildcard(pat_loc) => (pat_loc, PStr::permanent("_")),
         };
         build_expression_lookup_from_expr_single(
           lookup,
@@ -153,13 +155,14 @@ fn build_expression_lookup_from_expr_recursive(
         );
       }
       if let Some(f) = &e.expression {
-        build_expression_lookup_from_expr_recursive(lookup, f);
+        build_expression_lookup_from_expr_recursive(heap, lookup, f);
       }
     }
   }
 }
 
 pub(super) fn rebuild_expression_lookup_for_module(
+  heap: &mut Heap,
   lookup: &mut LocationLookup<expr::E>,
   module_reference: &ModuleReference,
   module: &Module,
@@ -167,7 +170,7 @@ pub(super) fn rebuild_expression_lookup_for_module(
   lookup.purge(module_reference);
   for toplevel in &module.toplevels {
     if let Toplevel::Class(c) = toplevel {
-      build_synthetic_class_name_id(lookup, module_reference, &c.name);
+      build_synthetic_class_name_id(heap, lookup, module_reference, &c.name);
       for member in &c.members {
         build_expression_lookup_from_expr_single(
           lookup,
@@ -180,7 +183,7 @@ pub(super) fn rebuild_expression_lookup_for_module(
             member.decl.name.clone(),
           ),
         );
-        build_expression_lookup_from_expr_recursive(lookup, &member.body);
+        build_expression_lookup_from_expr_recursive(heap, lookup, &member.body);
       }
     }
   }
@@ -189,7 +192,7 @@ pub(super) fn rebuild_expression_lookup_for_module(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::checker::type_check_source_handles;
+  use crate::{checker::type_check_source_handles, common::rcs};
   use pretty_assertions::assert_eq;
   use std::ops::Deref;
 
@@ -233,7 +236,7 @@ mod tests {
   #[test]
   fn builder_coverage_test() {
     let mod_ref = ModuleReference::ordinary(vec![rcs("foo")]);
-    let r = type_check_source_handles(vec![(
+    let mut r = type_check_source_handles(vec![(
       mod_ref.clone(),
       r#"class Foo(val a: int) {
     function bar(): int = 3
@@ -308,6 +311,7 @@ mod tests {
 
     let mut lookup = LocationLookup::new();
     rebuild_expression_lookup_for_module(
+      &mut r.heap,
       &mut lookup,
       &mod_ref,
       r.checked_sources.get(&mod_ref).unwrap(),

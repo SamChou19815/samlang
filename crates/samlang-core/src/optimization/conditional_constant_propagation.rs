@@ -3,7 +3,7 @@ use super::optimization_common::{
 };
 use crate::{
   ast::hir::*,
-  common::{rc_string, LocalStackedContext},
+  common::{rc_string, LocalStackedContext, Str},
 };
 use itertools::Itertools;
 
@@ -86,7 +86,7 @@ fn merge_binary_expression(
   }
 }
 
-type BinaryExpressionContext = LocalStackedContext<BinaryExpression>;
+type BinaryExpressionContext = LocalStackedContext<Str, BinaryExpression>;
 
 fn optimize_variable_name(
   value_cx: &mut LocalValueContextForOptimization,
@@ -108,7 +108,7 @@ fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression
   }
 }
 
-fn optimize_callee(value_cx: &mut LocalStackedContext<Expression>, callee: &Callee) -> Callee {
+fn optimize_callee(value_cx: &mut LocalStackedContext<Str, Expression>, callee: &Callee) -> Callee {
   match callee {
     Callee::FunctionName(n) => Callee::FunctionName(n.clone()),
     Callee::Variable(v) => optimize_variable_name(value_cx, v).convert_to_callee().unwrap(),

@@ -2,29 +2,29 @@ use super::{
   loc::{Location, ModuleReference},
   reason::Reason,
 };
-use crate::common::{rcs, Str};
+use crate::common::{Heap, PStr};
 use enum_as_inner::EnumAsInner;
 use itertools::join;
 use std::{collections::HashMap, rc::Rc};
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CommentKind {
   LINE,
   BLOCK,
   DOC,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(crate) struct Comment {
   pub(crate) kind: CommentKind,
-  pub(crate) text: Str,
+  pub(crate) text: PStr,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(crate) enum Literal {
   Bool(bool),
   Int(i32),
-  String(Str),
+  String(PStr),
 }
 
 impl Literal {
@@ -39,16 +39,16 @@ impl Literal {
     Literal::Int(i)
   }
 
-  pub(crate) fn string_literal(s: Str) -> Literal {
+  pub(crate) fn string_literal(s: PStr) -> Literal {
     Literal::String(s)
   }
 
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       Self::Bool(true) => "true".to_string(),
       Self::Bool(false) => "false".to_string(),
       Self::Int(i) => i.to_string(),
-      Self::String(s) => format!("\"{}\"", s),
+      Self::String(s) => format!("\"{}\"", s.as_str(heap)),
     }
   }
 }
@@ -73,7 +73,7 @@ impl ToString for PrimitiveTypeKind {
 }
 
 pub(crate) trait ISourceType {
-  fn pretty_print(&self) -> String;
+  fn pretty_print(&self, heap: &Heap) -> String;
   fn is_the_same_type(&self, other: &Self) -> bool;
 }
 
@@ -81,17 +81,21 @@ pub(crate) trait ISourceType {
 pub(crate) struct IdType {
   pub(crate) reason: Reason,
   pub(crate) module_reference: ModuleReference,
-  pub(crate) id: Str,
+  pub(crate) id: PStr,
   pub(crate) type_arguments: Vec<Rc<Type>>,
 }
 
 impl ISourceType for IdType {
-  fn pretty_print(&self) -> String {
+  fn pretty_print(&self, heap: &Heap) -> String {
     let IdType { reason: _, module_reference: _, id, type_arguments } = self;
     if type_arguments.is_empty() {
-      id.to_string()
+      id.as_str(heap).to_string()
     } else {
-      format!("{}<{}>", id, join(type_arguments.iter().map(|t| t.pretty_print()), ", "))
+      format!(
+        "{}<{}>",
+        id.as_str(heap),
+        join(type_arguments.iter().map(|t| t.pretty_print(heap)), ", ")
+      )
     }
   }
 
@@ -124,12 +128,12 @@ pub(crate) struct FunctionType {
 }
 
 impl ISourceType for FunctionType {
-  fn pretty_print(&self) -> String {
+  fn pretty_print(&self, heap: &Heap) -> String {
     let FunctionType { reason: _, argument_types, return_type } = self;
     format!(
       "({}) -> {}",
-      join(argument_types.iter().map(|t| t.pretty_print()), ", "),
-      return_type.pretty_print()
+      join(argument_types.iter().map(|t| t.pretty_print(heap)), ", "),
+      return_type.pretty_print(heap)
     )
   }
 
@@ -161,12 +165,12 @@ pub(crate) enum Type {
 }
 
 impl ISourceType for Type {
-  fn pretty_print(&self) -> String {
+  fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       Self::Unknown(_) => String::from("unknown"),
       Self::Primitive(_, p) => p.to_string(),
-      Self::Id(id_type) => id_type.pretty_print(),
-      Self::Fn(fn_type) => fn_type.pretty_print(),
+      Self::Id(id_type) => id_type.pretty_print(heap),
+      Self::Fn(fn_type) => fn_type.pretty_print(heap),
     }
   }
 
@@ -211,7 +215,7 @@ impl Type {
       Self::Id(IdType { reason, module_reference, id, type_arguments }) => Type::Id(IdType {
         reason: f(reason),
         module_reference: module_reference.clone(),
-        id: id.clone(),
+        id: *id,
         type_arguments: type_arguments.clone(),
       }),
       Self::Fn(FunctionType { reason, argument_types, return_type }) => Type::Fn(FunctionType {
@@ -229,23 +233,25 @@ impl Type {
 
 #[derive(Clone)]
 pub(crate) struct TypeParameterSignature {
-  pub(crate) name: Str,
+  pub(crate) name: PStr,
   pub(crate) bound: Option<Rc<IdType>>,
 }
 
 impl TypeParameterSignature {
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match &self.bound {
-      Option::None => self.name.to_string(),
-      Option::Some(id_type) => format!("{} : {}", self.name, id_type.pretty_print()),
+      Option::None => self.name.as_str(heap).to_string(),
+      Option::Some(id_type) => {
+        format!("{} : {}", self.name.as_str(heap), id_type.pretty_print(heap))
+      }
     }
   }
 
-  pub(crate) fn pretty_print_list(list: &Vec<TypeParameterSignature>) -> String {
+  pub(crate) fn pretty_print_list(list: &Vec<TypeParameterSignature>, heap: &Heap) -> String {
     if list.is_empty() {
       "".to_string()
     } else {
-      format!("<{}>", list.iter().map(|t| t.pretty_print()).collect::<Vec<_>>().join(", "))
+      format!("<{}>", list.iter().map(|t| t.pretty_print(heap)).collect::<Vec<_>>().join(", "))
     }
   }
 }
@@ -254,12 +260,12 @@ impl TypeParameterSignature {
 pub(crate) struct Id {
   pub(crate) loc: Location,
   pub(crate) associated_comments: Rc<Vec<Comment>>,
-  pub(crate) name: Str,
+  pub(crate) name: PStr,
 }
 
 impl Id {
-  pub(crate) fn from(name: &'static str) -> Id {
-    Id { loc: Location::dummy(), associated_comments: Rc::new(vec![]), name: rcs(name) }
+  pub(crate) fn from(name: PStr) -> Id {
+    Id { loc: Location::dummy(), associated_comments: Rc::new(vec![]), name }
   }
 }
 
@@ -277,7 +283,7 @@ pub(crate) struct AnnotatedId {
 pub(crate) mod expr {
   use super::super::loc::{Location, ModuleReference};
   use super::{Comment, Id, Literal, OptionallyAnnotatedId, Type};
-  use crate::common::Str;
+  use crate::common::PStr;
   use std::collections::HashMap;
   use std::rc::Rc;
 
@@ -446,7 +452,7 @@ pub(crate) mod expr {
   pub(crate) struct Lambda {
     pub(crate) common: ExpressionCommon,
     pub(crate) parameters: Vec<OptionallyAnnotatedId>,
-    pub(crate) captured: HashMap<Str, Rc<Type>>,
+    pub(crate) captured: HashMap<PStr, Rc<Type>>,
     pub(crate) body: Box<E>,
   }
 
@@ -462,7 +468,7 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) enum Pattern {
     Object(Location, Vec<ObjectPatternDestucturedName>),
-    Id(Location, Str),
+    Id(Location, PStr),
     Wildcard(Location),
   }
 
@@ -604,11 +610,11 @@ pub(crate) struct TypeParameter {
 }
 
 impl TypeParameter {
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     if let Some(bound) = &self.bound {
-      format!("{}: {}", self.name.name, bound.pretty_print())
+      format!("{}: {}", self.name.name.as_str(heap), bound.pretty_print(heap))
     } else {
-      self.name.name.to_string()
+      self.name.name.as_str(heap).to_string()
     }
   }
 }
@@ -650,10 +656,10 @@ pub(crate) struct FieldType {
   pub(crate) type_: Rc<Type>,
 }
 
-impl ToString for FieldType {
-  fn to_string(&self) -> String {
+impl FieldType {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let access_str = if self.is_public { "" } else { "(private) " };
-    format!("{}{}", access_str, self.type_.pretty_print())
+    format!("{}{}", access_str, self.type_.pretty_print(heap))
   }
 }
 
@@ -662,7 +668,7 @@ pub(crate) struct TypeDefinition {
   pub(crate) loc: Location,
   pub(crate) is_object: bool,
   pub(crate) names: Vec<Id>,
-  pub(crate) mappings: HashMap<Str, FieldType>,
+  pub(crate) mappings: HashMap<PStr, FieldType>,
 }
 
 pub(crate) type ClassDefinition = InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition>;
@@ -761,8 +767,6 @@ pub(crate) struct Module {
 
 #[cfg(test)]
 pub(crate) mod test_builder {
-  use crate::common::rcs;
-
   use super::super::{
     loc::{Location, ModuleReference},
     reason::Reason,
@@ -788,37 +792,33 @@ pub(crate) mod test_builder {
       Rc::new(Type::string_type(self.reason.clone()))
     }
 
-    pub(crate) fn simple_id_type_unwrapped(&self, id: &'static str) -> IdType {
+    pub(crate) fn simple_id_type_unwrapped(&self, id: PStr) -> IdType {
       IdType {
         reason: self.reason.clone(),
         module_reference: self.module_reference.clone(),
-        id: rcs(id),
+        id,
         type_arguments: vec![],
       }
     }
 
     pub(crate) fn general_id_type_unwrapped(
       &self,
-      id: &'static str,
+      id: PStr,
       type_arguments: Vec<Rc<Type>>,
     ) -> IdType {
       IdType {
         reason: self.reason.clone(),
         module_reference: self.module_reference.clone(),
-        id: rcs(id),
+        id,
         type_arguments,
       }
     }
 
-    pub(crate) fn simple_id_type(&self, id: &'static str) -> Rc<Type> {
+    pub(crate) fn simple_id_type(&self, id: PStr) -> Rc<Type> {
       Rc::new(Type::Id(self.simple_id_type_unwrapped(id)))
     }
 
-    pub(crate) fn general_id_type(
-      &self,
-      id: &'static str,
-      type_arguments: Vec<Rc<Type>>,
-    ) -> Rc<Type> {
+    pub(crate) fn general_id_type(&self, id: PStr, type_arguments: Vec<Rc<Type>>) -> Rc<Type> {
       Rc::new(Type::Id(self.general_id_type_unwrapped(id, type_arguments)))
     }
 
@@ -850,11 +850,11 @@ pub(crate) mod test_builder {
       expr::E::Literal(self.expr_common(self.int_type()), Literal::Int(value))
     }
 
-    pub(crate) fn string_expr(&self, s: &'static str) -> expr::E {
-      expr::E::Literal(self.expr_common(self.string_type()), Literal::string_literal(rcs(s)))
+    pub(crate) fn string_expr(&self, s: PStr) -> expr::E {
+      expr::E::Literal(self.expr_common(self.string_type()), Literal::string_literal(s))
     }
 
-    pub(crate) fn id_expr(&self, id: &'static str, type_: Rc<Type>) -> expr::E {
+    pub(crate) fn id_expr(&self, id: PStr, type_: Rc<Type>) -> expr::E {
       expr::E::Id(self.expr_common(type_), Id::from(id))
     }
   }
