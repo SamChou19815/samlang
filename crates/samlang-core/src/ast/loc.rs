@@ -1,79 +1,18 @@
-use crate::common::{rc_string, rcs, Str};
-use itertools::join;
-use std::{collections::HashMap, rc::Rc};
+use crate::common::{Heap, ModuleReference};
+use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Position(pub i32, pub i32);
 
 pub(crate) const DUMMY_POSITION: Position = Position(-1, -1);
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum ModuleReferenceEnum {
-  Root,
-  Ordinary(Vec<Str>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ModuleReference(Rc<ModuleReferenceEnum>);
-
-impl ToString for ModuleReference {
-  fn to_string(&self) -> String {
-    match &*self.0 {
-      ModuleReferenceEnum::Root => "".to_string(),
-      ModuleReferenceEnum::Ordinary(parts) => join(parts, "."),
-    }
-  }
-}
-
-impl ModuleReference {
-  pub(crate) fn dummy() -> ModuleReference {
-    ModuleReference(Rc::new(ModuleReferenceEnum::Ordinary(vec![rcs("__DUMMY__")])))
-  }
-
-  pub(crate) fn root() -> ModuleReference {
-    ModuleReference(Rc::new(ModuleReferenceEnum::Root))
-  }
-
-  pub(crate) fn ordinary(parts: Vec<Str>) -> ModuleReference {
-    ModuleReference(Rc::new(ModuleReferenceEnum::Ordinary(parts)))
-  }
-
-  pub fn from_string_parts(parts: Vec<String>) -> ModuleReference {
-    ModuleReference(Rc::new(ModuleReferenceEnum::Ordinary(
-      parts.into_iter().map(rc_string).collect(),
-    )))
-  }
-
-  pub fn to_filename(&self) -> String {
-    match &*self.0 {
-      ModuleReferenceEnum::Root => ".sam".to_string(),
-      ModuleReferenceEnum::Ordinary(parts) => join(parts, "/") + ".sam",
-    }
-  }
-
-  pub fn encoded(&self) -> String {
-    match &*self.0 {
-      ModuleReferenceEnum::Root => "".to_string(),
-      ModuleReferenceEnum::Ordinary(parts) => {
-        parts.iter().map(|it| it.replace('-', "_")).collect::<Vec<String>>().join("$")
-      }
-    }
-  }
-}
-
 type Sources<M> = HashMap<ModuleReference, M>;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Location {
   pub module_reference: ModuleReference,
   pub start: Position,
   pub end: Position,
-}
-
-impl ToString for Location {
-  fn to_string(&self) -> String {
-    format!("{}:{}", self.module_reference.to_filename(), self.to_string_without_file())
-  }
 }
 
 impl Location {
@@ -105,11 +44,15 @@ impl Location {
     assert!(self.module_reference == other.module_reference);
     let start = if self.start < other.start { self.start } else { other.start };
     let end = if self.end > other.end { self.end } else { other.end };
-    Location { module_reference: self.module_reference.clone(), start, end }
+    Location { module_reference: self.module_reference, start, end }
   }
 
-  pub(crate) fn to_string_without_file(&self) -> String {
+  pub(crate) fn pretty_print_without_file(&self) -> String {
     format!("{}:{}-{}:{}", self.start.0 + 1, self.start.1 + 1, self.end.0 + 1, self.end.1 + 1)
+  }
+
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+    format!("{}:{}", self.module_reference.to_filename(heap), self.pretty_print_without_file())
   }
 }
 
@@ -121,7 +64,6 @@ mod tests {
   #[test]
   fn boilterplate() {
     assert!(!format!("{:?}", DUMMY_POSITION.clone()).is_empty());
-    assert!(!format!("{:?}", ModuleReferenceEnum::Root.clone()).is_empty());
     assert!(!format!("{:?}", ModuleReference::dummy().clone()).is_empty());
     assert!(!format!("{:?}", Location::dummy().clone()).is_empty());
 
@@ -140,35 +82,10 @@ mod tests {
   }
 
   #[test]
-  fn module_reference_to_string_tests() {
-    assert_eq!("__DUMMY__", ModuleReference::dummy().to_string());
-    assert_eq!("", ModuleReference::root().to_string());
-    assert_eq!("Foo", ModuleReference::from_string_parts(vec!["Foo".to_string()]).to_string());
-    assert_eq!("Foo.Bar", ModuleReference::ordinary(vec![rcs("Foo"), rcs("Bar")]).to_string());
-  }
-
-  #[test]
-  fn module_reference_to_filename_tests() {
-    assert_eq!(".sam", ModuleReference::root().to_filename());
-    assert_eq!("__DUMMY__.sam", ModuleReference::dummy().to_filename());
-    assert_eq!("Foo.sam", ModuleReference::ordinary(vec![rcs("Foo")]).to_filename());
-    assert_eq!(
-      "Foo/Bar.sam",
-      ModuleReference::ordinary(vec![rcs("Foo"), rcs("Bar")]).to_filename()
-    );
-  }
-
-  #[test]
-  fn module_reference_encoded_tests() {
-    assert_eq!("", ModuleReference::root().encoded());
-    assert_eq!("__DUMMY__", ModuleReference::dummy().encoded());
-    assert_eq!("Foo$Bar", ModuleReference::ordinary(vec![rcs("Foo"), rcs("Bar")]).encoded());
-  }
-
-  #[test]
   fn location_to_string_tests() {
-    assert_eq!("__DUMMY__.sam:0:0-0:0", Location::dummy().to_string());
-    assert_eq!("__DUMMY__.sam:2:2-3:5", Location::from_pos(1, 1, 2, 4).to_string());
+    let heap = Heap::new();
+    assert_eq!("__DUMMY__.sam:0:0-0:0", Location::dummy().pretty_print(&heap));
+    assert_eq!("__DUMMY__.sam:2:2-3:5", Location::from_pos(1, 1, 2, 4).pretty_print(&heap));
   }
 
   #[test]

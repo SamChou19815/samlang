@@ -31,8 +31,8 @@ impl VariableDefinitionLookup {
   ) -> Option<DefinitionAndUses> {
     let def_loc = self.0.use_define_map.get(location).unwrap_or(location);
     let mut use_locations = self.0.def_to_use_map.get(def_loc)?.clone();
-    use_locations.sort_by_key(|l| l.to_string());
-    Some(DefinitionAndUses { definition_location: def_loc.clone(), use_locations })
+    use_locations.sort();
+    Some(DefinitionAndUses { definition_location: *def_loc, use_locations })
   }
 }
 
@@ -42,18 +42,18 @@ fn get_relevant_in_ranges(
 ) -> Vec<Location> {
   let mut locations = vec![];
   if location.contains(definition_location) {
-    locations.push(definition_location.clone());
+    locations.push(*definition_location);
   }
   for use_loc in use_locations {
     if location.contains(use_loc) {
-      locations.push(use_loc.clone());
+      locations.push(*use_loc);
     }
   }
   locations
 }
 
 fn mod_id(id: &Id, new_name: PStr) -> Id {
-  Id { loc: id.loc.clone(), associated_comments: id.associated_comments.clone(), name: new_name }
+  Id { loc: id.loc, associated_comments: id.associated_comments.clone(), name: new_name }
 }
 
 fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) -> Id {
@@ -69,12 +69,12 @@ fn apply_expr_renaming(
   definition_and_uses: &DefinitionAndUses,
   new_name: PStr,
 ) -> expr::E {
-  let relevant_in_range = get_relevant_in_ranges(expr.loc(), definition_and_uses);
+  let relevant_in_range = get_relevant_in_ranges(&expr.loc(), definition_and_uses);
   if relevant_in_range.is_empty() {
     return expr.clone();
   }
   match expr {
-    expr::E::Literal(_, _) | expr::E::This(_) | expr::E::ClassFn(_) => panic!(),
+    expr::E::Literal(_, _) | expr::E::ClassFn(_) => panic!(),
     expr::E::Id(common, old_id) => expr::E::Id(common.clone(), mod_id(old_id, new_name)),
     expr::E::FieldAccess(e) => expr::E::FieldAccess(expr::FieldAccess {
       common: e.common.clone(),
@@ -124,7 +124,7 @@ fn apply_expr_renaming(
         .iter()
         .map(|expr::VariantPatternToExpression { loc, tag, tag_order, data_variable, body }| {
           expr::VariantPatternToExpression {
-            loc: loc.clone(),
+            loc: *loc,
             tag: tag.clone(),
             tag_order: *tag_order,
             data_variable: data_variable
@@ -161,11 +161,11 @@ fn apply_expr_renaming(
              annotation,
              assigned_expression,
            }| expr::DeclarationStatement {
-            loc: loc.clone(),
+            loc: *loc,
             associated_comments: associated_comments.clone(),
             pattern: match pattern {
               expr::Pattern::Object(l, names) => expr::Pattern::Object(
-                l.clone(),
+                *l,
                 names
                   .iter()
                   .map(
@@ -178,7 +178,7 @@ fn apply_expr_renaming(
                      }| {
                       if let Some(alias) = alias {
                         expr::ObjectPatternDestucturedName {
-                          loc: loc.clone(),
+                          loc: *loc,
                           field_order: *field_order,
                           field_name: field_name.clone(),
                           alias: Some(mod_def_id(alias, definition_and_uses, new_name)),
@@ -190,7 +190,7 @@ fn apply_expr_renaming(
                         let alias_opt =
                           if alias.name.eq(&field_name.name) { None } else { Some(alias) };
                         expr::ObjectPatternDestucturedName {
-                          loc: loc.clone(),
+                          loc: *loc,
                           field_order: *field_order,
                           field_name: field_name.clone(),
                           alias: alias_opt,
@@ -204,7 +204,7 @@ fn apply_expr_renaming(
               expr::Pattern::Id(l, name) => {
                 let name =
                   if l.eq(&definition_and_uses.definition_location) { new_name } else { *name };
-                expr::Pattern::Id(l.clone(), name)
+                expr::Pattern::Id(*l, name)
               }
               expr::Pattern::Wildcard(_) => pattern.clone(),
             },
@@ -237,7 +237,7 @@ pub(super) fn apply_renaming(
       .map(|toplevel| match toplevel {
         Toplevel::Interface(i) => Toplevel::Interface(i.clone()),
         Toplevel::Class(c) => Toplevel::Class(ClassDefinition {
-          loc: c.loc.clone(),
+          loc: c.loc,
           associated_comments: c.associated_comments.clone(),
           name: c.name.clone(),
           type_parameters: c.type_parameters.clone(),
@@ -263,7 +263,7 @@ pub(super) fn apply_renaming(
                }| {
                 ClassMemberDefinition {
                   decl: ClassMemberDeclaration {
-                    loc: loc.clone(),
+                    loc: *loc,
                     associated_comments: associated_comments.clone(),
                     is_public: *is_public,
                     is_method: *is_method,
@@ -297,9 +297,9 @@ mod tests {
   use crate::{
     ast::{
       source::{expr, test_builder, Id, Module},
-      Location, ModuleReference, Position,
+      Location, Position,
     },
-    common::{Heap, PStr},
+    common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::parse_source_module_from_text,
     printer,
@@ -309,19 +309,20 @@ mod tests {
   #[should_panic]
   #[test]
   fn coverage_booster_tests() {
+    let mut heap = Heap::new();
     let builder = test_builder::create();
     apply_expr_renaming(
       &expr::E::MethodAccess(expr::MethodAccess {
         common: builder.expr_common(builder.int_type()),
         type_arguments: vec![],
         object: Box::new(builder.zero_expr()),
-        method_name: Id::from(PStr::permanent("")),
+        method_name: Id::from(heap.alloc_str("")),
       }),
       &DefinitionAndUses {
         definition_location: Location::dummy(),
         use_locations: vec![Location::dummy()],
       },
-      PStr::permanent(""),
+      heap.alloc_str(""),
     );
   }
 
@@ -329,7 +330,7 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let module =
-      parse_source_module_from_text(source, &ModuleReference::dummy(), &mut heap, &mut error_set);
+      parse_source_module_from_text(source, ModuleReference::dummy(), &mut heap, &mut error_set);
     assert!(!error_set.has_errors());
     (heap, module)
   }
@@ -344,20 +345,27 @@ mod tests {
     (heap, lookup)
   }
 
-  fn loc_to_string(location: &Location) -> String {
-    let s = location.to_string();
+  fn loc_to_string(heap: &Heap, location: &Location) -> String {
+    let s = location.pretty_print(heap);
     s.chars().skip(s.chars().position(|c| c == ':').unwrap() + 1).collect()
   }
 
-  fn query(lookup: &VariableDefinitionLookup, location: Location) -> Option<(String, Vec<String>)> {
+  fn query(
+    heap: &Heap,
+    lookup: &VariableDefinitionLookup,
+    location: Location,
+  ) -> Option<(String, Vec<String>)> {
     let DefinitionAndUses { definition_location, use_locations } =
       lookup.find_all_definition_and_uses(&location)?;
-    Some((loc_to_string(&definition_location), use_locations.iter().map(loc_to_string).collect()))
+    Some((
+      loc_to_string(heap, &definition_location),
+      use_locations.iter().map(|l| loc_to_string(heap, l)).collect(),
+    ))
   }
 
   #[test]
   fn basic_test() {
-    let (_, lookup) = prepare_lookup(
+    let (heap, lookup) = prepare_lookup(
       r#"class Main {
 function test(a: int, b: bool): unit = { }
 }
@@ -365,15 +373,16 @@ function test(a: int, b: bool): unit = { }
 interface Foo {}
 "#,
     );
-    assert!(query(&lookup, Location::dummy()).is_none());
+    assert!(query(&heap, &lookup, Location::dummy()).is_none());
   }
 
   fn assert_lookup(
+    heap: &Heap,
     lookup: &VariableDefinitionLookup,
     location: Location,
     expected: (&str, Vec<&str>),
   ) {
-    let (actual_def_loc, actual_use_locs) = query(lookup, location).unwrap();
+    let (actual_def_loc, actual_use_locs) = query(heap, lookup, location).unwrap();
     assert_eq!(expected.0, actual_def_loc);
     assert_eq!(expected.1, actual_use_locs);
   }
@@ -396,33 +405,38 @@ class Main {
   }
 }
 "#;
-    let (_, lookup) = prepare_lookup(source);
+    let (heap, lookup) = prepare_lookup(source);
 
     assert_lookup(
+      &heap,
       &lookup,
       Location::from_pos(3, 12, 3, 13),
       ("3:17-3:18", vec!["3:17-3:18", "4:13-4:14"]),
     );
-    assert_lookup(&lookup, Location::from_pos(3, 8, 3, 9), ("4:9-4:10", vec!["4:9-4:10"]));
+    assert_lookup(&heap, &lookup, Location::from_pos(3, 8, 3, 9), ("4:9-4:10", vec!["4:9-4:10"]));
     assert_lookup(
+      &heap,
       &lookup,
       Location::from_pos(7, 12, 7, 13),
       ("6:10-6:11", vec!["6:10-6:11", "8:13-8:14", "9:59-9:60"]),
     );
     assert_lookup(
+      &heap,
       &lookup,
       Location::from_pos(7, 16, 7, 17),
       (
         "6:18-6:19",
-        vec!["10:24-10:25", "6:18-6:19", "7:24-7:25", "8:17-8:18", "9:45-9:46", "9:75-9:76"],
+        vec!["6:18-6:19", "7:24-7:25", "8:17-8:18", "9:45-9:46", "9:75-9:76", "10:24-10:25"],
       ),
     );
     assert_lookup(
+      &heap,
       &lookup,
       Location::from_pos(8, 22, 8, 23),
       ("9:23-9:24", vec!["9:23-9:24", "9:37-9:38"]),
     );
     assert_lookup(
+      &heap,
       &lookup,
       Location::from_pos(11, 19, 11, 21),
       ("12:14-12:16", vec!["12:14-12:16", "12:20-12:22"]),
@@ -440,8 +454,13 @@ class Main {
 
 interface Foo {}
 "#;
-    let (heap, lookup) = prepare_lookup(source);
+    let (mut heap, lookup) = prepare_lookup(source);
     let (_, parsed) = parse(source);
+    let renamed = apply_renaming(
+      &parsed,
+      &lookup.find_all_definition_and_uses(&Location::from_pos(3, 12, 3, 13)).unwrap(),
+      heap.alloc_str("renAmeD"),
+    );
     assert_eq!(
       r#"class Main {
   function test(renAmeD: int, b: bool): unit = {
@@ -451,38 +470,23 @@ interface Foo {}
 
 interface Foo
 "#,
-      printer::pretty_print_source_module(
-        &heap,
-        60,
-        &apply_renaming(
-          &parsed,
-          &lookup.find_all_definition_and_uses(&Location::from_pos(3, 12, 3, 13)).unwrap(),
-          PStr::permanent("renAmeD")
-        )
-      )
+      printer::pretty_print_source_module(&heap, 60, &renamed)
     );
   }
 
   fn assert_correctly_rewritten(
     source: &str,
-    heap: &Heap,
     lookup: &VariableDefinitionLookup,
     location: Location,
     expected: &str,
   ) {
-    let (_, parsed) = parse(source);
-    assert_eq!(
-      expected,
-      printer::pretty_print_source_module(
-        heap,
-        60,
-        &apply_renaming(
-          &parsed,
-          &lookup.find_all_definition_and_uses(&location).unwrap(),
-          PStr::permanent("renAmeD")
-        )
-      )
+    let (mut heap, parsed) = parse(source);
+    let renamed = apply_renaming(
+      &parsed,
+      &lookup.find_all_definition_and_uses(&location).unwrap(),
+      heap.alloc_str("renAmeD"),
     );
+    assert_eq!(expected, printer::pretty_print_source_module(&heap, 60, &renamed));
   }
 
   #[test]
@@ -502,7 +506,7 @@ class Main {
     }
   }
 }"#;
-    let (heap, lookup) = prepare_lookup(source);
+    let (_, lookup) = prepare_lookup(source);
 
     assert!(lookup
       .find_all_definition_and_uses(&Location {
@@ -521,7 +525,6 @@ class Main {
 
     assert_correctly_rewritten(
       source,
-      &heap,
       &lookup,
       Location::from_pos(3, 8, 3, 9),
       r#"class Main {
@@ -544,7 +547,6 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
-      &heap,
       &lookup,
       Location::from_pos(3, 12, 3, 13),
       r#"class Main {
@@ -567,7 +569,6 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
-      &heap,
       &lookup,
       Location::from_pos(5, 35, 5, 36),
       r#"class Main {
@@ -590,7 +591,6 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
-      &heap,
       &lookup,
       Location::from_pos(7, 12, 7, 13),
       r#"class Main {
@@ -613,7 +613,6 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
-      &heap,
       &lookup,
       Location::from_pos(7, 16, 7, 17),
       r#"class Main {
@@ -636,7 +635,6 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
-      &heap,
       &lookup,
       Location::from_pos(8, 22, 8, 23),
       r#"class Main {
@@ -659,7 +657,6 @@ class Main {
     );
     assert_correctly_rewritten(
       source,
-      &heap,
       &lookup,
       Location::from_pos(11, 19, 11, 21),
       r#"class Main {

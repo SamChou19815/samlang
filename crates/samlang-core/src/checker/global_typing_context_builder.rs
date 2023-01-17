@@ -13,9 +13,9 @@ use crate::{
       ClassMemberDeclaration, FieldType, FunctionType, ISourceType, IdType, Module, Toplevel, Type,
       TypeParameter, TypeParameterSignature,
     },
-    ModuleReference, Reason,
+    Reason,
   },
-  common::{Heap, PStr},
+  common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -55,8 +55,8 @@ fn recursive_compute_interface_members_chain(
   match visited.get_mut(&interface_type.module_reference) {
     Some(visited_types) if visited_types.contains(&interface_type.id) => {
       error_set.report_cyclic_type_definition_error(
-        &interface_type.reason.use_loc,
-        &interface_type.pretty_print(heap),
+        interface_type.reason.use_loc,
+        interface_type.pretty_print(heap),
       );
       return;
     }
@@ -64,7 +64,7 @@ fn recursive_compute_interface_members_chain(
       visited_types.insert(interface_type.id);
     }
     None => {
-      visited.insert(interface_type.module_reference.clone(), HashSet::from([interface_type.id]));
+      visited.insert(interface_type.module_reference, HashSet::from([interface_type.id]));
     }
   }
   if let Some(interface_context) = unoptimized_global_typing_context
@@ -159,7 +159,7 @@ fn check_class_member_conformance_with_signature(
 ) {
   if expected.type_parameters.len() != actual.type_parameters.len() {
     error_set.report_arity_mismatch_error(
-      &actual.type_.reason.use_loc,
+      actual.type_.reason.use_loc,
       "type parameters",
       expected.type_parameters.len(),
       actual.type_parameters.len(),
@@ -184,12 +184,12 @@ fn check_class_member_conformance_with_signature(
   }
   if has_type_parameter_conformance_errors {
     error_set.report_type_parameter_mismatch_error(
-      &actual.type_.reason.use_loc,
+      actual.type_.reason.use_loc,
       TypeParameterSignature::pretty_print_list(&expected.type_parameters, heap),
     );
   } else if !expected.type_.is_the_same_type(&actual.type_) {
     error_set.report_unexpected_type_error(
-      &actual.type_.reason.use_loc,
+      actual.type_.reason.use_loc,
       expected.type_.pretty_print(heap),
       actual.type_.pretty_print(heap),
     );
@@ -226,20 +226,20 @@ fn get_fully_inlined_multiple_interface_context(
     {
       if module_cx.classes.contains_key(&instantiated_interface_type.id) {
         error_set.report_unexpected_type_kind_error(
-          &instantiated_interface_type.reason.use_loc,
-          "interface type",
-          "class type",
+          instantiated_interface_type.reason.use_loc,
+          "interface type".to_string(),
+          "class type".to_string(),
         );
       } else if !module_cx.interfaces.contains_key(&instantiated_interface_type.id) {
         error_set.report_unresolved_name_error(
-          &instantiated_interface_type.reason.use_loc,
-          instantiated_interface_type.id.as_str(heap),
+          instantiated_interface_type.reason.use_loc,
+          instantiated_interface_type.id.as_str(heap).to_string(),
         );
       }
     } else {
       error_set.report_unresolved_name_error(
-        &instantiated_interface_type.reason.use_loc,
-        instantiated_interface_type.id.as_str(heap),
+        instantiated_interface_type.reason.use_loc,
+        instantiated_interface_type.id.as_str(heap).to_string(),
       );
     }
 
@@ -279,18 +279,26 @@ fn check_class_member_conformance_with_ast(
 ) {
   // We first filter out incompatible kind
   if expect_is_method && !actual.is_method {
-    error_set.report_unexpected_type_kind_error(&actual.loc, "method", "function");
+    error_set.report_unexpected_type_kind_error(
+      actual.loc,
+      "method".to_string(),
+      "function".to_string(),
+    );
     return;
   }
   if !expect_is_method && actual.is_method {
-    error_set.report_unexpected_type_kind_error(&actual.loc, "function", "method");
+    error_set.report_unexpected_type_kind_error(
+      actual.loc,
+      "function".to_string(),
+      "method".to_string(),
+    );
     return;
   }
   if !actual.is_public {
     error_set.report_unexpected_type_kind_error(
-      &actual.loc,
-      "public class member",
-      "private class member",
+      actual.loc,
+      "public class member".to_string(),
+      "private class member".to_string(),
     );
   }
 
@@ -398,7 +406,7 @@ fn optimize_global_typing_context_with_interface_conformance_checking(
       );
     }
     optimized_global_typing_context.insert(
-      module_reference.clone(),
+      *module_reference,
       ModuleTypingContext {
         type_definitions: module_typing_context.type_definitions.clone(),
         interfaces: optimized_interfaces,
@@ -461,16 +469,16 @@ pub(super) fn build_global_typing_context(
             extends_or_implements,
           } = build_unoptimized_interface_typing_context(toplevel);
           let class_type = Rc::new(Type::Id(IdType {
-            reason: Reason::new(class.name.loc.clone(), Some(class.name.loc.clone())),
-            module_reference: module_reference.clone(),
+            reason: Reason::new(class.name.loc, Some(class.name.loc)),
+            module_reference: *module_reference,
             id: class.name.name,
             type_arguments: class
               .type_parameters
               .iter()
               .map(|it| {
                 Rc::new(Type::Id(IdType {
-                  reason: Reason::new(it.loc.clone(), Some(it.loc.clone())),
-                  module_reference: module_reference.clone(),
+                  reason: Reason::new(it.loc, Some(it.loc)),
+                  module_reference: *module_reference,
                   id: it.name.name,
                   type_arguments: vec![],
                 }))
@@ -478,7 +486,7 @@ pub(super) fn build_global_typing_context(
               .collect_vec(),
           }));
           let type_def = &class.type_definition;
-          let type_def_reason = Reason::new(type_def.loc.clone(), Some(type_def.loc.clone()));
+          let type_def_reason = Reason::new(type_def.loc, Some(type_def.loc));
           let mut functions_with_ctors = functions.deref().clone();
           if type_def.is_object {
             functions_with_ctors.insert(
@@ -499,7 +507,7 @@ pub(super) fn build_global_typing_context(
               }),
             );
           } else {
-            let type_def_reason = Reason::new(type_def.loc.clone(), Some(type_def.loc.clone()));
+            let type_def_reason = Reason::new(type_def.loc, Some(type_def.loc));
             for (tag, FieldType { type_, is_public: _ }) in &type_def.mappings {
               functions_with_ctors.insert(
                 *tag,
@@ -536,7 +544,7 @@ pub(super) fn build_global_typing_context(
       }
     }
     unoptimized_global_typing_context.insert(
-      module_reference.clone(),
+      *module_reference,
       UnoptimizedModuleTypingContext { type_definitions, interfaces, classes },
     );
   }
@@ -562,13 +570,13 @@ mod tests {
       Location,
     },
     checker::typing_context::create_builtin_module_typing_context,
-    common::{rcs, Heap},
+    common::Heap,
   };
   use pretty_assertions::assert_eq;
 
   #[test]
   fn check_class_member_conformance_with_ast_tests() {
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let builder = test_builder::create();
 
@@ -588,7 +596,7 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: true,
-        name: Id::from(PStr::permanent("")),
+        name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -616,7 +624,7 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: false,
-        name: Id::from(PStr::permanent("")),
+        name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -632,7 +640,7 @@ mod tests {
       true,
       &MemberTypeInformation {
         is_public: true,
-        type_parameters: vec![TypeParameterSignature { name: PStr::permanent("A"), bound: None }],
+        type_parameters: vec![TypeParameterSignature { name: heap.alloc_str("A"), bound: None }],
         type_: FunctionType {
           reason: Reason::dummy(),
           argument_types: vec![],
@@ -644,7 +652,7 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
-        name: Id::from(PStr::permanent("")),
+        name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -661,8 +669,8 @@ mod tests {
       &MemberTypeInformation {
         is_public: true,
         type_parameters: vec![TypeParameterSignature {
-          name: PStr::permanent("A"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B")))),
+          name: heap.alloc_str("A"),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B")))),
         }],
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -675,12 +683,12 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
-        name: Id::from(PStr::permanent("")),
+        name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![TypeParameter {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: Id::from(PStr::permanent("A")),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B")))),
+          name: Id::from(heap.alloc_str("A")),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B")))),
         }]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -698,14 +706,14 @@ mod tests {
       &MemberTypeInformation {
         is_public: true,
         type_parameters: vec![
-          TypeParameterSignature { name: PStr::permanent("A"), bound: None },
+          TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
           TypeParameterSignature {
-            name: PStr::permanent("C"),
-            bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
+            name: heap.alloc_str("C"),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("A")))),
           },
           TypeParameterSignature {
-            name: PStr::permanent("D"),
-            bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
+            name: heap.alloc_str("D"),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("A")))),
           },
         ],
         type_: FunctionType {
@@ -719,25 +727,25 @@ mod tests {
         associated_comments: Rc::new(vec![]),
         is_public: false,
         is_method: true,
-        name: Id::from(PStr::permanent("")),
+        name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![
           TypeParameter {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: Id::from(PStr::permanent("B")),
+            name: Id::from(heap.alloc_str("B")),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: Id::from(PStr::permanent("C")),
+            name: Id::from(heap.alloc_str("C")),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: Id::from(PStr::permanent("D")),
-            bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B")))),
+            name: Id::from(heap.alloc_str("D")),
+            bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B")))),
           },
         ]),
         type_: FunctionType {
@@ -760,14 +768,14 @@ mod tests {
         "__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `public class member`, actual: `private class member`.",
         "__DUMMY__.sam:0:0-0:0: [UnexpectedType]: Expected: `() -> int`, actual: `() -> bool`.",
       ],
-      error_set.error_messages()
+      error_set.error_messages(&heap)
     );
   }
 
   fn inlined_cx_from_type(
-    heap: &Heap,
     unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
     id_types: Vec<IdType>,
+    heap: &Heap,
   ) -> String {
     let mut error_set = ErrorSet::new();
     let collector = get_fully_inlined_multiple_interface_context(
@@ -796,13 +804,14 @@ mod tests {
 
   #[test]
   fn get_fully_inlined_multiple_interface_context_tests() {
+    let mut heap = Heap::new();
     let builder = test_builder::create();
     let unoptimized_global_cx = HashMap::from([(
       ModuleReference::dummy(),
       UnoptimizedModuleTypingContext {
         type_definitions: BTreeMap::new(),
         classes: BTreeMap::from([(
-          PStr::permanent("C"),
+          heap.alloc_str("C"),
           UnoptimizedInterfaceTypingContext {
             functions: Rc::new(BTreeMap::new()),
             methods: Rc::new(BTreeMap::new()),
@@ -812,159 +821,159 @@ mod tests {
         )]),
         interfaces: BTreeMap::from([
           (
-            PStr::permanent("IUseNonExistent"),
+            heap.alloc_str("IUseNonExistent"),
             UnoptimizedInterfaceTypingContext {
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![
-                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
-                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
               ],
               extends_or_implements: vec![
-                builder.simple_id_type_unwrapped(PStr::permanent("not_exist")),
-                builder.simple_id_type_unwrapped(PStr::permanent("C")),
+                builder.simple_id_type_unwrapped(heap.alloc_str("not_exist")),
+                builder.simple_id_type_unwrapped(heap.alloc_str("C")),
               ],
             },
           ),
           (
-            PStr::permanent("IBase"),
+            heap.alloc_str("IBase"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![
-                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
-                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
               ],
               extends_or_implements: vec![],
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::from([(
-                PStr::permanent("m1"),
+                heap.alloc_str("m1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature {
-                    name: PStr::permanent("C"),
-                    bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
+                    name: heap.alloc_str("C"),
+                    bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("A")))),
                   }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
                     argument_types: vec![
-                      builder.simple_id_type(PStr::permanent("A")),
-                      builder.simple_id_type(PStr::permanent("B")),
+                      builder.simple_id_type(heap.alloc_str("A")),
+                      builder.simple_id_type(heap.alloc_str("B")),
                     ],
-                    return_type: builder.simple_id_type(PStr::permanent("C")),
+                    return_type: builder.simple_id_type(heap.alloc_str("C")),
                   },
                 }),
               )])),
             },
           ),
           (
-            PStr::permanent("ILevel1"),
+            heap.alloc_str("ILevel1"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![
-                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
-                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
               ],
               extends_or_implements: vec![builder.general_id_type_unwrapped(
-                PStr::permanent("IBase"),
-                vec![builder.int_type(), builder.simple_id_type(PStr::permanent("B"))],
+                heap.alloc_str("IBase"),
+                vec![builder.int_type(), builder.simple_id_type(heap.alloc_str("B"))],
               )],
               functions: Rc::new(BTreeMap::from([(
-                PStr::permanent("f1"),
+                heap.alloc_str("f1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature {
-                    name: PStr::permanent("C"),
+                    name: heap.alloc_str("C"),
                     bound: None,
                   }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
                     argument_types: vec![
-                      builder.simple_id_type(PStr::permanent("A")),
-                      builder.simple_id_type(PStr::permanent("B")),
+                      builder.simple_id_type(heap.alloc_str("A")),
+                      builder.simple_id_type(heap.alloc_str("B")),
                     ],
-                    return_type: builder.simple_id_type(PStr::permanent("C")),
+                    return_type: builder.simple_id_type(heap.alloc_str("C")),
                   },
                 }),
               )])),
               methods: Rc::new(BTreeMap::from([(
-                PStr::permanent("m1"),
+                heap.alloc_str("m1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature {
-                    name: PStr::permanent("C"),
-                    bound: Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("A")))),
+                    name: heap.alloc_str("C"),
+                    bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("A")))),
                   }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
                     argument_types: vec![
-                      builder.simple_id_type(PStr::permanent("A")),
-                      builder.simple_id_type(PStr::permanent("B")),
+                      builder.simple_id_type(heap.alloc_str("A")),
+                      builder.simple_id_type(heap.alloc_str("B")),
                     ],
-                    return_type: builder.simple_id_type(PStr::permanent("C")),
+                    return_type: builder.simple_id_type(heap.alloc_str("C")),
                   },
                 }),
               )])),
             },
           ),
           (
-            PStr::permanent("ILevel2"),
+            heap.alloc_str("ILevel2"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![
-                TypeParameterSignature { name: PStr::permanent("A"), bound: None },
-                TypeParameterSignature { name: PStr::permanent("B"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
               ],
               extends_or_implements: vec![builder.general_id_type_unwrapped(
-                PStr::permanent("ILevel1"),
-                vec![builder.simple_id_type(PStr::permanent("A")), builder.int_type()],
+                heap.alloc_str("ILevel1"),
+                vec![builder.simple_id_type(heap.alloc_str("A")), builder.int_type()],
               )],
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::from([(
-                PStr::permanent("m2"),
+                heap.alloc_str("m2"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![TypeParameterSignature {
-                    name: PStr::permanent("C"),
+                    name: heap.alloc_str("C"),
                     bound: None,
                   }],
                   type_: FunctionType {
                     reason: Reason::dummy(),
                     argument_types: vec![
-                      builder.simple_id_type(PStr::permanent("A")),
-                      builder.simple_id_type(PStr::permanent("B")),
+                      builder.simple_id_type(heap.alloc_str("A")),
+                      builder.simple_id_type(heap.alloc_str("B")),
                     ],
-                    return_type: builder.simple_id_type(PStr::permanent("C")),
+                    return_type: builder.simple_id_type(heap.alloc_str("C")),
                   },
                 }),
               )])),
             },
           ),
           (
-            PStr::permanent("ICyclic1"),
+            heap.alloc_str("ICyclic1"),
             UnoptimizedInterfaceTypingContext {
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![],
               extends_or_implements: vec![
-                builder.simple_id_type_unwrapped(PStr::permanent("ICyclic2"))
+                builder.simple_id_type_unwrapped(heap.alloc_str("ICyclic2"))
               ],
             },
           ),
           (
-            PStr::permanent("ICyclic2"),
+            heap.alloc_str("ICyclic2"),
             UnoptimizedInterfaceTypingContext {
               functions: Rc::new(BTreeMap::new()),
               methods: Rc::new(BTreeMap::new()),
               type_parameters: vec![],
               extends_or_implements: vec![
-                builder.simple_id_type_unwrapped(PStr::permanent("ICyclic1"))
+                builder.simple_id_type_unwrapped(heap.alloc_str("ICyclic1"))
               ],
             },
           ),
           (
-            PStr::permanent("ConflictExtends1"),
+            heap.alloc_str("ConflictExtends1"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![],
               extends_or_implements: vec![],
               functions: Rc::new(BTreeMap::from([(
-                PStr::permanent("f"),
+                heap.alloc_str("f"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -976,7 +985,7 @@ mod tests {
                 }),
               )])),
               methods: Rc::new(BTreeMap::from([(
-                PStr::permanent("m"),
+                heap.alloc_str("m"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -990,12 +999,12 @@ mod tests {
             },
           ),
           (
-            PStr::permanent("ConflictExtends2"),
+            heap.alloc_str("ConflictExtends2"),
             UnoptimizedInterfaceTypingContext {
               type_parameters: vec![],
               extends_or_implements: vec![],
               functions: Rc::new(BTreeMap::from([(
-                PStr::permanent("f"),
+                heap.alloc_str("f"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1007,7 +1016,7 @@ mod tests {
                 }),
               )])),
               methods: Rc::new(BTreeMap::from([(
-                PStr::permanent("m"),
+                heap.alloc_str("m"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1023,38 +1032,37 @@ mod tests {
         ]),
       },
     )]);
-    let heap = Heap::new();
 
     assert_eq!(
       "functions:\n\nmethods:\n\nsuper_types: C",
       inlined_cx_from_type(
-        &heap,
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(PStr::permanent("C"))]
+        vec![builder.simple_id_type_unwrapped(heap.alloc_str("C"))],
+        &heap,
       )
     );
     assert_eq!(
       "functions:\n\nmethods:\n\nsuper_types: I_not_exist",
       inlined_cx_from_type(
-        &heap,
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(PStr::permanent("I_not_exist"))]
+        vec![builder.simple_id_type_unwrapped(heap.alloc_str("I_not_exist"))],
+        &heap,
       )
     );
     assert_eq!(
       "functions:\n\nmethods:\n\nsuper_types: not_exist, C, IUseNonExistent",
       inlined_cx_from_type(
-        &heap,
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(PStr::permanent("IUseNonExistent"))]
+        vec![builder.simple_id_type_unwrapped(heap.alloc_str("IUseNonExistent"))],
+        &heap,
       )
     );
     assert_eq!(
       "functions:\n\nmethods:\n\nsuper_types: I",
       inlined_cx_from_type(
-        &heap,
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(PStr::permanent("I"))]
+        vec![builder.simple_id_type_unwrapped(heap.alloc_str("I"))],
+        &heap,
       )
     );
     assert_eq!(
@@ -1068,36 +1076,35 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
 "#
       .trim(),
       inlined_cx_from_type(
-        &heap,
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(PStr::permanent("ILevel2"))]
+        vec![builder.simple_id_type_unwrapped(heap.alloc_str("ILevel2"))],
+        &heap,
       )
     );
 
-    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped(PStr::permanent("ICyclic1"))],
+      &vec![builder.simple_id_type_unwrapped(heap.alloc_str("ICyclic1"))],
       &unoptimized_global_cx,
       &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped(PStr::permanent("ICyclic1"))],
+      &vec![builder.simple_id_type_unwrapped(heap.alloc_str("ICyclic1"))],
       &unoptimized_global_cx,
       &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped(PStr::permanent("ICyclic2"))],
+      &vec![builder.simple_id_type_unwrapped(heap.alloc_str("ICyclic2"))],
       &unoptimized_global_cx,
       &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
       &vec![
-        builder.simple_id_type_unwrapped(PStr::permanent("ConflictExtends1")),
-        builder.simple_id_type_unwrapped(PStr::permanent("ConflictExtends2")),
+        builder.simple_id_type_unwrapped(heap.alloc_str("ConflictExtends1")),
+        builder.simple_id_type_unwrapped(heap.alloc_str("ConflictExtends2")),
       ],
       &unoptimized_global_cx,
       &heap,
@@ -1110,12 +1117,13 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
         "__DUMMY__.sam:0:0-0:0: [CyclicTypeDefinition]: Type `ICyclic2` has a cyclic definition.",
         "__DUMMY__.sam:0:0-0:0: [UnexpectedType]: Expected: `() -> int`, actual: `() -> bool`.",
       ],
-      error_set.error_messages()
+      error_set.error_messages(&heap)
     );
   }
 
   #[test]
   fn check_module_member_interface_conformance_tests() {
+    let mut heap = Heap::new();
     let builder = test_builder::create();
     let unoptimized_global_cx = HashMap::from([(
       ModuleReference::dummy(),
@@ -1123,13 +1131,13 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
         type_definitions: BTreeMap::new(),
         classes: BTreeMap::new(),
         interfaces: BTreeMap::from([(
-          PStr::permanent("IBase"),
+          heap.alloc_str("IBase"),
           UnoptimizedInterfaceTypingContext {
             type_parameters: vec![],
             extends_or_implements: vec![],
             functions: Rc::new(BTreeMap::from([
               (
-                PStr::permanent("f1"),
+                heap.alloc_str("f1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1141,7 +1149,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 }),
               ),
               (
-                PStr::permanent("f2"),
+                heap.alloc_str("f2"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1155,7 +1163,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             ])),
             methods: Rc::new(BTreeMap::from([
               (
-                PStr::permanent("m1"),
+                heap.alloc_str("m1"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1167,7 +1175,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 }),
               ),
               (
-                PStr::permanent("m2"),
+                heap.alloc_str("m2"),
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: vec![],
@@ -1184,18 +1192,15 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
       },
     )]);
 
-    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     check_module_member_interface_conformance(
       &unoptimized_global_cx,
       &Toplevel::Class(InterfaceDeclarationCommon {
         loc: Location::dummy(),
         associated_comments: Rc::new(vec![]),
-        name: Id::from(PStr::permanent("A")),
+        name: Id::from(heap.alloc_str("A")),
         type_parameters: vec![],
-        extends_or_implements_nodes: vec![
-          builder.simple_id_type_unwrapped(PStr::permanent("IBase"))
-        ],
+        extends_or_implements_nodes: vec![builder.simple_id_type_unwrapped(heap.alloc_str("IBase"))],
         type_definition: TypeDefinition {
           loc: Location::dummy(),
           is_object: true,
@@ -1209,7 +1214,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               associated_comments: Rc::new(vec![]),
               is_public: true,
               is_method: false,
-              name: Id::from(PStr::permanent("f1")),
+              name: Id::from(heap.alloc_str("f1")),
               type_parameters: Rc::new(vec![]),
               type_: FunctionType {
                 reason: Reason::dummy(),
@@ -1226,7 +1231,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               associated_comments: Rc::new(vec![]),
               is_public: true,
               is_method: true,
-              name: Id::from(PStr::permanent("m1")),
+              name: Id::from(heap.alloc_str("m1")),
               type_parameters: Rc::new(vec![]),
               type_: FunctionType {
                 reason: Reason::dummy(),
@@ -1246,10 +1251,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
 
   #[test]
   fn builder_tests() {
-    let m0_ref = ModuleReference::ordinary(vec![rcs("Module0")]);
-    let m1_ref = ModuleReference::ordinary(vec![rcs("Module1")]);
-    let builder = test_builder::create();
     let mut heap = Heap::new();
+    let m0_ref = heap.alloc_module_reference_from_string_vec(vec!["Module0".to_string()]);
+    let m1_ref = heap.alloc_module_reference_from_string_vec(vec!["Module1".to_string()]);
+    let builder = test_builder::create();
 
     let test_sources = HashMap::from([
       (
@@ -1259,20 +1264,20 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           toplevels: vec![Toplevel::Class(InterfaceDeclarationCommon {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: Id::from(PStr::permanent("Class0")),
+            name: Id::from(heap.alloc_str("Class0")),
             type_parameters: vec![TypeParameter {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from(PStr::permanent("T")),
+              name: Id::from(heap.alloc_str("T")),
               bound: None,
             }],
             extends_or_implements_nodes: vec![],
             type_definition: TypeDefinition {
               loc: Location::dummy(),
               is_object: false,
-              names: vec![Id::from(PStr::permanent("A"))],
+              names: vec![Id::from(heap.alloc_str("A"))],
               mappings: HashMap::from([(
-                PStr::permanent("A"),
+                heap.alloc_str("A"),
                 FieldType { is_public: true, type_: builder.int_type() },
               )]),
             },
@@ -1286,8 +1291,8 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           imports: vec![ModuleMembersImport {
             loc: Location::dummy(),
             imported_members: vec![
-              Id::from(PStr::permanent("Class0")),
-              Id::from(PStr::permanent("BAD_CLASS_THAT_DOESNT_EXIST")),
+              Id::from(heap.alloc_str("Class0")),
+              Id::from(heap.alloc_str("BAD_CLASS_THAT_DOESNT_EXIST")),
             ],
             imported_module: m0_ref.clone(),
             imported_module_loc: Location::dummy(),
@@ -1296,15 +1301,15 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             Toplevel::Class(InterfaceDeclarationCommon {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from(PStr::permanent("Class1")),
+              name: Id::from(heap.alloc_str("Class1")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
               type_definition: TypeDefinition {
                 loc: Location::dummy(),
                 is_object: true,
-                names: vec![Id::from(PStr::permanent("a"))],
+                names: vec![Id::from(heap.alloc_str("a"))],
                 mappings: HashMap::from([(
-                  PStr::permanent("a"),
+                  heap.alloc_str("a"),
                   FieldType { is_public: true, type_: builder.int_type() },
                 )]),
               },
@@ -1315,7 +1320,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     associated_comments: Rc::new(vec![]),
                     is_public: true,
                     is_method: true,
-                    name: Id::from(PStr::permanent("m1")),
+                    name: Id::from(heap.alloc_str("m1")),
                     type_parameters: Rc::new(vec![]),
                     type_: FunctionType {
                       reason: Reason::dummy(),
@@ -1332,7 +1337,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     associated_comments: Rc::new(vec![]),
                     is_public: false,
                     is_method: false,
-                    name: Id::from(PStr::permanent("f1")),
+                    name: Id::from(heap.alloc_str("f1")),
                     type_parameters: Rc::new(vec![]),
                     type_: FunctionType {
                       reason: Reason::dummy(),
@@ -1348,7 +1353,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             Toplevel::Interface(InterfaceDeclarationCommon {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from(PStr::permanent("Interface2")),
+              name: Id::from(heap.alloc_str("Interface2")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
               type_definition: (),
@@ -1357,7 +1362,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             Toplevel::Interface(InterfaceDeclarationCommon {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from(PStr::permanent("Interface3")),
+              name: Id::from(heap.alloc_str("Interface3")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
               type_definition: (),
@@ -1366,7 +1371,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: Id::from(PStr::permanent("m1")),
+                name: Id::from(heap.alloc_str("m1")),
                 type_parameters: Rc::new(vec![]),
                 type_: FunctionType {
                   reason: Reason::dummy(),
@@ -1379,10 +1384,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             Toplevel::Class(InterfaceDeclarationCommon {
               loc: Location::dummy(),
               associated_comments: Rc::new(vec![]),
-              name: Id::from(PStr::permanent("Class2")),
+              name: Id::from(heap.alloc_str("Class2")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![
-                builder.simple_id_type_unwrapped(PStr::permanent("Interface3"))
+                builder.simple_id_type_unwrapped(heap.alloc_str("Interface3"))
               ],
               type_definition: TypeDefinition {
                 loc: Location::dummy(),
@@ -1422,20 +1427,20 @@ Class2:[]
 interfaces:
 Class1: class  : []
 functions:
-init: public (int) -> Class1
 f1: private () -> int
+init: public (int) -> Class1
 methods:
 m1: public () -> int
-Class2: class  : [Interface3]
-functions:
-init: public () -> Class2
-methods:
 Interface2: interface  : []
 functions:
 methods:
 Interface3: interface  : []
 functions:
 m1: public () -> int
+methods:
+Class2: class  : [Interface3]
+functions:
+init: public () -> Class2
 methods:"#,
       actual_global_cx.get(&m1_ref).unwrap().to_string(&heap)
     );

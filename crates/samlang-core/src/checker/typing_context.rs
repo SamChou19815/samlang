@@ -7,9 +7,9 @@ use crate::{
     source::{
       FieldType, FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature,
     },
-    Location, ModuleReference, Reason,
+    Location, Reason,
   },
-  common::{Heap, PStr},
+  common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -31,9 +31,9 @@ impl LocalTypingContext {
 
   pub(super) fn read(&self, loc: &Location) -> Type {
     if let Some(def_loc) = self.ssa_analysis_result.use_define_map.get(loc) {
-      self.type_map.get(def_loc).unwrap().reposition(loc.clone())
+      self.type_map.get(def_loc).unwrap().reposition(*loc)
     } else {
-      Type::Unknown(Reason::new(loc.clone(), None))
+      Type::Unknown(Reason::new(*loc, None))
     }
   }
 
@@ -214,6 +214,7 @@ impl ModuleTypingContext {
 
 pub(crate) fn create_builtin_module_typing_context(heap: &mut Heap) -> ModuleTypingContext {
   heap.alloc_str("init");
+  heap.alloc_str("this");
   let str_t = heap.alloc_str("T");
   ModuleTypingContext {
     type_definitions: BTreeMap::new(),
@@ -435,7 +436,7 @@ impl<'a> TypingContext<'a> {
     if self.available_type_parameters.iter().any(|it| it.name == id_type.id) {
       if !id_type.type_arguments.is_empty() {
         self.error_set.report_arity_mismatch_error(
-          &id_type.reason.use_loc,
+          id_type.reason.use_loc,
           "type arguments",
           0,
           id_type.type_arguments.len(),
@@ -451,14 +452,14 @@ impl<'a> TypingContext<'a> {
     {
       if !interface_info.is_concrete && enforce_concrete_types {
         self.error_set.report_unexpected_type_kind_error(
-          &id_type.reason.use_loc,
-          "non-abstract type",
-          &id_type.pretty_print(heap),
+          id_type.reason.use_loc,
+          "non-abstract type".to_string(),
+          id_type.pretty_print(heap),
         )
       }
       if interface_info.type_parameters.len() != id_type.type_arguments.len() {
         self.error_set.report_arity_mismatch_error(
-          &id_type.reason.use_loc,
+          id_type.reason.use_loc,
           "type arguments",
           interface_info.type_parameters.len(),
           id_type.type_arguments.len(),
@@ -469,7 +470,7 @@ impl<'a> TypingContext<'a> {
         if let Some(bound) = &tparam.bound {
           if !self.is_subtype(targ, &Type::Id(bound.deref().clone())) {
             self.error_set.report_unexpected_subtype_error(
-              &targ.get_reason().use_loc,
+              targ.get_reason().use_loc,
               bound.pretty_print(heap),
               targ.pretty_print(heap),
             )
@@ -507,8 +508,8 @@ impl<'a> TypingContext<'a> {
     let instantiated_cx = instantiate_interface_context(
       relevant_class,
       &IdType {
-        reason: Reason::new(use_loc.clone(), None),
-        module_reference: module_reference.clone(),
+        reason: Reason::new(use_loc, None),
+        module_reference: *module_reference,
         id: *class_name,
         type_arguments: class_type_arguments,
       },
@@ -522,7 +523,7 @@ impl<'a> TypingContext<'a> {
   }
 
   fn in_same_class(&self, module_reference: &ModuleReference, class_name: &PStr) -> bool {
-    module_reference.clone() == self.current_module_reference && *class_name == self.current_class
+    self.current_module_reference.eq(module_reference) && *class_name == self.current_class
   }
 
   pub(crate) fn resolve_type_definition(

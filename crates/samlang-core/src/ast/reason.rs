@@ -21,7 +21,7 @@ impl Reason {
   }
 
   pub(crate) fn to_use_reason(&self, use_loc: Location) -> Reason {
-    Reason { use_loc, def_loc: self.def_loc.clone() }
+    Reason { use_loc, def_loc: self.def_loc }
   }
 }
 

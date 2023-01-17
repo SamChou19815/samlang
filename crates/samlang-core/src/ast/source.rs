@@ -1,8 +1,5 @@
-use super::{
-  loc::{Location, ModuleReference},
-  reason::Reason,
-};
-use crate::common::{Heap, PStr};
+use super::{loc::Location, reason::Reason};
+use crate::common::{Heap, ModuleReference, PStr};
 use enum_as_inner::EnumAsInner;
 use itertools::join;
 use std::{collections::HashMap, rc::Rc};
@@ -214,7 +211,7 @@ impl Type {
       Self::Primitive(reason, p) => Type::Primitive(f(reason), *p),
       Self::Id(IdType { reason, module_reference, id, type_arguments }) => Type::Id(IdType {
         reason: f(reason),
-        module_reference: module_reference.clone(),
+        module_reference: *module_reference,
         id: *id,
         type_arguments: type_arguments.clone(),
       }),
@@ -281,9 +278,9 @@ pub(crate) struct AnnotatedId {
 }
 
 pub(crate) mod expr {
-  use super::super::loc::{Location, ModuleReference};
+  use super::super::loc::Location;
   use super::{Comment, Id, Literal, OptionallyAnnotatedId, Type};
-  use crate::common::PStr;
+  use crate::common::{ModuleReference, PStr};
   use std::collections::HashMap;
   use std::rc::Rc;
 
@@ -491,7 +488,6 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) enum E {
     Literal(ExpressionCommon, Literal),
-    This(ExpressionCommon),
     Id(ExpressionCommon, Id),
     ClassFn(ClassFunction),
     FieldAccess(FieldAccess),
@@ -509,7 +505,6 @@ pub(crate) mod expr {
     pub(crate) fn common(&self) -> &ExpressionCommon {
       match self {
         E::Literal(common, _)
-        | E::This(common)
         | E::Id(common, _)
         | E::ClassFn(ClassFunction { common, .. })
         | E::FieldAccess(FieldAccess { common, .. })
@@ -524,8 +519,8 @@ pub(crate) mod expr {
       }
     }
 
-    pub(crate) fn loc(&self) -> &Location {
-      &self.common().loc
+    pub(crate) fn loc(&self) -> Location {
+      self.common().loc
     }
 
     pub(crate) fn type_(&self) -> Rc<Type> {
@@ -534,7 +529,7 @@ pub(crate) mod expr {
 
     pub(crate) fn precedence(&self) -> i32 {
       match self {
-        E::Literal(_, _) | E::This(_) | E::Id(_, _) => 0,
+        E::Literal(_, _) | E::Id(_, _) => 0,
         E::ClassFn(_) => 1,
         E::FieldAccess(_) | E::MethodAccess(_) | E::Call(_) | E::Block(_) => 2,
         E::Unary(_) => 3,
@@ -548,7 +543,6 @@ pub(crate) mod expr {
     pub(crate) fn mod_common<F: FnOnce(ExpressionCommon) -> ExpressionCommon>(self, f: F) -> E {
       match self {
         E::Literal(common, l) => E::Literal(f(common), l),
-        E::This(common) => E::This(f(common)),
         E::Id(common, id) => E::Id(f(common), id),
         E::ClassFn(ClassFunction {
           common,
@@ -702,10 +696,10 @@ impl Toplevel {
     }
   }
 
-  pub(crate) fn loc(&self) -> &Location {
+  pub(crate) fn loc(&self) -> Location {
     match self {
-      Toplevel::Interface(i) => &i.loc,
-      Toplevel::Class(c) => &c.loc,
+      Toplevel::Interface(i) => i.loc,
+      Toplevel::Class(c) => c.loc,
     }
   }
 
@@ -767,10 +761,7 @@ pub(crate) struct Module {
 
 #[cfg(test)]
 pub(crate) mod test_builder {
-  use super::super::{
-    loc::{Location, ModuleReference},
-    reason::Reason,
-  };
+  use super::super::{loc::Location, reason::Reason};
   use super::*;
 
   pub(crate) struct CustomizedAstBuilder {

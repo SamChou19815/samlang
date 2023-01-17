@@ -1,18 +1,16 @@
 use super::{
-  location_lookup::{self, LocationLookup},
+  location_cover::{search_module, LocationCoverSearchResult},
   variable_definition::{apply_renaming, VariableDefinitionLookup},
 };
 use crate::{
   ast::{
-    source::{
-      expr, ClassMemberDeclaration, Comment, CommentKind, ISourceType, Module, Toplevel, Type,
-    },
-    Location, ModuleReference, Position,
+    source::{expr, ClassMemberDeclaration, Comment, CommentKind, ISourceType, Module, Toplevel},
+    Location, Position,
   },
   checker::{
     type_check_sources, GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation,
   },
-  common::{rc_string, Heap, PStr},
+  common::{Heap, ModuleReference, PStr},
   errors::{CompileTimeError, ErrorSet},
   parser::parse_source_module_from_text,
   printer,
@@ -58,26 +56,23 @@ fn get_last_doc_comment(comments: &[Comment]) -> Option<PStr> {
 }
 
 pub struct LanguageServices {
-  heap: Heap,
+  pub heap: Heap,
   raw_sources: HashMap<ModuleReference, String>,
   checked_modules: HashMap<ModuleReference, Module>,
   errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
   global_cx: GlobalTypingContext,
-  expression_loc_lookup: LocationLookup<expr::E>,
 }
 
 impl LanguageServices {
   // Section 1: Init
 
-  pub fn new(source_handles: Vec<(ModuleReference, String)>) -> LanguageServices {
-    let heap = Heap::new();
+  pub fn new(heap: Heap, source_handles: Vec<(ModuleReference, String)>) -> LanguageServices {
     let mut state = LanguageServices {
       heap,
       raw_sources: source_handles.into_iter().collect(),
       checked_modules: HashMap::new(),
       errors: HashMap::new(),
       global_cx: HashMap::new(),
-      expression_loc_lookup: LocationLookup::new(),
     };
     state.init();
     state
@@ -90,10 +85,7 @@ impl LanguageServices {
         .raw_sources
         .iter()
         .map(|(mod_ref, text)| {
-          (
-            mod_ref.clone(),
-            parse_source_module_from_text(text, mod_ref, &mut self.heap, &mut error_set),
-          )
+          (*mod_ref, parse_source_module_from_text(text, *mod_ref, &mut self.heap, &mut error_set))
         })
         .collect(),
       &mut self.heap,
@@ -102,24 +94,12 @@ impl LanguageServices {
     self.checked_modules = checked_modules;
     self.global_cx = global_cx;
     self.update_errors(error_set.errors());
-    self.update_location_lookups();
   }
 
   fn update_errors(&mut self, errors: Vec<&CompileTimeError>) {
-    let grouped = errors.into_iter().group_by(|e| e.0.module_reference.clone());
+    let grouped = errors.into_iter().group_by(|e| e.location.module_reference);
     self.errors =
       grouped.into_iter().map(|(k, v)| (k, v.cloned().collect_vec())).collect::<HashMap<_, _>>();
-  }
-
-  fn update_location_lookups(&mut self) {
-    for (module_reference, module) in &self.checked_modules {
-      location_lookup::rebuild_expression_lookup_for_module(
-        &mut self.heap,
-        &mut self.expression_loc_lookup,
-        module_reference,
-        module,
-      );
-    }
   }
 
   // Section 2: Getters and Setters
@@ -136,6 +116,10 @@ impl LanguageServices {
     }
   }
 
+  pub fn get_error_strings(&self, module_reference: &ModuleReference) -> Vec<String> {
+    self.get_errors(module_reference).iter().map(|e| e.pretty_print(&self.heap)).collect()
+  }
+
   pub fn update(&mut self, module_reference: ModuleReference, source_code: String) {
     self.raw_sources.insert(module_reference, source_code);
     self.init();
@@ -148,50 +132,68 @@ impl LanguageServices {
 
   // Section 3: LSP Providers
 
+  fn search_at_pos(
+    &self,
+    module_reference: &ModuleReference,
+    position: Position,
+  ) -> Option<LocationCoverSearchResult> {
+    search_module(*module_reference, self.checked_modules.get(module_reference)?, position)
+  }
+
   pub fn query_for_hover(
     &self,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<TypeQueryResult> {
-    let expression = self.expression_loc_lookup.get(module_reference, position)?;
-    let function_reference = if let expr::E::ClassFn(e) = expression {
-      Some((e.module_reference.clone(), e.class_name.name, &e.fn_name.name))
-    } else if let expr::E::MethodAccess(e) = expression {
-      let t = e.object.type_();
-      let this_type = t.as_id().unwrap();
-      Some((this_type.module_reference.clone(), this_type.id, &e.method_name.name))
-    } else {
-      None
-    };
-    if let Some((fetched_function_module_reference, class_name, fn_name)) = function_reference {
-      let relevant_fn =
-        self.find_class_member(&fetched_function_module_reference, &class_name, fn_name)?;
-      let type_content = TypeQueryContent {
-        language: "samlang",
-        value: expression.type_().pretty_print(&self.heap),
-      };
-      Some(self.query_result_with_optional_document(
-        expression.loc().clone(),
-        type_content,
-        get_last_doc_comment(&relevant_fn.associated_comments),
-      ))
-    } else {
-      let type_ = expression.type_().pretty_print(&self.heap);
-      if type_.starts_with("class ") {
-        let (expr_class_name, toplevel) = self.find_toplevel_from_synthetic_class_type(&type_);
-        let type_content =
-          TypeQueryContent { language: "samlang", value: format!("class {}", expr_class_name) };
+    match self.search_at_pos(module_reference, position)? {
+      LocationCoverSearchResult::ClassMemberName(
+        loc,
+        fetched_function_module_reference,
+        class_name,
+        fn_name,
+        _,
+      ) => {
+        let relevant_fn =
+          self.find_class_member(&fetched_function_module_reference, &class_name, &fn_name)?;
+        let type_content = TypeQueryContent {
+          language: "samlang",
+          value: relevant_fn.type_.pretty_print(&self.heap),
+        };
         Some(self.query_result_with_optional_document(
-          expression.loc().clone(),
+          loc,
           type_content,
-          toplevel.and_then(|toplevel| get_last_doc_comment(toplevel.associated_comments())),
+          get_last_doc_comment(&relevant_fn.associated_comments),
         ))
-      } else {
-        Some(TypeQueryResult {
-          contents: vec![TypeQueryContent { language: "samlang", value: type_ }],
-          location: expression.loc().clone(),
-        })
       }
+      LocationCoverSearchResult::ClassName(loc, module_reference, class_name) => {
+        let type_content = TypeQueryContent {
+          language: "samlang",
+          value: format!("class {}", class_name.as_str(&self.heap)),
+        };
+        Some(
+          self.query_result_with_optional_document(
+            loc,
+            type_content,
+            self
+              .find_toplevel(&module_reference, &class_name)
+              .and_then(|toplevel| get_last_doc_comment(toplevel.associated_comments())),
+          ),
+        )
+      }
+      LocationCoverSearchResult::Expression(expression) => Some(TypeQueryResult {
+        contents: vec![TypeQueryContent {
+          language: "samlang",
+          value: expression.type_().pretty_print(&self.heap),
+        }],
+        location: expression.loc(),
+      }),
+      LocationCoverSearchResult::TypedName(location, _, type_) => Some(TypeQueryResult {
+        contents: vec![TypeQueryContent {
+          language: "samlang",
+          value: type_.pretty_print(&self.heap),
+        }],
+        location,
+      }),
     }
   }
 
@@ -220,25 +222,6 @@ impl LanguageServices {
       .find(|it| it.name.name.eq(member_name))
   }
 
-  fn find_toplevel_from_synthetic_class_type<'a>(
-    &self,
-    class_type: &'a str,
-  ) -> (String, Option<&Toplevel>) {
-    let qualified_name = class_type.chars().skip(6).collect::<String>();
-    let mut module_parts = qualified_name.split('.').collect_vec();
-    let class_name = module_parts.pop().unwrap();
-    let class_name_pstr = self.heap.get_allocated_str_opt(class_name);
-    let toplevel = class_name_pstr.and_then(|class_name_pstr| {
-      self.find_toplevel(
-        &ModuleReference::ordinary(
-          module_parts.into_iter().map(|s| rc_string(s.to_string())).collect(),
-        ),
-        &class_name_pstr,
-      )
-    });
-    (class_name.to_string(), toplevel)
-  }
-
   fn query_result_with_optional_document(
     &self,
     location: Location,
@@ -263,10 +246,7 @@ impl LanguageServices {
         .toplevels
         .iter()
         .flat_map(|toplevel| {
-          toplevel
-            .members_iter()
-            .map(|member| member.loc.clone())
-            .chain(vec![toplevel.loc().clone()])
+          toplevel.members_iter().map(|member| member.loc).chain(vec![toplevel.loc()])
         })
         .collect(),
     )
@@ -277,53 +257,40 @@ impl LanguageServices {
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Location> {
-    let expression = self.expression_loc_lookup.get(module_reference, position)?;
-    match expression {
-      expr::E::Literal(_, _)
-      | expr::E::This(_)
-      | expr::E::Unary(_)
-      | expr::E::Call(_)
-      | expr::E::Binary(_)
-      | expr::E::IfElse(_)
-      | expr::E::Match(_)
-      | expr::E::Lambda(_)
-      | expr::E::Block(_) => None,
-      expr::E::Id(common, _) => match common.type_.as_ref() {
-        Type::Id(id_type) if id_type.id.as_str(&self.heap).starts_with("class ") => Some(
-          self
-            .find_toplevel_from_synthetic_class_type(id_type.id.as_str(&self.heap))
-            .1?
-            .loc()
-            .clone(),
-        ),
-        _ => {
-          let mut temp_heap = Heap::new();
-          let mut error_set = ErrorSet::new();
-          let module = parse_source_module_from_text(
-            self.raw_sources.get(module_reference).unwrap(),
-            module_reference,
-            &mut temp_heap,
-            &mut error_set,
-          );
-          VariableDefinitionLookup::new(&self.heap, &module)
-            .find_all_definition_and_uses(&common.loc)
-            .map(|it| it.definition_location)
-        }
-      },
-      expr::E::ClassFn(e) => self
-        .find_class_member(&e.module_reference, &e.class_name.name, &e.fn_name.name)
-        .map(|it| it.loc.clone()),
-      expr::E::FieldAccess(e) => {
-        let t = e.object.type_();
-        let id_t = t.as_id().unwrap();
-        self.find_toplevel(&id_t.module_reference, &id_t.id).map(|it| it.loc().clone())
+    let module = self.checked_modules.get(module_reference)?;
+    match search_module(*module_reference, module, position)? {
+      LocationCoverSearchResult::Expression(
+        expr::E::Literal(_, _)
+        | expr::E::ClassFn(_)
+        | expr::E::MethodAccess(_)
+        | expr::E::Unary(_)
+        | expr::E::Call(_)
+        | expr::E::Binary(_)
+        | expr::E::IfElse(_)
+        | expr::E::Match(_)
+        | expr::E::Lambda(_)
+        | expr::E::Block(_),
+      ) => None,
+      LocationCoverSearchResult::ClassMemberName(_, mod_ref, class_name, member_name, _) => {
+        Some(self.find_class_member(&mod_ref, &class_name, &member_name)?.loc)
       }
-      expr::E::MethodAccess(e) => {
+      LocationCoverSearchResult::ClassName(_, mod_ref, class_name) => {
+        Some(self.find_toplevel(&mod_ref, &class_name)?.loc())
+      }
+      LocationCoverSearchResult::TypedName(loc, _, _) => {
+        VariableDefinitionLookup::new(&self.heap, module)
+          .find_all_definition_and_uses(&loc)
+          .map(|it| it.definition_location)
+      }
+      LocationCoverSearchResult::Expression(expr::E::Id(expr::ExpressionCommon { loc, .. }, _)) => {
+        VariableDefinitionLookup::new(&self.heap, module)
+          .find_all_definition_and_uses(loc)
+          .map(|it| it.definition_location)
+      }
+      LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
         let t = e.object.type_();
         let id_t = t.as_id().unwrap();
-        self
-          .find_class_member(&id_t.module_reference, &id_t.id, &e.method_name.name)
-          .map(|it| it.loc.clone())
+        self.find_toplevel(&id_t.module_reference, &id_t.id).map(|it| it.loc())
       }
     }
   }
@@ -352,38 +319,39 @@ impl LanguageServices {
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Vec<AutoCompletionItem>> {
-    let expression = self.expression_loc_lookup.get(module_reference, position)?;
+    let (instance_mod_ref, instance_class_name) =
+      match self.search_at_pos(module_reference, position)? {
+        LocationCoverSearchResult::ClassMemberName(_, module_ref, class_name, _, false) => {
+          return self.get_interface_type(&module_ref, &class_name).map(|cx| {
+            cx.functions
+              .iter()
+              .map(|(name, info)| {
+                self.get_completion_result_from_type_info(
+                  name.as_str(&self.heap),
+                  info,
+                  CompletionItemKind::Function,
+                )
+              })
+              .collect()
+          });
+        }
+        LocationCoverSearchResult::ClassMemberName(_, module_ref, class_name, _, true) => {
+          (module_ref, class_name)
+        }
+        LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
+          e.object.type_().as_id().map(|id_type| (id_type.module_reference, id_type.id))?
+        }
+        _ => return None,
+      };
     let class_of_expr = self.find_class_name(module_reference, position);
-    if let expr::E::ClassFn(e) = expression {
-      return Some(
-        self
-          .get_interface_type(&e.module_reference, &e.class_name.name)?
-          .functions
-          .iter()
-          .map(|(name, info)| {
-            self.get_completion_result_from_type_info(
-              name.as_str(&self.heap),
-              info,
-              CompletionItemKind::Function,
-            )
-          })
-          .collect(),
-      );
-    }
-    let type_ = match expression {
-      expr::E::FieldAccess(e) => e.object.type_().as_id().unwrap().clone(),
-      expr::E::MethodAccess(e) => e.object.type_().as_id().unwrap().clone(),
-      _ => {
-        return None;
-      }
-    };
-    let relevant_interface_type = self.get_interface_type(&type_.module_reference, &type_.id)?;
+    let relevant_interface_type =
+      self.get_interface_type(&instance_mod_ref, &instance_class_name)?;
     let relevant_type_def = self
       .global_cx
-      .get(&type_.module_reference)
-      .and_then(|module_cx| module_cx.type_definitions.get(&type_.id));
+      .get(&instance_mod_ref)
+      .and_then(|module_cx| module_cx.type_definitions.get(&instance_class_name));
     let mut completion_results = vec![];
-    let is_inside_class = class_of_expr.eq(&type_.id);
+    let is_inside_class = class_of_expr.eq(&instance_class_name);
     match relevant_type_def {
       Some(def) if is_inside_class && def.is_object => {
         for name in &def.names {
@@ -472,7 +440,7 @@ impl LanguageServices {
   }
 
   pub fn rename_variable(
-    &self,
+    &mut self,
     module_reference: &ModuleReference,
     position: Position,
     new_name: &str,
@@ -483,33 +451,18 @@ impl LanguageServices {
     {
       return None;
     }
-    let expr = self.expression_loc_lookup.get(module_reference, position)?;
-    if !matches!(expr, expr::E::Id(_, _))
-      || expr
-        .type_()
-        .as_id()
-        .map(|id| id.id.as_str(&self.heap).starts_with("class "))
-        .unwrap_or(false)
-    {
-      return None;
-    }
+    let def_or_use_loc = match self.search_at_pos(module_reference, position) {
+      Some(LocationCoverSearchResult::TypedName(loc, _, _)) => loc,
+      Some(LocationCoverSearchResult::Expression(e)) => e.loc(),
+      _ => return None,
+    };
 
-    let mut temp_heap = Heap::new();
-    let mut error_set = ErrorSet::new();
-    let module = parse_source_module_from_text(
-      self.raw_sources.get(module_reference).unwrap(),
-      module_reference,
-      &mut temp_heap,
-      &mut error_set,
-    );
-    let def_and_uses = VariableDefinitionLookup::new(&temp_heap, &module)
-      .find_all_definition_and_uses(expr.loc())?;
-    let renamed = apply_renaming(
-      self.checked_modules.get(module_reference).unwrap(),
-      &def_and_uses,
-      temp_heap.alloc_str(new_name),
-    );
-    Some(printer::pretty_print_source_module(&temp_heap, 100, &renamed))
+    let module = self.checked_modules.get(module_reference).unwrap();
+    let def_and_uses = VariableDefinitionLookup::new(&self.heap, module)
+      .find_all_definition_and_uses(&def_or_use_loc)?;
+    let renamed =
+      apply_renaming(module, &def_and_uses, self.heap.alloc_string(new_name.to_string()));
+    Some(printer::pretty_print_source_module(&self.heap, 100, &renamed))
   }
 
   pub fn format_entire_document(&self, module_reference: &ModuleReference) -> Option<String> {
@@ -517,7 +470,7 @@ impl LanguageServices {
     let mut error_set = ErrorSet::new();
     let module = parse_source_module_from_text(
       self.raw_sources.get(module_reference)?,
-      module_reference,
+      *module_reference,
       &mut temp_heap,
       &mut error_set,
     );

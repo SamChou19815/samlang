@@ -31,6 +31,12 @@ _Demo_Main$main();
 );
 
 assertEqual(
+  await samlang.typeCheck('class Foo { function main(): int = true }'),
+  'Demo.sam:1:36-1:40: [UnexpectedType]: Expected: `int`, actual: `bool`.'
+);
+assertEqual(await samlang.typeCheck('class Foo {}'), '');
+
+assertEqual(
   JSON.stringify(await samlang.queryType('class Foo {}', 1, 8)),
   '{"contents":[{"language":"samlang","value":"class Foo"}],"range":{"startLineNumber":1,"startColumn":7,"endLineNumber":1,"endColumn":10}}'
 );

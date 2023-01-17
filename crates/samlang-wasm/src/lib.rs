@@ -5,8 +5,8 @@ use js_sys::Uint8Array;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
-fn demo_mod_ref() -> samlang_core::ast::ModuleReference {
-  samlang_core::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()])
+fn demo_mod_ref(heap: &mut samlang_core::Heap) -> samlang_core::ModuleReference {
+  heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()])
 }
 
 #[wasm_bindgen]
@@ -19,7 +19,9 @@ pub struct SourcesCompilationResult {
 
 #[wasm_bindgen]
 pub fn compile(source: String) -> Result<SourcesCompilationResult, String> {
-  match samlang_core::compile_sources(vec![(demo_mod_ref(), source)], vec![demo_mod_ref()], false) {
+  let heap = &mut samlang_core::Heap::new();
+  let mod_ref = demo_mod_ref(heap);
+  match samlang_core::compile_sources(heap, vec![(mod_ref, source)], vec![mod_ref], false) {
     Ok(samlang_core::SourcesCompilationResult { text_code_results, wasm_file }) => {
       let ts_code = text_code_results.get("Demo.ts").unwrap().clone();
       let wasm_bytes = Uint8Array::from(&wasm_file as &[u8]);
@@ -77,13 +79,24 @@ impl Range {
 }
 
 fn new_services(source: String) -> samlang_core::services::api::LanguageServices {
-  samlang_core::services::api::LanguageServices::new(vec![(demo_mod_ref(), source)])
+  let mut heap = samlang_core::Heap::new();
+  let mod_ref = demo_mod_ref(&mut heap);
+  samlang_core::services::api::LanguageServices::new(heap, vec![(mod_ref, source)])
+}
+
+#[wasm_bindgen(js_name=typeCheck)]
+pub fn type_check(source: String) -> String {
+  let services = &mut new_services(source);
+  let mod_ref = demo_mod_ref(&mut services.heap);
+  services.get_error_strings(&mod_ref).join("\n")
 }
 
 #[wasm_bindgen(js_name=queryType)]
 pub fn query_type(source: String, line: i32, column: i32) -> JsValue {
-  new_services(source)
-    .query_for_hover(&demo_mod_ref(), samlang_core::ast::Position(line - 1, column - 1))
+  let services = &mut new_services(source);
+  let mod_ref = demo_mod_ref(&mut services.heap);
+  services
+    .query_for_hover(&mod_ref, samlang_core::ast::Position(line - 1, column - 1))
     .map(|result| {
       serde_wasm_bindgen::to_value(&TypeQueryResult {
         range: Range::from(&result.location),
@@ -100,17 +113,21 @@ pub fn query_type(source: String, line: i32, column: i32) -> JsValue {
 
 #[wasm_bindgen(js_name=queryDefinitionLocation)]
 pub fn query_definition_location(source: String, line: i32, column: i32) -> JsValue {
-  new_services(source)
-    .query_definition_location(&demo_mod_ref(), samlang_core::ast::Position(line - 1, column - 1))
+  let services = &mut new_services(source);
+  let mod_ref = demo_mod_ref(&mut services.heap);
+  services
+    .query_definition_location(&mod_ref, samlang_core::ast::Position(line - 1, column - 1))
     .map(|loc| serde_wasm_bindgen::to_value(&Range::from(&loc)).unwrap())
     .unwrap_or(JsValue::NULL)
 }
 
 #[wasm_bindgen(js_name=autoComplete)]
 pub fn autocomplete(source: String, line: i32, column: i32) -> JsValue {
+  let services = &mut new_services(source);
+  let mod_ref = demo_mod_ref(&mut services.heap);
   serde_wasm_bindgen::to_value(
-    &(new_services(source)
-      .auto_complete(&demo_mod_ref(), samlang_core::ast::Position(line - 1, column))
+    &(services
+      .auto_complete(&mod_ref, samlang_core::ast::Position(line - 1, column))
       .into_iter()
       .map(|item| AutoCompletionItem {
         range: Range { start_line: line, start_col: column, end_line: line, end_col: column },

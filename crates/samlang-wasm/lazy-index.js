@@ -18,6 +18,10 @@ export async function compile(source) {
   }
 }
 
+export async function typeCheck(source) {
+  return (await singleton).typeCheck(source);
+}
+
 export async function queryType(source, line, number) {
   return (await singleton).queryType(source, line, number);
 }

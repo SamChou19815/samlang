@@ -2,8 +2,7 @@
 #![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
 #![cfg_attr(coverage_nightly, feature(no_coverage))]
 
-pub use common::measure_time;
-use common::Heap;
+pub use common::{measure_time, Heap, ModuleReference};
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
@@ -24,7 +23,7 @@ pub fn reformat_source(source: &str) -> String {
   let mut error_set = errors::ErrorSet::new();
   let module = parser::parse_source_module_from_text(
     source,
-    &ast::ModuleReference::dummy(),
+    ModuleReference::dummy(),
     &mut heap,
     &mut error_set,
   );
@@ -44,24 +43,25 @@ const EMITTED_WASM_FILE: &str = "__all__.wasm";
 const EMITTED_WAT_FILE: &str = "__all__.wat";
 
 pub fn compile_sources(
-  source_handles: Vec<(ast::ModuleReference, String)>,
-  entry_module_references: Vec<ast::ModuleReference>,
+  heap: &mut Heap,
+  source_handles: Vec<(ModuleReference, String)>,
+  entry_module_references: Vec<ModuleReference>,
   enable_profiling: bool,
 ) -> Result<SourcesCompilationResult, Vec<String>> {
   let checker::TypeCheckSourceHandlesResult {
     checked_sources,
-    heap,
     global_typing_context: _,
     compile_time_errors,
   } = measure_time(enable_profiling, "Type checking", || {
-    checker::type_check_source_handles(source_handles)
+    checker::type_check_source_handles(heap, source_handles)
   });
-  let mut errors = compile_time_errors.iter().map(|it| it.to_string()).sorted().collect_vec();
+  let mut errors =
+    compile_time_errors.iter().sorted().map(|it| it.pretty_print(heap)).collect_vec();
   for module_reference in &entry_module_references {
     if !checked_sources.contains_key(module_reference) {
       errors.insert(
         0,
-        format!("Invalid entry point: {} does not exist.", module_reference.to_string()),
+        format!("Invalid entry point: {} does not exist.", module_reference.pretty_print(heap)),
       );
     }
   }
@@ -70,7 +70,7 @@ pub fn compile_sources(
   }
 
   let unoptimized_hir_sources = measure_time(enable_profiling, "Compile to HIR", || {
-    compiler::compile_sources_to_hir(&heap, &checked_sources)
+    compiler::compile_sources_to_hir(heap, &checked_sources)
   });
   let optimized_hir_sources = measure_time(enable_profiling, "Optimize HIR", || {
     optimization::optimize_sources(
@@ -88,7 +88,7 @@ pub fn compile_sources(
 
   let mut text_code_results = BTreeMap::new();
   for module_reference in &entry_module_references {
-    let main_fn_name = ast::common_names::encode_main_function_name(module_reference);
+    let main_fn_name = ast::common_names::encode_main_function_name(heap, module_reference);
     let ts_code = format!("{}\n{}();\n", common_ts_code, main_fn_name);
     let wasm_js_code = format!(
       r#"// @{}
@@ -97,8 +97,9 @@ require('@dev-sam/samlang-cli/loader')(binary).{}();
 "#,
       "generated", EMITTED_WASM_FILE, main_fn_name
     );
-    text_code_results.insert(format!("{}.ts", module_reference.to_string()), ts_code);
-    text_code_results.insert(format!("{}.wasm.js", module_reference.to_string()), wasm_js_code);
+    text_code_results.insert(format!("{}.ts", module_reference.pretty_print(heap)), ts_code);
+    text_code_results
+      .insert(format!("{}.wasm.js", module_reference.pretty_print(heap)), wasm_js_code);
   }
   text_code_results.insert(EMITTED_WAT_FILE.to_string(), wat_text);
 
@@ -109,6 +110,8 @@ require('@dev-sam/samlang-cli/loader')(binary).{}();
 mod tests {
   use pretty_assertions::assert_eq;
 
+  use crate::Heap;
+
   #[test]
   fn reformat_tests() {
     super::reformat_source("d");
@@ -117,15 +120,13 @@ mod tests {
 
   #[test]
   fn compile_tests() {
+    let heap = &mut Heap::new();
+    let mod_ref_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
+    let mod_ref_demo = heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()]);
+
     assert_eq!(
       vec!["Invalid entry point: A does not exist.".to_string()],
-      super::compile_sources(
-        vec![],
-        vec![crate::ast::ModuleReference::from_string_parts(vec!["A".to_string()])],
-        false,
-      )
-      .err()
-      .unwrap()
+      super::compile_sources(heap, vec![], vec![mod_ref_a], false,).err().unwrap()
     );
 
     assert_eq!(
@@ -134,11 +135,9 @@ mod tests {
         "Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.".to_string()
       ],
       super::compile_sources(
-        vec![(
-          crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()]),
-          "class Main { function main(): string = 42 + \"\" }".to_string()
-        )],
-        vec![crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()])],
+        heap,
+        vec![(mod_ref_demo, "class Main { function main(): string = 42 + \"\" }".to_string())],
+        vec![mod_ref_demo],
         false,
       )
       .err()
@@ -146,11 +145,12 @@ mod tests {
     );
 
     assert!(super::compile_sources(
+      heap,
       vec![(
-        crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()]),
+        mod_ref_demo,
         "class Main { function main(): unit = Builtins.println(\"hello world\") }".to_string()
       )],
-      vec![crate::ast::ModuleReference::from_string_parts(vec!["Demo".to_string()])],
+      vec![mod_ref_demo],
       false,
     )
     .is_ok());

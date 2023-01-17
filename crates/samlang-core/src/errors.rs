@@ -1,171 +1,182 @@
-use crate::ast::{Location, ModuleReference};
-use itertools::Itertools;
-use std::collections::HashSet;
+use crate::{ast::Location, Heap};
+use std::collections::BTreeSet;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CompileTimeError(pub Location, pub(crate) String);
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum ErrorDetail {
+  ArityMismatchError { kind: &'static str, expected: usize, actual: usize },
+  Collision { name: String },
+  CyclicTypeDefinition { type_: String },
+  InsufficientTypeInferenceContext,
+  MissingDefinitions { missing_definitions: Vec<String> },
+  NonExhausiveMatch { missing_tags: Vec<String> },
+  SyntaxError(String),
+  TypeParameterNameMismatch { expected: String },
+  UnresolvedName { name: String },
+  UnexpectedSubtype { expected: String, actual: String },
+  UnexpectedTypeKind { expected: String, actual: String },
+  UnexpectedType { expected: String, actual: String },
+}
 
-impl ToString for CompileTimeError {
-  fn to_string(&self) -> String {
-    self.1.to_string()
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CompileTimeError {
+  pub location: Location,
+  detail: ErrorDetail,
+}
+
+impl CompileTimeError {
+  pub fn pretty_print(&self, heap: &Heap) -> String {
+    let (error_type, reason) = match &self.detail {
+      ErrorDetail::SyntaxError(reason) => ("SyntaxError", reason.to_string()),
+      ErrorDetail::UnexpectedType { expected, actual } => {
+        ("UnexpectedType", format!("Expected: `{}`, actual: `{}`.", expected, actual))
+      }
+      ErrorDetail::UnexpectedSubtype { expected, actual } => {
+        ("UnexpectedSubtype", format!("Expected: subtype of `{}`, actual: `{}`.", expected, actual))
+      }
+      ErrorDetail::UnexpectedTypeKind { expected, actual } => {
+        ("UnexpectedTypeKind", format!("Expected kind: `{}`, actual: `{}`.", expected, actual))
+      }
+      ErrorDetail::UnresolvedName { name } => {
+        ("UnresolvedName", format!("Name `{}` is not resolved.", name))
+      }
+      ErrorDetail::Collision { name } => {
+        ("Collision", format!("Name `{}` collides with a previously defined name.", name))
+      }
+      ErrorDetail::TypeParameterNameMismatch { expected } => (
+        "TypeParameterNameMismatch",
+        format!("Type parameter name mismatch. Expected exact match of `{}`.", expected),
+      ),
+      ErrorDetail::MissingDefinitions { missing_definitions } => (
+        "MissingDefinitions",
+        format!("Missing definitions for [{}].", missing_definitions.join(", ")),
+      ),
+      ErrorDetail::ArityMismatchError { kind, expected, actual } => (
+        "ArityMismatchError",
+        format!("Incorrect {} size. Expected: {}, actual: {}.", kind, expected, actual),
+      ),
+      ErrorDetail::InsufficientTypeInferenceContext => (
+        "InsufficientTypeInferenceContext",
+        "There is not enough context information to decide the type of this expression."
+          .to_string(),
+      ),
+      ErrorDetail::NonExhausiveMatch { missing_tags } => (
+        "NonExhausiveMatch",
+        format!(
+          "The following tags are not considered in the match: [{}].",
+          missing_tags.join(", ")
+        ),
+      ),
+      ErrorDetail::CyclicTypeDefinition { type_ } => {
+        ("CyclicTypeDefinition", format!("Type `{}` has a cyclic definition.", type_))
+      }
+    };
+    format!("{}: [{}]: {}", self.location.pretty_print(heap), error_type, reason)
   }
 }
 
 pub(crate) struct ErrorSet {
-  errors: HashSet<CompileTimeError>,
-  modules_with_error: HashSet<ModuleReference>,
+  errors: BTreeSet<CompileTimeError>,
 }
 
 impl ErrorSet {
   pub(crate) fn new() -> ErrorSet {
-    ErrorSet { errors: HashSet::new(), modules_with_error: HashSet::new() }
+    ErrorSet { errors: BTreeSet::new() }
   }
 
   pub(crate) fn has_errors(&self) -> bool {
     !self.errors.is_empty()
   }
 
-  pub(crate) fn module_has_error(&self, module_reference: &ModuleReference) -> bool {
-    self.modules_with_error.contains(module_reference)
-  }
-
   pub(crate) fn errors(&self) -> Vec<&CompileTimeError> {
-    let mut errors = self.errors.iter().collect_vec();
-    errors.sort_by(|a, b| a.1.cmp(&b.1));
-    errors
+    self.errors.iter().collect()
   }
 
-  pub(crate) fn error_messages(&self) -> Vec<String> {
-    self.errors().into_iter().map(|e| e.to_string()).collect()
+  pub(crate) fn error_messages(&self, heap: &Heap) -> Vec<String> {
+    self.errors().into_iter().map(|e| e.pretty_print(heap)).collect()
   }
 
-  fn report_error(&mut self, error_type: &str, loc: &Location, reason: String) {
-    self.errors.insert(CompileTimeError(
-      loc.clone(),
-      format!("{}: [{}]: {}", loc.to_string(), error_type, reason),
-    ));
-    self.modules_with_error.insert(loc.module_reference.clone());
+  fn report_error(&mut self, location: Location, detail: ErrorDetail) {
+    self.errors.insert(CompileTimeError { location, detail });
   }
 
-  pub(crate) fn report_syntax_error(&mut self, loc: &Location, reason: &str) {
-    self.report_error("SyntaxError", loc, reason.to_string())
+  pub(crate) fn report_syntax_error(&mut self, loc: Location, reason: String) {
+    self.report_error(loc, ErrorDetail::SyntaxError(reason))
   }
 
   pub(crate) fn report_unexpected_type_error(
     &mut self,
-    loc: &Location,
+    loc: Location,
     expected: String,
     actual: String,
   ) {
-    self.report_error(
-      "UnexpectedType",
-      loc,
-      format!("Expected: `{}`, actual: `{}`.", expected, actual),
-    )
+    self.report_error(loc, ErrorDetail::UnexpectedType { expected, actual })
   }
 
   pub(crate) fn report_unexpected_subtype_error(
     &mut self,
-    loc: &Location,
+    loc: Location,
     expected: String,
     actual: String,
   ) {
-    self.report_error(
-      "UnexpectedSubtype",
-      loc,
-      format!("Expected: subtype of `{}`, actual: `{}`.", expected, actual),
-    )
+    self.report_error(loc, ErrorDetail::UnexpectedSubtype { expected, actual })
   }
 
   pub(crate) fn report_unexpected_type_kind_error(
     &mut self,
-    loc: &Location,
-    expected: &str,
-    actual: &str,
+    loc: Location,
+    expected: String,
+    actual: String,
   ) {
-    self.report_error(
-      "UnexpectedTypeKind",
-      loc,
-      format!("Expected kind: `{}`, actual: `{}`.", expected, actual),
-    )
+    self.report_error(loc, ErrorDetail::UnexpectedTypeKind { expected, actual })
   }
 
-  pub(crate) fn report_unresolved_name_error(&mut self, loc: &Location, name: &str) {
-    self.report_error("UnresolvedName", loc, format!("Name `{}` is not resolved.", name))
+  pub(crate) fn report_unresolved_name_error(&mut self, loc: Location, name: String) {
+    self.report_error(loc, ErrorDetail::UnresolvedName { name })
   }
 
-  pub(crate) fn report_unresolved_synthetic_name_error(&mut self, loc: &Location, name: &str) {
-    self.report_error("UnresolvedName", loc, format!("Name `{}` is not resolved.", name))
+  pub(crate) fn report_collision_error(&mut self, loc: Location, name: String) {
+    self.report_error(loc, ErrorDetail::Collision { name })
   }
 
-  pub(crate) fn report_type_parameter_mismatch_error(&mut self, loc: &Location, expected: String) {
-    self.report_error(
-      "TypeParameterNameMismatch",
-      loc,
-      format!("Type parameter name mismatch. Expected exact match of `{}`.", expected),
-    )
+  pub(crate) fn report_type_parameter_mismatch_error(&mut self, loc: Location, expected: String) {
+    self.report_error(loc, ErrorDetail::TypeParameterNameMismatch { expected })
   }
 
   pub(crate) fn report_missing_definition_error(
     &mut self,
-    loc: &Location,
+    loc: Location,
     missing_definitions: Vec<String>,
   ) {
-    self.report_error(
-      "MissingDefinitions",
-      loc,
-      format!("Missing definitions for [{}].", missing_definitions.join(", ")),
-    )
+    self.report_error(loc, ErrorDetail::MissingDefinitions { missing_definitions })
   }
 
   pub(crate) fn report_arity_mismatch_error(
     &mut self,
-    loc: &Location,
-    kind: &str,
+    loc: Location,
+    kind: &'static str,
     expected_size: usize,
     actual_size: usize,
   ) {
     self.report_error(
-      "ArityMismatchError",
       loc,
-      format!("Incorrect {} size. Expected: {}, actual: {}.", kind, expected_size, actual_size),
+      ErrorDetail::ArityMismatchError { kind, expected: expected_size, actual: actual_size },
     )
   }
 
-  pub(crate) fn report_insufficient_type_inference_context_error(&mut self, loc: &Location) {
-    self.report_error(
-      "InsufficientTypeInferenceContext",
-      loc,
-      "There is not enough context information to decide the type of this expression.".to_string(),
-    )
-  }
-
-  pub(crate) fn report_collision_error(&mut self, loc: &Location, name: &str) {
-    self.report_error(
-      "Collision",
-      loc,
-      format!("Name `{}` collides with a previously defined name.", name),
-    )
+  pub(crate) fn report_insufficient_type_inference_context_error(&mut self, loc: Location) {
+    self.report_error(loc, ErrorDetail::InsufficientTypeInferenceContext)
   }
 
   pub(crate) fn report_non_exhausive_match_error(
     &mut self,
-    loc: &Location,
+    loc: Location,
     missing_tags: Vec<String>,
   ) {
-    self.report_error(
-      "NonExhausiveMatch",
-      loc,
-      format!("The following tags are not considered in the match: [{}].", missing_tags.join(", ")),
-    )
+    self.report_error(loc, ErrorDetail::NonExhausiveMatch { missing_tags })
   }
 
-  pub(crate) fn report_cyclic_type_definition_error(&mut self, type_loc: &Location, type_: &str) {
-    self.report_error(
-      "CyclicTypeDefinition",
-      type_loc,
-      format!("Type `{}` has a cyclic definition.", type_),
-    );
+  pub(crate) fn report_cyclic_type_definition_error(&mut self, type_loc: Location, type_: String) {
+    self.report_error(type_loc, ErrorDetail::CyclicTypeDefinition { type_ });
   }
 }
 
@@ -180,10 +191,33 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(!format!("{:?}", CompileTimeError(Location::dummy(), "ddd".to_string())).is_empty());
+    assert!(!format!(
+      "{:?}",
+      CompileTimeError {
+        location: Location::dummy(),
+        detail: ErrorDetail::InsufficientTypeInferenceContext
+      }
+    )
+    .is_empty());
+    assert_eq!(
+      Some(std::cmp::Ordering::Equal),
+      CompileTimeError {
+        location: Location::dummy(),
+        detail: ErrorDetail::InsufficientTypeInferenceContext
+      }
+      .partial_cmp(&CompileTimeError {
+        location: Location::dummy(),
+        detail: ErrorDetail::InsufficientTypeInferenceContext
+      })
+    );
     assert!(
-      CompileTimeError(Location::dummy(), "ddd".to_string())
-        == CompileTimeError(Location::dummy(), "ddd".to_string())
+      CompileTimeError {
+        location: Location::dummy(),
+        detail: ErrorDetail::InsufficientTypeInferenceContext
+      } == CompileTimeError {
+        location: Location::dummy(),
+        detail: ErrorDetail::InsufficientTypeInferenceContext
+      }
     );
   }
 
@@ -193,36 +227,40 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let builder = test_builder::create();
 
-    error_set.report_syntax_error(&Location::dummy(), "bad code");
+    error_set.report_syntax_error(Location::dummy(), "bad code".to_string());
     error_set.report_unexpected_type_error(
-      &Location::dummy(),
+      Location::dummy(),
       builder.int_type().pretty_print(&heap),
       builder.bool_type().pretty_print(&heap),
     );
     error_set.report_unexpected_subtype_error(
-      &Location::dummy(),
+      Location::dummy(),
       builder.int_type().pretty_print(&heap),
       builder.bool_type().pretty_print(&heap),
     );
-    error_set.report_unresolved_name_error(&Location::dummy(), "global");
-    error_set.report_type_parameter_mismatch_error(&Location::dummy(), "".to_string());
-    error_set.report_unexpected_type_kind_error(&Location::dummy(), "array", "object");
-    error_set.report_arity_mismatch_error(&Location::dummy(), "pair", 1, 2);
-    error_set.report_insufficient_type_inference_context_error(&Location::dummy());
-    error_set.report_collision_error(&Location::dummy(), "a");
+    error_set.report_unresolved_name_error(Location::dummy(), "global".to_string());
+    error_set.report_type_parameter_mismatch_error(Location::dummy(), "".to_string());
+    error_set.report_unexpected_type_kind_error(
+      Location::dummy(),
+      "array".to_string(),
+      "object".to_string(),
+    );
+    error_set.report_arity_mismatch_error(Location::dummy(), "pair", 1, 2);
+    error_set.report_insufficient_type_inference_context_error(Location::dummy());
+    error_set.report_collision_error(Location::dummy(), "a".to_string());
     error_set
-      .report_non_exhausive_match_error(&Location::dummy(), vec!["A".to_string(), "B".to_string()]);
+      .report_non_exhausive_match_error(Location::dummy(), vec!["A".to_string(), "B".to_string()]);
     error_set.report_missing_definition_error(
-      &Location::dummy(),
+      Location::dummy(),
       vec!["foo".to_string(), "bar".to_string()],
     );
     error_set.report_cyclic_type_definition_error(
-      &builder.int_type().get_reason().use_loc,
-      &builder.int_type().pretty_print(&heap),
+      builder.int_type().get_reason().use_loc,
+      builder.int_type().pretty_print(&heap),
     );
 
     let actual_errors = error_set
-      .error_messages()
+      .error_messages(&heap)
       .into_iter()
       .map(|s| {
         s.chars().collect::<Vec<_>>()["__DUMMY__.sam:0:0-0:0: ".len()..].iter().collect::<String>()
@@ -237,13 +275,12 @@ mod tests {
       "[NonExhausiveMatch]: The following tags are not considered in the match: [A, B].",
       "[SyntaxError]: bad code",
       "[TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of ``.",
+      "[UnresolvedName]: Name `global` is not resolved.",
       "[UnexpectedSubtype]: Expected: subtype of `int`, actual: `bool`.",
       "[UnexpectedTypeKind]: Expected kind: `array`, actual: `object`.",
       "[UnexpectedType]: Expected: `int`, actual: `bool`.",
-      "[UnresolvedName]: Name `global` is not resolved.",
     ];
     assert_eq!(expected_errors, actual_errors);
     assert!(error_set.has_errors());
-    assert!(error_set.module_has_error(&ModuleReference::dummy()))
   }
 }

@@ -31,6 +31,8 @@ export type CompilationResult = string | { tsCode: string; interpreterResult: st
 
 export function compile(source: string): Promise<CompilationResult>;
 
+export function typeCheck(source: string): Promise<string>;
+
 export function queryType(
   source: string,
   line: number,

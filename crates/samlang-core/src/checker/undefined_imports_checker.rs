@@ -1,6 +1,6 @@
 use crate::{
-  ast::{source::Module, ModuleReference},
-  common::Heap,
+  ast::source::Module,
+  common::{Heap, ModuleReference},
   errors::ErrorSet,
 };
 use std::collections::{HashMap, HashSet};
@@ -19,13 +19,13 @@ pub(super) fn check_undefined_imports_error(
       }
       for id in one_import.imported_members.iter() {
         if !available_members_set.contains(&id.name) {
-          error_set.report_unresolved_name_error(&id.loc, id.name.as_str(heap));
+          error_set.report_unresolved_name_error(id.loc, id.name.as_str(heap).to_string());
         }
       }
     } else {
-      error_set.report_unresolved_synthetic_name_error(
-        &one_import.loc,
-        &one_import.imported_module.to_string(),
+      error_set.report_unresolved_name_error(
+        one_import.loc,
+        one_import.imported_module.pretty_print(heap),
       );
     }
   }
@@ -33,24 +33,23 @@ pub(super) fn check_undefined_imports_error(
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashMap, rc::Rc, vec};
-
   use crate::{
     ast::{
       source::{Id, InterfaceDeclarationCommon, Module, ModuleMembersImport, Toplevel},
-      Location, ModuleReference,
+      Location,
     },
-    common::{rcs, Heap, PStr},
+    common::{Heap, ModuleReference, PStr},
     errors::ErrorSet,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use std::{collections::HashMap, rc::Rc, vec};
 
-  fn mock_class(name: &'static str) -> Toplevel {
+  fn mock_class(name: PStr) -> Toplevel {
     Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: Rc::new(vec![]),
-      name: Id::from(PStr::permanent(name)),
+      name: Id::from(name),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -59,82 +58,91 @@ mod tests {
   }
 
   fn mock_module(
+    heap: &mut Heap,
     name: &'static str,
     imports: Vec<(&'static str, Vec<&'static str>)>,
     members: Vec<&'static str>,
   ) -> (ModuleReference, Module) {
     (
-      ModuleReference::ordinary(vec![rcs(name)]),
+      heap.alloc_module_reference_from_string_vec(vec![name.to_string()]),
       Module {
         imports: imports
           .into_iter()
           .map(|(imported_mod_name, imported_member_strs)| {
             let mut loc = Location::dummy();
-            loc.module_reference = ModuleReference::ordinary(vec![rcs(name)]);
+            loc.module_reference =
+              heap.alloc_module_reference_from_string_vec(vec![name.to_string()]);
             let mut imported_members = vec![];
             for m in imported_member_strs {
               imported_members.push(Id {
                 loc: loc.clone(),
                 associated_comments: Rc::new(vec![]),
-                name: PStr::permanent(m),
+                name: heap.alloc_str(m),
               });
             }
             ModuleMembersImport {
               loc: loc.clone(),
               imported_members,
-              imported_module: ModuleReference::ordinary(vec![rcs(imported_mod_name)]),
+              imported_module: heap
+                .alloc_module_reference_from_string_vec(vec![imported_mod_name.to_string()]),
               imported_module_loc: loc,
             }
           })
           .collect_vec(),
-        toplevels: members.into_iter().map(mock_class).collect_vec(),
+        toplevels: members.into_iter().map(|n| mock_class(heap.alloc_str(n))).collect_vec(),
       },
     )
   }
 
   fn assert_expected_errors(
     sources: HashMap<ModuleReference, Module>,
+    heap: &mut Heap,
     expected_errors: Vec<&'static str>,
   ) {
-    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     for m in sources.values() {
-      super::check_undefined_imports_error(&sources, &heap, &mut error_set, m);
+      super::check_undefined_imports_error(&sources, heap, &mut error_set, m);
     }
-    assert_eq!(expected_errors, error_set.error_messages());
+    assert_eq!(expected_errors, error_set.error_messages(heap));
   }
 
   #[test]
   fn simple_tests() {
-    assert_expected_errors(HashMap::new(), vec![]);
+    let heap = &mut Heap::new();
+    assert_expected_errors(HashMap::new(), heap, vec![]);
     assert_expected_errors(
       HashMap::from([
-        mock_module("A", vec![], vec![]),
-        mock_module("B", vec![], vec!["Foo"]),
-        mock_module("C", vec![], vec!["Bar"]),
+        mock_module(heap, "A", vec![], vec![]),
+        mock_module(heap, "B", vec![], vec!["Foo"]),
+        mock_module(heap, "C", vec![], vec!["Bar"]),
       ]),
+      heap,
       vec![],
     )
   }
 
   #[test]
   fn cyclic_dependencies_no_errors_tests() {
+    let heap = &mut Heap::new();
     assert_expected_errors(
       HashMap::from([
-        mock_module("A", vec![("B", vec!["Bar"])], vec!["Foo"]),
-        mock_module("B", vec![("A", vec!["Foo"])], vec!["Bar"]),
+        mock_module(heap, "A", vec![("B", vec!["Bar"])], vec!["Foo"]),
+        mock_module(heap, "B", vec![("A", vec!["Foo"])], vec!["Bar"]),
       ]),
+      heap,
       vec![],
     )
   }
 
   #[test]
   fn missing_classes_errors_tests() {
+    let heap = &mut Heap::new();
     assert_expected_errors(
       HashMap::from([
-        mock_module("A", vec![("B", vec!["Foo", "Bar"])], vec![]),
-        mock_module("B", vec![("A", vec!["Foo", "Bar"])], vec![]),
+        mock_module(heap, "A", vec![("B", vec!["Foo", "Bar"])], vec![]),
+        mock_module(heap, "B", vec![("A", vec!["Foo", "Bar"])], vec![]),
       ]),
+      heap,
       vec![
         "A.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.",
         "A.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.",
@@ -146,8 +154,10 @@ mod tests {
 
   #[test]
   fn missing_modules_errors_tests() {
+    let heap = &mut Heap::new();
     assert_expected_errors(
-      HashMap::from([mock_module("A", vec![("B", vec![])], vec![])]),
+      HashMap::from([mock_module(heap, "A", vec![("B", vec![])], vec![])]),
+      heap,
       vec!["A.sam:0:0-0:0: [UnresolvedName]: Name `B` is not resolved."],
     )
   }

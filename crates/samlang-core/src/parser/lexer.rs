@@ -1,6 +1,6 @@
 use crate::{
-  ast::{Location, ModuleReference},
-  common::{Heap, PStr},
+  ast::Location,
+  common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use enum_iterator::{all, Sequence};
@@ -9,7 +9,10 @@ struct EOF();
 
 mod char_stream {
   use super::EOF;
-  use crate::ast::{Location, ModuleReference, Position};
+  use crate::{
+    ast::{Location, Position},
+    ModuleReference,
+  };
 
   pub(super) struct CharacterStream {
     pub(super) line_num: i32,
@@ -60,7 +63,7 @@ mod char_stream {
       for i in starting_pos..(starting_pos + length) {
         self.advance_char(self.source[i]);
       }
-      Location { module_reference: self.module_reference.clone(), start, end: self.current_pos() }
+      Location { module_reference: self.module_reference, start, end: self.current_pos() }
     }
 
     pub(super) fn peek_until_whitespace(&self) -> String {
@@ -391,13 +394,13 @@ impl TokenContent {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(super) struct Token(pub(super) Location, pub(super) TokenContent);
 
 impl Token {
-  pub(super) fn to_string(&self, heap: &Heap) -> String {
+  pub(super) fn pretty_print(&self, heap: &Heap) -> String {
     let Token(loc, content) = self;
-    format!("{}: {}", loc.to_string(), content.pretty_print(heap))
+    format!("{}: {}", loc.pretty_print(heap), content.pretty_print(heap))
   }
 }
 
@@ -434,30 +437,30 @@ fn get_next_token(
       if let Option::Some(s) = &stream.peek_line_comment() {
         return Option::Some(Token(
           stream.consume_and_get_loc(start, s.len()),
-          TokenContent::LineComment(heap.alloc_str(s)),
+          TokenContent::LineComment(heap.alloc_string(s.clone())),
         ));
       }
 
       if let Option::Some(s) = &stream.peek_block_comment() {
         return Option::Some(Token(
           stream.consume_and_get_loc(start, s.len()),
-          TokenContent::BlockComment(heap.alloc_str(s)),
+          TokenContent::BlockComment(heap.alloc_string(s.clone())),
         ));
       }
 
       if let Option::Some(s) = &stream.peek_int() {
         return Option::Some(Token(
           stream.consume_and_get_loc(start, s.len()),
-          TokenContent::IntLiteral(heap.alloc_str(s)),
+          TokenContent::IntLiteral(heap.alloc_string(s.clone())),
         ));
       }
 
       if let Option::Some(s) = &stream.peek_str() {
         let loc = stream.consume_and_get_loc(start, s.len());
         if !string_has_valid_escape(s) {
-          error_set.report_syntax_error(&loc, "Invalid escape in string.")
+          error_set.report_syntax_error(loc, "Invalid escape in string.".to_string())
         }
-        return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_str(s))));
+        return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s.clone()))));
       }
 
       if let Option::Some(s) = &stream.peek_id() {
@@ -466,9 +469,9 @@ fn get_next_token(
           return Option::Some(Token(loc, TokenContent::Keyword(k)));
         }
         let content = if s.chars().next().unwrap().is_ascii_uppercase() {
-          TokenContent::UpperId(heap.alloc_str(s))
+          TokenContent::UpperId(heap.alloc_string(s.clone()))
         } else {
-          TokenContent::LowerId(heap.alloc_str(s))
+          TokenContent::LowerId(heap.alloc_string(s.clone()))
         };
         return Option::Some(Token(loc, content));
       }
@@ -485,8 +488,11 @@ fn get_next_token(
 
       let error_token_content = &stream.peek_until_whitespace();
       let error_loc = stream.consume_and_get_loc(start, error_token_content.len());
-      error_set.report_syntax_error(&error_loc, "Invalid token.");
-      Option::Some(Token(error_loc, TokenContent::Error(heap.alloc_str(error_token_content))))
+      error_set.report_syntax_error(error_loc, "Invalid token.".to_string());
+      Option::Some(Token(
+        error_loc,
+        TokenContent::Error(heap.alloc_string(error_token_content.clone())),
+      ))
     }
   }
 }
@@ -509,12 +515,12 @@ pub(super) fn lex_source_program(
         let s = p_str.as_str(heap);
         match s.parse::<i64>() {
           Result::Err(_) => {
-            error_set.report_syntax_error(&loc, "Not a 32-bit integer.");
+            error_set.report_syntax_error(loc, "Not a 32-bit integer.".to_string());
           }
           Result::Ok(i64) => {
             let maxi32_plus1 = (i32::MAX as i64) + 1;
             if i64 > maxi32_plus1 || (i64 == maxi32_plus1 && tokens.is_empty()) {
-              error_set.report_syntax_error(&loc, "Not a 32-bit integer.");
+              error_set.report_syntax_error(loc, "Not a 32-bit integer.".to_string());
             } else if i64 == maxi32_plus1 {
               let prev_index = tokens.len() - 1;
               if let Option::Some(Token(prev_loc, TokenContent::Operator(TokenOp::MINUS))) =
@@ -523,7 +529,7 @@ pub(super) fn lex_source_program(
                 // Merge - and MAX_INT_PLUS_ONE into MIN_INT
                 tokens[prev_index] = Token(
                   prev_loc.union(&loc),
-                  TokenContent::IntLiteral(heap.alloc_str(&format!("-{}", s))),
+                  TokenContent::IntLiteral(heap.alloc_string(format!("-{}", s))),
                 );
                 continue;
               }

@@ -3,10 +3,10 @@ mod tests {
   use crate::{
     ast::{
       source::{expr, test_builder, ISourceType, Id},
-      Location, ModuleReference,
+      Location,
     },
     checker::{ssa_analysis, typing_context::LocalTypingContext},
-    common::{Heap, PStr},
+    common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser,
   };
@@ -14,7 +14,7 @@ mod tests {
 
   #[test]
   fn method_access_coverage_hack() {
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     // method access can never be produced by the parser, but we need coverage anyways...
     let mut error_set = ErrorSet::new();
     let builder = test_builder::create();
@@ -23,7 +23,7 @@ mod tests {
         common: builder.expr_common(builder.bool_type()),
         type_arguments: vec![builder.bool_type()],
         object: Box::new(builder.true_expr()),
-        method_name: Id::from(PStr::permanent("name")),
+        method_name: Id::from(heap.alloc_str("name")),
       }),
       &heap,
       &mut error_set,
@@ -53,7 +53,7 @@ mod tests {
 }"#;
     let expr = parser::parse_source_expression_from_text(
       expr_str,
-      &ModuleReference::dummy(),
+      ModuleReference::dummy(),
       &mut heap,
       &mut error_set,
     );
@@ -122,7 +122,7 @@ class MultiInvalidDef<T, T> {}
 "#;
     let module = parser::parse_source_module_from_text(
       program_str,
-      &ModuleReference::dummy(),
+      ModuleReference::dummy(),
       &mut heap,
       &mut error_set,
     );

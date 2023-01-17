@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{common_names, ModuleReference},
+    ast::common_names,
     checker::{
       type_check_single_module_source, type_check_source_handles, TypeCheckSourceHandlesResult,
     },
-    common::{rc_string, rcs, Heap},
+    common::{rc_string, Heap},
     compiler,
     errors::ErrorSet,
     interpreter, optimization,
@@ -478,11 +478,11 @@ class Main {
       "bounded-generics.sam:28:20-28:30: [UnexpectedTypeKind]: Expected kind: `interface type`, actual: `class type`.",
       "bounded-generics.sam:29:21-29:22: [UnresolvedName]: Name `T` is not resolved.",
       "complete-trash.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces: This",
+      "complete-trash.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces: is",
+      "complete-trash.sam:1:9-1:10: [SyntaxError]: Unexpected token among the classes and interfaces: a",
       "complete-trash.sam:1:11-1:14: [SyntaxError]: Unexpected token among the classes and interfaces: bad",
       "complete-trash.sam:1:15-1:21: [SyntaxError]: Unexpected token among the classes and interfaces: source",
       "complete-trash.sam:1:21-1:22: [SyntaxError]: Unexpected token among the classes and interfaces: .",
-      "complete-trash.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces: is",
-      "complete-trash.sam:1:9-1:10: [SyntaxError]: Unexpected token among the classes and interfaces: a",
       "illegal-binary-operations.sam:12:33-12:49: [UnexpectedType]: Expected: `int`, actual: `Box<int>`.",
       "illegal-binary-operations.sam:13:28-13:44: [UnexpectedType]: Expected: `int`, actual: `Box<int>`.",
       "illegal-binary-operations.sam:14:35-14:51: [UnexpectedType]: Expected: `int`, actual: `Box<int>`.",
@@ -497,14 +497,14 @@ class Main {
       "illegal-binary-operations.sam:27:35-27:64: [UnexpectedType]: Expected: `Box<Box<Box<int>>>`, actual: `Box<Box<Box<bool>>>`.",
       "illegal-private-field-access.sam:15:13-15:14: [UnresolvedName]: Name `b` is not resolved.",
       "illegal-private-field-access.sam:17:15-17:16: [UnresolvedName]: Name `b` is not resolved.",
+      "illegal-shadow.sam:3:7-3:8: [Collision]: Name `A` collides with a previously defined name.",
+      "illegal-shadow.sam:7:12-7:16: [Collision]: Name `test` collides with a previously defined name.",
       "illegal-shadow.sam:12:12-12:16: [Collision]: Name `test` collides with a previously defined name.",
       "illegal-shadow.sam:16:28-16:32: [Collision]: Name `test` collides with a previously defined name.",
       "illegal-shadow.sam:22:9-22:10: [Collision]: Name `a` collides with a previously defined name.",
-      "illegal-shadow.sam:3:7-3:8: [Collision]: Name `A` collides with a previously defined name.",
-      "illegal-shadow.sam:7:12-7:16: [Collision]: Name `test` collides with a previously defined name.",
       "illegal-this.sam:5:13-5:17: [UnresolvedName]: Name `this` is not resolved.",
-      "insufficient-type-info-none.sam:8:13-8:26: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
       "insufficient-type-info.sam:5:13-5:47: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
+      "insufficient-type-info-none.sam:8:13-8:26: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
       "invalid-property-declaration-syntax.sam:2:12-2:13: [SyntaxError]: Expected: val, actual: a.",
       "multiple-type-errors.sam:3:35-3:40: [UnexpectedType]: Expected: `int`, actual: `string`.",
       "multiple-type-errors.sam:3:43-3:48: [UnexpectedType]: Expected: `int`, actual: `string`.",
@@ -515,14 +515,19 @@ class Main {
       "undefined-variable.sam:3:29-3:39: [UnresolvedName]: Name `helloWorld` is not resolved.",
     ];
 
-    let result = type_check_source_handles(
-      sources
-        .iter()
-        .map(|it| (ModuleReference::ordinary(vec![rcs(it.test_name)]), it.source_code.to_string()))
-        .collect_vec(),
-    );
-
-    let actual_errors = result.compile_time_errors.iter().map(|it| it.to_string()).collect_vec();
+    let heap = &mut Heap::new();
+    let handles = sources
+      .iter()
+      .map(|it| {
+        (
+          heap.alloc_module_reference_from_string_vec(vec![it.test_name.to_string()]),
+          it.source_code.to_string(),
+        )
+      })
+      .collect_vec();
+    let result = type_check_source_handles(heap, handles);
+    let actual_errors =
+      result.compile_time_errors.iter().map(|it| it.pretty_print(heap)).collect_vec();
     assert_eq!(expected_errors, actual_errors);
   }
 
@@ -1687,7 +1692,7 @@ class Main {
       let mut error_set = ErrorSet::new();
       let parsed_module = parse_source_module_from_text(
         source_code,
-        &ModuleReference::ordinary(vec![rcs("Test")]),
+        heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]),
         &mut heap,
         &mut error_set,
       );
@@ -1700,16 +1705,22 @@ class Main {
 
   #[test]
   fn formatter_tests() {
-    let TypeCheckSourceHandlesResult { checked_sources, heap, .. } = type_check_source_handles(
-      compiler_integration_tests()
-        .iter()
-        .map(|case| (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code.to_string()))
-        .collect(),
-    );
+    let heap = &mut Heap::new();
+    let handles = compiler_integration_tests()
+      .iter()
+      .map(|case| {
+        (
+          heap.alloc_module_reference_from_string_vec(vec![case.name.to_string()]),
+          case.source_code.to_string(),
+        )
+      })
+      .collect_vec();
+    let TypeCheckSourceHandlesResult { checked_sources, .. } =
+      type_check_source_handles(heap, handles);
     for (mod_ref, module) in checked_sources {
-      let raw = printer::pretty_print_source_module(&heap, 100, &module);
+      let raw = printer::pretty_print_source_module(heap, 100, &module);
       let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
-        type_check_source_handles(vec![(mod_ref, raw)]);
+        type_check_source_handles(heap, vec![(mod_ref, raw)]);
       assert!(compile_time_errors.is_empty());
       assert!(checked_sources.len() == 1);
     }
@@ -1719,27 +1730,29 @@ class Main {
 
   #[test]
   fn compiler_tests() {
+    let heap = &mut Heap::new();
     let tests = compiler_integration_tests();
-    let TypeCheckSourceHandlesResult { checked_sources, heap, compile_time_errors, .. } =
-      type_check_source_handles(
-        tests
-          .iter()
-          .map(|case| {
-            (ModuleReference::ordinary(vec![rcs(case.name)]), case.source_code.to_string())
-          })
-          .collect(),
-      );
+    let handles = tests
+      .iter()
+      .map(|case| {
+        (
+          heap.alloc_module_reference_from_string_vec(vec![case.name.to_string()]),
+          case.source_code.to_string(),
+        )
+      })
+      .collect_vec();
+    let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
+      type_check_source_handles(heap, handles);
     assert!(compile_time_errors.is_empty());
-    let unoptimized_hir_sources = compiler::compile_sources_to_hir(&heap, &checked_sources);
+    let unoptimized_hir_sources = compiler::compile_sources_to_hir(heap, &checked_sources);
     let optimized_hir_sources = optimization::optimize_sources(
       unoptimized_hir_sources,
       &optimization::ALL_ENABLED_CONFIGURATION,
     );
     let mir_sources = compiler::compile_hir_to_mir(optimized_hir_sources);
     for test in &tests {
-      let main_function = rc_string(common_names::encode_main_function_name(
-        &ModuleReference::ordinary(vec![rcs(test.name)]),
-      ));
+      let mod_ref = heap.alloc_module_reference_from_string_vec(vec![test.name.to_string()]);
+      let main_function = rc_string(common_names::encode_main_function_name(heap, &mod_ref));
       let actual = interpreter::run_mir_sources(&mir_sources, main_function);
       assert_eq!(test.expected_std, actual);
       // Replace with the following line for debugging
@@ -1779,9 +1792,8 @@ class Main {
       .unwrap();
     let mut expected_str = String::new();
     for test in &tests {
-      let main_function_name = rc_string(common_names::encode_main_function_name(
-        &ModuleReference::ordinary(vec![rcs(test.name)]),
-      ));
+      let mod_ref = heap.alloc_module_reference_from_string_vec(vec![test.name.to_string()]);
+      let main_function_name = rc_string(common_names::encode_main_function_name(heap, &mod_ref));
       expected_str.push_str(test.name);
       expected_str.push_str(":\n");
       store.state_mut().push(test.name.to_string() + ":");
