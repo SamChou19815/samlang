@@ -1,7 +1,7 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
 use crate::{
-  ast::{source::*, Location, ModuleReference, Position, Reason},
-  common::{rc_string, Heap, PStr},
+  ast::{source::*, Location, Position, Reason},
+  common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -17,8 +17,8 @@ fn unescape_quotes(source: &str) -> String {
 }
 
 fn post_process_block_comment(heap: &mut Heap, block_comment: &str) -> PStr {
-  heap.alloc_str(
-    &block_comment
+  heap.alloc_string(
+    block_comment
       .split('\n')
       .into_iter()
       .map(|line| {
@@ -53,13 +53,13 @@ impl<'a> SourceParser<'a> {
     }
     match self.tokens.get(self.position - 1) {
       Option::None => Location::dummy(),
-      Option::Some(Token(loc, _)) => loc.clone(),
+      Option::Some(Token(loc, _)) => *loc,
     }
   }
 
   fn simple_peek(&self) -> Token {
     if let Some(peeked) = self.tokens.get(self.position) {
-      peeked.clone()
+      *peeked
     } else {
       Token(self.last_location(), TokenContent::EOF)
     }
@@ -83,12 +83,9 @@ impl<'a> SourceParser<'a> {
         None => Position(0, 0),
         Some(Token(location, _)) => location.end,
       };
-      let loc = Location {
-        module_reference: self.module_reference.clone(),
-        start: position,
-        end: position,
-      };
-      self.report(&loc, "Unexpected end of file.");
+      let loc =
+        Location { module_reference: self.module_reference, start: position, end: position };
+      self.report(loc, "Unexpected end of file.".to_string());
       return;
     }
     self.position += 1
@@ -136,8 +133,8 @@ impl<'a> SourceParser<'a> {
       }
     }
     self.report(
-      &location,
-      &format!(
+      location,
+      format!(
         "Expected: {}, actual: {}.",
         expected_kind.to_string(),
         content.pretty_print(self.heap)
@@ -155,8 +152,8 @@ impl<'a> SourceParser<'a> {
       }
     }
     self.report(
-      &location,
-      &format!(
+      location,
+      format!(
         "Expected: {}, actual: {}.",
         expected_kind.to_string(),
         content.pretty_print(self.heap)
@@ -171,11 +168,9 @@ impl<'a> SourceParser<'a> {
       self.consume();
       return (location, id);
     }
-    self.report(
-      &location,
-      &format!("Expected: lowerId, actual: {}.", content.pretty_print(self.heap)),
-    );
-    (location, PStr::permanent("MISSING"))
+    self
+      .report(location, format!("Expected: lowerId, actual: {}.", content.pretty_print(self.heap)));
+    (location, self.heap.alloc_str("MISSING"))
   }
 
   fn assert_and_peek_upper_id(&mut self) -> (Location, PStr) {
@@ -184,11 +179,9 @@ impl<'a> SourceParser<'a> {
       self.consume();
       return (location, id);
     }
-    self.report(
-      &location,
-      &format!("Expected: upperId, actual: {}.", content.pretty_print(self.heap)),
-    );
-    (location, PStr::permanent("MISSING"))
+    self
+      .report(location, format!("Expected: upperId, actual: {}.", content.pretty_print(self.heap)));
+    (location, self.heap.alloc_str("MISSING"))
   }
 
   fn assert_and_consume_identifier(&mut self) -> (Location, PStr) {
@@ -201,13 +194,13 @@ impl<'a> SourceParser<'a> {
       _ => {}
     }
     self.report(
-      &location,
-      &format!("Expected: identifier, actual: {}.", content.pretty_print(self.heap)),
+      location,
+      format!("Expected: identifier, actual: {}.", content.pretty_print(self.heap)),
     );
-    (location, PStr::permanent("MISSING"))
+    (location, self.heap.alloc_str("MISSING"))
   }
 
-  fn report(&mut self, loc: &Location, reason: &str) {
+  fn report(&mut self, loc: Location, reason: String) {
     self.error_set.report_syntax_error(loc, reason)
   }
 
@@ -248,12 +241,12 @@ impl<'a> SourceParser<'a> {
     tokens: Vec<Token>,
     heap: &'a mut Heap,
     error_set: &'a mut ErrorSet,
-    module_reference: &ModuleReference,
+    module_reference: ModuleReference,
     builtin_classes: HashSet<PStr>,
   ) -> SourceParser<'a> {
     SourceParser {
       tokens,
-      module_reference: module_reference.clone(),
+      module_reference,
       heap,
       error_set,
       builtin_classes,
@@ -272,16 +265,14 @@ impl<'a> SourceParser<'a> {
       self.assert_and_consume_operator(TokenOp::RBRACE);
       self.assert_and_consume_keyword(Keyword::FROM);
       let import_loc_start = self.peek().0;
-      let imported_module = ModuleReference::ordinary(self.parse_punctuation_separated_list(
-        TokenOp::DOT,
-        None,
-        &mut |s: &mut Self| {
-          rc_string(s.assert_and_consume_identifier().1.as_str(s.heap).to_string())
-        },
-      ));
+      let imported_module_parts =
+        self.parse_punctuation_separated_list(TokenOp::DOT, None, &mut |s: &mut Self| {
+          s.assert_and_consume_identifier().1
+        });
+      let imported_module = self.heap.alloc_module_reference(imported_module_parts);
       let imported_module_loc = import_loc_start.union(&self.last_location());
       for variable in imported_members.iter() {
-        self.class_source_map.insert(variable.name, imported_module.clone());
+        self.class_source_map.insert(variable.name, imported_module);
       }
       imports.push(ModuleMembersImport {
         loc: import_start.union(&imported_module_loc),
@@ -303,8 +294,8 @@ impl<'a> SourceParser<'a> {
           Token(loc, content) => {
             self.consume();
             self.report(
-              &loc,
-              &format!(
+              loc,
+              format!(
                 "Unexpected token among the classes and interfaces: {}",
                 content.pretty_print(self.heap)
               ),
@@ -495,7 +486,7 @@ impl<'a> SourceParser<'a> {
     let mut decl = self.parse_class_member_declaration_common(true);
     self.assert_and_consume_operator(TokenOp::ASSIGN);
     let body = self.parse_expression();
-    decl.loc = decl.loc.union(body.loc());
+    decl.loc = decl.loc.union(&body.loc());
     ClassMemberDefinition { decl, body }
   }
 
@@ -511,11 +502,11 @@ impl<'a> SourceParser<'a> {
     let mut is_public = true;
     let mut is_method = true;
     let mut peeked = self.peek();
-    if let Token(peeked_loc, TokenContent::Keyword(Keyword::PRIVATE)) = &peeked {
+    if let Token(peeked_loc, TokenContent::Keyword(Keyword::PRIVATE)) = peeked {
       if allow_private {
         is_public = false;
       } else {
-        self.report(peeked_loc, "Unexpected `private`");
+        self.report(peeked_loc, "Unexpected `private`".to_string());
       }
       self.consume();
       peeked = self.peek();
@@ -561,7 +552,7 @@ impl<'a> SourceParser<'a> {
       name,
       type_parameters: Rc::new(type_parameters),
       type_: FunctionType {
-        reason: Reason::new(fun_type_loc.clone(), Some(fun_type_loc)),
+        reason: Reason::new(fun_type_loc, Some(fun_type_loc)),
         argument_types: parameters.iter().map(|it| it.annotation.clone()).collect_vec(),
         return_type,
       },
@@ -579,7 +570,7 @@ impl<'a> SourceParser<'a> {
       let loc = name.loc.union(&bound.reason.use_loc);
       (Some(Rc::new(bound)), loc)
     } else {
-      (None, name.loc.clone())
+      (None, name.loc)
     };
     TypeParameter {
       loc,
@@ -601,7 +592,7 @@ impl<'a> SourceParser<'a> {
       let mut copied_new_comments = new_comments.clone();
       associated_comments.append(&mut copied_new_comments);
       expr::ExpressionCommon {
-        loc: c.loc.clone(),
+        loc: c.loc,
         associated_comments: Rc::new(associated_comments),
         type_: c.type_,
       }
@@ -623,7 +614,7 @@ impl<'a> SourceParser<'a> {
       let loc = peeked_loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
       expr::E::Match(expr::Match {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: Rc::new(associated_comments),
           type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
         },
@@ -648,7 +639,7 @@ impl<'a> SourceParser<'a> {
     self.assert_and_consume_operator(TokenOp::ARROW);
     let expression = self.parse_expression();
     expr::VariantPatternToExpression {
-      loc: start_loc.union(expression.loc()),
+      loc: start_loc.union(&expression.loc()),
       tag,
       tag_order: 0,
       data_variable,
@@ -665,10 +656,10 @@ impl<'a> SourceParser<'a> {
       let e1 = self.parse_expression();
       self.assert_and_consume_keyword(Keyword::ELSE);
       let e2 = self.parse_expression();
-      let loc = peeked_loc.union(e2.loc());
+      let loc = peeked_loc.union(&e2.loc());
       return expr::E::IfElse(expr::IfElse {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: Rc::new(associated_comments),
           type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
         },
@@ -686,10 +677,10 @@ impl<'a> SourceParser<'a> {
       let operator_preceding_comments = self.collect_preceding_comments();
       self.consume();
       let e2 = self.parse_conjunction();
-      let loc = e.loc().union(e2.loc());
+      let loc = e.loc().union(&e2.loc());
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: Rc::new(vec![]),
           type_: Rc::new(Type::bool_type(Reason::new(loc, None))),
         },
@@ -708,10 +699,10 @@ impl<'a> SourceParser<'a> {
       let operator_preceding_comments = self.collect_preceding_comments();
       self.consume();
       let e2 = self.parse_comparison();
-      let loc = e.loc().union(e2.loc());
+      let loc = e.loc().union(&e2.loc());
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: Rc::new(vec![]),
           type_: Rc::new(Type::bool_type(Reason::new(loc, None))),
         },
@@ -739,10 +730,10 @@ impl<'a> SourceParser<'a> {
       };
       self.consume();
       let e2 = self.parse_term();
-      let loc = e.loc().union(e2.loc());
+      let loc = e.loc().union(&e2.loc());
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: Rc::new(vec![]),
           type_: Rc::new(Type::bool_type(Reason::new(loc, None))),
         },
@@ -766,10 +757,10 @@ impl<'a> SourceParser<'a> {
       };
       self.consume();
       let e2 = self.parse_factor();
-      let loc = e.loc().union(e2.loc());
+      let loc = e.loc().union(&e2.loc());
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: Rc::new(vec![]),
           type_: Rc::new(Type::int_type(Reason::new(loc, None))),
         },
@@ -794,10 +785,10 @@ impl<'a> SourceParser<'a> {
       };
       self.consume();
       let e2 = self.parse_concat();
-      let loc = e.loc().union(e2.loc());
+      let loc = e.loc().union(&e2.loc());
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: Rc::new(vec![]),
           type_: Rc::new(Type::int_type(Reason::new(loc, None))),
         },
@@ -816,10 +807,10 @@ impl<'a> SourceParser<'a> {
       let operator_preceding_comments = self.collect_preceding_comments();
       self.consume();
       let e2 = self.parse_unary_expression();
-      let loc = e.loc().union(e2.loc());
+      let loc = e.loc().union(&e2.loc());
       e = expr::E::Binary(expr::Binary {
         common: expr::ExpressionCommon {
-          loc: loc.clone(),
+          loc,
           associated_comments: Rc::new(vec![]),
           type_: Rc::new(Type::string_type(Reason::new(loc, None))),
         },
@@ -834,15 +825,15 @@ impl<'a> SourceParser<'a> {
 
   fn parse_unary_expression(&mut self) -> expr::E {
     let associated_comments = self.collect_preceding_comments();
-    let Token(peeked_loc, content) = &self.peek();
+    let Token(peeked_loc, content) = self.peek();
     match content {
       TokenContent::Operator(TokenOp::NOT) => {
         self.consume();
         let argument = self.parse_function_call_or_field_access();
-        let loc = peeked_loc.union(argument.loc());
+        let loc = peeked_loc.union(&argument.loc());
         expr::E::Unary(expr::Unary {
           common: expr::ExpressionCommon {
-            loc: loc.clone(),
+            loc,
             associated_comments: Rc::new(associated_comments),
             type_: Rc::new(Type::bool_type(Reason::new(loc, None))),
           },
@@ -853,10 +844,10 @@ impl<'a> SourceParser<'a> {
       TokenContent::Operator(TokenOp::MINUS) => {
         self.consume();
         let argument = self.parse_function_call_or_field_access();
-        let loc = peeked_loc.union(argument.loc());
+        let loc = peeked_loc.union(&argument.loc());
         expr::E::Unary(expr::Unary {
           common: expr::ExpressionCommon {
-            loc: loc.clone(),
+            loc,
             associated_comments: Rc::new(associated_comments),
             type_: Rc::new(Type::int_type(Reason::new(loc, None))),
           },
@@ -892,7 +883,7 @@ impl<'a> SourceParser<'a> {
           };
           function_expression = expr::E::FieldAccess(expr::FieldAccess {
             common: expr::ExpressionCommon {
-              loc: loc.clone(),
+              loc,
               associated_comments: Rc::new(vec![]),
               type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
             },
@@ -920,7 +911,7 @@ impl<'a> SourceParser<'a> {
             function_expression.loc().union(&self.assert_and_consume_operator(TokenOp::RPAREN));
           function_expression = expr::E::Call(expr::Call {
             common: expr::ExpressionCommon {
-              loc: loc.clone(),
+              loc,
               associated_comments: Rc::new(vec![]),
               type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
             },
@@ -935,15 +926,15 @@ impl<'a> SourceParser<'a> {
 
   fn parse_base_expression(&mut self) -> expr::E {
     let associated_comments = self.collect_preceding_comments();
-    let peeked = &self.peek();
+    let peeked = self.peek();
 
     if let Token(peeked_loc, TokenContent::Keyword(Keyword::TRUE)) = peeked {
       self.consume();
       return expr::E::Literal(
         expr::ExpressionCommon {
-          loc: peeked_loc.clone(),
+          loc: peeked_loc,
           associated_comments: Rc::new(associated_comments),
-          type_: Rc::new(Type::bool_type(Reason::new(peeked_loc.clone(), None))),
+          type_: Rc::new(Type::bool_type(Reason::new(peeked_loc, None))),
         },
         Literal::Bool(true),
       );
@@ -952,9 +943,9 @@ impl<'a> SourceParser<'a> {
       self.consume();
       return expr::E::Literal(
         expr::ExpressionCommon {
-          loc: peeked_loc.clone(),
+          loc: peeked_loc,
           associated_comments: Rc::new(associated_comments),
-          type_: Rc::new(Type::bool_type(Reason::new(peeked_loc.clone(), None))),
+          type_: Rc::new(Type::bool_type(Reason::new(peeked_loc, None))),
         },
         Literal::Bool(false),
       );
@@ -963,9 +954,9 @@ impl<'a> SourceParser<'a> {
       self.consume();
       return expr::E::Literal(
         expr::ExpressionCommon {
-          loc: peeked_loc.clone(),
+          loc: peeked_loc,
           associated_comments: Rc::new(associated_comments),
-          type_: Rc::new(Type::int_type(Reason::new(peeked_loc.clone(), None))),
+          type_: Rc::new(Type::int_type(Reason::new(peeked_loc, None))),
         },
         Literal::Int(i.as_str(self.heap).parse::<i32>().unwrap_or(0)),
       );
@@ -976,31 +967,38 @@ impl<'a> SourceParser<'a> {
       let str_lit = unescape_quotes(&chars[1..(chars.len() - 1)].iter().collect::<String>());
       return expr::E::Literal(
         expr::ExpressionCommon {
-          loc: peeked_loc.clone(),
+          loc: peeked_loc,
           associated_comments: Rc::new(associated_comments),
-          type_: Rc::new(Type::string_type(Reason::new(peeked_loc.clone(), None))),
+          type_: Rc::new(Type::string_type(Reason::new(peeked_loc, None))),
         },
-        Literal::String(self.heap.alloc_str(&str_lit)),
+        Literal::String(self.heap.alloc_string(str_lit)),
       );
     }
     if let Token(peeked_loc, TokenContent::LowerId(name)) = peeked {
       self.consume();
       return expr::E::Id(
         expr::ExpressionCommon {
-          loc: peeked_loc.clone(),
+          loc: peeked_loc,
           associated_comments: Rc::new(associated_comments),
-          type_: Rc::new(Type::Unknown(Reason::new(peeked_loc.clone(), None))),
+          type_: Rc::new(Type::Unknown(Reason::new(peeked_loc, None))),
         },
-        Id { loc: peeked_loc.clone(), associated_comments: Rc::new(vec![]), name: *name },
+        Id { loc: peeked_loc, associated_comments: Rc::new(vec![]), name },
       );
     }
     if let Token(peeked_loc, TokenContent::Keyword(Keyword::THIS)) = peeked {
       self.consume();
-      return expr::E::This(expr::ExpressionCommon {
-        loc: peeked_loc.clone(),
-        associated_comments: Rc::new(associated_comments),
-        type_: Rc::new(Type::Unknown(Reason::new(peeked_loc.clone(), None))),
-      });
+      return expr::E::Id(
+        expr::ExpressionCommon {
+          loc: peeked_loc,
+          associated_comments: Rc::new(associated_comments),
+          type_: Rc::new(Type::Unknown(Reason::new(peeked_loc, None))),
+        },
+        Id {
+          loc: peeked_loc,
+          associated_comments: Rc::new(vec![]),
+          name: self.heap.alloc_str("this"),
+        },
+      );
     }
 
     // Class function
@@ -1025,16 +1023,16 @@ impl<'a> SourceParser<'a> {
         };
         return expr::E::ClassFn(expr::ClassFunction {
           common: expr::ExpressionCommon {
-            loc: loc.clone(),
+            loc,
             associated_comments: Rc::new(associated_comments),
             type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
           },
           type_arguments,
-          module_reference: self.resolve_class(*class_name),
+          module_reference: self.resolve_class(class_name),
           class_name: Id {
-            loc: peeked_loc.clone(),
+            loc: peeked_loc,
             associated_comments: Rc::new(vec![]),
-            name: *class_name,
+            name: class_name,
           },
           fn_name: Id {
             loc: member_name_loc,
@@ -1055,10 +1053,10 @@ impl<'a> SourceParser<'a> {
         comments.append(&mut self.collect_preceding_comments());
         self.assert_and_consume_operator(TokenOp::ARROW);
         let body = self.parse_expression();
-        let loc = peeked_loc.union(body.loc());
+        let loc = peeked_loc.union(&body.loc());
         return expr::E::Lambda(expr::Lambda {
           common: expr::ExpressionCommon {
-            loc: loc.clone(),
+            loc,
             associated_comments: Rc::new(comments),
             type_: Rc::new(Type::Fn(FunctionType {
               reason: Reason::new(loc, None),
@@ -1092,19 +1090,19 @@ impl<'a> SourceParser<'a> {
             self.assert_and_consume_operator(TokenOp::RPAREN);
             self.assert_and_consume_operator(TokenOp::ARROW);
             let body = self.parse_expression();
-            let loc = peeked_loc.union(body.loc());
+            let loc = peeked_loc.union(&body.loc());
             return expr::E::Lambda(expr::Lambda {
               common: expr::ExpressionCommon {
-                loc: loc.clone(),
+                loc,
                 associated_comments: Rc::new(associated_comments),
                 type_: Rc::new(Type::Fn(FunctionType {
-                  reason: Reason::new(loc.clone(), Some(loc)),
+                  reason: Reason::new(loc, Some(loc)),
                   argument_types: parameters
                     .iter()
                     .map(|it| {
                       it.annotation
                         .clone()
-                        .unwrap_or(Rc::new(Type::Unknown(Reason::new(it.name.loc.clone(), None))))
+                        .unwrap_or(Rc::new(Type::Unknown(Reason::new(it.name.loc, None))))
                     })
                     .collect_vec(),
                   return_type: body.type_(),
@@ -1123,14 +1121,14 @@ impl<'a> SourceParser<'a> {
               comments.append(&mut self.collect_preceding_comments());
               self.consume();
               let body = self.parse_expression();
-              let parameter_type = Type::Unknown(Reason::new(loc_id_for_lambda.clone(), None));
-              let loc = peeked_loc.union(body.loc());
+              let parameter_type = Type::Unknown(Reason::new(loc_id_for_lambda, None));
+              let loc = peeked_loc.union(&body.loc());
               return expr::E::Lambda(expr::Lambda {
                 common: expr::ExpressionCommon {
-                  loc: loc.clone(),
+                  loc,
                   associated_comments: Rc::new(comments),
                   type_: Rc::new(Type::Fn(FunctionType {
-                    reason: Reason::new(loc.clone(), Some(loc)),
+                    reason: Reason::new(loc, Some(loc)),
                     argument_types: vec![Rc::new(parameter_type)],
                     return_type: body.type_(),
                   })),
@@ -1174,7 +1172,7 @@ impl<'a> SourceParser<'a> {
         let loc = peeked_loc.union(&end_loc);
         return expr::E::Block(expr::Block {
           common: expr::ExpressionCommon {
-            loc: loc.clone(),
+            loc,
             associated_comments: Rc::new(associated_comments),
             type_: Rc::new(Type::unit_type(Reason::new(loc, None))),
           },
@@ -1199,14 +1197,14 @@ impl<'a> SourceParser<'a> {
 
     // Error case
     self.report(
-      &peeked.0,
-      &format!("Expected: expression, actual: {}", peeked.1.pretty_print(self.heap)),
+      peeked.0,
+      format!("Expected: expression, actual: {}", peeked.1.pretty_print(self.heap)),
     );
     expr::E::Literal(
       expr::ExpressionCommon {
-        loc: peeked.0.clone(),
+        loc: peeked.0,
         associated_comments: Rc::new(associated_comments),
-        type_: Rc::new(Type::int_type(Reason::new(peeked.0.clone(), None))),
+        type_: Rc::new(Type::int_type(Reason::new(peeked.0, None))),
       },
       Literal::Int(0),
     )
@@ -1235,7 +1233,7 @@ impl<'a> SourceParser<'a> {
   }
 
   pub(super) fn parse_pattern(&mut self) -> expr::Pattern {
-    let peeked = &self.peek();
+    let peeked = self.peek();
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
       self.consume();
       let destructured_names =
@@ -1247,10 +1245,10 @@ impl<'a> SourceParser<'a> {
             let loc = field_name.loc.union(&alias.loc);
             (Some(alias), loc)
           } else {
-            (None, field_name.loc.clone())
+            (None, field_name.loc)
           };
           expr::ObjectPatternDestucturedName {
-            loc: loc.clone(),
+            loc,
             field_name,
             field_order: 0,
             alias,
@@ -1262,9 +1260,9 @@ impl<'a> SourceParser<'a> {
     }
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::UNDERSCORE)) = peeked {
       self.consume();
-      return expr::Pattern::Wildcard(peeked_loc.clone());
+      return expr::Pattern::Wildcard(peeked_loc);
     }
-    expr::Pattern::Id(peeked.0.clone(), self.assert_and_peek_lower_id().1)
+    expr::Pattern::Id(peeked.0, self.assert_and_peek_lower_id().1)
   }
 
   fn parse_upper_id(&mut self) -> Id {
@@ -1287,7 +1285,7 @@ impl<'a> SourceParser<'a> {
         TokenContent::LineComment(text) => {
           self.consume();
           let str = text.as_str(self.heap).chars().skip(3).collect::<String>();
-          let text = self.heap.alloc_str(&str);
+          let text = self.heap.alloc_string(str);
           comments.push(Comment { kind: CommentKind::LINE, text });
         }
         TokenContent::BlockComment(text) => {
@@ -1320,30 +1318,30 @@ impl<'a> SourceParser<'a> {
   }
 
   pub(super) fn parse_type(&mut self) -> Rc<Type> {
-    let peeked = &self.peek();
-    match &peeked.1 {
+    let peeked = self.peek();
+    match peeked.1 {
       TokenContent::Keyword(Keyword::UNIT) => {
         self.consume();
-        Rc::new(Type::unit_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Rc::new(Type::unit_type(Reason::new(peeked.0, Option::Some(peeked.0))))
       }
       TokenContent::Keyword(Keyword::BOOL) => {
         self.consume();
-        Rc::new(Type::bool_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Rc::new(Type::bool_type(Reason::new(peeked.0, Option::Some(peeked.0))))
       }
       TokenContent::Keyword(Keyword::INT) => {
         self.consume();
-        Rc::new(Type::int_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Rc::new(Type::int_type(Reason::new(peeked.0, Option::Some(peeked.0))))
       }
       TokenContent::Keyword(Keyword::STRING) => {
         self.consume();
-        Rc::new(Type::string_type(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Rc::new(Type::string_type(Reason::new(peeked.0, Option::Some(peeked.0))))
       }
       TokenContent::UpperId(name) => {
         self.consume();
         Rc::new(Type::Id(self.parse_identifier_type(&Id {
-          loc: peeked.0.clone(),
+          loc: peeked.0,
           associated_comments: Rc::new(vec![]),
-          name: *name,
+          name,
         })))
       }
       TokenContent::Operator(TokenOp::LPAREN) => {
@@ -1362,17 +1360,17 @@ impl<'a> SourceParser<'a> {
         let return_type = self.parse_type();
         let location = peeked.0.union(&return_type.get_reason().use_loc);
         Rc::new(Type::Fn(FunctionType {
-          reason: Reason::new(location.clone(), Option::Some(location)),
+          reason: Reason::new(location, Option::Some(location)),
           argument_types,
           return_type,
         }))
       }
       content => {
         self.report(
-          &peeked.0,
-          &format!("Expecting: type, actual: {}", content.pretty_print(self.heap)),
+          peeked.0,
+          format!("Expecting: type, actual: {}", content.pretty_print(self.heap)),
         );
-        Rc::new(Type::Unknown(Reason::new(peeked.0.clone(), Option::Some(peeked.0.clone()))))
+        Rc::new(Type::Unknown(Reason::new(peeked.0, Option::Some(peeked.0))))
       }
     }
   }
@@ -1386,10 +1384,10 @@ impl<'a> SourceParser<'a> {
         let location = identifier.loc.union(&self.assert_and_consume_operator(TokenOp::GT));
         (types, location)
       } else {
-        (vec![], identifier.loc.clone())
+        (vec![], identifier.loc)
       };
     IdType {
-      reason: Reason::new(location.clone(), Option::Some(location)),
+      reason: Reason::new(location, Option::Some(location)),
       module_reference: self.resolve_class(identifier.name),
       id: identifier.name,
       type_arguments,
@@ -1400,7 +1398,7 @@ impl<'a> SourceParser<'a> {
     if self.builtin_classes.contains(&class_name) {
       ModuleReference::root()
     } else {
-      self.class_source_map.get(&class_name).unwrap_or(&self.module_reference).clone()
+      *self.class_source_map.get(&class_name).unwrap_or(&self.module_reference)
     }
   }
 }
@@ -1409,8 +1407,8 @@ impl<'a> SourceParser<'a> {
 mod tests {
   use super::{post_process_block_comment, SourceParser};
   use crate::{
-    ast::{Location, ModuleReference},
-    common::{Heap, PStr},
+    ast::Location,
+    common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::lexer::{Token, TokenContent},
   };
@@ -1430,7 +1428,7 @@ mod tests {
       vec![],
       &mut heap,
       &mut error_set,
-      &ModuleReference::dummy(),
+      ModuleReference::dummy(),
       HashSet::new(),
     );
 
@@ -1446,10 +1444,10 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let mut parser = SourceParser::new(
-      vec![Token(Location::dummy(), TokenContent::Error(PStr::permanent("ouch")))],
+      vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str("ouch")))],
       &mut heap,
       &mut error_set,
-      &ModuleReference::dummy(),
+      ModuleReference::dummy(),
       HashSet::new(),
     );
 
@@ -1457,16 +1455,10 @@ mod tests {
     parser.consume();
   }
 
-  fn with_tokens_robustness_tests(tokens: Vec<Token>) {
-    let mut heap = Heap::new();
+  fn with_tokens_robustness_tests(heap: &mut Heap, tokens: Vec<Token>) {
     let mut error_set = ErrorSet::new();
-    let mut parser = SourceParser::new(
-      tokens,
-      &mut heap,
-      &mut error_set,
-      &ModuleReference::dummy(),
-      HashSet::new(),
-    );
+    let mut parser =
+      SourceParser::new(tokens, heap, &mut error_set, ModuleReference::dummy(), HashSet::new());
 
     parser.parse_interface();
     parser.parse_class();
@@ -1481,14 +1473,13 @@ mod tests {
 
   #[test]
   fn empty_robustness_tests() {
-    with_tokens_robustness_tests(vec![])
+    with_tokens_robustness_tests(&mut Heap::new(), vec![]);
   }
 
   #[test]
   fn error_robustness_tests() {
-    with_tokens_robustness_tests(vec![Token(
-      Location::dummy(),
-      TokenContent::Error(PStr::permanent("ouch")),
-    )])
+    let heap = &mut Heap::new();
+    let tokens = vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str("ouch")))];
+    with_tokens_robustness_tests(heap, tokens);
   }
 }

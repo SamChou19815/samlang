@@ -41,7 +41,7 @@ fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
           }
           return Some(Type::Id(IdType {
             reason: reason.clone(),
-            module_reference: mod_ref2.clone(),
+            module_reference: *mod_ref2,
             id: *id2,
             type_arguments,
           }));
@@ -84,7 +84,7 @@ pub(super) fn contextual_type_meet(
     t
   } else {
     error_set.report_unexpected_type_error(
-      &specific.get_reason().use_loc,
+      specific.get_reason().use_loc,
       general.pretty_print(heap),
       specific.pretty_print(heap),
     );
@@ -120,7 +120,7 @@ pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<PStr, Rc<Typ
       } else {
         Rc::new(Type::Id(IdType {
           reason: reason.clone(),
-          module_reference: module_reference.clone(),
+          module_reference: *module_reference,
           id: *id,
           type_arguments: type_arguments
             .iter()
@@ -236,7 +236,7 @@ pub(super) fn solve_type_constraints(
   for type_param in type_parameter_signatures {
     solved_substitution.entry(type_param.name).or_insert_with(|| {
       // Fill in unknown for unsolved types.
-      Rc::new(Type::Unknown(Reason::new(concrete.get_reason().use_loc.clone(), None)))
+      Rc::new(Type::Unknown(Reason::new(concrete.get_reason().use_loc, None)))
     });
   }
   let solved_generic_type = perform_type_substitution(generic, &solved_substitution);

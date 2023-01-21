@@ -14,10 +14,10 @@ use crate::{
       Literal, Module, OptionallyAnnotatedId, PrimitiveTypeKind, Toplevel, Type, TypeParameter,
       TypeParameterSignature,
     },
-    ModuleReference, Reason,
+    Reason,
   },
   checker::checker_utils::solve_type_constraints,
-  common::{Heap, PStr},
+  common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -26,7 +26,6 @@ use std::{collections::HashMap, ops::Deref, rc::Rc};
 fn arguments_should_be_checked_without_hint(e: &expr::E) -> bool {
   match e {
     expr::E::Literal(_, _)
-    | expr::E::This(_)
     | expr::E::Id(_, _)
     | expr::E::ClassFn(_)
     | expr::E::FieldAccess(_)
@@ -120,7 +119,7 @@ impl<'a> TypingContext<'a> {
     general: Option<&Type>,
     expression: &expr::E,
   ) -> Type {
-    self.type_meet(heap, general, &Type::Unknown(Reason::new(expression.loc().clone(), None)))
+    self.type_meet(heap, general, &Type::Unknown(Reason::new(expression.loc(), None)))
   }
 
   fn validate_type_arguments(
@@ -139,7 +138,7 @@ impl<'a> TypingContext<'a> {
           && !self.is_subtype(solved_type_argument, &substituted_bound)
         {
           self.error_set.report_unexpected_subtype_error(
-            &solved_type_argument.get_reason().use_loc,
+            solved_type_argument.get_reason().use_loc,
             substituted_bound.pretty_print(heap),
             solved_type_argument.pretty_print(heap),
           );
@@ -151,7 +150,6 @@ impl<'a> TypingContext<'a> {
   fn check(&mut self, heap: &Heap, expression: expr::E, hint: Option<&Type>) -> expr::E {
     match expression {
       expr::E::Literal(common, literal) => self.check_literal(heap, common, literal, hint),
-      expr::E::This(common) => self.check_this(heap, common, hint),
       expr::E::Id(common, id) => self.check_variable(heap, common, id, hint),
       expr::E::ClassFn(e) => self.check_class_function(heap, e, hint),
       expr::E::FieldAccess(e) => self.check_field_access(heap, e, hint),
@@ -177,16 +175,6 @@ impl<'a> TypingContext<'a> {
     expr::E::Literal(common, literal)
   }
 
-  fn check_this(
-    &mut self,
-    heap: &Heap,
-    common: expr::ExpressionCommon,
-    hint: Option<&Type>,
-  ) -> expr::E {
-    let type_ = Rc::new(self.type_meet(heap, hint, &self.local_typing_context.read(&common.loc)));
-    expr::E::This(common.with_new_type(type_))
-  }
-
   fn check_variable(
     &mut self,
     heap: &Heap,
@@ -208,7 +196,7 @@ impl<'a> TypingContext<'a> {
       &expression.module_reference,
       &expression.class_name.name,
       &expression.fn_name.name,
-      expression.common.loc.clone(),
+      expression.common.loc,
     ) {
       if !expression.type_arguments.is_empty() {
         if expression.type_arguments.len() == class_function_type_information.type_parameters.len()
@@ -242,7 +230,7 @@ impl<'a> TypingContext<'a> {
           return (partially_checked_expr, vec![]);
         }
         self.error_set.report_arity_mismatch_error(
-          &expression.common.loc,
+          expression.common.loc,
           "type arguments",
           class_function_type_information.type_parameters.len(),
           expression.type_arguments.len(),
@@ -288,7 +276,7 @@ impl<'a> TypingContext<'a> {
                 perform_type_substitution(
                   &Type::Id(IdType {
                     reason: Reason::dummy(),
-                    module_reference: self.current_module_reference.clone(),
+                    module_reference: self.current_module_reference,
                     id: it.name,
                     type_arguments: vec![],
                   }),
@@ -306,16 +294,16 @@ impl<'a> TypingContext<'a> {
             return (partially_checked_expr, vec![]);
           }
           self.error_set.report_arity_mismatch_error(
-            &expression.common.loc,
+            expression.common.loc,
             "parameter",
             fun_hint.argument_types.len(),
             class_function_type_information.type_.argument_types.len(),
           );
         } else {
           self.error_set.report_unexpected_type_kind_error(
-            &expression.common.loc,
-            &hint.pretty_print(heap),
-            "function",
+            expression.common.loc,
+            hint.pretty_print(heap),
+            "function".to_string(),
           );
         }
       }
@@ -330,7 +318,7 @@ impl<'a> TypingContext<'a> {
           .map(|it| {
             Rc::new(Type::Id(IdType {
               reason: Reason::dummy(),
-              module_reference: self.current_module_reference.clone(),
+              module_reference: self.current_module_reference,
               id: it.name,
               type_arguments: vec![],
             }))
@@ -345,9 +333,9 @@ impl<'a> TypingContext<'a> {
       }
       (partially_checked_expr, class_function_type_information.type_parameters.clone())
     } else {
-      self.error_set.report_unresolved_synthetic_name_error(
-        &expression.common.loc,
-        &format!(
+      self.error_set.report_unresolved_name_error(
+        expression.common.loc,
+        format!(
           "{}.{}",
           expression.class_name.name.as_str(heap),
           expression.fn_name.name.as_str(heap)
@@ -356,7 +344,7 @@ impl<'a> TypingContext<'a> {
       let type_ = Rc::new(self.type_meet(
         heap,
         hint,
-        &Type::Unknown(Reason::new(expression.common.loc.clone(), None)),
+        &Type::Unknown(Reason::new(expression.common.loc, None)),
       ));
       (
         expr::ClassFunction {
@@ -456,13 +444,13 @@ impl<'a> TypingContext<'a> {
       _ => {
         self.error_set.report_unexpected_type_kind_error(
           checked_expression.loc(),
-          "identifier",
-          &checked_expression.type_().pretty_print(heap),
+          "identifier".to_string(),
+          checked_expression.type_().pretty_print(heap),
         );
         let unknown_type = Rc::new(self.type_meet(
           heap,
           hint,
-          &Type::Unknown(Reason::new(expression.common.loc.clone(), None)),
+          &Type::Unknown(Reason::new(expression.common.loc, None)),
         ));
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(unknown_type),
@@ -479,7 +467,7 @@ impl<'a> TypingContext<'a> {
       &obj_type.id,
       &expression.field_name.name,
       obj_type.type_arguments.clone(),
-      expression.common.loc.clone(),
+      expression.common.loc,
     ) {
       // This is a valid method. We will now type check it as a method access
       for targ in &expression.type_arguments {
@@ -508,7 +496,7 @@ impl<'a> TypingContext<'a> {
           return (partially_checked_expr, vec![]);
         }
         self.error_set.report_arity_mismatch_error(
-          &expression.common.loc,
+          expression.common.loc,
           "type arguments",
           method_type_info.type_parameters.len(),
           expression.type_arguments.len(),
@@ -548,7 +536,7 @@ impl<'a> TypingContext<'a> {
                 perform_type_substitution(
                   &Type::Id(IdType {
                     reason: Reason::dummy(),
-                    module_reference: self.current_module_reference.clone(),
+                    module_reference: self.current_module_reference,
                     id: it.name,
                     type_arguments: vec![],
                   }),
@@ -565,16 +553,16 @@ impl<'a> TypingContext<'a> {
             return (partially_checked_expr, vec![]);
           }
           self.error_set.report_arity_mismatch_error(
-            &expression.common.loc,
+            expression.common.loc,
             "parameter",
             fun_hint.argument_types.len(),
             method_type_info.type_.argument_types.len(),
           );
         } else {
           self.error_set.report_unexpected_type_kind_error(
-            &expression.common.loc,
-            &hint.pretty_print(heap),
-            "function",
+            expression.common.loc,
+            hint.pretty_print(heap),
+            "function".to_string(),
           );
         }
       }
@@ -587,7 +575,7 @@ impl<'a> TypingContext<'a> {
           .map(|it| {
             Rc::new(Type::Id(IdType {
               reason: Reason::dummy(),
-              module_reference: self.current_module_reference.clone(),
+              module_reference: self.current_module_reference,
               id: it.name,
               type_arguments: vec![],
             }))
@@ -601,7 +589,7 @@ impl<'a> TypingContext<'a> {
       // Now it should be checked as field access.
       if !expression.type_arguments.is_empty() {
         self.error_set.report_arity_mismatch_error(
-          &expression.common.loc,
+          expression.common.loc,
           "type arguments",
           0,
           expression.type_arguments.len(),
@@ -609,15 +597,12 @@ impl<'a> TypingContext<'a> {
       }
       let (field_names, field_mappings) = self.resolve_type_definition(&obj_type, true);
       if let Some(field_type) = field_mappings.get(&expression.field_name.name) {
-        let type_ = Rc::new(self.type_meet(
-          heap,
-          hint,
-          &field_type.type_.reposition(expression.common.loc.clone()),
-        ));
+        let type_ =
+          Rc::new(self.type_meet(heap, hint, &field_type.type_.reposition(expression.common.loc)));
         if obj_type.id != self.current_class && !field_type.is_public {
           self.error_set.report_unresolved_name_error(
-            &expression.field_name.loc,
-            expression.field_name.name.as_str(heap),
+            expression.field_name.loc,
+            expression.field_name.name.as_str(heap).to_string(),
           );
           let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
             common: expression.common.with_new_type(type_),
@@ -640,13 +625,13 @@ impl<'a> TypingContext<'a> {
         (partially_checked_expr, vec![])
       } else {
         self.error_set.report_unresolved_name_error(
-          &expression.field_name.loc,
-          expression.field_name.name.as_str(heap),
+          expression.field_name.loc,
+          expression.field_name.name.as_str(heap).to_string(),
         );
         let unknown_type = Rc::new(self.type_meet(
           heap,
           hint,
-          &Type::Unknown(Reason::new(expression.common.loc.clone(), None)),
+          &Type::Unknown(Reason::new(expression.common.loc, None)),
         ));
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(Rc::new(self.type_meet(
@@ -711,7 +696,7 @@ impl<'a> TypingContext<'a> {
   ) -> FunctionCallTypeCheckingResult {
     if generic_function_type.argument_types.len() != function_arguments.len() {
       self.error_set.report_arity_mismatch_error(
-        &function_call_reason.use_loc,
+        function_call_reason.use_loc,
         "arguments",
         generic_function_type.argument_types.len(),
         function_arguments.len(),
@@ -782,9 +767,7 @@ impl<'a> TypingContext<'a> {
       .filter(|it| !fully_solved_substitution.contains_key(&it.name))
       .collect_vec();
     if !still_unresolved_type_parameters.is_empty() {
-      self
-        .error_set
-        .report_insufficient_type_inference_context_error(&function_call_reason.use_loc);
+      self.error_set.report_insufficient_type_inference_context_error(function_call_reason.use_loc);
     }
     for type_parameter in still_unresolved_type_parameters {
       fully_solved_substitution
@@ -794,7 +777,7 @@ impl<'a> TypingContext<'a> {
       perform_fn_type_substitution(generic_function_type, &fully_solved_substitution);
     let fully_solved_concrete_return_type = contextual_type_meet(
       &return_type_hint.cloned().unwrap_or(Type::Unknown(function_call_reason.clone())),
-      &fully_solved_generic_type.return_type.reposition(function_call_reason.use_loc.clone()),
+      &fully_solved_generic_type.return_type.reposition(function_call_reason.use_loc),
       heap,
       self.error_set,
     );
@@ -834,7 +817,7 @@ impl<'a> TypingContext<'a> {
     let partially_checked_callee_type = partially_checked_callee.type_();
     let callee_function_type = match &*partially_checked_callee_type {
       Type::Unknown(_) => {
-        let loc = expression.common.loc.clone();
+        let loc = expression.common.loc;
         let type_ = Rc::new(self.type_meet(heap, hint, &Type::Unknown(Reason::new(loc, None))));
         return expr::E::Call(expr::Call {
           common: expression.common.with_new_type(type_),
@@ -850,11 +833,11 @@ impl<'a> TypingContext<'a> {
       Type::Fn(fn_type) => fn_type,
       t => {
         self.error_set.report_unexpected_type_kind_error(
-          &expression.common.loc,
-          "function",
-          &t.pretty_print(heap),
+          expression.common.loc,
+          "function".to_string(),
+          t.pretty_print(heap),
         );
-        let loc = expression.common.loc.clone();
+        let loc = expression.common.loc;
         let type_ = Rc::new(self.type_meet(heap, hint, &Type::Unknown(Reason::new(loc, None))));
         return expr::E::Call(expr::Call {
           common: expression.common.with_new_type(type_),
@@ -877,7 +860,7 @@ impl<'a> TypingContext<'a> {
       heap,
       callee_function_type,
       &unresolved_tparams,
-      &Reason::new(expression.common.loc.clone(), None),
+      &Reason::new(expression.common.loc, None),
       expression.arguments,
       hint,
     );
@@ -938,9 +921,9 @@ impl<'a> TypingContext<'a> {
       | expr::BinaryOperator::GT
       | expr::BinaryOperator::GE => {
         let e1_type_hint =
-          Type::Primitive(Reason::new(expression.e1.loc().clone(), None), PrimitiveTypeKind::Int);
+          Type::Primitive(Reason::new(expression.e1.loc(), None), PrimitiveTypeKind::Int);
         let e2_type_hint =
-          Type::Primitive(Reason::new(expression.e2.loc().clone(), None), PrimitiveTypeKind::Int);
+          Type::Primitive(Reason::new(expression.e2.loc(), None), PrimitiveTypeKind::Int);
         expr::E::Binary(expr::Binary {
           common: expression.common,
           operator_preceding_comments: expression.operator_preceding_comments,
@@ -951,9 +934,9 @@ impl<'a> TypingContext<'a> {
       }
       expr::BinaryOperator::AND | expr::BinaryOperator::OR => {
         let e1_type_hint =
-          Type::Primitive(Reason::new(expression.e1.loc().clone(), None), PrimitiveTypeKind::Bool);
+          Type::Primitive(Reason::new(expression.e1.loc(), None), PrimitiveTypeKind::Bool);
         let e2_type_hint =
-          Type::Primitive(Reason::new(expression.e2.loc().clone(), None), PrimitiveTypeKind::Bool);
+          Type::Primitive(Reason::new(expression.e2.loc(), None), PrimitiveTypeKind::Bool);
         expr::E::Binary(expr::Binary {
           common: expression.common,
           operator_preceding_comments: expression.operator_preceding_comments,
@@ -963,14 +946,10 @@ impl<'a> TypingContext<'a> {
         })
       }
       expr::BinaryOperator::CONCAT => {
-        let e1_type_hint = Type::Primitive(
-          Reason::new(expression.e1.loc().clone(), None),
-          PrimitiveTypeKind::String,
-        );
-        let e2_type_hint = Type::Primitive(
-          Reason::new(expression.e2.loc().clone(), None),
-          PrimitiveTypeKind::String,
-        );
+        let e1_type_hint =
+          Type::Primitive(Reason::new(expression.e1.loc(), None), PrimitiveTypeKind::String);
+        let e2_type_hint =
+          Type::Primitive(Reason::new(expression.e2.loc(), None), PrimitiveTypeKind::String);
         expr::E::Binary(expr::Binary {
           common: expression.common,
           operator_preceding_comments: expression.operator_preceding_comments,
@@ -1004,7 +983,7 @@ impl<'a> TypingContext<'a> {
     let condition = Box::new(self.check(heap, *expression.condition, None));
     let e1 = Box::new(self.check(heap, *expression.e1, hint));
     let e2 = Box::new(self.check(heap, *expression.e2, Some(&e1.type_())));
-    let type_ = e2.type_().reposition(expression.common.loc.clone());
+    let type_ = e2.type_().reposition(expression.common.loc);
     expr::E::IfElse(expr::IfElse {
       common: expression.common.with_new_type(Rc::new(type_)),
       condition,
@@ -1021,14 +1000,11 @@ impl<'a> TypingContext<'a> {
       t => {
         self.error_set.report_unexpected_type_kind_error(
           checked_matched.loc(),
-          "identifier",
-          &t.pretty_print(heap),
+          "identifier".to_string(),
+          t.pretty_print(heap),
         );
-        let type_ = self.type_meet(
-          heap,
-          hint,
-          &Type::Unknown(Reason::new(expression.common.loc.clone(), None)),
-        );
+        let type_ =
+          self.type_meet(heap, hint, &Type::Unknown(Reason::new(expression.common.loc, None)));
         return expr::E::Match(expr::Match {
           common: expression.common.with_new_type(Rc::new(type_)),
           matched: Box::new(checked_matched),
@@ -1047,12 +1023,12 @@ impl<'a> TypingContext<'a> {
       let mapping_data_type = match unused_mappings.remove(&tag.name) {
         Some(field_type) => field_type.type_,
         None => {
-          self.error_set.report_unresolved_name_error(&tag.loc, tag.name.as_str(heap));
+          self.error_set.report_unresolved_name_error(tag.loc, tag.name.as_str(heap).to_string());
           continue;
         }
       };
       let (checked_body, checked_data_variable) = if let Some((data_variable, _)) = data_variable {
-        self.local_typing_context.write(data_variable.loc.clone(), mapping_data_type.clone());
+        self.local_typing_context.write(data_variable.loc, mapping_data_type.clone());
         (self.check(heap, *body, hint), Some((data_variable.clone(), mapping_data_type)))
       } else {
         (self.check(heap, *body, hint), None)
@@ -1070,14 +1046,10 @@ impl<'a> TypingContext<'a> {
     if !unused_mappings.is_empty() {
       let missing_tags =
         unused_mappings.keys().map(|k| k.as_str(heap).to_string()).sorted().collect_vec();
-      self.error_set.report_non_exhausive_match_error(&expression.common.loc, missing_tags);
+      self.error_set.report_non_exhausive_match_error(expression.common.loc, missing_tags);
     }
     let final_type = matching_list_types.iter().fold(
-      Rc::new(self.type_meet(
-        heap,
-        hint,
-        &Type::Unknown(Reason::new(expression.common.loc.clone(), None)),
-      )),
+      Rc::new(self.type_meet(heap, hint, &Type::Unknown(Reason::new(expression.common.loc, None)))),
       |general, specific| Rc::new(self.type_meet(heap, Some(&general), specific)),
     );
     expr::E::Match(expr::Match {
@@ -1104,16 +1076,16 @@ impl<'a> TypingContext<'a> {
               let annot = if let Some(annot) = &parameter.annotation {
                 annot.clone()
               } else {
-                Rc::new(Type::Unknown(Reason::new(parameter.name.loc.clone(), None)))
+                Rc::new(Type::Unknown(Reason::new(parameter.name.loc, None)))
               };
               let type_ = Rc::new(self.type_meet(heap, Some(parameter_hint), &annot));
-              self.local_typing_context.write(parameter.name.loc.clone(), type_.clone());
+              self.local_typing_context.write(parameter.name.loc, type_.clone());
               type_
             })
             .collect_vec();
         } else {
           self.error_set.report_arity_mismatch_error(
-            &expression.common.loc,
+            expression.common.loc,
             "function arguments",
             fun_hint.argument_types.len(),
             expression.parameters.len(),
@@ -1121,7 +1093,7 @@ impl<'a> TypingContext<'a> {
         }
       } else {
         self.error_set.report_unexpected_type_error(
-          &expression.common.loc,
+          expression.common.loc,
           hint.pretty_print(heap),
           expression.common.type_.pretty_print(heap),
         );
@@ -1132,11 +1104,11 @@ impl<'a> TypingContext<'a> {
       let type_ = if let Some(annot) = annotation {
         annot.clone()
       } else {
-        self.error_set.report_insufficient_type_inference_context_error(&name.loc);
-        Rc::new(Type::Unknown(Reason::new(name.loc.clone(), None)))
+        self.error_set.report_insufficient_type_inference_context_error(name.loc);
+        Rc::new(Type::Unknown(Reason::new(name.loc, None)))
       };
       self.validate_type_instantiation_strictly(heap, &type_);
-      self.local_typing_context.write(name.loc.clone(), type_.clone());
+      self.local_typing_context.write(name.loc, type_.clone());
       types_.push(type_);
     }
     types_
@@ -1156,7 +1128,7 @@ impl<'a> TypingContext<'a> {
     );
     let captured = self.local_typing_context.get_captured(heap, &expression.common.loc);
     let type_ = Type::Fn(FunctionType {
-      reason: Reason::new(expression.common.loc.clone(), None),
+      reason: Reason::new(expression.common.loc, None),
       argument_types,
       return_type: body.type_(),
     });
@@ -1195,8 +1167,8 @@ impl<'a> TypingContext<'a> {
           t => {
             self.error_set.report_unexpected_type_kind_error(
               checked_assigned_expr.loc(),
-              "identifier",
-              &t.pretty_print(heap),
+              "identifier".to_string(),
+              t.pretty_print(heap),
             );
             return expr::DeclarationStatement {
               loc,
@@ -1218,8 +1190,7 @@ impl<'a> TypingContext<'a> {
         {
           if let Some(field_information) = field_mappings.get(&field_name.name) {
             if id_type.id.eq(&self.current_class) || field_information.is_public {
-              let write_loc =
-                if let Some(alias) = &alias { alias.loc.clone() } else { field_name.loc.clone() };
+              let write_loc = if let Some(alias) = &alias { alias.loc } else { field_name.loc };
               self.local_typing_context.write(write_loc, field_information.type_.clone());
               let field_order = field_order_mapping.get(&field_name.name).unwrap();
               checked_destructured_names.push(ObjectPatternDestucturedName {
@@ -1234,7 +1205,7 @@ impl<'a> TypingContext<'a> {
           }
           self
             .error_set
-            .report_unresolved_name_error(&field_name.loc, field_name.name.as_str(heap));
+            .report_unresolved_name_error(field_name.loc, field_name.name.as_str(heap).to_string());
           checked_destructured_names.push(ObjectPatternDestucturedName {
             loc,
             field_order,
@@ -1246,7 +1217,7 @@ impl<'a> TypingContext<'a> {
         expr::Pattern::Object(pattern_loc, checked_destructured_names)
       }
       expr::Pattern::Id(loc, name) => {
-        self.local_typing_context.write(loc.clone(), checked_assigned_expr_type);
+        self.local_typing_context.write(loc, checked_assigned_expr_type);
         expr::Pattern::Id(loc, name)
       }
       expr::Pattern::Wildcard(loc) => expr::Pattern::Wildcard(loc),
@@ -1265,7 +1236,7 @@ impl<'a> TypingContext<'a> {
       self.type_meet(
         heap,
         hint,
-        &Type::Primitive(Reason::new(expression.common.loc.clone(), None), PrimitiveTypeKind::Unit),
+        &Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Unit),
       );
     }
     let statements =
@@ -1274,10 +1245,7 @@ impl<'a> TypingContext<'a> {
     let type_ = if let Some(e) = &checked_final_expr {
       e.type_()
     } else {
-      Rc::new(Type::Primitive(
-        Reason::new(expression.common.loc.clone(), None),
-        PrimitiveTypeKind::Unit,
-      ))
+      Rc::new(Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Unit))
     };
     expr::E::Block(expr::Block {
       common: expression.common.with_new_type(type_),
@@ -1309,7 +1277,7 @@ fn validate_signature_types(
   toplevel: &Toplevel,
   global_cx: &GlobalTypingContext,
   local_cx: &mut LocalTypingContext,
-  module_reference: &ModuleReference,
+  module_reference: ModuleReference,
   heap: &Heap,
   error_set: &mut ErrorSet,
 ) {
@@ -1317,7 +1285,7 @@ fn validate_signature_types(
     global_cx,
     local_cx,
     error_set,
-    module_reference.clone(),
+    module_reference,
     toplevel.name().name,
     type_params_to_type_params_sig(toplevel.type_parameters()),
   );
@@ -1347,7 +1315,7 @@ fn validate_signature_types(
       global_cx,
       local_cx,
       error_set,
-      module_reference.clone(),
+      module_reference,
       toplevel.name().name,
       tparam_sigs,
     );
@@ -1362,7 +1330,7 @@ fn validate_signature_types(
 }
 
 pub(super) fn type_check_module(
-  module_reference: &ModuleReference,
+  module_reference: ModuleReference,
   module: Module,
   global_cx: &GlobalTypingContext,
   heap: &Heap,
@@ -1375,27 +1343,27 @@ pub(super) fn type_check_module(
     validate_signature_types(toplevel, global_cx, &mut local_cx, module_reference, heap, error_set);
     if let Toplevel::Class(c) = toplevel {
       let type_ = Type::Id(IdType {
-        reason: Reason::new(c.loc.clone(), None),
-        module_reference: module_reference.clone(),
+        reason: Reason::new(c.loc, None),
+        module_reference,
         id: c.name.name,
         type_arguments: c
           .type_parameters
           .iter()
           .map(|it| {
             Rc::new(Type::Id(IdType {
-              reason: Reason::new(it.loc.clone(), Some(it.loc.clone())),
-              module_reference: module_reference.clone(),
+              reason: Reason::new(it.loc, Some(it.loc)),
+              module_reference,
               id: it.name.name,
               type_arguments: vec![],
             }))
           })
           .collect_vec(),
       });
-      local_cx.write(c.loc.clone(), Rc::new(type_));
+      local_cx.write(c.loc, Rc::new(type_));
     }
     for member in toplevel.members_iter() {
       for param in member.parameters.iter() {
-        local_cx.write(param.name.loc.clone(), param.annotation.clone());
+        local_cx.write(param.name.loc, param.annotation.clone());
       }
     }
   }
@@ -1418,7 +1386,7 @@ pub(super) fn type_check_module(
             global_cx,
             &mut local_cx,
             error_set,
-            module_reference.clone(),
+            module_reference,
             c.name.name,
             tparam_sigs,
           );

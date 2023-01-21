@@ -3,7 +3,7 @@ mod tests {
   use crate::{
     ast::{
       source::{expr, test_builder, FieldType, FunctionType, Id, Type, TypeParameterSignature},
-      Location, ModuleReference, Reason,
+      Location, Reason,
     },
     checker::{
       main_checker::type_check_expression,
@@ -15,7 +15,7 @@ mod tests {
         TypeDefinitionTypingContext, TypingContext,
       },
     },
-    common::{rcs, Heap},
+    common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
   };
@@ -531,8 +531,8 @@ mod tests {
     let mut error_set = ErrorSet::new();
 
     let parsed =
-      parse_source_expression_from_text(source, &ModuleReference::dummy(), heap, &mut error_set);
-    assert_eq!(Vec::<String>::new(), error_set.error_messages());
+      parse_source_expression_from_text(source, ModuleReference::dummy(), heap, &mut error_set);
+    assert_eq!(Vec::<String>::new(), error_set.error_messages(heap));
 
     let mut temp_ssa_error_set = ErrorSet::new();
     let global_cx = sandbox_global_cx(heap);
@@ -552,7 +552,7 @@ mod tests {
     );
 
     type_check_expression(&mut cx, heap, parsed, Some(expected_type));
-    error_set.error_messages()
+    error_set.error_messages(heap)
   }
 
   fn assert_errors_with_class(
@@ -1395,8 +1395,8 @@ mod tests {
       "{val {a, b as c} = C.init();}",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.",
         "__DUMMY__.sam:1:7-1:8: [UnresolvedName]: Name `a` is not resolved.",
+        "__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.",
       ],
     );
     assert_errors(
@@ -1438,9 +1438,9 @@ mod tests {
 "#,
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:12:11-12:94: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
         "__DUMMY__.sam:2:12-2:26: [ArityMismatchError]: Incorrect arguments size. Expected: 0, actual: 1.",
         "__DUMMY__.sam:8:11-8:64: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
+        "__DUMMY__.sam:12:11-12:94: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
       ],
     );
   }
@@ -1469,12 +1469,12 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let mut unchecked_sources = HashMap::new();
     for (mod_ref_str, source) in sources {
-      let mod_ref = ModuleReference::ordinary(vec![rcs(mod_ref_str)]);
-      let parsed = parse_source_module_from_text(source, &mod_ref, &mut heap, &mut error_set);
+      let mod_ref = heap.alloc_module_reference_from_string_vec(vec![mod_ref_str.to_string()]);
+      let parsed = parse_source_module_from_text(source, mod_ref, &mut heap, &mut error_set);
       unchecked_sources.insert(mod_ref, parsed);
     }
     type_check_sources(unchecked_sources, &mut heap, &mut error_set);
-    assert_eq!(expected_errors, error_set.error_messages());
+    assert_eq!(expected_errors, error_set.error_messages(&heap));
   }
 
   #[test]
@@ -1610,6 +1610,7 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
 "#;
 
     let expected_errors = vec![
+      "A.sam:8:1-8:17: [MissingDefinitions]: Missing definitions for [a, b].",
       "A.sam:10:13-10:23: [UnexpectedType]: Expected: `() -> unit`, actual: `() -> string`.",
       "A.sam:11:11-11:19: [UnexpectedType]: Expected: `() -> string`, actual: `() -> unit`.",
       "A.sam:14:3-14:28: [UnexpectedTypeKind]: Expected kind: `method`, actual: `function`.",
@@ -1628,7 +1629,6 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       "A.sam:52:21-52:28: [CyclicTypeDefinition]: Type `Cyclic3` has a cyclic definition.",
       "A.sam:53:21-53:28: [CyclicTypeDefinition]: Type `Cyclic1` has a cyclic definition.",
       "A.sam:54:21-54:28: [CyclicTypeDefinition]: Type `Cyclic4` has a cyclic definition.",
-      "A.sam:8:1-8:17: [MissingDefinitions]: Missing definitions for [a, b].",
     ];
     assert_module_errors(vec![("A", source)], expected_errors);
   }
@@ -1700,6 +1700,7 @@ class ImplTArg<T> : T {} // error: T not resolved
 
   #[test]
   fn type_check_toplevel_smoke_tests() {
+    let heap = &mut Heap::new();
     let source = r#"
 interface UnusedInterface<T> { function main(): unit }
 class Main {
@@ -1709,7 +1710,7 @@ class Main {
 
     assert_eq!(
       1,
-      type_check_source_handles(vec![(ModuleReference::dummy(), source.to_string())])
+      type_check_source_handles(heap, vec![(ModuleReference::dummy(), source.to_string())])
         .compile_time_errors
         .len()
     );
@@ -1719,7 +1720,7 @@ class Main {
     type_check_single_module_source(
       parse_source_module_from_text(
         source,
-        &ModuleReference::ordinary(vec![rcs("Test")]),
+        heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]),
         &mut heap,
         &mut error_set,
       ),
@@ -1728,7 +1729,7 @@ class Main {
     );
     assert_eq!(
       vec!["Test.sam:4:29-4:65: [UnexpectedType]: Expected: `string`, actual: `unit`."],
-      error_set.error_messages()
+      error_set.error_messages(&heap)
     );
   }
 }

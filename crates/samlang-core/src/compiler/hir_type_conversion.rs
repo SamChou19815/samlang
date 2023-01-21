@@ -2,9 +2,9 @@ use crate::{
   ast::{
     common_names::encode_samlang_type,
     hir::{ClosureTypeDefinition, FunctionType, IdType, PrimitiveType, Type, TypeDefinition},
-    source, ModuleReference,
+    source,
   },
-  common::{rc_string, Heap, Str},
+  common::{rc_string, Heap, ModuleReference, Str},
 };
 use itertools::Itertools;
 use std::{
@@ -285,7 +285,7 @@ impl TypeLoweringManager {
           Type::new_id_str_no_targs(id_string)
         } else {
           Type::new_id_str(
-            rc_string(encode_samlang_type(&id.module_reference, &id_string)),
+            rc_string(encode_samlang_type(heap, &id.module_reference, &id_string)),
             id.type_arguments.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
           )
         }
@@ -337,7 +337,7 @@ impl TypeLoweringManager {
         .push(self.lower_source_type(heap, &source_type_def.mappings.get(&n.name).unwrap().type_));
     }
     TypeDefinition {
-      identifier: rc_string(encode_samlang_type(module_reference, identifier)),
+      identifier: rc_string(encode_samlang_type(heap, module_reference, identifier)),
       is_object: source_type_def.is_object,
       type_parameters,
       names,
@@ -370,7 +370,7 @@ mod tests {
       hir::{BOOL_TYPE, INT_TYPE, STRING_TYPE},
       Location, Reason,
     },
-    common::{rcs, PStr},
+    common::rcs,
   };
   use pretty_assertions::assert_eq;
 
@@ -634,7 +634,7 @@ mod tests {
 
   #[test]
   fn type_lowering_manager_lower_source_type_tests() {
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     let mut manager = TypeLoweringManager {
       generic_types: HashSet::new(),
       type_synthesizer: TypeSynthesizer::new(),
@@ -654,32 +654,22 @@ mod tests {
         .join("")
     );
 
-    assert_eq!(
-      "__DUMMY___A<int>",
-      manager
-        .lower_source_type(
-          &heap,
-          &builder.general_id_type(PStr::permanent("A"), vec![builder.int_type()])
-        )
-        .pretty_print()
-    );
+    assert_eq!("__DUMMY___A<int>", {
+      let t = builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type()]);
+      manager.lower_source_type(&heap, &t).pretty_print()
+    });
 
     let mut manager2 = TypeLoweringManager {
       generic_types: HashSet::from([rcs("T")]),
       type_synthesizer: manager.type_synthesizer,
     };
-    assert_eq!(
-      "$SyntheticIDType0<T>",
-      manager2
-        .lower_source_type(
-          &heap,
-          &builder.fun_type(
-            vec![builder.simple_id_type(PStr::permanent("T")), builder.bool_type()],
-            builder.int_type()
-          )
-        )
-        .pretty_print()
-    );
+    assert_eq!("$SyntheticIDType0<T>", {
+      let t = builder.fun_type(
+        vec![builder.simple_id_type(heap.alloc_str("T")), builder.bool_type()],
+        builder.int_type(),
+      );
+      manager2.lower_source_type(&heap, &t).pretty_print()
+    });
 
     let SynthesizedTypes { closure_types, tuple_types } =
       manager2.type_synthesizer.synthesized_types();
@@ -692,51 +682,44 @@ mod tests {
 
   #[test]
   fn type_lowering_manager_lower_type_definition_tests() {
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     let mut manager = TypeLoweringManager {
       generic_types: HashSet::from([rcs("A")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = source::test_builder::create();
 
-    let type_def = manager.lower_source_type_definition(
-      &heap,
-      &ModuleReference::root(),
-      "Foo",
-      &source::TypeDefinition {
-        loc: Location::dummy(),
-        is_object: true,
-        names: vec![source::Id::from(PStr::permanent("a")), source::Id::from(PStr::permanent("b"))],
-        mappings: HashMap::from([
-          (
-            PStr::permanent("a"),
-            source::FieldType {
-              is_public: true,
-              type_: builder.fun_type(
-                vec![builder.fun_type(
-                  vec![builder.simple_id_type(PStr::permanent("A"))],
-                  builder.bool_type(),
-                )],
-                builder.bool_type(),
-              ),
-            },
-          ),
-          (
-            PStr::permanent("b"),
-            source::FieldType {
-              is_public: false,
-              type_: builder.fun_type(
-                vec![builder.fun_type(
-                  vec![builder.simple_id_type(PStr::permanent("A"))],
-                  builder.bool_type(),
-                )],
-                builder.bool_type(),
-              ),
-            },
-          ),
-        ]),
-      },
-    );
+    let type_def = source::TypeDefinition {
+      loc: Location::dummy(),
+      is_object: true,
+      names: vec![source::Id::from(heap.alloc_str("a")), source::Id::from(heap.alloc_str("b"))],
+      mappings: HashMap::from([
+        (
+          heap.alloc_str("a"),
+          source::FieldType {
+            is_public: true,
+            type_: builder.fun_type(
+              vec![builder
+                .fun_type(vec![builder.simple_id_type(heap.alloc_str("A"))], builder.bool_type())],
+              builder.bool_type(),
+            ),
+          },
+        ),
+        (
+          heap.alloc_str("b"),
+          source::FieldType {
+            is_public: false,
+            type_: builder.fun_type(
+              vec![builder
+                .fun_type(vec![builder.simple_id_type(heap.alloc_str("A"))], builder.bool_type())],
+              builder.bool_type(),
+            ),
+          },
+        ),
+      ]),
+    };
+    let type_def =
+      manager.lower_source_type_definition(&heap, &ModuleReference::root(), "Foo", &type_def);
     let SynthesizedTypes { closure_types, mut tuple_types } =
       manager.type_synthesizer.synthesized_types();
     assert_eq!(

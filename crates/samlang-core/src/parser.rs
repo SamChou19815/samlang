@@ -1,6 +1,6 @@
 use crate::{
-  ast::{source, ModuleReference},
-  common::{Heap, PStr},
+  ast::source,
+  common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use std::collections::HashSet;
@@ -15,13 +15,13 @@ fn builtin_classes(heap: &mut Heap) -> HashSet<PStr> {
 
 pub(crate) fn parse_source_module_from_text(
   text: &str,
-  module_reference: &ModuleReference,
+  module_reference: ModuleReference,
   heap: &mut Heap,
   error_set: &mut ErrorSet,
 ) -> source::Module {
   let builtins = builtin_classes(heap);
   let mut parser = source_parser::SourceParser::new(
-    lexer::lex_source_program(text, module_reference.clone(), heap, error_set),
+    lexer::lex_source_program(text, module_reference, heap, error_set),
     heap,
     error_set,
     module_reference,
@@ -32,13 +32,13 @@ pub(crate) fn parse_source_module_from_text(
 
 pub(crate) fn parse_source_expression_from_text(
   text: &str,
-  module_reference: &ModuleReference,
+  module_reference: ModuleReference,
   heap: &mut Heap,
   error_set: &mut ErrorSet,
 ) -> source::expr::E {
   let builtins = builtin_classes(heap);
   let mut parser = source_parser::SourceParser::new(
-    lexer::lex_source_program(text, module_reference.clone(), heap, error_set),
+    lexer::lex_source_program(text, module_reference, heap, error_set),
     heap,
     error_set,
     module_reference,
@@ -47,32 +47,17 @@ pub(crate) fn parse_source_expression_from_text(
   parser.parse_expression()
 }
 
-pub(crate) fn parse_sources_with_invalid_modules_dropped(
-  source_handles: Vec<(ModuleReference, &str)>,
-  heap: &mut Heap,
-) -> Vec<(ModuleReference, source::Module)> {
-  let mut error_set = ErrorSet::new();
-  let mut parsed = vec![];
-  for (mod_ref, source) in source_handles {
-    let module = parse_source_module_from_text(source, &mod_ref, heap, &mut error_set);
-    if !error_set.module_has_error(&mod_ref) {
-      parsed.push((mod_ref.clone(), module));
-    }
-  }
-  parsed
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::common::rcs;
   use itertools::Itertools;
+  use pretty_assertions::assert_eq;
 
   fn expect_good_expr(text: &str) {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    parse_source_expression_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
-    assert_eq!("", error_set.error_messages().join("\n"));
+    parse_source_expression_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
+    assert_eq!("", error_set.error_messages(&heap).join("\n"));
   }
 
   #[test]
@@ -139,8 +124,8 @@ mod tests {
   fn expect_bad_expr(text: &str) {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    parse_source_expression_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
-    assert_ne!("", error_set.error_messages().join("\n"));
+    parse_source_expression_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
+    assert_ne!("", error_set.error_messages(&heap).join("\n"));
   }
 
   #[test]
@@ -256,8 +241,8 @@ mod tests {
     }
 "#;
     let parsed =
-      &parse_source_module_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
-    let errors = error_set.error_messages();
+      &parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
+    let errors = error_set.error_messages(&heap);
     assert_eq!("", errors.join("\n"));
     assert_eq!(1, parsed.imports.len());
     assert_eq!(
@@ -306,7 +291,7 @@ mod tests {
     }
 "#;
     let module =
-      parse_source_module_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
+      parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
 
     assert_eq!(1, module.imports.len());
     assert!(!error_set.errors().is_empty())
@@ -336,7 +321,7 @@ mod tests {
       }
     }
 "#;
-    parse_source_module_from_text(text, &ModuleReference::dummy(), &mut heap, &mut error_set);
+    parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
     assert!(!error_set.errors().is_empty())
   }
 
@@ -346,30 +331,18 @@ mod tests {
     let mut error_set = ErrorSet::new();
     parse_source_module_from_text(
       "This is not a program.",
-      &ModuleReference::dummy(),
+      ModuleReference::dummy(),
       &mut heap,
       &mut error_set,
     );
-    let expected_errors =vec![
+    let expected_errors = vec![
       "__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces: This",
+      "__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces: is",
+      "__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes and interfaces: not",
       "__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes and interfaces: a",
       "__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes and interfaces: program",
       "__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes and interfaces: .",
-      "__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces: is",
-      "__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes and interfaces: not"
     ];
-    assert_eq!(expected_errors, error_set.error_messages());
-  }
-
-  #[test]
-  fn parse_sources_test() {
-    let mut heap = Heap::new();
-    let modules = vec![
-      // good
-      (ModuleReference::ordinary(vec![rcs("Test1")]), "class Main { function main(): unit = {} }"),
-      // bad
-      (ModuleReference::ordinary(vec![rcs("Test2")]), "class Main { function main(): unt = {} }"),
-    ];
-    assert_eq!(1, parse_sources_with_invalid_modules_dropped(modules, &mut heap).len());
+    assert_eq!(expected_errors, error_set.error_messages(&heap));
   }
 }

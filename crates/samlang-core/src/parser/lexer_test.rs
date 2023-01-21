@@ -2,8 +2,8 @@
 mod tests {
   use super::super::lexer::*;
   use crate::{
-    ast::{Location, ModuleReference},
-    common::Heap,
+    ast::Location,
+    common::{Heap, ModuleReference},
     errors::ErrorSet,
   };
 
@@ -15,7 +15,9 @@ mod tests {
     assert!(TokenOp::EQ == TokenOp::EQ.clone());
     assert_eq!(
       "__DUMMY__.sam:0:0-0:0: as",
-      Token(Location::dummy(), TokenContent::Keyword(Keyword::AS)).clone().to_string(&heap)
+      Token(Location::dummy(), TokenContent::Keyword(Keyword::AS).clone())
+        .clone()
+        .pretty_print(&heap)
     );
   }
 
@@ -23,7 +25,7 @@ mod tests {
     let mut heap = Heap::new();
     lex_source_program(source, ModuleReference::root(), &mut heap, &mut ErrorSet::new())
       .into_iter()
-      .map(|t| t.to_string(&heap))
+      .map(|t| t.pretty_print(&heap))
       .collect()
   }
 

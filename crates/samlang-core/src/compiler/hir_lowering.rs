@@ -13,9 +13,8 @@ use crate::{
     common_names::{self, encode_samlang_type},
     hir::{self, Type},
     source::{self, ClassMemberDefinition},
-    ModuleReference,
   },
-  common::{self, rc_pstr, rc_string, rcs, Heap, Str},
+  common::{self, rc_pstr, rc_string, rcs, Heap, ModuleReference, Str},
 };
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
@@ -122,6 +121,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn allocate_synthetic_fn_name(&mut self) -> String {
     let fn_name = common_names::encode_function_name_globally(
+      self.heap,
       self.module_reference,
       self.encoded_function_name,
       &format!("_Synthetic_{}", self.next_synthetic_fn_id),
@@ -227,12 +227,13 @@ impl<'a> ExpressionLoweringManager<'a> {
           self.string_manager.allocate(&rc_pstr(self.heap, *s)).name,
         ),
       },
-      source::expr::E::This(_) => {
-        LoweringResult { statements: vec![], expression: self.resolve_variable(&rcs("_this")) }
-      }
       source::expr::E::Id(_, id) => LoweringResult {
         statements: vec![],
-        expression: self.resolve_variable(&rc_pstr(self.heap, id.name)),
+        expression: self.resolve_variable(&if id.name.as_str(self.heap) == "this" {
+          rcs("_this")
+        } else {
+          rc_pstr(self.heap, id.name)
+        }),
       },
       source::expr::E::ClassFn(e) => self.lower_class_fn(e, favored_temp_variable),
       source::expr::E::FieldAccess(e) => self.lower_field_access(e, favored_temp_variable),
@@ -256,7 +257,12 @@ impl<'a> ExpressionLoweringManager<'a> {
     if self.type_lowering_manager.generic_types.contains(class_name) {
       common_names::encode_generic_function_name_globally(class_name, function_name)
     } else {
-      common_names::encode_function_name_globally(module_reference, class_name, function_name)
+      common_names::encode_function_name_globally(
+        self.heap,
+        module_reference,
+        class_name,
+        function_name,
+      )
     }
   }
 
@@ -265,11 +271,15 @@ impl<'a> ExpressionLoweringManager<'a> {
     expression: &source::expr::ClassFunction,
     favored_temp_variable: Option<&str>,
   ) -> LoweringResult {
-    let encoded_original_fn_name = self.encode_function_name_globally_considering_generics(
-      &expression.module_reference,
-      &rc_pstr(self.heap, expression.class_name.name),
-      &rc_pstr(self.heap, expression.fn_name.name),
-    );
+    let encoded_original_fn_name = {
+      let class_name = rc_pstr(self.heap, expression.class_name.name);
+      let fn_name = expression.fn_name.name.as_str(self.heap);
+      self.encode_function_name_globally_considering_generics(
+        &expression.module_reference,
+        &class_name,
+        fn_name,
+      )
+    };
     let original_function_type = self.get_function_type_without_context(&expression.common.type_);
     let function_type = hir::FunctionType {
       argument_types: vec![hir::INT_TYPE]
@@ -424,7 +434,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         let fn_name = self.encode_function_name_globally_considering_generics(
           &source_callee.module_reference,
           &rc_pstr(self.heap, source_callee.class_name.name),
-          &rc_pstr(self.heap, source_callee.fn_name.name),
+          source_callee.fn_name.name.as_str(self.heap),
         );
         let fn_type_without_cx =
           self.get_function_type_without_context(&source_callee.common.type_);
@@ -458,7 +468,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         let fn_name = self.encode_function_name_globally_considering_generics(
           &source_target_id_type.module_reference,
           &rc_pstr(self.heap, source_target_id_type.id),
-          &rc_pstr(self.heap, source_callee.method_name.name),
+          source_callee.method_name.name.as_str(self.heap),
         );
         let fn_type_without_cx =
           self.get_function_type_without_context(&source_callee.common.type_);
@@ -1044,11 +1054,12 @@ fn companion_fn_with_cx(original_fn: &hir::Function) -> hir::Function {
 }
 
 fn lower_constructors(
+  heap: &Heap,
   module_reference: &ModuleReference,
   class_name: &Str,
   type_definition_mapping: &HashMap<Str, hir::TypeDefinition>,
 ) -> Vec<hir::Function> {
-  let type_name = rc_string(common_names::encode_samlang_type(module_reference, class_name));
+  let type_name = rc_string(common_names::encode_samlang_type(heap, module_reference, class_name));
   let type_def = type_definition_mapping.get(&type_name).unwrap();
   let struct_var_name = "_struct";
   let struct_type = hir::IdType {
@@ -1063,6 +1074,7 @@ fn lower_constructors(
   if type_def.is_object {
     let f = hir::Function {
       name: rc_string(common_names::encode_function_name_globally(
+        heap,
         module_reference,
         class_name,
         "init",
@@ -1099,6 +1111,7 @@ fn lower_constructors(
     for (tag_order, data_type) in type_def.mappings.iter().enumerate() {
       let f = hir::Function {
         name: rc_string(common_names::encode_function_name_globally(
+          heap,
           module_reference,
           class_name,
           &type_def.names[tag_order],
@@ -1160,7 +1173,8 @@ fn compile_sources_with_generics_preserved(
               && decl.type_parameters.is_empty()
           })
         {
-          main_function_names.push(rc_string(common_names::encode_main_function_name(mod_ref)));
+          main_function_names
+            .push(rc_string(common_names::encode_main_function_name(heap, mod_ref)));
         }
       }
     }
@@ -1175,12 +1189,14 @@ fn compile_sources_with_generics_preserved(
     for toplevel in &source_module.toplevels {
       if let source::Toplevel::Class(c) = &toplevel {
         compiled_functions.append(&mut lower_constructors(
+          heap,
           module_reference,
           &rc_pstr(heap, c.name.name),
           &type_def_mappings,
         ));
         for member in &c.members {
           let encoded_name = rc_string(common_names::encode_function_name_globally(
+            heap,
             module_reference,
             &rc_pstr(heap, c.name.name),
             &rc_pstr(heap, member.decl.name.name),
@@ -1198,7 +1214,7 @@ fn compile_sources_with_generics_preserved(
             let main_function_parameter_with_types = vec![(
               rcs("_this"),
               hir::Type::new_id_str(
-                rc_string(encode_samlang_type(module_reference, c.name.name.as_str(heap))),
+                rc_string(encode_samlang_type(heap, module_reference, c.name.name.as_str(heap))),
                 class_tparams.into_iter().map(Type::new_id_str_no_targs).collect_vec(),
               ),
             )]
@@ -1345,8 +1361,8 @@ pub(crate) fn compile_sources_to_hir(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{hir, source, Location, ModuleReference, Reason},
-    common::{rcs, Heap, PStr},
+    ast::{hir, source, Location, Reason},
+    common::{rcs, Heap, ModuleReference},
     compiler::{
       hir_lowering::ExpressionLoweringManager,
       hir_string_manager::StringManager,
@@ -1360,8 +1376,7 @@ mod tests {
     rc::Rc,
   };
 
-  fn assert_expr_correctly_lowered(source_expr: &source::expr::E, expected_str: &str) {
-    let heap = Heap::new();
+  fn assert_expr_correctly_lowered(source_expr: &source::expr::E, heap: &Heap, expected_str: &str) {
     let mut type_lowering_manager = TypeLoweringManager {
       generic_types: HashSet::from_iter(vec![rcs("GENERIC_TYPE")]),
       type_synthesizer: TypeSynthesizer::new(),
@@ -1391,7 +1406,7 @@ mod tests {
       ),
     ]);
     let manager = ExpressionLoweringManager::new(
-      &heap,
+      heap,
       &mod_ref,
       "ENCODED_FUNCTION_NAME",
       vec![
@@ -1427,43 +1442,54 @@ mod tests {
     assert_eq!(expected_str, actual_string.trim());
   }
 
-  fn dummy_source_id_type_unwrapped() -> source::IdType {
+  fn dummy_source_id_type_unwrapped(heap: &mut Heap) -> source::IdType {
     let builder = source::test_builder::create();
-    builder.simple_id_type_unwrapped(PStr::permanent("Dummy"))
+    builder.simple_id_type_unwrapped(heap.alloc_str("Dummy"))
   }
 
-  fn dummy_source_id_type() -> source::Type {
-    source::Type::Id(dummy_source_id_type_unwrapped())
+  fn dummy_source_id_type(heap: &mut Heap) -> source::Type {
+    source::Type::Id(dummy_source_id_type_unwrapped(heap))
   }
 
-  fn dummy_source_this() -> source::expr::E {
+  fn dummy_source_this(heap: &mut Heap) -> source::expr::E {
     let builder = source::test_builder::create();
-    source::expr::E::This(builder.expr_common(Rc::new(dummy_source_id_type())))
+    source::expr::E::Id(
+      builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+      source::Id::from(heap.alloc_str("this")),
+    )
   }
 
   #[test]
   fn simple_expressions_lowering_tests() {
+    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     // Literal lowering works.
-    assert_expr_correctly_lowered(&builder.false_expr(), "return 0;");
-    assert_expr_correctly_lowered(&builder.true_expr(), "return 1;");
-    assert_expr_correctly_lowered(&builder.zero_expr(), "return 0;");
+    assert_expr_correctly_lowered(&builder.false_expr(), heap, "return 0;");
+    assert_expr_correctly_lowered(&builder.true_expr(), heap, "return 1;");
+    assert_expr_correctly_lowered(&builder.zero_expr(), heap, "return 0;");
     assert_expr_correctly_lowered(
-      &builder.string_expr(PStr::permanent("foo")),
+      &builder.string_expr(heap.alloc_str("foo")),
+      heap,
       "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
     );
 
     // This & variable lowering works.
-    assert_expr_correctly_lowered(&dummy_source_this(), "return (_this: __DUMMY___Dummy);");
     assert_expr_correctly_lowered(
-      &builder.id_expr(PStr::permanent("foo"), builder.unit_type()),
+      &dummy_source_this(heap),
+      heap,
+      "return (_this: __DUMMY___Dummy);",
+    );
+    assert_expr_correctly_lowered(
+      &builder.id_expr(heap.alloc_str("foo"), builder.unit_type()),
+      heap,
       "return (foo: int);",
     );
   }
 
   #[test]
   fn access_expressions_lowering_tests() {
+    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     // ClassFn lowering works.
@@ -1472,9 +1498,10 @@ mod tests {
         common: builder.expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
         type_arguments: vec![],
         module_reference: ModuleReference::dummy(),
-        class_name: source::Id::from(PStr::permanent("A")),
-        fn_name: source::Id::from(PStr::permanent("b")),
+        class_name: source::Id::from(heap.alloc_str("A")),
+        fn_name: source::Id::from(heap.alloc_str("b")),
       }),
+      heap,
       r#"closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___A$b_with_context: (int, int) -> int), context: 0 };
 return (_t0: $SyntheticIDType0);"#,
@@ -1485,10 +1512,11 @@ return (_t0: $SyntheticIDType0);"#,
       &source::expr::E::FieldAccess(source::expr::FieldAccess {
         common: builder.expr_common(builder.unit_type()),
         type_arguments: vec![],
-        object: Box::new(dummy_source_this()),
-        field_name: source::Id::from(PStr::permanent("foo")),
+        object: Box::new(dummy_source_this(heap)),
+        field_name: source::Id::from(heap.alloc_str("foo")),
         field_order: 0,
       }),
+      heap,
       "let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);",
     );
 
@@ -1497,9 +1525,10 @@ return (_t0: $SyntheticIDType0);"#,
       &source::expr::E::MethodAccess(source::expr::MethodAccess {
         common: builder.expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
         type_arguments: vec![],
-        object: Box::new(dummy_source_this()),
-        method_name: source::Id::from(PStr::permanent("foo")),
+        object: Box::new(dummy_source_this(heap)),
+        method_name: source::Id::from(heap.alloc_str("foo")),
       }),
+      heap,
       r#"closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy$foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
 return (_t0: $SyntheticIDType0);"#,
@@ -1508,6 +1537,7 @@ return (_t0: $SyntheticIDType0);"#,
 
   #[test]
   fn call_lowering_tests() {
+    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     // Function call 1/n: class fn call with return
@@ -1518,12 +1548,14 @@ return (_t0: $SyntheticIDType0);"#,
           common: builder
             .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
           type_arguments: vec![],
-          module_reference: ModuleReference::ordinary(vec![rcs("ModuleModule")]),
-          class_name: source::Id::from(PStr::permanent("ImportedClass")),
-          fn_name: source::Id::from(PStr::permanent("bar")),
+          module_reference: heap
+            .alloc_module_reference_from_string_vec(vec!["ModuleModule".to_string()]),
+          class_name: source::Id::from(heap.alloc_str("ImportedClass")),
+          fn_name: source::Id::from(heap.alloc_str("bar")),
         })),
-        arguments: vec![dummy_source_this(), dummy_source_this()],
+        arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
       }),
+      heap,
       r#"let _t0: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);"#,
     );
@@ -1536,28 +1568,30 @@ return (_t0: int);"#,
             .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
-          class_name: source::Id::from(PStr::permanent("C")),
-          fn_name: source::Id::from(PStr::permanent("m1")),
+          class_name: source::Id::from(heap.alloc_str("C")),
+          fn_name: source::Id::from(heap.alloc_str("m1")),
         })),
         arguments: vec![builder.zero_expr()],
       }),
+      heap,
       "___DUMMY___C$m1(0);\nreturn 0;",
     );
     // Function call 3/n: class fn call with return
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(Rc::new(dummy_source_id_type())),
+        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
         callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
           common: builder.expr_common(
-            builder.fun_type(vec![builder.int_type()], Rc::new(dummy_source_id_type())),
+            builder.fun_type(vec![builder.int_type()], Rc::new(dummy_source_id_type(heap))),
           ),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
-          class_name: source::Id::from(PStr::permanent("C")),
-          fn_name: source::Id::from(PStr::permanent("m2")),
+          class_name: source::Id::from(heap.alloc_str("C")),
+          fn_name: source::Id::from(heap.alloc_str("m2")),
         })),
         arguments: vec![builder.zero_expr()],
       }),
+      heap,
       "let _t0: __DUMMY___Dummy = ___DUMMY___C$m2(0);\nreturn (_t0: __DUMMY___Dummy);",
     );
     // Function call 4/n: class fn generic call
@@ -1566,32 +1600,34 @@ return (_t0: int);"#,
         common: builder.expr_common(builder.unit_type()),
         callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
           common: builder.expr_common(
-            builder.fun_type(vec![builder.int_type()], Rc::new(dummy_source_id_type())),
+            builder.fun_type(vec![builder.int_type()], Rc::new(dummy_source_id_type(heap))),
           ),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
-          class_name: source::Id::from(PStr::permanent("GENERIC_TYPE")),
-          fn_name: source::Id::from(PStr::permanent("m2")),
+          class_name: source::Id::from(heap.alloc_str("GENERIC_TYPE")),
+          fn_name: source::Id::from(heap.alloc_str("m2")),
         })),
         arguments: vec![builder.zero_expr()],
       }),
+      heap,
       "$GENERICS$_GENERIC_TYPE$m2(0);\nreturn 0;",
     );
     // Function call 5/n: method call with return
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(Rc::new(dummy_source_id_type())),
+        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
         callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
           common: builder.expr_common(builder.fun_type(
-            vec![Rc::new(dummy_source_id_type()), Rc::new(dummy_source_id_type())],
+            vec![Rc::new(dummy_source_id_type(heap)), Rc::new(dummy_source_id_type(heap))],
             builder.int_type(),
           )),
           type_arguments: vec![],
-          object: Box::new(dummy_source_this()),
-          method_name: source::Id::from(PStr::permanent("fooBar")),
+          object: Box::new(dummy_source_this(heap)),
+          method_name: source::Id::from(heap.alloc_str("fooBar")),
         })),
-        arguments: vec![dummy_source_this(), dummy_source_this()],
+        arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
       }),
+      heap,
       r#"let _t0: int = ___DUMMY___Dummy$fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);"#,
     );
@@ -1600,11 +1636,12 @@ return (_t0: int);"#,
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.int_type()),
         callee: Box::new(builder.id_expr(
-          PStr::permanent("closure"),
+          heap.alloc_str("closure"),
           builder.fun_type(vec![builder.bool_type()], builder.int_type()),
         )),
         arguments: vec![builder.true_expr()],
       }),
+      heap,
       r#"let _t0: int = (closure: Closure)(1);
 return (_t0: int);"#,
     );
@@ -1613,11 +1650,12 @@ return (_t0: int);"#,
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.unit_type()),
         callee: Box::new(builder.id_expr(
-          PStr::permanent("closure_unit_return"),
+          heap.alloc_str("closure_unit_return"),
           builder.fun_type(vec![builder.bool_type()], builder.unit_type()),
         )),
         arguments: vec![builder.true_expr()],
       }),
+      heap,
       r#"(closure_unit_return: Closure)(1);
 return 0;"#,
     );
@@ -1625,6 +1663,7 @@ return 0;"#,
 
   #[test]
   fn op_lowering_tests() {
+    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     // Unary lowering works.
@@ -1632,16 +1671,18 @@ return 0;"#,
       &source::expr::E::Unary(source::expr::Unary {
         common: builder.expr_common(builder.unit_type()),
         operator: source::expr::UnaryOperator::NOT,
-        argument: Box::new(dummy_source_this()),
+        argument: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);",
     );
     assert_expr_correctly_lowered(
       &source::expr::E::Unary(source::expr::Unary {
         common: builder.expr_common(builder.unit_type()),
         operator: source::expr::UnaryOperator::NEG,
-        argument: Box::new(dummy_source_this()),
+        argument: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
     );
 
@@ -1651,9 +1692,10 @@ return 0;"#,
         common: builder.expr_common(builder.int_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::PLUS,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
     );
     assert_expr_correctly_lowered(
@@ -1661,9 +1703,10 @@ return 0;"#,
         common: builder.expr_common(builder.int_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::MINUS,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: int = (_this: __DUMMY___Dummy) - (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
     );
     assert_expr_correctly_lowered(
@@ -1671,9 +1714,10 @@ return 0;"#,
         common: builder.expr_common(builder.int_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::MUL,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
     );
     assert_expr_correctly_lowered(
@@ -1681,9 +1725,10 @@ return 0;"#,
         common: builder.expr_common(builder.int_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::DIV,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: int = (_this: __DUMMY___Dummy) / (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
     );
     assert_expr_correctly_lowered(
@@ -1691,9 +1736,10 @@ return 0;"#,
         common: builder.expr_common(builder.int_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::MOD,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: int = (_this: __DUMMY___Dummy) % (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
     );
     assert_expr_correctly_lowered(
@@ -1701,9 +1747,10 @@ return 0;"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::LT,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: bool = (_this: __DUMMY___Dummy) < (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
     );
     assert_expr_correctly_lowered(
@@ -1711,9 +1758,10 @@ return 0;"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::LE,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: bool = (_this: __DUMMY___Dummy) <= (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
     );
     assert_expr_correctly_lowered(
@@ -1721,9 +1769,10 @@ return 0;"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::GT,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: bool = (_this: __DUMMY___Dummy) > (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
     );
     assert_expr_correctly_lowered(
@@ -1731,9 +1780,10 @@ return 0;"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::GE,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: bool = (_this: __DUMMY___Dummy) >= (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
     );
     assert_expr_correctly_lowered(
@@ -1741,9 +1791,10 @@ return 0;"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::EQ,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: bool = (_this: __DUMMY___Dummy) == (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
     );
     assert_expr_correctly_lowered(
@@ -1751,9 +1802,10 @@ return 0;"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::NE,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       "let _t0: bool = (_this: __DUMMY___Dummy) != (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
     );
     // Binary Lowering: Short circuiting &&
@@ -1762,9 +1814,10 @@ return 0;"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::AND,
-        e1: Box::new(builder.id_expr(PStr::permanent("foo"), builder.bool_type())),
-        e2: Box::new(builder.id_expr(PStr::permanent("bar"), builder.bool_type())),
+        e1: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.bool_type())),
+        e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
       }),
+      heap,
       r#"let _t0: bool;
 if (foo: int) {
   _t0 = (bar: bool);
@@ -1779,8 +1832,9 @@ return (_t0: bool);"#,
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::AND,
         e1: Box::new(builder.true_expr()),
-        e2: Box::new(builder.id_expr(PStr::permanent("foo"), builder.int_type())),
+        e2: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
       }),
+      heap,
       "return (foo: int);",
     );
     assert_expr_correctly_lowered(
@@ -1789,8 +1843,9 @@ return (_t0: bool);"#,
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::AND,
         e1: Box::new(builder.false_expr()),
-        e2: Box::new(builder.id_expr(PStr::permanent("foo"), builder.int_type())),
+        e2: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
       }),
+      heap,
       "return 0;",
     );
     // Binary Lowering: Short circuiting ||
@@ -1802,6 +1857,7 @@ return (_t0: bool);"#,
         e1: Box::new(builder.true_expr()),
         e2: Box::new(builder.int_lit(65536)),
       }),
+      heap,
       "return 1;",
     );
     assert_expr_correctly_lowered(
@@ -1812,6 +1868,7 @@ return (_t0: bool);"#,
         e1: Box::new(builder.false_expr()),
         e2: Box::new(builder.int_lit(65536)),
       }),
+      heap,
       "return 65536;",
     );
     assert_expr_correctly_lowered(
@@ -1819,9 +1876,10 @@ return (_t0: bool);"#,
         common: builder.expr_common(builder.bool_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::OR,
-        e1: Box::new(builder.id_expr(PStr::permanent("foo"), builder.bool_type())),
-        e2: Box::new(builder.id_expr(PStr::permanent("bar"), builder.bool_type())),
+        e1: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.bool_type())),
+        e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
       }),
+      heap,
       r#"let _t0: bool;
 if (foo: int) {
   _t0 = 1;
@@ -1836,9 +1894,10 @@ return (_t0: bool);"#,
         common: builder.expr_common(builder.string_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::CONCAT,
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       r#"let _t0: string = __Builtins$stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: string);"#,
     );
@@ -1847,15 +1906,17 @@ return (_t0: string);"#,
         common: builder.expr_common(builder.string_type()),
         operator_preceding_comments: vec![],
         operator: source::expr::BinaryOperator::CONCAT,
-        e1: Box::new(builder.string_expr(PStr::permanent("hello "))),
-        e2: Box::new(builder.string_expr(PStr::permanent("world"))),
+        e1: Box::new(builder.string_expr(heap.alloc_str("hello "))),
+        e2: Box::new(builder.string_expr(heap.alloc_str("world"))),
       }),
+      heap,
       "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;",
     );
   }
 
   #[test]
   fn lambda_lowering_tests() {
+    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     assert_expr_correctly_lowered(
@@ -1863,12 +1924,13 @@ return (_t0: string);"#,
         common: builder
           .expr_common(builder.fun_type(vec![builder.unit_type()], builder.unit_type())),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from(PStr::permanent("a")),
+          name: source::Id::from(heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
         }],
-        captured: HashMap::from([(PStr::permanent("captured_a"), builder.unit_type())]),
-        body: Box::new(dummy_source_this()),
+        captured: HashMap::from([(heap.alloc_str("captured_a"), builder.unit_type())]),
+        body: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       r#"closure type $SyntheticIDType1 = (int) -> int
 object type $SyntheticIDType0 = [int]
 function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDType0, a: int): int {
@@ -1886,12 +1948,13 @@ return (_t0: $SyntheticIDType1);"#,
         common: builder
           .expr_common(builder.fun_type(vec![builder.unit_type()], builder.int_type())),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from(PStr::permanent("a")),
+          name: source::Id::from(heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
         }],
-        captured: HashMap::from([(PStr::permanent("captured_a"), builder.unit_type())]),
-        body: Box::new(dummy_source_this()),
+        captured: HashMap::from([(heap.alloc_str("captured_a"), builder.unit_type())]),
+        body: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       r#"closure type $SyntheticIDType1 = (int) -> int
 object type $SyntheticIDType0 = [int]
 function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDType0, a: int): int {
@@ -1907,15 +1970,16 @@ return (_t0: $SyntheticIDType1);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
         common: builder.expr_common(
-          builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type())),
+          builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type(heap))),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from(PStr::permanent("a")),
+          name: source::Id::from(heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
         }],
-        captured: HashMap::from([(PStr::permanent("captured_a"), builder.unit_type())]),
-        body: Box::new(dummy_source_this()),
+        captured: HashMap::from([(heap.alloc_str("captured_a"), builder.unit_type())]),
+        body: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       r#"closure type $SyntheticIDType1 = (int) -> __DUMMY___Dummy
 object type $SyntheticIDType0 = [int]
 function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDType0, a: int): __DUMMY___Dummy {
@@ -1931,15 +1995,16 @@ return (_t0: $SyntheticIDType1);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
         common: builder.expr_common(
-          builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type())),
+          builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type(heap))),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from(PStr::permanent("a")),
+          name: source::Id::from(heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
         }],
         captured: HashMap::new(),
-        body: Box::new(dummy_source_this()),
+        body: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       r#"closure type $SyntheticIDType0 = (int) -> __DUMMY___Dummy
 function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: int, a: int): __DUMMY___Dummy {
   return (_this: __DUMMY___Dummy);
@@ -1952,15 +2017,17 @@ return (_t0: $SyntheticIDType0);"#,
 
   #[test]
   fn control_flow_lowering_tests() {
+    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: builder.expr_common(Rc::new(dummy_source_id_type())),
-        condition: Box::new(dummy_source_this()),
-        e1: Box::new(dummy_source_this()),
-        e2: Box::new(dummy_source_this()),
+        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+        condition: Box::new(dummy_source_this(heap)),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
       }),
+      heap,
       r#"let _t0: __DUMMY___Dummy;
 if (_this: __DUMMY___Dummy) {
   _t0 = (_this: __DUMMY___Dummy);
@@ -1972,25 +2039,26 @@ return (_t0: __DUMMY___Dummy);"#,
 
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
-        common: builder.expr_common(Rc::new(dummy_source_id_type())),
-        matched: Box::new(dummy_source_this()),
+        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+        matched: Box::new(dummy_source_this(heap)),
         cases: vec![
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(PStr::permanent("Foo")),
+            tag: source::Id::from(heap.alloc_str("Foo")),
             tag_order: 0,
-            data_variable: Some((source::Id::from(PStr::permanent("bar")), builder.int_type())),
-            body: Box::new(dummy_source_this()),
+            data_variable: Some((source::Id::from(heap.alloc_str("bar")), builder.int_type())),
+            body: Box::new(dummy_source_this(heap)),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(PStr::permanent("Bar")),
+            tag: source::Id::from(heap.alloc_str("Bar")),
             tag_order: 1,
             data_variable: None,
-            body: Box::new(dummy_source_this()),
+            body: Box::new(dummy_source_this(heap)),
           },
         ],
       }),
+      heap,
       r#"let _t0: int = (_this: __DUMMY___Dummy)[0];
 let _t1: bool = (_t0: int) == 0;
 let _t2: __DUMMY___Dummy;
@@ -2005,37 +2073,38 @@ return (_t2: __DUMMY___Dummy);"#,
 
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
-        common: builder.expr_common(Rc::new(dummy_source_id_type())),
-        matched: Box::new(dummy_source_this()),
+        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+        matched: Box::new(dummy_source_this(heap)),
         cases: vec![
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(PStr::permanent("Foo")),
+            tag: source::Id::from(heap.alloc_str("Foo")),
             tag_order: 0,
             data_variable: None,
-            body: Box::new(dummy_source_this()),
+            body: Box::new(dummy_source_this(heap)),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(PStr::permanent("Bar")),
+            tag: source::Id::from(heap.alloc_str("Bar")),
             tag_order: 1,
             data_variable: Some((
-              source::Id::from(PStr::permanent("bar")),
-              Rc::new(dummy_source_id_type()),
+              source::Id::from(heap.alloc_str("bar")),
+              Rc::new(dummy_source_id_type(heap)),
             )),
             body: Box::new(
-              builder.id_expr(PStr::permanent("bar"), Rc::new(dummy_source_id_type())),
+              builder.id_expr(heap.alloc_str("bar"), Rc::new(dummy_source_id_type(heap))),
             ),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
-            tag: source::Id::from(PStr::permanent("Baz")),
+            tag: source::Id::from(heap.alloc_str("Baz")),
             tag_order: 2,
             data_variable: None,
-            body: Box::new(dummy_source_this()),
+            body: Box::new(dummy_source_this(heap)),
           },
         ],
       }),
+      heap,
       r#"let _t0: int = (_this: __DUMMY___Dummy)[0];
 let _t3: bool = (_t0: int) == 0;
 let _t4: __DUMMY___Dummy;
@@ -2058,6 +2127,7 @@ return (_t4: __DUMMY___Dummy);"#,
 
   #[test]
   fn block_lowering_tests() {
+    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     assert_expr_correctly_lowered(
@@ -2066,7 +2136,7 @@ return (_t4: __DUMMY___Dummy);"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: vec![],
-          pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: builder.expr_common(builder.unit_type()),
@@ -2080,28 +2150,28 @@ return (_t4: __DUMMY___Dummy);"#,
                     source::expr::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 0,
-                      field_name: source::Id::from(PStr::permanent("a")),
+                      field_name: source::Id::from(heap.alloc_str("a")),
                       alias: None,
                       type_: builder.int_type(),
                     },
                     source::expr::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 1,
-                      field_name: source::Id::from(PStr::permanent("b")),
-                      alias: Some(source::Id::from(PStr::permanent("c"))),
+                      field_name: source::Id::from(heap.alloc_str("b")),
+                      alias: Some(source::Id::from(heap.alloc_str("c"))),
                       type_: builder.int_type(),
                     },
                   ],
                 ),
-                annotation: Some(Rc::new(dummy_source_id_type())),
-                assigned_expression: Box::new(dummy_source_this()),
+                annotation: Some(Rc::new(dummy_source_id_type(heap))),
+                assigned_expression: Box::new(dummy_source_this(heap)),
               },
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
                 associated_comments: vec![],
                 pattern: source::expr::Pattern::Wildcard(Location::dummy()),
-                annotation: Some(Rc::new(dummy_source_id_type())),
-                assigned_expression: Box::new(dummy_source_this()),
+                annotation: Some(Rc::new(dummy_source_id_type(heap))),
+                assigned_expression: Box::new(dummy_source_this(heap)),
               },
             ],
             expression: None,
@@ -2109,6 +2179,7 @@ return (_t4: __DUMMY___Dummy);"#,
         }],
         expression: None,
       }),
+      heap,
       r#"let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];
 return 0;"#,
@@ -2127,32 +2198,33 @@ return 0;"#,
                 source::expr::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 0,
-                  field_name: source::Id::from(PStr::permanent("a")),
+                  field_name: source::Id::from(heap.alloc_str("a")),
                   alias: None,
                   type_: builder.int_type(),
                 },
                 source::expr::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 1,
-                  field_name: source::Id::from(PStr::permanent("b")),
-                  alias: Some(source::Id::from(PStr::permanent("c"))),
+                  field_name: source::Id::from(heap.alloc_str("b")),
+                  alias: Some(source::Id::from(heap.alloc_str("c"))),
                   type_: builder.int_type(),
                 },
               ],
             ),
-            annotation: Some(Rc::new(dummy_source_id_type())),
-            assigned_expression: Box::new(dummy_source_this()),
+            annotation: Some(Rc::new(dummy_source_id_type(heap))),
+            assigned_expression: Box::new(dummy_source_this(heap)),
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: vec![],
             pattern: source::expr::Pattern::Wildcard(Location::dummy()),
-            annotation: Some(Rc::new(dummy_source_id_type())),
-            assigned_expression: Box::new(dummy_source_this()),
+            annotation: Some(Rc::new(dummy_source_id_type(heap))),
+            assigned_expression: Box::new(dummy_source_this(heap)),
           },
         ],
         expression: None,
       }),
+      heap,
       r#"let a: int = (_this: __DUMMY___Dummy)[0];
 let c: int = (_this: __DUMMY___Dummy)[1];
 return 0;"#,
@@ -2164,7 +2236,7 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: vec![],
-          pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.int_type()),
           assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
             common: builder.expr_common(builder.int_type()),
@@ -2172,15 +2244,18 @@ return 0;"#,
               common: builder
                 .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
               type_arguments: vec![],
-              module_reference: ModuleReference::ordinary(vec![rcs("ModuleModule")]),
-              class_name: source::Id::from(PStr::permanent("ImportedClass")),
-              fn_name: source::Id::from(PStr::permanent("bar")),
+              module_reference: heap.alloc_module_reference_from_string_vec(
+                vec!["ModuleModule".to_string()],
+              ),
+              class_name: source::Id::from(heap.alloc_str("ImportedClass")),
+              fn_name: source::Id::from(heap.alloc_str("bar")),
             })),
-            arguments: vec![dummy_source_this(), dummy_source_this()],
+            arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
           })),
         }],
-        expression: Some(Box::new(builder.id_expr(PStr::permanent("a"), builder.string_type()))),
+        expression: Some(Box::new(builder.id_expr(heap.alloc_str("a"), builder.string_type()))),
       }),
+      heap,
       "let a: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));\nreturn (a: int);",
     );
 
@@ -2191,22 +2266,23 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: vec![],
-            pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
+            pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
             annotation: Some(builder.unit_type()),
-            assigned_expression: Box::new(builder.string_expr(PStr::permanent("foo"))),
+            assigned_expression: Box::new(builder.string_expr(heap.alloc_str("foo"))),
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: vec![],
-            pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("b")),
+            pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("b")),
             annotation: Some(builder.unit_type()),
             assigned_expression: Box::new(
-              builder.id_expr(PStr::permanent("a"), builder.string_type()),
+              builder.id_expr(heap.alloc_str("a"), builder.string_type()),
             ),
           },
         ],
-        expression: Some(Box::new(builder.id_expr(PStr::permanent("b"), builder.string_type()))),
+        expression: Some(Box::new(builder.id_expr(heap.alloc_str("b"), builder.string_type()))),
       }),
+      heap,
       "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
     );
 
@@ -2216,34 +2292,36 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: vec![],
-          pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: builder.expr_common(builder.unit_type()),
             statements: vec![source::expr::DeclarationStatement {
               loc: Location::dummy(),
               associated_comments: vec![],
-              pattern: source::expr::Pattern::Id(Location::dummy(), PStr::permanent("a")),
+              pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
               annotation: Some(builder.int_type()),
-              assigned_expression: Box::new(dummy_source_this()),
+              assigned_expression: Box::new(dummy_source_this(heap)),
             }],
-            expression: Some(Box::new(
-              builder.id_expr(PStr::permanent("a"), builder.string_type()),
-            )),
+            expression: Some(Box::new(builder.id_expr(heap.alloc_str("a"), builder.string_type()))),
           })),
         }],
-        expression: Some(Box::new(builder.id_expr(PStr::permanent("a"), builder.string_type()))),
+        expression: Some(Box::new(builder.id_expr(heap.alloc_str("a"), builder.string_type()))),
       }),
+      heap,
       "return (_this: __DUMMY___Dummy);",
     );
   }
 
   #[test]
   fn integration_tests() {
+    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
-    let this_expr =
-      &source::expr::E::This(builder.expr_common(builder.simple_id_type(PStr::permanent("Dummy"))));
+    let this_expr = &source::expr::E::Id(
+      builder.expr_common(builder.simple_id_type(heap.alloc_str("Dummy"))),
+      source::Id::from(heap.alloc_str("this")),
+    );
 
     let source_module = source::Module {
       imports: vec![],
@@ -2251,7 +2329,7 @@ return 0;"#,
         source::Toplevel::Interface(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from(PStr::permanent("I")),
+          name: source::Id::from(heap.alloc_str("I")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
           type_definition: (),
@@ -2260,7 +2338,7 @@ return 0;"#,
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from(PStr::permanent("Main")),
+          name: source::Id::from(heap.alloc_str("Main")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition {
@@ -2276,7 +2354,7 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: source::Id::from(PStr::permanent("main")),
+                name: source::Id::from(heap.alloc_str("main")),
                 type_parameters: Rc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
@@ -2291,8 +2369,8 @@ return 0;"#,
                   common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
-                  class_name: source::Id::from(PStr::permanent("Class1")),
-                  fn_name: source::Id::from(PStr::permanent("infiniteLoop")),
+                  class_name: source::Id::from(heap.alloc_str("Class1")),
+                  fn_name: source::Id::from(heap.alloc_str("infiniteLoop")),
                 })),
                 arguments: vec![],
               }),
@@ -2303,11 +2381,11 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: source::Id::from(PStr::permanent("loopy")),
+                name: source::Id::from(heap.alloc_str("loopy")),
                 type_parameters: Rc::new(vec![source::TypeParameter {
                   loc: Location::dummy(),
                   associated_comments: Rc::new(vec![]),
-                  name: source::Id::from(PStr::permanent("T")),
+                  name: source::Id::from(heap.alloc_str("T")),
                   bound: None,
                 }]),
                 type_: source::FunctionType {
@@ -2323,8 +2401,8 @@ return 0;"#,
                   common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
-                  class_name: source::Id::from(PStr::permanent("T")),
-                  fn_name: source::Id::from(PStr::permanent("loopy")),
+                  class_name: source::Id::from(heap.alloc_str("T")),
+                  fn_name: source::Id::from(heap.alloc_str("loopy")),
                 })),
                 arguments: vec![],
               }),
@@ -2334,15 +2412,15 @@ return 0;"#,
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from(PStr::permanent("Class1")),
+          name: source::Id::from(heap.alloc_str("Class1")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition {
             loc: Location::dummy(),
             is_object: true,
-            names: vec![source::Id::from(PStr::permanent("a"))],
+            names: vec![source::Id::from(heap.alloc_str("a"))],
             mappings: HashMap::from([(
-              PStr::permanent("a"),
+              heap.alloc_str("a"),
               source::FieldType { is_public: true, type_: builder.int_type() },
             )]),
           },
@@ -2353,7 +2431,7 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: true,
-                name: source::Id::from(PStr::permanent("foo")),
+                name: source::Id::from(heap.alloc_str("foo")),
                 type_parameters: Rc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
@@ -2361,7 +2439,7 @@ return 0;"#,
                   return_type: builder.int_type(),
                 },
                 parameters: Rc::new(vec![source::AnnotatedId {
-                  name: source::Id::from(PStr::permanent("a")),
+                  name: source::Id::from(heap.alloc_str("a")),
                   annotation: builder.int_type(),
                 }]),
               },
@@ -2373,7 +2451,7 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: source::Id::from(PStr::permanent("infiniteLoop")),
+                name: source::Id::from(heap.alloc_str("infiniteLoop")),
                 type_parameters: Rc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
@@ -2388,8 +2466,8 @@ return 0;"#,
                   common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
-                  class_name: source::Id::from(PStr::permanent("Class1")),
-                  fn_name: source::Id::from(PStr::permanent("infiniteLoop")),
+                  class_name: source::Id::from(heap.alloc_str("Class1")),
+                  fn_name: source::Id::from(heap.alloc_str("infiniteLoop")),
                 })),
                 arguments: vec![],
               }),
@@ -2400,7 +2478,7 @@ return 0;"#,
                 associated_comments: Rc::new(vec![]),
                 is_public: true,
                 is_method: false,
-                name: source::Id::from(PStr::permanent("factorial")),
+                name: source::Id::from(heap.alloc_str("factorial")),
                 type_parameters: Rc::new(vec![]),
                 type_: source::FunctionType {
                   reason: Reason::dummy(),
@@ -2409,11 +2487,11 @@ return 0;"#,
                 },
                 parameters: Rc::new(vec![
                   source::AnnotatedId {
-                    name: source::Id::from(PStr::permanent("n")),
+                    name: source::Id::from(heap.alloc_str("n")),
                     annotation: builder.int_type(),
                   },
                   source::AnnotatedId {
-                    name: source::Id::from(PStr::permanent("acc")),
+                    name: source::Id::from(heap.alloc_str("acc")),
                     annotation: builder.int_type(),
                   },
                 ]),
@@ -2424,7 +2502,7 @@ return 0;"#,
                   common: builder.expr_common(builder.int_type()),
                   operator_preceding_comments: vec![],
                   operator: source::expr::BinaryOperator::EQ,
-                  e1: Box::new(builder.id_expr(PStr::permanent("n"), builder.int_type())),
+                  e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
                   e2: Box::new(builder.zero_expr()),
                 })),
                 e1: Box::new(builder.int_lit(1)),
@@ -2437,23 +2515,23 @@ return 0;"#,
                     ),
                     type_arguments: vec![],
                     module_reference: ModuleReference::dummy(),
-                    class_name: source::Id::from(PStr::permanent("Class1")),
-                    fn_name: source::Id::from(PStr::permanent("factorial")),
+                    class_name: source::Id::from(heap.alloc_str("Class1")),
+                    fn_name: source::Id::from(heap.alloc_str("factorial")),
                   })),
                   arguments: vec![
                     source::expr::E::Binary(source::expr::Binary {
                       common: builder.expr_common(builder.int_type()),
                       operator_preceding_comments: vec![],
                       operator: source::expr::BinaryOperator::MINUS,
-                      e1: Box::new(builder.id_expr(PStr::permanent("n"), builder.int_type())),
+                      e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
                       e2: Box::new(builder.int_lit(1)),
                     }),
                     source::expr::E::Binary(source::expr::Binary {
                       common: builder.expr_common(builder.int_type()),
                       operator_preceding_comments: vec![],
                       operator: source::expr::BinaryOperator::MUL,
-                      e1: Box::new(builder.id_expr(PStr::permanent("n"), builder.int_type())),
-                      e2: Box::new(builder.id_expr(PStr::permanent("acc"), builder.int_type())),
+                      e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
+                      e2: Box::new(builder.id_expr(heap.alloc_str("acc"), builder.int_type())),
                     }),
                   ],
                 })),
@@ -2464,15 +2542,15 @@ return 0;"#,
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from(PStr::permanent("Class2")),
+          name: source::Id::from(heap.alloc_str("Class2")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition {
             loc: Location::dummy(),
             is_object: false,
-            names: vec![source::Id::from(PStr::permanent("Tag"))],
+            names: vec![source::Id::from(heap.alloc_str("Tag"))],
             mappings: HashMap::from([(
-              PStr::permanent("Tag"),
+              heap.alloc_str("Tag"),
               source::FieldType { is_public: true, type_: builder.int_type() },
             )]),
           },
@@ -2481,26 +2559,26 @@ return 0;"#,
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
           associated_comments: Rc::new(vec![]),
-          name: source::Id::from(PStr::permanent("Class3")),
+          name: source::Id::from(heap.alloc_str("Class3")),
           type_parameters: vec![source::TypeParameter {
             loc: Location::dummy(),
             associated_comments: Rc::new(vec![]),
-            name: source::Id::from(PStr::permanent("T")),
+            name: source::Id::from(heap.alloc_str("T")),
             bound: None,
           }],
           extends_or_implements_nodes: vec![],
           type_definition: source::TypeDefinition {
             loc: Location::dummy(),
             is_object: true,
-            names: vec![source::Id::from(PStr::permanent("a"))],
+            names: vec![source::Id::from(heap.alloc_str("a"))],
             mappings: HashMap::from([(
-              PStr::permanent("a"),
+              heap.alloc_str("a"),
               source::FieldType {
                 is_public: true,
                 type_: builder.fun_type(
                   vec![
-                    builder.general_id_type(PStr::permanent("A"), vec![builder.int_type()]),
-                    builder.simple_id_type(PStr::permanent("T")),
+                    builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type()]),
+                    builder.simple_id_type(heap.alloc_str("T")),
                   ],
                   builder.int_type(),
                 ),
@@ -2514,7 +2592,7 @@ return 0;"#,
     let sources = HashMap::from([
       (ModuleReference::dummy(), source_module),
       (
-        ModuleReference::ordinary(vec![rcs("Foo")]),
+        heap.alloc_module_reference_from_string_vec(vec!["Foo".to_string()]),
         source::Module { imports: vec![], toplevels: vec![] },
       ),
     ]);
@@ -2632,11 +2710,10 @@ function ___DUMMY___Main$main(): int {
 
 sources.mains = [___DUMMY___Main$main]"#;
 
-    let heap = Heap::new();
     assert_eq!(
       generics_preserved_expected,
-      super::compile_sources_with_generics_preserved(&heap, &sources).debug_print()
+      super::compile_sources_with_generics_preserved(heap, &sources).debug_print()
     );
-    assert_eq!(optimized_expected, super::compile_sources_to_hir(&heap, &sources).debug_print());
+    assert_eq!(optimized_expected, super::compile_sources_to_hir(heap, &sources).debug_print());
   }
 }

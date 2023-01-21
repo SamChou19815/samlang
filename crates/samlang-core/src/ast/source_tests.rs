@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod comments_tests {
   use super::super::source::*;
-  use crate::common::PStr;
+  use crate::common::Heap;
 
   #[test]
   fn boilterplate() {
     assert!(!format!(
       "{:?}",
-      Comment { kind: CommentKind::BLOCK, text: PStr::permanent("d") }.clone().text
+      Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str("d") }.clone().text
     )
     .is_empty());
   }
@@ -16,18 +16,15 @@ mod comments_tests {
 #[cfg(test)]
 mod literal_tests {
   use super::super::source::*;
-  use crate::common::{Heap, PStr};
+  use crate::common::Heap;
 
   #[test]
   fn pretty_print_test() {
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     assert_eq!("true", Literal::true_literal().pretty_print(&heap));
     assert_eq!("false", Literal::false_literal().pretty_print(&heap));
     assert_eq!("0", Literal::int_literal(0).clone().pretty_print(&heap));
-    assert_eq!(
-      "\"hi\"",
-      Literal::string_literal(PStr::permanent("hi")).clone().pretty_print(&heap)
-    );
+    assert_eq!("\"hi\"", Literal::string_literal(heap.alloc_str("hi")).clone().pretty_print(&heap));
   }
 }
 
@@ -36,7 +33,7 @@ mod type_tests {
   use super::super::source::*;
   use crate::ast::loc::Location;
   use crate::ast::reason::Reason;
-  use crate::common::{Heap, PStr};
+  use crate::common::Heap;
   use std::rc::Rc;
   use std::vec;
 
@@ -48,25 +45,25 @@ mod type_tests {
     let builder = test_builder::create();
     builder.int_type().as_id();
     builder.int_type().as_fn();
-    builder.simple_id_type(PStr::permanent("")).as_id();
+    builder.simple_id_type(Heap::new().alloc_str("")).as_id();
     builder.fun_type(vec![], builder.int_type()).as_fn();
   }
 
   #[test]
   fn pretty_print_tests() {
     let builder = test_builder::create();
-    let heap = Heap::new();
+    let mut heap = Heap::new();
 
     assert_eq!("unknown", Type::Unknown(Reason::dummy()).clone().pretty_print(&heap));
     assert_eq!("unit", builder.unit_type().clone().pretty_print(&heap));
     assert_eq!("int", builder.int_type().pretty_print(&heap));
     assert_eq!("bool", builder.bool_type().pretty_print(&heap));
     assert_eq!("string", builder.string_type().pretty_print(&heap));
-    assert_eq!("I", builder.simple_id_type(PStr::permanent("I")).clone().pretty_print(&heap));
+    assert_eq!("I", builder.simple_id_type(heap.alloc_str("I")).clone().pretty_print(&heap));
     assert_eq!(
       "I",
       builder
-        .simple_id_type_unwrapped(PStr::permanent("I"))
+        .simple_id_type_unwrapped(heap.alloc_str("I"))
         .reposition(Location::dummy())
         .clone()
         .pretty_print(&heap)
@@ -75,8 +72,8 @@ mod type_tests {
       "Foo<unit, Bar>",
       builder
         .general_id_type(
-          PStr::permanent("Foo"),
-          vec![builder.unit_type(), builder.simple_id_type(PStr::permanent("Bar"))]
+          heap.alloc_str("Foo"),
+          vec![builder.unit_type(), builder.simple_id_type(heap.alloc_str("Bar"))]
         )
         .clone()
         .pretty_print(&heap)
@@ -110,7 +107,7 @@ mod type_tests {
       TypeParameter {
         loc: Location::dummy(),
         associated_comments: Rc::new(vec![]),
-        name: Id::from(PStr::permanent("A")),
+        name: Id::from(heap.alloc_str("A")),
         bound: Option::None
       }
       .pretty_print(&heap)
@@ -120,22 +117,21 @@ mod type_tests {
       TypeParameter {
         loc: Location::dummy(),
         associated_comments: Rc::new(vec![]),
-        name: Id::from(PStr::permanent("A")),
-        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B"))))
+        name: Id::from(heap.alloc_str("A")),
+        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
       }
       .pretty_print(&heap)
     );
 
     assert_eq!(
       "A",
-      TypeParameterSignature { name: PStr::permanent("A"), bound: Option::None }
-        .pretty_print(&heap)
+      TypeParameterSignature { name: heap.alloc_str("A"), bound: Option::None }.pretty_print(&heap)
     );
     assert_eq!(
       "A : B",
       TypeParameterSignature {
-        name: PStr::permanent("A"),
-        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B"))))
+        name: heap.alloc_str("A"),
+        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
       }
       .clone()
       .pretty_print(&heap)
@@ -147,10 +143,10 @@ mod type_tests {
       TypeParameterSignature::pretty_print_list(
         &vec![
           TypeParameterSignature {
-            name: PStr::permanent("A"),
-            bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(PStr::permanent("B"))))
+            name: heap.alloc_str("A"),
+            bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
           },
-          TypeParameterSignature { name: PStr::permanent("C"), bound: Option::None }
+          TypeParameterSignature { name: heap.alloc_str("C"), bound: Option::None }
         ],
         &heap
       )
@@ -163,28 +159,33 @@ mod type_tests {
 
   #[test]
   fn mod_reason_tests() {
+    let mut heap = Heap::new();
     let builder = test_builder::create();
 
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
-      Type::Unknown(Reason::dummy()).mod_reason(new_reason_f).get_reason().use_loc.to_string()
+      Type::Unknown(Reason::dummy())
+        .mod_reason(new_reason_f)
+        .get_reason()
+        .use_loc
+        .pretty_print(&heap)
     );
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
-      builder.int_type().mod_reason(new_reason_f).get_reason().use_loc.to_string()
+      builder.int_type().mod_reason(new_reason_f).get_reason().use_loc.pretty_print(&heap)
     );
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
-      builder.int_type().mod_reason(new_reason_f).get_reason().use_loc.to_string()
+      builder.int_type().mod_reason(new_reason_f).get_reason().use_loc.pretty_print(&heap)
     );
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
       builder
-        .simple_id_type(PStr::permanent("I"))
+        .simple_id_type(heap.alloc_str("I"))
         .mod_reason(new_reason_f)
         .get_reason()
         .use_loc
-        .to_string()
+        .pretty_print(&heap)
     );
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
@@ -193,7 +194,7 @@ mod type_tests {
         .mod_reason(new_reason_f)
         .get_reason()
         .use_loc
-        .to_string()
+        .pretty_print(&heap)
     );
   }
 
@@ -208,35 +209,36 @@ mod type_tests {
         .reposition(Location::from_pos(1, 2, 3, 4))
         .get_reason()
         .use_loc
-        .to_string()
+        .pretty_print(&Heap::new())
     );
   }
 
   #[test]
   fn test_equality_test() {
+    let mut heap = Heap::new();
     let builder = test_builder::create();
 
-    assert!(!builder.unit_type().is_the_same_type(&builder.simple_id_type(PStr::permanent("A"))));
+    assert!(!builder.unit_type().is_the_same_type(&builder.simple_id_type(heap.alloc_str("A"))));
 
     assert!(Type::Unknown(Reason::dummy()).is_the_same_type(&Type::Unknown(Reason::dummy())));
     assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
     assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
 
     assert!(builder
-      .simple_id_type(PStr::permanent("A"))
-      .is_the_same_type(&builder.simple_id_type(PStr::permanent("A"))));
+      .simple_id_type(heap.alloc_str("A"))
+      .is_the_same_type(&builder.simple_id_type(heap.alloc_str("A"))));
     assert!(!builder
-      .simple_id_type(PStr::permanent("A"))
-      .is_the_same_type(&builder.simple_id_type(PStr::permanent("B"))));
+      .simple_id_type(heap.alloc_str("A"))
+      .is_the_same_type(&builder.simple_id_type(heap.alloc_str("B"))));
     assert!(builder
-      .general_id_type(PStr::permanent("A"), vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_id_type(PStr::permanent("A"), vec![builder.bool_type()])));
+      .general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])
+      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])));
     assert!(!builder
-      .general_id_type(PStr::permanent("A"), vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_id_type(PStr::permanent("A"), vec![builder.int_type()])));
+      .general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])
+      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type()])));
     assert!(!builder
-      .simple_id_type(PStr::permanent("A"))
-      .is_the_same_type(&builder.general_id_type(PStr::permanent("A"), vec![builder.bool_type()])));
+      .simple_id_type(heap.alloc_str("A"))
+      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])));
 
     assert!(builder
       .fun_type(vec![builder.unit_type()], builder.string_type())
@@ -294,13 +296,14 @@ mod expressions_tests {
   use super::super::source::expr::*;
   use super::super::source::*;
   use crate::{
-    ast::loc::{Location, ModuleReference},
-    common::PStr,
+    ast::loc::Location,
+    common::{Heap, ModuleReference},
   };
   use std::collections::HashMap;
 
   #[test]
   fn precedence_boilerplate_tests() {
+    let mut heap = Heap::new();
     let builder = test_builder::create();
     let common = builder.expr_common(builder.bool_type());
 
@@ -309,8 +312,8 @@ mod expressions_tests {
       common: common.clone(),
       type_arguments: vec![],
       module_reference: ModuleReference::dummy(),
-      class_name: Id::from(PStr::permanent("name")),
-      fn_name: Id::from(PStr::permanent("name")),
+      class_name: Id::from(heap.alloc_str("name")),
+      fn_name: Id::from(heap.alloc_str("name")),
     })
     .precedence();
     E::Block(Block { common: common.clone(), statements: vec![], expression: None }).precedence();
@@ -350,7 +353,7 @@ mod expressions_tests {
     E::Lambda(Lambda {
       common: common.clone(),
       parameters: vec![OptionallyAnnotatedId {
-        name: Id::from(PStr::permanent("name")),
+        name: Id::from(heap.alloc_str("name")),
         annotation: None,
       }],
       captured: HashMap::new(),
@@ -361,19 +364,19 @@ mod expressions_tests {
 
   #[test]
   fn common_test() {
+    let mut heap = Heap::new();
     let builder = test_builder::create();
     let common = builder.expr_common(builder.bool_type());
     let mod_common = |c: ExpressionCommon| c.clone();
 
     builder.zero_expr().clone().mod_common(mod_common).common();
-    E::Id(common.clone(), Id::from(PStr::permanent("d"))).clone().mod_common(mod_common).common();
-    E::This(common.clone()).clone().mod_common(mod_common).common();
+    E::Id(common.clone(), Id::from(heap.alloc_str("d"))).clone().mod_common(mod_common).common();
     E::ClassFn(ClassFunction {
       common: common.clone(),
       type_arguments: vec![],
       module_reference: ModuleReference::dummy(),
-      class_name: Id::from(PStr::permanent("name")),
-      fn_name: Id::from(PStr::permanent("name")),
+      class_name: Id::from(heap.alloc_str("name")),
+      fn_name: Id::from(heap.alloc_str("name")),
     })
     .clone()
     .mod_common(mod_common)
@@ -382,7 +385,7 @@ mod expressions_tests {
       common: common.clone(),
       type_arguments: vec![],
       object: Box::new(builder.true_expr()),
-      field_name: Id::from(PStr::permanent("name")),
+      field_name: Id::from(heap.alloc_str("name")),
       field_order: -1,
     })
     .clone()
@@ -392,7 +395,7 @@ mod expressions_tests {
       common: common.clone(),
       type_arguments: vec![],
       object: Box::new(builder.true_expr()),
-      method_name: Id::from(PStr::permanent("name")),
+      method_name: Id::from(heap.alloc_str("name")),
     })
     .clone()
     .mod_common(mod_common)
@@ -439,7 +442,7 @@ mod expressions_tests {
       matched: Box::new(builder.zero_expr()),
       cases: vec![VariantPatternToExpression {
         loc: Location::dummy(),
-        tag: Id::from(PStr::permanent("name")),
+        tag: Id::from(heap.alloc_str("name")),
         tag_order: 1,
         data_variable: None,
         body: Box::new(builder.true_expr()),
@@ -451,7 +454,7 @@ mod expressions_tests {
     E::Lambda(Lambda {
       common: common.clone(),
       parameters: vec![OptionallyAnnotatedId {
-        name: Id::from(PStr::permanent("name")),
+        name: Id::from(heap.alloc_str("name")),
         annotation: None,
       }],
       captured: HashMap::new(),
@@ -470,7 +473,7 @@ mod expressions_tests {
           vec![ObjectPatternDestucturedName {
             loc: Location::dummy(),
             field_order: 0,
-            field_name: Id::from(PStr::permanent("name")),
+            field_name: Id::from(heap.alloc_str("name")),
             alias: None,
             type_: builder.bool_type(),
           }],
@@ -489,21 +492,21 @@ mod expressions_tests {
 #[cfg(test)]
 mod toplevel_tests {
   use crate::{
-    ast::{source::*, Location, ModuleReference, Reason},
-    common::{Heap, PStr},
+    ast::{source::*, Location, Reason},
+    common::{Heap, ModuleReference},
   };
   use pretty_assertions::assert_eq;
   use std::{collections::HashMap, rc::Rc};
 
   #[test]
   fn boilterplate() {
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     assert_eq!(
       "name",
       TypeParameter {
         loc: Location::dummy(),
         associated_comments: Rc::new(vec![]),
-        name: Id::from(PStr::permanent("name")),
+        name: Id::from(heap.alloc_str("name")),
         bound: None
       }
       .clone()
@@ -515,7 +518,7 @@ mod toplevel_tests {
     assert_eq!(
       "s",
       AnnotatedId {
-        name: Id::from(PStr::permanent("s")),
+        name: Id::from(heap.alloc_str("s")),
         annotation: Rc::new(Type::int_type(Reason::dummy()))
       }
       .name
@@ -540,7 +543,7 @@ mod toplevel_tests {
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
       associated_comments: Rc::new(vec![]),
-      name: Id::from(PStr::permanent("")),
+      name: Id::from(heap.alloc_str("")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -549,7 +552,7 @@ mod toplevel_tests {
         associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: true,
-        name: Id::from(PStr::permanent("")),
+        name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -584,7 +587,7 @@ mod toplevel_tests {
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: Rc::new(vec![]),
-      name: Id::from(PStr::permanent("name")),
+      name: Id::from(heap.alloc_str("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: TypeDefinition {
@@ -599,7 +602,7 @@ mod toplevel_tests {
           associated_comments: Rc::new(vec![]),
           is_public: true,
           is_method: true,
-          name: Id::from(PStr::permanent("")),
+          name: Id::from(heap.alloc_str("")),
           type_parameters: Rc::new(vec![]),
           type_: FunctionType {
             reason: Reason::dummy(),
@@ -618,7 +621,7 @@ mod toplevel_tests {
     let interface = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: Rc::new(vec![]),
-      name: Id::from(PStr::permanent("name")),
+      name: Id::from(heap.alloc_str("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -627,7 +630,7 @@ mod toplevel_tests {
         associated_comments: Rc::new(vec![]),
         is_public: true,
         is_method: true,
-        name: Id::from(PStr::permanent("")),
+        name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
         type_: FunctionType {
           reason: Reason::dummy(),
@@ -647,16 +650,17 @@ mod toplevel_tests {
 #[cfg(test)]
 mod builder_tests {
   use super::super::source::test_builder;
-  use crate::common::PStr;
+  use crate::common::Heap;
 
   #[test]
   fn boilterplate() {
+    let mut heap = Heap::new();
     let builder = test_builder::create();
 
     builder.true_expr().common();
     builder.false_expr().type_();
     builder.zero_expr().loc();
-    builder.string_expr(PStr::permanent("ouch"));
-    builder.id_expr(PStr::permanent("id"), builder.simple_id_type(PStr::permanent("Id"))).common();
+    builder.string_expr(heap.alloc_str("ouch"));
+    builder.id_expr(heap.alloc_str("id"), builder.simple_id_type(heap.alloc_str("Id"))).common();
   }
 }

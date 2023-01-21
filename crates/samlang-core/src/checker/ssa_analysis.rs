@@ -41,14 +41,14 @@ impl<'a> SsaAnalysisState<'a> {
   fn visit_module(&mut self, heap: &Heap, module: &Module) {
     for import in &module.imports {
       for member in &import.imported_members {
-        self.define_id(heap, &member.name, &member.loc);
+        self.define_id(heap, &member.name, member.loc);
       }
     }
 
     // Hoist toplevel names
     for toplevel in &module.toplevels {
       let name = toplevel.name();
-      self.define_id(heap, &name.name, &name.loc)
+      self.define_id(heap, &name.name, name.loc)
     }
 
     for toplevel in &module.toplevels {
@@ -61,7 +61,7 @@ impl<'a> SsaAnalysisState<'a> {
         {
           for tparam in type_parameters {
             let id = &tparam.name;
-            self.define_id(heap, &id.name, &id.loc);
+            self.define_id(heap, &id.name, id.loc);
           }
           for tparam in type_parameters {
             if let Some(bound) = &tparam.bound {
@@ -73,7 +73,7 @@ impl<'a> SsaAnalysisState<'a> {
           }
           if let Some(type_def) = type_definition {
             for name in &type_def.names {
-              self.define_id(heap, &name.name, &name.loc);
+              self.define_id(heap, &name.name, name.loc);
             }
             for name in &type_def.names {
               self.visit_type(heap, &type_def.mappings.get(&name.name).unwrap().type_)
@@ -87,17 +87,20 @@ impl<'a> SsaAnalysisState<'a> {
         self.context.push_scope();
         for m in toplevel.members_iter() {
           let id = &m.name;
-          self.define_id(heap, &id.name, &id.loc);
+          self.define_id(heap, &id.name, id.loc);
         }
         self.context.pop_scope();
         // Visit instance methods
         self.context.push_scope();
         if type_definition.is_some() {
-          self.define_id(heap, &PStr::permanent("this"), toplevel.loc());
+          // If this is not allocated, then this is never used, so omitting its define is safe.
+          if let Some(this_string) = heap.get_allocated_str_opt("this") {
+            self.define_id(heap, &this_string, toplevel.loc());
+          }
         }
         for tparam in type_parameters {
           let id = &tparam.name;
-          self.define_id(heap, &id.name, &id.loc);
+          self.define_id(heap, &id.name, id.loc);
         }
         self.visit_members(heap, toplevel, true);
         self.context.pop_scope();
@@ -138,7 +141,7 @@ impl<'a> SsaAnalysisState<'a> {
     self.context.push_scope();
     for tparam in member.type_parameters.iter() {
       let id = &tparam.name;
-      self.define_id(heap, &id.name, &id.loc);
+      self.define_id(heap, &id.name, id.loc);
     }
     for tparam in member.type_parameters.iter() {
       if let Some(bound) = &tparam.bound {
@@ -147,7 +150,7 @@ impl<'a> SsaAnalysisState<'a> {
     }
     for param in member.parameters.iter() {
       let id = &param.name;
-      self.define_id(heap, &id.name, &id.loc);
+      self.define_id(heap, &id.name, id.loc);
       self.visit_type(heap, &param.annotation);
     }
     self.visit_type(heap, &member.type_.return_type);
@@ -160,8 +163,7 @@ impl<'a> SsaAnalysisState<'a> {
   fn visit_expression(&mut self, heap: &Heap, expression: &expr::E) {
     match expression {
       expr::E::Literal(_, _) => {}
-      expr::E::This(c) => self.use_id(heap, &PStr::permanent("this"), &c.loc),
-      expr::E::Id(_, id) => self.use_id(heap, &id.name, &id.loc),
+      expr::E::Id(_, id) => self.use_id(heap, &id.name, id.loc),
       expr::E::ClassFn(e) => {
         for targ in &e.type_arguments {
           self.visit_type(heap, targ);
@@ -200,7 +202,7 @@ impl<'a> SsaAnalysisState<'a> {
         for case in &e.cases {
           self.context.push_scope();
           if let Some((id, _)) = &case.data_variable {
-            self.define_id(heap, &id.name, &id.loc);
+            self.define_id(heap, &id.name, id.loc);
           }
           self.visit_expression(heap, &case.body);
           self.context.pop_scope();
@@ -209,14 +211,14 @@ impl<'a> SsaAnalysisState<'a> {
       expr::E::Lambda(e) => {
         self.context.push_scope();
         for OptionallyAnnotatedId { name, annotation } in &e.parameters {
-          self.define_id(heap, &name.name, &name.loc);
+          self.define_id(heap, &name.name, name.loc);
           if let Some(t) = annotation {
             self.visit_type(heap, t)
           }
         }
         self.visit_expression(heap, &e.body);
         let captured = self.context.pop_scope();
-        self.lambda_captures.insert(e.common.loc.clone(), captured);
+        self.lambda_captures.insert(e.common.loc, captured);
       }
       expr::E::Block(e) => {
         self.context.push_scope();
@@ -236,10 +238,10 @@ impl<'a> SsaAnalysisState<'a> {
             expr::Pattern::Object(_, names) => {
               for name in names {
                 let id = name.alias.clone().unwrap_or(name.field_name.clone());
-                self.define_id(heap, &id.name, &id.loc);
+                self.define_id(heap, &id.name, id.loc);
               }
             }
-            expr::Pattern::Id(loc, id) => self.define_id(heap, id, loc),
+            expr::Pattern::Id(loc, id) => self.define_id(heap, id, *loc),
             expr::Pattern::Wildcard(_) => {}
           }
         }
@@ -255,7 +257,7 @@ impl<'a> SsaAnalysisState<'a> {
     match t {
       Type::Unknown(_) | Type::Primitive(_, _) => {}
       Type::Id(IdType { reason, module_reference: _, id, type_arguments }) => {
-        self.use_id(heap, id, &reason.use_loc);
+        self.use_id(heap, id, reason.use_loc);
         for targ in type_arguments {
           self.visit_type(heap, targ);
         }
@@ -269,21 +271,21 @@ impl<'a> SsaAnalysisState<'a> {
     }
   }
 
-  fn define_id(&mut self, heap: &Heap, name: &PStr, loc: &Location) {
-    if !self.context.insert(name, loc.clone()) && !self.invalid_defines.contains(loc) {
+  fn define_id(&mut self, heap: &Heap, name: &PStr, loc: Location) {
+    if !self.context.insert(name, loc) && !self.invalid_defines.contains(&loc) {
       // Never error on an illegal define twice, since they might be visited multiple times.
-      self.error_set.report_collision_error(loc, name.as_str(heap));
-      self.invalid_defines.insert(loc.clone());
+      self.error_set.report_collision_error(loc, name.as_str(heap).to_string());
+      self.invalid_defines.insert(loc);
     }
-    self.def_locs.insert(loc.clone());
+    self.def_locs.insert(loc);
   }
 
-  fn use_id(&mut self, heap: &Heap, name: &PStr, loc: &Location) {
+  fn use_id(&mut self, heap: &Heap, name: &PStr, loc: Location) {
     if let Some(definition) = self.context.get(name) {
-      self.use_define_map.insert(loc.clone(), definition.clone());
+      self.use_define_map.insert(loc, *definition);
     } else {
       self.unbound_names.insert(*name);
-      self.error_set.report_unresolved_name_error(loc, name.as_str(heap));
+      self.error_set.report_unresolved_name_error(loc, name.as_str(heap).to_string());
     }
   }
 }
@@ -301,16 +303,18 @@ impl SsaAnalysisResult {
     format!(
       "Unbound names: [{}]\nInvalid defines: [{}]\nLambda Capture Locs: [{}]\ndef_to_use_map:\n{}",
       self.unbound_names.iter().map(|n| n.as_str(heap)).join(", "),
-      self.invalid_defines.iter().map(Location::to_string_without_file).sorted().join(", "),
-      self.lambda_captures.keys().map(|k| k.to_string_without_file()).sorted().join(", "),
+      self.invalid_defines.iter().map(Location::pretty_print_without_file).sorted().join(", "),
+      self.lambda_captures.keys().map(|k| k.pretty_print_without_file()).sorted().join(", "),
       self
         .def_to_use_map
         .iter()
-        .sorted_by(|(l1, _), (l2, _)| l1.to_string_without_file().cmp(&l2.to_string_without_file()))
+        .sorted_by(|(l1, _), (l2, _)| l1
+          .pretty_print_without_file()
+          .cmp(&l2.pretty_print_without_file()))
         .map(|(def_loc, uses)| format!(
           "{} -> [{}]",
-          def_loc.to_string_without_file(),
-          uses.iter().map(Location::to_string_without_file).sorted().join(", ")
+          def_loc.pretty_print_without_file(),
+          uses.iter().map(Location::pretty_print_without_file).sorted().join(", ")
         ))
         .join("\n")
     )
@@ -321,10 +325,10 @@ impl SsaAnalysisResult {
   fn from(state: SsaAnalysisState) -> SsaAnalysisResult {
     let mut def_to_use_map: HashMap<Location, Vec<Location>> = HashMap::new();
     for loc in state.def_locs {
-      def_to_use_map.insert(loc.clone(), vec![loc]);
+      def_to_use_map.insert(loc, vec![loc]);
     }
     for (use_loc, def_loc) in &state.use_define_map {
-      def_to_use_map.get_mut(def_loc).unwrap().push(use_loc.clone());
+      def_to_use_map.get_mut(def_loc).unwrap().push(*use_loc);
     }
     SsaAnalysisResult {
       unbound_names: state.unbound_names,

@@ -1,64 +1,98 @@
-use std::{
-  collections::{HashMap, HashSet},
-  fmt::Display,
-  hash::Hash,
-  ops::Deref,
-  rc::Rc,
-  time::Instant,
-};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum PStrInner {
-  Temp(u32),
-  Permanent(&'static str),
-}
+use itertools::Itertools;
+use std::{collections::HashMap, fmt::Display, hash::Hash, ops::Deref, rc::Rc, time::Instant};
 
 /// A string pointer free to be copied. However, we have to do GC manually.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct PStr(PStrInner);
+pub(crate) struct PStr(u32);
 
 impl PStr {
-  pub(crate) fn permanent(str: &'static str) -> PStr {
-    PStr(PStrInner::Permanent(str))
-  }
-
   pub(crate) fn as_str<'a>(&self, heap: &'a Heap) -> &'a str {
-    match &self.0 {
-      PStrInner::Temp(_) => {
-        if let Some(s) = heap.str_pointer_table.get(self) {
-          s
-        } else {
-          panic!("Use of freed string {:?}", self)
-        }
-      }
-      PStrInner::Permanent(s) => s,
+    if let Some(s) = heap.str_pointer_table.get(self) {
+      s
+    } else {
+      panic!("Use of freed string {:?}", self)
     }
   }
 }
 
-/// Users of the string heap is responsible for calling retain at appropriate places to do GC.
-pub(crate) struct Heap {
-  interned_str: HashMap<Rc<str>, PStr>,
-  str_pointer_table: HashMap<PStr, Rc<str>>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ModuleReference(u32);
+
+impl ModuleReference {
+  pub const fn root() -> ModuleReference {
+    ModuleReference(0)
+  }
+
+  pub(crate) const fn dummy() -> ModuleReference {
+    ModuleReference(2)
+  }
+
+  pub(crate) fn get_parts<'a>(&self, heap: &'a Heap) -> &'a Vec<PStr> {
+    if let Some(s) = heap.module_reference_pointer_table.get(self) {
+      s
+    } else {
+      panic!("Use of freed module reference {:?}", self)
+    }
+  }
+
+  pub fn pretty_print(&self, heap: &Heap) -> String {
+    self.get_parts(heap).iter().map(|p| p.as_str(heap)).join(".")
+  }
+
+  pub fn to_filename(&self, heap: &Heap) -> String {
+    self.get_parts(heap).iter().map(|p| p.as_str(heap)).join("/") + ".sam"
+  }
+
+  pub fn encoded(&self, heap: &Heap) -> String {
+    self
+      .get_parts(heap)
+      .iter()
+      .map(|it| it.as_str(heap).replace('-', "_"))
+      .collect::<Vec<String>>()
+      .join("$")
+  }
+}
+
+/// Users of the heap is responsible for calling retain at appropriate places to do GC.
+pub struct Heap {
+  interned_str: HashMap<Rc<String>, PStr>,
+  str_pointer_table: HashMap<PStr, Rc<String>>,
+  interned_module_reference: HashMap<Rc<Vec<PStr>>, ModuleReference>,
+  module_reference_pointer_table: HashMap<ModuleReference, Rc<Vec<PStr>>>,
   id: u32,
 }
 
 impl Heap {
-  pub(crate) fn new() -> Heap {
-    Heap { interned_str: HashMap::new(), str_pointer_table: HashMap::new(), id: 0 }
+  pub fn new() -> Heap {
+    let mut heap = Heap {
+      interned_str: HashMap::new(),
+      str_pointer_table: HashMap::new(),
+      interned_module_reference: HashMap::new(),
+      module_reference_pointer_table: HashMap::new(),
+      id: 0,
+    };
+    heap.alloc_module_reference(vec![]); // Root
+    let dummy_parts = vec![heap.alloc_str("__DUMMY__")];
+    let allocated_dummy = heap.alloc_module_reference(dummy_parts);
+    debug_assert!(ModuleReference::dummy() == allocated_dummy); // Dummy
+    heap
   }
 
   pub(crate) fn get_allocated_str_opt(&self, str: &str) -> Option<PStr> {
-    self.interned_str.get(&Rc::from(str)).cloned()
+    self.interned_str.get(&Rc::new(str.to_string())).cloned()
   }
 
-  pub(crate) fn alloc_str(&mut self, str: &str) -> PStr {
-    let rc_str = Rc::from(str);
+  pub(crate) fn alloc_str(&mut self, str: &'static str) -> PStr {
+    self.alloc_string(str.to_string())
+  }
+
+  pub(crate) fn alloc_string(&mut self, string: String) -> PStr {
+    let rc_str = Rc::new(string);
     if let Some(id) = self.interned_str.get(&rc_str) {
       *id
     } else {
       let id = self.id;
-      let p_str = PStr(PStrInner::Temp(id));
+      let p_str = PStr(id);
       self.interned_str.insert(rc_str.clone(), p_str);
       self.str_pointer_table.insert(p_str, rc_str);
       self.id += 1;
@@ -66,10 +100,42 @@ impl Heap {
     }
   }
 
-  pub(crate) fn retain(&mut self, retain_set: &HashSet<PStr>) {
-    self.str_pointer_table.retain(|p, _| retain_set.contains(p));
-    let str_retain_set = self.str_pointer_table.values().cloned().collect::<HashSet<_>>();
-    self.interned_str.retain(|p, _| str_retain_set.contains(p));
+  pub fn get_allocated_module_reference_opt(&self, parts: Vec<String>) -> Option<ModuleReference> {
+    let mut p_str_parts = vec![];
+    for part in &parts {
+      p_str_parts.push(self.get_allocated_str_opt(part)?);
+    }
+    self.interned_module_reference.get(&Rc::new(p_str_parts)).cloned()
+  }
+
+  pub(crate) fn alloc_module_reference(&mut self, parts: Vec<PStr>) -> ModuleReference {
+    let rc_parts = Rc::new(parts);
+    if let Some(id) = self.interned_module_reference.get(&rc_parts) {
+      *id
+    } else {
+      let id = self.id;
+      let mod_ref = ModuleReference(id);
+      self.interned_module_reference.insert(rc_parts.clone(), mod_ref);
+      self.module_reference_pointer_table.insert(mod_ref, rc_parts);
+      self.id += 1;
+      mod_ref
+    }
+  }
+
+  pub fn alloc_module_reference_from_string_vec(&mut self, parts: Vec<String>) -> ModuleReference {
+    let parts = parts.into_iter().map(|p| self.alloc_string(p)).collect_vec();
+    self.alloc_module_reference(parts)
+  }
+
+  pub(crate) fn alloc_dummy_module_reference(&mut self) -> ModuleReference {
+    let parts = vec![self.alloc_str("__DUMMY__")];
+    self.alloc_module_reference(parts)
+  }
+}
+
+impl Default for Heap {
+  fn default() -> Self {
+    Self::new()
   }
 }
 
@@ -193,9 +259,9 @@ impl<K: Clone + Eq + Hash, V: Clone> LocalStackedContext<K, V> {
 
 #[cfg(test)]
 mod tests {
-  use crate::common::PStr;
-
-  use super::{int_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext};
+  use super::{
+    int_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr,
+  };
   use itertools::Itertools;
   use std::{cmp::Ordering, collections::HashSet};
 
@@ -219,34 +285,55 @@ mod tests {
   }
 
   #[test]
-  fn p_str_tests() {
-    let mut heap = Heap::new();
+  fn heap_tests() {
+    let mut heap = Heap::default();
     let a1 = heap.alloc_str("a");
     let b = heap.alloc_str("b");
     let a2 = heap.alloc_str("a");
     assert!(heap.get_allocated_str_opt("a").is_some());
     assert!(heap.get_allocated_str_opt("d").is_none());
-    let c = PStr::permanent("c");
     assert!(!format!("{:?}", b).is_empty());
-    assert!(!format!("{:?}", c.0.clone()).is_empty());
     assert_eq!(a1.clone(), a2.clone());
     assert_ne!(a1, b);
     assert_ne!(a2, b);
     assert_eq!(Ordering::Equal, a1.cmp(&a2));
     assert_eq!(Some(Ordering::Equal), a1.partial_cmp(&a2));
-    heap.retain(&HashSet::from([a1, b]));
     a1.as_str(&heap);
     a2.as_str(&heap);
-    c.clone().as_str(&heap);
+    b.clone().as_str(&heap);
+
+    let ma1 = heap.alloc_module_reference_from_string_vec(vec!["a".to_string()]);
+    let mb = heap.alloc_module_reference_from_string_vec(vec!["b".to_string(), "d-c".to_string()]);
+    let ma2 = heap.alloc_module_reference_from_string_vec(vec!["a".to_string()]);
+    let m_dummy = heap.alloc_dummy_module_reference();
+    assert!(heap.get_allocated_module_reference_opt(vec!["a".to_string()]).is_some());
+    assert!(heap.get_allocated_module_reference_opt(vec!["d-c".to_string()]).is_none());
+    assert!(heap.get_allocated_module_reference_opt(vec!["ddasdasdas".to_string()]).is_none());
+    assert!(!format!("{:?}", mb).is_empty());
+    assert_eq!(ma1.clone(), ma2.clone());
+    assert_ne!(ma1, mb);
+    assert_ne!(ma2, mb);
+    assert_eq!(Ordering::Equal, ma1.cmp(&ma2));
+    assert_eq!(Some(Ordering::Equal), ma1.partial_cmp(&ma2));
+    assert_eq!("a", ma1.pretty_print(&heap));
+    assert_eq!("b/d-c.sam", mb.to_filename(&heap));
+    assert_eq!("b$d_c", mb.encoded(&heap));
+    assert_eq!("__DUMMY__", m_dummy.pretty_print(&heap));
+    mb.clone().pretty_print(&heap);
   }
 
   #[should_panic]
   #[test]
-  fn p_str_gc_panic() {
-    let mut heap = Heap::new();
-    let a = heap.alloc_str("a");
-    heap.retain(&HashSet::new());
-    a.as_str(&heap);
+  fn heap_str_crash() {
+    let heap = Heap::new();
+    PStr(0).as_str(&heap);
+  }
+
+  #[should_panic]
+  #[test]
+  fn heap_mod_ref_crash() {
+    let heap = Heap::new();
+    ModuleReference(1).pretty_print(&heap);
   }
 
   #[test]

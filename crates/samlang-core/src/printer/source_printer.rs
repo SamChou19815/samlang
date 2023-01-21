@@ -160,7 +160,6 @@ impl expr::E {
   fn create_doc_without_preceding_comment(&self, heap: &Heap) -> Document {
     match self {
       expr::E::Literal(_, l) => Document::Text(rc_string(l.pretty_print(heap))),
-      expr::E::This(_) => Document::Text(rcs("this")),
       expr::E::Id(_, id) => Document::Text(rc_pstr(heap, id.name)),
       expr::E::ClassFn(e) => Self::create_doc_for_dotted_expr(
         heap,
@@ -499,8 +498,10 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module) -> Documen
     documents.push(braces_surrounded_doc(comma_sep_list(&import.imported_members, |m| {
       Document::Text(rc_pstr(heap, m.name))
     })));
-    documents
-      .push(Document::Text(rc_string(format!(" from {}", import.imported_module.to_string()))));
+    documents.push(Document::Text(rc_string(format!(
+      " from {}",
+      import.imported_module.pretty_print(heap)
+    ))));
     documents.push(Document::LineHard);
   }
   if !module.imports.is_empty() {
@@ -522,11 +523,8 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module) -> Documen
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{
-      source::{expr, test_builder, Id},
-      ModuleReference,
-    },
-    common::{Heap, PStr},
+    ast::source::{expr, test_builder, Id},
+    common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
     printer::{prettier, pretty_print_source_module},
@@ -538,11 +536,11 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let e = parse_source_expression_from_text(
       source,
-      &ModuleReference::dummy(),
+      ModuleReference::dummy(),
       &mut heap,
       &mut error_set,
     );
-    assert!(error_set.error_messages().is_empty());
+    assert!(error_set.error_messages(&heap).is_empty());
     assert_eq!(expected, prettier::pretty_print(40, e.create_doc(&heap)).trim_end());
   }
 
@@ -550,8 +548,8 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let m =
-      parse_source_module_from_text(source, &ModuleReference::dummy(), &mut heap, &mut error_set);
-    assert!(error_set.error_messages().is_empty());
+      parse_source_module_from_text(source, ModuleReference::dummy(), &mut heap, &mut error_set);
+    assert!(error_set.error_messages(&heap).is_empty());
     assert_eq!(expected, format!("\n{}", pretty_print_source_module(&heap, 40, &m).trim_end()));
   }
 
@@ -603,7 +601,7 @@ Test /* b */ /* c */ .VariantName<T>(42)"#,
     assert_reprint_expr("foo.bar", "foo.bar");
 
     let builder = test_builder::create();
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     assert_eq!(
       "foo.bar",
       prettier::pretty_print(
@@ -611,8 +609,8 @@ Test /* b */ /* c */ .VariantName<T>(42)"#,
         expr::E::MethodAccess(expr::MethodAccess {
           common: builder.expr_common(builder.int_type()),
           type_arguments: vec![],
-          object: Box::new(builder.id_expr(PStr::permanent("foo"), builder.int_type())),
-          method_name: Id::from(PStr::permanent("bar"))
+          object: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
+          method_name: Id::from(heap.alloc_str("bar"))
         })
         .create_doc(&heap)
       )
@@ -625,8 +623,8 @@ Test /* b */ /* c */ .VariantName<T>(42)"#,
         expr::E::MethodAccess(expr::MethodAccess {
           common: builder.expr_common(builder.int_type()),
           type_arguments: vec![builder.int_type()],
-          object: Box::new(builder.id_expr(PStr::permanent("foo"), builder.int_type())),
-          method_name: Id::from(PStr::permanent("bar"))
+          object: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
+          method_name: Id::from(heap.alloc_str("bar"))
         })
         .create_doc(&heap)
       )

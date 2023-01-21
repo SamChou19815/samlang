@@ -22,31 +22,50 @@ mod utils {
     }
   }
 
-  pub(super) fn file_path_to_module_reference(
+  pub(super) fn file_path_to_module_reference_parts(
     absolute_source_path: &Path,
     absolute_file_path: &Path,
-  ) -> Option<samlang_core::ast::ModuleReference> {
+  ) -> Option<Vec<String>> {
     let relative_path = absolute_file_path.strip_prefix(absolute_source_path).ok()?;
     let mut relative_path_no_extension_chars = relative_path.to_str()?.chars().collect::<Vec<_>>();
     relative_path_no_extension_chars.pop(); // m
     relative_path_no_extension_chars.pop(); // a
     relative_path_no_extension_chars.pop(); // s
     relative_path_no_extension_chars.pop(); // .
-    Some(samlang_core::ast::ModuleReference::from_string_parts(
+    Some(
       relative_path_no_extension_chars
         .into_iter()
         .collect::<String>()
         .split(std::path::MAIN_SEPARATOR)
         .map(|part| part.to_string())
         .collect(),
-    ))
+    )
+  }
+
+  pub(super) fn file_path_to_module_reference_alloc(
+    heap: &mut samlang_core::Heap,
+    absolute_source_path: &Path,
+    absolute_file_path: &Path,
+  ) -> Option<samlang_core::ModuleReference> {
+    file_path_to_module_reference_parts(absolute_source_path, absolute_file_path)
+      .map(|parts| heap.alloc_module_reference_from_string_vec(parts))
+  }
+
+  pub(super) fn file_path_to_module_reference_read(
+    heap: &mut samlang_core::Heap,
+    absolute_source_path: &Path,
+    absolute_file_path: &Path,
+  ) -> Option<samlang_core::ModuleReference> {
+    file_path_to_module_reference_parts(absolute_source_path, absolute_file_path)
+      .and_then(|parts| heap.get_allocated_module_reference_opt(parts))
   }
 
   fn walk(
+    heap: &mut samlang_core::Heap,
     ignores: &Vec<String>,
     absolute_source_path: &Path,
     start_path: &Path,
-    sources: &mut Vec<(samlang_core::ast::ModuleReference, String)>,
+    sources: &mut Vec<(samlang_core::ModuleReference, String)>,
   ) {
     for ignore in ignores {
       if start_path
@@ -61,7 +80,7 @@ mod utils {
     }
     if start_path.is_file() && start_path.to_str().unwrap().ends_with(".sam") {
       if let (Some(mod_ref), Ok(src)) = (
-        file_path_to_module_reference(absolute_source_path, start_path),
+        file_path_to_module_reference_alloc(heap, absolute_source_path, start_path),
         fs::read_to_string(start_path),
       ) {
         sources.push((mod_ref, src));
@@ -69,7 +88,7 @@ mod utils {
     } else if start_path.is_dir() {
       if let Ok(read_dir_result) = fs::read_dir(start_path) {
         for entry in read_dir_result.into_iter().flatten() {
-          walk(ignores, absolute_source_path, entry.path().as_path(), sources);
+          walk(heap, ignores, absolute_source_path, entry.path().as_path(), sources);
         }
       }
     }
@@ -77,13 +96,14 @@ mod utils {
 
   pub(super) fn collect_sources(
     configuration: &configuration::ProjectConfiguration,
-  ) -> Vec<(samlang_core::ast::ModuleReference, String)> {
+    heap: &mut samlang_core::Heap,
+  ) -> Vec<(samlang_core::ModuleReference, String)> {
     let mut sources = vec![];
     if let Ok(absolute_source_path) =
       fs::canonicalize(PathBuf::from(configuration.source_directory.clone()))
     {
       let start_path = absolute_source_path.as_path();
-      walk(&configuration.ignores, start_path, start_path, &mut sources);
+      walk(heap, &configuration.ignores, start_path, start_path, &mut sources);
     }
     sources
   }
@@ -118,22 +138,65 @@ mod lsp {
 
   impl WrappedService {
     fn update(&mut self, absolute_source_path: &Path, url: &Url, source: String) {
-      self.0.update(convert_url_to_module_reference_helper(absolute_source_path, url), source)
+      let mod_ref = self.0.heap.alloc_module_reference_from_string_vec(
+        convert_url_to_module_reference_helper(absolute_source_path, url),
+      );
+      self.0.update(mod_ref, source);
+    }
+
+    fn get_diagnostics(&self, absolute_source_path: &Path) -> Vec<(Url, Vec<Diagnostic>)> {
+      let heap = &self.0.heap;
+      let mut collected = vec![];
+      for module_reference in self.0.all_modules() {
+        let url =
+          convert_module_reference_to_url_helper(heap, absolute_source_path, module_reference);
+        let diagnostics = self
+          .0
+          .get_errors(module_reference)
+          .iter()
+          .map(|e| Diagnostic {
+            range: samlang_loc_to_lsp_range(&e.location),
+            severity: Some(DiagnosticSeverity::ERROR),
+            message: e.pretty_print(heap),
+            source: Some("samlang".to_string()),
+            ..Default::default()
+          })
+          .collect::<Vec<_>>();
+        collected.push((url, diagnostics));
+      }
+      collected
     }
   }
 
-  fn convert_url_to_module_reference_helper(
+  fn convert_module_reference_to_url_helper(
+    heap: &samlang_core::Heap,
     absolute_source_path: &Path,
-    url: &Url,
-  ) -> samlang_core::ast::ModuleReference {
+    module_reference: &samlang_core::ModuleReference,
+  ) -> Url {
+    if let Ok(path) =
+      fs::canonicalize(absolute_source_path.join(PathBuf::from(module_reference.to_filename(heap))))
+    {
+      match Url::from_file_path(path) {
+        Ok(url) => url,
+        Err(_) => panic!("{}", module_reference.to_filename(heap)),
+      }
+    } else {
+      panic!("{}", module_reference.to_filename(heap))
+    }
+  }
+
+  fn convert_url_to_module_reference_helper(absolute_source_path: &Path, url: &Url) -> Vec<String> {
     let url_str = url.as_str();
     let url_protocol_stripped_str = PathBuf::from(if url_str.starts_with("file://") {
       url_str.chars().skip("file://".len()).collect::<String>()
     } else {
       url_str.to_string()
     });
-    utils::file_path_to_module_reference(absolute_source_path, url_protocol_stripped_str.as_path())
-      .unwrap()
+    utils::file_path_to_module_reference_parts(
+      absolute_source_path,
+      url_protocol_stripped_str.as_path(),
+    )
+    .unwrap()
   }
 
   unsafe impl Send for WrappedService {}
@@ -153,44 +216,30 @@ mod lsp {
       Backend { client, absolute_source_path, service: RwLock::new(WrappedService(service)) }
     }
 
-    fn convert_url_to_module_reference(&self, url: &Url) -> samlang_core::ast::ModuleReference {
-      convert_url_to_module_reference_helper(&self.absolute_source_path, url)
+    fn convert_url_to_module_reference(
+      &self,
+      heap: &samlang_core::Heap,
+      url: &Url,
+    ) -> samlang_core::ModuleReference {
+      heap
+        .get_allocated_module_reference_opt(convert_url_to_module_reference_helper(
+          &self.absolute_source_path,
+          url,
+        ))
+        .unwrap_or(samlang_core::ModuleReference::root())
     }
 
     fn convert_module_reference_to_url(
       &self,
-      module_reference: &samlang_core::ast::ModuleReference,
+      heap: &samlang_core::Heap,
+      module_reference: &samlang_core::ModuleReference,
     ) -> Url {
-      if let Ok(path) = fs::canonicalize(
-        self.absolute_source_path.join(PathBuf::from(module_reference.to_filename())),
-      ) {
-        match Url::from_file_path(path) {
-          Ok(url) => url,
-          Err(_) => panic!("{}", module_reference.to_filename()),
-        }
-      } else {
-        panic!("{}", module_reference.to_filename())
-      }
+      convert_module_reference_to_url_helper(heap, &self.absolute_source_path, module_reference)
     }
 
     async fn publish_diagnostics(&self) {
       let service = self.service.read().await;
-      let mut to_publish = vec![];
-      for module_reference in service.0.all_modules() {
-        let diagnostics = service
-          .0
-          .get_errors(module_reference)
-          .iter()
-          .map(|e| Diagnostic {
-            range: samlang_loc_to_lsp_range(&e.0),
-            severity: Some(DiagnosticSeverity::ERROR),
-            message: e.to_string(),
-            source: Some("samlang".to_string()),
-            ..Default::default()
-          })
-          .collect::<Vec<_>>();
-        to_publish.push((self.convert_module_reference_to_url(module_reference), diagnostics));
-      }
+      let to_publish = service.get_diagnostics(&self.absolute_source_path);
       for (url, diagnostics) in to_publish {
         self.client.publish_diagnostics(url, diagnostics, None).await;
       }
@@ -245,16 +294,16 @@ mod lsp {
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
       self.client.log_message(MessageType::INFO, "[lsp] hover").await;
+      let service = self.service.read().await;
+      let mod_ref = self.convert_url_to_module_reference(
+        &service.0.heap,
+        &params.text_document_position_params.text_document.uri,
+      );
       Ok(
-        self
-          .service
-          .read()
-          .await
+        service
           .0
           .query_for_hover(
-            &self.convert_url_to_module_reference(
-              &params.text_document_position_params.text_document.uri,
-            ),
+            &mod_ref,
             lsp_pos_to_samlang_pos(params.text_document_position_params.position),
           )
           .map(|samlang_core::services::api::TypeQueryResult { location, contents }| Hover {
@@ -279,21 +328,22 @@ mod lsp {
       params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
       self.client.log_message(MessageType::INFO, "[lsp] goto_definition").await;
+      let service = self.service.read().await;
+      let mod_ref = self.convert_url_to_module_reference(
+        &service.0.heap,
+        &params.text_document_position_params.text_document.uri,
+      );
       Ok(
-        self
-          .service
-          .read()
-          .await
+        service
           .0
           .query_definition_location(
-            &self.convert_url_to_module_reference(
-              &params.text_document_position_params.text_document.uri,
-            ),
+            &mod_ref,
             lsp_pos_to_samlang_pos(params.text_document_position_params.position),
           )
           .map(|location| {
             GotoDefinitionResponse::Scalar(Location {
-              uri: self.convert_module_reference_to_url(&location.module_reference),
+              uri: self
+                .convert_module_reference_to_url(&service.0.heap, &location.module_reference),
               range: samlang_loc_to_lsp_range(&location),
             })
           }),
@@ -302,40 +352,34 @@ mod lsp {
 
     async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
       self.client.log_message(MessageType::INFO, "[lsp] folding_range").await;
-      Ok(
-        self
-          .service
-          .read()
-          .await
-          .0
-          .query_folding_ranges(&self.convert_url_to_module_reference(&params.text_document.uri))
-          .map(|ranges| {
-            ranges
-              .into_iter()
-              .map(|location| FoldingRange {
-                start_line: location.start.0 as u32,
-                start_character: Some(location.start.1 as u32),
-                end_line: location.end.0 as u32,
-                end_character: Some(location.end.1 as u32),
-                kind: None,
-              })
-              .collect()
-          }),
-      )
+      let service = self.service.read().await;
+      let mod_ref =
+        self.convert_url_to_module_reference(&service.0.heap, &params.text_document.uri);
+      Ok(service.0.query_folding_ranges(&mod_ref).map(|ranges| {
+        ranges
+          .into_iter()
+          .map(|location| FoldingRange {
+            start_line: location.start.0 as u32,
+            start_character: Some(location.start.1 as u32),
+            end_line: location.end.0 as u32,
+            end_character: Some(location.end.1 as u32),
+            kind: None,
+          })
+          .collect()
+      }))
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
       self.client.log_message(MessageType::INFO, "[lsp] completion").await;
+      let service = self.service.read().await;
+      let mod_ref = self.convert_url_to_module_reference(
+        &service.0.heap,
+        &params.text_document_position.text_document.uri,
+      );
       Ok(Some(CompletionResponse::Array(
-        self
-          .service
-          .read()
-          .await
+        service
           .0
-          .auto_complete(
-            &self.convert_url_to_module_reference(&params.text_document_position.text_document.uri),
-            lsp_pos_to_samlang_pos(params.text_document_position.position),
-          )
+          .auto_complete(&mod_ref, lsp_pos_to_samlang_pos(params.text_document_position.position))
           .into_iter()
           .map(|item| CompletionItem {
             label: item.label,
@@ -358,14 +402,16 @@ mod lsp {
 
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
       self.client.log_message(MessageType::INFO, "[lsp] rename").await;
+      let mut service = self.service.write().await;
+      let mod_ref = self.convert_url_to_module_reference(
+        &service.0.heap,
+        &params.text_document_position.text_document.uri,
+      );
       Ok(
-        self
-          .service
-          .read()
-          .await
+        service
           .0
           .rename_variable(
-            &self.convert_url_to_module_reference(&params.text_document_position.text_document.uri),
+            &mod_ref,
             lsp_pos_to_samlang_pos(params.text_document_position.position),
             &params.new_name,
           )
@@ -385,13 +431,13 @@ mod lsp {
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
       self.client.log_message(MessageType::INFO, "[lsp] formatting").await;
+      let service = self.service.read().await;
+      let mod_ref =
+        self.convert_url_to_module_reference(&service.0.heap, &params.text_document.uri);
       Ok(
-        self
-          .service
-          .read()
-          .await
+        service
           .0
-          .format_entire_document(&self.convert_url_to_module_reference(&params.text_document.uri))
+          .format_entire_document(&mod_ref)
           .map(|new_text| vec![TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text }]),
       )
     }
@@ -407,10 +453,11 @@ mod runners {
       println!("samlang format: Format your codebase according to sconfig.json.")
     } else {
       let configuration = utils::get_configuration();
-      for (module_reference, source) in utils::collect_sources(&configuration) {
+      let heap = &mut samlang_core::Heap::new();
+      for (module_reference, source) in utils::collect_sources(&configuration, heap) {
         fs::write(
           PathBuf::from(configuration.source_directory.clone())
-            .join(module_reference.to_filename()),
+            .join(module_reference.to_filename(heap)),
           samlang_core::reformat_source(&source),
         )
         .unwrap();
@@ -420,11 +467,12 @@ mod runners {
 
   fn compile_single() {
     let configuration = utils::get_configuration();
+    let heap = &mut samlang_core::Heap::new();
     let entry_module_references = configuration
       .entry_points
       .iter()
       .map(|entry_point| {
-        samlang_core::ast::ModuleReference::from_string_parts(
+        heap.alloc_module_reference_from_string_vec(
           entry_point.split('.').map(|s| s.to_string()).collect(),
         )
       })
@@ -432,9 +480,10 @@ mod runners {
     let enable_profiling = std::env::var("PROFILE").is_ok();
     let collected_sources =
       samlang_core::measure_time(enable_profiling, "Collecting sources", || {
-        utils::collect_sources(&configuration)
+        utils::collect_sources(&configuration, heap)
       });
     match samlang_core::compile_sources(
+      heap,
       collected_sources,
       entry_module_references,
       enable_profiling,
@@ -479,8 +528,9 @@ mod runners {
       if let Ok(absolute_source_path) =
         fs::canonicalize(PathBuf::from(configuration.source_directory.clone()))
       {
-        let collected_sources = utils::collect_sources(&configuration);
-        let service = samlang_core::services::api::LanguageServices::new(collected_sources);
+        let mut heap = samlang_core::Heap::new();
+        let collected_sources = utils::collect_sources(&configuration, &mut heap);
+        let service = samlang_core::services::api::LanguageServices::new(heap, collected_sources);
         let (service, socket) =
           LspService::new(|client| lsp::Backend::new(client, absolute_source_path, service));
 

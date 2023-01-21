@@ -138,7 +138,6 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E) ->
       Literal::Int(i) => Value::Int(*i),
       Literal::String(s) => new_str(cx, s.as_str(heap).to_string()),
     },
-    expr::E::This(_) => *cx.local_values.get(&heap.alloc_str("this")).expect("Missing `this`"),
     expr::E::Id(_, id) => {
       *cx.local_values.get(&id.name).expect(&format!("Missing variable {}", id.name.as_str(heap)))
     }
@@ -487,10 +486,10 @@ mod tests {
   use crate::{
     ast::{
       source::{Id, InterfaceDeclarationCommon, Type},
-      Location, ModuleReference, Reason,
+      Location, Reason,
     },
     checker::type_check_single_module_source,
-    common::{rcs, Heap},
+    common::Heap,
     errors::ErrorSet,
     parser::parse_source_module_from_text,
   };
@@ -518,8 +517,8 @@ mod tests {
     }
   }
 
-  fn eval_expr_simple(expr: &expr::E) -> Value {
-    eval_expr(&mut empty_cx(), &mut Heap::new(), expr)
+  fn eval_expr_simple(heap: &mut Heap, expr: &expr::E) -> Value {
+    eval_expr(&mut empty_cx(), heap, expr)
   }
 
   #[test]
@@ -565,27 +564,32 @@ mod tests {
 
   #[test]
   fn literal_tests() {
+    let heap = &mut Heap::new();
     assert_eq!(
       Value::Int(1),
-      eval_expr_simple(&expr::E::Literal(dummy_expr_common(), Literal::Int(1)))
+      eval_expr_simple(heap, &expr::E::Literal(dummy_expr_common(), Literal::Int(1)))
     );
     assert_eq!(
       Value::Boolean(true),
-      eval_expr_simple(&expr::E::Literal(dummy_expr_common(), Literal::Bool(true)))
+      eval_expr_simple(heap, &expr::E::Literal(dummy_expr_common(), Literal::Bool(true)))
     );
-    eval_expr_simple(&expr::E::Literal(dummy_expr_common(), Literal::String(PStr::permanent("a"))));
+    let expr = expr::E::Literal(dummy_expr_common(), Literal::String(heap.alloc_str("a")));
+    eval_expr_simple(heap, &expr);
   }
 
   #[should_panic]
   #[test]
   fn this_panic_tests() {
-    eval_expr_simple(&expr::E::This(dummy_expr_common()));
+    let heap = &mut Heap::new();
+    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str("a")));
+    eval_expr_simple(heap, &expr);
   }
 
   #[should_panic]
   #[test]
   fn variable_panic_tests() {
-    eval_expr_simple(&expr::E::Id(dummy_expr_common(), Id::from(PStr::permanent("a"))));
+    let heap = &mut Heap::new();
+    eval_expr_simple(heap, &expr::E::Id(dummy_expr_common(), Id::from(Heap::new().alloc_str("a"))));
   }
 
   #[test]
@@ -594,7 +598,8 @@ mod tests {
     let mut heap = Heap::new();
     cx.local_values.insert(&heap.alloc_str("a"), Value::Int(1));
     cx.local_values.insert(&heap.alloc_str("this"), Value::Int(1));
-    assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr::E::This(dummy_expr_common())));
+    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str("this")));
+    assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
     let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str("a")));
     assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
   }
@@ -637,7 +642,7 @@ mod tests {
           Builtins.panic(\"\")
         }
       }"#,
-      &ModuleReference::ordinary(vec![rcs("Test")]),
+      heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]),
       &mut heap,
       &mut error_set,
     );
