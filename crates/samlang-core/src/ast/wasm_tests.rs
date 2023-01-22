@@ -1,31 +1,33 @@
 #[cfg(test)]
 mod tests {
   use super::super::wasm::*;
-  use crate::{ast::hir::Operator, common::rcs};
+  use crate::{ast::hir::Operator, common::Heap};
   use pretty_assertions::assert_eq;
 
   #[test]
   fn pretty_print_test() {
+    let heap = &mut Heap::new();
+
     let module = Module {
       function_type_parameter_counts: vec![0, 1, 2, 3],
       global_variables: vec![
         GlobalData { constant_pointer: 1024, ints: vec![0, 0] },
         GlobalData { constant_pointer: 323, ints: vec![3, 2] },
       ],
-      exported_functions: vec![rcs("main")],
+      exported_functions: vec![heap.alloc_str("main")],
       functions: vec![Function {
-        name: rcs("main"),
-        parameters: vec![rcs("a"), rcs("b")],
-        local_variables: vec![rcs("c"), rcs("d")],
+        name: heap.alloc_str("main"),
+        parameters: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+        local_variables: vec![heap.alloc_str("c"), heap.alloc_str("d")],
         instructions: vec![
           Instruction::IfElse {
             condition: InlineInstruction::Const(1),
             s1: vec![
               Instruction::Inline(InlineInstruction::Const(1)),
               Instruction::Inline(InlineInstruction::Drop(Box::new(InlineInstruction::Const(0)))),
-              Instruction::Inline(InlineInstruction::LocalGet(rcs("a"))),
+              Instruction::Inline(InlineInstruction::LocalGet(heap.alloc_str("a"))),
               Instruction::Inline(InlineInstruction::LocalSet(
-                rcs("b"),
+                heap.alloc_str("b"),
                 Box::new(InlineInstruction::Const(0)),
               )),
             ],
@@ -92,10 +94,10 @@ mod tests {
               )),
             ],
           },
-          Instruction::UnconditionalJump(rcs("aa")),
+          Instruction::UnconditionalJump(heap.alloc_str("aa")),
           Instruction::Loop {
-            continue_label: rcs("cl"),
-            exit_label: rcs("el"),
+            continue_label: heap.alloc_str("cl"),
+            exit_label: heap.alloc_str("el"),
             instructions: vec![
               Instruction::Inline(InlineInstruction::Load {
                 index: 0,
@@ -116,12 +118,12 @@ mod tests {
                 assigned: Box::new(InlineInstruction::Const(0)),
               }),
               Instruction::Inline(InlineInstruction::DirectCall(
-                rcs("main"),
+                heap.alloc_str("main"),
                 vec![InlineInstruction::Const(0)],
               )),
               Instruction::Inline(InlineInstruction::IndirectCall {
                 function_index: Box::new(InlineInstruction::Const(0)),
-                type_string: rcs("dff"),
+                type_string: heap.alloc_str("dff"),
                 arguments: vec![InlineInstruction::Const(0)],
               }),
             ],
@@ -181,6 +183,6 @@ mod tests {
 )
 (export "main" (func $main))
 "#;
-    assert_eq!(expected, module.pretty_print());
+    assert_eq!(expected, module.pretty_print(heap));
   }
 }

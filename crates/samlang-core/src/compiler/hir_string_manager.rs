@@ -1,17 +1,14 @@
-use crate::{
-  ast::hir::GlobalVariable,
-  common::{rc_string, Str},
-};
+use crate::{ast::hir::GlobalVariable, common::PStr, Heap};
 use std::collections::HashMap;
 
+// TODO: move this to global variable since heap allows us to provide a better API
 pub(super) struct StringManager {
-  next_global_variable_id: i32,
-  global_variable_reference_map: HashMap<String, GlobalVariable>,
+  global_variable_reference_map: HashMap<PStr, GlobalVariable>,
 }
 
 impl StringManager {
   pub(super) fn new() -> StringManager {
-    StringManager { next_global_variable_id: 0, global_variable_reference_map: HashMap::new() }
+    StringManager { global_variable_reference_map: HashMap::new() }
   }
 
   pub(super) fn all_global_variables(self) -> Vec<GlobalVariable> {
@@ -22,17 +19,15 @@ impl StringManager {
     vars
   }
 
-  pub(super) fn allocate(&mut self, str: &Str) -> GlobalVariable {
-    let key = format!("STRING_CONTENT_{}", str);
-    if let Some(existing) = self.global_variable_reference_map.get(&key) {
-      existing.clone()
+  pub(super) fn allocate(&mut self, heap: &mut Heap, str: PStr) -> GlobalVariable {
+    if let Some(existing) = self.global_variable_reference_map.get(&str) {
+      *existing
     } else {
       let v = GlobalVariable {
-        name: rc_string(format!("GLOBAL_STRING_{}", self.next_global_variable_id)),
-        content: str.clone(),
+        name: heap.alloc_string(format!("GLOBAL_STRING_{}", str.opaque_id())),
+        content: str,
       };
-      self.next_global_variable_id += 1;
-      self.global_variable_reference_map.insert(key, v.clone());
+      self.global_variable_reference_map.insert(str, v);
       v
     }
   }
@@ -41,15 +36,18 @@ impl StringManager {
 #[cfg(test)]
 mod tests {
   use super::StringManager;
-  use crate::common::rcs;
+  use crate::Heap;
   use pretty_assertions::assert_eq;
 
   #[test]
   fn tests() {
+    let heap = &mut Heap::new();
     let mut s = StringManager::new();
-    assert_eq!(rcs("a"), s.allocate(&rcs("a")).content);
-    assert_eq!(rcs("b"), s.allocate(&rcs("b")).content);
-    assert_eq!(rcs("a"), s.allocate(&rcs("a")).content);
+    let a = heap.alloc_str("a");
+    let b = heap.alloc_str("b");
+    assert_eq!(a, s.allocate(heap, a).content);
+    assert_eq!(b, s.allocate(heap, b).content);
+    assert_eq!(a, s.allocate(heap, a).content);
     assert_eq!(2, s.all_global_variables().len());
   }
 }

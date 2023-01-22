@@ -1,30 +1,30 @@
 use crate::{
   ast::mir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type},
-  common::Str,
+  common::PStr,
 };
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 
-fn collect_for_type_set(type_: &Type, type_set: &mut HashSet<Str>) {
+fn collect_for_type_set(type_: &Type, type_set: &mut HashSet<PStr>) {
   if let Type::Id(n) = type_ {
-    type_set.insert(n.clone());
+    type_set.insert(*n);
   }
 }
 
 fn collect_used_names_from_expression(
-  name_set: &mut HashSet<Str>,
-  type_set: &mut HashSet<Str>,
+  name_set: &mut HashSet<PStr>,
+  type_set: &mut HashSet<PStr>,
   expression: &Expression,
 ) {
   if let Expression::Name(n, _) = expression {
-    name_set.insert(n.clone());
+    name_set.insert(*n);
   }
   collect_for_type_set(expression.type_(), type_set);
 }
 
 fn collect_used_names_from_statement(
-  name_set: &mut HashSet<Str>,
-  type_set: &mut HashSet<Str>,
+  name_set: &mut HashSet<PStr>,
+  type_set: &mut HashSet<PStr>,
   statement: &Statement,
 ) {
   match statement {
@@ -88,8 +88,8 @@ fn collect_used_names_from_statement(
 }
 
 fn collect_used_names_from_statements(
-  name_set: &mut HashSet<Str>,
-  type_set: &mut HashSet<Str>,
+  name_set: &mut HashSet<PStr>,
+  type_set: &mut HashSet<PStr>,
   statements: &Vec<Statement>,
 ) {
   for s in statements {
@@ -97,7 +97,9 @@ fn collect_used_names_from_statements(
   }
 }
 
-fn get_other_functions_used_by_given_function(function: &Function) -> (HashSet<Str>, HashSet<Str>) {
+fn get_other_functions_used_by_given_function(
+  function: &Function,
+) -> (HashSet<PStr>, HashSet<PStr>) {
   let mut name_set = HashSet::new();
   let mut type_set = HashSet::new();
   collect_used_names_from_statements(&mut name_set, &mut type_set, &function.body);
@@ -112,11 +114,11 @@ fn get_other_functions_used_by_given_function(function: &Function) -> (HashSet<S
 
 fn analyze_used_function_names_and_type_names(
   functions: &Vec<Function>,
-  entry_points: &[Str],
-) -> (HashSet<Str>, HashSet<Str>) {
+  entry_points: &[PStr],
+) -> (HashSet<PStr>, HashSet<PStr>) {
   let mut used_functions_map = HashMap::new();
   for f in functions {
-    used_functions_map.insert(f.name.clone(), get_other_functions_used_by_given_function(f));
+    used_functions_map.insert(f.name, get_other_functions_used_by_given_function(f));
   }
 
   let mut used_names: HashSet<_> = entry_points.iter().cloned().collect();
@@ -126,8 +128,8 @@ fn analyze_used_function_names_and_type_names(
     if let Some((used_by_this_function, _)) = used_functions_map.get(&fn_name) {
       for used_fn in used_by_this_function {
         if !used_names.contains(used_fn) {
-          used_names.insert(used_fn.clone());
-          stack.push(used_fn.clone());
+          used_names.insert(*used_fn);
+          stack.push(*used_fn);
         }
       }
     }
@@ -137,7 +139,7 @@ fn analyze_used_function_names_and_type_names(
   for used_name in &used_names {
     if let Some((_, types)) = used_functions_map.get(used_name) {
       for t in types {
-        used_types.insert(t.clone());
+        used_types.insert(*t);
       }
     }
   }
@@ -174,30 +176,32 @@ mod tests {
         INT_TYPE, ZERO,
       },
     },
-    common::rcs,
+    Heap,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
 
   #[test]
   fn integration_test() {
+    let heap = &mut Heap::new();
+
     let optimized = super::optimize_mir_sources_by_eliminating_unused_ones(Sources {
       global_variables: vec![
-        GlobalVariable { name: rcs("bar"), content: rcs("fff") },
-        GlobalVariable { name: rcs("fsdfsdf"), content: rcs("fff") },
+        GlobalVariable { name: heap.alloc_str("bar"), content: heap.alloc_str("fff") },
+        GlobalVariable { name: heap.alloc_str("fsdfsdf"), content: heap.alloc_str("fff") },
       ],
       type_definitions: vec![
-        TypeDefinition { name: rcs("Foo"), mappings: vec![INT_TYPE] },
-        TypeDefinition { name: rcs("Baz"), mappings: vec![INT_TYPE] },
+        TypeDefinition { name: heap.alloc_str("Foo"), mappings: vec![INT_TYPE] },
+        TypeDefinition { name: heap.alloc_str("Baz"), mappings: vec![INT_TYPE] },
       ],
-      main_function_names: vec![rcs("main")],
+      main_function_names: vec![heap.alloc_str("main")],
       functions: vec![
         Function {
-          name: rcs("main"),
+          name: heap.alloc_str("main"),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
-            callee: Expression::Name(rcs("foo"), Type::Id(rcs("Foo"))),
+            callee: Expression::Name(heap.alloc_str("foo"), Type::Id(heap.alloc_str("Foo"))),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: None,
@@ -205,51 +209,51 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: rcs("foo"),
+          name: heap.alloc_str("foo"),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::Cast {
-              name: rcs(""),
+              name: heap.alloc_str(""),
               type_: INT_TYPE,
-              assigned_expression: Expression::Name(rcs("bar"), INT_TYPE),
+              assigned_expression: Expression::Name(heap.alloc_str("bar"), INT_TYPE),
             },
             Statement::StructInit {
-              struct_variable_name: rcs(""),
+              struct_variable_name: heap.alloc_str(""),
               type_: INT_TYPE,
-              expression_list: vec![Expression::Name(rcs("bar"), INT_TYPE)],
+              expression_list: vec![Expression::Name(heap.alloc_str("bar"), INT_TYPE)],
             },
             Statement::IndexedAccess {
-              name: rcs(""),
+              name: heap.alloc_str(""),
               type_: INT_TYPE,
-              pointer_expression: Expression::Name(rcs("bar"), INT_TYPE),
+              pointer_expression: Expression::Name(heap.alloc_str("bar"), INT_TYPE),
               index: 0,
             },
             Statement::IndexedAssign {
               assigned_expression: ZERO,
-              pointer_expression: Expression::Name(rcs("bar"), INT_TYPE),
+              pointer_expression: Expression::Name(heap.alloc_str("bar"), INT_TYPE),
               index: 0,
             },
             Statement::Call {
-              callee: Expression::Name(rcs("baz"), INT_TYPE),
-              arguments: vec![Expression::Name(rcs("haha"), INT_TYPE)],
+              callee: Expression::Name(heap.alloc_str("baz"), INT_TYPE),
+              arguments: vec![Expression::Name(heap.alloc_str("haha"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::binary(
-                "",
+                heap.alloc_str(""),
                 crate::ast::hir::Operator::GE,
-                Expression::Name(rcs("foo"), INT_TYPE),
-                Expression::Name(rcs("bar"), INT_TYPE),
+                Expression::Name(heap.alloc_str("foo"), INT_TYPE),
+                Expression::Name(heap.alloc_str("bar"), INT_TYPE),
               )],
               s2: vec![Statement::Cast {
-                name: rcs(""),
+                name: heap.alloc_str(""),
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               }],
-              final_assignments: vec![(rcs("fff"), INT_TYPE, ZERO, ZERO)],
+              final_assignments: vec![(heap.alloc_str("fff"), INT_TYPE, ZERO, ZERO)],
             },
             Statement::SingleIf {
               condition: ZERO,
@@ -258,23 +262,23 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: rcs("f"),
+                name: heap.alloc_str("f"),
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![],
-              break_collector: Some((rcs("d"), INT_TYPE)),
+              break_collector: Some((heap.alloc_str("d"), INT_TYPE)),
             },
           ],
-          return_value: Expression::Name(rcs("bar"), INT_TYPE),
+          return_value: Expression::Name(heap.alloc_str("bar"), INT_TYPE),
         },
         Function {
-          name: rcs("bar"),
+          name: heap.alloc_str("bar"),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
-            callee: Expression::Name(rcs("foo"), INT_TYPE),
+            callee: Expression::Name(heap.alloc_str("foo"), INT_TYPE),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: None,
@@ -282,7 +286,7 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: rcs("baz"),
+          name: heap.alloc_str("baz"),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![],
@@ -293,15 +297,15 @@ mod tests {
 
     assert_eq!(
       vec!["bar"],
-      optimized.global_variables.iter().map(|it| it.name.as_str()).collect_vec()
+      optimized.global_variables.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
     assert_eq!(
       vec!["Foo"],
-      optimized.type_definitions.iter().map(|it| it.name.as_str()).collect_vec()
+      optimized.type_definitions.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
     assert_eq!(
       vec!["main", "foo", "bar", "baz"],
-      optimized.functions.iter().map(|it| it.name.as_str()).collect_vec()
+      optimized.functions.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
   }
 }

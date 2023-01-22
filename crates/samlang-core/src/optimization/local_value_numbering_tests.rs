@@ -5,15 +5,20 @@ mod tests {
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, BOOL_TYPE, FALSE, INT_TYPE, ONE, TRUE, ZERO,
     },
-    common::rcs,
+    common::Heap,
     optimization::local_value_numbering,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
 
-  fn assert_correctly_optimized(stmts: Vec<Statement>, return_value: Expression, expected: &str) {
+  fn assert_correctly_optimized(
+    stmts: Vec<Statement>,
+    return_value: Expression,
+    heap: &mut Heap,
+    expected: &str,
+  ) {
     let Function { body, return_value, .. } = local_value_numbering::optimize_function(Function {
-      name: rcs(""),
+      name: heap.alloc_str(""),
       parameters: vec![],
       type_parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -22,82 +27,88 @@ mod tests {
     });
     let actual = format!(
       "{}\nreturn {};",
-      body.iter().map(Statement::debug_print).join("\n"),
-      return_value.debug_print()
+      body.iter().map(|s| s.debug_print(heap)).join("\n"),
+      return_value.debug_print(heap)
     );
     assert_eq!(expected, actual);
   }
 
   #[test]
   fn simple_statements_tests() {
+    let heap = &mut Heap::new();
+
     assert_correctly_optimized(
       vec![
         Statement::IndexedAccess {
-          name: rcs("i0"),
+          name: heap.alloc_str("i0"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("a", INT_TYPE),
+          pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
           index: 2,
         },
         Statement::IndexedAccess {
-          name: rcs("i1"),
+          name: heap.alloc_str("i1"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("a", INT_TYPE),
+          pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
           index: 2,
         },
         Statement::binary(
-          "b0",
+          heap.alloc_str("b0"),
           Operator::PLUS,
-          Expression::var_name("i0", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i0"), INT_TYPE),
           Expression::int(3),
         ),
         Statement::binary(
-          "b1",
+          heap.alloc_str("b1"),
           Operator::PLUS,
-          Expression::var_name("i0", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i0"), INT_TYPE),
           Expression::int(3),
         ),
         Statement::binary(
-          "b3",
+          heap.alloc_str("b3"),
           Operator::PLUS,
-          Expression::var_name("i1", INT_TYPE),
-          Expression::var_name("b1", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i1"), INT_TYPE),
+          Expression::var_name(heap.alloc_str("b1"), INT_TYPE),
         ),
         Statement::StructInit {
-          struct_variable_name: rcs("s"),
-          type_: Type::new_id_no_targs_unwrapped("S"),
+          struct_variable_name: heap.alloc_str("s"),
+          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("S")),
           expression_list: vec![
-            Expression::var_name("i1", INT_TYPE),
-            Expression::var_name("b1", INT_TYPE),
-            Expression::var_name("b3", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i1"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("b1"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("b3"), INT_TYPE),
           ],
         },
         Statement::ClosureInit {
-          closure_variable_name: rcs("s"),
-          closure_type: Type::new_id_no_targs_unwrapped("S"),
-          function_name: FunctionName::new("a", Type::new_fn_unwrapped(vec![], INT_TYPE)),
+          closure_variable_name: heap.alloc_str("s"),
+          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str("S")),
+          function_name: FunctionName::new(
+            heap.alloc_str("a"),
+            Type::new_fn_unwrapped(vec![], INT_TYPE),
+          ),
           context: ZERO,
         },
         Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
-            "fff",
+            heap.alloc_str("fff"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           )),
           arguments: vec![
-            Expression::var_name("i1", INT_TYPE),
-            Expression::var_name("b1", INT_TYPE),
-            Expression::var_name("b3", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i1"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("b1"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("b3"), INT_TYPE),
           ],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::Call {
-          callee: Callee::Variable(VariableName::new("fff", INT_TYPE)),
+          callee: Callee::Variable(VariableName::new(heap.alloc_str("fff"), INT_TYPE)),
           arguments: vec![],
           return_type: INT_TYPE,
           return_collector: None,
         },
       ],
-      Expression::var_name("ss", INT_TYPE),
+      Expression::var_name(heap.alloc_str("ss"), INT_TYPE),
+      heap,
       r#"let i0: int = (a: int)[2];
 let b0: int = (i0: int) + 3;
 let b3: int = (i0: int) + (b0: int);
@@ -111,54 +122,57 @@ return (ss: int);"#,
 
   #[test]
   fn if_else_tests() {
+    let heap = &mut Heap::new();
+
     assert_correctly_optimized(
       vec![
         Statement::IndexedAccess {
-          name: rcs("i0"),
+          name: heap.alloc_str("i0"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("a", INT_TYPE),
+          pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
           index: 2,
         },
         Statement::IfElse {
           condition: ZERO,
           s1: vec![
             Statement::IndexedAccess {
-              name: rcs("i1"),
+              name: heap.alloc_str("i1"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("a", INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
               index: 2,
             },
             Statement::IndexedAccess {
-              name: rcs("i3"),
+              name: heap.alloc_str("i3"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("i1", INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str("i1"), INT_TYPE),
               index: 1,
             },
           ],
           s2: vec![
             Statement::IndexedAccess {
-              name: rcs("i2"),
+              name: heap.alloc_str("i2"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("a", INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
               index: 2,
             },
             Statement::IndexedAccess {
-              name: rcs("i4"),
+              name: heap.alloc_str("i4"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("i2", INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str("i2"), INT_TYPE),
               index: 1,
             },
           ],
           final_assignments: vec![],
         },
         Statement::IndexedAccess {
-          name: rcs("i5"),
+          name: heap.alloc_str("i5"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("i0", INT_TYPE),
+          pointer_expression: Expression::var_name(heap.alloc_str("i0"), INT_TYPE),
           index: 1,
         },
       ],
       ZERO,
+      heap,
       r#"let i0: int = (a: int)[2];
 if 0 {
   let i3: int = (i0: int)[1];
@@ -172,50 +186,51 @@ return 0;"#,
     assert_correctly_optimized(
       vec![
         Statement::IndexedAccess {
-          name: rcs("i0"),
+          name: heap.alloc_str("i0"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("a", INT_TYPE),
+          pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
           index: 2,
         },
         Statement::IfElse {
           condition: ZERO,
           s1: vec![
             Statement::IndexedAccess {
-              name: rcs("i1"),
+              name: heap.alloc_str("i1"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("a", INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
               index: 2,
             },
             Statement::IndexedAccess {
-              name: rcs("i3"),
+              name: heap.alloc_str("i3"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("i1", INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str("i1"), INT_TYPE),
               index: 1,
             },
           ],
           s2: vec![
             Statement::IndexedAccess {
-              name: rcs("i2"),
+              name: heap.alloc_str("i2"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("a", INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
               index: 2,
             },
             Statement::IndexedAccess {
-              name: rcs("i4"),
+              name: heap.alloc_str("i4"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("i2", INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str("i2"), INT_TYPE),
               index: 1,
             },
           ],
           final_assignments: vec![(
-            rcs("bar"),
+            heap.alloc_str("bar"),
             INT_TYPE,
-            Expression::var_name("i1", INT_TYPE),
-            Expression::var_name("i2", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i1"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("i2"), INT_TYPE),
           )],
         },
       ],
       ZERO,
+      heap,
       r#"let i0: int = (a: int)[2];
 let bar: int;
 if 0 {
@@ -231,32 +246,39 @@ return 0;"#,
 
   #[test]
   fn while_tests() {
+    let heap = &mut Heap::new();
+
     assert_correctly_optimized(
       vec![Statement::While {
         loop_variables: vec![GenenalLoopVariable {
-          name: rcs("n"),
+          name: heap.alloc_str("n"),
           type_: INT_TYPE,
           initial_value: Expression::int(10),
-          loop_value: Expression::var_name("_tmp_n", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("_tmp_n"), INT_TYPE),
         }],
         statements: vec![
-          Statement::binary("is_zero", Operator::EQ, Expression::var_name("n", INT_TYPE), ZERO),
+          Statement::binary(
+            heap.alloc_str("is_zero"),
+            Operator::EQ,
+            Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+            ZERO,
+          ),
           Statement::IfElse {
-            condition: Expression::var_name("is_zero", BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str("is_zero"), BOOL_TYPE),
             s1: vec![],
             s2: vec![Statement::binary(
-              "s2_n",
+              heap.alloc_str("s2_n"),
               Operator::MINUS,
-              Expression::var_name("n", INT_TYPE),
+              Expression::var_name(heap.alloc_str("n"), INT_TYPE),
               ONE,
             )],
             final_assignments: vec![
-              (rcs("c"), INT_TYPE, FALSE, TRUE),
+              (heap.alloc_str("c"), INT_TYPE, FALSE, TRUE),
               (
-                rcs("_tmp_n"),
+                heap.alloc_str("_tmp_n"),
                 INT_TYPE,
-                Expression::var_name("n", INT_TYPE),
-                Expression::var_name("s2_n", INT_TYPE),
+                Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+                Expression::var_name(heap.alloc_str("s2_n"), INT_TYPE),
               ),
             ],
           },
@@ -269,6 +291,7 @@ return 0;"#,
         break_collector: None,
       }],
       ZERO,
+      heap,
       r#"let n: int = 10;
 while (true) {
   let is_zero: bool = (n: int) == 0;
@@ -294,36 +317,42 @@ return 0;"#,
     assert_correctly_optimized(
       vec![Statement::While {
         loop_variables: vec![GenenalLoopVariable {
-          name: rcs("n"),
+          name: heap.alloc_str("n"),
           type_: INT_TYPE,
           initial_value: Expression::int(10),
-          loop_value: Expression::var_name("_tmp_n", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("_tmp_n"), INT_TYPE),
         }],
         statements: vec![
-          Statement::binary("is_zero", Operator::EQ, Expression::var_name("n", INT_TYPE), ZERO),
+          Statement::binary(
+            heap.alloc_str("is_zero"),
+            Operator::EQ,
+            Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+            ZERO,
+          ),
           Statement::IfElse {
-            condition: Expression::var_name("is_zero", BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str("is_zero"), BOOL_TYPE),
             s1: vec![],
             s2: vec![Statement::binary(
-              "s2_n",
+              heap.alloc_str("s2_n"),
               Operator::MINUS,
-              Expression::var_name("n", INT_TYPE),
+              Expression::var_name(heap.alloc_str("n"), INT_TYPE),
               ONE,
             )],
             final_assignments: vec![
-              (rcs("c"), INT_TYPE, FALSE, TRUE),
+              (heap.alloc_str("c"), INT_TYPE, FALSE, TRUE),
               (
-                rcs("_tmp_n"),
+                heap.alloc_str("_tmp_n"),
                 INT_TYPE,
-                Expression::var_name("n", INT_TYPE),
-                Expression::var_name("s2_n", INT_TYPE),
+                Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+                Expression::var_name(heap.alloc_str("s2_n"), INT_TYPE),
               ),
             ],
           },
         ],
-        break_collector: Some(VariableName { name: rcs("v"), type_: INT_TYPE }),
+        break_collector: Some(VariableName { name: heap.alloc_str("v"), type_: INT_TYPE }),
       }],
-      Expression::var_name("v", INT_TYPE),
+      Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+      heap,
       r#"let n: int = 10;
 let v: int;
 while (true) {

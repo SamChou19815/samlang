@@ -1,4 +1,4 @@
-use crate::common::{Heap, ModuleReference};
+use crate::common::{Heap, ModuleReference, PStr};
 
 pub(crate) fn encode_function_name_globally(
   heap: &Heap,
@@ -11,9 +11,9 @@ pub(crate) fn encode_function_name_globally(
 pub(crate) fn encode_samlang_type(
   heap: &Heap,
   module_reference: &ModuleReference,
-  identifier: &str,
+  identifier: PStr,
 ) -> String {
-  format!("{}_{}", module_reference.encoded(heap), identifier)
+  format!("{}_{}", module_reference.encoded(heap), identifier.as_str(heap))
 }
 pub(crate) fn encode_generic_function_name_globally(
   class_name: &str,
@@ -66,7 +66,8 @@ mod tests {
     let heap = &mut Heap::new();
     assert_eq!("$GENERICS$_T$bar", encode_generic_function_name_globally("T", "bar"));
 
-    assert_eq!("__DUMMY___T", encode_samlang_type(heap, &ModuleReference::dummy(), "T"));
+    let t = heap.alloc_str("T");
+    assert_eq!("__DUMMY___T", encode_samlang_type(heap, &ModuleReference::dummy(), t));
 
     assert_eq!("___DUMMY___Main$main", encode_main_function_name(heap, &ModuleReference::dummy()));
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()]);

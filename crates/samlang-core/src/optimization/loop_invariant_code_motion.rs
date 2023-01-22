@@ -1,6 +1,6 @@
 use crate::{
   ast::hir::{Expression, GenenalLoopVariable, Statement, VariableName},
-  common::Str,
+  common::PStr,
 };
 use std::collections::HashSet;
 
@@ -8,12 +8,12 @@ pub(super) struct LoopInvariantCodeMotionOptimizationResult {
   pub(super) hoisted_statements_before_while: Vec<Statement>,
   pub(super) optimized_while_statement:
     (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>),
-  pub(super) non_loop_invariant_variables: HashSet<Str>,
+  pub(super) non_loop_invariant_variables: HashSet<PStr>,
 }
 
 fn expression_is_loop_invariant(
   expr: &Expression,
-  non_loop_invariant_variables: &HashSet<Str>,
+  non_loop_invariant_variables: &HashSet<PStr>,
 ) -> bool {
   expr.as_variable().map(|v| !non_loop_invariant_variables.contains(&v.name)).unwrap_or(true)
 }
@@ -26,7 +26,7 @@ pub(super) fn optimize(
   ),
 ) -> LoopInvariantCodeMotionOptimizationResult {
   let mut non_loop_invariant_variables =
-    loop_variables.iter().map(|it| it.name.clone()).collect::<HashSet<_>>();
+    loop_variables.iter().map(|it| it.name).collect::<HashSet<_>>();
 
   let mut hoisted_stmts = vec![];
   let mut inner_stmts = vec![];
@@ -38,7 +38,7 @@ pub(super) fn optimize(
         {
           hoisted_stmts.push(Statement::Binary(b));
         } else {
-          non_loop_invariant_variables.insert(b.name.clone());
+          non_loop_invariant_variables.insert(b.name);
           inner_stmts.push(Statement::Binary(b));
         }
       }
@@ -46,7 +46,7 @@ pub(super) fn optimize(
         if expression_is_loop_invariant(&pointer_expression, &non_loop_invariant_variables) {
           hoisted_stmts.push(Statement::IndexedAccess { name, type_, pointer_expression, index });
         } else {
-          non_loop_invariant_variables.insert(name.clone());
+          non_loop_invariant_variables.insert(name);
           inner_stmts.push(Statement::IndexedAccess { name, type_, pointer_expression, index });
         }
       }
@@ -61,7 +61,7 @@ pub(super) fn optimize(
             expression_list,
           });
         } else {
-          non_loop_invariant_variables.insert(struct_variable_name.clone());
+          non_loop_invariant_variables.insert(struct_variable_name);
           inner_stmts.push(Statement::StructInit { struct_variable_name, type_, expression_list });
         }
       }
@@ -74,7 +74,7 @@ pub(super) fn optimize(
             context,
           });
         } else {
-          non_loop_invariant_variables.insert(closure_variable_name.clone());
+          non_loop_invariant_variables.insert(closure_variable_name);
           inner_stmts.push(Statement::ClosureInit {
             closure_variable_name,
             closure_type,
@@ -85,13 +85,13 @@ pub(super) fn optimize(
       }
       Statement::Call { callee, arguments, return_type, return_collector } => {
         if let Some(c) = &return_collector {
-          non_loop_invariant_variables.insert(c.clone());
+          non_loop_invariant_variables.insert(*c);
         }
         inner_stmts.push(Statement::Call { callee, arguments, return_type, return_collector });
       }
       Statement::IfElse { condition, s1, s2, final_assignments } => {
         for (n, _, _, _) in &final_assignments {
-          non_loop_invariant_variables.insert(n.clone());
+          non_loop_invariant_variables.insert(*n);
         }
         inner_stmts.push(Statement::IfElse { condition, s1, s2, final_assignments });
       }
@@ -100,7 +100,7 @@ pub(super) fn optimize(
       }
       Statement::While { loop_variables, statements, break_collector } => {
         if let Some(v) = &break_collector {
-          non_loop_invariant_variables.insert(v.name.clone());
+          non_loop_invariant_variables.insert(v.name);
         }
         inner_stmts.push(Statement::While { loop_variables, statements, break_collector });
       }
@@ -121,13 +121,15 @@ mod tests {
       Callee, Expression, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, BOOL_TYPE, INT_TYPE, ONE, ZERO,
     },
-    common::rcs,
+    Heap,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
 
   #[test]
   fn integration_test() {
+    let heap = &mut Heap::new();
+
     let super::LoopInvariantCodeMotionOptimizationResult {
       hoisted_statements_before_while,
       optimized_while_statement: (loop_variables, inner_stmts, break_collector),
@@ -135,152 +137,168 @@ mod tests {
     } = super::optimize((
       vec![
         GenenalLoopVariable {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_i", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: rcs("j"),
+          name: heap.alloc_str("j"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_j", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_j"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: rcs("x"),
+          name: heap.alloc_str("x"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_x", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_x"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: rcs("y"),
+          name: heap.alloc_str("y"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_y", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_y"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: rcs("z"),
+          name: heap.alloc_str("z"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_z", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_z"), INT_TYPE),
         },
       ],
       vec![
-        Statement::binary("cc", Operator::LT, Expression::var_name("i", INT_TYPE), ZERO),
+        Statement::binary(
+          heap.alloc_str("cc"),
+          Operator::LT,
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+          ZERO,
+        ),
         Statement::SingleIf {
-          condition: Expression::var_name("cc", BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str("cc"), BOOL_TYPE),
           invert_condition: false,
           statements: vec![Statement::Break(ZERO)],
         },
-        Statement::binary("tmp_i", Operator::PLUS, Expression::var_name("i", INT_TYPE), ONE),
         Statement::binary(
-          "tmp_j",
+          heap.alloc_str("tmp_i"),
           Operator::PLUS,
-          Expression::var_name("j", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+          ONE,
+        ),
+        Statement::binary(
+          heap.alloc_str("tmp_j"),
+          Operator::PLUS,
+          Expression::var_name(heap.alloc_str("j"), INT_TYPE),
           Expression::int(3),
         ),
         Statement::binary(
-          "tmp_x",
+          heap.alloc_str("tmp_x"),
           Operator::MUL,
-          Expression::var_name("i", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
           Expression::int(5),
         ),
         Statement::binary(
-          "tmp_y",
+          heap.alloc_str("tmp_y"),
           Operator::PLUS,
-          Expression::var_name("tmp_x", INT_TYPE),
+          Expression::var_name(heap.alloc_str("tmp_x"), INT_TYPE),
           Expression::int(6),
         ),
         Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
-            "f",
+            heap.alloc_str("f"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           )),
-          arguments: vec![Expression::var_name("tmp_x", INT_TYPE)],
+          arguments: vec![Expression::var_name(heap.alloc_str("tmp_x"), INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
-            "f",
+            heap.alloc_str("f"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           )),
-          arguments: vec![Expression::var_name("tmp_x", INT_TYPE)],
+          arguments: vec![Expression::var_name(heap.alloc_str("tmp_x"), INT_TYPE)],
           return_type: INT_TYPE,
-          return_collector: Some(rcs("fc")),
+          return_collector: Some(heap.alloc_str("fc")),
         },
         Statement::binary(
-          "tmp_z",
+          heap.alloc_str("tmp_z"),
           Operator::PLUS,
-          Expression::var_name("tmp_x", INT_TYPE),
-          Expression::var_name("tmp_y", INT_TYPE),
+          Expression::var_name(heap.alloc_str("tmp_x"), INT_TYPE),
+          Expression::var_name(heap.alloc_str("tmp_y"), INT_TYPE),
         ),
         Statement::binary(
-          "c",
+          heap.alloc_str("c"),
           Operator::MINUS,
-          Expression::var_name("a", INT_TYPE),
-          Expression::var_name("b", INT_TYPE),
+          Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+          Expression::var_name(heap.alloc_str("b"), INT_TYPE),
         ),
         Statement::IndexedAccess {
-          name: rcs("d"),
+          name: heap.alloc_str("d"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("c", INT_TYPE),
+          pointer_expression: Expression::var_name(heap.alloc_str("c"), INT_TYPE),
           index: 0,
         },
         Statement::IndexedAccess {
-          name: rcs("e"),
+          name: heap.alloc_str("e"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("x", INT_TYPE),
+          pointer_expression: Expression::var_name(heap.alloc_str("x"), INT_TYPE),
           index: 0,
         },
         Statement::binary(
-          "f",
+          heap.alloc_str("f"),
           Operator::PLUS,
-          Expression::var_name("b", INT_TYPE),
-          Expression::var_name("x", INT_TYPE),
+          Expression::var_name(heap.alloc_str("b"), INT_TYPE),
+          Expression::var_name(heap.alloc_str("x"), INT_TYPE),
         ),
         Statement::ClosureInit {
-          closure_variable_name: rcs("g"),
-          closure_type: Type::new_id_no_targs_unwrapped("I"),
-          function_name: FunctionName::new("f", Type::new_fn_unwrapped(vec![], INT_TYPE)),
-          context: Expression::var_name("x", INT_TYPE),
+          closure_variable_name: heap.alloc_str("g"),
+          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str("I")),
+          function_name: FunctionName::new(
+            heap.alloc_str("f"),
+            Type::new_fn_unwrapped(vec![], INT_TYPE),
+          ),
+          context: Expression::var_name(heap.alloc_str("x"), INT_TYPE),
         },
         Statement::ClosureInit {
-          closure_variable_name: rcs("h"),
-          closure_type: Type::new_id_no_targs_unwrapped("I"),
-          function_name: FunctionName::new("f", Type::new_fn_unwrapped(vec![], INT_TYPE)),
-          context: Expression::var_name("d", INT_TYPE),
+          closure_variable_name: heap.alloc_str("h"),
+          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str("I")),
+          function_name: FunctionName::new(
+            heap.alloc_str("f"),
+            Type::new_fn_unwrapped(vec![], INT_TYPE),
+          ),
+          context: Expression::var_name(heap.alloc_str("d"), INT_TYPE),
         },
         Statement::StructInit {
-          struct_variable_name: rcs("kk"),
-          type_: Type::new_id_no_targs_unwrapped("I"),
+          struct_variable_name: heap.alloc_str("kk"),
+          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("I")),
           expression_list: vec![ZERO],
         },
         Statement::StructInit {
-          struct_variable_name: rcs("kk2"),
-          type_: Type::new_id_no_targs_unwrapped("I"),
-          expression_list: vec![Expression::var_name("g", INT_TYPE)],
+          struct_variable_name: heap.alloc_str("kk2"),
+          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("I")),
+          expression_list: vec![Expression::var_name(heap.alloc_str("g"), INT_TYPE)],
         },
         Statement::IfElse {
           condition: ZERO,
           s1: vec![],
           s2: vec![],
-          final_assignments: vec![(rcs("bad"), INT_TYPE, ZERO, ZERO)],
+          final_assignments: vec![(heap.alloc_str("bad"), INT_TYPE, ZERO, ZERO)],
         },
         Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
         Statement::While {
           loop_variables: vec![],
           statements: vec![],
-          break_collector: Some(VariableName::new("zzzz", INT_TYPE)),
+          break_collector: Some(VariableName::new(heap.alloc_str("zzzz"), INT_TYPE)),
         },
       ],
-      Some(VariableName::new("bc", INT_TYPE)),
+      Some(VariableName::new(heap.alloc_str("bc"), INT_TYPE)),
     ));
 
     let optimized_stmts = hoisted_statements_before_while
       .into_iter()
       .chain(vec![Statement::While { loop_variables, statements: inner_stmts, break_collector }])
-      .map(|s| s.debug_print())
+      .map(|s| s.debug_print(heap))
       .join("\n");
     assert_eq!(
       r#"let c: int = (a: int) - (b: int);
@@ -334,7 +352,7 @@ while (true) {
         "bad", "cc", "e", "f", "fc", "g", "i", "j", "kk2", "tmp_i", "tmp_j", "tmp_x", "tmp_y",
         "tmp_z", "x", "y", "z", "zzzz",
       ],
-      non_loop_invariant_variables.iter().map(|it| it.to_string()).sorted().collect_vec()
+      non_loop_invariant_variables.iter().map(|it| it.as_str(heap)).sorted().collect_vec()
     );
   }
 }

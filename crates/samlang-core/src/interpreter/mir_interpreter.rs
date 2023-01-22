@@ -4,16 +4,17 @@ use crate::{
     hir::Operator,
     mir::{Expression, Function, Sources, Statement, INT_TYPE},
   },
-  common::Str,
+  common::{Heap, PStr},
 };
 use std::collections::HashMap;
 
 struct Memory<'a> {
-  heap: &'a mut [u8],
+  heap: &'a mut Heap,
+  program_heap: &'a mut [u8],
   malloc_end: usize,
-  stacks: &'a mut Vec<HashMap<Str, i32>>,
+  stacks: &'a mut Vec<HashMap<PStr, i32>>,
   string_id_to_string: HashMap<i32, String>,
-  global_names_to_address: HashMap<Str, i32>,
+  global_names_to_address: HashMap<PStr, i32>,
   println_collector: Vec<String>,
 }
 
@@ -26,21 +27,21 @@ impl<'a> Memory<'a> {
     self.stacks.pop();
   }
 
-  fn read_from_stack(&self, name: &Str) -> i32 {
+  fn read_from_stack(&self, name: &PStr) -> i32 {
     *self.stacks.last().unwrap().get(name).unwrap_or(&0)
   }
 
-  fn write_to_stack(&mut self, name: Str, value: i32) {
+  fn write_to_stack(&mut self, name: PStr, value: i32) {
     self.stacks.last_mut().unwrap().insert(name, value);
   }
 
   fn read_from_heap(&self, address: i32) -> i32 {
     let offset = usize::try_from(address).expect(address.to_string().as_str());
     i32::from_be_bytes([
-      self.heap[offset],
-      self.heap[offset + 1],
-      self.heap[offset + 2],
-      self.heap[offset + 3],
+      self.program_heap[offset],
+      self.program_heap[offset + 1],
+      self.program_heap[offset + 2],
+      self.program_heap[offset + 3],
     ])
   }
 
@@ -54,7 +55,7 @@ impl<'a> Memory<'a> {
   }
 
   fn write_to_heap(&mut self, address: i32, value: i32) {
-    Self::write_int(self.heap, address, value);
+    Self::write_int(self.program_heap, address, value);
   }
 
   fn malloc(&mut self, size: usize) -> i32 {
@@ -70,7 +71,7 @@ impl<'a> Memory<'a> {
     self.write_to_heap(address - 4, 0);
     let offset = usize::try_from(address).unwrap();
     for i in 0..size {
-      self.heap[offset + i] = 0;
+      self.program_heap[offset + i] = 0;
     }
   }
 
@@ -93,7 +94,7 @@ fn eval_expr(mem: &mut Memory, expr: &Expression) -> i32 {
   match expr {
     Expression::IntLiteral(i, _) => *i,
     Expression::Variable(n, _) => mem.read_from_stack(n),
-    Expression::Name(n, _) => *mem.global_names_to_address.get(n).expect(n),
+    Expression::Name(n, _) => *mem.global_names_to_address.get(n).expect(n.as_str(mem.heap)),
   }
 }
 
@@ -124,12 +125,12 @@ fn eval_stmt(
         Operator::EQ => (v1 == v2) as i32,
         Operator::NE => (v1 != v2) as i32,
       };
-      mem.write_to_stack(name.clone(), v);
+      mem.write_to_stack(*name, v);
       Ok(())
     }
     Statement::IndexedAccess { name, type_: _, pointer_expression, index } => {
       let ptr = eval_expr(mem, pointer_expression) + i32::try_from(*index).unwrap() * 4;
-      mem.write_to_stack(name.clone(), mem.read_from_heap(ptr));
+      mem.write_to_stack(*name, mem.read_from_heap(ptr));
       Ok(())
     }
     Statement::IndexedAssign { assigned_expression, pointer_expression, index } => {
@@ -141,7 +142,7 @@ fn eval_stmt(
     Statement::Call { callee, arguments, return_type: _, return_collector } => {
       let v = eval_fun_call(mem, id_to_functions, callee, arguments);
       if let Some(n) = return_collector {
-        mem.write_to_stack(n.clone(), v);
+        mem.write_to_stack(*n, v);
       }
       Ok(())
     }
@@ -150,13 +151,13 @@ fn eval_stmt(
         eval_stmts(mem, id_to_functions, s1)?;
         for (n, _, e, _) in final_assignments {
           let v = eval_expr(mem, e);
-          mem.write_to_stack(n.clone(), v);
+          mem.write_to_stack(*n, v);
         }
       } else {
         eval_stmts(mem, id_to_functions, s2)?;
         for (n, _, _, e) in final_assignments {
           let v = eval_expr(mem, e);
-          mem.write_to_stack(n.clone(), v);
+          mem.write_to_stack(*n, v);
         }
       }
       Ok(())
@@ -171,19 +172,19 @@ fn eval_stmt(
     Statement::While { loop_variables, statements, break_collector } => {
       for var in loop_variables {
         let v = eval_expr(mem, &var.initial_value);
-        mem.write_to_stack(var.name.clone(), v);
+        mem.write_to_stack(var.name, v);
       }
       loop {
         match eval_stmts(mem, id_to_functions, statements) {
           Ok(_) => {
             for var in loop_variables {
               let v = eval_expr(mem, &var.loop_value);
-              mem.write_to_stack(var.name.clone(), v);
+              mem.write_to_stack(var.name, v);
             }
           }
           Err(v) => {
             if let Some((n, _)) = break_collector {
-              mem.write_to_stack(n.clone(), v);
+              mem.write_to_stack(*n, v);
             }
             return Ok(());
           }
@@ -192,7 +193,7 @@ fn eval_stmt(
     }
     Statement::Cast { name, type_: _, assigned_expression } => {
       let v = eval_expr(mem, assigned_expression);
-      mem.write_to_stack(name.clone(), v);
+      mem.write_to_stack(*name, v);
       Ok(())
     }
     Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
@@ -201,7 +202,7 @@ fn eval_stmt(
         let v = eval_expr(mem, expr);
         mem.write_to_heap(address + i32::try_from(i).unwrap() * 4, v);
       }
-      mem.write_to_stack(struct_variable_name.clone(), address);
+      mem.write_to_stack(*struct_variable_name, address);
       Ok(())
     }
   }
@@ -228,7 +229,7 @@ fn eval_fun_call(
   arguments: &[Expression],
 ) -> i32 {
   if let Expression::Name(s, _) = callee {
-    let name = s.to_string();
+    let name = s.as_str(mem.heap);
     if name.eq(&common_names::encoded_fn_name_free()) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 1);
@@ -264,7 +265,7 @@ fn eval_fun_call(
   mem.push_stack();
   let f = id_to_functions.get(&callee_v).unwrap();
   for (param, arg) in f.parameters.iter().zip(argument_vs) {
-    mem.write_to_stack(param.clone(), arg);
+    mem.write_to_stack(*param, arg);
   }
   eval_stmts(mem, id_to_functions, &f.body).unwrap();
   let v = eval_expr(mem, &f.return_value);
@@ -272,8 +273,8 @@ fn eval_fun_call(
   v
 }
 
-pub(super) fn run(sources: &Sources, main_function: Str) -> String {
-  let mut heap: [u8; 20000] = [0; 20000];
+pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: PStr) -> String {
+  let mut program_heap: [u8; 20000] = [0; 20000];
   let mut stack = vec![];
   let mut string_id_to_string = HashMap::new();
   let mut id_to_functions = HashMap::new();
@@ -282,18 +283,19 @@ pub(super) fn run(sources: &Sources, main_function: Str) -> String {
 
   for (string_id, v) in sources.global_variables.iter().enumerate() {
     let string_id = i32::try_from(string_id).unwrap();
-    string_id_to_string.insert(string_id, v.content.to_string());
-    Memory::write_int(&mut heap, global_name_id + 4, string_id);
-    global_names_to_address.insert(v.name.clone(), global_name_id);
+    string_id_to_string.insert(string_id, v.content.as_str(heap).to_string());
+    Memory::write_int(&mut program_heap, global_name_id + 4, string_id);
+    global_names_to_address.insert(v.name, global_name_id);
     global_name_id += 8;
   }
   for f in &sources.functions {
-    global_names_to_address.insert(f.name.clone(), global_name_id);
+    global_names_to_address.insert(f.name, global_name_id);
     id_to_functions.insert(global_name_id, f);
     global_name_id += 4;
   }
   let mut mem = Memory {
-    heap: &mut heap,
+    heap,
+    program_heap: &mut program_heap,
     malloc_end: usize::try_from(global_name_id).unwrap(),
     stacks: &mut stack,
     string_id_to_string,
@@ -321,74 +323,90 @@ mod tests {
         Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ONE, ZERO,
       },
     },
-    common::{rc_string, rcs},
+    common::Heap,
   };
   use pretty_assertions::assert_eq;
 
   #[should_panic]
   #[test]
   fn panic_test() {
-    super::run(
-      &Sources {
-        global_variables: vec![GlobalVariable { name: rcs("A"), content: rcs("Ouch") }],
-        type_definitions: vec![],
-        main_function_names: vec![],
-        functions: vec![Function {
-          name: rcs("main"),
-          parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-          body: vec![Statement::Call {
-            callee: Expression::Name(rc_string(common_names::encoded_fn_name_panic()), INT_TYPE),
-            arguments: vec![Expression::Variable(rcs("A"), INT_TYPE)],
-            return_type: INT_TYPE,
-            return_collector: None,
-          }],
-          return_value: ZERO,
+    let heap = &mut Heap::new();
+
+    let sources = Sources {
+      global_variables: vec![GlobalVariable {
+        name: heap.alloc_str("A"),
+        content: heap.alloc_str("Ouch"),
+      }],
+      type_definitions: vec![],
+      main_function_names: vec![],
+      functions: vec![Function {
+        name: heap.alloc_str("main"),
+        parameters: vec![],
+        type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        body: vec![Statement::Call {
+          callee: Expression::Name(
+            heap.alloc_string(common_names::encoded_fn_name_panic()),
+            INT_TYPE,
+          ),
+          arguments: vec![Expression::Variable(heap.alloc_str("A"), INT_TYPE)],
+          return_type: INT_TYPE,
+          return_collector: None,
         }],
-      },
-      rcs("main"),
-    );
+        return_value: ZERO,
+      }],
+    };
+    let main_fn = heap.alloc_str("main");
+
+    super::run(heap, &sources, main_fn);
   }
 
   fn assert_run_output(
     global_variables: Vec<GlobalVariable>,
     functions: Vec<Function>,
+    heap: &mut Heap,
     expected: &str,
   ) {
+    let fn_name = heap.alloc_str("main");
     let actual = super::run(
+      heap,
       &Sources {
         global_variables,
         type_definitions: vec![],
         main_function_names: vec![],
         functions,
       },
-      rcs("main"),
+      fn_name,
     );
     assert_eq!(expected, actual);
   }
 
   #[test]
   fn free_zero_test() {
+    let heap = &mut Heap::new();
+
     assert_run_output(
       vec![],
       vec![
         Function {
-          name: rcs("pp"),
-          parameters: vec![rcs("n")],
+          name: heap.alloc_str("pp"),
+          parameters: vec![heap.alloc_str("n")],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::Call {
               callee: Expression::Name(
-                rc_string(common_names::encoded_fn_name_int_to_string()),
+                heap.alloc_string(common_names::encoded_fn_name_int_to_string()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(rcs("n"), INT_TYPE)],
+              arguments: vec![Expression::Variable(heap.alloc_str("n"), INT_TYPE)],
               return_type: INT_TYPE,
-              return_collector: Some(rcs("s")),
+              return_collector: Some(heap.alloc_str("s")),
             },
             Statement::Call {
-              callee: Expression::Name(rc_string(common_names::encoded_fn_name_panic()), INT_TYPE),
-              arguments: vec![Expression::Variable(rcs("s"), INT_TYPE)],
+              callee: Expression::Name(
+                heap.alloc_string(common_names::encoded_fn_name_panic()),
+                INT_TYPE,
+              ),
+              arguments: vec![Expression::Variable(heap.alloc_str("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             },
@@ -396,49 +414,52 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: rcs("main"),
+          name: heap.alloc_str("main"),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::StructInit {
-              struct_variable_name: rcs("o"),
+              struct_variable_name: heap.alloc_str("o"),
               type_: INT_TYPE,
               expression_list: vec![ONE, ONE],
             },
             Statement::Call {
-              callee: Expression::Name(rc_string(common_names::encoded_fn_name_free()), INT_TYPE),
-              arguments: vec![Expression::Variable(rcs("o"), INT_TYPE)],
+              callee: Expression::Name(
+                heap.alloc_string(common_names::encoded_fn_name_free()),
+                INT_TYPE,
+              ),
+              arguments: vec![Expression::Variable(heap.alloc_str("o"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::IndexedAccess {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
-              pointer_expression: Expression::Variable(rcs("o"), INT_TYPE),
+              pointer_expression: Expression::Variable(heap.alloc_str("o"), INT_TYPE),
               index: 0,
             },
             Statement::SingleIf {
-              condition: Expression::Variable(rcs("v"), INT_TYPE),
+              condition: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
               invert_condition: false,
               statements: vec![Statement::Call {
-                callee: Expression::Name(rcs("pp"), INT_TYPE),
-                arguments: vec![Expression::Variable(rcs("v"), INT_TYPE)],
+                callee: Expression::Name(heap.alloc_str("pp"), INT_TYPE),
+                arguments: vec![Expression::Variable(heap.alloc_str("v"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
             },
             Statement::IndexedAccess {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
-              pointer_expression: Expression::Variable(rcs("o"), INT_TYPE),
+              pointer_expression: Expression::Variable(heap.alloc_str("o"), INT_TYPE),
               index: 1,
             },
             Statement::SingleIf {
-              condition: Expression::Variable(rcs("v"), INT_TYPE),
+              condition: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
               invert_condition: false,
               statements: vec![Statement::Call {
-                callee: Expression::Name(rcs("pp"), INT_TYPE),
-                arguments: vec![Expression::Variable(rcs("v"), INT_TYPE)],
+                callee: Expression::Name(heap.alloc_str("pp"), INT_TYPE),
+                arguments: vec![Expression::Variable(heap.alloc_str("v"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -447,179 +468,182 @@ mod tests {
           return_value: ZERO,
         },
       ],
+      heap,
       "",
     );
   }
 
   #[test]
   fn integration_test() {
+    let heap = &mut Heap::new();
+
     assert_run_output(
       vec![
-        GlobalVariable { name: rcs("A"), content: rcs("Hello ") },
-        GlobalVariable { name: rcs("B"), content: rcs("World!") },
+        GlobalVariable { name: heap.alloc_str("A"), content: heap.alloc_str("Hello ") },
+        GlobalVariable { name: heap.alloc_str("B"), content: heap.alloc_str("World!") },
       ],
       vec![
         Function {
-          name: rcs("_"),
-          parameters: vec![rcs("n")],
+          name: heap.alloc_str("_"),
+          parameters: vec![heap.alloc_str("n")],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![],
           return_value: ZERO,
         },
         Function {
-          name: rcs("printlnInt"),
-          parameters: vec![rcs("n")],
+          name: heap.alloc_str("printlnInt"),
+          parameters: vec![heap.alloc_str("n")],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::Call {
               callee: Expression::Name(
-                rc_string(common_names::encoded_fn_name_int_to_string()),
+                heap.alloc_string(common_names::encoded_fn_name_int_to_string()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(rcs("n"), INT_TYPE)],
+              arguments: vec![Expression::Variable(heap.alloc_str("n"), INT_TYPE)],
               return_type: INT_TYPE,
-              return_collector: Some(rcs("s")),
+              return_collector: Some(heap.alloc_str("s")),
             },
             Statement::Call {
               callee: Expression::Name(
-                rc_string(common_names::encoded_fn_name_string_to_int()),
+                heap.alloc_string(common_names::encoded_fn_name_string_to_int()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(rcs("s"), INT_TYPE)],
+              arguments: vec![Expression::Variable(heap.alloc_str("s"), INT_TYPE)],
               return_type: INT_TYPE,
-              return_collector: Some(rcs("s")),
+              return_collector: Some(heap.alloc_str("s")),
             },
             Statement::Call {
               callee: Expression::Name(
-                rc_string(common_names::encoded_fn_name_int_to_string()),
+                heap.alloc_string(common_names::encoded_fn_name_int_to_string()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(rcs("s"), INT_TYPE)],
+              arguments: vec![Expression::Variable(heap.alloc_str("s"), INT_TYPE)],
               return_type: INT_TYPE,
-              return_collector: Some(rcs("s")),
+              return_collector: Some(heap.alloc_str("s")),
             },
             Statement::Call {
               callee: Expression::Name(
-                rc_string(common_names::encoded_fn_name_println()),
+                heap.alloc_string(common_names::encoded_fn_name_println()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(rcs("s"), INT_TYPE)],
+              arguments: vec![Expression::Variable(heap.alloc_str("s"), INT_TYPE)],
               return_type: INT_TYPE,
-              return_collector: Some(rcs("r")),
+              return_collector: Some(heap.alloc_str("r")),
             },
           ],
-          return_value: Expression::Variable(rcs("r"), INT_TYPE),
+          return_value: Expression::Variable(heap.alloc_str("r"), INT_TYPE),
         },
         Function {
-          name: rcs("main"),
+          name: heap.alloc_str("main"),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::StructInit {
-              struct_variable_name: rcs("a"),
+              struct_variable_name: heap.alloc_str("a"),
               type_: INT_TYPE,
               expression_list: vec![ZERO, ZERO],
             },
             Statement::IndexedAccess {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
-              pointer_expression: Expression::Variable(rcs("a"), INT_TYPE),
+              pointer_expression: Expression::Variable(heap.alloc_str("a"), INT_TYPE),
               index: 0,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::PLUS,
-              e1: Expression::Variable(rcs("v"), INT_TYPE),
+              e1: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::MINUS,
-              e1: Expression::Variable(rcs("v"), INT_TYPE),
+              e1: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::MUL,
-              e1: Expression::Variable(rcs("v"), INT_TYPE),
+              e1: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::DIV,
-              e1: Expression::Variable(rcs("v"), INT_TYPE),
+              e1: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
               e2: ONE,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::MOD,
-              e1: Expression::Variable(rcs("v"), INT_TYPE),
+              e1: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
               e2: ONE,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::XOR,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::LT,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::LE,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::GT,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::GE,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::EQ,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::NE,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
-              name: rcs("v"),
+              name: heap.alloc_str("v"),
               type_: INT_TYPE,
               operator: Operator::PLUS,
-              e1: Expression::Variable(rcs("v"), INT_TYPE),
+              e1: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
               e2: ONE,
             },
             Statement::IndexedAssign {
-              assigned_expression: Expression::Variable(rcs("v"), INT_TYPE),
-              pointer_expression: Expression::Variable(rcs("a"), INT_TYPE),
+              assigned_expression: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
+              pointer_expression: Expression::Variable(heap.alloc_str("a"), INT_TYPE),
               index: 1,
             },
             Statement::SingleIf {
@@ -627,10 +651,10 @@ mod tests {
               invert_condition: true,
               statements: vec![Statement::Call {
                 callee: Expression::Name(
-                  rc_string(common_names::encoded_fn_name_println()),
+                  heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(rcs("B"), INT_TYPE)],
+                arguments: vec![Expression::Name(heap.alloc_str("B"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -640,10 +664,10 @@ mod tests {
               invert_condition: false,
               statements: vec![Statement::Call {
                 callee: Expression::Name(
-                  rc_string(common_names::encoded_fn_name_println()),
+                  heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(rcs("A"), INT_TYPE)],
+                arguments: vec![Expression::Name(heap.alloc_str("A"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -652,52 +676,52 @@ mod tests {
               condition: ZERO,
               s1: vec![Statement::Call {
                 callee: Expression::Name(
-                  rc_string(common_names::encoded_fn_name_println()),
+                  heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(rcs("A"), INT_TYPE)],
+                arguments: vec![Expression::Name(heap.alloc_str("A"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
               s2: vec![Statement::Call {
                 callee: Expression::Name(
-                  rc_string(common_names::encoded_fn_name_println()),
+                  heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(rcs("B"), INT_TYPE)],
+                arguments: vec![Expression::Name(heap.alloc_str("B"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
-              final_assignments: vec![(rcs("if1"), INT_TYPE, ZERO, ONE)],
+              final_assignments: vec![(heap.alloc_str("if1"), INT_TYPE, ZERO, ONE)],
             },
             Statement::IfElse {
               condition: ONE,
               s1: vec![Statement::Call {
                 callee: Expression::Name(
-                  rc_string(common_names::encoded_fn_name_println()),
+                  heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(rcs("B"), INT_TYPE)],
+                arguments: vec![Expression::Name(heap.alloc_str("B"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
               s2: vec![Statement::Call {
                 callee: Expression::Name(
-                  rc_string(common_names::encoded_fn_name_println()),
+                  heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(rcs("A"), INT_TYPE)],
+                arguments: vec![Expression::Name(heap.alloc_str("A"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
-              final_assignments: vec![(rcs("if2"), INT_TYPE, ONE, ZERO)],
+              final_assignments: vec![(heap.alloc_str("if2"), INT_TYPE, ONE, ZERO)],
             },
             Statement::Binary {
-              name: rcs("if_sum"),
+              name: heap.alloc_str("if_sum"),
               type_: INT_TYPE,
               operator: Operator::PLUS,
-              e1: Expression::Variable(rcs("if1"), INT_TYPE),
-              e2: Expression::Variable(rcs("if2"), INT_TYPE),
+              e1: Expression::Variable(heap.alloc_str("if1"), INT_TYPE),
+              e2: Expression::Variable(heap.alloc_str("if2"), INT_TYPE),
             },
             Statement::While {
               loop_variables: vec![],
@@ -726,60 +750,60 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: rcs("lv"),
+                name: heap.alloc_str("lv"),
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ONE,
               }],
               statements: vec![Statement::SingleIf {
-                condition: Expression::Variable(rcs("lv"), INT_TYPE),
+                condition: Expression::Variable(heap.alloc_str("lv"), INT_TYPE),
                 invert_condition: false,
                 statements: vec![Statement::Break(Expression::int(2))],
               }],
-              break_collector: Some((rcs("bc"), INT_TYPE)),
+              break_collector: Some((heap.alloc_str("bc"), INT_TYPE)),
             },
             Statement::Binary {
-              name: rcs("product"),
+              name: heap.alloc_str("product"),
               type_: INT_TYPE,
               operator: Operator::MUL,
-              e1: Expression::Variable(rcs("if_sum"), INT_TYPE),
-              e2: Expression::Variable(rcs("bc"), INT_TYPE),
+              e1: Expression::Variable(heap.alloc_str("if_sum"), INT_TYPE),
+              e2: Expression::Variable(heap.alloc_str("bc"), INT_TYPE),
             },
             Statement::Cast {
-              name: rcs("cast"),
+              name: heap.alloc_str("cast"),
               type_: INT_TYPE,
-              assigned_expression: Expression::Variable(rcs("product"), INT_TYPE),
+              assigned_expression: Expression::Variable(heap.alloc_str("product"), INT_TYPE),
             },
             Statement::Call {
-              callee: Expression::Name(rcs("printlnInt"), INT_TYPE),
-              arguments: vec![Expression::Variable(rcs("cast"), INT_TYPE)],
+              callee: Expression::Name(heap.alloc_str("printlnInt"), INT_TYPE),
+              arguments: vec![Expression::Variable(heap.alloc_str("cast"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::Call {
               callee: Expression::Name(
-                rc_string(common_names::encoded_fn_name_string_concat()),
+                heap.alloc_string(common_names::encoded_fn_name_string_concat()),
                 INT_TYPE,
               ),
               arguments: vec![
-                Expression::Name(rcs("A"), INT_TYPE),
-                Expression::Name(rcs("B"), INT_TYPE),
+                Expression::Name(heap.alloc_str("A"), INT_TYPE),
+                Expression::Name(heap.alloc_str("B"), INT_TYPE),
               ],
               return_type: INT_TYPE,
-              return_collector: Some(rcs("hw_string")),
+              return_collector: Some(heap.alloc_str("hw_string")),
             },
             Statement::Call {
               callee: Expression::Name(
-                rc_string(common_names::encoded_fn_name_println()),
+                heap.alloc_string(common_names::encoded_fn_name_println()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(rcs("hw_string"), INT_TYPE)],
+              arguments: vec![Expression::Variable(heap.alloc_str("hw_string"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::Call {
               callee: Expression::int(16), // calling function _
-              arguments: vec![Expression::Variable(rcs("hw_string"), INT_TYPE)],
+              arguments: vec![Expression::Variable(heap.alloc_str("hw_string"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             },
@@ -787,6 +811,7 @@ mod tests {
           return_value: ZERO,
         },
       ],
+      heap,
       r#"World!
 World!
 World!

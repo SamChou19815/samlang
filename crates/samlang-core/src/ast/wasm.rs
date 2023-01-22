@@ -1,12 +1,12 @@
 use super::hir;
-use crate::common::{int_vec_to_data_string, Str};
+use crate::common::{int_vec_to_data_string, Heap, PStr};
 use itertools::Itertools;
 
 pub(crate) enum InlineInstruction {
   Const(i32),
   Drop(Box<InlineInstruction>),
-  LocalGet(Str),
-  LocalSet(Str, Box<InlineInstruction>),
+  LocalGet(PStr),
+  LocalSet(PStr, Box<InlineInstruction>),
   Binary(Box<InlineInstruction>, hir::Operator, Box<InlineInstruction>),
   Load {
     index: usize,
@@ -17,22 +17,22 @@ pub(crate) enum InlineInstruction {
     pointer: Box<InlineInstruction>,
     assigned: Box<InlineInstruction>,
   },
-  DirectCall(Str, Vec<InlineInstruction>),
+  DirectCall(PStr, Vec<InlineInstruction>),
   IndirectCall {
     function_index: Box<InlineInstruction>,
-    type_string: Str,
+    type_string: PStr,
     arguments: Vec<InlineInstruction>,
   },
 }
 
 impl InlineInstruction {
-  fn pretty_print(&self) -> String {
+  fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       InlineInstruction::Const(i) => format!("(i32.const {})", i),
-      InlineInstruction::Drop(v) => format!("(drop {})", v.pretty_print()),
-      InlineInstruction::LocalGet(name) => format!("(local.get ${})", name),
+      InlineInstruction::Drop(v) => format!("(drop {})", v.pretty_print(heap)),
+      InlineInstruction::LocalGet(name) => format!("(local.get ${})", name.as_str(heap)),
       InlineInstruction::LocalSet(name, assigned) => {
-        format!("(local.set ${} {})", name, assigned.pretty_print())
+        format!("(local.set ${} {})", name.as_str(heap), assigned.pretty_print(heap))
       }
       InlineInstruction::Binary(v1, op, v2) => {
         let op_s = match op {
@@ -49,40 +49,40 @@ impl InlineInstruction {
           hir::Operator::EQ => "eq",
           hir::Operator::NE => "ne",
         };
-        format!("(i32.{} {} {})", op_s, v1.pretty_print(), v2.pretty_print())
+        format!("(i32.{} {} {})", op_s, v1.pretty_print(heap), v2.pretty_print(heap))
       }
       InlineInstruction::Load { index, pointer } => {
         if *index == 0 {
-          format!("(i32.load {})", pointer.pretty_print())
+          format!("(i32.load {})", pointer.pretty_print(heap))
         } else {
-          format!("(i32.load offset={} {})", index * 4, pointer.pretty_print())
+          format!("(i32.load offset={} {})", index * 4, pointer.pretty_print(heap))
         }
       }
       InlineInstruction::Store { index, pointer, assigned } => {
         if *index == 0 {
-          format!("(i32.store {} {})", pointer.pretty_print(), assigned.pretty_print())
+          format!("(i32.store {} {})", pointer.pretty_print(heap), assigned.pretty_print(heap))
         } else {
           format!(
             "(i32.store offset={} {} {})",
             index * 4,
-            pointer.pretty_print(),
-            assigned.pretty_print()
+            pointer.pretty_print(heap),
+            assigned.pretty_print(heap)
           )
         }
       }
       InlineInstruction::DirectCall(name, arguments) => {
         format!(
           "(call ${} {})",
-          name,
-          arguments.iter().map(InlineInstruction::pretty_print).join(" ")
+          name.as_str(heap),
+          arguments.iter().map(|e| e.pretty_print(heap)).join(" ")
         )
       }
       InlineInstruction::IndirectCall { function_index, type_string, arguments } => {
         format!(
           "(call_indirect $0 (type ${}) {} {})",
-          type_string,
-          arguments.iter().map(InlineInstruction::pretty_print).join(" "),
-          function_index.pretty_print()
+          type_string.as_str(heap),
+          arguments.iter().map(|e| e.pretty_print(heap)).join(" "),
+          function_index.pretty_print(heap)
         )
       }
     }
@@ -92,37 +92,41 @@ impl InlineInstruction {
 pub(crate) enum Instruction {
   Inline(InlineInstruction),
   IfElse { condition: InlineInstruction, s1: Vec<Instruction>, s2: Vec<Instruction> },
-  UnconditionalJump(Str),
-  Loop { continue_label: Str, exit_label: Str, instructions: Vec<Instruction> },
+  UnconditionalJump(PStr),
+  Loop { continue_label: PStr, exit_label: PStr, instructions: Vec<Instruction> },
 }
 
 impl Instruction {
-  fn print_to_collector(&self, collector: &mut Vec<String>, level: usize) {
+  fn print_to_collector(&self, heap: &Heap, collector: &mut Vec<String>, level: usize) {
     match self {
       Instruction::Inline(i) => {
-        collector.push(format!("{}{}\n", "  ".repeat(level), i.pretty_print()))
+        collector.push(format!("{}{}\n", "  ".repeat(level), i.pretty_print(heap)))
       }
       Instruction::IfElse { condition, s1, s2 } => {
-        collector.push(format!("{}(if {} (then\n", "  ".repeat(level), condition.pretty_print()));
+        collector.push(format!(
+          "{}(if {} (then\n",
+          "  ".repeat(level),
+          condition.pretty_print(heap)
+        ));
         for s in s1 {
-          s.print_to_collector(collector, level + 1)
+          s.print_to_collector(heap, collector, level + 1)
         }
         if !s2.is_empty() {
           collector.push(format!("{}) (else\n", "  ".repeat(level)));
           for s in s2 {
-            s.print_to_collector(collector, level + 1)
+            s.print_to_collector(heap, collector, level + 1)
           }
         }
         collector.push(format!("{}))\n", "  ".repeat(level)));
       }
       Instruction::UnconditionalJump(label) => {
-        collector.push(format!("{}(br ${})\n", "  ".repeat(level), label))
+        collector.push(format!("{}(br ${})\n", "  ".repeat(level), label.as_str(heap)))
       }
       Instruction::Loop { continue_label, exit_label, instructions } => {
-        collector.push(format!("{}(loop ${}\n", "  ".repeat(level), continue_label));
-        collector.push(format!("{}(block ${}\n", "  ".repeat(level + 1), exit_label));
+        collector.push(format!("{}(loop ${}\n", "  ".repeat(level), continue_label.as_str(heap)));
+        collector.push(format!("{}(block ${}\n", "  ".repeat(level + 1), exit_label.as_str(heap)));
         for s in instructions {
-          s.print_to_collector(collector, level + 2)
+          s.print_to_collector(heap, collector, level + 2)
         }
         collector.push(format!("{})\n", "  ".repeat(level + 1)));
         collector.push(format!("{})\n", "  ".repeat(level)));
@@ -140,9 +144,9 @@ pub(crate) fn function_type_string(count: usize) -> String {
 }
 
 pub(crate) struct Function {
-  pub(crate) name: Str,
-  pub(crate) parameters: Vec<Str>,
-  pub(crate) local_variables: Vec<Str>,
+  pub(crate) name: PStr,
+  pub(crate) parameters: Vec<PStr>,
+  pub(crate) local_variables: Vec<PStr>,
   pub(crate) instructions: Vec<Instruction>,
 }
 
@@ -154,12 +158,12 @@ pub(crate) struct GlobalData {
 pub(crate) struct Module {
   pub(crate) function_type_parameter_counts: Vec<usize>,
   pub(crate) global_variables: Vec<GlobalData>,
-  pub(crate) exported_functions: Vec<Str>,
+  pub(crate) exported_functions: Vec<PStr>,
   pub(crate) functions: Vec<Function>,
 }
 
 impl Module {
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     let mut collector = vec![];
     for count in &self.function_type_parameter_counts {
       let type_string = function_type_string(*count);
@@ -183,24 +187,24 @@ impl Module {
     collector.push(format!("(table $0 {} funcref)\n", self.functions.len()));
     collector.push(format!(
       "(elem $0 (i32.const 0) {})\n",
-      self.functions.iter().map(|it| format!("${}", it.name)).join(" ")
+      self.functions.iter().map(|it| format!("${}", it.name.as_str(heap))).join(" ")
     ));
     for Function { name, parameters, local_variables, instructions } in &self.functions {
       collector.push(format!(
         "(func ${} {} (result i32)\n",
-        name,
-        parameters.iter().map(|it| format!("(param ${} i32)", it)).join(" ")
+        name.as_str(heap),
+        parameters.iter().map(|it| format!("(param ${} i32)", it.as_str(heap))).join(" ")
       ));
       for v in local_variables {
-        collector.push(format!("  (local ${} i32)\n", v));
+        collector.push(format!("  (local ${} i32)\n", v.as_str(heap)));
       }
       for i in instructions {
-        i.print_to_collector(&mut collector, 1);
+        i.print_to_collector(heap, &mut collector, 1);
       }
       collector.push(")\n".to_string());
     }
     for f in &self.exported_functions {
-      collector.push(format!("(export \"{}\" (func ${}))\n", f, f));
+      collector.push(format!("(export \"{}\" (func ${}))\n", f.as_str(heap), f.as_str(heap)));
     }
     collector.join("")
   }

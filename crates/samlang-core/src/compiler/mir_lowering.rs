@@ -1,7 +1,8 @@
 use super::mir_unused_name_elimination;
 use crate::{
   ast::{common_names::encoded_fn_name_free, hir, mir},
-  common::{rc_string, rcs, Str},
+  common::PStr,
+  Heap,
 };
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashSet};
@@ -36,14 +37,6 @@ fn unknown_member_destructor_type() -> mir::FunctionType {
   mir::Type::new_fn_unwrapped(vec![mir::ANY_TYPE], mir::INT_TYPE)
 }
 
-fn reference_type_name(type_: &mir::Type) -> Option<Str> {
-  match type_ {
-    mir::Type::Primitive(mir::PrimitiveType::String) => Some(rcs("string")),
-    mir::Type::Id(n) => Some(n.clone()),
-    _ => None,
-  }
-}
-
 fn lower_expression(expr: hir::Expression) -> mir::Expression {
   match expr {
     hir::Expression::IntLiteral(i, is_int) => {
@@ -60,46 +53,59 @@ fn lower_expression(expr: hir::Expression) -> mir::Expression {
   }
 }
 
-fn dec_ref_fn_name(name: &str) -> Str {
-  rc_string(format!("__decRef_{}", name))
-}
-
-fn dec_ref_fn_arg_type(type_name: &Str) -> mir::Type {
-  if type_name.as_str().eq("string") {
-    mir::STRING_TYPE
-  } else {
-    mir::Type::Id(type_name.clone())
+fn reference_type_name(heap: &mut Heap, type_: &mir::Type) -> Option<PStr> {
+  match type_ {
+    mir::Type::Primitive(mir::PrimitiveType::String) => Some(heap.alloc_str("string")),
+    mir::Type::Id(n) => Some(*n),
+    _ => None,
   }
 }
 
-fn variable_of_mir_expr(expression: &mir::Expression) -> Option<Str> {
+fn dec_ref_fn_name(name: &str) -> String {
+  format!("__decRef_{}", name)
+}
+
+fn dec_ref_fn_arg_type(heap: &Heap, type_name: PStr) -> mir::Type {
+  if type_name.as_str(heap).eq("string") {
+    mir::STRING_TYPE
+  } else {
+    mir::Type::Id(type_name)
+  }
+}
+
+fn variable_of_mir_expr(expression: &mir::Expression) -> Option<PStr> {
   if let mir::Expression::Variable(n, _) = expression {
-    Some(n.clone())
+    Some(*n)
   } else {
     None
   }
 }
 
-fn generate_single_destructor_function<F: FnOnce(Str, mir::Type, &mut Vec<mir::Statement>)>(
-  type_name: &Str,
+fn generate_single_destructor_function<
+  F: FnOnce(&mut Heap, PStr, mir::Type, &mut Vec<mir::Statement>),
+>(
+  type_name: PStr,
+  heap: &mut Heap,
   get_destruct_member_stmts: F,
 ) -> mir::Function {
-  let parameter_name = rcs("o");
-  let parameter_type = dec_ref_fn_arg_type(type_name);
+  let parameter_name = heap.alloc_str("o");
+  let parameter_type = dec_ref_fn_arg_type(heap, type_name);
   let mut destruct_member_statements = vec![];
   get_destruct_member_stmts(
-    parameter_name.clone(),
+    heap,
+    parameter_name,
     parameter_type.clone(),
     &mut destruct_member_statements,
   );
   let body = generate_single_destructor_construct_body(
+    heap,
     &parameter_type,
     destruct_member_statements,
-    mir::Expression::Variable(parameter_name.clone(), parameter_type.clone()),
+    mir::Expression::Variable(parameter_name, parameter_type.clone()),
     type_name,
   );
   mir::Function {
-    name: dec_ref_fn_name(type_name),
+    name: heap.alloc_string(dec_ref_fn_name(type_name.as_str(heap))),
     parameters: vec![parameter_name],
     type_: mir::Type::new_fn_unwrapped(vec![parameter_type], mir::INT_TYPE),
     body,
@@ -108,15 +114,16 @@ fn generate_single_destructor_function<F: FnOnce(Str, mir::Type, &mut Vec<mir::S
 }
 
 fn generate_single_destructor_construct_body(
+  heap: &mut Heap,
   parameter_type: &mir::Type,
   mut destruct_member_statements: Vec<mir::Statement>,
   parameter: mir::Expression,
-  type_name: &Str,
+  type_name: PStr,
 ) -> Vec<mir::Statement> {
   if parameter_type.is_the_same_type(&mir::ANY_TYPE) {
     destruct_member_statements.push(mir::Statement::Call {
       callee: mir::Expression::Name(
-        rc_string(encoded_fn_name_free()),
+        heap.alloc_string(encoded_fn_name_free()),
         mir::Type::Fn(unknown_member_destructor_type()),
       ),
       arguments: vec![parameter.clone()],
@@ -125,52 +132,55 @@ fn generate_single_destructor_construct_body(
     });
   } else {
     destruct_member_statements.push(mir::Statement::Cast {
-      name: rcs("pointer_casted"),
+      name: heap.alloc_str("pointer_casted"),
       type_: mir::ANY_TYPE,
       assigned_expression: parameter.clone(),
     });
     destruct_member_statements.push(mir::Statement::Call {
       callee: mir::Expression::Name(
-        rc_string(encoded_fn_name_free()),
+        heap.alloc_string(encoded_fn_name_free()),
         mir::Type::Fn(unknown_member_destructor_type()),
       ),
-      arguments: vec![mir::Expression::Variable(rcs("pointer_casted"), mir::ANY_TYPE)],
+      arguments: vec![mir::Expression::Variable(heap.alloc_str("pointer_casted"), mir::ANY_TYPE)],
       return_type: mir::INT_TYPE,
       return_collector: None,
     });
   }
-  if type_name.as_str().ne("string") {
+  if type_name.as_str(heap).ne("string") {
     vec![
       /* currentRefCount = parameter[0] */
       mir::Statement::IndexedAccess {
-        name: rcs("currentRefCount"),
+        name: heap.alloc_str("currentRefCount"),
         type_: mir::INT_TYPE,
         pointer_expression: parameter.clone(),
         index: 0,
       },
       /* decrementedRefCount = currentRefCount - 1 */
       mir::Statement::binary(
-        "decrementedRefCount",
+        heap.alloc_str("decrementedRefCount"),
         hir::Operator::MINUS,
-        mir::Expression::Variable(rcs("currentRefCount"), mir::INT_TYPE),
+        mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
         mir::ONE,
       ),
       /* parameter[0] = decrementedRefCount */
       mir::Statement::IndexedAssign {
-        assigned_expression: mir::Expression::Variable(rcs("decrementedRefCount"), mir::INT_TYPE),
+        assigned_expression: mir::Expression::Variable(
+          heap.alloc_str("decrementedRefCount"),
+          mir::INT_TYPE,
+        ),
         pointer_expression: parameter,
         index: 0,
       },
       /* dead = currentRefCount <= 1 */
       mir::Statement::binary(
-        "dead",
+        heap.alloc_str("dead"),
         hir::Operator::LE,
-        mir::Expression::Variable(rcs("currentRefCount"), mir::INT_TYPE),
+        mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
         mir::ONE,
       ),
       /* if (dead) destructMemberStatements; */
       mir::Statement::SingleIf {
-        condition: mir::Expression::Variable(rcs("dead"), mir::BOOL_TYPE),
+        condition: mir::Expression::Variable(heap.alloc_str("dead"), mir::BOOL_TYPE),
         invert_condition: false,
         statements: destruct_member_statements,
       },
@@ -179,33 +189,33 @@ fn generate_single_destructor_construct_body(
     vec![
       /* currentRefCount = parameter[0] */
       mir::Statement::IndexedAccess {
-        name: rcs("currentRefCount"),
+        name: heap.alloc_str("currentRefCount"),
         type_: mir::INT_TYPE,
         pointer_expression: parameter.clone(),
         index: 0,
       },
       /* performGC = currentRefCount > 0 */
       mir::Statement::binary(
-        "performGC",
+        heap.alloc_str("performGC"),
         hir::Operator::GT,
-        mir::Expression::Variable(rcs("currentRefCount"), mir::INT_TYPE),
+        mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
         mir::ZERO,
       ),
       mir::Statement::SingleIf {
-        condition: mir::Expression::Variable(rcs("performGC"), mir::BOOL_TYPE),
+        condition: mir::Expression::Variable(heap.alloc_str("performGC"), mir::BOOL_TYPE),
         invert_condition: false,
         statements: vec![
           /* decrementedRefCount = currentRefCount - 1 */
           mir::Statement::binary(
-            "decrementedRefCount",
+            heap.alloc_str("decrementedRefCount"),
             hir::Operator::MINUS,
-            mir::Expression::Variable(rcs("currentRefCount"), mir::INT_TYPE),
+            mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
             mir::ONE,
           ),
           /* parameter[0] = decrementedRefCount */
           mir::Statement::IndexedAssign {
             assigned_expression: mir::Expression::Variable(
-              rcs("decrementedRefCount"),
+              heap.alloc_str("decrementedRefCount"),
               mir::INT_TYPE,
             ),
             pointer_expression: parameter,
@@ -213,14 +223,14 @@ fn generate_single_destructor_construct_body(
           },
           /* dead = currentRefCount <= 1 */
           mir::Statement::binary(
-            "dead",
+            heap.alloc_str("dead"),
             hir::Operator::LE,
-            mir::Expression::Variable(rcs("currentRefCount"), mir::INT_TYPE),
+            mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
             mir::ONE,
           ),
           /* if (dead) destructMemberStatements; */
           mir::Statement::SingleIf {
-            condition: mir::Expression::Variable(rcs("dead"), mir::BOOL_TYPE),
+            condition: mir::Expression::Variable(heap.alloc_str("dead"), mir::BOOL_TYPE),
             invert_condition: false,
             statements: destruct_member_statements,
           },
@@ -231,23 +241,22 @@ fn generate_single_destructor_construct_body(
 }
 
 struct LoweringManager<'a> {
-  closure_defs: &'a BTreeMap<Str, mir::FunctionType>,
-  type_defs: &'a BTreeMap<Str, hir::TypeDefinition>,
-  temp_id: i32,
+  heap: &'a mut Heap,
+  closure_defs: &'a BTreeMap<PStr, mir::FunctionType>,
+  type_defs: &'a BTreeMap<PStr, hir::TypeDefinition>,
 }
 
 impl<'a> LoweringManager<'a> {
   fn new(
-    closure_defs: &'a BTreeMap<Str, mir::FunctionType>,
-    type_defs: &'a BTreeMap<Str, hir::TypeDefinition>,
+    heap: &'a mut Heap,
+    closure_defs: &'a BTreeMap<PStr, mir::FunctionType>,
+    type_defs: &'a BTreeMap<PStr, hir::TypeDefinition>,
   ) -> LoweringManager<'a> {
-    LoweringManager { closure_defs, type_defs, temp_id: 0 }
+    LoweringManager { heap, closure_defs, type_defs }
   }
 
-  fn alloc_temp(&mut self) -> Str {
-    let name = rc_string(format!("_mid_t{}", self.temp_id));
-    self.temp_id += 1;
-    name
+  fn alloc_temp(&mut self) -> PStr {
+    self.heap.alloc_temp_str()
   }
 
   fn generate_destructor_functions(&mut self) -> Vec<mir::Function> {
@@ -255,26 +264,27 @@ impl<'a> LoweringManager<'a> {
 
     for type_def in self.type_defs.values() {
       functions.push(generate_single_destructor_function(
-        &type_def.identifier,
-        |var_name, var_type, destruct_member_stmts| {
+        type_def.identifier,
+        self.heap,
+        |heap, var_name, var_type, destruct_member_stmts| {
           let pointer_expression = mir::Expression::Variable(var_name, var_type);
           if type_def.is_object {
             for (index, type_) in type_def.mappings.iter().enumerate() {
               let lowered_type = lower_type(type_.clone());
-              if let Some(type_name) = reference_type_name(&lowered_type) {
+              if let Some(type_name) = reference_type_name(heap, &lowered_type) {
                 destruct_member_stmts.push(mir::Statement::IndexedAccess {
-                  name: rc_string(format!("v{}", index)),
+                  name: heap.alloc_string(format!("v{}", index)),
                   type_: lowered_type.clone(),
                   pointer_expression: pointer_expression.clone(),
                   index: index + 1,
                 });
                 destruct_member_stmts.push(mir::Statement::Call {
                   callee: mir::Expression::Name(
-                    dec_ref_fn_name(&type_name),
-                    mir::Type::new_fn(vec![dec_ref_fn_arg_type(&type_name)], mir::INT_TYPE),
+                    heap.alloc_string(dec_ref_fn_name(type_name.as_str(heap))),
+                    mir::Type::new_fn(vec![dec_ref_fn_arg_type(heap, type_name)], mir::INT_TYPE),
                   ),
                   arguments: vec![mir::Expression::Variable(
-                    rc_string(format!("v{}", index)),
+                    heap.alloc_string(format!("v{}", index)),
                     lowered_type,
                   )],
                   return_type: mir::INT_TYPE,
@@ -286,10 +296,10 @@ impl<'a> LoweringManager<'a> {
             if type_def
               .mappings
               .iter()
-              .any(|t| reference_type_name(&lower_type(t.clone())).is_some())
+              .any(|t| reference_type_name(heap, &lower_type(t.clone())).is_some())
             {
               destruct_member_stmts.push(mir::Statement::IndexedAccess {
-                name: rcs("tag"),
+                name: heap.alloc_str("tag"),
                 type_: mir::INT_TYPE,
                 pointer_expression: pointer_expression.clone(),
                 index: 1,
@@ -297,50 +307,50 @@ impl<'a> LoweringManager<'a> {
             }
             for (index, type_) in type_def.mappings.iter().enumerate() {
               let lowered_type = lower_type(type_.clone());
-              if let Some(type_name) = reference_type_name(&lowered_type) {
+              if let Some(type_name) = reference_type_name(heap, &lowered_type) {
                 let mut statements = vec![];
                 if lowered_type.is_the_same_type(&mir::ANY_TYPE) {
                   statements.push(mir::Statement::IndexedAccess {
-                    name: rc_string(format!("v{}", index)),
+                    name: heap.alloc_string(format!("v{}", index)),
                     type_: lowered_type.clone(),
                     pointer_expression: pointer_expression.clone(),
                     index: 2,
                   });
                 } else {
-                  let temp = rc_string(format!("vTemp{}", index));
+                  let temp = heap.alloc_string(format!("vTemp{}", index));
                   statements.push(mir::Statement::IndexedAccess {
-                    name: temp.clone(),
+                    name: temp,
                     type_: mir::ANY_TYPE,
                     pointer_expression: pointer_expression.clone(),
                     index: 2,
                   });
                   statements.push(mir::Statement::Cast {
-                    name: rc_string(format!("v{}", index)),
+                    name: heap.alloc_string(format!("v{}", index)),
                     type_: lowered_type.clone(),
                     assigned_expression: mir::Expression::Variable(temp, mir::ANY_TYPE),
                   });
                 }
                 statements.push(mir::Statement::Call {
                   callee: mir::Expression::Name(
-                    dec_ref_fn_name(&type_name),
-                    mir::Type::new_fn(vec![dec_ref_fn_arg_type(&type_name)], mir::INT_TYPE),
+                    heap.alloc_string(dec_ref_fn_name(type_name.as_str(heap))),
+                    mir::Type::new_fn(vec![dec_ref_fn_arg_type(heap, type_name)], mir::INT_TYPE),
                   ),
                   arguments: vec![mir::Expression::Variable(
-                    rc_string(format!("v{}", index)),
+                    heap.alloc_string(format!("v{}", index)),
                     lowered_type,
                   )],
                   return_type: mir::INT_TYPE,
                   return_collector: None,
                 });
-                destruct_member_stmts.push(mir::Statement::binary_str(
-                  rc_string(format!("tagComparison{}", index)),
+                destruct_member_stmts.push(mir::Statement::binary(
+                  heap.alloc_string(format!("tagComparison{}", index)),
                   hir::Operator::EQ,
-                  mir::Expression::Variable(rcs("tag"), mir::INT_TYPE),
+                  mir::Expression::Variable(heap.alloc_str("tag"), mir::INT_TYPE),
                   mir::Expression::int(i32::try_from(index).unwrap() + 1),
                 ));
                 destruct_member_stmts.push(mir::Statement::SingleIf {
                   condition: mir::Expression::Variable(
-                    rc_string(format!("tagComparison{}", index)),
+                    heap.alloc_string(format!("tagComparison{}", index)),
                     mir::BOOL_TYPE,
                   ),
                   invert_condition: false,
@@ -354,37 +364,45 @@ impl<'a> LoweringManager<'a> {
     }
 
     for type_name in self.closure_defs.keys() {
-      functions.push(generate_single_destructor_function(type_name, |n, t, stmts| {
-        let pointer_expression = mir::Expression::Variable(n, t);
-        stmts.push(mir::Statement::IndexedAccess {
-          name: rcs("destructor"),
-          type_: mir::Type::Fn(unknown_member_destructor_type()),
-          pointer_expression: pointer_expression.clone(),
-          index: 1,
-        });
-        stmts.push(mir::Statement::IndexedAccess {
-          name: rcs("context"),
-          type_: mir::ANY_TYPE,
-          pointer_expression,
-          index: 3,
-        });
-        stmts.push(mir::Statement::Call {
-          callee: mir::Expression::Variable(
-            rcs("destructor"),
-            mir::Type::Fn(unknown_member_destructor_type()),
-          ),
-          arguments: vec![mir::Expression::Variable(rcs("context"), mir::ANY_TYPE)],
-          return_type: mir::INT_TYPE,
-          return_collector: None,
-        });
-      }));
+      functions.push(generate_single_destructor_function(
+        *type_name,
+        self.heap,
+        |heap, n, t, stmts| {
+          let pointer_expression = mir::Expression::Variable(n, t);
+          stmts.push(mir::Statement::IndexedAccess {
+            name: heap.alloc_str("destructor"),
+            type_: mir::Type::Fn(unknown_member_destructor_type()),
+            pointer_expression: pointer_expression.clone(),
+            index: 1,
+          });
+          stmts.push(mir::Statement::IndexedAccess {
+            name: heap.alloc_str("context"),
+            type_: mir::ANY_TYPE,
+            pointer_expression,
+            index: 3,
+          });
+          stmts.push(mir::Statement::Call {
+            callee: mir::Expression::Variable(
+              heap.alloc_str("destructor"),
+              mir::Type::Fn(unknown_member_destructor_type()),
+            ),
+            arguments: vec![mir::Expression::Variable(heap.alloc_str("context"), mir::ANY_TYPE)],
+            return_type: mir::INT_TYPE,
+            return_collector: None,
+          });
+        },
+      ));
     }
 
-    functions.push(generate_single_destructor_function(&rcs("string"), |_, _, _| {}));
+    functions.push(generate_single_destructor_function(
+      self.heap.alloc_str("string"),
+      self.heap,
+      |_, _, _, _| {},
+    ));
 
     functions.push(mir::Function {
-      name: dec_ref_fn_name("nothing"),
-      parameters: vec![rcs("o")],
+      name: self.heap.alloc_string(dec_ref_fn_name("nothing")),
+      parameters: vec![self.heap.alloc_str("o")],
       type_: unknown_member_destructor_type(),
       body: vec![],
       return_value: mir::ZERO,
@@ -411,22 +429,21 @@ impl<'a> LoweringManager<'a> {
   fn lower_stmt_block(
     &mut self,
     stmts: Vec<hir::Statement>,
-    variables_not_to_deref: &HashSet<Str>,
+    variables_not_to_deref: &HashSet<PStr>,
   ) -> Vec<mir::Statement> {
     let mut lowered_statements = stmts.into_iter().flat_map(|s| self.lower_stmt(s)).collect_vec();
     let mut variable_to_decrease_reference_count = vec![];
     for s in &lowered_statements {
       match s {
         mir::Statement::Call { callee: _, arguments: _, return_type, return_collector } => {
-          if let Some(type_name) = reference_type_name(return_type) {
-            variable_to_decrease_reference_count
-              .push((return_collector.clone().unwrap(), type_name.clone()));
+          if let Some(type_name) = reference_type_name(self.heap, return_type) {
+            variable_to_decrease_reference_count.push(((*return_collector).unwrap(), type_name));
           }
         }
         mir::Statement::IfElse { condition: _, s1: _, s2: _, final_assignments } => {
           for (n, t, _, _) in final_assignments {
-            if let Some(type_name) = reference_type_name(t) {
-              variable_to_decrease_reference_count.push((n.clone(), type_name.clone()));
+            if let Some(type_name) = reference_type_name(self.heap, t) {
+              variable_to_decrease_reference_count.push((*n, type_name));
             }
           }
         }
@@ -435,13 +452,13 @@ impl<'a> LoweringManager<'a> {
           statements: _,
           break_collector: Some((n, t)),
         } => {
-          if let Some(type_name) = reference_type_name(t) {
-            variable_to_decrease_reference_count.push((n.clone(), type_name.clone()));
+          if let Some(type_name) = reference_type_name(self.heap, t) {
+            variable_to_decrease_reference_count.push((*n, type_name));
           }
         }
         mir::Statement::StructInit { struct_variable_name, type_, expression_list: _ } => {
           variable_to_decrease_reference_count
-            .push((struct_variable_name.clone(), reference_type_name(type_).unwrap()));
+            .push((*struct_variable_name, reference_type_name(self.heap, type_).unwrap()));
         }
         _ => {}
       }
@@ -450,12 +467,13 @@ impl<'a> LoweringManager<'a> {
       if variables_not_to_deref.contains(&variable_name) {
         continue;
       }
+      let var_type = dec_ref_fn_arg_type(self.heap, type_name);
       lowered_statements.push(mir::Statement::Call {
         callee: mir::Expression::Name(
-          dec_ref_fn_name(&type_name),
-          mir::Type::new_fn(vec![dec_ref_fn_arg_type(&type_name)], mir::INT_TYPE),
+          self.heap.alloc_string(dec_ref_fn_name(type_name.as_str(self.heap))),
+          mir::Type::new_fn(vec![var_type.clone()], mir::INT_TYPE),
         ),
-        arguments: vec![mir::Expression::Variable(variable_name, dec_ref_fn_arg_type(&type_name))],
+        arguments: vec![mir::Expression::Variable(variable_name, var_type)],
         return_type: mir::INT_TYPE,
         return_collector: None,
       });
@@ -508,7 +526,7 @@ impl<'a> LoweringManager<'a> {
             let temp = self.alloc_temp();
             vec![
               mir::Statement::IndexedAccess {
-                name: temp.clone(),
+                name: temp,
                 type_: mir::ANY_TYPE,
                 pointer_expression: pointer_expr,
                 index: 2,
@@ -526,7 +544,7 @@ impl<'a> LoweringManager<'a> {
         let lowered_return_type = lower_type(return_type);
         let return_collector = if let Some(c) = return_collector {
           Some(c)
-        } else if reference_type_name(&lowered_return_type).is_some() {
+        } else if reference_type_name(self.heap, &lowered_return_type).is_some() {
           Some(self.alloc_temp())
         } else {
           None
@@ -538,7 +556,7 @@ impl<'a> LoweringManager<'a> {
               callee: lower_expression(hir::Expression::FunctionName(fn_name)),
               arguments: arguments.into_iter().map(lower_expression).collect(),
               return_type: lowered_return_type.clone(),
-              return_collector: return_collector.clone(),
+              return_collector,
             });
           }
           hir::Callee::Variable(hir::VariableName {
@@ -548,17 +566,17 @@ impl<'a> LoweringManager<'a> {
             let temp_fn = self.alloc_temp();
             let temp_cx = self.alloc_temp();
             let closure_type_name = &closure_hir_type.as_id().unwrap().name;
-            let fn_type = self.closure_defs.get(closure_type_name).expect(closure_type_name);
+            let fn_type = self.closure_defs.get(closure_type_name).unwrap();
             let pointer_expr =
               mir::Expression::Variable(closure_var_name, lower_type(closure_hir_type));
             statements.push(mir::Statement::IndexedAccess {
-              name: temp_fn.clone(),
+              name: temp_fn,
               type_: mir::Type::Fn(fn_type.clone()),
               pointer_expression: pointer_expr.clone(),
               index: 2,
             });
             statements.push(mir::Statement::IndexedAccess {
-              name: temp_cx.clone(),
+              name: temp_cx,
               type_: mir::ANY_TYPE,
               pointer_expression: pointer_expr,
               index: 3,
@@ -570,7 +588,7 @@ impl<'a> LoweringManager<'a> {
                 .chain(arguments.into_iter().map(lower_expression))
                 .collect(),
               return_type: lowered_return_type.clone(),
-              return_collector: return_collector.clone(),
+              return_collector,
             });
           }
         }
@@ -657,7 +675,7 @@ impl<'a> LoweringManager<'a> {
                 } else {
                   let temp = self.alloc_temp();
                   statements.push(mir::Statement::Cast {
-                    name: temp.clone(),
+                    name: temp,
                     type_: mir::ANY_TYPE,
                     assigned_expression: lowered,
                   });
@@ -700,19 +718,19 @@ impl<'a> LoweringManager<'a> {
         } else {
           let temp = self.alloc_temp();
           statements.push(mir::Statement::Cast {
-            name: temp.clone(),
+            name: temp,
             type_: mir::Type::Fn(type_erased_closure_type.clone()),
             assigned_expression: mir::Expression::Name(fn_name, mir::Type::Fn(original_fn_type)),
           });
           mir::Expression::Variable(temp, mir::Type::Fn(type_erased_closure_type))
         };
-        let context_type_name = reference_type_name(context.type_());
+        let context_type_name = reference_type_name(self.heap, context.type_());
         let cx_slot = if context.type_().is_the_same_type(&mir::ANY_TYPE) {
           context.clone()
         } else {
           let temp = self.alloc_temp();
           statements.push(mir::Statement::Cast {
-            name: temp.clone(),
+            name: temp,
             type_: mir::ANY_TYPE,
             assigned_expression: context.clone(),
           });
@@ -720,7 +738,7 @@ impl<'a> LoweringManager<'a> {
         };
         let destructor_function_slot = if let Some(context_type_name) = context_type_name {
           let name = mir::Expression::Name(
-            dec_ref_fn_name(&context_type_name),
+            self.heap.alloc_string(dec_ref_fn_name(context_type_name.as_str(self.heap))),
             mir::Type::new_fn(vec![context.type_().clone()], mir::INT_TYPE),
           );
           if context.type_().is_the_same_type(&mir::ANY_TYPE) {
@@ -728,7 +746,7 @@ impl<'a> LoweringManager<'a> {
           } else {
             let temp = self.alloc_temp();
             statements.push(mir::Statement::Cast {
-              name: temp.clone(),
+              name: temp,
               type_: mir::Type::Fn(unknown_member_destructor_type()),
               assigned_expression: name,
             });
@@ -736,7 +754,7 @@ impl<'a> LoweringManager<'a> {
           }
         } else {
           mir::Expression::Name(
-            dec_ref_fn_name("nothing"),
+            self.heap.alloc_string(dec_ref_fn_name("nothing")),
             mir::Type::Fn(unknown_member_destructor_type()),
           )
         };
@@ -755,18 +773,22 @@ impl<'a> LoweringManager<'a> {
     collector: &mut Vec<mir::Statement>,
     expression: &mir::Expression,
   ) {
-    let type_name = if let Some(n) = reference_type_name(expression.type_()) { n } else { return };
+    let type_name = if let Some(n) = reference_type_name(self.heap, expression.type_()) {
+      n
+    } else {
+      return;
+    };
     let count = self.alloc_temp();
     let new_count = self.alloc_temp();
-    if type_name.as_str().ne("string") {
+    if type_name.as_str(self.heap).ne("string") {
       collector.push(mir::Statement::IndexedAccess {
-        name: count.clone(),
+        name: count,
         type_: mir::INT_TYPE,
         pointer_expression: expression.clone(),
         index: 0,
       });
-      collector.push(mir::Statement::binary_str(
-        new_count.clone(),
+      collector.push(mir::Statement::binary(
+        new_count,
         hir::Operator::PLUS,
         mir::Expression::Variable(count, mir::INT_TYPE),
         mir::ONE,
@@ -779,23 +801,23 @@ impl<'a> LoweringManager<'a> {
     } else {
       let not_special = self.alloc_temp();
       collector.push(mir::Statement::IndexedAccess {
-        name: count.clone(),
+        name: count,
         type_: mir::INT_TYPE,
         pointer_expression: expression.clone(),
         index: 0,
       });
-      collector.push(mir::Statement::binary_str(
-        not_special.clone(),
+      collector.push(mir::Statement::binary(
+        not_special,
         hir::Operator::GT,
-        mir::Expression::Variable(count.clone(), mir::INT_TYPE),
+        mir::Expression::Variable(count, mir::INT_TYPE),
         mir::ZERO,
       ));
       collector.push(mir::Statement::SingleIf {
         condition: mir::Expression::Variable(not_special, mir::BOOL_TYPE),
         invert_condition: false,
         statements: vec![
-          mir::Statement::binary_str(
-            new_count.clone(),
+          mir::Statement::binary(
+            new_count,
             hir::Operator::PLUS,
             mir::Expression::Variable(count, mir::INT_TYPE),
             mir::ONE,
@@ -811,7 +833,7 @@ impl<'a> LoweringManager<'a> {
   }
 }
 
-pub(crate) fn compile_hir_to_mir(sources: hir::Sources) -> mir::Sources {
+pub(crate) fn compile_hir_to_mir(heap: &mut Heap, sources: hir::Sources) -> mir::Sources {
   let mut type_defs = vec![];
   let mut closure_def_map = BTreeMap::new();
   let mut type_def_map = BTreeMap::new();
@@ -830,7 +852,7 @@ pub(crate) fn compile_hir_to_mir(sources: hir::Sources) -> mir::Sources {
       return_type,
     };
     type_defs.push(mir::TypeDefinition {
-      name: identifier.clone(),
+      name: identifier,
       mappings: vec![
         mir::INT_TYPE,
         mir::Type::new_fn(vec![mir::ANY_TYPE], mir::INT_TYPE),
@@ -847,16 +869,16 @@ pub(crate) fn compile_hir_to_mir(sources: hir::Sources) -> mir::Sources {
       vec![mir::INT_TYPE, mir::ANY_TYPE]
     };
     mir_mappings.insert(0, mir::INT_TYPE);
-    type_defs
-      .push(mir::TypeDefinition { name: type_def.identifier.clone(), mappings: mir_mappings });
-    type_def_map.insert(type_def.identifier.clone(), type_def);
+    type_defs.push(mir::TypeDefinition { name: type_def.identifier, mappings: mir_mappings });
+    type_def_map.insert(type_def.identifier, type_def);
   }
   let mut functions = functions
     .into_iter()
-    .map(|f| LoweringManager::new(&closure_def_map, &type_def_map).lower_function(f))
+    .map(|f| LoweringManager::new(heap, &closure_def_map, &type_def_map).lower_function(f))
     .collect_vec();
   functions.append(
-    &mut LoweringManager::new(&closure_def_map, &type_def_map).generate_destructor_functions(),
+    &mut LoweringManager::new(heap, &closure_def_map, &type_def_map)
+      .generate_destructor_functions(),
   );
   mir_unused_name_elimination::optimize_mir_sources_by_eliminating_unused_ones(mir::Sources {
     global_variables,
@@ -877,7 +899,7 @@ mod tests {
         STRING_TYPE, TRUE, ZERO,
       },
     },
-    common::rcs,
+    common::Heap,
   };
   use pretty_assertions::assert_eq;
 
@@ -885,24 +907,28 @@ mod tests {
   fn boilterplate() {
     assert_eq!(
       "(t0: number, t1: Str) => boolean",
-      super::lower_type(Type::new_fn(vec![INT_TYPE, STRING_TYPE], BOOL_TYPE)).pretty_print()
+      super::lower_type(Type::new_fn(vec![INT_TYPE, STRING_TYPE], BOOL_TYPE))
+        .pretty_print(&Heap::new())
     );
   }
 
-  fn assert_lowered(sources: Sources, expected: &str) {
-    assert_eq!(expected, super::compile_hir_to_mir(sources).pretty_print());
+  fn assert_lowered(sources: Sources, heap: &mut Heap, expected: &str) {
+    assert_eq!(expected, super::compile_hir_to_mir(heap, sources).pretty_print(heap));
   }
 
   #[test]
   fn smoke_test() {
+    let heap = &mut Heap::new();
+
     assert_lowered(
       Sources {
         global_variables: vec![],
         closure_types: vec![],
         type_definitions: vec![],
-        main_function_names: vec![rcs(common_names::ENCODED_COMPILED_PROGRAM_MAIN)],
+        main_function_names: vec![heap.alloc_str(common_names::ENCODED_COMPILED_PROGRAM_MAIN)],
         functions: vec![],
       },
+      heap,
       &format!(
         r#"type Str = [number, string];
 const {} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
@@ -924,89 +950,94 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
 
   #[test]
   fn comprehensive_test() {
-    let closure_type = &Type::new_id_no_targs("CC");
-    let obj_type = &Type::new_id_no_targs("Object");
-    let variant_type = &Type::new_id_no_targs("Variant");
+    let heap = &mut Heap::new();
+
+    let closure_type = &Type::new_id_no_targs(heap.alloc_str("CC"));
+    let obj_type = &Type::new_id_no_targs(heap.alloc_str("Object"));
+    let variant_type = &Type::new_id_no_targs(heap.alloc_str("Variant"));
     let sources = Sources {
       global_variables: vec![],
       closure_types: vec![ClosureTypeDefinition {
-        identifier: rcs("CC"),
+        identifier: heap.alloc_str("CC"),
         type_parameters: vec![],
         function_type: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
       }],
       type_definitions: vec![
         TypeDefinition {
-          identifier: rcs("Object"),
+          identifier: heap.alloc_str("Object"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
           mappings: vec![INT_TYPE, INT_TYPE],
         },
         TypeDefinition {
-          identifier: rcs("Variant"),
+          identifier: heap.alloc_str("Variant"),
           is_object: false,
           type_parameters: vec![],
           names: vec![],
           mappings: vec![INT_TYPE, INT_TYPE],
         },
         TypeDefinition {
-          identifier: rcs("Object2"),
+          identifier: heap.alloc_str("Object2"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![STRING_TYPE, Type::new_id_no_targs("Foo")],
+          mappings: vec![STRING_TYPE, Type::new_id_no_targs(heap.alloc_str("Foo"))],
         },
         TypeDefinition {
-          identifier: rcs("Variant2"),
+          identifier: heap.alloc_str("Variant2"),
           is_object: false,
           type_parameters: vec![],
           names: vec![],
           mappings: vec![STRING_TYPE],
         },
         TypeDefinition {
-          identifier: rcs("Variant3"),
+          identifier: heap.alloc_str("Variant3"),
           is_object: false,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![STRING_TYPE, Type::new_id_no_targs("Foo")],
+          mappings: vec![STRING_TYPE, Type::new_id_no_targs(heap.alloc_str("Foo"))],
         },
       ],
-      main_function_names: vec![rcs(common_names::ENCODED_COMPILED_PROGRAM_MAIN)],
+      main_function_names: vec![heap.alloc_str(common_names::ENCODED_COMPILED_PROGRAM_MAIN)],
       functions: vec![
         Function {
-          name: rcs("cc"),
+          name: heap.alloc_str("cc"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::Call {
-              callee: Callee::Variable(VariableName::new("cc", closure_type.clone())),
+              callee: Callee::Variable(VariableName::new(
+                heap.alloc_str("cc"),
+                closure_type.clone(),
+              )),
               arguments: vec![ZERO],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::IndexedAccess {
-              name: rcs("v1"),
+              name: heap.alloc_str("v1"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("a", obj_type.clone()),
+              pointer_expression: Expression::var_name(heap.alloc_str("a"), obj_type.clone()),
               index: 0,
             },
             Statement::IndexedAccess {
-              name: rcs("v2"),
+              name: heap.alloc_str("v2"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("b", variant_type.clone()),
+              pointer_expression: Expression::var_name(heap.alloc_str("b"), variant_type.clone()),
               index: 0,
             },
             Statement::IndexedAccess {
-              name: rcs("v3"),
+              name: heap.alloc_str("v3"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name("b", variant_type.clone()),
+              pointer_expression: Expression::var_name(heap.alloc_str("b"), variant_type.clone()),
               index: 1,
             },
             Statement::IndexedAccess {
-              name: rcs("v4"),
+              name: heap.alloc_str("v4"),
               type_: STRING_TYPE,
-              pointer_expression: Expression::var_name("b", variant_type.clone()),
+              pointer_expression: Expression::var_name(heap.alloc_str("b"), variant_type.clone()),
               index: 1,
             },
             Statement::While {
@@ -1020,7 +1051,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: rcs("_"),
+                name: heap.alloc_str("_"),
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
@@ -1030,50 +1061,56 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
                 invert_condition: true,
                 statements: vec![Statement::Break(ZERO)],
               }],
-              break_collector: Some(VariableName::new("_", Type::new_id_no_targs("_"))),
+              break_collector: Some(VariableName::new(
+                heap.alloc_str("_"),
+                Type::new_id_no_targs(heap.alloc_str("_")),
+              )),
             },
           ],
           return_value: ZERO,
         },
         Function {
-          name: rcs("main"),
+          name: heap.alloc_str("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
-            Statement::binary("v1", Operator::PLUS, ZERO, ZERO),
+            Statement::binary(heap.alloc_str("v1"), Operator::PLUS, ZERO, ZERO),
             Statement::StructInit {
-              struct_variable_name: rcs("O"),
+              struct_variable_name: heap.alloc_str("O"),
               type_: obj_type.as_id().unwrap().clone(),
               expression_list: vec![
                 ZERO,
-                Expression::var_name("obj", Type::new_id_no_targs("Obj")),
+                Expression::var_name(
+                  heap.alloc_str("obj"),
+                  Type::new_id_no_targs(heap.alloc_str("Obj")),
+                ),
               ],
             },
             Statement::StructInit {
-              struct_variable_name: rcs("v1"),
+              struct_variable_name: heap.alloc_str("v1"),
               type_: variant_type.as_id().unwrap().clone(),
               expression_list: vec![ZERO, ZERO],
             },
             Statement::StructInit {
-              struct_variable_name: rcs("v2"),
+              struct_variable_name: heap.alloc_str("v2"),
               type_: variant_type.as_id().unwrap().clone(),
-              expression_list: vec![ZERO, Expression::StringName(rcs("G1"))],
+              expression_list: vec![ZERO, Expression::StringName(heap.alloc_str("G1"))],
             },
             Statement::ClosureInit {
-              closure_variable_name: rcs("c1"),
+              closure_variable_name: heap.alloc_str("c1"),
               closure_type: closure_type.as_id().unwrap().clone(),
               function_name: FunctionName::new(
-                "aaa",
+                heap.alloc_str("aaa"),
                 Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
               ),
-              context: Expression::StringName(rcs("G1")),
+              context: Expression::StringName(heap.alloc_str("G1")),
             },
             Statement::ClosureInit {
-              closure_variable_name: rcs("c2"),
+              closure_variable_name: heap.alloc_str("c2"),
               closure_type: closure_type.as_id().unwrap().clone(),
               function_name: FunctionName::new(
-                "bbb",
+                heap.alloc_str("bbb"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               ),
               context: ZERO,
@@ -1082,7 +1119,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
           return_value: ZERO,
         },
         Function {
-          name: rcs(common_names::ENCODED_COMPILED_PROGRAM_MAIN),
+          name: heap.alloc_str(common_names::ENCODED_COMPILED_PROGRAM_MAIN),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -1092,7 +1129,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               s1: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName::new(
-                    "main",
+                    heap.alloc_str("main"),
                     Type::new_fn_unwrapped(vec![], INT_TYPE),
                   )),
                   arguments: vec![ZERO],
@@ -1101,48 +1138,54 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName::new(
-                    "cc",
+                    heap.alloc_str("cc"),
                     Type::new_fn_unwrapped(vec![], INT_TYPE),
                   )),
                   arguments: vec![ZERO],
                   return_type: INT_TYPE,
-                  return_collector: Some(rcs("ccc")),
+                  return_collector: Some(heap.alloc_str("ccc")),
                 },
               ],
               s2: vec![
                 Statement::Call {
-                  callee: Callee::Variable(VariableName::new("cc", closure_type.clone())),
+                  callee: Callee::Variable(VariableName::new(
+                    heap.alloc_str("cc"),
+                    closure_type.clone(),
+                  )),
                   arguments: vec![ZERO],
-                  return_type: Type::new_id_no_targs("CC"),
+                  return_type: Type::new_id_no_targs(heap.alloc_str("CC")),
                   return_collector: None,
                 },
                 Statement::ClosureInit {
-                  closure_variable_name: rcs("v2"),
+                  closure_variable_name: heap.alloc_str("v2"),
                   closure_type: closure_type.as_id().unwrap().clone(),
                   function_name: FunctionName::new(
-                    "aaa",
+                    heap.alloc_str("aaa"),
                     Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
                   ),
-                  context: Expression::var_name("G1", Type::new_id_no_targs("CC")),
+                  context: Expression::var_name(
+                    heap.alloc_str("G1"),
+                    Type::new_id_no_targs(heap.alloc_str("CC")),
+                  ),
                 },
               ],
               final_assignments: vec![(
-                rcs("finalV"),
+                heap.alloc_str("finalV"),
                 closure_type.clone(),
-                Expression::var_name("v1", closure_type.clone()),
-                Expression::var_name("v2", closure_type.clone()),
+                Expression::var_name(heap.alloc_str("v1"), closure_type.clone()),
+                Expression::var_name(heap.alloc_str("v2"), closure_type.clone()),
               )],
             },
             Statement::IfElse {
               condition: TRUE,
               s1: vec![],
               s2: vec![],
-              final_assignments: vec![(rcs("finalV2"), INT_TYPE, ZERO, ZERO)],
+              final_assignments: vec![(heap.alloc_str("finalV2"), INT_TYPE, ZERO, ZERO)],
             },
             Statement::While {
               loop_variables: vec![],
               statements: vec![],
-              break_collector: Some(VariableName::new("finalV3", INT_TYPE)),
+              break_collector: Some(VariableName::new(heap.alloc_str("finalV3"), INT_TYPE)),
             },
           ],
           return_value: ZERO,
@@ -1161,13 +1204,13 @@ type CC = [number, (t0: any) => number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
 type Variant = [number, number, any];
 function cc(): number {{
-  let _mid_t0: (t0: any, t1: number) => number = cc[2];
-  let _mid_t1: any = cc[3];
-  _mid_t0(_mid_t1, 0);
+  let _t32: (t0: any, t1: number) => number = cc[2];
+  let _t33: any = cc[3];
+  _t32(_t33, 0);
   let v1: number = a[1];
   let v2: number = b[1];
-  let _mid_t2: any = b[2];
-  let v3 = _mid_t2 as number;
+  let _t34: any = b[2];
+  let v3 = _t34 as number;
   let v4: Str = b[2];
   while (true) {{
     if (0) {{
@@ -1187,29 +1230,29 @@ function cc(): number {{
 }}
 function main(): number {{
   let v1: number = 0 + 0;
-  let _mid_t0: number = obj[0];
-  let _mid_t1: number = _mid_t0 + 1;
-  obj[0] = _mid_t1;
+  let _t36: number = obj[0];
+  let _t37: number = _t36 + 1;
+  obj[0] = _t37;
   let O: Object = [1, 0, obj];
-  let _mid_t2 = 0 as any;
-  let v1: Variant = [1, 0, _mid_t2];
-  let _mid_t3: number = G1[0];
-  let _mid_t5: boolean = _mid_t3 > 0;
-  if (_mid_t5) {{
-    let _mid_t4: number = _mid_t3 + 1;
-    G1[0] = _mid_t4;
+  let _t38 = 0 as any;
+  let v1: Variant = [1, 0, _t38];
+  let _t40: number = G1[0];
+  let _t42: boolean = _t40 > 0;
+  if (_t42) {{
+    let _t41: number = _t40 + 1;
+    G1[0] = _t41;
   }}
   let v2: Variant = [1, 0, G1];
-  let _mid_t6: number = G1[0];
-  let _mid_t8: boolean = _mid_t6 > 0;
-  if (_mid_t8) {{
-    let _mid_t7: number = _mid_t6 + 1;
-    G1[0] = _mid_t7;
+  let _t43: number = G1[0];
+  let _t45: boolean = _t43 > 0;
+  if (_t45) {{
+    let _t44: number = _t43 + 1;
+    G1[0] = _t44;
   }}
   let c1: CC = [1, __decRef_string, aaa, G1];
-  let _mid_t9 = bbb as (t0: any) => number;
-  let _mid_t10 = 0 as any;
-  let c2: CC = [1, __decRef_nothing, _mid_t9, _mid_t10];
+  let _t47 = bbb as (t0: any) => number;
+  let _t48 = 0 as any;
+  let c2: CC = [1, __decRef_nothing, _t47, _t48];
   __decRef_Object(O);
   __decRef_Variant(v1);
   __decRef_Variant(v2);
@@ -1224,19 +1267,19 @@ function _compiled_program_main(): number {{
     let ccc: number = cc(0);
     finalV = v1;
   }} else {{
-    let _mid_t1: (t0: any, t1: number) => number = cc[2];
-    let _mid_t2: any = cc[3];
-    let _mid_t0: CC = _mid_t1(_mid_t2, 0);
-    let _mid_t3: number = _mid_t0[0];
-    let _mid_t4: number = _mid_t3 + 1;
-    _mid_t0[0] = _mid_t4;
-    let _mid_t5: number = G1[0];
-    let _mid_t6: number = _mid_t5 + 1;
-    G1[0] = _mid_t6;
-    let _mid_t7 = G1 as any;
-    let _mid_t8 = __decRef_CC as (t0: any) => number;
-    let v2: CC = [1, _mid_t8, aaa, _mid_t7];
-    __decRef_CC(_mid_t0);
+    let _t54: (t0: any, t1: number) => number = cc[2];
+    let _t55: any = cc[3];
+    let _t53: CC = _t54(_t55, 0);
+    let _t56: number = _t53[0];
+    let _t57: number = _t56 + 1;
+    _t53[0] = _t57;
+    let _t58: number = G1[0];
+    let _t59: number = _t58 + 1;
+    G1[0] = _t59;
+    let _t60 = G1 as any;
+    let _t61 = __decRef_CC as (t0: any) => number;
+    let v2: CC = [1, _t61, aaa, _t60];
+    __decRef_CC(_t53);
     finalV = v2;
   }}
   let finalV2: number;
@@ -1311,6 +1354,6 @@ function __decRef_nothing(o: any): number {{
       common_names::encoded_fn_name_panic(),
       common_names::encoded_fn_name_free()
     );
-    assert_lowered(sources, &expected);
+    assert_lowered(sources, heap, &expected);
   }
 }

@@ -1,66 +1,84 @@
 #[cfg(test)]
 mod tests {
   use super::super::hir::*;
-  use crate::common::rcs;
+  use crate::Heap;
   use pretty_assertions::assert_eq;
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
   #[test]
   fn boilterplate() {
+    let heap = &mut Heap::new();
+
     assert!(!format!(
       "{:?}",
-      Expression::var_name("a", Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
-    )
-    .is_empty());
-    assert!(!format!(
-      "{:?}",
-      Expression::var_name_str(
-        rcs("a"),
-        Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")])
+      Expression::var_name(
+        heap.alloc_str("a"),
+        Type::new_id(
+          heap.alloc_str("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
+        )
       )
     )
     .is_empty());
     assert!(!format!(
       "{:?}",
-      Expression::fn_name("a", Type::new_fn(vec![INT_TYPE], INT_TYPE).as_fn().unwrap().clone())
+      Expression::var_name(
+        heap.alloc_str("a"),
+        Type::new_id(
+          heap.alloc_str("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
+        )
+      )
     )
     .is_empty());
-    assert!(!format!("{:?}", Expression::StringName(rcs("a"))).is_empty());
+    assert!(!format!(
+      "{:?}",
+      Expression::fn_name(
+        heap.alloc_str("a"),
+        Type::new_fn(vec![INT_TYPE], INT_TYPE).as_fn().unwrap().clone()
+      )
+    )
+    .is_empty());
+    assert!(!format!("{:?}", Expression::StringName(heap.alloc_str("a"))).is_empty());
     assert!(!format!("{:?}", Operator::GE).is_empty());
     assert!(!format!("{:?}", ZERO.type_()).is_empty());
     assert!(!format!("{:?}", FALSE.type_()).is_empty());
-    assert!(!format!("{:?}", Expression::var_name("a", INT_TYPE).type_().as_fn()).is_empty());
-    assert!(!format!("{:?}", Expression::StringName(rcs("a")).type_().as_id()).is_empty());
+    assert!(!format!("{:?}", Expression::var_name(heap.alloc_str("a"), INT_TYPE).type_().as_fn())
+      .is_empty());
+    assert!(
+      !format!("{:?}", Expression::StringName(heap.alloc_str("a")).type_().as_id()).is_empty()
+    );
     assert!(!GenenalLoopVariable {
-      name: rcs(""),
+      name: heap.alloc_str(""),
       type_: INT_TYPE,
       initial_value: ZERO,
       loop_value: ZERO
     }
-    .to_string()
+    .pretty_print(heap)
     .is_empty());
     assert!(!format!(
       "{:?}",
-      Expression::fn_name("a", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).type_()
+      Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))
+        .type_()
     )
     .is_empty());
     assert!(PrimitiveType::Int.eq(&PrimitiveType::Int));
     assert_eq!(PrimitiveType::Int, PrimitiveType::Int);
     Expression::FunctionName(FunctionName {
-      name: rcs(""),
+      name: heap.alloc_str(""),
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       type_arguments: vec![INT_TYPE],
     })
     .convert_to_callee();
-    Expression::var_name("", INT_TYPE).convert_to_callee();
-    Expression::StringName(rcs("")).convert_to_callee();
+    Expression::var_name(heap.alloc_str(""), INT_TYPE).convert_to_callee();
+    Expression::StringName(heap.alloc_str("")).convert_to_callee();
     ZERO.convert_to_callee();
-    Expression::var_name("a", INT_TYPE).as_function_name();
+    Expression::var_name(heap.alloc_str("a"), INT_TYPE).as_function_name();
     Statement::Break(ZERO).as_binary();
-    Statement::binary("name", Operator::DIV, ZERO, ZERO).clone().as_binary();
+    Statement::binary(heap.alloc_str("name"), Operator::DIV, ZERO, ZERO).clone().as_binary();
     Statement::Call {
       callee: Callee::FunctionName(FunctionName {
-        name: rcs(""),
+        name: heap.alloc_str(""),
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         type_arguments: vec![INT_TYPE],
       }),
@@ -73,111 +91,159 @@ mod tests {
 
     assert!(
       Expression::var_name(
-        "a",
-        Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
+        heap.alloc_str("a"),
+        Type::new_fn(
+          vec![INT_TYPE],
+          Type::new_id(
+            heap.alloc_str("A"),
+            vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
+          )
+        )
       ) == Expression::var_name(
-        "a",
-        Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
+        heap.alloc_str("a"),
+        Type::new_fn(
+          vec![INT_TYPE],
+          Type::new_id(
+            heap.alloc_str("A"),
+            vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
+          )
+        )
       )
     );
     assert!(Expression::var_name(
-      "a",
-      Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
+      heap.alloc_str("a"),
+      Type::new_fn(
+        vec![INT_TYPE],
+        Type::new_id(
+          heap.alloc_str("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
+        )
+      )
     )
     .eq(&Expression::var_name(
-      "a",
-      Type::new_fn(vec![INT_TYPE], Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")]))
+      heap.alloc_str("a"),
+      Type::new_fn(
+        vec![INT_TYPE],
+        Type::new_id(
+          heap.alloc_str("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
+        )
+      )
     )));
     assert!(Type::new_fn(
       vec![INT_TYPE],
-      Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")])
+      Type::new_id(heap.alloc_str("A"), vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))])
     )
     .eq(
       &(Type::new_fn(
         vec![INT_TYPE],
-        Type::new_id("A", vec![INT_TYPE, Type::new_id_no_targs("B")])
+        Type::new_id(
+          heap.alloc_str("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
+        )
       ))
     ));
     let mut hasher = DefaultHasher::new();
     Operator::DIV.hash(&mut hasher);
-    Statement::binary_flexible_unwrapped(rcs(""), Operator::DIV, ZERO, ZERO);
+    Statement::binary_flexible_unwrapped(heap.alloc_str(""), Operator::DIV, ZERO, ZERO);
   }
 
   #[test]
   fn print_types_and_expressions_tests() {
-    assert_eq!("bool", BOOL_TYPE.clone().pretty_print());
-    assert_eq!("int", INT_TYPE.pretty_print());
-    assert_eq!("string", STRING_TYPE.pretty_print());
-    assert_eq!("0", ZERO.clone().debug_print());
-    assert_eq!("(a: int)", Expression::var_name("a", INT_TYPE).debug_print());
+    let heap = &mut Heap::new();
+
+    assert_eq!("bool", BOOL_TYPE.clone().pretty_print(heap));
+    assert_eq!("int", INT_TYPE.pretty_print(heap));
+    assert_eq!("string", STRING_TYPE.pretty_print(heap));
+    assert_eq!("0", ZERO.clone().debug_print(heap));
+    ZERO.dump_to_string();
+    Expression::var_name(heap.alloc_str("a"), INT_TYPE).dump_to_string();
+    Expression::StringName(heap.alloc_str("a")).dump_to_string();
+    Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))
+      .dump_to_string();
+    assert_eq!("(a: int)", Expression::var_name(heap.alloc_str("a"), INT_TYPE).debug_print(heap));
     assert_eq!(
       "(a: A<int, B>)",
-      Expression::var_name("a", Type::new_id("A", vec![INT_TYPE, (Type::new_id_no_targs("B"))]))
-        .clone()
-        .debug_print()
+      Expression::var_name(
+        heap.alloc_str("a"),
+        Type::new_id(
+          heap.alloc_str("A"),
+          vec![INT_TYPE, (Type::new_id_no_targs(heap.alloc_str("B")))]
+        )
+      )
+      .clone()
+      .debug_print(heap)
     );
     assert_eq!(
       "(a: (int) -> int)",
-      Expression::var_name("a", Type::new_fn(vec![(INT_TYPE)], INT_TYPE)).debug_print()
+      Expression::var_name(heap.alloc_str("a"), Type::new_fn(vec![(INT_TYPE)], INT_TYPE))
+        .debug_print(heap)
     );
     assert_eq!(
       "a",
-      Expression::fn_name("a", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))
+      Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))
         .clone()
-        .debug_print()
+        .debug_print(heap)
     );
-    assert_eq!("a", Expression::StringName(rcs("a")).clone().debug_print());
+    assert_eq!("a", Expression::StringName(heap.alloc_str("a")).clone().debug_print(heap));
   }
 
   #[test]
   fn print_type_definition_tests() {
+    let heap = &mut Heap::new();
+
     assert_eq!(
       "object type A = [int, bool]",
       TypeDefinition {
-        identifier: rcs("A"),
+        identifier: heap.alloc_str("A"),
         is_object: true,
         type_parameters: vec![],
         names: vec![],
         mappings: vec![INT_TYPE, BOOL_TYPE],
       }
-      .pretty_print()
+      .pretty_print(heap)
     );
     assert_eq!(
       "variant type B<C> = [int, C]",
       TypeDefinition {
-        identifier: rcs("B"),
+        identifier: heap.alloc_str("B"),
         is_object: false,
-        type_parameters: vec![rcs("C")],
+        type_parameters: vec![heap.alloc_str("C")],
         names: vec![],
-        mappings: vec![INT_TYPE, Type::new_id_no_targs("C")],
+        mappings: vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("C"))],
       }
-      .pretty_print()
+      .pretty_print(heap)
     );
   }
 
   #[test]
   fn print_statement_tests() {
+    let heap = &mut Heap::new();
+
     let stmt = Statement::IfElse {
       condition: ZERO,
       s1: vec![
         Statement::StructInit {
-          struct_variable_name: rcs("baz"),
-          type_: Type::new_id_no_targs_unwrapped("FooBar"),
-          expression_list: vec![Expression::StringName(rcs("meggo"))],
+          struct_variable_name: heap.alloc_str("baz"),
+          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("FooBar")),
+          expression_list: vec![Expression::StringName(heap.alloc_str("meggo"))],
         },
         Statement::ClosureInit {
-          closure_variable_name: rcs("closure"),
-          closure_type: Type::new_id_no_targs_unwrapped("CCC"),
-          function_name: FunctionName::new("foo", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)),
+          closure_variable_name: heap.alloc_str("closure"),
+          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str("CCC")),
+          function_name: FunctionName::new(
+            heap.alloc_str("foo"),
+            Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+          ),
           context: ZERO,
         },
-        Statement::binary("dd", Operator::LT, ZERO, ZERO),
-        Statement::binary("dd", Operator::LE, ZERO, ZERO),
-        Statement::binary("dd", Operator::GT, ZERO, ZERO),
-        Statement::binary("dd", Operator::GE, ZERO, ZERO),
-        Statement::binary("dd", Operator::EQ, ZERO, ZERO),
-        Statement::binary("dd", Operator::NE, ZERO, ZERO),
-        Statement::binary("dd", Operator::XOR.clone(), ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::LT, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::LE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::GT, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::GE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::EQ, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::NE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::XOR.clone(), ZERO, ZERO),
         Statement::While {
           loop_variables: vec![],
           statements: vec![Statement::SingleIf {
@@ -189,7 +255,7 @@ mod tests {
         },
         Statement::While {
           loop_variables: vec![GenenalLoopVariable {
-            name: rcs("_"),
+            name: heap.alloc_str("_"),
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: ZERO,
@@ -199,54 +265,65 @@ mod tests {
             invert_condition: true,
             statements: vec![Statement::Break(ZERO)],
           }],
-          break_collector: Some(VariableName { name: rcs("_"), type_: INT_TYPE }),
+          break_collector: Some(VariableName { name: heap.alloc_str("_"), type_: INT_TYPE }),
         },
       ],
       s2: vec![
-        Statement::binary("dd", Operator::PLUS, ZERO, ZERO),
-        Statement::binary("dd", Operator::MINUS, ZERO, ZERO),
-        Statement::binary("dd", Operator::MINUS, ZERO, Expression::int(-2147483648)),
-        Statement::binary("dd", Operator::MUL, ZERO, ZERO),
-        Statement::binary("dd", Operator::DIV, ZERO, ZERO),
-        Statement::binary("dd", Operator::MOD, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::PLUS, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::MINUS, ZERO, ZERO),
+        Statement::binary(
+          heap.alloc_str("dd"),
+          Operator::MINUS,
+          ZERO,
+          Expression::int(-2147483648),
+        ),
+        Statement::binary(heap.alloc_str("dd"), Operator::MUL, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::DIV, ZERO, ZERO),
+        Statement::binary(heap.alloc_str("dd"), Operator::MOD, ZERO, ZERO),
         Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
-            "h",
+            heap.alloc_str("h"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           )),
-          arguments: vec![Expression::var_name("big", Type::new_id_no_targs("FooBar"))],
+          arguments: vec![Expression::var_name(
+            heap.alloc_str("big"),
+            Type::new_id_no_targs(heap.alloc_str("FooBar")),
+          )],
           return_type: INT_TYPE,
-          return_collector: Some(rcs("vibez")),
+          return_collector: Some(heap.alloc_str("vibez")),
         },
         Statement::Call {
           callee: Callee::FunctionName(FunctionName {
-            name: rcs("stresso"),
+            name: heap.alloc_str("stresso"),
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
             type_arguments: vec![INT_TYPE],
           }),
-          arguments: vec![Expression::var_name("d", INT_TYPE)],
+          arguments: vec![Expression::var_name(heap.alloc_str("d"), INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::Call {
-          callee: Callee::Variable(VariableName { name: rcs("d"), type_: INT_TYPE }),
-          arguments: vec![Expression::var_name("d", INT_TYPE)],
+          callee: Callee::Variable(VariableName { name: heap.alloc_str("d"), type_: INT_TYPE }),
+          arguments: vec![Expression::var_name(heap.alloc_str("d"), INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::IndexedAccess {
-          name: rcs("f"),
+          name: heap.alloc_str("f"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("big", Type::new_id_no_targs("FooBar")),
+          pointer_expression: Expression::var_name(
+            heap.alloc_str("big"),
+            Type::new_id_no_targs(heap.alloc_str("FooBar")),
+          ),
           index: 0,
         },
         Statement::Break(ZERO),
       ],
       final_assignments: vec![(
-        rcs("bar"),
+        heap.alloc_str("bar"),
         INT_TYPE,
-        Expression::var_name("b1", INT_TYPE),
-        Expression::var_name("b2", INT_TYPE),
+        Expression::var_name(heap.alloc_str("b1"), INT_TYPE),
+        Expression::var_name(heap.alloc_str("b2"), INT_TYPE),
       )],
     };
     assert!(!format!("{:?}", stmt.clone()).is_empty());
@@ -290,39 +367,46 @@ if 0 {
   break;
   bar = (b2: int);
 }"#;
-    assert_eq!(expected, stmt.debug_print());
+    assert_eq!(expected, stmt.debug_print(heap));
   }
 
   #[test]
   fn print_sources_tests() {
+    let heap = &mut Heap::new();
+
     let sources1 = Sources {
-      global_variables: vec![
-        GlobalVariable { name: rcs("dev_meggo"), content: rcs("vibez") }.clone()
-      ],
+      global_variables: vec![GlobalVariable {
+        name: heap.alloc_str("dev_meggo"),
+        content: heap.alloc_str("vibez"),
+      }
+      .clone()],
       closure_types: vec![ClosureTypeDefinition {
-        identifier: rcs("c"),
+        identifier: heap.alloc_str("c"),
         type_parameters: vec![],
         function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
       }
       .clone()],
       type_definitions: vec![TypeDefinition {
-        identifier: rcs("Foo"),
+        identifier: heap.alloc_str("Foo"),
         is_object: true,
         type_parameters: vec![],
         names: vec![],
         mappings: vec![INT_TYPE, BOOL_TYPE],
       }
       .clone()],
-      main_function_names: vec![rcs("ddd")],
+      main_function_names: vec![heap.alloc_str("ddd")],
       functions: vec![Function {
-        name: rcs("Bar"),
-        parameters: vec![rcs("f")],
+        name: heap.alloc_str("Bar"),
+        parameters: vec![heap.alloc_str("f")],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IndexedAccess {
-          name: rcs("f"),
+          name: heap.alloc_str("f"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name("big", Type::new_id_no_targs("FooBar")),
+          pointer_expression: Expression::var_name(
+            heap.alloc_str("big"),
+            Type::new_id_no_targs(heap.alloc_str("FooBar")),
+          ),
           index: 0,
         }],
         return_value: ZERO,
@@ -340,7 +424,7 @@ function Bar(f: int): int {
 }
 
 sources.mains = [ddd]"#;
-    assert_eq!(expected1, sources1.debug_print());
+    assert_eq!(expected1, sources1.debug_print(heap));
 
     let sources2 = Sources {
       global_variables: vec![],
@@ -348,9 +432,9 @@ sources.mains = [ddd]"#;
       type_definitions: vec![],
       main_function_names: vec![],
       functions: vec![Function {
-        name: rcs("Bar"),
-        parameters: vec![rcs("f")],
-        type_parameters: vec![rcs("A")],
+        name: heap.alloc_str("Bar"),
+        parameters: vec![heap.alloc_str("f")],
+        type_parameters: vec![heap.alloc_str("A")],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![],
         return_value: ZERO,
@@ -360,11 +444,13 @@ sources.mains = [ddd]"#;
   return 0;
 }
 "#;
-    assert_eq!(expected2, sources2.debug_print());
+    assert_eq!(expected2, sources2.debug_print(heap));
   }
 
   #[test]
   fn flexible_order_binary_tests() {
+    let heap = &mut Heap::new();
+
     assert_eq!(
       (Operator::PLUS, ONE, ZERO),
       Statement::flexible_order_binary(Operator::PLUS, ZERO, ONE)
@@ -378,65 +464,95 @@ sources.mains = [ddd]"#;
       Statement::flexible_order_binary(Operator::PLUS, ONE, ZERO)
     );
     assert_eq!(
-      (Operator::PLUS, Expression::StringName(rcs("")), ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, ZERO, Expression::StringName(rcs(""))),
-    );
-    assert_eq!(
-      (Operator::PLUS, Expression::var_name("", INT_TYPE), ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, ZERO, Expression::var_name("", INT_TYPE)),
-    );
-
-    assert_eq!(
-      (Operator::PLUS, Expression::StringName(rcs("b")), Expression::StringName(rcs("a"))),
+      (Operator::PLUS, Expression::StringName(heap.alloc_str("")), ZERO),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::StringName(rcs("a")),
-        Expression::StringName(rcs("b"))
+        ZERO,
+        Expression::StringName(heap.alloc_str(""))
       ),
     );
     assert_eq!(
-      (Operator::PLUS, Expression::StringName(rcs("b")), ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, Expression::StringName(rcs("b")), ZERO),
+      (Operator::PLUS, Expression::var_name(heap.alloc_str(""), INT_TYPE), ZERO),
+      Statement::flexible_order_binary(
+        Operator::PLUS,
+        ZERO,
+        Expression::var_name(heap.alloc_str(""), INT_TYPE)
+      ),
+    );
+
+    let a = heap.alloc_str("a");
+    let b = heap.alloc_str("b");
+    assert_eq!(
+      (Operator::PLUS, Expression::StringName(b), Expression::StringName(a),),
+      Statement::flexible_order_binary(
+        Operator::PLUS,
+        Expression::StringName(a),
+        Expression::StringName(b),
+      ),
+    );
+    assert_eq!(
+      (Operator::PLUS, Expression::StringName(heap.alloc_str("b")), ZERO),
+      Statement::flexible_order_binary(
+        Operator::PLUS,
+        Expression::StringName(heap.alloc_str("b")),
+        ZERO
+      ),
     );
     assert_eq!(
       (
         Operator::PLUS,
-        Expression::fn_name("b", Type::new_fn_unwrapped(vec![], INT_TYPE)),
-        Expression::fn_name("a", Type::new_fn_unwrapped(vec![], INT_TYPE))
+        Expression::fn_name(heap.alloc_str("b"), Type::new_fn_unwrapped(vec![], INT_TYPE)),
+        Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![], INT_TYPE))
       ),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::fn_name("b", Type::new_fn_unwrapped(vec![], INT_TYPE)),
-        Expression::fn_name("a", Type::new_fn_unwrapped(vec![], INT_TYPE))
+        Expression::fn_name(heap.alloc_str("b"), Type::new_fn_unwrapped(vec![], INT_TYPE)),
+        Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![], INT_TYPE))
       ),
     );
     assert_eq!(
-      (Operator::PLUS, Expression::var_name("", INT_TYPE), Expression::StringName(rcs("")),),
+      (
+        Operator::PLUS,
+        Expression::var_name(heap.alloc_str(""), INT_TYPE),
+        Expression::StringName(heap.alloc_str("")),
+      ),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::StringName(rcs("")),
-        Expression::var_name("", INT_TYPE),
+        Expression::StringName(heap.alloc_str("")),
+        Expression::var_name(heap.alloc_str(""), INT_TYPE),
       ),
     );
 
     assert_eq!(
-      (Operator::PLUS, Expression::var_name("", INT_TYPE), ZERO),
-      Statement::flexible_order_binary(Operator::PLUS, Expression::var_name("", INT_TYPE), ZERO),
-    );
-    assert_eq!(
-      (Operator::PLUS, Expression::var_name("a", INT_TYPE), Expression::StringName(rcs("b")),),
+      (Operator::PLUS, Expression::var_name(heap.alloc_str(""), INT_TYPE), ZERO),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::var_name("a", INT_TYPE),
-        Expression::StringName(rcs("b")),
+        Expression::var_name(heap.alloc_str(""), INT_TYPE),
+        ZERO
       ),
     );
     assert_eq!(
-      (Operator::PLUS, Expression::var_name("b", INT_TYPE), Expression::var_name("a", INT_TYPE),),
+      (
+        Operator::PLUS,
+        Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+        Expression::StringName(heap.alloc_str("b")),
+      ),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::var_name("a", INT_TYPE),
-        Expression::var_name("b", INT_TYPE),
+        Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+        Expression::StringName(heap.alloc_str("b")),
+      ),
+    );
+    assert_eq!(
+      (
+        Operator::PLUS,
+        Expression::var_name(heap.alloc_str("b"), INT_TYPE),
+        Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+      ),
+      Statement::flexible_order_binary(
+        Operator::PLUS,
+        Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+        Expression::var_name(heap.alloc_str("b"), INT_TYPE),
       ),
     );
 

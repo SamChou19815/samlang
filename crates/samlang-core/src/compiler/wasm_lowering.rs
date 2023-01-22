@@ -1,41 +1,35 @@
 use crate::{
   ast::{common_names, hir, mir, wasm},
-  common::{rc_string, Str},
+  common::{Heap, PStr},
 };
 use itertools::Itertools;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
-struct ResourceAllocator(i32);
-impl ResourceAllocator {
-  fn alloc_label_with_annot(&mut self, annot: &str) -> Str {
-    let label = rc_string(format!("l{}_{}", self.0, annot));
-    self.0 += 1;
-    label
-  }
-}
-
 #[derive(Clone)]
 struct LoopContext {
-  break_collector: Option<Str>,
-  exit_label: Str,
+  break_collector: Option<PStr>,
+  exit_label: PStr,
 }
 
 struct LoweringManager<'a> {
-  allocator: ResourceAllocator,
+  heap: &'a mut Heap,
+  label_id: i32,
   loop_cx: Option<LoopContext>,
-  local_variables: BTreeSet<Str>,
-  global_variables_to_pointer_mapping: &'a HashMap<Str, usize>,
-  function_index_mapping: &'a HashMap<Str, usize>,
+  local_variables: BTreeSet<PStr>,
+  global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
+  function_index_mapping: &'a HashMap<PStr, usize>,
 }
 
 impl<'a> LoweringManager<'a> {
   fn lower_fn(
-    global_variables_to_pointer_mapping: &'a HashMap<Str, usize>,
-    function_index_mapping: &'a HashMap<Str, usize>,
+    heap: &'a mut Heap,
+    global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
+    function_index_mapping: &'a HashMap<PStr, usize>,
     function: &mir::Function,
   ) -> wasm::Function {
     let mut instance = LoweringManager {
-      allocator: ResourceAllocator(0),
+      heap,
+      label_id: 0,
       loop_cx: None,
       local_variables: BTreeSet::new(),
       global_variables_to_pointer_mapping,
@@ -48,7 +42,7 @@ impl<'a> LoweringManager<'a> {
       instance.local_variables.remove(n);
     }
     wasm::Function {
-      name: function.name.clone(),
+      name: function.name,
       parameters: function.parameters.clone(),
       local_variables: instance.local_variables.into_iter().collect_vec(),
       instructions,
@@ -82,11 +76,13 @@ impl<'a> LoweringManager<'a> {
       mir::Statement::Call { callee, arguments, return_type: _, return_collector } => {
         let argument_instructions = arguments.iter().map(|it| self.lower_expr(it)).collect_vec();
         let call = if let mir::Expression::Name(name, _) = callee {
-          wasm::InlineInstruction::DirectCall(name.clone(), argument_instructions)
+          wasm::InlineInstruction::DirectCall(*name, argument_instructions)
         } else {
           wasm::InlineInstruction::IndirectCall {
             function_index: Box::new(self.lower_expr(callee)),
-            type_string: rc_string(wasm::function_type_string(argument_instructions.len())),
+            type_string: self
+              .heap
+              .alloc_string(wasm::function_type_string(argument_instructions.len())),
             arguments: argument_instructions,
           }
         };
@@ -142,8 +138,8 @@ impl<'a> LoweringManager<'a> {
       }
       mir::Statement::Break(e) => {
         let LoopContext { break_collector, exit_label } = self.loop_cx.as_ref().unwrap();
-        let exit_label = exit_label.clone();
-        if let Some(c) = break_collector.clone() {
+        let exit_label = *exit_label;
+        if let Some(c) = *break_collector {
           let e = self.lower_expr(e);
           vec![
             wasm::Instruction::Inline(self.set(&c, e)),
@@ -155,11 +151,11 @@ impl<'a> LoweringManager<'a> {
       }
       mir::Statement::While { loop_variables, statements, break_collector } => {
         let saved_current_loop_cx = self.loop_cx.clone();
-        let continue_label = self.allocator.alloc_label_with_annot("loop_continue");
-        let exit_label = self.allocator.alloc_label_with_annot("loop_exit");
+        let continue_label = self.alloc_label_with_annot("loop_continue");
+        let exit_label = self.alloc_label_with_annot("loop_exit");
         self.loop_cx = Some(LoopContext {
-          break_collector: if let Some((n, _)) = break_collector { Some(n.clone()) } else { None },
-          exit_label: exit_label.clone(),
+          break_collector: if let Some((n, _)) = break_collector { Some(*n) } else { None },
+          exit_label,
         });
         let mut instructions = loop_variables
           .iter()
@@ -174,7 +170,7 @@ impl<'a> LoweringManager<'a> {
           let e = self.lower_expr(&v.loop_value);
           loop_instructions.push(wasm::Instruction::Inline(self.set(&v.name, e)));
         }
-        loop_instructions.push(wasm::Instruction::UnconditionalJump(continue_label.clone()));
+        loop_instructions.push(wasm::Instruction::UnconditionalJump(continue_label));
         instructions.push(wasm::Instruction::Loop {
           continue_label,
           exit_label,
@@ -188,10 +184,11 @@ impl<'a> LoweringManager<'a> {
         vec![wasm::Instruction::Inline(self.set(name, assigned))]
       }
       mir::Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
+        let fn_name = self.heap.alloc_string(common_names::encoded_fn_name_malloc());
         let mut instructions = vec![wasm::Instruction::Inline(self.set(
           struct_variable_name,
           wasm::InlineInstruction::DirectCall(
-            rc_string(common_names::encoded_fn_name_malloc()),
+            fn_name,
             vec![wasm::InlineInstruction::Const(i32::try_from(expression_list.len() * 4).unwrap())],
           ),
         ))];
@@ -224,34 +221,41 @@ impl<'a> LoweringManager<'a> {
     }
   }
 
-  fn get(&mut self, n: &Str) -> wasm::InlineInstruction {
-    self.local_variables.insert(n.clone());
-    wasm::InlineInstruction::LocalGet(n.clone())
+  fn alloc_label_with_annot(&mut self, annot: &str) -> PStr {
+    let label = self.heap.alloc_string(format!("l{}_{}", self.label_id, annot));
+    self.label_id += 1;
+    label
   }
 
-  fn set(&mut self, n: &Str, v: wasm::InlineInstruction) -> wasm::InlineInstruction {
-    self.local_variables.insert(n.clone());
-    wasm::InlineInstruction::LocalSet(n.clone(), Box::new(v))
+  fn get(&mut self, n: &PStr) -> wasm::InlineInstruction {
+    self.local_variables.insert(*n);
+    wasm::InlineInstruction::LocalGet(*n)
+  }
+
+  fn set(&mut self, n: &PStr, v: wasm::InlineInstruction) -> wasm::InlineInstruction {
+    self.local_variables.insert(*n);
+    wasm::InlineInstruction::LocalSet(*n, Box::new(v))
   }
 }
 
-pub(super) fn compile_mir_to_wasm(sources: &mir::Sources) -> wasm::Module {
+pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &mir::Sources) -> wasm::Module {
   let mut data_start: usize = 4096;
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
   let mut global_variables = vec![];
   for hir::GlobalVariable { name, content } in &sources.global_variables {
-    let mut ints = vec![0, i32::try_from(content.len()).unwrap()];
-    for b in content.as_bytes() {
+    let content_str = content.as_str(heap);
+    let mut ints = vec![0, i32::try_from(content_str.len()).unwrap()];
+    for b in content_str.as_bytes() {
       ints.push(i32::from(*b));
     }
     let global_variable = wasm::GlobalData { constant_pointer: data_start, ints };
-    global_variables_to_pointer_mapping.insert(name.clone(), data_start);
-    data_start += (content.len() + 2) * 4;
+    global_variables_to_pointer_mapping.insert(*name, data_start);
+    data_start += (content_str.len() + 2) * 4;
     global_variables.push(global_variable);
   }
   for (i, f) in sources.functions.iter().enumerate() {
-    function_index_mapping.insert(f.name.clone(), i);
+    function_index_mapping.insert(f.name, i);
   }
   wasm::Module {
     function_type_parameter_counts: sources
@@ -268,7 +272,12 @@ pub(super) fn compile_mir_to_wasm(sources: &mir::Sources) -> wasm::Module {
       .functions
       .iter()
       .map(|f| {
-        LoweringManager::lower_fn(&global_variables_to_pointer_mapping, &function_index_mapping, f)
+        LoweringManager::lower_fn(
+          heap,
+          &global_variables_to_pointer_mapping,
+          &function_index_mapping,
+          f,
+        )
       })
       .collect_vec(),
   }
@@ -283,13 +292,15 @@ mod tests {
         Expression, Function, GenenalLoopVariable, Sources, Statement, Type, FALSE, INT_TYPE, ZERO,
       },
     },
-    common::rcs,
+    common::Heap,
   };
   use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {
-    assert!(super::LoopContext { break_collector: None, exit_label: rcs("") }
+    let heap = &mut Heap::new();
+
+    assert!(super::LoopContext { break_collector: None, exit_label: heap.alloc_str("") }
       .clone()
       .break_collector
       .is_none());
@@ -297,16 +308,18 @@ mod tests {
 
   #[test]
   fn comprehensive_test() {
-    let actual = super::compile_mir_to_wasm(&Sources {
+    let heap = &mut Heap::new();
+
+    let sources = Sources {
       global_variables: vec![
-        GlobalVariable { name: rcs("FOO"), content: rcs("foo") },
-        GlobalVariable { name: rcs("BAR"), content: rcs("bar") },
+        GlobalVariable { name: heap.alloc_str("FOO"), content: heap.alloc_str("foo") },
+        GlobalVariable { name: heap.alloc_str("BAR"), content: heap.alloc_str("bar") },
       ],
       type_definitions: vec![],
-      main_function_names: vec![rcs("main")],
+      main_function_names: vec![heap.alloc_str("main")],
       functions: vec![Function {
-        name: rcs("main"),
-        parameters: vec![rcs("bar")],
+        name: heap.alloc_str("main"),
+        parameters: vec![heap.alloc_str("bar")],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
           Statement::IfElse { condition: FALSE, s1: vec![], s2: vec![], final_assignments: vec![] },
@@ -314,7 +327,7 @@ mod tests {
             condition: FALSE,
             s1: vec![],
             s2: vec![Statement::Cast {
-              name: rcs("c"),
+              name: heap.alloc_str("c"),
               type_: INT_TYPE,
               assigned_expression: ZERO,
             }],
@@ -324,13 +337,13 @@ mod tests {
             condition: FALSE,
             s1: vec![Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: rcs("i"),
+                name: heap.alloc_str("i"),
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![Statement::Cast {
-                name: rcs("c"),
+                name: heap.alloc_str("c"),
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               }],
@@ -344,7 +357,7 @@ mod tests {
                   invert_condition: false,
                   statements: vec![Statement::Break(ZERO)],
                 }],
-                break_collector: Some((rcs("b"), INT_TYPE)),
+                break_collector: Some((heap.alloc_str("b"), INT_TYPE)),
               },
               Statement::While {
                 loop_variables: vec![],
@@ -357,60 +370,65 @@ mod tests {
               },
             ],
             final_assignments: vec![(
-              rcs("f"),
+              heap.alloc_str("f"),
               INT_TYPE,
-              Expression::Name(rcs("FOO"), INT_TYPE),
-              Expression::Name(rcs("main"), Type::new_fn(vec![], INT_TYPE)),
+              Expression::Name(heap.alloc_str("FOO"), INT_TYPE),
+              Expression::Name(heap.alloc_str("main"), Type::new_fn(vec![], INT_TYPE)),
             )],
           },
-          Statement::binary("bin", Operator::PLUS, Expression::Variable(rcs("f"), INT_TYPE), ZERO),
+          Statement::binary(
+            heap.alloc_str("bin"),
+            Operator::PLUS,
+            Expression::Variable(heap.alloc_str("f"), INT_TYPE),
+            ZERO,
+          ),
           Statement::Call {
-            callee: Expression::Name(rcs("main"), Type::new_fn(vec![], INT_TYPE)),
+            callee: Expression::Name(heap.alloc_str("main"), Type::new_fn(vec![], INT_TYPE)),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
             return_collector: None,
           },
           Statement::Call {
-            callee: Expression::Variable(rcs("f"), INT_TYPE),
+            callee: Expression::Variable(heap.alloc_str("f"), INT_TYPE),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
-            return_collector: Some(rcs("rc")),
+            return_collector: Some(heap.alloc_str("rc")),
           },
           Statement::IndexedAccess {
-            name: rcs("v"),
+            name: heap.alloc_str("v"),
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::IndexedAssign {
-            assigned_expression: Expression::Variable(rcs("v"), INT_TYPE),
+            assigned_expression: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::StructInit {
-            struct_variable_name: rcs("s"),
+            struct_variable_name: heap.alloc_str("s"),
             type_: INT_TYPE,
-            expression_list: vec![ZERO, Expression::Variable(rcs("v"), INT_TYPE)],
+            expression_list: vec![ZERO, Expression::Variable(heap.alloc_str("v"), INT_TYPE)],
           },
         ],
         return_value: ZERO,
       }],
-    })
-    .pretty_print();
+    };
+    let actual = super::compile_mir_to_wasm(heap, &sources).pretty_print(heap);
     let expected = r#"(type $i32_=>_i32 (func (param i32) (result i32)))
 (data (i32.const 4096) "\00\00\00\00\03\00\00\00\66\00\00\00\6f\00\00\00\6f\00\00\00")
 (data (i32.const 4116) "\00\00\00\00\03\00\00\00\62\00\00\00\61\00\00\00\72\00\00\00")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $main)
 (func $main (param $bar i32) (result i32)
-  (local $b i32)
-  (local $bin i32)
   (local $c i32)
-  (local $f i32)
   (local $i i32)
+  (local $b i32)
+  (local $f i32)
+  (local $bin i32)
   (local $rc i32)
-  (local $s i32)
   (local $v i32)
+  (local $s i32)
   (if (i32.xor (i32.const 0) (i32.const 1)) (then
     (local.set $c (i32.const 0))
   ))

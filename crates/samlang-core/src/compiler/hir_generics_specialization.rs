@@ -6,7 +6,7 @@ use crate::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
     IdType, Sources, Statement, Type, TypeDefinition, VariableName,
   },
-  common::{rc_string, Str},
+  common::{Heap, PStr},
 };
 use itertools::Itertools;
 use std::{
@@ -16,89 +16,92 @@ use std::{
 };
 
 struct Rewriter {
-  original_closure_defs: HashMap<Str, Rc<ClosureTypeDefinition>>,
-  original_type_defs: HashMap<Str, Rc<TypeDefinition>>,
-  original_functions: HashMap<Str, Rc<Function>>,
-  used_string_names: HashSet<Str>,
-  specialized_id_type_mappings: HashMap<Str, Str>,
-  specialized_closure_definitions: BTreeMap<Str, Rc<ClosureTypeDefinition>>,
-  specialized_type_definitions: BTreeMap<Str, Rc<TypeDefinition>>,
-  specialized_functions: BTreeMap<Str, Rc<Function>>,
+  original_closure_defs: HashMap<PStr, Rc<ClosureTypeDefinition>>,
+  original_type_defs: HashMap<PStr, Rc<TypeDefinition>>,
+  original_functions: HashMap<PStr, Rc<Function>>,
+  used_string_names: HashSet<PStr>,
+  specialized_id_type_mappings: HashMap<PStr, PStr>,
+  specialized_closure_definitions: BTreeMap<PStr, Rc<ClosureTypeDefinition>>,
+  specialized_type_definitions: BTreeMap<PStr, Rc<TypeDefinition>>,
+  specialized_functions: BTreeMap<PStr, Rc<Function>>,
 }
 
 impl Rewriter {
   fn rewrite_function(
     &mut self,
+    heap: &mut Heap,
     Function { name: _, parameters, type_parameters: _, type_: _, body, return_value }: &Function,
-    new_name: Str,
+    new_name: PStr,
     new_type: FunctionType,
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Function {
     Function {
       name: new_name,
       parameters: parameters.clone(),
       type_parameters: vec![],
       type_: new_type,
-      body: self.rewrite_stmts(body, generics_replacement_map),
-      return_value: self.rewrite_expr(return_value, generics_replacement_map),
+      body: self.rewrite_stmts(heap, body, generics_replacement_map),
+      return_value: self.rewrite_expr(heap, return_value, generics_replacement_map),
     }
   }
 
   fn rewrite_stmts(
     &mut self,
+    heap: &mut Heap,
     stmts: &[Statement],
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Vec<Statement> {
-    stmts.iter().map(|stmt| self.rewrite_stmt(stmt, generics_replacement_map)).collect_vec()
+    stmts.iter().map(|stmt| self.rewrite_stmt(heap, stmt, generics_replacement_map)).collect_vec()
   }
 
   fn rewrite_stmt(
     &mut self,
+    heap: &mut Heap,
     stmt: &Statement,
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Statement {
     match stmt {
       Statement::Binary(Binary { name, type_, operator, e1, e2 }) => Statement::Binary(Binary {
-        name: name.clone(),
-        type_: self.rewrite_type(type_, generics_replacement_map),
+        name: *name,
+        type_: self.rewrite_type(heap, type_, generics_replacement_map),
         operator: *operator,
-        e1: self.rewrite_expr(e1, generics_replacement_map),
-        e2: self.rewrite_expr(e2, generics_replacement_map),
+        e1: self.rewrite_expr(heap, e1, generics_replacement_map),
+        e2: self.rewrite_expr(heap, e2, generics_replacement_map),
       }),
       Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         Statement::IndexedAccess {
-          name: name.clone(),
-          type_: self.rewrite_type(type_, generics_replacement_map),
-          pointer_expression: self.rewrite_expr(pointer_expression, generics_replacement_map),
+          name: *name,
+          type_: self.rewrite_type(heap, type_, generics_replacement_map),
+          pointer_expression: self.rewrite_expr(heap, pointer_expression, generics_replacement_map),
           index: *index,
         }
       }
       Statement::Call { callee, arguments, return_type, return_collector } => Statement::Call {
         callee: match callee {
           Callee::FunctionName(fn_name) => {
-            Callee::FunctionName(self.rewrite_fn_name_expr(fn_name, generics_replacement_map))
+            Callee::FunctionName(self.rewrite_fn_name_expr(heap, fn_name, generics_replacement_map))
           }
           Callee::Variable(VariableName { name, type_ }) => Callee::Variable(VariableName {
-            name: name.clone(),
-            type_: self.rewrite_type(type_, generics_replacement_map),
+            name: *name,
+            type_: self.rewrite_type(heap, type_, generics_replacement_map),
           }),
         },
-        arguments: self.rewrite_expressions(arguments, generics_replacement_map),
-        return_type: self.rewrite_type(return_type, generics_replacement_map),
-        return_collector: return_collector.clone(),
+        arguments: self.rewrite_expressions(heap, arguments, generics_replacement_map),
+        return_type: self.rewrite_type(heap, return_type, generics_replacement_map),
+        return_collector: *return_collector,
       },
       Statement::IfElse { condition, s1, s2, final_assignments } => Statement::IfElse {
-        condition: self.rewrite_expr(condition, generics_replacement_map),
-        s1: self.rewrite_stmts(s1, generics_replacement_map),
-        s2: self.rewrite_stmts(s2, generics_replacement_map),
+        condition: self.rewrite_expr(heap, condition, generics_replacement_map),
+        s1: self.rewrite_stmts(heap, s1, generics_replacement_map),
+        s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
         final_assignments: final_assignments
           .iter()
           .map(|(n, t, e1, e2)| {
             (
-              n.clone(),
-              self.rewrite_type(t, generics_replacement_map),
-              self.rewrite_expr(e1, generics_replacement_map),
-              self.rewrite_expr(e2, generics_replacement_map),
+              *n,
+              self.rewrite_type(heap, t, generics_replacement_map),
+              self.rewrite_expr(heap, e1, generics_replacement_map),
+              self.rewrite_expr(heap, e2, generics_replacement_map),
             )
           })
           .collect_vec(),
@@ -113,21 +116,25 @@ impl Rewriter {
         panic!("While should not appear before tailrec optimization.")
       }
       Statement::StructInit { struct_variable_name, type_, expression_list } => {
-        let type_ = self.rewrite_id_type(type_, generics_replacement_map).into_id().unwrap();
+        let type_ = self.rewrite_id_type(heap, type_, generics_replacement_map).into_id().unwrap();
         Statement::StructInit {
-          struct_variable_name: struct_variable_name.clone(),
+          struct_variable_name: *struct_variable_name,
           type_,
-          expression_list: self.rewrite_expressions(expression_list, generics_replacement_map),
+          expression_list: self.rewrite_expressions(
+            heap,
+            expression_list,
+            generics_replacement_map,
+          ),
         }
       }
       Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
         let closure_type =
-          self.rewrite_id_type(closure_type, generics_replacement_map).into_id().unwrap();
+          self.rewrite_id_type(heap, closure_type, generics_replacement_map).into_id().unwrap();
         Statement::ClosureInit {
-          closure_variable_name: closure_variable_name.clone(),
+          closure_variable_name: *closure_variable_name,
           closure_type,
-          function_name: self.rewrite_fn_name_expr(function_name, generics_replacement_map),
-          context: self.rewrite_expr(context, generics_replacement_map),
+          function_name: self.rewrite_fn_name_expr(heap, function_name, generics_replacement_map),
+          context: self.rewrite_expr(heap, context, generics_replacement_map),
         }
       }
     }
@@ -135,112 +142,124 @@ impl Rewriter {
 
   fn rewrite_expressions(
     &mut self,
+    heap: &mut Heap,
     expressions: &[Expression],
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Vec<Expression> {
-    expressions.iter().map(|e| self.rewrite_expr(e, generics_replacement_map)).collect_vec()
+    expressions.iter().map(|e| self.rewrite_expr(heap, e, generics_replacement_map)).collect_vec()
   }
 
   fn rewrite_expr(
     &mut self,
+    heap: &mut Heap,
     expression: &Expression,
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Expression {
     match expression {
       Expression::IntLiteral(i, b) => Expression::IntLiteral(*i, *b),
       Expression::StringName(s) => {
-        self.used_string_names.insert(s.clone());
-        Expression::StringName(s.clone())
+        self.used_string_names.insert(*s);
+        Expression::StringName(*s)
       }
       Expression::Variable(VariableName { name, type_ }) => Expression::Variable(VariableName {
-        name: name.clone(),
-        type_: self.rewrite_type(type_, generics_replacement_map),
+        name: *name,
+        type_: self.rewrite_type(heap, type_, generics_replacement_map),
       }),
       Expression::FunctionName(fn_name) => {
-        Expression::FunctionName(self.rewrite_fn_name_expr(fn_name, generics_replacement_map))
+        Expression::FunctionName(self.rewrite_fn_name_expr(heap, fn_name, generics_replacement_map))
       }
     }
   }
 
   fn rewrite_fn_name_expr(
     &mut self,
+    heap: &mut Heap,
     FunctionName { name, type_, type_arguments }: &FunctionName,
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> FunctionName {
-    let fn_type = self.rewrite_fn_type(type_, generics_replacement_map);
-    let rewritten_targs = self.rewrite_types(type_arguments, generics_replacement_map);
+    let fn_type = self.rewrite_fn_type(heap, type_, generics_replacement_map);
+    let rewritten_targs = self.rewrite_types(heap, type_arguments, generics_replacement_map);
     let rewritten_name =
-      self.rewrite_fn_name(name, fn_type.clone(), rewritten_targs, generics_replacement_map);
+      self.rewrite_fn_name(heap, *name, fn_type.clone(), rewritten_targs, generics_replacement_map);
     FunctionName { name: rewritten_name, type_: fn_type, type_arguments: vec![] }
   }
 
   fn rewrite_fn_name(
     &mut self,
-    original_name: &Str,
+    heap: &mut Heap,
+    original_name: PStr,
     function_type: FunctionType,
     function_type_arguments: Vec<Type>,
-    generics_replacement_map: &HashMap<Str, Type>,
-  ) -> Str {
-    if original_name.starts_with("$GENERICS$_") {
-      let to_be_splitted = original_name.chars().skip("$GENERICS$_".len()).collect::<String>();
+    generics_replacement_map: &HashMap<PStr, Type>,
+  ) -> PStr {
+    if original_name.as_str(heap).starts_with("$GENERICS$_") {
+      let to_be_splitted =
+        original_name.as_str(heap).chars().skip("$GENERICS$_".len()).collect::<String>();
       let mut splitted = to_be_splitted.split('$');
-      let generic_class_name = rc_string(splitted.next().unwrap().to_string());
+      let generic_class_name = heap.alloc_string(splitted.next().unwrap().to_string());
       let fn_name = splitted.next().unwrap().to_string();
       let replacement_class =
         generics_replacement_map.get(&generic_class_name).unwrap().as_id().unwrap();
       let replacement_class_type =
         self.specialized_id_type_mappings.get(&replacement_class.name).unwrap();
-      let rewritten_fn_name = rc_string(format!("_{}${}", replacement_class_type, fn_name));
+      let rewritten_fn_name =
+        heap.alloc_string(format!("_{}${}", replacement_class_type.as_str(heap), fn_name));
       return self.rewrite_fn_name(
-        &rewritten_fn_name,
+        heap,
+        rewritten_fn_name,
         function_type,
         function_type_arguments,
         generics_replacement_map,
       );
     }
-    if let Some(existing_fn) = self.original_functions.get(original_name).cloned() {
-      let encoded_specialized_fn_name = rc_string(encode_name_after_generics_specialization(
-        original_name,
-        &function_type_arguments,
-      ));
+    if let Some(existing_fn) = self.original_functions.get(&original_name).cloned() {
+      let encoded_specialized_fn_name = heap.alloc_string(
+        encode_name_after_generics_specialization(heap, original_name, &function_type_arguments),
+      );
       if !self.specialized_functions.contains_key(&encoded_specialized_fn_name) {
-        self.specialized_functions.insert(encoded_specialized_fn_name.clone(), existing_fn.clone());
+        self.specialized_functions.insert(encoded_specialized_fn_name, existing_fn.clone());
         let rewritten_fn = self.rewrite_function(
+          heap,
           &existing_fn,
-          encoded_specialized_fn_name.clone(),
+          encoded_specialized_fn_name,
           function_type,
           &existing_fn.type_parameters.iter().cloned().zip(function_type_arguments).collect(),
         );
-        self
-          .specialized_functions
-          .insert(encoded_specialized_fn_name.clone(), Rc::new(rewritten_fn));
+        self.specialized_functions.insert(encoded_specialized_fn_name, Rc::new(rewritten_fn));
       }
       encoded_specialized_fn_name
     } else {
-      original_name.clone()
+      original_name
     }
   }
 
   fn rewrite_types(
     &mut self,
+    heap: &mut Heap,
     types: &[Type],
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Vec<Type> {
-    types.iter().map(|t| self.rewrite_type(t, generics_replacement_map)).collect_vec()
+    types.iter().map(|t| self.rewrite_type(heap, t, generics_replacement_map)).collect_vec()
   }
 
-  fn rewrite_type(&mut self, type_: &Type, generics_replacement_map: &HashMap<Str, Type>) -> Type {
+  fn rewrite_type(
+    &mut self,
+    heap: &mut Heap,
+    type_: &Type,
+    generics_replacement_map: &HashMap<PStr, Type>,
+  ) -> Type {
     match type_ {
       Type::Primitive(kind) => Type::Primitive(*kind),
-      Type::Id(id) => self.rewrite_id_type(id, generics_replacement_map),
-      Type::Fn(f) => Type::Fn(self.rewrite_fn_type(f, generics_replacement_map)),
+      Type::Id(id) => self.rewrite_id_type(heap, id, generics_replacement_map),
+      Type::Fn(f) => Type::Fn(self.rewrite_fn_type(heap, f, generics_replacement_map)),
     }
   }
 
   fn rewrite_id_type(
     &mut self,
+    heap: &mut Heap,
     id_type: &IdType,
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Type {
     if id_type.type_arguments.is_empty() {
       if let Some(replacement) = generics_replacement_map.get(&id_type.name) {
@@ -248,16 +267,17 @@ impl Rewriter {
       }
     }
     let concrete_type = IdType {
-      name: id_type.name.clone(),
-      type_arguments: self.rewrite_types(&id_type.type_arguments, generics_replacement_map),
+      name: id_type.name,
+      type_arguments: self.rewrite_types(heap, &id_type.type_arguments, generics_replacement_map),
     };
-    let encoded_name = rc_string(encode_name_after_generics_specialization(
-      &concrete_type.name,
+    let encoded_name = heap.alloc_string(encode_name_after_generics_specialization(
+      heap,
+      concrete_type.name,
       &concrete_type.type_arguments,
     ));
     if self.specialized_type_definitions.get(&encoded_name).is_none() {
       if let Some(type_def) = self.original_type_defs.get(&concrete_type.name).cloned() {
-        let solved_targs_replacement_map: HashMap<Str, Type> = type_def
+        let solved_targs_replacement_map: HashMap<PStr, Type> = type_def
           .type_parameters
           .iter()
           .cloned()
@@ -265,28 +285,32 @@ impl Rewriter {
             &type_def.type_parameters,
             &concrete_type,
             &IdType {
-              name: concrete_type.name.clone(),
+              name: concrete_type.name,
               type_arguments: type_def
                 .type_parameters
                 .iter()
                 .cloned()
-                .map(Type::new_id_str_no_targs)
+                .map(Type::new_id_no_targs)
                 .collect_vec(),
             },
           ))
           .collect();
-        self.specialized_type_definitions.insert(encoded_name.clone(), type_def.clone());
+        self.specialized_type_definitions.insert(encoded_name, type_def.clone());
         let rewritten_mappings = type_def
           .mappings
           .iter()
           .map(|it| {
-            self.rewrite_type(&type_application(it, &solved_targs_replacement_map), &HashMap::new())
+            self.rewrite_type(
+              heap,
+              &type_application(it, &solved_targs_replacement_map),
+              &HashMap::new(),
+            )
           })
           .collect_vec();
         self.specialized_type_definitions.insert(
-          encoded_name.clone(),
+          encoded_name,
           Rc::new(TypeDefinition {
-            identifier: encoded_name.clone(),
+            identifier: encoded_name,
             is_object: type_def.is_object,
             type_parameters: vec![],
             names: type_def.names.clone(),
@@ -298,8 +322,8 @@ impl Rewriter {
           .original_closure_defs
           .get(&concrete_type.name)
           .cloned()
-          .expect(&format!("Missing {}", concrete_type.name));
-        let solved_targs_replacement_map: HashMap<Str, Type> = closure_def
+          .expect(&format!("Missing {}", concrete_type.name.as_str(heap)));
+        let solved_targs_replacement_map: HashMap<PStr, Type> = closure_def
           .type_parameters
           .iter()
           .cloned()
@@ -307,19 +331,20 @@ impl Rewriter {
             &closure_def.type_parameters,
             &concrete_type,
             &IdType {
-              name: concrete_type.name.clone(),
+              name: concrete_type.name,
               type_arguments: closure_def
                 .type_parameters
                 .iter()
                 .cloned()
-                .map(Type::new_id_str_no_targs)
+                .map(Type::new_id_no_targs)
                 .collect_vec(),
             },
           ))
           .collect();
-        self.specialized_closure_definitions.insert(encoded_name.clone(), closure_def.clone());
+        self.specialized_closure_definitions.insert(encoded_name, closure_def.clone());
         let rewritten_fn_type = self
           .rewrite_type(
+            heap,
             &type_application(
               &Type::Fn(closure_def.function_type.clone()),
               &solved_targs_replacement_map,
@@ -329,27 +354,28 @@ impl Rewriter {
           .into_fn()
           .unwrap();
         self.specialized_closure_definitions.insert(
-          encoded_name.clone(),
+          encoded_name,
           Rc::new(ClosureTypeDefinition {
-            identifier: encoded_name.clone(),
+            identifier: encoded_name,
             type_parameters: vec![],
             function_type: rewritten_fn_type,
           }),
         );
       }
     }
-    self.specialized_id_type_mappings.insert(encoded_name.clone(), concrete_type.name);
-    Type::new_id_str_no_targs(encoded_name)
+    self.specialized_id_type_mappings.insert(encoded_name, concrete_type.name);
+    Type::new_id_no_targs(encoded_name)
   }
 
   fn rewrite_fn_type(
     &mut self,
+    heap: &mut Heap,
     FunctionType { argument_types, return_type }: &FunctionType,
-    generics_replacement_map: &HashMap<Str, Type>,
+    generics_replacement_map: &HashMap<PStr, Type>,
   ) -> FunctionType {
     FunctionType {
-      argument_types: self.rewrite_types(argument_types, generics_replacement_map),
-      return_type: Box::new(self.rewrite_type(return_type, generics_replacement_map)),
+      argument_types: self.rewrite_types(heap, argument_types, generics_replacement_map),
+      return_type: Box::new(self.rewrite_type(heap, return_type, generics_replacement_map)),
     }
   }
 }
@@ -359,18 +385,19 @@ fn rc_valued_bmap_into_vec<K, T: Debug>(map: BTreeMap<K, Rc<T>>) -> Vec<T> {
 }
 
 pub(super) fn perform_generics_specialization(
+  heap: &mut Heap,
   Sources { global_variables, closure_types, type_definitions, main_function_names, functions }: Sources,
 ) -> Sources {
   let mut rewriter = Rewriter {
     original_closure_defs: closure_types
       .into_iter()
-      .map(|it| (it.identifier.clone(), Rc::new(it)))
+      .map(|it| (it.identifier, Rc::new(it)))
       .collect(),
     original_type_defs: type_definitions
       .into_iter()
-      .map(|it| (it.identifier.clone(), Rc::new(it)))
+      .map(|it| (it.identifier, Rc::new(it)))
       .collect(),
-    original_functions: functions.into_iter().map(|it| (it.name.clone(), Rc::new(it))).collect(),
+    original_functions: functions.into_iter().map(|it| (it.name, Rc::new(it))).collect(),
     used_string_names: HashSet::new(),
     specialized_id_type_mappings: HashMap::new(),
     specialized_closure_definitions: BTreeMap::new(),
@@ -380,12 +407,13 @@ pub(super) fn perform_generics_specialization(
   for main_fn_name in &main_function_names {
     let original_fn = rewriter.original_functions.get(main_fn_name).cloned().unwrap();
     let rewritten = rewriter.rewrite_function(
+      heap,
       &original_fn,
-      main_fn_name.clone(),
+      *main_fn_name,
       original_fn.type_.clone(),
       &HashMap::new(),
     );
-    rewriter.specialized_functions.insert(main_fn_name.clone(), Rc::new(rewritten));
+    rewriter.specialized_functions.insert(*main_fn_name, Rc::new(rewritten));
   }
   let Rewriter {
     used_string_names,
@@ -409,14 +437,11 @@ pub(super) fn perform_generics_specialization(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    ast::hir::{GlobalVariable, Operator, INT_TYPE, STRING_TYPE, TRUE, ZERO},
-    common::rcs,
-  };
+  use crate::ast::hir::{GlobalVariable, Operator, INT_TYPE, STRING_TYPE, TRUE, ZERO};
   use pretty_assertions::assert_eq;
 
-  fn assert_specialized(sources: Sources, expected: &str) {
-    assert_eq!(expected.trim(), perform_generics_specialization(sources).debug_print());
+  fn assert_specialized(sources: Sources, heap: &mut Heap, expected: &str) {
+    assert_eq!(expected.trim(), perform_generics_specialization(heap, sources).debug_print(heap));
   }
 
   #[test]
@@ -429,21 +454,24 @@ mod tests {
         main_function_names: vec![],
         functions: vec![],
       },
+      &mut Heap::new(),
       "",
     );
   }
 
   #[test]
   fn dce_real_smoke_test() {
+    let heap = &mut Heap::new();
+
     assert_specialized(
       Sources {
         global_variables: vec![],
         closure_types: vec![],
         type_definitions: vec![],
-        main_function_names: vec![rcs("main")],
+        main_function_names: vec![heap.alloc_str("main")],
         functions: vec![
           Function {
-            name: rcs("main"),
+            name: heap.alloc_str("main"),
             parameters: vec![],
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -451,7 +479,7 @@ mod tests {
             return_value: ZERO,
           },
           Function {
-            name: rcs("main2"),
+            name: heap.alloc_str("main2"),
             parameters: vec![],
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -460,6 +488,7 @@ mod tests {
           },
         ],
       },
+      heap,
       r#"
 function main(): int {
   return 0;
@@ -472,29 +501,35 @@ sources.mains = [main]
 
   #[test]
   fn builtin_function_call_no_dce_test() {
+    let heap = &mut Heap::new();
+
     assert_specialized(
       Sources {
-        global_variables: vec![GlobalVariable { name: rcs("G1"), content: rcs("") }],
+        global_variables: vec![GlobalVariable {
+          name: heap.alloc_str("G1"),
+          content: heap.alloc_str(""),
+        }],
         closure_types: vec![],
         type_definitions: vec![],
-        main_function_names: vec![rcs("main")],
+        main_function_names: vec![heap.alloc_str("main")],
         functions: vec![Function {
-          name: rcs("main"),
+          name: heap.alloc_str("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              "__builtins_println",
+              heap.alloc_str("__builtins_println"),
               Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
             )),
-            arguments: vec![Expression::StringName(rcs("G1"))],
+            arguments: vec![Expression::StringName(heap.alloc_str("G1"))],
             return_type: INT_TYPE,
             return_collector: None,
           }],
           return_value: ZERO,
         }],
       },
+      heap,
       r#"const G1 = '';
 
 function main(): int {
@@ -510,32 +545,37 @@ sources.mains = [main]
   #[should_panic]
   #[test]
   fn panic_test_1() {
-    perform_generics_specialization(Sources {
+    let heap = &mut Heap::new();
+
+    let sources = Sources {
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![rcs("main")],
+      main_function_names: vec![heap.alloc_str("main")],
       functions: vec![Function {
-        name: rcs("main"),
+        name: heap.alloc_str("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::Break(ZERO)],
         return_value: ZERO,
       }],
-    });
+    };
+    perform_generics_specialization(heap, sources);
   }
 
   #[should_panic]
   #[test]
   fn panic_test_2() {
-    perform_generics_specialization(Sources {
+    let heap = &mut Heap::new();
+
+    let sources = Sources {
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![rcs("main")],
+      main_function_names: vec![heap.alloc_str("main")],
       functions: vec![Function {
-        name: rcs("main"),
+        name: heap.alloc_str("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -546,19 +586,22 @@ sources.mains = [main]
         }],
         return_value: ZERO,
       }],
-    });
+    };
+    perform_generics_specialization(heap, sources);
   }
 
   #[should_panic]
   #[test]
   fn panic_test_3() {
-    perform_generics_specialization(Sources {
+    let heap = &mut Heap::new();
+
+    let sources = Sources {
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![rcs("main")],
+      main_function_names: vec![heap.alloc_str("main")],
       functions: vec![Function {
-        name: rcs("main"),
+        name: heap.alloc_str("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -569,55 +612,61 @@ sources.mains = [main]
         }],
         return_value: ZERO,
       }],
-    });
+    };
+    perform_generics_specialization(heap, sources);
   }
 
   #[test]
   fn comprehensive_test() {
-    let type_a = Type::new_id_no_targs("A");
-    let type_b = Type::new_id_no_targs("B");
-    let type_j = Type::new_id_no_targs("J");
-    let type_ia = Type::new_id("I", vec![type_a.clone(), STRING_TYPE]);
-    let type_ib = Type::new_id("I", vec![INT_TYPE, type_b.clone()]);
-    let type_i = Type::new_id("I", vec![INT_TYPE, STRING_TYPE]);
-    let g1 = Expression::StringName(rcs("G1"));
+    let heap = &mut Heap::new();
+
+    let type_a = Type::new_id_no_targs(heap.alloc_str("A"));
+    let type_b = Type::new_id_no_targs(heap.alloc_str("B"));
+    let type_j = Type::new_id_no_targs(heap.alloc_str("J"));
+    let type_ia = Type::new_id(heap.alloc_str("I"), vec![type_a.clone(), STRING_TYPE]);
+    let type_ib = Type::new_id(heap.alloc_str("I"), vec![INT_TYPE, type_b.clone()]);
+    let type_i = Type::new_id(heap.alloc_str("I"), vec![INT_TYPE, STRING_TYPE]);
+    let g1 = Expression::StringName(heap.alloc_str("G1"));
     assert_specialized(
       Sources {
         global_variables: vec![
-          GlobalVariable { name: rcs("G1"), content: rcs("") },
-          GlobalVariable { name: rcs("G2"), content: rcs("") },
+          GlobalVariable { name: heap.alloc_str("G1"), content: heap.alloc_str("") },
+          GlobalVariable { name: heap.alloc_str("G2"), content: heap.alloc_str("") },
         ],
         closure_types: vec![ClosureTypeDefinition {
-          identifier: rcs("CC"),
-          type_parameters: vec![rcs("A"), rcs("B")],
+          identifier: heap.alloc_str("CC"),
+          type_parameters: vec![heap.alloc_str("A"), heap.alloc_str("B")],
           function_type: Type::new_fn_unwrapped(vec![type_a.clone()], type_b.clone()),
         }],
         type_definitions: vec![
           TypeDefinition {
-            identifier: rcs("I"),
+            identifier: heap.alloc_str("I"),
             is_object: false,
-            type_parameters: vec![rcs("A"), rcs("B")],
+            type_parameters: vec![heap.alloc_str("A"), heap.alloc_str("B")],
             names: vec![],
-            mappings: vec![Type::new_id_no_targs("A"), Type::new_id_no_targs("B")],
+            mappings: vec![
+              Type::new_id_no_targs(heap.alloc_str("A")),
+              Type::new_id_no_targs(heap.alloc_str("B")),
+            ],
           },
           TypeDefinition {
-            identifier: rcs("J"),
+            identifier: heap.alloc_str("J"),
             is_object: true,
             type_parameters: vec![],
             names: vec![],
             mappings: vec![INT_TYPE],
           },
         ],
-        main_function_names: vec![rcs("main")],
+        main_function_names: vec![heap.alloc_str("main")],
         functions: vec![
           Function {
-            name: rcs("functor_fun"),
-            parameters: vec![rcs("a")],
-            type_parameters: vec![rcs("A")],
+            name: heap.alloc_str("functor_fun"),
+            parameters: vec![heap.alloc_str("a")],
+            type_parameters: vec![heap.alloc_str("A")],
             type_: Type::new_fn_unwrapped(vec![type_a.clone()], INT_TYPE),
             body: vec![Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                "$GENERICS$_A$bar",
+                heap.alloc_str("$GENERICS$_A$bar"),
                 Type::new_fn_unwrapped(vec![type_a.clone()], INT_TYPE),
               )),
               arguments: vec![ZERO],
@@ -627,47 +676,53 @@ sources.mains = [main]
             return_value: ZERO,
           },
           Function {
-            name: rcs("_I$bar"),
-            parameters: vec![rcs("a")],
-            type_parameters: vec![rcs("A")],
+            name: heap.alloc_str("_I$bar"),
+            parameters: vec![heap.alloc_str("a")],
+            type_parameters: vec![heap.alloc_str("A")],
             type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
             body: vec![],
             return_value: ZERO,
           },
           Function {
-            name: rcs("_J$bar"),
-            parameters: vec![rcs("a")],
-            type_parameters: vec![rcs("A")],
+            name: heap.alloc_str("_J$bar"),
+            parameters: vec![heap.alloc_str("a")],
+            type_parameters: vec![heap.alloc_str("A")],
             type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
             body: vec![],
             return_value: ZERO,
           },
           Function {
-            name: rcs("creatorIA"),
-            parameters: vec![rcs("a")],
-            type_parameters: vec![rcs("A")],
+            name: heap.alloc_str("creatorIA"),
+            parameters: vec![heap.alloc_str("a")],
+            type_parameters: vec![heap.alloc_str("A")],
             type_: Type::new_fn_unwrapped(vec![type_a.clone()], type_ia.clone()),
             body: vec![Statement::StructInit {
-              struct_variable_name: rcs("v"),
+              struct_variable_name: heap.alloc_str("v"),
               type_: type_ia.clone().into_id().unwrap(),
-              expression_list: vec![Expression::int(0), Expression::var_name("a", type_a)],
+              expression_list: vec![
+                Expression::int(0),
+                Expression::var_name(heap.alloc_str("a"), type_a),
+              ],
             }],
-            return_value: Expression::var_name("v", type_ia),
+            return_value: Expression::var_name(heap.alloc_str("v"), type_ia),
           },
           Function {
-            name: rcs("creatorIB"),
-            parameters: vec![rcs("b")],
-            type_parameters: vec![rcs("B")],
+            name: heap.alloc_str("creatorIB"),
+            parameters: vec![heap.alloc_str("b")],
+            type_parameters: vec![heap.alloc_str("B")],
             type_: Type::new_fn_unwrapped(vec![type_b.clone()], type_ib.clone()),
             body: vec![Statement::StructInit {
-              struct_variable_name: rcs("v"),
+              struct_variable_name: heap.alloc_str("v"),
               type_: type_ib.clone().into_id().unwrap(),
-              expression_list: vec![Expression::int(1), Expression::var_name("b", type_b)],
+              expression_list: vec![
+                Expression::int(1),
+                Expression::var_name(heap.alloc_str("b"), type_b),
+              ],
             }],
-            return_value: Expression::var_name("v", type_ib),
+            return_value: Expression::var_name(heap.alloc_str("v"), type_ib),
           },
           Function {
-            name: rcs("main"),
+            name: heap.alloc_str("main"),
             parameters: vec![],
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -676,40 +731,40 @@ sources.mains = [main]
               s1: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: rcs("creatorIA"),
+                    name: heap.alloc_str("creatorIA"),
                     type_: Type::new_fn_unwrapped(vec![INT_TYPE], type_i.clone()),
                     type_arguments: vec![INT_TYPE],
                   }),
                   arguments: vec![ZERO],
                   return_type: type_i.clone(),
-                  return_collector: Some(rcs("a")),
+                  return_collector: Some(heap.alloc_str("a")),
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: rcs("creatorIA"),
+                    name: heap.alloc_str("creatorIA"),
                     type_: Type::new_fn_unwrapped(
                       vec![STRING_TYPE],
-                      Type::new_id("I", vec![STRING_TYPE, STRING_TYPE]),
+                      Type::new_id(heap.alloc_str("I"), vec![STRING_TYPE, STRING_TYPE]),
                     ),
                     type_arguments: vec![STRING_TYPE],
                   }),
                   arguments: vec![g1.clone()],
                   return_type: type_i.clone(),
-                  return_collector: Some(rcs("a2")),
+                  return_collector: Some(heap.alloc_str("a2")),
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: rcs("creatorIB"),
+                    name: heap.alloc_str("creatorIB"),
                     type_: Type::new_fn_unwrapped(vec![STRING_TYPE], type_i.clone()),
                     type_arguments: vec![STRING_TYPE],
                   }),
                   arguments: vec![g1.clone()],
                   return_type: type_i.clone(),
-                  return_collector: Some(rcs("b")),
+                  return_collector: Some(heap.alloc_str("b")),
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: rcs("functor_fun"),
+                    name: heap.alloc_str("functor_fun"),
                     type_: Type::new_fn_unwrapped(vec![type_i.clone()], INT_TYPE),
                     type_arguments: vec![type_i.clone()],
                   }),
@@ -719,7 +774,7 @@ sources.mains = [main]
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: rcs("functor_fun"),
+                    name: heap.alloc_str("functor_fun"),
                     type_: Type::new_fn_unwrapped(vec![type_j.clone()], INT_TYPE),
                     type_arguments: vec![type_j.clone()],
                   }),
@@ -728,55 +783,61 @@ sources.mains = [main]
                   return_collector: None,
                 },
                 Statement::IndexedAccess {
-                  name: rcs("v1"),
+                  name: heap.alloc_str("v1"),
                   type_: INT_TYPE,
-                  pointer_expression: Expression::var_name("a", type_i),
+                  pointer_expression: Expression::var_name(heap.alloc_str("a"), type_i),
                   index: 0,
                 },
               ],
               s2: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName::new(
-                    "main",
+                    heap.alloc_str("main"),
                     Type::new_fn_unwrapped(vec![], INT_TYPE),
                   )),
                   arguments: vec![],
                   return_type: INT_TYPE,
                   return_collector: None,
                 },
-                Statement::binary("v1", Operator::PLUS, ZERO, ZERO),
+                Statement::binary(heap.alloc_str("v1"), Operator::PLUS, ZERO, ZERO),
                 Statement::StructInit {
-                  struct_variable_name: rcs("j"),
+                  struct_variable_name: heap.alloc_str("j"),
                   type_: type_j.clone().into_id().unwrap(),
                   expression_list: vec![Expression::int(0)],
                 },
                 Statement::IndexedAccess {
-                  name: rcs("v2"),
+                  name: heap.alloc_str("v2"),
                   type_: INT_TYPE,
-                  pointer_expression: Expression::var_name("j", type_j),
+                  pointer_expression: Expression::var_name(heap.alloc_str("j"), type_j),
                   index: 0,
                 },
                 Statement::ClosureInit {
-                  closure_variable_name: rcs("c1"),
-                  closure_type: Type::new_id_unwrapped("CC", vec![STRING_TYPE, STRING_TYPE]),
+                  closure_variable_name: heap.alloc_str("c1"),
+                  closure_type: Type::new_id_unwrapped(
+                    heap.alloc_str("CC"),
+                    vec![STRING_TYPE, STRING_TYPE],
+                  ),
                   function_name: FunctionName {
-                    name: rcs("creatorIA"),
+                    name: heap.alloc_str("creatorIA"),
                     type_: Type::new_fn_unwrapped(
                       vec![STRING_TYPE],
-                      Type::new_id("I", vec![STRING_TYPE, STRING_TYPE]),
+                      Type::new_id(heap.alloc_str("I"), vec![STRING_TYPE, STRING_TYPE]),
                     ),
                     type_arguments: vec![STRING_TYPE],
                   },
                   context: g1.clone(),
                 },
                 Statement::ClosureInit {
-                  closure_variable_name: rcs("c2"),
-                  closure_type: Type::new_id_unwrapped("CC", vec![INT_TYPE, STRING_TYPE]),
+                  closure_variable_name: heap.alloc_str("c2"),
+                  closure_type: Type::new_id_unwrapped(
+                    heap.alloc_str("CC"),
+                    vec![INT_TYPE, STRING_TYPE],
+                  ),
                   function_name: FunctionName {
-                    name: rcs("creatorIA"),
+                    name: heap.alloc_str("creatorIA"),
                     type_: Type::new_fn_unwrapped(
                       vec![STRING_TYPE],
-                      Type::new_id("I", vec![STRING_TYPE, STRING_TYPE]),
+                      Type::new_id(heap.alloc_str("I"), vec![STRING_TYPE, STRING_TYPE]),
                     ),
                     type_arguments: vec![STRING_TYPE],
                   },
@@ -784,24 +845,47 @@ sources.mains = [main]
                 },
               ],
               final_assignments: vec![(
-                rcs("finalV"),
+                heap.alloc_str("finalV"),
                 INT_TYPE,
-                Expression::var_name("v1", INT_TYPE),
-                Expression::var_name("v2", INT_TYPE),
+                Expression::var_name(heap.alloc_str("v1"), INT_TYPE),
+                Expression::var_name(heap.alloc_str("v2"), INT_TYPE),
               )],
             }],
             return_value: ZERO,
           },
         ],
       },
+      heap,
       r#"
 const G1 = '';
 
-closure type CC_int_string = (int) -> string
 closure type CC_string_string = (string) -> string
+closure type CC_int_string = (int) -> string
+object type J = [int]
 variant type I_int_string = [int, string]
 variant type I_string_string = [string, string]
-object type J = [int]
+function main(): int {
+  let finalV: int;
+  if 1 {
+    let a: I_int_string = creatorIA_int(0);
+    let a2: I_int_string = creatorIA_string(G1);
+    let b: I_int_string = creatorIB_string(G1);
+    functor_fun_I_int_string(G1);
+    functor_fun_J(G1);
+    let v1: int = (a: I_int_string)[0];
+    finalV = (v1: int);
+  } else {
+    main();
+    let v1: int = 0 + 0;
+    let j: J = [0];
+    let v2: int = (j: J)[0];
+    let c1: CC_string_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
+    let c2: CC_int_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
+    finalV = (v2: int);
+  }
+  return 0;
+}
+
 function _I$bar(a: I_int_string): int {
   return 0;
 }
@@ -835,117 +919,107 @@ function functor_fun_J(a: J): int {
   return 0;
 }
 
-function main(): int {
-  let finalV: int;
-  if 1 {
-    let a: I_int_string = creatorIA_int(0);
-    let a2: I_int_string = creatorIA_string(G1);
-    let b: I_int_string = creatorIB_string(G1);
-    functor_fun_I_int_string(G1);
-    functor_fun_J(G1);
-    let v1: int = (a: I_int_string)[0];
-    finalV = (v1: int);
-  } else {
-    main();
-    let v1: int = 0 + 0;
-    let j: J = [0];
-    let v2: int = (j: J)[0];
-    let c1: CC_string_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
-    let c2: CC_int_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
-    finalV = (v2: int);
-  }
-  return 0;
-}
-
 sources.mains = [main]"#,
     );
   }
 
   #[test]
   fn no_arg_function_type_def_test() {
+    let heap = &mut Heap::new();
+
     assert_specialized(
       Sources {
         global_variables: vec![],
         closure_types: vec![],
         type_definitions: vec![
           TypeDefinition {
-            identifier: rcs("I"),
+            identifier: heap.alloc_str("I"),
             is_object: false,
-            type_parameters: vec![rcs("A"), rcs("B")],
+            type_parameters: vec![heap.alloc_str("A"), heap.alloc_str("B")],
             names: vec![],
-            mappings: vec![Type::new_id_no_targs("A"), Type::new_id_no_targs("B")],
+            mappings: vec![
+              Type::new_id_no_targs(heap.alloc_str("A")),
+              Type::new_id_no_targs(heap.alloc_str("B")),
+            ],
           },
           TypeDefinition {
-            identifier: rcs("J"),
+            identifier: heap.alloc_str("J"),
             is_object: true,
             type_parameters: vec![],
             names: vec![],
-            mappings: vec![Type::new_id("I", vec![INT_TYPE, INT_TYPE])],
+            mappings: vec![Type::new_id(heap.alloc_str("I"), vec![INT_TYPE, INT_TYPE])],
           },
         ],
-        main_function_names: vec![rcs("main")],
+        main_function_names: vec![heap.alloc_str("main")],
         functions: vec![
           Function {
-            name: rcs("creatorJ"),
+            name: heap.alloc_str("creatorJ"),
             parameters: vec![],
             type_parameters: vec![],
-            type_: Type::new_fn_unwrapped(vec![], Type::new_id_no_targs("J")),
+            type_: Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str("J"))),
             body: vec![
               Statement::StructInit {
-                struct_variable_name: rcs("v1"),
-                type_: Type::new_id_unwrapped("I", vec![INT_TYPE, INT_TYPE]),
+                struct_variable_name: heap.alloc_str("v1"),
+                type_: Type::new_id_unwrapped(heap.alloc_str("I"), vec![INT_TYPE, INT_TYPE]),
                 expression_list: vec![],
               },
               Statement::StructInit {
-                struct_variable_name: rcs("v2"),
-                type_: Type::new_id_no_targs_unwrapped("J"),
+                struct_variable_name: heap.alloc_str("v2"),
+                type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("J")),
                 expression_list: vec![ZERO, ZERO],
               },
             ],
-            return_value: Expression::var_name("v2", Type::new_id_no_targs("J")),
+            return_value: Expression::var_name(
+              heap.alloc_str("v2"),
+              Type::new_id_no_targs(heap.alloc_str("J")),
+            ),
           },
           Function {
-            name: rcs("main"),
+            name: heap.alloc_str("main"),
             parameters: vec![],
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
             body: vec![
               Statement::Call {
                 callee: Callee::FunctionName(FunctionName::new(
-                  "creatorJ",
-                  Type::new_fn_unwrapped(vec![], Type::new_id_no_targs("J")),
+                  heap.alloc_str("creatorJ"),
+                  Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str("J"))),
                 )),
                 arguments: vec![],
-                return_type: Type::new_id_no_targs("J"),
+                return_type: Type::new_id_no_targs(heap.alloc_str("J")),
                 return_collector: None,
               },
               Statement::Call {
-                callee: Callee::Variable(VariableName { name: rcs("v"), type_: INT_TYPE }),
+                callee: Callee::Variable(VariableName {
+                  name: heap.alloc_str("v"),
+                  type_: INT_TYPE,
+                }),
                 arguments: vec![],
-                return_type: Type::new_id_no_targs("J"),
+                return_type: Type::new_id_no_targs(heap.alloc_str("J")),
                 return_collector: None,
               },
             ],
             return_value: Expression::FunctionName(FunctionName::new(
-              "creatorJ",
-              Type::new_fn_unwrapped(vec![], Type::new_id_no_targs("J")),
+              heap.alloc_str("creatorJ"),
+              Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str("J"))),
             )),
           },
         ],
       },
+      heap,
       r#"
-variant type I_int_int = [int, int]
 object type J = [I_int_int]
-function creatorJ(): J {
-  let v1: I_int_int = [];
-  let v2: J = [0, 0];
-  return (v2: J);
-}
-
+variant type I_int_int = [int, int]
 function main(): int {
   creatorJ();
   (v: int)();
   return creatorJ;
+}
+
+function creatorJ(): J {
+  let v1: I_int_int = [];
+  let v2: J = [0, 0];
+  return (v2: J);
 }
 
 sources.mains = [main]"#,

@@ -2,11 +2,13 @@ use super::{
   dead_code_elimination, loop_algebraic_optimization,
   loop_induction_analysis::{self, OptimizableWhileLoop},
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
-  optimization_common::ResourceAllocator,
 };
-use crate::ast::hir::{
-  Expression, Function, GenenalLoopVariable, Operator, Statement, VariableName, BOOL_TYPE,
-  INT_TYPE, ZERO,
+use crate::{
+  ast::hir::{
+    Expression, Function, GenenalLoopVariable, Operator, Statement, VariableName, BOOL_TYPE,
+    INT_TYPE, ZERO,
+  },
+  Heap,
 };
 use itertools::Itertools;
 use std::collections::HashSet;
@@ -20,11 +22,11 @@ fn expand_optimizable_while_loop(
     statements,
     break_collector,
   }: OptimizableWhileLoop,
-  allocator: &mut ResourceAllocator,
+  heap: &mut Heap,
 ) -> Statement {
-  let basic_induction_variable_with_loop_guard_value_collector = allocator.alloc_loop_temp();
+  let basic_induction_variable_with_loop_guard_value_collector = heap.alloc_temp_str();
   let break_value = if let Some((_, _, e)) = &break_collector { e } else { &ZERO };
-  let mut useful_used_set = HashSet::from([basic_induction_variable_with_loop_guard.name.clone()]);
+  let mut useful_used_set = HashSet::from([basic_induction_variable_with_loop_guard.name]);
   dead_code_elimination::collect_use_from_expression(break_value, &mut useful_used_set);
   for v in &loop_variables_that_are_not_basic_induction_variables {
     dead_code_elimination::collect_use_from_expression(&v.loop_value, &mut useful_used_set);
@@ -33,27 +35,27 @@ fn expand_optimizable_while_loop(
   let general_basic_induction_variables_with_loop_value_collectors = general_induction_variables
     .into_iter()
     .filter(|v| useful_used_set.contains(&v.name))
-    .map(|v| (v, allocator.alloc_loop_temp()))
+    .map(|v| (v, heap.alloc_temp_str()))
     .collect_vec();
-  let loop_condition_variable = allocator.alloc_loop_temp();
+  let loop_condition_variable = heap.alloc_temp_str();
   let loop_variables = loop_variables_that_are_not_basic_induction_variables
     .into_iter()
     .filter(|v| useful_used_set.contains(&v.name))
     .chain(vec![GenenalLoopVariable {
-      name: basic_induction_variable_with_loop_guard.name.clone(),
+      name: basic_induction_variable_with_loop_guard.name,
       type_: INT_TYPE,
       initial_value: basic_induction_variable_with_loop_guard.initial_value.clone(),
-      loop_value: Expression::var_name_str(
-        basic_induction_variable_with_loop_guard_value_collector.clone(),
+      loop_value: Expression::var_name(
+        basic_induction_variable_with_loop_guard_value_collector,
         INT_TYPE,
       ),
     }])
     .chain(general_basic_induction_variables_with_loop_value_collectors.iter().map(|(v, n)| {
       GenenalLoopVariable {
-        name: v.name.clone(),
+        name: v.name,
         type_: INT_TYPE,
         initial_value: v.initial_value.clone(),
-        loop_value: Expression::var_name_str(n.clone(), INT_TYPE),
+        loop_value: Expression::var_name(*n, INT_TYPE),
       }
     }))
     .collect_vec();
@@ -62,13 +64,13 @@ fn expand_optimizable_while_loop(
     loop_variables,
     statements: vec![
       Statement::Binary(Statement::binary_unwrapped(
-        loop_condition_variable.clone(),
+        loop_condition_variable,
         basic_induction_variable_with_loop_guard.guard_operator.invert().to_op(),
-        Expression::var_name_str(basic_induction_variable_with_loop_guard.name.clone(), INT_TYPE),
+        Expression::var_name(basic_induction_variable_with_loop_guard.name, INT_TYPE),
         basic_induction_variable_with_loop_guard.guard_expression.to_expression(),
       )),
       Statement::SingleIf {
-        condition: Expression::var_name_str(loop_condition_variable, BOOL_TYPE),
+        condition: Expression::var_name(loop_condition_variable, BOOL_TYPE),
         invert_condition: false,
         statements: vec![Statement::Break(break_value.clone())],
       },
@@ -78,7 +80,7 @@ fn expand_optimizable_while_loop(
     .chain(vec![Statement::Binary(Statement::binary_unwrapped(
       basic_induction_variable_with_loop_guard_value_collector,
       Operator::PLUS,
-      Expression::var_name_str(basic_induction_variable_with_loop_guard.name.clone(), INT_TYPE),
+      Expression::var_name(basic_induction_variable_with_loop_guard.name, INT_TYPE),
       basic_induction_variable_with_loop_guard.increment_amount.to_expression(),
     ))])
     .chain(general_basic_induction_variables_with_loop_value_collectors.into_iter().map(
@@ -86,24 +88,24 @@ fn expand_optimizable_while_loop(
         Statement::Binary(Statement::binary_unwrapped(
           collector,
           Operator::PLUS,
-          Expression::var_name_str(v.name, INT_TYPE),
+          Expression::var_name(v.name, INT_TYPE),
           v.increment_amount.to_expression(),
         ))
       },
     ))
     .chain(derived_induction_variables.into_iter().flat_map(|v| {
-      let step_1_temp = allocator.alloc_loop_temp();
+      let step_1_temp = heap.alloc_temp_str();
       vec![
         Statement::Binary(Statement::binary_flexible_unwrapped(
-          step_1_temp.clone(),
+          step_1_temp,
           Operator::MUL,
-          Expression::var_name_str(v.base_name, INT_TYPE),
+          Expression::var_name(v.base_name, INT_TYPE),
           v.multiplier.to_expression(),
         )),
         Statement::Binary(Statement::binary_flexible_unwrapped(
           v.name,
           Operator::PLUS,
-          Expression::var_name_str(step_1_temp, INT_TYPE),
+          Expression::var_name(step_1_temp, INT_TYPE),
           v.immediate.to_expression(),
         )),
       ]
@@ -119,7 +121,7 @@ fn expand_optimizable_while_loop(
 
 fn optimize_while_statement_with_all_loop_optimizations(
   while_stmt: (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>),
-  allocator: &mut ResourceAllocator,
+  heap: &mut Heap,
 ) -> Vec<Statement> {
   let loop_invariant_code_motion::LoopInvariantCodeMotionOptimizationResult {
     hoisted_statements_before_while: mut final_stmts,
@@ -131,15 +133,14 @@ fn optimize_while_statement_with_all_loop_optimizations(
     &non_loop_invariant_variables,
   ) {
     Ok(optimizable_while_loop) => {
-      if let Some(mut stmts) =
-        loop_algebraic_optimization::optimize(&optimizable_while_loop, allocator)
+      if let Some(mut stmts) = loop_algebraic_optimization::optimize(&optimizable_while_loop, heap)
       {
         final_stmts.append(&mut stmts);
         return final_stmts;
       }
 
       let optimizable_while_loop =
-        match loop_induction_variable_elimination::optimize(optimizable_while_loop, allocator) {
+        match loop_induction_variable_elimination::optimize(optimizable_while_loop, heap) {
           Ok(loop_induction_variable_elimination::LoopInductionVariableEliminationResult {
             mut prefix_statements,
             optimizable_while_loop: l,
@@ -161,11 +162,11 @@ fn optimize_while_statement_with_all_loop_optimizations(
             statements,
             break_collector,
           },
-      } = loop_strength_reduction::optimize(optimizable_while_loop, allocator);
+      } = loop_strength_reduction::optimize(optimizable_while_loop, heap);
       final_stmts.append(&mut prefix_statements);
 
       let already_handled_induction_variable_names =
-        general_induction_variables.iter().map(|v| v.name.clone()).collect::<HashSet<_>>();
+        general_induction_variables.iter().map(|v| v.name).collect::<HashSet<_>>();
       final_stmts.push(expand_optimizable_while_loop(
         OptimizableWhileLoop {
           basic_induction_variable_with_loop_guard,
@@ -182,7 +183,7 @@ fn optimize_while_statement_with_all_loop_optimizations(
             .collect(),
           break_collector,
         },
-        allocator,
+        heap,
       ));
 
       final_stmts
@@ -194,41 +195,41 @@ fn optimize_while_statement_with_all_loop_optimizations(
   }
 }
 
-fn optimize_stmt(stmt: Statement, allocator: &mut ResourceAllocator) -> Vec<Statement> {
+fn optimize_stmt(stmt: Statement, heap: &mut Heap) -> Vec<Statement> {
   match stmt {
     Statement::IfElse { condition, s1, s2, final_assignments } => vec![Statement::IfElse {
       condition,
-      s1: optimize_stmts(s1, allocator),
-      s2: optimize_stmts(s2, allocator),
+      s1: optimize_stmts(s1, heap),
+      s2: optimize_stmts(s2, heap),
       final_assignments,
     }],
     Statement::SingleIf { condition, invert_condition, statements } => vec![Statement::SingleIf {
       condition,
       invert_condition,
-      statements: optimize_stmts(statements, allocator),
+      statements: optimize_stmts(statements, heap),
     }],
     Statement::While { loop_variables, statements, break_collector } => {
       optimize_while_statement_with_all_loop_optimizations(
         (loop_variables, statements, break_collector),
-        allocator,
+        heap,
       )
     }
     _ => vec![stmt],
   }
 }
 
-fn optimize_stmts(stmts: Vec<Statement>, allocator: &mut ResourceAllocator) -> Vec<Statement> {
-  stmts.into_iter().flat_map(|s| optimize_stmt(s, allocator)).collect()
+fn optimize_stmts(stmts: Vec<Statement>, heap: &mut Heap) -> Vec<Statement> {
+  stmts.into_iter().flat_map(|s| optimize_stmt(s, heap)).collect()
 }
 
-pub(super) fn optimize_function(function: Function, allocator: &mut ResourceAllocator) -> Function {
+pub(super) fn optimize_function(function: Function, heap: &mut Heap) -> Function {
   let Function { name, parameters, type_parameters, type_, body, return_value } = function;
   Function {
     name,
     parameters,
     type_parameters,
     type_,
-    body: optimize_stmts(body, allocator),
+    body: optimize_stmts(body, heap),
     return_value,
   }
 }
@@ -240,356 +241,401 @@ mod tests {
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, BOOL_TYPE, INT_TYPE, ONE, ZERO,
     },
-    common::rcs,
-    optimization::optimization_common::ResourceAllocator,
+    common::INVALID_PSTR,
+    Heap,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
 
   fn assert_loop_optimized(
     stmt: (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>),
+    heap: &mut Heap,
     expected: &str,
   ) {
-    let actual = super::optimize_while_statement_with_all_loop_optimizations(
-      stmt,
-      &mut ResourceAllocator::new(),
-    )
-    .iter()
-    .map(Statement::debug_print)
-    .join("\n");
+    let actual = super::optimize_while_statement_with_all_loop_optimizations(stmt, heap)
+      .iter()
+      .map(|s| s.debug_print(heap))
+      .join("\n");
     assert_eq!(expected, actual);
   }
 
-  fn assert_stmts_optimized(stmts: Vec<Statement>, return_value: Expression, expected: &str) {
+  fn assert_stmts_optimized(
+    stmts: Vec<Statement>,
+    return_value: Expression,
+    heap: &mut Heap,
+    expected: &str,
+  ) {
     let Function { body, return_value, .. } =
-      super::super::conditional_constant_propagation::optimize_function(super::optimize_function(
-        Function {
-          name: rcs(""),
-          parameters: vec![],
-          type_parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-          body: stmts,
-          return_value,
-        },
-        &mut ResourceAllocator::new(),
-      ));
+      super::super::conditional_constant_propagation::optimize_function(
+        super::optimize_function(
+          Function {
+            name: INVALID_PSTR,
+            parameters: vec![],
+            type_parameters: vec![],
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            body: stmts,
+            return_value,
+          },
+          heap,
+        ),
+        heap,
+      );
     let actual = format!(
       "{}\nreturn {};",
-      body.iter().map(Statement::debug_print).join("\n"),
-      return_value.debug_print()
+      body.iter().map(|s| s.debug_print(heap)).join("\n"),
+      return_value.debug_print(heap)
     );
     assert_eq!(expected, actual);
   }
 
-  fn optimizable_loop_1() -> (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>) {
+  fn optimizable_loop_1(
+    heap: &mut Heap,
+  ) -> (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>) {
     (
       vec![
         GenenalLoopVariable {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_i", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: rcs("j"),
+          name: heap.alloc_str("j"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_j", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_j"), INT_TYPE),
         },
       ],
       vec![
         Statement::binary(
-          "cc",
+          heap.alloc_str("cc"),
           Operator::GE,
-          Expression::var_name("i", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
           Expression::int(10),
         ),
         Statement::SingleIf {
-          condition: Expression::var_name("cc", BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str("cc"), BOOL_TYPE),
           invert_condition: false,
-          statements: vec![Statement::Break(Expression::var_name("j", INT_TYPE))],
+          statements: vec![Statement::Break(Expression::var_name(heap.alloc_str("j"), INT_TYPE))],
         },
-        Statement::binary("tmp_i", Operator::PLUS, Expression::var_name("i", INT_TYPE), ONE),
         Statement::binary(
-          "tmp_j",
+          heap.alloc_str("tmp_i"),
           Operator::PLUS,
-          Expression::var_name("j", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+          ONE,
+        ),
+        Statement::binary(
+          heap.alloc_str("tmp_j"),
+          Operator::PLUS,
+          Expression::var_name(heap.alloc_str("j"), INT_TYPE),
           Expression::int(10),
         ),
       ],
-      Some(VariableName::new("bc", INT_TYPE)),
+      Some(VariableName::new(heap.alloc_str("bc"), INT_TYPE)),
     )
   }
 
-  fn optimizable_loop_2() -> (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>) {
+  fn optimizable_loop_2(
+    heap: &mut Heap,
+  ) -> (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>) {
     (
       vec![
         GenenalLoopVariable {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_i", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: rcs("j"),
+          name: heap.alloc_str("j"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_j", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_j"), INT_TYPE),
         },
       ],
       vec![
         Statement::binary(
-          "cc",
+          heap.alloc_str("cc"),
           Operator::GE,
-          Expression::var_name("i", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
           Expression::int(10),
         ),
         Statement::SingleIf {
-          condition: Expression::var_name("cc", BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str("cc"), BOOL_TYPE),
           invert_condition: false,
-          statements: vec![Statement::Break(Expression::var_name("j", INT_TYPE))],
+          statements: vec![Statement::Break(Expression::var_name(heap.alloc_str("j"), INT_TYPE))],
         },
-        Statement::binary("tmp_i", Operator::PLUS, Expression::var_name("i", INT_TYPE), ONE),
         Statement::binary(
-          "tmp_j",
+          heap.alloc_str("tmp_i"),
           Operator::PLUS,
-          Expression::var_name("tmp_i", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+          ONE,
+        ),
+        Statement::binary(
+          heap.alloc_str("tmp_j"),
+          Operator::PLUS,
+          Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
           Expression::int(10),
         ),
       ],
-      Some(VariableName::new("bc", INT_TYPE)),
+      Some(VariableName::new(heap.alloc_str("bc"), INT_TYPE)),
     )
   }
 
-  fn optimizable_loop_3() -> (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>) {
+  fn optimizable_loop_3(
+    heap: &mut Heap,
+  ) -> (Vec<GenenalLoopVariable>, Vec<Statement>, Option<VariableName>) {
     (
       vec![
         GenenalLoopVariable {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_i", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: rcs("j"),
+          name: heap.alloc_str("j"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_j", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_j"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: rcs("k"),
+          name: heap.alloc_str("k"),
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name("tmp_k", INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_k"), INT_TYPE),
         },
       ],
       vec![
         Statement::binary(
-          "cc",
+          heap.alloc_str("cc"),
           Operator::GE,
-          Expression::var_name("i", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
           Expression::int(10),
         ),
         Statement::SingleIf {
-          condition: Expression::var_name("cc", BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str("cc"), BOOL_TYPE),
           invert_condition: false,
-          statements: vec![Statement::Break(Expression::var_name("j", INT_TYPE))],
+          statements: vec![Statement::Break(Expression::var_name(heap.alloc_str("j"), INT_TYPE))],
         },
-        Statement::binary("tmp_i", Operator::PLUS, Expression::var_name("i", INT_TYPE), ONE),
         Statement::binary(
-          "tmp_j",
+          heap.alloc_str("tmp_i"),
           Operator::PLUS,
-          Expression::var_name("tmp_i", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+          ONE,
+        ),
+        Statement::binary(
+          heap.alloc_str("tmp_j"),
+          Operator::PLUS,
+          Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
           Expression::int(9),
         ),
         Statement::binary(
-          "tmp_k",
+          heap.alloc_str("tmp_k"),
           Operator::PLUS,
-          Expression::var_name("tmp_i", INT_TYPE),
+          Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
           Expression::int(9),
         ),
       ],
-      Some(VariableName::new("bc", INT_TYPE)),
+      Some(VariableName::new(heap.alloc_str("bc"), INT_TYPE)),
     )
   }
 
   #[test]
   fn loop_optimization_tests() {
+    let heap = &mut Heap::new();
     assert_loop_optimized(
-      (vec![], vec![Statement::binary("a", Operator::PLUS, ZERO, ZERO)], None),
+      (vec![], vec![Statement::binary(heap.alloc_str("a"), Operator::PLUS, ZERO, ZERO)], None),
+      heap,
       "let a: int = 0 + 0;\nwhile (true) {\n}",
     );
 
+    let heap = &mut Heap::new();
     assert_loop_optimized(
-      optimizable_loop_1(),
-      "let _loop_0: int = 10 * 10;\nlet bc: int = (_loop_0: int) + 0;",
+      optimizable_loop_1(heap),
+      heap,
+      "let _t9: int = 10 * 10;\nlet bc: int = (_t9: int) + 0;",
     );
 
+    let heap = &mut Heap::new();
     assert_loop_optimized(
-      optimizable_loop_2(),
-      r#"let _loop_0: int = 1 * 0;
-let _loop_1: int = (_loop_0: int) + 11;
-let _loop_2: int = 10 * 1;
-let _loop_3: int = (_loop_2: int) + 11;
+      optimizable_loop_2(heap),
+      heap,
+      r#"let _t9: int = 1 * 0;
+let _t10: int = (_t9: int) + 11;
+let _t11: int = 10 * 1;
+let _t12: int = (_t11: int) + 11;
 let j: int = 0;
-let tmp_j: int = (_loop_1: int);
+let tmp_j: int = (_t10: int);
 let bc: int;
 while (true) {
-  let _loop_5: bool = (tmp_j: int) >= (_loop_3: int);
-  if (_loop_5: bool) {
+  let _t14: bool = (tmp_j: int) >= (_t12: int);
+  if (_t14: bool) {
     bc = (j: int);
     break;
   }
-  let _loop_4: int = (tmp_j: int) + 1;
+  let _t13: int = (tmp_j: int) + 1;
   j = (tmp_j: int);
-  tmp_j = (_loop_4: int);
+  tmp_j = (_t13: int);
 }"#,
     );
 
+    let heap = &mut Heap::new();
     assert_loop_optimized(
-      optimizable_loop_3(),
-      r#"let _loop_0: int = 1 * 0;
-let _loop_1: int = (_loop_0: int) + 10;
-let _loop_2: int = 1 * 0;
-let _loop_3: int = (_loop_2: int) + 10;
+      optimizable_loop_3(heap),
+      heap,
+      r#"let _t11: int = 1 * 0;
+let _t12: int = (_t11: int) + 10;
+let _t13: int = 1 * 0;
+let _t14: int = (_t13: int) + 10;
 let j: int = 0;
 let i: int = 0;
-let tmp_j: int = (_loop_1: int);
-let tmp_k: int = (_loop_3: int);
+let tmp_j: int = (_t12: int);
+let tmp_k: int = (_t14: int);
 let bc: int;
 while (true) {
-  let _loop_7: bool = (i: int) >= 10;
-  if (_loop_7: bool) {
+  let _t18: bool = (i: int) >= 10;
+  if (_t18: bool) {
     bc = (j: int);
     break;
   }
-  let _loop_4: int = (i: int) + 1;
-  let _loop_5: int = (tmp_j: int) + 1;
-  let _loop_6: int = (tmp_k: int) + 1;
+  let _t15: int = (i: int) + 1;
+  let _t16: int = (tmp_j: int) + 1;
+  let _t17: int = (tmp_k: int) + 1;
   j = (tmp_j: int);
-  i = (_loop_4: int);
-  tmp_j = (_loop_5: int);
-  tmp_k = (_loop_6: int);
+  i = (_t15: int);
+  tmp_j = (_t16: int);
+  tmp_k = (_t17: int);
 }"#,
     );
 
+    let heap = &mut Heap::new();
     assert_loop_optimized(
       (
         vec![
           GenenalLoopVariable {
-            name: rcs("i"),
+            name: heap.alloc_str("i"),
             type_: INT_TYPE,
             initial_value: ZERO,
-            loop_value: Expression::var_name("tmp_i", INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
           },
           GenenalLoopVariable {
-            name: rcs("j"),
+            name: heap.alloc_str("j"),
             type_: INT_TYPE,
             initial_value: ZERO,
-            loop_value: Expression::var_name("tmp_j", INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str("tmp_j"), INT_TYPE),
           },
         ],
         vec![
           Statement::binary(
-            "cc",
+            heap.alloc_str("cc"),
             Operator::LT,
-            Expression::var_name("i", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
             Expression::int(10),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name("cc", BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str("cc"), BOOL_TYPE),
             invert_condition: false,
-            statements: vec![Statement::Break(Expression::var_name("j", INT_TYPE))],
+            statements: vec![Statement::Break(Expression::var_name(heap.alloc_str("j"), INT_TYPE))],
           },
           Statement::binary(
-            "tmp_i",
+            heap.alloc_str("tmp_i"),
             Operator::PLUS,
-            Expression::var_name("i", INT_TYPE),
-            Expression::var_name("a", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("a"), INT_TYPE),
           ),
           Statement::binary(
-            "tmp_j",
+            heap.alloc_str("tmp_j"),
             Operator::MUL,
-            Expression::var_name("i", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
             Expression::int(2),
           ),
         ],
-        Some(VariableName::new("bc", INT_TYPE)),
+        Some(VariableName::new(heap.alloc_str("bc"), INT_TYPE)),
       ),
+      heap,
       r#"let j: int = 0;
 let i: int = 0;
 let bc: int;
 while (true) {
-  let _loop_1: bool = (i: int) < 10;
-  if (_loop_1: bool) {
+  let _t11: bool = (i: int) < 10;
+  if (_t11: bool) {
     bc = (j: int);
     break;
   }
-  let _loop_0: int = (i: int) + (a: int);
-  let _loop_2: int = (i: int) * 2;
-  let tmp_j: int = (_loop_2: int) + 0;
+  let _t10: int = (i: int) + (a: int);
+  let _t12: int = (i: int) * 2;
+  let tmp_j: int = (_t12: int) + 0;
   j = (tmp_j: int);
-  i = (_loop_0: int);
+  i = (_t10: int);
 }"#,
     );
 
+    let heap = &mut Heap::new();
     assert_loop_optimized(
       (
         vec![
           GenenalLoopVariable {
-            name: rcs("i"),
+            name: heap.alloc_str("i"),
             type_: INT_TYPE,
             initial_value: ZERO,
-            loop_value: Expression::var_name("tmp_i", INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
           },
           GenenalLoopVariable {
-            name: rcs("j"),
+            name: heap.alloc_str("j"),
             type_: INT_TYPE,
             initial_value: ZERO,
-            loop_value: Expression::var_name("tmp_j", INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str("tmp_j"), INT_TYPE),
           },
         ],
         vec![
           Statement::binary(
-            "cc",
+            heap.alloc_str("cc"),
             Operator::LT,
-            Expression::var_name("i", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
             Expression::int(10),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name("cc", BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str("cc"), BOOL_TYPE),
             invert_condition: false,
-            statements: vec![Statement::Break(Expression::var_name("j", INT_TYPE))],
+            statements: vec![Statement::Break(Expression::var_name(heap.alloc_str("j"), INT_TYPE))],
           },
-          Statement::binary("tmp_i", Operator::PLUS, Expression::var_name("i", INT_TYPE), ONE),
           Statement::binary(
-            "tmp_j",
+            heap.alloc_str("tmp_i"),
             Operator::PLUS,
-            Expression::var_name("tmp_i", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+            ONE,
+          ),
+          Statement::binary(
+            heap.alloc_str("tmp_j"),
+            Operator::PLUS,
+            Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
             Expression::int(10),
           ),
         ],
         None,
       ),
-      r#"let _loop_0: int = 1 * 0;
-let _loop_1: int = (_loop_0: int) + 11;
-let _loop_2: int = 10 * 1;
-let _loop_3: int = (_loop_2: int) + 11;
-let tmp_j: int = (_loop_1: int);
+      heap,
+      r#"let _t8: int = 1 * 0;
+let _t9: int = (_t8: int) + 11;
+let _t10: int = 10 * 1;
+let _t11: int = (_t10: int) + 11;
+let tmp_j: int = (_t9: int);
 while (true) {
-  let _loop_5: bool = (tmp_j: int) >= (_loop_3: int);
-  if (_loop_5: bool) {
+  let _t13: bool = (tmp_j: int) >= (_t11: int);
+  if (_t13: bool) {
     undefined = 0;
     break;
   }
-  let _loop_4: int = (tmp_j: int) + 1;
-  tmp_j = (_loop_4: int);
+  let _t12: int = (tmp_j: int) + 1;
+  tmp_j = (_t12: int);
 }"#,
     );
   }
 
   #[test]
   fn stmts_optimization_tests() {
+    let heap = &mut Heap::new();
     assert_stmts_optimized(
       vec![Statement::IfElse {
         condition: ZERO,
@@ -599,109 +645,126 @@ while (true) {
           statements: vec![Statement::Break(ZERO)],
         }],
         s2: vec![Statement::binary(
-          "tmp_j",
+          heap.alloc_str("tmp_j"),
           Operator::MUL,
-          Expression::var_name("i", INT_TYPE),
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
           Expression::int(2),
         )],
         final_assignments: vec![],
       }],
       ZERO,
+      heap,
       "let tmp_j: int = (i: int) * 2;\nreturn 0;",
     );
 
-    let (loop_variables, statements, break_collector) = optimizable_loop_1();
+    let heap = &mut Heap::new();
+    let (loop_variables, statements, break_collector) = optimizable_loop_1(heap);
     assert_stmts_optimized(
       vec![Statement::While { loop_variables, statements, break_collector }],
-      Expression::var_name("bc", INT_TYPE),
+      Expression::var_name(heap.alloc_str("bc"), INT_TYPE),
+      heap,
       "\nreturn 100;",
     );
 
-    let (loop_variables, statements, break_collector) = optimizable_loop_2();
+    let heap = &mut Heap::new();
+    let (loop_variables, statements, break_collector) = optimizable_loop_2(heap);
     assert_stmts_optimized(
       vec![Statement::While { loop_variables, statements, break_collector }],
-      Expression::var_name("bc", INT_TYPE),
+      Expression::var_name(heap.alloc_str("bc"), INT_TYPE),
+      heap,
       r#"let j: int = 16;
 let tmp_j: int = 17;
 let bc: int;
 while (true) {
-  let _loop_5: bool = (tmp_j: int) >= 21;
-  if (_loop_5: bool) {
+  let _t14: bool = (tmp_j: int) >= 21;
+  if (_t14: bool) {
     bc = (j: int);
     break;
   }
-  let _loop_4: int = (tmp_j: int) + 1;
+  let _t13: int = (tmp_j: int) + 1;
   j = (tmp_j: int);
-  tmp_j = (_loop_4: int);
+  tmp_j = (_t13: int);
 }
 return (bc: int);"#,
     );
 
-    let (loop_variables, statements, break_collector) = optimizable_loop_3();
+    let heap = &mut Heap::new();
+    let (loop_variables, statements, break_collector) = optimizable_loop_3(heap);
     assert_stmts_optimized(
       vec![Statement::While { loop_variables, statements, break_collector }],
-      Expression::var_name("bc", INT_TYPE),
+      Expression::var_name(heap.alloc_str("bc"), INT_TYPE),
+      heap,
       r#"let j: int = 15;
 let i: int = 6;
 let tmp_j: int = 16;
 let tmp_k: int = 16;
 let bc: int;
 while (true) {
-  let _loop_7: bool = (i: int) >= 10;
-  if (_loop_7: bool) {
+  let _t18: bool = (i: int) >= 10;
+  if (_t18: bool) {
     bc = (j: int);
     break;
   }
-  let _loop_4: int = (i: int) + 1;
-  let _loop_5: int = (tmp_j: int) + 1;
-  let _loop_6: int = (tmp_k: int) + 1;
+  let _t15: int = (i: int) + 1;
+  let _t16: int = (tmp_j: int) + 1;
+  let _t17: int = (tmp_k: int) + 1;
   j = (tmp_j: int);
-  i = (_loop_4: int);
-  tmp_j = (_loop_5: int);
-  tmp_k = (_loop_6: int);
+  i = (_t15: int);
+  tmp_j = (_t16: int);
+  tmp_k = (_t17: int);
 }
 return (bc: int);"#,
     );
 
+    let heap = &mut Heap::new();
     assert_stmts_optimized(
       vec![Statement::While {
         loop_variables: vec![
           GenenalLoopVariable {
-            name: rcs("i"),
+            name: heap.alloc_str("i"),
             type_: INT_TYPE,
             initial_value: Expression::int(4),
-            loop_value: Expression::var_name("tmp_i", INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
           },
           GenenalLoopVariable {
-            name: rcs("acc"),
+            name: heap.alloc_str("acc"),
             type_: INT_TYPE,
             initial_value: ONE,
-            loop_value: Expression::var_name("tmp_j", INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str("tmp_j"), INT_TYPE),
           },
         ],
         statements: vec![
-          Statement::binary("cc", Operator::LT, Expression::var_name("i", INT_TYPE), ONE),
+          Statement::binary(
+            heap.alloc_str("cc"),
+            Operator::LT,
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+            ONE,
+          ),
           Statement::SingleIf {
-            condition: Expression::var_name("cc", BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str("cc"), BOOL_TYPE),
             invert_condition: false,
-            statements: vec![Statement::Break(Expression::var_name("acc", INT_TYPE))],
+            statements: vec![Statement::Break(Expression::var_name(
+              heap.alloc_str("acc"),
+              INT_TYPE,
+            ))],
           },
           Statement::binary(
-            "tmp_i",
+            heap.alloc_str("tmp_i"),
             Operator::PLUS,
-            Expression::var_name("i", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
             Expression::int(-1),
           ),
           Statement::binary(
-            "tmp_j",
+            heap.alloc_str("tmp_j"),
             Operator::MUL,
-            Expression::var_name("i", INT_TYPE),
-            Expression::var_name("acc", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("acc"), INT_TYPE),
           ),
         ],
-        break_collector: Some(VariableName::new("bc", INT_TYPE)),
+        break_collector: Some(VariableName::new(heap.alloc_str("bc"), INT_TYPE)),
       }],
-      Expression::var_name("bc", INT_TYPE),
+      Expression::var_name(heap.alloc_str("bc"), INT_TYPE),
+      heap,
       "\nreturn 24;",
     );
   }
@@ -709,73 +772,75 @@ return (bc: int);"#,
   #[test]
   fn stmts_optimization_tricky_test() {
     // This test used to uncover a over-optimization bug in conditional constant propagation.
+    let heap = &mut Heap::new();
     assert_stmts_optimized(
       vec![Statement::While {
         loop_variables: vec![GenenalLoopVariable {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           type_: INT_TYPE,
-          initial_value: Expression::var_name("init_i", INT_TYPE),
-          loop_value: Expression::var_name("tmp_i", INT_TYPE),
+          initial_value: Expression::var_name(heap.alloc_str("init_i"), INT_TYPE),
+          loop_value: Expression::var_name(heap.alloc_str("tmp_i"), INT_TYPE),
         }],
         statements: vec![
           Statement::binary(
-            "cc",
+            heap.alloc_str("cc"),
             Operator::LT,
-            Expression::var_name("i", INT_TYPE),
-            Expression::var_name("L", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("L"), INT_TYPE),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name("cc", BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str("cc"), BOOL_TYPE),
             invert_condition: true,
             statements: vec![Statement::Break(ZERO)],
           },
           Statement::binary(
-            "t",
+            heap.alloc_str("t"),
             Operator::MUL,
-            Expression::var_name("i", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
             Expression::int(3),
           ),
           Statement::binary(
-            "j",
+            heap.alloc_str("j"),
             Operator::PLUS,
-            Expression::var_name("a", INT_TYPE),
-            Expression::var_name("t", INT_TYPE),
+            Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+            Expression::var_name(heap.alloc_str("t"), INT_TYPE),
           ),
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              "f",
+              heap.alloc_str("f"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
-            arguments: vec![Expression::var_name("j", INT_TYPE)],
+            arguments: vec![Expression::var_name(heap.alloc_str("j"), INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: None,
           },
           Statement::binary(
-            "tmp_i",
+            heap.alloc_str("tmp_i"),
             Operator::PLUS,
-            Expression::var_name("i", INT_TYPE),
+            Expression::var_name(heap.alloc_str("i"), INT_TYPE),
             Expression::int(2),
           ),
         ],
         break_collector: None,
       }],
       ZERO,
-      r#"let _loop_0: int = (init_i: int) * 3;
-let _loop_2: int = (init_i: int) * 3;
-let _loop_3: int = (a: int) + (_loop_2: int);
+      heap,
+      r#"let _t12: int = (init_i: int) * 3;
+let _t14: int = (init_i: int) * 3;
+let _t15: int = (_t14: int) + (a: int);
 let i: int = (init_i: int);
-let j: int = (_loop_3: int);
+let j: int = (_t15: int);
 while (true) {
-  let _loop_6: bool = (i: int) >= (L: int);
-  if (_loop_6: bool) {
+  let _t18: bool = (L: int) <= (i: int);
+  if (_t18: bool) {
     undefined = 0;
     break;
   }
   f((j: int));
-  let _loop_4: int = (i: int) + 2;
-  let _loop_5: int = (j: int) + 6;
-  i = (_loop_4: int);
-  j = (_loop_5: int);
+  let _t16: int = (i: int) + 2;
+  let _t17: int = (j: int) + 6;
+  i = (_t16: int);
+  j = (_t17: int);
 }
 return 0;"#,
     );

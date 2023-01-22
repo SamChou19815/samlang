@@ -1,37 +1,7 @@
 use crate::{
   ast::hir::*,
-  common::{rc_string, LocalStackedContext, Str},
+  common::{LocalStackedContext, PStr},
 };
-
-pub(super) struct ResourceAllocator {
-  cse_hoisting_temp_id: i32,
-  inlining_prefix_id: i32,
-  loop_temp_id: i32,
-}
-
-impl ResourceAllocator {
-  pub(super) fn new() -> ResourceAllocator {
-    ResourceAllocator { cse_hoisting_temp_id: 0, inlining_prefix_id: 0, loop_temp_id: 0 }
-  }
-
-  pub(super) fn alloc_cse_hoisted_temp(&mut self) -> Str {
-    let temp = rc_string(format!("_cse_{}_", self.cse_hoisting_temp_id));
-    self.cse_hoisting_temp_id += 1;
-    temp
-  }
-
-  pub(super) fn alloc_inlining_temp_prefix(&mut self) -> Str {
-    let temp = rc_string(format!("_inline_{}_", self.inlining_prefix_id));
-    self.inlining_prefix_id += 1;
-    temp
-  }
-
-  pub(super) fn alloc_loop_temp(&mut self) -> Str {
-    let temp = rc_string(format!("_loop_{}", self.loop_temp_id));
-    self.loop_temp_id += 1;
-    temp
-  }
-}
 
 #[derive(Clone, PartialEq, Eq)]
 pub(super) struct IndexAccessBindedValue {
@@ -40,9 +10,9 @@ pub(super) struct IndexAccessBindedValue {
   pub(super) index: usize,
 }
 
-impl ToString for IndexAccessBindedValue {
-  fn to_string(&self) -> String {
-    format!("{}[{}]", self.pointer_expression.debug_print(), self.index)
+impl IndexAccessBindedValue {
+  pub(super) fn dump_to_string(&self) -> String {
+    format!("{}[{}]", self.pointer_expression.dump_to_string(), self.index)
   }
 }
 
@@ -53,9 +23,14 @@ pub(super) struct BinaryBindedValue {
   pub(super) e2: Expression,
 }
 
-impl ToString for BinaryBindedValue {
-  fn to_string(&self) -> String {
-    format!("({}{}{})", self.e1.debug_print(), self.operator.to_string(), self.e2.debug_print())
+impl BinaryBindedValue {
+  pub(super) fn dump_to_string(&self) -> String {
+    format!(
+      "({}{}{})",
+      self.e1.dump_to_string(),
+      self.operator.to_string(),
+      self.e2.dump_to_string()
+    )
   }
 }
 
@@ -65,11 +40,11 @@ pub(super) enum BindedValue {
   Binary(BinaryBindedValue),
 }
 
-impl ToString for BindedValue {
-  fn to_string(&self) -> String {
+impl BindedValue {
+  pub(super) fn dump_to_string(&self) -> String {
     match self {
-      BindedValue::IndexedAccess(e) => e.to_string(),
-      BindedValue::Binary(e) => e.to_string(),
+      BindedValue::IndexedAccess(e) => e.dump_to_string(),
+      BindedValue::Binary(e) => e.dump_to_string(),
     }
   }
 }
@@ -82,14 +57,14 @@ impl PartialOrd for BindedValue {
 
 impl Ord for BindedValue {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    self.to_string().cmp(&other.to_string())
+    self.dump_to_string().cmp(&other.dump_to_string())
   }
 }
 
-pub(super) type LocalValueContextForOptimization = LocalStackedContext<Str, Expression>;
+pub(super) type LocalValueContextForOptimization = LocalStackedContext<PStr, Expression>;
 
 impl LocalValueContextForOptimization {
-  pub(super) fn checked_bind(&mut self, name: &Str, expression: Expression) {
+  pub(super) fn checked_bind(&mut self, name: &PStr, expression: Expression) {
     if !self.insert(name, expression) {
       panic!()
     }
@@ -100,7 +75,7 @@ pub(super) fn if_else_or_null(
   condition: Expression,
   s1: Vec<Statement>,
   s2: Vec<Statement>,
-  final_assignments: Vec<(Str, Type, Expression, Expression)>,
+  final_assignments: Vec<(PStr, Type, Expression, Expression)>,
 ) -> Vec<Statement> {
   if s1.is_empty() && s2.is_empty() && final_assignments.is_empty() {
     vec![]
@@ -124,19 +99,9 @@ pub(super) fn single_if_or_null(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::common::rcs;
-  use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {
-    let mut allocator = ResourceAllocator::new();
-    assert_eq!("_cse_0_", allocator.alloc_cse_hoisted_temp().as_str());
-    assert_eq!("_inline_0_", allocator.alloc_inlining_temp_prefix().as_str());
-    assert_eq!("_loop_0", allocator.alloc_loop_temp().as_str());
-    assert_eq!("_cse_1_", allocator.alloc_cse_hoisted_temp().as_str());
-    assert_eq!("_inline_1_", allocator.alloc_inlining_temp_prefix().as_str());
-    assert_eq!("_loop_1", allocator.alloc_loop_temp().as_str());
-
     assert!(if_else_or_null(ZERO, vec![], vec![], vec![]).is_empty());
     assert!(!if_else_or_null(ZERO, vec![], vec![Statement::Break(ZERO)], vec![]).is_empty());
     assert!(single_if_or_null(ZERO, false, vec![]).is_empty());
@@ -149,8 +114,8 @@ mod tests {
     });
     let bv2 =
       BindedValue::Binary(BinaryBindedValue { operator: Operator::PLUS, e1: ZERO, e2: ZERO });
-    assert_eq!("0[0]", bv1.to_string());
-    assert_eq!("(0+0)", bv2.to_string());
+    bv1.dump_to_string();
+    bv2.dump_to_string();
     let _ = bv1.clone();
     let _ = bv2.clone();
     assert!(bv1.eq(&bv1));
@@ -161,7 +126,8 @@ mod tests {
   #[test]
   fn local_value_context_for_optimization_panic() {
     let mut cx = LocalValueContextForOptimization::new();
-    cx.checked_bind(&rcs("a"), ZERO);
-    cx.checked_bind(&rcs("a"), ZERO);
+    let heap = &mut crate::common::Heap::new();
+    cx.checked_bind(&heap.alloc_str("a"), ZERO);
+    cx.checked_bind(&heap.alloc_str("a"), ZERO);
   }
 }

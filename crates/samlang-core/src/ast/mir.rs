@@ -2,7 +2,7 @@ use super::{
   common_names,
   hir::{GlobalVariable, Operator},
 };
-use crate::common::{rcs, Str};
+use crate::common::{Heap, PStr};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 
@@ -41,16 +41,16 @@ pub(crate) struct FunctionType {
 }
 
 impl FunctionType {
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     format!(
       "({}) => {}",
       self
         .argument_types
         .iter()
         .enumerate()
-        .map(|(i, t)| format!("t{}: {}", i, t.pretty_print()))
+        .map(|(i, t)| format!("t{}: {}", i, t.pretty_print(heap)))
         .join(", "),
-      self.return_type.pretty_print()
+      self.return_type.pretty_print(heap)
     )
   }
 }
@@ -58,15 +58,11 @@ impl FunctionType {
 #[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Type {
   Primitive(PrimitiveType),
-  Id(Str),
+  Id(PStr),
   Fn(FunctionType),
 }
 
 impl Type {
-  pub(crate) fn new_id(name: &'static str) -> Type {
-    Type::Id(rcs(name))
-  }
-
   pub(crate) fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
     FunctionType { argument_types, return_type: Box::new(return_type) }
   }
@@ -75,11 +71,11 @@ impl Type {
     Type::Fn(Self::new_fn_unwrapped(argument_types, return_type))
   }
 
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       Type::Primitive(t) => t.to_string(),
-      Type::Id(id) => id.to_string(),
-      Type::Fn(function) => function.pretty_print(),
+      Type::Id(id) => id.as_str(heap).to_string(),
+      Type::Fn(function) => function.pretty_print(heap),
     }
   }
 
@@ -111,8 +107,8 @@ pub(crate) const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
 #[derive(Debug, Clone)]
 pub(crate) enum Expression {
   IntLiteral(i32, Type),
-  Name(Str, Type),
-  Variable(Str, Type),
+  Name(PStr, Type),
+  Variable(PStr, Type),
 }
 
 impl Expression {
@@ -126,7 +122,7 @@ impl Expression {
     }
   }
 
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       Expression::IntLiteral(0, t) if t.as_primitive().unwrap().eq(&PrimitiveType::Bool) => {
         "false".to_string()
@@ -135,7 +131,7 @@ impl Expression {
         "true".to_string()
       }
       Expression::IntLiteral(i, _) => i.to_string(),
-      Expression::Name(n, _) | Expression::Variable(n, _) => n.to_string(),
+      Expression::Name(n, _) | Expression::Variable(n, _) => n.as_str(heap).to_string(),
     }
   }
 }
@@ -146,7 +142,7 @@ pub(crate) const ZERO: Expression = Expression::IntLiteral(0, INT_TYPE);
 pub(crate) const ONE: Expression = Expression::IntLiteral(1, INT_TYPE);
 
 pub(crate) struct GenenalLoopVariable {
-  pub(crate) name: Str,
+  pub(crate) name: PStr,
   pub(crate) type_: Type,
   pub(crate) initial_value: Expression,
   pub(crate) loop_value: Expression,
@@ -154,14 +150,14 @@ pub(crate) struct GenenalLoopVariable {
 
 pub(crate) enum Statement {
   Binary {
-    name: Str,
+    name: PStr,
     type_: Type,
     operator: Operator,
     e1: Expression,
     e2: Expression,
   },
   IndexedAccess {
-    name: Str,
+    name: PStr,
     type_: Type,
     pointer_expression: Expression,
     index: usize,
@@ -175,13 +171,13 @@ pub(crate) enum Statement {
     callee: Expression,
     arguments: Vec<Expression>,
     return_type: Type,
-    return_collector: Option<Str>,
+    return_collector: Option<PStr>,
   },
   IfElse {
     condition: Expression,
     s1: Vec<Statement>,
     s2: Vec<Statement>,
-    final_assignments: Vec<(Str, Type, Expression, Expression)>,
+    final_assignments: Vec<(PStr, Type, Expression, Expression)>,
   },
   SingleIf {
     condition: Expression,
@@ -192,15 +188,15 @@ pub(crate) enum Statement {
   While {
     loop_variables: Vec<GenenalLoopVariable>,
     statements: Vec<Statement>,
-    break_collector: Option<(Str, Type)>,
+    break_collector: Option<(PStr, Type)>,
   },
   Cast {
-    name: Str,
+    name: PStr,
     type_: Type,
     assigned_expression: Expression,
   },
   StructInit {
-    struct_variable_name: Str,
+    struct_variable_name: PStr,
     type_: Type,
     expression_list: Vec<Expression>,
   },
@@ -208,16 +204,7 @@ pub(crate) enum Statement {
 
 impl Statement {
   pub(crate) fn binary(
-    name: &'static str,
-    operator: Operator,
-    e1: Expression,
-    e2: Expression,
-  ) -> Statement {
-    Self::binary_str(rcs(name), operator, e1, e2)
-  }
-
-  pub(crate) fn binary_str(
-    name: Str,
+    name: PStr,
     operator: Operator,
     e1: Expression,
     e2: Expression,
@@ -233,27 +220,34 @@ impl Statement {
 
   fn pretty_print_internal(
     &self,
+    heap: &Heap,
     level: usize,
-    break_collector: &Option<(Str, Type)>,
+    break_collector: &Option<(PStr, Type)>,
     collector: &mut Vec<String>,
   ) {
     match self {
       Statement::Binary { name, type_, operator, e1, e2 } => {
-        let type_ = type_.pretty_print();
-        let e1 = e1.pretty_print();
-        let e2 = e2.pretty_print();
+        let type_ = type_.pretty_print(heap);
+        let e1 = e1.pretty_print(heap);
+        let e2 = e2.pretty_print(heap);
         let expr_str = format!("{} {} {}", e1, operator.to_string(), e2);
         let wrapped =
           if *operator == Operator::DIV { format!("Math.floor({})", expr_str) } else { expr_str };
-        collector.push(format!("{}let {}: {} = { };\n", "  ".repeat(level), name, type_, wrapped));
+        collector.push(format!(
+          "{}let {}: {} = { };\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          type_,
+          wrapped
+        ));
       }
       Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         collector.push(format!(
           "{}let {}: {} = {}[{}];\n",
           "  ".repeat(level),
-          name,
-          type_.pretty_print(),
-          pointer_expression.pretty_print(),
+          name.as_str(heap),
+          type_.pretty_print(heap),
+          pointer_expression.pretty_print(heap),
           index
         ));
       }
@@ -261,14 +255,14 @@ impl Statement {
         collector.push(format!(
           "{}{}[{}] = {};\n",
           "  ".repeat(level),
-          pointer_expression.pretty_print(),
+          pointer_expression.pretty_print(heap),
           index,
-          assigned_expression.pretty_print(),
+          assigned_expression.pretty_print(heap),
         ));
       }
       Statement::Call { callee, arguments, return_type, return_collector } => {
         let collector_str = if let Some(collector) = return_collector {
-          format!("let {}: {} = ", collector, return_type.pretty_print())
+          format!("let {}: {} = ", collector.as_str(heap), return_type.pretty_print(heap))
         } else {
           "".to_string()
         };
@@ -276,27 +270,42 @@ impl Statement {
           "{}{}{}({});\n",
           "  ".repeat(level),
           collector_str,
-          callee.pretty_print(),
-          arguments.iter().map(|it| it.pretty_print()).join(", ")
+          callee.pretty_print(heap),
+          arguments.iter().map(|it| it.pretty_print(heap)).join(", ")
         ));
       }
       Statement::IfElse { condition, s1, s2, final_assignments } => {
         for (n, t, _, _) in final_assignments {
-          collector.push(format!("{}let {}: {};\n", "  ".repeat(level), n, t.pretty_print()));
+          collector.push(format!(
+            "{}let {}: {};\n",
+            "  ".repeat(level),
+            n.as_str(heap),
+            t.pretty_print(heap)
+          ));
         }
-        collector.push(format!("{}if ({}) {{\n", "  ".repeat(level), condition.pretty_print()));
+        collector.push(format!("{}if ({}) {{\n", "  ".repeat(level), condition.pretty_print(heap)));
         for s in s1 {
-          s.pretty_print_internal(level + 1, break_collector, collector);
+          s.pretty_print_internal(heap, level + 1, break_collector, collector);
         }
         for (n, _, v1, _) in final_assignments {
-          collector.push(format!("{}{} = {};\n", "  ".repeat(level + 1), n, v1.pretty_print()));
+          collector.push(format!(
+            "{}{} = {};\n",
+            "  ".repeat(level + 1),
+            n.as_str(heap),
+            v1.pretty_print(heap)
+          ));
         }
         collector.push(format!("{}}} else {{\n", "  ".repeat(level)));
         for s in s2 {
-          s.pretty_print_internal(level + 1, break_collector, collector);
+          s.pretty_print_internal(heap, level + 1, break_collector, collector);
         }
         for (n, _, _, v2) in final_assignments {
-          collector.push(format!("{}{} = {};\n", "  ".repeat(level + 1), n, v2.pretty_print()));
+          collector.push(format!(
+            "{}{} = {};\n",
+            "  ".repeat(level + 1),
+            n.as_str(heap),
+            v2.pretty_print(heap)
+          ));
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
       }
@@ -306,10 +315,10 @@ impl Statement {
           "{}if ({}{}) {{\n",
           "  ".repeat(level),
           invert_str,
-          condition.pretty_print()
+          condition.pretty_print(heap)
         ));
         for s in statements {
-          s.pretty_print_internal(level + 1, break_collector, collector);
+          s.pretty_print_internal(heap, level + 1, break_collector, collector);
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
       }
@@ -318,8 +327,8 @@ impl Statement {
           collector.push(format!(
             "{}{} = {};\n",
             "  ".repeat(level),
-            break_collector_str,
-            break_value.pretty_print()
+            break_collector_str.as_str(heap),
+            break_value.pretty_print(heap)
           ));
         }
         collector.push(format!("{}break;\n", "  ".repeat(level)));
@@ -329,24 +338,29 @@ impl Statement {
           collector.push(format!(
             "{}let {}: {} = {};\n",
             "  ".repeat(level),
-            v.name,
-            v.type_.pretty_print(),
-            v.initial_value.pretty_print()
+            v.name.as_str(heap),
+            v.type_.pretty_print(heap),
+            v.initial_value.pretty_print(heap)
           ));
         }
         if let Some((n, t)) = break_collector {
-          collector.push(format!("{}let {}: {};\n", "  ".repeat(level), n, t.pretty_print()));
+          collector.push(format!(
+            "{}let {}: {};\n",
+            "  ".repeat(level),
+            n.as_str(heap),
+            t.pretty_print(heap)
+          ));
         }
         collector.push(format!("{}while (true) {{\n", "  ".repeat(level)));
         for nested in statements {
-          nested.pretty_print_internal(level + 1, break_collector, collector);
+          nested.pretty_print_internal(heap, level + 1, break_collector, collector);
         }
         for v in loop_variables {
           collector.push(format!(
             "{}{} = {};\n",
             "  ".repeat(level + 1),
-            v.name,
-            v.loop_value.pretty_print()
+            v.name.as_str(heap),
+            v.loop_value.pretty_print(heap)
           ));
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
@@ -355,18 +369,18 @@ impl Statement {
         collector.push(format!(
           "{}let {} = {} as {};\n",
           "  ".repeat(level),
-          name,
-          assigned_expression.pretty_print(),
-          type_.pretty_print()
+          name.as_str(heap),
+          assigned_expression.pretty_print(heap),
+          type_.pretty_print(heap)
         ));
       }
       Statement::StructInit { struct_variable_name, type_, expression_list } => {
         collector.push(format!(
           "{}let {}: {} = [{}];\n",
           "  ".repeat(level),
-          struct_variable_name,
-          type_.pretty_print(),
-          expression_list.iter().map(|it| it.pretty_print()).join(", ")
+          struct_variable_name.as_str(heap),
+          type_.pretty_print(heap),
+          expression_list.iter().map(|it| it.pretty_print(heap)).join(", ")
         ));
       }
     }
@@ -374,49 +388,49 @@ impl Statement {
 }
 
 pub(crate) struct Function {
-  pub(crate) name: Str,
-  pub(crate) parameters: Vec<Str>,
+  pub(crate) name: PStr,
+  pub(crate) parameters: Vec<PStr>,
   pub(crate) type_: FunctionType,
   pub(crate) body: Vec<Statement>,
   pub(crate) return_value: Expression,
 }
 
 impl Function {
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     let header = format!(
       "function {}({}): {} {{",
-      self.name,
+      self.name.as_str(heap),
       self
         .parameters
         .iter()
         .zip(&self.type_.argument_types)
-        .map(|(n, t)| format!("{}: {}", n, t.pretty_print()))
+        .map(|(n, t)| format!("{}: {}", n.as_str(heap), t.pretty_print(heap)))
         .join(", "),
-      self.type_.return_type.pretty_print()
+      self.type_.return_type.pretty_print(heap)
     );
     let mut collector = vec![];
     for s in &self.body {
-      s.pretty_print_internal(1, &None, &mut collector);
+      s.pretty_print_internal(heap, 1, &None, &mut collector);
     }
-    collector.push(format!("  return {};", self.return_value.pretty_print()));
+    collector.push(format!("  return {};", self.return_value.pretty_print(heap)));
     format!("{}\n{}\n}}\n", header, collector.join(""))
   }
 }
 
 pub(crate) struct TypeDefinition {
-  pub(crate) name: Str,
+  pub(crate) name: PStr,
   pub(crate) mappings: Vec<Type>,
 }
 
 pub(crate) struct Sources {
   pub(crate) global_variables: Vec<GlobalVariable>,
   pub(crate) type_definitions: Vec<TypeDefinition>,
-  pub(crate) main_function_names: Vec<Str>,
+  pub(crate) main_function_names: Vec<PStr>,
   pub(crate) functions: Vec<Function>,
 }
 
 impl Sources {
-  pub(crate) fn pretty_print(&self) -> String {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     let mut collector = vec![];
     collector.push(format!(
       r#"type Str = [number, string];
@@ -436,17 +450,21 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
     )); // empty the array to mess up program code that uses after free.
 
     for v in &self.global_variables {
-      collector.push(format!("const {}: Str = [0, `{}`];\n", v.name, v.content));
+      collector.push(format!(
+        "const {}: Str = [0, `{}`];\n",
+        v.name.as_str(heap),
+        v.content.as_str(heap)
+      ));
     }
     for d in &self.type_definitions {
       collector.push(format!(
         "type {} = [{}];\n",
-        d.name,
-        d.mappings.iter().map(|it| it.pretty_print()).join(", ")
+        d.name.as_str(heap),
+        d.mappings.iter().map(|it| it.pretty_print(heap)).join(", ")
       ));
     }
     for f in &self.functions {
-      collector.push(f.pretty_print());
+      collector.push(f.pretty_print(heap));
     }
     collector.join("")
   }

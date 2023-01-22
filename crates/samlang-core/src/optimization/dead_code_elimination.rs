@@ -1,23 +1,21 @@
-use itertools::Itertools;
-
+use super::optimization_common;
 use crate::{
   ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Operator, Statement},
-  common::Str,
+  common::PStr,
 };
+use itertools::Itertools;
 use std::collections::HashSet;
 
-use super::optimization_common;
-
-pub(super) fn collect_use_from_expression(expression: &Expression, set: &mut HashSet<Str>) {
+pub(super) fn collect_use_from_expression(expression: &Expression, set: &mut HashSet<PStr>) {
   if let Expression::Variable(v) = expression {
-    set.insert(v.name.clone());
+    set.insert(v.name);
   }
 }
 
 fn collect_use_from_while_parts(
   loop_variables: &Vec<GenenalLoopVariable>,
   stmts: &Vec<Statement>,
-  set: &mut HashSet<Str>,
+  set: &mut HashSet<PStr>,
 ) {
   for v in loop_variables {
     collect_use_from_expression(&v.initial_value, set);
@@ -26,7 +24,7 @@ fn collect_use_from_while_parts(
   collect_use_from_stmts(stmts, set);
 }
 
-fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<Str>) {
+fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
   match stmt {
     Statement::Binary(Binary { name: _, type_: _, operator: _, e1, e2 }) => {
       collect_use_from_expression(e1, set);
@@ -37,7 +35,7 @@ fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<Str>) {
     }
     Statement::Call { callee, arguments, return_type: _, return_collector: _ } => {
       if let Callee::Variable(v) = callee {
-        set.insert(v.name.clone());
+        set.insert(v.name);
       }
       for e in arguments {
         collect_use_from_expression(e, set)
@@ -76,13 +74,13 @@ fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<Str>) {
   }
 }
 
-pub(super) fn collect_use_from_stmts(stmts: &Vec<Statement>, set: &mut HashSet<Str>) {
+pub(super) fn collect_use_from_stmts(stmts: &Vec<Statement>, set: &mut HashSet<PStr>) {
   for stmt in stmts {
     collect_use_from_stmt(stmt, set)
   }
 }
 
-fn optimize_stmt(stmt: Statement, set: &mut HashSet<Str>) -> Vec<Statement> {
+fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Vec<Statement> {
   match stmt {
     Statement::Binary(binary) => {
       if !set.contains(&binary.name)
@@ -110,7 +108,7 @@ fn optimize_stmt(stmt: Statement, set: &mut HashSet<Str>) -> Vec<Statement> {
         _ => None,
       };
       if let Callee::Variable(v) = &callee {
-        set.insert(v.name.clone());
+        set.insert(v.name);
       }
       for e in &arguments {
         collect_use_from_expression(e, set);
@@ -199,7 +197,7 @@ fn optimize_stmt(stmt: Statement, set: &mut HashSet<Str>) -> Vec<Statement> {
   }
 }
 
-pub(super) fn optimize_stmts(stmts: Vec<Statement>, set: &mut HashSet<Str>) -> Vec<Statement> {
+pub(super) fn optimize_stmts(stmts: Vec<Statement>, set: &mut HashSet<PStr>) -> Vec<Statement> {
   let mut collector = vec![];
   for s in stmts.into_iter().rev() {
     collector.append(&mut optimize_stmt(s, set));

@@ -3,20 +3,20 @@ use crate::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
     Sources, Statement, Type, TypeDefinition,
   },
-  common::Str,
+  common::PStr,
 };
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 
-fn collect_for_type_set(type_: &Type, type_set: &mut HashSet<Str>) {
+fn collect_for_type_set(type_: &Type, type_set: &mut HashSet<PStr>) {
   if let Type::Id(n) = type_ {
-    type_set.insert(n.name.clone());
+    type_set.insert(n.name);
   }
 }
 
 fn collect_used_names_from_expression(
-  name_set: &mut HashSet<Str>,
-  type_set: &mut HashSet<Str>,
+  name_set: &mut HashSet<PStr>,
+  type_set: &mut HashSet<PStr>,
   expression: &Expression,
 ) {
   collect_for_type_set(&expression.type_(), type_set);
@@ -24,14 +24,14 @@ fn collect_used_names_from_expression(
     Expression::IntLiteral(_, _) | Expression::Variable(_) => {}
     Expression::StringName(n)
     | Expression::FunctionName(FunctionName { name: n, type_: _, type_arguments: _ }) => {
-      name_set.insert(n.clone());
+      name_set.insert(*n);
     }
   }
 }
 
 fn collect_used_names_from_statement(
-  name_set: &mut HashSet<Str>,
-  type_set: &mut HashSet<Str>,
+  name_set: &mut HashSet<PStr>,
+  type_set: &mut HashSet<PStr>,
   statement: &Statement,
 ) {
   match statement {
@@ -47,7 +47,7 @@ fn collect_used_names_from_statement(
     Statement::Call { callee, arguments, return_type, return_collector: _ } => {
       match callee {
         Callee::FunctionName(n) => {
-          name_set.insert(n.name.clone());
+          name_set.insert(n.name);
         }
         Callee::Variable(v) => collect_for_type_set(&v.type_, type_set),
       }
@@ -83,22 +83,22 @@ fn collect_used_names_from_statement(
       }
     }
     Statement::StructInit { struct_variable_name: _, type_, expression_list } => {
-      type_set.insert(type_.name.clone());
+      type_set.insert(type_.name);
       for e in expression_list {
         collect_used_names_from_expression(name_set, type_set, e);
       }
     }
     Statement::ClosureInit { closure_variable_name: _, closure_type, function_name, context } => {
-      name_set.insert(function_name.name.clone());
+      name_set.insert(function_name.name);
       collect_used_names_from_expression(name_set, type_set, context);
-      type_set.insert(closure_type.name.clone());
+      type_set.insert(closure_type.name);
     }
   }
 }
 
 fn collect_used_names_from_statements(
-  name_set: &mut HashSet<Str>,
-  type_set: &mut HashSet<Str>,
+  name_set: &mut HashSet<PStr>,
+  type_set: &mut HashSet<PStr>,
   statements: &Vec<Statement>,
 ) {
   for s in statements {
@@ -106,7 +106,9 @@ fn collect_used_names_from_statements(
   }
 }
 
-fn get_other_functions_used_by_given_function(function: &Function) -> (HashSet<Str>, HashSet<Str>) {
+fn get_other_functions_used_by_given_function(
+  function: &Function,
+) -> (HashSet<PStr>, HashSet<PStr>) {
   let mut name_set = HashSet::new();
   let mut type_set = HashSet::new();
   collect_used_names_from_statements(&mut name_set, &mut type_set, &function.body);
@@ -123,24 +125,24 @@ fn analyze_used_function_names_and_type_names(
   functions: &Vec<Function>,
   closure_types: &[ClosureTypeDefinition],
   type_definitions: &[TypeDefinition],
-  entry_points: &[Str],
-) -> (HashSet<Str>, HashSet<Str>) {
+  entry_points: &[PStr],
+) -> (HashSet<PStr>, HashSet<PStr>) {
   let mut used_functions_map = HashMap::new();
   for f in functions {
-    used_functions_map.insert(f.name.clone(), get_other_functions_used_by_given_function(f));
+    used_functions_map.insert(f.name, get_other_functions_used_by_given_function(f));
   }
   let mut type_def_map = HashMap::new();
   for d in closure_types {
     let mut type_set = HashSet::new();
     collect_for_type_set(&Type::Fn(d.function_type.clone()), &mut type_set);
-    type_def_map.insert(d.identifier.clone(), type_set);
+    type_def_map.insert(d.identifier, type_set);
   }
   for d in type_definitions {
     let mut type_set = HashSet::new();
     for t in &d.mappings {
       collect_for_type_set(t, &mut type_set);
     }
-    type_def_map.insert(d.identifier.clone(), type_set);
+    type_def_map.insert(d.identifier, type_set);
   }
 
   let mut used_names: HashSet<_> = entry_points.iter().cloned().collect();
@@ -150,8 +152,8 @@ fn analyze_used_function_names_and_type_names(
     if let Some((used_by_this_function, _)) = used_functions_map.get(&fn_name) {
       for used_fn in used_by_this_function {
         if !used_names.contains(used_fn) {
-          used_names.insert(used_fn.clone());
-          stack.push(used_fn.clone());
+          used_names.insert(*used_fn);
+          stack.push(*used_fn);
         }
       }
     }
@@ -165,15 +167,15 @@ fn analyze_used_function_names_and_type_names(
         if let Some(more_used_types) = type_def_map.get(t) {
           used_types_todo_stack.append(&mut more_used_types.iter().cloned().collect())
         }
-        used_types.insert(t.clone());
+        used_types.insert(*t);
       }
     }
   }
   while let Some(additional_used_type) = used_types_todo_stack.pop() {
     if !used_types.contains(&additional_used_type) {
-      used_types.insert(additional_used_type.clone());
+      used_types.insert(additional_used_type);
       for t in type_def_map.get(&additional_used_type).into_iter().flatten() {
-        used_types_todo_stack.push(t.clone());
+        used_types_todo_stack.push(*t);
       }
     }
   }
@@ -215,26 +217,28 @@ mod tests {
       Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
       GlobalVariable, Sources, Statement, Type, TypeDefinition, VariableName, INT_TYPE, ZERO,
     },
-    common::rcs,
+    Heap,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
 
   #[test]
   fn integration_test() {
+    let heap = &mut Heap::new();
+
     let optimized = super::optimize_sources(Sources {
       global_variables: vec![
-        GlobalVariable { name: rcs("bar"), content: rcs("fff") },
-        GlobalVariable { name: rcs("fsdfsdf"), content: rcs("fff") },
+        GlobalVariable { name: heap.alloc_str("bar"), content: heap.alloc_str("fff") },
+        GlobalVariable { name: heap.alloc_str("fsdfsdf"), content: heap.alloc_str("fff") },
       ],
       closure_types: vec![
         ClosureTypeDefinition {
-          identifier: rcs("Foo"),
+          identifier: heap.alloc_str("Foo"),
           type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
         ClosureTypeDefinition {
-          identifier: rcs("Baz"),
+          identifier: heap.alloc_str("Baz"),
           type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
@@ -242,36 +246,40 @@ mod tests {
       type_definitions: vec![
         TypeDefinition {
           is_object: true,
-          identifier: rcs("Foo"),
+          identifier: heap.alloc_str("Foo"),
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![INT_TYPE, Type::new_id_no_targs("Foo"), Type::new_id_no_targs("Bar")],
+          mappings: vec![
+            INT_TYPE,
+            Type::new_id_no_targs(heap.alloc_str("Foo")),
+            Type::new_id_no_targs(heap.alloc_str("Bar")),
+          ],
         },
         TypeDefinition {
           is_object: true,
-          identifier: rcs("Bar"),
+          identifier: heap.alloc_str("Bar"),
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![Type::new_id_no_targs("Bar")],
+          mappings: vec![Type::new_id_no_targs(heap.alloc_str("Bar"))],
         },
         TypeDefinition {
           is_object: true,
-          identifier: rcs("Baz"),
+          identifier: heap.alloc_str("Baz"),
           type_parameters: vec![],
           names: vec![],
           mappings: vec![INT_TYPE],
         },
       ],
-      main_function_names: vec![rcs("main")],
+      main_function_names: vec![heap.alloc_str("main")],
       functions: vec![
         Function {
-          name: rcs("main"),
+          name: heap.alloc_str("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              "foo",
+              heap.alloc_str("foo"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
@@ -281,58 +289,61 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: rcs("foo"),
+          name: heap.alloc_str("foo"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::StructInit {
-              struct_variable_name: rcs(""),
-              type_: Type::new_id_no_targs_unwrapped("Foo"),
-              expression_list: vec![Expression::StringName(rcs("bar"))],
+              struct_variable_name: heap.alloc_str(""),
+              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("Foo")),
+              expression_list: vec![Expression::StringName(heap.alloc_str("bar"))],
             },
             Statement::ClosureInit {
-              closure_variable_name: rcs(""),
-              closure_type: Type::new_id_no_targs_unwrapped("Foo"),
-              function_name: (FunctionName::new("foo", Type::new_fn_unwrapped(vec![], INT_TYPE))),
+              closure_variable_name: heap.alloc_str(""),
+              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str("Foo")),
+              function_name: (FunctionName::new(
+                heap.alloc_str("foo"),
+                Type::new_fn_unwrapped(vec![], INT_TYPE),
+              )),
               context: ZERO,
             },
             Statement::IndexedAccess {
-              name: rcs(""),
+              name: heap.alloc_str(""),
               type_: INT_TYPE,
-              pointer_expression: Expression::StringName(rcs("bar")),
+              pointer_expression: Expression::StringName(heap.alloc_str("bar")),
               index: 0,
             },
             Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                "baz",
+                heap.alloc_str("baz"),
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
               )),
-              arguments: vec![Expression::StringName(rcs("haha"))],
+              arguments: vec![Expression::StringName(heap.alloc_str("haha"))],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName::new("baz", INT_TYPE)),
-              arguments: vec![Expression::StringName(rcs("haha"))],
+              callee: Callee::Variable(VariableName::new(heap.alloc_str("baz"), INT_TYPE)),
+              arguments: vec![Expression::StringName(heap.alloc_str("haha"))],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::binary(
-                "",
+                heap.alloc_str(""),
                 crate::ast::hir::Operator::GE,
-                Expression::StringName(rcs("foo")),
-                Expression::StringName(rcs("bar")),
+                Expression::StringName(heap.alloc_str("foo")),
+                Expression::StringName(heap.alloc_str("bar")),
               )],
               s2: vec![Statement::binary(
-                "",
+                heap.alloc_str(""),
                 crate::ast::hir::Operator::GE,
-                Expression::StringName(rcs("foo")),
-                Expression::StringName(rcs("bar")),
+                Expression::StringName(heap.alloc_str("foo")),
+                Expression::StringName(heap.alloc_str("bar")),
               )],
-              final_assignments: vec![(rcs("fff"), INT_TYPE, ZERO, ZERO)],
+              final_assignments: vec![(heap.alloc_str("fff"), INT_TYPE, ZERO, ZERO)],
             },
             Statement::SingleIf {
               condition: ZERO,
@@ -341,36 +352,39 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: rcs("f"),
+                name: heap.alloc_str("f"),
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![],
               break_collector: Some(VariableName {
-                name: rcs("d"),
-                type_: Type::new_id_no_targs("A"),
+                name: heap.alloc_str("d"),
+                type_: Type::new_id_no_targs(heap.alloc_str("A")),
               }),
             },
             Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
           ],
-          return_value: Expression::StringName(rcs("bar")),
+          return_value: Expression::StringName(heap.alloc_str("bar")),
         },
         Function {
-          name: rcs("bar"),
+          name: heap.alloc_str("bar"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
-            callee: Callee::Variable(VariableName::new("baz", INT_TYPE)),
-            arguments: vec![Expression::fn_name("baz", Type::new_fn_unwrapped(vec![], INT_TYPE))],
+            callee: Callee::Variable(VariableName::new(heap.alloc_str("baz"), INT_TYPE)),
+            arguments: vec![Expression::fn_name(
+              heap.alloc_str("baz"),
+              Type::new_fn_unwrapped(vec![], INT_TYPE),
+            )],
             return_type: INT_TYPE,
             return_collector: None,
           }],
           return_value: ZERO,
         },
         Function {
-          name: rcs("baz"),
+          name: heap.alloc_str("baz"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -382,15 +396,15 @@ mod tests {
 
     assert_eq!(
       vec!["bar"],
-      optimized.global_variables.iter().map(|it| it.name.as_str()).collect_vec()
+      optimized.global_variables.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
     assert_eq!(
       vec!["Foo", "Bar"],
-      optimized.type_definitions.iter().map(|it| it.identifier.as_str()).collect_vec()
+      optimized.type_definitions.iter().map(|it| it.identifier.as_str(heap)).collect_vec()
     );
     assert_eq!(
       vec!["main", "foo", "bar", "baz"],
-      optimized.functions.iter().map(|it| it.name.as_str()).collect_vec()
+      optimized.functions.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
   }
 }

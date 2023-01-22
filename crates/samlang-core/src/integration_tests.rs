@@ -1746,20 +1746,22 @@ class Main {
     assert!(compile_time_errors.is_empty());
     let unoptimized_hir_sources = compiler::compile_sources_to_hir(heap, &checked_sources);
     let optimized_hir_sources = optimization::optimize_sources(
+      heap,
       unoptimized_hir_sources,
       &optimization::ALL_ENABLED_CONFIGURATION,
     );
-    let mir_sources = compiler::compile_hir_to_mir(optimized_hir_sources);
+    let mir_sources = compiler::compile_hir_to_mir(heap, optimized_hir_sources);
     for test in &tests {
       let mod_ref = heap.alloc_module_reference_from_string_vec(vec![test.name.to_string()]);
-      let main_function = rc_string(common_names::encode_main_function_name(heap, &mod_ref));
-      let actual = interpreter::run_mir_sources(&mir_sources, main_function);
+      let main_function =
+        heap.alloc_string(common_names::encode_main_function_name(heap, &mod_ref));
+      let actual = interpreter::run_mir_sources(heap, &mir_sources, main_function);
       assert_eq!(test.expected_std, actual);
       // Replace with the following line for debugging
       // assert_eq!(test.expected_std, actual, "{}", test.name);
     }
 
-    let (_, wasm_module) = compiler::compile_mir_to_wasm(&mir_sources);
+    let (_, wasm_module) = compiler::compile_mir_to_wasm(heap, &mir_sources);
     let engine = Engine::default();
     let module = Module::new(&engine, &mut &wasm_module[..]).unwrap();
     let mut store = Store::new(&engine, vec![]);
