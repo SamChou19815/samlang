@@ -1,11 +1,11 @@
-use super::{
-  loop_induction_analysis::{
-    BasicInductionVariableWithLoopGuard, GuardOperator, OptimizableWhileLoop,
-    PotentialLoopInvariantExpression,
-  },
-  optimization_common::ResourceAllocator,
+use super::loop_induction_analysis::{
+  BasicInductionVariableWithLoopGuard, GuardOperator, OptimizableWhileLoop,
+  PotentialLoopInvariantExpression,
 };
-use crate::ast::hir::{Binary, Expression, Operator, Statement, INT_TYPE, ZERO};
+use crate::{
+  ast::hir::{Binary, Expression, Operator, Statement, INT_TYPE, ZERO},
+  Heap,
+};
 
 fn analyze_number_of_iterations_to_break_less_than_guard(
   initial_guard_value: i32,
@@ -59,7 +59,7 @@ fn analyze_number_of_iterations_to_break_guard(
 
 pub(super) fn optimize(
   optimizable_while_loop: &OptimizableWhileLoop,
-  allocator: &mut ResourceAllocator,
+  heap: &mut Heap,
 ) -> Option<Vec<Statement>> {
   let BasicInductionVariableWithLoopGuard {
     name: basic_induction_variable_with_loop_guard_name,
@@ -89,7 +89,7 @@ pub(super) fn optimize(
         let basic_induction_variable_with_loop_guard_final_value =
           *initial_guard_value + *guard_increment_amount * num_of_loop_iterations;
         return Some(vec![Statement::Binary(Binary {
-          name: n.clone(),
+          name: *n,
           type_: t.clone(),
           operator: Operator::PLUS,
           e1: Expression::int(basic_induction_variable_with_loop_guard_final_value),
@@ -101,7 +101,7 @@ pub(super) fn optimize(
       // Now we know that the break value is a constant, so we can directly return the assignment
       // without looping around.
       return Some(vec![Statement::Binary(Binary {
-        name: n.clone(),
+        name: *n,
         type_: t.clone(),
         operator: Operator::PLUS,
         e1: e.clone(),
@@ -118,26 +118,26 @@ pub(super) fn optimize(
     .iter()
     .find(|v| v.name.eq(&break_collector.2.name))
   {
-    let increment_temporary = allocator.alloc_loop_temp();
+    let increment_temporary = heap.alloc_temp_str();
     Some(vec![
       Statement::Binary(Statement::binary_flexible_unwrapped(
-        increment_temporary.clone(),
+        increment_temporary,
         Operator::MUL,
         relevant_general_induction_variable.increment_amount.to_expression(),
         Expression::int(num_of_loop_iterations),
       )),
       Statement::Binary(Statement::binary_flexible_unwrapped(
-        break_collector.0.clone(),
+        *break_collector.0,
         Operator::PLUS,
         relevant_general_induction_variable.initial_value.clone(),
-        Expression::var_name_str(increment_temporary, INT_TYPE),
+        Expression::var_name(increment_temporary, INT_TYPE),
       )),
     ])
   } else {
     // Now we know that the break value is a constant, so we can directly return the assignment
     // without looping around.
     Some(vec![Statement::Binary(Binary {
-      name: break_collector.0.clone(),
+      name: *break_collector.0,
       type_: break_collector.1.clone(),
       operator: Operator::PLUS,
       e1: Expression::Variable(break_collector.2.clone()),
@@ -150,13 +150,10 @@ pub(super) fn optimize(
 mod tests {
   use crate::{
     ast::hir::{Expression, Statement, VariableName, INT_TYPE, ZERO},
-    common::rcs,
-    optimization::{
-      loop_induction_analysis::{
-        BasicInductionVariableWithLoopGuard, GeneralBasicInductionVariable, GuardOperator,
-        OptimizableWhileLoop, PotentialLoopInvariantExpression,
-      },
-      optimization_common::ResourceAllocator,
+    common::Heap,
+    optimization::loop_induction_analysis::{
+      BasicInductionVariableWithLoopGuard, GeneralBasicInductionVariable, GuardOperator,
+      OptimizableWhileLoop, PotentialLoopInvariantExpression,
     },
   };
   use itertools::Itertools;
@@ -232,79 +229,96 @@ mod tests {
     );
   }
 
-  fn assert_rejected(optimizable_while_loop: OptimizableWhileLoop) {
-    assert!(super::optimize(&optimizable_while_loop, &mut ResourceAllocator::new()).is_none());
+  fn assert_rejected(optimizable_while_loop: OptimizableWhileLoop, heap: &mut Heap) {
+    assert!(super::optimize(&optimizable_while_loop, heap).is_none());
   }
 
   #[test]
   fn rejection_tests() {
-    assert_rejected(OptimizableWhileLoop {
-      basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-        name: rcs("i"),
-        initial_value: Expression::var_name("a", INT_TYPE),
-        increment_amount: PotentialLoopInvariantExpression::Int(0),
-        guard_operator: GuardOperator::LT,
-        guard_expression: PotentialLoopInvariantExpression::Int(0),
-      },
-      general_induction_variables: vec![],
-      loop_variables_that_are_not_basic_induction_variables: vec![],
-      derived_induction_variables: vec![],
-      statements: vec![],
-      break_collector: None,
-    });
+    let heap = &mut Heap::new();
 
-    assert_rejected(OptimizableWhileLoop {
-      basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-        name: rcs("i"),
-        initial_value: ZERO,
-        increment_amount: PotentialLoopInvariantExpression::Int(0),
-        guard_operator: GuardOperator::LT,
-        guard_expression: PotentialLoopInvariantExpression::Int(0),
-      },
-      general_induction_variables: vec![],
-      loop_variables_that_are_not_basic_induction_variables: vec![],
-      derived_induction_variables: vec![],
-      statements: vec![Statement::While {
-        loop_variables: vec![],
+    assert_rejected(
+      OptimizableWhileLoop {
+        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+          name: heap.alloc_str("i"),
+          initial_value: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+          increment_amount: PotentialLoopInvariantExpression::Int(0),
+          guard_operator: GuardOperator::LT,
+          guard_expression: PotentialLoopInvariantExpression::Int(0),
+        },
+        general_induction_variables: vec![],
+        loop_variables_that_are_not_basic_induction_variables: vec![],
+        derived_induction_variables: vec![],
         statements: vec![],
         break_collector: None,
-      }],
-      break_collector: None,
-    });
-
-    assert_rejected(OptimizableWhileLoop {
-      basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-        name: rcs("i"),
-        initial_value: ZERO,
-        increment_amount: PotentialLoopInvariantExpression::Int(0),
-        guard_operator: GuardOperator::LT,
-        guard_expression: PotentialLoopInvariantExpression::Int(1),
       },
-      general_induction_variables: vec![],
-      loop_variables_that_are_not_basic_induction_variables: vec![],
-      derived_induction_variables: vec![],
-      statements: vec![],
-      break_collector: None,
-    });
+      heap,
+    );
+
+    assert_rejected(
+      OptimizableWhileLoop {
+        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+          name: heap.alloc_str("i"),
+          initial_value: ZERO,
+          increment_amount: PotentialLoopInvariantExpression::Int(0),
+          guard_operator: GuardOperator::LT,
+          guard_expression: PotentialLoopInvariantExpression::Int(0),
+        },
+        general_induction_variables: vec![],
+        loop_variables_that_are_not_basic_induction_variables: vec![],
+        derived_induction_variables: vec![],
+        statements: vec![Statement::While {
+          loop_variables: vec![],
+          statements: vec![],
+          break_collector: None,
+        }],
+        break_collector: None,
+      },
+      heap,
+    );
+
+    assert_rejected(
+      OptimizableWhileLoop {
+        basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
+          name: heap.alloc_str("i"),
+          initial_value: ZERO,
+          increment_amount: PotentialLoopInvariantExpression::Int(0),
+          guard_operator: GuardOperator::LT,
+          guard_expression: PotentialLoopInvariantExpression::Int(1),
+        },
+        general_induction_variables: vec![],
+        loop_variables_that_are_not_basic_induction_variables: vec![],
+        derived_induction_variables: vec![],
+        statements: vec![],
+        break_collector: None,
+      },
+      heap,
+    );
   }
 
-  fn assert_optimized(optimizable_while_loop: OptimizableWhileLoop, expected: &str) {
+  fn assert_optimized(
+    optimizable_while_loop: OptimizableWhileLoop,
+    heap: &mut Heap,
+    expected: &str,
+  ) {
     assert_eq!(
       expected,
-      super::optimize(&optimizable_while_loop, &mut ResourceAllocator::new())
+      super::optimize(&optimizable_while_loop, heap)
         .unwrap()
         .iter()
-        .map(Statement::debug_print)
+        .map(|s| s.debug_print(heap))
         .join("\n")
     );
   }
 
   #[test]
   fn optimizable_tests() {
+    let heap = &mut Heap::new();
+
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(0),
           guard_operator: GuardOperator::LT,
@@ -316,13 +330,14 @@ mod tests {
         statements: vec![],
         break_collector: None,
       },
+      heap,
       "",
     );
 
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           initial_value: Expression::int(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
@@ -332,15 +347,16 @@ mod tests {
         loop_variables_that_are_not_basic_induction_variables: vec![],
         derived_induction_variables: vec![],
         statements: vec![],
-        break_collector: Some((rcs("bc"), INT_TYPE, Expression::int(3))),
+        break_collector: Some((heap.alloc_str("bc"), INT_TYPE, Expression::int(3))),
       },
+      heap,
       "let bc: int = 3 + 0;",
     );
 
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           initial_value: Expression::int(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
@@ -350,56 +366,73 @@ mod tests {
         loop_variables_that_are_not_basic_induction_variables: vec![],
         derived_induction_variables: vec![],
         statements: vec![],
-        break_collector: Some((rcs("bc"), INT_TYPE, Expression::var_name("i", INT_TYPE))),
+        break_collector: Some((
+          heap.alloc_str("bc"),
+          INT_TYPE,
+          Expression::var_name(heap.alloc_str("i"), INT_TYPE),
+        )),
       },
+      heap,
       "let bc: int = 20 + 0;",
     );
 
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           initial_value: Expression::int(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(20),
         },
         general_induction_variables: vec![GeneralBasicInductionVariable {
-          name: rcs("j"),
-          initial_value: Expression::var_name("j_init", INT_TYPE),
+          name: heap.alloc_str("j"),
+          initial_value: Expression::var_name(heap.alloc_str("j_init"), INT_TYPE),
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
-            "outside", INT_TYPE,
+            heap.alloc_str("outside"),
+            INT_TYPE,
           )),
         }],
         loop_variables_that_are_not_basic_induction_variables: vec![],
         derived_induction_variables: vec![],
         statements: vec![],
-        break_collector: Some((rcs("bc"), INT_TYPE, Expression::var_name("j", INT_TYPE))),
+        break_collector: Some((
+          heap.alloc_str("bc"),
+          INT_TYPE,
+          Expression::var_name(heap.alloc_str("j"), INT_TYPE),
+        )),
       },
-      "let _loop_0: int = (outside: int) * 15;\nlet bc: int = (j_init: int) + (_loop_0: int);",
+      heap,
+      "let _t8: int = (outside: int) * 15;\nlet bc: int = (_t8: int) + (j_init: int);",
     );
 
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: rcs("i"),
+          name: heap.alloc_str("i"),
           initial_value: Expression::int(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(20),
         },
         general_induction_variables: vec![GeneralBasicInductionVariable {
-          name: rcs("j"),
-          initial_value: Expression::var_name("j_init", INT_TYPE),
+          name: heap.alloc_str("j"),
+          initial_value: Expression::var_name(heap.alloc_str("j_init"), INT_TYPE),
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
-            "outside", INT_TYPE,
+            heap.alloc_str("outside"),
+            INT_TYPE,
           )),
         }],
         loop_variables_that_are_not_basic_induction_variables: vec![],
         derived_induction_variables: vec![],
         statements: vec![],
-        break_collector: Some((rcs("bc"), INT_TYPE, Expression::var_name("aa", INT_TYPE))),
+        break_collector: Some((
+          heap.alloc_str("bc"),
+          INT_TYPE,
+          Expression::var_name(heap.alloc_str("aa"), INT_TYPE),
+        )),
       },
+      heap,
       "let bc: int = (aa: int) + 0;",
     );
   }

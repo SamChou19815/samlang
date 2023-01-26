@@ -3,16 +3,16 @@ use crate::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
     IdType, Sources, Statement, Type, TypeDefinition, VariableName,
   },
-  common::{rc_string, Str},
+  common::{Heap, PStr},
 };
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashMap};
 
-type State = HashMap<Str, Str>;
+type State = HashMap<PStr, PStr>;
 
 fn rewrite_id_type(state: &State, id: IdType) -> IdType {
   assert!(id.type_arguments.is_empty());
-  let name = if let Some(n) = state.get(&id.name) { n.clone() } else { id.name };
+  let name = if let Some(n) = state.get(&id.name) { *n } else { id.name };
   IdType { name, type_arguments: vec![] }
 }
 
@@ -157,36 +157,37 @@ fn rewrite_function(
 }
 
 pub(super) fn deduplicate(
+  heap: &Heap,
   Sources { global_variables, closure_types, type_definitions, main_function_names, functions }: Sources,
 ) -> Sources {
   let mut state = HashMap::new();
-  let mut closure_type_def_mapping = BTreeMap::<Str, ClosureTypeDefinition>::new();
-  let mut type_def_mapping = BTreeMap::<Str, TypeDefinition>::new();
+  let mut closure_type_def_mapping = BTreeMap::<String, ClosureTypeDefinition>::new();
+  let mut type_def_mapping = BTreeMap::<String, TypeDefinition>::new();
   for closure_type in closure_types {
-    assert!(closure_type.type_parameters.is_empty());
-    let key = rc_string(closure_type.function_type.pretty_print());
-    let original_name = closure_type.identifier.clone();
+    debug_assert!(closure_type.type_parameters.is_empty());
+    let key = closure_type.function_type.pretty_print(heap);
+    let original_name = closure_type.identifier;
     let canonical_name = if let Some(c) = closure_type_def_mapping.get(&key) {
-      c.identifier.clone()
+      c.identifier
     } else {
       closure_type_def_mapping.insert(key, closure_type);
-      original_name.clone()
+      original_name
     };
     state.insert(original_name, canonical_name);
   }
   for type_def in type_definitions {
-    assert!(type_def.type_parameters.is_empty());
-    let key = rc_string(format!(
+    debug_assert!(type_def.type_parameters.is_empty());
+    let key = format!(
       "{}_{}",
       type_def.is_object,
-      type_def.mappings.iter().map(Type::pretty_print).join("_")
-    ));
-    let original_name = type_def.identifier.clone();
+      type_def.mappings.iter().map(|t| t.pretty_print(heap)).join("_")
+    );
+    let original_name = type_def.identifier;
     let canonical_name = if let Some(c) = type_def_mapping.get(&key) {
-      c.identifier.clone()
+      c.identifier
     } else {
       type_def_mapping.insert(key, type_def);
-      original_name.clone()
+      original_name
     };
     state.insert(original_name, canonical_name);
   }
@@ -225,7 +226,7 @@ mod tests {
   use super::*;
   use crate::{
     ast::hir::{INT_TYPE, STRING_TYPE, TRUE, ZERO},
-    common::rcs,
+    Heap,
   };
   use pretty_assertions::assert_eq;
 
@@ -255,50 +256,54 @@ mod tests {
 
   #[test]
   fn boilterplate() {
+    let heap = &mut Heap::new();
+
     assert_eq!(
       "() -> int",
-      rewrite_type(&HashMap::new(), Type::new_fn(vec![], INT_TYPE)).pretty_print()
+      rewrite_type(&HashMap::new(), Type::new_fn(vec![], INT_TYPE)).pretty_print(heap)
     );
     assert_eq!(
       "f<int>",
       rewrite_expr(
         &HashMap::new(),
         Expression::FunctionName(FunctionName {
-          name: rcs("f"),
+          name: heap.alloc_str("f"),
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           type_arguments: vec![INT_TYPE]
         })
       )
-      .debug_print()
+      .debug_print(heap)
     );
   }
 
   #[test]
   fn working_test() {
-    let actual = deduplicate(Sources {
+    let heap = &mut Heap::new();
+
+    let sources = Sources {
       global_variables: vec![],
       closure_types: vec![
         ClosureTypeDefinition {
-          identifier: rcs("A"),
+          identifier: heap.alloc_str("A"),
           type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
         ClosureTypeDefinition {
-          identifier: rcs("B"),
+          identifier: heap.alloc_str("B"),
           type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
       ],
       type_definitions: vec![
         TypeDefinition {
-          identifier: rcs("C"),
+          identifier: heap.alloc_str("C"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
           mappings: vec![INT_TYPE, STRING_TYPE],
         },
         TypeDefinition {
-          identifier: rcs("D"),
+          identifier: heap.alloc_str("D"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
@@ -307,17 +312,17 @@ mod tests {
       ],
       main_function_names: vec![],
       functions: vec![Function {
-        name: rcs("main"),
+        name: heap.alloc_str("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IfElse {
           condition: TRUE,
           s1: vec![
-            Statement::binary("_", crate::ast::hir::Operator::PLUS, ZERO, ZERO),
+            Statement::binary(heap.alloc_str("_"), crate::ast::hir::Operator::PLUS, ZERO, ZERO),
             Statement::Call {
               callee: Callee::FunctionName(FunctionName {
-                name: rcs("f"),
+                name: heap.alloc_str("f"),
                 type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
                 type_arguments: vec![],
               }),
@@ -326,41 +331,44 @@ mod tests {
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName { name: rcs("f"), type_: INT_TYPE }),
+              callee: Callee::Variable(VariableName { name: heap.alloc_str("f"), type_: INT_TYPE }),
               arguments: vec![],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::IndexedAccess {
-              name: rcs("_"),
-              type_: Type::new_id_no_targs("B"),
+              name: heap.alloc_str("_"),
+              type_: Type::new_id_no_targs(heap.alloc_str("B")),
               pointer_expression: ZERO,
               index: 0,
             },
           ],
           s2: vec![
             Statement::StructInit {
-              struct_variable_name: rcs("_"),
-              type_: Type::new_id_no_targs_unwrapped("D"),
+              struct_variable_name: heap.alloc_str("_"),
+              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("D")),
               expression_list: vec![ZERO],
             },
             Statement::ClosureInit {
-              closure_variable_name: rcs("_"),
-              closure_type: Type::new_id_no_targs_unwrapped("C"),
+              closure_variable_name: heap.alloc_str("_"),
+              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str("C")),
               function_name: FunctionName {
-                name: rcs("f"),
-                type_: Type::new_fn_unwrapped(vec![Type::new_id_no_targs("E")], INT_TYPE),
+                name: heap.alloc_str("f"),
+                type_: Type::new_fn_unwrapped(
+                  vec![Type::new_id_no_targs(heap.alloc_str("E"))],
+                  INT_TYPE,
+                ),
                 type_arguments: vec![],
               },
-              context: Expression::var_name("v", INT_TYPE),
+              context: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
             },
           ],
-          final_assignments: vec![(rcs("_"), INT_TYPE, ZERO, ZERO)],
+          final_assignments: vec![(heap.alloc_str("_"), INT_TYPE, ZERO, ZERO)],
         }],
         return_value: ZERO,
       }],
-    })
-    .debug_print();
+    };
+    let actual = deduplicate(heap, sources).debug_print(heap);
     assert_eq!(
       r#"closure type A = () -> int
 object type C = [int, string]

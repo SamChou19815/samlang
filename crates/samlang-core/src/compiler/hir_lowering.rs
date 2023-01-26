@@ -14,7 +14,7 @@ use crate::{
     hir::{self, Type},
     source::{self, ClassMemberDefinition},
   },
-  common::{self, rc_pstr, rc_string, rcs, Heap, ModuleReference, Str},
+  common::{self, Heap, ModuleReference, PStr},
 };
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
@@ -30,10 +30,10 @@ struct LoweringResultWithSyntheticFunctions {
   expression: hir::Expression,
 }
 
-type LoweringContext = common::LocalStackedContext<Str, hir::Expression>;
+type LoweringContext = common::LocalStackedContext<PStr, hir::Expression>;
 
 impl LoweringContext {
-  fn bind(&mut self, name: &Str, value: hir::Expression) {
+  fn bind(&mut self, name: &PStr, value: hir::Expression) {
     match &value {
       hir::Expression::IntLiteral(_, _) | hir::Expression::Variable(_) => {
         self.insert(name, value);
@@ -53,20 +53,25 @@ mod lowering_cx_boilterplate_tests {
 
   #[test]
   fn tests() {
+    let heap = &mut Heap::new();
+
     LoweringContext::new().bind(
-      &rcs("a"),
-      hir::Expression::fn_name("a", hir::Type::new_fn_unwrapped(vec![], hir::BOOL_TYPE)),
+      &heap.alloc_str("a"),
+      hir::Expression::fn_name(
+        heap.alloc_str("a"),
+        hir::Type::new_fn_unwrapped(vec![], hir::BOOL_TYPE),
+      ),
     );
   }
 }
 
 struct ExpressionLoweringManager<'a> {
   // Immutable states
-  heap: &'a Heap,
+  heap: &'a mut Heap,
   module_reference: &'a ModuleReference,
-  encoded_function_name: &'a str,
-  defined_variables: Vec<(Str, hir::Type)>,
-  type_definition_mapping: &'a HashMap<Str, hir::TypeDefinition>,
+  encoded_function_name: PStr,
+  defined_variables: Vec<(PStr, hir::Type)>,
+  type_definition_mapping: &'a HashMap<PStr, hir::TypeDefinition>,
   type_lowering_manager: &'a mut TypeLoweringManager,
   string_manager: &'a mut StringManager,
   // Mutable states
@@ -80,17 +85,17 @@ struct ExpressionLoweringManager<'a> {
 
 impl<'a> ExpressionLoweringManager<'a> {
   fn new(
-    heap: &'a Heap,
     module_reference: &'a ModuleReference,
-    encoded_function_name: &'a str,
-    defined_variables: Vec<(Str, hir::Type)>,
-    type_definition_mapping: &'a HashMap<Str, hir::TypeDefinition>,
+    encoded_function_name: PStr,
+    defined_variables: Vec<(PStr, hir::Type)>,
+    type_definition_mapping: &'a HashMap<PStr, hir::TypeDefinition>,
+    heap: &'a mut Heap,
     type_lowering_manager: &'a mut TypeLoweringManager,
     string_manager: &'a mut StringManager,
   ) -> ExpressionLoweringManager<'a> {
     let mut variable_cx = LoweringContext::new();
     for (n, t) in &defined_variables {
-      variable_cx.bind(n, hir::Expression::var_name_str(n.clone(), t.clone()));
+      variable_cx.bind(n, hir::Expression::var_name(*n, t.clone()));
     }
     ExpressionLoweringManager {
       heap,
@@ -109,31 +114,29 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn allocate_temp_variable(&mut self, favored_temp_variable: Option<&str>) -> Str {
+  fn allocate_temp_variable(&mut self, favored_temp_variable: Option<PStr>) -> PStr {
     if let Some(v) = favored_temp_variable {
-      rc_string(v.to_string())
+      v
     } else {
-      let variable_name = format!("_t{}", self.next_temp_var_id);
-      self.next_temp_var_id += 1;
-      rc_string(variable_name)
+      self.heap.alloc_temp_str()
     }
   }
 
-  fn allocate_synthetic_fn_name(&mut self) -> String {
+  fn allocate_synthetic_fn_name(&mut self) -> PStr {
     let fn_name = common_names::encode_function_name_globally(
       self.heap,
       self.module_reference,
-      self.encoded_function_name,
+      self.encoded_function_name.as_str(self.heap),
       &format!("_Synthetic_{}", self.next_synthetic_fn_id),
     );
     self.next_synthetic_fn_id += 1;
-    fn_name
+    self.heap.alloc_string(fn_name)
   }
 
   fn lowered_and_add_statements(
     &mut self,
     expression: &source::expr::E,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
     statements: &mut Vec<hir::Statement>,
   ) -> hir::Expression {
     let LoweringResult { statements: mut lowered_statements, expression: e } =
@@ -151,11 +154,11 @@ impl<'a> ExpressionLoweringManager<'a> {
     .sorted()
     .collect_vec();
     let type_arguments =
-      type_parameters.iter().cloned().map(hir::Type::new_id_str_no_targs).collect_vec();
+      type_parameters.iter().cloned().map(hir::Type::new_id_no_targs).collect_vec();
     let name = self
       .type_lowering_manager
       .type_synthesizer
-      .synthesize_tuple_type(mappings, type_parameters)
+      .synthesize_tuple_type(self.heap, mappings, type_parameters)
       .identifier;
     hir::IdType { name, type_arguments }
   }
@@ -170,29 +173,25 @@ impl<'a> ExpressionLoweringManager<'a> {
         .sorted()
         .collect_vec();
     let type_arguments =
-      type_parameters.iter().cloned().map(hir::Type::new_id_str_no_targs).collect_vec();
+      type_parameters.iter().cloned().map(hir::Type::new_id_no_targs).collect_vec();
     let name = self
       .type_lowering_manager
       .type_synthesizer
-      .synthesize_closure_type(fn_type, type_parameters)
+      .synthesize_closure_type(self.heap, fn_type, type_parameters)
       .identifier;
     hir::IdType { name, type_arguments }
   }
 
-  fn resolve_variable(&mut self, variable_name: &Str) -> hir::Expression {
+  fn resolve_variable(&mut self, variable_name: &PStr) -> hir::Expression {
     self
       .variable_cx
       .get(variable_name)
-      .expect(&format!("Variable not resolved: {}", variable_name))
+      .expect(&format!("Variable not resolved: {}", variable_name.as_str(self.heap)))
       .clone()
   }
 
   fn resolve_type_mapping_of_id_type(&mut self, hir_id_type: &hir::IdType) -> Vec<hir::Type> {
-    let type_def = self
-      .type_definition_mapping
-      .get(&hir_id_type.name)
-      .expect(&format!("Missing {}", hir_id_type.name))
-      .clone();
+    let type_def = self.type_definition_mapping.get(&hir_id_type.name).unwrap().clone();
     let replacement_map: HashMap<_, _> =
       type_def.type_parameters.iter().cloned().zip(hir_id_type.type_arguments.clone()).collect();
     type_def.mappings.iter().map(|t| type_application(t, &replacement_map)).collect_vec()
@@ -212,7 +211,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower(
     &mut self,
     expression: &source::expr::E,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     match expression {
       source::expr::E::Literal(_, source::Literal::Bool(b)) => {
@@ -223,17 +222,16 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
       source::expr::E::Literal(_, source::Literal::String(s)) => LoweringResult {
         statements: vec![],
-        expression: hir::Expression::StringName(
-          self.string_manager.allocate(&rc_pstr(self.heap, *s)).name,
-        ),
+        expression: hir::Expression::StringName(self.string_manager.allocate(self.heap, *s).name),
       },
       source::expr::E::Id(_, id) => LoweringResult {
         statements: vec![],
-        expression: self.resolve_variable(&if id.name.as_str(self.heap) == "this" {
-          rcs("_this")
+        expression: if id.name.as_str(self.heap) == "this" {
+          let this_str = self.heap.alloc_str("_this");
+          self.resolve_variable(&this_str)
         } else {
-          rc_pstr(self.heap, id.name)
-        }),
+          self.resolve_variable(&id.name)
+        },
       },
       source::expr::E::ClassFn(e) => self.lower_class_fn(e, favored_temp_variable),
       source::expr::E::FieldAccess(e) => self.lower_field_access(e, favored_temp_variable),
@@ -251,16 +249,19 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn encode_function_name_globally_considering_generics(
     &self,
     module_reference: &ModuleReference,
-    class_name: &Str,
+    class_name: &PStr,
     function_name: &str,
   ) -> String {
     if self.type_lowering_manager.generic_types.contains(class_name) {
-      common_names::encode_generic_function_name_globally(class_name, function_name)
+      common_names::encode_generic_function_name_globally(
+        class_name.as_str(self.heap),
+        function_name,
+      )
     } else {
       common_names::encode_function_name_globally(
         self.heap,
         module_reference,
-        class_name,
+        class_name.as_str(self.heap),
         function_name,
       )
     }
@@ -269,10 +270,10 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower_class_fn(
     &mut self,
     expression: &source::expr::ClassFunction,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let encoded_original_fn_name = {
-      let class_name = rc_pstr(self.heap, expression.class_name.name);
+      let class_name = expression.class_name.name;
       let fn_name = expression.fn_name.name.as_str(self.heap);
       self.encode_function_name_globally_considering_generics(
         &expression.module_reference,
@@ -290,16 +291,14 @@ impl<'a> ExpressionLoweringManager<'a> {
     };
     let closure_type = self.get_synthetic_identifier_type_from_closure(original_function_type);
     let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
-    let final_variable_expr = hir::Expression::var_name_str(
-      closure_variable_name.clone(),
-      hir::Type::Id(closure_type.clone()),
-    );
+    let final_variable_expr =
+      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone()));
     self.variable_cx.bind(&closure_variable_name, final_variable_expr.clone());
     let statements = vec![hir::Statement::ClosureInit {
       closure_variable_name,
       closure_type,
       function_name: hir::FunctionName {
-        name: rc_string(format!("{}_with_context", encoded_original_fn_name)),
+        name: self.heap.alloc_string(format!("{}_with_context", encoded_original_fn_name)),
         type_: function_type,
         type_arguments: self
           .type_lowering_manager
@@ -313,7 +312,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower_field_access(
     &mut self,
     expression: &source::expr::FieldAccess,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let LoweringResult { mut statements, expression: result_expr } =
       self.lower(&expression.object, None);
@@ -323,31 +322,30 @@ impl<'a> ExpressionLoweringManager<'a> {
     let extracted_field_type = &mappings_for_id_type[index];
     let value_name = self.allocate_temp_variable(favored_temp_variable);
     statements.push(hir::Statement::IndexedAccess {
-      name: value_name.clone(),
+      name: value_name,
       type_: extracted_field_type.clone(),
       pointer_expression: result_expr,
       index,
     });
-    self.variable_cx.bind(
-      &value_name,
-      hir::Expression::var_name_str(value_name.clone(), extracted_field_type.clone()),
-    );
+    self
+      .variable_cx
+      .bind(&value_name, hir::Expression::var_name(value_name, extracted_field_type.clone()));
     LoweringResult {
       statements,
-      expression: hir::Expression::var_name_str(value_name, extracted_field_type.clone()),
+      expression: hir::Expression::var_name(value_name, extracted_field_type.clone()),
     }
   }
 
   fn lower_method_access(
     &mut self,
     expression: &source::expr::MethodAccess,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let source_obj_type = expression.object.type_();
     let source_obj_id_type = source_obj_type.as_id().unwrap();
     let function_name = self.encode_function_name_globally_considering_generics(
       &source_obj_id_type.module_reference,
-      &rc_pstr(self.heap, source_obj_id_type.id),
+      &source_obj_id_type.id,
       expression.method_name.name.as_str(self.heap),
     );
     let LoweringResult { mut statements, expression: result_expr } =
@@ -364,16 +362,13 @@ impl<'a> ExpressionLoweringManager<'a> {
     let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
     self.variable_cx.bind(
       &closure_variable_name,
-      hir::Expression::var_name_str(
-        closure_variable_name.clone(),
-        hir::Type::Id(closure_type.clone()),
-      ),
+      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone())),
     );
     statements.push(hir::Statement::ClosureInit {
-      closure_variable_name: closure_variable_name.clone(),
+      closure_variable_name,
       closure_type: closure_type.clone(),
       function_name: hir::FunctionName {
-        name: rc_string(function_name),
+        name: self.heap.alloc_string(function_name),
         type_: method_type,
         type_arguments: self
           .type_lowering_manager
@@ -383,14 +378,14 @@ impl<'a> ExpressionLoweringManager<'a> {
     });
     LoweringResult {
       statements,
-      expression: hir::Expression::var_name_str(closure_variable_name, hir::Type::Id(closure_type)),
+      expression: hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type)),
     }
   }
 
   fn lower_unary(
     &mut self,
     expression: &source::expr::Unary,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let LoweringResult { mut statements, expression: result_expr } =
       self.lower(&expression.argument, None);
@@ -411,8 +406,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         e2: result_expr,
       },
     };
-    let final_expr =
-      hir::Expression::var_name_str(new_binary.name.clone(), new_binary.type_.clone());
+    let final_expr = hir::Expression::var_name(new_binary.name, new_binary.type_.clone());
     statements.push(hir::Statement::Binary(new_binary));
     LoweringResult { statements, expression: final_expr }
   }
@@ -420,7 +414,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower_fn_call(
     &mut self,
     expression: &source::expr::Call,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
     let is_void_return = if let Some((_, kind)) = expression.common.type_.as_primitive() {
@@ -433,7 +427,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       source::expr::E::ClassFn(source_callee) => {
         let fn_name = self.encode_function_name_globally_considering_generics(
           &source_callee.module_reference,
-          &rc_pstr(self.heap, source_callee.class_name.name),
+          &source_callee.class_name.name,
           source_callee.fn_name.name.as_str(self.heap),
         );
         let fn_type_without_cx =
@@ -442,7 +436,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           fn_type_without_cx.return_type.as_ref().clone(),
           hir::Statement::Call {
             callee: hir::Callee::FunctionName(hir::FunctionName {
-              name: rc_string(fn_name),
+              name: self.heap.alloc_string(fn_name),
               type_: fn_type_without_cx.clone(),
               type_arguments: self
                 .type_lowering_manager
@@ -454,11 +448,7 @@ impl<'a> ExpressionLoweringManager<'a> {
               .map(|a| self.lowered_and_add_statements(a, None, &mut lowered_stmts))
               .collect_vec(),
             return_type: fn_type_without_cx.return_type.as_ref().clone(),
-            return_collector: if is_void_return {
-              None
-            } else {
-              Some(return_collector_name.clone())
-            },
+            return_collector: if is_void_return { None } else { Some(return_collector_name) },
           },
         )
       }
@@ -467,7 +457,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         let source_target_id_type = source_target_type.as_id().unwrap();
         let fn_name = self.encode_function_name_globally_considering_generics(
           &source_target_id_type.module_reference,
-          &rc_pstr(self.heap, source_target_id_type.id),
+          &source_target_id_type.id,
           source_callee.method_name.name.as_str(self.heap),
         );
         let fn_type_without_cx =
@@ -479,7 +469,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           fn_type_without_cx.return_type.as_ref().clone(),
           hir::Statement::Call {
             callee: hir::Callee::FunctionName(hir::FunctionName {
-              name: rc_string(fn_name),
+              name: self.heap.alloc_string(fn_name),
               type_: hir::FunctionType {
                 argument_types: vec![hir_target.type_()]
                   .into_iter()
@@ -510,7 +500,7 @@ impl<'a> ExpressionLoweringManager<'a> {
               )
               .collect_vec(),
             return_type: fn_type_without_cx.return_type.as_ref().clone(),
-            return_collector: Some(return_collector_name.clone()),
+            return_collector: Some(return_collector_name),
           },
         )
       }
@@ -536,11 +526,7 @@ impl<'a> ExpressionLoweringManager<'a> {
             callee: hir::Callee::Variable(lowered_fn_expr),
             arguments: lowered_args,
             return_type,
-            return_collector: if is_void_return {
-              None
-            } else {
-              Some(return_collector_name.clone())
-            },
+            return_collector: if is_void_return { None } else { Some(return_collector_name) },
           },
         )
       }
@@ -552,7 +538,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       expression: if is_void_return {
         hir::ZERO
       } else {
-        hir::Expression::var_name_str(return_collector_name, function_return_collector_type)
+        hir::Expression::var_name(return_collector_name, function_return_collector_type)
       },
     }
   }
@@ -560,7 +546,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower_binary(
     &mut self,
     expression: &source::expr::E,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let expression = match expression {
       source::expr::E::Binary(e) => e,
@@ -588,11 +574,11 @@ impl<'a> ExpressionLoweringManager<'a> {
           condition: e1,
           s1: s2,
           s2: vec![],
-          final_assignments: vec![(temp.clone(), hir::BOOL_TYPE, e2, hir::FALSE)],
+          final_assignments: vec![(temp, hir::BOOL_TYPE, e2, hir::FALSE)],
         });
         return LoweringResult {
           statements,
-          expression: hir::Expression::var_name_str(temp, hir::BOOL_TYPE),
+          expression: hir::Expression::var_name(temp, hir::BOOL_TYPE),
         };
       }
       source::expr::BinaryOperator::OR => {
@@ -616,11 +602,11 @@ impl<'a> ExpressionLoweringManager<'a> {
           condition: e1,
           s1: vec![],
           s2,
-          final_assignments: vec![(temp.clone(), hir::BOOL_TYPE, hir::TRUE, e2)],
+          final_assignments: vec![(temp, hir::BOOL_TYPE, hir::TRUE, e2)],
         });
         return LoweringResult {
           statements,
-          expression: hir::Expression::var_name_str(temp, hir::BOOL_TYPE),
+          expression: hir::Expression::var_name(temp, hir::BOOL_TYPE),
         };
       }
       source::expr::BinaryOperator::CONCAT => {
@@ -629,13 +615,12 @@ impl<'a> ExpressionLoweringManager<'a> {
           source::expr::E::Literal(_, source::Literal::String(s2)),
         ) = (expression.e1.as_ref(), expression.e2.as_ref())
         {
+          let concat_string = format!("{}{}", s1.as_str(self.heap), s2.as_str(self.heap));
+          let concat_pstr = self.heap.alloc_string(concat_string);
           return LoweringResult {
             statements: vec![],
             expression: hir::Expression::StringName(
-              self
-                .string_manager
-                .allocate(&rc_string(format!("{}{}", s1.as_str(self.heap), s2.as_str(self.heap))))
-                .name,
+              self.string_manager.allocate(self.heap, concat_pstr).name,
             ),
           };
         }
@@ -645,7 +630,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         let return_collector_name = self.allocate_temp_variable(favored_temp_variable);
         lowered_stmts.push(hir::Statement::Call {
           callee: hir::Callee::FunctionName(hir::FunctionName {
-            name: rc_string(common_names::encoded_fn_name_string_concat()),
+            name: self.heap.alloc_string(common_names::encoded_fn_name_string_concat()),
             type_: hir::Type::new_fn_unwrapped(
               vec![hir::STRING_TYPE, hir::STRING_TYPE],
               hir::STRING_TYPE,
@@ -654,11 +639,11 @@ impl<'a> ExpressionLoweringManager<'a> {
           }),
           arguments: vec![e1, e2],
           return_type: hir::STRING_TYPE,
-          return_collector: Some(return_collector_name.clone()),
+          return_collector: Some(return_collector_name),
         });
         return LoweringResult {
           statements: lowered_stmts,
-          expression: hir::Expression::var_name_str(return_collector_name, hir::STRING_TYPE),
+          expression: hir::Expression::var_name(return_collector_name, hir::STRING_TYPE),
         };
       }
       source::expr::BinaryOperator::MUL => hir::Operator::MUL,
@@ -677,19 +662,19 @@ impl<'a> ExpressionLoweringManager<'a> {
     let e1 = self.lowered_and_add_statements(&expression.e1, None, &mut lowered_stmts);
     let e2 = self.lowered_and_add_statements(&expression.e2, None, &mut lowered_stmts);
     let value_temp = self.allocate_temp_variable(favored_temp_variable);
-    let binary = hir::Statement::binary_unwrapped(value_temp.clone(), operator, e1, e2);
+    let binary = hir::Statement::binary_unwrapped(value_temp, operator, e1, e2);
     let final_type = binary.type_.clone();
     lowered_stmts.push(hir::Statement::Binary(binary));
     LoweringResult {
       statements: lowered_stmts,
-      expression: hir::Expression::var_name_str(value_temp, final_type),
+      expression: hir::Expression::var_name(value_temp, final_type),
     }
   }
 
   fn lower_if_else(
     &mut self,
     expression: &source::expr::IfElse,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
     let condition =
@@ -702,15 +687,15 @@ impl<'a> ExpressionLoweringManager<'a> {
       condition,
       s1,
       s2,
-      final_assignments: vec![(final_var_name.clone(), lowered_return_type.clone(), e1, e2)],
+      final_assignments: vec![(final_var_name, lowered_return_type.clone(), e1, e2)],
     });
     self.variable_cx.bind(
       &final_var_name,
-      hir::Expression::var_name_str(final_var_name.clone(), lowered_return_type.clone()),
+      hir::Expression::var_name(final_var_name, lowered_return_type.clone()),
     );
     LoweringResult {
       statements: lowered_stmts,
-      expression: hir::Expression::var_name_str(final_var_name, lowered_return_type),
+      expression: hir::Expression::var_name(final_var_name, lowered_return_type),
     }
   }
 
@@ -722,15 +707,14 @@ impl<'a> ExpressionLoweringManager<'a> {
       self.resolve_type_mapping_of_id_type(matched_expr.type_().as_id().unwrap());
     let variable_for_tag = self.allocate_temp_variable(None);
     lowered_stmts.push(hir::Statement::IndexedAccess {
-      name: variable_for_tag.clone(),
+      name: variable_for_tag,
       type_: hir::INT_TYPE,
       pointer_expression: matched_expr.clone(),
       index: 0,
     });
-    self.variable_cx.bind(
-      &variable_for_tag,
-      hir::Expression::var_name_str(variable_for_tag.clone(), hir::INT_TYPE),
-    );
+    self
+      .variable_cx
+      .bind(&variable_for_tag, hir::Expression::var_name(variable_for_tag, hir::INT_TYPE));
 
     let mut lowered_matching_list = vec![];
     for source::expr::VariantPatternToExpression { tag_order, data_variable, body, .. } in
@@ -740,16 +724,14 @@ impl<'a> ExpressionLoweringManager<'a> {
       self.variable_cx.push_scope();
       if let Some((data_var_name, _)) = data_variable {
         let data_var_type = &matched_expr_type_mapping[*tag_order];
-        let name = rc_pstr(self.heap, data_var_name.name);
+        let name = data_var_name.name;
         local_stmts.push(hir::Statement::IndexedAccess {
-          name: name.clone(),
+          name,
           type_: data_var_type.clone(),
           pointer_expression: matched_expr.clone(),
           index: 1,
         });
-        self
-          .variable_cx
-          .bind(&name, hir::Expression::var_name_str(name.clone(), data_var_type.clone()));
+        self.variable_cx.bind(&name, hir::Expression::var_name(name, data_var_type.clone()));
       }
       let final_expr = self.lowered_and_add_statements(body, None, &mut local_stmts);
       self.variable_cx.pop_scope();
@@ -766,24 +748,24 @@ impl<'a> ExpressionLoweringManager<'a> {
       let (acc_stmts, acc_e) = acc;
       let new_stmts = vec![
         hir::Statement::Binary(hir::Statement::binary_unwrapped(
-          comparison_temp.clone(),
+          comparison_temp,
           hir::Operator::EQ,
-          hir::Expression::var_name_str(variable_for_tag.clone(), hir::INT_TYPE),
+          hir::Expression::var_name(variable_for_tag, hir::INT_TYPE),
           hir::Expression::int(i32::try_from(tag_order).unwrap()),
         )),
         hir::Statement::IfElse {
-          condition: hir::Expression::var_name_str(comparison_temp, hir::BOOL_TYPE),
+          condition: hir::Expression::var_name(comparison_temp, hir::BOOL_TYPE),
           s1: case_stmts,
           s2: acc_stmts,
           final_assignments: vec![(
-            final_assignment_temp.clone(),
+            final_assignment_temp,
             lowered_return_type.clone(),
             case_e,
             acc_e,
           )],
         },
       ];
-      acc = (new_stmts, hir::Expression::var_name_str(final_assignment_temp, lowered_return_type))
+      acc = (new_stmts, hir::Expression::var_name(final_assignment_temp, lowered_return_type))
     }
 
     lowered_stmts.append(&mut acc.0);
@@ -793,15 +775,16 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn create_synthetic_lambda_function(
     &mut self,
     expression: &source::expr::Lambda,
-    captured: &[(Str, hir::Expression)],
+    captured: &[(PStr, hir::Expression)],
     context_type: &hir::Type,
   ) -> hir::Function {
     let mut lambda_stmts = vec![];
+    let underscore_context_str = self.heap.alloc_str("_context");
     for (index, (name, e)) in captured.iter().enumerate() {
       lambda_stmts.push(hir::Statement::IndexedAccess {
-        name: name.clone(),
+        name: *name,
         type_: e.type_(),
-        pointer_expression: hir::Expression::var_name("_context", context_type.clone()),
+        pointer_expression: hir::Expression::var_name(underscore_context_str, context_type.clone()),
         index,
       });
     }
@@ -822,17 +805,16 @@ impl<'a> ExpressionLoweringManager<'a> {
     let fn_name = self.allocate_synthetic_fn_name();
     let LoweringResult { statements: mut lowered_s, expression: lowered_e } =
       ExpressionLoweringManager::new(
-        self.heap,
         self.module_reference,
-        &fn_name,
+        fn_name,
         parameters
           .into_iter()
-          .map(|n| rc_pstr(self.heap, n))
           .zip(fun_type_without_cx_argument_types.iter().cloned())
           .chain(self.defined_variables.iter().cloned())
-          .chain(captured.iter().map(|(n, e)| (n.clone(), e.type_())))
+          .chain(captured.iter().map(|(n, e)| (*n, e.type_())))
           .collect_vec(),
         self.type_definition_mapping,
+        self.heap,
         self.type_lowering_manager,
         self.string_manager,
       )
@@ -840,10 +822,10 @@ impl<'a> ExpressionLoweringManager<'a> {
     lambda_stmts.append(&mut lowered_s);
 
     hir::Function {
-      name: rc_string(fn_name),
-      parameters: vec![rcs("_context")]
+      name: fn_name,
+      parameters: vec![underscore_context_str]
         .into_iter()
-        .chain(expression.parameters.iter().map(|it| rc_pstr(self.heap, it.name.name)))
+        .chain(expression.parameters.iter().map(|it| it.name.name))
         .collect_vec(),
       type_parameters,
       type_: hir::FunctionType {
@@ -861,16 +843,9 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower_lambda(
     &mut self,
     expression: &source::expr::Lambda,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
-    let captured = expression
-      .captured
-      .keys()
-      .map(|k| {
-        let k = rc_pstr(self.heap, *k);
-        (k.clone(), self.resolve_variable(&k))
-      })
-      .collect_vec();
+    let captured = expression.captured.keys().map(|k| (*k, self.resolve_variable(k))).collect_vec();
 
     let mut lowered_stmts = vec![];
     let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
@@ -882,15 +857,15 @@ impl<'a> ExpressionLoweringManager<'a> {
         captured.iter().map(|(_, v)| v.type_()).collect_vec(),
       );
       lowered_stmts.push(hir::Statement::StructInit {
-        struct_variable_name: context_name.clone(),
+        struct_variable_name: context_name,
         type_: context_type.clone(),
         expression_list: captured.iter().map(|(_, v)| v.clone()).collect_vec(),
       });
       self.variable_cx.bind(
         &context_name,
-        hir::Expression::var_name_str(context_name.clone(), hir::Type::Id(context_type.clone())),
+        hir::Expression::var_name(context_name, hir::Type::Id(context_type.clone())),
       );
-      hir::Expression::var_name_str(context_name, hir::Type::Id(context_type))
+      hir::Expression::var_name(context_name, hir::Type::Id(context_type))
     };
     let synthetic_lambda =
       self.create_synthetic_lambda_function(expression, &captured, &context.type_());
@@ -899,16 +874,16 @@ impl<'a> ExpressionLoweringManager<'a> {
       return_type: synthetic_lambda.type_.return_type.clone(),
     });
     lowered_stmts.push(hir::Statement::ClosureInit {
-      closure_variable_name: closure_variable_name.clone(),
+      closure_variable_name,
       closure_type: closure_type.clone(),
       function_name: hir::FunctionName {
-        name: synthetic_lambda.name.clone(),
+        name: synthetic_lambda.name,
         type_: synthetic_lambda.type_.clone(),
         type_arguments: synthetic_lambda
           .type_parameters
           .iter()
           .cloned()
-          .map(hir::Type::new_id_str_no_targs)
+          .map(hir::Type::new_id_no_targs)
           .collect_vec(),
       },
       context,
@@ -916,30 +891,32 @@ impl<'a> ExpressionLoweringManager<'a> {
     self.synthetic_functions.push(synthetic_lambda);
     self.variable_cx.bind(
       &closure_variable_name,
-      hir::Expression::var_name_str(
-        closure_variable_name.clone(),
-        hir::Type::Id(closure_type.clone()),
-      ),
+      hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone())),
     );
     LoweringResult {
       statements: lowered_stmts,
-      expression: hir::Expression::var_name_str(closure_variable_name, hir::Type::Id(closure_type)),
+      expression: hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type)),
     }
   }
 
-  fn get_renamed_variable_for_nesting(&mut self, name: &Str, type_: &hir::Type) -> Str {
+  fn get_renamed_variable_for_nesting(&mut self, name: &PStr, type_: &hir::Type) -> PStr {
     if self.depth == 0 {
-      return name.clone();
+      return *name;
     }
-    let renamed = rc_string(format!("{}__depth_{}__block_{}", name, self.depth, self.block_id));
-    self.variable_cx.bind(name, hir::Expression::var_name_str(renamed.clone(), type_.clone()));
+    let renamed = self.heap.alloc_string(format!(
+      "{}__depth_{}__block_{}",
+      name.as_str(self.heap),
+      self.depth,
+      self.block_id
+    ));
+    self.variable_cx.bind(name, hir::Expression::var_name(renamed, type_.clone()));
     renamed
   }
 
   fn lower_block(
     &mut self,
     expression: &source::expr::Block,
-    favored_temp_variable: Option<&str>,
+    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
     self.depth += 1;
@@ -954,20 +931,16 @@ impl<'a> ExpressionLoweringManager<'a> {
             let field_type =
               &self.resolve_type_mapping_of_id_type(&id_type)[destructured_name.field_order];
             let mangled_name = self.get_renamed_variable_for_nesting(
-              &rc_pstr(
-                self.heap,
-                if let Some(n) = &destructured_name.alias {
-                  n.name
-                } else {
-                  destructured_name.field_name.name
-                },
-              ),
+              &if let Some(n) = &destructured_name.alias {
+                n.name
+              } else {
+                destructured_name.field_name.name
+              },
               field_type,
             );
-            self.variable_cx.bind(
-              &mangled_name,
-              hir::Expression::var_name_str(mangled_name.clone(), field_type.clone()),
-            );
+            self
+              .variable_cx
+              .bind(&mangled_name, hir::Expression::var_name(mangled_name, field_type.clone()));
             lowered_stmts.push(hir::Statement::IndexedAccess {
               name: mangled_name,
               type_: field_type.clone(),
@@ -977,10 +950,9 @@ impl<'a> ExpressionLoweringManager<'a> {
           }
         }
         source::expr::Pattern::Id(_, id) => {
-          let id = rc_pstr(self.heap, *id);
           let e =
-            self.lowered_and_add_statements(&s.assigned_expression, Some(&id), &mut lowered_stmts);
-          self.variable_cx.bind(&id, e);
+            self.lowered_and_add_statements(&s.assigned_expression, Some(*id), &mut lowered_stmts);
+          self.variable_cx.bind(id, e);
         }
         source::expr::Pattern::Wildcard(_) => {
           self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
@@ -1014,10 +986,10 @@ fn lower_source_expression(
   }
 }
 
-fn companion_fn_with_cx(original_fn: &hir::Function) -> hir::Function {
+fn companion_fn_with_cx(heap: &mut Heap, original_fn: &hir::Function) -> hir::Function {
   hir::Function {
-    name: rc_string(format!("{}_with_context", original_fn.name)),
-    parameters: vec![rcs("_context")]
+    name: heap.alloc_string(format!("{}_with_context", original_fn.name.as_str(heap))),
+    parameters: vec![heap.alloc_str("_context")]
       .into_iter()
       .chain(original_fn.parameters.iter().cloned())
       .collect_vec(),
@@ -1031,35 +1003,39 @@ fn companion_fn_with_cx(original_fn: &hir::Function) -> hir::Function {
     },
     body: vec![hir::Statement::Call {
       callee: hir::Callee::FunctionName(hir::FunctionName {
-        name: original_fn.name.clone(),
+        name: original_fn.name,
         type_: original_fn.type_.clone(),
         type_arguments: original_fn
           .type_parameters
           .iter()
           .cloned()
-          .map(hir::Type::new_id_str_no_targs)
+          .map(hir::Type::new_id_no_targs)
           .collect_vec(),
       }),
       arguments: original_fn
         .parameters
         .iter()
         .zip(original_fn.type_.argument_types.iter())
-        .map(|(n, t)| hir::Expression::var_name_str(n.clone(), t.clone()))
+        .map(|(n, t)| hir::Expression::var_name(*n, t.clone()))
         .collect_vec(),
       return_type: original_fn.type_.return_type.as_ref().clone(),
-      return_collector: Some(rcs("_ret")),
+      return_collector: Some(heap.alloc_str("_ret")),
     }],
-    return_value: hir::Expression::var_name("_ret", original_fn.type_.return_type.as_ref().clone()),
+    return_value: hir::Expression::var_name(
+      heap.alloc_str("_ret"),
+      original_fn.type_.return_type.as_ref().clone(),
+    ),
   }
 }
 
 fn lower_constructors(
-  heap: &Heap,
+  heap: &mut Heap,
   module_reference: &ModuleReference,
-  class_name: &Str,
-  type_definition_mapping: &HashMap<Str, hir::TypeDefinition>,
+  class_name: PStr,
+  type_definition_mapping: &HashMap<PStr, hir::TypeDefinition>,
 ) -> Vec<hir::Function> {
-  let type_name = rc_string(common_names::encode_samlang_type(heap, module_reference, class_name));
+  let type_name =
+    heap.alloc_string(common_names::encode_samlang_type(heap, module_reference, class_name));
   let type_def = type_definition_mapping.get(&type_name).unwrap();
   let struct_var_name = "_struct";
   let struct_type = hir::IdType {
@@ -1067,23 +1043,23 @@ fn lower_constructors(
     type_arguments: type_def
       .type_parameters
       .iter()
-      .map(|n| hir::Type::new_id_str_no_targs(n.clone()))
+      .map(|n| hir::Type::new_id_no_targs(*n))
       .collect_vec(),
   };
   let mut functions = vec![];
   if type_def.is_object {
     let f = hir::Function {
-      name: rc_string(common_names::encode_function_name_globally(
+      name: heap.alloc_string(common_names::encode_function_name_globally(
         heap,
         module_reference,
-        class_name,
+        class_name.as_str(heap),
         "init",
       )),
       parameters: type_def
         .mappings
         .iter()
         .enumerate()
-        .map(|(i, _)| rc_string(format!("_f{}", i)))
+        .map(|(i, _)| heap.alloc_string(format!("_f{}", i)))
         .collect_vec(),
       type_parameters: type_def.type_parameters.clone(),
       type_: hir::Type::new_fn_unwrapped(
@@ -1091,51 +1067,54 @@ fn lower_constructors(
         hir::Type::Id(struct_type.clone()),
       ),
       body: vec![hir::Statement::StructInit {
-        struct_variable_name: rcs(struct_var_name),
+        struct_variable_name: heap.alloc_str(struct_var_name),
         type_: struct_type.clone(),
         expression_list: type_def
           .mappings
           .iter()
           .enumerate()
           .map(|(order, t)| {
-            hir::Expression::var_name_str(rc_string(format!("_f{}", order)), t.clone())
+            hir::Expression::var_name(heap.alloc_string(format!("_f{}", order)), t.clone())
           })
           .collect_vec(),
       }],
-      return_value: hir::Expression::var_name(struct_var_name, hir::Type::Id(struct_type)),
+      return_value: hir::Expression::var_name(
+        heap.alloc_str(struct_var_name),
+        hir::Type::Id(struct_type),
+      ),
     };
-    let companion = companion_fn_with_cx(&f);
+    let companion = companion_fn_with_cx(heap, &f);
     functions.push(f);
     functions.push(companion);
   } else {
     for (tag_order, data_type) in type_def.mappings.iter().enumerate() {
       let f = hir::Function {
-        name: rc_string(common_names::encode_function_name_globally(
+        name: heap.alloc_string(common_names::encode_function_name_globally(
           heap,
           module_reference,
-          class_name,
-          &type_def.names[tag_order],
+          class_name.as_str(heap),
+          type_def.names[tag_order].as_str(heap),
         )),
-        parameters: vec![rcs("_data")],
+        parameters: vec![heap.alloc_str("_data")],
         type_parameters: type_def.type_parameters.clone(),
         type_: hir::Type::new_fn_unwrapped(
           vec![data_type.clone()],
           hir::Type::Id(struct_type.clone()),
         ),
         body: vec![hir::Statement::StructInit {
-          struct_variable_name: rcs(struct_var_name),
+          struct_variable_name: heap.alloc_str(struct_var_name),
           type_: struct_type.clone(),
           expression_list: vec![
             hir::Expression::int(i32::try_from(tag_order).unwrap()),
-            hir::Expression::var_name("_data", data_type.clone()),
+            hir::Expression::var_name(heap.alloc_str("_data"), data_type.clone()),
           ],
         }],
         return_value: hir::Expression::var_name(
-          struct_var_name,
+          heap.alloc_str(struct_var_name),
           hir::Type::Id(struct_type.clone()),
         ),
       };
-      let companion = companion_fn_with_cx(&f);
+      let companion = companion_fn_with_cx(heap, &f);
       functions.push(f);
       functions.push(companion);
     }
@@ -1143,12 +1122,12 @@ fn lower_constructors(
   functions
 }
 
-fn lower_tparams(heap: &Heap, type_parameters: &[source::TypeParameter]) -> Vec<Str> {
-  type_parameters.iter().map(|it| rc_string(it.name.name.as_str(heap).to_string())).collect_vec()
+fn lower_tparams(type_parameters: &[source::TypeParameter]) -> Vec<PStr> {
+  type_parameters.iter().map(|it| it.name.name).collect_vec()
 }
 
 fn compile_sources_with_generics_preserved(
-  heap: &Heap,
+  heap: &mut Heap,
   sources: &HashMap<ModuleReference, source::Module>,
 ) -> hir::Sources {
   let mut type_lowering_manager =
@@ -1159,11 +1138,11 @@ fn compile_sources_with_generics_preserved(
     for toplevel in &source_module.toplevels {
       if let source::Toplevel::Class(c) = &toplevel {
         type_lowering_manager.generic_types =
-          c.type_parameters.iter().map(|it| rc_pstr(heap, it.name.name)).collect();
+          c.type_parameters.iter().map(|it| it.name.name).collect();
         compiled_type_defs.push(type_lowering_manager.lower_source_type_definition(
           heap,
           mod_ref,
-          c.name.name.as_str(heap),
+          c.name.name,
           &c.type_definition,
         ));
         if c.name.name.as_str(heap).eq("Main")
@@ -1174,13 +1153,13 @@ fn compile_sources_with_generics_preserved(
           })
         {
           main_function_names
-            .push(rc_string(common_names::encode_main_function_name(heap, mod_ref)));
+            .push(heap.alloc_string(common_names::encode_main_function_name(heap, mod_ref)));
         }
       }
     }
   }
   let type_def_mappings: HashMap<_, _> =
-    compiled_type_defs.iter().map(|it| (it.identifier.clone(), it.clone())).collect();
+    compiled_type_defs.iter().map(|it| (it.identifier, it.clone())).collect();
 
   let mut string_manager = StringManager::new();
   let mut compiled_functions_with_added_dummy_cx = vec![];
@@ -1191,47 +1170,44 @@ fn compile_sources_with_generics_preserved(
         compiled_functions.append(&mut lower_constructors(
           heap,
           module_reference,
-          &rc_pstr(heap, c.name.name),
+          c.name.name,
           &type_def_mappings,
         ));
         for member in &c.members {
-          let encoded_name = rc_string(common_names::encode_function_name_globally(
+          let encoded_name = heap.alloc_string(common_names::encode_function_name_globally(
             heap,
             module_reference,
-            &rc_pstr(heap, c.name.name),
-            &rc_pstr(heap, member.decl.name.name),
+            c.name.name.as_str(heap),
+            member.decl.name.name.as_str(heap),
           ));
-          let class_tparams = lower_tparams(heap, &c.type_parameters);
+          let class_tparams = lower_tparams(&c.type_parameters);
           if member.decl.is_method {
             let tparams = class_tparams
               .iter()
               .cloned()
-              .chain(lower_tparams(heap, &member.decl.type_parameters))
+              .chain(lower_tparams(&member.decl.type_parameters))
               .sorted()
               .collect_vec();
             let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
             type_lowering_manager.generic_types = tparams_set;
             let main_function_parameter_with_types = vec![(
-              rcs("_this"),
-              hir::Type::new_id_str(
-                rc_string(encode_samlang_type(heap, module_reference, c.name.name.as_str(heap))),
-                class_tparams.into_iter().map(Type::new_id_str_no_targs).collect_vec(),
+              heap.alloc_str("_this"),
+              hir::Type::new_id(
+                heap.alloc_string(encode_samlang_type(heap, module_reference, c.name.name)),
+                class_tparams.into_iter().map(Type::new_id_no_targs).collect_vec(),
               ),
             )]
             .into_iter()
             .chain(member.decl.parameters.iter().map(|id| {
-              (
-                rc_pstr(heap, id.name.name),
-                type_lowering_manager.lower_source_type(heap, &id.annotation),
-              )
+              (id.name.name, type_lowering_manager.lower_source_type(heap, &id.annotation))
             }))
             .collect_vec();
             let manager = ExpressionLoweringManager::new(
-              heap,
               module_reference,
-              &encoded_name,
+              encoded_name,
               main_function_parameter_with_types.clone(),
               &type_def_mappings,
+              heap,
               &mut type_lowering_manager,
               &mut string_manager,
             );
@@ -1258,7 +1234,7 @@ fn compile_sources_with_generics_preserved(
             compiled_functions.append(&mut compiled_functions_to_add);
           } else {
             let tparams_set: HashSet<_> =
-              lower_tparams(heap, &member.decl.type_parameters).into_iter().collect();
+              lower_tparams(&member.decl.type_parameters).into_iter().collect();
             let tparams = tparams_set.iter().sorted().cloned().collect_vec();
             type_lowering_manager.generic_types = tparams_set;
             let main_function_parameter_with_types = member
@@ -1266,18 +1242,15 @@ fn compile_sources_with_generics_preserved(
               .parameters
               .iter()
               .map(|id| {
-                (
-                  rc_pstr(heap, id.name.name),
-                  type_lowering_manager.lower_source_type(heap, &id.annotation),
-                )
+                (id.name.name, type_lowering_manager.lower_source_type(heap, &id.annotation))
               })
               .collect_vec();
             let manager = ExpressionLoweringManager::new(
-              heap,
               module_reference,
-              &encoded_name,
+              encoded_name,
               main_function_parameter_with_types.clone(),
               &type_def_mappings,
+              heap,
               &mut type_lowering_manager,
               &mut string_manager,
             );
@@ -1301,7 +1274,7 @@ fn compile_sources_with_generics_preserved(
               body: statements,
               return_value: expression,
             };
-            let companion = companion_fn_with_cx(&original_f);
+            let companion = companion_fn_with_cx(heap, &original_f);
             compiled_functions.append(&mut compiled_functions_to_add);
             compiled_functions.push(original_f);
             compiled_functions_with_added_dummy_cx.push(companion);
@@ -1327,7 +1300,7 @@ fn compile_sources_with_generics_preserved(
   }
 }
 
-fn optimize_by_tail_rec_rewrite(sources: hir::Sources) -> hir::Sources {
+fn optimize_by_tail_rec_rewrite(heap: &mut Heap, sources: hir::Sources) -> hir::Sources {
   let hir::Sources {
     global_variables,
     closure_types,
@@ -1342,27 +1315,26 @@ fn optimize_by_tail_rec_rewrite(sources: hir::Sources) -> hir::Sources {
     main_function_names,
     functions: functions
       .into_iter()
-      .map(hir_tail_recursion_rewrite::optimize_function_by_tailrec_rewrite)
-      .collect_vec(),
+      .map(|f| hir_tail_recursion_rewrite::optimize_function_by_tailrec_rewrite(heap, f))
+      .collect(),
   }
 }
 
 pub(crate) fn compile_sources_to_hir(
-  heap: &Heap,
+  heap: &mut Heap,
   sources: &HashMap<ModuleReference, source::Module>,
 ) -> hir::Sources {
-  optimize_by_tail_rec_rewrite(hir_type_deduplication::deduplicate(
-    hir_generics_specialization::perform_generics_specialization(
-      compile_sources_with_generics_preserved(heap, sources),
-    ),
-  ))
+  let mut sources = compile_sources_with_generics_preserved(heap, sources);
+  sources = hir_generics_specialization::perform_generics_specialization(heap, sources);
+  sources = hir_type_deduplication::deduplicate(heap, sources);
+  optimize_by_tail_rec_rewrite(heap, sources)
 }
 
 #[cfg(test)]
 mod tests {
   use crate::{
     ast::{hir, source, Location, Reason},
-    common::{rcs, Heap, ModuleReference},
+    common::{Heap, ModuleReference},
     compiler::{
       hir_lowering::ExpressionLoweringManager,
       hir_string_manager::StringManager,
@@ -1376,18 +1348,22 @@ mod tests {
     rc::Rc,
   };
 
-  fn assert_expr_correctly_lowered(source_expr: &source::expr::E, heap: &Heap, expected_str: &str) {
+  fn assert_expr_correctly_lowered(
+    source_expr: &source::expr::E,
+    heap: &mut Heap,
+    expected_str: &str,
+  ) {
     let mut type_lowering_manager = TypeLoweringManager {
-      generic_types: HashSet::from_iter(vec![rcs("GENERIC_TYPE")]),
+      generic_types: HashSet::from_iter(vec![heap.alloc_str("GENERIC_TYPE")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let mut string_manager = StringManager::new();
     let mod_ref = ModuleReference::dummy();
     let type_def_mapping = HashMap::from([
       (
-        rcs("__DUMMY___Foo"),
+        heap.alloc_str("__DUMMY___Foo"),
         hir::TypeDefinition {
-          identifier: rcs("__DUMMY___Foo"),
+          identifier: heap.alloc_str("__DUMMY___Foo"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
@@ -1395,9 +1371,9 @@ mod tests {
         },
       ),
       (
-        rcs("__DUMMY___Dummy"),
+        heap.alloc_str("__DUMMY___Dummy"),
         hir::TypeDefinition {
-          identifier: rcs("__DUMMY___Dummy"),
+          identifier: heap.alloc_str("__DUMMY___Dummy"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
@@ -1406,18 +1382,21 @@ mod tests {
       ),
     ]);
     let manager = ExpressionLoweringManager::new(
-      heap,
       &mod_ref,
-      "ENCODED_FUNCTION_NAME",
+      heap.alloc_str("ENCODED_FUNCTION_NAME"),
       vec![
-        (rcs("_this"), hir::Type::new_id_no_targs("__DUMMY___Dummy")),
-        (rcs("foo"), hir::INT_TYPE),
-        (rcs("bar"), hir::BOOL_TYPE),
-        (rcs("closure"), hir::Type::new_id_no_targs("Closure")),
-        (rcs("closure_unit_return"), hir::Type::new_id_no_targs("Closure")),
-        (rcs("captured_a"), hir::INT_TYPE),
+        (heap.alloc_str("_this"), hir::Type::new_id_no_targs(heap.alloc_str("__DUMMY___Dummy"))),
+        (heap.alloc_str("foo"), hir::INT_TYPE),
+        (heap.alloc_str("bar"), hir::BOOL_TYPE),
+        (heap.alloc_str("closure"), hir::Type::new_id_no_targs(heap.alloc_str("Closure"))),
+        (
+          heap.alloc_str("closure_unit_return"),
+          hir::Type::new_id_no_targs(heap.alloc_str("Closure")),
+        ),
+        (heap.alloc_str("captured_a"), hir::INT_TYPE),
       ],
       &type_def_mapping,
+      heap,
       &mut type_lowering_manager,
       &mut string_manager,
     );
@@ -1435,9 +1414,9 @@ mod tests {
     };
     let actual_string = format!(
       "{}\n{}\nreturn {};",
-      synthetic_module.debug_print(),
-      statements.iter().map(|it| it.debug_print()).join("\n"),
-      expression.debug_print()
+      synthetic_module.debug_print(heap),
+      statements.iter().map(|it| it.debug_print(heap)).join("\n"),
+      expression.debug_print(heap)
     );
     assert_eq!(expected_str, actual_string.trim());
   }
@@ -1461,17 +1440,17 @@ mod tests {
 
   #[test]
   fn simple_expressions_lowering_tests() {
-    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     // Literal lowering works.
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(&builder.false_expr(), heap, "return 0;");
     assert_expr_correctly_lowered(&builder.true_expr(), heap, "return 1;");
     assert_expr_correctly_lowered(&builder.zero_expr(), heap, "return 0;");
     assert_expr_correctly_lowered(
       &builder.string_expr(heap.alloc_str("foo")),
       heap,
-      "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
+      "const GLOBAL_STRING_8 = 'foo';\n\n\nreturn GLOBAL_STRING_8;",
     );
 
     // This & variable lowering works.
@@ -1489,10 +1468,10 @@ mod tests {
 
   #[test]
   fn access_expressions_lowering_tests() {
-    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     // ClassFn lowering works.
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::ClassFn(source::expr::ClassFunction {
         common: builder.expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
@@ -1503,11 +1482,12 @@ mod tests {
       }),
       heap,
       r#"closure type $SyntheticIDType0 = (int) -> int
-let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___A$b_with_context: (int, int) -> int), context: 0 };
-return (_t0: $SyntheticIDType0);"#,
+let _t17: $SyntheticIDType0 = Closure { fun: (___DUMMY___A$b_with_context: (int, int) -> int), context: 0 };
+return (_t17: $SyntheticIDType0);"#,
     );
 
     // FieldAccess lowering works.
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::FieldAccess(source::expr::FieldAccess {
         common: builder.expr_common(builder.unit_type()),
@@ -1517,10 +1497,11 @@ return (_t0: $SyntheticIDType0);"#,
         field_order: 0,
       }),
       heap,
-      "let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);",
+      "let _t16: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t16: int);",
     );
 
     // MethodAccess lowering works.
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::MethodAccess(source::expr::MethodAccess {
         common: builder.expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
@@ -1530,17 +1511,17 @@ return (_t0: $SyntheticIDType0);"#,
       }),
       heap,
       r#"closure type $SyntheticIDType0 = (int) -> int
-let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy$foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
-return (_t0: $SyntheticIDType0);"#,
+let _t17: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy$foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
+return (_t17: $SyntheticIDType0);"#,
     );
   }
 
   #[test]
   fn call_lowering_tests() {
-    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     // Function call 1/n: class fn call with return
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.int_type()),
@@ -1556,10 +1537,11 @@ return (_t0: $SyntheticIDType0);"#,
         arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
       }),
       heap,
-      r#"let _t0: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t0: int);"#,
+      r#"let _t19: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+return (_t19: int);"#,
     );
     // Function call 2/n: class fn call without return
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.unit_type()),
@@ -1577,6 +1559,7 @@ return (_t0: int);"#,
       "___DUMMY___C$m1(0);\nreturn 0;",
     );
     // Function call 3/n: class fn call with return
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
@@ -1592,7 +1575,7 @@ return (_t0: int);"#,
         arguments: vec![builder.zero_expr()],
       }),
       heap,
-      "let _t0: __DUMMY___Dummy = ___DUMMY___C$m2(0);\nreturn (_t0: __DUMMY___Dummy);",
+      "let _t17: __DUMMY___Dummy = ___DUMMY___C$m2(0);\nreturn (_t17: __DUMMY___Dummy);",
     );
     // Function call 4/n: class fn generic call
     assert_expr_correctly_lowered(
@@ -1613,6 +1596,7 @@ return (_t0: int);"#,
       "$GENERICS$_GENERIC_TYPE$m2(0);\nreturn 0;",
     );
     // Function call 5/n: method call with return
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
@@ -1628,10 +1612,11 @@ return (_t0: int);"#,
         arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
       }),
       heap,
-      r#"let _t0: int = ___DUMMY___Dummy$fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t0: int);"#,
+      r#"let _t17: int = ___DUMMY___Dummy$fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+return (_t17: int);"#,
     );
     // Function call 6/n: closure call with return
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.int_type()),
@@ -1642,10 +1627,11 @@ return (_t0: int);"#,
         arguments: vec![builder.true_expr()],
       }),
       heap,
-      r#"let _t0: int = (closure: Closure)(1);
-return (_t0: int);"#,
+      r#"let _t14: int = (closure: Closure)(1);
+return (_t14: int);"#,
     );
     // Function call 7/n: closure call without return
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
         common: builder.expr_common(builder.unit_type()),
@@ -1663,10 +1649,10 @@ return 0;"#,
 
   #[test]
   fn op_lowering_tests() {
-    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
     // Unary lowering works.
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Unary(source::expr::Unary {
         common: builder.expr_common(builder.unit_type()),
@@ -1674,8 +1660,9 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);",
+      "let _t16: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t16: bool);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Unary(source::expr::Unary {
         common: builder.expr_common(builder.unit_type()),
@@ -1683,10 +1670,11 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
+      "let _t16: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
     );
 
     // Binary Lowering: normal
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
@@ -1696,8 +1684,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
+      "let _t16: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
@@ -1707,8 +1696,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: int = (_this: __DUMMY___Dummy) - (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
+      "let _t16: int = (_this: __DUMMY___Dummy) - (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
@@ -1718,8 +1708,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
+      "let _t16: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
@@ -1729,8 +1720,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: int = (_this: __DUMMY___Dummy) / (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
+      "let _t16: int = (_this: __DUMMY___Dummy) / (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
@@ -1740,8 +1732,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: int = (_this: __DUMMY___Dummy) % (_this: __DUMMY___Dummy);\nreturn (_t0: int);",
+      "let _t16: int = (_this: __DUMMY___Dummy) % (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1751,8 +1744,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: bool = (_this: __DUMMY___Dummy) < (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
+      "let _t16: bool = (_this: __DUMMY___Dummy) < (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1762,8 +1756,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: bool = (_this: __DUMMY___Dummy) <= (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
+      "let _t16: bool = (_this: __DUMMY___Dummy) <= (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1773,8 +1768,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: bool = (_this: __DUMMY___Dummy) > (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
+      "let _t16: bool = (_this: __DUMMY___Dummy) > (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1784,8 +1780,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: bool = (_this: __DUMMY___Dummy) >= (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
+      "let _t16: bool = (_this: __DUMMY___Dummy) >= (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1795,8 +1792,9 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: bool = (_this: __DUMMY___Dummy) == (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
+      "let _t16: bool = (_this: __DUMMY___Dummy) == (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1806,9 +1804,10 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t0: bool = (_this: __DUMMY___Dummy) != (_this: __DUMMY___Dummy);\nreturn (_t0: bool);",
+      "let _t16: bool = (_this: __DUMMY___Dummy) != (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
     );
     // Binary Lowering: Short circuiting &&
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1818,14 +1817,15 @@ return 0;"#,
         e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t0: bool;
+      r#"let _t14: bool;
 if (foo: int) {
-  _t0 = (bar: bool);
+  _t14 = (bar: bool);
 } else {
-  _t0 = 0;
+  _t14 = 0;
 }
-return (_t0: bool);"#,
+return (_t14: bool);"#,
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1837,6 +1837,7 @@ return (_t0: bool);"#,
       heap,
       "return (foo: int);",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1849,6 +1850,7 @@ return (_t0: bool);"#,
       "return 0;",
     );
     // Binary Lowering: Short circuiting ||
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1860,6 +1862,7 @@ return (_t0: bool);"#,
       heap,
       "return 1;",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1871,6 +1874,7 @@ return (_t0: bool);"#,
       heap,
       "return 65536;",
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
@@ -1880,15 +1884,16 @@ return (_t0: bool);"#,
         e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t0: bool;
+      r#"let _t14: bool;
 if (foo: int) {
-  _t0 = 1;
+  _t14 = 1;
 } else {
-  _t0 = (bar: bool);
+  _t14 = (bar: bool);
 }
-return (_t0: bool);"#,
+return (_t14: bool);"#,
     );
     // Binary Lowering: string concat
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.string_type()),
@@ -1898,9 +1903,10 @@ return (_t0: bool);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t0: string = __Builtins$stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t0: string);"#,
+      r#"let _t16: string = __Builtins$stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+return (_t16: string);"#,
     );
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.string_type()),
@@ -1910,15 +1916,15 @@ return (_t0: string);"#,
         e2: Box::new(builder.string_expr(heap.alloc_str("world"))),
       }),
       heap,
-      "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;",
+      "const GLOBAL_STRING_16 = 'hello world';\n\n\nreturn GLOBAL_STRING_16;",
     );
   }
 
   #[test]
   fn lambda_lowering_tests() {
-    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
         common: builder
@@ -1938,11 +1944,12 @@ function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDTyp
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: $SyntheticIDType0 = [(captured_a: int)];
-let _t0: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t1: $SyntheticIDType0) };
-return (_t0: $SyntheticIDType1);"#,
+let _t18: $SyntheticIDType0 = [(captured_a: int)];
+let _t17: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t18: $SyntheticIDType0) };
+return (_t17: $SyntheticIDType1);"#,
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
         common: builder
@@ -1962,11 +1969,12 @@ function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDTyp
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: $SyntheticIDType0 = [(captured_a: int)];
-let _t0: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t1: $SyntheticIDType0) };
-return (_t0: $SyntheticIDType1);"#,
+let _t18: $SyntheticIDType0 = [(captured_a: int)];
+let _t17: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t18: $SyntheticIDType0) };
+return (_t17: $SyntheticIDType1);"#,
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
         common: builder.expr_common(
@@ -1987,11 +1995,12 @@ function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDTyp
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: $SyntheticIDType0 = [(captured_a: int)];
-let _t0: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy), context: (_t1: $SyntheticIDType0) };
-return (_t0: $SyntheticIDType1);"#,
+let _t18: $SyntheticIDType0 = [(captured_a: int)];
+let _t17: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy), context: (_t18: $SyntheticIDType0) };
+return (_t17: $SyntheticIDType1);"#,
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
         common: builder.expr_common(
@@ -2010,16 +2019,16 @@ function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: int, a: int): _
   return (_this: __DUMMY___Dummy);
 }
 
-let _t0: $SyntheticIDType0 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: (int, int) -> __DUMMY___Dummy), context: 0 };
-return (_t0: $SyntheticIDType0);"#,
+let _t17: $SyntheticIDType0 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: (int, int) -> __DUMMY___Dummy), context: 0 };
+return (_t17: $SyntheticIDType0);"#,
     );
   }
 
   #[test]
   fn control_flow_lowering_tests() {
-    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
         common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
@@ -2028,15 +2037,16 @@ return (_t0: $SyntheticIDType0);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t0: __DUMMY___Dummy;
+      r#"let _t16: __DUMMY___Dummy;
 if (_this: __DUMMY___Dummy) {
-  _t0 = (_this: __DUMMY___Dummy);
+  _t16 = (_this: __DUMMY___Dummy);
 } else {
-  _t0 = (_this: __DUMMY___Dummy);
+  _t16 = (_this: __DUMMY___Dummy);
 }
-return (_t0: __DUMMY___Dummy);"#,
+return (_t16: __DUMMY___Dummy);"#,
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
         common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
@@ -2059,18 +2069,19 @@ return (_t0: __DUMMY___Dummy);"#,
         ],
       }),
       heap,
-      r#"let _t0: int = (_this: __DUMMY___Dummy)[0];
-let _t1: bool = (_t0: int) == 0;
-let _t2: __DUMMY___Dummy;
-if (_t1: bool) {
+      r#"let _t18: int = (_this: __DUMMY___Dummy)[0];
+let _t19: bool = (_t18: int) == 0;
+let _t20: __DUMMY___Dummy;
+if (_t19: bool) {
   let bar: int = (_this: __DUMMY___Dummy)[1];
-  _t2 = (_this: __DUMMY___Dummy);
+  _t20 = (_this: __DUMMY___Dummy);
 } else {
-  _t2 = (_this: __DUMMY___Dummy);
+  _t20 = (_this: __DUMMY___Dummy);
 }
-return (_t2: __DUMMY___Dummy);"#,
+return (_t20: __DUMMY___Dummy);"#,
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
         common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
@@ -2105,31 +2116,31 @@ return (_t2: __DUMMY___Dummy);"#,
         ],
       }),
       heap,
-      r#"let _t0: int = (_this: __DUMMY___Dummy)[0];
-let _t3: bool = (_t0: int) == 0;
-let _t4: __DUMMY___Dummy;
-if (_t3: bool) {
-  _t4 = (_this: __DUMMY___Dummy);
+      r#"let _t19: int = (_this: __DUMMY___Dummy)[0];
+let _t22: bool = (_t19: int) == 0;
+let _t23: __DUMMY___Dummy;
+if (_t22: bool) {
+  _t23 = (_this: __DUMMY___Dummy);
 } else {
-  let _t1: bool = (_t0: int) == 1;
-  let _t2: __DUMMY___Dummy;
-  if (_t1: bool) {
+  let _t20: bool = (_t19: int) == 1;
+  let _t21: __DUMMY___Dummy;
+  if (_t20: bool) {
     let bar: int = (_this: __DUMMY___Dummy)[1];
-    _t2 = (bar: int);
+    _t21 = (bar: int);
   } else {
-    _t2 = (_this: __DUMMY___Dummy);
+    _t21 = (_this: __DUMMY___Dummy);
   }
-  _t4 = (_t2: __DUMMY___Dummy);
+  _t23 = (_t21: __DUMMY___Dummy);
 }
-return (_t4: __DUMMY___Dummy);"#,
+return (_t23: __DUMMY___Dummy);"#,
     );
   }
 
   #[test]
   fn block_lowering_tests() {
-    let heap = &mut Heap::new();
     let builder = source::test_builder::create();
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
         common: builder.expr_common(builder.unit_type()),
@@ -2185,6 +2196,7 @@ let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];
 return 0;"#,
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
         common: builder.expr_common(builder.unit_type()),
@@ -2230,6 +2242,7 @@ let c: int = (_this: __DUMMY___Dummy)[1];
 return 0;"#,
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
         common: builder.expr_common(builder.unit_type()),
@@ -2259,6 +2272,7 @@ return 0;"#,
       "let a: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));\nreturn (a: int);",
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
         common: builder.expr_common(builder.unit_type()),
@@ -2283,9 +2297,10 @@ return 0;"#,
         expression: Some(Box::new(builder.id_expr(heap.alloc_str("b"), builder.string_type()))),
       }),
       heap,
-      "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
+      "const GLOBAL_STRING_4 = 'foo';\n\n\nreturn GLOBAL_STRING_4;",
     );
 
+    let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
         common: builder.expr_common(builder.unit_type()),
@@ -2662,17 +2677,17 @@ function ___DUMMY___Class1$infiniteLoop(): int {
 }
 
 function ___DUMMY___Class1$factorial(n: int, acc: int): int {
-  let _t0: bool = (n: int) == 0;
-  let _t1: int;
-  if (_t0: bool) {
-    _t1 = 1;
+  let _t50: bool = (n: int) == 0;
+  let _t51: int;
+  if (_t50: bool) {
+    _t51 = 1;
   } else {
-    let _t3: int = (n: int) + -1;
-    let _t4: int = (n: int) * (acc: int);
-    let _t2: int = ___DUMMY___Class1$factorial((_t3: int), (_t4: int));
-    _t1 = (_t2: int);
+    let _t53: int = (n: int) + -1;
+    let _t54: int = (n: int) * (acc: int);
+    let _t52: int = ___DUMMY___Class1$factorial((_t53: int), (_t54: int));
+    _t51 = (_t52: int);
   }
-  return (_t1: int);
+  return (_t51: int);
 }
 
 function ___DUMMY___Class2$Tag(_data: int): __DUMMY___Class2 {
@@ -2697,14 +2712,14 @@ function ___DUMMY___Class3$init_with_context<T>(_context: int, _f0: $SyntheticID
 
 sources.mains = [___DUMMY___Main$main]"#;
 
-    let optimized_expected = r#"function ___DUMMY___Class1$infiniteLoop(): int {
-  while (true) {
-  }
+    let optimized_expected = r#"function ___DUMMY___Main$main(): int {
+  ___DUMMY___Class1$infiniteLoop();
   return 0;
 }
 
-function ___DUMMY___Main$main(): int {
-  ___DUMMY___Class1$infiniteLoop();
+function ___DUMMY___Class1$infiniteLoop(): int {
+  while (true) {
+  }
   return 0;
 }
 
@@ -2712,8 +2727,8 @@ sources.mains = [___DUMMY___Main$main]"#;
 
     assert_eq!(
       generics_preserved_expected,
-      super::compile_sources_with_generics_preserved(heap, &sources).debug_print()
+      super::compile_sources_with_generics_preserved(heap, &sources).debug_print(heap)
     );
-    assert_eq!(optimized_expected, super::compile_sources_to_hir(heap, &sources).debug_print());
+    assert_eq!(optimized_expected, super::compile_sources_to_hir(heap, &sources).debug_print(heap));
   }
 }

@@ -1,21 +1,24 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use crate::{
   ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement, VariableName},
-  common::{rc_string, LocalStackedContext, Str},
+  common::{LocalStackedContext, PStr},
 };
 use itertools::Itertools;
 
-type LocalContext = LocalStackedContext<Str, Str>;
+type LocalContext = LocalStackedContext<PStr, PStr>;
+type LocalBindedValueContext = LocalStackedContext<String, PStr>;
 
 impl LocalContext {
-  fn lvn_bind_var(&mut self, name: &Str, value: Str) {
+  fn lvn_bind_var(&mut self, name: &PStr, value: PStr) {
     let value = self.get(name).cloned().unwrap_or(value);
     let inserted = self.insert(name, value);
     debug_assert!(inserted);
   }
+}
 
-  fn lvn_bind_value(&mut self, value: &BindedValue, name: Str) {
-    let inserted = self.insert(&rc_string(value.to_string()), name);
+impl LocalBindedValueContext {
+  fn lvn_bind_value(&mut self, value: &BindedValue, name: PStr) {
+    let inserted = self.insert(&value.dump_to_string(), name);
     debug_assert!(inserted);
   }
 }
@@ -39,7 +42,7 @@ fn optimize_expr(expression: Expression, variable_cx: &mut LocalContext) -> Expr
 fn optimize_stmt(
   stmt: Statement,
   variable_cx: &mut LocalContext,
-  binded_value_cx: &mut LocalContext,
+  binded_value_cx: &mut LocalBindedValueContext,
 ) -> Option<Statement> {
   match stmt {
     Statement::Binary(Binary { name, type_, operator, e1, e2 }) => {
@@ -47,11 +50,11 @@ fn optimize_stmt(
       let e2 = optimize_expr(e2, variable_cx);
       let value =
         BindedValue::Binary(BinaryBindedValue { operator, e1: e1.clone(), e2: e2.clone() });
-      if let Some(binded) = binded_value_cx.get(&rc_string(value.to_string())) {
-        variable_cx.lvn_bind_var(&name, binded.clone());
+      if let Some(binded) = binded_value_cx.get(&value.dump_to_string()) {
+        variable_cx.lvn_bind_var(&name, *binded);
         None
       } else {
-        binded_value_cx.lvn_bind_value(&value, name.clone());
+        binded_value_cx.lvn_bind_value(&value, name);
         Some(Statement::Binary(Binary { name, type_, operator, e1, e2 }))
       }
     }
@@ -62,11 +65,11 @@ fn optimize_stmt(
         pointer_expression: pointer_expression.clone(),
         index,
       });
-      if let Some(binded) = binded_value_cx.get(&rc_string(value.to_string())) {
-        variable_cx.lvn_bind_var(&name, binded.clone());
+      if let Some(binded) = binded_value_cx.get(&value.dump_to_string()) {
+        variable_cx.lvn_bind_var(&name, *binded);
         None
       } else {
-        binded_value_cx.lvn_bind_value(&value, name.clone());
+        binded_value_cx.lvn_bind_value(&value, name);
         Some(Statement::IndexedAccess { name, type_, pointer_expression, index })
       }
     }
@@ -124,9 +127,7 @@ fn optimize_stmt(
     Statement::While { loop_variables, statements, break_collector } => {
       let loop_variables_without_loop_values = loop_variables
         .iter()
-        .map(|v| {
-          (v.name.clone(), v.type_.clone(), optimize_expr(v.initial_value.clone(), variable_cx))
-        })
+        .map(|v| (v.name, v.type_.clone(), optimize_expr(v.initial_value.clone(), variable_cx)))
         .collect_vec();
       variable_cx.push_scope();
       binded_value_cx.push_scope();
@@ -171,14 +172,14 @@ fn optimize_stmt(
 fn optimize_stmts(
   stmts: Vec<Statement>,
   variable_cx: &mut LocalContext,
-  binded_value_cx: &mut LocalContext,
+  binded_value_cx: &mut LocalBindedValueContext,
 ) -> Vec<Statement> {
   stmts.into_iter().filter_map(|s| optimize_stmt(s, variable_cx, binded_value_cx)).collect()
 }
 
 pub(super) fn optimize_function(function: Function) -> Function {
   let mut variable_cx = LocalContext::new();
-  let mut binded_value_cx = LocalContext::new();
+  let mut binded_value_cx = LocalBindedValueContext::new();
   let Function { name, parameters, type_parameters, type_, body, return_value } = function;
   Function {
     name,

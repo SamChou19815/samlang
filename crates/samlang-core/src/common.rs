@@ -1,11 +1,17 @@
 use itertools::Itertools;
-use std::{collections::HashMap, fmt::Display, hash::Hash, ops::Deref, rc::Rc, time::Instant};
+use std::{collections::HashMap, hash::Hash, ops::Deref, rc::Rc, time::Instant};
 
 /// A string pointer free to be copied. However, we have to do GC manually.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct PStr(u32);
 
+pub(crate) const INVALID_PSTR: PStr = PStr(u32::MAX);
+
 impl PStr {
+  pub(crate) fn opaque_id(&self) -> u32 {
+    self.0
+  }
+
   pub(crate) fn as_str<'a>(&self, heap: &'a Heap) -> &'a str {
     if let Some(s) = heap.str_pointer_table.get(self) {
       s
@@ -86,6 +92,12 @@ impl Heap {
     self.alloc_string(str.to_string())
   }
 
+  pub(crate) fn alloc_temp_str(&mut self) -> PStr {
+    let id = self.id;
+    let string = format!("_t{}", id);
+    self.alloc_string(string)
+  }
+
   pub(crate) fn alloc_string(&mut self, string: String) -> PStr {
     let rc_str = Rc::new(string);
     if let Some(id) = self.interned_str.get(&rc_str) {
@@ -141,12 +153,6 @@ impl Default for Heap {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct Str(Rc<String>);
-
-impl Display for Str {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", self.0)
-  }
-}
 
 impl Deref for Str {
   type Target = String;
@@ -287,9 +293,12 @@ mod tests {
   #[test]
   fn heap_tests() {
     let mut heap = Heap::default();
+    assert_eq!(2, heap.alloc_dummy_module_reference().0);
     let a1 = heap.alloc_str("a");
     let b = heap.alloc_str("b");
     let a2 = heap.alloc_str("a");
+    a1.opaque_id();
+    heap.alloc_temp_str();
     assert!(heap.get_allocated_str_opt("a").is_some());
     assert!(heap.get_allocated_str_opt("d").is_none());
     assert!(!format!("{:?}", b).is_empty());

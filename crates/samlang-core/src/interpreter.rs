@@ -1,15 +1,16 @@
-use crate::{
-  ast,
-  common::{Heap, Str},
-};
+use crate::{ast, common};
 
 mod mir_interpreter;
 mod source_interpreter;
 
-pub(super) fn run_source_module(heap: &mut Heap, module: &ast::source::Module) -> String {
+pub(super) fn run_source_module(heap: &mut common::Heap, module: &ast::source::Module) -> String {
   source_interpreter::run(heap, module)
 }
 
-pub(super) fn run_mir_sources(sources: &ast::mir::Sources, main_function: Str) -> String {
-  mir_interpreter::run(sources, main_function)
+pub(super) fn run_mir_sources(
+  heap: &mut common::Heap,
+  sources: &ast::mir::Sources,
+  main_function: common::PStr,
+) -> String {
+  mir_interpreter::run(heap, sources, main_function)
 }

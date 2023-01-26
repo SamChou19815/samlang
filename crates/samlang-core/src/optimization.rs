@@ -1,5 +1,7 @@
-use self::optimization_common::ResourceAllocator;
-use crate::ast::hir::{Function, Sources};
+use crate::{
+  ast::hir::{Function, Sources},
+  Heap,
+};
 
 mod common_subexpression_elimination;
 mod conditional_constant_propagation;
@@ -43,15 +45,15 @@ pub(super) const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration =
 
 fn optimize_function_for_one_round(
   function: Function,
-  allocator: &mut ResourceAllocator,
+  heap: &mut Heap,
   configuration: &OptimizationConfiguration,
 ) -> Function {
-  let mut optimized_fn = conditional_constant_propagation::optimize_function(function);
+  let mut optimized_fn = conditional_constant_propagation::optimize_function(function, heap);
   if configuration.does_perform_loop_optimization {
-    optimized_fn = loop_optimizations::optimize_function(optimized_fn, allocator);
+    optimized_fn = loop_optimizations::optimize_function(optimized_fn, heap);
   }
   if configuration.does_perform_common_sub_expression_elimination {
-    optimized_fn = common_subexpression_elimination::optimize_function(optimized_fn, allocator);
+    optimized_fn = common_subexpression_elimination::optimize_function(optimized_fn, heap);
   }
   if configuration.does_perform_local_value_numbering {
     optimized_fn = local_value_numbering::optimize_function(optimized_fn);
@@ -61,32 +63,35 @@ fn optimize_function_for_one_round(
 
 fn optimize_function_for_rounds(
   function: Function,
-  allocator: &mut ResourceAllocator,
+  heap: &mut Heap,
   configuration: &OptimizationConfiguration,
 ) -> Function {
   let mut optimized_fn = function;
   for _ in 0..2 {
-    optimized_fn = optimize_function_for_one_round(optimized_fn, allocator, configuration);
+    optimized_fn = optimize_function_for_one_round(optimized_fn, heap, configuration);
   }
-  conditional_constant_propagation::optimize_function(dead_code_elimination::optimize_function(
-    conditional_constant_propagation::optimize_function(optimized_fn),
-  ))
+  conditional_constant_propagation::optimize_function(
+    dead_code_elimination::optimize_function(conditional_constant_propagation::optimize_function(
+      optimized_fn,
+      heap,
+    )),
+    heap,
+  )
 }
 
 fn optimize_functions_for_rounds(
   functions: Vec<Function>,
-  allocator: &mut ResourceAllocator,
+  heap: &mut Heap,
   configuration: &OptimizationConfiguration,
 ) -> Vec<Function> {
-  functions.into_iter().map(|f| optimize_function_for_rounds(f, allocator, configuration)).collect()
+  functions.into_iter().map(|f| optimize_function_for_rounds(f, heap, configuration)).collect()
 }
 
 pub(super) fn optimize_sources(
+  heap: &mut Heap,
   sources: Sources,
   configuration: &OptimizationConfiguration,
 ) -> Sources {
-  let mut allocator = ResourceAllocator::new();
-
   let mut intermediate = sources;
   for _ in 0..4 {
     let Sources {
@@ -96,10 +101,9 @@ pub(super) fn optimize_sources(
       main_function_names,
       functions,
     } = intermediate;
-    let mut optimized_functions =
-      optimize_functions_for_rounds(functions, &mut allocator, configuration);
+    let mut optimized_functions = optimize_functions_for_rounds(functions, heap, configuration);
     if configuration.does_perform_inlining {
-      optimized_functions = inlining::optimize_functions(optimized_functions, &mut allocator);
+      optimized_functions = inlining::optimize_functions(optimized_functions, heap);
     }
     intermediate = unused_name_elimination::optimize_sources(Sources {
       global_variables,
@@ -117,7 +121,7 @@ pub(super) fn optimize_sources(
     closure_types,
     type_definitions,
     main_function_names,
-    functions: optimize_functions_for_rounds(functions, &mut allocator, configuration),
+    functions: optimize_functions_for_rounds(functions, heap, configuration),
   }
 }
 
@@ -125,18 +129,18 @@ pub(super) fn optimize_sources(
 mod tests {
   use crate::{
     ast::hir::{Function, Sources, Type, INT_TYPE, ZERO},
-    common::rcs,
+    Heap,
   };
   use pretty_assertions::assert_eq;
 
-  fn sources() -> Sources {
+  fn sources(heap: &mut Heap) -> Sources {
     Sources {
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![rcs("main")],
+      main_function_names: vec![heap.alloc_str("main")],
       functions: vec![Function {
-        name: rcs("main"),
+        name: heap.alloc_str("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -148,19 +152,22 @@ mod tests {
 
   #[test]
   fn coverage_tests() {
+    let heap = &mut Heap::new();
     let common_expected = r#"function main(): int {
   return 0;
 }
 
 sources.mains = [main]"#;
 
+    let s = sources(heap);
     assert_eq!(
       common_expected,
-      super::optimize_sources(sources(), &super::ALL_ENABLED_CONFIGURATION).debug_print()
+      super::optimize_sources(heap, s, &super::ALL_ENABLED_CONFIGURATION).debug_print(heap)
     );
+    let s = sources(heap);
     assert_eq!(
       common_expected,
-      super::optimize_sources(sources(), &super::ALL_DISABLED_CONFIGURATION).debug_print()
+      super::optimize_sources(heap, s, &super::ALL_DISABLED_CONFIGURATION).debug_print(heap)
     );
   }
 }

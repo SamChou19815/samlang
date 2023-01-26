@@ -1,13 +1,12 @@
-use itertools::Itertools;
-
+use super::optimization_common::LocalValueContextForOptimization;
 use crate::ast::hir::{
   Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement,
   Type, VariableName, ZERO,
 };
-use crate::common::{rc_string, Str};
+use crate::common::PStr;
+use crate::Heap;
+use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
-
-use super::optimization_common::{LocalValueContextForOptimization, ResourceAllocator};
 
 mod estimator {
   use super::*;
@@ -56,8 +55,8 @@ mod estimator {
   }
 
   pub(super) struct FunctionsToInline {
-    pub(super) functions_that_can_be_inlined: HashSet<Str>,
-    pub(super) functions_that_can_perform_inlining: HashSet<Str>,
+    pub(super) functions_that_can_be_inlined: HashSet<PStr>,
+    pub(super) functions_that_can_perform_inlining: HashSet<PStr>,
   }
 
   pub(super) fn get_functions_to_inline(functions: &Vec<Function>) -> FunctionsToInline {
@@ -66,10 +65,10 @@ mod estimator {
     for f in functions {
       let cost = estimate_fn_inline_cost(f);
       if cost <= INLINE_THRESHOLD {
-        functions_that_can_be_inlined.insert(f.name.clone());
+        functions_that_can_be_inlined.insert(f.name);
       }
       if cost <= PERFORM_INLINE_THRESHOLD {
-        functions_that_can_perform_inlining.insert(f.name.clone());
+        functions_that_can_perform_inlining.insert(f.name);
       }
     }
     FunctionsToInline { functions_that_can_be_inlined, functions_that_can_perform_inlining }
@@ -82,38 +81,35 @@ mod estimator {
         Callee, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type, INT_TYPE,
         ZERO,
       },
-      common::rcs,
+      common::Heap,
     };
 
     #[test]
     fn cost_estimator_test() {
+      let s = Heap::new().alloc_str("");
+
       let actual = super::estimate_fn_inline_cost(&Function {
-        name: rcs(""),
+        name: s,
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
-          Statement::IndexedAccess {
-            name: rcs("i0"),
-            type_: INT_TYPE,
-            pointer_expression: ZERO,
-            index: 2,
-          },
-          Statement::binary("b0", Operator::PLUS, ZERO, ZERO),
+          Statement::IndexedAccess { name: s, type_: INT_TYPE, pointer_expression: ZERO, index: 2 },
+          Statement::binary(s, Operator::PLUS, ZERO, ZERO),
           Statement::StructInit {
-            struct_variable_name: rcs(""),
-            type_: Type::new_id_no_targs_unwrapped("name"),
+            struct_variable_name: s,
+            type_: Type::new_id_no_targs_unwrapped(s),
             expression_list: vec![ZERO, ZERO, ZERO],
           },
           Statement::ClosureInit {
-            closure_variable_name: rcs(""),
-            closure_type: Type::new_id_no_targs_unwrapped("name"),
-            function_name: FunctionName::new("name", Type::new_fn_unwrapped(vec![], INT_TYPE)),
+            closure_variable_name: s,
+            closure_type: Type::new_id_no_targs_unwrapped(s),
+            function_name: FunctionName::new(s, Type::new_fn_unwrapped(vec![], INT_TYPE)),
             context: ZERO,
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              "name",
+              s,
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![ZERO, ZERO],
@@ -124,27 +120,27 @@ mod estimator {
             condition: ZERO,
             s1: vec![],
             s2: vec![],
-            final_assignments: vec![(rcs(""), INT_TYPE, ZERO, ZERO)],
+            final_assignments: vec![(s, INT_TYPE, ZERO, ZERO)],
           },
           Statement::IfElse {
             condition: ZERO,
-            s1: vec![Statement::binary("b0", Operator::PLUS, ZERO, ZERO)],
-            s2: vec![Statement::binary("b0", Operator::PLUS, ZERO, ZERO)],
+            s1: vec![Statement::binary(s, Operator::PLUS, ZERO, ZERO)],
+            s2: vec![Statement::binary(s, Operator::PLUS, ZERO, ZERO)],
             final_assignments: vec![],
           },
           Statement::SingleIf {
             condition: ZERO,
             invert_condition: false,
-            statements: vec![Statement::binary("b0", Operator::PLUS, ZERO, ZERO)],
+            statements: vec![Statement::binary(s, Operator::PLUS, ZERO, ZERO)],
           },
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
-              name: rcs(""),
+              name: s,
               type_: INT_TYPE,
               initial_value: ZERO,
               loop_value: ZERO,
             }],
-            statements: vec![Statement::binary("b0", Operator::PLUS, ZERO, ZERO)],
+            statements: vec![Statement::binary(s, Operator::PLUS, ZERO, ZERO)],
             break_collector: None,
           },
         ],
@@ -162,7 +158,7 @@ fn inline_rewrite_variable(
   if let Some(binded) = cx.get(name) {
     binded.clone()
   } else {
-    Expression::Variable(VariableName { name: name.clone(), type_: type_.clone() })
+    Expression::Variable(VariableName { name: *name, type_: type_.clone() })
   }
 }
 
@@ -190,23 +186,25 @@ fn inline_rewrite_callee(callee: &Callee, cx: &mut LocalValueContextForOptimizat
 
 fn bind_with_mangled_name(
   cx: &mut LocalValueContextForOptimization,
-  prefix: &str,
-  name: &Str,
+  heap: &mut Heap,
+  prefix: &PStr,
+  name: &PStr,
   type_: &Type,
-) -> Str {
-  let mangled_name = rc_string(format!("{}{}", prefix, name));
-  cx.checked_bind(name, Expression::var_name_str(mangled_name.clone(), type_.clone()));
+) -> PStr {
+  let mangled_name = heap.alloc_string(format!("{}{}", prefix.as_str(heap), name.as_str(heap)));
+  cx.checked_bind(name, Expression::var_name(mangled_name, type_.clone()));
   mangled_name
 }
 
 fn inline_rewrite_stmt(
   cx: &mut LocalValueContextForOptimization,
-  prefix: &str,
+  heap: &mut Heap,
+  prefix: &PStr,
   stmt: &Statement,
 ) -> Statement {
   match stmt {
     Statement::Binary(Binary { name, type_, operator, e1, e2 }) => Statement::Binary(Binary {
-      name: bind_with_mangled_name(cx, prefix, name, type_),
+      name: bind_with_mangled_name(cx, heap, prefix, name, type_),
       type_: type_.clone(),
       operator: *operator,
       e1: inline_rewrite_expr(e1, cx),
@@ -214,7 +212,7 @@ fn inline_rewrite_stmt(
     }),
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {
       Statement::IndexedAccess {
-        name: bind_with_mangled_name(cx, prefix, name, type_),
+        name: bind_with_mangled_name(cx, heap, prefix, name, type_),
         type_: type_.clone(),
         pointer_expression: inline_rewrite_expr(pointer_expression, cx),
         index: *index,
@@ -224,18 +222,18 @@ fn inline_rewrite_stmt(
       let callee = inline_rewrite_callee(callee, cx);
       let arguments = inline_rewrite_expressions(arguments, cx);
       let return_collector =
-        return_collector.as_ref().map(|c| bind_with_mangled_name(cx, prefix, c, return_type));
+        return_collector.as_ref().map(|c| bind_with_mangled_name(cx, heap, prefix, c, return_type));
       Statement::Call { callee, arguments, return_type: return_type.clone(), return_collector }
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       let condition = inline_rewrite_expr(condition, cx);
       cx.push_scope();
-      let s1 = inline_rewrite_stmts(cx, prefix, s1);
+      let s1 = inline_rewrite_stmts(cx, heap, prefix, s1);
       let branch1_values =
         final_assignments.iter().map(|(_, _, e, _)| inline_rewrite_expr(e, cx)).collect_vec();
       cx.pop_scope();
       cx.push_scope();
-      let s2 = inline_rewrite_stmts(cx, prefix, s2);
+      let s2 = inline_rewrite_stmts(cx, heap, prefix, s2);
       let branch2_values =
         final_assignments.iter().map(|(_, _, _, e)| inline_rewrite_expr(e, cx)).collect_vec();
       cx.pop_scope();
@@ -244,7 +242,7 @@ fn inline_rewrite_stmt(
         .zip(branch2_values)
         .zip(final_assignments)
         .map(|((e1, e2), (n, t, _, _))| {
-          (bind_with_mangled_name(cx, prefix, n, t), t.clone(), e1, e2)
+          (bind_with_mangled_name(cx, heap, prefix, n, t), t.clone(), e1, e2)
         })
         .collect_vec();
       Statement::IfElse { condition, s1, s2, final_assignments }
@@ -252,7 +250,7 @@ fn inline_rewrite_stmt(
     Statement::SingleIf { condition, invert_condition, statements } => {
       let condition = inline_rewrite_expr(condition, cx);
       cx.push_scope();
-      let statements = inline_rewrite_stmts(cx, prefix, statements);
+      let statements = inline_rewrite_stmts(cx, heap, prefix, statements);
       cx.pop_scope();
       Statement::SingleIf { condition, invert_condition: *invert_condition, statements }
     }
@@ -261,13 +259,13 @@ fn inline_rewrite_stmt(
       let loop_variables_with_all_but_loop_value_rewritten = loop_variables
         .iter()
         .map(|GenenalLoopVariable { name, type_, initial_value, loop_value }| GenenalLoopVariable {
-          name: bind_with_mangled_name(cx, prefix, name, type_),
+          name: bind_with_mangled_name(cx, heap, prefix, name, type_),
           type_: type_.clone(),
           initial_value: inline_rewrite_expr(initial_value, cx),
           loop_value: loop_value.clone(),
         })
         .collect_vec();
-      let statements = inline_rewrite_stmts(cx, prefix, statements);
+      let statements = inline_rewrite_stmts(cx, heap, prefix, statements);
       let loop_variables = loop_variables_with_all_but_loop_value_rewritten
         .into_iter()
         .map(|GenenalLoopVariable { name, type_, initial_value, loop_value }| GenenalLoopVariable {
@@ -279,7 +277,7 @@ fn inline_rewrite_stmt(
         .collect_vec();
       let break_collector = if let Some(VariableName { name, type_ }) = break_collector {
         Some(VariableName {
-          name: bind_with_mangled_name(cx, prefix, name, type_),
+          name: bind_with_mangled_name(cx, heap, prefix, name, type_),
           type_: type_.clone(),
         })
       } else {
@@ -291,6 +289,7 @@ fn inline_rewrite_stmt(
       Statement::StructInit {
         struct_variable_name: bind_with_mangled_name(
           cx,
+          heap,
           prefix,
           struct_variable_name,
           &Type::Id(type_.clone()),
@@ -303,6 +302,7 @@ fn inline_rewrite_stmt(
       Statement::ClosureInit {
         closure_variable_name: bind_with_mangled_name(
           cx,
+          heap,
           prefix,
           closure_variable_name,
           &Type::Id(closure_type.clone()),
@@ -317,17 +317,18 @@ fn inline_rewrite_stmt(
 
 fn inline_rewrite_stmts(
   cx: &mut LocalValueContextForOptimization,
-  prefix: &str,
+  heap: &mut Heap,
+  prefix: &PStr,
   stmts: &[Statement],
 ) -> Vec<Statement> {
-  stmts.iter().map(|s| inline_rewrite_stmt(cx, prefix, s)).collect()
+  stmts.iter().map(|s| inline_rewrite_stmt(cx, heap, prefix, s)).collect()
 }
 
 fn perform_inline_rewrite_on_function_stmt(
   stmt: Statement,
-  current_fn_name: &Str,
-  functions_that_can_be_inlined: &HashMap<Str, Function>,
-  allocator: &mut ResourceAllocator,
+  current_fn_name: &PStr,
+  functions_that_can_be_inlined: &HashMap<PStr, Function>,
+  heap: &mut Heap,
 ) -> Vec<Statement> {
   match stmt {
     Statement::Call {
@@ -342,15 +343,19 @@ fn perform_inline_rewrite_on_function_stmt(
         return_value: return_value_of_function_to_be_inlined,
         ..
       } = functions_that_can_be_inlined.get(&name).unwrap();
-      let temporary_prefix = allocator.alloc_inlining_temp_prefix();
+      let temporary_prefix = heap.alloc_temp_str();
       let mut cx = LocalValueContextForOptimization::new();
       // Inline step 1: Bind args to args temp
       for (param, arg) in parameters_of_function_to_be_inlined.iter().zip(arguments) {
         cx.checked_bind(param, arg.clone());
       }
       // Inline step 2: Add in body code and change return statements
-      let mut rewritten_body =
-        inline_rewrite_stmts(&mut cx, &temporary_prefix, main_body_stmts_of_function_to_be_inlined);
+      let mut rewritten_body = inline_rewrite_stmts(
+        &mut cx,
+        heap,
+        &temporary_prefix,
+        main_body_stmts_of_function_to_be_inlined,
+      );
       if let Some(c) = return_collector {
         // Using this to move the value around, will be optimized away eventually.
         rewritten_body.push(Statement::Binary(Binary {
@@ -371,13 +376,13 @@ fn perform_inline_rewrite_on_function_stmt(
           s1,
           current_fn_name,
           functions_that_can_be_inlined,
-          allocator,
+          heap,
         ),
         s2: perform_inline_rewrite_on_function_stmts(
           s2,
           current_fn_name,
           functions_that_can_be_inlined,
-          allocator,
+          heap,
         ),
         final_assignments,
       }]
@@ -390,7 +395,7 @@ fn perform_inline_rewrite_on_function_stmt(
           statements,
           current_fn_name,
           functions_that_can_be_inlined,
-          allocator,
+          heap,
         ),
       }]
     }
@@ -401,7 +406,7 @@ fn perform_inline_rewrite_on_function_stmt(
           statements,
           current_fn_name,
           functions_that_can_be_inlined,
-          allocator,
+          heap,
         ),
         break_collector,
       }]
@@ -413,9 +418,9 @@ fn perform_inline_rewrite_on_function_stmt(
 
 fn perform_inline_rewrite_on_function_stmts(
   statements: Vec<Statement>,
-  current_fn_name: &Str,
-  functions_that_can_be_inlined: &HashMap<Str, Function>,
-  allocator: &mut ResourceAllocator,
+  current_fn_name: &PStr,
+  functions_that_can_be_inlined: &HashMap<PStr, Function>,
+  heap: &mut Heap,
 ) -> Vec<Statement> {
   statements
     .into_iter()
@@ -424,7 +429,7 @@ fn perform_inline_rewrite_on_function_stmts(
         s,
         current_fn_name,
         functions_that_can_be_inlined,
-        allocator,
+        heap,
       )
     })
     .collect()
@@ -432,17 +437,17 @@ fn perform_inline_rewrite_on_function_stmts(
 
 fn perform_inline_rewrite_on_function(
   function: Function,
-  functions_that_can_be_inlined: &HashMap<Str, Function>,
-  allocator: &mut ResourceAllocator,
+  functions_that_can_be_inlined: &HashMap<PStr, Function>,
+  heap: &mut Heap,
 ) -> Function {
   let body = perform_inline_rewrite_on_function_stmts(
     function.body,
     &function.name,
     functions_that_can_be_inlined,
-    allocator,
+    heap,
   );
   Function {
-    name: function.name.clone(),
+    name: function.name,
     parameters: function.parameters.clone(),
     type_parameters: function.type_parameters.clone(),
     type_: function.type_.clone(),
@@ -451,10 +456,7 @@ fn perform_inline_rewrite_on_function(
   }
 }
 
-pub(super) fn optimize_functions(
-  functions: Vec<Function>,
-  allocator: &mut ResourceAllocator,
-) -> Vec<Function> {
+pub(super) fn optimize_functions(functions: Vec<Function>, heap: &mut Heap) -> Vec<Function> {
   let mut temp_functions = functions;
   for _ in 0..5 {
     let estimator_result = estimator::get_functions_to_inline(&temp_functions);
@@ -465,9 +467,9 @@ pub(super) fn optimize_functions(
     let mut all_other_functions = vec![];
     let mut names = vec![];
     for f in temp_functions {
-      names.push(f.name.clone());
+      names.push(f.name);
       if estimator_result.functions_that_can_be_inlined.contains(&f.name) {
-        functions_that_can_be_inlined.insert(f.name.clone(), f);
+        functions_that_can_be_inlined.insert(f.name, f);
       } else {
         all_other_functions.push(f);
       }
@@ -475,11 +477,7 @@ pub(super) fn optimize_functions(
     let mut inlined = vec![];
     for f in all_other_functions {
       if estimator_result.functions_that_can_perform_inlining.contains(&f.name) {
-        inlined.push(perform_inline_rewrite_on_function(
-          f,
-          &functions_that_can_be_inlined,
-          allocator,
-        ))
+        inlined.push(perform_inline_rewrite_on_function(f, &functions_that_can_be_inlined, heap))
       } else {
         inlined.push(f);
       }
@@ -488,7 +486,7 @@ pub(super) fn optimize_functions(
       inlined.push(perform_inline_rewrite_on_function(
         f.clone(),
         &functions_that_can_be_inlined,
-        allocator,
+        heap,
       ))
     }
     inlined.sort_by(|a, b| a.name.cmp(&b.name));

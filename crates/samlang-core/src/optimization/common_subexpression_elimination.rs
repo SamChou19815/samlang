@@ -1,9 +1,10 @@
-use super::optimization_common::{
-  BinaryBindedValue, BindedValue, IndexAccessBindedValue, ResourceAllocator,
+use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
+use crate::{
+  ast::hir::{Binary, Function, Statement},
+  Heap,
 };
-use crate::ast::hir::{Binary, Function, Statement};
 use itertools::Itertools;
-use std::{collections::BTreeSet, vec};
+use std::collections::BTreeSet;
 
 fn intersection_of(
   set1: BTreeSet<BindedValue>,
@@ -12,25 +13,20 @@ fn intersection_of(
   set1.into_iter().filter(|e| others.iter().all(|it| it.contains(e))).sorted().collect()
 }
 
-fn produce_hoisted_stmt(allocator: &mut ResourceAllocator, value: BindedValue) -> Statement {
+fn produce_hoisted_stmt(heap: &mut Heap, value: BindedValue) -> Statement {
   match value {
     BindedValue::IndexedAccess(IndexAccessBindedValue { type_, pointer_expression, index }) => {
-      Statement::IndexedAccess {
-        name: allocator.alloc_cse_hoisted_temp(),
-        type_,
-        pointer_expression,
-        index,
-      }
+      Statement::IndexedAccess { name: heap.alloc_temp_str(), type_, pointer_expression, index }
     }
-    BindedValue::Binary(BinaryBindedValue { operator, e1, e2 }) => Statement::Binary(
-      Statement::binary_unwrapped(allocator.alloc_cse_hoisted_temp(), operator, e1, e2),
-    ),
+    BindedValue::Binary(BinaryBindedValue { operator, e1, e2 }) => {
+      Statement::Binary(Statement::binary_unwrapped(heap.alloc_temp_str(), operator, e1, e2))
+    }
   }
 }
 
 fn optimize_stmt(
   stmt: Statement,
-  allocator: &mut ResourceAllocator,
+  heap: &mut Heap,
   set: &mut BTreeSet<BindedValue>,
 ) -> Vec<Statement> {
   match stmt {
@@ -60,14 +56,14 @@ fn optimize_stmt(
     }
 
     Statement::IfElse { condition, s1, s2, final_assignments } => {
-      let (s1, set1) = optimize_stmts(s1, allocator);
-      let (s2, set2) = optimize_stmts(s2, allocator);
+      let (s1, set1) = optimize_stmts(s1, heap);
+      let (s2, set2) = optimize_stmts(s2, heap);
       let common_expressions = intersection_of(set1, vec![set2]);
       let mut hoisted_stmts = vec![];
       for binded_value in common_expressions {
         hoisted_stmts.append(&mut optimize_stmt(
-          produce_hoisted_stmt(allocator, binded_value),
-          allocator,
+          produce_hoisted_stmt(heap, binded_value),
+          heap,
           set,
         ));
       }
@@ -80,25 +76,25 @@ fn optimize_stmt(
 
 fn optimize_stmts(
   stmts: Vec<Statement>,
-  allocator: &mut ResourceAllocator,
+  heap: &mut Heap,
 ) -> (Vec<Statement>, BTreeSet<BindedValue>) {
   let mut set = BTreeSet::new();
   let mut collector = vec![];
   for stmt in stmts.into_iter().rev() {
-    collector.append(&mut optimize_stmt(stmt, allocator, &mut set));
+    collector.append(&mut optimize_stmt(stmt, heap, &mut set));
   }
   collector.reverse();
   (collector, set)
 }
 
-pub(super) fn optimize_function(function: Function, allocator: &mut ResourceAllocator) -> Function {
+pub(super) fn optimize_function(function: Function, heap: &mut Heap) -> Function {
   let Function { name, parameters, type_parameters, type_, body, return_value } = function;
   Function {
     name,
     parameters,
     type_parameters,
     type_,
-    body: optimize_stmts(body, allocator).0,
+    body: optimize_stmts(body, heap).0,
     return_value,
   }
 }
@@ -110,27 +106,26 @@ mod tests {
       Callee, Expression, Function, FunctionName, Operator, Statement, Type, VariableName,
       BOOL_TYPE, INT_TYPE, ONE, ZERO,
     },
-    common::rcs,
-    optimization::optimization_common::ResourceAllocator,
+    Heap,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
 
-  fn assert_correctly_optimized(stmts: Vec<Statement>, expected: &str) {
+  fn assert_correctly_optimized(stmts: Vec<Statement>, heap: &mut Heap, expected: &str) {
     let actual = super::super::local_value_numbering::optimize_function(super::optimize_function(
       Function {
-        name: rcs(""),
+        name: heap.alloc_str(""),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: stmts,
         return_value: ZERO,
       },
-      &mut ResourceAllocator::new(),
+      heap,
     ))
     .body
     .iter()
-    .map(Statement::debug_print)
+    .map(|s| s.debug_print(heap))
     .join("\n");
 
     assert_eq!(expected, actual);
@@ -138,44 +133,46 @@ mod tests {
 
   #[test]
   fn integration_test() {
+    let heap = &mut Heap::new();
+
     assert_correctly_optimized(
       vec![Statement::IfElse {
-        condition: Expression::var_name("b", BOOL_TYPE),
+        condition: Expression::var_name(heap.alloc_str("b"), BOOL_TYPE),
         s1: vec![
-          Statement::binary("ddddd", Operator::PLUS, ONE, ONE),
-          Statement::binary("a", Operator::PLUS, ONE, ZERO),
+          Statement::binary(heap.alloc_str("ddddd"), Operator::PLUS, ONE, ONE),
+          Statement::binary(heap.alloc_str("a"), Operator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
-            name: rcs("ddd"),
+            name: heap.alloc_str("ddd"),
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              "fff",
+              heap.alloc_str("fff"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![
-              Expression::var_name("a", INT_TYPE),
-              Expression::var_name("ddd", INT_TYPE),
+              Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+              Expression::var_name(heap.alloc_str("ddd"), INT_TYPE),
             ],
             return_type: INT_TYPE,
             return_collector: None,
           },
         ],
         s2: vec![
-          Statement::binary("fd", Operator::PLUS, ONE, ZERO),
+          Statement::binary(heap.alloc_str("fd"), Operator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
-            name: rcs("eee"),
+            name: heap.alloc_str("eee"),
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::Call {
-            callee: Callee::Variable(VariableName::new("eeee", INT_TYPE)),
+            callee: Callee::Variable(VariableName::new(heap.alloc_str("eeee"), INT_TYPE)),
             arguments: vec![
-              Expression::var_name("fd", INT_TYPE),
-              Expression::var_name("eee", INT_TYPE),
+              Expression::var_name(heap.alloc_str("fd"), INT_TYPE),
+              Expression::var_name(heap.alloc_str("eee"), INT_TYPE),
             ],
             return_type: INT_TYPE,
             return_collector: None,
@@ -183,13 +180,14 @@ mod tests {
         ],
         final_assignments: vec![],
       }],
-      r#"let _cse_0_: int = 1 + 0;
-let _cse_1_: int = 0[3];
+      heap,
+      r#"let _t12: int = 1 + 0;
+let _t13: int = 0[3];
 if (b: bool) {
   let ddddd: int = 1 + 1;
-  fff((_cse_0_: int), (_cse_1_: int));
+  fff((_t12: int), (_t13: int));
 } else {
-  (eeee: int)((_cse_0_: int), (_cse_1_: int));
+  (eeee: int)((_t12: int), (_t13: int));
 }"#,
     );
   }
