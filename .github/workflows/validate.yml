@@ -51,4 +51,5 @@ jobs:
       - name: Lint
         run: cargo lint
       - name: Run Tests
+        # 64M
         run: RUST_MIN_STACK=67108864 cargo tc
