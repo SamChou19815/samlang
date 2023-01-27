@@ -274,7 +274,7 @@ fn eval_fun_call(
 }
 
 pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: PStr) -> String {
-  let mut program_heap: [u8; 20000] = [0; 20000];
+  let program_heap = (&mut vec![1u8; 20000]) as &mut [u8];
   let mut stack = vec![];
   let mut string_id_to_string = HashMap::new();
   let mut id_to_functions = HashMap::new();
@@ -284,7 +284,7 @@ pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: PStr) -> St
   for (string_id, v) in sources.global_variables.iter().enumerate() {
     let string_id = i32::try_from(string_id).unwrap();
     string_id_to_string.insert(string_id, v.content.as_str(heap).to_string());
-    Memory::write_int(&mut program_heap, global_name_id + 4, string_id);
+    Memory::write_int(program_heap, global_name_id + 4, string_id);
     global_names_to_address.insert(v.name, global_name_id);
     global_name_id += 8;
   }
@@ -295,7 +295,7 @@ pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: PStr) -> St
   }
   let mut mem = Memory {
     heap,
-    program_heap: &mut program_heap,
+    program_heap,
     malloc_end: usize::try_from(global_name_id).unwrap(),
     stacks: &mut stack,
     string_id_to_string,
