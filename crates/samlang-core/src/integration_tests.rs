@@ -1681,6 +1681,8 @@ class Main {
 
   #[test]
   fn source_interpreter_tests() {
+    let mut heap = Heap::new();
+    let mut error_set = ErrorSet::new();
     for CompilerTestCase { name, expected_std, source_code } in compiler_integration_tests() {
       if name == "SortableList" {
         continue;
@@ -1688,8 +1690,6 @@ class Main {
       if name == "StringGlobalConstant" {
         continue;
       }
-      let mut heap = Heap::new();
-      let mut error_set = ErrorSet::new();
       let parsed_module = parse_source_module_from_text(
         source_code,
         heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]),
