@@ -1410,5 +1410,9 @@ pub(super) fn type_check_module(
     checked_toplevels.push(checked);
   }
 
-  Module { imports: module.imports, toplevels: checked_toplevels }
+  Module {
+    comment_store: module.comment_store,
+    imports: module.imports,
+    toplevels: checked_toplevels,
+  }
 }

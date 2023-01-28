@@ -165,7 +165,7 @@ pub(super) fn search_module(
 mod tests {
   use crate::{
     ast::{
-      source::{expr, Id, Type},
+      source::{expr, Id, Type, NO_COMMENT_REFERENCE},
       Location, Position, Reason,
     },
     checker::type_check_source_handles,
@@ -180,14 +180,14 @@ mod tests {
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           type_: Rc::new(Type::Unknown(Reason::dummy())),
         },
         type_arguments: vec![],
         object: Box::new(expr::E::Id(
           expr::ExpressionCommon {
             loc: Location::dummy(),
-            associated_comments: Rc::new(vec![]),
+            associated_comments: NO_COMMENT_REFERENCE,
             type_: Rc::new(Type::Unknown(Reason::dummy())),
           },
           Id::from(heap.alloc_str("id")),
@@ -198,7 +198,7 @@ mod tests {
             start: Position(10, 10),
             end: Position(10, 20),
           },
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           name: heap.alloc_str("meth")
         },
       }),

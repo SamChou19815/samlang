@@ -10,6 +10,10 @@ mod comments_tests {
       Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str("d") }.clone().text
     )
     .is_empty());
+    assert!(!format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone())
+      .is_empty());
+    assert!(CommentStore::new().clone().get(NO_COMMENT_REFERENCE).is_empty());
+    assert!(CommentStore::new().clone().get_mut(NO_COMMENT_REFERENCE).is_empty());
   }
 }
 
@@ -106,7 +110,7 @@ mod type_tests {
       "A",
       TypeParameter {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         name: Id::from(heap.alloc_str("A")),
         bound: Option::None
       }
@@ -116,7 +120,7 @@ mod type_tests {
       "A: B",
       TypeParameter {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         name: Id::from(heap.alloc_str("A")),
         bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
       }
@@ -331,7 +335,7 @@ mod expressions_tests {
     .precedence();
     E::Binary(Binary {
       common: common.clone(),
-      operator_preceding_comments: vec![],
+      operator_preceding_comments: NO_COMMENT_REFERENCE,
       operator: BinaryOperator::AND,
       e1: Box::new(builder.zero_expr()),
       e2: Box::new(builder.zero_expr()),
@@ -420,7 +424,7 @@ mod expressions_tests {
     .common();
     E::Binary(Binary {
       common: common.clone(),
-      operator_preceding_comments: vec![],
+      operator_preceding_comments: NO_COMMENT_REFERENCE,
       operator: BinaryOperator::AND,
       e1: Box::new(builder.zero_expr()),
       e2: Box::new(builder.zero_expr()),
@@ -467,7 +471,7 @@ mod expressions_tests {
       common: common.clone(),
       statements: vec![DeclarationStatement {
         loc: Location::dummy(),
-        associated_comments: vec![],
+        associated_comments: NO_COMMENT_REFERENCE,
         pattern: Pattern::Object(
           Location::dummy(),
           vec![ObjectPatternDestucturedName {
@@ -505,7 +509,7 @@ mod toplevel_tests {
       "name",
       TypeParameter {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         name: Id::from(heap.alloc_str("name")),
         bound: None
       }
@@ -542,14 +546,14 @@ mod toplevel_tests {
 
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
-      associated_comments: Rc::new(vec![]),
+      associated_comments: NO_COMMENT_REFERENCE,
       name: Id::from(heap.alloc_str("")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
       members: vec![ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
         name: Id::from(heap.alloc_str("")),
@@ -586,7 +590,7 @@ mod toplevel_tests {
 
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
-      associated_comments: Rc::new(vec![]),
+      associated_comments: NO_COMMENT_REFERENCE,
       name: Id::from(heap.alloc_str("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
@@ -599,7 +603,7 @@ mod toplevel_tests {
       members: vec![ClassMemberDefinition {
         decl: ClassMemberDeclaration {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           is_public: true,
           is_method: true,
           name: Id::from(heap.alloc_str("")),
@@ -620,14 +624,14 @@ mod toplevel_tests {
     assert!(class.is_class());
     let interface = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
-      associated_comments: Rc::new(vec![]),
+      associated_comments: NO_COMMENT_REFERENCE,
       name: Id::from(heap.alloc_str("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
       members: vec![ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
         name: Id::from(heap.alloc_str("")),

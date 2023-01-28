@@ -6,6 +6,7 @@ mod tests {
     common::{Heap, ModuleReference},
     errors::ErrorSet,
   };
+  use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {
@@ -629,13 +630,13 @@ class Main {
 
   #[test]
   fn good_test_3() {
-    let expected = vec![".sam:1:2-1:12: /* comm */"];
+    let expected = vec![".sam:1:2-1:12: comm"];
     assert_eq!(expected, lex(r#" /* comm */"#));
   }
 
   #[test]
   fn line_comment_edge_case() {
-    assert_eq!(vec![".sam:1:1-1:6: // ss"], lex("// ss"));
+    assert_eq!(vec![".sam:1:1-1:6: ss"], lex("// ss"));
   }
 
   #[test]
@@ -681,16 +682,14 @@ class Main {
       ".sam:5:16-5:17: =",
       ".sam:5:18-5:19: 2",
       ".sam:5:19-5:20: ;",
-      r#".sam:6:5-8:13: /* block comment lol
-    ol ol
-    0000l */"#,
+      ".sam:6:5-8:13: block comment lol ol ol 0000l",
       ".sam:9:5-9:6: /",
       ".sam:9:7-9:10: not",
       ".sam:9:11-9:12: a",
       ".sam:9:13-9:17: line",
       ".sam:9:18-9:25: comment",
-      ".sam:10:5-10:25: // line comment haha",
-      ".sam:11:5-11:19: /** foo bar */",
+      ".sam:10:5-10:25: line comment haha",
+      ".sam:11:5-11:19: foo bar",
       ".sam:12:5-12:6: /",
       ".sam:12:6-12:7: *",
       ".sam:13:3-13:4: }",

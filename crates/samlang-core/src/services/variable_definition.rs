@@ -53,7 +53,7 @@ fn get_relevant_in_ranges(
 }
 
 fn mod_id(id: &Id, new_name: PStr) -> Id {
-  Id { loc: id.loc, associated_comments: id.associated_comments.clone(), name: new_name }
+  Id { loc: id.loc, associated_comments: id.associated_comments, name: new_name }
 }
 
 fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) -> Id {
@@ -105,7 +105,7 @@ fn apply_expr_renaming(
     }),
     expr::E::Binary(e) => expr::E::Binary(expr::Binary {
       common: e.common.clone(),
-      operator_preceding_comments: e.operator_preceding_comments.clone(),
+      operator_preceding_comments: e.operator_preceding_comments,
       operator: e.operator,
       e1: Box::new(apply_expr_renaming(&e.e1, definition_and_uses, new_name)),
       e2: Box::new(apply_expr_renaming(&e.e2, definition_and_uses, new_name)),
@@ -162,7 +162,7 @@ fn apply_expr_renaming(
              assigned_expression,
            }| expr::DeclarationStatement {
             loc: *loc,
-            associated_comments: associated_comments.clone(),
+            associated_comments: *associated_comments,
             pattern: match pattern {
               expr::Pattern::Object(l, names) => expr::Pattern::Object(
                 *l,
@@ -226,11 +226,12 @@ fn apply_expr_renaming(
 }
 
 pub(super) fn apply_renaming(
-  Module { imports, toplevels }: &Module,
+  Module { comment_store, imports, toplevels }: &Module,
   definition_and_uses: &DefinitionAndUses,
   new_name: PStr,
 ) -> Module {
   Module {
+    comment_store: comment_store.clone(),
     imports: imports.clone(),
     toplevels: toplevels
       .iter()
@@ -238,7 +239,7 @@ pub(super) fn apply_renaming(
         Toplevel::Interface(i) => Toplevel::Interface(i.clone()),
         Toplevel::Class(c) => Toplevel::Class(ClassDefinition {
           loc: c.loc,
-          associated_comments: c.associated_comments.clone(),
+          associated_comments: c.associated_comments,
           name: c.name.clone(),
           type_parameters: c.type_parameters.clone(),
           extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),
@@ -264,7 +265,7 @@ pub(super) fn apply_renaming(
                 ClassMemberDefinition {
                   decl: ClassMemberDeclaration {
                     loc: *loc,
-                    associated_comments: associated_comments.clone(),
+                    associated_comments: *associated_comments,
                     is_public: *is_public,
                     is_method: *is_method,
                     name: name.clone(),

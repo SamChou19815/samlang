@@ -13,6 +13,7 @@ mod char_stream {
     ast::{Location, Position},
     ModuleReference,
   };
+  use itertools::Itertools;
 
   pub(super) struct CharacterStream {
     pub(super) line_num: i32,
@@ -106,8 +107,24 @@ mod char_stream {
       Option::Some(self.source[self.pos..(self.pos + comment_length)].iter().collect())
     }
 
+    fn post_process_block_comment(block_comment: &str) -> String {
+      block_comment
+        .split('\n')
+        .into_iter()
+        .map(|line| {
+          let l = line.trim_start();
+          if l.starts_with('*') {
+            l.chars().skip(1).collect::<String>().trim().to_string()
+          } else {
+            l.trim_end().to_string()
+          }
+        })
+        .filter(|line| !line.is_empty())
+        .join(" ")
+    }
+
     /// Returns comment string including /* or null if it's not a block comment.
-    pub(super) fn peek_block_comment(&self) -> Option<String> {
+    pub(super) fn consume_opt_block_comment(&mut self) -> Option<(bool, Location, String)> {
       if self.pos + 2 > self.source.len()
         || self.source[self.pos..(self.pos + 2)].iter().collect::<String>() != "/*"
       {
@@ -126,7 +143,22 @@ mod char_stream {
         comment_length += 1;
       }
       comment_length += 2;
-      Option::Some(self.source[self.pos..(self.pos + comment_length)].iter().collect())
+      let current_pos = self.current_pos();
+      let loc = self.consume_and_get_loc(current_pos, comment_length);
+      let chars = &self.source[(self.pos - comment_length)..(self.pos)];
+      if chars[2] == '*' {
+        Option::Some((
+          true,
+          loc,
+          Self::post_process_block_comment(&chars[3..(chars.len() - 2)].iter().collect::<String>()),
+        ))
+      } else {
+        Option::Some((
+          false,
+          loc,
+          Self::post_process_block_comment(&chars[2..(chars.len() - 2)].iter().collect::<String>()),
+        ))
+      }
     }
 
     pub(super) fn peek_int(&self) -> Option<String> {
@@ -374,6 +406,7 @@ pub(super) enum TokenContent {
   IntLiteral(PStr),
   LineComment(PStr),
   BlockComment(PStr),
+  DocComment(PStr),
   Error(PStr),
 }
 
@@ -388,7 +421,8 @@ impl TokenContent {
       | TokenContent::StringLiteral(s)
       | TokenContent::IntLiteral(s)
       | TokenContent::LineComment(s)
-      | TokenContent::BlockComment(s) => s.as_str(heap).to_string(),
+      | TokenContent::BlockComment(s)
+      | TokenContent::DocComment(s) => s.as_str(heap).to_string(),
       TokenContent::Error(e) => format!("ERROR: {}", e.as_str(heap)),
     }
   }
@@ -434,44 +468,49 @@ fn get_next_token(
     Result::Ok(()) => {
       let start = stream.current_pos();
 
-      if let Option::Some(s) = &stream.peek_line_comment() {
-        return Option::Some(Token(
-          stream.consume_and_get_loc(start, s.len()),
-          TokenContent::LineComment(heap.alloc_string(s.clone())),
-        ));
-      }
-
-      if let Option::Some(s) = &stream.peek_block_comment() {
-        return Option::Some(Token(
-          stream.consume_and_get_loc(start, s.len()),
-          TokenContent::BlockComment(heap.alloc_string(s.clone())),
-        ));
-      }
-
-      if let Option::Some(s) = &stream.peek_int() {
-        return Option::Some(Token(
-          stream.consume_and_get_loc(start, s.len()),
-          TokenContent::IntLiteral(heap.alloc_string(s.clone())),
-        ));
-      }
-
-      if let Option::Some(s) = &stream.peek_str() {
+      if let Option::Some(s) = stream.peek_line_comment() {
         let loc = stream.consume_and_get_loc(start, s.len());
-        if !string_has_valid_escape(s) {
+        let comment_pstr =
+          heap.alloc_string(s.chars().skip(2).collect::<String>().trim().to_string());
+        return Option::Some(Token(loc, TokenContent::LineComment(comment_pstr)));
+      }
+
+      if let Option::Some((is_doc, loc, s)) = stream.consume_opt_block_comment() {
+        let comment_pstr = heap.alloc_string(s);
+        return Option::Some(Token(
+          loc,
+          if is_doc {
+            TokenContent::DocComment(comment_pstr)
+          } else {
+            TokenContent::BlockComment(comment_pstr)
+          },
+        ));
+      }
+
+      if let Option::Some(s) = stream.peek_int() {
+        return Option::Some(Token(
+          stream.consume_and_get_loc(start, s.len()),
+          TokenContent::IntLiteral(heap.alloc_string(s)),
+        ));
+      }
+
+      if let Option::Some(s) = stream.peek_str() {
+        let loc = stream.consume_and_get_loc(start, s.len());
+        if !string_has_valid_escape(&s) {
           error_set.report_syntax_error(loc, "Invalid escape in string.".to_string())
         }
-        return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s.clone()))));
+        return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s))));
       }
 
-      if let Option::Some(s) = &stream.peek_id() {
+      if let Option::Some(s) = stream.peek_id() {
         let loc = stream.consume_and_get_loc(start, s.len());
         if let Option::Some(k) = all::<Keyword>().find(|k| k.to_string() == *s) {
           return Option::Some(Token(loc, TokenContent::Keyword(k)));
         }
         let content = if s.chars().next().unwrap().is_ascii_uppercase() {
-          TokenContent::UpperId(heap.alloc_string(s.clone()))
+          TokenContent::UpperId(heap.alloc_string(s))
         } else {
-          TokenContent::LowerId(heap.alloc_string(s.clone()))
+          TokenContent::LowerId(heap.alloc_string(s))
         };
         return Option::Some(Token(loc, content));
       }
@@ -486,13 +525,10 @@ fn get_next_token(
         }
       }
 
-      let error_token_content = &stream.peek_until_whitespace();
+      let error_token_content = stream.peek_until_whitespace();
       let error_loc = stream.consume_and_get_loc(start, error_token_content.len());
       error_set.report_syntax_error(error_loc, "Invalid token.".to_string());
-      Option::Some(Token(
-        error_loc,
-        TokenContent::Error(heap.alloc_string(error_token_content.clone())),
-      ))
+      Option::Some(Token(error_loc, TokenContent::Error(heap.alloc_string(error_token_content))))
     }
   }
 }
@@ -504,7 +540,7 @@ pub(super) fn lex_source_program(
   error_set: &mut ErrorSet,
 ) -> Vec<Token> {
   let mut stream = char_stream::CharacterStream::new(module_reference, source);
-  let mut tokens: Vec<Token> = vec![];
+  let mut tokens = vec![];
   let mut known_sorted_operators = all::<TokenOp>().collect::<Vec<_>>();
   known_sorted_operators.sort_by_key(|op| -(op.to_string().len() as i64));
 

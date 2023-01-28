@@ -450,7 +450,7 @@ pub(super) fn build_global_typing_context(
 ) -> GlobalTypingContext {
   let mut unoptimized_global_typing_context = HashMap::new();
 
-  for (module_reference, Module { imports: _, toplevels }) in sources {
+  for (module_reference, Module { comment_store: _, imports: _, toplevels }) in sources {
     let mut interfaces = BTreeMap::new();
     let mut classes = BTreeMap::new();
     let mut type_definitions = BTreeMap::new();
@@ -564,8 +564,8 @@ mod tests {
   use crate::{
     ast::{
       source::{
-        test_builder, ClassMemberDefinition, Id, InterfaceDeclarationCommon, ModuleMembersImport,
-        TypeDefinition,
+        test_builder, ClassMemberDefinition, CommentStore, Id, InterfaceDeclarationCommon,
+        ModuleMembersImport, TypeDefinition, NO_COMMENT_REFERENCE,
       },
       Location,
     },
@@ -593,7 +593,7 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
         name: Id::from(heap.alloc_str("")),
@@ -621,7 +621,7 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: false,
         name: Id::from(heap.alloc_str("")),
@@ -649,7 +649,7 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         is_public: false,
         is_method: true,
         name: Id::from(heap.alloc_str("")),
@@ -680,13 +680,13 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         is_public: false,
         is_method: true,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![TypeParameter {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           name: Id::from(heap.alloc_str("A")),
           bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B")))),
         }]),
@@ -724,26 +724,26 @@ mod tests {
       },
       &ClassMemberDeclaration {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         is_public: false,
         is_method: true,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: Rc::new(vec![]),
+            associated_comments: NO_COMMENT_REFERENCE,
             name: Id::from(heap.alloc_str("B")),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: Rc::new(vec![]),
+            associated_comments: NO_COMMENT_REFERENCE,
             name: Id::from(heap.alloc_str("C")),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: Rc::new(vec![]),
+            associated_comments: NO_COMMENT_REFERENCE,
             name: Id::from(heap.alloc_str("D")),
             bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B")))),
           },
@@ -1197,7 +1197,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
       &unoptimized_global_cx,
       &Toplevel::Class(InterfaceDeclarationCommon {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         name: Id::from(heap.alloc_str("A")),
         type_parameters: vec![],
         extends_or_implements_nodes: vec![builder.simple_id_type_unwrapped(heap.alloc_str("IBase"))],
@@ -1211,7 +1211,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           ClassMemberDefinition {
             decl: ClassMemberDeclaration {
               loc: Location::dummy(),
-              associated_comments: Rc::new(vec![]),
+              associated_comments: NO_COMMENT_REFERENCE,
               is_public: true,
               is_method: false,
               name: Id::from(heap.alloc_str("f1")),
@@ -1228,7 +1228,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           ClassMemberDefinition {
             decl: ClassMemberDeclaration {
               loc: Location::dummy(),
-              associated_comments: Rc::new(vec![]),
+              associated_comments: NO_COMMENT_REFERENCE,
               is_public: true,
               is_method: true,
               name: Id::from(heap.alloc_str("m1")),
@@ -1260,14 +1260,15 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
       (
         m0_ref.clone(),
         Module {
+          comment_store: CommentStore::new(),
           imports: vec![],
           toplevels: vec![Toplevel::Class(InterfaceDeclarationCommon {
             loc: Location::dummy(),
-            associated_comments: Rc::new(vec![]),
+            associated_comments: NO_COMMENT_REFERENCE,
             name: Id::from(heap.alloc_str("Class0")),
             type_parameters: vec![TypeParameter {
               loc: Location::dummy(),
-              associated_comments: Rc::new(vec![]),
+              associated_comments: NO_COMMENT_REFERENCE,
               name: Id::from(heap.alloc_str("T")),
               bound: None,
             }],
@@ -1288,6 +1289,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
       (
         m1_ref.clone(),
         Module {
+          comment_store: CommentStore::new(),
           imports: vec![ModuleMembersImport {
             loc: Location::dummy(),
             imported_members: vec![
@@ -1300,7 +1302,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
           toplevels: vec![
             Toplevel::Class(InterfaceDeclarationCommon {
               loc: Location::dummy(),
-              associated_comments: Rc::new(vec![]),
+              associated_comments: NO_COMMENT_REFERENCE,
               name: Id::from(heap.alloc_str("Class1")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
@@ -1317,7 +1319,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 ClassMemberDefinition {
                   decl: ClassMemberDeclaration {
                     loc: Location::dummy(),
-                    associated_comments: Rc::new(vec![]),
+                    associated_comments: NO_COMMENT_REFERENCE,
                     is_public: true,
                     is_method: true,
                     name: Id::from(heap.alloc_str("m1")),
@@ -1334,7 +1336,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 ClassMemberDefinition {
                   decl: ClassMemberDeclaration {
                     loc: Location::dummy(),
-                    associated_comments: Rc::new(vec![]),
+                    associated_comments: NO_COMMENT_REFERENCE,
                     is_public: false,
                     is_method: false,
                     name: Id::from(heap.alloc_str("f1")),
@@ -1352,7 +1354,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             }),
             Toplevel::Interface(InterfaceDeclarationCommon {
               loc: Location::dummy(),
-              associated_comments: Rc::new(vec![]),
+              associated_comments: NO_COMMENT_REFERENCE,
               name: Id::from(heap.alloc_str("Interface2")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
@@ -1361,14 +1363,14 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             }),
             Toplevel::Interface(InterfaceDeclarationCommon {
               loc: Location::dummy(),
-              associated_comments: Rc::new(vec![]),
+              associated_comments: NO_COMMENT_REFERENCE,
               name: Id::from(heap.alloc_str("Interface3")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![],
               type_definition: (),
               members: vec![ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: Rc::new(vec![]),
+                associated_comments: NO_COMMENT_REFERENCE,
                 is_public: true,
                 is_method: false,
                 name: Id::from(heap.alloc_str("m1")),
@@ -1383,7 +1385,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             }),
             Toplevel::Class(InterfaceDeclarationCommon {
               loc: Location::dummy(),
-              associated_comments: Rc::new(vec![]),
+              associated_comments: NO_COMMENT_REFERENCE,
               name: Id::from(heap.alloc_str("Class2")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![

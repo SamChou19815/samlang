@@ -4,7 +4,10 @@ use super::{
 };
 use crate::{
   ast::{
-    source::{expr, ClassMemberDeclaration, Comment, CommentKind, ISourceType, Module, Toplevel},
+    source::{
+      expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, ISourceType,
+      Module, Toplevel,
+    },
     Location, Position,
   },
   checker::{
@@ -51,8 +54,11 @@ pub struct AutoCompletionItem {
   pub detail: String,
 }
 
-fn get_last_doc_comment(comments: &[Comment]) -> Option<PStr> {
-  comments.iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| c.text)
+fn get_last_doc_comment(
+  comment_store: &CommentStore,
+  comment_ref: CommentReference,
+) -> Option<PStr> {
+  comment_store.get(comment_ref).iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| c.text)
 }
 
 pub struct LanguageServices {
@@ -162,7 +168,10 @@ impl LanguageServices {
         Some(self.query_result_with_optional_document(
           loc,
           type_content,
-          get_last_doc_comment(&relevant_fn.associated_comments),
+          get_last_doc_comment(
+            &self.checked_modules.get(&fetched_function_module_reference).unwrap().comment_store,
+            relevant_fn.associated_comments,
+          ),
         ))
       }
       LocationCoverSearchResult::ClassName(loc, module_reference, class_name) => {
@@ -170,15 +179,16 @@ impl LanguageServices {
           language: "samlang",
           value: format!("class {}", class_name.as_str(&self.heap)),
         };
-        Some(
-          self.query_result_with_optional_document(
-            loc,
-            type_content,
-            self
-              .find_toplevel(&module_reference, &class_name)
-              .and_then(|toplevel| get_last_doc_comment(toplevel.associated_comments())),
-          ),
-        )
+        Some(self.query_result_with_optional_document(
+          loc,
+          type_content,
+          self.find_toplevel(&module_reference, &class_name).and_then(|toplevel| {
+            get_last_doc_comment(
+              &self.checked_modules.get(&module_reference).unwrap().comment_store,
+              toplevel.associated_comments(),
+            )
+          }),
+        ))
       }
       LocationCoverSearchResult::Expression(expression) => Some(TypeQueryResult {
         contents: vec![TypeQueryContent {

@@ -35,7 +35,10 @@ pub(super) fn check_undefined_imports_error(
 mod tests {
   use crate::{
     ast::{
-      source::{Id, InterfaceDeclarationCommon, Module, ModuleMembersImport, Toplevel},
+      source::{
+        CommentStore, Id, InterfaceDeclarationCommon, Module, ModuleMembersImport, Toplevel,
+        NO_COMMENT_REFERENCE,
+      },
       Location,
     },
     common::{Heap, ModuleReference, PStr},
@@ -43,12 +46,12 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
-  use std::{collections::HashMap, rc::Rc, vec};
+  use std::collections::HashMap;
 
   fn mock_class(name: PStr) -> Toplevel {
     Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
-      associated_comments: Rc::new(vec![]),
+      associated_comments: NO_COMMENT_REFERENCE,
       name: Id::from(name),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
@@ -66,6 +69,7 @@ mod tests {
     (
       heap.alloc_module_reference_from_string_vec(vec![name.to_string()]),
       Module {
+        comment_store: CommentStore::new(),
         imports: imports
           .into_iter()
           .map(|(imported_mod_name, imported_member_strs)| {
@@ -76,7 +80,7 @@ mod tests {
             for m in imported_member_strs {
               imported_members.push(Id {
                 loc: loc.clone(),
-                associated_comments: Rc::new(vec![]),
+                associated_comments: NO_COMMENT_REFERENCE,
                 name: heap.alloc_str(m),
               });
             }

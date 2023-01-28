@@ -1333,7 +1333,11 @@ pub(crate) fn compile_sources_to_hir(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{hir, source, Location, Reason},
+    ast::{
+      hir,
+      source::{self, CommentStore, NO_COMMENT_REFERENCE},
+      Location, Reason,
+    },
     common::{Heap, ModuleReference},
     compiler::{
       hir_lowering::ExpressionLoweringManager,
@@ -1678,7 +1682,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::PLUS,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1690,7 +1694,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::MINUS,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1702,7 +1706,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::MUL,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1714,7 +1718,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::DIV,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1726,7 +1730,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.int_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::MOD,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1738,7 +1742,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::LT,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1750,7 +1754,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::LE,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1762,7 +1766,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::GT,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1774,7 +1778,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments:NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::GE,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1786,7 +1790,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::EQ,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1798,7 +1802,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::NE,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1811,7 +1815,7 @@ return 0;"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::AND,
         e1: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.bool_type())),
         e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
@@ -1829,7 +1833,7 @@ return (_t14: bool);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::AND,
         e1: Box::new(builder.true_expr()),
         e2: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
@@ -1841,7 +1845,7 @@ return (_t14: bool);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::AND,
         e1: Box::new(builder.false_expr()),
         e2: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
@@ -1854,7 +1858,7 @@ return (_t14: bool);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::OR,
         e1: Box::new(builder.true_expr()),
         e2: Box::new(builder.int_lit(65536)),
@@ -1866,7 +1870,7 @@ return (_t14: bool);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::OR,
         e1: Box::new(builder.false_expr()),
         e2: Box::new(builder.int_lit(65536)),
@@ -1878,7 +1882,7 @@ return (_t14: bool);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.bool_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::OR,
         e1: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.bool_type())),
         e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
@@ -1897,7 +1901,7 @@ return (_t14: bool);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.string_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::CONCAT,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -1910,7 +1914,7 @@ return (_t16: string);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: builder.expr_common(builder.string_type()),
-        operator_preceding_comments: vec![],
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::CONCAT,
         e1: Box::new(builder.string_expr(heap.alloc_str("hello "))),
         e2: Box::new(builder.string_expr(heap.alloc_str("world"))),
@@ -2146,7 +2150,7 @@ return (_t23: __DUMMY___Dummy);"#,
         common: builder.expr_common(builder.unit_type()),
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
-          associated_comments: vec![],
+          associated_comments: NO_COMMENT_REFERENCE,
           pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
@@ -2154,7 +2158,7 @@ return (_t23: __DUMMY___Dummy);"#,
             statements: vec![
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
-                associated_comments: vec![],
+                associated_comments: NO_COMMENT_REFERENCE,
                 pattern: source::expr::Pattern::Object(
                   Location::dummy(),
                   vec![
@@ -2179,7 +2183,7 @@ return (_t23: __DUMMY___Dummy);"#,
               },
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
-                associated_comments: vec![],
+                associated_comments: NO_COMMENT_REFERENCE,
                 pattern: source::expr::Pattern::Wildcard(Location::dummy()),
                 annotation: Some(Rc::new(dummy_source_id_type(heap))),
                 assigned_expression: Box::new(dummy_source_this(heap)),
@@ -2203,7 +2207,7 @@ return 0;"#,
         statements: vec![
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
-            associated_comments: vec![],
+            associated_comments: NO_COMMENT_REFERENCE,
             pattern: source::expr::Pattern::Object(
               Location::dummy(),
               vec![
@@ -2228,7 +2232,7 @@ return 0;"#,
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
-            associated_comments: vec![],
+            associated_comments: NO_COMMENT_REFERENCE,
             pattern: source::expr::Pattern::Wildcard(Location::dummy()),
             annotation: Some(Rc::new(dummy_source_id_type(heap))),
             assigned_expression: Box::new(dummy_source_this(heap)),
@@ -2248,7 +2252,7 @@ return 0;"#,
         common: builder.expr_common(builder.unit_type()),
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
-          associated_comments: vec![],
+          associated_comments: NO_COMMENT_REFERENCE,
           pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.int_type()),
           assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
@@ -2279,14 +2283,14 @@ return 0;"#,
         statements: vec![
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
-            associated_comments: vec![],
+            associated_comments: NO_COMMENT_REFERENCE,
             pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
             annotation: Some(builder.unit_type()),
             assigned_expression: Box::new(builder.string_expr(heap.alloc_str("foo"))),
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
-            associated_comments: vec![],
+            associated_comments: NO_COMMENT_REFERENCE,
             pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("b")),
             annotation: Some(builder.unit_type()),
             assigned_expression: Box::new(
@@ -2306,14 +2310,14 @@ return 0;"#,
         common: builder.expr_common(builder.unit_type()),
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
-          associated_comments: vec![],
+          associated_comments: NO_COMMENT_REFERENCE,
           pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: builder.expr_common(builder.unit_type()),
             statements: vec![source::expr::DeclarationStatement {
               loc: Location::dummy(),
-              associated_comments: vec![],
+              associated_comments: NO_COMMENT_REFERENCE,
               pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
               annotation: Some(builder.int_type()),
               assigned_expression: Box::new(dummy_source_this(heap)),
@@ -2339,11 +2343,12 @@ return 0;"#,
     );
 
     let source_module = source::Module {
+      comment_store: CommentStore::new(),
       imports: vec![],
       toplevels: vec![
         source::Toplevel::Interface(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           name: source::Id::from(heap.alloc_str("I")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
@@ -2352,7 +2357,7 @@ return 0;"#,
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           name: source::Id::from(heap.alloc_str("Main")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
@@ -2366,7 +2371,7 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: Rc::new(vec![]),
+                associated_comments: NO_COMMENT_REFERENCE,
                 is_public: true,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str("main")),
@@ -2393,13 +2398,13 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: Rc::new(vec![]),
+                associated_comments: NO_COMMENT_REFERENCE,
                 is_public: true,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str("loopy")),
                 type_parameters: Rc::new(vec![source::TypeParameter {
                   loc: Location::dummy(),
-                  associated_comments: Rc::new(vec![]),
+                  associated_comments: NO_COMMENT_REFERENCE,
                   name: source::Id::from(heap.alloc_str("T")),
                   bound: None,
                 }]),
@@ -2426,7 +2431,7 @@ return 0;"#,
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           name: source::Id::from(heap.alloc_str("Class1")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
@@ -2443,7 +2448,7 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: Rc::new(vec![]),
+                associated_comments: NO_COMMENT_REFERENCE,
                 is_public: true,
                 is_method: true,
                 name: source::Id::from(heap.alloc_str("foo")),
@@ -2463,7 +2468,7 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: Rc::new(vec![]),
+                associated_comments: NO_COMMENT_REFERENCE,
                 is_public: true,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str("infiniteLoop")),
@@ -2490,7 +2495,7 @@ return 0;"#,
             source::ClassMemberDefinition {
               decl: source::ClassMemberDeclaration {
                 loc: Location::dummy(),
-                associated_comments: Rc::new(vec![]),
+                associated_comments: NO_COMMENT_REFERENCE,
                 is_public: true,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str("factorial")),
@@ -2515,7 +2520,7 @@ return 0;"#,
                 common: builder.expr_common(builder.int_type()),
                 condition: Box::new(source::expr::E::Binary(source::expr::Binary {
                   common: builder.expr_common(builder.int_type()),
-                  operator_preceding_comments: vec![],
+                  operator_preceding_comments: NO_COMMENT_REFERENCE,
                   operator: source::expr::BinaryOperator::EQ,
                   e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
                   e2: Box::new(builder.zero_expr()),
@@ -2536,14 +2541,14 @@ return 0;"#,
                   arguments: vec![
                     source::expr::E::Binary(source::expr::Binary {
                       common: builder.expr_common(builder.int_type()),
-                      operator_preceding_comments: vec![],
+                      operator_preceding_comments: NO_COMMENT_REFERENCE,
                       operator: source::expr::BinaryOperator::MINUS,
                       e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
                       e2: Box::new(builder.int_lit(1)),
                     }),
                     source::expr::E::Binary(source::expr::Binary {
                       common: builder.expr_common(builder.int_type()),
-                      operator_preceding_comments: vec![],
+                      operator_preceding_comments: NO_COMMENT_REFERENCE,
                       operator: source::expr::BinaryOperator::MUL,
                       e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
                       e2: Box::new(builder.id_expr(heap.alloc_str("acc"), builder.int_type())),
@@ -2556,7 +2561,7 @@ return 0;"#,
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           name: source::Id::from(heap.alloc_str("Class2")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
@@ -2573,11 +2578,11 @@ return 0;"#,
         }),
         source::Toplevel::Class(source::InterfaceDeclarationCommon {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           name: source::Id::from(heap.alloc_str("Class3")),
           type_parameters: vec![source::TypeParameter {
             loc: Location::dummy(),
-            associated_comments: Rc::new(vec![]),
+            associated_comments: NO_COMMENT_REFERENCE,
             name: source::Id::from(heap.alloc_str("T")),
             bound: None,
           }],
@@ -2608,7 +2613,7 @@ return 0;"#,
       (ModuleReference::dummy(), source_module),
       (
         heap.alloc_module_reference_from_string_vec(vec!["Foo".to_string()]),
-        source::Module { imports: vec![], toplevels: vec![] },
+        source::Module { comment_store: CommentStore::new(), imports: vec![], toplevels: vec![] },
       ),
     ]);
 
