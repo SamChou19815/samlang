@@ -90,7 +90,7 @@ pub fn compile_sources(
   let mut text_code_results = BTreeMap::new();
   for module_reference in &entry_module_references {
     let main_fn_name = ast::common_names::encode_main_function_name(heap, module_reference);
-    let ts_code = format!("{}\n{}();\n", common_ts_code, main_fn_name);
+    let ts_code = format!("{common_ts_code}\n{main_fn_name}();\n");
     let wasm_js_code = format!(
       r#"// @{}
 const binary = require('fs').readFileSync(require('path').join(__dirname, '{}'));

@@ -529,7 +529,7 @@ pub(super) fn lex_source_program(
                 // Merge - and MAX_INT_PLUS_ONE into MIN_INT
                 tokens[prev_index] = Token(
                   prev_loc.union(&loc),
-                  TokenContent::IntLiteral(heap.alloc_string(format!("-{}", s))),
+                  TokenContent::IntLiteral(heap.alloc_string(format!("-{s}"))),
                 );
                 continue;
               }

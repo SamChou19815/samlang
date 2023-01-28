@@ -19,14 +19,14 @@ pub(crate) fn encode_generic_function_name_globally(
   class_name: &str,
   function_name: &str,
 ) -> String {
-  format!("$GENERICS$_{}${}", class_name, function_name)
+  format!("$GENERICS$_{class_name}${function_name}")
 }
 
 pub(crate) fn encode_builtin_name(name: &str) -> String {
-  format!("_builtin_{}", name)
+  format!("_builtin_{name}")
 }
 fn encode_builtin_function_name_globally(class_name: &str, function_name: &str) -> String {
-  format!("__{}${}", class_name, function_name)
+  format!("__{class_name}${function_name}")
 }
 pub(crate) fn encode_main_function_name(heap: &Heap, module_reference: &ModuleReference) -> String {
   encode_function_name_globally(heap, module_reference, "Main", "main")

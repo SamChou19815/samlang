@@ -98,7 +98,7 @@ impl TypeSynthesizer {
       names: mappings
         .iter()
         .enumerate()
-        .map(|(i, _)| heap.alloc_string(format!("_n{}", i)))
+        .map(|(i, _)| heap.alloc_string(format!("_n{i}")))
         .collect_vec(),
       mappings,
     };

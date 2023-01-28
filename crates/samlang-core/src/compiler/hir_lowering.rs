@@ -298,7 +298,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       closure_variable_name,
       closure_type,
       function_name: hir::FunctionName {
-        name: self.heap.alloc_string(format!("{}_with_context", encoded_original_fn_name)),
+        name: self.heap.alloc_string(format!("{encoded_original_fn_name}_with_context")),
         type_: function_type,
         type_arguments: self
           .type_lowering_manager
@@ -1059,7 +1059,7 @@ fn lower_constructors(
         .mappings
         .iter()
         .enumerate()
-        .map(|(i, _)| heap.alloc_string(format!("_f{}", i)))
+        .map(|(i, _)| heap.alloc_string(format!("_f{i}")))
         .collect_vec(),
       type_parameters: type_def.type_parameters.clone(),
       type_: hir::Type::new_fn_unwrapped(
@@ -1074,7 +1074,7 @@ fn lower_constructors(
           .iter()
           .enumerate()
           .map(|(order, t)| {
-            hir::Expression::var_name(heap.alloc_string(format!("_f{}", order)), t.clone())
+            hir::Expression::var_name(heap.alloc_string(format!("_f{order}")), t.clone())
           })
           .collect_vec(),
       }],

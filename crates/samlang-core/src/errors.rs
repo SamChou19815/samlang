@@ -28,23 +28,23 @@ impl CompileTimeError {
     let (error_type, reason) = match &self.detail {
       ErrorDetail::SyntaxError(reason) => ("SyntaxError", reason.to_string()),
       ErrorDetail::UnexpectedType { expected, actual } => {
-        ("UnexpectedType", format!("Expected: `{}`, actual: `{}`.", expected, actual))
+        ("UnexpectedType", format!("Expected: `{expected}`, actual: `{actual}`."))
       }
       ErrorDetail::UnexpectedSubtype { expected, actual } => {
-        ("UnexpectedSubtype", format!("Expected: subtype of `{}`, actual: `{}`.", expected, actual))
+        ("UnexpectedSubtype", format!("Expected: subtype of `{expected}`, actual: `{actual}`."))
       }
       ErrorDetail::UnexpectedTypeKind { expected, actual } => {
-        ("UnexpectedTypeKind", format!("Expected kind: `{}`, actual: `{}`.", expected, actual))
+        ("UnexpectedTypeKind", format!("Expected kind: `{expected}`, actual: `{actual}`."))
       }
       ErrorDetail::UnresolvedName { name } => {
-        ("UnresolvedName", format!("Name `{}` is not resolved.", name))
+        ("UnresolvedName", format!("Name `{name}` is not resolved."))
       }
       ErrorDetail::Collision { name } => {
-        ("Collision", format!("Name `{}` collides with a previously defined name.", name))
+        ("Collision", format!("Name `{name}` collides with a previously defined name."))
       }
       ErrorDetail::TypeParameterNameMismatch { expected } => (
         "TypeParameterNameMismatch",
-        format!("Type parameter name mismatch. Expected exact match of `{}`.", expected),
+        format!("Type parameter name mismatch. Expected exact match of `{expected}`."),
       ),
       ErrorDetail::MissingDefinitions { missing_definitions } => (
         "MissingDefinitions",
@@ -52,7 +52,7 @@ impl CompileTimeError {
       ),
       ErrorDetail::ArityMismatchError { kind, expected, actual } => (
         "ArityMismatchError",
-        format!("Incorrect {} size. Expected: {}, actual: {}.", kind, expected, actual),
+        format!("Incorrect {kind} size. Expected: {expected}, actual: {actual}."),
       ),
       ErrorDetail::InsufficientTypeInferenceContext => (
         "InsufficientTypeInferenceContext",
@@ -67,7 +67,7 @@ impl CompileTimeError {
         ),
       ),
       ErrorDetail::CyclicTypeDefinition { type_ } => {
-        ("CyclicTypeDefinition", format!("Type `{}` has a cyclic definition.", type_))
+        ("CyclicTypeDefinition", format!("Type `{type_}` has a cyclic definition."))
       }
     };
     format!("{}: [{}]: {}", self.location.pretty_print(heap), error_type, reason)

@@ -92,7 +92,7 @@ impl Document {
     let mut multiline_docs = vec![Self::Text(rcs("// "))];
     for word in text.split(' ') {
       multiline_docs.push(Self::Union(
-        Rc::new(Self::Text(rc_string(format!("{} ", word)))),
+        Rc::new(Self::Text(rc_string(format!("{word} ")))),
         Rc::new(Self::concat(vec![
           Self::Text(rc_string(word.to_string())),
           Self::LineHard,
@@ -101,7 +101,7 @@ impl Document {
       ));
     }
     Self::Union(
-      Rc::new(Self::Text(rc_string(format!("// {}", text)))),
+      Rc::new(Self::Text(rc_string(format!("// {text}")))),
       Rc::new(Self::concat(multiline_docs)),
     )
   }
@@ -111,7 +111,7 @@ impl Document {
       vec![Self::Text(rc_string(starter.to_string())), Self::LineHard, Self::Text(rcs(" * "))];
     for word in text.split(' ') {
       multiline_docs.push(Self::Union(
-        Rc::new(Self::Text(rc_string(format!("{} ", word)))),
+        Rc::new(Self::Text(rc_string(format!("{word} ")))),
         Rc::new(Self::concat(vec![
           Self::Text(rc_string(word.to_string())),
           Self::LineHard,
@@ -122,7 +122,7 @@ impl Document {
     multiline_docs.push(Self::LineHard);
     multiline_docs.push(Self::Text(rcs(" */")));
     Self::Union(
-      Rc::new(Self::Text(rc_string(format!("{} {} */", starter, text)))),
+      Rc::new(Self::Text(rc_string(format!("{starter} {text} */")))),
       Rc::new(Self::concat(multiline_docs)),
     )
   }
@@ -230,7 +230,7 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
   if post_processed.is_empty() {
     post_processed.to_string()
   } else {
-    format!("{}\n", post_processed)
+    format!("{post_processed}\n")
   }
 }
 

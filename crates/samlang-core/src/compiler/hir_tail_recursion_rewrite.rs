@@ -150,7 +150,7 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
 }
 
 fn tail_rec_param_name(name: &str) -> String {
-  format!("_tailrec_param_{}", name)
+  format!("_tailrec_param_{name}")
 }
 
 fn optimize_function_by_tailrec_rewrite_aux(
