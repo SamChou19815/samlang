@@ -62,7 +62,7 @@ fn reference_type_name(heap: &mut Heap, type_: &mir::Type) -> Option<PStr> {
 }
 
 fn dec_ref_fn_name(name: &str) -> String {
-  format!("__decRef_{}", name)
+  format!("__decRef_{name}")
 }
 
 fn dec_ref_fn_arg_type(heap: &Heap, type_name: PStr) -> mir::Type {
@@ -273,7 +273,7 @@ impl<'a> LoweringManager<'a> {
               let lowered_type = lower_type(type_.clone());
               if let Some(type_name) = reference_type_name(heap, &lowered_type) {
                 destruct_member_stmts.push(mir::Statement::IndexedAccess {
-                  name: heap.alloc_string(format!("v{}", index)),
+                  name: heap.alloc_string(format!("v{index}")),
                   type_: lowered_type.clone(),
                   pointer_expression: pointer_expression.clone(),
                   index: index + 1,
@@ -284,7 +284,7 @@ impl<'a> LoweringManager<'a> {
                     mir::Type::new_fn(vec![dec_ref_fn_arg_type(heap, type_name)], mir::INT_TYPE),
                   ),
                   arguments: vec![mir::Expression::Variable(
-                    heap.alloc_string(format!("v{}", index)),
+                    heap.alloc_string(format!("v{index}")),
                     lowered_type,
                   )],
                   return_type: mir::INT_TYPE,
@@ -311,13 +311,13 @@ impl<'a> LoweringManager<'a> {
                 let mut statements = vec![];
                 if lowered_type.is_the_same_type(&mir::ANY_TYPE) {
                   statements.push(mir::Statement::IndexedAccess {
-                    name: heap.alloc_string(format!("v{}", index)),
+                    name: heap.alloc_string(format!("v{index}")),
                     type_: lowered_type.clone(),
                     pointer_expression: pointer_expression.clone(),
                     index: 2,
                   });
                 } else {
-                  let temp = heap.alloc_string(format!("vTemp{}", index));
+                  let temp = heap.alloc_string(format!("vTemp{index}"));
                   statements.push(mir::Statement::IndexedAccess {
                     name: temp,
                     type_: mir::ANY_TYPE,
@@ -325,7 +325,7 @@ impl<'a> LoweringManager<'a> {
                     index: 2,
                   });
                   statements.push(mir::Statement::Cast {
-                    name: heap.alloc_string(format!("v{}", index)),
+                    name: heap.alloc_string(format!("v{index}")),
                     type_: lowered_type.clone(),
                     assigned_expression: mir::Expression::Variable(temp, mir::ANY_TYPE),
                   });
@@ -336,21 +336,21 @@ impl<'a> LoweringManager<'a> {
                     mir::Type::new_fn(vec![dec_ref_fn_arg_type(heap, type_name)], mir::INT_TYPE),
                   ),
                   arguments: vec![mir::Expression::Variable(
-                    heap.alloc_string(format!("v{}", index)),
+                    heap.alloc_string(format!("v{index}")),
                     lowered_type,
                   )],
                   return_type: mir::INT_TYPE,
                   return_collector: None,
                 });
                 destruct_member_stmts.push(mir::Statement::binary(
-                  heap.alloc_string(format!("tagComparison{}", index)),
+                  heap.alloc_string(format!("tagComparison{index}")),
                   hir::Operator::EQ,
                   mir::Expression::Variable(heap.alloc_str("tag"), mir::INT_TYPE),
                   mir::Expression::int(i32::try_from(index).unwrap() + 1),
                 ));
                 destruct_member_stmts.push(mir::Statement::SingleIf {
                   condition: mir::Expression::Variable(
-                    heap.alloc_string(format!("tagComparison{}", index)),
+                    heap.alloc_string(format!("tagComparison{index}")),
                     mir::BOOL_TYPE,
                   ),
                   invert_condition: false,

@@ -413,7 +413,7 @@ if 0 {
       }
       .clone()],
     };
-    assert!(!format!("{:?}", sources1).is_empty());
+    assert!(!format!("{sources1:?}").is_empty());
     let expected1 = r#"const dev_meggo = 'vibez';
 
 closure type c = () -> int

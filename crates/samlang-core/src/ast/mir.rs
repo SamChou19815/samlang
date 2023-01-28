@@ -232,7 +232,7 @@ impl Statement {
         let e2 = e2.pretty_print(heap);
         let expr_str = format!("{} {} {}", e1, operator.to_string(), e2);
         let wrapped =
-          if *operator == Operator::DIV { format!("Math.floor({})", expr_str) } else { expr_str };
+          if *operator == Operator::DIV { format!("Math.floor({expr_str})") } else { expr_str };
         collector.push(format!(
           "{}let {}: {} = { };\n",
           "  ".repeat(level),

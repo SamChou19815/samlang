@@ -279,7 +279,7 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E) ->
         let v2 = eval_expr(cx, heap, &e.e2);
         let s1 = v1.string_value(cx);
         let s2 = v2.string_value(cx);
-        new_str(cx, format!("{}{}", s1, s2))
+        new_str(cx, format!("{s1}{s2}"))
       }
     },
     expr::E::IfElse(e) => {

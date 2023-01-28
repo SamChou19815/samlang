@@ -429,11 +429,11 @@ impl LanguageServices {
 
   fn get_insert_text(name: &str, argument_length: usize) -> (String, InsertTextFormat) {
     if argument_length == 0 {
-      (format!("{}()", name), InsertTextFormat::PlainText)
+      (format!("{name}()"), InsertTextFormat::PlainText)
     } else {
       let mut items = vec![];
       for i in 0..argument_length {
-        items.push(format!("${}", i));
+        items.push(format!("${i}"));
       }
       (format!("{}({})${}", name, items.join(", "), argument_length), InsertTextFormat::Snippet)
     }

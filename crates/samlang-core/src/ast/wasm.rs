@@ -28,7 +28,7 @@ pub(crate) enum InlineInstruction {
 impl InlineInstruction {
   fn pretty_print(&self, heap: &Heap) -> String {
     match self {
-      InlineInstruction::Const(i) => format!("(i32.const {})", i),
+      InlineInstruction::Const(i) => format!("(i32.const {i})"),
       InlineInstruction::Drop(v) => format!("(drop {})", v.pretty_print(heap)),
       InlineInstruction::LocalGet(name) => format!("(local.get ${})", name.as_str(heap)),
       InlineInstruction::LocalSet(name, assigned) => {
@@ -168,7 +168,7 @@ impl Module {
     for count in &self.function_type_parameter_counts {
       let type_string = function_type_string(*count);
       if *count == 0 {
-        collector.push(format!("(type ${} (func (result i32)))\n", type_string));
+        collector.push(format!("(type ${type_string} (func (result i32)))\n"));
       } else {
         collector.push(format!(
           "(type ${} (func (param{}) (result i32)))\n",

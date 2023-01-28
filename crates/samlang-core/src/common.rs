@@ -16,7 +16,7 @@ impl PStr {
     if let Some(s) = heap.str_pointer_table.get(self) {
       s
     } else {
-      panic!("Use of freed string {:?}", self)
+      panic!("Use of freed string {self:?}")
     }
   }
 }
@@ -37,7 +37,7 @@ impl ModuleReference {
     if let Some(s) = heap.module_reference_pointer_table.get(self) {
       s
     } else {
-      panic!("Use of freed module reference {:?}", self)
+      panic!("Use of freed module reference {self:?}")
     }
   }
 
@@ -94,7 +94,7 @@ impl Heap {
 
   pub(crate) fn alloc_temp_str(&mut self) -> PStr {
     let id = self.id;
-    let string = format!("_t{}", id);
+    let string = format!("_t{id}");
     self.alloc_string(string)
   }
 
@@ -167,7 +167,7 @@ pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F
     let now = Instant::now();
     let result = f();
     let time = now.elapsed().as_millis();
-    eprintln!("{} takes {}ms.", name, time);
+    eprintln!("{name} takes {time}ms.");
     result
   } else {
     f()
@@ -301,7 +301,7 @@ mod tests {
     heap.alloc_temp_str();
     assert!(heap.get_allocated_str_opt("a").is_some());
     assert!(heap.get_allocated_str_opt("d").is_none());
-    assert!(!format!("{:?}", b).is_empty());
+    assert!(!format!("{b:?}").is_empty());
     assert_eq!(a1.clone(), a2.clone());
     assert_ne!(a1, b);
     assert_ne!(a2, b);
@@ -318,7 +318,7 @@ mod tests {
     assert!(heap.get_allocated_module_reference_opt(vec!["a".to_string()]).is_some());
     assert!(heap.get_allocated_module_reference_opt(vec!["d-c".to_string()]).is_none());
     assert!(heap.get_allocated_module_reference_opt(vec!["ddasdasdas".to_string()]).is_none());
-    assert!(!format!("{:?}", mb).is_empty());
+    assert!(!format!("{mb:?}").is_empty());
     assert_eq!(ma1.clone(), ma2.clone());
     assert_ne!(ma1, mb);
     assert_ne!(ma2, mb);

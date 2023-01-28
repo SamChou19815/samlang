@@ -501,7 +501,7 @@ mod runners {
       Err(errors) => {
         eprintln!("Found {} error(s).", errors.len());
         for e in errors {
-          eprintln!("{}", e);
+          eprintln!("{e}");
         }
         std::process::exit(1)
       }
