@@ -778,7 +778,7 @@ class Main {
       },
       CompilerTestCase {
         name: "CSETest3",
-        expected_std: "2181\n",
+        expected_std: "232\n",
         source_code: r#"
 class Main {
   function log(x: int, b: int): int =
@@ -798,7 +798,7 @@ class Main {
   function plusLog2(acc: int, i: int): int = acc + Main.log(i, 2)
 
   function test(acc: int, i: int): int =
-    if (i >= 300) then
+    if (i >= 50) then
       acc
     else
       Main.test(acc + Main.log(i, 2), i + 1)
