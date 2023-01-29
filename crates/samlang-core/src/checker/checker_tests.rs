@@ -1268,19 +1268,19 @@ mod tests {
     );
     assert_checks(
       heap,
-      "{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }",
+      "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
       &builder.unit_type(),
     );
     assert_errors_with_class(
       heap,
-      "{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar s -> 2 }; }",
+      "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
       &builder.unit_type(),
       vec![],
       "Test2",
     );
     assert_errors_with_class(
       heap,
-      "{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Bar d -> 2 }; }",
+      "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(d) -> 2 }; }",
       &builder.unit_type(),
       vec![],
       "Test2",
@@ -1316,7 +1316,7 @@ mod tests {
     );
     assert_errors(
       heap,
-      "match (3) { | Foo _ -> 1 | Bar s -> 2 }",
+      "match (3) { Foo(_) -> 1, Bar(s) -> 2 }",
       &builder.unit_type(),
       vec![
         "__DUMMY__.sam:1:8-1:9: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.",
@@ -1324,19 +1324,19 @@ mod tests {
     );
     assert_errors(
       heap,
-      "match (Test.init(true, 3)) { | Foo _ -> 1 | Bar s -> 2 }",
+      "match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:32-1:35: [UnresolvedName]: Name `Foo` is not resolved.",
-        "__DUMMY__.sam:1:45-1:48: [UnresolvedName]: Name `Bar` is not resolved.",
+        "__DUMMY__.sam:1:30-1:33: [UnresolvedName]: Name `Foo` is not resolved.",
+        "__DUMMY__.sam:1:43-1:46: [UnresolvedName]: Name `Bar` is not resolved.",
       ],
     );
     assert_errors_with_class(
-      heap,"{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Baz s -> 2 }; }",
+      heap,"{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }",
       &builder.unit_type(),
       vec![
         "__DUMMY__.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].",
-        "__DUMMY__.sam:1:52-1:55: [UnresolvedName]: Name `Baz` is not resolved.",
+        "__DUMMY__.sam:1:50-1:53: [UnresolvedName]: Name `Baz` is not resolved.",
       ],
       "Test2",
     );
@@ -1429,13 +1429,13 @@ mod tests {
   val _: string = Test.generic1(
     (() -> 0)(),
     {true},
-    match (Test2.Foo(false)) { | Foo _ -> false | Bar _ -> false }
+    match (Test2.Foo(false)) { Foo(_) -> false, Bar(_) -> false, }
   );
   val _ = Test.generic1(0, if true then true else false, false);
   val _ = Test.generic2((a: int) -> 1, 1);
   val _ = Test.generic2((a) -> 1, 1);
   val _ = Test.generic3((a: int) -> 1);
-  val _ = Test.generic3(match (Test2.Foo(false)) { | Foo _ -> (a) -> 1 | Bar _ -> (a) -> 1 });
+  val _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
   val _ = Test.generic4((a: int, b) -> 1);
 }
 "#,
@@ -1492,7 +1492,7 @@ mod tests {
   class C(Int(int), Boo(B)) {
     function ofInt(value: int): C = C.Int(value)
     function ofB(b: B): C = C.Boo(b)
-    method intValue(): int = match (this) { | Int v -> v  | Boo b -> b.intValue()  }
+    method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
   }"#;
     let source_d = r#"import { A } from A
   import { B } from B
@@ -1519,7 +1519,7 @@ mod tests {
   class C(Int(int), Int(bool), Boo(B)) {
     function ofInt(value: int): C = C.Int(value)
     function <T, F, T>ofB(b: B): C = C.Boo(b)
-    method intValue(): int = match (this) { | Int v -> v  | Boo b -> b.intValue()  }
+    method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
   }"#;
     let source_d = r#"import { A } from A
   import { B } from B
@@ -1547,8 +1547,8 @@ mod tests {
         "C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.",
         "C.sam:4:21-4:22: [Collision]: Name `T` collides with a previously defined name.",
         "C.sam:4:30-4:31: [ArityMismatchError]: Incorrect type arguments size. Expected: 2, actual: 0.",
-        "C.sam:5:56-5:57: [UnexpectedType]: Expected: `int`, actual: `bool`.",
-        "C.sam:5:70-5:82: [UnexpectedType]: Expected: `bool`, actual: `int`.",
+        "C.sam:5:55-5:56: [UnexpectedType]: Expected: `int`, actual: `bool`.",
+        "C.sam:5:68-5:80: [UnexpectedType]: Expected: `bool`, actual: `int`.",
         "D.sam:5:50-5:52: [Collision]: Name `c1` collides with a previously defined name.",
       ],
     );

@@ -41,8 +41,8 @@ mod tests {
   val c = a;
   val _ = if a && b then {
     match (!c) {
-      | Foo d -> d + a
-      | Bar _ -> b
+      Foo(d) -> d + a,
+      Bar(_) -> b
     }
   } else {
     (p1: Foo, p2) -> Baz.ouch<Foo>(p2).ahha<Foo>(p1) + a
@@ -68,10 +68,10 @@ def_to_use_map:
 13:7-13:8 -> [13:7-13:8]
 14:18-14:20 -> [14:18-14:20, 15:8-15:10]
 14:8-14:10 -> [14:8-14:10, 15:3-15:5]
-2:7-2:8 -> [11:56-11:57, 2:7-2:8, 4:11-4:12, 5:14-5:15, 7:22-7:23]
-3:7-3:8 -> [3:7-3:8, 5:19-5:20, 8:18-8:19]
+2:7-2:8 -> [11:56-11:57, 2:7-2:8, 4:11-4:12, 5:14-5:15, 7:21-7:22]
+3:7-3:8 -> [3:7-3:8, 5:19-5:20, 8:17-8:18]
 4:7-4:8 -> [4:7-4:8, 6:13-6:14]
-7:13-7:14 -> [7:13-7:14, 7:18-7:19]
+7:11-7:12 -> [7:11-7:12, 7:17-7:18]
 "#
     .trim();
     let analysis_result =
@@ -97,7 +97,7 @@ def_to_use_map:
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let program_str = r#"
-import { Pair } from tests.StdLib
+import { Pair } from stdlib.utils
 
 interface Useless
 

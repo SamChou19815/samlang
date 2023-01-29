@@ -455,12 +455,10 @@ mod runners {
       let configuration = utils::get_configuration();
       let heap = &mut samlang_core::Heap::new();
       for (module_reference, source) in utils::collect_sources(&configuration, heap) {
-        fs::write(
-          PathBuf::from(configuration.source_directory.clone())
-            .join(module_reference.to_filename(heap)),
-          samlang_core::reformat_source(&source),
-        )
-        .unwrap();
+        let path = PathBuf::from(configuration.source_directory.clone())
+          .join(module_reference.to_filename(heap));
+        fs::write(&path, samlang_core::reformat_source(&source)).unwrap();
+        eprintln!("Formatted: {}", path.to_str().unwrap())
       }
     }
   }

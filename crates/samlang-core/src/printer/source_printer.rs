@@ -2,12 +2,13 @@ use super::prettier::Document;
 use crate::{
   ast::source::{
     expr, ClassDefinition, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore,
-    ISourceType, IdType, InterfaceDeclaration, Module, Toplevel, Type, TypeParameter,
+    ISourceType, Id, IdType, InterfaceDeclaration, Module, Toplevel, Type, TypeParameter,
   },
-  common::{rc_pstr, rc_string, rcs, Heap, Str},
+  common::{rc_pstr, rc_string, rcs, Heap},
+  ModuleReference,
 };
 use itertools::Itertools;
-use std::rc::Rc;
+use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 fn comma_sep_list<E, F: Fn(&E) -> Document>(elements: &[E], doc_creator: F) -> Document {
   let mut iter = elements.iter().rev();
@@ -42,10 +43,17 @@ fn braces_surrounded_block_doc(docs: Vec<Document>) -> Document {
   ])
 }
 
+enum DocumentGrouping {
+  Flattened,
+  Expanded,
+  Grouped,
+}
+
 fn associated_comments_doc(
   heap: &Heap,
   comment_store: &CommentStore,
   associated_comments: CommentReference,
+  group: DocumentGrouping,
   add_final_line_break: bool,
 ) -> Option<Document> {
   let mut documents = vec![];
@@ -69,7 +77,16 @@ fn associated_comments_doc(
     if final_line_break_is_soft {
       documents.pop();
     }
-    let final_main_doc = Document::group(Document::concat(documents));
+    let mut final_main_doc = Document::concat(documents);
+    match group {
+      DocumentGrouping::Flattened => {
+        if let Some(d) = final_main_doc.flatten() {
+          final_main_doc = d;
+        }
+      }
+      DocumentGrouping::Expanded => {}
+      DocumentGrouping::Grouped => final_main_doc = Document::group(final_main_doc),
+    }
     Some(if add_final_line_break && final_line_break_is_soft {
       Document::Concat(Rc::new(final_main_doc), Rc::new(Document::Line))
     } else {
@@ -112,19 +129,37 @@ impl expr::E {
     comment_store: &CommentStore,
     if_else: &expr::IfElse,
   ) -> Document {
+    let expanded =
+      self.create_doc_for_if_else_customized_flattened(heap, comment_store, false, if_else);
+    if let Some(flattened) =
+      self.create_doc_for_if_else_customized_flattened(heap, comment_store, true, if_else).flatten()
+    {
+      Document::Union(Rc::new(flattened), Rc::new(expanded))
+    } else {
+      expanded
+    }
+  }
+
+  fn create_doc_for_if_else_customized_flattened(
+    &self,
+    heap: &Heap,
+    comment_store: &CommentStore,
+    flattened: bool,
+    if_else: &expr::IfElse,
+  ) -> Document {
     let mut documents = vec![];
-    self.add_if_else_first_half_docs(heap, comment_store, if_else, &mut documents);
+    self.add_if_else_first_half_docs(heap, comment_store, flattened, if_else, &mut documents);
     let mut base: &expr::E = &if_else.e2;
     loop {
       if let expr::E::IfElse(if_else) = base {
-        self.add_if_else_first_half_docs(heap, comment_store, if_else, &mut documents);
+        self.add_if_else_first_half_docs(heap, comment_store, flattened, if_else, &mut documents);
         base = &if_else.e2;
       } else {
-        documents.push(self.create_doc_for_subexpression_considering_precedence_level(
+        documents.push(self.expr_wrapped_with_braces_expanded_in_if_else(
           heap,
           comment_store,
+          flattened,
           base,
-          false,
         ));
         return Document::concat(documents);
       }
@@ -135,40 +170,222 @@ impl expr::E {
     &self,
     heap: &Heap,
     comment_store: &CommentStore,
+    flattened: bool,
     if_else: &expr::IfElse,
     documents: &mut Vec<Document>,
   ) {
     documents.push(Document::Text(rcs("if ")));
-    documents.push(parenthesis_surrounded_doc(if_else.condition.create_doc(heap, comment_store)));
+    documents.push(if_else.condition.create_doc(heap, comment_store));
     documents.push(Document::Text(rcs(" then ")));
-    documents.push(self.create_doc_for_subexpression_considering_precedence_level(
+    documents.push(self.expr_wrapped_with_braces_expanded_in_if_else(
       heap,
       comment_store,
+      flattened,
       &if_else.e1,
-      false,
     ));
     documents.push(Document::Text(rcs(" else ")));
   }
 
-  fn create_doc_for_dotted_expr(
+  fn expr_wrapped_with_braces_expanded_in_if_else(
+    &self,
     heap: &Heap,
     comment_store: &CommentStore,
-    base: Document,
-    comments: CommentReference,
-    member: Str,
+    flattened: bool,
+    sub_expression: &expr::E,
   ) -> Document {
-    let member_preceding_comments_docs =
-      if let Some(doc) = associated_comments_doc(heap, comment_store, comments, true) {
-        Document::group(Document::Concat(Rc::new(Document::Line), Rc::new(doc)))
+    let mut expr_doc = self.create_doc_for_subexpression_considering_precedence_level(
+      heap,
+      comment_store,
+      sub_expression,
+      false,
+    );
+    if !matches!(sub_expression, expr::E::Block(_)) && !flattened {
+      expr_doc = Document::concat(vec![
+        Document::Text(rcs("{")),
+        Document::Nest(2, Rc::new(Document::Concat(Rc::new(Document::Line), Rc::new(expr_doc)))),
+        Document::Line,
+        Document::Text(rcs("}")),
+      ]);
+    }
+    expr_doc
+  }
+
+  fn create_doc_for_dotted_chain(
+    heap: &Heap,
+    comment_store: &CommentStore,
+    (base, chain): (Document, Vec<(CommentReference, Vec<Document>)>),
+  ) -> Document {
+    let mut expanded = Document::concat(vec![
+      base.clone(),
+      Document::Nest(
+        2,
+        Rc::new(Document::concat(
+          chain
+            .iter()
+            .cloned()
+            .flat_map(|(c, d)| {
+              vec![
+                Self::create_member_preceding_comment_docs(heap, comment_store, false, c),
+                Document::Text(rcs(".")),
+              ]
+              .into_iter()
+              .chain(d)
+            })
+            .collect(),
+        )),
+      ),
+    ]);
+    if let Some(((first_c, first_d), chain)) = chain.split_first() {
+      let less_expanded = Document::concat(vec![
+        base.clone(),
+        Self::create_member_preceding_comment_docs(heap, comment_store, true, *first_c),
+        Document::Text(rcs(".")),
+        Document::concat(first_d.clone()),
+        Document::Nest(
+          2,
+          Rc::new(Document::concat(
+            chain
+              .iter()
+              .cloned()
+              .flat_map(|(c, d)| {
+                vec![
+                  Self::create_member_preceding_comment_docs(heap, comment_store, false, c),
+                  Document::Text(rcs(".")),
+                ]
+                .into_iter()
+                .chain(d)
+              })
+              .collect(),
+          )),
+        ),
+      ]);
+      expanded = Document::Union(Rc::new(less_expanded), Rc::new(expanded))
+    }
+
+    let flattened = Document::concat(
+      vec![base]
+        .into_iter()
+        .chain(chain.into_iter().flat_map(|(c, d)| {
+          vec![
+            Self::create_member_preceding_comment_docs(heap, comment_store, true, c),
+            Document::Text(rcs(".")),
+          ]
+          .into_iter()
+          .chain(d)
+        }))
+        .collect(),
+    );
+    if let Some(flattened) = flattened.flatten() {
+      Document::Union(Rc::new(flattened), Rc::new(expanded))
+    } else {
+      expanded
+    }
+  }
+
+  fn create_member_preceding_comment_docs(
+    heap: &Heap,
+    comment_store: &CommentStore,
+    flattened: bool,
+    comments: CommentReference,
+  ) -> Document {
+    if let Some(doc) = associated_comments_doc(
+      heap,
+      comment_store,
+      comments,
+      if flattened { DocumentGrouping::Flattened } else { DocumentGrouping::Expanded },
+      !flattened,
+    ) {
+      if flattened {
+        Document::Concat(Rc::new(Document::Text(rcs(" "))), Rc::new(doc))
       } else {
-        Document::Nil
-      };
-    Document::concat(vec![
-      base,
-      member_preceding_comments_docs,
-      Document::Text(rcs(".")),
-      Document::Text(member),
-    ])
+        Document::Concat(Rc::new(Document::LineHard), Rc::new(doc))
+      }
+    } else if flattened {
+      Document::Nil
+    } else {
+      Document::LineHard
+    }
+  }
+
+  fn create_chainable_ir_docs(
+    &self,
+    heap: &Heap,
+    comment_store: &CommentStore,
+    potential_chainable_expr: &expr::E,
+  ) -> (Document, Vec<(CommentReference, Vec<Document>)>) {
+    match potential_chainable_expr {
+      expr::E::ClassFn(e) => {
+        let mut class_name_doc = Document::Text(rc_pstr(heap, e.class_name.name));
+        if let Some(comment_doc) = associated_comments_doc(
+          heap,
+          comment_store,
+          e.common.associated_comments,
+          DocumentGrouping::Grouped,
+          true,
+        ) {
+          class_name_doc =
+            Document::group(Document::Concat(Rc::new(comment_doc), Rc::new(class_name_doc)))
+        }
+        (
+          class_name_doc,
+          vec![(
+            e.fn_name.associated_comments,
+            vec![Document::Text(rc_string(format!(
+              "{}{}",
+              e.fn_name.name.as_str(heap),
+              optional_targs(heap, &e.type_arguments)
+            )))],
+          )],
+        )
+      }
+      expr::E::FieldAccess(e) => {
+        let (base, mut chain) =
+          potential_chainable_expr.create_chainable_ir_docs(heap, comment_store, &e.object);
+        chain.push((
+          e.field_name.associated_comments,
+          vec![Document::Text(rc_string(format!(
+            "{}{}",
+            e.field_name.name.as_str(heap),
+            optional_targs(heap, &e.type_arguments)
+          )))],
+        ));
+        (base, chain)
+      }
+      expr::E::MethodAccess(e) => {
+        let (base, mut chain) =
+          potential_chainable_expr.create_chainable_ir_docs(heap, comment_store, &e.object);
+        chain.push((
+          e.method_name.associated_comments,
+          vec![Document::Text(rc_string(format!(
+            "{}{}",
+            e.method_name.name.as_str(heap),
+            optional_targs(heap, &e.type_arguments)
+          )))],
+        ));
+        (base, chain)
+      }
+      expr::E::Call(e) => {
+        let args_doc = parenthesis_surrounded_doc(comma_sep_list(&e.arguments, |e| {
+          e.create_doc(heap, comment_store)
+        }));
+        let (mut base, mut chain) = self.create_chainable_ir_docs(heap, comment_store, &e.callee);
+        if let Some((_, last_docs)) = chain.last_mut() {
+          last_docs.push(args_doc);
+        } else {
+          base = Document::Concat(Rc::new(base), Rc::new(args_doc));
+        }
+        (base, chain)
+      }
+      _ => (
+        self.create_doc_for_subexpression_considering_precedence_level(
+          heap,
+          comment_store,
+          potential_chainable_expr,
+          false,
+        ),
+        vec![],
+      ),
+    }
   }
 
   fn create_doc_without_preceding_comment(
@@ -179,48 +396,13 @@ impl expr::E {
     match self {
       expr::E::Literal(_, l) => Document::Text(rc_string(l.pretty_print(heap))),
       expr::E::Id(_, id) => Document::Text(rc_pstr(heap, id.name)),
-      expr::E::ClassFn(e) => Self::create_doc_for_dotted_expr(
+      expr::E::ClassFn(_)
+      | expr::E::FieldAccess(_)
+      | expr::E::MethodAccess(_)
+      | expr::E::Call(_) => Self::create_doc_for_dotted_chain(
         heap,
         comment_store,
-        Document::Text(rc_pstr(heap, e.class_name.name)),
-        e.fn_name.associated_comments,
-        rc_string(format!(
-          "{}{}",
-          e.fn_name.name.as_str(heap),
-          optional_targs(heap, &e.type_arguments)
-        )),
-      ),
-      expr::E::FieldAccess(e) => Self::create_doc_for_dotted_expr(
-        heap,
-        comment_store,
-        self.create_doc_for_subexpression_considering_precedence_level(
-          heap,
-          comment_store,
-          &e.object,
-          false,
-        ),
-        e.field_name.associated_comments,
-        rc_string(format!(
-          "{}{}",
-          e.field_name.name.as_str(heap),
-          optional_targs(heap, &e.type_arguments)
-        )),
-      ),
-      expr::E::MethodAccess(e) => Self::create_doc_for_dotted_expr(
-        heap,
-        comment_store,
-        self.create_doc_for_subexpression_considering_precedence_level(
-          heap,
-          comment_store,
-          &e.object,
-          false,
-        ),
-        e.method_name.associated_comments,
-        rc_string(format!(
-          "{}{}",
-          e.method_name.name.as_str(heap),
-          optional_targs(heap, &e.type_arguments)
-        )),
+        Self::create_chainable_ir_docs(self, heap, comment_store, self),
       ),
       expr::E::Unary(e) => Document::Concat(
         Rc::new(Document::Text(rc_string(e.operator.to_string()))),
@@ -231,23 +413,16 @@ impl expr::E {
           false,
         )),
       ),
-      expr::E::Call(e) => Document::Concat(
-        Rc::new(self.create_doc_for_subexpression_considering_precedence_level(
-          heap,
-          comment_store,
-          &e.callee,
-          false,
-        )),
-        Rc::new(parenthesis_surrounded_doc(comma_sep_list(&e.arguments, |e| {
-          e.create_doc(heap, comment_store)
-        }))),
-      ),
       expr::E::IfElse(e) => self.create_doc_for_if_else(heap, comment_store, e),
 
       expr::E::Binary(e) => {
-        let operator_preceding_comments_docs = if let Some(doc) =
-          associated_comments_doc(heap, comment_store, e.operator_preceding_comments, false)
-        {
+        let operator_preceding_comments_docs = if let Some(doc) = associated_comments_doc(
+          heap,
+          comment_store,
+          e.operator_preceding_comments,
+          DocumentGrouping::Grouped,
+          false,
+        ) {
           Document::group(Document::Concat(Rc::new(Document::Line), Rc::new(doc)))
         } else {
           Document::Nil
@@ -310,7 +485,7 @@ impl expr::E {
         let mut list = vec![];
         for case in &e.cases {
           list.push(Document::Text(rc_string(format!(
-            "| {} {} -> ",
+            "{}({}) -> ",
             case.tag.name.as_str(heap),
             if let Some((data_var, _)) = &case.data_variable {
               data_var.name.as_str(heap)
@@ -318,21 +493,24 @@ impl expr::E {
               "_"
             }
           ))));
-          list.push(self.create_doc_for_subexpression_considering_precedence_level(
-            heap,
-            comment_store,
-            &case.body,
-            false,
-          ));
+          list.push(case.body.create_doc(heap, comment_store));
+          if !matches!(case.body.deref(), expr::E::Block(_) | expr::E::Match(_)) {
+            list.push(Document::Text(rcs(",")))
+          }
           list.push(Document::Line);
         }
         list.pop();
 
         Document::concat(vec![
           Document::Text(rcs("match ")),
-          parenthesis_surrounded_doc(e.matched.create_doc(heap, comment_store)),
+          e.matched.create_doc(heap, comment_store),
           Document::Text(rcs(" ")),
-          braces_surrounded_doc(Document::concat(list)),
+          Document::bracket_flexible(
+            rcs("{"),
+            Document::LineHard,
+            Document::concat(list),
+            rcs("}"),
+          ),
         ])
       }
 
@@ -372,8 +550,14 @@ impl expr::E {
             expr::Pattern::Wildcard(_) => Document::Text(rcs("_")),
           };
           segments.push(
-            associated_comments_doc(heap, comment_store, stmt.associated_comments, true)
-              .unwrap_or(Document::Nil),
+            associated_comments_doc(
+              heap,
+              comment_store,
+              stmt.associated_comments,
+              DocumentGrouping::Grouped,
+              true,
+            )
+            .unwrap_or(Document::Nil),
           );
           segments.push(Document::Text(rcs("val ")));
           segments.push(pattern_doc);
@@ -404,9 +588,16 @@ impl expr::E {
 
   fn create_doc(&self, heap: &Heap, comment_store: &CommentStore) -> Document {
     let main_doc = self.create_doc_without_preceding_comment(heap, comment_store);
-    if let Some(comment_doc) =
-      associated_comments_doc(heap, comment_store, self.common().associated_comments, true)
-    {
+    if matches!(self, expr::E::ClassFn(_)) {
+      return main_doc;
+    }
+    if let Some(comment_doc) = associated_comments_doc(
+      heap,
+      comment_store,
+      self.common().associated_comments,
+      DocumentGrouping::Grouped,
+      true,
+    ) {
       Document::group(Document::Concat(Rc::new(comment_doc), Rc::new(main_doc)))
     } else {
       main_doc
@@ -443,8 +634,14 @@ fn create_doc_for_interface_member(
   };
 
   vec![
-    associated_comments_doc(heap, comment_store, member.associated_comments, true)
-      .unwrap_or(Document::Nil),
+    associated_comments_doc(
+      heap,
+      comment_store,
+      member.associated_comments,
+      DocumentGrouping::Grouped,
+      true,
+    )
+    .unwrap_or(Document::Nil),
     if member.is_public { Document::Nil } else { Document::Text(rcs("private ")) },
     Document::Text(rcs(if member.is_method { "method " } else { "function " })),
     Document::Text(rc_string(type_parameters_to_string(heap, &member.type_parameters))),
@@ -477,8 +674,14 @@ fn interface_to_doc(
   interface: &InterfaceDeclaration,
 ) -> Vec<Document> {
   let mut documents = vec![
-    associated_comments_doc(heap, comment_store, interface.associated_comments, true)
-      .unwrap_or(Document::Nil),
+    associated_comments_doc(
+      heap,
+      comment_store,
+      interface.associated_comments,
+      DocumentGrouping::Grouped,
+      true,
+    )
+    .unwrap_or(Document::Nil),
     Document::Text(rc_string(format!(
       "interface {}{}{}",
       interface.name.name.as_str(heap),
@@ -515,8 +718,14 @@ fn class_to_doc(
   class: &ClassDefinition,
 ) -> Vec<Document> {
   let mut documents = vec![
-    associated_comments_doc(heap, comment_store, class.associated_comments, true)
-      .unwrap_or(Document::Nil),
+    associated_comments_doc(
+      heap,
+      comment_store,
+      class.associated_comments,
+      DocumentGrouping::Grouped,
+      true,
+    )
+    .unwrap_or(Document::Nil),
     Document::Text(rc_string(format!(
       "class {}{}",
       class.name.name.as_str(heap),
@@ -577,15 +786,28 @@ fn class_to_doc(
 pub(super) fn source_module_to_document(heap: &Heap, module: &Module) -> Document {
   let mut documents = vec![];
 
+  let mut organized_imports = HashMap::<ModuleReference, Vec<Id>>::new();
   for import in &module.imports {
+    if let Some(list) = organized_imports.get_mut(&import.imported_module) {
+      list.append(&mut import.imported_members.clone());
+    } else {
+      organized_imports.insert(import.imported_module, import.imported_members.clone());
+    }
+  }
+
+  for (imported_module, imported_members) in organized_imports
+    .into_iter()
+    .sorted_by_key(|(mod_ref, _)| mod_ref.pretty_print(heap))
+    .map(|(mod_ref, members)| {
+      (mod_ref, members.into_iter().sorted_by_key(|m| m.name.as_str(heap)).collect_vec())
+    })
+  {
     documents.push(Document::Text(rcs("import ")));
-    documents.push(braces_surrounded_doc(comma_sep_list(&import.imported_members, |m| {
+    documents.push(braces_surrounded_doc(comma_sep_list(&imported_members, |m| {
       Document::Text(rc_pstr(heap, m.name))
     })));
-    documents.push(Document::Text(rc_string(format!(
-      " from {}",
-      import.imported_module.pretty_print(heap)
-    ))));
+    documents
+      .push(Document::Text(rc_string(format!(" from {}", imported_module.pretty_print(heap)))));
     documents.push(Document::LineHard);
   }
   if !module.imports.is_empty() {
@@ -659,15 +881,28 @@ mod tests {
     assert_reprint_expr(
       "/* a */ ClassName./* b */  /* c */ classMember<A,B>",
       r#"/* a */
-ClassName
-/* b */ /* c */
-.classMember<A, B>"#,
+ClassName /* b */ /* c */.classMember<A, B>"#,
     );
-    assert_reprint_expr("ClassName/* a */.classMember", "ClassName /* a */ .classMember");
-    assert_reprint_expr("ClassName. /* b */classMember", "ClassName /* b */ .classMember");
+    assert_reprint_expr(
+      "// foo\n ClassName./* b */  /* c */ classMember<A,B>",
+      r#"// foo
+ClassName /* b */ /* c */.classMember<A, B>"#,
+    );
+    assert_reprint_expr(
+      "/* abcdefg abcdefg abcdefg abcdefg abcdefg abcdefg abcdefg abcdefg abcdefg abcdefg */ ClassName./* b */  /* c */ classMember<A,B>",
+      r#"/*
+ * abcdefg abcdefg abcdefg abcdefg
+ * abcdefg abcdefg abcdefg abcdefg
+ * abcdefg abcdefg
+ */
+ClassName /* b */ /* c */.classMember<A, B>"#,
+    );
+    assert_reprint_expr("ClassName/* a */.classMember", "ClassName /* a */.classMember");
+    assert_reprint_expr("ClassName// a\n.classMember", "ClassName // a\n.classMember");
+    assert_reprint_expr("ClassName. /* b */classMember", "ClassName /* b */.classMember");
     assert_reprint_expr(
       "ClassName/* a */. /* b */classMember",
-      "ClassName /* a */ /* b */ .classMember",
+      "ClassName /* a */ /* b */.classMember",
     );
 
     assert_reprint_expr("Test.VariantName(42)", "Test.VariantName(42)");
@@ -675,7 +910,7 @@ ClassName
     assert_reprint_expr(
       "/* a */ Test./* b */ VariantName/* c */ <T>(42)",
       r#"/* a */
-Test /* b */ /* c */ .VariantName<T>(42)"#,
+Test /* b */ /* c */.VariantName<T>(42)"#,
     );
     assert_reprint_expr("/* a */Obj.VariantName(/* b */42)", "/* a */ Obj.VariantName(/* b */ 42)");
     assert_reprint_expr(
@@ -683,6 +918,14 @@ Test /* b */ /* c */ .VariantName<T>(42)"#,
       r#"V.VariantName(
   aVariableNameThatIsVeryVeryVeryLong
 )"#,
+    );
+    assert_reprint_expr(
+      "(match foo {None(_)->1}).bar",
+      r#"(
+  match foo {
+    None(_) -> 1,
+  }
+).bar"#,
     );
 
     assert_reprint_expr("foo.bar", "foo.bar");
@@ -762,7 +1005,7 @@ Test /* b */ /* c */ .VariantName<T>(42)"#,
     assert_reprint_expr("true || false || true", "true || false || true");
     assert_reprint_expr(r#""dev" :: "meggo" :: "vibez""#, r#""dev" :: "meggo" :: "vibez""#);
 
-    assert_reprint_expr("if (b) then a else c", "if (b) then a else c");
+    assert_reprint_expr("if (b) then a else c", "if b then a else c");
     assert_reprint_expr(
       r#"
       if (b) then {
@@ -783,14 +1026,14 @@ Test /* b */ /* c */ .VariantName<T>(42)"#,
         val _ = println("");
         val _ = println("");
       }"#,
-      r#"if (b) then {
+      r#"if b then {
   // fff
   val _ = println("");
   val _ = println("");
   val _ = println("");
   /* f */
   val _ = println("");
-} else if (b) then {
+} else if b then {
   val _ = println("");
   val _ = println("");
   val _ = println("");
@@ -804,10 +1047,10 @@ Test /* b */ /* c */ .VariantName<T>(42)"#,
     );
 
     assert_reprint_expr(
-      "match (v) { | None _ -> fooBar | Some bazBaz -> bazBaz }",
-      r#"match (v) {
-  | None _ -> fooBar
-  | Some bazBaz -> bazBaz
+      "match (v) { None(_) -> fooBar, Some(bazBaz) -> bazBaz }",
+      r#"match v {
+  None(_) -> fooBar,
+  Some(bazBaz) -> bazBaz,
 }"#,
     );
 
@@ -898,15 +1141,13 @@ class Main {
 
     assert_reprint_module(
       r#"
-import {Foo} from Bar.Baz
-import {F1,F2,F3,F4,F5,F6,F7,F8,F9,F10} from Bar.Baz
+import {Foo} from Foo.Baz
+import {F1,F2,F3,F4,F5,F6,F7,F8} from Bar.Baz
+import {F9,F10} from Bar.Baz
 
 class Option<T>(None(unit), Some(T)) {
   private method <T> matchExample(opt: Option<int>): int =
-    match (opt) {
-      | None _ -> 42
-      | Some a -> a
-    }
+    match (opt) { None(_) -> 42, Some(a) -> a }
 
   /* not ignored */ /** foo bar a */
   function a(): int = 3
@@ -935,9 +1176,9 @@ class A(val a: int) {}
 class Main {}
 "#,
       r#"
-import { Foo } from Bar.Baz
 import {
   F1,
+  F10,
   F2,
   F3,
   F4,
@@ -945,17 +1186,17 @@ import {
   F6,
   F7,
   F8,
-  F9,
-  F10
+  F9
 } from Bar.Baz
+import { Foo } from Foo.Baz
 
 class Option<T>(None(unit), Some(T)) {
   private method <T> matchExample(
     opt: Option<int>
   ): int =
-    match (opt) {
-      | None _ -> 42
-      | Some a -> a
+    match opt {
+      None(_) -> 42,
+      Some(a) -> a,
     }
 
   /* not ignored */ /** foo bar a */

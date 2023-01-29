@@ -1,4 +1,5 @@
-import { List, ForTests } from tests.StdLib
+import { List, Option } from stdlib.utils
+import { ForTests } from tests.StdLib
 
 class Foo(val a: int) {
   function bar(): int = 3
@@ -25,24 +26,6 @@ class Clazz(val t: int) {
   }
 }
 
-class Option<T>(Some(T), None(bool)) {
-  function <T> none(): Option<T> = Option.None(true)
-
-  method toSome(t: T): Option<T> = Option.Some(t)
-
-  method isNone(): bool = match (this) { | None _ -> true | Some _ -> false }
-
-  method <R> map(f: (T) -> R): Option<R> =
-    match (this) { | None _ -> Option.None(true) | Some t -> Option.Some(f(t)) }
-
-  function test(): unit = {
-    val _ = match (Option.None<(string) -> int>(false)) {
-      | None _ -> ""
-      | Some f -> Builtins.intToString(f(""))
-    };
-  }
-}
-
 class DifferentExpressionDemo {
   function identity(a: int): int = a
 
@@ -54,7 +37,7 @@ class DifferentExpressionDemo {
   function oof(): int = 14
 
   function div(a: int, b: int): int =
-    if (b == 0) then Builtins.panic("Division by zero is illegal!") else a / b
+    if b == 0 then Builtins.panic("Division by zero is illegal!") else a / b
 
   function nestedVal(): int = {
     val a: int = {
@@ -70,8 +53,10 @@ class DifferentExpressionDemo {
 
   function methodAndFunctionReference(): int = Clazz.of().thisTest()
 
+  function <V, T> toSome(option: Option<V>, t: T): Option<T> = Option.Some(t)
+
   function lambdaTest(a: int): string = {
-    val c = Option.none<int>().toSome(3).map((x: int) -> "empty");
+    val c = DifferentExpressionDemo.toSome(Option.None<int>({  }), 3).map((x: int) -> "empty");
     "hello world"
   }
 

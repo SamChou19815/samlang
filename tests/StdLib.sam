@@ -1,50 +1,14 @@
-class Pair<A, B>(val a: A, val b: B)
-
-class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
-  function <T> nil(): List<T> = List.Nil({  })
-
-  function <T> of(t: T): List<T> = List.Cons(Pair.init(t, List.Nil<T>({  })))
-
-  method cons(t: T): List<T> = List.Cons(Pair.init(t, this))
-
-  method <R> map(f: (T) -> R): List<R> =
-    match (this) {
-      | Nil _ -> List.Nil({  })
-      | Cons pair -> {
-        val { a as v, b as rest } = pair;
-        List.Cons(Pair.init(f(v), rest.map(f)))
-      }
-    }
-
-  method iter(f: (T) -> unit): unit =
-    match (this) {
-      | Nil _ -> {  }
-      | Cons pair -> {
-        val { a as v, b as rest } = pair;
-        val _ = f(v);
-        rest.iter(f)
-      }
-    }
-
-  private method reverseWithAccumulator(acc: List<T>): List<T> =
-    match (this) {
-      | Nil _ -> acc
-      | Cons pair -> {
-        val { a as v, b as rest } = pair;
-        rest.reverseWithAccumulator(List.Cons(Pair.init(v, acc)))
-      }
-    }
-
-  method reverse(): List<T> = this.reverseWithAccumulator(List.Nil<T>({  }))
-}
-
 class ForTests {
   function printlnInt(n: int): unit = Builtins.println(Builtins.intToString(n))
 
-  function boolToString(b: bool): string = if (b) then "true" else "false"
+  function boolToString(b: bool): string = if b then "true" else "false"
 
   function assertIntEquals(expected: int, actual: int): unit =
-    if (actual == expected) then {  } else Builtins.panic(
-      "Actual: " :: Builtins.intToString(actual) :: ", expected: " :: Builtins.intToString(expected)
-    )
+    if actual == expected then {  } else {
+      Builtins.panic(
+        "Actual: " :: Builtins.intToString(actual) :: ", expected: " :: Builtins.intToString(
+          expected
+        )
+      )
+    }
 }

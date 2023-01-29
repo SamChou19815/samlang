@@ -1,10 +1,10 @@
-import { List } from tests.StdLib
+import { List } from stdlib.utils
 import { AndOrInsideIf } from tests.AndOrInsideIf
 import { Benchmark } from tests.Benchmark
 import { BlockInIfElse } from tests.BlockInIfElse
+import { CSETest } from tests.CSETest
 import { ConstantFoldingTest } from tests.ConstantFoldingTest
 import { DevMeggo } from tests.DevMeggo
-import { CSETest } from tests.CSETest
 import { DifferentExpressionDemo } from tests.DifferentExpressionDemo
 import { DifferentModulesDemo } from tests.DifferentModulesDemo
 import { EvaluationOrder } from tests.EvaluationOrder
@@ -26,21 +26,23 @@ class TestCase(val name: string, val runner: () -> unit) {
 
 class Main {
   private function getTests(): List<TestCase> =
-    List.nil<TestCase>().cons(TestCase.init("AndOrInsideIf", AndOrInsideIf.run)).cons(
-      TestCase.init("Benchmark", Benchmark.run)
-    ).cons(TestCase.init("BlockInIfElse", BlockInIfElse.run)).cons(
-      TestCase.init("ConstantFoldingTest", ConstantFoldingTest.run)
-    ).cons(TestCase.init("CSETest", CSETest.run)).cons(
-      TestCase.init("DevMeggo", DevMeggo.run)
-    ).cons(TestCase.init("DifferentExpressionDemo", DifferentExpressionDemo.run)).cons(
-      TestCase.init("DifferentModulesDemo", DifferentModulesDemo.run)
-    ).cons(TestCase.init("EvaluationOrder", EvaluationOrder.run)).cons(
-      TestCase.init("GC", GC.run)
-    ).cons(TestCase.init("IntToString", IntToString.run)).cons(
-      TestCase.init("LoopOptimization", LoopOptimization.run)
-    ).cons(TestCase.init("MathFunctions", MathFunctions.run)).cons(
-      TestCase.init("PrintHelloWorld", PrintHelloWorld.run)
-    ).cons(TestCase.init("SortableList", SortableListTest.run)).reverse()
+    List.nil<TestCase>()
+      .cons(TestCase.init("AndOrInsideIf", AndOrInsideIf.run))
+      .cons(TestCase.init("Benchmark", Benchmark.run))
+      .cons(TestCase.init("BlockInIfElse", BlockInIfElse.run))
+      .cons(TestCase.init("ConstantFoldingTest", ConstantFoldingTest.run))
+      .cons(TestCase.init("CSETest", CSETest.run))
+      .cons(TestCase.init("DevMeggo", DevMeggo.run))
+      .cons(TestCase.init("DifferentExpressionDemo", DifferentExpressionDemo.run))
+      .cons(TestCase.init("DifferentModulesDemo", DifferentModulesDemo.run))
+      .cons(TestCase.init("EvaluationOrder", EvaluationOrder.run))
+      .cons(TestCase.init("GC", GC.run))
+      .cons(TestCase.init("IntToString", IntToString.run))
+      .cons(TestCase.init("LoopOptimization", LoopOptimization.run))
+      .cons(TestCase.init("MathFunctions", MathFunctions.run))
+      .cons(TestCase.init("PrintHelloWorld", PrintHelloWorld.run))
+      .cons(TestCase.init("SortableList", SortableListTest.run))
+      .reverse()
 
   function main(): unit = {
     val _ = Main.getTests().iter((test) -> test.run());

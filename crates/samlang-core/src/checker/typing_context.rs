@@ -29,9 +29,14 @@ impl LocalTypingContext {
     LocalTypingContext { type_map: HashMap::new(), ssa_analysis_result }
   }
 
+  fn read_opt(&self, loc: &Location) -> Option<Type> {
+    let def_loc = self.ssa_analysis_result.use_define_map.get(loc)?;
+    Some(self.type_map.get(def_loc)?.reposition(*loc))
+  }
+
   pub(super) fn read(&self, loc: &Location) -> Type {
-    if let Some(def_loc) = self.ssa_analysis_result.use_define_map.get(loc) {
-      self.type_map.get(def_loc).unwrap().reposition(*loc)
+    if let Some(t) = self.read_opt(loc) {
+      t
     } else {
       Type::Unknown(Reason::new(*loc, None))
     }

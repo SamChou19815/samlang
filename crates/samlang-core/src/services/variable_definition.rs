@@ -398,10 +398,10 @@ class Main {
     val {f, g as h} = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(f) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
+    val lambda1 = (x, y) -> if x + y * 3 > h then panic(f) else println(h);
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
     }
   }
 }
@@ -419,7 +419,7 @@ class Main {
       &heap,
       &lookup,
       Location::from_pos(7, 12, 7, 13),
-      ("6:10-6:11", vec!["6:10-6:11", "8:13-8:14", "9:59-9:60"]),
+      ("6:10-6:11", vec!["6:10-6:11", "8:13-8:14", "9:57-9:58"]),
     );
     assert_lookup(
       &heap,
@@ -427,20 +427,20 @@ class Main {
       Location::from_pos(7, 16, 7, 17),
       (
         "6:18-6:19",
-        vec!["6:18-6:19", "7:24-7:25", "8:17-8:18", "9:45-9:46", "9:75-9:76", "10:24-10:25"],
+        vec!["6:18-6:19", "7:24-7:25", "8:17-8:18", "9:44-9:45", "9:73-9:74", "10:23-10:24"],
       ),
     );
     assert_lookup(
       &heap,
       &lookup,
       Location::from_pos(8, 22, 8, 23),
-      ("9:23-9:24", vec!["9:23-9:24", "9:37-9:38"]),
+      ("9:23-9:24", vec!["9:23-9:24", "9:36-9:37"]),
     );
     assert_lookup(
       &heap,
       &lookup,
-      Location::from_pos(11, 19, 11, 21),
-      ("12:14-12:16", vec!["12:14-12:16", "12:20-12:22"]),
+      Location::from_pos(11, 18, 11, 20),
+      ("12:12-12:14", vec!["12:12-12:14", "12:19-12:21"]),
     );
   }
 
@@ -500,10 +500,10 @@ class Main {
     val {f, g as h} = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(f) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
+    val lambda1 = (x, y) -> if x + y * 3 > h then panic(f) else println(h);
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
     }
   }
 }"#;
@@ -535,12 +535,14 @@ class Main {
     val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
-      f
-    ) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
+    val lambda1 = (x, y) -> if x + y * 3 > h then {
+      panic(f)
+    } else {
+      println(h)
+    };
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
     }
   }
 }
@@ -557,12 +559,14 @@ class Main {
     val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
-      f
-    ) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
+    val lambda1 = (x, y) -> if x + y * 3 > h then {
+      panic(f)
+    } else {
+      println(h)
+    };
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
     }
   }
 }
@@ -579,12 +583,14 @@ class Main {
     val { f, g as h } = Main.init(3, renAmeD);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
-      f
-    ) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
+    val lambda1 = (x, y) -> if x + y * 3 > h then {
+      panic(f)
+    } else {
+      println(h)
+    };
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
     }
   }
 }
@@ -601,12 +607,14 @@ class Main {
     val { f as renAmeD, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = renAmeD + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
-      renAmeD
-    ) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
+    val lambda1 = (x, y) -> if x + y * 3 > h then {
+      panic(renAmeD)
+    } else {
+      println(h)
+    };
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
     }
   }
 }
@@ -623,12 +631,14 @@ class Main {
     val { f, g as renAmeD } = Main.init(3, g);
     val _ = Obj.Tagged(renAmeD);
     val _ = f + renAmeD;
-    val lambda1 = (x, y) -> if (
-      x + y * 3 > renAmeD
-    ) then panic(f) else println(renAmeD);
-    match (lambda1(3, !renAmeD)) {
-      | None _ -> 1.d
-      | Some dd -> dd
+    val lambda1 = (x, y) -> if x + y * 3 > renAmeD then {
+      panic(f)
+    } else {
+      println(renAmeD)
+    };
+    match lambda1(3, !renAmeD) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
     }
   }
 }
@@ -645,12 +655,17 @@ class Main {
     val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, renAmeD) -> if (
-      x + renAmeD * 3 > h
-    ) then panic(f) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some dd -> dd
+    val lambda1 = (
+      x,
+      renAmeD
+    ) -> if x + renAmeD * 3 > h then {
+      panic(f)
+    } else {
+      println(h)
+    };
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
     }
   }
 }
@@ -659,7 +674,7 @@ class Main {
     assert_correctly_rewritten(
       source,
       &lookup,
-      Location::from_pos(11, 19, 11, 21),
+      Location::from_pos(11, 18, 11, 20),
       r#"class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
@@ -667,12 +682,14 @@ class Main {
     val { f, g as h } = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
-      f
-    ) else println(h);
-    match (lambda1(3, !h)) {
-      | None _ -> 1.d
-      | Some renAmeD -> renAmeD
+    val lambda1 = (x, y) -> if x + y * 3 > h then {
+      panic(f)
+    } else {
+      println(h)
+    };
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(renAmeD) -> renAmeD,
     }
   }
 }
