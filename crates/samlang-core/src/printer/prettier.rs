@@ -30,7 +30,7 @@ pub(super) enum Document {
 
 impl Document {
   /// Replace all LINE with TEXT(' '). Correspond to the `flatten` function in the prettier paper.
-  fn flatten(&self) -> Option<Document> {
+  pub(super) fn flatten(&self) -> Option<Document> {
     match self {
       Document::Nil => Some(Document::Nil),
       Document::Concat(d1, d2) => {
@@ -71,7 +71,12 @@ impl Document {
     }
   }
 
-  fn bracket_flexible(left: Str, separator: Document, doc: Document, right: Str) -> Document {
+  pub(super) fn bracket_flexible(
+    left: Str,
+    separator: Document,
+    doc: Document,
+    right: Str,
+  ) -> Document {
     Self::group(Self::concat(vec![
       Self::Text(left),
       Self::Nest(2, Rc::new(Self::Concat(Rc::new(separator.clone()), Rc::new(doc)))),

@@ -901,10 +901,10 @@ class PrimitiveType(
   // pattern matching!
   method isTruthy(): bool =
     match (this) {
-      | U _ -> false
-      | I i -> i != 0
-      | S s -> s != ""
-      | B b -> b
+      U(_) -> false,
+      I(i) -> i != 0,
+      S(s) -> s != "",
+      B(b) -> b,
     }
 }
 
@@ -924,13 +924,13 @@ class Option<T>(None(unit), Some(T)) {
   function <T> getSome(d: T): Option<T> = Option.Some(d)
   method forceValue(): T =
     match (this) {
-      | None _ -> Builtins.panic("Ah")
-      | Some v -> v
+      None(_) -> Builtins.panic("Ah"),
+      Some(v) -> v,
     }
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
-      | None _ -> Option.None({})
-      | Some d -> Option.Some(f(d))
+      None(_) -> Option.None({}),
+      Some(d) -> Option.Some(f(d)),
     }
 }
 
@@ -975,8 +975,8 @@ class Foo(val a: int) {
 class Option<T>(None(unit), Some(T)) {
   function matchExample(opt: Option<int>): int =
     match (opt) {
-      | None _ -> 42
-      | Some a -> a
+      None(_) -> 42,
+      Some(a) -> a,
     }
 }
 
@@ -1210,7 +1210,7 @@ class Main {
         source_code: r#"
 class Option<T>(Some(T), None(bool)) {
   method <R> map(f: (T) -> R): Option<R> =
-    match (this) { | None _ -> Option.None(true) | Some t -> Option.Some(f(t)) }
+    match (this) { None(_) -> Option.None(true), Some(t) -> Option.Some(f(t)) }
 }
 
 class Main {
@@ -1248,8 +1248,8 @@ class Main {
 class Option<T>(None(unit), Some(T)) {
   method <R> mapButIgnore(f: (T) -> R): unit = {
     val _ = match (this) {
-      | None _ -> Option.None<R>({})
-      | Some d -> Option.Some(f(d))
+      None(_) -> Option.None<R>({}),
+      Some(d) -> Option.Some(f(d)),
     };
   }
 
@@ -1438,8 +1438,8 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
   method iter(f: (T) -> unit): unit =
     match (this) {
-      | Nil _ -> {  }
-      | Cons pair -> {
+      Nil(_) -> {  }
+      Cons(pair) -> {
         val { a as v, b as rest } = pair;
         val _ = f(v);
         rest.iter(f)
@@ -1448,10 +1448,10 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
   method sort(): List<T> =
     match (this) {
-      | Nil _ -> this
-      | Cons pair -> match (pair.b) {
-        | Nil _ -> this
-        | Cons _ -> {
+      Nil(_) -> this,
+      Cons(pair) -> match (pair.b) {
+        Nil(_) -> this,
+        Cons(_) -> {
           val { a as l1, b as l2 } = this.split(List.nil<T>(), List.nil<T>());
           l1.sort().merge(l2.sort())
         }
@@ -1460,10 +1460,10 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
   private method merge(other: List<T>): List<T> =
     match (this) {
-      | Nil _ -> other
-      | Cons pair1 -> match (other) {
-        | Nil _ -> this
-        | Cons pair2 -> {
+      Nil(_) -> other,
+      Cons(pair1) -> match (other) {
+        Nil(_) -> this,
+        Cons(pair2) -> {
           val { a as h1, b as t1 } = pair1;
           val { a as h2, b as t2 } = pair2;
           if (h1.compare(h2) < 0) then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
@@ -1473,8 +1473,8 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
   private method split(y: List<T>, z: List<T>): Pair<List<T>, List<T>> =
     match (this) {
-      | Nil _ -> Pair.init(y, z)
-      | Cons pair -> {
+      Nil(_) -> Pair.init(y, z),
+      Cons(pair) -> {
         val { a as x, b as rest } = pair;
         rest.split(z, y.cons(x))
       }
@@ -1595,18 +1595,18 @@ class Option<T>(Some(T), None(bool)) {
   function <T> none(): Option<T> = Option.None(true)
   method toSome(t: T): Option<T> = Option.Some(t)
   method isNone(): bool = match (this) {
-    | None _ -> true
-    | Some _ -> false
+    None(_) -> true,
+    Some(_) -> false,
   }
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
-      | None _ -> Option.None(true)
-      | Some t -> Option.Some(f(t))
+      None(_) -> Option.None(true),
+      Some(t) -> Option.Some(f(t)),
     }
   function test(): unit = {
     val _ = match (Option.None<(string) -> int>(false)) {
-      | None _ -> ""
-      | Some f -> Builtins.intToString(f(""))
+      None(_) -> "",
+      Some(f) -> Builtins.intToString(f("")),
     };
   }
 }

@@ -1,6 +1,6 @@
 class BlockInIfElse {
   function run(): unit =
-    if (true) then {
+    if true then {
       val _: int = BlockInIfElse.main2();
       val _: unit = BlockInIfElse.main3();
       val _: int = 3;
@@ -8,10 +8,10 @@ class BlockInIfElse {
     } else { {  } }
 
   private function main2(): int =
-    if (true) then {
+    if true then {
       val _: int = 3;
       3
     } else { 2 }
 
-  private function main3(): unit = if (true) then { val _: int = 3; } else {  }
+  private function main3(): unit = if true then { val _: int = 3; } else {  }
 }

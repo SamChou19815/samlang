@@ -2,7 +2,7 @@ import { ForTests } from tests.StdLib
 
 class Benchmark {
   private function mathTailRec(n: int, acc: int): int =
-    if (n == 0) then acc else Benchmark.mathTailRec(n - 1, (acc % 10007 + n % 10007) % 10007)
+    if n == 0 then acc else Benchmark.mathTailRec(n - 1, (acc % 10007 + n % 10007) % 10007)
 
   function run(): unit = {
     val bigNum = 20000000;

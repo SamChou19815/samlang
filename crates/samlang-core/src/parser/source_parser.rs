@@ -157,6 +157,7 @@ impl<'a> SourceParser<'a> {
         self.consume();
         return location;
       }
+      self.consume();
     }
     self.report(
       location,
@@ -609,12 +610,10 @@ impl<'a> SourceParser<'a> {
     let associated_comments = self.collect_preceding_comments();
     if let Token(peeked_loc, TokenContent::Keyword(Keyword::MATCH)) = self.peek() {
       self.consume();
-      self.assert_and_consume_operator(TokenOp::LPAREN);
       let match_expression = self.parse_expression_with_ending_comments();
-      self.assert_and_consume_operator(TokenOp::RPAREN);
       self.assert_and_consume_operator(TokenOp::LBRACE);
       let mut matching_list = vec![self.parse_pattern_to_expression()];
-      while let TokenContent::Operator(TokenOp::BAR) = self.peek().1 {
+      while let TokenContent::UpperId(_) = self.peek().1 {
         matching_list.push(self.parse_pattern_to_expression());
       }
       let loc = peeked_loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
@@ -633,8 +632,8 @@ impl<'a> SourceParser<'a> {
   }
 
   fn parse_pattern_to_expression(&mut self) -> expr::VariantPatternToExpression {
-    let start_loc = self.assert_and_consume_operator(TokenOp::BAR);
     let tag = self.parse_upper_id();
+    self.assert_and_consume_operator(TokenOp::LPAREN);
     let data_variable = if let TokenContent::Operator(TokenOp::UNDERSCORE) = self.peek().1 {
       self.consume();
       None
@@ -642,10 +641,21 @@ impl<'a> SourceParser<'a> {
       let name = self.parse_lower_id();
       Some((name.clone(), Rc::new(Type::Unknown(Reason::new(name.loc, None)))))
     };
+    self.assert_and_consume_operator(TokenOp::RPAREN);
     self.assert_and_consume_operator(TokenOp::ARROW);
     let expression = self.parse_expression();
+    let mut loc = tag.loc.union(&expression.loc());
+    if matches!(expression, expr::E::Block(_) | expr::E::Match(_))
+      || matches!(self.peek().1, TokenContent::Operator(TokenOp::RBRACE))
+    {
+      if matches!(self.peek().1, TokenContent::Operator(TokenOp::COMMA)) {
+        loc = loc.union(&self.assert_and_consume_operator(TokenOp::COMMA));
+      }
+    } else {
+      loc = loc.union(&self.assert_and_consume_operator(TokenOp::COMMA));
+    }
     expr::VariantPatternToExpression {
-      loc: start_loc.union(&expression.loc()),
+      loc,
       tag,
       tag_order: 0,
       data_variable,

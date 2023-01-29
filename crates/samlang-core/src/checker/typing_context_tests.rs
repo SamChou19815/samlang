@@ -32,6 +32,20 @@ mod tests {
   }
 
   #[test]
+  fn local_typing_cx_no_crash() {
+    empty_local_typing_context().read(&Location::dummy());
+
+    LocalTypingContext::new(SsaAnalysisResult {
+      unbound_names: HashSet::new(),
+      invalid_defines: HashSet::new(),
+      use_define_map: HashMap::from([(Location::dummy(), Location::dummy())]),
+      def_to_use_map: HashMap::new(),
+      lambda_captures: HashMap::new(),
+    })
+    .read(&Location::dummy());
+  }
+
+  #[test]
   fn boilterplate() {
     let mut heap = Heap::new();
 

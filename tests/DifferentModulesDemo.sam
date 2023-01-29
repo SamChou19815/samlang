@@ -22,7 +22,12 @@ class PrimitiveType(U(bool), I(int), S(string), B(bool)) {
   function getBool(): PrimitiveType = PrimitiveType.B(false)
 
   method isTruthy(): bool =
-    match (this) { | U _ -> false | I i -> i != 0 | S s -> s != "" | B b -> b }
+    match this {
+      U(_) -> false,
+      I(i) -> i != 0,
+      S(s) -> s != "",
+      B(b) -> b,
+    }
 }
 
 class FunctionExample {
@@ -42,21 +47,24 @@ class Option<T>(None(unit), Some(T)) {
   function <T> getSome(d: T): Option<T> = Option.Some(d)
 
   method forceValue(): T =
-    match (this) {
-      | None _ -> Builtins.panic("Trying to get value from Option.None")
-      | Some v -> v
+    match this {
+      None(_) -> Builtins.panic("Trying to get value from Option.None"),
+      Some(v) -> v,
     }
 
   method <R> map(f: (T) -> R): Option<R> =
-    match (this) { | None _ -> Option.None({  }) | Some d -> Option.Some(f(d)) }
+    match this {
+      None(_) -> Option.None({  }),
+      Some(d) -> Option.Some(f(d)),
+    }
 }
 
 class DifferentModulesDemo {
   private function assertTrue(condition: bool, message: string): unit =
-    if (condition) then {  } else Builtins.panic(message)
+    if condition then {  } else Builtins.panic(message)
 
   private function assertFalse(condition: bool, message: string): unit =
-    if (!condition) then {  } else Builtins.panic(message)
+    if !condition then {  } else Builtins.panic(message)
 
   function run(): unit = {
     val _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);
