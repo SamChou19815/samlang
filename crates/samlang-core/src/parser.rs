@@ -20,7 +20,7 @@ pub(crate) fn parse_source_module_from_text(
   error_set: &mut ErrorSet,
 ) -> source::Module {
   let builtins = builtin_classes(heap);
-  let mut parser = source_parser::SourceParser::new(
+  let parser = source_parser::SourceParser::new(
     lexer::lex_source_program(text, module_reference, heap, error_set),
     heap,
     error_set,
@@ -35,16 +35,16 @@ pub(crate) fn parse_source_expression_from_text(
   module_reference: ModuleReference,
   heap: &mut Heap,
   error_set: &mut ErrorSet,
-) -> source::expr::E {
+) -> (source::CommentStore, source::expr::E) {
   let builtins = builtin_classes(heap);
-  let mut parser = source_parser::SourceParser::new(
+  let parser = source_parser::SourceParser::new(
     lexer::lex_source_program(text, module_reference, heap, error_set),
     heap,
     error_set,
     module_reference,
     builtins,
   );
-  parser.parse_expression()
+  parser.parse_expression_with_comment_store()
 }
 
 #[cfg(test)]

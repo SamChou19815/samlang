@@ -17,6 +17,36 @@ pub(crate) struct Comment {
   pub(crate) text: PStr,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct CommentReference(usize);
+
+pub(crate) const NO_COMMENT_REFERENCE: CommentReference = CommentReference(0);
+
+#[derive(Clone)]
+pub(crate) struct CommentStore {
+  store: Vec<Vec<Comment>>,
+}
+
+impl CommentStore {
+  pub(crate) fn new() -> CommentStore {
+    CommentStore { store: vec![vec![]] }
+  }
+
+  pub(crate) fn get(&self, reference: CommentReference) -> &Vec<Comment> {
+    &self.store[reference.0]
+  }
+
+  pub(crate) fn get_mut(&mut self, reference: CommentReference) -> &mut Vec<Comment> {
+    &mut self.store[reference.0]
+  }
+
+  pub(crate) fn create_comment_reference(&mut self, comments: Vec<Comment>) -> CommentReference {
+    let id = self.store.len();
+    self.store.push(comments);
+    CommentReference(id)
+  }
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum Literal {
   Bool(bool),
@@ -256,13 +286,13 @@ impl TypeParameterSignature {
 #[derive(Clone)]
 pub(crate) struct Id {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: Rc<Vec<Comment>>,
+  pub(crate) associated_comments: CommentReference,
   pub(crate) name: PStr,
 }
 
 impl Id {
   pub(crate) fn from(name: PStr) -> Id {
-    Id { loc: Location::dummy(), associated_comments: Rc::new(vec![]), name }
+    Id { loc: Location::dummy(), associated_comments: NO_COMMENT_REFERENCE, name }
   }
 }
 
@@ -279,7 +309,7 @@ pub(crate) struct AnnotatedId {
 
 pub(crate) mod expr {
   use super::super::loc::Location;
-  use super::{Comment, Id, Literal, OptionallyAnnotatedId, Type};
+  use super::{CommentReference, Id, Literal, OptionallyAnnotatedId, Type};
   use crate::common::{ModuleReference, PStr};
   use std::collections::HashMap;
   use std::rc::Rc;
@@ -287,7 +317,7 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct ExpressionCommon {
     pub(crate) loc: Location,
-    pub(crate) associated_comments: Rc<Vec<Comment>>,
+    pub(crate) associated_comments: CommentReference,
     pub(crate) type_: Rc<Type>,
   }
 
@@ -415,7 +445,7 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct Binary {
     pub(crate) common: ExpressionCommon,
-    pub(crate) operator_preceding_comments: Vec<Comment>,
+    pub(crate) operator_preceding_comments: CommentReference,
     pub(crate) operator: BinaryOperator,
     pub(crate) e1: Box<E>,
     pub(crate) e2: Box<E>,
@@ -472,7 +502,7 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct DeclarationStatement {
     pub(crate) loc: Location,
-    pub(crate) associated_comments: Vec<Comment>,
+    pub(crate) associated_comments: CommentReference,
     pub(crate) pattern: Pattern,
     pub(crate) annotation: Option<Rc<Type>>,
     pub(crate) assigned_expression: Box<E>,
@@ -598,7 +628,7 @@ pub(crate) mod expr {
 #[derive(Clone)]
 pub(crate) struct TypeParameter {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: Rc<Vec<Comment>>,
+  pub(crate) associated_comments: CommentReference,
   pub(crate) name: Id,
   pub(crate) bound: Option<Rc<IdType>>,
 }
@@ -616,7 +646,7 @@ impl TypeParameter {
 #[derive(Clone)]
 pub(crate) struct ClassMemberDeclaration {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: Rc<Vec<Comment>>,
+  pub(crate) associated_comments: CommentReference,
   pub(crate) is_public: bool,
   pub(crate) is_method: bool,
   pub(crate) name: Id,
@@ -633,7 +663,7 @@ pub(crate) struct ClassMemberDefinition {
 #[derive(Clone)]
 pub(crate) struct InterfaceDeclarationCommon<D, M> {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: Rc<Vec<Comment>>,
+  pub(crate) associated_comments: CommentReference,
   pub(crate) name: Id,
   pub(crate) type_parameters: Vec<TypeParameter>,
   /** The node after colon, interpreted as extends in interfaces and implements in classes. */
@@ -703,10 +733,10 @@ impl Toplevel {
     }
   }
 
-  pub(crate) fn associated_comments(&self) -> &Vec<Comment> {
+  pub(crate) fn associated_comments(&self) -> CommentReference {
     match self {
-      Toplevel::Interface(i) => &i.associated_comments,
-      Toplevel::Class(c) => &c.associated_comments,
+      Toplevel::Interface(i) => i.associated_comments,
+      Toplevel::Class(c) => c.associated_comments,
     }
   }
 
@@ -755,6 +785,7 @@ pub(crate) struct ModuleMembersImport {
 }
 
 pub(crate) struct Module {
+  pub(crate) comment_store: CommentStore,
   pub(crate) imports: Vec<ModuleMembersImport>,
   pub(crate) toplevels: Vec<Toplevel>,
 }
@@ -822,7 +853,11 @@ pub(crate) mod test_builder {
     }
 
     pub(crate) fn expr_common(&self, type_: Rc<Type>) -> expr::ExpressionCommon {
-      expr::ExpressionCommon { loc: Location::dummy(), associated_comments: Rc::new(vec![]), type_ }
+      expr::ExpressionCommon {
+        loc: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        type_,
+      }
     }
 
     pub(crate) fn true_expr(&self) -> expr::E {

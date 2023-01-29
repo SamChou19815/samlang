@@ -51,7 +51,7 @@ mod tests {
   val {o1, o2 as o3} = {};
   o1 + o3
 }"#;
-    let expr = parser::parse_source_expression_from_text(
+    let (_, expr) = parser::parse_source_expression_from_text(
       expr_str,
       ModuleReference::dummy(),
       &mut heap,

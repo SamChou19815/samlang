@@ -2,7 +2,10 @@
 mod tests {
   use crate::{
     ast::{
-      source::{expr, test_builder, FieldType, FunctionType, Id, Type, TypeParameterSignature},
+      source::{
+        expr, test_builder, FieldType, FunctionType, Id, Type, TypeParameterSignature,
+        NO_COMMENT_REFERENCE,
+      },
       Location, Reason,
     },
     checker::{
@@ -56,14 +59,14 @@ mod tests {
       expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           type_: builder.bool_type(),
         },
         type_arguments: vec![],
         object: Box::new(builder.true_expr()),
         method_name: Id {
           loc: Location::dummy(),
-          associated_comments: Rc::new(vec![]),
+          associated_comments: NO_COMMENT_REFERENCE,
           name: test_str,
         },
       }),
@@ -530,7 +533,7 @@ mod tests {
   ) -> Vec<String> {
     let mut error_set = ErrorSet::new();
 
-    let parsed =
+    let (_, parsed) =
       parse_source_expression_from_text(source, ModuleReference::dummy(), heap, &mut error_set);
     assert_eq!(Vec::<String>::new(), error_set.error_messages(heap));
 

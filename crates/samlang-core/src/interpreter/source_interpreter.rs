@@ -485,7 +485,7 @@ mod tests {
   use super::*;
   use crate::{
     ast::{
-      source::{Id, InterfaceDeclarationCommon, Type},
+      source::{CommentStore, Id, InterfaceDeclarationCommon, Type, NO_COMMENT_REFERENCE},
       Location, Reason,
     },
     checker::type_check_single_module_source,
@@ -512,7 +512,7 @@ mod tests {
   fn dummy_expr_common() -> expr::ExpressionCommon {
     expr::ExpressionCommon {
       loc: Location::dummy(),
-      associated_comments: Rc::new(vec![]),
+      associated_comments: NO_COMMENT_REFERENCE,
       type_: Rc::new(Type::int_type(Reason::dummy())),
     }
   }
@@ -609,10 +609,11 @@ mod tests {
   fn run_without_main_test() {
     let mut heap = Heap::new();
     let module = Module {
+      comment_store: CommentStore::new(),
       imports: vec![],
       toplevels: vec![Toplevel::Interface(InterfaceDeclarationCommon {
         loc: Location::dummy(),
-        associated_comments: Rc::new(vec![]),
+        associated_comments: NO_COMMENT_REFERENCE,
         name: Id::from(heap.alloc_str("")),
         type_parameters: vec![],
         extends_or_implements_nodes: vec![],

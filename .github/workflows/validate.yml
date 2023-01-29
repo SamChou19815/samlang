@@ -21,6 +21,12 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: cargo-build-debug-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format Check
+        run: cargo fmt --all -- --check
+      - name: Build Tests
+        run: cargo build --tests
+      - name: Lint
+        run: cargo lint
       - name: Build and Validate
         run: ./compile-repository.sh
   test:
@@ -44,11 +50,5 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: cargo-test-${{ hashFiles('**/Cargo.lock') }}
-      - name: Format Check
-        run: cargo fmt --all -- --check
-      - name: Build Tests
-        run: cargo build --tests
-      - name: Lint
-        run: cargo lint
       - name: Run Tests
         run: cargo tc
