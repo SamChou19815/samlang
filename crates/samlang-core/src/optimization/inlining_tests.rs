@@ -359,9 +359,9 @@ function loop(): int {
 }
 
 function insanelyBigFunction(a: int): int {
-  let _t18c: int = (a: int)[0];
+  let _t16c: int = (a: int)[0];
   (a: int)();
-  let _t21c: int = (a: int)[0];
+  let _t19c: int = (a: int)[0];
   (a: int)();
   non-existing-function();
   non-existing-function();
@@ -607,36 +607,36 @@ function main(): int {
 }
 
 function main(): int {
-  let _t9b: int;
+  let _t7b: int;
   if (bar: int) {
-    let _t11b: int;
+    let _t9b: int;
     if (bar: int) {
-      let _t13b: int;
+      let _t11b: int;
       if (bar: int) {
-        let _t15b: int;
+        let _t13b: int;
         if (bar: int) {
-          let _t17b: int;
+          let _t15b: int;
           if (bar: int) {
             fooBar();
-            _t17b = 0;
+            _t15b = 0;
           } else {
-            _t17b = (a: int);
+            _t15b = (a: int);
           }
-          _t15b = 0;
+          _t13b = 0;
         } else {
-          _t15b = (a: int);
+          _t13b = (a: int);
         }
-        _t13b = 0;
+        _t11b = 0;
       } else {
-        _t13b = (a: int);
+        _t11b = (a: int);
       }
-      _t11b = 0;
+      _t9b = 0;
     } else {
-      _t11b = (a: int);
+      _t9b = (a: int);
     }
-    _t9b = 0;
+    _t7b = 0;
   } else {
-    _t9b = (a: int);
+    _t7b = (a: int);
   }
   return 0;
 }
@@ -704,8 +704,8 @@ function main(): int {
 }
 
 function main(): int {
-  let _t13ff: FF = [1, 0];
-  let _t13s: SS = Closure { fun: (aaa: () -> int), context: 0 };
+  let _t11ff: FF = [1, 0];
+  let _t11s: SS = Closure { fun: (aaa: () -> int), context: 0 };
   undefined = 0;
   break;
   return 0;
@@ -807,26 +807,26 @@ function main(): int {
 }
 
 function main(): int {
-  let _t8n: int = 10;
+  let _t6n: int = 10;
   while (true) {
-    let _t11n: int = 10;
+    let _t9n: int = 10;
     while (true) {
-      let _t14n: int = 10;
+      let _t12n: int = 10;
       while (true) {
-        let _t17n: int = 10;
+        let _t15n: int = 10;
         while (true) {
-          let _t20n: int = 10;
+          let _t18n: int = 10;
           while (true) {
-            let _t20_tmp_n: int = fooBar();
-            _t20n = (_t20_tmp_n: int);
+            let _t18_tmp_n: int = fooBar();
+            _t18n = (_t18_tmp_n: int);
           }
-          _t17n = (v: int);
+          _t15n = (v: int);
         }
-        _t14n = (v: int);
+        _t12n = (v: int);
       }
-      _t11n = (v: int);
+      _t9n = (v: int);
     }
-    _t8n = (v: int);
+    _t6n = (v: int);
   }
   return (v: int);
 }

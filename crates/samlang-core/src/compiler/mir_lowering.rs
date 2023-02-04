@@ -1204,13 +1204,13 @@ type CC = [number, (t0: any) => number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
 type Variant = [number, number, any];
 function cc(): number {{
-  let _t32: (t0: any, t1: number) => number = cc[2];
-  let _t33: any = cc[3];
-  _t32(_t33, 0);
+  let _t30: (t0: any, t1: number) => number = cc[2];
+  let _t31: any = cc[3];
+  _t30(_t31, 0);
   let v1: number = a[1];
   let v2: number = b[1];
-  let _t34: any = b[2];
-  let v3 = _t34 as number;
+  let _t32: any = b[2];
+  let v3 = _t32 as number;
   let v4: Str = b[2];
   while (true) {{
     if (0) {{
@@ -1230,29 +1230,29 @@ function cc(): number {{
 }}
 function main(): number {{
   let v1: number = 0 + 0;
-  let _t36: number = obj[0];
-  let _t37: number = _t36 + 1;
-  obj[0] = _t37;
+  let _t34: number = obj[0];
+  let _t35: number = _t34 + 1;
+  obj[0] = _t35;
   let O: Object = [1, 0, obj];
-  let _t38 = 0 as any;
-  let v1: Variant = [1, 0, _t38];
-  let _t40: number = G1[0];
-  let _t42: boolean = _t40 > 0;
-  if (_t42) {{
-    let _t41: number = _t40 + 1;
-    G1[0] = _t41;
+  let _t36 = 0 as any;
+  let v1: Variant = [1, 0, _t36];
+  let _t38: number = G1[0];
+  let _t40: boolean = _t38 > 0;
+  if (_t40) {{
+    let _t39: number = _t38 + 1;
+    G1[0] = _t39;
   }}
   let v2: Variant = [1, 0, G1];
-  let _t43: number = G1[0];
-  let _t45: boolean = _t43 > 0;
-  if (_t45) {{
-    let _t44: number = _t43 + 1;
-    G1[0] = _t44;
+  let _t41: number = G1[0];
+  let _t43: boolean = _t41 > 0;
+  if (_t43) {{
+    let _t42: number = _t41 + 1;
+    G1[0] = _t42;
   }}
   let c1: CC = [1, __decRef_string, aaa, G1];
-  let _t47 = bbb as (t0: any) => number;
-  let _t48 = 0 as any;
-  let c2: CC = [1, __decRef_nothing, _t47, _t48];
+  let _t45 = bbb as (t0: any) => number;
+  let _t46 = 0 as any;
+  let c2: CC = [1, __decRef_nothing, _t45, _t46];
   __decRef_Object(O);
   __decRef_Variant(v1);
   __decRef_Variant(v2);
@@ -1267,19 +1267,19 @@ function _compiled_program_main(): number {{
     let ccc: number = cc(0);
     finalV = v1;
   }} else {{
-    let _t54: (t0: any, t1: number) => number = cc[2];
-    let _t55: any = cc[3];
-    let _t53: CC = _t54(_t55, 0);
-    let _t56: number = _t53[0];
+    let _t52: (t0: any, t1: number) => number = cc[2];
+    let _t53: any = cc[3];
+    let _t51: CC = _t52(_t53, 0);
+    let _t54: number = _t51[0];
+    let _t55: number = _t54 + 1;
+    _t51[0] = _t55;
+    let _t56: number = G1[0];
     let _t57: number = _t56 + 1;
-    _t53[0] = _t57;
-    let _t58: number = G1[0];
-    let _t59: number = _t58 + 1;
-    G1[0] = _t59;
-    let _t60 = G1 as any;
-    let _t61 = __decRef_CC as (t0: any) => number;
-    let v2: CC = [1, _t61, aaa, _t60];
-    __decRef_CC(_t53);
+    G1[0] = _t57;
+    let _t58 = G1 as any;
+    let _t59 = __decRef_CC as (t0: any) => number;
+    let v2: CC = [1, _t59, aaa, _t58];
+    __decRef_CC(_t51);
     finalV = v2;
   }}
   let finalV2: number;

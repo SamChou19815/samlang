@@ -3,26 +3,22 @@ use std::{collections::HashMap, hash::Hash, ops::Deref, rc::Rc, time::Instant};
 
 /// A string pointer free to be copied. However, we have to do GC manually.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct PStr(u32);
+pub(crate) struct PStr(usize);
 
-pub(crate) const INVALID_PSTR: PStr = PStr(u32::MAX);
+pub(crate) const INVALID_PSTR: PStr = PStr(usize::MAX);
 
 impl PStr {
-  pub(crate) fn opaque_id(&self) -> u32 {
+  pub(crate) fn opaque_id(&self) -> usize {
     self.0
   }
 
   pub(crate) fn as_str<'a>(&self, heap: &'a Heap) -> &'a str {
-    if let Some(s) = heap.get_str(self) {
-      s
-    } else {
-      panic!("Use of freed string {self:?}")
-    }
+    &heap.str_pointer_table[self.0]
   }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ModuleReference(u32);
+pub struct ModuleReference(usize);
 
 impl ModuleReference {
   pub const fn root() -> ModuleReference {
@@ -30,15 +26,11 @@ impl ModuleReference {
   }
 
   pub(crate) const fn dummy() -> ModuleReference {
-    ModuleReference(2)
+    ModuleReference(1)
   }
 
-  pub(crate) fn get_parts<'a>(&self, heap: &'a Heap) -> &'a Vec<PStr> {
-    if let Some(s) = heap.module_reference_pointer_table.get(self) {
-      s
-    } else {
-      panic!("Use of freed module reference {self:?}")
-    }
+  pub(crate) fn get_parts<'a>(&self, heap: &'a Heap) -> &'a [PStr] {
+    heap.module_reference_pointer_table[self.0]
   }
 
   pub fn pretty_print(&self, heap: &Heap) -> String {
@@ -59,41 +51,39 @@ impl ModuleReference {
   }
 }
 
-enum StringRefForHeap {
+enum StringStoredInHeap {
   Permanent(&'static str),
-  Rc(Rc<String>),
+  Temporary(String),
 }
 
-impl Deref for StringRefForHeap {
+impl Deref for StringStoredInHeap {
   type Target = str;
 
   fn deref(&self) -> &Self::Target {
     match self {
-      StringRefForHeap::Permanent(s) => s,
-      StringRefForHeap::Rc(s) => s.deref(),
+      StringStoredInHeap::Permanent(s) => s,
+      StringStoredInHeap::Temporary(s) => s,
     }
   }
 }
 
 /// Users of the heap is responsible for calling retain at appropriate places to do GC.
 pub struct Heap {
-  str_pointer_table: HashMap<PStr, StringRefForHeap>,
-  interned_string: HashMap<Rc<String>, PStr>,
+  str_pointer_table: Vec<StringStoredInHeap>,
+  module_reference_pointer_table: Vec<&'static [PStr]>,
+  interned_string: HashMap<&'static str, PStr>,
   interned_static_str: HashMap<&'static str, PStr>,
-  interned_module_reference: HashMap<Rc<Vec<PStr>>, ModuleReference>,
-  module_reference_pointer_table: HashMap<ModuleReference, Rc<Vec<PStr>>>,
-  id: u32,
+  interned_module_reference: HashMap<&'static [PStr], ModuleReference>,
 }
 
 impl Heap {
   pub fn new() -> Heap {
     let mut heap = Heap {
-      str_pointer_table: HashMap::new(),
+      str_pointer_table: vec![],
+      module_reference_pointer_table: vec![],
       interned_string: HashMap::new(),
       interned_static_str: HashMap::new(),
       interned_module_reference: HashMap::new(),
-      module_reference_pointer_table: HashMap::new(),
-      id: 0,
     };
     heap.alloc_module_reference(vec![]); // Root
     let dummy_parts = vec![heap.alloc_str("__DUMMY__")];
@@ -102,61 +92,45 @@ impl Heap {
     heap
   }
 
-  fn get_str(&self, p_str: &PStr) -> Option<&str> {
-    Some(self.str_pointer_table.get(p_str)?.deref())
-  }
-
   pub(crate) fn get_allocated_str_opt(&self, str: &str) -> Option<PStr> {
-    self
-      .interned_static_str
-      .get(&str)
-      .or_else(|| self.interned_string.get(&Rc::new(str.to_string())))
-      .copied()
+    self.interned_static_str.get(&str).or_else(|| self.interned_string.get(&str)).copied()
   }
 
   pub(crate) fn alloc_str(&mut self, str: &'static str) -> PStr {
     if let Some(id) = self.interned_static_str.get(&str) {
       *id
-    } else {
-      let p_str = {
-        // If for some reasons, the string is already allocated by regular strings,
-        // we will promote this to the permanent generation.
-        if let Some(p_str) = self.interned_string.remove(&Rc::new(str.to_string())) {
-          p_str
-        } else {
-          let id = self.id;
-          let p_str = PStr(id);
-          self.id += 1;
-          p_str
-        }
-      };
+    } else if let Some(p_str) = self.interned_string.remove(&str) {
+      // If for some reasons, the string is already allocated by regular strings,
+      // we will promote this to the permanent generation.
+      self.str_pointer_table[p_str.0] = StringStoredInHeap::Permanent(str);
       self.interned_static_str.insert(str, p_str);
-      self.str_pointer_table.insert(p_str, StringRefForHeap::Permanent(str));
+      p_str
+    } else {
+      let p_str = PStr(self.str_pointer_table.len());
+      self.interned_static_str.insert(str, p_str);
+      self.str_pointer_table.push(StringStoredInHeap::Permanent(str));
       p_str
     }
   }
 
+  /// This function can only be called in compiler code.
   pub(crate) fn alloc_temp_str(&mut self) -> PStr {
-    let id = self.id;
-    let string = format!("_t{id}");
+    let string = format!("_t{}", self.str_pointer_table.len());
     self.alloc_string(string)
   }
 
   pub(crate) fn alloc_string(&mut self, string: String) -> PStr {
     if let Some(id) = self.interned_static_str.get(string.deref()) {
       *id
+    } else if let Some(id) = self.interned_string.get(string.as_str()) {
+      *id
     } else {
-      let rc_str = Rc::new(string);
-      if let Some(id) = self.interned_string.get(&rc_str) {
-        *id
-      } else {
-        let id = self.id;
-        let p_str = PStr(id);
-        self.interned_string.insert(rc_str.clone(), p_str);
-        self.str_pointer_table.insert(p_str, StringRefForHeap::Rc(rc_str));
-        self.id += 1;
-        p_str
-      }
+      let p_str = PStr(self.str_pointer_table.len());
+      // The string pointer is managed by the the string pointer table.
+      let unmanaged_str_ptr: &'static str = unsafe { (&string as *const String).as_ref().unwrap() };
+      self.str_pointer_table.push(StringStoredInHeap::Temporary(string));
+      self.interned_string.insert(unmanaged_str_ptr, p_str);
+      p_str
     }
   }
 
@@ -165,19 +139,18 @@ impl Heap {
     for part in &parts {
       p_str_parts.push(self.get_allocated_str_opt(part)?);
     }
-    self.interned_module_reference.get(&Rc::new(p_str_parts)).cloned()
+    self.interned_module_reference.get(p_str_parts.deref()).cloned()
   }
 
   pub(crate) fn alloc_module_reference(&mut self, parts: Vec<PStr>) -> ModuleReference {
-    let rc_parts = Rc::new(parts);
-    if let Some(id) = self.interned_module_reference.get(&rc_parts) {
+    if let Some(id) = self.interned_module_reference.get(parts.deref()) {
       *id
     } else {
-      let id = self.id;
-      let mod_ref = ModuleReference(id);
-      self.interned_module_reference.insert(rc_parts.clone(), mod_ref);
-      self.module_reference_pointer_table.insert(mod_ref, rc_parts);
-      self.id += 1;
+      let mod_ref = ModuleReference(self.module_reference_pointer_table.len());
+      // We don't plan to gc module
+      let leaked_parts = Vec::leak(parts);
+      self.interned_module_reference.insert(leaked_parts, mod_ref);
+      self.module_reference_pointer_table.push(leaked_parts);
       mod_ref
     }
   }
@@ -341,7 +314,7 @@ mod tests {
   #[test]
   fn heap_tests() {
     let mut heap = Heap::default();
-    assert_eq!(2, heap.alloc_dummy_module_reference().0);
+    assert_eq!(1, heap.alloc_dummy_module_reference().0);
     let a1 = heap.alloc_str("a");
     let b = heap.alloc_str("b");
     let a2 = heap.alloc_str("a");
@@ -383,14 +356,14 @@ mod tests {
   #[test]
   fn heap_str_crash() {
     let heap = Heap::new();
-    PStr(0).as_str(&heap);
+    PStr(100).as_str(&heap);
   }
 
   #[should_panic]
   #[test]
   fn heap_mod_ref_crash() {
     let heap = Heap::new();
-    ModuleReference(1).pretty_print(&heap);
+    ModuleReference(100).pretty_print(&heap);
   }
 
   #[test]
