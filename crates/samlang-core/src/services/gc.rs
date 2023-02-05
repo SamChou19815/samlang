@@ -132,6 +132,11 @@ fn mark_module(heap: &mut Heap, module: &Module) {
   {
     heap.mark(comment_text);
   }
+  for import in &module.imports {
+    for id in &import.imported_members {
+      mark_id(heap, id);
+    }
+  }
   for toplevel in &module.toplevels {
     mark_id(heap, toplevel.name());
     mark_type_parameters(heap, toplevel.type_parameters());
@@ -204,7 +209,9 @@ mod tests {
       heap,
       vec![(
         ModuleReference::dummy(),
-        r#"class Foo(val a: int) {
+        r#"import {Foo, Bar} from Module.Reference
+
+  class Foo(val a: int) {
     function bar(): int = 3
   }
 
@@ -277,7 +284,6 @@ mod tests {
           .to_string(),
       )],
     );
-    assert!(r.compile_time_errors.is_empty());
     super::perform_gc_after_recheck(heap, &r.checked_sources, vec![ModuleReference::root()]);
     super::perform_gc_after_recheck(heap, &r.checked_sources, vec![ModuleReference::dummy()]);
     assert_eq!("", heap.debug_unmarked_strings());
