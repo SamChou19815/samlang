@@ -528,7 +528,8 @@ mod runners {
       {
         let mut heap = samlang_core::Heap::new();
         let collected_sources = utils::collect_sources(&configuration, &mut heap);
-        let service = samlang_core::services::api::LanguageServices::new(heap, collected_sources);
+        let service =
+          samlang_core::services::api::LanguageServices::new(heap, true, collected_sources);
         let (service, socket) =
           LspService::new(|client| lsp::Backend::new(client, absolute_source_path, service));
 

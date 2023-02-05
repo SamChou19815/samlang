@@ -81,7 +81,7 @@ impl Range {
 fn new_services(source: String) -> samlang_core::services::api::LanguageServices {
   let mut heap = samlang_core::Heap::new();
   let mod_ref = demo_mod_ref(&mut heap);
-  samlang_core::services::api::LanguageServices::new(heap, vec![(mod_ref, source)])
+  samlang_core::services::api::LanguageServices::new(heap, false, vec![(mod_ref, source)])
 }
 
 #[wasm_bindgen(js_name=typeCheck)]
