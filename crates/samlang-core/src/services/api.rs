@@ -100,6 +100,11 @@ impl LanguageServices {
     self.checked_modules = checked_modules;
     self.global_cx = global_cx;
     self.update_errors(error_set.errors());
+    /*
+    for mod_ref in self.checked_modules.keys() {
+      self.heap.add_unmarked_module_reference(*mod_ref);
+    }
+    */
   }
 
   fn update_errors(&mut self, errors: Vec<&CompileTimeError>) {

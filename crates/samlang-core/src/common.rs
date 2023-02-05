@@ -1,5 +1,11 @@
 use itertools::Itertools;
-use std::{collections::HashMap, hash::Hash, ops::Deref, rc::Rc, time::Instant};
+use std::{
+  collections::{HashMap, HashSet},
+  hash::Hash,
+  ops::Deref,
+  rc::Rc,
+  time::Instant,
+};
 
 /// A string pointer free to be copied. However, we have to do GC manually.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -52,8 +58,10 @@ impl ModuleReference {
 }
 
 enum StringStoredInHeap {
+  // (string, marked)
   Permanent(&'static str),
-  Temporary(String),
+  Temporary(String, bool),
+  Deallocated,
 }
 
 impl Deref for StringStoredInHeap {
@@ -62,7 +70,8 @@ impl Deref for StringStoredInHeap {
   fn deref(&self) -> &Self::Target {
     match self {
       StringStoredInHeap::Permanent(s) => s,
-      StringStoredInHeap::Temporary(s) => s,
+      StringStoredInHeap::Temporary(s, _) => s,
+      StringStoredInHeap::Deallocated => panic!("Dereferencing deallocated strings"),
     }
   }
 }
@@ -74,6 +83,9 @@ pub struct Heap {
   interned_string: HashMap<&'static str, PStr>,
   interned_static_str: HashMap<&'static str, PStr>,
   interned_module_reference: HashMap<&'static [PStr], ModuleReference>,
+  unmarked_module_references: HashSet<ModuleReference>,
+  // invariant: 0 <= sweep_index < str_pointer_table.len()
+  sweep_index: usize,
 }
 
 impl Heap {
@@ -84,6 +96,8 @@ impl Heap {
       interned_string: HashMap::new(),
       interned_static_str: HashMap::new(),
       interned_module_reference: HashMap::new(),
+      unmarked_module_references: HashSet::new(),
+      sweep_index: 0,
     };
     heap.alloc_module_reference(vec![]); // Root
     let dummy_parts = vec![heap.alloc_str("__DUMMY__")];
@@ -128,9 +142,26 @@ impl Heap {
       let p_str = PStr(self.str_pointer_table.len());
       // The string pointer is managed by the the string pointer table.
       let unmanaged_str_ptr: &'static str = unsafe { (&string as *const String).as_ref().unwrap() };
-      self.str_pointer_table.push(StringStoredInHeap::Temporary(string));
+      self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
       self.interned_string.insert(unmanaged_str_ptr, p_str);
       p_str
+    }
+  }
+
+  fn make_string_static(string: String) -> &'static str {
+    Box::leak(Box::new(string))
+  }
+
+  fn make_string_permanent(&mut self, p_str: PStr) {
+    let stored_string = &mut self.str_pointer_table[p_str.0];
+    match stored_string {
+      StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated => {}
+      StringStoredInHeap::Temporary(s, _) => {
+        let static_str: &'static str = Self::make_string_static(s.to_string());
+        *stored_string = StringStoredInHeap::Permanent(static_str);
+        self.interned_string.remove(static_str);
+        self.interned_static_str.insert(static_str, p_str);
+      }
     }
   }
 
@@ -147,6 +178,9 @@ impl Heap {
       *id
     } else {
       let mod_ref = ModuleReference(self.module_reference_pointer_table.len());
+      for p in &parts {
+        self.make_string_permanent(*p);
+      }
       // We don't plan to gc module
       let leaked_parts = Vec::leak(parts);
       self.interned_module_reference.insert(leaked_parts, mod_ref);
@@ -156,7 +190,8 @@ impl Heap {
   }
 
   pub fn alloc_module_reference_from_string_vec(&mut self, parts: Vec<String>) -> ModuleReference {
-    let parts = parts.into_iter().map(|p| self.alloc_string(p)).collect_vec();
+    let parts =
+      parts.into_iter().map(|p| self.alloc_str(Self::make_string_static(p))).collect_vec();
     self.alloc_module_reference(parts)
   }
 
@@ -164,6 +199,89 @@ impl Heap {
     let parts = vec![self.alloc_str("__DUMMY__")];
     self.alloc_module_reference(parts)
   }
+
+  /// Returns the statistics of heap to help debugging
+  pub(crate) fn stat(&self) -> String {
+    let total_slots = self.str_pointer_table.len();
+    let total_unused = self
+      .str_pointer_table
+      .iter()
+      .filter(|it| matches!(it, StringStoredInHeap::Deallocated))
+      .count();
+    let total_used = total_slots - total_unused;
+    format!("Total slots: {total_slots}. Total used: {total_used}. Total unused: {total_unused}")
+  }
+
+  /// This function can be used for GC purposes only. Use with caution.
+  ///
+  /// This function informs the heap that a new module reference has been touched, so that
+  /// everything related to the module need to be marked again.
+  ///
+  /// Adding the full set of changed modules since the last GC is critical for the correctness of GC.
+  pub(crate) fn add_unmarked_module_reference(&mut self, module_reference: ModuleReference) {
+    self.unmarked_module_references.insert(module_reference);
+  }
+
+  /// This function can be used for GC purposes only. Use with caution.
+  ///
+  /// This function informs the heap that marking of a module has completed.
+  ///
+  /// It should be called at the end of one slice of incremental marking.
+  pub(crate) fn pop_unmarked_module_reference(&mut self) -> Option<ModuleReference> {
+    let item = self.unmarked_module_references.iter().next().copied()?;
+    self.unmarked_module_references.remove(&item);
+    Some(item)
+  }
+
+  /// This function can be used for GC purposes only. Use with caution.
+  ///
+  /// This function marks a string as being used, thus excluding it from the next around of GC.
+  ///
+  /// It should be called during incremental marking.
+  pub(crate) fn mark(&mut self, p_str: PStr) {
+    match &mut self.str_pointer_table[p_str.0] {
+      StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated => {}
+      StringStoredInHeap::Temporary(_, marked) => *marked = true,
+    }
+  }
+
+  /// This function can be used for GC purposes only. Use with caution.
+  ///
+  /// This function is a no-op if there are remaining unmarked module references. If there are not,
+  /// then it will retain all the marked temporary strings, and purge the rest of the temporarily
+  /// strings. It doesn't compactify the heap.
+  ///
+  /// It should be called at the end of a GC round. Sweep is still incremental. The amount of work
+  /// is controled by `work_unit`.
+  pub(crate) fn sweep(&mut self, work_unit: usize) {
+    if !self.unmarked_module_references.is_empty() {
+      return;
+    }
+    let sweep_start = self.sweep_index;
+    let mut sweep_end = self.sweep_index + work_unit;
+    let max_sweep = self.str_pointer_table.len();
+    if sweep_end >= max_sweep {
+      self.sweep_index = 0;
+      sweep_end = max_sweep;
+    } else {
+      self.sweep_index = sweep_end
+    }
+    for string_stored in self.str_pointer_table[sweep_start..sweep_end].iter_mut() {
+      match string_stored {
+        StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated => {}
+        StringStoredInHeap::Temporary(str, marked) => {
+          if *marked {
+            *marked = false;
+          } else {
+            self.interned_static_str.remove(str.as_str());
+            *string_stored = StringStoredInHeap::Deallocated
+          }
+        }
+      }
+    }
+  }
+
+  // compactify is not implemented for now. It's likely not needed for a while.
 }
 
 impl Default for Heap {
@@ -288,9 +406,11 @@ impl<K: Clone + Eq + Hash, V: Clone> LocalStackedContext<K, V> {
 mod tests {
   use super::{
     int_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr,
+    StringStoredInHeap,
   };
   use itertools::Itertools;
-  use std::{cmp::Ordering, collections::HashSet};
+  use pretty_assertions::assert_eq;
+  use std::{cmp::Ordering, collections::HashSet, ops::Deref};
 
   fn test_closure() {}
 
@@ -352,11 +472,81 @@ mod tests {
     mb.clone().pretty_print(&heap);
   }
 
+  #[test]
+  fn gc_successful_sweep_test() {
+    let heap = &mut Heap::new();
+    heap.alloc_string("string".to_string());
+    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    heap.sweep(1000);
+    assert_eq!("Total slots: 2. Total used: 1. Total unused: 1", heap.stat());
+  }
+
+  #[test]
+  fn gc_partial_sweep_test() {
+    let heap = &mut Heap::new();
+    heap.alloc_string("string1".to_string());
+    heap.alloc_string("string2".to_string());
+    assert_eq!("Total slots: 3. Total used: 3. Total unused: 0", heap.stat());
+    heap.sweep(0);
+    assert_eq!("Total slots: 3. Total used: 3. Total unused: 0", heap.stat());
+    heap.sweep(1);
+    assert_eq!("Total slots: 3. Total used: 3. Total unused: 0", heap.stat());
+    heap.sweep(1);
+    assert_eq!("Total slots: 3. Total used: 2. Total unused: 1", heap.stat());
+    heap.sweep(1);
+    assert_eq!("Total slots: 3. Total used: 1. Total unused: 2", heap.stat());
+    assert_eq!(0, heap.sweep_index);
+  }
+
+  #[test]
+  fn gc_marked_full_sweep_test() {
+    let heap = &mut Heap::new();
+    let p1 = heap.alloc_str("static1");
+    heap.alloc_str("static2");
+    let p2 = heap.alloc_string("string1".to_string());
+    heap.alloc_string("string2".to_string());
+    heap.mark(p1);
+    heap.mark(p2);
+    assert_eq!("Total slots: 5. Total used: 5. Total unused: 0", heap.stat());
+    heap.sweep(1000);
+    assert_eq!("Total slots: 5. Total used: 4. Total unused: 1", heap.stat());
+  }
+
+  #[test]
+  fn gc_has_unmarked_no_op_sweep_test() {
+    let heap = &mut Heap::new();
+    heap.alloc_string("string".to_string());
+    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    heap.add_unmarked_module_reference(ModuleReference::dummy());
+    heap.sweep(1000);
+    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+  }
+
+  #[test]
+  fn gc_mark_unmark_module_reference_sweep_test() {
+    let heap = &mut Heap::new();
+    heap.alloc_string("string".to_string());
+    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    heap.add_unmarked_module_reference(ModuleReference::dummy());
+    heap.sweep(1000);
+    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    assert!(heap.pop_unmarked_module_reference().is_some());
+    assert!(heap.pop_unmarked_module_reference().is_none());
+    heap.sweep(1000);
+    assert_eq!("Total slots: 2. Total used: 1. Total unused: 1", heap.stat());
+  }
+
   #[should_panic]
   #[test]
   fn heap_str_crash() {
     let heap = Heap::new();
     PStr(100).as_str(&heap);
+  }
+
+  #[should_panic]
+  #[test]
+  fn heap_str_stored_crash() {
+    let _ = StringStoredInHeap::Deallocated.deref();
   }
 
   #[should_panic]
