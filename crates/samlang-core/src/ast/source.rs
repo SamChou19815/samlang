@@ -32,6 +32,10 @@ impl CommentStore {
     CommentStore { store: vec![vec![]] }
   }
 
+  pub(crate) fn all_comments(&self) -> &Vec<Vec<Comment>> {
+    &self.store
+  }
+
   pub(crate) fn get(&self, reference: CommentReference) -> &Vec<Comment> {
     &self.store[reference.0]
   }

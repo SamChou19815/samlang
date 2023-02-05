@@ -212,6 +212,22 @@ impl Heap {
     format!("Total slots: {total_slots}. Total used: {total_used}. Total unused: {total_unused}")
   }
 
+  /// Returns all unmarked strings for debugging
+  #[cfg(test)]
+  pub(crate) fn debug_unmarked_strings(&self) -> String {
+    self
+      .str_pointer_table
+      .iter()
+      .filter_map(|stored| match stored {
+        StringStoredInHeap::Permanent(_)
+        | StringStoredInHeap::Deallocated
+        | StringStoredInHeap::Temporary(_, true) => None,
+        StringStoredInHeap::Temporary(s, false) => Some(s),
+      })
+      .sorted()
+      .join("\n")
+  }
+
   /// This function can be used for GC purposes only. Use with caution.
   ///
   /// This function informs the heap that a new module reference has been touched, so that
@@ -477,8 +493,10 @@ mod tests {
     let heap = &mut Heap::new();
     heap.alloc_string("string".to_string());
     assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    assert_eq!("string", heap.debug_unmarked_strings());
     heap.sweep(1000);
     assert_eq!("Total slots: 2. Total used: 1. Total unused: 1", heap.stat());
+    assert_eq!("", heap.debug_unmarked_strings());
   }
 
   #[test]

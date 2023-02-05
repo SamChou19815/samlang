@@ -12,6 +12,7 @@ mod comments_tests {
     .is_empty());
     assert!(!format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone())
       .is_empty());
+    assert!(!CommentStore::new().all_comments().is_empty());
     assert!(CommentStore::new().clone().get(NO_COMMENT_REFERENCE).is_empty());
     assert!(CommentStore::new().clone().get_mut(NO_COMMENT_REFERENCE).is_empty());
   }

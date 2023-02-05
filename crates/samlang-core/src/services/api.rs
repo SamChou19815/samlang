@@ -1,4 +1,5 @@
 use super::{
+  gc::perform_gc_after_recheck,
   location_cover::{search_module, LocationCoverSearchResult},
   variable_definition::{apply_renaming, VariableDefinitionLookup},
 };
@@ -100,11 +101,11 @@ impl LanguageServices {
     self.checked_modules = checked_modules;
     self.global_cx = global_cx;
     self.update_errors(error_set.errors());
-    /*
-    for mod_ref in self.checked_modules.keys() {
-      self.heap.add_unmarked_module_reference(*mod_ref);
-    }
-    */
+    perform_gc_after_recheck(
+      &mut self.heap,
+      &self.checked_modules,
+      self.checked_modules.keys().copied().collect(),
+    );
   }
 
   fn update_errors(&mut self, errors: Vec<&CompileTimeError>) {
