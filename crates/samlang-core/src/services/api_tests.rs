@@ -28,7 +28,7 @@ mod tests {
   fn update_tests() {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["test".to_string()]);
-    let mut service = LanguageServices::new(heap, vec![]);
+    let mut service = LanguageServices::new(heap, false, vec![]);
     service.update(
       test_mod_ref,
       r#"
@@ -58,6 +58,7 @@ interface I { function test(): int }
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let mut service = LanguageServices::new(
       heap,
+      false,
       vec![
         (
           test1_mod_ref,
@@ -183,6 +184,7 @@ class Test2 {
     let test3_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test3".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![
         (
           test_mod_ref,
@@ -251,6 +253,7 @@ class Test1(val a: int) {
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![
         (
           test_mod_ref,
@@ -294,6 +297,7 @@ class Test2(val a: int) {
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![
         (
           test_mod_ref,
@@ -334,6 +338,7 @@ class Test2(val a: int) {
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![(
         test_mod_ref,
         r#"class Test1(val a: int) {
@@ -359,6 +364,7 @@ class Test2(val a: int) {
     let test3_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test3".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![
         (test3_mod_ref, "class ABC { function a(): unit = { val _ = 1; } }".to_string()),
         (test2_mod_ref, "class TTT { method test(): int = this.test() }".to_string()),
@@ -485,6 +491,7 @@ class Test1(val a: int) {
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![(
         test_mod_ref,
         r#"/** Test */
@@ -540,6 +547,7 @@ class Main {
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![(
         test_mod_ref,
         r#"
@@ -658,6 +666,7 @@ class Main {
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![(
         test_mod_ref,
         r#"
@@ -717,7 +726,7 @@ class Main {
   #[test]
   fn autocomplete_test_3() {
     let mod_ref = ModuleReference::dummy();
-    let service = LanguageServices::new(Heap::new(), vec![(mod_ref, ".".to_string())]);
+    let service = LanguageServices::new(Heap::new(), false, vec![(mod_ref, ".".to_string())]);
     assert!(service.auto_complete(&mod_ref, Position(0, 1)).is_empty());
   }
 
@@ -726,6 +735,7 @@ class Main {
     let mod_ref = ModuleReference::dummy();
     let service = LanguageServices::new(
       Heap::new(),
+      false,
       vec![(
         mod_ref,
         r#"
@@ -744,6 +754,7 @@ class Main {
     let mod_ref = ModuleReference::dummy();
     let service = LanguageServices::new(
       Heap::new(),
+      false,
       vec![(
         mod_ref.clone(),
         r#"
@@ -762,6 +773,7 @@ class Main {
     let mod_ref = ModuleReference::dummy();
     let service = LanguageServices::new(
       Heap::new(),
+      false,
       vec![(
         mod_ref,
         r#"
@@ -793,6 +805,7 @@ class Developer {
     let mod_ref = ModuleReference::dummy();
     let service = LanguageServices::new(
       Heap::new(),
+      false,
       vec![(
         mod_ref,
         r#"
@@ -810,7 +823,7 @@ class Main {
   fn rename_bad_identifier_tests() {
     let mut heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let mut service = LanguageServices::new(heap, vec![]);
+    let mut service = LanguageServices::new(heap, false, vec![]);
     assert!(service.rename_variable(&mod_ref, Position(2, 45), "3").is_none());
     assert!(service.rename_variable(&mod_ref, Position(2, 45), "A3").is_none());
     assert!(service.rename_variable(&mod_ref, Position(2, 45), "a3").is_none());
@@ -822,6 +835,7 @@ class Main {
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let mut service = LanguageServices::new(
       heap,
+      false,
       vec![(
         mod_ref,
         r#"/** Test */
@@ -847,6 +861,7 @@ class Test1 {
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let mut service = LanguageServices::new(
       heap,
+      false,
       vec![(
         mod_ref,
         r#"
@@ -885,6 +900,7 @@ class Test {
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![(
         mod_ref.clone(),
         r#"
@@ -912,6 +928,7 @@ class Main {
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let service = LanguageServices::new(
       heap,
+      false,
       vec![(
         mod_ref,
         r#"

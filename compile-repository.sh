@@ -6,7 +6,7 @@ echo "===== Compile Repository Integration Tests ====="
 echo ""
 echo "==================== Step 1 ===================="
 echo "Compiling samlang CLI..."
-cargo b -p samlang-cli 2> /dev/null
+cargo b -p samlang-cli --profile test 2> /dev/null
 echo "Compiled samlang CLI."
 
 echo "==================== Step 2 ===================="

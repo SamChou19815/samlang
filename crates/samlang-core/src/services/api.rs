@@ -1,4 +1,5 @@
 use super::{
+  gc::perform_gc_after_recheck,
   location_cover::{search_module, LocationCoverSearchResult},
   variable_definition::{apply_renaming, VariableDefinitionLookup},
 };
@@ -15,6 +16,7 @@ use crate::{
   },
   common::{Heap, ModuleReference, PStr},
   errors::{CompileTimeError, ErrorSet},
+  measure_time,
   parser::parse_source_module_from_text,
   printer,
 };
@@ -63,6 +65,7 @@ fn get_last_doc_comment(
 
 pub struct LanguageServices {
   pub heap: Heap,
+  enable_profiling: bool,
   raw_sources: HashMap<ModuleReference, String>,
   checked_modules: HashMap<ModuleReference, Module>,
   errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
@@ -72,9 +75,14 @@ pub struct LanguageServices {
 impl LanguageServices {
   // Section 1: Init
 
-  pub fn new(heap: Heap, source_handles: Vec<(ModuleReference, String)>) -> LanguageServices {
+  pub fn new(
+    heap: Heap,
+    enable_profiling: bool,
+    source_handles: Vec<(ModuleReference, String)>,
+  ) -> LanguageServices {
     let mut state = LanguageServices {
       heap,
+      enable_profiling,
       raw_sources: source_handles.into_iter().collect(),
       checked_modules: HashMap::new(),
       errors: HashMap::new(),
@@ -86,20 +94,32 @@ impl LanguageServices {
 
   fn init(&mut self) {
     let mut error_set = ErrorSet::new();
-    let (checked_modules, global_cx) = type_check_sources(
-      self
-        .raw_sources
-        .iter()
-        .map(|(mod_ref, text)| {
-          (*mod_ref, parse_source_module_from_text(text, *mod_ref, &mut self.heap, &mut error_set))
-        })
-        .collect(),
-      &mut self.heap,
-      &mut error_set,
-    );
+    let (checked_modules, global_cx) = measure_time(self.enable_profiling, "Recheck", || {
+      type_check_sources(
+        self
+          .raw_sources
+          .iter()
+          .map(|(mod_ref, text)| {
+            (
+              *mod_ref,
+              parse_source_module_from_text(text, *mod_ref, &mut self.heap, &mut error_set),
+            )
+          })
+          .collect(),
+        &mut self.heap,
+        &mut error_set,
+      )
+    });
     self.checked_modules = checked_modules;
     self.global_cx = global_cx;
     self.update_errors(error_set.errors());
+    measure_time(self.enable_profiling, "GC", || {
+      perform_gc_after_recheck(
+        &mut self.heap,
+        &self.checked_modules,
+        self.checked_modules.keys().copied().collect(),
+      )
+    });
   }
 
   fn update_errors(&mut self, errors: Vec<&CompileTimeError>) {

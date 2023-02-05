@@ -1454,7 +1454,7 @@ mod tests {
     assert_expr_correctly_lowered(
       &builder.string_expr(heap.alloc_str("foo")),
       heap,
-      "const GLOBAL_STRING_8 = 'foo';\n\n\nreturn GLOBAL_STRING_8;",
+      "const GLOBAL_STRING_6 = 'foo';\n\n\nreturn GLOBAL_STRING_6;",
     );
 
     // This & variable lowering works.
@@ -1486,8 +1486,8 @@ mod tests {
       }),
       heap,
       r#"closure type $SyntheticIDType0 = (int) -> int
-let _t17: $SyntheticIDType0 = Closure { fun: (___DUMMY___A$b_with_context: (int, int) -> int), context: 0 };
-return (_t17: $SyntheticIDType0);"#,
+let _t15: $SyntheticIDType0 = Closure { fun: (___DUMMY___A$b_with_context: (int, int) -> int), context: 0 };
+return (_t15: $SyntheticIDType0);"#,
     );
 
     // FieldAccess lowering works.
@@ -1501,7 +1501,7 @@ return (_t17: $SyntheticIDType0);"#,
         field_order: 0,
       }),
       heap,
-      "let _t16: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t16: int);",
+      "let _t14: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t14: int);",
     );
 
     // MethodAccess lowering works.
@@ -1515,8 +1515,8 @@ return (_t17: $SyntheticIDType0);"#,
       }),
       heap,
       r#"closure type $SyntheticIDType0 = (int) -> int
-let _t17: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy$foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
-return (_t17: $SyntheticIDType0);"#,
+let _t15: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy$foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
+return (_t15: $SyntheticIDType0);"#,
     );
   }
 
@@ -1541,8 +1541,8 @@ return (_t17: $SyntheticIDType0);"#,
         arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
       }),
       heap,
-      r#"let _t19: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t19: int);"#,
+      r#"let _t16: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+return (_t16: int);"#,
     );
     // Function call 2/n: class fn call without return
     let heap = &mut Heap::new();
@@ -1579,7 +1579,7 @@ return (_t19: int);"#,
         arguments: vec![builder.zero_expr()],
       }),
       heap,
-      "let _t17: __DUMMY___Dummy = ___DUMMY___C$m2(0);\nreturn (_t17: __DUMMY___Dummy);",
+      "let _t15: __DUMMY___Dummy = ___DUMMY___C$m2(0);\nreturn (_t15: __DUMMY___Dummy);",
     );
     // Function call 4/n: class fn generic call
     assert_expr_correctly_lowered(
@@ -1616,8 +1616,8 @@ return (_t19: int);"#,
         arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
       }),
       heap,
-      r#"let _t17: int = ___DUMMY___Dummy$fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t17: int);"#,
+      r#"let _t15: int = ___DUMMY___Dummy$fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+return (_t15: int);"#,
     );
     // Function call 6/n: closure call with return
     let heap = &mut Heap::new();
@@ -1631,8 +1631,8 @@ return (_t17: int);"#,
         arguments: vec![builder.true_expr()],
       }),
       heap,
-      r#"let _t14: int = (closure: Closure)(1);
-return (_t14: int);"#,
+      r#"let _t12: int = (closure: Closure)(1);
+return (_t12: int);"#,
     );
     // Function call 7/n: closure call without return
     let heap = &mut Heap::new();
@@ -1664,7 +1664,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t16: bool);",
+      "let _t14: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t14: bool);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1674,7 +1674,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
+      "let _t14: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
 
     // Binary Lowering: normal
@@ -1688,7 +1688,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
+      "let _t14: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1700,7 +1700,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: int = (_this: __DUMMY___Dummy) - (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
+      "let _t14: int = (_this: __DUMMY___Dummy) - (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1712,7 +1712,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
+      "let _t14: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1724,7 +1724,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: int = (_this: __DUMMY___Dummy) / (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
+      "let _t14: int = (_this: __DUMMY___Dummy) / (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1736,7 +1736,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: int = (_this: __DUMMY___Dummy) % (_this: __DUMMY___Dummy);\nreturn (_t16: int);",
+      "let _t14: int = (_this: __DUMMY___Dummy) % (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1748,7 +1748,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: bool = (_this: __DUMMY___Dummy) < (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
+      "let _t14: bool = (_this: __DUMMY___Dummy) < (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1760,7 +1760,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: bool = (_this: __DUMMY___Dummy) <= (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
+      "let _t14: bool = (_this: __DUMMY___Dummy) <= (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1772,7 +1772,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: bool = (_this: __DUMMY___Dummy) > (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
+      "let _t14: bool = (_this: __DUMMY___Dummy) > (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1784,7 +1784,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: bool = (_this: __DUMMY___Dummy) >= (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
+      "let _t14: bool = (_this: __DUMMY___Dummy) >= (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1796,7 +1796,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: bool = (_this: __DUMMY___Dummy) == (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
+      "let _t14: bool = (_this: __DUMMY___Dummy) == (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1808,7 +1808,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t16: bool = (_this: __DUMMY___Dummy) != (_this: __DUMMY___Dummy);\nreturn (_t16: bool);",
+      "let _t14: bool = (_this: __DUMMY___Dummy) != (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
     );
     // Binary Lowering: Short circuiting &&
     let heap = &mut Heap::new();
@@ -1821,13 +1821,13 @@ return 0;"#,
         e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t14: bool;
+      r#"let _t12: bool;
 if (foo: int) {
-  _t14 = (bar: bool);
+  _t12 = (bar: bool);
 } else {
-  _t14 = 0;
+  _t12 = 0;
 }
-return (_t14: bool);"#,
+return (_t12: bool);"#,
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1888,13 +1888,13 @@ return (_t14: bool);"#,
         e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t14: bool;
+      r#"let _t12: bool;
 if (foo: int) {
-  _t14 = 1;
+  _t12 = 1;
 } else {
-  _t14 = (bar: bool);
+  _t12 = (bar: bool);
 }
-return (_t14: bool);"#,
+return (_t12: bool);"#,
     );
     // Binary Lowering: string concat
     let heap = &mut Heap::new();
@@ -1907,8 +1907,8 @@ return (_t14: bool);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t16: string = __Builtins$stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t16: string);"#,
+      r#"let _t14: string = __Builtins$stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+return (_t14: string);"#,
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1920,7 +1920,7 @@ return (_t16: string);"#,
         e2: Box::new(builder.string_expr(heap.alloc_str("world"))),
       }),
       heap,
-      "const GLOBAL_STRING_16 = 'hello world';\n\n\nreturn GLOBAL_STRING_16;",
+      "const GLOBAL_STRING_14 = 'hello world';\n\n\nreturn GLOBAL_STRING_14;",
     );
   }
 
@@ -1948,9 +1948,9 @@ function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDTyp
   return (_this: __DUMMY___Dummy);
 }
 
-let _t18: $SyntheticIDType0 = [(captured_a: int)];
-let _t17: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t18: $SyntheticIDType0) };
-return (_t17: $SyntheticIDType1);"#,
+let _t16: $SyntheticIDType0 = [(captured_a: int)];
+let _t15: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t16: $SyntheticIDType0) };
+return (_t15: $SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -1973,9 +1973,9 @@ function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDTyp
   return (_this: __DUMMY___Dummy);
 }
 
-let _t18: $SyntheticIDType0 = [(captured_a: int)];
-let _t17: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t18: $SyntheticIDType0) };
-return (_t17: $SyntheticIDType1);"#,
+let _t16: $SyntheticIDType0 = [(captured_a: int)];
+let _t15: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t16: $SyntheticIDType0) };
+return (_t15: $SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -1999,9 +1999,9 @@ function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDTyp
   return (_this: __DUMMY___Dummy);
 }
 
-let _t18: $SyntheticIDType0 = [(captured_a: int)];
-let _t17: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy), context: (_t18: $SyntheticIDType0) };
-return (_t17: $SyntheticIDType1);"#,
+let _t16: $SyntheticIDType0 = [(captured_a: int)];
+let _t15: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy), context: (_t16: $SyntheticIDType0) };
+return (_t15: $SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2023,8 +2023,8 @@ function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: int, a: int): _
   return (_this: __DUMMY___Dummy);
 }
 
-let _t17: $SyntheticIDType0 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: (int, int) -> __DUMMY___Dummy), context: 0 };
-return (_t17: $SyntheticIDType0);"#,
+let _t15: $SyntheticIDType0 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: (int, int) -> __DUMMY___Dummy), context: 0 };
+return (_t15: $SyntheticIDType0);"#,
     );
   }
 
@@ -2041,13 +2041,13 @@ return (_t17: $SyntheticIDType0);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t16: __DUMMY___Dummy;
+      r#"let _t14: __DUMMY___Dummy;
 if (_this: __DUMMY___Dummy) {
-  _t16 = (_this: __DUMMY___Dummy);
+  _t14 = (_this: __DUMMY___Dummy);
 } else {
-  _t16 = (_this: __DUMMY___Dummy);
+  _t14 = (_this: __DUMMY___Dummy);
 }
-return (_t16: __DUMMY___Dummy);"#,
+return (_t14: __DUMMY___Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2073,16 +2073,16 @@ return (_t16: __DUMMY___Dummy);"#,
         ],
       }),
       heap,
-      r#"let _t18: int = (_this: __DUMMY___Dummy)[0];
-let _t19: bool = (_t18: int) == 0;
-let _t20: __DUMMY___Dummy;
-if (_t19: bool) {
+      r#"let _t16: int = (_this: __DUMMY___Dummy)[0];
+let _t17: bool = (_t16: int) == 0;
+let _t18: __DUMMY___Dummy;
+if (_t17: bool) {
   let bar: int = (_this: __DUMMY___Dummy)[1];
-  _t20 = (_this: __DUMMY___Dummy);
+  _t18 = (_this: __DUMMY___Dummy);
 } else {
-  _t20 = (_this: __DUMMY___Dummy);
+  _t18 = (_this: __DUMMY___Dummy);
 }
-return (_t20: __DUMMY___Dummy);"#,
+return (_t18: __DUMMY___Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2120,23 +2120,23 @@ return (_t20: __DUMMY___Dummy);"#,
         ],
       }),
       heap,
-      r#"let _t19: int = (_this: __DUMMY___Dummy)[0];
-let _t22: bool = (_t19: int) == 0;
-let _t23: __DUMMY___Dummy;
-if (_t22: bool) {
-  _t23 = (_this: __DUMMY___Dummy);
+      r#"let _t17: int = (_this: __DUMMY___Dummy)[0];
+let _t20: bool = (_t17: int) == 0;
+let _t21: __DUMMY___Dummy;
+if (_t20: bool) {
+  _t21 = (_this: __DUMMY___Dummy);
 } else {
-  let _t20: bool = (_t19: int) == 1;
-  let _t21: __DUMMY___Dummy;
-  if (_t20: bool) {
+  let _t18: bool = (_t17: int) == 1;
+  let _t19: __DUMMY___Dummy;
+  if (_t18: bool) {
     let bar: int = (_this: __DUMMY___Dummy)[1];
-    _t21 = (bar: int);
+    _t19 = (bar: int);
   } else {
-    _t21 = (_this: __DUMMY___Dummy);
+    _t19 = (_this: __DUMMY___Dummy);
   }
-  _t23 = (_t21: __DUMMY___Dummy);
+  _t21 = (_t19: __DUMMY___Dummy);
 }
-return (_t23: __DUMMY___Dummy);"#,
+return (_t21: __DUMMY___Dummy);"#,
     );
   }
 
@@ -2301,7 +2301,7 @@ return 0;"#,
         expression: Some(Box::new(builder.id_expr(heap.alloc_str("b"), builder.string_type()))),
       }),
       heap,
-      "const GLOBAL_STRING_4 = 'foo';\n\n\nreturn GLOBAL_STRING_4;",
+      "const GLOBAL_STRING_2 = 'foo';\n\n\nreturn GLOBAL_STRING_2;",
     );
 
     let heap = &mut Heap::new();
@@ -2682,17 +2682,17 @@ function ___DUMMY___Class1$infiniteLoop(): int {
 }
 
 function ___DUMMY___Class1$factorial(n: int, acc: int): int {
-  let _t50: bool = (n: int) == 0;
-  let _t51: int;
-  if (_t50: bool) {
-    _t51 = 1;
+  let _t47: bool = (n: int) == 0;
+  let _t48: int;
+  if (_t47: bool) {
+    _t48 = 1;
   } else {
-    let _t53: int = (n: int) + -1;
-    let _t54: int = (n: int) * (acc: int);
-    let _t52: int = ___DUMMY___Class1$factorial((_t53: int), (_t54: int));
-    _t51 = (_t52: int);
+    let _t50: int = (n: int) + -1;
+    let _t51: int = (n: int) * (acc: int);
+    let _t49: int = ___DUMMY___Class1$factorial((_t50: int), (_t51: int));
+    _t48 = (_t49: int);
   }
-  return (_t51: int);
+  return (_t48: int);
 }
 
 function ___DUMMY___Class2$Tag(_data: int): __DUMMY___Class2 {

@@ -403,7 +403,7 @@ mod tests {
         )),
       },
       heap,
-      "let _t8: int = (outside: int) * 15;\nlet bc: int = (_t8: int) + (j_init: int);",
+      "let _t6: int = (outside: int) * 15;\nlet bc: int = (_t6: int) + (j_init: int);",
     );
 
     assert_optimized(
