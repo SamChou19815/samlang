@@ -289,7 +289,7 @@ impl Heap {
           if *marked {
             *marked = false;
           } else {
-            self.interned_static_str.remove(str.as_str());
+            self.interned_string.remove(str.as_str());
             *string_stored = StringStoredInHeap::Deallocated
           }
         }
