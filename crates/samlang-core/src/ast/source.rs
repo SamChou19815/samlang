@@ -287,6 +287,54 @@ impl TypeParameterSignature {
   }
 }
 
+pub(crate) mod annotation {
+  use super::CommentReference;
+  use crate::{ast::Location, ModuleReference};
+
+  #[derive(Copy, Clone)]
+  pub(crate) enum PrimitiveTypeKind {
+    Unit,
+    Bool,
+    Int,
+    String,
+  }
+
+  impl ToString for PrimitiveTypeKind {
+    fn to_string(&self) -> String {
+      match self {
+        Self::Unit => "unit".to_string(),
+        Self::Bool => "bool".to_string(),
+        Self::Int => "int".to_string(),
+        Self::String => "string".to_string(),
+      }
+    }
+  }
+
+  #[derive(Clone)]
+  pub(crate) struct Id {
+    pub(crate) location: Location,
+    pub(crate) associated_comments: CommentReference,
+    pub(crate) module_reference: ModuleReference,
+    pub(crate) id: super::Id,
+    pub(crate) type_arguments: Vec<T>,
+  }
+
+  #[derive(Clone)]
+  pub(crate) struct Function {
+    pub(crate) location: Location,
+    pub(crate) associated_comments: CommentReference,
+    pub(crate) argument_types: Vec<T>,
+    pub(crate) return_type: Box<T>,
+  }
+
+  #[derive(Clone)]
+  pub(crate) enum T {
+    Primitive(Location, CommentReference, PrimitiveTypeKind),
+    Id(Id),
+    Fn(Function),
+  }
+}
+
 #[derive(Clone)]
 pub(crate) struct Id {
   pub(crate) loc: Location,
@@ -805,6 +853,69 @@ pub(crate) mod test_builder {
   }
 
   impl CustomizedAstBuilder {
+    pub(crate) fn unit_annot(&self) -> annotation::T {
+      annotation::T::Primitive(
+        Location::dummy(),
+        NO_COMMENT_REFERENCE,
+        annotation::PrimitiveTypeKind::Unit,
+      )
+    }
+
+    pub(crate) fn bool_annot(&self) -> annotation::T {
+      annotation::T::Primitive(
+        Location::dummy(),
+        NO_COMMENT_REFERENCE,
+        annotation::PrimitiveTypeKind::Bool,
+      )
+    }
+
+    pub(crate) fn int_annot(&self) -> annotation::T {
+      annotation::T::Primitive(
+        Location::dummy(),
+        NO_COMMENT_REFERENCE,
+        annotation::PrimitiveTypeKind::Int,
+      )
+    }
+
+    pub(crate) fn string_annot(&self) -> annotation::T {
+      annotation::T::Primitive(
+        Location::dummy(),
+        NO_COMMENT_REFERENCE,
+        annotation::PrimitiveTypeKind::String,
+      )
+    }
+
+    pub(crate) fn general_id_annot(
+      &self,
+      id: PStr,
+      type_arguments: Vec<annotation::T>,
+    ) -> annotation::T {
+      annotation::T::Id(annotation::Id {
+        location: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        module_reference: self.module_reference,
+        id: Id::from(id),
+        type_arguments,
+      })
+    }
+
+    pub(crate) fn simple_id_annot(&self, id: PStr) -> annotation::T {
+      self.general_id_annot(id, vec![])
+    }
+
+    pub(crate) fn fn_annot(
+      &self,
+      argument_types: Vec<annotation::T>,
+      return_type: annotation::T,
+    ) -> annotation::T {
+      annotation::T::Fn(annotation::Function {
+        location: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        argument_types,
+        return_type: Box::new(return_type),
+      })
+    }
+
     pub(crate) fn unit_type(&self) -> Rc<Type> {
       Rc::new(Type::unit_type(self.reason.clone()))
     }
@@ -821,7 +932,7 @@ pub(crate) mod test_builder {
     pub(crate) fn simple_id_type_unwrapped(&self, id: PStr) -> IdType {
       IdType {
         reason: self.reason.clone(),
-        module_reference: self.module_reference.clone(),
+        module_reference: self.module_reference,
         id,
         type_arguments: vec![],
       }
@@ -834,7 +945,7 @@ pub(crate) mod test_builder {
     ) -> IdType {
       IdType {
         reason: self.reason.clone(),
-        module_reference: self.module_reference.clone(),
+        module_reference: self.module_reference,
         id,
         type_arguments,
       }
