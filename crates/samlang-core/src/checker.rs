@@ -11,21 +11,25 @@ use crate::{
 };
 use std::collections::HashMap;
 
+/// Converting annotations to internal type language.
+mod annotation_converter;
 mod checker_tests;
-/** Utilities operating on types */
+/// Utilities operating on types
 mod checker_utils;
 mod checker_utils_tests;
-/** Responsible for building the global typing environment as part of pre-processing phase. */
+/// Responsible for building the global typing environment as part of pre-processing phase.
 mod global_typing_context_builder;
-/** The main checker that connects everything together. */
+/// The main checker that connects everything together.
 mod main_checker;
-/** Computing the SSA graph. */
+/// Computing the SSA graph.
 mod ssa_analysis;
 mod ssa_analysis_tests;
-/** All the typing context in one place. */
+/// Definition of internal type language.
+mod type_;
+/// All the typing context in one place.
 mod typing_context;
 mod typing_context_tests;
-/** Responsible for checking undefined imports. */
+/// Responsible for checking undefined imports.
 mod undefined_imports_checker;
 
 pub(crate) use ssa_analysis::{perform_ssa_analysis_on_module, SsaAnalysisResult};
