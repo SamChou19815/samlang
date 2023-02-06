@@ -34,6 +34,37 @@ mod literal_tests {
 }
 
 #[cfg(test)]
+mod annotation_tests {
+  use super::super::source::*;
+  use crate::Heap;
+
+  #[test]
+  fn primitive_type_kind_to_string_tests() {
+    assert_eq!("unit", annotation::PrimitiveTypeKind::Unit.to_string());
+    assert_eq!("bool", annotation::PrimitiveTypeKind::Bool.to_string());
+    assert_eq!("int", annotation::PrimitiveTypeKind::Int.to_string());
+    assert_eq!("string", annotation::PrimitiveTypeKind::String.to_string());
+  }
+
+  #[test]
+  fn build_and_clone_tests() {
+    let builder = test_builder::create();
+    let heap = &mut Heap::new();
+    let _ = builder
+      .fn_annot(
+        vec![
+          builder.unit_annot(),
+          builder.bool_annot(),
+          builder.int_annot(),
+          builder.string_annot(),
+        ],
+        builder.simple_id_annot(heap.alloc_str("str")),
+      )
+      .clone();
+  }
+}
+
+#[cfg(test)]
 mod type_tests {
   use super::super::source::*;
   use crate::ast::loc::Location;
