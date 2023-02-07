@@ -11,9 +11,9 @@ use super::{
 use crate::{
   ast::{
     common_names::{self, encode_samlang_type},
-    hir::{self, Type},
-    source::{self, ClassMemberDefinition},
+    hir, source,
   },
+  checker::type_,
   common::{self, Heap, ModuleReference, PStr},
 };
 use itertools::Itertools;
@@ -197,8 +197,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     type_def.mappings.iter().map(|t| type_application(t, &replacement_map)).collect_vec()
   }
 
-  fn get_function_type_without_context(&mut self, t: &source::Type) -> hir::FunctionType {
-    let source::FunctionType { argument_types, return_type, .. } =
+  fn get_function_type_without_context(&mut self, t: &type_::Type) -> hir::FunctionType {
+    let type_::FunctionType { argument_types, return_type, .. } =
       t.as_fn().expect("Expecting function type");
     let (_, t) = self.type_lowering_manager.lower_source_function_type_for_toplevel(
       self.heap,
@@ -418,7 +418,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
     let is_void_return = if let Some((_, kind)) = expression.common.type_.as_primitive() {
-      *kind == source::PrimitiveTypeKind::Unit
+      *kind == type_::PrimitiveTypeKind::Unit
     } else {
       false
     };
@@ -1146,7 +1146,7 @@ fn compile_sources_with_generics_preserved(
           &c.type_definition,
         ));
         if c.name.name.as_str(heap).eq("Main")
-          && c.members.iter().any(|ClassMemberDefinition { decl, .. }| {
+          && c.members.iter().any(|source::ClassMemberDefinition { decl, .. }| {
             decl.name.name.as_str(heap).eq("main")
               && decl.parameters.is_empty()
               && decl.type_parameters.is_empty()
@@ -1194,7 +1194,7 @@ fn compile_sources_with_generics_preserved(
               heap.alloc_str("_this"),
               hir::Type::new_id(
                 heap.alloc_string(encode_samlang_type(heap, module_reference, c.name.name)),
-                class_tparams.into_iter().map(Type::new_id_no_targs).collect_vec(),
+                class_tparams.into_iter().map(hir::Type::new_id_no_targs).collect_vec(),
               ),
             )]
             .into_iter()
@@ -1338,6 +1338,7 @@ mod tests {
       source::{self, CommentStore, NO_COMMENT_REFERENCE},
       Location, Reason,
     },
+    checker::type_::{self, test_type_builder},
     common::{Heap, ModuleReference},
     compiler::{
       hir_lowering::ExpressionLoweringManager,
@@ -1425,34 +1426,60 @@ mod tests {
     assert_eq!(expected_str, actual_string.trim());
   }
 
-  fn dummy_source_id_type_unwrapped(heap: &mut Heap) -> source::IdType {
-    let builder = source::test_builder::create();
-    builder.simple_id_type_unwrapped(heap.alloc_str("Dummy"))
+  fn dummy_source_id_type_unwrapped(heap: &mut Heap) -> type_::IdType {
+    test_type_builder::create().simple_id_type_unwrapped(heap.alloc_str("Dummy"))
   }
 
-  fn dummy_source_id_type(heap: &mut Heap) -> source::Type {
-    source::Type::Id(dummy_source_id_type_unwrapped(heap))
+  fn dummy_source_id_type(heap: &mut Heap) -> type_::Type {
+    type_::Type::Id(dummy_source_id_type_unwrapped(heap))
   }
 
   fn dummy_source_this(heap: &mut Heap) -> source::expr::E {
-    let builder = source::test_builder::create();
     source::expr::E::Id(
-      builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+      source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
       source::Id::from(heap.alloc_str("this")),
     )
   }
 
+  fn id_expr(id: crate::common::PStr, type_: Rc<type_::Type>) -> source::expr::E {
+    source::expr::E::Id(source::expr::ExpressionCommon::dummy(type_), source::Id::from(id))
+  }
+
   #[test]
   fn simple_expressions_lowering_tests() {
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     // Literal lowering works.
     let heap = &mut Heap::new();
-    assert_expr_correctly_lowered(&builder.false_expr(), heap, "return 0;");
-    assert_expr_correctly_lowered(&builder.true_expr(), heap, "return 1;");
-    assert_expr_correctly_lowered(&builder.zero_expr(), heap, "return 0;");
     assert_expr_correctly_lowered(
-      &builder.string_expr(heap.alloc_str("foo")),
+      &source::expr::E::Literal(
+        source::expr::ExpressionCommon::dummy(builder.bool_type()),
+        source::Literal::Bool(false),
+      ),
+      heap,
+      "return 0;",
+    );
+    assert_expr_correctly_lowered(
+      &source::expr::E::Literal(
+        source::expr::ExpressionCommon::dummy(builder.bool_type()),
+        source::Literal::Bool(true),
+      ),
+      heap,
+      "return 1;",
+    );
+    assert_expr_correctly_lowered(
+      &source::expr::E::Literal(
+        source::expr::ExpressionCommon::dummy(builder.int_type()),
+        source::Literal::Int(0),
+      ),
+      heap,
+      "return 0;",
+    );
+    assert_expr_correctly_lowered(
+      &source::expr::E::Literal(
+        source::expr::ExpressionCommon::dummy(builder.string_type()),
+        source::Literal::String(heap.alloc_str("foo")),
+      ),
       heap,
       "const GLOBAL_STRING_6 = 'foo';\n\n\nreturn GLOBAL_STRING_6;",
     );
@@ -1464,7 +1491,7 @@ mod tests {
       "return (_this: __DUMMY___Dummy);",
     );
     assert_expr_correctly_lowered(
-      &builder.id_expr(heap.alloc_str("foo"), builder.unit_type()),
+      &id_expr(heap.alloc_str("foo"), builder.unit_type()),
       heap,
       "return (foo: int);",
     );
@@ -1472,13 +1499,15 @@ mod tests {
 
   #[test]
   fn access_expressions_lowering_tests() {
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     // ClassFn lowering works.
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::ClassFn(source::expr::ClassFunction {
-        common: builder.expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
+        common: source::expr::ExpressionCommon::dummy(
+          builder.fun_type(vec![builder.int_type()], builder.int_type()),
+        ),
         type_arguments: vec![],
         module_reference: ModuleReference::dummy(),
         class_name: source::Id::from(heap.alloc_str("A")),
@@ -1494,7 +1523,7 @@ return (_t15: $SyntheticIDType0);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::FieldAccess(source::expr::FieldAccess {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         type_arguments: vec![],
         object: Box::new(dummy_source_this(heap)),
         field_name: source::Id::from(heap.alloc_str("foo")),
@@ -1508,7 +1537,9 @@ return (_t15: $SyntheticIDType0);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::MethodAccess(source::expr::MethodAccess {
-        common: builder.expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
+        common: source::expr::ExpressionCommon::dummy(
+          builder.fun_type(vec![builder.int_type()], builder.int_type()),
+        ),
         type_arguments: vec![],
         object: Box::new(dummy_source_this(heap)),
         method_name: source::Id::from(heap.alloc_str("foo")),
@@ -1522,16 +1553,17 @@ return (_t15: $SyntheticIDType0);"#,
 
   #[test]
   fn call_lowering_tests() {
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     // Function call 1/n: class fn call with return
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(builder.int_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
         callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-          common: builder
-            .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
+          common: source::expr::ExpressionCommon::dummy(
+            builder.fun_type(vec![builder.int_type()], builder.int_type()),
+          ),
           type_arguments: vec![],
           module_reference: heap
             .alloc_module_reference_from_string_vec(vec!["ModuleModule".to_string()]),
@@ -1548,16 +1580,20 @@ return (_t16: int);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-          common: builder
-            .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
+          common: source::expr::ExpressionCommon::dummy(
+            builder.fun_type(vec![builder.int_type()], builder.int_type()),
+          ),
           type_arguments: vec![],
           module_reference: ModuleReference::dummy(),
           class_name: source::Id::from(heap.alloc_str("C")),
           fn_name: source::Id::from(heap.alloc_str("m1")),
         })),
-        arguments: vec![builder.zero_expr()],
+        arguments: vec![source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.int_type()),
+          source::Literal::Int(0),
+        )],
       }),
       heap,
       "___DUMMY___C$m1(0);\nreturn 0;",
@@ -1566,9 +1602,9 @@ return (_t16: int);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-          common: builder.expr_common(
+          common: source::expr::ExpressionCommon::dummy(
             builder.fun_type(vec![builder.int_type()], Rc::new(dummy_source_id_type(heap))),
           ),
           type_arguments: vec![],
@@ -1576,7 +1612,10 @@ return (_t16: int);"#,
           class_name: source::Id::from(heap.alloc_str("C")),
           fn_name: source::Id::from(heap.alloc_str("m2")),
         })),
-        arguments: vec![builder.zero_expr()],
+        arguments: vec![source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.int_type()),
+          source::Literal::Int(0),
+        )],
       }),
       heap,
       "let _t15: __DUMMY___Dummy = ___DUMMY___C$m2(0);\nreturn (_t15: __DUMMY___Dummy);",
@@ -1584,9 +1623,9 @@ return (_t16: int);"#,
     // Function call 4/n: class fn generic call
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-          common: builder.expr_common(
+          common: source::expr::ExpressionCommon::dummy(
             builder.fun_type(vec![builder.int_type()], Rc::new(dummy_source_id_type(heap))),
           ),
           type_arguments: vec![],
@@ -1594,7 +1633,10 @@ return (_t16: int);"#,
           class_name: source::Id::from(heap.alloc_str("GENERIC_TYPE")),
           fn_name: source::Id::from(heap.alloc_str("m2")),
         })),
-        arguments: vec![builder.zero_expr()],
+        arguments: vec![source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.int_type()),
+          source::Literal::Int(0),
+        )],
       }),
       heap,
       "$GENERICS$_GENERIC_TYPE$m2(0);\nreturn 0;",
@@ -1603,9 +1645,9 @@ return (_t16: int);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         callee: Box::new(source::expr::E::MethodAccess(source::expr::MethodAccess {
-          common: builder.expr_common(builder.fun_type(
+          common: source::expr::ExpressionCommon::dummy(builder.fun_type(
             vec![Rc::new(dummy_source_id_type(heap)), Rc::new(dummy_source_id_type(heap))],
             builder.int_type(),
           )),
@@ -1623,12 +1665,15 @@ return (_t15: int);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(builder.int_type()),
-        callee: Box::new(builder.id_expr(
+        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+        callee: Box::new(id_expr(
           heap.alloc_str("closure"),
           builder.fun_type(vec![builder.bool_type()], builder.int_type()),
         )),
-        arguments: vec![builder.true_expr()],
+        arguments: vec![source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.bool_type()),
+          source::Literal::Bool(true),
+        )],
       }),
       heap,
       r#"let _t12: int = (closure: Closure)(1);
@@ -1638,12 +1683,15 @@ return (_t12: int);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Call(source::expr::Call {
-        common: builder.expr_common(builder.unit_type()),
-        callee: Box::new(builder.id_expr(
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
+        callee: Box::new(id_expr(
           heap.alloc_str("closure_unit_return"),
           builder.fun_type(vec![builder.bool_type()], builder.unit_type()),
         )),
-        arguments: vec![builder.true_expr()],
+        arguments: vec![source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.bool_type()),
+          source::Literal::Bool(true),
+        )],
       }),
       heap,
       r#"(closure_unit_return: Closure)(1);
@@ -1653,13 +1701,13 @@ return 0;"#,
 
   #[test]
   fn op_lowering_tests() {
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     // Unary lowering works.
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Unary(source::expr::Unary {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         operator: source::expr::UnaryOperator::NOT,
         argument: Box::new(dummy_source_this(heap)),
       }),
@@ -1669,7 +1717,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Unary(source::expr::Unary {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         operator: source::expr::UnaryOperator::NEG,
         argument: Box::new(dummy_source_this(heap)),
       }),
@@ -1681,7 +1729,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.int_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::PLUS,
         e1: Box::new(dummy_source_this(heap)),
@@ -1693,7 +1741,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.int_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::MINUS,
         e1: Box::new(dummy_source_this(heap)),
@@ -1705,7 +1753,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.int_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::MUL,
         e1: Box::new(dummy_source_this(heap)),
@@ -1717,7 +1765,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.int_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::DIV,
         e1: Box::new(dummy_source_this(heap)),
@@ -1729,7 +1777,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.int_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.int_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::MOD,
         e1: Box::new(dummy_source_this(heap)),
@@ -1741,7 +1789,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::LT,
         e1: Box::new(dummy_source_this(heap)),
@@ -1753,7 +1801,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::LE,
         e1: Box::new(dummy_source_this(heap)),
@@ -1765,7 +1813,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::GT,
         e1: Box::new(dummy_source_this(heap)),
@@ -1777,7 +1825,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments:NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::GE,
         e1: Box::new(dummy_source_this(heap)),
@@ -1789,7 +1837,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::EQ,
         e1: Box::new(dummy_source_this(heap)),
@@ -1801,7 +1849,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::NE,
         e1: Box::new(dummy_source_this(heap)),
@@ -1814,11 +1862,11 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::AND,
-        e1: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.bool_type())),
-        e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
+        e1: Box::new(id_expr(heap.alloc_str("foo"), builder.bool_type())),
+        e2: Box::new(id_expr(heap.alloc_str("bar"), builder.bool_type())),
       }),
       heap,
       r#"let _t12: bool;
@@ -1832,11 +1880,14 @@ return (_t12: bool);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::AND,
-        e1: Box::new(builder.true_expr()),
-        e2: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
+        e1: Box::new(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.bool_type()),
+          source::Literal::Bool(true),
+        )),
+        e2: Box::new(id_expr(heap.alloc_str("foo"), builder.int_type())),
       }),
       heap,
       "return (foo: int);",
@@ -1844,11 +1895,14 @@ return (_t12: bool);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::AND,
-        e1: Box::new(builder.false_expr()),
-        e2: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
+        e1: Box::new(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.bool_type()),
+          source::Literal::Bool(false),
+        )),
+        e2: Box::new(id_expr(heap.alloc_str("foo"), builder.int_type())),
       }),
       heap,
       "return 0;",
@@ -1857,11 +1911,17 @@ return (_t12: bool);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::OR,
-        e1: Box::new(builder.true_expr()),
-        e2: Box::new(builder.int_lit(65536)),
+        e1: Box::new(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.bool_type()),
+          source::Literal::Bool(true),
+        )),
+        e2: Box::new(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.int_type()),
+          source::Literal::Int(65536),
+        )),
       }),
       heap,
       "return 1;",
@@ -1869,11 +1929,17 @@ return (_t12: bool);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::OR,
-        e1: Box::new(builder.false_expr()),
-        e2: Box::new(builder.int_lit(65536)),
+        e1: Box::new(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.bool_type()),
+          source::Literal::Bool(false),
+        )),
+        e2: Box::new(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.int_type()),
+          source::Literal::Int(65536),
+        )),
       }),
       heap,
       "return 65536;",
@@ -1881,11 +1947,11 @@ return (_t12: bool);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.bool_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::OR,
-        e1: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.bool_type())),
-        e2: Box::new(builder.id_expr(heap.alloc_str("bar"), builder.bool_type())),
+        e1: Box::new(id_expr(heap.alloc_str("foo"), builder.bool_type())),
+        e2: Box::new(id_expr(heap.alloc_str("bar"), builder.bool_type())),
       }),
       heap,
       r#"let _t12: bool;
@@ -1900,7 +1966,7 @@ return (_t12: bool);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.string_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.string_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::CONCAT,
         e1: Box::new(dummy_source_this(heap)),
@@ -1913,11 +1979,17 @@ return (_t14: string);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
-        common: builder.expr_common(builder.string_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.string_type()),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::CONCAT,
-        e1: Box::new(builder.string_expr(heap.alloc_str("hello "))),
-        e2: Box::new(builder.string_expr(heap.alloc_str("world"))),
+        e1: Box::new(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.string_type()),
+          source::Literal::String(heap.alloc_str("hello ")),
+        )),
+        e2: Box::new(source::expr::E::Literal(
+          source::expr::ExpressionCommon::dummy(builder.string_type()),
+          source::Literal::String(heap.alloc_str("world")),
+        )),
       }),
       heap,
       "const GLOBAL_STRING_14 = 'hello world';\n\n\nreturn GLOBAL_STRING_14;",
@@ -1926,13 +1998,14 @@ return (_t14: string);"#,
 
   #[test]
   fn lambda_lowering_tests() {
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
-        common: builder
-          .expr_common(builder.fun_type(vec![builder.unit_type()], builder.unit_type())),
+        common: source::expr::ExpressionCommon::dummy(
+          builder.fun_type(vec![builder.unit_type()], builder.unit_type()),
+        ),
         parameters: vec![source::OptionallyAnnotatedId {
           name: source::Id::from(heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
@@ -1956,8 +2029,9 @@ return (_t15: $SyntheticIDType1);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
-        common: builder
-          .expr_common(builder.fun_type(vec![builder.unit_type()], builder.int_type())),
+        common: source::expr::ExpressionCommon::dummy(
+          builder.fun_type(vec![builder.unit_type()], builder.int_type()),
+        ),
         parameters: vec![source::OptionallyAnnotatedId {
           name: source::Id::from(heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
@@ -1981,7 +2055,7 @@ return (_t15: $SyntheticIDType1);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
-        common: builder.expr_common(
+        common: source::expr::ExpressionCommon::dummy(
           builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type(heap))),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
@@ -2007,7 +2081,7 @@ return (_t15: $SyntheticIDType1);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Lambda(source::expr::Lambda {
-        common: builder.expr_common(
+        common: source::expr::ExpressionCommon::dummy(
           builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type(heap))),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
@@ -2030,12 +2104,12 @@ return (_t15: $SyntheticIDType0);"#,
 
   #[test]
   fn control_flow_lowering_tests() {
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
-        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         condition: Box::new(dummy_source_this(heap)),
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
@@ -2053,7 +2127,7 @@ return (_t14: __DUMMY___Dummy);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
-        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         matched: Box::new(dummy_source_this(heap)),
         cases: vec![
           source::expr::VariantPatternToExpression {
@@ -2088,7 +2162,7 @@ return (_t18: __DUMMY___Dummy);"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Match(source::expr::Match {
-        common: builder.expr_common(Rc::new(dummy_source_id_type(heap))),
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
         matched: Box::new(dummy_source_this(heap)),
         cases: vec![
           source::expr::VariantPatternToExpression {
@@ -2106,9 +2180,7 @@ return (_t18: __DUMMY___Dummy);"#,
               source::Id::from(heap.alloc_str("bar")),
               Rc::new(dummy_source_id_type(heap)),
             )),
-            body: Box::new(
-              builder.id_expr(heap.alloc_str("bar"), Rc::new(dummy_source_id_type(heap))),
-            ),
+            body: Box::new(id_expr(heap.alloc_str("bar"), Rc::new(dummy_source_id_type(heap)))),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
@@ -2142,19 +2214,19 @@ return (_t21: __DUMMY___Dummy);"#,
 
   #[test]
   fn block_lowering_tests() {
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
-            common: builder.expr_common(builder.unit_type()),
+            common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
             statements: vec![
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
@@ -2203,7 +2275,7 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         statements: vec![
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
@@ -2249,17 +2321,18 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.int_type()),
           assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
-            common: builder.expr_common(builder.int_type()),
+            common: source::expr::ExpressionCommon::dummy(builder.int_type()),
             callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-              common: builder
-                .expr_common(builder.fun_type(vec![builder.int_type()], builder.int_type())),
+              common: source::expr::ExpressionCommon::dummy(
+                builder.fun_type(vec![builder.int_type()], builder.int_type())
+              ),
               type_arguments: vec![],
               module_reference: heap.alloc_module_reference_from_string_vec(
                 vec!["ModuleModule".to_string()],
@@ -2270,7 +2343,7 @@ return 0;"#,
             arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
           })),
         }],
-        expression: Some(Box::new(builder.id_expr(heap.alloc_str("a"), builder.string_type()))),
+        expression: Some(Box::new( id_expr(heap.alloc_str("a"), builder.string_type()))),
       }),
       heap,
       "let a: int = _ModuleModule_ImportedClass$bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));\nreturn (a: int);",
@@ -2279,26 +2352,27 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         statements: vec![
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
             pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
             annotation: Some(builder.unit_type()),
-            assigned_expression: Box::new(builder.string_expr(heap.alloc_str("foo"))),
+            assigned_expression: Box::new(source::expr::E::Literal(
+              source::expr::ExpressionCommon::dummy(builder.string_type()),
+              source::Literal::String(heap.alloc_str("foo")),
+            )),
           },
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
             pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("b")),
             annotation: Some(builder.unit_type()),
-            assigned_expression: Box::new(
-              builder.id_expr(heap.alloc_str("a"), builder.string_type()),
-            ),
+            assigned_expression: Box::new(id_expr(heap.alloc_str("a"), builder.string_type())),
           },
         ],
-        expression: Some(Box::new(builder.id_expr(heap.alloc_str("b"), builder.string_type()))),
+        expression: Some(Box::new(id_expr(heap.alloc_str("b"), builder.string_type()))),
       }),
       heap,
       "const GLOBAL_STRING_2 = 'foo';\n\n\nreturn GLOBAL_STRING_2;",
@@ -2307,14 +2381,14 @@ return 0;"#,
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Block(source::expr::Block {
-        common: builder.expr_common(builder.unit_type()),
+        common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str("a")),
           annotation: Some(builder.unit_type()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
-            common: builder.expr_common(builder.unit_type()),
+            common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
             statements: vec![source::expr::DeclarationStatement {
               loc: Location::dummy(),
               associated_comments: NO_COMMENT_REFERENCE,
@@ -2322,10 +2396,10 @@ return 0;"#,
               annotation: Some(builder.int_type()),
               assigned_expression: Box::new(dummy_source_this(heap)),
             }],
-            expression: Some(Box::new(builder.id_expr(heap.alloc_str("a"), builder.string_type()))),
+            expression: Some(Box::new(id_expr(heap.alloc_str("a"), builder.string_type()))),
           })),
         }],
-        expression: Some(Box::new(builder.id_expr(heap.alloc_str("a"), builder.string_type()))),
+        expression: Some(Box::new(id_expr(heap.alloc_str("a"), builder.string_type()))),
       }),
       heap,
       "return (_this: __DUMMY___Dummy);",
@@ -2335,10 +2409,10 @@ return 0;"#,
   #[test]
   fn integration_tests() {
     let heap = &mut Heap::new();
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     let this_expr = &source::expr::E::Id(
-      builder.expr_common(builder.simple_id_type(heap.alloc_str("Dummy"))),
+      source::expr::ExpressionCommon::dummy(builder.simple_id_type(heap.alloc_str("Dummy"))),
       source::Id::from(heap.alloc_str("this")),
     );
 
@@ -2376,7 +2450,7 @@ return 0;"#,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str("main")),
                 type_parameters: Rc::new(vec![]),
-                type_: source::FunctionType {
+                type_: type_::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![],
                   return_type: builder.unit_type(),
@@ -2384,9 +2458,11 @@ return 0;"#,
                 parameters: Rc::new(vec![]),
               },
               body: source::expr::E::Call(source::expr::Call {
-                common: builder.expr_common(builder.unit_type()),
+                common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
                 callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-                  common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
+                  common: source::expr::ExpressionCommon::dummy(
+                    builder.fun_type(vec![], builder.int_type()),
+                  ),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
                   class_name: source::Id::from(heap.alloc_str("Class1")),
@@ -2408,7 +2484,7 @@ return 0;"#,
                   name: source::Id::from(heap.alloc_str("T")),
                   bound: None,
                 }]),
-                type_: source::FunctionType {
+                type_: type_::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![],
                   return_type: builder.unit_type(),
@@ -2416,9 +2492,11 @@ return 0;"#,
                 parameters: Rc::new(vec![]),
               },
               body: source::expr::E::Call(source::expr::Call {
-                common: builder.expr_common(builder.unit_type()),
+                common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
                 callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-                  common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
+                  common: source::expr::ExpressionCommon::dummy(
+                    builder.fun_type(vec![], builder.int_type()),
+                  ),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
                   class_name: source::Id::from(heap.alloc_str("T")),
@@ -2453,7 +2531,7 @@ return 0;"#,
                 is_method: true,
                 name: source::Id::from(heap.alloc_str("foo")),
                 type_parameters: Rc::new(vec![]),
-                type_: source::FunctionType {
+                type_: type_::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![builder.int_type()],
                   return_type: builder.int_type(),
@@ -2473,7 +2551,7 @@ return 0;"#,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str("infiniteLoop")),
                 type_parameters: Rc::new(vec![]),
-                type_: source::FunctionType {
+                type_: type_::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![],
                   return_type: builder.unit_type(),
@@ -2481,9 +2559,11 @@ return 0;"#,
                 parameters: Rc::new(vec![]),
               },
               body: source::expr::E::Call(source::expr::Call {
-                common: builder.expr_common(builder.unit_type()),
+                common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
                 callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-                  common: builder.expr_common(builder.fun_type(vec![], builder.int_type())),
+                  common: source::expr::ExpressionCommon::dummy(
+                    builder.fun_type(vec![], builder.int_type()),
+                  ),
                   type_arguments: vec![],
                   module_reference: ModuleReference::dummy(),
                   class_name: source::Id::from(heap.alloc_str("Class1")),
@@ -2500,7 +2580,7 @@ return 0;"#,
                 is_method: false,
                 name: source::Id::from(heap.alloc_str("factorial")),
                 type_parameters: Rc::new(vec![]),
-                type_: source::FunctionType {
+                type_: type_::FunctionType {
                   reason: Reason::dummy(),
                   argument_types: vec![builder.int_type(), builder.int_type()],
                   return_type: builder.int_type(),
@@ -2517,19 +2597,25 @@ return 0;"#,
                 ]),
               },
               body: source::expr::E::IfElse(source::expr::IfElse {
-                common: builder.expr_common(builder.int_type()),
+                common: source::expr::ExpressionCommon::dummy(builder.int_type()),
                 condition: Box::new(source::expr::E::Binary(source::expr::Binary {
-                  common: builder.expr_common(builder.int_type()),
+                  common: source::expr::ExpressionCommon::dummy(builder.int_type()),
                   operator_preceding_comments: NO_COMMENT_REFERENCE,
                   operator: source::expr::BinaryOperator::EQ,
-                  e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
-                  e2: Box::new(builder.zero_expr()),
+                  e1: Box::new(id_expr(heap.alloc_str("n"), builder.int_type())),
+                  e2: Box::new(source::expr::E::Literal(
+                    source::expr::ExpressionCommon::dummy(builder.int_type()),
+                    source::Literal::Int(0),
+                  )),
                 })),
-                e1: Box::new(builder.int_lit(1)),
+                e1: Box::new(source::expr::E::Literal(
+                  source::expr::ExpressionCommon::dummy(builder.int_type()),
+                  source::Literal::Int(1),
+                )),
                 e2: Box::new(source::expr::E::Call(source::expr::Call {
-                  common: builder.expr_common(builder.int_type()),
+                  common: source::expr::ExpressionCommon::dummy(builder.int_type()),
                   callee: Box::new(source::expr::E::ClassFn(source::expr::ClassFunction {
-                    common: builder.expr_common(
+                    common: source::expr::ExpressionCommon::dummy(
                       builder
                         .fun_type(vec![builder.int_type(), builder.int_type()], builder.int_type()),
                     ),
@@ -2540,18 +2626,21 @@ return 0;"#,
                   })),
                   arguments: vec![
                     source::expr::E::Binary(source::expr::Binary {
-                      common: builder.expr_common(builder.int_type()),
+                      common: source::expr::ExpressionCommon::dummy(builder.int_type()),
                       operator_preceding_comments: NO_COMMENT_REFERENCE,
                       operator: source::expr::BinaryOperator::MINUS,
-                      e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
-                      e2: Box::new(builder.int_lit(1)),
+                      e1: Box::new(id_expr(heap.alloc_str("n"), builder.int_type())),
+                      e2: Box::new(source::expr::E::Literal(
+                        source::expr::ExpressionCommon::dummy(builder.int_type()),
+                        source::Literal::Int(1),
+                      )),
                     }),
                     source::expr::E::Binary(source::expr::Binary {
-                      common: builder.expr_common(builder.int_type()),
+                      common: source::expr::ExpressionCommon::dummy(builder.int_type()),
                       operator_preceding_comments: NO_COMMENT_REFERENCE,
                       operator: source::expr::BinaryOperator::MUL,
-                      e1: Box::new(builder.id_expr(heap.alloc_str("n"), builder.int_type())),
-                      e2: Box::new(builder.id_expr(heap.alloc_str("acc"), builder.int_type())),
+                      e1: Box::new(id_expr(heap.alloc_str("n"), builder.int_type())),
+                      e2: Box::new(id_expr(heap.alloc_str("acc"), builder.int_type())),
                     }),
                   ],
                 })),

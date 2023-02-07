@@ -1,12 +1,10 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{
-      source::{test_builder, FieldType, FunctionType, ISourceType, Type, TypeParameterSignature},
-      Location, Reason,
-    },
+    ast::{source::FieldType, Location, Reason},
     checker::{
       ssa_analysis::SsaAnalysisResult,
+      type_::{test_type_builder, FunctionType, ISourceType, Type, TypeParameterSignature},
       typing_context::{
         create_builtin_module_typing_context, InterfaceTypingContext, LocalTypingContext,
         MemberTypeInformation, ModuleTypingContext, TypeDefinitionTypingContext, TypingContext,
@@ -112,7 +110,7 @@ m2: public () -> unknown
       .to_string(&heap)
     );
 
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     assert_eq!(
       "a:bool, b:(private) bool",
       TypeDefinitionTypingContext {
@@ -155,7 +153,7 @@ m2: public () -> unknown
   #[test]
   fn is_subtype_tests() {
     let mut heap = Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
@@ -222,7 +220,7 @@ m2: public () -> unknown
 
   #[test]
   fn validate_type_instantiation_tests() {
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
@@ -314,7 +312,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
 
   #[test]
   fn get_members_test() {
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
@@ -620,7 +618,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
 
   #[test]
   fn resolve_type_definitions_test() {
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();

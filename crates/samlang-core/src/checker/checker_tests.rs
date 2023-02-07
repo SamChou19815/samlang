@@ -2,15 +2,13 @@
 mod tests {
   use crate::{
     ast::{
-      source::{
-        expr, test_builder, FieldType, FunctionType, Id, Type, TypeParameterSignature,
-        NO_COMMENT_REFERENCE,
-      },
+      source::{expr, FieldType, Id, Literal, NO_COMMENT_REFERENCE},
       Location, Reason,
     },
     checker::{
       main_checker::type_check_expression,
       ssa_analysis::{perform_ssa_analysis_on_expression, SsaAnalysisResult},
+      type_::{test_type_builder, FunctionType, Type, TypeParameterSignature},
       type_check_single_module_source, type_check_source_handles, type_check_sources,
       typing_context::{
         create_builtin_module_typing_context, GlobalTypingContext, InterfaceTypingContext,
@@ -52,7 +50,7 @@ mod tests {
       /* availableTypeParameters */ vec![],
     );
 
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     type_check_expression(
       &mut cx,
       &heap,
@@ -63,7 +61,10 @@ mod tests {
           type_: builder.bool_type(),
         },
         type_arguments: vec![],
-        object: Box::new(builder.true_expr()),
+        object: Box::new(expr::E::Literal(
+          expr::ExpressionCommon::dummy(builder.bool_type()),
+          Literal::Bool(true),
+        )),
         method_name: Id {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
@@ -75,7 +76,7 @@ mod tests {
   }
 
   fn sandbox_global_cx(heap: &mut Heap) -> GlobalTypingContext {
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     HashMap::from([
       (ModuleReference::root(), create_builtin_module_typing_context(heap)),
@@ -587,7 +588,7 @@ mod tests {
   #[test]
   fn simple_expressions_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_checks(heap, "true", &builder.bool_type());
     assert_checks(heap, "false", &builder.bool_type());
@@ -631,7 +632,7 @@ mod tests {
   #[test]
   fn class_members_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_checks(
       heap,
@@ -699,7 +700,7 @@ mod tests {
   #[test]
   fn ctors_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     let test_str = heap.alloc_str("Test");
     let test2_str = heap.alloc_str("Test2");
@@ -788,7 +789,7 @@ mod tests {
   #[test]
   fn field_and_method_access_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_checks(heap, "Test.init(true, 3).foo", &builder.bool_type());
     assert_checks(heap, "Test.init(true, 3).bar", &builder.int_type());
@@ -930,7 +931,7 @@ mod tests {
   #[test]
   fn function_call_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_checks(heap, "Builtins.panic(\"\")", &builder.unit_type());
     assert_checks(heap, "Builtins.panic(\"\")", &builder.bool_type());
@@ -1003,7 +1004,7 @@ mod tests {
   #[test]
   fn unary_binary_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_checks(heap, "-(1)", &builder.int_type());
     assert_checks(heap, "!true", &builder.bool_type());
@@ -1256,7 +1257,7 @@ mod tests {
   #[test]
   fn control_flow_expressions_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_checks(heap, "if true then false else true", &builder.bool_type());
     assert_checks(heap, "if false then 1 else 0", &builder.int_type());
@@ -1345,7 +1346,7 @@ mod tests {
   #[test]
   fn lambdas_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_checks(
       heap,
@@ -1371,7 +1372,7 @@ mod tests {
   #[test]
   fn blocks_checker_test() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_errors_with_class(
       heap,
@@ -1420,7 +1421,7 @@ mod tests {
 
   #[test]
   fn function_call_integration_test() {
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_errors(
       &mut Heap::new(),
@@ -1450,7 +1451,7 @@ mod tests {
 
   #[test]
   fn checker_simple_integration_test() {
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_checks(
       &mut Heap::new(),

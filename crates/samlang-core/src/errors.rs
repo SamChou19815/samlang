@@ -184,7 +184,7 @@ impl ErrorSet {
 mod tests {
   use super::*;
   use crate::{
-    ast::source::{test_builder, ISourceType},
+    checker::type_::{test_type_builder, ISourceType},
     common::Heap,
   };
   use pretty_assertions::assert_eq;
@@ -225,7 +225,7 @@ mod tests {
   fn error_message_tests() {
     let heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     error_set.report_syntax_error(Location::dummy(), "bad code".to_string());
     error_set.report_unexpected_type_error(

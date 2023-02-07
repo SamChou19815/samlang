@@ -2,10 +2,11 @@ use crate::{
   ast::{
     source::{
       expr::{self, DeclarationStatement},
-      ClassMemberDeclaration, FunctionType, IdType, Module, OptionallyAnnotatedId, Toplevel, Type,
+      ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
     },
     Location,
   },
+  checker::type_::{FunctionType, IdType, Type},
   common::{Heap, LocalStackedContext, PStr},
   errors::ErrorSet,
 };

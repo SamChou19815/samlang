@@ -25,7 +25,7 @@ mod main_checker;
 mod ssa_analysis;
 mod ssa_analysis_tests;
 /// Definition of internal type language.
-mod type_;
+pub(crate) mod type_;
 /// All the typing context in one place.
 mod typing_context;
 mod typing_context_tests;

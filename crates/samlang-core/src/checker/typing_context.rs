@@ -1,14 +1,10 @@
 use super::{
   checker_utils::{perform_fn_type_substitution, perform_type_substitution},
   ssa_analysis::SsaAnalysisResult,
+  type_::{FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature},
 };
 use crate::{
-  ast::{
-    source::{
-      FieldType, FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature,
-    },
-    Location, Reason,
-  },
+  ast::{source::FieldType, Location, Reason},
   common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
