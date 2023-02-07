@@ -297,9 +297,10 @@ mod tests {
   use super::{apply_expr_renaming, apply_renaming, DefinitionAndUses, VariableDefinitionLookup};
   use crate::{
     ast::{
-      source::{expr, test_builder, Id, Module},
+      source::{expr, Id, Literal, Module},
       Location, Position,
     },
+    checker::type_::test_type_builder,
     common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::parse_source_module_from_text,
@@ -311,12 +312,15 @@ mod tests {
   #[test]
   fn coverage_booster_tests() {
     let mut heap = Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     apply_expr_renaming(
       &expr::E::MethodAccess(expr::MethodAccess {
-        common: builder.expr_common(builder.int_type()),
+        common: expr::ExpressionCommon::dummy(builder.int_type()),
         type_arguments: vec![],
-        object: Box::new(builder.zero_expr()),
+        object: Box::new(expr::E::Literal(
+          expr::ExpressionCommon::dummy(builder.int_type()),
+          Literal::Int(0),
+        )),
         method_name: Id::from(heap.alloc_str("")),
       }),
       &DefinitionAndUses {

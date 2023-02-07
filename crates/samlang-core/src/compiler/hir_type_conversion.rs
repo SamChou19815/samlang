@@ -4,6 +4,7 @@ use crate::{
     hir::{ClosureTypeDefinition, FunctionType, IdType, PrimitiveType, Type, TypeDefinition},
     source,
   },
+  checker::type_,
   common::{Heap, ModuleReference, PStr},
 };
 use itertools::Itertools;
@@ -276,16 +277,16 @@ pub(super) struct TypeLoweringManager {
 }
 
 impl TypeLoweringManager {
-  pub(super) fn lower_source_type(&mut self, heap: &mut Heap, type_: &source::Type) -> Type {
+  pub(super) fn lower_source_type(&mut self, heap: &mut Heap, type_: &type_::Type) -> Type {
     match type_ {
-      source::Type::Unknown(_) => panic!(),
-      source::Type::Primitive(_, kind) => Type::Primitive(match kind {
-        source::PrimitiveTypeKind::Bool => PrimitiveType::Bool,
-        source::PrimitiveTypeKind::Unit => PrimitiveType::Int,
-        source::PrimitiveTypeKind::Int => PrimitiveType::Int,
-        source::PrimitiveTypeKind::String => PrimitiveType::String,
+      type_::Type::Unknown(_) => panic!(),
+      type_::Type::Primitive(_, kind) => Type::Primitive(match kind {
+        type_::PrimitiveTypeKind::Bool => PrimitiveType::Bool,
+        type_::PrimitiveTypeKind::Unit => PrimitiveType::Int,
+        type_::PrimitiveTypeKind::Int => PrimitiveType::Int,
+        type_::PrimitiveTypeKind::String => PrimitiveType::String,
       }),
-      source::Type::Id(id) => {
+      type_::Type::Id(id) => {
         let id_string = id.id;
         if self.generic_types.contains(&id_string) {
           Type::new_id_no_targs(id_string)
@@ -296,7 +297,7 @@ impl TypeLoweringManager {
           )
         }
       }
-      source::Type::Fn(f) => {
+      type_::Type::Fn(f) => {
         let rewritten_function_type = Type::new_fn_unwrapped(
           f.argument_types.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
           self.lower_source_type(heap, &f.return_type),
@@ -320,7 +321,7 @@ impl TypeLoweringManager {
   pub(super) fn lower_source_types(
     &mut self,
     heap: &mut Heap,
-    source_types: &Vec<Rc<source::Type>>,
+    source_types: &Vec<Rc<type_::Type>>,
   ) -> Vec<Type> {
     let mut types = vec![];
     for t in source_types {
@@ -357,8 +358,8 @@ impl TypeLoweringManager {
   pub(super) fn lower_source_function_type_for_toplevel(
     &mut self,
     heap: &mut Heap,
-    argument_types: &[Rc<source::Type>],
-    return_type: &source::Type,
+    argument_types: &[Rc<type_::Type>],
+    return_type: &type_::Type,
   ) -> (Vec<PStr>, FunctionType) {
     let function_type = Type::new_fn_unwrapped(
       argument_types.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
@@ -374,9 +375,12 @@ impl TypeLoweringManager {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::{
-    hir::{BOOL_TYPE, INT_TYPE, STRING_TYPE},
-    Location, Reason,
+  use crate::{
+    ast::{
+      hir::{BOOL_TYPE, INT_TYPE, STRING_TYPE},
+      Location, Reason,
+    },
+    checker::type_::test_type_builder,
   };
   use pretty_assertions::assert_eq;
 
@@ -694,7 +698,7 @@ mod tests {
   fn type_lowering_manager_lower_source_type_panic_test() {
     let heap = &mut Heap::new();
     TypeLoweringManager { generic_types: HashSet::new(), type_synthesizer: TypeSynthesizer::new() }
-      .lower_source_type(heap, &source::Type::Unknown(Reason::dummy()));
+      .lower_source_type(heap, &type_::Type::Unknown(Reason::dummy()));
   }
 
   #[test]
@@ -704,7 +708,7 @@ mod tests {
       generic_types: HashSet::new(),
       type_synthesizer: TypeSynthesizer::new(),
     };
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_eq!("bool", manager.lower_source_type(heap, &builder.bool_type()).pretty_print(heap));
     assert_eq!("int", manager.lower_source_type(heap, &builder.unit_type()).pretty_print(heap));
@@ -755,7 +759,7 @@ mod tests {
       generic_types: HashSet::from([heap.alloc_str("A")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     let type_def = source::TypeDefinition {
       loc: Location::dummy(),
@@ -814,7 +818,7 @@ mod tests {
       generic_types: HashSet::from([heap.alloc_str("A")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
-    let builder = source::test_builder::create();
+    let builder = test_type_builder::create();
 
     let (tparams1, f1) = manager.lower_source_function_type_for_toplevel(
       heap,

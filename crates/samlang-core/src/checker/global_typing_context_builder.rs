@@ -2,6 +2,7 @@ use super::{
   checker_utils::{
     perform_fn_type_substitution, perform_id_type_substitution_asserting_id_type_return,
   },
+  type_::{FunctionType, ISourceType, IdType, Type, TypeParameterSignature},
   typing_context::{
     GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation, ModuleTypingContext,
     TypeDefinitionTypingContext,
@@ -9,10 +10,7 @@ use super::{
 };
 use crate::{
   ast::{
-    source::{
-      ClassMemberDeclaration, FieldType, FunctionType, ISourceType, IdType, Module, Toplevel, Type,
-      TypeParameter, TypeParameterSignature,
-    },
+    source::{ClassMemberDeclaration, FieldType, Module, Toplevel, TypeParameter},
     Reason,
   },
   common::{Heap, ModuleReference, PStr},
@@ -564,12 +562,12 @@ mod tests {
   use crate::{
     ast::{
       source::{
-        test_builder, ClassMemberDefinition, CommentStore, Id, InterfaceDeclarationCommon,
+        expr, ClassMemberDefinition, CommentStore, Id, InterfaceDeclarationCommon, Literal,
         ModuleMembersImport, TypeDefinition, NO_COMMENT_REFERENCE,
       },
       Location,
     },
-    checker::typing_context::create_builtin_module_typing_context,
+    checker::{type_::test_type_builder, typing_context::create_builtin_module_typing_context},
     common::Heap,
   };
   use pretty_assertions::assert_eq;
@@ -578,7 +576,7 @@ mod tests {
   fn check_class_member_conformance_with_ast_tests() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     check_class_member_conformance_with_ast(
       false,
@@ -805,7 +803,7 @@ mod tests {
   #[test]
   fn get_fully_inlined_multiple_interface_context_tests() {
     let mut heap = Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let unoptimized_global_cx = HashMap::from([(
       ModuleReference::dummy(),
       UnoptimizedModuleTypingContext {
@@ -1124,7 +1122,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
   #[test]
   fn check_module_member_interface_conformance_tests() {
     let mut heap = Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let unoptimized_global_cx = HashMap::from([(
       ModuleReference::dummy(),
       UnoptimizedModuleTypingContext {
@@ -1223,7 +1221,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               },
               parameters: Rc::new(vec![]),
             },
-            body: builder.false_expr(),
+            body: expr::E::Literal(
+              expr::ExpressionCommon::dummy(builder.bool_type()),
+              Literal::Bool(false),
+            ),
           },
           ClassMemberDefinition {
             decl: ClassMemberDeclaration {
@@ -1240,7 +1241,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               },
               parameters: Rc::new(vec![]),
             },
-            body: builder.false_expr(),
+            body: expr::E::Literal(
+              expr::ExpressionCommon::dummy(builder.bool_type()),
+              Literal::Bool(false),
+            ),
           },
         ],
       }),
@@ -1254,7 +1258,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
     let mut heap = Heap::new();
     let m0_ref = heap.alloc_module_reference_from_string_vec(vec!["Module0".to_string()]);
     let m1_ref = heap.alloc_module_reference_from_string_vec(vec!["Module1".to_string()]);
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     let test_sources = HashMap::from([
       (
@@ -1331,7 +1335,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     },
                     parameters: Rc::new(vec![]),
                   },
-                  body: builder.false_expr(),
+                  body: expr::E::Literal(
+                    expr::ExpressionCommon::dummy(builder.bool_type()),
+                    Literal::Bool(false),
+                  ),
                 },
                 ClassMemberDefinition {
                   decl: ClassMemberDeclaration {
@@ -1348,7 +1355,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     },
                     parameters: Rc::new(vec![]),
                   },
-                  body: builder.false_expr(),
+                  body: expr::E::Literal(
+                    expr::ExpressionCommon::dummy(builder.bool_type()),
+                    Literal::Bool(false),
+                  ),
                 },
               ],
             }),

@@ -6,13 +6,13 @@ use super::{
 use crate::{
   ast::{
     source::{
-      expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, ISourceType,
-      Module, Toplevel,
+      expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, Module, Toplevel,
     },
     Location, Position,
   },
   checker::{
-    type_check_sources, GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation,
+    type_::ISourceType, type_check_sources, GlobalTypingContext, InterfaceTypingContext,
+    MemberTypeInformation,
   },
   common::{Heap, ModuleReference, PStr},
   errors::{CompileTimeError, ErrorSet},

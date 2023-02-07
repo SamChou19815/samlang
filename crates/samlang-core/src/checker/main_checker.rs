@@ -4,15 +4,15 @@ use super::{
     solve_multiple_type_constrains, TypeConstraint, TypeConstraintSolution,
   },
   ssa_analysis::perform_ssa_analysis_on_module,
+  type_::{FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature},
   typing_context::{GlobalTypingContext, LocalTypingContext, TypingContext},
 };
 use crate::{
   ast::{
     source::{
       expr::{self, ObjectPatternDestucturedName},
-      ClassMemberDefinition, FunctionType, ISourceType, Id, IdType, InterfaceDeclarationCommon,
-      Literal, Module, OptionallyAnnotatedId, PrimitiveTypeKind, Toplevel, Type, TypeParameter,
-      TypeParameterSignature,
+      ClassMemberDefinition, Id, InterfaceDeclarationCommon, Literal, Module,
+      OptionallyAnnotatedId, Toplevel, TypeParameter,
     },
     Reason,
   },

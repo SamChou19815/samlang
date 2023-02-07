@@ -485,10 +485,10 @@ mod tests {
   use super::*;
   use crate::{
     ast::{
-      source::{CommentStore, Id, InterfaceDeclarationCommon, Type, NO_COMMENT_REFERENCE},
+      source::{CommentStore, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE},
       Location, Reason,
     },
-    checker::type_check_single_module_source,
+    checker::{type_::Type, type_check_single_module_source},
     common::Heap,
     errors::ErrorSet,
     parser::parse_source_module_from_text,
@@ -510,11 +510,7 @@ mod tests {
   }
 
   fn dummy_expr_common() -> expr::ExpressionCommon {
-    expr::ExpressionCommon {
-      loc: Location::dummy(),
-      associated_comments: NO_COMMENT_REFERENCE,
-      type_: Rc::new(Type::int_type(Reason::dummy())),
-    }
+    expr::ExpressionCommon::dummy(Rc::new(Type::int_type(Reason::dummy())))
   }
 
   fn eval_expr_simple(heap: &mut Heap, expr: &expr::E) -> Value {

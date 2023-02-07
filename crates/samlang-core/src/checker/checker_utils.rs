@@ -1,8 +1,6 @@
 use crate::{
-  ast::{
-    source::{FunctionType, ISourceType, IdType, Type, TypeParameterSignature},
-    Reason,
-  },
+  ast::Reason,
+  checker::type_::{FunctionType, ISourceType, IdType, Type, TypeParameterSignature},
   common::{Heap, PStr},
   errors::ErrorSet,
 };

@@ -1,6 +1,7 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
 use crate::{
   ast::{source::*, Location, Position, Reason},
+  checker::type_::{FunctionType, IdType, Type},
   common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };

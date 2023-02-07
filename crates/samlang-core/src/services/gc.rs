@@ -1,5 +1,6 @@
 use crate::{
-  ast::source::{expr, FunctionType, Id, IdType, Module, Toplevel, Type, TypeParameter},
+  ast::source::{expr, Id, Module, Toplevel, TypeParameter},
+  checker::type_::{FunctionType, IdType, Type},
   Heap, ModuleReference,
 };
 use std::{collections::HashMap, rc::Rc};

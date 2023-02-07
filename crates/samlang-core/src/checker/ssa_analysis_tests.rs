@@ -2,10 +2,14 @@
 mod tests {
   use crate::{
     ast::{
-      source::{expr, test_builder, ISourceType, Id},
+      source::{expr, Id, Literal},
       Location,
     },
-    checker::{ssa_analysis, typing_context::LocalTypingContext},
+    checker::{
+      ssa_analysis,
+      type_::{test_type_builder, ISourceType},
+      typing_context::LocalTypingContext,
+    },
     common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser,
@@ -17,12 +21,15 @@ mod tests {
     let mut heap = Heap::new();
     // method access can never be produced by the parser, but we need coverage anyways...
     let mut error_set = ErrorSet::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     ssa_analysis::perform_ssa_analysis_on_expression(
       &expr::E::MethodAccess(expr::MethodAccess {
-        common: builder.expr_common(builder.bool_type()),
+        common: expr::ExpressionCommon::dummy(builder.bool_type()),
         type_arguments: vec![builder.bool_type()],
-        object: Box::new(builder.true_expr()),
+        object: Box::new(expr::E::Literal(
+          expr::ExpressionCommon::dummy(builder.bool_type()),
+          Literal::Bool(true),
+        )),
         method_name: Id::from(heap.alloc_str("name")),
       }),
       &heap,
@@ -78,7 +85,7 @@ def_to_use_map:
       ssa_analysis::perform_ssa_analysis_on_expression(&expr, &heap, &mut error_set);
     assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let mut cx = LocalTypingContext::new(analysis_result);
     cx.write(Location::from_pos(1, 6, 1, 7), builder.bool_type());
     assert_eq!("bool", cx.read(&Location::from_pos(3, 10, 3, 11)).pretty_print(&heap));
@@ -172,7 +179,7 @@ def_to_use_map:
       ssa_analysis::perform_ssa_analysis_on_module(&module, &heap, &mut error_set);
     assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let mut cx = LocalTypingContext::new(analysis_result);
     cx.write(Location::from_pos(13, 6, 13, 10), builder.bool_type());
     assert!(cx.get_captured(&heap, &Location::from_pos(17, 39, 17, 54)).is_empty());

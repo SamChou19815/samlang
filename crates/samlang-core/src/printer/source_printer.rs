@@ -1,9 +1,10 @@
 use super::prettier::Document;
 use crate::{
   ast::source::{
-    expr, ClassDefinition, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore,
-    ISourceType, Id, IdType, InterfaceDeclaration, Module, Toplevel, Type, TypeParameter,
+    expr, ClassDefinition, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, Id,
+    InterfaceDeclaration, Module, Toplevel, TypeParameter,
   },
+  checker::type_::{ISourceType, IdType, Type},
   common::{rc_pstr, rc_string, rcs, Heap},
   ModuleReference,
 };
@@ -829,7 +830,8 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module) -> Documen
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::source::{expr, test_builder, CommentStore, Id},
+    ast::source::{expr, CommentStore, Id},
+    checker::type_::test_type_builder,
     common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
@@ -930,7 +932,7 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
 
     assert_reprint_expr("foo.bar", "foo.bar");
 
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let empty_comment_store = CommentStore::new();
     let mut heap = Heap::new();
     assert_eq!(
@@ -938,9 +940,12 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       prettier::pretty_print(
         40,
         expr::E::MethodAccess(expr::MethodAccess {
-          common: builder.expr_common(builder.int_type()),
+          common: expr::ExpressionCommon::dummy(builder.int_type()),
           type_arguments: vec![],
-          object: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
+          object: Box::new(expr::E::Id(
+            expr::ExpressionCommon::dummy(builder.int_type()),
+            Id::from(heap.alloc_str("foo"))
+          )),
           method_name: Id::from(heap.alloc_str("bar"))
         })
         .create_doc(&heap, &empty_comment_store)
@@ -952,9 +957,12 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       prettier::pretty_print(
         40,
         expr::E::MethodAccess(expr::MethodAccess {
-          common: builder.expr_common(builder.int_type()),
+          common: expr::ExpressionCommon::dummy(builder.int_type()),
           type_arguments: vec![builder.int_type()],
-          object: Box::new(builder.id_expr(heap.alloc_str("foo"), builder.int_type())),
+          object: Box::new(expr::E::Id(
+            expr::ExpressionCommon::dummy(builder.int_type()),
+            Id::from(heap.alloc_str("foo"))
+          )),
           method_name: Id::from(heap.alloc_str("bar"))
         })
         .create_doc(&heap, &empty_comment_store)

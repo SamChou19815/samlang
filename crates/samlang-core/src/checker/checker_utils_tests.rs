@@ -1,14 +1,9 @@
 #[cfg(test)]
 mod tests {
   use super::super::checker_utils::*;
-  use crate::{
-    ast::{
-      source::{test_builder, ISourceType, Type, TypeParameterSignature},
-      Reason,
-    },
-    common::Heap,
-    errors::ErrorSet,
-  };
+  use super::super::type_::{ISourceType, Type, TypeParameterSignature};
+  use crate::checker::type_::test_type_builder;
+  use crate::{ast::Reason, common::Heap, errors::ErrorSet};
   use pretty_assertions::assert_eq;
   use std::{collections::HashMap, rc::Rc};
 
@@ -25,7 +20,7 @@ mod tests {
   #[test]
   fn contextual_type_meet_tests() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_eq!(meet(&builder.unit_type(), &builder.unit_type(), heap), "unit");
     assert_eq!(meet(&builder.unit_type(), &builder.int_type(), heap), "FAILED_MEET");
@@ -161,7 +156,7 @@ mod tests {
   #[test]
   fn type_substitution_tests() {
     let mut heap = Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert_eq!(
       "(A<int, C<int>>, int, E<F>, int) -> int",
@@ -208,7 +203,7 @@ mod tests {
   #[test]
   fn id_type_substitution_panic_test() {
     let mut heap = Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     perform_id_type_substitution_asserting_id_type_return(
       &builder.simple_id_type_unwrapped(heap.alloc_str("A")),
@@ -243,7 +238,7 @@ mod tests {
   #[test]
   fn type_constrain_solver_tests() {
     let heap = &mut Heap::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     // primitive types
     solver_test(
@@ -356,7 +351,7 @@ mod tests {
   fn type_constrain_solver_integration_test_1() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     let TypeConstraintSolution {
       solved_substitution: _,
@@ -403,7 +398,7 @@ mod tests {
   fn type_constrain_solver_integration_test_2() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     let TypeConstraintSolution {
       solved_substitution: _,

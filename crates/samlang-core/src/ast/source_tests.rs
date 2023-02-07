@@ -68,76 +68,16 @@ mod annotation_tests {
 mod type_tests {
   use super::super::source::*;
   use crate::ast::loc::Location;
-  use crate::ast::reason::Reason;
+  use crate::checker::type_::test_type_builder;
   use crate::common::Heap;
   use std::rc::Rc;
-  use std::vec;
-
-  #[test]
-  fn boilterplate() {
-    assert!(PrimitiveTypeKind::Unit == PrimitiveTypeKind::Unit.clone());
-    assert!(CommentKind::DOC == CommentKind::DOC.clone());
-
-    let builder = test_builder::create();
-    builder.int_type().as_id();
-    builder.int_type().as_fn();
-    builder.simple_id_type(Heap::new().alloc_str("")).as_id();
-    builder.fun_type(vec![], builder.int_type()).as_fn();
-  }
 
   #[test]
   fn pretty_print_tests() {
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
     let mut heap = Heap::new();
 
-    assert_eq!("unknown", Type::Unknown(Reason::dummy()).clone().pretty_print(&heap));
-    assert_eq!("unit", builder.unit_type().clone().pretty_print(&heap));
-    assert_eq!("int", builder.int_type().pretty_print(&heap));
-    assert_eq!("bool", builder.bool_type().pretty_print(&heap));
-    assert_eq!("string", builder.string_type().pretty_print(&heap));
-    assert_eq!("I", builder.simple_id_type(heap.alloc_str("I")).clone().pretty_print(&heap));
-    assert_eq!(
-      "I",
-      builder
-        .simple_id_type_unwrapped(heap.alloc_str("I"))
-        .reposition(Location::dummy())
-        .clone()
-        .pretty_print(&heap)
-    );
-    assert_eq!(
-      "Foo<unit, Bar>",
-      builder
-        .general_id_type(
-          heap.alloc_str("Foo"),
-          vec![builder.unit_type(), builder.simple_id_type(heap.alloc_str("Bar"))]
-        )
-        .clone()
-        .pretty_print(&heap)
-    );
-    assert_eq!("() -> unit", builder.fun_type(vec![], builder.unit_type()).pretty_print(&heap));
-    assert_eq!(
-      "() -> unit",
-      FunctionType {
-        reason: Reason::dummy(),
-        argument_types: vec![],
-        return_type: builder.unit_type()
-      }
-      .clone()
-      .reposition(Location::dummy())
-      .pretty_print(&heap)
-    );
-    assert_eq!(
-      "(unit) -> unit",
-      builder.fun_type(vec![builder.unit_type()], builder.unit_type()).pretty_print(&heap)
-    );
-    assert_eq!(
-      "(int, bool) -> unit",
-      builder
-        .fun_type(vec![builder.int_type(), builder.bool_type()], builder.unit_type())
-        .clone()
-        .pretty_print(&heap)
-    );
-
+    assert!(CommentKind::DOC == CommentKind::DOC.clone());
     assert_eq!(
       "A",
       TypeParameter {
@@ -158,136 +98,6 @@ mod type_tests {
       }
       .pretty_print(&heap)
     );
-
-    assert_eq!(
-      "A",
-      TypeParameterSignature { name: heap.alloc_str("A"), bound: Option::None }.pretty_print(&heap)
-    );
-    assert_eq!(
-      "A : B",
-      TypeParameterSignature {
-        name: heap.alloc_str("A"),
-        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
-      }
-      .clone()
-      .pretty_print(&heap)
-    );
-
-    assert_eq!("", TypeParameterSignature::pretty_print_list(&vec![], &heap));
-    assert_eq!(
-      "<A : B, C>",
-      TypeParameterSignature::pretty_print_list(
-        &vec![
-          TypeParameterSignature {
-            name: heap.alloc_str("A"),
-            bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
-          },
-          TypeParameterSignature { name: heap.alloc_str("C"), bound: Option::None }
-        ],
-        &heap
-      )
-    );
-  }
-
-  fn new_reason_f(_: &Reason) -> Reason {
-    Reason::new(Location::from_pos(1, 2, 3, 4), Option::None)
-  }
-
-  #[test]
-  fn mod_reason_tests() {
-    let mut heap = Heap::new();
-    let builder = test_builder::create();
-
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      Type::Unknown(Reason::dummy())
-        .mod_reason(new_reason_f)
-        .get_reason()
-        .use_loc
-        .pretty_print(&heap)
-    );
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder.int_type().mod_reason(new_reason_f).get_reason().use_loc.pretty_print(&heap)
-    );
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder.int_type().mod_reason(new_reason_f).get_reason().use_loc.pretty_print(&heap)
-    );
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder
-        .simple_id_type(heap.alloc_str("I"))
-        .mod_reason(new_reason_f)
-        .get_reason()
-        .use_loc
-        .pretty_print(&heap)
-    );
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder
-        .fun_type(vec![], builder.unit_type())
-        .mod_reason(new_reason_f)
-        .get_reason()
-        .use_loc
-        .pretty_print(&heap)
-    );
-  }
-
-  #[test]
-  fn reposition_tests() {
-    let builder = test_builder::create();
-
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder
-        .int_type()
-        .reposition(Location::from_pos(1, 2, 3, 4))
-        .get_reason()
-        .use_loc
-        .pretty_print(&Heap::new())
-    );
-  }
-
-  #[test]
-  fn test_equality_test() {
-    let mut heap = Heap::new();
-    let builder = test_builder::create();
-
-    assert!(!builder.unit_type().is_the_same_type(&builder.simple_id_type(heap.alloc_str("A"))));
-
-    assert!(Type::Unknown(Reason::dummy()).is_the_same_type(&Type::Unknown(Reason::dummy())));
-    assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
-    assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
-
-    assert!(builder
-      .simple_id_type(heap.alloc_str("A"))
-      .is_the_same_type(&builder.simple_id_type(heap.alloc_str("A"))));
-    assert!(!builder
-      .simple_id_type(heap.alloc_str("A"))
-      .is_the_same_type(&builder.simple_id_type(heap.alloc_str("B"))));
-    assert!(builder
-      .general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])));
-    assert!(!builder
-      .general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type()])));
-    assert!(!builder
-      .simple_id_type(heap.alloc_str("A"))
-      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])));
-
-    assert!(builder
-      .fun_type(vec![builder.unit_type()], builder.string_type())
-      .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.string_type())));
-    assert!(!builder
-      .fun_type(vec![], builder.string_type())
-      .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.string_type())));
-    assert!(!builder
-      .fun_type(vec![builder.unit_type()], builder.string_type())
-      .is_the_same_type(&builder.fun_type(vec![builder.unit_type()], builder.int_type())));
-    assert!(!builder
-      .fun_type(vec![builder.unit_type()], builder.string_type())
-      .is_the_same_type(&builder.fun_type(vec![builder.int_type()], builder.string_type())));
   }
 }
 
@@ -333,6 +143,7 @@ mod expressions_tests {
   use super::super::source::*;
   use crate::{
     ast::loc::Location,
+    checker::type_::test_type_builder,
     common::{Heap, ModuleReference},
   };
   use std::collections::HashMap;
@@ -340,10 +151,11 @@ mod expressions_tests {
   #[test]
   fn precedence_boilerplate_tests() {
     let mut heap = Heap::new();
-    let builder = test_builder::create();
-    let common = builder.expr_common(builder.bool_type());
+    let builder = test_type_builder::create();
+    let common = ExpressionCommon::dummy(builder.bool_type());
+    let zero_expr = E::Literal(ExpressionCommon::dummy(builder.int_type()), Literal::Int(0));
 
-    builder.zero_expr().precedence();
+    zero_expr.precedence();
     E::ClassFn(ClassFunction {
       common: common.clone(),
       type_arguments: vec![],
@@ -355,37 +167,33 @@ mod expressions_tests {
     E::Block(Block { common: common.clone(), statements: vec![], expression: None }).precedence();
     E::Call(Call {
       common: common.clone(),
-      callee: Box::new(builder.zero_expr()),
+      callee: Box::new(zero_expr.clone()),
       arguments: vec![],
     })
     .precedence();
     E::Unary(Unary {
       common: common.clone(),
       operator: UnaryOperator::NEG,
-      argument: Box::new(builder.true_expr()),
+      argument: Box::new(zero_expr.clone()),
     })
     .precedence();
     E::Binary(Binary {
       common: common.clone(),
       operator_preceding_comments: NO_COMMENT_REFERENCE,
       operator: BinaryOperator::AND,
-      e1: Box::new(builder.zero_expr()),
-      e2: Box::new(builder.zero_expr()),
+      e1: Box::new(zero_expr.clone()),
+      e2: Box::new(zero_expr.clone()),
     })
     .precedence();
     E::IfElse(IfElse {
       common: common.clone(),
-      condition: Box::new(builder.zero_expr()),
-      e1: Box::new(builder.zero_expr()),
-      e2: Box::new(builder.zero_expr()),
+      condition: Box::new(zero_expr.clone()),
+      e1: Box::new(zero_expr.clone()),
+      e2: Box::new(zero_expr.clone()),
     })
     .precedence();
-    E::Match(Match {
-      common: common.clone(),
-      matched: Box::new(builder.zero_expr()),
-      cases: vec![],
-    })
-    .precedence();
+    E::Match(Match { common: common.clone(), matched: Box::new(zero_expr.clone()), cases: vec![] })
+      .precedence();
     E::Lambda(Lambda {
       common: common.clone(),
       parameters: vec![OptionallyAnnotatedId {
@@ -393,7 +201,7 @@ mod expressions_tests {
         annotation: None,
       }],
       captured: HashMap::new(),
-      body: Box::new(builder.zero_expr()),
+      body: Box::new(zero_expr.clone()),
     })
     .precedence();
   }
@@ -401,11 +209,12 @@ mod expressions_tests {
   #[test]
   fn common_test() {
     let mut heap = Heap::new();
-    let builder = test_builder::create();
-    let common = builder.expr_common(builder.bool_type());
+    let builder = test_type_builder::create();
+    let common = ExpressionCommon::dummy(builder.bool_type());
     let mod_common = |c: ExpressionCommon| c.clone();
+    let zero_expr = E::Literal(ExpressionCommon::dummy(builder.int_type()), Literal::Int(0));
 
-    builder.zero_expr().clone().mod_common(mod_common).common();
+    zero_expr.clone().mod_common(mod_common).common();
     E::Id(common.clone(), Id::from(heap.alloc_str("d"))).clone().mod_common(mod_common).common();
     E::ClassFn(ClassFunction {
       common: common.clone(),
@@ -420,7 +229,7 @@ mod expressions_tests {
     E::FieldAccess(FieldAccess {
       common: common.clone(),
       type_arguments: vec![],
-      object: Box::new(builder.true_expr()),
+      object: Box::new(zero_expr.clone()),
       field_name: Id::from(heap.alloc_str("name")),
       field_order: -1,
     })
@@ -430,7 +239,7 @@ mod expressions_tests {
     E::MethodAccess(MethodAccess {
       common: common.clone(),
       type_arguments: vec![],
-      object: Box::new(builder.true_expr()),
+      object: Box::new(zero_expr.clone()),
       method_name: Id::from(heap.alloc_str("name")),
     })
     .clone()
@@ -441,14 +250,14 @@ mod expressions_tests {
     E::Unary(Unary {
       common: common.clone(),
       operator: UnaryOperator::NEG,
-      argument: Box::new(builder.true_expr()),
+      argument: Box::new(zero_expr.clone()),
     })
     .clone()
     .mod_common(mod_common)
     .common();
     E::Call(Call {
       common: common.clone(),
-      callee: Box::new(builder.zero_expr()),
+      callee: Box::new(zero_expr.clone()),
       arguments: vec![],
     })
     .clone()
@@ -458,30 +267,30 @@ mod expressions_tests {
       common: common.clone(),
       operator_preceding_comments: NO_COMMENT_REFERENCE,
       operator: BinaryOperator::AND,
-      e1: Box::new(builder.zero_expr()),
-      e2: Box::new(builder.zero_expr()),
+      e1: Box::new(zero_expr.clone()),
+      e2: Box::new(zero_expr.clone()),
     })
     .clone()
     .mod_common(mod_common)
     .common();
     E::IfElse(IfElse {
       common: common.clone(),
-      condition: Box::new(builder.zero_expr()),
-      e1: Box::new(builder.zero_expr()),
-      e2: Box::new(builder.zero_expr()),
+      condition: Box::new(zero_expr.clone()),
+      e1: Box::new(zero_expr.clone()),
+      e2: Box::new(zero_expr.clone()),
     })
     .clone()
     .mod_common(mod_common)
     .common();
     E::Match(Match {
       common: common.clone(),
-      matched: Box::new(builder.zero_expr()),
+      matched: Box::new(zero_expr.clone()),
       cases: vec![VariantPatternToExpression {
         loc: Location::dummy(),
         tag: Id::from(heap.alloc_str("name")),
         tag_order: 1,
         data_variable: None,
-        body: Box::new(builder.true_expr()),
+        body: Box::new(zero_expr.clone()),
       }],
     })
     .clone()
@@ -494,7 +303,7 @@ mod expressions_tests {
         annotation: None,
       }],
       captured: HashMap::new(),
-      body: Box::new(builder.zero_expr()),
+      body: Box::new(zero_expr.clone()),
     })
     .clone()
     .mod_common(mod_common)
@@ -515,7 +324,7 @@ mod expressions_tests {
           }],
         ),
         annotation: None,
-        assigned_expression: Box::new(builder.true_expr()),
+        assigned_expression: Box::new(zero_expr.clone()),
       }],
       expression: None,
     })
@@ -529,6 +338,7 @@ mod expressions_tests {
 mod toplevel_tests {
   use crate::{
     ast::{source::*, Location, Reason},
+    checker::type_::{test_type_builder, FunctionType, Type},
     common::{Heap, ModuleReference},
   };
   use pretty_assertions::assert_eq;
@@ -574,7 +384,7 @@ mod toplevel_tests {
         .to_string(&heap)
     );
 
-    let builder = test_builder::create();
+    let builder = test_type_builder::create();
 
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
@@ -647,7 +457,7 @@ mod toplevel_tests {
           },
           parameters: Rc::new(vec![]),
         },
-        body: builder.true_expr(),
+        body: expr::E::Literal(expr::ExpressionCommon::dummy(builder.int_type()), Literal::Int(0)),
       }],
     });
     class.members_iter().next();
@@ -680,23 +490,5 @@ mod toplevel_tests {
     interface.loc();
     interface.associated_comments();
     assert!(!interface.is_class());
-  }
-}
-
-#[cfg(test)]
-mod builder_tests {
-  use super::super::source::test_builder;
-  use crate::common::Heap;
-
-  #[test]
-  fn boilterplate() {
-    let mut heap = Heap::new();
-    let builder = test_builder::create();
-
-    builder.true_expr().common();
-    builder.false_expr().type_();
-    builder.zero_expr().loc();
-    builder.string_expr(heap.alloc_str("ouch"));
-    builder.id_expr(heap.alloc_str("id"), builder.simple_id_type(heap.alloc_str("Id"))).common();
   }
 }

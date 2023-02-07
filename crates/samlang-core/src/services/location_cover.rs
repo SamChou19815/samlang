@@ -1,8 +1,9 @@
 use crate::{
   ast::{
-    source::{expr, Module, Toplevel, Type},
+    source::{expr, Module, Toplevel},
     Location, Position,
   },
+  checker::type_::Type,
   common::PStr,
   ModuleReference,
 };
@@ -165,10 +166,10 @@ pub(super) fn search_module(
 mod tests {
   use crate::{
     ast::{
-      source::{expr, Id, Type, NO_COMMENT_REFERENCE},
+      source::{expr, Id, NO_COMMENT_REFERENCE},
       Location, Position, Reason,
     },
-    checker::type_check_source_handles,
+    checker::{type_::Type, type_check_source_handles},
     Heap, ModuleReference,
   };
   use std::rc::Rc;
