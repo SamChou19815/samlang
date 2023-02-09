@@ -4,7 +4,7 @@ use super::{
   type_::{FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature},
 };
 use crate::{
-  ast::{source::FieldType, Location, Reason},
+  ast::{Location, Reason},
   common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
@@ -174,7 +174,7 @@ impl InterfaceTypingContext {
 pub(crate) struct TypeDefinitionTypingContext {
   pub(crate) is_object: bool,
   pub(crate) names: Vec<PStr>,
-  pub(crate) mappings: HashMap<PStr, FieldType>,
+  pub(crate) mappings: HashMap<PStr, (Rc<Type>, bool)>,
 }
 
 impl TypeDefinitionTypingContext {
@@ -182,11 +182,13 @@ impl TypeDefinitionTypingContext {
     let is_object = self.is_object;
     let mut collector = vec![];
     for name in &self.names {
-      let field_type = self.mappings.get(name).unwrap();
+      let (t, is_public) = self.mappings.get(name).unwrap();
+      let type_str =
+        format!("{}{}", if *is_public { "" } else { "(private) " }, t.pretty_print(heap));
       if is_object {
-        collector.push(format!("{}:{}", name.as_str(heap), field_type.to_string(heap)));
+        collector.push(format!("{}:{}", name.as_str(heap), type_str));
       } else {
-        collector.push(format!("{}({})", name.as_str(heap), field_type.to_string(heap)));
+        collector.push(format!("{}({})", name.as_str(heap), type_str));
       }
     }
     collector.join(", ")
@@ -531,7 +533,7 @@ impl<'a> TypingContext<'a> {
     &self,
     id_type: &IdType,
     expect_object: bool,
-  ) -> (Vec<PStr>, HashMap<PStr, FieldType>) {
+  ) -> TypeDefinitionTypingContext {
     let relevant_type_parameters =
       if let Some(cx) = self.get_interface_information(&id_type.module_reference, &id_type.id) {
         cx.type_parameters.clone()
@@ -544,25 +546,31 @@ impl<'a> TypingContext<'a> {
       .and_then(|d| d.type_definitions.get(&id_type.id))
     {
       if *is_object != expect_object {
-        return (vec![], HashMap::new());
+        return TypeDefinitionTypingContext {
+          is_object: *is_object,
+          names: vec![],
+          mappings: HashMap::new(),
+        };
       }
       let mut subst_map = HashMap::new();
       for (tparam, targ) in relevant_type_parameters.into_iter().zip(&id_type.type_arguments) {
         subst_map.insert(tparam.name, targ.clone());
       }
       let mut new_mappings = HashMap::new();
-      for (name, field_type) in mappings {
-        new_mappings.insert(
-          *name,
-          FieldType {
-            is_public: field_type.is_public,
-            type_: perform_type_substitution(&field_type.type_, &subst_map),
-          },
-        );
+      for (name, (t, is_public)) in mappings {
+        new_mappings.insert(*name, (perform_type_substitution(t, &subst_map), *is_public));
       }
-      (names.clone(), new_mappings)
+      TypeDefinitionTypingContext {
+        is_object: expect_object,
+        names: names.clone(),
+        mappings: new_mappings,
+      }
     } else {
-      (vec![], HashMap::new())
+      TypeDefinitionTypingContext {
+        is_object: expect_object,
+        names: vec![],
+        mappings: HashMap::new(),
+      }
     }
   }
 }

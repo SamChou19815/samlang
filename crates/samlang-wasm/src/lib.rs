@@ -22,8 +22,8 @@ pub fn compile(source: String) -> Result<SourcesCompilationResult, String> {
   let heap = &mut samlang_core::Heap::new();
   let mod_ref = demo_mod_ref(heap);
   match samlang_core::compile_sources(heap, vec![(mod_ref, source)], vec![mod_ref], false) {
-    Ok(samlang_core::SourcesCompilationResult { text_code_results, wasm_file }) => {
-      let ts_code = text_code_results.get("Demo.ts").unwrap().clone();
+    Ok(samlang_core::SourcesCompilationResult { mut text_code_results, wasm_file }) => {
+      let ts_code = text_code_results.remove("Demo.ts").unwrap();
       let wasm_bytes = Uint8Array::from(&wasm_file as &[u8]);
       Ok(SourcesCompilationResult { ts_code, wasm_bytes })
     }

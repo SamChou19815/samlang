@@ -2,7 +2,7 @@
 mod tests {
   use crate::{
     ast::{
-      source::{expr, Id, Literal},
+      source::{expr, test_builder, Id, Literal},
       Location,
     },
     checker::{
@@ -25,7 +25,8 @@ mod tests {
     ssa_analysis::perform_ssa_analysis_on_expression(
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon::dummy(builder.bool_type()),
-        type_arguments: vec![builder.bool_type()],
+        explicit_type_arguments: vec![test_builder::create().bool_annot()],
+        inferred_type_arguments: vec![builder.bool_type()],
         object: Box::new(expr::E::Literal(
           expr::ExpressionCommon::dummy(builder.bool_type()),
           Literal::Bool(true),

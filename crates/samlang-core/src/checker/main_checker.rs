@@ -5,7 +5,9 @@ use super::{
   },
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature},
-  typing_context::{GlobalTypingContext, LocalTypingContext, TypingContext},
+  typing_context::{
+    GlobalTypingContext, LocalTypingContext, TypeDefinitionTypingContext, TypingContext,
+  },
 };
 use crate::{
   ast::{
@@ -87,7 +89,7 @@ fn solve_type_arguments(
     partially_solved_substitution
       .entry(type_parameter.name)
       // Fill in unknown for unsolved types.
-      .or_insert_with(|| Rc::new(Type::Unknown(function_call_reason.clone())));
+      .or_insert_with(|| Rc::new(Type::Unknown(*function_call_reason)));
   }
   perform_fn_type_substitution(generic_function_type, &partially_solved_substitution)
 }
@@ -198,14 +200,17 @@ impl<'a> TypingContext<'a> {
       &expression.fn_name.name,
       expression.common.loc,
     ) {
-      if !expression.type_arguments.is_empty() {
-        if expression.type_arguments.len() == class_function_type_information.type_parameters.len()
+      if !expression.explicit_type_arguments.is_empty() {
+        if expression.explicit_type_arguments.len()
+          == class_function_type_information.type_parameters.len()
         {
           let mut subst_map = HashMap::new();
-          for (tparam, targ) in
-            class_function_type_information.type_parameters.iter().zip(&expression.type_arguments)
+          for (tparam, targ) in class_function_type_information
+            .type_parameters
+            .iter()
+            .zip(&expression.explicit_type_arguments)
           {
-            subst_map.insert(tparam.name, targ.clone());
+            subst_map.insert(tparam.name, Rc::new(Type::from_annotation(targ)));
           }
           self.validate_type_arguments(
             heap,
@@ -220,9 +225,15 @@ impl<'a> TypingContext<'a> {
               &subst_map,
             )),
           );
+          let inferred_type_arguments = expression
+            .explicit_type_arguments
+            .iter()
+            .map(|a| Rc::new(Type::from_annotation(a)))
+            .collect_vec();
           let partially_checked_expr = expr::ClassFunction {
             common: expression.common.with_new_type(Rc::new(type_)),
-            type_arguments: expression.type_arguments,
+            explicit_type_arguments: expression.explicit_type_arguments,
+            inferred_type_arguments,
             module_reference: expression.module_reference,
             class_name: expression.class_name,
             fn_name: expression.fn_name,
@@ -233,7 +244,7 @@ impl<'a> TypingContext<'a> {
           expression.common.loc,
           "type arguments",
           class_function_type_information.type_parameters.len(),
-          expression.type_arguments.len(),
+          expression.explicit_type_arguments.len(),
         );
       } else if class_function_type_information.type_parameters.is_empty() {
         // No type parameter to solve
@@ -243,7 +254,8 @@ impl<'a> TypingContext<'a> {
             hint,
             &Type::Fn(class_function_type_information.type_),
           ))),
-          type_arguments: expression.type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments,
+          inferred_type_arguments: vec![],
           module_reference: expression.module_reference,
           class_name: expression.class_name,
           fn_name: expression.fn_name,
@@ -269,7 +281,7 @@ impl<'a> TypingContext<'a> {
               self.error_set,
             );
             let common = expression.common.with_new_type(solved_generic_type);
-            let type_arguments = class_function_type_information
+            let inferred_type_arguments = class_function_type_information
               .type_parameters
               .iter()
               .map(|it| {
@@ -286,7 +298,8 @@ impl<'a> TypingContext<'a> {
               .collect_vec();
             let partially_checked_expr = expr::ClassFunction {
               common,
-              type_arguments,
+              explicit_type_arguments: expression.explicit_type_arguments,
+              inferred_type_arguments,
               module_reference: expression.module_reference,
               class_name: expression.class_name,
               fn_name: expression.fn_name,
@@ -307,30 +320,32 @@ impl<'a> TypingContext<'a> {
           );
         }
       }
+      let inferred_type_arguments = class_function_type_information
+        .type_parameters
+        .iter()
+        .map(|it| {
+          Rc::new(Type::Id(IdType {
+            reason: Reason::dummy(),
+            module_reference: self.current_module_reference,
+            id: it.name,
+            type_arguments: vec![],
+          }))
+        })
+        .collect_vec();
+      for targ in &expression.explicit_type_arguments {
+        self.validate_type_instantiation_strictly(heap, &Type::from_annotation(targ));
+      }
       // When hint is bad or there is no hint, we need to give up and let context help us more.
       let partially_checked_expr = expr::ClassFunction {
         common: expression
           .common
           .with_new_type(Rc::new(Type::Fn(class_function_type_information.type_.clone()))),
-        type_arguments: class_function_type_information
-          .type_parameters
-          .iter()
-          .map(|it| {
-            Rc::new(Type::Id(IdType {
-              reason: Reason::dummy(),
-              module_reference: self.current_module_reference,
-              id: it.name,
-              type_arguments: vec![],
-            }))
-          })
-          .collect_vec(),
+        explicit_type_arguments: expression.explicit_type_arguments,
+        inferred_type_arguments,
         module_reference: expression.module_reference,
         class_name: expression.class_name,
         fn_name: expression.fn_name,
       };
-      for targ in &expression.type_arguments {
-        self.validate_type_instantiation_strictly(heap, targ);
-      }
       (partially_checked_expr, class_function_type_information.type_parameters.clone())
     } else {
       self.error_set.report_unresolved_name_error(
@@ -349,7 +364,8 @@ impl<'a> TypingContext<'a> {
       (
         expr::ClassFunction {
           common: expression.common.with_new_type(type_),
-          type_arguments: expression.type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments,
+          inferred_type_arguments: expression.inferred_type_arguments,
           module_reference: expression.module_reference,
           class_name: expression.class_name,
           fn_name: expression.fn_name,
@@ -377,13 +393,14 @@ impl<'a> TypingContext<'a> {
     let type_ = Rc::new(self.type_meet(
       heap,
       hint,
-      &perform_type_substitution(&expression.type_(), &subst_map),
+      &perform_type_substitution(expression.type_(), &subst_map),
     ));
     match expression {
       expr::E::ClassFn(e) => expr::E::ClassFn(expr::ClassFunction {
         common: e.common.with_new_type(type_),
-        type_arguments: e
-          .type_arguments
+        explicit_type_arguments: e.explicit_type_arguments,
+        inferred_type_arguments: e
+          .inferred_type_arguments
           .iter()
           .map(|it| perform_type_substitution(it, &subst_map))
           .collect_vec(),
@@ -391,21 +408,22 @@ impl<'a> TypingContext<'a> {
         class_name: e.class_name,
         fn_name: e.fn_name,
       }),
-      expr::E::FieldAccess(e) => expr::E::FieldAccess(expr::FieldAccess {
-        common: e.common.with_new_type(type_),
-        type_arguments: e
-          .type_arguments
-          .iter()
-          .map(|it| perform_type_substitution(it, &subst_map))
-          .collect_vec(),
-        object: e.object,
-        field_name: e.field_name,
-        field_order: e.field_order,
-      }),
+      expr::E::FieldAccess(e) => {
+        debug_assert!(e.inferred_type_arguments.is_empty());
+        expr::E::FieldAccess(expr::FieldAccess {
+          common: e.common.with_new_type(type_),
+          explicit_type_arguments: e.explicit_type_arguments,
+          inferred_type_arguments: vec![],
+          object: e.object,
+          field_name: e.field_name,
+          field_order: e.field_order,
+        })
+      }
       expr::E::MethodAccess(e) => expr::E::MethodAccess(expr::MethodAccess {
         common: e.common.with_new_type(type_),
-        type_arguments: e
-          .type_arguments
+        explicit_type_arguments: e.explicit_type_arguments,
+        inferred_type_arguments: e
+          .inferred_type_arguments
           .iter()
           .map(|it| perform_type_substitution(it, &subst_map))
           .collect_vec(),
@@ -439,7 +457,7 @@ impl<'a> TypingContext<'a> {
     hint: Option<&Type>,
   ) -> (FieldOrMethodAccesss, Vec<TypeParameterSignature>) {
     let checked_expression = self.check(heap, *expression.object, None);
-    let obj_type = match (*checked_expression.type_()).clone() {
+    let obj_type = match checked_expression.type_().deref() {
       Type::Id(t) => t,
       _ => {
         self.error_set.report_unexpected_type_kind_error(
@@ -454,7 +472,8 @@ impl<'a> TypingContext<'a> {
         ));
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(unknown_type),
-          type_arguments: expression.type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments,
+          inferred_type_arguments: expression.inferred_type_arguments,
           object: Box::new(checked_expression),
           field_name: expression.field_name,
           field_order: expression.field_order,
@@ -470,16 +489,16 @@ impl<'a> TypingContext<'a> {
       expression.common.loc,
     ) {
       // This is a valid method. We will now type check it as a method access
-      for targ in &expression.type_arguments {
-        self.validate_type_instantiation_strictly(heap, targ)
+      for targ in &expression.explicit_type_arguments {
+        self.validate_type_instantiation_strictly(heap, &Type::from_annotation(targ))
       }
-      if !expression.type_arguments.is_empty() {
-        if expression.type_arguments.len() == method_type_info.type_parameters.len() {
+      if !expression.explicit_type_arguments.is_empty() {
+        if expression.explicit_type_arguments.len() == method_type_info.type_parameters.len() {
           let mut subst_map = HashMap::new();
           for (tparam, targ) in
-            method_type_info.type_parameters.iter().zip(&expression.type_arguments)
+            method_type_info.type_parameters.iter().zip(&expression.explicit_type_arguments)
           {
-            subst_map.insert(tparam.name, targ.clone());
+            subst_map.insert(tparam.name, Rc::new(Type::from_annotation(targ)));
           }
           self.validate_type_arguments(heap, &method_type_info.type_parameters, &subst_map);
           let type_ = Rc::new(self.type_meet(
@@ -489,7 +508,8 @@ impl<'a> TypingContext<'a> {
           ));
           let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
             common: expression.common.with_new_type(type_),
-            type_arguments: expression.type_arguments,
+            explicit_type_arguments: expression.explicit_type_arguments,
+            inferred_type_arguments: expression.inferred_type_arguments,
             object: Box::new(checked_expression),
             method_name: expression.field_name,
           });
@@ -499,7 +519,7 @@ impl<'a> TypingContext<'a> {
           expression.common.loc,
           "type arguments",
           method_type_info.type_parameters.len(),
-          expression.type_arguments.len(),
+          expression.explicit_type_arguments.len(),
         );
       }
       if method_type_info.type_parameters.is_empty() {
@@ -507,7 +527,8 @@ impl<'a> TypingContext<'a> {
         let type_ = Rc::new(self.type_meet(heap, hint, &Type::Fn(method_type_info.type_)));
         let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
           common: expression.common.with_new_type(type_),
-          type_arguments: expression.type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments,
+          inferred_type_arguments: expression.inferred_type_arguments,
           object: Box::new(checked_expression),
           method_name: expression.field_name,
         });
@@ -529,7 +550,7 @@ impl<'a> TypingContext<'a> {
               self.error_set,
             );
             let common = expression.common.with_new_type(solved_generic_type);
-            let type_arguments = method_type_info
+            let inferred_type_arguments = method_type_info
               .type_parameters
               .iter()
               .map(|it| {
@@ -546,7 +567,8 @@ impl<'a> TypingContext<'a> {
               .collect_vec();
             let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
               common,
-              type_arguments,
+              explicit_type_arguments: expression.explicit_type_arguments,
+              inferred_type_arguments,
               object: Box::new(checked_expression),
               method_name: expression.field_name,
             });
@@ -569,7 +591,8 @@ impl<'a> TypingContext<'a> {
       // When hint is bad or there is no hint, we need to give up and let context help us more.
       let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
         common: expression.common.with_new_type(Rc::new(Type::Fn(method_type_info.type_))),
-        type_arguments: method_type_info
+        explicit_type_arguments: expression.explicit_type_arguments,
+        inferred_type_arguments: method_type_info
           .type_parameters
           .iter()
           .map(|it| {
@@ -587,26 +610,31 @@ impl<'a> TypingContext<'a> {
       (partially_checked_expr, method_type_info.type_parameters.clone())
     } else {
       // Now it should be checked as field access.
-      if !expression.type_arguments.is_empty() {
+      if !expression.explicit_type_arguments.is_empty() {
         self.error_set.report_arity_mismatch_error(
           expression.common.loc,
           "type arguments",
           0,
-          expression.type_arguments.len(),
+          expression.explicit_type_arguments.len(),
         );
       }
-      let (field_names, field_mappings) = self.resolve_type_definition(&obj_type, true);
-      if let Some(field_type) = field_mappings.get(&expression.field_name.name) {
+      let TypeDefinitionTypingContext {
+        is_object: _,
+        names: field_names,
+        mappings: field_mappings,
+      } = self.resolve_type_definition(obj_type, true);
+      if let Some((field_type, is_public)) = field_mappings.get(&expression.field_name.name) {
         let type_ =
-          Rc::new(self.type_meet(heap, hint, &field_type.type_.reposition(expression.common.loc)));
-        if obj_type.id != self.current_class && !field_type.is_public {
+          Rc::new(self.type_meet(heap, hint, &field_type.reposition(expression.common.loc)));
+        if obj_type.id != self.current_class && !is_public {
           self.error_set.report_unresolved_name_error(
             expression.field_name.loc,
             expression.field_name.name.as_str(heap).to_string(),
           );
           let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
             common: expression.common.with_new_type(type_),
-            type_arguments: expression.type_arguments,
+            explicit_type_arguments: expression.explicit_type_arguments,
+            inferred_type_arguments: expression.inferred_type_arguments,
             object: Box::new(checked_expression),
             field_name: expression.field_name,
             field_order: expression.field_order,
@@ -617,7 +645,8 @@ impl<'a> TypingContext<'a> {
           field_names.iter().find_position(|it| *it.deref() == expression.field_name.name).unwrap();
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(type_),
-          type_arguments: expression.type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments,
+          inferred_type_arguments: expression.inferred_type_arguments,
           object: Box::new(checked_expression),
           field_name: expression.field_name,
           field_order: order as i32,
@@ -639,7 +668,8 @@ impl<'a> TypingContext<'a> {
             hint,
             &unknown_type,
           ))),
-          type_arguments: expression.type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments,
+          inferred_type_arguments: expression.inferred_type_arguments,
           object: Box::new(checked_expression),
           field_name: expression.field_name,
           field_order: expression.field_order,
@@ -677,11 +707,11 @@ impl<'a> TypingContext<'a> {
   fn check_unary(&mut self, heap: &Heap, expression: expr::Unary, hint: Option<&Type>) -> expr::E {
     // Type of unary expression can be decided at parse time.
     self.type_meet(heap, hint, &expression.common.type_);
-    let hint = expression.common.type_.clone();
+    let argument = Box::new(self.check(heap, *expression.argument, Some(&expression.common.type_)));
     expr::E::Unary(expr::Unary {
       common: expression.common,
       operator: expression.operator,
-      argument: Box::new(self.check(heap, expression.argument.deref().clone(), Some(&hint))),
+      argument,
     })
   }
 
@@ -703,7 +733,7 @@ impl<'a> TypingContext<'a> {
       );
       return FunctionCallTypeCheckingResult {
         solved_generic_type: generic_function_type.clone(),
-        solved_return_type: Type::Unknown(function_call_reason.clone()),
+        solved_return_type: Type::Unknown(*function_call_reason),
         solved_substitution: HashMap::new(),
         checked_arguments: function_arguments,
       };
@@ -735,7 +765,7 @@ impl<'a> TypingContext<'a> {
       );
       let hint = contextual_type_meet(
         &best_effort_instantiated_function_type.argument_types[i],
-        &partially_checked_expr.type_(),
+        partially_checked_expr.type_(),
         heap,
         self.error_set,
       );
@@ -771,12 +801,12 @@ impl<'a> TypingContext<'a> {
     }
     for type_parameter in still_unresolved_type_parameters {
       fully_solved_substitution
-        .insert(type_parameter.name, Rc::new(Type::Unknown(function_call_reason.clone())));
+        .insert(type_parameter.name, Rc::new(Type::Unknown(*function_call_reason)));
     }
     let fully_solved_generic_type =
       perform_fn_type_substitution(generic_function_type, &fully_solved_substitution);
     let fully_solved_concrete_return_type = contextual_type_meet(
-      &return_type_hint.cloned().unwrap_or(Type::Unknown(function_call_reason.clone())),
+      &return_type_hint.cloned().unwrap_or(Type::Unknown(*function_call_reason)),
       &fully_solved_generic_type.return_type.reposition(function_call_reason.use_loc),
       heap,
       self.error_set,
@@ -814,8 +844,8 @@ impl<'a> TypingContext<'a> {
       }
       e => (self.check(heap, e, None), vec![]),
     };
-    let partially_checked_callee_type = partially_checked_callee.type_();
-    let callee_function_type = match &*partially_checked_callee_type {
+    let partially_checked_callee_type = partially_checked_callee.type_().deref();
+    let callee_function_type = match partially_checked_callee_type {
       Type::Unknown(_) => {
         let loc = expression.common.loc;
         let type_ = Rc::new(self.type_meet(heap, hint, &Type::Unknown(Reason::new(loc, None))));
@@ -869,8 +899,9 @@ impl<'a> TypingContext<'a> {
     let callee_with_patched_targs = match fully_resolved_checked_callee {
       expr::E::ClassFn(class_fn) => expr::E::ClassFn(expr::ClassFunction {
         common: class_fn.common,
-        type_arguments: class_fn
-          .type_arguments
+        explicit_type_arguments: class_fn.explicit_type_arguments,
+        inferred_type_arguments: class_fn
+          .inferred_type_arguments
           .iter()
           .map(|it| perform_type_substitution(it, &solved_substitution))
           .collect_vec(),
@@ -880,15 +911,17 @@ impl<'a> TypingContext<'a> {
       }),
       expr::E::FieldAccess(f) => expr::E::FieldAccess(expr::FieldAccess {
         common: f.common,
-        type_arguments: f.type_arguments,
+        explicit_type_arguments: f.explicit_type_arguments,
+        inferred_type_arguments: f.inferred_type_arguments,
         object: f.object,
         field_name: f.field_name,
         field_order: f.field_order,
       }),
       expr::E::MethodAccess(m) => expr::E::MethodAccess(expr::MethodAccess {
         common: m.common,
-        type_arguments: m
-          .type_arguments
+        explicit_type_arguments: m.explicit_type_arguments,
+        inferred_type_arguments: m
+          .inferred_type_arguments
           .iter()
           .map(|it| perform_type_substitution(it, &solved_substitution))
           .collect_vec(),
@@ -960,7 +993,7 @@ impl<'a> TypingContext<'a> {
       }
       expr::BinaryOperator::EQ | expr::BinaryOperator::NE => {
         let e1 = Box::new(self.check(heap, *expression.e1, None));
-        let e2 = Box::new(self.check(heap, *expression.e2, Some(&e1.type_())));
+        let e2 = Box::new(self.check(heap, *expression.e2, Some(e1.type_())));
         expr::E::Binary(expr::Binary {
           common: expression.common,
           operator_preceding_comments: expression.operator_preceding_comments,
@@ -970,7 +1003,7 @@ impl<'a> TypingContext<'a> {
         })
       }
     };
-    self.type_meet(heap, hint, &checked_expr.type_());
+    self.type_meet(heap, hint, checked_expr.type_());
     checked_expr
   }
 
@@ -982,7 +1015,7 @@ impl<'a> TypingContext<'a> {
   ) -> expr::E {
     let condition = Box::new(self.check(heap, *expression.condition, None));
     let e1 = Box::new(self.check(heap, *expression.e1, hint));
-    let e2 = Box::new(self.check(heap, *expression.e2, Some(&e1.type_())));
+    let e2 = Box::new(self.check(heap, *expression.e2, Some(e1.type_())));
     let type_ = e2.type_().reposition(expression.common.loc);
     expr::E::IfElse(expr::IfElse {
       common: expression.common.with_new_type(Rc::new(type_)),
@@ -994,8 +1027,8 @@ impl<'a> TypingContext<'a> {
 
   fn check_match(&mut self, heap: &Heap, expression: expr::Match, hint: Option<&Type>) -> expr::E {
     let checked_matched = self.check(heap, *expression.matched, None);
-    let checked_matched_type = checked_matched.type_();
-    let checked_matched_id_type = match &*checked_matched_type {
+    let checked_matched_type = checked_matched.type_().deref();
+    let checked_matched_id_type = match checked_matched_type {
       Type::Id(t) => t,
       t => {
         self.error_set.report_unexpected_type_kind_error(
@@ -1012,8 +1045,11 @@ impl<'a> TypingContext<'a> {
         });
       }
     };
-    let (variant_names, variant_mappings) =
-      self.resolve_type_definition(checked_matched_id_type, false);
+    let TypeDefinitionTypingContext {
+      is_object: _,
+      names: variant_names,
+      mappings: variant_mappings,
+    } = self.resolve_type_definition(checked_matched_id_type, false);
     let mut unused_mappings = variant_mappings;
     let mut checked_cases = vec![];
     let mut matching_list_types = vec![];
@@ -1021,7 +1057,7 @@ impl<'a> TypingContext<'a> {
       expression.cases
     {
       let mapping_data_type = match unused_mappings.remove(&tag.name) {
-        Some(field_type) => field_type.type_,
+        Some((field_type, _)) => field_type,
         None => {
           self.error_set.report_unresolved_name_error(tag.loc, tag.name.as_str(heap).to_string());
           continue;
@@ -1029,12 +1065,12 @@ impl<'a> TypingContext<'a> {
       };
       let (checked_body, checked_data_variable) = if let Some((data_variable, _)) = data_variable {
         self.local_typing_context.write(data_variable.loc, mapping_data_type.clone());
-        (self.check(heap, *body, hint), Some((data_variable.clone(), mapping_data_type)))
+        (self.check(heap, *body, hint), Some((data_variable, mapping_data_type)))
       } else {
         (self.check(heap, *body, hint), None)
       };
       let (tag_order, _) = variant_names.iter().find_position(|n| tag.name.eq(n)).unwrap();
-      matching_list_types.push(checked_body.type_());
+      matching_list_types.push(checked_body.type_().clone());
       checked_cases.push(expr::VariantPatternToExpression {
         loc,
         tag,
@@ -1074,7 +1110,7 @@ impl<'a> TypingContext<'a> {
             .zip(&expression.parameters)
             .map(|(parameter_hint, parameter)| {
               let annot = if let Some(annot) = &parameter.annotation {
-                annot.clone()
+                Rc::new(Type::from_annotation(annot))
               } else {
                 Rc::new(Type::Unknown(Reason::new(parameter.name.loc, None)))
               };
@@ -1102,7 +1138,7 @@ impl<'a> TypingContext<'a> {
     let mut types_ = vec![];
     for OptionallyAnnotatedId { name, annotation } in &expression.parameters {
       let type_ = if let Some(annot) = annotation {
-        annot.clone()
+        Rc::new(Type::from_annotation(annot))
       } else {
         self.error_set.report_insufficient_type_inference_context_error(name.loc);
         Rc::new(Type::Unknown(Reason::new(name.loc, None)))
@@ -1130,7 +1166,7 @@ impl<'a> TypingContext<'a> {
     let type_ = Type::Fn(FunctionType {
       reason: Reason::new(expression.common.loc, None),
       argument_types,
-      return_type: body.type_(),
+      return_type: body.type_().clone(),
     });
     expr::E::Lambda(expr::Lambda {
       common: expression.common.with_new_type(Rc::new(type_)),
@@ -1153,16 +1189,17 @@ impl<'a> TypingContext<'a> {
       assigned_expression,
     } = statement;
     let hint = if let Some(annot) = &annotation {
-      self.validate_type_instantiation_strictly(heap, annot);
-      Some(annot.deref())
+      let t = Type::from_annotation(annot);
+      self.validate_type_instantiation_strictly(heap, &t);
+      Some(t)
     } else {
       None
     };
-    let checked_assigned_expr = self.check(heap, *assigned_expression, hint);
+    let checked_assigned_expr = self.check(heap, *assigned_expression, hint.as_ref());
     let checked_assigned_expr_type = checked_assigned_expr.type_();
     let checked_pattern = match pattern {
       expr::Pattern::Object(pattern_loc, destructed_names) => {
-        let id_type = match &*checked_assigned_expr_type {
+        let id_type = match checked_assigned_expr_type.deref() {
           Type::Id(t) => t,
           t => {
             self.error_set.report_unexpected_type_kind_error(
@@ -1179,7 +1216,11 @@ impl<'a> TypingContext<'a> {
             };
           }
         };
-        let (field_names, field_mappings) = self.resolve_type_definition(id_type, true);
+        let TypeDefinitionTypingContext {
+          is_object: _,
+          names: field_names,
+          mappings: field_mappings,
+        } = self.resolve_type_definition(id_type, true);
         let mut field_order_mapping = HashMap::new();
         for (i, name) in field_names.into_iter().enumerate() {
           field_order_mapping.insert(name, i);
@@ -1188,10 +1229,10 @@ impl<'a> TypingContext<'a> {
         for ObjectPatternDestucturedName { loc, field_order, field_name, alias, type_ } in
           destructed_names
         {
-          if let Some(field_information) = field_mappings.get(&field_name.name) {
-            if id_type.id.eq(&self.current_class) || field_information.is_public {
+          if let Some((field_type, is_public)) = field_mappings.get(&field_name.name) {
+            if id_type.id.eq(&self.current_class) || *is_public {
               let write_loc = if let Some(alias) = &alias { alias.loc } else { field_name.loc };
-              self.local_typing_context.write(write_loc, field_information.type_.clone());
+              self.local_typing_context.write(write_loc, field_type.clone());
               let field_order = field_order_mapping.get(&field_name.name).unwrap();
               checked_destructured_names.push(ObjectPatternDestucturedName {
                 loc,
@@ -1217,7 +1258,7 @@ impl<'a> TypingContext<'a> {
         expr::Pattern::Object(pattern_loc, checked_destructured_names)
       }
       expr::Pattern::Id(loc, name) => {
-        self.local_typing_context.write(loc, checked_assigned_expr_type);
+        self.local_typing_context.write(loc, checked_assigned_expr_type.clone());
         expr::Pattern::Id(loc, name)
       }
       expr::Pattern::Wildcard(loc) => expr::Pattern::Wildcard(loc),
@@ -1243,7 +1284,7 @@ impl<'a> TypingContext<'a> {
       expression.statements.into_iter().map(|it| self.check_statement(heap, it)).collect_vec();
     let checked_final_expr = expression.expression.map(|e| Box::new(self.check(heap, *e, hint)));
     let type_ = if let Some(e) = &checked_final_expr {
-      e.type_()
+      e.type_().clone()
     } else {
       Rc::new(Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Unit))
     };
@@ -1269,7 +1310,10 @@ fn type_params_to_type_params_sig(
 ) -> Vec<TypeParameterSignature> {
   type_parameters
     .iter()
-    .map(|it| TypeParameterSignature { name: it.name.name, bound: it.bound.clone() })
+    .map(|it| TypeParameterSignature {
+      name: it.name.name,
+      bound: it.bound.as_ref().map(|b| Rc::new(IdType::from_annotation(b))),
+    })
     .collect_vec()
 }
 
@@ -1292,15 +1336,21 @@ fn validate_signature_types(
 
   for tparam in toplevel.type_parameters() {
     if let Some(bound) = &tparam.bound {
-      cx.validate_type_instantiation_allow_abstract_types(heap, &Type::Id(bound.deref().clone()));
+      cx.validate_type_instantiation_allow_abstract_types(
+        heap,
+        &Type::Id(IdType::from_annotation(bound)),
+      );
     }
   }
   for node in toplevel.extends_or_implements_nodes() {
-    cx.validate_type_instantiation_allow_abstract_types(heap, &Type::Id(node.deref().clone()));
+    cx.validate_type_instantiation_allow_abstract_types(
+      heap,
+      &Type::Id(IdType::from_annotation(node)),
+    );
   }
   if let Some(type_definition) = toplevel.type_definition() {
     for field_type in type_definition.mappings.values() {
-      cx.validate_type_instantiation_strictly(heap, &field_type.type_);
+      cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(&field_type.0));
     }
   }
   for member in toplevel.members_iter() {
@@ -1321,11 +1371,16 @@ fn validate_signature_types(
     );
     for tparam in member.type_parameters.iter() {
       if let Some(bound) = &tparam.bound {
-        member_cx
-          .validate_type_instantiation_allow_abstract_types(heap, &Type::Id(bound.deref().clone()));
+        member_cx.validate_type_instantiation_allow_abstract_types(
+          heap,
+          &Type::Id(IdType::from_annotation(bound)),
+        );
       }
     }
-    member_cx.validate_type_instantiation_strictly(heap, &Type::Fn(member.type_.clone()));
+    member_cx.validate_type_instantiation_strictly(
+      heap,
+      &Type::Fn(FunctionType::from_annotation(&member.type_)),
+    );
   }
 }
 
@@ -1363,7 +1418,7 @@ pub(super) fn type_check_module(
     }
     for member in toplevel.members_iter() {
       for param in member.parameters.iter() {
-        local_cx.write(param.name.loc, param.annotation.clone());
+        local_cx.write(param.name.loc, Rc::new(Type::from_annotation(&param.annotation)));
       }
     }
   }
@@ -1390,7 +1445,7 @@ pub(super) fn type_check_module(
             c.name.name,
             tparam_sigs,
           );
-          let body_type_hint = member.decl.type_.return_type.clone();
+          let body_type_hint = Type::from_annotation(&member.decl.type_.return_type);
           checked_members.push(ClassMemberDefinition {
             decl: member.decl,
             body: type_check_expression(&mut cx, heap, member.body, Some(&body_type_hint)),

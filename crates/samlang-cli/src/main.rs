@@ -100,7 +100,7 @@ mod utils {
   ) -> Vec<(samlang_core::ModuleReference, String)> {
     let mut sources = vec![];
     if let Ok(absolute_source_path) =
-      fs::canonicalize(PathBuf::from(configuration.source_directory.clone()))
+      fs::canonicalize(PathBuf::from(&configuration.source_directory))
     {
       let start_path = absolute_source_path.as_path();
       walk(heap, &configuration.ignores, start_path, start_path, &mut sources);
@@ -455,8 +455,8 @@ mod runners {
       let configuration = utils::get_configuration();
       let heap = &mut samlang_core::Heap::new();
       for (module_reference, source) in utils::collect_sources(&configuration, heap) {
-        let path = PathBuf::from(configuration.source_directory.clone())
-          .join(module_reference.to_filename(heap));
+        let path =
+          PathBuf::from(&configuration.source_directory).join(module_reference.to_filename(heap));
         fs::write(&path, samlang_core::reformat_source(&source)).unwrap();
         eprintln!("Formatted: {}", path.to_str().unwrap())
       }
@@ -487,10 +487,9 @@ mod runners {
       enable_profiling,
     ) {
       Ok(samlang_core::SourcesCompilationResult { text_code_results, wasm_file }) => {
-        if fs::create_dir_all(configuration.output_directory.clone()).is_ok() {
+        if fs::create_dir_all(&configuration.output_directory).is_ok() {
           for (file, content) in text_code_results {
-            fs::write(PathBuf::from(configuration.output_directory.clone()).join(file), content)
-              .unwrap();
+            fs::write(PathBuf::from(&configuration.output_directory).join(file), content).unwrap();
           }
           fs::write(PathBuf::from(&configuration.output_directory).join("__all__.wasm"), wasm_file)
             .unwrap();
@@ -524,7 +523,7 @@ mod runners {
     } else {
       let configuration = utils::get_configuration();
       if let Ok(absolute_source_path) =
-        fs::canonicalize(PathBuf::from(configuration.source_directory.clone()))
+        fs::canonicalize(PathBuf::from(&configuration.source_directory))
       {
         let mut heap = samlang_core::Heap::new();
         let collected_sources = utils::collect_sources(&configuration, &mut heap);

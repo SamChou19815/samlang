@@ -343,8 +343,10 @@ impl TypeLoweringManager {
     let mut mappings = vec![];
     for n in &source_type_def.names {
       names.push(n.name);
-      mappings
-        .push(self.lower_source_type(heap, &source_type_def.mappings.get(&n.name).unwrap().type_));
+      mappings.push(self.lower_source_type(
+        heap,
+        &type_::Type::from_annotation(&source_type_def.mappings.get(&n.name).unwrap().0),
+      ));
     }
     TypeDefinition {
       identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
@@ -378,6 +380,7 @@ mod tests {
   use crate::{
     ast::{
       hir::{BOOL_TYPE, INT_TYPE, STRING_TYPE},
+      source::test_builder,
       Location, Reason,
     },
     checker::type_::test_type_builder,
@@ -759,7 +762,7 @@ mod tests {
       generic_types: HashSet::from([heap.alloc_str("A")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
-    let builder = test_type_builder::create();
+    let annot_builder = test_builder::create();
 
     let type_def = source::TypeDefinition {
       loc: Location::dummy(),
@@ -768,25 +771,29 @@ mod tests {
       mappings: HashMap::from([
         (
           heap.alloc_str("a"),
-          source::FieldType {
-            is_public: true,
-            type_: builder.fun_type(
-              vec![builder
-                .fun_type(vec![builder.simple_id_type(heap.alloc_str("A"))], builder.bool_type())],
-              builder.bool_type(),
+          (
+            annot_builder.fn_annot(
+              vec![annot_builder.fn_annot(
+                vec![annot_builder.simple_id_annot(heap.alloc_str("A"))],
+                annot_builder.bool_annot(),
+              )],
+              annot_builder.bool_annot(),
             ),
-          },
+            true,
+          ),
         ),
         (
           heap.alloc_str("b"),
-          source::FieldType {
-            is_public: false,
-            type_: builder.fun_type(
-              vec![builder
-                .fun_type(vec![builder.simple_id_type(heap.alloc_str("A"))], builder.bool_type())],
-              builder.bool_type(),
+          (
+            annot_builder.fn_annot(
+              vec![annot_builder.fn_annot(
+                vec![annot_builder.simple_id_annot(heap.alloc_str("A"))],
+                annot_builder.bool_annot(),
+              )],
+              annot_builder.bool_annot(),
             ),
-          },
+            false,
+          ),
         ),
       ]),
     };

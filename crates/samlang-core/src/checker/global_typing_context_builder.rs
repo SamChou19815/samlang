@@ -10,7 +10,7 @@ use super::{
 };
 use crate::{
   ast::{
-    source::{ClassMemberDeclaration, FieldType, Module, Toplevel, TypeParameter},
+    source::{annotation, ClassMemberDeclaration, Module, Toplevel, TypeParameter},
     Reason,
   },
   common::{Heap, ModuleReference, PStr},
@@ -209,7 +209,7 @@ fn validate_and_patch_member_map(
 }
 
 fn get_fully_inlined_multiple_interface_context(
-  instantiated_interface_types: &Vec<IdType>,
+  instantiated_interface_types: &Vec<annotation::Id>,
   unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   heap: &Heap,
   error_set: &mut ErrorSet,
@@ -222,27 +222,27 @@ fn get_fully_inlined_multiple_interface_context(
     if let Some(module_cx) =
       unoptimized_global_typing_context.get(&instantiated_interface_type.module_reference)
     {
-      if module_cx.classes.contains_key(&instantiated_interface_type.id) {
+      if module_cx.classes.contains_key(&instantiated_interface_type.id.name) {
         error_set.report_unexpected_type_kind_error(
-          instantiated_interface_type.reason.use_loc,
+          instantiated_interface_type.location,
           "interface type".to_string(),
           "class type".to_string(),
         );
-      } else if !module_cx.interfaces.contains_key(&instantiated_interface_type.id) {
+      } else if !module_cx.interfaces.contains_key(&instantiated_interface_type.id.name) {
         error_set.report_unresolved_name_error(
-          instantiated_interface_type.reason.use_loc,
-          instantiated_interface_type.id.as_str(heap).to_string(),
+          instantiated_interface_type.location,
+          instantiated_interface_type.id.name.as_str(heap).to_string(),
         );
       }
     } else {
       error_set.report_unresolved_name_error(
-        instantiated_interface_type.reason.use_loc,
-        instantiated_interface_type.id.as_str(heap).to_string(),
+        instantiated_interface_type.location,
+        instantiated_interface_type.id.name.as_str(heap).to_string(),
       );
     }
 
     let inlined = get_fully_inlined_interface_context(
-      instantiated_interface_type,
+      &IdType::from_annotation(instantiated_interface_type),
       unoptimized_global_typing_context,
       heap,
       error_set,
@@ -264,7 +264,10 @@ fn ast_type_params_to_sig_type_params(
 ) -> Vec<TypeParameterSignature> {
   type_parameters
     .iter()
-    .map(|it| TypeParameterSignature { name: it.name.name, bound: it.bound.clone() })
+    .map(|it| TypeParameterSignature {
+      name: it.name.name,
+      bound: it.bound.as_ref().map(|b| Rc::new(IdType::from_annotation(b))),
+    })
     .collect_vec()
 }
 
@@ -303,7 +306,7 @@ fn check_class_member_conformance_with_ast(
   let actual_sig = MemberTypeInformation {
     is_public: actual.is_public,
     type_parameters: ast_type_params_to_sig_type_params(&actual.type_parameters),
-    type_: actual.type_.clone(),
+    type_: FunctionType::from_annotation(&actual.type_),
   };
   check_class_member_conformance_with_signature(expected, &actual_sig, heap, error_set);
 }
@@ -424,7 +427,7 @@ fn build_unoptimized_interface_typing_context(
     let type_info = Rc::new(MemberTypeInformation {
       is_public: member.is_public,
       type_parameters: ast_type_params_to_sig_type_params(&member.type_parameters),
-      type_: member.type_.clone(),
+      type_: FunctionType::from_annotation(&member.type_),
     });
     if member.is_method {
       methods.insert(member.name.name, type_info);
@@ -436,7 +439,11 @@ fn build_unoptimized_interface_typing_context(
     functions: Rc::new(functions),
     methods: Rc::new(methods),
     type_parameters: ast_type_params_to_sig_type_params(toplevel.type_parameters()),
-    extends_or_implements: toplevel.extends_or_implements_nodes().clone(),
+    extends_or_implements: toplevel
+      .extends_or_implements_nodes()
+      .iter()
+      .map(IdType::from_annotation)
+      .collect(),
   }
 }
 
@@ -498,7 +505,9 @@ pub(super) fn build_global_typing_context(
                   argument_types: type_def
                     .names
                     .iter()
-                    .map(|it| type_def.mappings.get(&it.name).unwrap().type_.clone())
+                    .map(|it| {
+                      Rc::new(Type::from_annotation(&type_def.mappings.get(&it.name).unwrap().0))
+                    })
                     .collect_vec(),
                   return_type: class_type,
                 },
@@ -506,15 +515,15 @@ pub(super) fn build_global_typing_context(
             );
           } else {
             let type_def_reason = Reason::new(type_def.loc, Some(type_def.loc));
-            for (tag, FieldType { type_, is_public: _ }) in &type_def.mappings {
+            for (tag, (annot, _)) in &type_def.mappings {
               functions_with_ctors.insert(
                 *tag,
                 Rc::new(MemberTypeInformation {
                   is_public: true,
                   type_parameters: ast_type_params_to_sig_type_params(&class.type_parameters),
                   type_: FunctionType {
-                    reason: type_def_reason.clone(),
-                    argument_types: vec![type_.clone()],
+                    reason: type_def_reason,
+                    argument_types: vec![Rc::new(Type::from_annotation(annot))],
                     return_type: class_type.clone(),
                   },
                 }),
@@ -535,7 +544,13 @@ pub(super) fn build_global_typing_context(
             TypeDefinitionTypingContext {
               is_object: type_def.is_object,
               names: type_def.names.iter().map(|it| it.name).collect_vec(),
-              mappings: type_def.mappings.clone(),
+              mappings: type_def
+                .mappings
+                .iter()
+                .map(|(name, (annot, is_public))| {
+                  (*name, (Rc::new(Type::from_annotation(annot)), *is_public))
+                })
+                .collect(),
             },
           );
         }
@@ -562,8 +577,8 @@ mod tests {
   use crate::{
     ast::{
       source::{
-        expr, ClassMemberDefinition, CommentStore, Id, InterfaceDeclarationCommon, Literal,
-        ModuleMembersImport, TypeDefinition, NO_COMMENT_REFERENCE,
+        expr, test_builder, ClassMemberDefinition, CommentStore, Id, InterfaceDeclarationCommon,
+        Literal, ModuleMembersImport, TypeDefinition, NO_COMMENT_REFERENCE,
       },
       Location,
     },
@@ -576,6 +591,7 @@ mod tests {
   fn check_class_member_conformance_with_ast_tests() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
+    let annot_builder = test_builder::create();
     let builder = test_type_builder::create();
 
     check_class_member_conformance_with_ast(
@@ -596,11 +612,7 @@ mod tests {
         is_method: true,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
-        type_: FunctionType {
-          reason: Reason::dummy(),
-          argument_types: vec![],
-          return_type: builder.int_type(),
-        },
+        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
         parameters: Rc::new(vec![]),
       },
       &heap,
@@ -624,11 +636,7 @@ mod tests {
         is_method: false,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
-        type_: FunctionType {
-          reason: Reason::dummy(),
-          argument_types: vec![],
-          return_type: builder.int_type(),
-        },
+        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
         parameters: Rc::new(vec![]),
       },
       &heap,
@@ -652,11 +660,7 @@ mod tests {
         is_method: true,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
-        type_: FunctionType {
-          reason: Reason::dummy(),
-          argument_types: vec![],
-          return_type: builder.bool_type(),
-        },
+        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.bool_annot()),
         parameters: Rc::new(vec![]),
       },
       &heap,
@@ -684,15 +688,10 @@ mod tests {
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![TypeParameter {
           loc: Location::dummy(),
-          associated_comments: NO_COMMENT_REFERENCE,
           name: Id::from(heap.alloc_str("A")),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B")))),
+          bound: Some(annot_builder.simple_id_annot_unwrapped(heap.alloc_str("B"))),
         }]),
-        type_: FunctionType {
-          reason: Reason::dummy(),
-          argument_types: vec![],
-          return_type: builder.int_type(),
-        },
+        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
         parameters: Rc::new(vec![]),
       },
       &heap,
@@ -729,28 +728,21 @@ mod tests {
         type_parameters: Rc::new(vec![
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: NO_COMMENT_REFERENCE,
             name: Id::from(heap.alloc_str("B")),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: NO_COMMENT_REFERENCE,
             name: Id::from(heap.alloc_str("C")),
             bound: None,
           },
           TypeParameter {
             loc: Location::dummy(),
-            associated_comments: NO_COMMENT_REFERENCE,
             name: Id::from(heap.alloc_str("D")),
-            bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B")))),
+            bound: Some(annot_builder.simple_id_annot_unwrapped(heap.alloc_str("B"))),
           },
         ]),
-        type_: FunctionType {
-          reason: Reason::dummy(),
-          argument_types: vec![],
-          return_type: builder.bool_type(),
-        },
+        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.bool_annot()),
         parameters: Rc::new(vec![]),
       },
       &heap,
@@ -772,7 +764,7 @@ mod tests {
 
   fn inlined_cx_from_type(
     unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
-    id_types: Vec<IdType>,
+    id_types: Vec<annotation::Id>,
     heap: &Heap,
   ) -> String {
     let mut error_set = ErrorSet::new();
@@ -803,6 +795,7 @@ mod tests {
   #[test]
   fn get_fully_inlined_multiple_interface_context_tests() {
     let mut heap = Heap::new();
+    let annot_builder = test_builder::create();
     let builder = test_type_builder::create();
     let unoptimized_global_cx = HashMap::from([(
       ModuleReference::dummy(),
@@ -1035,7 +1028,7 @@ mod tests {
       "functions:\n\nmethods:\n\nsuper_types: C",
       inlined_cx_from_type(
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(heap.alloc_str("C"))],
+        vec![annot_builder.simple_id_annot_unwrapped(heap.alloc_str("C"))],
         &heap,
       )
     );
@@ -1043,7 +1036,7 @@ mod tests {
       "functions:\n\nmethods:\n\nsuper_types: I_not_exist",
       inlined_cx_from_type(
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(heap.alloc_str("I_not_exist"))],
+        vec![annot_builder.simple_id_annot_unwrapped(heap.alloc_str("I_not_exist"))],
         &heap,
       )
     );
@@ -1051,7 +1044,7 @@ mod tests {
       "functions:\n\nmethods:\n\nsuper_types: not_exist, C, IUseNonExistent",
       inlined_cx_from_type(
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(heap.alloc_str("IUseNonExistent"))],
+        vec![annot_builder.simple_id_annot_unwrapped(heap.alloc_str("IUseNonExistent"))],
         &heap,
       )
     );
@@ -1059,7 +1052,7 @@ mod tests {
       "functions:\n\nmethods:\n\nsuper_types: I",
       inlined_cx_from_type(
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(heap.alloc_str("I"))],
+        vec![annot_builder.simple_id_annot_unwrapped(heap.alloc_str("I"))],
         &heap,
       )
     );
@@ -1075,34 +1068,34 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
       .trim(),
       inlined_cx_from_type(
         &unoptimized_global_cx,
-        vec![builder.simple_id_type_unwrapped(heap.alloc_str("ILevel2"))],
+        vec![annot_builder.simple_id_annot_unwrapped(heap.alloc_str("ILevel2"))],
         &heap,
       )
     );
 
     let mut error_set = ErrorSet::new();
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped(heap.alloc_str("ICyclic1"))],
+      &vec![annot_builder.simple_id_annot_unwrapped(heap.alloc_str("ICyclic1"))],
       &unoptimized_global_cx,
       &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped(heap.alloc_str("ICyclic1"))],
+      &vec![annot_builder.simple_id_annot_unwrapped(heap.alloc_str("ICyclic1"))],
       &unoptimized_global_cx,
       &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
-      &vec![builder.simple_id_type_unwrapped(heap.alloc_str("ICyclic2"))],
+      &vec![annot_builder.simple_id_annot_unwrapped(heap.alloc_str("ICyclic2"))],
       &unoptimized_global_cx,
       &heap,
       &mut error_set,
     );
     get_fully_inlined_multiple_interface_context(
       &vec![
-        builder.simple_id_type_unwrapped(heap.alloc_str("ConflictExtends1")),
-        builder.simple_id_type_unwrapped(heap.alloc_str("ConflictExtends2")),
+        annot_builder.simple_id_annot_unwrapped(heap.alloc_str("ConflictExtends1")),
+        annot_builder.simple_id_annot_unwrapped(heap.alloc_str("ConflictExtends2")),
       ],
       &unoptimized_global_cx,
       &heap,
@@ -1122,6 +1115,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
   #[test]
   fn check_module_member_interface_conformance_tests() {
     let mut heap = Heap::new();
+    let annot_builder = test_builder::create();
     let builder = test_type_builder::create();
     let unoptimized_global_cx = HashMap::from([(
       ModuleReference::dummy(),
@@ -1198,7 +1192,9 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
         associated_comments: NO_COMMENT_REFERENCE,
         name: Id::from(heap.alloc_str("A")),
         type_parameters: vec![],
-        extends_or_implements_nodes: vec![builder.simple_id_type_unwrapped(heap.alloc_str("IBase"))],
+        extends_or_implements_nodes: vec![
+          annot_builder.simple_id_annot_unwrapped(heap.alloc_str("IBase"))
+        ],
         type_definition: TypeDefinition {
           loc: Location::dummy(),
           is_object: true,
@@ -1214,11 +1210,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               is_method: false,
               name: Id::from(heap.alloc_str("f1")),
               type_parameters: Rc::new(vec![]),
-              type_: FunctionType {
-                reason: Reason::dummy(),
-                argument_types: vec![],
-                return_type: builder.int_type(),
-              },
+              type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
               parameters: Rc::new(vec![]),
             },
             body: expr::E::Literal(
@@ -1234,11 +1226,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               is_method: true,
               name: Id::from(heap.alloc_str("m1")),
               type_parameters: Rc::new(vec![]),
-              type_: FunctionType {
-                reason: Reason::dummy(),
-                argument_types: vec![],
-                return_type: builder.int_type(),
-              },
+              type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
               parameters: Rc::new(vec![]),
             },
             body: expr::E::Literal(
@@ -1258,6 +1246,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
     let mut heap = Heap::new();
     let m0_ref = heap.alloc_module_reference_from_string_vec(vec!["Module0".to_string()]);
     let m1_ref = heap.alloc_module_reference_from_string_vec(vec!["Module1".to_string()]);
+    let annot_builder = test_builder::create();
     let builder = test_type_builder::create();
 
     let test_sources = HashMap::from([
@@ -1272,7 +1261,6 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
             name: Id::from(heap.alloc_str("Class0")),
             type_parameters: vec![TypeParameter {
               loc: Location::dummy(),
-              associated_comments: NO_COMMENT_REFERENCE,
               name: Id::from(heap.alloc_str("T")),
               bound: None,
             }],
@@ -1281,10 +1269,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               loc: Location::dummy(),
               is_object: false,
               names: vec![Id::from(heap.alloc_str("A"))],
-              mappings: HashMap::from([(
-                heap.alloc_str("A"),
-                FieldType { is_public: true, type_: builder.int_type() },
-              )]),
+              mappings: HashMap::from([(heap.alloc_str("A"), (annot_builder.int_annot(), true))]),
             },
             members: vec![],
           })],
@@ -1314,10 +1299,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 loc: Location::dummy(),
                 is_object: true,
                 names: vec![Id::from(heap.alloc_str("a"))],
-                mappings: HashMap::from([(
-                  heap.alloc_str("a"),
-                  FieldType { is_public: true, type_: builder.int_type() },
-                )]),
+                mappings: HashMap::from([(heap.alloc_str("a"), (annot_builder.int_annot(), true))]),
               },
               members: vec![
                 ClassMemberDefinition {
@@ -1328,11 +1310,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     is_method: true,
                     name: Id::from(heap.alloc_str("m1")),
                     type_parameters: Rc::new(vec![]),
-                    type_: FunctionType {
-                      reason: Reason::dummy(),
-                      argument_types: vec![],
-                      return_type: builder.int_type(),
-                    },
+                    type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
                     parameters: Rc::new(vec![]),
                   },
                   body: expr::E::Literal(
@@ -1348,11 +1326,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     is_method: false,
                     name: Id::from(heap.alloc_str("f1")),
                     type_parameters: Rc::new(vec![]),
-                    type_: FunctionType {
-                      reason: Reason::dummy(),
-                      argument_types: vec![],
-                      return_type: builder.int_type(),
-                    },
+                    type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
                     parameters: Rc::new(vec![]),
                   },
                   body: expr::E::Literal(
@@ -1385,11 +1359,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 is_method: false,
                 name: Id::from(heap.alloc_str("m1")),
                 type_parameters: Rc::new(vec![]),
-                type_: FunctionType {
-                  reason: Reason::dummy(),
-                  argument_types: vec![],
-                  return_type: builder.int_type(),
-                },
+                type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
                 parameters: Rc::new(vec![]),
               }],
             }),
@@ -1399,7 +1369,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               name: Id::from(heap.alloc_str("Class2")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![
-                builder.simple_id_type_unwrapped(heap.alloc_str("Interface3"))
+                annot_builder.simple_id_annot_unwrapped(heap.alloc_str("Interface3"))
               ],
               type_definition: TypeDefinition {
                 loc: Location::dummy(),

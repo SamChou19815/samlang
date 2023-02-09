@@ -13,7 +13,7 @@ pub(super) enum LocationCoverSearchResult<'a> {
   Expression(&'a expr::E),
   ClassName(Location, ModuleReference, PStr),
   ClassMemberName(Location, ModuleReference, PStr, PStr, bool /* is method */),
-  TypedName(Location, PStr, &'a Type),
+  TypedName(Location, PStr, Type),
 }
 
 fn search_expression(expr: &expr::E, position: Position) -> Option<LocationCoverSearchResult> {
@@ -83,8 +83,12 @@ fn search_expression(expr: &expr::E, position: Position) -> Option<LocationCover
     expr::E::Lambda(e) => {
       for param in &e.parameters {
         if param.name.loc.contains_position(position) {
-          if let Some(t) = &param.annotation {
-            return Some(LocationCoverSearchResult::TypedName(param.name.loc, param.name.name, t));
+          if let Some(annot) = &param.annotation {
+            return Some(LocationCoverSearchResult::TypedName(
+              param.name.loc,
+              param.name.name,
+              Type::from_annotation(annot),
+            ));
           }
         }
       }
@@ -100,7 +104,7 @@ fn search_expression(expr: &expr::E, position: Position) -> Option<LocationCover
             return Some(LocationCoverSearchResult::TypedName(
               *pat_loc,
               *n,
-              &stmt.assigned_expression.common().type_,
+              stmt.assigned_expression.common().type_.deref().clone(),
             ))
           }
           _ => {}
@@ -146,7 +150,7 @@ pub(super) fn search_module(
           return Some(LocationCoverSearchResult::TypedName(
             param.name.loc,
             param.name.name,
-            &param.annotation,
+            Type::from_annotation(&param.annotation),
           ));
         }
       }
@@ -184,7 +188,8 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           type_: Rc::new(Type::Unknown(Reason::dummy())),
         },
-        type_arguments: vec![],
+        explicit_type_arguments: vec![],
+        inferred_type_arguments: vec![],
         object: Box::new(expr::E::Id(
           expr::ExpressionCommon {
             loc: Location::dummy(),

@@ -1,6 +1,6 @@
 use super::loc::Location;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Reason {
   pub(crate) use_loc: Location,
   pub(crate) def_loc: Option<Location>,
@@ -20,7 +20,7 @@ impl Reason {
     Reason { use_loc, def_loc }
   }
 
-  pub(crate) fn to_use_reason(&self, use_loc: Location) -> Reason {
+  pub(crate) fn to_use_reason(self, use_loc: Location) -> Reason {
     Reason { use_loc, def_loc: self.def_loc }
   }
 }
@@ -31,7 +31,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(!format!("{:?}", Reason::dummy().clone()).is_empty());
+    assert!(!format!("{:?}", Reason::dummy()).is_empty());
     assert_eq!(Reason::builtin(), Reason::builtin());
   }
 

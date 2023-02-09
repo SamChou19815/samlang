@@ -2,7 +2,7 @@
 mod tests {
   use crate::{
     ast::{
-      source::{expr, FieldType, Id, Literal, NO_COMMENT_REFERENCE},
+      source::{expr, Id, Literal, NO_COMMENT_REFERENCE},
       Location, Reason,
     },
     checker::{
@@ -60,7 +60,8 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           type_: builder.bool_type(),
         },
-        type_arguments: vec![],
+        explicit_type_arguments: vec![],
+        inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(
           expr::ExpressionCommon::dummy(builder.bool_type()),
           Literal::Bool(true),
@@ -90,21 +91,9 @@ mod tests {
                 is_object: true,
                 names: vec![heap.alloc_str("foo"), heap.alloc_str("bar"), heap.alloc_str("fff")],
                 mappings: HashMap::from([
-                  (
-                    heap.alloc_str("foo"),
-                    FieldType { is_public: true, type_: builder.bool_type() },
-                  ),
-                  (
-                    heap.alloc_str("bar"),
-                    FieldType { is_public: false, type_: builder.int_type() },
-                  ),
-                  (
-                    heap.alloc_str("fff"),
-                    FieldType {
-                      is_public: false,
-                      type_: builder.fun_type(vec![], builder.string_type()),
-                    },
-                  ),
+                  (heap.alloc_str("foo"), (builder.bool_type(), true)),
+                  (heap.alloc_str("bar"), (builder.int_type(), false)),
+                  (heap.alloc_str("fff"), (builder.fun_type(vec![], builder.string_type()), false)),
                 ]),
               },
             ),
@@ -114,11 +103,8 @@ mod tests {
                 is_object: false,
                 names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
                 mappings: HashMap::from([
-                  (
-                    heap.alloc_str("Foo"),
-                    FieldType { is_public: true, type_: builder.bool_type() },
-                  ),
-                  (heap.alloc_str("Bar"), FieldType { is_public: true, type_: builder.int_type() }),
+                  (heap.alloc_str("Foo"), (builder.bool_type(), true)),
+                  (heap.alloc_str("Bar"), (builder.int_type(), true)),
                 ]),
               },
             ),
@@ -128,17 +114,8 @@ mod tests {
                 is_object: true,
                 names: vec![heap.alloc_str("foo"), heap.alloc_str("bar")],
                 mappings: HashMap::from([
-                  (
-                    heap.alloc_str("foo"),
-                    FieldType {
-                      is_public: true,
-                      type_: builder.simple_id_type(heap.alloc_str("E")),
-                    },
-                  ),
-                  (
-                    heap.alloc_str("bar"),
-                    FieldType { is_public: false, type_: builder.int_type() },
-                  ),
+                  (heap.alloc_str("foo"), (builder.simple_id_type(heap.alloc_str("E")), true)),
+                  (heap.alloc_str("bar"), (builder.int_type(), false)),
                 ]),
               },
             ),
@@ -148,14 +125,8 @@ mod tests {
                 is_object: false,
                 names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
                 mappings: HashMap::from([
-                  (
-                    heap.alloc_str("Foo"),
-                    FieldType {
-                      is_public: true,
-                      type_: builder.simple_id_type(heap.alloc_str("E")),
-                    },
-                  ),
-                  (heap.alloc_str("Bar"), FieldType { is_public: true, type_: builder.int_type() }),
+                  (heap.alloc_str("Foo"), (builder.simple_id_type(heap.alloc_str("E")), true)),
+                  (heap.alloc_str("Bar"), (builder.int_type(), true)),
                 ]),
               },
             ),
@@ -165,8 +136,8 @@ mod tests {
                 is_object: true,
                 names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
                 mappings: HashMap::from([
-                  (heap.alloc_str("a"), FieldType { is_public: true, type_: builder.int_type() }),
-                  (heap.alloc_str("b"), FieldType { is_public: false, type_: builder.bool_type() }),
+                  (heap.alloc_str("a"), (builder.int_type(), true)),
+                  (heap.alloc_str("b"), (builder.bool_type(), false)),
                 ]),
               },
             ),
@@ -176,8 +147,8 @@ mod tests {
                 is_object: true,
                 names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
                 mappings: HashMap::from([
-                  (heap.alloc_str("a"), FieldType { is_public: true, type_: builder.int_type() }),
-                  (heap.alloc_str("b"), FieldType { is_public: false, type_: builder.bool_type() }),
+                  (heap.alloc_str("a"), (builder.int_type(), true)),
+                  (heap.alloc_str("b"), (builder.bool_type(), false)),
                 ]),
               },
             ),
@@ -187,8 +158,8 @@ mod tests {
                 is_object: false,
                 names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
                 mappings: HashMap::from([
-                  (heap.alloc_str("a"), FieldType { is_public: true, type_: builder.int_type() }),
-                  (heap.alloc_str("b"), FieldType { is_public: true, type_: builder.bool_type() }),
+                  (heap.alloc_str("a"), (builder.int_type(), true)),
+                  (heap.alloc_str("b"), (builder.bool_type(), true)),
                 ]),
               },
             ),

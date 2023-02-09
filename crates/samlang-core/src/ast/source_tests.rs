@@ -1,10 +1,16 @@
 #[cfg(test)]
-mod comments_tests {
+mod tests {
+  use super::super::source::expr::*;
   use super::super::source::*;
-  use crate::common::Heap;
+  use crate::{
+    ast::loc::Location, checker::type_::test_type_builder, common::Heap, common::ModuleReference,
+  };
+  use std::collections::HashMap;
+  use std::rc::Rc;
 
   #[test]
   fn boilterplate() {
+    assert!(CommentKind::DOC == CommentKind::DOC.clone());
     assert!(!format!(
       "{:?}",
       Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str("d") }.clone().text
@@ -15,31 +21,48 @@ mod comments_tests {
     assert!(!CommentStore::new().all_comments().is_empty());
     assert!(CommentStore::new().clone().get(NO_COMMENT_REFERENCE).is_empty());
     assert!(CommentStore::new().clone().get_mut(NO_COMMENT_REFERENCE).is_empty());
-  }
-}
 
-#[cfg(test)]
-mod literal_tests {
-  use super::super::source::*;
-  use crate::common::Heap;
+    assert_eq!("!", expr::UnaryOperator::NOT.clone().to_string());
+    assert_eq!("-", expr::UnaryOperator::NEG.clone().to_string());
+
+    let list = vec![
+      expr::BinaryOperator::MUL,
+      expr::BinaryOperator::DIV,
+      expr::BinaryOperator::MOD,
+      expr::BinaryOperator::PLUS,
+      expr::BinaryOperator::MINUS,
+      expr::BinaryOperator::CONCAT,
+      expr::BinaryOperator::LT,
+      expr::BinaryOperator::LE,
+      expr::BinaryOperator::GT,
+      expr::BinaryOperator::GE,
+      expr::BinaryOperator::EQ,
+      expr::BinaryOperator::NE,
+      expr::BinaryOperator::AND,
+      expr::BinaryOperator::OR,
+    ];
+    let mut p = -1;
+    for op in list.iter() {
+      assert!(!op.clone().to_string().is_empty());
+      // Assert that the list above has precedence ordered.
+      let new_p = op.precedence();
+      assert!(p <= new_p);
+      p = new_p;
+    }
+  }
 
   #[test]
-  fn pretty_print_test() {
+  fn annot_pretty_print_test() {
     let mut heap = Heap::new();
     assert_eq!("true", Literal::true_literal().pretty_print(&heap));
     assert_eq!("false", Literal::false_literal().pretty_print(&heap));
     assert_eq!("0", Literal::int_literal(0).clone().pretty_print(&heap));
     assert_eq!("\"hi\"", Literal::string_literal(heap.alloc_str("hi")).clone().pretty_print(&heap));
   }
-}
-
-#[cfg(test)]
-mod annotation_tests {
-  use super::super::source::*;
-  use crate::Heap;
 
   #[test]
   fn primitive_type_kind_to_string_tests() {
+    assert_eq!("any", annotation::PrimitiveTypeKind::Any.to_string());
     assert_eq!("unit", annotation::PrimitiveTypeKind::Unit.to_string());
     assert_eq!("bool", annotation::PrimitiveTypeKind::Bool.to_string());
     assert_eq!("int", annotation::PrimitiveTypeKind::Int.to_string());
@@ -47,7 +70,7 @@ mod annotation_tests {
   }
 
   #[test]
-  fn build_and_clone_tests() {
+  fn annot_build_and_clone_tests() {
     let builder = test_builder::create();
     let heap = &mut Heap::new();
     let _ = builder
@@ -62,91 +85,6 @@ mod annotation_tests {
       )
       .clone();
   }
-}
-
-#[cfg(test)]
-mod type_tests {
-  use super::super::source::*;
-  use crate::ast::loc::Location;
-  use crate::checker::type_::test_type_builder;
-  use crate::common::Heap;
-  use std::rc::Rc;
-
-  #[test]
-  fn pretty_print_tests() {
-    let builder = test_type_builder::create();
-    let mut heap = Heap::new();
-
-    assert!(CommentKind::DOC == CommentKind::DOC.clone());
-    assert_eq!(
-      "A",
-      TypeParameter {
-        loc: Location::dummy(),
-        associated_comments: NO_COMMENT_REFERENCE,
-        name: Id::from(heap.alloc_str("A")),
-        bound: Option::None
-      }
-      .pretty_print(&heap)
-    );
-    assert_eq!(
-      "A: B",
-      TypeParameter {
-        loc: Location::dummy(),
-        associated_comments: NO_COMMENT_REFERENCE,
-        name: Id::from(heap.alloc_str("A")),
-        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
-      }
-      .pretty_print(&heap)
-    );
-  }
-}
-
-#[cfg(test)]
-mod operators_tests {
-  use super::super::source::expr::*;
-
-  #[test]
-  fn boilterplate() {
-    assert_eq!("!", UnaryOperator::NOT.clone().to_string());
-    assert_eq!("-", UnaryOperator::NEG.clone().to_string());
-
-    let list = vec![
-      BinaryOperator::MUL,
-      BinaryOperator::DIV,
-      BinaryOperator::MOD,
-      BinaryOperator::PLUS,
-      BinaryOperator::MINUS,
-      BinaryOperator::CONCAT,
-      BinaryOperator::LT,
-      BinaryOperator::LE,
-      BinaryOperator::GT,
-      BinaryOperator::GE,
-      BinaryOperator::EQ,
-      BinaryOperator::NE,
-      BinaryOperator::AND,
-      BinaryOperator::OR,
-    ];
-    let mut p = -1;
-    for op in list.iter() {
-      assert!(!op.clone().to_string().is_empty());
-      // Assert that the list above has precedence ordered.
-      let new_p = op.precedence();
-      assert!(p <= new_p);
-      p = new_p;
-    }
-  }
-}
-
-#[cfg(test)]
-mod expressions_tests {
-  use super::super::source::expr::*;
-  use super::super::source::*;
-  use crate::{
-    ast::loc::Location,
-    checker::type_::test_type_builder,
-    common::{Heap, ModuleReference},
-  };
-  use std::collections::HashMap;
 
   #[test]
   fn precedence_boilerplate_tests() {
@@ -158,7 +96,8 @@ mod expressions_tests {
     zero_expr.precedence();
     E::ClassFn(ClassFunction {
       common: common.clone(),
-      type_arguments: vec![],
+      explicit_type_arguments: vec![],
+      inferred_type_arguments: vec![],
       module_reference: ModuleReference::dummy(),
       class_name: Id::from(heap.alloc_str("name")),
       fn_name: Id::from(heap.alloc_str("name")),
@@ -218,7 +157,8 @@ mod expressions_tests {
     E::Id(common.clone(), Id::from(heap.alloc_str("d"))).clone().mod_common(mod_common).common();
     E::ClassFn(ClassFunction {
       common: common.clone(),
-      type_arguments: vec![],
+      explicit_type_arguments: vec![],
+      inferred_type_arguments: vec![],
       module_reference: ModuleReference::dummy(),
       class_name: Id::from(heap.alloc_str("name")),
       fn_name: Id::from(heap.alloc_str("name")),
@@ -228,7 +168,8 @@ mod expressions_tests {
     .common();
     E::FieldAccess(FieldAccess {
       common: common.clone(),
-      type_arguments: vec![],
+      explicit_type_arguments: vec![],
+      inferred_type_arguments: vec![],
       object: Box::new(zero_expr.clone()),
       field_name: Id::from(heap.alloc_str("name")),
       field_order: -1,
@@ -238,7 +179,8 @@ mod expressions_tests {
     .common();
     E::MethodAccess(MethodAccess {
       common: common.clone(),
-      type_arguments: vec![],
+      explicit_type_arguments: vec![],
+      inferred_type_arguments: vec![],
       object: Box::new(zero_expr.clone()),
       method_name: Id::from(heap.alloc_str("name")),
     })
@@ -332,58 +274,35 @@ mod expressions_tests {
     .mod_common(mod_common)
     .common();
   }
-}
-
-#[cfg(test)]
-mod toplevel_tests {
-  use crate::{
-    ast::{source::*, Location, Reason},
-    checker::type_::{test_type_builder, FunctionType, Type},
-    common::{Heap, ModuleReference},
-  };
-  use pretty_assertions::assert_eq;
-  use std::{collections::HashMap, rc::Rc};
 
   #[test]
-  fn boilterplate() {
+  fn toplevel_boilterplate() {
     let mut heap = Heap::new();
     assert_eq!(
       "name",
-      TypeParameter {
-        loc: Location::dummy(),
-        associated_comments: NO_COMMENT_REFERENCE,
-        name: Id::from(heap.alloc_str("name")),
-        bound: None
-      }
-      .clone()
-      .name
-      .name
-      .as_str(&heap)
+      TypeParameter { loc: Location::dummy(), name: Id::from(heap.alloc_str("name")), bound: None }
+        .clone()
+        .name
+        .name
+        .as_str(&heap)
     );
 
     assert_eq!(
       "s",
       AnnotatedId {
         name: Id::from(heap.alloc_str("s")),
-        annotation: Rc::new(Type::int_type(Reason::dummy()))
+        annotation: annotation::T::Primitive(
+          Location::dummy(),
+          NO_COMMENT_REFERENCE,
+          annotation::PrimitiveTypeKind::Bool
+        )
       }
       .name
       .name
       .as_str(&heap)
     );
 
-    assert_eq!(
-      "int",
-      FieldType { is_public: true, type_: Rc::new(Type::int_type(Reason::dummy())) }
-        .to_string(&heap)
-    );
-    assert_eq!(
-      "(private) int",
-      FieldType { is_public: false, type_: Rc::new(Type::int_type(Reason::dummy())) }
-        .clone()
-        .to_string(&heap)
-    );
-
+    let annot_builder = test_builder::create();
     let builder = test_type_builder::create();
 
     assert!(InterfaceDeclaration {
@@ -400,11 +319,7 @@ mod toplevel_tests {
         is_method: true,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
-        type_: FunctionType {
-          reason: Reason::dummy(),
-          argument_types: vec![],
-          return_type: builder.int_type()
-        },
+        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
         parameters: Rc::new(vec![])
       }]
     }
@@ -450,11 +365,7 @@ mod toplevel_tests {
           is_method: true,
           name: Id::from(heap.alloc_str("")),
           type_parameters: Rc::new(vec![]),
-          type_: FunctionType {
-            reason: Reason::dummy(),
-            argument_types: vec![],
-            return_type: builder.int_type(),
-          },
+          type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
           parameters: Rc::new(vec![]),
         },
         body: expr::E::Literal(expr::ExpressionCommon::dummy(builder.int_type()), Literal::Int(0)),
@@ -478,11 +389,7 @@ mod toplevel_tests {
         is_method: true,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
-        type_: FunctionType {
-          reason: Reason::dummy(),
-          argument_types: vec![],
-          return_type: builder.int_type(),
-        },
+        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
         parameters: Rc::new(vec![]),
       }],
     });

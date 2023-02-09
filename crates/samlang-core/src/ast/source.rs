@@ -1,6 +1,6 @@
 use super::loc::Location;
 use crate::{
-  checker::type_::{FunctionType, ISourceType, IdType, Type},
+  checker::type_::Type,
   common::{Heap, ModuleReference, PStr},
 };
 use std::{collections::HashMap, rc::Rc};
@@ -95,6 +95,7 @@ pub(crate) mod annotation {
     Bool,
     Int,
     String,
+    Any,
   }
 
   impl ToString for PrimitiveTypeKind {
@@ -104,6 +105,7 @@ pub(crate) mod annotation {
         Self::Bool => "bool".to_string(),
         Self::Int => "int".to_string(),
         Self::String => "string".to_string(),
+        Self::Any => "any".to_string(),
       }
     }
   }
@@ -111,7 +113,6 @@ pub(crate) mod annotation {
   #[derive(Clone)]
   pub(crate) struct Id {
     pub(crate) location: Location,
-    pub(crate) associated_comments: CommentReference,
     pub(crate) module_reference: ModuleReference,
     pub(crate) id: super::Id,
     pub(crate) type_arguments: Vec<T>,
@@ -131,9 +132,19 @@ pub(crate) mod annotation {
     Id(Id),
     Fn(Function),
   }
+
+  impl T {
+    pub(crate) fn location(&self) -> Location {
+      match self {
+        T::Primitive(l, _, _) => *l,
+        T::Id(annot) => annot.location,
+        T::Fn(annot) => annot.location,
+      }
+    }
+  }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(crate) struct Id {
   pub(crate) loc: Location,
   pub(crate) associated_comments: CommentReference,
@@ -149,17 +160,17 @@ impl Id {
 #[derive(Clone)]
 pub(crate) struct OptionallyAnnotatedId {
   pub(crate) name: Id,
-  pub(crate) annotation: Option<Rc<Type>>,
+  pub(crate) annotation: Option<annotation::T>,
 }
 
 pub(crate) struct AnnotatedId {
   pub(crate) name: Id,
-  pub(crate) annotation: Rc<Type>,
+  pub(crate) annotation: annotation::T,
 }
 
 pub(crate) mod expr {
   use super::super::loc::Location;
-  use super::{CommentReference, Id, Literal, OptionallyAnnotatedId, Type};
+  use super::{annotation, CommentReference, Id, Literal, Type};
   use crate::common::{ModuleReference, PStr};
   use std::collections::HashMap;
   use std::rc::Rc;
@@ -189,7 +200,8 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct ClassFunction {
     pub(crate) common: ExpressionCommon,
-    pub(crate) type_arguments: Vec<Rc<Type>>,
+    pub(crate) explicit_type_arguments: Vec<annotation::T>,
+    pub(crate) inferred_type_arguments: Vec<Rc<Type>>,
     pub(crate) module_reference: ModuleReference,
     pub(crate) class_name: Id,
     pub(crate) fn_name: Id,
@@ -198,7 +210,8 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct FieldAccess {
     pub(crate) common: ExpressionCommon,
-    pub(crate) type_arguments: Vec<Rc<Type>>,
+    pub(crate) explicit_type_arguments: Vec<annotation::T>,
+    pub(crate) inferred_type_arguments: Vec<Rc<Type>>,
     pub(crate) object: Box<E>,
     pub(crate) field_name: Id,
     pub(crate) field_order: i32,
@@ -207,7 +220,8 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct MethodAccess {
     pub(crate) common: ExpressionCommon,
-    pub(crate) type_arguments: Vec<Rc<Type>>,
+    pub(crate) explicit_type_arguments: Vec<annotation::T>,
+    pub(crate) inferred_type_arguments: Vec<Rc<Type>>,
     pub(crate) object: Box<E>,
     pub(crate) method_name: Id,
   }
@@ -337,7 +351,7 @@ pub(crate) mod expr {
   #[derive(Clone)]
   pub(crate) struct Lambda {
     pub(crate) common: ExpressionCommon,
-    pub(crate) parameters: Vec<OptionallyAnnotatedId>,
+    pub(crate) parameters: Vec<super::OptionallyAnnotatedId>,
     pub(crate) captured: HashMap<PStr, Rc<Type>>,
     pub(crate) body: Box<E>,
   }
@@ -363,7 +377,7 @@ pub(crate) mod expr {
     pub(crate) loc: Location,
     pub(crate) associated_comments: CommentReference,
     pub(crate) pattern: Pattern,
-    pub(crate) annotation: Option<Rc<Type>>,
+    pub(crate) annotation: Option<annotation::T>,
     pub(crate) assigned_expression: Box<E>,
   }
 
@@ -412,8 +426,8 @@ pub(crate) mod expr {
       self.common().loc
     }
 
-    pub(crate) fn type_(&self) -> Rc<Type> {
-      self.common().type_.clone()
+    pub(crate) fn type_(&self) -> &Rc<Type> {
+      &self.common().type_
     }
 
     pub(crate) fn precedence(&self) -> i32 {
@@ -435,29 +449,47 @@ pub(crate) mod expr {
         E::Id(common, id) => E::Id(f(common), id),
         E::ClassFn(ClassFunction {
           common,
-          type_arguments,
+          explicit_type_arguments,
+          inferred_type_arguments,
           module_reference,
           class_name,
           fn_name,
         }) => E::ClassFn(ClassFunction {
           common: f(common),
-          type_arguments,
+          explicit_type_arguments,
+          inferred_type_arguments,
           module_reference,
           class_name,
           fn_name,
         }),
-        E::FieldAccess(FieldAccess { common, type_arguments, object, field_name, field_order }) => {
-          E::FieldAccess(FieldAccess {
-            common: f(common),
-            type_arguments,
-            object,
-            field_name,
-            field_order,
-          })
-        }
-        E::MethodAccess(MethodAccess { common, type_arguments, object, method_name }) => {
-          E::MethodAccess(MethodAccess { common: f(common), type_arguments, object, method_name })
-        }
+        E::FieldAccess(FieldAccess {
+          common,
+          explicit_type_arguments,
+          inferred_type_arguments,
+          object,
+          field_name,
+          field_order,
+        }) => E::FieldAccess(FieldAccess {
+          common: f(common),
+          explicit_type_arguments,
+          inferred_type_arguments,
+          object,
+          field_name,
+          field_order,
+        }),
+        E::MethodAccess(MethodAccess {
+          common,
+          explicit_type_arguments,
+          inferred_type_arguments,
+          object,
+          method_name,
+        }) => E::MethodAccess(MethodAccess {
+          common: f(common),
+          explicit_type_arguments,
+          inferred_type_arguments,
+          object,
+          method_name,
+        }),
         E::Unary(Unary { common, operator, argument }) => {
           E::Unary(Unary { common: f(common), operator, argument })
         }
@@ -487,19 +519,8 @@ pub(crate) mod expr {
 #[derive(Clone)]
 pub(crate) struct TypeParameter {
   pub(crate) loc: Location,
-  pub(crate) associated_comments: CommentReference,
   pub(crate) name: Id,
-  pub(crate) bound: Option<Rc<IdType>>,
-}
-
-impl TypeParameter {
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
-    if let Some(bound) = &self.bound {
-      format!("{}: {}", self.name.name.as_str(heap), bound.pretty_print(heap))
-    } else {
-      self.name.name.as_str(heap).to_string()
-    }
-  }
+  pub(crate) bound: Option<annotation::Id>,
 }
 
 #[derive(Clone)]
@@ -510,7 +531,7 @@ pub(crate) struct ClassMemberDeclaration {
   pub(crate) is_method: bool,
   pub(crate) name: Id,
   pub(crate) type_parameters: Rc<Vec<TypeParameter>>,
-  pub(crate) type_: FunctionType,
+  pub(crate) type_: annotation::Function,
   pub(crate) parameters: Rc<Vec<AnnotatedId>>,
 }
 
@@ -526,7 +547,7 @@ pub(crate) struct InterfaceDeclarationCommon<D, M> {
   pub(crate) name: Id,
   pub(crate) type_parameters: Vec<TypeParameter>,
   /** The node after colon, interpreted as extends in interfaces and implements in classes. */
-  pub(crate) extends_or_implements_nodes: Vec<IdType>,
+  pub(crate) extends_or_implements_nodes: Vec<annotation::Id>,
   pub(crate) type_definition: D,
   pub(crate) members: Vec<M>,
 }
@@ -534,24 +555,11 @@ pub(crate) struct InterfaceDeclarationCommon<D, M> {
 pub(crate) type InterfaceDeclaration = InterfaceDeclarationCommon<(), ClassMemberDeclaration>;
 
 #[derive(Clone)]
-pub(crate) struct FieldType {
-  pub(crate) is_public: bool,
-  pub(crate) type_: Rc<Type>,
-}
-
-impl FieldType {
-  pub(crate) fn to_string(&self, heap: &Heap) -> String {
-    let access_str = if self.is_public { "" } else { "(private) " };
-    format!("{}{}", access_str, self.type_.pretty_print(heap))
-  }
-}
-
-#[derive(Clone)]
 pub(crate) struct TypeDefinition {
   pub(crate) loc: Location,
   pub(crate) is_object: bool,
   pub(crate) names: Vec<Id>,
-  pub(crate) mappings: HashMap<PStr, FieldType>,
+  pub(crate) mappings: HashMap<PStr, (annotation::T, bool)>,
 }
 
 pub(crate) type ClassDefinition = InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition>;
@@ -613,7 +621,7 @@ impl Toplevel {
     }
   }
 
-  pub(crate) fn extends_or_implements_nodes(&self) -> &Vec<IdType> {
+  pub(crate) fn extends_or_implements_nodes(&self) -> &Vec<annotation::Id> {
     match self {
       Toplevel::Interface(i) => &i.extends_or_implements_nodes,
       Toplevel::Class(c) => &c.extends_or_implements_nodes,
@@ -651,15 +659,20 @@ pub(crate) struct Module {
 
 #[cfg(test)]
 pub(crate) mod test_builder {
-  use super::super::{loc::Location, reason::Reason};
+  use super::super::loc::Location;
   use super::*;
 
-  pub(crate) struct CustomizedAstBuilder {
-    reason: Reason,
-    module_reference: ModuleReference,
-  }
+  pub(crate) struct CustomizedAstBuilder {}
 
   impl CustomizedAstBuilder {
+    pub(crate) fn any_annot(&self) -> annotation::T {
+      annotation::T::Primitive(
+        Location::dummy(),
+        NO_COMMENT_REFERENCE,
+        annotation::PrimitiveTypeKind::Any,
+      )
+    }
+
     pub(crate) fn unit_annot(&self) -> annotation::T {
       annotation::T::Primitive(
         Location::dummy(),
@@ -692,22 +705,51 @@ pub(crate) mod test_builder {
       )
     }
 
+    pub(crate) fn general_id_annot_unwrapped(
+      &self,
+      id: PStr,
+      type_arguments: Vec<annotation::T>,
+    ) -> annotation::Id {
+      annotation::Id {
+        location: Location::dummy(),
+        module_reference: ModuleReference::dummy(),
+        id: Id::from(id),
+        type_arguments,
+      }
+    }
+
     pub(crate) fn general_id_annot(
       &self,
       id: PStr,
       type_arguments: Vec<annotation::T>,
     ) -> annotation::T {
-      annotation::T::Id(annotation::Id {
+      annotation::T::Id(self.general_id_annot_unwrapped(id, type_arguments))
+    }
+
+    pub(crate) fn simple_id_annot_unwrapped(&self, id: PStr) -> annotation::Id {
+      annotation::Id {
         location: Location::dummy(),
-        associated_comments: NO_COMMENT_REFERENCE,
-        module_reference: self.module_reference,
+        module_reference: ModuleReference::dummy(),
         id: Id::from(id),
-        type_arguments,
-      })
+        type_arguments: vec![],
+      }
     }
 
     pub(crate) fn simple_id_annot(&self, id: PStr) -> annotation::T {
       self.general_id_annot(id, vec![])
+    }
+
+    pub(crate) fn fn_annot_unwrapped(
+      &self,
+      argument_types: Vec<annotation::T>,
+      return_type: annotation::T,
+    ) -> annotation::Function {
+      annotation::Function {
+        location: Location::dummy(),
+        associated_comments: NO_COMMENT_REFERENCE,
+        argument_types,
+        return_type: Box::new(return_type),
+      }
     }
 
     pub(crate) fn fn_annot(
@@ -715,16 +757,11 @@ pub(crate) mod test_builder {
       argument_types: Vec<annotation::T>,
       return_type: annotation::T,
     ) -> annotation::T {
-      annotation::T::Fn(annotation::Function {
-        location: Location::dummy(),
-        associated_comments: NO_COMMENT_REFERENCE,
-        argument_types,
-        return_type: Box::new(return_type),
-      })
+      annotation::T::Fn(self.fn_annot_unwrapped(argument_types, return_type))
     }
   }
 
   pub(crate) fn create() -> CustomizedAstBuilder {
-    CustomizedAstBuilder { reason: Reason::dummy(), module_reference: ModuleReference::dummy() }
+    CustomizedAstBuilder {}
   }
 }

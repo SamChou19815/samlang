@@ -81,6 +81,7 @@ mod tests {
     expect_good_expr("V.Variant<T>(3)");
     expect_good_expr("foo.bar");
     expect_good_expr("foo.bar<int, bool>");
+    expect_good_expr("foo.bar<() -> int, bool>");
     expect_good_expr("!false");
     expect_good_expr("-42");
     expect_good_expr("haha(3, 4, false, \"oh no\")");
@@ -108,6 +109,7 @@ mod tests {
     expect_good_expr("match (this) { None(_) -> {}, Some(d) -> d }");
     expect_good_expr("match (this) { None(_) -> 0, Some(d) -> d, }");
     expect_good_expr("(a, b: int, c: Type) -> 3");
+    expect_good_expr("(a, b: () -> int, c: Type) -> 3");
     expect_good_expr("() -> 3");
     expect_good_expr("(foo) -> 3");
     expect_good_expr("(foo: bool) -> 3");
@@ -186,12 +188,12 @@ mod tests {
     interface Bar<T> {}
 
     interface Baz : Bar<int> {
-      function foo(): string
+      function foo(): () -> string
       method bar(baz: bool): int
     }
 
     class Main : Baz {
-      function main(): string = "Hello World"
+      function main(): (int) -> string = "Hello World"
     }
 
     class Main {
@@ -204,7 +206,8 @@ mod tests {
 
     class Util<T>
 
-    class A(val a: int) : Baz
+    class A(val a: () -> int) : Baz
+    class A(val a: (string) -> int) : Baz
 
     /**
      * docs
@@ -249,7 +252,18 @@ mod tests {
     assert_eq!("", errors.join("\n"));
     assert_eq!(1, parsed.imports.len());
     assert_eq!(
-      vec!["Main", "Main", "Util", "Util", "Util", "A", "Option", "TypeInference", "Developer"],
+      vec![
+        "Main",
+        "Main",
+        "Util",
+        "Util",
+        "Util",
+        "A",
+        "A",
+        "Option",
+        "TypeInference",
+        "Developer"
+      ],
       parsed
         .toplevels
         .iter()

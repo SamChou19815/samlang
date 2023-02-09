@@ -1,7 +1,7 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
 use crate::{
   ast::{source::*, Location, Position, Reason},
-  checker::type_::{FunctionType, IdType, Type},
+  checker::type_::{FunctionType, Type},
   common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
@@ -350,7 +350,7 @@ impl<'a> SourceParser<'a> {
         let nodes = if let TokenContent::Operator(TokenOp::COLON) = self.peek().1 {
           self.consume();
           let nodes = self.parse_extends_or_implements_nodes();
-          loc = loc.union(&nodes.last().unwrap().reason.use_loc);
+          loc = loc.union(&nodes.last().unwrap().location);
           nodes
         } else {
           vec![]
@@ -373,7 +373,7 @@ impl<'a> SourceParser<'a> {
         let nodes = if let TokenContent::Operator(TokenOp::COLON) = self.peek().1 {
           self.consume();
           let nodes = self.parse_extends_or_implements_nodes();
-          loc = loc.union(&nodes.last().unwrap().reason.use_loc);
+          loc = loc.union(&nodes.last().unwrap().location);
           nodes
         } else {
           vec![]
@@ -419,7 +419,7 @@ impl<'a> SourceParser<'a> {
     {
       self.consume();
       let nodes = self.parse_extends_or_implements_nodes();
-      loc = loc.union(&nodes.last().unwrap().reason.use_loc);
+      loc = loc.union(&nodes.last().unwrap().location);
       nodes
     } else {
       vec![]
@@ -445,10 +445,10 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  fn parse_extends_or_implements_nodes(&mut self) -> Vec<IdType> {
+  fn parse_extends_or_implements_nodes(&mut self) -> Vec<annotation::Id> {
     self.parse_comma_separated_list(None, &mut |s: &mut Self| {
       let id = s.parse_upper_id();
-      s.parse_identifier_type(&id)
+      s.parse_identifier_annot(id)
     })
   }
 
@@ -460,9 +460,9 @@ impl<'a> SourceParser<'a> {
         self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
           let name = s.parse_upper_id();
           s.assert_and_consume_operator(TokenOp::LPAREN);
-          let type_ = s.parse_type();
+          let type_ = s.parse_annotation();
           s.assert_and_consume_operator(TokenOp::RPAREN);
-          (name, FieldType { is_public: false, type_ })
+          (name, (type_, false))
         });
       (name_with_types, false)
     } else {
@@ -476,13 +476,13 @@ impl<'a> SourceParser<'a> {
           s.assert_and_consume_keyword(Keyword::VAL);
           let name = s.parse_lower_id();
           s.assert_and_consume_operator(TokenOp::COLON);
-          let type_ = s.parse_type();
-          (name, FieldType { is_public, type_ })
+          let type_ = s.parse_annotation();
+          (name, (type_, is_public))
         });
       (name_with_types, true)
     };
     for (name, field_type) in name_with_types {
-      names.push(name.clone());
+      names.push(name);
       mappings.insert(name.name, field_type);
     }
     TypeDefinition { loc: Location::dummy(), is_object, names, mappings }
@@ -546,14 +546,14 @@ impl<'a> SourceParser<'a> {
       self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
         let name = s.parse_lower_id();
         s.assert_and_consume_operator(TokenOp::COLON);
-        let type_ = s.parse_type();
-        AnnotatedId { name, annotation: type_ }
+        let annotation = s.parse_annotation();
+        AnnotatedId { name, annotation }
       })
     };
     self.assert_and_consume_operator(TokenOp::RPAREN);
     self.assert_and_consume_operator(TokenOp::COLON);
-    let return_type = self.parse_type();
-    let fun_type_loc = fun_type_loc_start.union(&return_type.get_reason().use_loc);
+    let return_type = self.parse_annotation();
+    let fun_type_loc = fun_type_loc_start.union(&return_type.location());
     ClassMemberDeclaration {
       loc: start_loc.union(&fun_type_loc),
       associated_comments: self.comments_store.create_comment_reference(associated_comments),
@@ -561,33 +561,28 @@ impl<'a> SourceParser<'a> {
       is_method,
       name,
       type_parameters: Rc::new(type_parameters),
-      type_: FunctionType {
-        reason: Reason::new(fun_type_loc, Some(fun_type_loc)),
+      type_: annotation::Function {
+        location: fun_type_loc,
+        associated_comments: NO_COMMENT_REFERENCE,
         argument_types: parameters.iter().map(|it| it.annotation.clone()).collect_vec(),
-        return_type,
+        return_type: Box::new(return_type),
       },
       parameters: Rc::new(parameters),
     }
   }
 
   fn parse_type_parameter(&mut self) -> TypeParameter {
-    let associated_comments = self.collect_preceding_comments();
     let name = &self.parse_upper_id();
     let (bound, loc) = if let Token(_, TokenContent::Operator(TokenOp::COLON)) = self.peek() {
       self.consume();
       let id = self.parse_upper_id();
-      let bound = self.parse_identifier_type(&id);
-      let loc = name.loc.union(&bound.reason.use_loc);
-      (Some(Rc::new(bound)), loc)
+      let bound = self.parse_identifier_annot(id);
+      let loc = name.loc.union(&bound.location);
+      (Some(bound), loc)
     } else {
       (None, name.loc)
     };
-    TypeParameter {
-      loc,
-      associated_comments: self.comments_store.create_comment_reference(associated_comments),
-      name: name.clone(),
-      bound,
-    }
+    TypeParameter { loc, name: *name, bound }
   }
 
   pub(super) fn parse_expression_with_comment_store(mut self) -> (CommentStore, expr::E) {
@@ -640,7 +635,7 @@ impl<'a> SourceParser<'a> {
       None
     } else {
       let name = self.parse_lower_id();
-      Some((name.clone(), Rc::new(Type::Unknown(Reason::new(name.loc, None)))))
+      Some((name, Rc::new(Type::Unknown(Reason::new(name.loc, None)))))
     };
     self.assert_and_consume_operator(TokenOp::RPAREN);
     self.assert_and_consume_operator(TokenOp::ARROW);
@@ -900,23 +895,27 @@ impl<'a> SourceParser<'a> {
           field_preceding_comments.append(&mut self.collect_preceding_comments());
           let (field_loc, field_name) = self.assert_and_peek_lower_id();
           let mut loc = function_expression.loc().union(&field_loc);
-          let type_arguments = if let Token(_, TokenContent::Operator(TokenOp::LT)) = self.peek() {
-            field_preceding_comments.append(&mut self.collect_preceding_comments());
-            self.assert_and_consume_operator(TokenOp::LT);
-            let type_args = self
-              .parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| s.parse_type());
-            loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
-            type_args
-          } else {
-            vec![]
-          };
+          let explicit_type_arguments =
+            if let Token(_, TokenContent::Operator(TokenOp::LT)) = self.peek() {
+              field_preceding_comments.append(&mut self.collect_preceding_comments());
+              self.assert_and_consume_operator(TokenOp::LT);
+              let type_args = self
+                .parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| {
+                  s.parse_annotation()
+                });
+              loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
+              type_args
+            } else {
+              vec![]
+            };
           function_expression = expr::E::FieldAccess(expr::FieldAccess {
             common: expr::ExpressionCommon {
               loc,
               associated_comments: self.comments_store.create_comment_reference(vec![]),
               type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
             },
-            type_arguments,
+            explicit_type_arguments,
+            inferred_type_arguments: vec![],
             object: Box::new(function_expression),
             field_name: Id {
               loc: field_loc,
@@ -1046,11 +1045,13 @@ impl<'a> SourceParser<'a> {
         member_preceding_comments.append(&mut self.collect_preceding_comments());
         let (member_name_loc, function_name) = self.assert_and_consume_identifier();
         let mut loc = peeked_loc.union(&member_name_loc);
-        let type_arguments = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
+        let explicit_type_arguments = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
           member_preceding_comments.append(&mut self.collect_preceding_comments());
           self.assert_and_consume_operator(TokenOp::LT);
-          let type_args =
-            self.parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| s.parse_type());
+          let type_args = self
+            .parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| {
+              s.parse_annotation()
+            });
           loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
           type_args
         } else {
@@ -1062,7 +1063,8 @@ impl<'a> SourceParser<'a> {
             associated_comments: self.comments_store.create_comment_reference(associated_comments),
             type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
           },
-          type_arguments,
+          explicit_type_arguments,
+          inferred_type_arguments: vec![],
           module_reference: self.resolve_class(class_name),
           class_name: Id {
             loc: peeked_loc,
@@ -1098,7 +1100,7 @@ impl<'a> SourceParser<'a> {
             type_: Rc::new(Type::Fn(FunctionType {
               reason: Reason::new(loc, None),
               argument_types: vec![],
-              return_type: body.type_(),
+              return_type: body.type_().clone(),
             })),
           },
           parameters: vec![],
@@ -1119,7 +1121,7 @@ impl<'a> SourceParser<'a> {
                 let name = s.parse_lower_id();
                 if let Token(_, TokenContent::Operator(TokenOp::COLON)) = s.peek() {
                   s.consume();
-                  OptionallyAnnotatedId { name, annotation: Some(s.parse_type()) }
+                  OptionallyAnnotatedId { name, annotation: Some(s.parse_annotation()) }
                 } else {
                   OptionallyAnnotatedId { name, annotation: None }
                 }
@@ -1140,11 +1142,12 @@ impl<'a> SourceParser<'a> {
                     .iter()
                     .map(|it| {
                       it.annotation
-                        .clone()
+                        .as_ref()
+                        .map(|annot| Rc::new(Type::from_annotation(annot)))
                         .unwrap_or(Rc::new(Type::Unknown(Reason::new(it.name.loc, None))))
                     })
                     .collect_vec(),
-                  return_type: body.type_(),
+                  return_type: body.type_().clone(),
                 })),
               },
               parameters,
@@ -1169,7 +1172,7 @@ impl<'a> SourceParser<'a> {
                   type_: Rc::new(Type::Fn(FunctionType {
                     reason: Reason::new(loc, Some(loc)),
                     argument_types: vec![Rc::new(parameter_type)],
-                    return_type: body.type_(),
+                    return_type: body.type_().clone(),
                   })),
                 },
                 parameters: vec![OptionallyAnnotatedId {
@@ -1227,7 +1230,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: expression.type_(),
+          type_: expression.type_().clone(),
         },
         statements,
         expression: Some(Box::new(expression)),
@@ -1256,7 +1259,7 @@ impl<'a> SourceParser<'a> {
     let pattern = self.parse_pattern();
     let annotation = if let Token(_, TokenContent::Operator(TokenOp::COLON)) = self.peek() {
       self.consume();
-      Some(self.parse_type())
+      Some(self.parse_annotation())
     } else {
       None
     };
@@ -1348,33 +1351,50 @@ impl<'a> SourceParser<'a> {
     comments
   }
 
-  pub(super) fn parse_type(&mut self) -> Rc<Type> {
+  pub(super) fn parse_annotation(&mut self) -> annotation::T {
+    let associated_comments = self.collect_preceding_comments();
     let peeked = self.peek();
     match peeked.1 {
       TokenContent::Keyword(Keyword::UNIT) => {
         self.consume();
-        Rc::new(Type::unit_type(Reason::new(peeked.0, Option::Some(peeked.0))))
+        annotation::T::Primitive(
+          peeked.0,
+          self.comments_store.create_comment_reference(associated_comments),
+          annotation::PrimitiveTypeKind::Unit,
+        )
       }
       TokenContent::Keyword(Keyword::BOOL) => {
         self.consume();
-        Rc::new(Type::bool_type(Reason::new(peeked.0, Option::Some(peeked.0))))
+        annotation::T::Primitive(
+          peeked.0,
+          self.comments_store.create_comment_reference(associated_comments),
+          annotation::PrimitiveTypeKind::Bool,
+        )
       }
       TokenContent::Keyword(Keyword::INT) => {
         self.consume();
-        Rc::new(Type::int_type(Reason::new(peeked.0, Option::Some(peeked.0))))
+        annotation::T::Primitive(
+          peeked.0,
+          self.comments_store.create_comment_reference(associated_comments),
+          annotation::PrimitiveTypeKind::Int,
+        )
       }
       TokenContent::Keyword(Keyword::STRING) => {
         self.consume();
-        Rc::new(Type::string_type(Reason::new(peeked.0, Option::Some(peeked.0))))
+        annotation::T::Primitive(
+          peeked.0,
+          self.comments_store.create_comment_reference(associated_comments),
+          annotation::PrimitiveTypeKind::String,
+        )
       }
       TokenContent::UpperId(name) => {
         self.consume();
         let associated_comments = self.comments_store.create_comment_reference(vec![]);
-        Rc::new(Type::Id(self.parse_identifier_type(&Id {
+        annotation::T::Id(self.parse_identifier_annot(Id {
           loc: peeked.0,
           associated_comments,
           name,
-        })))
+        }))
       }
       TokenContent::Operator(TokenOp::LPAREN) => {
         self.consume();
@@ -1384,44 +1404,51 @@ impl<'a> SourceParser<'a> {
           vec![]
         } else {
           let types = self
-            .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| s.parse_type());
+            .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+              s.parse_annotation()
+            });
           self.assert_and_consume_operator(TokenOp::RPAREN);
           types
         };
         self.assert_and_consume_operator(TokenOp::ARROW);
-        let return_type = self.parse_type();
-        let location = peeked.0.union(&return_type.get_reason().use_loc);
-        Rc::new(Type::Fn(FunctionType {
-          reason: Reason::new(location, Option::Some(location)),
+        let return_type = self.parse_annotation();
+        let location = peeked.0.union(&return_type.location());
+        annotation::T::Fn(annotation::Function {
+          location,
+          associated_comments: self.comments_store.create_comment_reference(associated_comments),
           argument_types,
-          return_type,
-        }))
+          return_type: Box::new(return_type),
+        })
       }
       content => {
         self.report(
           peeked.0,
           format!("Expecting: type, actual: {}", content.pretty_print(self.heap)),
         );
-        Rc::new(Type::Unknown(Reason::new(peeked.0, Option::Some(peeked.0))))
+        annotation::T::Primitive(
+          peeked.0,
+          self.comments_store.create_comment_reference(associated_comments),
+          annotation::PrimitiveTypeKind::Any,
+        )
       }
     }
   }
 
-  fn parse_identifier_type(&mut self, identifier: &Id) -> IdType {
+  fn parse_identifier_annot(&mut self, identifier: Id) -> annotation::Id {
     let (type_arguments, location) =
       if let Token(_, TokenContent::Operator(TokenOp::LT)) = self.peek() {
         self.consume();
-        let types =
-          self.parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| s.parse_type());
+        let types = self
+          .parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| s.parse_annotation());
         let location = identifier.loc.union(&self.assert_and_consume_operator(TokenOp::GT));
         (types, location)
       } else {
         (vec![], identifier.loc)
       };
-    IdType {
-      reason: Reason::new(location, Option::Some(location)),
+    annotation::Id {
+      location,
       module_reference: self.resolve_class(identifier.name),
-      id: identifier.name,
+      id: identifier,
       type_arguments,
     }
   }
@@ -1499,7 +1526,7 @@ mod tests {
     parser.parse_expression();
     parser.parse_pattern();
     parser.parse_statement();
-    parser.parse_type();
+    parser.parse_annotation();
     parser.parse_module();
   }
 
