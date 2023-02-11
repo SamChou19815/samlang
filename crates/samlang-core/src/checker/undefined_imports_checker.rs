@@ -79,13 +79,13 @@ mod tests {
             let mut imported_members = vec![];
             for m in imported_member_strs {
               imported_members.push(Id {
-                loc: loc.clone(),
+                loc,
                 associated_comments: NO_COMMENT_REFERENCE,
                 name: heap.alloc_str(m),
               });
             }
             ModuleMembersImport {
-              loc: loc.clone(),
+              loc,
               imported_members,
               imported_module: heap
                 .alloc_module_reference_from_string_vec(vec![imported_mod_name.to_string()]),

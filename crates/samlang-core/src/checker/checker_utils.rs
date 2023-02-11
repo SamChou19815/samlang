@@ -13,7 +13,7 @@ use std::{
 
 fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
   if let Type::Unknown(_) = specific {
-    return Some(general.mod_reason(|_| specific.get_reason().clone()));
+    return Some(general.mod_reason(|_| *specific.get_reason()));
   }
   match general {
     Type::Unknown(_) => Some(specific.clone()),
@@ -38,7 +38,7 @@ fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
             }
           }
           return Some(Type::Id(IdType {
-            reason: reason.clone(),
+            reason: *reason,
             module_reference: *mod_ref2,
             id: *id2,
             type_arguments,
@@ -60,7 +60,7 @@ fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
           }
           if let Some(r) = contextual_type_meet_opt(r1, r2) {
             return Some(Type::Fn(FunctionType {
-              reason: reason.clone(),
+              reason: *reason,
               argument_types,
               return_type: Rc::new(r),
             }));
@@ -95,7 +95,7 @@ pub(super) fn perform_fn_type_substitution(
   mapping: &HashMap<PStr, Rc<Type>>,
 ) -> FunctionType {
   FunctionType {
-    reason: t.reason.clone(),
+    reason: t.reason,
     argument_types: t
       .argument_types
       .iter()
@@ -117,7 +117,7 @@ pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<PStr, Rc<Typ
         }
       } else {
         Rc::new(Type::Id(IdType {
-          reason: reason.clone(),
+          reason: *reason,
           module_reference: *module_reference,
           id: *id,
           type_arguments: type_arguments

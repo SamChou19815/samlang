@@ -11,8 +11,8 @@ use crate::{
     Location, Position,
   },
   checker::{
-    type_::ISourceType, type_check_sources, GlobalTypingContext, InterfaceTypingContext,
-    MemberTypeInformation,
+    type_::{FunctionType, ISourceType},
+    type_check_sources, GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation,
   },
   common::{Heap, ModuleReference, PStr},
   errors::{CompileTimeError, ErrorSet},
@@ -183,7 +183,7 @@ impl LanguageServices {
           self.find_class_member(&fetched_function_module_reference, &class_name, &fn_name)?;
         let type_content = TypeQueryContent {
           language: "samlang",
-          value: relevant_fn.type_.pretty_print(&self.heap),
+          value: FunctionType::from_annotation(&relevant_fn.type_).pretty_print(&self.heap),
         };
         Some(self.query_result_with_optional_document(
           loc,
@@ -391,7 +391,7 @@ impl LanguageServices {
             insert_text: name.as_str(&self.heap).to_string(),
             insert_text_format: InsertTextFormat::PlainText,
             kind: CompletionItemKind::Field,
-            detail: field_type.type_.pretty_print(&self.heap),
+            detail: field_type.0.pretty_print(&self.heap),
           });
         }
       }

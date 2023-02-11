@@ -11,8 +11,6 @@ use crate::{
 };
 use std::collections::HashMap;
 
-/// Converting annotations to internal type language.
-mod annotation_converter;
 mod checker_tests;
 /// Utilities operating on types
 mod checker_utils;
@@ -73,10 +71,7 @@ pub(crate) fn type_check_source_handles(
   }
   let (checked_sources, global_typing_context) =
     type_check_sources(parsed_sources, heap, &mut error_set);
-  let mut compile_time_errors = vec![];
-  for e in error_set.errors() {
-    compile_time_errors.push(e.clone());
-  }
+  let compile_time_errors = error_set.into_errors();
   TypeCheckSourceHandlesResult { checked_sources, global_typing_context, compile_time_errors }
 }
 

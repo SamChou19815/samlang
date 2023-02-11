@@ -1,5 +1,5 @@
 use crate::{
-  ast::{Location, Reason},
+  ast::{source::annotation, Location, Reason},
   common::PStr,
   Heap, ModuleReference,
 };
@@ -72,6 +72,19 @@ impl IdType {
       type_arguments: self.type_arguments,
     }
   }
+
+  pub(crate) fn from_annotation(annotation: &annotation::Id) -> IdType {
+    IdType {
+      reason: Reason::new(annotation.location, Some(annotation.location)),
+      module_reference: annotation.module_reference,
+      id: annotation.id.name,
+      type_arguments: annotation
+        .type_arguments
+        .iter()
+        .map(|annot| Rc::new(Type::from_annotation(annot)))
+        .collect(),
+    }
+  }
 }
 
 #[derive(Clone)]
@@ -106,6 +119,18 @@ impl FunctionType {
       reason: self.reason.to_use_reason(use_loc),
       argument_types: self.argument_types,
       return_type: self.return_type,
+    }
+  }
+
+  pub(crate) fn from_annotation(annotation: &annotation::Function) -> FunctionType {
+    FunctionType {
+      reason: Reason::new(annotation.location, Some(annotation.location)),
+      argument_types: annotation
+        .argument_types
+        .iter()
+        .map(|annot| Rc::new(Type::from_annotation(annot)))
+        .collect(),
+      return_type: Rc::new(Type::from_annotation(&annotation.return_type)),
     }
   }
 }
@@ -183,6 +208,28 @@ impl Type {
   pub(crate) fn reposition(&self, use_loc: Location) -> Type {
     self.mod_reason(|r| r.to_use_reason(use_loc))
   }
+
+  pub(crate) fn from_annotation(annotation: &annotation::T) -> Type {
+    match annotation {
+      annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Unit) => {
+        Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Unit)
+      }
+      annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Bool) => {
+        Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Bool)
+      }
+      annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Int) => {
+        Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Int)
+      }
+      annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::String) => {
+        Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::String)
+      }
+      annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Any) => {
+        Type::Unknown(Reason::new(*loc, Some(*loc)))
+      }
+      annotation::T::Id(annot) => Type::Id(IdType::from_annotation(annot)),
+      annotation::T::Fn(annot) => Type::Fn(FunctionType::from_annotation(annot)),
+    }
+  }
 }
 
 #[derive(Clone)]
@@ -221,21 +268,21 @@ pub(crate) mod test_type_builder {
 
   impl CustomizedTypeBuilder {
     pub(crate) fn unit_type(&self) -> Rc<Type> {
-      Rc::new(Type::unit_type(self.reason.clone()))
+      Rc::new(Type::unit_type(self.reason))
     }
     pub(crate) fn bool_type(&self) -> Rc<Type> {
-      Rc::new(Type::bool_type(self.reason.clone()))
+      Rc::new(Type::bool_type(self.reason))
     }
     pub(crate) fn int_type(&self) -> Rc<Type> {
-      Rc::new(Type::int_type(self.reason.clone()))
+      Rc::new(Type::int_type(self.reason))
     }
     pub(crate) fn string_type(&self) -> Rc<Type> {
-      Rc::new(Type::string_type(self.reason.clone()))
+      Rc::new(Type::string_type(self.reason))
     }
 
     pub(crate) fn simple_id_type_unwrapped(&self, id: PStr) -> IdType {
       IdType {
-        reason: self.reason.clone(),
+        reason: self.reason,
         module_reference: self.module_reference,
         id,
         type_arguments: vec![],
@@ -247,12 +294,7 @@ pub(crate) mod test_type_builder {
       id: PStr,
       type_arguments: Vec<Rc<Type>>,
     ) -> IdType {
-      IdType {
-        reason: self.reason.clone(),
-        module_reference: self.module_reference,
-        id,
-        type_arguments,
-      }
+      IdType { reason: self.reason, module_reference: self.module_reference, id, type_arguments }
     }
 
     pub(crate) fn simple_id_type(&self, id: PStr) -> Rc<Type> {
@@ -280,10 +322,11 @@ pub(crate) mod test_type_builder {
 #[cfg(test)]
 mod type_tests {
   use super::*;
+  use crate::ast::source::test_builder;
 
   #[test]
   fn boilterplate() {
-    assert!(PrimitiveTypeKind::Unit == PrimitiveTypeKind::Unit.clone());
+    assert!(PrimitiveTypeKind::Unit == PrimitiveTypeKind::Unit);
 
     let builder = test_type_builder::create();
     builder.int_type().as_id();
@@ -433,6 +476,26 @@ mod type_tests {
         .use_loc
         .pretty_print(&Heap::new())
     );
+  }
+
+  #[test]
+  fn conversion_test() {
+    let heap = &mut Heap::new();
+    let builder = test_builder::create();
+
+    assert_eq!("unknown", Type::from_annotation(&builder.any_annot()).pretty_print(heap));
+    assert_eq!("unit", Type::from_annotation(&builder.unit_annot()).pretty_print(heap));
+    assert_eq!("bool", Type::from_annotation(&builder.bool_annot()).pretty_print(heap));
+    assert_eq!("int", Type::from_annotation(&builder.int_annot()).pretty_print(heap));
+    assert_eq!("string", Type::from_annotation(&builder.string_annot()).pretty_print(heap));
+    assert_eq!(
+      "(bool) -> I<int>",
+      Type::from_annotation(&builder.fn_annot(
+        vec![builder.bool_annot()],
+        builder.general_id_annot(heap.alloc_str("I"), vec![builder.int_annot()])
+      ))
+      .pretty_print(heap)
+    )
   }
 
   #[test]

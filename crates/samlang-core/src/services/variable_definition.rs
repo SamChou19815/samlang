@@ -60,7 +60,7 @@ fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) 
   if id.loc.eq(&definition_and_uses.definition_location) {
     mod_id(id, new_name)
   } else {
-    id.clone()
+    *id
   }
 }
 
@@ -78,16 +78,18 @@ fn apply_expr_renaming(
     expr::E::Id(common, old_id) => expr::E::Id(common.clone(), mod_id(old_id, new_name)),
     expr::E::FieldAccess(e) => expr::E::FieldAccess(expr::FieldAccess {
       common: e.common.clone(),
-      type_arguments: e.type_arguments.clone(),
+      explicit_type_arguments: e.explicit_type_arguments.clone(),
+      inferred_type_arguments: e.inferred_type_arguments.clone(),
       object: Box::new(apply_expr_renaming(&e.object, definition_and_uses, new_name)),
-      field_name: e.field_name.clone(),
+      field_name: e.field_name,
       field_order: e.field_order,
     }),
     expr::E::MethodAccess(e) => expr::E::MethodAccess(expr::MethodAccess {
       common: e.common.clone(),
-      type_arguments: e.type_arguments.clone(),
+      explicit_type_arguments: e.explicit_type_arguments.clone(),
+      inferred_type_arguments: e.inferred_type_arguments.clone(),
       object: Box::new(apply_expr_renaming(&e.object, definition_and_uses, new_name)),
-      method_name: e.method_name.clone(),
+      method_name: e.method_name,
     }),
     expr::E::Unary(e) => expr::E::Unary(expr::Unary {
       common: e.common.clone(),
@@ -125,7 +127,7 @@ fn apply_expr_renaming(
         .map(|expr::VariantPatternToExpression { loc, tag, tag_order, data_variable, body }| {
           expr::VariantPatternToExpression {
             loc: *loc,
-            tag: tag.clone(),
+            tag: *tag,
             tag_order: *tag_order,
             data_variable: data_variable
               .as_ref()
@@ -180,7 +182,7 @@ fn apply_expr_renaming(
                         expr::ObjectPatternDestucturedName {
                           loc: *loc,
                           field_order: *field_order,
-                          field_name: field_name.clone(),
+                          field_name: *field_name,
                           alias: Some(mod_def_id(alias, definition_and_uses, new_name)),
                           type_: type_.clone(),
                         }
@@ -192,7 +194,7 @@ fn apply_expr_renaming(
                         expr::ObjectPatternDestucturedName {
                           loc: *loc,
                           field_order: *field_order,
-                          field_name: field_name.clone(),
+                          field_name: *field_name,
                           alias: alias_opt,
                           type_: type_.clone(),
                         }
@@ -240,7 +242,7 @@ pub(super) fn apply_renaming(
         Toplevel::Class(c) => Toplevel::Class(ClassDefinition {
           loc: c.loc,
           associated_comments: c.associated_comments,
-          name: c.name.clone(),
+          name: c.name,
           type_parameters: c.type_parameters.clone(),
           extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),
           type_definition: c.type_definition.clone(),
@@ -268,7 +270,7 @@ pub(super) fn apply_renaming(
                     associated_comments: *associated_comments,
                     is_public: *is_public,
                     is_method: *is_method,
-                    name: name.clone(),
+                    name: *name,
                     type_parameters: type_parameters.clone(),
                     type_: type_.clone(),
                     parameters: Rc::new(
@@ -316,7 +318,8 @@ mod tests {
     apply_expr_renaming(
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon::dummy(builder.int_type()),
-        type_arguments: vec![],
+        explicit_type_arguments: vec![],
+        inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(
           expr::ExpressionCommon::dummy(builder.int_type()),
           Literal::Int(0),

@@ -756,7 +756,7 @@ class Main {
       Heap::new(),
       false,
       vec![(
-        mod_ref.clone(),
+        mod_ref,
         r#"
 class Main {
   function main(a: Developer): Developer = a.
@@ -902,7 +902,7 @@ class Test {
       heap,
       false,
       vec![(
-        mod_ref.clone(),
+        mod_ref,
         r#"
 class Main {
   function main(): Developer = Developer.sam()

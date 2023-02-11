@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{source::FieldType, Location, Reason},
+    ast::{Location, Reason},
     checker::{
       ssa_analysis::SsaAnalysisResult,
       type_::{test_type_builder, FunctionType, ISourceType, Type, TypeParameterSignature},
@@ -117,8 +117,8 @@ m2: public () -> unknown
         is_object: true,
         names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
         mappings: HashMap::from([
-          (heap.alloc_str("a"), FieldType { is_public: true, type_: builder.bool_type() }),
-          (heap.alloc_str("b"), FieldType { is_public: false, type_: builder.bool_type() })
+          (heap.alloc_str("a"), (builder.bool_type(), true)),
+          (heap.alloc_str("b"), (builder.bool_type(), false)),
         ])
       }
       .to_string(&heap)
@@ -128,10 +128,7 @@ m2: public () -> unknown
       TypeDefinitionTypingContext {
         is_object: false,
         names: vec![heap.alloc_str("A")],
-        mappings: HashMap::from([(
-          heap.alloc_str("A"),
-          FieldType { is_public: true, type_: builder.bool_type() }
-        )])
+        mappings: HashMap::from([(heap.alloc_str("A"), (builder.bool_type(), true))])
       }
       .to_string(&heap)
     );
@@ -632,17 +629,8 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
               is_object: false,
               names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
               mappings: HashMap::from([
-                (
-                  heap.alloc_str("a"),
-                  FieldType { is_public: true, type_: builder.simple_id_type(heap.alloc_str("A")) },
-                ),
-                (
-                  heap.alloc_str("b"),
-                  FieldType {
-                    is_public: false,
-                    type_: builder.simple_id_type(heap.alloc_str("B")),
-                  },
-                ),
+                (heap.alloc_str("a"), (builder.simple_id_type(heap.alloc_str("A")), true)),
+                (heap.alloc_str("b"), (builder.simple_id_type(heap.alloc_str("B")), false)),
               ]),
             },
           ),
@@ -702,7 +690,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
         ),
         true,
       )
-      .0
+      .names
       .is_empty());
     assert!(cx
       .resolve_type_definition(
@@ -712,7 +700,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
         ),
         true,
       )
-      .0
+      .names
       .is_empty());
     assert!(cx
       .resolve_type_definition(
@@ -722,22 +710,24 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
         ),
         true,
       )
-      .0
+      .names
       .is_empty());
 
-    let (_, resolved) = cx.resolve_type_definition(
-      &builder.general_id_type_unwrapped(
-        heap.alloc_str("A"),
-        vec![builder.int_type(), builder.int_type()],
-      ),
-      false,
-    );
+    let resolved = cx
+      .resolve_type_definition(
+        &builder.general_id_type_unwrapped(
+          heap.alloc_str("A"),
+          vec![builder.int_type(), builder.int_type()],
+        ),
+        false,
+      )
+      .mappings;
     assert_eq!(2, resolved.len());
     let resolved_a = resolved.get(&heap.alloc_str("a")).unwrap();
     let resolved_b = resolved.get(&heap.alloc_str("b")).unwrap();
-    assert_eq!(true, resolved_a.is_public);
-    assert_eq!(false, resolved_b.is_public);
-    assert_eq!("int", resolved_a.type_.pretty_print(&heap));
-    assert_eq!("int", resolved_b.type_.pretty_print(&heap));
+    assert_eq!(true, resolved_a.1);
+    assert_eq!(false, resolved_b.1);
+    assert_eq!("int", resolved_a.0.pretty_print(&heap));
+    assert_eq!("int", resolved_b.0.pretty_print(&heap));
   }
 }

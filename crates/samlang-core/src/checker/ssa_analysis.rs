@@ -1,20 +1,17 @@
 use crate::{
   ast::{
     source::{
+      annotation,
       expr::{self, DeclarationStatement},
       ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
     },
     Location,
   },
-  checker::type_::{FunctionType, IdType, Type},
   common::{Heap, LocalStackedContext, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
-use std::{
-  collections::{HashMap, HashSet},
-  ops::Deref,
-};
+use std::collections::{HashMap, HashSet};
 
 struct SsaAnalysisState<'a> {
   unbound_names: HashSet<PStr>,
@@ -66,18 +63,18 @@ impl<'a> SsaAnalysisState<'a> {
           }
           for tparam in type_parameters {
             if let Some(bound) = &tparam.bound {
-              self.visit_type(heap, &Type::Id(bound.deref().clone()));
+              self.visit_id_annot(heap, bound);
             };
           }
           for t in toplevel.extends_or_implements_nodes() {
-            self.visit_type(heap, &Type::Id(t.clone()));
+            self.visit_id_annot(heap, t);
           }
           if let Some(type_def) = type_definition {
             for name in &type_def.names {
               self.define_id(heap, &name.name, name.loc);
             }
             for name in &type_def.names {
-              self.visit_type(heap, &type_def.mappings.get(&name.name).unwrap().type_)
+              self.visit_annot(heap, &type_def.mappings.get(&name.name).unwrap().0)
             }
           }
         }
@@ -146,15 +143,15 @@ impl<'a> SsaAnalysisState<'a> {
     }
     for tparam in member.type_parameters.iter() {
       if let Some(bound) = &tparam.bound {
-        self.visit_type(heap, &Type::Id(bound.deref().clone()));
+        self.visit_id_annot(heap, bound);
       }
     }
     for param in member.parameters.iter() {
       let id = &param.name;
       self.define_id(heap, &id.name, id.loc);
-      self.visit_type(heap, &param.annotation);
+      self.visit_annot(heap, &param.annotation);
     }
-    self.visit_type(heap, &member.type_.return_type);
+    self.visit_annot(heap, &member.type_.return_type);
     if let Some(b) = body {
       self.visit_expression(heap, b);
     }
@@ -166,20 +163,20 @@ impl<'a> SsaAnalysisState<'a> {
       expr::E::Literal(_, _) => {}
       expr::E::Id(_, id) => self.use_id(heap, &id.name, id.loc),
       expr::E::ClassFn(e) => {
-        for targ in &e.type_arguments {
-          self.visit_type(heap, targ);
+        for targ in &e.explicit_type_arguments {
+          self.visit_annot(heap, targ);
         }
       }
       expr::E::FieldAccess(e) => {
         self.visit_expression(heap, &e.object);
-        for targ in &e.type_arguments {
-          self.visit_type(heap, targ);
+        for targ in &e.explicit_type_arguments {
+          self.visit_annot(heap, targ);
         }
       }
       expr::E::MethodAccess(e) => {
         self.visit_expression(heap, &e.object);
-        for targ in &e.type_arguments {
-          self.visit_type(heap, targ);
+        for targ in &e.explicit_type_arguments {
+          self.visit_annot(heap, targ);
         }
       }
       expr::E::Unary(e) => self.visit_expression(heap, &e.argument),
@@ -213,8 +210,8 @@ impl<'a> SsaAnalysisState<'a> {
         self.context.push_scope();
         for OptionallyAnnotatedId { name, annotation } in &e.parameters {
           self.define_id(heap, &name.name, name.loc);
-          if let Some(t) = annotation {
-            self.visit_type(heap, t)
+          if let Some(annot) = annotation {
+            self.visit_annot(heap, annot)
           }
         }
         self.visit_expression(heap, &e.body);
@@ -232,13 +229,13 @@ impl<'a> SsaAnalysisState<'a> {
         } in &e.statements
         {
           self.visit_expression(heap, assigned_expression);
-          if let Some(t) = annotation {
-            self.visit_type(heap, t);
+          if let Some(annot) = annotation {
+            self.visit_annot(heap, annot);
           }
           match pattern {
             expr::Pattern::Object(_, names) => {
               for name in names {
-                let id = name.alias.clone().unwrap_or(name.field_name.clone());
+                let id = name.alias.unwrap_or(name.field_name);
                 self.define_id(heap, &id.name, id.loc);
               }
             }
@@ -254,20 +251,31 @@ impl<'a> SsaAnalysisState<'a> {
     }
   }
 
-  fn visit_type(&mut self, heap: &Heap, t: &Type) {
-    match t {
-      Type::Unknown(_) | Type::Primitive(_, _) => {}
-      Type::Id(IdType { reason, module_reference: _, id, type_arguments }) => {
-        self.use_id(heap, id, reason.use_loc);
-        for targ in type_arguments {
-          self.visit_type(heap, targ);
-        }
-      }
-      Type::Fn(FunctionType { reason: _, argument_types, return_type }) => {
+  fn visit_id_annot(
+    &mut self,
+    heap: &Heap,
+    annotation::Id { location, module_reference: _, id, type_arguments }: &annotation::Id,
+  ) {
+    self.use_id(heap, &id.name, *location);
+    for targ in type_arguments {
+      self.visit_annot(heap, targ);
+    }
+  }
+
+  fn visit_annot(&mut self, heap: &Heap, annot: &annotation::T) {
+    match annot {
+      annotation::T::Primitive(_, _, _) => {}
+      annotation::T::Id(annot) => self.visit_id_annot(heap, annot),
+      annotation::T::Fn(annotation::Function {
+        location: _,
+        associated_comments: _,
+        argument_types,
+        return_type,
+      }) => {
         for arg in argument_types {
-          self.visit_type(heap, arg);
+          self.visit_annot(heap, arg);
         }
-        self.visit_type(heap, return_type);
+        self.visit_annot(heap, return_type);
       }
     }
   }

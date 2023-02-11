@@ -91,6 +91,10 @@ impl ErrorSet {
     self.errors.iter().collect()
   }
 
+  pub(crate) fn into_errors(self) -> Vec<CompileTimeError> {
+    self.errors.into_iter().collect()
+  }
+
   pub(crate) fn error_messages(&self, heap: &Heap) -> Vec<String> {
     self.errors().into_iter().map(|e| e.pretty_print(heap)).collect()
   }
@@ -282,5 +286,6 @@ mod tests {
     ];
     assert_eq!(expected_errors, actual_errors);
     assert!(error_set.has_errors());
+    error_set.into_errors();
   }
 }
