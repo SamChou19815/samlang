@@ -36,7 +36,7 @@ impl<'a> SsaAnalysisState<'a> {
     }
   }
 
-  fn visit_module(&mut self, heap: &Heap, module: &Module) {
+  fn visit_module(&mut self, heap: &Heap, module: &Module<()>) {
     for import in &module.imports {
       for member in &import.imported_members {
         self.define_id(heap, &member.name, member.loc);
@@ -111,7 +111,7 @@ impl<'a> SsaAnalysisState<'a> {
     }
   }
 
-  fn visit_members(&mut self, heap: &Heap, toplevel: &Toplevel, is_method: bool) {
+  fn visit_members(&mut self, heap: &Heap, toplevel: &Toplevel<()>, is_method: bool) {
     match toplevel {
       Toplevel::Class(c) => {
         for m in &c.members {
@@ -134,7 +134,7 @@ impl<'a> SsaAnalysisState<'a> {
     &mut self,
     heap: &Heap,
     member: &ClassMemberDeclaration,
-    body: Option<&expr::E>,
+    body: Option<&expr::E<()>>,
   ) {
     self.context.push_scope();
     for tparam in member.type_parameters.iter() {
@@ -158,7 +158,7 @@ impl<'a> SsaAnalysisState<'a> {
     self.context.pop_scope();
   }
 
-  fn visit_expression(&mut self, heap: &Heap, expression: &expr::E) {
+  fn visit_expression(&mut self, heap: &Heap, expression: &expr::E<()>) {
     match expression {
       expr::E::Literal(_, _) => {}
       expr::E::Id(_, id) => self.use_id(heap, &id.name, id.loc),
@@ -350,7 +350,7 @@ impl SsaAnalysisResult {
 }
 
 pub(super) fn perform_ssa_analysis_on_expression(
-  expression: &expr::E,
+  expression: &expr::E<()>,
   heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> SsaAnalysisResult {
@@ -360,7 +360,7 @@ pub(super) fn perform_ssa_analysis_on_expression(
 }
 
 pub(crate) fn perform_ssa_analysis_on_module(
-  module: &Module,
+  module: &Module<()>,
   heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> SsaAnalysisResult {

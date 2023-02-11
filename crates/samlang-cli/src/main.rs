@@ -328,7 +328,7 @@ mod lsp {
       params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
       self.client.log_message(MessageType::INFO, "[lsp] goto_definition").await;
-      let service = self.service.read().await;
+      let mut service = self.service.write().await;
       let mod_ref = self.convert_url_to_module_reference(
         &service.0.heap,
         &params.text_document_position_params.text_document.uri,

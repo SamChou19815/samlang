@@ -1,9 +1,14 @@
-use crate::{ast, common};
+use std::rc::Rc;
+
+use crate::{ast, checker, common};
 
 mod mir_interpreter;
 mod source_interpreter;
 
-pub(super) fn run_source_module(heap: &mut common::Heap, module: &ast::source::Module) -> String {
+pub(super) fn run_source_module(
+  heap: &mut common::Heap,
+  module: &ast::source::Module<Rc<checker::type_::Type>>,
+) -> String {
   source_interpreter::run(heap, module)
 }
 

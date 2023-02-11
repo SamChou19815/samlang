@@ -1,7 +1,6 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
 use crate::{
-  ast::{source::*, Location, Position, Reason},
-  checker::type_::{FunctionType, Type},
+  ast::{source::*, Location, Position},
   common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
@@ -265,7 +264,7 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  pub(super) fn parse_module(mut self) -> Module {
+  pub(super) fn parse_module(mut self) -> Module<()> {
     let mut imports = vec![];
     while let Token(import_start, TokenContent::Keyword(Keyword::IMPORT)) = self.peek() {
       self.consume();
@@ -319,7 +318,7 @@ impl<'a> SourceParser<'a> {
     Module { comment_store: self.comments_store, imports, toplevels }
   }
 
-  fn parse_toplevel(&mut self) -> Toplevel {
+  fn parse_toplevel(&mut self) -> Toplevel<()> {
     let peeked = self.peek().1;
     self.unconsume_comments();
     if let TokenContent::Keyword(Keyword::CLASS) = peeked {
@@ -329,7 +328,7 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  pub(super) fn parse_class(&mut self) -> ClassDefinition {
+  pub(super) fn parse_class(&mut self) -> ClassDefinition<()> {
     let associated_comments = self.collect_preceding_comments();
     let mut loc = self.assert_and_consume_keyword(Keyword::CLASS);
     let name = self.parse_upper_id();
@@ -492,7 +491,7 @@ impl<'a> SourceParser<'a> {
     matches!(self.peek().1, TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE))
   }
 
-  pub(super) fn parse_class_member_definition(&mut self) -> ClassMemberDefinition {
+  pub(super) fn parse_class_member_definition(&mut self) -> ClassMemberDefinition<()> {
     let mut decl = self.parse_class_member_declaration_common(true);
     self.assert_and_consume_operator(TokenOp::ASSIGN);
     let body = self.parse_expression();
@@ -585,16 +584,16 @@ impl<'a> SourceParser<'a> {
     TypeParameter { loc, name: *name, bound }
   }
 
-  pub(super) fn parse_expression_with_comment_store(mut self) -> (CommentStore, expr::E) {
+  pub(super) fn parse_expression_with_comment_store(mut self) -> (CommentStore, expr::E<()>) {
     let e = self.parse_expression();
     (self.comments_store, e)
   }
 
-  fn parse_expression(&mut self) -> expr::E {
+  fn parse_expression(&mut self) -> expr::E<()> {
     self.parse_match()
   }
 
-  fn parse_expression_with_ending_comments(&mut self) -> expr::E {
+  fn parse_expression_with_ending_comments(&mut self) -> expr::E<()> {
     let expr = self.parse_expression();
     let mut new_comments = self.collect_preceding_comments();
     let associated_comments = self.comments_store.get_mut(expr.common().associated_comments);
@@ -602,7 +601,7 @@ impl<'a> SourceParser<'a> {
     expr
   }
 
-  fn parse_match(&mut self) -> expr::E {
+  fn parse_match(&mut self) -> expr::E<()> {
     let associated_comments = self.collect_preceding_comments();
     if let Token(peeked_loc, TokenContent::Keyword(Keyword::MATCH)) = self.peek() {
       self.consume();
@@ -617,7 +616,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
+          type_: (),
         },
         matched: Box::new(match_expression),
         cases: matching_list,
@@ -627,7 +626,7 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  fn parse_pattern_to_expression(&mut self) -> expr::VariantPatternToExpression {
+  fn parse_pattern_to_expression(&mut self) -> expr::VariantPatternToExpression<()> {
     let tag = self.parse_upper_id();
     self.assert_and_consume_operator(TokenOp::LPAREN);
     let data_variable = if let TokenContent::Operator(TokenOp::UNDERSCORE) = self.peek().1 {
@@ -635,7 +634,7 @@ impl<'a> SourceParser<'a> {
       None
     } else {
       let name = self.parse_lower_id();
-      Some((name, Rc::new(Type::Unknown(Reason::new(name.loc, None)))))
+      Some((name, ()))
     };
     self.assert_and_consume_operator(TokenOp::RPAREN);
     self.assert_and_consume_operator(TokenOp::ARROW);
@@ -659,7 +658,7 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  fn parse_if_else(&mut self) -> expr::E {
+  fn parse_if_else(&mut self) -> expr::E<()> {
     let associated_comments = self.collect_preceding_comments();
     if let Token(peeked_loc, TokenContent::Keyword(Keyword::IF)) = self.peek() {
       self.consume();
@@ -673,7 +672,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
+          type_: (),
         },
         condition: Box::new(condition),
         e1: Box::new(e1),
@@ -683,7 +682,7 @@ impl<'a> SourceParser<'a> {
     self.parse_disjunction()
   }
 
-  fn parse_disjunction(&mut self) -> expr::E {
+  fn parse_disjunction(&mut self) -> expr::E<()> {
     let mut e = self.parse_conjunction();
     while let TokenContent::Operator(TokenOp::OR) = self.peek().1 {
       let concrete_comments = self.collect_preceding_comments();
@@ -696,7 +695,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(vec![]),
-          type_: Rc::new(Type::bool_type(Reason::new(loc, None))),
+          type_: (),
         },
         operator_preceding_comments,
         operator: expr::BinaryOperator::OR,
@@ -707,7 +706,7 @@ impl<'a> SourceParser<'a> {
     e
   }
 
-  fn parse_conjunction(&mut self) -> expr::E {
+  fn parse_conjunction(&mut self) -> expr::E<()> {
     let mut e = self.parse_comparison();
     while let TokenContent::Operator(TokenOp::AND) = self.peek().1 {
       let concrete_comments = self.collect_preceding_comments();
@@ -720,7 +719,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(vec![]),
-          type_: Rc::new(Type::bool_type(Reason::new(loc, None))),
+          type_: (),
         },
         operator_preceding_comments,
         operator: expr::BinaryOperator::AND,
@@ -731,7 +730,7 @@ impl<'a> SourceParser<'a> {
     e
   }
 
-  fn parse_comparison(&mut self) -> expr::E {
+  fn parse_comparison(&mut self) -> expr::E<()> {
     let mut e = self.parse_term();
     loop {
       let concrete_comments = self.collect_preceding_comments();
@@ -753,7 +752,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(vec![]),
-          type_: Rc::new(Type::bool_type(Reason::new(loc, None))),
+          type_: (),
         },
         operator_preceding_comments,
         operator,
@@ -764,7 +763,7 @@ impl<'a> SourceParser<'a> {
     e
   }
 
-  fn parse_term(&mut self) -> expr::E {
+  fn parse_term(&mut self) -> expr::E<()> {
     let mut e = self.parse_factor();
     loop {
       let concrete_comments = self.collect_preceding_comments();
@@ -782,7 +781,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(vec![]),
-          type_: Rc::new(Type::int_type(Reason::new(loc, None))),
+          type_: (),
         },
         operator_preceding_comments,
         operator,
@@ -793,7 +792,7 @@ impl<'a> SourceParser<'a> {
     e
   }
 
-  fn parse_factor(&mut self) -> expr::E {
+  fn parse_factor(&mut self) -> expr::E<()> {
     let mut e = self.parse_concat();
     loop {
       let concrete_comments = self.collect_preceding_comments();
@@ -812,7 +811,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(vec![]),
-          type_: Rc::new(Type::int_type(Reason::new(loc, None))),
+          type_: (),
         },
         operator_preceding_comments,
         operator,
@@ -823,7 +822,7 @@ impl<'a> SourceParser<'a> {
     e
   }
 
-  fn parse_concat(&mut self) -> expr::E {
+  fn parse_concat(&mut self) -> expr::E<()> {
     let mut e = self.parse_unary_expression();
     while let TokenContent::Operator(TokenOp::COLONCOLON) = self.peek().1 {
       let concrete_comments = self.collect_preceding_comments();
@@ -836,7 +835,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(vec![]),
-          type_: Rc::new(Type::string_type(Reason::new(loc, None))),
+          type_: (),
         },
         operator_preceding_comments,
         operator: expr::BinaryOperator::CONCAT,
@@ -847,7 +846,7 @@ impl<'a> SourceParser<'a> {
     e
   }
 
-  fn parse_unary_expression(&mut self) -> expr::E {
+  fn parse_unary_expression(&mut self) -> expr::E<()> {
     let associated_comments = self.collect_preceding_comments();
     let Token(peeked_loc, content) = self.peek();
     match content {
@@ -859,7 +858,7 @@ impl<'a> SourceParser<'a> {
           common: expr::ExpressionCommon {
             loc,
             associated_comments: self.comments_store.create_comment_reference(associated_comments),
-            type_: Rc::new(Type::bool_type(Reason::new(loc, None))),
+            type_: (),
           },
           operator: expr::UnaryOperator::NOT,
           argument: Box::new(argument),
@@ -873,7 +872,7 @@ impl<'a> SourceParser<'a> {
           common: expr::ExpressionCommon {
             loc,
             associated_comments: self.comments_store.create_comment_reference(associated_comments),
-            type_: Rc::new(Type::int_type(Reason::new(loc, None))),
+            type_: (),
           },
           operator: expr::UnaryOperator::NEG,
           argument: Box::new(argument),
@@ -883,7 +882,7 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  fn parse_function_call_or_field_access(&mut self) -> expr::E {
+  fn parse_function_call_or_field_access(&mut self) -> expr::E<()> {
     // Treat function arguments or field name as postfix.
     // Then use Kleene star trick to parse.
     let mut function_expression = self.parse_base_expression();
@@ -912,7 +911,7 @@ impl<'a> SourceParser<'a> {
             common: expr::ExpressionCommon {
               loc,
               associated_comments: self.comments_store.create_comment_reference(vec![]),
-              type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
+              type_: (),
             },
             explicit_type_arguments,
             inferred_type_arguments: vec![],
@@ -943,7 +942,7 @@ impl<'a> SourceParser<'a> {
             common: expr::ExpressionCommon {
               loc,
               associated_comments: self.comments_store.create_comment_reference(vec![]),
-              type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
+              type_: (),
             },
             callee: Box::new(function_expression),
             arguments: function_arguments,
@@ -954,7 +953,7 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  fn parse_base_expression(&mut self) -> expr::E {
+  fn parse_base_expression(&mut self) -> expr::E<()> {
     let associated_comments = self.collect_preceding_comments();
     let peeked = self.peek();
 
@@ -964,7 +963,7 @@ impl<'a> SourceParser<'a> {
         expr::ExpressionCommon {
           loc: peeked_loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: Rc::new(Type::bool_type(Reason::new(peeked_loc, None))),
+          type_: (),
         },
         Literal::Bool(true),
       );
@@ -975,7 +974,7 @@ impl<'a> SourceParser<'a> {
         expr::ExpressionCommon {
           loc: peeked_loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: Rc::new(Type::bool_type(Reason::new(peeked_loc, None))),
+          type_: (),
         },
         Literal::Bool(false),
       );
@@ -986,7 +985,7 @@ impl<'a> SourceParser<'a> {
         expr::ExpressionCommon {
           loc: peeked_loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: Rc::new(Type::int_type(Reason::new(peeked_loc, None))),
+          type_: (),
         },
         Literal::Int(i.as_str(self.heap).parse::<i32>().unwrap_or(0)),
       );
@@ -999,7 +998,7 @@ impl<'a> SourceParser<'a> {
         expr::ExpressionCommon {
           loc: peeked_loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: Rc::new(Type::string_type(Reason::new(peeked_loc, None))),
+          type_: (),
         },
         Literal::String(self.heap.alloc_string(str_lit)),
       );
@@ -1010,7 +1009,7 @@ impl<'a> SourceParser<'a> {
         expr::ExpressionCommon {
           loc: peeked_loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: Rc::new(Type::Unknown(Reason::new(peeked_loc, None))),
+          type_: (),
         },
         Id {
           loc: peeked_loc,
@@ -1025,7 +1024,7 @@ impl<'a> SourceParser<'a> {
         expr::ExpressionCommon {
           loc: peeked_loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: Rc::new(Type::Unknown(Reason::new(peeked_loc, None))),
+          type_: (),
         },
         Id {
           loc: peeked_loc,
@@ -1061,7 +1060,7 @@ impl<'a> SourceParser<'a> {
           common: expr::ExpressionCommon {
             loc,
             associated_comments: self.comments_store.create_comment_reference(associated_comments),
-            type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
+            type_: (),
           },
           explicit_type_arguments,
           inferred_type_arguments: vec![],
@@ -1097,11 +1096,7 @@ impl<'a> SourceParser<'a> {
           common: expr::ExpressionCommon {
             loc,
             associated_comments: self.comments_store.create_comment_reference(comments),
-            type_: Rc::new(Type::Fn(FunctionType {
-              reason: Reason::new(loc, None),
-              argument_types: vec![],
-              return_type: body.type_().clone(),
-            })),
+            type_: (),
           },
           parameters: vec![],
           captured: HashMap::new(),
@@ -1136,19 +1131,7 @@ impl<'a> SourceParser<'a> {
                 associated_comments: self
                   .comments_store
                   .create_comment_reference(associated_comments),
-                type_: Rc::new(Type::Fn(FunctionType {
-                  reason: Reason::new(loc, Some(loc)),
-                  argument_types: parameters
-                    .iter()
-                    .map(|it| {
-                      it.annotation
-                        .as_ref()
-                        .map(|annot| Rc::new(Type::from_annotation(annot)))
-                        .unwrap_or(Rc::new(Type::Unknown(Reason::new(it.name.loc, None))))
-                    })
-                    .collect_vec(),
-                  return_type: body.type_().clone(),
-                })),
+                type_: (),
               },
               parameters,
               captured: HashMap::new(),
@@ -1163,17 +1146,12 @@ impl<'a> SourceParser<'a> {
               comments.append(&mut self.collect_preceding_comments());
               self.consume();
               let body = self.parse_expression();
-              let parameter_type = Type::Unknown(Reason::new(loc_id_for_lambda, None));
               let loc = peeked_loc.union(&body.loc());
               return expr::E::Lambda(expr::Lambda {
                 common: expr::ExpressionCommon {
                   loc,
                   associated_comments: self.comments_store.create_comment_reference(comments),
-                  type_: Rc::new(Type::Fn(FunctionType {
-                    reason: Reason::new(loc, Some(loc)),
-                    argument_types: vec![Rc::new(parameter_type)],
-                    return_type: body.type_().clone(),
-                  })),
+                  type_: (),
                 },
                 parameters: vec![OptionallyAnnotatedId {
                   name: Id {
@@ -1216,7 +1194,7 @@ impl<'a> SourceParser<'a> {
           common: expr::ExpressionCommon {
             loc,
             associated_comments: self.comments_store.create_comment_reference(associated_comments),
-            type_: Rc::new(Type::unit_type(Reason::new(loc, None))),
+            type_: (),
           },
           statements,
           expression: None,
@@ -1230,7 +1208,7 @@ impl<'a> SourceParser<'a> {
         common: expr::ExpressionCommon {
           loc,
           associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: expression.type_().clone(),
+          type_: (),
         },
         statements,
         expression: Some(Box::new(expression)),
@@ -1246,13 +1224,13 @@ impl<'a> SourceParser<'a> {
       expr::ExpressionCommon {
         loc: peeked.0,
         associated_comments: self.comments_store.create_comment_reference(associated_comments),
-        type_: Rc::new(Type::int_type(Reason::new(peeked.0, None))),
+        type_: (),
       },
       Literal::Int(0),
     )
   }
 
-  pub(super) fn parse_statement(&mut self) -> expr::DeclarationStatement {
+  pub(super) fn parse_statement(&mut self) -> expr::DeclarationStatement<()> {
     let concrete_comments = self.collect_preceding_comments();
     let associated_comments = self.comments_store.create_comment_reference(concrete_comments);
     let start_loc = self.assert_and_consume_keyword(Keyword::VAL);
@@ -1275,7 +1253,7 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  pub(super) fn parse_pattern(&mut self) -> expr::Pattern {
+  pub(super) fn parse_pattern(&mut self) -> expr::Pattern<()> {
     let peeked = self.peek();
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
       self.consume();
@@ -1290,13 +1268,7 @@ impl<'a> SourceParser<'a> {
           } else {
             (None, field_name.loc)
           };
-          expr::ObjectPatternDestucturedName {
-            loc,
-            field_name,
-            field_order: 0,
-            alias,
-            type_: Rc::new(Type::Unknown(Reason::new(loc, None))),
-          }
+          expr::ObjectPatternDestucturedName { loc, field_name, field_order: 0, alias, type_: () }
         });
       let end_location = self.assert_and_consume_operator(TokenOp::RBRACE);
       return expr::Pattern::Object(peeked_loc.union(&end_location), destructured_names);

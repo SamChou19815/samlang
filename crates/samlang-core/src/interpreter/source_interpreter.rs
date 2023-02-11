@@ -3,10 +3,11 @@
 
 use crate::{
   ast::source::{expr, Literal, Module, Toplevel},
+  checker::type_::Type,
   common::{Heap, LocalStackedContext, PStr},
 };
 use itertools::Itertools;
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Value {
@@ -71,7 +72,7 @@ impl Value {
 
 #[derive(Clone)]
 enum FunctionImpl {
-  Expr(expr::E),
+  Expr(expr::E<Rc<Type>>),
   InitObject(Vec<PStr>),
   InitVariant(PStr),
   StringToInt,
@@ -131,7 +132,7 @@ fn new_fn(cx: &mut InterpretationContext, f: FunctionValue) -> Value {
   Value::FunctionPointer(id)
 }
 
-fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E) -> Value {
+fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<Type>>) -> Value {
   match expr {
     expr::E::Literal(_, l) => match l {
       Literal::Bool(b) => Value::Boolean(*b),
@@ -359,7 +360,7 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E) ->
   }
 }
 
-fn new_cx(heap: &mut Heap, module: &Module) -> InterpretationContext {
+fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
   let mut classes = HashMap::new();
   for toplevel in &module.toplevels {
     if let Toplevel::Class(c) = toplevel {
@@ -460,7 +461,7 @@ fn eval_main_function(cx: &mut InterpretationContext, heap: &mut Heap, body: Fun
   }
 }
 
-pub(super) fn run(heap: &mut Heap, module: &Module) -> String {
+pub(super) fn run(heap: &mut Heap, module: &Module<Rc<Type>>) -> String {
   let mut cx = new_cx(heap, module);
   let main_fun_body = cx
     .classes
@@ -509,11 +510,11 @@ mod tests {
     }
   }
 
-  fn dummy_expr_common() -> expr::ExpressionCommon {
+  fn dummy_expr_common() -> expr::ExpressionCommon<Rc<Type>> {
     expr::ExpressionCommon::dummy(Rc::new(Type::int_type(Reason::dummy())))
   }
 
-  fn eval_expr_simple(heap: &mut Heap, expr: &expr::E) -> Value {
+  fn eval_expr_simple(heap: &mut Heap, expr: &expr::E<Rc<Type>>) -> Value {
     eval_expr(&mut empty_cx(), heap, expr)
   }
 

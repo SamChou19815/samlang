@@ -1715,9 +1715,8 @@ class Main {
         )
       })
       .collect_vec();
-    let TypeCheckSourceHandlesResult { checked_sources, .. } =
-      type_check_source_handles(heap, handles);
-    for (mod_ref, module) in checked_sources {
+    for (mod_ref, text) in handles {
+      let module = parse_source_module_from_text(&text, mod_ref, heap, &mut ErrorSet::new());
       let raw = printer::pretty_print_source_module(heap, 100, &module);
       let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
         type_check_source_handles(heap, vec![(mod_ref, raw)]);

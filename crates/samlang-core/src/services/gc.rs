@@ -63,7 +63,7 @@ fn mark_id(heap: &mut Heap, id: &Id) {
   heap.mark(id.name);
 }
 
-fn mark_expression(heap: &mut Heap, expr: &expr::E) {
+fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
   mark_type(heap, &expr.common().type_);
   match expr {
     expr::E::Literal(_, _) => {}
@@ -154,7 +154,7 @@ fn mark_type_parameters(heap: &mut Heap, type_parameters: &Vec<TypeParameter>) {
   }
 }
 
-fn mark_module(heap: &mut Heap, module: &Module) {
+fn mark_module(heap: &mut Heap, module: &Module<Rc<Type>>) {
   for comment_text in
     module.comment_store.all_comments().iter().flat_map(|it| it.iter()).map(|it| it.text)
   {
@@ -194,7 +194,7 @@ const NUM_SWEEP_UNIT: usize = 10000;
 fn perform_gc_after_recheck_internal(
   heap: &mut Heap,
   mut remaining_slice: usize,
-  all_modules: &HashMap<ModuleReference, Module>,
+  all_modules: &HashMap<ModuleReference, Module<Rc<Type>>>,
   changed_modules: Vec<ModuleReference>,
 ) {
   for mod_ref in changed_modules {
@@ -215,7 +215,7 @@ fn perform_gc_after_recheck_internal(
 
 pub(super) fn perform_gc_after_recheck(
   heap: &mut Heap,
-  all_modules: &HashMap<ModuleReference, Module>,
+  all_modules: &HashMap<ModuleReference, Module<Rc<Type>>>,
   changed_modules: Vec<ModuleReference>,
 ) {
   perform_gc_after_recheck_internal(

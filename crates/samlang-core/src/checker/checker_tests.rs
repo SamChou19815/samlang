@@ -50,7 +50,6 @@ mod tests {
       /* availableTypeParameters */ vec![],
     );
 
-    let builder = test_type_builder::create();
     type_check_expression(
       &mut cx,
       &heap,
@@ -58,14 +57,11 @@ mod tests {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          type_: builder.bool_type(),
+          type_: (),
         },
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
-        object: Box::new(expr::E::Literal(
-          expr::ExpressionCommon::dummy(builder.bool_type()),
-          Literal::Bool(true),
-        )),
+        object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(true))),
         method_name: Id {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
@@ -1291,7 +1287,8 @@ mod tests {
       "match (3) { Foo(_) -> 1, Bar(s) -> 2 }",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:8-1:9: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.",
+        "__DUMMY__.sam:1:13-1:16: [UnresolvedName]: Name `Foo` is not resolved.",
+        "__DUMMY__.sam:1:26-1:29: [UnresolvedName]: Name `Bar` is not resolved.",
       ],
     );
     assert_errors(
@@ -1335,7 +1332,7 @@ mod tests {
       "__DUMMY__.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
     ]);
     assert_errors(heap, "(a) -> a", &builder.int_type(), vec![
-      "__DUMMY__.sam:1:1-1:9: [UnexpectedType]: Expected: `int`, actual: `(unknown) -> unknown`.",
+      "__DUMMY__.sam:1:1-1:9: [UnexpectedType]: Expected: `int`, actual: `function type`.",
       "__DUMMY__.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
     ]);
   }
@@ -1379,7 +1376,8 @@ mod tests {
       "{val {a, b as c} = 1;}",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:20-1:21: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.",
+        "__DUMMY__.sam:1:7-1:8: [UnresolvedName]: Name `a` is not resolved.",
+        "__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.",
       ],
     );
     assert_errors(

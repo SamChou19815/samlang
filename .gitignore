@@ -26,3 +26,4 @@ tsconfig.tsbuildinfo
 
 ## Logs
 *.log
+.watchman-*

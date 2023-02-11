@@ -2,9 +2,7 @@
 mod tests {
   use super::super::source::expr::*;
   use super::super::source::*;
-  use crate::{
-    ast::loc::Location, checker::type_::test_type_builder, common::Heap, common::ModuleReference,
-  };
+  use crate::{ast::loc::Location, common::Heap, common::ModuleReference};
   use std::collections::HashMap;
   use std::rc::Rc;
 
@@ -89,9 +87,8 @@ mod tests {
   #[test]
   fn precedence_boilerplate_tests() {
     let mut heap = Heap::new();
-    let builder = test_type_builder::create();
-    let common = ExpressionCommon::dummy(builder.bool_type());
-    let zero_expr = E::Literal(ExpressionCommon::dummy(builder.int_type()), Literal::Int(0));
+    let common = ExpressionCommon::dummy(());
+    let zero_expr = E::Literal(ExpressionCommon::dummy(()), Literal::Int(0));
 
     zero_expr.precedence();
     E::ClassFn(ClassFunction {
@@ -146,136 +143,6 @@ mod tests {
   }
 
   #[test]
-  fn common_test() {
-    let mut heap = Heap::new();
-    let builder = test_type_builder::create();
-    let common = ExpressionCommon::dummy(builder.bool_type());
-    let mod_common = |c: ExpressionCommon| c.clone();
-    let zero_expr = E::Literal(ExpressionCommon::dummy(builder.int_type()), Literal::Int(0));
-
-    zero_expr.clone().mod_common(mod_common).common();
-    E::Id(common.clone(), Id::from(heap.alloc_str("d"))).clone().mod_common(mod_common).common();
-    E::ClassFn(ClassFunction {
-      common: common.clone(),
-      explicit_type_arguments: vec![],
-      inferred_type_arguments: vec![],
-      module_reference: ModuleReference::dummy(),
-      class_name: Id::from(heap.alloc_str("name")),
-      fn_name: Id::from(heap.alloc_str("name")),
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-    E::FieldAccess(FieldAccess {
-      common: common.clone(),
-      explicit_type_arguments: vec![],
-      inferred_type_arguments: vec![],
-      object: Box::new(zero_expr.clone()),
-      field_name: Id::from(heap.alloc_str("name")),
-      field_order: -1,
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-    E::MethodAccess(MethodAccess {
-      common: common.clone(),
-      explicit_type_arguments: vec![],
-      inferred_type_arguments: vec![],
-      object: Box::new(zero_expr.clone()),
-      method_name: Id::from(heap.alloc_str("name")),
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common()
-    .clone()
-    .with_new_type(builder.int_type());
-    E::Unary(Unary {
-      common: common.clone(),
-      operator: UnaryOperator::NEG,
-      argument: Box::new(zero_expr.clone()),
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-    E::Call(Call {
-      common: common.clone(),
-      callee: Box::new(zero_expr.clone()),
-      arguments: vec![],
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-    E::Binary(Binary {
-      common: common.clone(),
-      operator_preceding_comments: NO_COMMENT_REFERENCE,
-      operator: BinaryOperator::AND,
-      e1: Box::new(zero_expr.clone()),
-      e2: Box::new(zero_expr.clone()),
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-    E::IfElse(IfElse {
-      common: common.clone(),
-      condition: Box::new(zero_expr.clone()),
-      e1: Box::new(zero_expr.clone()),
-      e2: Box::new(zero_expr.clone()),
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-    E::Match(Match {
-      common: common.clone(),
-      matched: Box::new(zero_expr.clone()),
-      cases: vec![VariantPatternToExpression {
-        loc: Location::dummy(),
-        tag: Id::from(heap.alloc_str("name")),
-        tag_order: 1,
-        data_variable: None,
-        body: Box::new(zero_expr.clone()),
-      }],
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-    E::Lambda(Lambda {
-      common: common.clone(),
-      parameters: vec![OptionallyAnnotatedId {
-        name: Id::from(heap.alloc_str("name")),
-        annotation: None,
-      }],
-      captured: HashMap::new(),
-      body: Box::new(zero_expr.clone()),
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-    E::Block(Block {
-      common: common.clone(),
-      statements: vec![DeclarationStatement {
-        loc: Location::dummy(),
-        associated_comments: NO_COMMENT_REFERENCE,
-        pattern: Pattern::Object(
-          Location::dummy(),
-          vec![ObjectPatternDestucturedName {
-            loc: Location::dummy(),
-            field_order: 0,
-            field_name: Id::from(heap.alloc_str("name")),
-            alias: None,
-            type_: builder.bool_type(),
-          }],
-        ),
-        annotation: None,
-        assigned_expression: Box::new(zero_expr.clone()),
-      }],
-      expression: None,
-    })
-    .clone()
-    .mod_common(mod_common)
-    .common();
-  }
-
-  #[test]
   fn toplevel_boilterplate() {
     let mut heap = Heap::new();
     assert_eq!(
@@ -302,8 +169,7 @@ mod tests {
       .as_str(&heap)
     );
 
-    let annot_builder = test_builder::create();
-    let builder = test_type_builder::create();
+    let builder = test_builder::create();
 
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
@@ -319,7 +185,7 @@ mod tests {
         is_method: true,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
-        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
+        type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![])
       }]
     }
@@ -365,17 +231,17 @@ mod tests {
           is_method: true,
           name: Id::from(heap.alloc_str("")),
           type_parameters: Rc::new(vec![]),
-          type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
+          type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
           parameters: Rc::new(vec![]),
         },
-        body: expr::E::Literal(expr::ExpressionCommon::dummy(builder.int_type()), Literal::Int(0)),
+        body: expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0)),
       }],
     });
     class.members_iter().next();
     class.loc();
     class.associated_comments();
     assert!(class.is_class());
-    let interface = Toplevel::Interface(InterfaceDeclarationCommon {
+    let interface: Toplevel<()> = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
       name: Id::from(heap.alloc_str("name")),
@@ -389,7 +255,7 @@ mod tests {
         is_method: true,
         name: Id::from(heap.alloc_str("")),
         type_parameters: Rc::new(vec![]),
-        type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
+        type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![]),
       }],
     });

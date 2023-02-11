@@ -187,12 +187,12 @@ fn id_annot_to_doc(
   )
 }
 
-impl expr::E {
+impl expr::E<()> {
   fn create_doc_for_subexpression_considering_precedence_level(
     &self,
     heap: &Heap,
     comment_store: &CommentStore,
-    sub_expression: &expr::E,
+    sub_expression: &expr::E<()>,
     equal_level_parenthesis: bool,
   ) -> Document {
     let add_parenthesis = if equal_level_parenthesis {
@@ -211,7 +211,7 @@ impl expr::E {
     &self,
     heap: &Heap,
     comment_store: &CommentStore,
-    if_else: &expr::IfElse,
+    if_else: &expr::IfElse<()>,
   ) -> Document {
     let expanded =
       self.create_doc_for_if_else_customized_flattened(heap, comment_store, false, if_else);
@@ -229,11 +229,11 @@ impl expr::E {
     heap: &Heap,
     comment_store: &CommentStore,
     flattened: bool,
-    if_else: &expr::IfElse,
+    if_else: &expr::IfElse<()>,
   ) -> Document {
     let mut documents = vec![];
     self.add_if_else_first_half_docs(heap, comment_store, flattened, if_else, &mut documents);
-    let mut base: &expr::E = &if_else.e2;
+    let mut base: &expr::E<()> = &if_else.e2;
     loop {
       if let expr::E::IfElse(if_else) = base {
         self.add_if_else_first_half_docs(heap, comment_store, flattened, if_else, &mut documents);
@@ -255,7 +255,7 @@ impl expr::E {
     heap: &Heap,
     comment_store: &CommentStore,
     flattened: bool,
-    if_else: &expr::IfElse,
+    if_else: &expr::IfElse<()>,
     documents: &mut Vec<Document>,
   ) {
     documents.push(Document::Text(rcs("if ")));
@@ -275,7 +275,7 @@ impl expr::E {
     heap: &Heap,
     comment_store: &CommentStore,
     flattened: bool,
-    sub_expression: &expr::E,
+    sub_expression: &expr::E<()>,
   ) -> Document {
     let mut expr_doc = self.create_doc_for_subexpression_considering_precedence_level(
       heap,
@@ -395,7 +395,7 @@ impl expr::E {
     &self,
     heap: &Heap,
     comment_store: &CommentStore,
-    potential_chainable_expr: &expr::E,
+    potential_chainable_expr: &expr::E<()>,
   ) -> (Document, Vec<(CommentReference, Vec<Document>)>) {
     match potential_chainable_expr {
       expr::E::ClassFn(e) => {
@@ -729,7 +729,7 @@ fn create_doc_for_interface_member(
   heap: &Heap,
   comment_store: &CommentStore,
   member: &ClassMemberDeclaration,
-  body: Option<&expr::E>,
+  body: Option<&expr::E<()>>,
 ) -> Vec<Document> {
   let body_doc = body.map(|e| e.create_doc(heap, comment_store)).unwrap_or(Document::Nil);
 
@@ -845,7 +845,7 @@ fn interface_to_doc(
 fn class_to_doc(
   heap: &Heap,
   comment_store: &CommentStore,
-  class: &ClassDefinition,
+  class: &ClassDefinition<()>,
 ) -> Vec<Document> {
   let mut documents = vec![
     associated_comments_doc(
@@ -912,7 +912,7 @@ fn class_to_doc(
   documents
 }
 
-pub(super) fn source_module_to_document(heap: &Heap, module: &Module) -> Document {
+pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Document {
   let mut documents = vec![];
 
   let mut organized_imports = HashMap::<ModuleReference, Vec<Id>>::new();
@@ -959,7 +959,6 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module) -> Documen
 mod tests {
   use crate::{
     ast::source::{expr, test_builder, CommentStore, Id},
-    checker::type_::test_type_builder,
     common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
@@ -1069,7 +1068,6 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
 
     assert_reprint_expr("foo.bar", "foo.bar");
 
-    let builder = test_type_builder::create();
     let empty_comment_store = CommentStore::new();
     let mut heap = Heap::new();
     assert_eq!(
@@ -1077,11 +1075,11 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       prettier::pretty_print(
         40,
         expr::E::MethodAccess(expr::MethodAccess {
-          common: expr::ExpressionCommon::dummy(builder.int_type()),
+          common: expr::ExpressionCommon::dummy(()),
           explicit_type_arguments: vec![],
           inferred_type_arguments: vec![],
           object: Box::new(expr::E::Id(
-            expr::ExpressionCommon::dummy(builder.int_type()),
+            expr::ExpressionCommon::dummy(()),
             Id::from(heap.alloc_str("foo"))
           )),
           method_name: Id::from(heap.alloc_str("bar"))
@@ -1095,11 +1093,11 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       prettier::pretty_print(
         40,
         expr::E::MethodAccess(expr::MethodAccess {
-          common: expr::ExpressionCommon::dummy(builder.int_type()),
+          common: expr::ExpressionCommon::dummy(()),
           explicit_type_arguments: vec![test_builder::create().int_annot()],
           inferred_type_arguments: vec![],
           object: Box::new(expr::E::Id(
-            expr::ExpressionCommon::dummy(builder.int_type()),
+            expr::ExpressionCommon::dummy(()),
             Id::from(heap.alloc_str("foo"))
           )),
           method_name: Id::from(heap.alloc_str("bar"))
