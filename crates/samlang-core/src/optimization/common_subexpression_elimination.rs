@@ -3,14 +3,13 @@ use crate::{
   ast::hir::{Binary, Function, Statement},
   Heap,
 };
-use itertools::Itertools;
 use std::collections::BTreeSet;
 
 fn intersection_of(
   set1: BTreeSet<BindedValue>,
   others: Vec<BTreeSet<BindedValue>>,
 ) -> Vec<BindedValue> {
-  set1.into_iter().filter(|e| others.iter().all(|it| it.contains(e))).sorted().collect()
+  set1.into_iter().filter(|e| others.iter().all(|it| it.contains(e))).collect()
 }
 
 fn produce_hoisted_stmt(heap: &mut Heap, value: BindedValue) -> Statement {

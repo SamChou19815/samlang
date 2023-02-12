@@ -296,7 +296,7 @@ fn optimize_stmt(
           optimized_final_assignments.push((*n, t.clone(), e1, e2));
         }
       }
-      if_else_or_null(condition, s1, s2, optimized_final_assignments)
+      if_else_or_null(condition, s1, s2, optimized_final_assignments).into_iter().collect()
     }
 
     Statement::SingleIf { condition, invert_condition, statements } => {

@@ -1,7 +1,8 @@
 use super::{
   checker_utils::{
-    contextual_type_meet, perform_fn_type_substitution, perform_type_substitution,
-    solve_multiple_type_constrains, TypeConstraint, TypeConstraintSolution,
+    contextual_type_meet, perform_fn_type_substitution, perform_id_type_substitution,
+    perform_type_substitution, solve_multiple_type_constrains, TypeConstraint,
+    TypeConstraintSolution,
   },
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature},
@@ -109,30 +110,35 @@ pub(crate) fn mod_type(expression: expr::E<Rc<Type>>, new_type: Rc<Type>) -> exp
 
 #[cfg(test)]
 mod mod_type_tests {
-  use std::collections::HashMap;
-
   use super::mod_type;
   use crate::{
     ast::{
       source::{expr::*, Id, Literal, OptionallyAnnotatedId, NO_COMMENT_REFERENCE},
-      Location,
+      Location, Reason,
     },
-    checker::type_::test_type_builder,
+    checker::type_::{test_type_builder, Type},
     Heap, ModuleReference,
   };
+  use std::{collections::HashMap, rc::Rc};
+
+  fn common() -> ExpressionCommon<Rc<Type>> {
+    ExpressionCommon::dummy(Rc::new(Type::unit_type(Reason::dummy())))
+  }
+
+  fn zero_expr() -> E<Rc<Type>> {
+    E::Literal(ExpressionCommon::dummy(Rc::new(Type::unit_type(Reason::dummy()))), Literal::Int(0))
+  }
 
   #[test]
   fn common_test() {
     let mut heap = Heap::new();
     let builder = test_type_builder::create();
-    let common = ExpressionCommon::dummy(builder.unit_type());
-    let zero_expr = E::Literal(ExpressionCommon::dummy(builder.bool_type()), Literal::Int(0));
 
-    mod_type(zero_expr.clone(), builder.bool_type());
-    mod_type(E::Id(common.clone(), Id::from(heap.alloc_str("d"))), builder.bool_type());
+    mod_type(zero_expr(), builder.bool_type());
+    mod_type(E::Id(common(), Id::from(heap.alloc_str("d"))), builder.bool_type());
     mod_type(
       E::ClassFn(ClassFunction {
-        common: common.clone(),
+        common: common(),
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
         module_reference: ModuleReference::dummy(),
@@ -143,10 +149,10 @@ mod mod_type_tests {
     );
     mod_type(
       E::FieldAccess(FieldAccess {
-        common: common.clone(),
+        common: common(),
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
-        object: Box::new(zero_expr.clone()),
+        object: Box::new(zero_expr()),
         field_name: Id::from(heap.alloc_str("name")),
         field_order: -1,
       }),
@@ -154,78 +160,74 @@ mod mod_type_tests {
     );
     mod_type(
       E::MethodAccess(MethodAccess {
-        common: common.clone(),
+        common: common(),
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
-        object: Box::new(zero_expr.clone()),
+        object: Box::new(zero_expr()),
         method_name: Id::from(heap.alloc_str("name")),
       }),
       builder.bool_type(),
     );
     mod_type(
       E::Unary(Unary {
-        common: common.clone(),
+        common: common(),
         operator: UnaryOperator::NEG,
-        argument: Box::new(zero_expr.clone()),
+        argument: Box::new(zero_expr()),
       }),
       builder.bool_type(),
     );
     mod_type(
-      E::Call(Call {
-        common: common.clone(),
-        callee: Box::new(zero_expr.clone()),
-        arguments: vec![],
-      }),
+      E::Call(Call { common: common(), callee: Box::new(zero_expr()), arguments: vec![] }),
       builder.bool_type(),
     );
     mod_type(
       E::Binary(Binary {
-        common: common.clone(),
+        common: common(),
         operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: BinaryOperator::AND,
-        e1: Box::new(zero_expr.clone()),
-        e2: Box::new(zero_expr.clone()),
+        e1: Box::new(zero_expr()),
+        e2: Box::new(zero_expr()),
       }),
       builder.bool_type(),
     );
     mod_type(
       E::IfElse(IfElse {
-        common: common.clone(),
-        condition: Box::new(zero_expr.clone()),
-        e1: Box::new(zero_expr.clone()),
-        e2: Box::new(zero_expr.clone()),
+        common: common(),
+        condition: Box::new(zero_expr()),
+        e1: Box::new(zero_expr()),
+        e2: Box::new(zero_expr()),
       }),
       builder.bool_type(),
     );
     mod_type(
       E::Match(Match {
-        common: common.clone(),
-        matched: Box::new(zero_expr.clone()),
+        common: common(),
+        matched: Box::new(zero_expr()),
         cases: vec![VariantPatternToExpression {
           loc: Location::dummy(),
           tag: Id::from(heap.alloc_str("name")),
           tag_order: 1,
           data_variable: None,
-          body: Box::new(zero_expr.clone()),
+          body: Box::new(zero_expr()),
         }],
       }),
       builder.bool_type(),
     );
     mod_type(
       E::Lambda(Lambda {
-        common: common.clone(),
+        common: common(),
         parameters: vec![OptionallyAnnotatedId {
           name: Id::from(heap.alloc_str("name")),
           annotation: None,
         }],
         captured: HashMap::new(),
-        body: Box::new(zero_expr.clone()),
+        body: Box::new(zero_expr()),
       }),
       builder.bool_type(),
     );
     mod_type(
       E::Block(Block {
-        common: common.clone(),
+        common: common(),
         statements: vec![DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
@@ -240,7 +242,7 @@ mod mod_type_tests {
             }],
           ),
           annotation: None,
-          assigned_expression: Box::new(zero_expr.clone()),
+          assigned_expression: Box::new(zero_expr()),
         }],
         expression: None,
       }),
@@ -354,8 +356,7 @@ impl<'a> TypingContext<'a> {
       if let (Some(bound), Some(solved_type_argument)) =
         (&type_param.bound, subst_map.get(&type_param.name))
       {
-        let substituted_bound =
-          perform_type_substitution(&Type::Id(bound.deref().clone()), subst_map);
+        let substituted_bound = perform_id_type_substitution(bound, subst_map);
         if !solved_type_argument.is_the_same_type(&substituted_bound)
           && !self.is_subtype(solved_type_argument, &substituted_bound)
         {
@@ -1511,7 +1512,7 @@ impl<'a> TypingContext<'a> {
       expression.statements.into_iter().map(|it| self.check_statement(heap, it)).collect_vec();
     let checked_final_expr = expression.expression.map(|e| Box::new(self.check(heap, *e, hint)));
     let type_ = if let Some(e) = &checked_final_expr {
-      e.type_().clone()
+      Rc::new(e.type_().reposition(expression.common.loc))
     } else {
       Rc::new(Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Unit))
     };

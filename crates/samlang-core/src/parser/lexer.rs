@@ -15,37 +15,33 @@ mod char_stream {
   };
   use itertools::Itertools;
 
-  pub(super) struct CharacterStream {
+  pub(super) struct CharacterStream<'a> {
     pub(super) line_num: i32,
     pub(super) col_num: i32,
     pos: usize,
     module_reference: ModuleReference,
-    source: Vec<char>,
+    source: &'a [u8],
   }
 
-  impl CharacterStream {
+  impl<'a> CharacterStream<'a> {
     pub(super) fn new(module_reference: ModuleReference, source: &str) -> CharacterStream {
       CharacterStream {
         line_num: 0,
         col_num: 0,
         pos: 0,
         module_reference,
-        source: source.chars().collect(),
+        source: source.as_bytes(),
       }
     }
 
-    fn advance_char(&mut self, c: char) {
+    fn advance_char(&mut self, c: u8) {
       self.pos += 1;
-      if c == '\n' {
+      if c == b'\n' {
         self.line_num += 1;
         self.col_num = 0;
       } else {
         self.col_num += 1;
       }
-    }
-
-    pub(super) fn current_pos(&self) -> Position {
-      Position(self.line_num, self.col_num)
     }
 
     pub(super) fn consume_whitespace(&mut self) -> Result<(), EOF> {
@@ -59,15 +55,20 @@ mod char_stream {
       Result::Err(EOF())
     }
 
-    pub(super) fn consume_and_get_loc(&mut self, start: Position, length: usize) -> Location {
+    pub(super) fn consume_and_get_loc(&mut self, length: usize) -> Location {
+      let start_position = Position(self.line_num, self.col_num);
       let starting_pos = self.pos;
       for i in starting_pos..(starting_pos + length) {
         self.advance_char(self.source[i]);
       }
-      Location { module_reference: self.module_reference, start, end: self.current_pos() }
+      Location {
+        module_reference: self.module_reference,
+        start: start_position,
+        end: Position(self.line_num, self.col_num),
+      }
     }
 
-    pub(super) fn peek_until_whitespace(&self) -> String {
+    pub(super) fn consume_until_whitespace(&mut self) -> (Location, String) {
       let mut position = self.pos;
       while position < self.source.len() {
         if self.source[position].is_ascii_whitespace() {
@@ -75,36 +76,47 @@ mod char_stream {
         }
         position += 1;
       }
-      self.source[self.pos..position].iter().collect()
+      let string = String::from_utf8(self.source[self.pos..position].to_vec()).unwrap();
+      (self.consume_and_get_loc(position - self.pos), string)
     }
 
-    pub(super) fn peek_next_constant_token(&self, token: &str) -> bool {
+    pub(super) fn consume_opt_next_constant_token(&mut self, token: &str) -> Option<Location> {
       let l = token.len();
       if self.pos + l > self.source.len() {
-        return false;
+        return None;
       }
-      self.source[self.pos..(self.pos + l)].iter().collect::<String>() == token
+      if token.as_bytes().eq(&self.source[self.pos..(self.pos + l)]) {
+        let loc = self.consume_and_get_loc(l);
+        Some(loc)
+      } else {
+        None
+      }
     }
 
     /// Returns comment string including // or null if it's not a line comment.
-    pub(super) fn peek_line_comment(&self) -> Option<String> {
+    pub(super) fn consume_line_comment_opt(&mut self) -> Option<(Location, String)> {
       if self.pos + 2 > self.source.len()
-        || self.source[self.pos..(self.pos + 2)].iter().collect::<String>() != "//"
+        || self.source[self.pos..(self.pos + 2)].ne("//".as_bytes())
       {
         return Option::None;
       }
       let mut comment_length = 2;
       loop {
         if self.pos + comment_length >= self.source.len() {
-          return Option::Some(self.source[self.pos..(self.pos + comment_length)].iter().collect());
+          break;
         }
         let c = self.source[self.pos + comment_length];
-        if c == '\n' {
+        if c == b'\n' {
           break;
         }
         comment_length += 1;
       }
-      Option::Some(self.source[self.pos..(self.pos + comment_length)].iter().collect())
+      let string =
+        String::from_utf8_lossy(&self.source[(self.pos + 2)..(self.pos + comment_length)])
+          .trim()
+          .to_string();
+      let loc = self.consume_and_get_loc(comment_length);
+      Option::Some((loc, string))
     }
 
     fn post_process_block_comment(block_comment: &str) -> String {
@@ -126,7 +138,7 @@ mod char_stream {
     /// Returns comment string including /* or null if it's not a block comment.
     pub(super) fn consume_opt_block_comment(&mut self) -> Option<(bool, Location, String)> {
       if self.pos + 2 > self.source.len()
-        || self.source[self.pos..(self.pos + 2)].iter().collect::<String>() != "/*"
+        || self.source[self.pos..(self.pos + 2)].ne("/*".as_bytes())
       {
         return Option::None;
       }
@@ -135,66 +147,70 @@ mod char_stream {
         if self.pos + comment_length >= self.source.len() {
           return Option::None;
         }
-        if self.source[self.pos + comment_length] == '*'
-          && self.source[self.pos + comment_length + 1] == '/'
+        if self.source[self.pos + comment_length] == b'*'
+          && self.source[self.pos + comment_length + 1] == b'/'
         {
           break;
         }
         comment_length += 1;
       }
       comment_length += 2;
-      let current_pos = self.current_pos();
-      let loc = self.consume_and_get_loc(current_pos, comment_length);
+      let loc = self.consume_and_get_loc(comment_length);
       let chars = &self.source[(self.pos - comment_length)..(self.pos)];
-      if chars[2] == '*' {
+      if chars[2] == b'*' {
         Option::Some((
           true,
           loc,
-          Self::post_process_block_comment(&chars[3..(chars.len() - 2)].iter().collect::<String>()),
+          Self::post_process_block_comment(&String::from_utf8_lossy(&chars[3..(chars.len() - 2)])),
         ))
       } else {
         Option::Some((
           false,
           loc,
-          Self::post_process_block_comment(&chars[2..(chars.len() - 2)].iter().collect::<String>()),
+          Self::post_process_block_comment(&String::from_utf8_lossy(&chars[2..(chars.len() - 2)])),
         ))
       }
     }
 
-    pub(super) fn peek_int(&self) -> Option<String> {
-      if *self.source.get(self.pos).unwrap_or(&'_') == '0' {
-        return Option::Some("0".to_string());
+    pub(super) fn consume_opt_int(&mut self) -> Option<(Location, String)> {
+      if *self.source.get(self.pos).unwrap_or(&b'_') == b'0' {
+        let loc = self.consume_and_get_loc(1);
+        return Option::Some((loc, "0".to_string()));
       }
       let mut pos = self.pos;
       loop {
-        let c = *self.source.get(pos).unwrap_or(&'a');
+        let c = *self.source.get(pos).unwrap_or(&b'a');
         if c.is_ascii_digit() {
           pos += 1;
         } else if pos == self.pos {
           return Option::None;
         } else {
-          return Option::Some(self.source[self.pos..pos].iter().collect());
+          let string = String::from_utf8(self.source[self.pos..pos].to_vec()).unwrap();
+          let loc = self.consume_and_get_loc(pos - self.pos);
+          return Option::Some((loc, string));
         }
       }
     }
 
-    pub(super) fn peek_id(&self) -> Option<String> {
+    pub(super) fn consume_opt_id(&mut self) -> Option<(Location, String)> {
       if self.pos >= self.source.len() || !self.source[self.pos].is_ascii_alphabetic() {
         return Option::None;
       }
       let mut pos = self.pos + 1;
       loop {
-        let c = *self.source.get(pos).unwrap_or(&' ');
+        let c = *self.source.get(pos).unwrap_or(&b' ');
         if c.is_ascii_alphanumeric() {
           pos += 1;
         } else {
-          return Option::Some(self.source[self.pos..pos].iter().collect());
+          let string = String::from_utf8(self.source[self.pos..pos].to_vec()).unwrap();
+          let loc = self.consume_and_get_loc(pos - self.pos);
+          return Option::Some((loc, string));
         }
       }
     }
 
-    pub(super) fn peek_str(&self) -> Option<String> {
-      if self.pos >= self.source.len() || self.source[self.pos] != '"' {
+    pub(super) fn consume_str_opt(&mut self) -> Option<(Location, String)> {
+      if self.pos >= self.source.len() || (self.source[self.pos]) != b'"' {
         return Option::None;
       }
       let mut pos = self.pos + 1;
@@ -203,22 +219,24 @@ mod char_stream {
           return Option::None;
         }
         let c = self.source[pos];
-        if c == '"' {
+        if c == b'"' {
           let mut escape_count = 0;
           for i in ((self.pos + 1)..(pos)).rev() {
-            if self.source[i] != '\\' {
+            if (self.source[i]) != b'\\' {
               break;
             }
             escape_count += 1;
           }
           // We don't validate escaping here.
           if escape_count % 2 == 0 {
+            let string = String::from_utf8(self.source[self.pos..(pos + 1)].to_vec()).unwrap();
             // When there are even number of escapes, the quote is not escaped,
             // so it's the ending quote.
-            return Option::Some(self.source[self.pos..(pos + 1)].iter().collect());
+            let loc = self.consume_and_get_loc(pos + 1 - self.pos);
+            return Option::Some((loc, string));
           }
         }
-        if c == '\n' {
+        if c == b'\n' {
           return Option::None;
         }
         pos += 1;
@@ -274,8 +292,8 @@ pub(super) enum Keyword {
   ASSERT,
 }
 
-impl ToString for Keyword {
-  fn to_string(&self) -> String {
+impl Keyword {
+  pub(super) fn as_str(&self) -> &'static str {
     match self {
       Keyword::IMPORT => "import",
       Keyword::FROM => "from",
@@ -314,7 +332,6 @@ impl ToString for Keyword {
       Keyword::EXPORTS => "exports",
       Keyword::ASSERT => "assert",
     }
-    .to_string()
   }
 }
 
@@ -356,8 +373,8 @@ pub(super) enum TokenOp {
   DOTDOTDOT,
 }
 
-impl ToString for TokenOp {
-  fn to_string(&self) -> String {
+impl TokenOp {
+  pub(super) fn as_str(&self) -> &'static str {
     match self {
       TokenOp::UNDERSCORE => "_",
       TokenOp::LPAREN => "(",
@@ -391,7 +408,6 @@ impl ToString for TokenOp {
       TokenOp::OR => "||",
       TokenOp::DOTDOTDOT => "...",
     }
-    .to_string()
   }
 }
 
@@ -413,8 +429,8 @@ pub(super) enum TokenContent {
 impl TokenContent {
   pub(super) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
-      TokenContent::Keyword(k) => k.to_string(),
-      TokenContent::Operator(o) => o.to_string(),
+      TokenContent::Keyword(k) => k.as_str().to_string(),
+      TokenContent::Operator(o) => o.as_str().to_string(),
       TokenContent::EOF => "EOF".to_string(),
       TokenContent::UpperId(s)
       | TokenContent::LowerId(s)
@@ -466,12 +482,8 @@ fn get_next_token(
   match stream.consume_whitespace() {
     Result::Err(EOF()) => Option::None,
     Result::Ok(()) => {
-      let start = stream.current_pos();
-
-      if let Option::Some(s) = stream.peek_line_comment() {
-        let loc = stream.consume_and_get_loc(start, s.len());
-        let comment_pstr =
-          heap.alloc_string(s.chars().skip(2).collect::<String>().trim().to_string());
+      if let Option::Some((loc, s)) = stream.consume_line_comment_opt() {
+        let comment_pstr = heap.alloc_string(s);
         return Option::Some(Token(loc, TokenContent::LineComment(comment_pstr)));
       }
 
@@ -487,24 +499,19 @@ fn get_next_token(
         ));
       }
 
-      if let Option::Some(s) = stream.peek_int() {
-        return Option::Some(Token(
-          stream.consume_and_get_loc(start, s.len()),
-          TokenContent::IntLiteral(heap.alloc_string(s)),
-        ));
+      if let Option::Some((loc, s)) = stream.consume_opt_int() {
+        return Option::Some(Token(loc, TokenContent::IntLiteral(heap.alloc_string(s))));
       }
 
-      if let Option::Some(s) = stream.peek_str() {
-        let loc = stream.consume_and_get_loc(start, s.len());
+      if let Option::Some((loc, s)) = stream.consume_str_opt() {
         if !string_has_valid_escape(&s) {
           error_set.report_syntax_error(loc, "Invalid escape in string.".to_string())
         }
         return Option::Some(Token(loc, TokenContent::StringLiteral(heap.alloc_string(s))));
       }
 
-      if let Option::Some(s) = stream.peek_id() {
-        let loc = stream.consume_and_get_loc(start, s.len());
-        if let Option::Some(k) = all::<Keyword>().find(|k| k.to_string() == *s) {
+      if let Option::Some((loc, s)) = stream.consume_opt_id() {
+        if let Option::Some(k) = all::<Keyword>().find(|k| k.as_str().eq(&s)) {
           return Option::Some(Token(loc, TokenContent::Keyword(k)));
         }
         let content = if s.chars().next().unwrap().is_ascii_uppercase() {
@@ -516,17 +523,13 @@ fn get_next_token(
       }
 
       for op in known_sorted_operators {
-        let op_string = op.to_string();
-        if stream.peek_next_constant_token(&op_string) {
-          return Option::Some(Token(
-            stream.consume_and_get_loc(start, op_string.len()),
-            TokenContent::Operator(*op),
-          ));
+        let op_string = op.as_str();
+        if let Some(loc) = stream.consume_opt_next_constant_token(op_string) {
+          return Option::Some(Token(loc, TokenContent::Operator(*op)));
         }
       }
 
-      let error_token_content = stream.peek_until_whitespace();
-      let error_loc = stream.consume_and_get_loc(start, error_token_content.len());
+      let (error_loc, error_token_content) = stream.consume_until_whitespace();
       error_set.report_syntax_error(error_loc, "Invalid token.".to_string());
       Option::Some(Token(error_loc, TokenContent::Error(heap.alloc_string(error_token_content))))
     }
@@ -542,7 +545,7 @@ pub(super) fn lex_source_program(
   let mut stream = char_stream::CharacterStream::new(module_reference, source);
   let mut tokens = vec![];
   let mut known_sorted_operators = all::<TokenOp>().collect::<Vec<_>>();
-  known_sorted_operators.sort_by_key(|op| -(op.to_string().len() as i64));
+  known_sorted_operators.sort_by_key(|op| -(op.as_str().len() as i64));
 
   loop {
     match get_next_token(&mut stream, heap, error_set, &known_sorted_operators) {

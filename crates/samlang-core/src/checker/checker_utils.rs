@@ -13,7 +13,7 @@ use std::{
 
 fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
   if let Type::Unknown(_) = specific {
-    return Some(general.mod_reason(|_| *specific.get_reason()));
+    return Some(general.reposition(specific.get_reason().use_loc));
   }
   match general {
     Type::Unknown(_) => Some(specific.clone()),
@@ -108,27 +108,30 @@ pub(super) fn perform_fn_type_substitution(
 pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type> {
   match t {
     Type::Unknown(_) | Type::Primitive(_, _) => Rc::new((*t).clone()),
-    Type::Id(IdType { reason, module_reference, id, type_arguments }) => {
-      if type_arguments.is_empty() {
-        if let Some(replaced) = mapping.get(id) {
-          replaced.clone()
-        } else {
-          Rc::new((*t).clone())
-        }
-      } else {
-        Rc::new(Type::Id(IdType {
-          reason: *reason,
-          module_reference: *module_reference,
-          id: *id,
-          type_arguments: type_arguments
-            .iter()
-            .map(|it| perform_type_substitution(it, mapping))
-            .collect_vec(),
-        }))
-      }
-    }
+    Type::Id(id_type) => perform_id_type_substitution(id_type, mapping),
     Type::Fn(f) => Rc::new(Type::Fn(perform_fn_type_substitution(f, mapping))),
   }
+}
+
+pub(super) fn perform_id_type_substitution(
+  id_type: &IdType,
+  mapping: &HashMap<PStr, Rc<Type>>,
+) -> Rc<Type> {
+  if id_type.type_arguments.is_empty() {
+    if let Some(replaced) = mapping.get(&id_type.id) {
+      return replaced.clone();
+    }
+  }
+  Rc::new(Type::Id(IdType {
+    reason: id_type.reason,
+    module_reference: id_type.module_reference,
+    id: id_type.id,
+    type_arguments: id_type
+      .type_arguments
+      .iter()
+      .map(|it| perform_type_substitution(it, mapping))
+      .collect_vec(),
+  }))
 }
 
 pub(super) fn perform_id_type_substitution_asserting_id_type_return(

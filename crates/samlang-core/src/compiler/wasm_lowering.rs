@@ -3,7 +3,7 @@ use crate::{
   common::{Heap, PStr},
 };
 use itertools::Itertools;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 
 #[derive(Clone)]
 struct LoopContext {
@@ -262,9 +262,8 @@ pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &mir::Sources) -> wa
       .functions
       .iter()
       .map(|it| it.parameters.len())
-      .collect::<HashSet<_>>()
+      .collect::<BTreeSet<_>>()
       .into_iter()
-      .sorted()
       .collect_vec(),
     global_variables,
     exported_functions: sources.main_function_names.clone(),

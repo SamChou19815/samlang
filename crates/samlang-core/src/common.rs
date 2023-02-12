@@ -129,8 +129,13 @@ impl Heap {
 
   /// This function can only be called in compiler code.
   pub(crate) fn alloc_temp_str(&mut self) -> PStr {
-    let string = format!("_t{}", self.str_pointer_table.len());
-    self.alloc_string(string)
+    // We use a more specialized implementation here,
+    // since the generated strings are guaranteed to be globally unique.
+    let id = self.str_pointer_table.len();
+    let string = format!("_t{id}");
+    let p_str = PStr(id);
+    self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
+    p_str
   }
 
   pub(crate) fn alloc_string(&mut self, string: String) -> PStr {
@@ -321,8 +326,8 @@ pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F
   if enabled {
     let now = Instant::now();
     let result = f();
-    let time = now.elapsed().as_millis();
-    eprintln!("{name} takes {time}ms.");
+    let time = now.elapsed().as_micros();
+    eprintln!("{name} takes {}ms.", (time as f64) / 1000.0);
     result
   } else {
     f()
