@@ -1,8 +1,5 @@
 use super::loc::Location;
-use crate::{
-  checker::type_::Type,
-  common::{Heap, ModuleReference, PStr},
-};
+use crate::common::{Heap, ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -170,21 +167,20 @@ pub(crate) struct AnnotatedId {
 
 pub(crate) mod expr {
   use super::super::loc::Location;
-  use super::{annotation, CommentReference, Id, Literal, Type};
+  use super::{annotation, CommentReference, Id, Literal};
   use crate::common::{ModuleReference, PStr};
   use std::collections::HashMap;
-  use std::rc::Rc;
 
   #[derive(Clone)]
-  pub(crate) struct ExpressionCommon {
+  pub(crate) struct ExpressionCommon<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) associated_comments: CommentReference,
-    pub(crate) type_: Rc<Type>,
+    pub(crate) type_: T,
   }
 
-  impl ExpressionCommon {
+  impl<T: Clone> ExpressionCommon<T> {
     #[cfg(test)]
-    pub(crate) fn dummy(type_: Rc<Type>) -> ExpressionCommon {
+    pub(crate) fn dummy(type_: T) -> ExpressionCommon<T> {
       ExpressionCommon {
         loc: Location::dummy(),
         associated_comments: super::NO_COMMENT_REFERENCE,
@@ -192,37 +188,37 @@ pub(crate) mod expr {
       }
     }
 
-    pub(crate) fn with_new_type(self, type_: Rc<Type>) -> ExpressionCommon {
+    pub(crate) fn with_new_type<NT: Clone>(self, type_: NT) -> ExpressionCommon<NT> {
       ExpressionCommon { loc: self.loc, associated_comments: self.associated_comments, type_ }
     }
   }
 
   #[derive(Clone)]
-  pub(crate) struct ClassFunction {
-    pub(crate) common: ExpressionCommon,
+  pub(crate) struct ClassFunction<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
     pub(crate) explicit_type_arguments: Vec<annotation::T>,
-    pub(crate) inferred_type_arguments: Vec<Rc<Type>>,
+    pub(crate) inferred_type_arguments: Vec<T>,
     pub(crate) module_reference: ModuleReference,
     pub(crate) class_name: Id,
     pub(crate) fn_name: Id,
   }
 
   #[derive(Clone)]
-  pub(crate) struct FieldAccess {
-    pub(crate) common: ExpressionCommon,
+  pub(crate) struct FieldAccess<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
     pub(crate) explicit_type_arguments: Vec<annotation::T>,
-    pub(crate) inferred_type_arguments: Vec<Rc<Type>>,
-    pub(crate) object: Box<E>,
+    pub(crate) inferred_type_arguments: Vec<T>,
+    pub(crate) object: Box<E<T>>,
     pub(crate) field_name: Id,
     pub(crate) field_order: i32,
   }
 
   #[derive(Clone)]
-  pub(crate) struct MethodAccess {
-    pub(crate) common: ExpressionCommon,
+  pub(crate) struct MethodAccess<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
     pub(crate) explicit_type_arguments: Vec<annotation::T>,
-    pub(crate) inferred_type_arguments: Vec<Rc<Type>>,
-    pub(crate) object: Box<E>,
+    pub(crate) inferred_type_arguments: Vec<T>,
+    pub(crate) object: Box<E<T>>,
     pub(crate) method_name: Id,
   }
 
@@ -242,17 +238,17 @@ pub(crate) mod expr {
   }
 
   #[derive(Clone)]
-  pub(crate) struct Unary {
-    pub(crate) common: ExpressionCommon,
+  pub(crate) struct Unary<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
     pub(crate) operator: UnaryOperator,
-    pub(crate) argument: Box<E>,
+    pub(crate) argument: Box<E<T>>,
   }
 
   #[derive(Clone)]
-  pub(crate) struct Call {
-    pub(crate) common: ExpressionCommon,
-    pub(crate) callee: Box<E>,
-    pub(crate) arguments: Vec<E>,
+  pub(crate) struct Call<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
+    pub(crate) callee: Box<E<T>>,
+    pub(crate) arguments: Vec<E<T>>,
   }
 
   #[derive(Copy, Clone)]
@@ -316,96 +312,96 @@ pub(crate) mod expr {
   }
 
   #[derive(Clone)]
-  pub(crate) struct Binary {
-    pub(crate) common: ExpressionCommon,
+  pub(crate) struct Binary<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
     pub(crate) operator_preceding_comments: CommentReference,
     pub(crate) operator: BinaryOperator,
-    pub(crate) e1: Box<E>,
-    pub(crate) e2: Box<E>,
+    pub(crate) e1: Box<E<T>>,
+    pub(crate) e2: Box<E<T>>,
   }
 
   #[derive(Clone)]
-  pub(crate) struct IfElse {
-    pub(crate) common: ExpressionCommon,
-    pub(crate) condition: Box<E>,
-    pub(crate) e1: Box<E>,
-    pub(crate) e2: Box<E>,
+  pub(crate) struct IfElse<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
+    pub(crate) condition: Box<E<T>>,
+    pub(crate) e1: Box<E<T>>,
+    pub(crate) e2: Box<E<T>>,
   }
 
   #[derive(Clone)]
-  pub(crate) struct VariantPatternToExpression {
+  pub(crate) struct VariantPatternToExpression<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) tag: Id,
     pub(crate) tag_order: usize,
-    pub(crate) data_variable: Option<(Id, Rc<Type>)>,
-    pub(crate) body: Box<E>,
+    pub(crate) data_variable: Option<(Id, T)>,
+    pub(crate) body: Box<E<T>>,
   }
 
   #[derive(Clone)]
-  pub(crate) struct Match {
-    pub(crate) common: ExpressionCommon,
-    pub(crate) matched: Box<E>,
-    pub(crate) cases: Vec<VariantPatternToExpression>,
+  pub(crate) struct Match<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
+    pub(crate) matched: Box<E<T>>,
+    pub(crate) cases: Vec<VariantPatternToExpression<T>>,
   }
 
   #[derive(Clone)]
-  pub(crate) struct Lambda {
-    pub(crate) common: ExpressionCommon,
+  pub(crate) struct Lambda<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
     pub(crate) parameters: Vec<super::OptionallyAnnotatedId>,
-    pub(crate) captured: HashMap<PStr, Rc<Type>>,
-    pub(crate) body: Box<E>,
+    pub(crate) captured: HashMap<PStr, T>,
+    pub(crate) body: Box<E<T>>,
   }
 
   #[derive(Clone)]
-  pub(crate) struct ObjectPatternDestucturedName {
+  pub(crate) struct ObjectPatternDestucturedName<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) field_order: usize,
     pub(crate) field_name: Id,
     pub(crate) alias: Option<Id>,
-    pub(crate) type_: Rc<Type>,
+    pub(crate) type_: T,
   }
 
   #[derive(Clone)]
-  pub(crate) enum Pattern {
-    Object(Location, Vec<ObjectPatternDestucturedName>),
+  pub(crate) enum Pattern<T: Clone> {
+    Object(Location, Vec<ObjectPatternDestucturedName<T>>),
     Id(Location, PStr),
     Wildcard(Location),
   }
 
   #[derive(Clone)]
-  pub(crate) struct DeclarationStatement {
+  pub(crate) struct DeclarationStatement<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) associated_comments: CommentReference,
-    pub(crate) pattern: Pattern,
+    pub(crate) pattern: Pattern<T>,
     pub(crate) annotation: Option<annotation::T>,
-    pub(crate) assigned_expression: Box<E>,
+    pub(crate) assigned_expression: Box<E<T>>,
   }
 
   #[derive(Clone)]
-  pub(crate) struct Block {
-    pub(crate) common: ExpressionCommon,
-    pub(crate) statements: Vec<DeclarationStatement>,
-    pub(crate) expression: Option<Box<E>>,
+  pub(crate) struct Block<T: Clone> {
+    pub(crate) common: ExpressionCommon<T>,
+    pub(crate) statements: Vec<DeclarationStatement<T>>,
+    pub(crate) expression: Option<Box<E<T>>>,
   }
 
   #[derive(Clone)]
-  pub(crate) enum E {
-    Literal(ExpressionCommon, Literal),
-    Id(ExpressionCommon, Id),
-    ClassFn(ClassFunction),
-    FieldAccess(FieldAccess),
-    MethodAccess(MethodAccess),
-    Unary(Unary),
-    Call(Call),
-    Binary(Binary),
-    IfElse(IfElse),
-    Match(Match),
-    Lambda(Lambda),
-    Block(Block),
+  pub(crate) enum E<T: Clone> {
+    Literal(ExpressionCommon<T>, Literal),
+    Id(ExpressionCommon<T>, Id),
+    ClassFn(ClassFunction<T>),
+    FieldAccess(FieldAccess<T>),
+    MethodAccess(MethodAccess<T>),
+    Unary(Unary<T>),
+    Call(Call<T>),
+    Binary(Binary<T>),
+    IfElse(IfElse<T>),
+    Match(Match<T>),
+    Lambda(Lambda<T>),
+    Block(Block<T>),
   }
 
-  impl E {
-    pub(crate) fn common(&self) -> &ExpressionCommon {
+  impl<T: Clone> E<T> {
+    pub(crate) fn common(&self) -> &ExpressionCommon<T> {
       match self {
         E::Literal(common, _)
         | E::Id(common, _)
@@ -426,7 +422,7 @@ pub(crate) mod expr {
       self.common().loc
     }
 
-    pub(crate) fn type_(&self) -> &Rc<Type> {
+    pub(crate) fn type_(&self) -> &T {
       &self.common().type_
     }
 
@@ -440,77 +436,6 @@ pub(crate) mod expr {
         E::IfElse(_) => 11,
         E::Match(_) => 12,
         E::Lambda(_) => 13,
-      }
-    }
-
-    pub(crate) fn mod_common<F: FnOnce(ExpressionCommon) -> ExpressionCommon>(self, f: F) -> E {
-      match self {
-        E::Literal(common, l) => E::Literal(f(common), l),
-        E::Id(common, id) => E::Id(f(common), id),
-        E::ClassFn(ClassFunction {
-          common,
-          explicit_type_arguments,
-          inferred_type_arguments,
-          module_reference,
-          class_name,
-          fn_name,
-        }) => E::ClassFn(ClassFunction {
-          common: f(common),
-          explicit_type_arguments,
-          inferred_type_arguments,
-          module_reference,
-          class_name,
-          fn_name,
-        }),
-        E::FieldAccess(FieldAccess {
-          common,
-          explicit_type_arguments,
-          inferred_type_arguments,
-          object,
-          field_name,
-          field_order,
-        }) => E::FieldAccess(FieldAccess {
-          common: f(common),
-          explicit_type_arguments,
-          inferred_type_arguments,
-          object,
-          field_name,
-          field_order,
-        }),
-        E::MethodAccess(MethodAccess {
-          common,
-          explicit_type_arguments,
-          inferred_type_arguments,
-          object,
-          method_name,
-        }) => E::MethodAccess(MethodAccess {
-          common: f(common),
-          explicit_type_arguments,
-          inferred_type_arguments,
-          object,
-          method_name,
-        }),
-        E::Unary(Unary { common, operator, argument }) => {
-          E::Unary(Unary { common: f(common), operator, argument })
-        }
-        E::Call(Call { common, callee, arguments }) => {
-          E::Call(Call { common: f(common), callee, arguments })
-        }
-        E::Binary(Binary { common, operator_preceding_comments, operator, e1, e2 }) => {
-          E::Binary(Binary { common: f(common), operator_preceding_comments, operator, e1, e2 })
-        }
-        E::IfElse(IfElse { common, condition, e1, e2 }) => {
-          E::IfElse(IfElse { common: f(common), condition, e1, e2 })
-        }
-        E::Match(Match { common, matched, cases }) => {
-          E::Match(Match { common: f(common), matched, cases })
-        }
-        E::Lambda(Lambda { common, parameters, captured, body }) => {
-          E::Lambda(Lambda { common: f(common), parameters, captured, body })
-        }
-        E::Block(Block { common, statements, expression }) => {
-          E::Block(Block { common: f(common), statements, expression })
-        }
       }
     }
   }
@@ -535,9 +460,9 @@ pub(crate) struct ClassMemberDeclaration {
   pub(crate) parameters: Rc<Vec<AnnotatedId>>,
 }
 
-pub(crate) struct ClassMemberDefinition {
+pub(crate) struct ClassMemberDefinition<T: Clone> {
   pub(crate) decl: ClassMemberDeclaration,
-  pub(crate) body: expr::E,
+  pub(crate) body: expr::E<T>,
 }
 
 #[derive(Clone)]
@@ -562,19 +487,20 @@ pub(crate) struct TypeDefinition {
   pub(crate) mappings: HashMap<PStr, (annotation::T, bool)>,
 }
 
-pub(crate) type ClassDefinition = InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition>;
+pub(crate) type ClassDefinition<T> =
+  InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition<T>>;
 
-pub(crate) enum Toplevel {
+pub(crate) enum Toplevel<T: Clone> {
   Interface(InterfaceDeclaration),
-  Class(ClassDefinition),
+  Class(ClassDefinition<T>),
 }
 
-pub(crate) enum MemberDeclarationsIterator<'a> {
-  Class(std::slice::Iter<'a, ClassMemberDefinition>),
+pub(crate) enum MemberDeclarationsIterator<'a, T: Clone> {
+  Class(std::slice::Iter<'a, ClassMemberDefinition<T>>),
   Interface(std::slice::Iter<'a, ClassMemberDeclaration>),
 }
 
-impl<'a> Iterator for MemberDeclarationsIterator<'a> {
+impl<'a, T: Clone> Iterator for MemberDeclarationsIterator<'a, T> {
   type Item = &'a ClassMemberDeclaration;
 
   fn next(&mut self) -> Option<Self::Item> {
@@ -585,7 +511,7 @@ impl<'a> Iterator for MemberDeclarationsIterator<'a> {
   }
 }
 
-impl Toplevel {
+impl<T: Clone> Toplevel<T> {
   pub(crate) fn is_class(&self) -> bool {
     match self {
       Toplevel::Interface(_) => false,
@@ -635,7 +561,7 @@ impl Toplevel {
     }
   }
 
-  pub(crate) fn members_iter(&self) -> MemberDeclarationsIterator {
+  pub(crate) fn members_iter(&self) -> MemberDeclarationsIterator<T> {
     match self {
       Toplevel::Interface(i) => MemberDeclarationsIterator::Interface(i.members.iter()),
       Toplevel::Class(c) => MemberDeclarationsIterator::Class(c.members.iter()),
@@ -651,10 +577,10 @@ pub(crate) struct ModuleMembersImport {
   pub(crate) imported_module_loc: Location,
 }
 
-pub(crate) struct Module {
+pub(crate) struct Module<T: Clone> {
   pub(crate) comment_store: CommentStore,
   pub(crate) imports: Vec<ModuleMembersImport>,
-  pub(crate) toplevels: Vec<Toplevel>,
+  pub(crate) toplevels: Vec<Toplevel<T>>,
 }
 
 #[cfg(test)]

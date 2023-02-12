@@ -313,7 +313,7 @@ fn check_class_member_conformance_with_ast(
 
 fn check_module_member_interface_conformance(
   unoptimized_global_typing_context: &HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
-  actual_interface: &Toplevel,
+  actual_interface: &Toplevel<()>,
   heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> InterfaceInliningCollector {
@@ -363,7 +363,7 @@ fn check_module_member_interface_conformance(
 }
 
 fn optimize_global_typing_context_with_interface_conformance_checking(
-  sources: &HashMap<ModuleReference, Module>,
+  sources: &HashMap<ModuleReference, Module<()>>,
   unoptimized_global_typing_context: HashMap<ModuleReference, UnoptimizedModuleTypingContext>,
   builtin_module_types: ModuleTypingContext,
   heap: &Heap,
@@ -419,7 +419,7 @@ fn optimize_global_typing_context_with_interface_conformance_checking(
 }
 
 fn build_unoptimized_interface_typing_context(
-  toplevel: &Toplevel,
+  toplevel: &Toplevel<()>,
 ) -> UnoptimizedInterfaceTypingContext {
   let mut functions = BTreeMap::new();
   let mut methods = BTreeMap::new();
@@ -448,7 +448,7 @@ fn build_unoptimized_interface_typing_context(
 }
 
 pub(super) fn build_global_typing_context(
-  sources: &HashMap<ModuleReference, Module>,
+  sources: &HashMap<ModuleReference, Module<()>>,
   heap: &Heap,
   error_set: &mut ErrorSet,
   builtin_module_types: ModuleTypingContext,
@@ -1213,10 +1213,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
               parameters: Rc::new(vec![]),
             },
-            body: expr::E::Literal(
-              expr::ExpressionCommon::dummy(builder.bool_type()),
-              Literal::Bool(false),
-            ),
+            body: expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(false)),
           },
           ClassMemberDefinition {
             decl: ClassMemberDeclaration {
@@ -1229,10 +1226,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
               parameters: Rc::new(vec![]),
             },
-            body: expr::E::Literal(
-              expr::ExpressionCommon::dummy(builder.bool_type()),
-              Literal::Bool(false),
-            ),
+            body: expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(false)),
           },
         ],
       }),
@@ -1246,8 +1240,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
     let mut heap = Heap::new();
     let m0_ref = heap.alloc_module_reference_from_string_vec(vec!["Module0".to_string()]);
     let m1_ref = heap.alloc_module_reference_from_string_vec(vec!["Module1".to_string()]);
-    let annot_builder = test_builder::create();
-    let builder = test_type_builder::create();
+    let builder = test_builder::create();
 
     let test_sources = HashMap::from([
       (
@@ -1269,7 +1262,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               loc: Location::dummy(),
               is_object: false,
               names: vec![Id::from(heap.alloc_str("A"))],
-              mappings: HashMap::from([(heap.alloc_str("A"), (annot_builder.int_annot(), true))]),
+              mappings: HashMap::from([(heap.alloc_str("A"), (builder.int_annot(), true))]),
             },
             members: vec![],
           })],
@@ -1299,7 +1292,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 loc: Location::dummy(),
                 is_object: true,
                 names: vec![Id::from(heap.alloc_str("a"))],
-                mappings: HashMap::from([(heap.alloc_str("a"), (annot_builder.int_annot(), true))]),
+                mappings: HashMap::from([(heap.alloc_str("a"), (builder.int_annot(), true))]),
               },
               members: vec![
                 ClassMemberDefinition {
@@ -1310,13 +1303,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     is_method: true,
                     name: Id::from(heap.alloc_str("m1")),
                     type_parameters: Rc::new(vec![]),
-                    type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
+                    type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
                     parameters: Rc::new(vec![]),
                   },
-                  body: expr::E::Literal(
-                    expr::ExpressionCommon::dummy(builder.bool_type()),
-                    Literal::Bool(false),
-                  ),
+                  body: expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(false)),
                 },
                 ClassMemberDefinition {
                   decl: ClassMemberDeclaration {
@@ -1326,13 +1316,10 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                     is_method: false,
                     name: Id::from(heap.alloc_str("f1")),
                     type_parameters: Rc::new(vec![]),
-                    type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
+                    type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
                     parameters: Rc::new(vec![]),
                   },
-                  body: expr::E::Literal(
-                    expr::ExpressionCommon::dummy(builder.bool_type()),
-                    Literal::Bool(false),
-                  ),
+                  body: expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(false)),
                 },
               ],
             }),
@@ -1359,7 +1346,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
                 is_method: false,
                 name: Id::from(heap.alloc_str("m1")),
                 type_parameters: Rc::new(vec![]),
-                type_: annot_builder.fn_annot_unwrapped(vec![], annot_builder.int_annot()),
+                type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
                 parameters: Rc::new(vec![]),
               }],
             }),
@@ -1369,7 +1356,7 @@ super_types: IBase<int, int>, ILevel1<A, int>, ILevel2
               name: Id::from(heap.alloc_str("Class2")),
               type_parameters: vec![],
               extends_or_implements_nodes: vec![
-                annot_builder.simple_id_annot_unwrapped(heap.alloc_str("Interface3"))
+                builder.simple_id_annot_unwrapped(heap.alloc_str("Interface3"))
               ],
               type_definition: TypeDefinition {
                 loc: Location::dummy(),

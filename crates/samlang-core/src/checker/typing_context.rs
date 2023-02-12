@@ -531,9 +531,19 @@ impl<'a> TypingContext<'a> {
 
   pub(crate) fn resolve_type_definition(
     &self,
-    id_type: &IdType,
+    type_: &Type,
     expect_object: bool,
   ) -> TypeDefinitionTypingContext {
+    let id_type = match type_ {
+      Type::Id(t) => t,
+      Type::Unknown(_) | Type::Primitive(_, _) | Type::Fn(_) => {
+        return TypeDefinitionTypingContext {
+          is_object: expect_object,
+          names: vec![],
+          mappings: HashMap::new(),
+        }
+      }
+    };
     let relevant_type_parameters =
       if let Some(cx) = self.get_interface_information(&id_type.module_reference, &id_type.id) {
         cx.type_parameters.clone()
@@ -558,7 +568,9 @@ impl<'a> TypingContext<'a> {
       }
       let mut new_mappings = HashMap::new();
       for (name, (t, is_public)) in mappings {
-        new_mappings.insert(*name, (perform_type_substitution(t, &subst_map), *is_public));
+        if !expect_object || id_type.id.eq(&self.current_class) || *is_public {
+          new_mappings.insert(*name, (perform_type_substitution(t, &subst_map), *is_public));
+        }
       }
       TypeDefinitionTypingContext {
         is_object: expect_object,

@@ -295,7 +295,7 @@ class Test2(val a: int) {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
-    let service = LanguageServices::new(
+    let mut service = LanguageServices::new(
       heap,
       false,
       vec![
@@ -336,7 +336,7 @@ class Test2(val a: int) {
   fn query_def_loc_test_2() {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
-    let service = LanguageServices::new(
+    let mut service = LanguageServices::new(
       heap,
       false,
       vec![(
@@ -362,7 +362,7 @@ class Test2(val a: int) {
     let test1_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let test3_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test3".to_string()]);
-    let service = LanguageServices::new(
+    let mut service = LanguageServices::new(
       heap,
       false,
       vec![

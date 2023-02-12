@@ -11,7 +11,7 @@ use crate::{
     Location, Position,
   },
   checker::{
-    type_::{FunctionType, ISourceType},
+    type_::{FunctionType, ISourceType, Type},
     type_check_sources, GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation,
   },
   common::{Heap, ModuleReference, PStr},
@@ -67,7 +67,7 @@ pub struct LanguageServices {
   pub heap: Heap,
   enable_profiling: bool,
   raw_sources: HashMap<ModuleReference, String>,
-  checked_modules: HashMap<ModuleReference, Module>,
+  checked_modules: HashMap<ModuleReference, Module<Rc<Type>>>,
   errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
   global_cx: GlobalTypingContext,
 }
@@ -231,7 +231,7 @@ impl LanguageServices {
     &self,
     module_reference: &ModuleReference,
     class_name: &PStr,
-  ) -> Option<&Toplevel> {
+  ) -> Option<&Toplevel<Rc<Type>>> {
     self
       .checked_modules
       .get(module_reference)?
@@ -283,12 +283,11 @@ impl LanguageServices {
   }
 
   pub fn query_definition_location(
-    &self,
+    &mut self,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Location> {
-    let module = self.checked_modules.get(module_reference)?;
-    match search_module(*module_reference, module, position)? {
+    match search_module(*module_reference, self.checked_modules.get(module_reference)?, position)? {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
         | expr::E::ClassFn(_)
@@ -308,12 +307,24 @@ impl LanguageServices {
         Some(self.find_toplevel(&mod_ref, &class_name)?.loc())
       }
       LocationCoverSearchResult::TypedName(loc, _, _) => {
-        VariableDefinitionLookup::new(&self.heap, module)
+        let module = parse_source_module_from_text(
+          self.raw_sources.get(module_reference).unwrap(),
+          *module_reference,
+          &mut self.heap,
+          &mut ErrorSet::new(),
+        );
+        VariableDefinitionLookup::new(&self.heap, &module)
           .find_all_definition_and_uses(&loc)
           .map(|it| it.definition_location)
       }
       LocationCoverSearchResult::Expression(expr::E::Id(expr::ExpressionCommon { loc, .. }, _)) => {
-        VariableDefinitionLookup::new(&self.heap, module)
+        let module = parse_source_module_from_text(
+          self.raw_sources.get(module_reference).unwrap(),
+          *module_reference,
+          &mut self.heap,
+          &mut ErrorSet::new(),
+        );
+        VariableDefinitionLookup::new(&self.heap, &module)
           .find_all_definition_and_uses(loc)
           .map(|it| it.definition_location)
       }
@@ -487,11 +498,16 @@ impl LanguageServices {
       _ => return None,
     };
 
-    let module = self.checked_modules.get(module_reference).unwrap();
-    let def_and_uses = VariableDefinitionLookup::new(&self.heap, module)
+    let module = parse_source_module_from_text(
+      self.raw_sources.get(module_reference).unwrap(),
+      *module_reference,
+      &mut self.heap,
+      &mut ErrorSet::new(),
+    );
+    let def_and_uses = VariableDefinitionLookup::new(&self.heap, &module)
       .find_all_definition_and_uses(&def_or_use_loc)?;
     let renamed =
-      apply_renaming(module, &def_and_uses, self.heap.alloc_string(new_name.to_string()));
+      apply_renaming(&module, &def_and_uses, self.heap.alloc_string(new_name.to_string()));
     Some(printer::pretty_print_source_module(&self.heap, 100, &renamed))
   }
 

@@ -21,16 +21,12 @@ mod tests {
     let mut heap = Heap::new();
     // method access can never be produced by the parser, but we need coverage anyways...
     let mut error_set = ErrorSet::new();
-    let builder = test_type_builder::create();
     ssa_analysis::perform_ssa_analysis_on_expression(
       &expr::E::MethodAccess(expr::MethodAccess {
-        common: expr::ExpressionCommon::dummy(builder.bool_type()),
+        common: expr::ExpressionCommon::dummy(()),
         explicit_type_arguments: vec![test_builder::create().bool_annot()],
-        inferred_type_arguments: vec![builder.bool_type()],
-        object: Box::new(expr::E::Literal(
-          expr::ExpressionCommon::dummy(builder.bool_type()),
-          Literal::Bool(true),
-        )),
+        inferred_type_arguments: vec![],
+        object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(true))),
         method_name: Id::from(heap.alloc_str("name")),
       }),
       &heap,

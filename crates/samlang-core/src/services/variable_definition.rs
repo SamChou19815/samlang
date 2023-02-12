@@ -20,7 +20,7 @@ pub(super) struct DefinitionAndUses {
 pub(super) struct VariableDefinitionLookup(SsaAnalysisResult);
 
 impl VariableDefinitionLookup {
-  pub(super) fn new(heap: &Heap, module: &Module) -> VariableDefinitionLookup {
+  pub(super) fn new(heap: &Heap, module: &Module<()>) -> VariableDefinitionLookup {
     let mut error_set = ErrorSet::new();
     VariableDefinitionLookup(perform_ssa_analysis_on_module(module, heap, &mut error_set))
   }
@@ -65,10 +65,10 @@ fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) 
 }
 
 fn apply_expr_renaming(
-  expr: &expr::E,
+  expr: &expr::E<()>,
   definition_and_uses: &DefinitionAndUses,
   new_name: PStr,
-) -> expr::E {
+) -> expr::E<()> {
   let relevant_in_range = get_relevant_in_ranges(&expr.loc(), definition_and_uses);
   if relevant_in_range.is_empty() {
     return expr.clone();
@@ -131,7 +131,7 @@ fn apply_expr_renaming(
             tag_order: *tag_order,
             data_variable: data_variable
               .as_ref()
-              .map(|(id, t)| (mod_def_id(id, definition_and_uses, new_name), t.clone())),
+              .map(|(id, t)| (mod_def_id(id, definition_and_uses, new_name), *t)),
             body: Box::new(apply_expr_renaming(body, definition_and_uses, new_name)),
           }
         })
@@ -184,7 +184,7 @@ fn apply_expr_renaming(
                           field_order: *field_order,
                           field_name: *field_name,
                           alias: Some(mod_def_id(alias, definition_and_uses, new_name)),
-                          type_: type_.clone(),
+                          type_: *type_,
                         }
                       } else {
                         let name_to_mod = alias.as_ref().unwrap_or(field_name);
@@ -196,7 +196,7 @@ fn apply_expr_renaming(
                           field_order: *field_order,
                           field_name: *field_name,
                           alias: alias_opt,
-                          type_: type_.clone(),
+                          type_: *type_,
                         }
                       }
                     },
@@ -228,10 +228,10 @@ fn apply_expr_renaming(
 }
 
 pub(super) fn apply_renaming(
-  Module { comment_store, imports, toplevels }: &Module,
+  Module { comment_store, imports, toplevels }: &Module<()>,
   definition_and_uses: &DefinitionAndUses,
   new_name: PStr,
-) -> Module {
+) -> Module<()> {
   Module {
     comment_store: comment_store.clone(),
     imports: imports.clone(),
@@ -302,7 +302,6 @@ mod tests {
       source::{expr, Id, Literal, Module},
       Location, Position,
     },
-    checker::type_::test_type_builder,
     common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::parse_source_module_from_text,
@@ -314,16 +313,12 @@ mod tests {
   #[test]
   fn coverage_booster_tests() {
     let mut heap = Heap::new();
-    let builder = test_type_builder::create();
     apply_expr_renaming(
       &expr::E::MethodAccess(expr::MethodAccess {
-        common: expr::ExpressionCommon::dummy(builder.int_type()),
+        common: expr::ExpressionCommon::dummy(()),
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
-        object: Box::new(expr::E::Literal(
-          expr::ExpressionCommon::dummy(builder.int_type()),
-          Literal::Int(0),
-        )),
+        object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0))),
         method_name: Id::from(heap.alloc_str("")),
       }),
       &DefinitionAndUses {
@@ -334,7 +329,7 @@ mod tests {
     );
   }
 
-  fn parse(source: &str) -> (Heap, Module) {
+  fn parse(source: &str) -> (Heap, Module<()>) {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let module =
@@ -343,7 +338,7 @@ mod tests {
     (heap, module)
   }
 
-  fn new_lookup(heap: &Heap, module: Module) -> VariableDefinitionLookup {
+  fn new_lookup(heap: &Heap, module: Module<()>) -> VariableDefinitionLookup {
     VariableDefinitionLookup::new(heap, &module)
   }
 

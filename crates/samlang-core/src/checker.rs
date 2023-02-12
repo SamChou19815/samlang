@@ -1,6 +1,6 @@
 use self::{
   global_typing_context_builder::build_global_typing_context, main_checker::type_check_module,
-  typing_context::create_builtin_module_typing_context,
+  type_::Type, typing_context::create_builtin_module_typing_context,
   undefined_imports_checker::check_undefined_imports_error,
 };
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
   errors::{CompileTimeError, ErrorSet},
   parser::parse_source_module_from_text,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 mod checker_tests;
 /// Utilities operating on types
@@ -36,10 +36,10 @@ pub(crate) use typing_context::{
 };
 
 pub(crate) fn type_check_sources(
-  sources: HashMap<ModuleReference, Module>,
+  sources: HashMap<ModuleReference, Module<()>>,
   heap: &mut Heap,
   error_set: &mut ErrorSet,
-) -> (HashMap<ModuleReference, Module>, GlobalTypingContext) {
+) -> (HashMap<ModuleReference, Module<Rc<Type>>>, GlobalTypingContext) {
   let builtin_cx = create_builtin_module_typing_context(heap);
   let global_cx = build_global_typing_context(&sources, heap, error_set, builtin_cx);
   let mut checked_sources = HashMap::new();
@@ -54,7 +54,7 @@ pub(crate) fn type_check_sources(
 }
 
 pub(crate) struct TypeCheckSourceHandlesResult {
-  pub(crate) checked_sources: HashMap<ModuleReference, Module>,
+  pub(crate) checked_sources: HashMap<ModuleReference, Module<Rc<Type>>>,
   pub(crate) global_typing_context: GlobalTypingContext,
   pub(crate) compile_time_errors: Vec<CompileTimeError>,
 }
@@ -76,10 +76,10 @@ pub(crate) fn type_check_source_handles(
 }
 
 pub(crate) fn type_check_single_module_source(
-  module: Module,
+  module: Module<()>,
   heap: &mut Heap,
   error_set: &mut ErrorSet,
-) -> Module {
+) -> Module<Rc<Type>> {
   let module_reference = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
   type_check_sources(HashMap::from([(module_reference, module)]), heap, error_set)
     .0

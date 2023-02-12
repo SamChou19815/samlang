@@ -17,7 +17,10 @@ use crate::{
   common::{self, Heap, ModuleReference, PStr},
 };
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
+use std::{
+  collections::{HashMap, HashSet},
+  rc::Rc,
+};
 
 struct LoweringResult {
   statements: Vec<hir::Statement>,
@@ -135,7 +138,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lowered_and_add_statements(
     &mut self,
-    expression: &source::expr::E,
+    expression: &source::expr::E<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
     statements: &mut Vec<hir::Statement>,
   ) -> hir::Expression {
@@ -210,7 +213,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower(
     &mut self,
-    expression: &source::expr::E,
+    expression: &source::expr::E<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     match expression {
@@ -269,7 +272,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_class_fn(
     &mut self,
-    expression: &source::expr::ClassFunction,
+    expression: &source::expr::ClassFunction<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let encoded_original_fn_name = {
@@ -311,7 +314,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_field_access(
     &mut self,
-    expression: &source::expr::FieldAccess,
+    expression: &source::expr::FieldAccess<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let LoweringResult { mut statements, expression: result_expr } =
@@ -338,7 +341,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_method_access(
     &mut self,
-    expression: &source::expr::MethodAccess,
+    expression: &source::expr::MethodAccess<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let source_obj_type = expression.object.type_();
@@ -384,7 +387,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_unary(
     &mut self,
-    expression: &source::expr::Unary,
+    expression: &source::expr::Unary<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let LoweringResult { mut statements, expression: result_expr } =
@@ -413,7 +416,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_fn_call(
     &mut self,
-    expression: &source::expr::Call,
+    expression: &source::expr::Call<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
@@ -545,7 +548,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_binary(
     &mut self,
-    expression: &source::expr::E,
+    expression: &source::expr::E<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let expression = match expression {
@@ -673,7 +676,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_if_else(
     &mut self,
-    expression: &source::expr::IfElse,
+    expression: &source::expr::IfElse<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
@@ -699,7 +702,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_match(&mut self, expression: &source::expr::Match) -> LoweringResult {
+  fn lower_match(&mut self, expression: &source::expr::Match<Rc<type_::Type>>) -> LoweringResult {
     let mut lowered_stmts = vec![];
     let matched_expr =
       self.lowered_and_add_statements(&expression.matched, None, &mut lowered_stmts);
@@ -774,7 +777,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn create_synthetic_lambda_function(
     &mut self,
-    expression: &source::expr::Lambda,
+    expression: &source::expr::Lambda<Rc<type_::Type>>,
     captured: &[(PStr, hir::Expression)],
     context_type: &hir::Type,
   ) -> hir::Function {
@@ -842,7 +845,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_lambda(
     &mut self,
-    expression: &source::expr::Lambda,
+    expression: &source::expr::Lambda<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let captured = expression.captured.keys().map(|k| (*k, self.resolve_variable(k))).collect_vec();
@@ -915,7 +918,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_block(
     &mut self,
-    expression: &source::expr::Block,
+    expression: &source::expr::Block<Rc<type_::Type>>,
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
@@ -973,7 +976,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
 fn lower_source_expression(
   mut manager: ExpressionLoweringManager,
-  expression: &source::expr::E,
+  expression: &source::expr::E<Rc<type_::Type>>,
 ) -> LoweringResultWithSyntheticFunctions {
   if let source::expr::E::Block(_) = expression {
     manager.depth -= 1;
@@ -1128,7 +1131,7 @@ fn lower_tparams(type_parameters: &[source::TypeParameter]) -> Vec<PStr> {
 
 fn compile_sources_with_generics_preserved(
   heap: &mut Heap,
-  sources: &HashMap<ModuleReference, source::Module>,
+  sources: &HashMap<ModuleReference, source::Module<Rc<type_::Type>>>,
 ) -> hir::Sources {
   let mut type_lowering_manager =
     TypeLoweringManager { generic_types: HashSet::new(), type_synthesizer: TypeSynthesizer::new() };
@@ -1336,7 +1339,7 @@ fn optimize_by_tail_rec_rewrite(heap: &mut Heap, sources: hir::Sources) -> hir::
 
 pub(crate) fn compile_sources_to_hir(
   heap: &mut Heap,
-  sources: &HashMap<ModuleReference, source::Module>,
+  sources: &HashMap<ModuleReference, source::Module<Rc<type_::Type>>>,
 ) -> hir::Sources {
   let mut sources = compile_sources_with_generics_preserved(heap, sources);
   sources = hir_generics_specialization::perform_generics_specialization(heap, sources);
@@ -1368,7 +1371,7 @@ mod tests {
   };
 
   fn assert_expr_correctly_lowered(
-    source_expr: &source::expr::E,
+    source_expr: &source::expr::E<Rc<type_::Type>>,
     heap: &mut Heap,
     expected_str: &str,
   ) {
@@ -1452,14 +1455,14 @@ mod tests {
     test_builder::create().simple_id_annot(heap.alloc_str("Dummy"))
   }
 
-  fn dummy_source_this(heap: &mut Heap) -> source::expr::E {
+  fn dummy_source_this(heap: &mut Heap) -> source::expr::E<Rc<type_::Type>> {
     source::expr::E::Id(
       source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
       source::Id::from(heap.alloc_str("this")),
     )
   }
 
-  fn id_expr(id: crate::common::PStr, type_: Rc<type_::Type>) -> source::expr::E {
+  fn id_expr(id: crate::common::PStr, type_: Rc<type_::Type>) -> source::expr::E<Rc<type_::Type>> {
     source::expr::E::Id(source::expr::ExpressionCommon::dummy(type_), source::Id::from(id))
   }
 

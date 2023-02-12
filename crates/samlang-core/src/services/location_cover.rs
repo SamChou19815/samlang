@@ -7,16 +7,19 @@ use crate::{
   common::PStr,
   ModuleReference,
 };
-use std::ops::Deref;
+use std::{ops::Deref, rc::Rc};
 
 pub(super) enum LocationCoverSearchResult<'a> {
-  Expression(&'a expr::E),
+  Expression(&'a expr::E<Rc<Type>>),
   ClassName(Location, ModuleReference, PStr),
   ClassMemberName(Location, ModuleReference, PStr, PStr, bool /* is method */),
   TypedName(Location, PStr, Type),
 }
 
-fn search_expression(expr: &expr::E, position: Position) -> Option<LocationCoverSearchResult> {
+fn search_expression(
+  expr: &expr::E<Rc<Type>>,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
   let found_from_children = match expr {
     expr::E::Literal(_, _) | expr::E::Id(_, _) => None,
     expr::E::ClassFn(e) => {
@@ -127,7 +130,7 @@ fn search_expression(expr: &expr::E, position: Position) -> Option<LocationCover
 
 pub(super) fn search_module(
   module_reference: ModuleReference,
-  module: &Module,
+  module: &Module<Rc<Type>>,
   position: Position,
 ) -> Option<LocationCoverSearchResult> {
   for toplevel in &module.toplevels {

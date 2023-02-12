@@ -682,32 +682,24 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
       vec![],
     );
 
+    assert!(cx.resolve_type_definition(&builder.bool_type(), true).names.is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type_unwrapped(
-          heap.alloc_str("A"),
-          vec![builder.int_type(), builder.int_type()]
-        ),
+        &builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type(), builder.int_type()]),
         true,
       )
       .names
       .is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type_unwrapped(
-          heap.alloc_str("A"),
-          vec![builder.int_type(), builder.int_type()]
-        ),
+        &builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type(), builder.int_type()]),
         true,
       )
       .names
       .is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type_unwrapped(
-          heap.alloc_str("C"),
-          vec![builder.int_type(), builder.int_type()]
-        ),
+        &builder.general_id_type(heap.alloc_str("C"), vec![builder.int_type(), builder.int_type()]),
         true,
       )
       .names
@@ -715,10 +707,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
 
     let resolved = cx
       .resolve_type_definition(
-        &builder.general_id_type_unwrapped(
-          heap.alloc_str("A"),
-          vec![builder.int_type(), builder.int_type()],
-        ),
+        &builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type(), builder.int_type()]),
         false,
       )
       .mappings;

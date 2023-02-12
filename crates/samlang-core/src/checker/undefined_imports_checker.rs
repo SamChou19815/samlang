@@ -5,11 +5,11 @@ use crate::{
 };
 use std::collections::{HashMap, HashSet};
 
-pub(super) fn check_undefined_imports_error(
-  sources: &HashMap<ModuleReference, Module>,
+pub(super) fn check_undefined_imports_error<T: Clone>(
+  sources: &HashMap<ModuleReference, Module<T>>,
   heap: &Heap,
   error_set: &mut ErrorSet,
-  module: &Module,
+  module: &Module<T>,
 ) {
   for one_import in module.imports.iter() {
     if let Some(available_members) = sources.get(&one_import.imported_module) {
@@ -48,7 +48,7 @@ mod tests {
   use pretty_assertions::assert_eq;
   use std::collections::HashMap;
 
-  fn mock_class(name: PStr) -> Toplevel {
+  fn mock_class(name: PStr) -> Toplevel<()> {
     Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
@@ -65,7 +65,7 @@ mod tests {
     name: &'static str,
     imports: Vec<(&'static str, Vec<&'static str>)>,
     members: Vec<&'static str>,
-  ) -> (ModuleReference, Module) {
+  ) -> (ModuleReference, Module<()>) {
     (
       heap.alloc_module_reference_from_string_vec(vec![name.to_string()]),
       Module {
@@ -99,7 +99,7 @@ mod tests {
   }
 
   fn assert_expected_errors(
-    sources: HashMap<ModuleReference, Module>,
+    sources: HashMap<ModuleReference, Module<()>>,
     heap: &mut Heap,
     expected_errors: Vec<&'static str>,
   ) {
