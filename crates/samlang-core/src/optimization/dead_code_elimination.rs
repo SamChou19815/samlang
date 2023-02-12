@@ -80,26 +80,26 @@ pub(super) fn collect_use_from_stmts(stmts: &Vec<Statement>, set: &mut HashSet<P
   }
 }
 
-fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Vec<Statement> {
+fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Option<Statement> {
   match stmt {
     Statement::Binary(binary) => {
       if !set.contains(&binary.name)
         && binary.operator != Operator::DIV
         && binary.operator != Operator::MOD
       {
-        vec![]
+        None
       } else {
         collect_use_from_expression(&binary.e1, set);
         collect_use_from_expression(&binary.e2, set);
-        vec![Statement::Binary(binary)]
+        Some(Statement::Binary(binary))
       }
     }
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {
       if !set.contains(&name) {
-        vec![]
+        None
       } else {
         collect_use_from_expression(&pointer_expression, set);
-        vec![Statement::IndexedAccess { name, type_, pointer_expression, index }]
+        Some(Statement::IndexedAccess { name, type_, pointer_expression, index })
       }
     }
     Statement::Call { callee, arguments, return_type, return_collector } => {
@@ -113,7 +113,7 @@ fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Vec<Statement> {
       for e in &arguments {
         collect_use_from_expression(e, set);
       }
-      vec![Statement::Call { callee, arguments, return_type, return_collector }]
+      Some(Statement::Call { callee, arguments, return_type, return_collector })
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       let final_assignments = final_assignments
@@ -132,7 +132,7 @@ fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Vec<Statement> {
       let s2 = optimize_stmts(s2, set);
       let if_else =
         optimization_common::if_else_or_null(condition.clone(), s1, s2, final_assignments);
-      if !if_else.is_empty() {
+      if if_else.is_some() {
         collect_use_from_expression(&condition, set);
       }
       if_else
@@ -140,15 +140,15 @@ fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Vec<Statement> {
     Statement::SingleIf { condition, invert_condition, statements } => {
       let statements = optimize_stmts(statements, set);
       if statements.is_empty() {
-        vec![]
+        None
       } else {
         collect_use_from_expression(&condition, set);
-        vec![Statement::SingleIf { condition, invert_condition, statements }]
+        Some(Statement::SingleIf { condition, invert_condition, statements })
       }
     }
     Statement::Break(e) => {
       collect_use_from_expression(&e, set);
-      vec![Statement::Break(e)]
+      Some(Statement::Break(e))
     }
     Statement::While { loop_variables, statements, break_collector } => {
       let break_collector = match break_collector {
@@ -174,24 +174,24 @@ fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Vec<Statement> {
           }
         })
         .collect_vec();
-      vec![Statement::While { loop_variables, statements, break_collector }]
+      Some(Statement::While { loop_variables, statements, break_collector })
     }
     Statement::StructInit { struct_variable_name, type_, expression_list } => {
       if !set.contains(&struct_variable_name) {
-        vec![]
+        None
       } else {
         for e in &expression_list {
           collect_use_from_expression(e, set);
         }
-        vec![Statement::StructInit { struct_variable_name, type_, expression_list }]
+        Some(Statement::StructInit { struct_variable_name, type_, expression_list })
       }
     }
     Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
       if !set.contains(&closure_variable_name) {
-        vec![]
+        None
       } else {
         collect_use_from_expression(&context, set);
-        vec![Statement::ClosureInit { closure_variable_name, closure_type, function_name, context }]
+        Some(Statement::ClosureInit { closure_variable_name, closure_type, function_name, context })
       }
     }
   }
@@ -200,7 +200,9 @@ fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Vec<Statement> {
 pub(super) fn optimize_stmts(stmts: Vec<Statement>, set: &mut HashSet<PStr>) -> Vec<Statement> {
   let mut collector = vec![];
   for s in stmts.into_iter().rev() {
-    collector.append(&mut optimize_stmt(s, set));
+    if let Some(s) = optimize_stmt(s, set) {
+      collector.push(s);
+    }
   }
   collector.reverse();
   collector

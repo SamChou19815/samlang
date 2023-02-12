@@ -55,8 +55,7 @@ pub fn compile_sources(
   } = measure_time(enable_profiling, "Type checking", || {
     checker::type_check_source_handles(heap, source_handles)
   });
-  let mut errors =
-    compile_time_errors.iter().sorted().map(|it| it.pretty_print(heap)).collect_vec();
+  let mut errors = compile_time_errors.iter().map(|it| it.pretty_print(heap)).collect_vec();
   for module_reference in &entry_module_references {
     if !checked_sources.contains_key(module_reference) {
       errors.insert(

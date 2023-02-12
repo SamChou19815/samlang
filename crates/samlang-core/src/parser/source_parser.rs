@@ -141,11 +141,7 @@ impl<'a> SourceParser<'a> {
     }
     self.report(
       location,
-      format!(
-        "Expected: {}, actual: {}.",
-        expected_kind.to_string(),
-        content.pretty_print(self.heap)
-      ),
+      format!("Expected: {}, actual: {}.", expected_kind.as_str(), content.pretty_print(self.heap)),
     );
     location
   }
@@ -161,11 +157,7 @@ impl<'a> SourceParser<'a> {
     }
     self.report(
       location,
-      format!(
-        "Expected: {}, actual: {}.",
-        expected_kind.to_string(),
-        content.pretty_print(self.heap)
-      ),
+      format!("Expected: {}, actual: {}.", expected_kind.as_str(), content.pretty_print(self.heap)),
     );
     location
   }

@@ -76,11 +76,11 @@ pub(super) fn if_else_or_null(
   s1: Vec<Statement>,
   s2: Vec<Statement>,
   final_assignments: Vec<(PStr, Type, Expression, Expression)>,
-) -> Vec<Statement> {
+) -> Option<Statement> {
   if s1.is_empty() && s2.is_empty() && final_assignments.is_empty() {
-    vec![]
+    None
   } else {
-    vec![Statement::IfElse { condition, s1, s2, final_assignments }]
+    Some(Statement::IfElse { condition, s1, s2, final_assignments })
   }
 }
 
@@ -102,8 +102,8 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(if_else_or_null(ZERO, vec![], vec![], vec![]).is_empty());
-    assert!(!if_else_or_null(ZERO, vec![], vec![Statement::Break(ZERO)], vec![]).is_empty());
+    assert!(if_else_or_null(ZERO, vec![], vec![], vec![]).is_none());
+    assert!(if_else_or_null(ZERO, vec![], vec![Statement::Break(ZERO)], vec![]).is_some());
     assert!(single_if_or_null(ZERO, false, vec![]).is_empty());
     assert!(!single_if_or_null(ZERO, false, vec![Statement::Break(ZERO)]).is_empty());
 
@@ -118,6 +118,8 @@ mod tests {
     bv2.dump_to_string();
     let _ = bv1.clone();
     let _ = bv2.clone();
+    assert_eq!(Some(std::cmp::Ordering::Equal), bv1.partial_cmp(&bv1));
+    assert_eq!(Some(std::cmp::Ordering::Equal), bv2.partial_cmp(&bv2));
     assert!(bv1.eq(&bv1));
     assert!(bv2.eq(&bv2));
   }

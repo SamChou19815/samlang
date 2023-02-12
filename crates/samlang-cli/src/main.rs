@@ -463,46 +463,51 @@ mod runners {
     }
   }
 
-  fn compile_single() {
-    let configuration = utils::get_configuration();
-    let heap = &mut samlang_core::Heap::new();
-    let entry_module_references = configuration
-      .entry_points
-      .iter()
-      .map(|entry_point| {
-        heap.alloc_module_reference_from_string_vec(
-          entry_point.split('.').map(|s| s.to_string()).collect(),
-        )
-      })
-      .collect::<Vec<_>>();
-    let enable_profiling = std::env::var("PROFILE").is_ok();
-    let collected_sources =
-      samlang_core::measure_time(enable_profiling, "Collecting sources", || {
-        utils::collect_sources(&configuration, heap)
-      });
-    match samlang_core::compile_sources(
-      heap,
-      collected_sources,
-      entry_module_references,
-      enable_profiling,
-    ) {
-      Ok(samlang_core::SourcesCompilationResult { text_code_results, wasm_file }) => {
-        if fs::create_dir_all(&configuration.output_directory).is_ok() {
-          for (file, content) in text_code_results {
-            fs::write(PathBuf::from(&configuration.output_directory).join(file), content).unwrap();
-          }
-          fs::write(PathBuf::from(&configuration.output_directory).join("__all__.wasm"), wasm_file)
+  fn compile_single(enable_profiling: bool) {
+    samlang_core::measure_time(enable_profiling, "Full run", || {
+      let configuration = utils::get_configuration();
+      let heap = &mut samlang_core::Heap::new();
+      let entry_module_references = configuration
+        .entry_points
+        .iter()
+        .map(|entry_point| {
+          heap.alloc_module_reference_from_string_vec(
+            entry_point.split('.').map(|s| s.to_string()).collect(),
+          )
+        })
+        .collect::<Vec<_>>();
+      let collected_sources =
+        samlang_core::measure_time(enable_profiling, "Collecting sources", || {
+          utils::collect_sources(&configuration, heap)
+        });
+      match samlang_core::compile_sources(
+        heap,
+        collected_sources,
+        entry_module_references,
+        enable_profiling,
+      ) {
+        Ok(samlang_core::SourcesCompilationResult { text_code_results, wasm_file }) => {
+          if fs::create_dir_all(&configuration.output_directory).is_ok() {
+            for (file, content) in text_code_results {
+              fs::write(PathBuf::from(&configuration.output_directory).join(file), content)
+                .unwrap();
+            }
+            fs::write(
+              PathBuf::from(&configuration.output_directory).join("__all__.wasm"),
+              wasm_file,
+            )
             .unwrap();
+          }
+        }
+        Err(errors) => {
+          eprintln!("Found {} error(s).", errors.len());
+          for e in errors {
+            eprintln!("{e}");
+          }
+          std::process::exit(1)
         }
       }
-      Err(errors) => {
-        eprintln!("Found {} error(s).", errors.len());
-        for e in errors {
-          eprintln!("{e}");
-        }
-        std::process::exit(1)
-      }
-    }
+    });
   }
 
   pub(super) fn compile(need_help: bool) {
@@ -511,8 +516,9 @@ mod runners {
     } else {
       let benchmark_repeat =
         std::env::var("BENCHMARK_REPEAT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(1);
+      let enable_profiling = std::env::var("PROFILE").is_ok();
       for _ in 0..benchmark_repeat {
-        compile_single();
+        compile_single(enable_profiling);
       }
     }
   }

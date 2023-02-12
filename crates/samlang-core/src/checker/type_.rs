@@ -187,26 +187,22 @@ impl Type {
     }
   }
 
-  pub(crate) fn mod_reason<F: FnOnce(&Reason) -> Reason>(&self, f: F) -> Type {
+  pub(crate) fn reposition(&self, use_loc: Location) -> Type {
     match self {
-      Self::Unknown(reason) => Type::Unknown(f(reason)),
-      Self::Primitive(reason, p) => Type::Primitive(f(reason), *p),
+      Self::Unknown(reason) => Type::Unknown(reason.to_use_reason(use_loc)),
+      Self::Primitive(reason, p) => Type::Primitive(reason.to_use_reason(use_loc), *p),
       Self::Id(IdType { reason, module_reference, id, type_arguments }) => Type::Id(IdType {
-        reason: f(reason),
+        reason: reason.to_use_reason(use_loc),
         module_reference: *module_reference,
         id: *id,
         type_arguments: type_arguments.clone(),
       }),
       Self::Fn(FunctionType { reason, argument_types, return_type }) => Type::Fn(FunctionType {
-        reason: f(reason),
+        reason: reason.to_use_reason(use_loc),
         argument_types: argument_types.clone(),
         return_type: return_type.clone(),
       }),
     }
-  }
-
-  pub(crate) fn reposition(&self, use_loc: Location) -> Type {
-    self.mod_reason(|r| r.to_use_reason(use_loc))
   }
 
   pub(crate) fn from_annotation(annotation: &annotation::T) -> Type {
@@ -418,59 +414,42 @@ mod type_tests {
     );
   }
 
-  fn new_reason_f(_: &Reason) -> Reason {
-    Reason::new(Location::from_pos(1, 2, 3, 4), Option::None)
-  }
-
-  #[test]
-  fn mod_reason_tests() {
-    let mut heap = Heap::new();
-    let builder = test_type_builder::create();
-
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      Type::Unknown(Reason::dummy())
-        .mod_reason(new_reason_f)
-        .get_reason()
-        .use_loc
-        .pretty_print(&heap)
-    );
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder.int_type().mod_reason(new_reason_f).get_reason().use_loc.pretty_print(&heap)
-    );
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder.int_type().mod_reason(new_reason_f).get_reason().use_loc.pretty_print(&heap)
-    );
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder
-        .simple_id_type(heap.alloc_str("I"))
-        .mod_reason(new_reason_f)
-        .get_reason()
-        .use_loc
-        .pretty_print(&heap)
-    );
-    assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
-      builder
-        .fun_type(vec![], builder.unit_type())
-        .mod_reason(new_reason_f)
-        .get_reason()
-        .use_loc
-        .pretty_print(&heap)
-    );
-  }
-
   #[test]
   fn reposition_tests() {
+    let mut heap = Heap::new();
     let builder = test_type_builder::create();
 
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
       builder
         .int_type()
+        .reposition(Location::from_pos(1, 2, 3, 4))
+        .get_reason()
+        .use_loc
+        .pretty_print(&Heap::new())
+    );
+    assert_eq!(
+      "__DUMMY__.sam:2:3-4:5",
+      builder
+        .simple_id_type(heap.alloc_str("I"))
+        .reposition(Location::from_pos(1, 2, 3, 4))
+        .get_reason()
+        .use_loc
+        .pretty_print(&Heap::new())
+    );
+    assert_eq!(
+      "__DUMMY__.sam:2:3-4:5",
+      builder
+        .general_id_type(heap.alloc_str("I"), vec![builder.unit_type()])
+        .reposition(Location::from_pos(1, 2, 3, 4))
+        .get_reason()
+        .use_loc
+        .pretty_print(&Heap::new())
+    );
+    assert_eq!(
+      "__DUMMY__.sam:2:3-4:5",
+      builder
+        .fun_type(vec![], builder.unit_type())
         .reposition(Location::from_pos(1, 2, 3, 4))
         .get_reason()
         .use_loc
