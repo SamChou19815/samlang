@@ -652,15 +652,6 @@ pub(crate) mod test_builder {
       annotation::T::Id(self.general_id_annot_unwrapped(id, type_arguments))
     }
 
-    pub(crate) fn simple_id_annot_unwrapped(&self, id: PStr) -> annotation::Id {
-      annotation::Id {
-        location: Location::dummy(),
-        module_reference: ModuleReference::dummy(),
-        id: Id::from(id),
-        type_arguments: vec![],
-      }
-    }
-
     pub(crate) fn simple_id_annot(&self, id: PStr) -> annotation::T {
       self.general_id_annot(id, vec![])
     }

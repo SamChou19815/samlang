@@ -4,18 +4,20 @@ use super::{
     perform_type_substitution, solve_multiple_type_constrains, TypeConstraint,
     TypeConstraintSolution,
   },
+  global_cx,
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature},
   typing_context::{
     GlobalTypingContext, LocalTypingContext, TypeDefinitionTypingContext, TypingContext,
   },
+  MemberTypeInformation,
 };
 use crate::{
   ast::{
     source::{
       expr::{self, ExpressionCommon, ObjectPatternDestucturedName},
-      ClassMemberDefinition, Id, InterfaceDeclarationCommon, Literal, Module,
-      OptionallyAnnotatedId, Toplevel, TypeParameter,
+      ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon, Literal,
+      Module, OptionallyAnnotatedId, Toplevel, TypeParameter,
     },
     Reason,
   },
@@ -428,9 +430,9 @@ impl<'a> TypingContext<'a> {
     hint: Option<&Type>,
   ) -> (expr::ClassFunction<Rc<Type>>, Vec<TypeParameterSignature>) {
     if let Some(class_function_type_information) = self.get_function_type(
-      &expression.module_reference,
-      &expression.class_name.name,
-      &expression.fn_name.name,
+      expression.module_reference,
+      expression.class_name.name,
+      expression.fn_name.name,
       expression.common.loc,
     ) {
       if !expression.explicit_type_arguments.is_empty() {
@@ -718,9 +720,9 @@ impl<'a> TypingContext<'a> {
       }
     };
     if let Some(method_type_info) = self.get_method_type(
-      &obj_type.module_reference,
-      &obj_type.id,
-      &expression.field_name.name,
+      obj_type.module_reference,
+      obj_type.id,
+      expression.field_name.name,
       obj_type.type_arguments.clone(),
       expression.common.loc,
     ) {
@@ -1612,6 +1614,54 @@ fn validate_signature_types(
   }
 }
 
+fn check_class_member_conformance_with_signature(
+  heap: &Heap,
+  error_set: &mut ErrorSet,
+  expected: &MemberTypeInformation,
+  actual: &ClassMemberDeclaration,
+) {
+  if expected.type_parameters.len() != actual.type_parameters.len() {
+    error_set.report_arity_mismatch_error(
+      actual.type_.location,
+      "type parameters",
+      expected.type_parameters.len(),
+      actual.type_parameters.len(),
+    );
+  }
+  let mut has_type_parameter_conformance_errors = false;
+  for (e, a) in expected.type_parameters.iter().zip(actual.type_parameters.deref()) {
+    if e.name != a.name.name {
+      has_type_parameter_conformance_errors = true;
+    }
+    match (&e.bound, &a.bound) {
+      (None, Some(_)) | (Some(_), None) => {
+        has_type_parameter_conformance_errors = true;
+      }
+      (None, None) => { /* Great! */ }
+      (Some(e_bound), Some(a_bound)) => {
+        if !e_bound.is_the_same_type(&IdType::from_annotation(a_bound)) {
+          has_type_parameter_conformance_errors = true;
+        }
+      }
+    }
+  }
+  if has_type_parameter_conformance_errors {
+    error_set.report_type_parameter_mismatch_error(
+      actual.type_.location,
+      TypeParameterSignature::pretty_print_list(&expected.type_parameters, heap),
+    );
+  } else {
+    let actual_fn_type = FunctionType::from_annotation(&actual.type_);
+    if !expected.type_.is_the_same_type(&actual_fn_type) {
+      error_set.report_unexpected_type_error(
+        actual.type_.location,
+        expected.type_.pretty_print(heap),
+        actual_fn_type.pretty_print(heap),
+      );
+    }
+  }
+}
+
 pub(super) fn type_check_module(
   module_reference: ModuleReference,
   module: Module<()>,
@@ -1624,25 +1674,103 @@ pub(super) fn type_check_module(
 
   for toplevel in &module.toplevels {
     validate_signature_types(toplevel, global_cx, &mut local_cx, module_reference, heap, error_set);
+    let id_type = IdType {
+      reason: Reason::new(toplevel.name().loc, None),
+      module_reference,
+      id: toplevel.name().name,
+      type_arguments: toplevel
+        .type_parameters()
+        .iter()
+        .map(|it| {
+          Rc::new(Type::Id(IdType {
+            reason: Reason::new(it.loc, Some(it.loc)),
+            module_reference,
+            id: it.name.name,
+            type_arguments: vec![],
+          }))
+        })
+        .collect_vec(),
+    };
+    let global_cx::SuperTypesResolutionResult { types: resolved_super_types, is_cyclic } =
+      global_cx::resolve_all_transitive_super_types(global_cx, &id_type);
+    if is_cyclic {
+      error_set
+        .report_cyclic_type_definition_error(id_type.reason.use_loc, id_type.pretty_print(heap));
+    }
+    for super_type in &resolved_super_types {
+      if global_cx
+        .get(&super_type.module_reference)
+        .and_then(|it| it.interfaces.get(&super_type.id))
+        .map(|it| it.is_concrete)
+        .unwrap_or(false)
+      {
+        error_set.report_unexpected_type_kind_error(
+          super_type.reason.use_loc,
+          "interface type".to_string(),
+          "class type".to_string(),
+        );
+      }
+    }
+    for member in toplevel.members_iter() {
+      let has_interface_def = if member.is_method {
+        let resolved = global_cx::resolve_all_method_signatures(
+          global_cx,
+          &resolved_super_types,
+          member.name.name,
+        );
+        for expected in &resolved {
+          check_class_member_conformance_with_signature(heap, error_set, expected, member);
+        }
+        !resolved.is_empty()
+      } else {
+        let resolved = global_cx::resolve_all_function_signatures(
+          global_cx,
+          &resolved_super_types,
+          member.name.name,
+        );
+        for expected in &resolved {
+          check_class_member_conformance_with_signature(heap, error_set, expected, member);
+        }
+        !resolved.is_empty()
+      };
+      if !member.is_public && has_interface_def {
+        error_set.report_unexpected_type_kind_error(
+          member.loc,
+          "public class member".to_string(),
+          "private class member".to_string(),
+        );
+      }
+    }
     if let Toplevel::Class(c) = toplevel {
-      let type_ = Type::Id(IdType {
-        reason: Reason::new(c.loc, None),
-        module_reference,
-        id: c.name.name,
-        type_arguments: c
-          .type_parameters
-          .iter()
-          .map(|it| {
-            Rc::new(Type::Id(IdType {
-              reason: Reason::new(it.loc, Some(it.loc)),
-              module_reference,
-              id: it.name.name,
-              type_arguments: vec![],
-            }))
-          })
-          .collect_vec(),
-      });
-      local_cx.write(c.loc, Rc::new(type_));
+      let mut missing_function_members =
+        global_cx::resolve_all_member_names(global_cx, &resolved_super_types, false);
+      let mut missing_method_members =
+        global_cx::resolve_all_member_names(global_cx, &resolved_super_types, true);
+      for member in &c.members {
+        let n = member.decl.name.name;
+        if member.decl.is_method {
+          missing_method_members.remove(&n);
+        } else {
+          missing_function_members.remove(&n);
+        }
+      }
+      if c.type_definition.is_object {
+        missing_function_members.remove(&heap.get_allocated_str_opt("init").unwrap());
+      } else {
+        for n in c.type_definition.mappings.keys() {
+          missing_function_members.remove(n);
+        }
+      }
+      missing_function_members.extend(&missing_method_members);
+      if !missing_function_members.is_empty() {
+        error_set.report_missing_definition_error(
+          toplevel.loc(),
+          missing_function_members.iter().sorted().map(|p| p.as_str(heap).to_string()).collect(),
+        );
+      }
+    }
+    if let Toplevel::Class(c) = toplevel {
+      local_cx.write(c.loc, Rc::new(Type::Id(id_type)));
     }
     for member in toplevel.members_iter() {
       for param in member.parameters.iter() {

@@ -1,6 +1,6 @@
 use self::{
-  global_typing_context_builder::build_global_typing_context, main_checker::type_check_module,
-  type_::Type, typing_context::create_builtin_module_typing_context,
+  global_cx::build_global_typing_context, main_checker::type_check_module, type_::Type,
+  typing_context::create_builtin_module_typing_context,
   undefined_imports_checker::check_undefined_imports_error,
 };
 use crate::{
@@ -15,8 +15,8 @@ mod checker_tests;
 /// Utilities operating on types
 mod checker_utils;
 mod checker_utils_tests;
-/// Responsible for building the global typing environment as part of pre-processing phase.
-mod global_typing_context_builder;
+/// Responsible for building and querying the global typing environment.
+mod global_cx;
 /// The main checker that connects everything together.
 mod main_checker;
 /// Computing the SSA graph.
@@ -41,7 +41,7 @@ pub(crate) fn type_check_sources(
   error_set: &mut ErrorSet,
 ) -> (HashMap<ModuleReference, Module<Rc<Type>>>, GlobalTypingContext) {
   let builtin_cx = create_builtin_module_typing_context(heap);
-  let global_cx = build_global_typing_context(&sources, heap, error_set, builtin_cx);
+  let global_cx = build_global_typing_context(&sources, heap, builtin_cx);
   let mut checked_sources = HashMap::new();
   for (_, module) in sources.iter() {
     check_undefined_imports_error(&sources, heap, error_set, module);

@@ -46,12 +46,16 @@ impl<'a> SsaAnalysisState<'a> {
     // Hoist toplevel names
     for toplevel in &module.toplevels {
       let name = toplevel.name();
-      self.define_id(heap, &name.name, name.loc)
+      self.define_id(heap, &name.name, name.loc);
     }
 
     for toplevel in &module.toplevels {
       let type_parameters = toplevel.type_parameters();
       let type_definition = toplevel.type_definition();
+
+      for t in toplevel.extends_or_implements_nodes() {
+        self.use_id(heap, &t.id.name, t.id.loc);
+      }
 
       self.context.push_scope();
       {
@@ -67,7 +71,9 @@ impl<'a> SsaAnalysisState<'a> {
             };
           }
           for t in toplevel.extends_or_implements_nodes() {
-            self.visit_id_annot(heap, t);
+            for annot in &t.type_arguments {
+              self.visit_annot(heap, annot);
+            }
           }
           if let Some(type_def) = type_definition {
             for name in &type_def.names {

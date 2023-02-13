@@ -474,7 +474,7 @@ class Main {
       "bounded-generics.sam:15:66-15:73: [UnexpectedType]: Expected: `int`, actual: `T`.",
       "bounded-generics.sam:18:20-18:40: [UnexpectedTypeKind]: Expected kind: `non-abstract type`, actual: `Comparable<BoxedInt>`.",
       "bounded-generics.sam:19:53-19:69: [UnexpectedType]: Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.",
-      "bounded-generics.sam:25:15-25:23: [UnexpectedType]: Expected: `() -> int`, actual: `() -> bool`.",
+      "bounded-generics.sam:28:7-28:17: [CyclicTypeDefinition]: Type `ImplItself` has a cyclic definition.",
       "bounded-generics.sam:28:20-28:30: [UnexpectedTypeKind]: Expected kind: `interface type`, actual: `class type`.",
       "bounded-generics.sam:29:21-29:22: [UnresolvedName]: Name `T` is not resolved.",
       "complete-trash.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces: This",
