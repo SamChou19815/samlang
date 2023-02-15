@@ -21,10 +21,7 @@ mod tests {
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
   };
   use pretty_assertions::assert_eq;
-  use std::{
-    collections::{BTreeMap, HashMap, HashSet},
-    rc::Rc,
-  };
+  use std::collections::{BTreeMap, HashMap, HashSet};
 
   #[test]
   #[should_panic]
@@ -163,12 +160,12 @@ mod tests {
           interfaces: BTreeMap::from([
             (
               heap.alloc_str("Test"),
-              Rc::new(InterfaceTypingContext {
+              InterfaceTypingContext {
                 is_concrete: true,
-                functions: Rc::new(BTreeMap::from([
+                functions: BTreeMap::from([
                   (
                     heap.alloc_str("init"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -176,11 +173,11 @@ mod tests {
                         argument_types: vec![builder.bool_type(), builder.int_type()],
                         return_type: builder.simple_id_type(heap.alloc_str("Test")),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("helloWorld"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -188,11 +185,11 @@ mod tests {
                         argument_types: vec![builder.string_type()],
                         return_type: builder.unit_type(),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("helloWorldWithTypeParameters"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
                         name: heap.alloc_str("A"),
@@ -203,11 +200,11 @@ mod tests {
                         argument_types: vec![builder.simple_id_type(heap.alloc_str("A"))],
                         return_type: builder.unit_type(),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("generic1"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![
                         TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
@@ -224,11 +221,11 @@ mod tests {
                         ],
                         return_type: builder.simple_id_type(heap.alloc_str("D")),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("generic2"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
                         name: heap.alloc_str("T"),
@@ -242,11 +239,11 @@ mod tests {
                         ],
                         return_type: builder.bool_type(),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("generic3"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![
                         TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
@@ -260,11 +257,11 @@ mod tests {
                         )],
                         return_type: builder.bool_type(),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("generic4"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -275,13 +272,13 @@ mod tests {
                         )],
                         return_type: builder.bool_type(),
                       },
-                    }),
+                    },
                   ),
-                ])),
-                methods: Rc::new(BTreeMap::from([
+                ]),
+                methods: BTreeMap::from([
                   (
                     heap.alloc_str("baz"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -289,11 +286,11 @@ mod tests {
                         argument_types: vec![builder.int_type()],
                         return_type: builder.bool_type(),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("bazWithTypeParam"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
                         name: heap.alloc_str("A"),
@@ -304,11 +301,11 @@ mod tests {
                         argument_types: vec![builder.int_type()],
                         return_type: builder.bool_type(),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("bazWithUsefulTypeParam"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
                         name: heap.alloc_str("A"),
@@ -319,21 +316,21 @@ mod tests {
                         argument_types: vec![builder.simple_id_type(heap.alloc_str("A"))],
                         return_type: builder.bool_type(),
                       },
-                    }),
+                    },
                   ),
-                ])),
+                ]),
                 type_parameters: vec![],
                 super_types: vec![],
-              }),
+              },
             ),
             (
               heap.alloc_str("Test2"),
-              Rc::new(InterfaceTypingContext {
+              InterfaceTypingContext {
                 is_concrete: true,
-                functions: Rc::new(BTreeMap::from([
+                functions: BTreeMap::from([
                   (
                     heap.alloc_str("Foo"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -341,11 +338,11 @@ mod tests {
                         argument_types: vec![builder.bool_type()],
                         return_type: builder.simple_id_type(heap.alloc_str("Test2")),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("Bar"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
@@ -353,35 +350,35 @@ mod tests {
                         argument_types: vec![builder.int_type()],
                         return_type: builder.simple_id_type(heap.alloc_str("Test2")),
                       },
-                    }),
+                    },
                   ),
-                ])),
-                methods: Rc::new(BTreeMap::new()),
+                ]),
+                methods: BTreeMap::new(),
                 type_parameters: vec![],
                 super_types: vec![],
-              }),
+              },
             ),
             (
               heap.alloc_str("Test3"),
-              Rc::new(InterfaceTypingContext {
+              InterfaceTypingContext {
                 is_concrete: true,
-                functions: Rc::new(BTreeMap::new()),
-                methods: Rc::new(BTreeMap::new()),
+                functions: BTreeMap::new(),
+                methods: BTreeMap::new(),
                 type_parameters: vec![TypeParameterSignature {
                   name: heap.alloc_str("E"),
                   bound: None,
                 }],
                 super_types: vec![],
-              }),
+              },
             ),
             (
               heap.alloc_str("Test4"),
-              Rc::new(InterfaceTypingContext {
+              InterfaceTypingContext {
                 is_concrete: true,
-                functions: Rc::new(BTreeMap::from([
+                functions: BTreeMap::from([
                   (
                     heap.alloc_str("Foo"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature {
                         name: heap.alloc_str("E"),
@@ -395,11 +392,11 @@ mod tests {
                           vec![builder.simple_id_type(heap.alloc_str("E"))],
                         ),
                       },
-                    }),
+                    },
                   ),
                   (
                     heap.alloc_str("Bar"),
-                    Rc::new(MemberTypeInformation {
+                    MemberTypeInformation {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature {
                         name: heap.alloc_str("E"),
@@ -413,24 +410,24 @@ mod tests {
                           vec![builder.simple_id_type(heap.alloc_str("E"))],
                         ),
                       },
-                    }),
+                    },
                   ),
-                ])),
-                methods: Rc::new(BTreeMap::new()),
+                ]),
+                methods: BTreeMap::new(),
                 type_parameters: vec![TypeParameterSignature {
                   name: heap.alloc_str("E"),
                   bound: None,
                 }],
                 super_types: vec![],
-              }),
+              },
             ),
             (
               heap.alloc_str("A"),
-              Rc::new(InterfaceTypingContext {
+              InterfaceTypingContext {
                 is_concrete: true,
-                functions: Rc::new(BTreeMap::from([(
+                functions: BTreeMap::from([(
                   heap.alloc_str("init"),
-                  Rc::new(MemberTypeInformation {
+                  MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
@@ -438,20 +435,20 @@ mod tests {
                       argument_types: vec![],
                       return_type: builder.simple_id_type(heap.alloc_str("A")),
                     },
-                  }),
-                )])),
-                methods: Rc::new(BTreeMap::new()),
+                  },
+                )]),
+                methods: BTreeMap::new(),
                 type_parameters: vec![],
                 super_types: vec![],
-              }),
+              },
             ),
             (
               heap.alloc_str("B"),
-              Rc::new(InterfaceTypingContext {
+              InterfaceTypingContext {
                 is_concrete: true,
-                functions: Rc::new(BTreeMap::from([(
+                functions: BTreeMap::from([(
                   heap.alloc_str("init"),
-                  Rc::new(MemberTypeInformation {
+                  MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
@@ -459,20 +456,20 @@ mod tests {
                       argument_types: vec![],
                       return_type: builder.simple_id_type(heap.alloc_str("B")),
                     },
-                  }),
-                )])),
-                methods: Rc::new(BTreeMap::new()),
+                  },
+                )]),
+                methods: BTreeMap::new(),
                 type_parameters: vec![],
                 super_types: vec![],
-              }),
+              },
             ),
             (
               heap.alloc_str("C"),
-              Rc::new(InterfaceTypingContext {
+              InterfaceTypingContext {
                 is_concrete: true,
-                functions: Rc::new(BTreeMap::from([(
+                functions: BTreeMap::from([(
                   heap.alloc_str("init"),
-                  Rc::new(MemberTypeInformation {
+                  MemberTypeInformation {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
@@ -480,12 +477,12 @@ mod tests {
                       argument_types: vec![],
                       return_type: builder.simple_id_type(heap.alloc_str("C")),
                     },
-                  }),
-                )])),
-                methods: Rc::new(BTreeMap::new()),
+                  },
+                )]),
+                methods: BTreeMap::new(),
                 type_parameters: vec![],
                 super_types: vec![],
-              }),
+              },
             ),
           ]),
         },
@@ -1575,6 +1572,8 @@ interface J : G {
 interface K : G {
   method <TE: Bar> unrelated(): unit
 }
+interface WithBound { function <T: T> f(): int }
+interface WithBound2 : WithBound { function <T: T> f(): int }
 class Z<T: Foo> : DumDum {} // error
 interface Cyclic1 : Cyclic2 {} // error: cyclic
 interface Cyclic2 : Cyclic3 {} // error: cyclic
@@ -1586,8 +1585,7 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       "A.sam:8:1-8:17: [MissingDefinitions]: Missing definitions for [a, b].",
       "A.sam:10:13-10:23: [UnexpectedType]: Expected: `() -> unit`, actual: `() -> string`.",
       "A.sam:11:11-11:19: [UnexpectedType]: Expected: `() -> string`, actual: `() -> unit`.",
-      "A.sam:14:3-14:28: [UnexpectedTypeKind]: Expected kind: `method`, actual: `function`.",
-      "A.sam:15:3-15:24: [UnexpectedTypeKind]: Expected kind: `function`, actual: `method`.",
+      "A.sam:13:1-16:2: [MissingDefinitions]: Missing definitions for [a, b].",
       "A.sam:32:11-32:72: [UnexpectedTypeKind]: Expected kind: `public class member`, actual: `private class member`.",
       "A.sam:32:25-32:51: [UnexpectedType]: Expected: `(int, int) -> TC`, actual: `(string, string) -> TC`.",
       "A.sam:33:27-33:53: [UnexpectedType]: Expected: `(TA, TB) -> TC`, actual: `(string, string) -> TC`.",
@@ -1597,11 +1595,11 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       "A.sam:42:24-42:32: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
       "A.sam:45:19-45:27: [ArityMismatchError]: Incorrect type parameters size. Expected: 1, actual: 0.",
       "A.sam:48:29-48:37: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
-      "A.sam:50:19-50:25: [UnresolvedName]: Name `DumDum` is not resolved.",
-      "A.sam:51:21-51:28: [CyclicTypeDefinition]: Type `Cyclic2` has a cyclic definition.",
-      "A.sam:52:21-52:28: [CyclicTypeDefinition]: Type `Cyclic3` has a cyclic definition.",
-      "A.sam:53:21-53:28: [CyclicTypeDefinition]: Type `Cyclic1` has a cyclic definition.",
-      "A.sam:54:21-54:28: [CyclicTypeDefinition]: Type `Cyclic4` has a cyclic definition.",
+      "A.sam:52:19-52:25: [UnresolvedName]: Name `DumDum` is not resolved.",
+      "A.sam:53:11-53:18: [CyclicTypeDefinition]: Type `Cyclic1` has a cyclic definition.",
+      "A.sam:54:11-54:18: [CyclicTypeDefinition]: Type `Cyclic2` has a cyclic definition.",
+      "A.sam:55:11-55:18: [CyclicTypeDefinition]: Type `Cyclic3` has a cyclic definition.",
+      "A.sam:56:11-56:18: [CyclicTypeDefinition]: Type `Cyclic4` has a cyclic definition.",
     ];
     assert_module_errors(vec![("A", source)], expected_errors);
   }
@@ -1634,7 +1632,7 @@ interface Conflicting1 {
 interface Conflicting2 {
   function foo(): bool
 }
-interface ExtendingConfliting : Conflicting1, Conflicting2
+interface ExtendingConfliting : Conflicting1, Conflicting2 // no error, we only complain if it's used by classes
 class ImplItself : ImplItself {} // error: expect interface type
 class ImplTArg<T> : T {} // error: T not resolved
     "#;
@@ -1645,7 +1643,7 @@ class ImplTArg<T> : T {} // error: T not resolved
       "bounded-generics.sam:15:66-15:73: [UnexpectedType]: Expected: `int`, actual: `T`.",
       "bounded-generics.sam:18:20-18:40: [UnexpectedTypeKind]: Expected kind: `non-abstract type`, actual: `Comparable<BoxedInt>`.",
       "bounded-generics.sam:19:53-19:69: [UnexpectedType]: Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.",
-      "bounded-generics.sam:25:15-25:23: [UnexpectedType]: Expected: `() -> int`, actual: `() -> bool`.",
+      "bounded-generics.sam:28:7-28:17: [CyclicTypeDefinition]: Type `ImplItself` has a cyclic definition.",
       "bounded-generics.sam:28:20-28:30: [UnexpectedTypeKind]: Expected kind: `interface type`, actual: `class type`.",
       "bounded-generics.sam:29:21-29:22: [UnresolvedName]: Name `T` is not resolved.",
     ];

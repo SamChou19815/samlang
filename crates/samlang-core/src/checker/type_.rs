@@ -1,5 +1,8 @@
 use crate::{
-  ast::{source::annotation, Location, Reason},
+  ast::{
+    source::{annotation, TypeParameter},
+    Location, Reason,
+  },
   common::PStr,
   Heap, ModuleReference,
 };
@@ -235,6 +238,13 @@ pub(crate) struct TypeParameterSignature {
 }
 
 impl TypeParameterSignature {
+  pub(crate) fn from(type_parameter: &TypeParameter) -> TypeParameterSignature {
+    TypeParameterSignature {
+      name: type_parameter.name.name,
+      bound: type_parameter.bound.as_ref().map(|b| Rc::new(IdType::from_annotation(b))),
+    }
+  }
+
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match &self.bound {
       Option::None => self.name.as_str(heap).to_string(),
@@ -318,7 +328,7 @@ pub(crate) mod test_type_builder {
 #[cfg(test)]
 mod type_tests {
   use super::*;
-  use crate::ast::source::test_builder;
+  use crate::ast::source::{test_builder, Id};
 
   #[test]
   fn boilterplate() {
@@ -386,15 +396,25 @@ mod type_tests {
 
     assert_eq!(
       "A",
-      TypeParameterSignature { name: heap.alloc_str("A"), bound: Option::None }.pretty_print(&heap)
+      TypeParameterSignature::from(&TypeParameter {
+        loc: Location::dummy(),
+        name: Id::from(heap.alloc_str("A")),
+        bound: None
+      })
+      .pretty_print(&heap)
     );
     assert_eq!(
       "A : B",
-      TypeParameterSignature {
-        name: heap.alloc_str("A"),
-        bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
-      }
-      .clone()
+      TypeParameterSignature::from(&TypeParameter {
+        loc: Location::dummy(),
+        name: Id::from(heap.alloc_str("A")),
+        bound: Some(annotation::Id {
+          location: Location::dummy(),
+          module_reference: ModuleReference::dummy(),
+          id: Id::from(heap.alloc_str("B")),
+          type_arguments: vec![]
+        })
+      })
       .pretty_print(&heap)
     );
 

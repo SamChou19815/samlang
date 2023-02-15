@@ -424,7 +424,7 @@ impl LanguageServices {
     &self,
     module_reference: &ModuleReference,
     class_name: &PStr,
-  ) -> Option<&Rc<InterfaceTypingContext>> {
+  ) -> Option<&InterfaceTypingContext> {
     self.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(class_name))
   }
 

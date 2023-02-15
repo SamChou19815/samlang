@@ -4,7 +4,7 @@
 
 pub use common::{measure_time, Heap, ModuleReference};
 use itertools::Itertools;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 pub mod ast;
 mod checker;
@@ -48,14 +48,19 @@ pub fn compile_sources(
   entry_module_references: Vec<ModuleReference>,
   enable_profiling: bool,
 ) -> Result<SourcesCompilationResult, Vec<String>> {
-  let checker::TypeCheckSourceHandlesResult {
-    checked_sources,
-    global_typing_context: _,
-    compile_time_errors,
-  } = measure_time(enable_profiling, "Type checking", || {
-    checker::type_check_source_handles(heap, source_handles)
+  let mut error_set = errors::ErrorSet::new();
+  let mut parsed_sources = HashMap::new();
+  crate::common::measure_time(enable_profiling, "Parsing", || {
+    for (module_reference, source) in source_handles {
+      let parsed =
+        parser::parse_source_module_from_text(&source, module_reference, heap, &mut error_set);
+      parsed_sources.insert(module_reference, parsed);
+    }
   });
-  let mut errors = compile_time_errors.iter().map(|it| it.pretty_print(heap)).collect_vec();
+  let checked_sources = measure_time(enable_profiling, "Type checking", || {
+    checker::type_check_sources(parsed_sources, heap, &mut error_set).0
+  });
+  let mut errors = error_set.into_errors().iter().map(|it| it.pretty_print(heap)).collect_vec();
   for module_reference in &entry_module_references {
     if !checked_sources.contains_key(module_reference) {
       errors.insert(
