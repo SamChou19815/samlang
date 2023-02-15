@@ -489,7 +489,7 @@ mod tests {
       source::{CommentStore, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE},
       Location, Reason,
     },
-    checker::{type_::Type, type_check_single_module_source},
+    checker::{type_::Type, type_check_sources},
     common::Heap,
     errors::ErrorSet,
     parser::parse_source_module_from_text,
@@ -632,6 +632,7 @@ mod tests {
   fn panic_call_test() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
+    let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
     let parsed_module = parse_source_module_from_text(
       r#"class Main {
         function main(): unit = {
@@ -640,11 +641,12 @@ mod tests {
           Builtins.panic(\"\")
         }
       }"#,
-      heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]),
+      mod_ref,
       &mut heap,
       &mut error_set,
     );
-    let checked = type_check_single_module_source(parsed_module, &mut heap, &mut error_set);
-    run(&mut heap, &checked);
+    let checked =
+      type_check_sources(HashMap::from([(mod_ref, parsed_module)]), &mut heap, &mut error_set).0;
+    run(&mut heap, checked.get(&mod_ref).unwrap());
   }
 }

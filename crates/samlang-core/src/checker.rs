@@ -1,13 +1,13 @@
 use self::{
-  global_cx::build_global_typing_context, main_checker::type_check_module, type_::Type,
-  typing_context::create_builtin_module_typing_context,
+  global_signature::build_global_signature,
+  main_checker::type_check_module,
+  type_::{create_builtin_module_signature, Type},
   undefined_imports_checker::check_undefined_imports_error,
 };
 use crate::{
   ast::source::Module,
   common::{Heap, ModuleReference},
-  errors::{CompileTimeError, ErrorSet},
-  parser::parse_source_module_from_text,
+  errors::ErrorSet,
 };
 use std::{collections::HashMap, rc::Rc};
 
@@ -15,8 +15,8 @@ mod checker_tests;
 /// Utilities operating on types
 mod checker_utils;
 mod checker_utils_tests;
-/// Responsible for building and querying the global typing environment.
-mod global_cx;
+/// Responsible for building and querying the global signature environment.
+mod global_signature;
 /// The main checker that connects everything together.
 mod main_checker;
 /// Computing the SSA graph.
@@ -31,17 +31,15 @@ mod typing_context_tests;
 mod undefined_imports_checker;
 
 pub(crate) use ssa_analysis::{perform_ssa_analysis_on_module, SsaAnalysisResult};
-pub(crate) use typing_context::{
-  GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation,
-};
+pub(crate) use type_::{GlobalSignature, InterfaceSignature, MemberSignature};
 
 pub(crate) fn type_check_sources(
   sources: HashMap<ModuleReference, Module<()>>,
   heap: &mut Heap,
   error_set: &mut ErrorSet,
-) -> (HashMap<ModuleReference, Module<Rc<Type>>>, GlobalTypingContext) {
-  let builtin_cx = create_builtin_module_typing_context(heap);
-  let global_cx = build_global_typing_context(&sources, heap, builtin_cx);
+) -> (HashMap<ModuleReference, Module<Rc<Type>>>, GlobalSignature) {
+  let builtin_cx = create_builtin_module_signature(heap);
+  let global_cx = build_global_signature(&sources, heap, builtin_cx);
   let mut checked_sources = HashMap::new();
   for (_, module) in sources.iter() {
     check_undefined_imports_error(&sources, heap, error_set, module);
@@ -51,38 +49,4 @@ pub(crate) fn type_check_sources(
     checked_sources.insert(module_reference, checked);
   }
   (checked_sources, global_cx)
-}
-
-pub(crate) struct TypeCheckSourceHandlesResult {
-  pub(crate) checked_sources: HashMap<ModuleReference, Module<Rc<Type>>>,
-  pub(crate) global_typing_context: GlobalTypingContext,
-  pub(crate) compile_time_errors: Vec<CompileTimeError>,
-}
-
-pub(crate) fn type_check_source_handles(
-  heap: &mut Heap,
-  source_handles: Vec<(ModuleReference, String)>,
-) -> TypeCheckSourceHandlesResult {
-  let mut error_set = ErrorSet::new();
-  let mut parsed_sources = HashMap::new();
-  for (module_reference, source) in source_handles {
-    let parsed = parse_source_module_from_text(&source, module_reference, heap, &mut error_set);
-    parsed_sources.insert(module_reference, parsed);
-  }
-  let (checked_sources, global_typing_context) =
-    type_check_sources(parsed_sources, heap, &mut error_set);
-  let compile_time_errors = error_set.into_errors();
-  TypeCheckSourceHandlesResult { checked_sources, global_typing_context, compile_time_errors }
-}
-
-pub(crate) fn type_check_single_module_source(
-  module: Module<()>,
-  heap: &mut Heap,
-  error_set: &mut ErrorSet,
-) -> Module<Rc<Type>> {
-  let module_reference = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-  type_check_sources(HashMap::from([(module_reference, module)]), heap, error_set)
-    .0
-    .remove(&module_reference)
-    .unwrap()
 }

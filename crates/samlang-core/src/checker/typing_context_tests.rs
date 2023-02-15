@@ -4,18 +4,19 @@ mod tests {
     ast::{Location, Reason},
     checker::{
       ssa_analysis::SsaAnalysisResult,
-      type_::{test_type_builder, FunctionType, ISourceType, Type, TypeParameterSignature},
-      typing_context::{
-        create_builtin_module_typing_context, InterfaceTypingContext, LocalTypingContext,
-        MemberTypeInformation, ModuleTypingContext, TypeDefinitionTypingContext, TypingContext,
+      type_::{
+        test_type_builder, ISourceType, ModuleSignature, Type, TypeDefinitionSignature,
+        TypeParameterSignature,
       },
+      typing_context::{LocalTypingContext, TypingContext},
+      InterfaceSignature, MemberSignature,
     },
     common::{Heap, ModuleReference},
     errors::ErrorSet,
   };
   use pretty_assertions::assert_eq;
   use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     rc::Rc,
   };
 
@@ -44,122 +45,6 @@ mod tests {
   }
 
   #[test]
-  fn boilterplate() {
-    let mut heap = Heap::new();
-
-    assert_eq!(
-      r#"
-class  : []
-functions:
-stringToInt: public (string) -> int
-intToString: public (int) -> string
-println: public (string) -> unit
-panic: public <T>(string) -> T
-stringConcat: public (string, string) -> string
-methods:
-
-"#
-      .trim(),
-      create_builtin_module_typing_context(&mut heap)
-        .interfaces
-        .get(&heap.alloc_str("Builtins"))
-        .unwrap()
-        .to_string(&heap)
-    );
-    assert_eq!(
-      r#"
-class  : []
-functions:
-methods:
-m1: public () -> unknown
-m2: public () -> unknown
-     "#
-      .trim(),
-      InterfaceTypingContext {
-        is_concrete: true,
-        type_parameters: vec![],
-        super_types: vec![],
-        functions: BTreeMap::new(),
-        methods: BTreeMap::from([
-          (
-            heap.alloc_str("m1"),
-            MemberTypeInformation {
-              is_public: true,
-              type_parameters: vec![],
-              type_: FunctionType {
-                reason: Reason::dummy(),
-                argument_types: vec![],
-                return_type: Rc::new(Type::Unknown(Reason::dummy()))
-              }
-            }
-          ),
-          (
-            heap.alloc_str("m2"),
-            MemberTypeInformation {
-              is_public: true,
-              type_parameters: vec![],
-              type_: FunctionType {
-                reason: Reason::dummy(),
-                argument_types: vec![],
-                return_type: Rc::new(Type::Unknown(Reason::dummy()))
-              }
-            }
-          )
-        ]),
-      }
-      .to_string(&heap)
-    );
-
-    let builder = test_type_builder::create();
-    assert_eq!(
-      "a:bool, b:(private) bool",
-      TypeDefinitionTypingContext {
-        is_object: true,
-        names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
-        mappings: HashMap::from([
-          (heap.alloc_str("a"), (builder.bool_type(), true)),
-          (heap.alloc_str("b"), (builder.bool_type(), false)),
-        ])
-      }
-      .to_string(&heap)
-    );
-    assert_eq!(
-      "A(bool)",
-      TypeDefinitionTypingContext {
-        is_object: false,
-        names: vec![heap.alloc_str("A")],
-        mappings: HashMap::from([(heap.alloc_str("A"), (builder.bool_type(), true))])
-      }
-      .to_string(&heap)
-    );
-
-    assert_eq!(
-      "private a() -> bool",
-      MemberTypeInformation::create_private_builtin_function(
-        &mut heap,
-        "a",
-        vec![],
-        builder.bool_type(),
-        vec![]
-      )
-      .1
-      .pretty_print("a", &heap)
-    );
-    assert_eq!(
-      "public a() -> bool",
-      MemberTypeInformation::create_builtin_function(
-        &mut heap,
-        "a",
-        vec![],
-        builder.bool_type(),
-        vec![]
-      )
-      .1
-      .pretty_print("a", &heap)
-    );
-  }
-
-  #[test]
   fn is_subtype_tests() {
     let mut heap = Heap::new();
     let builder = test_type_builder::create();
@@ -167,11 +52,11 @@ m2: public () -> unknown
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
-      ModuleTypingContext {
-        type_definitions: BTreeMap::new(),
-        interfaces: BTreeMap::from([(
+      ModuleSignature {
+        type_definitions: HashMap::new(),
+        interfaces: HashMap::from([(
           heap.alloc_str("A"),
-          InterfaceTypingContext {
+          InterfaceSignature {
             is_concrete: true,
             type_parameters: vec![TypeParameterSignature {
               name: heap.alloc_str("T"),
@@ -181,8 +66,8 @@ m2: public () -> unknown
               heap.alloc_str("B"),
               vec![builder.simple_id_type(heap.alloc_str("T")), builder.int_type()],
             )],
-            functions: BTreeMap::new(),
-            methods: BTreeMap::new(),
+            functions: HashMap::new(),
+            methods: HashMap::new(),
           },
         )]),
       },
@@ -235,12 +120,12 @@ m2: public () -> unknown
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
-      ModuleTypingContext {
-        type_definitions: BTreeMap::new(),
-        interfaces: BTreeMap::from([
+      ModuleSignature {
+        type_definitions: HashMap::new(),
+        interfaces: HashMap::from([
           (
             heap.alloc_str("A"),
-            InterfaceTypingContext {
+            InterfaceSignature {
               is_concrete: true,
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str("T1"), bound: None },
@@ -250,18 +135,18 @@ m2: public () -> unknown
                 },
               ],
               super_types: vec![],
-              functions: BTreeMap::new(),
-              methods: BTreeMap::new(),
+              functions: HashMap::new(),
+              methods: HashMap::new(),
             },
           ),
           (
             heap.alloc_str("B"),
-            InterfaceTypingContext {
+            InterfaceSignature {
               is_concrete: false,
               type_parameters: vec![],
               super_types: vec![builder.simple_id_type_unwrapped(heap.alloc_str("B"))],
-              functions: BTreeMap::new(),
-              methods: BTreeMap::new(),
+              functions: HashMap::new(),
+              methods: HashMap::new(),
             },
           ),
         ]),
@@ -329,27 +214,27 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
     let str_b = heap.alloc_str("B");
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
-      ModuleTypingContext {
-        type_definitions: BTreeMap::new(),
-        interfaces: BTreeMap::from([
+      ModuleSignature {
+        type_definitions: HashMap::new(),
+        interfaces: HashMap::from([
           (
             heap.alloc_str("A"),
-            InterfaceTypingContext {
+            InterfaceSignature {
               is_concrete: true,
               type_parameters: vec![
                 TypeParameterSignature { name: str_a, bound: None },
                 TypeParameterSignature { name: str_b, bound: None },
               ],
               super_types: vec![],
-              functions: BTreeMap::from([
-                MemberTypeInformation::create_builtin_function(
+              functions: HashMap::from([
+                MemberSignature::create_builtin_function(
                   &mut heap,
                   "f1",
                   vec![],
                   builder.int_type(),
                   vec!["C"],
                 ),
-                MemberTypeInformation::create_private_builtin_function(
+                MemberSignature::create_private_builtin_function(
                   &mut heap,
                   "f2",
                   vec![],
@@ -357,15 +242,15 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                   vec!["C"],
                 ),
               ]),
-              methods: BTreeMap::from([
-                MemberTypeInformation::create_builtin_function(
+              methods: HashMap::from([
+                MemberSignature::create_builtin_function(
                   &mut heap,
                   "m1",
                   vec![builder.simple_id_type(str_a), builder.simple_id_type(str_b)],
                   builder.int_type(),
                   vec!["C"],
                 ),
-                MemberTypeInformation::create_builtin_function(
+                MemberSignature::create_builtin_function(
                   &mut heap,
                   "m2",
                   vec![],
@@ -377,22 +262,22 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
           ),
           (
             heap.alloc_str("B"),
-            InterfaceTypingContext {
+            InterfaceSignature {
               is_concrete: false,
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str("E"), bound: None },
                 TypeParameterSignature { name: heap.alloc_str("F"), bound: None },
               ],
               super_types: vec![],
-              functions: BTreeMap::from([
-                MemberTypeInformation::create_builtin_function(
+              functions: HashMap::from([
+                MemberSignature::create_builtin_function(
                   &mut heap,
                   "f1",
                   vec![],
                   builder.int_type(),
                   vec!["C"],
                 ),
-                MemberTypeInformation::create_private_builtin_function(
+                MemberSignature::create_private_builtin_function(
                   &mut heap,
                   "f2",
                   vec![],
@@ -400,15 +285,15 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
                   vec!["C"],
                 ),
               ]),
-              methods: BTreeMap::from([
-                MemberTypeInformation::create_builtin_function(
+              methods: HashMap::from([
+                MemberSignature::create_builtin_function(
                   &mut heap,
                   "m1",
                   vec![],
                   builder.int_type(),
                   vec!["C"],
                 ),
-                MemberTypeInformation::create_private_builtin_function(
+                MemberSignature::create_private_builtin_function(
                   &mut heap,
                   "m2",
                   vec![],
@@ -633,11 +518,11 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
-      ModuleTypingContext {
-        type_definitions: BTreeMap::from([
+      ModuleSignature {
+        type_definitions: HashMap::from([
           (
             heap.alloc_str("A"),
-            TypeDefinitionTypingContext {
+            TypeDefinitionSignature {
               is_object: false,
               names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
               mappings: HashMap::from([
@@ -648,38 +533,34 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
           ),
           (
             heap.alloc_str("B"),
-            TypeDefinitionTypingContext {
-              is_object: true,
-              names: vec![],
-              mappings: HashMap::new(),
-            },
+            TypeDefinitionSignature { is_object: true, names: vec![], mappings: HashMap::new() },
           ),
         ]),
-        interfaces: BTreeMap::from([
+        interfaces: HashMap::from([
           (
             heap.alloc_str("A"),
-            InterfaceTypingContext {
+            InterfaceSignature {
               is_concrete: true,
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
                 TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
               ],
               super_types: vec![],
-              functions: BTreeMap::new(),
-              methods: BTreeMap::new(),
+              functions: HashMap::new(),
+              methods: HashMap::new(),
             },
           ),
           (
             heap.alloc_str("B"),
-            InterfaceTypingContext {
+            InterfaceSignature {
               is_concrete: false,
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str("E"), bound: None },
                 TypeParameterSignature { name: heap.alloc_str("F"), bound: None },
               ],
               super_types: vec![],
-              functions: BTreeMap::new(),
-              methods: BTreeMap::new(),
+              functions: HashMap::new(),
+              methods: HashMap::new(),
             },
           ),
         ]),

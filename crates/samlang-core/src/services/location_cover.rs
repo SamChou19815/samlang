@@ -176,10 +176,12 @@ mod tests {
       source::{expr, Id, NO_COMMENT_REFERENCE},
       Location, Position, Reason,
     },
-    checker::{type_::Type, type_check_source_handles},
+    checker::{type_::Type, type_check_sources},
+    errors::ErrorSet,
+    parser::parse_source_module_from_text,
     Heap, ModuleReference,
   };
-  use std::rc::Rc;
+  use std::{collections::HashMap, rc::Rc};
 
   #[test]
   fn method_search_coverage_test() {
@@ -219,83 +221,84 @@ mod tests {
   #[test]
   fn searcher_coverage_test() {
     let heap = &mut Heap::new();
+    let mut error_set = ErrorSet::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["foo".to_string()]);
-    let r = type_check_source_handles(
-      heap,
-      vec![(
-        mod_ref,
-        r#"class Foo(val a: int) {
-    function bar(): int = 3
-  }
+    let parsed = parse_source_module_from_text(
+      r#"class Foo(val a: int) {
+      function bar(): int = 3
+    }
 
-  class Option<T>(None(unit), Some(T)) {
-    function none(): Option<int> = Option.None({})
-    function createSome(): (int) -> Option<int> = (n: int) -> Option.Some(n)
-    function createSome2(): (int) -> Option<int> = (n) -> Option.Some(n)
+    class Option<T>(None(unit), Some(T)) {
+      function none(): Option<int> = Option.None({})
+      function createSome(): (int) -> Option<int> = (n: int) -> Option.Some(n)
+      function createSome2(): (int) -> Option<int> = (n) -> Option.Some(n)
 
-    function run(): unit = Option.createSome()(1).matchExample()
+      function run(): unit = Option.createSome()(1).matchExample()
 
-    method matchExample(): unit =
-      match (this) {
-        None(_) -> {}
-        Some(a) -> {}
+      method matchExample(): unit =
+        match (this) {
+          None(_) -> {}
+          Some(a) -> {}
+        }
+    }
+
+    class Obj(val d: int, val e: int) {
+      function valExample(): int = {
+        val a: int = 1;
+        val b = 2;
+        val c = 3; // c = 3
+        val { e as d } = Obj.init(5, 4); // d = 4
+        val f = Obj.init(5, 4); // d = 4
+        val g = Obj.init(d, 4); // d = 4
+        val _ = f.d;
+        // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
+        a + b * c / d
       }
-  }
-
-  class Obj(val d: int, val e: int) {
-    function valExample(): int = {
-      val a: int = 1;
-      val b = 2;
-      val c = 3; // c = 3
-      val { e as d } = Obj.init(5, 4); // d = 4
-      val f = Obj.init(5, 4); // d = 4
-      val g = Obj.init(d, 4); // d = 4
-      val _ = f.d;
-      // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
-      a + b * c / d
-    }
-  }
-
-  interface Interface
-
-  class Main {
-    function identity(a: int): int = a
-
-    function random(): int = {
-      val a = 42; // very random
-      a
     }
 
-    function oof(): int = 14
+    interface Interface
 
-    function div(a: int, b: int): int =
-      if b == 0 then (
-        Builtins.panic("Division by zero is illegal!")
-      ) else (
-        a / b
-      )
+    class Main {
+      function identity(a: int): int = a
 
-    function nestedVal(): int = {
-      val a = {
-        val b = 4;
-        val c = {
-          val c = b;
-          b
+      function random(): int = {
+        val a = 42; // very random
+        a
+      }
+
+      function oof(): int = 14
+
+      function div(a: int, b: int): int =
+        if b == 0 then (
+          Builtins.panic("Division by zero is illegal!")
+        ) else (
+          a / b
+        )
+
+      function nestedVal(): int = {
+        val a = {
+          val b = 4;
+          val c = {
+            val c = b;
+            b
+          };
+          c
         };
-        c
-      };
-      a + -1
-    }
+        a + -1
+      }
 
-    function main(): unit = Builtins.println(Builtins.intToString(Main.identity(
-      Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
-    )))
-  }"#
-          .to_string(),
-      )],
+      function main(): unit = Builtins.println(Builtins.intToString(Main.identity(
+        Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
+      )))
+    }"#,
+      mod_ref,
+      heap,
+      &mut error_set,
     );
-    assert!(r.compile_time_errors.is_empty());
-    for m in r.checked_sources.values() {
+    let (checked_sources, _) =
+      type_check_sources(HashMap::from([(mod_ref, parsed)]), heap, &mut error_set);
+    assert!(error_set.into_errors().is_empty());
+    for m in checked_sources.values() {
       for i in 0..80 {
         for j in 0..80 {
           super::search_module(mod_ref, m, Position(i, j));

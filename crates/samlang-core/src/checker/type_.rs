@@ -8,7 +8,7 @@ use crate::{
 };
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) enum PrimitiveTypeKind {
@@ -325,10 +325,234 @@ pub(crate) mod test_type_builder {
   }
 }
 
+pub(crate) struct MemberSignature {
+  pub(crate) is_public: bool,
+  pub(crate) type_parameters: Vec<TypeParameterSignature>,
+  pub(crate) type_: FunctionType,
+}
+
+impl MemberSignature {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
+    let access_str = if self.is_public { "public" } else { "private" };
+    let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters, heap);
+    format!("{} {}{}", access_str, tparam_str, self.type_.pretty_print(heap))
+  }
+}
+
+impl MemberSignature {
+  fn create_custom_builtin_function(
+    heap: &mut Heap,
+    name: &'static str,
+    is_public: bool,
+    argument_types: Vec<Rc<Type>>,
+    return_type: Rc<Type>,
+    type_parameters: Vec<&'static str>,
+  ) -> (PStr, MemberSignature) {
+    (
+      heap.alloc_str(name),
+      MemberSignature {
+        is_public,
+        type_parameters: type_parameters
+          .into_iter()
+          .map(|name| TypeParameterSignature { name: heap.alloc_str(name), bound: None })
+          .collect_vec(),
+        type_: FunctionType { reason: Reason::builtin(), argument_types, return_type },
+      },
+    )
+  }
+
+  pub(super) fn create_builtin_function(
+    heap: &mut Heap,
+    name: &'static str,
+    argument_types: Vec<Rc<Type>>,
+    return_type: Rc<Type>,
+    type_parameters: Vec<&'static str>,
+  ) -> (PStr, MemberSignature) {
+    MemberSignature::create_custom_builtin_function(
+      heap,
+      name,
+      true,
+      argument_types,
+      return_type,
+      type_parameters,
+    )
+  }
+
+  pub(super) fn create_private_builtin_function(
+    heap: &mut Heap,
+    name: &'static str,
+    argument_types: Vec<Rc<Type>>,
+    return_type: Rc<Type>,
+    type_parameters: Vec<&'static str>,
+  ) -> (PStr, MemberSignature) {
+    MemberSignature::create_custom_builtin_function(
+      heap,
+      name,
+      false,
+      argument_types,
+      return_type,
+      type_parameters,
+    )
+  }
+
+  pub(crate) fn pretty_print(&self, name: &str, heap: &Heap) -> String {
+    let access_str = if self.is_public { "public" } else { "private" };
+    let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters, heap);
+    format!("{} {}{}{}", access_str, name, tparam_str, self.type_.pretty_print(heap))
+  }
+
+  pub(super) fn reposition(&self, use_loc: Location) -> MemberSignature {
+    MemberSignature {
+      is_public: self.is_public,
+      type_parameters: self.type_parameters.clone(),
+      type_: self.type_.clone().reposition(use_loc),
+    }
+  }
+}
+
+pub(crate) struct InterfaceSignature {
+  pub(crate) is_concrete: bool,
+  pub(crate) functions: HashMap<PStr, MemberSignature>,
+  pub(crate) methods: HashMap<PStr, MemberSignature>,
+  pub(crate) type_parameters: Vec<TypeParameterSignature>,
+  pub(crate) super_types: Vec<IdType>,
+}
+
+impl InterfaceSignature {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
+    let mut lines = vec![];
+    lines.push(format!(
+      "{} {} : [{}]",
+      if self.is_concrete { "class".to_string() } else { "interface".to_string() },
+      TypeParameterSignature::pretty_print_list(&self.type_parameters, heap),
+      self.super_types.iter().map(|it| it.pretty_print(heap)).join(", "),
+    ));
+    lines.push("functions:".to_string());
+    for (name, info) in self.functions.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
+      lines.push(format!("{}: {}", name.as_str(heap), info.to_string(heap)));
+    }
+    lines.push("methods:".to_string());
+    for (name, info) in self.methods.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
+      lines.push(format!("{}: {}", name.as_str(heap), info.to_string(heap)));
+    }
+    lines.join("\n")
+  }
+}
+
+pub(crate) struct TypeDefinitionSignature {
+  pub(crate) is_object: bool,
+  pub(crate) names: Vec<PStr>,
+  pub(crate) mappings: HashMap<PStr, (Rc<Type>, bool)>,
+}
+
+impl TypeDefinitionSignature {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
+    let is_object = self.is_object;
+    let mut collector = vec![];
+    for name in &self.names {
+      let (t, is_public) = self.mappings.get(name).unwrap();
+      let type_str =
+        format!("{}{}", if *is_public { "" } else { "(private) " }, t.pretty_print(heap));
+      if is_object {
+        collector.push(format!("{}:{}", name.as_str(heap), type_str));
+      } else {
+        collector.push(format!("{}({})", name.as_str(heap), type_str));
+      }
+    }
+    collector.join(", ")
+  }
+}
+
+pub(crate) struct ModuleSignature {
+  pub(crate) type_definitions: HashMap<PStr, TypeDefinitionSignature>,
+  pub(crate) interfaces: HashMap<PStr, InterfaceSignature>,
+}
+
+impl ModuleSignature {
+  pub(crate) fn to_string(&self, heap: &Heap) -> String {
+    let mut lines = vec![];
+    lines.push("type_definitions:".to_string());
+    for (name, def) in self.type_definitions.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
+      lines.push(format!("{}:[{}]", name.as_str(heap), def.to_string(heap)));
+    }
+    lines.push("\ninterfaces:".to_string());
+    for (name, i) in self.interfaces.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
+      lines.push(format!("{}: {}", name.as_str(heap), i.to_string(heap)));
+    }
+    lines.join("\n")
+  }
+}
+
+pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignature {
+  heap.alloc_str("init");
+  heap.alloc_str("this");
+  let str_t = heap.alloc_str("T");
+  ModuleSignature {
+    type_definitions: HashMap::new(),
+    interfaces: HashMap::from([(
+      heap.alloc_str("Builtins"),
+      InterfaceSignature {
+        is_concrete: true,
+        type_parameters: vec![],
+        super_types: vec![],
+        methods: HashMap::new(),
+        functions: HashMap::from([
+          MemberSignature::create_builtin_function(
+            heap,
+            "stringToInt",
+            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
+            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
+            vec![],
+          ),
+          MemberSignature::create_builtin_function(
+            heap,
+            "intToString",
+            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
+            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
+            vec![],
+          ),
+          MemberSignature::create_builtin_function(
+            heap,
+            "println",
+            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
+            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
+            vec![],
+          ),
+          MemberSignature::create_builtin_function(
+            heap,
+            "panic",
+            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
+            Rc::new(Type::Id(IdType {
+              reason: Reason::builtin(),
+              module_reference: ModuleReference::root(),
+              id: str_t,
+              type_arguments: vec![],
+            })),
+            vec!["T"],
+          ),
+          MemberSignature::create_builtin_function(
+            heap,
+            "stringConcat",
+            vec![
+              Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
+              Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
+            ],
+            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
+            vec![],
+          ),
+        ]),
+      },
+    )]),
+  }
+}
+
+pub(crate) type GlobalSignature = HashMap<ModuleReference, ModuleSignature>;
+
 #[cfg(test)]
 mod type_tests {
   use super::*;
   use crate::ast::source::{test_builder, Id};
+  use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {
@@ -431,6 +655,111 @@ mod type_tests {
         ],
         &heap
       )
+    );
+
+    assert_eq!(
+      r#"
+class  : []
+functions:
+stringToInt: public (string) -> int
+intToString: public (int) -> string
+println: public (string) -> unit
+panic: public <T>(string) -> T
+stringConcat: public (string, string) -> string
+methods:
+
+"#
+      .trim(),
+      create_builtin_module_signature(&mut heap)
+        .interfaces
+        .get(&heap.alloc_str("Builtins"))
+        .unwrap()
+        .to_string(&heap)
+    );
+    assert_eq!(
+      r#"
+class  : []
+functions:
+methods:
+m1: public () -> unknown
+m2: public () -> unknown
+"#
+      .trim(),
+      InterfaceSignature {
+        is_concrete: true,
+        type_parameters: vec![],
+        super_types: vec![],
+        functions: HashMap::new(),
+        methods: HashMap::from([
+          (
+            heap.alloc_str("m1"),
+            MemberSignature {
+              is_public: true,
+              type_parameters: vec![],
+              type_: FunctionType {
+                reason: Reason::dummy(),
+                argument_types: vec![],
+                return_type: Rc::new(Type::Unknown(Reason::dummy()))
+              }
+            }
+          ),
+          (
+            heap.alloc_str("m2"),
+            MemberSignature {
+              is_public: true,
+              type_parameters: vec![],
+              type_: FunctionType {
+                reason: Reason::dummy(),
+                argument_types: vec![],
+                return_type: Rc::new(Type::Unknown(Reason::dummy()))
+              }
+            }
+          )
+        ]),
+      }
+      .to_string(&heap)
+    );
+
+    let builder = test_type_builder::create();
+    assert_eq!(
+      "a:bool, b:(private) bool",
+      TypeDefinitionSignature {
+        is_object: true,
+        names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+        mappings: HashMap::from([
+          (heap.alloc_str("a"), (builder.bool_type(), true)),
+          (heap.alloc_str("b"), (builder.bool_type(), false)),
+        ])
+      }
+      .to_string(&heap)
+    );
+    assert_eq!(
+      "A(bool)",
+      TypeDefinitionSignature {
+        is_object: false,
+        names: vec![heap.alloc_str("A")],
+        mappings: HashMap::from([(heap.alloc_str("A"), (builder.bool_type(), true))])
+      }
+      .to_string(&heap)
+    );
+
+    assert_eq!(
+      "private a() -> bool",
+      MemberSignature::create_private_builtin_function(
+        &mut heap,
+        "a",
+        vec![],
+        builder.bool_type(),
+        vec![]
+      )
+      .1
+      .pretty_print("a", &heap)
+    );
+    assert_eq!(
+      "public a() -> bool",
+      MemberSignature::create_builtin_function(&mut heap, "a", vec![], builder.bool_type(), vec![])
+        .1
+        .pretty_print("a", &heap)
     );
   }
 

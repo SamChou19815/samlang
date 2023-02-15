@@ -12,7 +12,7 @@ use crate::{
   },
   checker::{
     type_::{FunctionType, ISourceType, Type},
-    type_check_sources, GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation,
+    type_check_sources, GlobalSignature, InterfaceSignature, MemberSignature,
   },
   common::{Heap, ModuleReference, PStr},
   errors::{CompileTimeError, ErrorSet},
@@ -69,7 +69,7 @@ pub struct LanguageServices {
   raw_sources: HashMap<ModuleReference, String>,
   checked_modules: HashMap<ModuleReference, Module<Rc<Type>>>,
   errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
-  global_cx: GlobalTypingContext,
+  global_cx: GlobalSignature,
 }
 
 impl LanguageServices {
@@ -373,6 +373,7 @@ impl LanguageServices {
                   CompletionItemKind::Function,
                 )
               })
+              .sorted_by_key(|r| r.label.to_string())
               .collect()
           });
         }
@@ -417,6 +418,7 @@ impl LanguageServices {
         ));
       }
     }
+    completion_results.sort_by_key(|r| r.label.to_string());
     Some(completion_results)
   }
 
@@ -424,14 +426,14 @@ impl LanguageServices {
     &self,
     module_reference: &ModuleReference,
     class_name: &PStr,
-  ) -> Option<&InterfaceTypingContext> {
+  ) -> Option<&InterfaceSignature> {
     self.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(class_name))
   }
 
   fn get_completion_result_from_type_info(
     &self,
     name: &str,
-    type_information: &MemberTypeInformation,
+    type_information: &MemberSignature,
     kind: CompletionItemKind,
   ) -> AutoCompletionItem {
     let (insert_text, insert_text_format) =
@@ -456,7 +458,7 @@ impl LanguageServices {
     }
   }
 
-  fn pretty_print_type_info(&self, type_information: &MemberTypeInformation) -> String {
+  fn pretty_print_type_info(&self, type_information: &MemberSignature) -> String {
     if type_information.type_parameters.is_empty() {
       type_information.type_.pretty_print(&self.heap)
     } else {
