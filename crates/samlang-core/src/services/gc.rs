@@ -228,98 +228,103 @@ pub(super) fn perform_gc_after_recheck(
 
 #[cfg(test)]
 mod tests {
-  use crate::{checker::type_check_source_handles, Heap, ModuleReference};
+  use crate::{
+    checker::type_check_sources, errors::ErrorSet, parser::parse_source_module_from_text, Heap,
+    ModuleReference,
+  };
+  use std::collections::HashMap;
 
   #[test]
   fn mark_coverage_test() {
     let heap = &mut Heap::new();
-    let r = type_check_source_handles(
-      heap,
-      vec![(
-        ModuleReference::dummy(),
-        r#"import {Foo, Bar} from Module.Reference
+    let mut error_set = ErrorSet::new();
+    let parsed = parse_source_module_from_text(
+      r#"import {Foo, Bar} from Module.Reference
 
-  class Foo(val a: int) {
-    function bar(): int = 3
-  }
-
-  class Option<T>(None(unit), Some(T)) {
-    function none(): Option<int> = Option.None({})
-    function createSome(): (int) -> Option<int> = (n: int) -> Option.Some(n)
-    function createSome2(): (int) -> Option<int> = (n) -> Option.Some(n)
-
-    function run(): unit = Option.createSome()(1).matchExample()
-
-    method matchExample(): unit =
-      match (this) {
-        None(_) -> {}
-        Some(a) -> {}
+      class Foo(val a: int) {
+        function bar(): int = 3
       }
-  }
 
-  class Obj(val d: int, val e: int) {
-    function valExample(): int = {
-      val a: int = 1;
-      val b = 2;
-      val c = 3; // c = 3
-      val { d } = Obj.init(5, 4);
-      val { e as d2 } = Obj.init(5, 4); // d = 4
-      val f = Obj.init(5, 4); // d = 4
-      val g = Obj.init(d, 4); // d = 4
-      val _ = f.d;
-      // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
-      a + b * c / d
-    }
-  }
+      class Option<T>(None(unit), Some(T)) {
+        function none(): Option<int> = Option.None({})
+        function createSome(): (int) -> Option<int> = (n: int) -> Option.Some(n)
+        function createSome2(): (int) -> Option<int> = (n) -> Option.Some(n)
 
-  interface Interface
+        function run(): unit = Option.createSome()(1).matchExample()
 
-  interface Generic<T: Interface> : Interface {}
+        method matchExample(): unit =
+          match (this) {
+            None(_) -> {}
+            Some(a) -> {}
+          }
+      }
 
-  class Main {
-    function identity(a: int): int = a
+      class Obj(val d: int, val e: int) {
+        function valExample(): int = {
+          val a: int = 1;
+          val b = 2;
+          val c = 3; // c = 3
+          val { d } = Obj.init(5, 4);
+          val { e as d2 } = Obj.init(5, 4); // d = 4
+          val f = Obj.init(5, 4); // d = 4
+          val g = Obj.init(d, 4); // d = 4
+          val _ = f.d;
+          // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
+          a + b * c / d
+        }
+      }
 
-    function random(): int = {
-      val a = 42; // very random
-      a
-    }
+      interface Interface
 
-    function oof(): int = 14
+      interface Generic<T: Interface> : Interface {}
 
-    function div(a: int, b: int): int =
-      if b == 0 then (
-        Builtins.panic("Division by zero is illegal!")
-      ) else (
-        a / b
-      )
+      class Main {
+        function identity(a: int): int = a
 
-    function nestedVal(): int = {
-      val a = {
-        val b = 4;
-        val c = {
-          val c = b;
-          b
-        };
-        c
-      };
-      a + -1
-    }
+        function random(): int = {
+          val a = 42; // very random
+          a
+        }
 
-    function main(): unit = Builtins.println(Builtins.intToString(Main.identity(
-      Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
-    )))
-  }"#
-          .to_string(),
-      )],
+        function oof(): int = 14
+
+        function div(a: int, b: int): int =
+          if b == 0 then (
+            Builtins.panic("Division by zero is illegal!")
+          ) else (
+            a / b
+          )
+
+        function nestedVal(): int = {
+          val a = {
+            val b = 4;
+            val c = {
+              val c = b;
+              b
+            };
+            c
+          };
+          a + -1
+        }
+
+        function main(): unit = Builtins.println(Builtins.intToString(Main.identity(
+          Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
+        )))
+      }"#,
+      ModuleReference::dummy(),
+      heap,
+      &mut error_set,
     );
-    super::perform_gc_after_recheck(heap, &r.checked_sources, vec![ModuleReference::root()]);
-    super::perform_gc_after_recheck(heap, &r.checked_sources, vec![ModuleReference::dummy()]);
+    let (checked_sources, _) =
+      type_check_sources(HashMap::from([(ModuleReference::dummy(), parsed)]), heap, &mut error_set);
+    super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::root()]);
+    super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::dummy()]);
     assert_eq!("", heap.debug_unmarked_strings());
 
     super::perform_gc_after_recheck_internal(
       heap,
       1,
-      &r.checked_sources,
+      &checked_sources,
       vec![ModuleReference::dummy()],
     );
   }

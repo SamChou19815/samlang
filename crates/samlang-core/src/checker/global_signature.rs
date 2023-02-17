@@ -2,10 +2,9 @@ use super::{
   checker_utils::{
     perform_fn_type_substitution, perform_id_type_substitution_asserting_id_type_return,
   },
-  type_::{FunctionType, ISourceType, IdType, Type, TypeParameterSignature},
-  typing_context::{
-    GlobalTypingContext, InterfaceTypingContext, MemberTypeInformation, ModuleTypingContext,
-    TypeDefinitionTypingContext,
+  type_::{
+    FunctionType, GlobalSignature, ISourceType, IdType, InterfaceSignature, MemberSignature,
+    ModuleSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
   },
 };
 use crate::{
@@ -17,63 +16,76 @@ use crate::{
 };
 use itertools::Itertools;
 use std::{
-  collections::{BTreeMap, HashMap, HashSet},
+  collections::{HashMap, HashSet},
   rc::Rc,
 };
 
-pub(super) fn build_global_typing_context(
-  sources: &HashMap<ModuleReference, Module<()>>,
+pub(crate) fn build_module_signature(
+  module_reference: ModuleReference,
+  module: &Module<()>,
   heap: &Heap,
-  builtin_module_types: ModuleTypingContext,
-) -> GlobalTypingContext {
-  let mut global_cx = HashMap::new();
-  global_cx.insert(ModuleReference::root(), builtin_module_types);
-  for (module_reference, Module { comment_store: _, imports: _, toplevels }) in sources {
-    let module_reference = *module_reference;
-    let mut interfaces = BTreeMap::new();
-    let mut type_definitions = BTreeMap::new();
-    for toplevel in toplevels {
-      let name = toplevel.name().name;
-      let mut functions = BTreeMap::new();
-      let mut methods = BTreeMap::new();
-      for member in toplevel.members_iter() {
-        let type_info = MemberTypeInformation {
-          is_public: member.is_public,
-          type_parameters: member
-            .type_parameters
-            .iter()
-            .map(TypeParameterSignature::from)
-            .collect(),
-          type_: FunctionType::from_annotation(&member.type_),
-        };
-        if member.is_method {
-          methods.insert(member.name.name, type_info);
-        } else {
-          functions.insert(member.name.name, type_info);
-        }
+) -> ModuleSignature {
+  let mut interfaces = HashMap::new();
+  let mut type_definitions = HashMap::new();
+  for toplevel in &module.toplevels {
+    let name = toplevel.name().name;
+    let mut functions = HashMap::new();
+    let mut methods = HashMap::new();
+    for member in toplevel.members_iter() {
+      let type_info = MemberSignature {
+        is_public: member.is_public,
+        type_parameters: member.type_parameters.iter().map(TypeParameterSignature::from).collect(),
+        type_: FunctionType::from_annotation(&member.type_),
+      };
+      if member.is_method {
+        methods.insert(member.name.name, type_info);
+      } else {
+        functions.insert(member.name.name, type_info);
       }
-      if let Toplevel::Class(class) = toplevel {
-        let class_type = Rc::new(Type::Id(IdType {
-          reason: Reason::new(class.name.loc, Some(class.name.loc)),
-          module_reference,
-          id: class.name.name,
-          type_arguments: class
-            .type_parameters
-            .iter()
-            .map(|it| {
-              Rc::new(Type::Id(IdType {
-                reason: Reason::new(it.loc, Some(it.loc)),
-                module_reference,
-                id: it.name.name,
-                type_arguments: vec![],
-              }))
-            })
-            .collect_vec(),
-        }));
-        let type_def = &class.type_definition;
+    }
+    if let Toplevel::Class(class) = toplevel {
+      let class_type = Rc::new(Type::Id(IdType {
+        reason: Reason::new(class.name.loc, Some(class.name.loc)),
+        module_reference,
+        id: class.name.name,
+        type_arguments: class
+          .type_parameters
+          .iter()
+          .map(|it| {
+            Rc::new(Type::Id(IdType {
+              reason: Reason::new(it.loc, Some(it.loc)),
+              module_reference,
+              id: it.name.name,
+              type_arguments: vec![],
+            }))
+          })
+          .collect_vec(),
+      }));
+      let type_def = &class.type_definition;
+      let type_def_reason = Reason::new(type_def.loc, Some(type_def.loc));
+      if type_def.is_object {
+        let ctor_fn = MemberSignature {
+          is_public: true,
+          type_parameters: class.type_parameters.iter().map(TypeParameterSignature::from).collect(),
+          type_: FunctionType {
+            reason: type_def_reason,
+            argument_types: type_def
+              .names
+              .iter()
+              .map(|it| Rc::new(Type::from_annotation(&type_def.mappings.get(&it.name).unwrap().0)))
+              .collect_vec(),
+            return_type: class_type,
+          },
+        };
+        functions.insert(
+          // init string should be pre-allocated during builtin_cx init
+          heap.get_allocated_str_opt("init").unwrap(),
+          ctor_fn,
+        );
+      } else {
         let type_def_reason = Reason::new(type_def.loc, Some(type_def.loc));
-        if type_def.is_object {
-          let ctor_fn = MemberTypeInformation {
+        for (tag, (annot, _)) in &type_def.mappings {
+          let ctor_fn = MemberSignature {
             is_public: true,
             type_parameters: class
               .type_parameters
@@ -82,84 +94,68 @@ pub(super) fn build_global_typing_context(
               .collect(),
             type_: FunctionType {
               reason: type_def_reason,
-              argument_types: type_def
-                .names
-                .iter()
-                .map(|it| {
-                  Rc::new(Type::from_annotation(&type_def.mappings.get(&it.name).unwrap().0))
-                })
-                .collect_vec(),
-              return_type: class_type,
+              argument_types: vec![Rc::new(Type::from_annotation(annot))],
+              return_type: class_type.clone(),
             },
           };
-          functions.insert(
-            // init string should be pre-allocated during builtin_cx init
-            heap.get_allocated_str_opt("init").unwrap(),
-            ctor_fn,
-          );
-        } else {
-          let type_def_reason = Reason::new(type_def.loc, Some(type_def.loc));
-          for (tag, (annot, _)) in &type_def.mappings {
-            let ctor_fn = MemberTypeInformation {
-              is_public: true,
-              type_parameters: class
-                .type_parameters
-                .iter()
-                .map(TypeParameterSignature::from)
-                .collect(),
-              type_: FunctionType {
-                reason: type_def_reason,
-                argument_types: vec![Rc::new(Type::from_annotation(annot))],
-                return_type: class_type.clone(),
-              },
-            };
-            functions.insert(*tag, ctor_fn);
-          }
+          functions.insert(*tag, ctor_fn);
         }
-        type_definitions.insert(
-          name,
-          TypeDefinitionTypingContext {
-            is_object: type_def.is_object,
-            names: type_def.names.iter().map(|it| it.name).collect_vec(),
-            mappings: type_def
-              .mappings
-              .iter()
-              .map(|(name, (annot, is_public))| {
-                (*name, (Rc::new(Type::from_annotation(annot)), *is_public))
-              })
-              .collect(),
-          },
-        );
-      };
-      interfaces.insert(
+      }
+      type_definitions.insert(
         name,
-        InterfaceTypingContext {
-          is_concrete: toplevel.is_class(),
-          functions,
-          methods,
-          type_parameters: toplevel
-            .type_parameters()
+        TypeDefinitionSignature {
+          is_object: type_def.is_object,
+          names: type_def.names.iter().map(|it| it.name).collect_vec(),
+          mappings: type_def
+            .mappings
             .iter()
-            .map(TypeParameterSignature::from)
-            .collect(),
-          super_types: toplevel
-            .extends_or_implements_nodes()
-            .iter()
-            .map(IdType::from_annotation)
+            .map(|(name, (annot, is_public))| {
+              (*name, (Rc::new(Type::from_annotation(annot)), *is_public))
+            })
             .collect(),
         },
       );
-    }
-    global_cx.insert(module_reference, ModuleTypingContext { type_definitions, interfaces });
+    };
+    interfaces.insert(
+      name,
+      InterfaceSignature {
+        is_concrete: toplevel.is_class(),
+        functions,
+        methods,
+        type_parameters: toplevel
+          .type_parameters()
+          .iter()
+          .map(TypeParameterSignature::from)
+          .collect(),
+        super_types: toplevel
+          .extends_or_implements_nodes()
+          .iter()
+          .map(IdType::from_annotation)
+          .collect(),
+      },
+    );
+  }
+  ModuleSignature { type_definitions, interfaces }
+}
+
+pub(crate) fn build_global_signature(
+  sources: &HashMap<ModuleReference, Module<()>>,
+  heap: &Heap,
+  builtin_module_types: ModuleSignature,
+) -> GlobalSignature {
+  let mut global_cx = HashMap::new();
+  global_cx.insert(ModuleReference::root(), builtin_module_types);
+  for (module_reference, module) in sources {
+    global_cx.insert(*module_reference, build_module_signature(*module_reference, module, heap));
   }
   global_cx
 }
 
 pub(super) fn resolve_interface_cx(
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   module_reference: ModuleReference,
   toplevel_name: PStr,
-) -> Option<&InterfaceTypingContext> {
+) -> Option<&InterfaceSignature> {
   global_cx.get(&module_reference)?.interfaces.get(&toplevel_name)
 }
 
@@ -179,7 +175,7 @@ impl SuperTypesResolutionResult {
 }
 
 pub(super) fn resolve_all_member_names(
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   interface_types: &[IdType],
   method: bool,
 ) -> HashSet<PStr> {
@@ -209,7 +205,7 @@ pub(super) fn resolve_all_member_names(
 }
 
 fn resolve_all_transitive_super_types_recursive(
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   interface_type: &IdType,
   collector: &mut SuperTypesResolutionResult,
   visited: &mut HashSet<(ModuleReference, PStr)>,
@@ -241,7 +237,7 @@ fn resolve_all_transitive_super_types_recursive(
 }
 
 pub(super) fn resolve_all_transitive_super_types(
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   interface_type: &IdType,
 ) -> SuperTypesResolutionResult {
   let mut collector = SuperTypesResolutionResult { types: vec![], is_cyclic: false };
@@ -255,11 +251,11 @@ pub(super) fn resolve_all_transitive_super_types(
 }
 
 fn resolve_function_signature_internal<'a>(
-  global_cx: &'a GlobalTypingContext,
+  global_cx: &'a GlobalSignature,
   fn_name: PStr,
   all: bool,
   mut lookup_candidates: Vec<(ModuleReference, PStr)>,
-  collector: &mut Vec<&'a MemberTypeInformation>,
+  collector: &mut Vec<&'a MemberSignature>,
   visited: &mut HashSet<(ModuleReference, PStr)>,
 ) {
   loop {
@@ -287,10 +283,10 @@ fn resolve_function_signature_internal<'a>(
 }
 
 pub(super) fn resolve_function_signature(
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   (module_reference, toplevel_name): (ModuleReference, PStr),
   fn_name: PStr,
-) -> Vec<&MemberTypeInformation> {
+) -> Vec<&MemberSignature> {
   let mut collector = vec![];
   resolve_function_signature_internal(
     global_cx,
@@ -304,10 +300,10 @@ pub(super) fn resolve_function_signature(
 }
 
 pub(super) fn resolve_all_function_signatures<'a>(
-  global_cx: &'a GlobalTypingContext,
+  global_cx: &'a GlobalSignature,
   interface_types: &[IdType],
   fn_name: PStr,
-) -> Vec<&'a MemberTypeInformation> {
+) -> Vec<&'a MemberSignature> {
   let mut collector = vec![];
   resolve_function_signature_internal(
     global_cx,
@@ -321,11 +317,11 @@ pub(super) fn resolve_all_function_signatures<'a>(
 }
 
 fn resolve_method_signature_recursive(
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   interface_type: &IdType,
   method_name: PStr,
   all: bool,
-  collector: &mut Vec<MemberTypeInformation>,
+  collector: &mut Vec<MemberSignature>,
   visited: &mut HashSet<(ModuleReference, PStr)>,
 ) {
   if !visited.insert((interface_type.module_reference, interface_type.id)) {
@@ -339,7 +335,7 @@ fn resolve_method_signature_recursive(
       subst_mapping.insert(tparam.name, targ.clone());
     }
     if let Some(info) = interface_cx.methods.get(&method_name) {
-      collector.push(MemberTypeInformation {
+      collector.push(MemberSignature {
         is_public: info.is_public,
         type_parameters: info
           .type_parameters
@@ -371,10 +367,10 @@ fn resolve_method_signature_recursive(
 }
 
 pub(super) fn resolve_method_signature(
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   interface_type: &IdType,
   method_name: PStr,
-) -> Vec<MemberTypeInformation> {
+) -> Vec<MemberSignature> {
   let mut collector = vec![];
   resolve_method_signature_recursive(
     global_cx,
@@ -388,10 +384,10 @@ pub(super) fn resolve_method_signature(
 }
 
 pub(super) fn resolve_all_method_signatures(
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   interface_types: &[IdType],
   method_name: PStr,
-) -> Vec<MemberTypeInformation> {
+) -> Vec<MemberSignature> {
   let mut collector = vec![];
   for interface_type in interface_types {
     resolve_method_signature_recursive(
@@ -415,9 +411,8 @@ mod tests {
   use crate::{
     ast::Reason,
     checker::{
-      type_::{test_type_builder, IdType},
-      typing_context::create_builtin_module_typing_context,
-      GlobalTypingContext,
+      type_::{create_builtin_module_signature, test_type_builder, IdType},
+      GlobalSignature,
     },
     errors::ErrorSet,
     parser::parse_source_module_from_text,
@@ -450,8 +445,8 @@ interface Hiya {}
     let module =
       parse_source_module_from_text(source_code, ModuleReference::dummy(), heap, &mut error_set);
     assert_eq!("", error_set.error_messages(heap).join("\n"));
-    let builtin_cx = create_builtin_module_typing_context(heap);
-    let global_cx = super::build_global_typing_context(
+    let builtin_cx = create_builtin_module_signature(heap);
+    let global_cx = super::build_global_signature(
       &HashMap::from([(ModuleReference::dummy(), module)]),
       heap,
       builtin_cx,
@@ -484,7 +479,7 @@ methods:"#,
     );
   }
 
-  fn build_global_cx_for_resolution_tests(heap: &mut Heap) -> GlobalTypingContext {
+  fn build_global_cx_for_resolution_tests(heap: &mut Heap) -> GlobalSignature {
     let mut error_set = ErrorSet::new();
 
     let source_code = r#"
@@ -522,8 +517,8 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
     let module =
       parse_source_module_from_text(source_code, ModuleReference::dummy(), heap, &mut error_set);
     assert_eq!("", error_set.error_messages(heap).join("\n"));
-    let builtin_cx = create_builtin_module_typing_context(heap);
-    super::build_global_typing_context(
+    let builtin_cx = create_builtin_module_signature(heap);
+    super::build_global_signature(
       &HashMap::from([(ModuleReference::dummy(), module)]),
       heap,
       builtin_cx,

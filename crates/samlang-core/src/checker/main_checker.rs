@@ -4,13 +4,14 @@ use super::{
     perform_type_substitution, solve_multiple_type_constrains, TypeConstraint,
     TypeConstraintSolution,
   },
-  global_cx,
+  global_signature,
   ssa_analysis::perform_ssa_analysis_on_module,
-  type_::{FunctionType, ISourceType, IdType, PrimitiveTypeKind, Type, TypeParameterSignature},
-  typing_context::{
-    GlobalTypingContext, LocalTypingContext, TypeDefinitionTypingContext, TypingContext,
+  type_::{
+    FunctionType, GlobalSignature, ISourceType, IdType, PrimitiveTypeKind, Type,
+    TypeDefinitionSignature, TypeParameterSignature,
   },
-  MemberTypeInformation,
+  typing_context::{LocalTypingContext, TypingContext},
+  MemberSignature,
 };
 use crate::{
   ast::{
@@ -861,11 +862,8 @@ impl<'a> TypingContext<'a> {
           expression.explicit_type_arguments.len(),
         );
       }
-      let TypeDefinitionTypingContext {
-        is_object: _,
-        names: field_names,
-        mappings: field_mappings,
-      } = self.resolve_type_definition(checked_expression.type_(), true);
+      let TypeDefinitionSignature { is_object: _, names: field_names, mappings: field_mappings } =
+        self.resolve_type_definition(checked_expression.type_(), true);
       if let Some((field_type, _)) = field_mappings.get(&expression.field_name.name) {
         let type_ =
           Rc::new(self.type_meet(heap, hint, &field_type.reposition(expression.common.loc)));
@@ -1289,11 +1287,8 @@ impl<'a> TypingContext<'a> {
   ) -> expr::E<Rc<Type>> {
     let checked_matched = self.check(heap, *expression.matched, None);
     let checked_matched_type = checked_matched.type_().deref();
-    let TypeDefinitionTypingContext {
-      is_object: _,
-      names: variant_names,
-      mappings: variant_mappings,
-    } = self.resolve_type_definition(checked_matched_type, false);
+    let TypeDefinitionSignature { is_object: _, names: variant_names, mappings: variant_mappings } =
+      self.resolve_type_definition(checked_matched_type, false);
     let mut unused_mappings = variant_mappings;
     let mut checked_cases = vec![];
     let mut matching_list_types = vec![];
@@ -1443,11 +1438,8 @@ impl<'a> TypingContext<'a> {
     let checked_assigned_expr_type = checked_assigned_expr.type_();
     let checked_pattern = match pattern {
       expr::Pattern::Object(pattern_loc, destructed_names) => {
-        let TypeDefinitionTypingContext {
-          is_object: _,
-          names: field_names,
-          mappings: field_mappings,
-        } = self.resolve_type_definition(checked_assigned_expr_type, true);
+        let TypeDefinitionSignature { is_object: _, names: field_names, mappings: field_mappings } =
+          self.resolve_type_definition(checked_assigned_expr_type, true);
         let mut field_order_mapping = HashMap::new();
         for (i, name) in field_names.into_iter().enumerate() {
           field_order_mapping.insert(name, i);
@@ -1549,7 +1541,7 @@ fn type_params_to_type_params_sig(
 
 fn validate_signature_types(
   toplevel: &Toplevel<()>,
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   local_cx: &mut LocalTypingContext,
   module_reference: ModuleReference,
   heap: &Heap,
@@ -1617,7 +1609,7 @@ fn validate_signature_types(
 fn check_class_member_conformance_with_signature(
   heap: &Heap,
   error_set: &mut ErrorSet,
-  expected: &MemberTypeInformation,
+  expected: &MemberSignature,
   actual: &ClassMemberDeclaration,
 ) {
   if expected.type_parameters.len() != actual.type_parameters.len() {
@@ -1665,7 +1657,7 @@ fn check_class_member_conformance_with_signature(
 pub(super) fn type_check_module(
   module_reference: ModuleReference,
   module: Module<()>,
-  global_cx: &GlobalTypingContext,
+  global_cx: &GlobalSignature,
   heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> Module<Rc<Type>> {
@@ -1691,8 +1683,8 @@ pub(super) fn type_check_module(
         })
         .collect_vec(),
     };
-    let global_cx::SuperTypesResolutionResult { types: resolved_super_types, is_cyclic } =
-      global_cx::resolve_all_transitive_super_types(global_cx, &id_type);
+    let global_signature::SuperTypesResolutionResult { types: resolved_super_types, is_cyclic } =
+      global_signature::resolve_all_transitive_super_types(global_cx, &id_type);
     if is_cyclic {
       error_set
         .report_cyclic_type_definition_error(id_type.reason.use_loc, id_type.pretty_print(heap));
@@ -1713,7 +1705,7 @@ pub(super) fn type_check_module(
     }
     for member in toplevel.members_iter() {
       let has_interface_def = if member.is_method {
-        let resolved = global_cx::resolve_all_method_signatures(
+        let resolved = global_signature::resolve_all_method_signatures(
           global_cx,
           &resolved_super_types,
           member.name.name,
@@ -1723,7 +1715,7 @@ pub(super) fn type_check_module(
         }
         !resolved.is_empty()
       } else {
-        let resolved = global_cx::resolve_all_function_signatures(
+        let resolved = global_signature::resolve_all_function_signatures(
           global_cx,
           &resolved_super_types,
           member.name.name,
@@ -1743,9 +1735,9 @@ pub(super) fn type_check_module(
     }
     if let Toplevel::Class(c) = toplevel {
       let mut missing_function_members =
-        global_cx::resolve_all_member_names(global_cx, &resolved_super_types, false);
+        global_signature::resolve_all_member_names(global_cx, &resolved_super_types, false);
       let mut missing_method_members =
-        global_cx::resolve_all_member_names(global_cx, &resolved_super_types, true);
+        global_signature::resolve_all_member_names(global_cx, &resolved_super_types, true);
       for member in &c.members {
         let n = member.decl.name.name;
         if member.decl.is_method {

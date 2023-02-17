@@ -2,9 +2,7 @@
 mod tests {
   use crate::{
     ast::common_names,
-    checker::{
-      type_check_single_module_source, type_check_source_handles, TypeCheckSourceHandlesResult,
-    },
+    checker::type_check_sources,
     common::{rc_string, Heap},
     compiler,
     errors::ErrorSet,
@@ -14,6 +12,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use std::collections::HashMap;
   use wasmi::*;
 
   struct CheckerTestSource<'a> {
@@ -516,18 +515,17 @@ class Main {
     ];
 
     let heap = &mut Heap::new();
-    let handles = sources
+    let mut error_set = ErrorSet::new();
+    let sources = sources
       .iter()
       .map(|it| {
-        (
-          heap.alloc_module_reference_from_string_vec(vec![it.test_name.to_string()]),
-          it.source_code.to_string(),
-        )
+        let mod_ref = heap.alloc_module_reference_from_string_vec(vec![it.test_name.to_string()]);
+        (mod_ref, parse_source_module_from_text(it.source_code, mod_ref, heap, &mut error_set))
       })
-      .collect_vec();
-    let result = type_check_source_handles(heap, handles);
+      .collect::<HashMap<_, _>>();
+    type_check_sources(sources, heap, &mut error_set);
     let actual_errors =
-      result.compile_time_errors.iter().map(|it| it.pretty_print(heap)).collect_vec();
+      error_set.into_errors().iter().map(|it| it.pretty_print(heap)).collect_vec();
     assert_eq!(expected_errors, actual_errors);
   }
 
@@ -1690,15 +1688,13 @@ class Main {
       if name == "StringGlobalConstant" {
         continue;
       }
-      let parsed_module = parse_source_module_from_text(
-        source_code,
-        heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]),
-        &mut heap,
-        &mut error_set,
-      );
-      let checked_module =
-        type_check_single_module_source(parsed_module, &mut heap, &mut error_set);
-      let actual_std = interpreter::run_source_module(&mut heap, &checked_module);
+      let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
+      let parsed_module =
+        parse_source_module_from_text(source_code, mod_ref, &mut heap, &mut error_set);
+      let (checked_sources, _) =
+        type_check_sources(HashMap::from([(mod_ref, parsed_module)]), &mut heap, &mut error_set);
+      let actual_std =
+        interpreter::run_source_module(&mut heap, checked_sources.get(&mod_ref).unwrap());
       assert_eq!(expected_std, actual_std);
     }
   }
@@ -1718,9 +1714,16 @@ class Main {
     for (mod_ref, text) in handles {
       let module = parse_source_module_from_text(&text, mod_ref, heap, &mut ErrorSet::new());
       let raw = printer::pretty_print_source_module(heap, 100, &module);
-      let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
-        type_check_source_handles(heap, vec![(mod_ref, raw)]);
-      assert!(compile_time_errors.is_empty());
+      let mut error_set = ErrorSet::new();
+      let (checked_sources, _) = type_check_sources(
+        HashMap::from([(
+          mod_ref,
+          parse_source_module_from_text(&raw, mod_ref, heap, &mut error_set),
+        )]),
+        heap,
+        &mut error_set,
+      );
+      assert!(error_set.into_errors().is_empty());
       assert!(checked_sources.len() == 1);
     }
   }
@@ -1729,20 +1732,18 @@ class Main {
 
   #[test]
   fn compiler_tests() {
-    let heap = &mut Heap::new();
     let tests = compiler_integration_tests();
-    let handles = tests
+    let heap = &mut Heap::new();
+    let mut error_set = ErrorSet::new();
+    let sources = tests
       .iter()
-      .map(|case| {
-        (
-          heap.alloc_module_reference_from_string_vec(vec![case.name.to_string()]),
-          case.source_code.to_string(),
-        )
+      .map(|it| {
+        let mod_ref = heap.alloc_module_reference_from_string_vec(vec![it.name.to_string()]);
+        (mod_ref, parse_source_module_from_text(it.source_code, mod_ref, heap, &mut error_set))
       })
-      .collect_vec();
-    let TypeCheckSourceHandlesResult { checked_sources, compile_time_errors, .. } =
-      type_check_source_handles(heap, handles);
-    assert!(compile_time_errors.is_empty());
+      .collect::<HashMap<_, _>>();
+    let (checked_sources, _) = type_check_sources(sources, heap, &mut error_set);
+    assert!(error_set.into_errors().is_empty());
     let unoptimized_hir_sources = compiler::compile_sources_to_hir(heap, &checked_sources);
     let optimized_hir_sources = optimization::optimize_sources(
       heap,

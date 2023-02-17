@@ -582,16 +582,16 @@ class Main {
         AutoCompletionItem {
           kind: CompletionItemKind::Function,
           insert_text_format: InsertTextFormat::Snippet,
-          detail: "<T>((unit) -> List<T>)".to_string(),
-          insert_text: "Nil($0)$1".to_string(),
-          label: "Nil(a0: unit): List<T>".to_string(),
+          detail: "<T>((Pair<T, List<T>>) -> List<T>)".to_string(),
+          insert_text: "Cons($0)$1".to_string(),
+          label: "Cons(a0: Pair<T, List<T>>): List<T>".to_string(),
         },
         AutoCompletionItem {
           kind: CompletionItemKind::Function,
           insert_text_format: InsertTextFormat::Snippet,
-          detail: "<T>((Pair<T, List<T>>) -> List<T>)".to_string(),
-          insert_text: "Cons($0)$1".to_string(),
-          label: "Cons(a0: Pair<T, List<T>>): List<T>".to_string(),
+          detail: "<T>((unit) -> List<T>)".to_string(),
+          insert_text: "Nil($0)$1".to_string(),
+          label: "Nil(a0: unit): List<T>".to_string(),
         },
         AutoCompletionItem {
           kind: CompletionItemKind::Function,
@@ -618,15 +618,15 @@ class Main {
         AutoCompletionItem {
           kind: CompletionItemKind::Field,
           insert_text_format: InsertTextFormat::PlainText,
-          label: "name".to_string(),
-          insert_text: "name".to_string(),
+          label: "github".to_string(),
+          insert_text: "github".to_string(),
           detail: "string".to_string(),
         },
         AutoCompletionItem {
           kind: CompletionItemKind::Field,
           insert_text_format: InsertTextFormat::PlainText,
-          label: "github".to_string(),
-          insert_text: "github".to_string(),
+          label: "name".to_string(),
+          insert_text: "name".to_string(),
           detail: "string".to_string(),
         },
         AutoCompletionItem {
@@ -700,15 +700,15 @@ class Main {
         AutoCompletionItem {
           kind: CompletionItemKind::Field,
           insert_text_format: InsertTextFormat::PlainText,
-          label: "name".to_string(),
-          insert_text: "name".to_string(),
+          label: "github".to_string(),
+          insert_text: "github".to_string(),
           detail: "string".to_string(),
         },
         AutoCompletionItem {
           kind: CompletionItemKind::Field,
           insert_text_format: InsertTextFormat::PlainText,
-          label: "github".to_string(),
-          insert_text: "github".to_string(),
+          label: "name".to_string(),
+          insert_text: "name".to_string(),
           detail: "string".to_string(),
         },
         AutoCompletionItem {
