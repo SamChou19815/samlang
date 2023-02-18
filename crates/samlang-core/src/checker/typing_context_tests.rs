@@ -5,11 +5,10 @@ mod tests {
     checker::{
       ssa_analysis::SsaAnalysisResult,
       type_::{
-        test_type_builder, ISourceType, ModuleSignature, Type, TypeDefinitionSignature,
-        TypeParameterSignature,
+        test_type_builder, ISourceType, InterfaceSignature, MemberSignature, ModuleSignature, Type,
+        TypeDefinitionSignature, TypeParameterSignature,
       },
       typing_context::{LocalTypingContext, TypingContext},
-      InterfaceSignature, MemberSignature,
     },
     common::{Heap, ModuleReference},
     errors::ErrorSet,

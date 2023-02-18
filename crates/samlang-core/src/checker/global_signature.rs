@@ -410,10 +410,7 @@ mod tests {
   };
   use crate::{
     ast::Reason,
-    checker::{
-      type_::{create_builtin_module_signature, test_type_builder, IdType},
-      GlobalSignature,
-    },
+    checker::type_::{create_builtin_module_signature, test_type_builder, GlobalSignature, IdType},
     errors::ErrorSet,
     parser::parse_source_module_from_text,
     Heap, ModuleReference,
