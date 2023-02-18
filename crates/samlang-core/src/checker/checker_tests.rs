@@ -1476,7 +1476,11 @@ mod tests {
 
   #[test]
   fn type_checker_smoke_test_failing() {
-    let source_a = r#"class A { function a(): int = 42 function a(): int = 42 }"#;
+    let source_a = r#"import { Z } from K
+    import { C } from B
+    class A {
+      function a(): int = 42 function a(): int = 42 }
+    "#;
     let source_b = r#"import { A } from A
   class B<A, A>(val value: int) {
     function of(): B<int, bool> = B.init(A.a())
@@ -1505,7 +1509,9 @@ mod tests {
     assert_module_errors(
       vec![("A", source_a), ("B", source_b), ("C", source_c), ("D", source_d)],
       vec![
-        "A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.",
+        "A.sam:1:1-1:20: [UnresolvedName]: Name `K` is not resolved.",
+        "A.sam:2:14-2:15: [UnresolvedName]: Name `C` is not resolved.",
+        "A.sam:4:39-4:40: [Collision]: Name `a` collides with a previously defined name.",
         "B.sam:2:11-2:12: [Collision]: Name `A` collides with a previously defined name.",
         "B.sam:2:14-2:15: [Collision]: Name `A` collides with a previously defined name.",
         "B.sam:3:35-3:48: [UnexpectedType]: Expected: `B<int, bool>`, actual: `B<int, int>`.",

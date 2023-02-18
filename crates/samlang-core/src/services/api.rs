@@ -11,8 +11,10 @@ use crate::{
     Location, Position,
   },
   checker::{
-    type_::{FunctionType, ISourceType, Type},
-    type_check_sources, GlobalSignature, InterfaceSignature, MemberSignature,
+    type_::{
+      FunctionType, GlobalSignature, ISourceType, InterfaceSignature, MemberSignature, Type,
+    },
+    type_check_sources,
   },
   common::{Heap, ModuleReference, PStr},
   errors::{CompileTimeError, ErrorSet},

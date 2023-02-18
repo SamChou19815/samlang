@@ -7,11 +7,10 @@ use super::{
   global_signature,
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{
-    FunctionType, GlobalSignature, ISourceType, IdType, PrimitiveTypeKind, Type,
+    FunctionType, GlobalSignature, ISourceType, IdType, MemberSignature, PrimitiveTypeKind, Type,
     TypeDefinitionSignature, TypeParameterSignature,
   },
   typing_context::{LocalTypingContext, TypingContext},
-  MemberSignature,
 };
 use crate::{
   ast::{
@@ -1663,6 +1662,21 @@ pub(super) fn type_check_module(
 ) -> Module<Rc<Type>> {
   let mut local_cx =
     LocalTypingContext::new(perform_ssa_analysis_on_module(&module, heap, error_set));
+
+  for one_import in module.imports.iter() {
+    if let Some(module_cx) = global_cx.get(&one_import.imported_module) {
+      for id in one_import.imported_members.iter() {
+        if !module_cx.interfaces.contains_key(&id.name) {
+          error_set.report_unresolved_name_error(id.loc, id.name.as_str(heap).to_string());
+        }
+      }
+    } else {
+      error_set.report_unresolved_name_error(
+        one_import.loc,
+        one_import.imported_module.pretty_print(heap),
+      );
+    }
+  }
 
   for toplevel in &module.toplevels {
     validate_signature_types(toplevel, global_cx, &mut local_cx, module_reference, heap, error_set);
