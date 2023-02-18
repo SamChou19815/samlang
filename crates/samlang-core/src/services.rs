@@ -1,6 +1,8 @@
 /// The public LSP services
 pub mod api;
 mod api_tests;
+/// A service to maintain up-to-date dependency graph
+mod dep_graph;
 /// A service to perform garbage collection on heaps
 mod gc;
 /// A service to find the smallest cover of a meaningful AST node
