@@ -52,11 +52,14 @@ mod tests {
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleSignature {
-        type_definitions: HashMap::new(),
         interfaces: HashMap::from([(
           heap.alloc_str("A"),
           InterfaceSignature {
-            is_concrete: true,
+            type_definition: Some(TypeDefinitionSignature {
+              is_object: false,
+              names: vec![],
+              mappings: HashMap::new(),
+            }),
             type_parameters: vec![TypeParameterSignature {
               name: heap.alloc_str("T"),
               bound: None,
@@ -120,12 +123,15 @@ mod tests {
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleSignature {
-        type_definitions: HashMap::new(),
         interfaces: HashMap::from([
           (
             heap.alloc_str("A"),
             InterfaceSignature {
-              is_concrete: true,
+              type_definition: Some(TypeDefinitionSignature {
+                is_object: false,
+                names: vec![],
+                mappings: HashMap::new(),
+              }),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str("T1"), bound: None },
                 TypeParameterSignature {
@@ -141,7 +147,7 @@ mod tests {
           (
             heap.alloc_str("B"),
             InterfaceSignature {
-              is_concrete: false,
+              type_definition: None,
               type_parameters: vec![],
               super_types: vec![builder.simple_id_type_unwrapped(heap.alloc_str("B"))],
               functions: HashMap::new(),
@@ -214,12 +220,15 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleSignature {
-        type_definitions: HashMap::new(),
         interfaces: HashMap::from([
           (
             heap.alloc_str("A"),
             InterfaceSignature {
-              is_concrete: true,
+              type_definition: Some(TypeDefinitionSignature {
+                is_object: false,
+                names: vec![],
+                mappings: HashMap::new(),
+              }),
               type_parameters: vec![
                 TypeParameterSignature { name: str_a, bound: None },
                 TypeParameterSignature { name: str_b, bound: None },
@@ -262,7 +271,7 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
           (
             heap.alloc_str("B"),
             InterfaceSignature {
-              is_concrete: false,
+              type_definition: None,
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str("E"), bound: None },
                 TypeParameterSignature { name: heap.alloc_str("F"), bound: None },
@@ -518,28 +527,18 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleSignature {
-        type_definitions: HashMap::from([
-          (
-            heap.alloc_str("A"),
-            TypeDefinitionSignature {
-              is_object: false,
-              names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
-              mappings: HashMap::from([
-                (heap.alloc_str("a"), (builder.simple_id_type(heap.alloc_str("A")), true)),
-                (heap.alloc_str("b"), (builder.simple_id_type(heap.alloc_str("B")), false)),
-              ]),
-            },
-          ),
-          (
-            heap.alloc_str("B"),
-            TypeDefinitionSignature { is_object: true, names: vec![], mappings: HashMap::new() },
-          ),
-        ]),
         interfaces: HashMap::from([
           (
             heap.alloc_str("A"),
             InterfaceSignature {
-              is_concrete: true,
+              type_definition: Some(TypeDefinitionSignature {
+                is_object: false,
+                names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+                mappings: HashMap::from([
+                  (heap.alloc_str("a"), (builder.simple_id_type(heap.alloc_str("A")), true)),
+                  (heap.alloc_str("b"), (builder.simple_id_type(heap.alloc_str("B")), false)),
+                ]),
+              }),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
                 TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
@@ -552,7 +551,11 @@ __DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`,
           (
             heap.alloc_str("B"),
             InterfaceSignature {
-              is_concrete: false,
+              type_definition: Some(TypeDefinitionSignature {
+                is_object: true,
+                names: vec![],
+                mappings: HashMap::new(),
+              }),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str("E"), bound: None },
                 TypeParameterSignature { name: heap.alloc_str("F"), bound: None },

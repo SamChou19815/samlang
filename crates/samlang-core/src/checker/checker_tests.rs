@@ -77,91 +77,22 @@ mod tests {
       (
         ModuleReference::dummy(),
         ModuleSignature {
-          type_definitions: HashMap::from([
-            (
-              heap.alloc_str("Test"),
-              TypeDefinitionSignature {
-                is_object: true,
-                names: vec![heap.alloc_str("foo"), heap.alloc_str("bar"), heap.alloc_str("fff")],
-                mappings: HashMap::from([
-                  (heap.alloc_str("foo"), (builder.bool_type(), true)),
-                  (heap.alloc_str("bar"), (builder.int_type(), false)),
-                  (heap.alloc_str("fff"), (builder.fun_type(vec![], builder.string_type()), false)),
-                ]),
-              },
-            ),
-            (
-              heap.alloc_str("Test2"),
-              TypeDefinitionSignature {
-                is_object: false,
-                names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
-                mappings: HashMap::from([
-                  (heap.alloc_str("Foo"), (builder.bool_type(), true)),
-                  (heap.alloc_str("Bar"), (builder.int_type(), true)),
-                ]),
-              },
-            ),
-            (
-              heap.alloc_str("Test3"),
-              TypeDefinitionSignature {
-                is_object: true,
-                names: vec![heap.alloc_str("foo"), heap.alloc_str("bar")],
-                mappings: HashMap::from([
-                  (heap.alloc_str("foo"), (builder.simple_id_type(heap.alloc_str("E")), true)),
-                  (heap.alloc_str("bar"), (builder.int_type(), false)),
-                ]),
-              },
-            ),
-            (
-              heap.alloc_str("Test4"),
-              TypeDefinitionSignature {
-                is_object: false,
-                names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
-                mappings: HashMap::from([
-                  (heap.alloc_str("Foo"), (builder.simple_id_type(heap.alloc_str("E")), true)),
-                  (heap.alloc_str("Bar"), (builder.int_type(), true)),
-                ]),
-              },
-            ),
-            (
-              heap.alloc_str("A"),
-              TypeDefinitionSignature {
-                is_object: true,
-                names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
-                mappings: HashMap::from([
-                  (heap.alloc_str("a"), (builder.int_type(), true)),
-                  (heap.alloc_str("b"), (builder.bool_type(), false)),
-                ]),
-              },
-            ),
-            (
-              heap.alloc_str("B"),
-              TypeDefinitionSignature {
-                is_object: true,
-                names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
-                mappings: HashMap::from([
-                  (heap.alloc_str("a"), (builder.int_type(), true)),
-                  (heap.alloc_str("b"), (builder.bool_type(), false)),
-                ]),
-              },
-            ),
-            (
-              heap.alloc_str("C"),
-              TypeDefinitionSignature {
-                is_object: false,
-                names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
-                mappings: HashMap::from([
-                  (heap.alloc_str("a"), (builder.int_type(), true)),
-                  (heap.alloc_str("b"), (builder.bool_type(), true)),
-                ]),
-              },
-            ),
-          ]),
           interfaces: HashMap::from([
             (
               heap.alloc_str("Test"),
               InterfaceSignature {
-                is_concrete: true,
+                type_definition: Some(TypeDefinitionSignature {
+                  is_object: true,
+                  names: vec![heap.alloc_str("foo"), heap.alloc_str("bar"), heap.alloc_str("fff")],
+                  mappings: HashMap::from([
+                    (heap.alloc_str("foo"), (builder.bool_type(), true)),
+                    (heap.alloc_str("bar"), (builder.int_type(), false)),
+                    (
+                      heap.alloc_str("fff"),
+                      (builder.fun_type(vec![], builder.string_type()), false),
+                    ),
+                  ]),
+                }),
                 functions: HashMap::from([
                   (
                     heap.alloc_str("init"),
@@ -326,7 +257,14 @@ mod tests {
             (
               heap.alloc_str("Test2"),
               InterfaceSignature {
-                is_concrete: true,
+                type_definition: Some(TypeDefinitionSignature {
+                  is_object: false,
+                  names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
+                  mappings: HashMap::from([
+                    (heap.alloc_str("Foo"), (builder.bool_type(), true)),
+                    (heap.alloc_str("Bar"), (builder.int_type(), true)),
+                  ]),
+                }),
                 functions: HashMap::from([
                   (
                     heap.alloc_str("Foo"),
@@ -361,7 +299,14 @@ mod tests {
             (
               heap.alloc_str("Test3"),
               InterfaceSignature {
-                is_concrete: true,
+                type_definition: Some(TypeDefinitionSignature {
+                  is_object: true,
+                  names: vec![heap.alloc_str("foo"), heap.alloc_str("bar")],
+                  mappings: HashMap::from([
+                    (heap.alloc_str("foo"), (builder.simple_id_type(heap.alloc_str("E")), true)),
+                    (heap.alloc_str("bar"), (builder.int_type(), false)),
+                  ]),
+                }),
                 functions: HashMap::new(),
                 methods: HashMap::new(),
                 type_parameters: vec![TypeParameterSignature {
@@ -374,7 +319,14 @@ mod tests {
             (
               heap.alloc_str("Test4"),
               InterfaceSignature {
-                is_concrete: true,
+                type_definition: Some(TypeDefinitionSignature {
+                  is_object: false,
+                  names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
+                  mappings: HashMap::from([
+                    (heap.alloc_str("Foo"), (builder.simple_id_type(heap.alloc_str("E")), true)),
+                    (heap.alloc_str("Bar"), (builder.int_type(), true)),
+                  ]),
+                }),
                 functions: HashMap::from([
                   (
                     heap.alloc_str("Foo"),
@@ -424,7 +376,14 @@ mod tests {
             (
               heap.alloc_str("A"),
               InterfaceSignature {
-                is_concrete: true,
+                type_definition: Some(TypeDefinitionSignature {
+                  is_object: true,
+                  names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+                  mappings: HashMap::from([
+                    (heap.alloc_str("a"), (builder.int_type(), true)),
+                    (heap.alloc_str("b"), (builder.bool_type(), false)),
+                  ]),
+                }),
                 functions: HashMap::from([(
                   heap.alloc_str("init"),
                   MemberSignature {
@@ -445,7 +404,14 @@ mod tests {
             (
               heap.alloc_str("B"),
               InterfaceSignature {
-                is_concrete: true,
+                type_definition: Some(TypeDefinitionSignature {
+                  is_object: true,
+                  names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+                  mappings: HashMap::from([
+                    (heap.alloc_str("a"), (builder.int_type(), true)),
+                    (heap.alloc_str("b"), (builder.bool_type(), false)),
+                  ]),
+                }),
                 functions: HashMap::from([(
                   heap.alloc_str("init"),
                   MemberSignature {
@@ -466,7 +432,14 @@ mod tests {
             (
               heap.alloc_str("C"),
               InterfaceSignature {
-                is_concrete: true,
+                type_definition: Some(TypeDefinitionSignature {
+                  is_object: false,
+                  names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+                  mappings: HashMap::from([
+                    (heap.alloc_str("a"), (builder.int_type(), true)),
+                    (heap.alloc_str("b"), (builder.bool_type(), true)),
+                  ]),
+                }),
                 functions: HashMap::from([(
                   heap.alloc_str("init"),
                   MemberSignature {
