@@ -26,29 +26,29 @@ fn transitive_set(
 }
 
 impl DependencyGraph {
+  pub(super) fn new(sources: &HashMap<ModuleReference, Module<()>>) -> DependencyGraph {
+    let mut graph = DependencyGraph { forward: HashMap::new(), reverse: HashMap::new() };
+    for (mod_ref, module) in sources {
+      let mut forward_set = HashSet::new();
+      for import in &module.imports {
+        forward_set.insert(import.imported_module);
+        if let Some(existing) = graph.reverse.get_mut(&import.imported_module) {
+          existing.insert(*mod_ref);
+        } else {
+          graph.reverse.insert(import.imported_module, HashSet::from([*mod_ref]));
+        }
+      }
+      graph.forward.insert(*mod_ref, forward_set);
+    }
+    graph
+  }
+
   pub(super) fn affected_set(
     &self,
     dirty_set: HashSet<ModuleReference>,
   ) -> HashSet<ModuleReference> {
     transitive_set(&self.forward, transitive_set(&self.reverse, dirty_set))
   }
-}
-
-pub(super) fn full_build(sources: &HashMap<ModuleReference, Module<()>>) -> DependencyGraph {
-  let mut graph = DependencyGraph { forward: HashMap::new(), reverse: HashMap::new() };
-  for (mod_ref, module) in sources {
-    let mut forward_set = HashSet::new();
-    for import in &module.imports {
-      forward_set.insert(import.imported_module);
-      if let Some(existing) = graph.reverse.get_mut(&import.imported_module) {
-        existing.insert(*mod_ref);
-      } else {
-        graph.reverse.insert(import.imported_module, HashSet::from([*mod_ref]));
-      }
-    }
-    graph.forward.insert(*mod_ref, forward_set);
-  }
-  graph
 }
 
 // TODO: incremental rebuild of dependency graph
@@ -80,7 +80,7 @@ mod tests {
       (mod_ref_c, parse_source_module_from_text(source_c, mod_ref_c, heap, error_set)),
       (mod_ref_d, parse_source_module_from_text(source_d, mod_ref_d, heap, error_set)),
     ]);
-    let graph = super::full_build(&sources);
+    let graph = super::DependencyGraph::new(&sources);
 
     assert_eq!(
       "{ModuleReference(2), ModuleReference(3), ModuleReference(4), ModuleReference(5)}",

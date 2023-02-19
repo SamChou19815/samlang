@@ -1651,7 +1651,7 @@ fn check_class_member_conformance_with_signature(
   }
 }
 
-pub(super) fn type_check_module(
+pub(crate) fn type_check_module(
   module_reference: ModuleReference,
   module: &Module<()>,
   global_cx: &GlobalSignature,

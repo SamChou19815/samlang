@@ -63,6 +63,6 @@
   },
   "devDependencies": {
     "@types/vscode": "1.62.0",
-    "vscode-languageclient": "^8.0.0-next.7"
+    "vscode-languageclient": "^8.1.0"
   }
 }
