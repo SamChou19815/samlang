@@ -334,9 +334,9 @@ enum FieldOrMethodAccesss {
   Method(expr::MethodAccess<Rc<Type>>),
 }
 
-enum MaybeCheckedExpression {
+enum MaybeCheckedExpression<'a> {
   Checked(expr::E<Rc<Type>>),
-  Unchecked(expr::E<()>, Rc<Type>),
+  Unchecked(&'a expr::E<()>, Rc<Type>),
 }
 
 impl<'a> TypingContext<'a> {
@@ -375,7 +375,7 @@ impl<'a> TypingContext<'a> {
   fn check(
     &mut self,
     heap: &Heap,
-    expression: expr::E<()>,
+    expression: &expr::E<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     match expression {
@@ -397,8 +397,8 @@ impl<'a> TypingContext<'a> {
   fn check_literal(
     &mut self,
     heap: &Heap,
-    common: expr::ExpressionCommon<()>,
-    literal: Literal,
+    common: &expr::ExpressionCommon<()>,
+    literal: &Literal,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     let reason = Reason::new(common.loc, Some(common.loc));
@@ -409,24 +409,24 @@ impl<'a> TypingContext<'a> {
     };
     let type_ = Rc::new(Type::Primitive(reason, kind));
     self.type_meet(heap, hint, &type_);
-    expr::E::Literal(common.with_new_type(type_), literal)
+    expr::E::Literal(common.with_new_type(type_), *literal)
   }
 
   fn check_variable(
     &mut self,
     heap: &Heap,
-    common: expr::ExpressionCommon<()>,
-    id: Id,
+    common: &expr::ExpressionCommon<()>,
+    id: &Id,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     let type_ = Rc::new(self.type_meet(heap, hint, &self.local_typing_context.read(&common.loc)));
-    expr::E::Id(common.with_new_type(type_), id)
+    expr::E::Id(common.with_new_type(type_), *id)
   }
 
   fn check_class_fn_with_unresolved_tparams(
     &mut self,
     heap: &Heap,
-    expression: expr::ClassFunction<()>,
+    expression: &expr::ClassFunction<()>,
     hint: Option<&Type>,
   ) -> (expr::ClassFunction<Rc<Type>>, Vec<TypeParameterSignature>) {
     if let Some(class_function_type_information) = self.get_function_type(
@@ -467,7 +467,7 @@ impl<'a> TypingContext<'a> {
             .collect_vec();
           let partially_checked_expr = expr::ClassFunction {
             common: expression.common.with_new_type(Rc::new(type_)),
-            explicit_type_arguments: expression.explicit_type_arguments,
+            explicit_type_arguments: expression.explicit_type_arguments.clone(),
             inferred_type_arguments,
             module_reference: expression.module_reference,
             class_name: expression.class_name,
@@ -489,7 +489,7 @@ impl<'a> TypingContext<'a> {
             hint,
             &Type::Fn(class_function_type_information.type_),
           ))),
-          explicit_type_arguments: expression.explicit_type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments.clone(),
           inferred_type_arguments: vec![],
           module_reference: expression.module_reference,
           class_name: expression.class_name,
@@ -533,7 +533,7 @@ impl<'a> TypingContext<'a> {
               .collect_vec();
             let partially_checked_expr = expr::ClassFunction {
               common,
-              explicit_type_arguments: expression.explicit_type_arguments,
+              explicit_type_arguments: expression.explicit_type_arguments.clone(),
               inferred_type_arguments,
               module_reference: expression.module_reference,
               class_name: expression.class_name,
@@ -575,7 +575,7 @@ impl<'a> TypingContext<'a> {
         common: expression
           .common
           .with_new_type(Rc::new(Type::Fn(class_function_type_information.type_.clone()))),
-        explicit_type_arguments: expression.explicit_type_arguments,
+        explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments,
         module_reference: expression.module_reference,
         class_name: expression.class_name,
@@ -599,7 +599,7 @@ impl<'a> TypingContext<'a> {
       (
         expr::ClassFunction {
           common: expression.common.with_new_type(type_),
-          explicit_type_arguments: expression.explicit_type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments.clone(),
           inferred_type_arguments: vec![],
           module_reference: expression.module_reference,
           class_name: expression.class_name,
@@ -675,7 +675,7 @@ impl<'a> TypingContext<'a> {
   fn check_class_function(
     &mut self,
     heap: &Heap,
-    expression: expr::ClassFunction<()>,
+    expression: &expr::ClassFunction<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     let (partially_checked_expr, unsolved_type_parameters) =
@@ -691,10 +691,10 @@ impl<'a> TypingContext<'a> {
   fn check_member_with_unresolved_tparams(
     &mut self,
     heap: &Heap,
-    expression: expr::FieldAccess<()>,
+    expression: &expr::FieldAccess<()>,
     hint: Option<&Type>,
   ) -> (FieldOrMethodAccesss, Vec<TypeParameterSignature>) {
-    let checked_expression = self.check(heap, *expression.object, None);
+    let checked_expression = self.check(heap, &expression.object, None);
     let obj_type = match checked_expression.type_().deref() {
       Type::Id(t) => t,
       _ => {
@@ -710,7 +710,7 @@ impl<'a> TypingContext<'a> {
         ));
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(unknown_type),
-          explicit_type_arguments: expression.explicit_type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments.clone(),
           inferred_type_arguments: vec![],
           object: Box::new(checked_expression),
           field_name: expression.field_name,
@@ -751,7 +751,7 @@ impl<'a> TypingContext<'a> {
             .collect_vec();
           let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
             common: expression.common.with_new_type(type_),
-            explicit_type_arguments: expression.explicit_type_arguments,
+            explicit_type_arguments: expression.explicit_type_arguments.clone(),
             inferred_type_arguments,
             object: Box::new(checked_expression),
             method_name: expression.field_name,
@@ -770,7 +770,7 @@ impl<'a> TypingContext<'a> {
         let type_ = Rc::new(self.type_meet(heap, hint, &Type::Fn(method_type_info.type_)));
         let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
           common: expression.common.with_new_type(type_),
-          explicit_type_arguments: expression.explicit_type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments.clone(),
           inferred_type_arguments: vec![],
           object: Box::new(checked_expression),
           method_name: expression.field_name,
@@ -810,7 +810,7 @@ impl<'a> TypingContext<'a> {
               .collect_vec();
             let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
               common,
-              explicit_type_arguments: expression.explicit_type_arguments,
+              explicit_type_arguments: expression.explicit_type_arguments.clone(),
               inferred_type_arguments,
               object: Box::new(checked_expression),
               method_name: expression.field_name,
@@ -834,7 +834,7 @@ impl<'a> TypingContext<'a> {
       // When hint is bad or there is no hint, we need to give up and let context help us more.
       let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
         common: expression.common.with_new_type(Rc::new(Type::Fn(method_type_info.type_))),
-        explicit_type_arguments: expression.explicit_type_arguments,
+        explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments: method_type_info
           .type_parameters
           .iter()
@@ -870,7 +870,7 @@ impl<'a> TypingContext<'a> {
           field_names.iter().find_position(|it| *it.deref() == expression.field_name.name).unwrap();
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(type_),
-          explicit_type_arguments: expression.explicit_type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments.clone(),
           inferred_type_arguments: vec![],
           object: Box::new(checked_expression),
           field_name: expression.field_name,
@@ -893,7 +893,7 @@ impl<'a> TypingContext<'a> {
             hint,
             &unknown_type,
           ))),
-          explicit_type_arguments: expression.explicit_type_arguments,
+          explicit_type_arguments: expression.explicit_type_arguments.clone(),
           inferred_type_arguments: vec![],
           object: Box::new(checked_expression),
           field_name: expression.field_name,
@@ -907,7 +907,7 @@ impl<'a> TypingContext<'a> {
   fn check_field_access(
     &mut self,
     heap: &Heap,
-    expression: expr::FieldAccess<()>,
+    expression: &expr::FieldAccess<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     let (partially_checked_expr, unresolved_type_parameters) =
@@ -932,7 +932,7 @@ impl<'a> TypingContext<'a> {
   fn check_unary(
     &mut self,
     heap: &Heap,
-    expression: expr::Unary<()>,
+    expression: &expr::Unary<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     let expected_type = Rc::new(Type::Primitive(
@@ -943,7 +943,7 @@ impl<'a> TypingContext<'a> {
       },
     ));
     self.type_meet(heap, hint, &expected_type);
-    let argument = Box::new(self.check(heap, *expression.argument, Some(&expected_type)));
+    let argument = Box::new(self.check(heap, &expression.argument, Some(&expected_type)));
     expr::E::Unary(expr::Unary {
       common: expression.common.with_new_type(expected_type),
       operator: expression.operator,
@@ -957,7 +957,7 @@ impl<'a> TypingContext<'a> {
     generic_function_type: &FunctionType,
     type_parameters: &Vec<TypeParameterSignature>,
     function_call_reason: &Reason,
-    function_arguments: Vec<expr::E<()>>,
+    function_arguments: &Vec<expr::E<()>>,
     return_type_hint: Option<&Type>,
   ) -> FunctionCallTypeCheckingResult {
     if generic_function_type.argument_types.len() != function_arguments.len() {
@@ -971,17 +971,14 @@ impl<'a> TypingContext<'a> {
         solved_generic_type: generic_function_type.clone(),
         solved_return_type: Type::Unknown(*function_call_reason),
         solved_substitution: HashMap::new(),
-        checked_arguments: function_arguments
-          .into_iter()
-          .map(|e| self.check(heap, e, None))
-          .collect(),
+        checked_arguments: function_arguments.iter().map(|e| self.check(heap, e, None)).collect(),
       };
     }
     // Phase 0: Initial Synthesis -> Vec<(Expr, checked)>
     let mut partially_checked_arguments = vec![];
     let mut checked_argument_types = vec![];
     for arg in function_arguments {
-      if arguments_should_be_checked_without_hint(&arg) {
+      if arguments_should_be_checked_without_hint(arg) {
         let checked = self.check(heap, arg, None);
         checked_argument_types.push(checked.type_().clone());
         partially_checked_arguments.push(MaybeCheckedExpression::Checked(checked));
@@ -1078,10 +1075,10 @@ impl<'a> TypingContext<'a> {
   fn check_function_call(
     &mut self,
     heap: &Heap,
-    expression: expr::Call<()>,
+    expression: &expr::Call<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
-    let (partially_checked_callee, unresolved_tparams) = match *expression.callee {
+    let (partially_checked_callee, unresolved_tparams) = match expression.callee.deref() {
       expr::E::ClassFn(class_fn) => {
         let (partially_checked_class_fn, unresolved_tparams) =
           self.check_class_fn_with_unresolved_tparams(heap, class_fn, None);
@@ -1119,7 +1116,7 @@ impl<'a> TypingContext<'a> {
             unresolved_tparams,
             None,
           )),
-          arguments: expression.arguments.into_iter().map(|e| self.check(heap, e, None)).collect(),
+          arguments: expression.arguments.iter().map(|e| self.check(heap, e, None)).collect(),
         });
       }
     };
@@ -1133,7 +1130,7 @@ impl<'a> TypingContext<'a> {
       callee_function_type,
       &unresolved_tparams,
       &Reason::new(expression.common.loc, None),
-      expression.arguments,
+      &expression.arguments,
       hint,
     );
     let fully_resolved_checked_callee =
@@ -1182,7 +1179,7 @@ impl<'a> TypingContext<'a> {
   fn check_binary(
     &mut self,
     heap: &Heap,
-    expression: expr::Binary<()>,
+    expression: &expr::Binary<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     let expected_type = Rc::new(match expression.operator {
@@ -1220,8 +1217,8 @@ impl<'a> TypingContext<'a> {
       | expr::BinaryOperator::AND
       | expr::BinaryOperator::OR
       | expr::BinaryOperator::CONCAT => {
-        let e1 = Box::new(self.check(heap, *expression.e1, Some(&expected_type)));
-        let e2 = Box::new(self.check(heap, *expression.e2, Some(&expected_type)));
+        let e1 = Box::new(self.check(heap, &expression.e1, Some(&expected_type)));
+        let e2 = Box::new(self.check(heap, &expression.e2, Some(&expected_type)));
         expr::E::Binary(expr::Binary {
           common: expression.common.with_new_type(expected_type),
           operator_preceding_comments: expression.operator_preceding_comments,
@@ -1236,8 +1233,8 @@ impl<'a> TypingContext<'a> {
       | expr::BinaryOperator::GE => {
         let child_type_hint =
           Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Int);
-        let e1 = Box::new(self.check(heap, *expression.e1, Some(&child_type_hint)));
-        let e2 = Box::new(self.check(heap, *expression.e2, Some(&child_type_hint)));
+        let e1 = Box::new(self.check(heap, &expression.e1, Some(&child_type_hint)));
+        let e2 = Box::new(self.check(heap, &expression.e2, Some(&child_type_hint)));
         expr::E::Binary(expr::Binary {
           common: expression.common.with_new_type(expected_type),
           operator_preceding_comments: expression.operator_preceding_comments,
@@ -1247,8 +1244,8 @@ impl<'a> TypingContext<'a> {
         })
       }
       expr::BinaryOperator::EQ | expr::BinaryOperator::NE => {
-        let e1 = Box::new(self.check(heap, *expression.e1, None));
-        let e2 = Box::new(self.check(heap, *expression.e2, Some(e1.type_())));
+        let e1 = Box::new(self.check(heap, &expression.e1, None));
+        let e2 = Box::new(self.check(heap, &expression.e2, Some(e1.type_())));
         expr::E::Binary(expr::Binary {
           common: expression.common.with_new_type(expected_type),
           operator_preceding_comments: expression.operator_preceding_comments,
@@ -1263,12 +1260,12 @@ impl<'a> TypingContext<'a> {
   fn check_if_else(
     &mut self,
     heap: &Heap,
-    expression: expr::IfElse<()>,
+    expression: &expr::IfElse<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
-    let condition = Box::new(self.check(heap, *expression.condition, None));
-    let e1 = Box::new(self.check(heap, *expression.e1, hint));
-    let e2 = Box::new(self.check(heap, *expression.e2, Some(e1.type_())));
+    let condition = Box::new(self.check(heap, &expression.condition, None));
+    let e1 = Box::new(self.check(heap, &expression.e1, hint));
+    let e2 = Box::new(self.check(heap, &expression.e2, Some(e1.type_())));
     let type_ = e2.type_().reposition(expression.common.loc);
     expr::E::IfElse(expr::IfElse {
       common: expression.common.with_new_type(Rc::new(type_)),
@@ -1281,10 +1278,10 @@ impl<'a> TypingContext<'a> {
   fn check_match(
     &mut self,
     heap: &Heap,
-    expression: expr::Match<()>,
+    expression: &expr::Match<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
-    let checked_matched = self.check(heap, *expression.matched, None);
+    let checked_matched = self.check(heap, &expression.matched, None);
     let checked_matched_type = checked_matched.type_().deref();
     let TypeDefinitionSignature { is_object: _, names: variant_names, mappings: variant_mappings } =
       self.resolve_type_definition(checked_matched_type, false);
@@ -1292,7 +1289,7 @@ impl<'a> TypingContext<'a> {
     let mut checked_cases = vec![];
     let mut matching_list_types = vec![];
     for expr::VariantPatternToExpression { loc, tag, tag_order: _, data_variable, body } in
-      expression.cases
+      &expression.cases
     {
       let mapping_data_type = match unused_mappings.remove(&tag.name) {
         Some((field_type, _)) => field_type,
@@ -1303,15 +1300,15 @@ impl<'a> TypingContext<'a> {
       };
       let (checked_body, checked_data_variable) = if let Some((data_variable, _)) = data_variable {
         self.local_typing_context.write(data_variable.loc, mapping_data_type.clone());
-        (self.check(heap, *body, hint), Some((data_variable, mapping_data_type)))
+        (self.check(heap, body, hint), Some((*data_variable, mapping_data_type)))
       } else {
-        (self.check(heap, *body, hint), None)
+        (self.check(heap, body, hint), None)
       };
       let (tag_order, _) = variant_names.iter().find_position(|n| tag.name.eq(n)).unwrap();
       matching_list_types.push(checked_body.type_().clone());
       checked_cases.push(expr::VariantPatternToExpression {
-        loc,
-        tag,
+        loc: *loc,
+        tag: *tag,
         tag_order,
         data_variable: checked_data_variable,
         body: Box::new(checked_body),
@@ -1391,13 +1388,13 @@ impl<'a> TypingContext<'a> {
   fn check_lambda(
     &mut self,
     heap: &Heap,
-    expression: expr::Lambda<()>,
+    expression: &expr::Lambda<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
-    let argument_types = self.infer_lambda_parameter_types(heap, &expression, hint);
+    let argument_types = self.infer_lambda_parameter_types(heap, expression, hint);
     let body = self.check(
       heap,
-      *expression.body,
+      &expression.body,
       if let Some(Type::Fn(fun_hint)) = hint { Some(&fun_hint.return_type) } else { None },
     );
     let captured = self.local_typing_context.get_captured(heap, &expression.common.loc);
@@ -1408,7 +1405,7 @@ impl<'a> TypingContext<'a> {
     });
     expr::E::Lambda(expr::Lambda {
       common: expression.common.with_new_type(Rc::new(type_)),
-      parameters: expression.parameters,
+      parameters: expression.parameters.clone(),
       captured,
       body: Box::new(body),
     })
@@ -1417,7 +1414,7 @@ impl<'a> TypingContext<'a> {
   fn check_statement(
     &mut self,
     heap: &Heap,
-    statement: expr::DeclarationStatement<()>,
+    statement: &expr::DeclarationStatement<()>,
   ) -> expr::DeclarationStatement<Rc<Type>> {
     let expr::DeclarationStatement {
       loc,
@@ -1433,7 +1430,7 @@ impl<'a> TypingContext<'a> {
     } else {
       None
     };
-    let checked_assigned_expr = self.check(heap, *assigned_expression, hint.as_ref());
+    let checked_assigned_expr = self.check(heap, assigned_expression, hint.as_ref());
     let checked_assigned_expr_type = checked_assigned_expr.type_();
     let checked_pattern = match pattern {
       expr::Pattern::Object(pattern_loc, destructed_names) => {
@@ -1452,11 +1449,11 @@ impl<'a> TypingContext<'a> {
             self.local_typing_context.write(write_loc, field_type.clone());
             let field_order = field_order_mapping.get(&field_name.name).unwrap();
             checked_destructured_names.push(ObjectPatternDestucturedName {
-              loc,
+              loc: *loc,
               field_order: *field_order,
-              field_name,
-              alias,
-              type_: Rc::new(field_type.reposition(loc)),
+              field_name: *field_name,
+              alias: *alias,
+              type_: Rc::new(field_type.reposition(*loc)),
             });
             continue;
           }
@@ -1464,26 +1461,26 @@ impl<'a> TypingContext<'a> {
             .error_set
             .report_unresolved_name_error(field_name.loc, field_name.name.as_str(heap).to_string());
           checked_destructured_names.push(ObjectPatternDestucturedName {
-            loc,
-            field_order,
-            field_name,
-            alias,
-            type_: Rc::new(Type::Unknown(Reason::new(loc, Some(loc)))),
+            loc: *loc,
+            field_order: *field_order,
+            field_name: *field_name,
+            alias: *alias,
+            type_: Rc::new(Type::Unknown(Reason::new(*loc, Some(*loc)))),
           });
         }
-        expr::Pattern::Object(pattern_loc, checked_destructured_names)
+        expr::Pattern::Object(*pattern_loc, checked_destructured_names)
       }
       expr::Pattern::Id(loc, name) => {
-        self.local_typing_context.write(loc, checked_assigned_expr_type.clone());
-        expr::Pattern::Id(loc, name)
+        self.local_typing_context.write(*loc, checked_assigned_expr_type.clone());
+        expr::Pattern::Id(*loc, *name)
       }
-      expr::Pattern::Wildcard(loc) => expr::Pattern::Wildcard(loc),
+      expr::Pattern::Wildcard(loc) => expr::Pattern::Wildcard(*loc),
     };
     expr::DeclarationStatement {
-      loc,
-      associated_comments,
+      loc: *loc,
+      associated_comments: *associated_comments,
       pattern: checked_pattern,
-      annotation,
+      annotation: annotation.clone(),
       assigned_expression: Box::new(checked_assigned_expr),
     }
   }
@@ -1491,7 +1488,7 @@ impl<'a> TypingContext<'a> {
   fn check_block(
     &mut self,
     heap: &Heap,
-    expression: expr::Block<()>,
+    expression: &expr::Block<()>,
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     if expression.expression.is_none() {
@@ -1502,8 +1499,9 @@ impl<'a> TypingContext<'a> {
       );
     }
     let statements =
-      expression.statements.into_iter().map(|it| self.check_statement(heap, it)).collect_vec();
-    let checked_final_expr = expression.expression.map(|e| Box::new(self.check(heap, *e, hint)));
+      expression.statements.iter().map(|it| self.check_statement(heap, it)).collect_vec();
+    let checked_final_expr =
+      expression.expression.as_ref().map(|e| Box::new(self.check(heap, e, hint)));
     let type_ = if let Some(e) = &checked_final_expr {
       Rc::new(e.type_().reposition(expression.common.loc))
     } else {
@@ -1520,7 +1518,7 @@ impl<'a> TypingContext<'a> {
 pub(super) fn type_check_expression(
   cx: &mut TypingContext,
   heap: &Heap,
-  expression: expr::E<()>,
+  expression: &expr::E<()>,
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
   cx.check(heap, expression, hint)
@@ -1655,13 +1653,13 @@ fn check_class_member_conformance_with_signature(
 
 pub(super) fn type_check_module(
   module_reference: ModuleReference,
-  module: Module<()>,
+  module: &Module<()>,
   global_cx: &GlobalSignature,
   heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> Module<Rc<Type>> {
   let mut local_cx =
-    LocalTypingContext::new(perform_ssa_analysis_on_module(&module, heap, error_set));
+    LocalTypingContext::new(perform_ssa_analysis_on_module(module, heap, error_set));
 
   for one_import in module.imports.iter() {
     if let Some(module_cx) = global_cx.get(&one_import.imported_module) {
@@ -1786,12 +1784,12 @@ pub(super) fn type_check_module(
   }
 
   let mut checked_toplevels = vec![];
-  for toplevel in module.toplevels {
+  for toplevel in &module.toplevels {
     let checked = match toplevel {
-      Toplevel::Interface(i) => Toplevel::Interface(i),
+      Toplevel::Interface(i) => Toplevel::Interface(i.clone()),
       Toplevel::Class(c) => {
         let mut checked_members = vec![];
-        for member in c.members {
+        for member in &c.members {
           let tparam_sigs = if member.decl.is_method {
             let mut sigs = type_params_to_type_params_sig(&c.type_parameters);
             sigs.append(&mut type_params_to_type_params_sig(&member.decl.type_parameters));
@@ -1809,17 +1807,17 @@ pub(super) fn type_check_module(
           );
           let body_type_hint = Type::from_annotation(&member.decl.type_.return_type);
           checked_members.push(ClassMemberDefinition {
-            decl: member.decl,
-            body: type_check_expression(&mut cx, heap, member.body, Some(&body_type_hint)),
+            decl: member.decl.clone(),
+            body: type_check_expression(&mut cx, heap, &member.body, Some(&body_type_hint)),
           });
         }
         Toplevel::Class(InterfaceDeclarationCommon {
           loc: c.loc,
           associated_comments: c.associated_comments,
           name: c.name,
-          type_parameters: c.type_parameters,
-          extends_or_implements_nodes: c.extends_or_implements_nodes,
-          type_definition: c.type_definition,
+          type_parameters: c.type_parameters.clone(),
+          extends_or_implements_nodes: c.extends_or_implements_nodes.clone(),
+          type_definition: c.type_definition.clone(),
           members: checked_members,
         })
       }
@@ -1828,8 +1826,8 @@ pub(super) fn type_check_module(
   }
 
   Module {
-    comment_store: module.comment_store,
-    imports: module.imports,
+    comment_store: module.comment_store.clone(),
+    imports: module.imports.clone(),
     toplevels: checked_toplevels,
   }
 }

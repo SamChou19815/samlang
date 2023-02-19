@@ -188,7 +188,7 @@ pub(crate) mod expr {
       }
     }
 
-    pub(crate) fn with_new_type<NT: Clone>(self, type_: NT) -> ExpressionCommon<NT> {
+    pub(crate) fn with_new_type<NT: Clone>(&self, type_: NT) -> ExpressionCommon<NT> {
       ExpressionCommon { loc: self.loc, associated_comments: self.associated_comments, type_ }
     }
   }

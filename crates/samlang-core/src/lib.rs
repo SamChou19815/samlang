@@ -58,7 +58,7 @@ pub fn compile_sources(
     }
   });
   let checked_sources = measure_time(enable_profiling, "Type checking", || {
-    checker::type_check_sources(parsed_sources, heap, &mut error_set).0
+    checker::type_check_sources(&parsed_sources, heap, &mut error_set).0
   });
   let mut errors = error_set.into_errors().iter().map(|it| it.pretty_print(heap)).collect_vec();
   for module_reference in &entry_module_references {

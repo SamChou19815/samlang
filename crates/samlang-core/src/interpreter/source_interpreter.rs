@@ -646,7 +646,7 @@ mod tests {
       &mut error_set,
     );
     let checked =
-      type_check_sources(HashMap::from([(mod_ref, parsed_module)]), &mut heap, &mut error_set).0;
+      type_check_sources(&HashMap::from([(mod_ref, parsed_module)]), &mut heap, &mut error_set).0;
     run(&mut heap, checked.get(&mod_ref).unwrap());
   }
 }
