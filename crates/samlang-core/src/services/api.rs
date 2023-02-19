@@ -98,7 +98,7 @@ impl LanguageServices {
     let mut error_set = ErrorSet::new();
     let (checked_modules, global_cx) = measure_time(self.enable_profiling, "Recheck", || {
       type_check_sources(
-        self
+        &self
           .raw_sources
           .iter()
           .map(|(mod_ref, text)| {

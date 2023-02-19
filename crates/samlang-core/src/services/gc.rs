@@ -315,8 +315,11 @@ mod tests {
       heap,
       &mut error_set,
     );
-    let (checked_sources, _) =
-      type_check_sources(HashMap::from([(ModuleReference::dummy(), parsed)]), heap, &mut error_set);
+    let (checked_sources, _) = type_check_sources(
+      &HashMap::from([(ModuleReference::dummy(), parsed)]),
+      heap,
+      &mut error_set,
+    );
     super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::root()]);
     super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::dummy()]);
     assert_eq!("", heap.debug_unmarked_strings());

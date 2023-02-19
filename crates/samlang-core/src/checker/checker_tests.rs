@@ -50,7 +50,7 @@ mod tests {
     type_check_expression(
       &mut cx,
       &heap,
-      expr::E::MethodAccess(expr::MethodAccess {
+      &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
@@ -519,7 +519,7 @@ mod tests {
       /* availableTypeParameters */ vec![],
     );
 
-    type_check_expression(&mut cx, heap, parsed, Some(expected_type));
+    type_check_expression(&mut cx, heap, &parsed, Some(expected_type));
     error_set.error_messages(heap)
   }
 
@@ -1443,7 +1443,7 @@ mod tests {
       let parsed = parse_source_module_from_text(source, mod_ref, &mut heap, &mut error_set);
       unchecked_sources.insert(mod_ref, parsed);
     }
-    type_check_sources(unchecked_sources, &mut heap, &mut error_set);
+    type_check_sources(&unchecked_sources, &mut heap, &mut error_set);
     assert_eq!(expected_errors, error_set.error_messages(&heap));
   }
 

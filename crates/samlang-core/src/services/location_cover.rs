@@ -296,7 +296,7 @@ mod tests {
       &mut error_set,
     );
     let (checked_sources, _) =
-      type_check_sources(HashMap::from([(mod_ref, parsed)]), heap, &mut error_set);
+      type_check_sources(&HashMap::from([(mod_ref, parsed)]), heap, &mut error_set);
     assert!(error_set.into_errors().is_empty());
     for m in checked_sources.values() {
       for i in 0..80 {
