@@ -22,6 +22,8 @@ pub(crate) mod type_;
 mod typing_context;
 mod typing_context_tests;
 
+pub(crate) use global_signature::build_module_signature;
+pub(crate) use main_checker::type_check_module;
 pub(crate) use ssa_analysis::{perform_ssa_analysis_on_module, SsaAnalysisResult};
 
 pub(crate) fn type_check_sources(
@@ -33,8 +35,7 @@ pub(crate) fn type_check_sources(
   let global_cx = global_signature::build_global_signature(sources, heap, builtin_cx);
   let mut checked_sources = HashMap::new();
   for (module_reference, module) in sources {
-    let checked =
-      main_checker::type_check_module(*module_reference, module, &global_cx, heap, error_set);
+    let checked = type_check_module(*module_reference, module, &global_cx, heap, error_set);
     checked_sources.insert(*module_reference, checked);
   }
   (checked_sources, global_cx)

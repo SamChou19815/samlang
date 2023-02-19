@@ -1,4 +1,5 @@
 use super::{
+  dep_graph::DependencyGraph,
   gc::perform_gc_after_recheck,
   location_cover::{search_module, LocationCoverSearchResult},
   variable_definition::{apply_renaming, VariableDefinitionLookup},
@@ -11,10 +12,11 @@ use crate::{
     Location, Position,
   },
   checker::{
+    build_module_signature,
     type_::{
       FunctionType, GlobalSignature, ISourceType, InterfaceSignature, MemberSignature, Type,
     },
-    type_check_sources,
+    type_check_module, type_check_sources,
   },
   common::{Heap, ModuleReference, PStr},
   errors::{CompileTimeError, ErrorSet},
@@ -23,7 +25,10 @@ use crate::{
   printer,
 };
 use itertools::Itertools;
-use std::{collections::HashMap, rc::Rc};
+use std::{
+  collections::{HashMap, HashSet},
+  rc::Rc,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CompletionItemKind {
@@ -68,53 +73,77 @@ fn get_last_doc_comment(
 pub struct LanguageServices {
   pub heap: Heap,
   enable_profiling: bool,
-  raw_sources: HashMap<ModuleReference, String>,
+  parsed_modules: HashMap<ModuleReference, Module<()>>,
+  dep_graph: DependencyGraph,
   checked_modules: HashMap<ModuleReference, Module<Rc<Type>>>,
-  errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
   global_cx: GlobalSignature,
+  errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
 }
 
 impl LanguageServices {
   // Section 1: Init
 
   pub fn new(
-    heap: Heap,
+    mut heap: Heap,
     enable_profiling: bool,
     source_handles: Vec<(ModuleReference, String)>,
   ) -> LanguageServices {
-    let mut state = LanguageServices {
-      heap,
-      enable_profiling,
-      raw_sources: source_handles.into_iter().collect(),
-      checked_modules: HashMap::new(),
-      errors: HashMap::new(),
-      global_cx: HashMap::new(),
-    };
-    state.init();
-    state
+    measure_time(enable_profiling, "LSP Init", || {
+      let mut error_set = ErrorSet::new();
+      let parsed_modules = source_handles
+        .iter()
+        .map(|(mod_ref, text)| {
+          (*mod_ref, parse_source_module_from_text(text, *mod_ref, &mut heap, &mut error_set))
+        })
+        .collect::<HashMap<_, _>>();
+      let dep_graph = DependencyGraph::new(&parsed_modules);
+      let (checked_modules, global_cx) =
+        type_check_sources(&parsed_modules, &mut heap, &mut error_set);
+      let errors = Self::group_errors(error_set);
+      LanguageServices {
+        heap,
+        enable_profiling,
+        parsed_modules,
+        dep_graph,
+        checked_modules,
+        global_cx,
+        errors,
+      }
+    })
   }
 
-  fn init(&mut self) {
-    let mut error_set = ErrorSet::new();
-    let (checked_modules, global_cx) = measure_time(self.enable_profiling, "Recheck", || {
-      type_check_sources(
-        &self
-          .raw_sources
-          .iter()
-          .map(|(mod_ref, text)| {
-            (
-              *mod_ref,
-              parse_source_module_from_text(text, *mod_ref, &mut self.heap, &mut error_set),
-            )
-          })
-          .collect(),
-        &mut self.heap,
-        &mut error_set,
-      )
-    });
-    self.checked_modules = checked_modules;
-    self.global_cx = global_cx;
-    self.update_errors(error_set.errors());
+  fn group_errors(error_set: ErrorSet) -> HashMap<ModuleReference, Vec<CompileTimeError>> {
+    let grouped = error_set.errors().into_iter().group_by(|e| e.location.module_reference);
+    grouped.into_iter().map(|(k, v)| (k, v.cloned().collect_vec())).collect::<HashMap<_, _>>()
+  }
+
+  /// Preconditions:
+  /// - Parsed modules updated
+  /// - Global context updated
+  /// - Dependency graph updated
+  /// - recheck_set is the conservative estimate of moduled need to recheck
+  fn recheck(&mut self, mut error_set: ErrorSet, recheck_set: &HashSet<ModuleReference>) {
+    // Type Checking
+    for recheck_mod_ref in recheck_set {
+      if let Some(parsed) = self.parsed_modules.get(recheck_mod_ref) {
+        let checked =
+          type_check_module(*recheck_mod_ref, parsed, &self.global_cx, &self.heap, &mut error_set);
+        self.checked_modules.insert(*recheck_mod_ref, checked);
+      }
+    }
+
+    // Collating Errors
+    let mut grouped_errors = Self::group_errors(error_set);
+    for rechecked_module in recheck_set {
+      if !grouped_errors.contains_key(rechecked_module) {
+        grouped_errors.insert(*rechecked_module, vec![]);
+      }
+    }
+    for (mod_ref, mod_scoped_errors) in grouped_errors {
+      self.errors.insert(mod_ref, mod_scoped_errors);
+    }
+
+    // GC
     measure_time(self.enable_profiling, "GC", || {
       perform_gc_after_recheck(
         &mut self.heap,
@@ -124,16 +153,10 @@ impl LanguageServices {
     });
   }
 
-  fn update_errors(&mut self, errors: Vec<&CompileTimeError>) {
-    let grouped = errors.into_iter().group_by(|e| e.location.module_reference);
-    self.errors =
-      grouped.into_iter().map(|(k, v)| (k, v.cloned().collect_vec())).collect::<HashMap<_, _>>();
-  }
-
   // Section 2: Getters and Setters
 
   pub fn all_modules(&self) -> Vec<&ModuleReference> {
-    self.raw_sources.keys().into_iter().collect()
+    self.parsed_modules.keys().into_iter().collect()
   }
 
   pub fn get_errors(&self, module_reference: &ModuleReference) -> &[CompileTimeError] {
@@ -148,14 +171,45 @@ impl LanguageServices {
     self.get_errors(module_reference).iter().map(|e| e.pretty_print(&self.heap)).collect()
   }
 
-  pub fn update(&mut self, module_reference: ModuleReference, source_code: String) {
-    self.raw_sources.insert(module_reference, source_code);
-    self.init();
+  pub fn update(&mut self, updates: Vec<(ModuleReference, String)>) {
+    let mut error_set = ErrorSet::new();
+    let initial_update_set = updates.iter().map(|(m, _)| *m).collect::<HashSet<_>>();
+    for (mod_ref, source_code) in updates {
+      let parsed =
+        parse_source_module_from_text(&source_code, mod_ref, &mut self.heap, &mut error_set);
+      self.global_cx.insert(mod_ref, build_module_signature(mod_ref, &parsed, &self.heap));
+      self.parsed_modules.insert(mod_ref, parsed);
+    }
+    self.dep_graph = DependencyGraph::new(&self.parsed_modules);
+    let recheck_set = self.dep_graph.affected_set(initial_update_set);
+    self.recheck(error_set, &recheck_set);
   }
 
-  pub fn remove(&mut self, module_reference: &ModuleReference) {
-    self.raw_sources.remove(module_reference);
-    self.init();
+  pub fn rename_module(&mut self, renames: Vec<(ModuleReference, ModuleReference)>) {
+    let recheck_set = self
+      .dep_graph
+      .affected_set(renames.iter().flat_map(|(a, b)| vec![*a, *b].into_iter()).collect());
+    for (old_mod_ref, new_mod_ref) in renames {
+      if let Some(parsed) = self.parsed_modules.remove(&old_mod_ref) {
+        self.parsed_modules.insert(new_mod_ref, parsed);
+        let mod_cx = self.global_cx.remove(&old_mod_ref).unwrap();
+        self.global_cx.insert(new_mod_ref, mod_cx);
+      }
+      self.checked_modules.remove(&old_mod_ref);
+    }
+    self.dep_graph = DependencyGraph::new(&self.parsed_modules);
+    self.recheck(ErrorSet::new(), &recheck_set);
+  }
+
+  pub fn remove(&mut self, module_references: &[ModuleReference]) {
+    let recheck_set = self.dep_graph.affected_set(module_references.iter().copied().collect());
+    for mod_ref in module_references {
+      self.parsed_modules.remove(mod_ref);
+      self.checked_modules.remove(mod_ref);
+      self.global_cx.remove(mod_ref);
+    }
+    self.dep_graph = DependencyGraph::new(&self.parsed_modules);
+    self.recheck(ErrorSet::new(), &recheck_set);
   }
 
   // Section 3: LSP Providers
@@ -309,24 +363,14 @@ impl LanguageServices {
         Some(self.find_toplevel(&mod_ref, &class_name)?.loc())
       }
       LocationCoverSearchResult::TypedName(loc, _, _) => {
-        let module = parse_source_module_from_text(
-          self.raw_sources.get(module_reference).unwrap(),
-          *module_reference,
-          &mut self.heap,
-          &mut ErrorSet::new(),
-        );
-        VariableDefinitionLookup::new(&self.heap, &module)
+        let module = self.parsed_modules.get(module_reference).unwrap();
+        VariableDefinitionLookup::new(&self.heap, module)
           .find_all_definition_and_uses(&loc)
           .map(|it| it.definition_location)
       }
       LocationCoverSearchResult::Expression(expr::E::Id(expr::ExpressionCommon { loc, .. }, _)) => {
-        let module = parse_source_module_from_text(
-          self.raw_sources.get(module_reference).unwrap(),
-          *module_reference,
-          &mut self.heap,
-          &mut ErrorSet::new(),
-        );
-        VariableDefinitionLookup::new(&self.heap, &module)
+        let module = self.parsed_modules.get(module_reference).unwrap();
+        VariableDefinitionLookup::new(&self.heap, module)
           .find_all_definition_and_uses(loc)
           .map(|it| it.definition_location)
       }
@@ -502,32 +546,21 @@ impl LanguageServices {
       _ => return None,
     };
 
-    let module = parse_source_module_from_text(
-      self.raw_sources.get(module_reference).unwrap(),
-      *module_reference,
-      &mut self.heap,
-      &mut ErrorSet::new(),
-    );
-    let def_and_uses = VariableDefinitionLookup::new(&self.heap, &module)
+    let module = self.parsed_modules.get(module_reference).unwrap();
+    let def_and_uses = VariableDefinitionLookup::new(&self.heap, module)
       .find_all_definition_and_uses(&def_or_use_loc)?;
     let renamed =
-      apply_renaming(&module, &def_and_uses, self.heap.alloc_string(new_name.to_string()));
+      apply_renaming(module, &def_and_uses, self.heap.alloc_string(new_name.to_string()));
     Some(printer::pretty_print_source_module(&self.heap, 100, &renamed))
   }
 
   pub fn format_entire_document(&self, module_reference: &ModuleReference) -> Option<String> {
-    let mut temp_heap = Heap::new();
-    let mut error_set = ErrorSet::new();
-    let module = parse_source_module_from_text(
-      self.raw_sources.get(module_reference)?,
-      *module_reference,
-      &mut temp_heap,
-      &mut error_set,
-    );
-    if error_set.has_errors() {
+    let module = self.parsed_modules.get(module_reference)?;
+    let errors = self.errors.get(module_reference).unwrap();
+    if errors.iter().any(|e| e.is_syntax_error()) {
       None
     } else {
-      Some(printer::pretty_print_source_module(&temp_heap, 100, &module))
+      Some(printer::pretty_print_source_module(&self.heap, 100, module))
     }
   }
 }

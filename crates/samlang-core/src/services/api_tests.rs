@@ -29,7 +29,7 @@ mod tests {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["test".to_string()]);
     let mut service = LanguageServices::new(heap, false, vec![]);
-    service.update(
+    service.update(vec![(
       test_mod_ref,
       r#"
 class Test {
@@ -38,7 +38,7 @@ class Test {
 interface I { function test(): int }
 "#
       .to_string(),
-    );
+    )]);
 
     assert_eq!(1, service.all_modules().len());
     assert!(service.get_errors(&ModuleReference::root()).is_empty());
@@ -47,7 +47,7 @@ interface I { function test(): int }
       service.get_error_strings(&test_mod_ref)
     );
 
-    service.remove(&test_mod_ref);
+    service.remove(&[test_mod_ref]);
     assert!(service.get_errors(&test_mod_ref).is_empty());
   }
 
@@ -97,7 +97,7 @@ class Test2 {
     );
 
     // Adding Test2 can clear one error of its reverse dependency.
-    service.update(
+    service.update(vec![(
       test1_mod_ref,
       r#"
 class Test1 {
@@ -106,7 +106,7 @@ class Test1 {
 class Test2 {}
 "#
       .to_string(),
-    );
+    )]);
     assert_eq!(
       vec!["Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`."],
       service.get_error_strings(&test1_mod_ref)
@@ -120,7 +120,7 @@ class Test2 {}
     );
 
     // Clearing local error of Test1
-    service.update(
+    service.update(vec![(
       test1_mod_ref,
       r#"
 class Test1 {
@@ -128,7 +128,7 @@ class Test1 {
 }
 "#
       .to_string(),
-    );
+    )]);
     assert!(service.get_errors(&test1_mod_ref).is_empty());
     assert_eq!(
       vec![
@@ -140,7 +140,7 @@ class Test1 {
     );
 
     // Clearing local error of Test2
-    service.update(
+    service.update(vec![(
       test2_mod_ref,
       r#"
 import { Test1, Test2 } from Test1
@@ -150,7 +150,7 @@ class Test2 {
 }
 "#
       .to_string(),
-    );
+    )]);
     assert!(service.get_errors(&test1_mod_ref).is_empty());
     assert_eq!(
       vec![
@@ -161,7 +161,7 @@ class Test2 {
     );
 
     // Clearing all errors of Test2
-    service.update(
+    service.update(vec![(
       test2_mod_ref,
       r#"
 import { Test1 } from Test1
@@ -171,9 +171,51 @@ class Test2 {
 }
 "#
       .to_string(),
-    );
+    )]);
     assert!(service.get_errors(&test1_mod_ref).is_empty());
     assert!(service.get_errors(&test2_mod_ref).is_empty());
+  }
+
+  #[test]
+  fn rename_mod_ref_tests() {
+    let mut heap = Heap::new();
+    let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
+    let a_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
+    let b_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["B".to_string()]);
+    let mut service = LanguageServices::new(
+      heap,
+      false,
+      vec![
+        (test_mod_ref, "import {A} from A\nimport {A} from B".to_string()),
+        (a_mod_ref, "class A".to_string()),
+      ],
+    );
+
+    assert_eq!(
+      vec![
+        "Test.sam:2:1-2:18: [UnresolvedName]: Name `B` is not resolved.",
+        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name.",
+      ],
+      service.get_error_strings(&test_mod_ref)
+    );
+
+    service.rename_module(vec![(a_mod_ref, b_mod_ref)]);
+    assert_eq!(
+      vec![
+        "Test.sam:1:1-1:18: [UnresolvedName]: Name `A` is not resolved.",
+        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name.",
+      ],
+      service.get_error_strings(&test_mod_ref)
+    );
+
+    service.rename_module(vec![(ModuleReference::dummy(), test_mod_ref)]);
+    assert_eq!(
+      vec![
+        "Test.sam:1:1-1:18: [UnresolvedName]: Name `A` is not resolved.",
+        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name.",
+      ],
+      service.get_error_strings(&test_mod_ref)
+    );
   }
 
   #[test]

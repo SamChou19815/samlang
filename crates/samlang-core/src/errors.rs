@@ -24,6 +24,10 @@ pub struct CompileTimeError {
 }
 
 impl CompileTimeError {
+  pub(crate) fn is_syntax_error(&self) -> bool {
+    matches!(&self.detail, ErrorDetail::SyntaxError(_))
+  }
+
   pub fn pretty_print(&self, heap: &Heap) -> String {
     let (error_type, reason) = match &self.detail {
       ErrorDetail::SyntaxError(reason) => ("SyntaxError", reason.to_string()),
@@ -262,6 +266,8 @@ mod tests {
       builder.int_type().get_reason().use_loc,
       builder.int_type().pretty_print(&heap),
     );
+
+    assert!(error_set.errors().iter().any(|e| e.is_syntax_error()));
 
     let actual_errors = error_set
       .error_messages(&heap)
