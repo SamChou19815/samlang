@@ -1705,7 +1705,7 @@ pub(crate) fn type_check_module(
       if global_cx
         .get(&super_type.module_reference)
         .and_then(|it| it.interfaces.get(&super_type.id))
-        .map(|it| it.is_concrete)
+        .map(|it| it.type_definition.is_some())
         .unwrap_or(false)
       {
         error_set.report_unexpected_type_kind_error(

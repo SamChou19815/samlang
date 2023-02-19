@@ -434,13 +434,9 @@ impl LanguageServices {
     let class_of_expr = self.find_class_name(module_reference, position);
     let relevant_interface_type =
       self.get_interface_type(&instance_mod_ref, &instance_class_name)?;
-    let relevant_type_def = self
-      .global_cx
-      .get(&instance_mod_ref)
-      .and_then(|module_cx| module_cx.type_definitions.get(&instance_class_name));
     let mut completion_results = vec![];
     let is_inside_class = class_of_expr.eq(&instance_class_name);
-    match relevant_type_def {
+    match &relevant_interface_type.type_definition {
       Some(def) if is_inside_class && def.is_object => {
         for name in &def.names {
           let field_type = def.mappings.get(name).unwrap();

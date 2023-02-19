@@ -26,7 +26,6 @@ pub(crate) fn build_module_signature(
   heap: &Heap,
 ) -> ModuleSignature {
   let mut interfaces = HashMap::new();
-  let mut type_definitions = HashMap::new();
   for toplevel in &module.toplevels {
     let name = toplevel.name().name;
     let mut functions = HashMap::new();
@@ -43,7 +42,7 @@ pub(crate) fn build_module_signature(
         functions.insert(member.name.name, type_info);
       }
     }
-    if let Toplevel::Class(class) = toplevel {
+    let type_definition = if let Toplevel::Class(class) = toplevel {
       let class_type = Rc::new(Type::Id(IdType {
         reason: Reason::new(class.name.loc, Some(class.name.loc)),
         module_reference,
@@ -101,25 +100,24 @@ pub(crate) fn build_module_signature(
           functions.insert(*tag, ctor_fn);
         }
       }
-      type_definitions.insert(
-        name,
-        TypeDefinitionSignature {
-          is_object: type_def.is_object,
-          names: type_def.names.iter().map(|it| it.name).collect_vec(),
-          mappings: type_def
-            .mappings
-            .iter()
-            .map(|(name, (annot, is_public))| {
-              (*name, (Rc::new(Type::from_annotation(annot)), *is_public))
-            })
-            .collect(),
-        },
-      );
+      Some(TypeDefinitionSignature {
+        is_object: type_def.is_object,
+        names: type_def.names.iter().map(|it| it.name).collect_vec(),
+        mappings: type_def
+          .mappings
+          .iter()
+          .map(|(name, (annot, is_public))| {
+            (*name, (Rc::new(Type::from_annotation(annot)), *is_public))
+          })
+          .collect(),
+      })
+    } else {
+      None
     };
     interfaces.insert(
       name,
       InterfaceSignature {
-        is_concrete: toplevel.is_class(),
+        type_definition,
         functions,
         methods,
         type_parameters: toplevel
@@ -135,7 +133,7 @@ pub(crate) fn build_module_signature(
       },
     );
   }
-  ModuleSignature { type_definitions, interfaces }
+  ModuleSignature { interfaces }
 }
 
 pub(crate) fn build_global_signature(
@@ -451,18 +449,15 @@ interface Hiya {}
     assert_eq!(2, global_cx.len());
     let module_cx = global_cx.get(&ModuleReference::dummy()).unwrap();
     assert_eq!(
-      r#"type_definitions:
-Foo1:[a:int, b:R]
-Foo2:[A((private) string), B((private) int)]
-
+      r#"
 interfaces:
-Foo1: class <R> : [Bar]
+Foo1: class(a:int, b:R) <R> : [Bar]
 functions:
 foo1: public (int) -> int
 init: public <R>(int, R) -> Foo1<R>
 methods:
 foo2: public <T>(int) -> int
-Foo2: class  : [Bar]
+Foo2: class(A((private) string), B((private) int))  : [Bar]
 functions:
 foo1: public (int) -> int
 A: public (string) -> Foo2

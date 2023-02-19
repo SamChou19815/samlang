@@ -167,7 +167,7 @@ impl<'a> TypingContext<'a> {
       id_type.id,
     ) {
       let interface_type_parameters = interface_info.type_parameters.clone();
-      if !interface_info.is_concrete && enforce_concrete_types {
+      if interface_info.type_definition.is_none() && enforce_concrete_types {
         self.error_set.report_unexpected_type_kind_error(
           id_type.reason.use_loc,
           "non-abstract type".to_string(),
@@ -272,10 +272,13 @@ impl<'a> TypingContext<'a> {
     };
     let id_type =
       self.resolve_to_potentially_in_scope_type_parameter_bound(id_type.id).unwrap_or(id_type);
-    if let Some(TypeDefinitionSignature { is_object, names, mappings }) = self
-      .global_signature
-      .get(&id_type.module_reference)
-      .and_then(|d| d.type_definitions.get(&id_type.id))
+    if let Some(TypeDefinitionSignature { is_object, names, mappings }) =
+      global_signature::resolve_interface_cx(
+        self.global_signature,
+        id_type.module_reference,
+        id_type.id,
+      )
+      .and_then(|toplevel_cx| toplevel_cx.type_definition.as_ref())
     {
       if *is_object != expect_object {
         return TypeDefinitionSignature {

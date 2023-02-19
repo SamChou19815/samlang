@@ -411,7 +411,7 @@ impl MemberSignature {
 }
 
 pub(crate) struct InterfaceSignature {
-  pub(crate) is_concrete: bool,
+  pub(crate) type_definition: Option<TypeDefinitionSignature>,
   pub(crate) functions: HashMap<PStr, MemberSignature>,
   pub(crate) methods: HashMap<PStr, MemberSignature>,
   pub(crate) type_parameters: Vec<TypeParameterSignature>,
@@ -423,7 +423,11 @@ impl InterfaceSignature {
     let mut lines = vec![];
     lines.push(format!(
       "{} {} : [{}]",
-      if self.is_concrete { "class".to_string() } else { "interface".to_string() },
+      if let Some(type_def) = &self.type_definition {
+        format!("class({})", type_def.to_string(heap))
+      } else {
+        "interface".to_string()
+      },
       TypeParameterSignature::pretty_print_list(&self.type_parameters, heap),
       self.super_types.iter().map(|it| it.pretty_print(heap)).join(", "),
     ));
@@ -464,17 +468,12 @@ impl TypeDefinitionSignature {
 }
 
 pub(crate) struct ModuleSignature {
-  pub(crate) type_definitions: HashMap<PStr, TypeDefinitionSignature>,
   pub(crate) interfaces: HashMap<PStr, InterfaceSignature>,
 }
 
 impl ModuleSignature {
   pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let mut lines = vec![];
-    lines.push("type_definitions:".to_string());
-    for (name, def) in self.type_definitions.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
-      lines.push(format!("{}:[{}]", name.as_str(heap), def.to_string(heap)));
-    }
     lines.push("\ninterfaces:".to_string());
     for (name, i) in self.interfaces.iter().sorted_by(|p1, p2| p1.0.cmp(p2.0)) {
       lines.push(format!("{}: {}", name.as_str(heap), i.to_string(heap)));
@@ -488,11 +487,14 @@ pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignatur
   heap.alloc_str("this");
   let str_t = heap.alloc_str("T");
   ModuleSignature {
-    type_definitions: HashMap::new(),
     interfaces: HashMap::from([(
       heap.alloc_str("Builtins"),
       InterfaceSignature {
-        is_concrete: true,
+        type_definition: Some(TypeDefinitionSignature {
+          is_object: false,
+          names: vec![],
+          mappings: HashMap::new(),
+        }),
         type_parameters: vec![],
         super_types: vec![],
         methods: HashMap::new(),
@@ -659,7 +661,7 @@ mod type_tests {
 
     assert_eq!(
       r#"
-class  : []
+class()  : []
 functions:
 stringToInt: public (string) -> int
 intToString: public (int) -> string
@@ -678,7 +680,7 @@ methods:
     );
     assert_eq!(
       r#"
-class  : []
+class(a:bool, b:(private) bool)  : []
 functions:
 methods:
 m1: public () -> unknown
@@ -686,7 +688,14 @@ m2: public () -> unknown
 "#
       .trim(),
       InterfaceSignature {
-        is_concrete: true,
+        type_definition: Some(TypeDefinitionSignature {
+          is_object: true,
+          names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+          mappings: HashMap::from([
+            (heap.alloc_str("a"), (builder.bool_type(), true)),
+            (heap.alloc_str("b"), (builder.bool_type(), false)),
+          ])
+        }),
         type_parameters: vec![],
         super_types: vec![],
         functions: HashMap::new(),
@@ -721,18 +730,6 @@ m2: public () -> unknown
     );
 
     let builder = test_type_builder::create();
-    assert_eq!(
-      "a:bool, b:(private) bool",
-      TypeDefinitionSignature {
-        is_object: true,
-        names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
-        mappings: HashMap::from([
-          (heap.alloc_str("a"), (builder.bool_type(), true)),
-          (heap.alloc_str("b"), (builder.bool_type(), false)),
-        ])
-      }
-      .to_string(&heap)
-    );
     assert_eq!(
       "A(bool)",
       TypeDefinitionSignature {
