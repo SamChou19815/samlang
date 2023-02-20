@@ -17,6 +17,14 @@ pub(super) struct DefinitionAndUses {
   pub(super) use_locations: Vec<Location>,
 }
 
+impl DefinitionAndUses {
+  pub(super) fn all_locations(self) -> Vec<Location> {
+    let DefinitionAndUses { definition_location, mut use_locations } = self;
+    use_locations.push(definition_location);
+    use_locations
+  }
+}
+
 pub(super) struct VariableDefinitionLookup(SsaAnalysisResult);
 
 impl VariableDefinitionLookup {
@@ -376,6 +384,7 @@ function test(a: int, b: bool): unit = { }
 interface Foo {}
 "#,
     );
+    lookup.find_all_definition_and_uses(&Location::from_pos(1, 14, 1, 15)).unwrap().all_locations();
     assert!(query(&heap, &lookup, Location::dummy()).is_none());
   }
 

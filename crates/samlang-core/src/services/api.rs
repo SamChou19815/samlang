@@ -1,7 +1,8 @@
 use super::{
   dep_graph::DependencyGraph,
   gc::perform_gc_after_recheck,
-  location_cover::{search_module, LocationCoverSearchResult},
+  global_searcher::search_modules_globally,
+  location_cover::{search_module_locally, LocationCoverSearchResult},
   variable_definition::{apply_renaming, VariableDefinitionLookup},
 };
 use crate::{
@@ -220,7 +221,7 @@ impl LanguageServices {
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<LocationCoverSearchResult> {
-    search_module(*module_reference, self.checked_modules.get(module_reference)?, position)
+    search_module_locally(*module_reference, self.checked_modules.get(module_reference)?, position)
   }
 
   pub fn query_for_hover(
@@ -380,12 +381,97 @@ impl LanguageServices {
     )
   }
 
+  pub fn query_all_references(
+    &self,
+    module_reference: &ModuleReference,
+    position: Position,
+  ) -> Vec<Location> {
+    self
+      .query_all_references_opt(module_reference, position)
+      .unwrap_or(vec![])
+      .into_iter()
+      .sorted()
+      .dedup()
+      .collect()
+  }
+
+  fn query_all_references_opt(
+    &self,
+    module_reference: &ModuleReference,
+    position: Position,
+  ) -> Option<Vec<Location>> {
+    match search_module_locally(
+      *module_reference,
+      self.checked_modules.get(module_reference)?,
+      position,
+    )? {
+      LocationCoverSearchResult::Expression(
+        expr::E::Literal(_, _)
+        | expr::E::ClassFn(_)
+        | expr::E::FieldAccess(_)
+        | expr::E::MethodAccess(_)
+        | expr::E::Unary(_)
+        | expr::E::Call(_)
+        | expr::E::Binary(_)
+        | expr::E::IfElse(_)
+        | expr::E::Match(_)
+        | expr::E::Lambda(_)
+        | expr::E::Block(_),
+      ) => None,
+      LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => {
+        Some(search_modules_globally(
+          &self.checked_modules,
+          &super::global_searcher::GlobalNameSearchRequest::Property(
+            mod_ref, class_name, field_name,
+          ),
+        ))
+      }
+      LocationCoverSearchResult::InterfaceMemberName(
+        _,
+        mod_ref,
+        class_name,
+        member_name,
+        is_method,
+      ) => Some(search_modules_globally(
+        &self.checked_modules,
+        &super::global_searcher::GlobalNameSearchRequest::InterfaceMember(
+          mod_ref,
+          class_name,
+          member_name,
+          is_method,
+        ),
+      )),
+      LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
+        Some(search_modules_globally(
+          &self.checked_modules,
+          &super::global_searcher::GlobalNameSearchRequest::Toplevel(mod_ref, class_name),
+        ))
+      }
+      LocationCoverSearchResult::TypedName(loc, _, _) => {
+        let module = self.parsed_modules.get(module_reference).unwrap();
+        VariableDefinitionLookup::new(&self.heap, module)
+          .find_all_definition_and_uses(&loc)
+          .map(|it| it.all_locations())
+      }
+      LocationCoverSearchResult::Expression(expr::E::Id(expr::ExpressionCommon { loc, .. }, _)) => {
+        let module = self.parsed_modules.get(module_reference).unwrap();
+        VariableDefinitionLookup::new(&self.heap, module)
+          .find_all_definition_and_uses(loc)
+          .map(|it| it.all_locations())
+      }
+    }
+  }
+
   pub fn query_definition_location(
-    &mut self,
+    &self,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Location> {
-    match search_module(*module_reference, self.checked_modules.get(module_reference)?, position)? {
+    match search_module_locally(
+      *module_reference,
+      self.checked_modules.get(module_reference)?,
+      position,
+    )? {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
         | expr::E::ClassFn(_)
