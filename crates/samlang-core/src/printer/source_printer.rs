@@ -2,7 +2,7 @@ use super::prettier::Document;
 use crate::{
   ast::source::{
     annotation, expr, ClassDefinition, ClassMemberDeclaration, CommentKind, CommentReference,
-    CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeParameter,
+    CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition, TypeParameter,
   },
   common::{rc_pstr, rc_string, rcs, Heap},
   ModuleReference,
@@ -858,29 +858,29 @@ fn class_to_doc(
     .unwrap_or(Document::Nil),
     Document::Text(rc_string(format!("class {}", class.name.name.as_str(heap)))),
     type_parameters_to_doc(heap, comment_store, false, &class.type_parameters),
-    if class.type_definition.mappings.is_empty() {
-      Document::Nil
-    } else {
-      parenthesis_surrounded_doc(comma_sep_list(&class.type_definition.names, |name| {
-        let (annot, is_public) = class.type_definition.mappings.get(&name.name).unwrap();
-        let annot_doc = annotation_to_doc(heap, comment_store, annot);
-        if class.type_definition.is_object {
+    match &class.type_definition {
+      TypeDefinition::Struct { loc: _, fields } if fields.is_empty() => Document::Nil,
+      TypeDefinition::Struct { loc: _, fields } => {
+        parenthesis_surrounded_doc(comma_sep_list(fields, |field| {
           Document::Concat(
             Rc::new(Document::Text(rc_string(format!(
               "{}val {}: ",
-              if *is_public { "" } else { "private " },
-              name.name.as_str(heap)
+              if field.is_public { "" } else { "private " },
+              field.name.name.as_str(heap)
             )))),
-            Rc::new(annot_doc),
+            Rc::new(annotation_to_doc(heap, comment_store, &field.annotation)),
           )
-        } else {
+        }))
+      }
+      TypeDefinition::Enum { loc: _, variants } => {
+        parenthesis_surrounded_doc(comma_sep_list(variants, |variant| {
           Document::concat(vec![
-            Document::Text(rc_string(format!("{}(", name.name.as_str(heap)))),
-            annot_doc,
+            Document::Text(rc_string(format!("{}(", variant.name.name.as_str(heap)))),
+            annotation_to_doc(heap, comment_store, &variant.associated_data_type),
             Document::Text(rcs(")")),
           ])
-        }
-      }))
+        }))
+      }
     },
     extends_or_implements_node_to_doc(heap, comment_store, &class.extends_or_implements_nodes),
   ];

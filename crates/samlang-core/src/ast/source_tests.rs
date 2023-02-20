@@ -81,7 +81,10 @@ mod tests {
         ],
         builder.simple_id_annot(heap.alloc_str("str")),
       )
-      .clone();
+      .clone()
+      .associated_comments();
+    builder.unit_annot().associated_comments();
+    builder.simple_id_annot(heap.alloc_str("str")).associated_comments();
   }
 
   #[test]
@@ -201,15 +204,22 @@ mod tests {
     .clone()
     .imported_members
     .is_empty());
-    assert!(TypeDefinition {
+    let _ = TypeDefinition::Struct {
       loc: Location::dummy(),
-      is_object: true,
-      names: vec![],
-      mappings: HashMap::new()
+      fields: vec![FieldDefinition {
+        name: Id::from(heap.alloc_str("str")),
+        annotation: builder.bool_annot(),
+        is_public: true,
+      }],
     }
-    .clone()
-    .mappings
-    .is_empty());
+    .clone();
+    let _ = TypeDefinition::Enum {
+      loc: Location::dummy(),
+      variants: vec![VariantDefinition {
+        name: Id::from(heap.alloc_str("str")),
+        associated_data_type: builder.bool_annot(),
+      }],
+    };
 
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
@@ -217,11 +227,13 @@ mod tests {
       name: Id::from(heap.alloc_str("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
-      type_definition: TypeDefinition {
+      type_definition: TypeDefinition::Struct {
         loc: Location::dummy(),
-        is_object: true,
-        names: vec![],
-        mappings: HashMap::new(),
+        fields: vec![FieldDefinition {
+          name: Id::from(heap.alloc_str("str")),
+          annotation: builder.bool_annot(),
+          is_public: true,
+        }],
       },
       members: vec![ClassMemberDefinition {
         decl: ClassMemberDeclaration {

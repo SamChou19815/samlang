@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum ErrorDetail {
   ArityMismatchError { kind: &'static str, expected: usize, actual: usize },
-  Collision { name: String },
+  Collision { name: String, old_loc: Location },
   CyclicTypeDefinition { type_: String },
   InsufficientTypeInferenceContext,
   MissingDefinitions { missing_definitions: Vec<String> },
@@ -43,9 +43,13 @@ impl CompileTimeError {
       ErrorDetail::UnresolvedName { name } => {
         ("UnresolvedName", format!("Name `{name}` is not resolved."))
       }
-      ErrorDetail::Collision { name } => {
-        ("Collision", format!("Name `{name}` collides with a previously defined name."))
-      }
+      ErrorDetail::Collision { name, old_loc } => (
+        "Collision",
+        format!(
+          "Name `{name}` collides with a previously defined name at {}.",
+          old_loc.pretty_print(heap)
+        ),
+      ),
       ErrorDetail::TypeParameterNameMismatch { expected } => (
         "TypeParameterNameMismatch",
         format!("Type parameter name mismatch. Expected exact match of `{expected}`."),
@@ -142,8 +146,13 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::UnresolvedName { name })
   }
 
-  pub(crate) fn report_collision_error(&mut self, loc: Location, name: String) {
-    self.report_error(loc, ErrorDetail::Collision { name })
+  pub(crate) fn report_collision_error(
+    &mut self,
+    new_loc: Location,
+    name: String,
+    old_loc: Location,
+  ) {
+    self.report_error(new_loc, ErrorDetail::Collision { name, old_loc })
   }
 
   pub(crate) fn report_type_parameter_mismatch_error(&mut self, loc: Location, expected: String) {
@@ -255,7 +264,7 @@ mod tests {
     );
     error_set.report_arity_mismatch_error(Location::dummy(), "pair", 1, 2);
     error_set.report_insufficient_type_inference_context_error(Location::dummy());
-    error_set.report_collision_error(Location::dummy(), "a".to_string());
+    error_set.report_collision_error(Location::dummy(), "a".to_string(), Location::dummy());
     error_set
       .report_non_exhausive_match_error(Location::dummy(), vec!["A".to_string(), "B".to_string()]);
     error_set.report_missing_definition_error(
@@ -278,7 +287,7 @@ mod tests {
       .collect::<Vec<_>>();
     let expected_errors = vec![
       "[ArityMismatchError]: Incorrect pair size. Expected: 1, actual: 2.",
-      "[Collision]: Name `a` collides with a previously defined name.",
+      "[Collision]: Name `a` collides with a previously defined name at __DUMMY__.sam:0:0-0:0.",
       "[CyclicTypeDefinition]: Type `int` has a cyclic definition.",
       "[InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
       "[MissingDefinitions]: Missing definitions for [foo, bar].",

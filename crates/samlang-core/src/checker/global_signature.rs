@@ -9,7 +9,7 @@ use super::{
 };
 use crate::{
   ast::{
-    source::{Module, Toplevel},
+    source::{Module, Toplevel, TypeDefinition},
     Reason,
   },
   common::{Heap, ModuleReference, PStr},
@@ -60,30 +60,9 @@ pub(crate) fn build_module_signature(
           })
           .collect_vec(),
       }));
-      let type_def = &class.type_definition;
-      let type_def_reason = Reason::new(type_def.loc, Some(type_def.loc));
-      if type_def.is_object {
-        let ctor_fn = MemberSignature {
-          is_public: true,
-          type_parameters: class.type_parameters.iter().map(TypeParameterSignature::from).collect(),
-          type_: FunctionType {
-            reason: type_def_reason,
-            argument_types: type_def
-              .names
-              .iter()
-              .map(|it| Rc::new(Type::from_annotation(&type_def.mappings.get(&it.name).unwrap().0)))
-              .collect_vec(),
-            return_type: class_type,
-          },
-        };
-        functions.insert(
-          // init string should be pre-allocated during builtin_cx init
-          heap.get_allocated_str_opt("init").unwrap(),
-          ctor_fn,
-        );
-      } else {
-        let type_def_reason = Reason::new(type_def.loc, Some(type_def.loc));
-        for (tag, (annot, _)) in &type_def.mappings {
+      match &class.type_definition {
+        TypeDefinition::Struct { loc, fields } => {
+          let type_def_reason = Reason::new(*loc, Some(*loc));
           let ctor_fn = MemberSignature {
             is_public: true,
             type_parameters: class
@@ -93,24 +72,59 @@ pub(crate) fn build_module_signature(
               .collect(),
             type_: FunctionType {
               reason: type_def_reason,
-              argument_types: vec![Rc::new(Type::from_annotation(annot))],
-              return_type: class_type.clone(),
+              argument_types: fields
+                .iter()
+                .map(|it| Rc::new(Type::from_annotation(&it.annotation)))
+                .collect_vec(),
+              return_type: class_type,
             },
           };
-          functions.insert(*tag, ctor_fn);
+          functions.insert(
+            // init string should be pre-allocated during builtin_cx init
+            heap.get_allocated_str_opt("init").unwrap(),
+            ctor_fn,
+          );
+          Some(TypeDefinitionSignature {
+            is_object: true,
+            names: fields.iter().map(|it| it.name.name).collect_vec(),
+            mappings: fields
+              .iter()
+              .map(|it| {
+                (it.name.name, (Rc::new(Type::from_annotation(&it.annotation)), it.is_public))
+              })
+              .collect(),
+          })
+        }
+        TypeDefinition::Enum { loc, variants } => {
+          let type_def_reason = Reason::new(*loc, Some(*loc));
+          for variant in variants {
+            let ctor_fn = MemberSignature {
+              is_public: true,
+              type_parameters: class
+                .type_parameters
+                .iter()
+                .map(TypeParameterSignature::from)
+                .collect(),
+              type_: FunctionType {
+                reason: type_def_reason,
+                argument_types: vec![Rc::new(Type::from_annotation(&variant.associated_data_type))],
+                return_type: class_type.clone(),
+              },
+            };
+            functions.insert(variant.name.name, ctor_fn);
+          }
+          Some(TypeDefinitionSignature {
+            is_object: false,
+            names: variants.iter().map(|it| it.name.name).collect_vec(),
+            mappings: variants
+              .iter()
+              .map(|it| {
+                (it.name.name, (Rc::new(Type::from_annotation(&it.associated_data_type)), true))
+              })
+              .collect(),
+          })
         }
       }
-      Some(TypeDefinitionSignature {
-        is_object: type_def.is_object,
-        names: type_def.names.iter().map(|it| it.name).collect_vec(),
-        mappings: type_def
-          .mappings
-          .iter()
-          .map(|(name, (annot, is_public))| {
-            (*name, (Rc::new(Type::from_annotation(annot)), *is_public))
-          })
-          .collect(),
-      })
     } else {
       None
     };
@@ -457,7 +471,7 @@ foo1: public (int) -> int
 init: public <R>(int, R) -> Foo1<R>
 methods:
 foo2: public <T>(int) -> int
-Foo2: class(A((private) string), B((private) int))  : [Bar]
+Foo2: class(A(string), B(int))  : [Bar]
 functions:
 foo1: public (int) -> int
 A: public (string) -> Foo2

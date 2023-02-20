@@ -90,7 +90,7 @@ class Test2 {
     assert_eq!(
       vec![
         "Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.",
-        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name.",
+        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
         "Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
@@ -113,7 +113,7 @@ class Test2 {}
     );
     assert_eq!(
       vec![
-        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name.",
+        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
         "Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
@@ -133,7 +133,7 @@ class Test1 {
     assert_eq!(
       vec![
         "Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.",
-        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name.",
+        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
         "Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
@@ -155,7 +155,7 @@ class Test2 {
     assert_eq!(
       vec![
         "Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.",
-        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name.",
+        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
       ],
       service.get_error_strings(&test2_mod_ref)
     );
@@ -194,7 +194,7 @@ class Test2 {
     assert_eq!(
       vec![
         "Test.sam:2:1-2:18: [UnresolvedName]: Name `B` is not resolved.",
-        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name.",
+        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
       ],
       service.get_error_strings(&test_mod_ref)
     );
@@ -203,7 +203,7 @@ class Test2 {
     assert_eq!(
       vec![
         "Test.sam:1:1-1:18: [UnresolvedName]: Name `A` is not resolved.",
-        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name.",
+        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
       ],
       service.get_error_strings(&test_mod_ref)
     );
@@ -212,7 +212,7 @@ class Test2 {
     assert_eq!(
       vec![
         "Test.sam:1:1-1:18: [UnresolvedName]: Name `A` is not resolved.",
-        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name.",
+        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
       ],
       service.get_error_strings(&test_mod_ref)
     );
@@ -245,7 +245,7 @@ class Test1 {
           r#"
 class Test1(val a: int) {
   method test(): int = 1
-
+  method getA(): int = this.a
   function test2(): int = Test1.init(3).test()
 }
 "#
@@ -277,6 +277,10 @@ class Test1(val a: int) {
     assert_eq!(
       vec![TypeQueryContent { language: "samlang", value: "class Test1".to_string() }],
       service.query_for_hover(&test2_mod_ref, Position(1, 9)).unwrap().contents
+    );
+    assert_eq!(
+      vec![TypeQueryContent { language: "samlang", value: "int".to_string() }],
+      service.query_for_hover(&test2_mod_ref, Position(3, 28)).unwrap().contents
     );
     assert_eq!(
       vec![TypeQueryContent { language: "samlang", value: "() -> int".to_string() }],
@@ -314,7 +318,7 @@ class Test1 {
           r#"import {Test1} from Test
 class Test2(val a: int) {
   method test(): int = 1
-
+  method getB(): int = this.b
   function test2(v: int): int = Test1.test()
 }
 "#
@@ -328,6 +332,8 @@ class Test2(val a: int) {
       vec![TypeQueryContent { language: "samlang", value: "int".to_string() }],
       service.query_for_hover(&test2_mod_ref, Position(4, 17)).unwrap().contents
     );
+    // At b in this.b
+    assert!(service.query_for_hover(&test2_mod_ref, Position(3, 28)).is_none());
     // At the () of call
     assert!(service.query_for_hover(&test2_mod_ref, Position(4, 42)).is_none());
   }
@@ -347,7 +353,7 @@ class Test2(val a: int) {
 class Test1 {
   /** test */
   // function test(): int = -1
-
+  method getB(): int = this.b
   function test2(): int = Builtins.stringToInt("")
 }
 "#
@@ -367,6 +373,7 @@ class Test2(val a: int) {
       ],
     );
 
+    assert!(service.query_definition_location(&test_mod_ref, Position(4, 28)).is_none());
     assert!(service.query_definition_location(&test_mod_ref, Position(4, 33)).is_none());
     assert!(service.query_definition_location(&test2_mod_ref, Position(2, 23)).is_none());
     assert!(service.query_definition_location(&test2_mod_ref, Position(4, 30)).is_none());
@@ -511,7 +518,7 @@ class Test1(val a: int) {
     );
 
     assert_eq!(
-      "Test1.sam:3:1-15:2",
+      "Test1.sam:3:17-3:18",
       service
         .query_definition_location(&test1_mod_ref, Position(6, 41))
         .unwrap()

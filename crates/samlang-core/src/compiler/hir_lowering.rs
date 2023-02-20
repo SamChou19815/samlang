@@ -36,7 +36,7 @@ struct LoweringResultWithSyntheticFunctions {
 type LoweringContext = common::LocalStackedContext<PStr, hir::Expression>;
 
 impl LoweringContext {
-  fn bind(&mut self, name: &PStr, value: hir::Expression) {
+  fn bind(&mut self, name: PStr, value: hir::Expression) {
     match &value {
       hir::Expression::IntLiteral(_, _) | hir::Expression::Variable(_) => {
         self.insert(name, value);
@@ -59,7 +59,7 @@ mod lowering_cx_boilterplate_tests {
     let heap = &mut Heap::new();
 
     LoweringContext::new().bind(
-      &heap.alloc_str("a"),
+      heap.alloc_str("a"),
       hir::Expression::fn_name(
         heap.alloc_str("a"),
         hir::Type::new_fn_unwrapped(vec![], hir::BOOL_TYPE),
@@ -98,7 +98,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   ) -> ExpressionLoweringManager<'a> {
     let mut variable_cx = LoweringContext::new();
     for (n, t) in &defined_variables {
-      variable_cx.bind(n, hir::Expression::var_name(*n, t.clone()));
+      variable_cx.bind(*n, hir::Expression::var_name(*n, t.clone()));
     }
     ExpressionLoweringManager {
       heap,
@@ -296,7 +296,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
     let final_variable_expr =
       hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone()));
-    self.variable_cx.bind(&closure_variable_name, final_variable_expr.clone());
+    self.variable_cx.bind(closure_variable_name, final_variable_expr.clone());
     let statements = vec![hir::Statement::ClosureInit {
       closure_variable_name,
       closure_type,
@@ -332,7 +332,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     });
     self
       .variable_cx
-      .bind(&value_name, hir::Expression::var_name(value_name, extracted_field_type.clone()));
+      .bind(value_name, hir::Expression::var_name(value_name, extracted_field_type.clone()));
     LoweringResult {
       statements,
       expression: hir::Expression::var_name(value_name, extracted_field_type.clone()),
@@ -364,7 +364,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let closure_type = self.get_synthetic_identifier_type_from_closure(original_function_type);
     let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
     self.variable_cx.bind(
-      &closure_variable_name,
+      closure_variable_name,
       hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone())),
     );
     statements.push(hir::Statement::ClosureInit {
@@ -692,10 +692,9 @@ impl<'a> ExpressionLoweringManager<'a> {
       s2,
       final_assignments: vec![(final_var_name, lowered_return_type.clone(), e1, e2)],
     });
-    self.variable_cx.bind(
-      &final_var_name,
-      hir::Expression::var_name(final_var_name, lowered_return_type.clone()),
-    );
+    self
+      .variable_cx
+      .bind(final_var_name, hir::Expression::var_name(final_var_name, lowered_return_type.clone()));
     LoweringResult {
       statements: lowered_stmts,
       expression: hir::Expression::var_name(final_var_name, lowered_return_type),
@@ -717,7 +716,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     });
     self
       .variable_cx
-      .bind(&variable_for_tag, hir::Expression::var_name(variable_for_tag, hir::INT_TYPE));
+      .bind(variable_for_tag, hir::Expression::var_name(variable_for_tag, hir::INT_TYPE));
 
     let mut lowered_matching_list = vec![];
     for source::expr::VariantPatternToExpression { tag_order, data_variable, body, .. } in
@@ -734,7 +733,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           pointer_expression: matched_expr.clone(),
           index: 1,
         });
-        self.variable_cx.bind(&name, hir::Expression::var_name(name, data_var_type.clone()));
+        self.variable_cx.bind(name, hir::Expression::var_name(name, data_var_type.clone()));
       }
       let final_expr = self.lowered_and_add_statements(body, None, &mut local_stmts);
       self.variable_cx.pop_scope();
@@ -865,7 +864,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         expression_list: captured.iter().map(|(_, v)| v.clone()).collect_vec(),
       });
       self.variable_cx.bind(
-        &context_name,
+        context_name,
         hir::Expression::var_name(context_name, hir::Type::Id(context_type.clone())),
       );
       hir::Expression::var_name(context_name, hir::Type::Id(context_type))
@@ -893,7 +892,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     });
     self.synthetic_functions.push(synthetic_lambda);
     self.variable_cx.bind(
-      &closure_variable_name,
+      closure_variable_name,
       hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone())),
     );
     LoweringResult {
@@ -902,9 +901,9 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn get_renamed_variable_for_nesting(&mut self, name: &PStr, type_: &hir::Type) -> PStr {
+  fn get_renamed_variable_for_nesting(&mut self, name: PStr, type_: &hir::Type) -> PStr {
     if self.depth == 0 {
-      return *name;
+      return name;
     }
     let renamed = self.heap.alloc_string(format!(
       "{}__depth_{}__block_{}",
@@ -934,7 +933,7 @@ impl<'a> ExpressionLoweringManager<'a> {
             let field_type =
               &self.resolve_type_mapping_of_id_type(&id_type)[destructured_name.field_order];
             let mangled_name = self.get_renamed_variable_for_nesting(
-              &if let Some(n) = &destructured_name.alias {
+              if let Some(n) = &destructured_name.alias {
                 n.name
               } else {
                 destructured_name.field_name.name
@@ -943,7 +942,7 @@ impl<'a> ExpressionLoweringManager<'a> {
             );
             self
               .variable_cx
-              .bind(&mangled_name, hir::Expression::var_name(mangled_name, field_type.clone()));
+              .bind(mangled_name, hir::Expression::var_name(mangled_name, field_type.clone()));
             lowered_stmts.push(hir::Statement::IndexedAccess {
               name: mangled_name,
               type_: field_type.clone(),
@@ -955,7 +954,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         source::expr::Pattern::Id(_, id) => {
           let e =
             self.lowered_and_add_statements(&s.assigned_expression, Some(*id), &mut lowered_stmts);
-          self.variable_cx.bind(id, e);
+          self.variable_cx.bind(*id, e);
         }
         source::expr::Pattern::Wildcard(_) => {
           self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
@@ -2468,11 +2467,9 @@ return 0;"#,
           name: source::Id::from(heap.alloc_str("Main")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
-          type_definition: source::TypeDefinition {
+          type_definition: source::TypeDefinition::Struct {
             loc: Location::dummy(),
-            is_object: true,
-            names: vec![],
-            mappings: HashMap::new(),
+            fields: vec![],
           },
           members: vec![
             source::ClassMemberDefinition {
@@ -2539,11 +2536,13 @@ return 0;"#,
           name: source::Id::from(heap.alloc_str("Class1")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
-          type_definition: source::TypeDefinition {
+          type_definition: source::TypeDefinition::Struct {
             loc: Location::dummy(),
-            is_object: true,
-            names: vec![source::Id::from(heap.alloc_str("a"))],
-            mappings: HashMap::from([(heap.alloc_str("a"), (annot_builder.int_annot(), true))]),
+            fields: vec![source::FieldDefinition {
+              name: source::Id::from(heap.alloc_str("a")),
+              annotation: annot_builder.int_annot(),
+              is_public: true,
+            }],
           },
           members: vec![
             source::ClassMemberDefinition {
@@ -2671,11 +2670,12 @@ return 0;"#,
           name: source::Id::from(heap.alloc_str("Class2")),
           type_parameters: vec![],
           extends_or_implements_nodes: vec![],
-          type_definition: source::TypeDefinition {
+          type_definition: source::TypeDefinition::Enum {
             loc: Location::dummy(),
-            is_object: false,
-            names: vec![source::Id::from(heap.alloc_str("Tag"))],
-            mappings: HashMap::from([(heap.alloc_str("Tag"), (annot_builder.int_annot(), true))]),
+            variants: vec![source::VariantDefinition {
+              name: source::Id::from(heap.alloc_str("Tag")),
+              associated_data_type: annot_builder.int_annot(),
+            }],
           },
           members: vec![],
         }),
@@ -2689,24 +2689,20 @@ return 0;"#,
             bound: None,
           }],
           extends_or_implements_nodes: vec![],
-          type_definition: source::TypeDefinition {
+          type_definition: source::TypeDefinition::Struct {
             loc: Location::dummy(),
-            is_object: true,
-            names: vec![source::Id::from(heap.alloc_str("a"))],
-            mappings: HashMap::from([(
-              heap.alloc_str("a"),
-              (
-                annot_builder.fn_annot(
-                  vec![
-                    annot_builder
-                      .general_id_annot(heap.alloc_str("A"), vec![annot_builder.int_annot()]),
-                    annot_builder.simple_id_annot(heap.alloc_str("T")),
-                  ],
-                  annot_builder.int_annot(),
-                ),
-                true,
+            fields: vec![source::FieldDefinition {
+              name: source::Id::from(heap.alloc_str("a")),
+              annotation: annot_builder.fn_annot(
+                vec![
+                  annot_builder
+                    .general_id_annot(heap.alloc_str("A"), vec![annot_builder.int_annot()]),
+                  annot_builder.simple_id_annot(heap.alloc_str("T")),
+                ],
+                annot_builder.int_annot(),
               ),
-            )]),
+              is_public: true,
+            }],
           },
           members: vec![],
         }),

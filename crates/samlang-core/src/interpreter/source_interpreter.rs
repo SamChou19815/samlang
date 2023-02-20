@@ -193,10 +193,10 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
       cx.local_values.push_scope();
       let fun_val = eval_expr(cx, heap, &e.callee).function_value(cx).clone();
       for (param, arg) in fun_val.parameters.iter().zip(argument_values) {
-        cx.local_values.insert(param, arg);
+        cx.local_values.insert(*param, arg);
       }
       for (name, value) in fun_val.captured {
-        cx.local_values.insert(&name, value);
+        cx.local_values.insert(name, value);
       }
       let v = match fun_val.body {
         FunctionImpl::Expr(body) => eval_expr(cx, heap, &body),
@@ -299,7 +299,7 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
         .expect(&format!("Missing tag {}", tag.as_str(heap)));
       if let Some(data_variable) = &matched_pattern.data_variable {
         cx.local_values.push_scope();
-        cx.local_values.insert(&data_variable.0.name, data);
+        cx.local_values.insert(data_variable.0.name, data);
         let v = eval_expr(cx, heap, &matched_pattern.body);
         cx.local_values.pop_scope();
         v
@@ -340,11 +340,11 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
                 assigned_value.object_value(cx).get(&destructured_name.field_name.name).expect(
                   &format!("Missing field {}", destructured_name.field_name.name.as_str(heap)),
                 );
-              cx.local_values.insert(k, *v);
+              cx.local_values.insert(*k, *v);
             }
           }
           expr::Pattern::Id(_, n) => {
-            cx.local_values.insert(n, assigned_value);
+            cx.local_values.insert(*n, assigned_value);
           }
           expr::Pattern::Wildcard(_) => {}
         }
@@ -378,24 +378,27 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
           functions.insert(member.decl.name.name, v);
         }
       }
-      if c.type_definition.is_object {
-        let parameters = c.type_definition.names.iter().map(|it| it.name).collect_vec();
-        let body = FunctionImpl::InitObject(parameters.clone());
-        functions.insert(
-          heap.alloc_str("init"),
-          FunctionValue { parameters, body, captured: HashMap::new() },
-        );
-      } else {
-        for name in &c.type_definition.names {
-          let body = FunctionImpl::InitVariant(name.name);
+      match &c.type_definition {
+        crate::ast::source::TypeDefinition::Struct { loc: _, fields } => {
+          let parameters = fields.iter().map(|it| it.name.name).collect_vec();
+          let body = FunctionImpl::InitObject(parameters.clone());
           functions.insert(
-            name.name,
-            FunctionValue {
-              parameters: vec![heap.alloc_str("data")],
-              body,
-              captured: HashMap::new(),
-            },
+            heap.alloc_str("init"),
+            FunctionValue { parameters, body, captured: HashMap::new() },
           );
+        }
+        crate::ast::source::TypeDefinition::Enum { loc: _, variants } => {
+          for variant in variants {
+            let body = FunctionImpl::InitVariant(variant.name.name);
+            functions.insert(
+              variant.name.name,
+              FunctionValue {
+                parameters: vec![heap.alloc_str("data")],
+                body,
+                captured: HashMap::new(),
+              },
+            );
+          }
         }
       }
       classes.insert(c.name.name, ClassValue { functions, methods });
@@ -593,8 +596,8 @@ mod tests {
   fn this_variable_passing_tests() {
     let mut cx = empty_cx();
     let mut heap = Heap::new();
-    cx.local_values.insert(&heap.alloc_str("a"), Value::Int(1));
-    cx.local_values.insert(&heap.alloc_str("this"), Value::Int(1));
+    cx.local_values.insert(heap.alloc_str("a"), Value::Int(1));
+    cx.local_values.insert(heap.alloc_str("this"), Value::Int(1));
     let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str("this")));
     assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
     let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str("a")));

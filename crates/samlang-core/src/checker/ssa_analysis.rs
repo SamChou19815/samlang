@@ -1,9 +1,8 @@
 use crate::{
   ast::{
     source::{
-      annotation,
-      expr::{self, DeclarationStatement},
-      ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
+      annotation, expr, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
+      TypeDefinition,
     },
     Location,
   },
@@ -39,14 +38,14 @@ impl<'a> SsaAnalysisState<'a> {
   fn visit_module(&mut self, heap: &Heap, module: &Module<()>) {
     for import in &module.imports {
       for member in &import.imported_members {
-        self.define_id(heap, &member.name, member.loc);
+        self.define_id(heap, member.name, member.loc);
       }
     }
 
     // Hoist toplevel names
     for toplevel in &module.toplevels {
       let name = toplevel.name();
-      self.define_id(heap, &name.name, name.loc);
+      self.define_id(heap, name.name, name.loc);
     }
 
     for toplevel in &module.toplevels {
@@ -63,7 +62,7 @@ impl<'a> SsaAnalysisState<'a> {
         {
           for tparam in type_parameters {
             let id = &tparam.name;
-            self.define_id(heap, &id.name, id.loc);
+            self.define_id(heap, id.name, id.loc);
           }
           for tparam in type_parameters {
             if let Some(bound) = &tparam.bound {
@@ -76,11 +75,27 @@ impl<'a> SsaAnalysisState<'a> {
             }
           }
           if let Some(type_def) = type_definition {
-            for name in &type_def.names {
-              self.define_id(heap, &name.name, name.loc);
+            let mut names = vec![];
+            let mut annots = vec![];
+            match type_def {
+              TypeDefinition::Struct { loc: _, fields } => {
+                for field in fields {
+                  names.push(&field.name);
+                  annots.push(&field.annotation);
+                }
+              }
+              TypeDefinition::Enum { loc: _, variants } => {
+                for variant in variants {
+                  names.push(&variant.name);
+                  annots.push(&variant.associated_data_type);
+                }
+              }
             }
-            for name in &type_def.names {
-              self.visit_annot(heap, &type_def.mappings.get(&name.name).unwrap().0)
+            for annot in annots {
+              self.visit_annot(heap, annot)
+            }
+            for name in names {
+              self.define_id(heap, name.name, name.loc);
             }
           }
         }
@@ -91,7 +106,7 @@ impl<'a> SsaAnalysisState<'a> {
         self.context.push_scope();
         for m in toplevel.members_iter() {
           let id = &m.name;
-          self.define_id(heap, &id.name, id.loc);
+          self.define_id(heap, id.name, id.loc);
         }
         self.context.pop_scope();
         // Visit instance methods
@@ -99,12 +114,12 @@ impl<'a> SsaAnalysisState<'a> {
         if type_definition.is_some() {
           // If this is not allocated, then this is never used, so omitting its define is safe.
           if let Some(this_string) = heap.get_allocated_str_opt("this") {
-            self.define_id(heap, &this_string, toplevel.loc());
+            self.define_id(heap, this_string, toplevel.loc());
           }
         }
         for tparam in type_parameters {
           let id = &tparam.name;
-          self.define_id(heap, &id.name, id.loc);
+          self.define_id(heap, id.name, id.loc);
         }
         self.visit_members(heap, toplevel, true);
         self.context.pop_scope();
@@ -145,7 +160,7 @@ impl<'a> SsaAnalysisState<'a> {
     self.context.push_scope();
     for tparam in member.type_parameters.iter() {
       let id = &tparam.name;
-      self.define_id(heap, &id.name, id.loc);
+      self.define_id(heap, id.name, id.loc);
     }
     for tparam in member.type_parameters.iter() {
       if let Some(bound) = &tparam.bound {
@@ -154,7 +169,7 @@ impl<'a> SsaAnalysisState<'a> {
     }
     for param in member.parameters.iter() {
       let id = &param.name;
-      self.define_id(heap, &id.name, id.loc);
+      self.define_id(heap, id.name, id.loc);
       self.visit_annot(heap, &param.annotation);
     }
     self.visit_annot(heap, &member.type_.return_type);
@@ -206,7 +221,7 @@ impl<'a> SsaAnalysisState<'a> {
         for case in &e.cases {
           self.context.push_scope();
           if let Some((id, _)) = &case.data_variable {
-            self.define_id(heap, &id.name, id.loc);
+            self.define_id(heap, id.name, id.loc);
           }
           self.visit_expression(heap, &case.body);
           self.context.pop_scope();
@@ -215,7 +230,7 @@ impl<'a> SsaAnalysisState<'a> {
       expr::E::Lambda(e) => {
         self.context.push_scope();
         for OptionallyAnnotatedId { name, annotation } in &e.parameters {
-          self.define_id(heap, &name.name, name.loc);
+          self.define_id(heap, name.name, name.loc);
           if let Some(annot) = annotation {
             self.visit_annot(heap, annot)
           }
@@ -226,7 +241,7 @@ impl<'a> SsaAnalysisState<'a> {
       }
       expr::E::Block(e) => {
         self.context.push_scope();
-        for DeclarationStatement {
+        for expr::DeclarationStatement {
           loc: _,
           associated_comments: _,
           pattern,
@@ -242,10 +257,10 @@ impl<'a> SsaAnalysisState<'a> {
             expr::Pattern::Object(_, names) => {
               for name in names {
                 let id = name.alias.unwrap_or(name.field_name);
-                self.define_id(heap, &id.name, id.loc);
+                self.define_id(heap, id.name, id.loc);
               }
             }
-            expr::Pattern::Id(loc, id) => self.define_id(heap, id, *loc),
+            expr::Pattern::Id(loc, id) => self.define_id(heap, *id, *loc),
             expr::Pattern::Wildcard(_) => {}
           }
         }
@@ -286,11 +301,13 @@ impl<'a> SsaAnalysisState<'a> {
     }
   }
 
-  fn define_id(&mut self, heap: &Heap, name: &PStr, loc: Location) {
-    if !self.context.insert(name, loc) && !self.invalid_defines.contains(&loc) {
-      // Never error on an illegal define twice, since they might be visited multiple times.
-      self.error_set.report_collision_error(loc, name.as_str(heap).to_string());
-      self.invalid_defines.insert(loc);
+  fn define_id(&mut self, heap: &Heap, name: PStr, loc: Location) {
+    if let Some(previous) = self.context.insert(name, loc) {
+      if !self.invalid_defines.contains(&loc) {
+        // Never error on an illegal define twice, since they might be visited multiple times.
+        self.error_set.report_collision_error(loc, name.as_str(heap).to_string(), previous);
+        self.invalid_defines.insert(loc);
+      }
     }
     self.def_locs.insert(loc);
   }
