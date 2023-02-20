@@ -341,16 +341,30 @@ impl TypeLoweringManager {
       Vec::from_iter(self.generic_types.iter().cloned().sorted_by_key(|ps| ps.as_str(heap)));
     let mut names = vec![];
     let mut mappings = vec![];
-    for n in &source_type_def.names {
-      names.push(n.name);
-      mappings.push(self.lower_source_type(
-        heap,
-        &type_::Type::from_annotation(&source_type_def.mappings.get(&n.name).unwrap().0),
-      ));
-    }
+    let is_object =
+      match source_type_def {
+        source::TypeDefinition::Struct { loc: _, fields } => {
+          for field in fields {
+            names.push(field.name.name);
+            mappings
+              .push(self.lower_source_type(heap, &type_::Type::from_annotation(&field.annotation)));
+          }
+          true
+        }
+        source::TypeDefinition::Enum { loc: _, variants } => {
+          for variant in variants {
+            names.push(variant.name.name);
+            mappings.push(self.lower_source_type(
+              heap,
+              &type_::Type::from_annotation(&variant.associated_data_type),
+            ));
+          }
+          false
+        }
+      };
     TypeDefinition {
       identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
-      is_object: source_type_def.is_object,
+      is_object,
       type_parameters,
       names,
       mappings,
@@ -764,38 +778,32 @@ mod tests {
     };
     let annot_builder = test_builder::create();
 
-    let type_def = source::TypeDefinition {
+    let type_def = source::TypeDefinition::Struct {
       loc: Location::dummy(),
-      is_object: true,
-      names: vec![source::Id::from(heap.alloc_str("a")), source::Id::from(heap.alloc_str("b"))],
-      mappings: HashMap::from([
-        (
-          heap.alloc_str("a"),
-          (
-            annot_builder.fn_annot(
-              vec![annot_builder.fn_annot(
-                vec![annot_builder.simple_id_annot(heap.alloc_str("A"))],
-                annot_builder.bool_annot(),
-              )],
+      fields: vec![
+        source::FieldDefinition {
+          name: source::Id::from(heap.alloc_str("a")),
+          annotation: annot_builder.fn_annot(
+            vec![annot_builder.fn_annot(
+              vec![annot_builder.simple_id_annot(heap.alloc_str("A"))],
               annot_builder.bool_annot(),
-            ),
-            true,
+            )],
+            annot_builder.bool_annot(),
           ),
-        ),
-        (
-          heap.alloc_str("b"),
-          (
-            annot_builder.fn_annot(
-              vec![annot_builder.fn_annot(
-                vec![annot_builder.simple_id_annot(heap.alloc_str("A"))],
-                annot_builder.bool_annot(),
-              )],
+          is_public: true,
+        },
+        source::FieldDefinition {
+          name: source::Id::from(heap.alloc_str("b")),
+          annotation: annot_builder.fn_annot(
+            vec![annot_builder.fn_annot(
+              vec![annot_builder.simple_id_annot(heap.alloc_str("A"))],
               annot_builder.bool_annot(),
-            ),
-            false,
+            )],
+            annot_builder.bool_annot(),
           ),
-        ),
-      ]),
+          is_public: false,
+        },
+      ],
     };
     let foo_str = heap.alloc_str("Foo");
     let type_def =

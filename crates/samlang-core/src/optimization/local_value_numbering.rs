@@ -9,17 +9,17 @@ type LocalContext = LocalStackedContext<PStr, PStr>;
 type LocalBindedValueContext = LocalStackedContext<String, PStr>;
 
 impl LocalContext {
-  fn lvn_bind_var(&mut self, name: &PStr, value: PStr) {
-    let value = self.get(name).cloned().unwrap_or(value);
+  fn lvn_bind_var(&mut self, name: PStr, value: PStr) {
+    let value = self.get(&name).cloned().unwrap_or(value);
     let inserted = self.insert(name, value);
-    debug_assert!(inserted);
+    debug_assert!(inserted.is_none());
   }
 }
 
 impl LocalBindedValueContext {
   fn lvn_bind_value(&mut self, value: &BindedValue, name: PStr) {
-    let inserted = self.insert(&value.dump_to_string(), name);
-    debug_assert!(inserted);
+    let inserted = self.insert(value.dump_to_string(), name);
+    debug_assert!(inserted.is_none());
   }
 }
 
@@ -51,7 +51,7 @@ fn optimize_stmt(
       let value =
         BindedValue::Binary(BinaryBindedValue { operator, e1: e1.clone(), e2: e2.clone() });
       if let Some(binded) = binded_value_cx.get(&value.dump_to_string()) {
-        variable_cx.lvn_bind_var(&name, *binded);
+        variable_cx.lvn_bind_var(name, *binded);
         None
       } else {
         binded_value_cx.lvn_bind_value(&value, name);
@@ -66,7 +66,7 @@ fn optimize_stmt(
         index,
       });
       if let Some(binded) = binded_value_cx.get(&value.dump_to_string()) {
-        variable_cx.lvn_bind_var(&name, *binded);
+        variable_cx.lvn_bind_var(name, *binded);
         None
       } else {
         binded_value_cx.lvn_bind_value(&value, name);

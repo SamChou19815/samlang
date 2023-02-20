@@ -192,7 +192,7 @@ fn bind_with_mangled_name(
   type_: &Type,
 ) -> PStr {
   let mangled_name = heap.alloc_string(format!("{}{}", prefix.as_str(heap), name.as_str(heap)));
-  cx.checked_bind(name, Expression::var_name(mangled_name, type_.clone()));
+  cx.checked_bind(*name, Expression::var_name(mangled_name, type_.clone()));
   mangled_name
 }
 
@@ -347,7 +347,7 @@ fn perform_inline_rewrite_on_function_stmt(
       let mut cx = LocalValueContextForOptimization::new();
       // Inline step 1: Bind args to args temp
       for (param, arg) in parameters_of_function_to_be_inlined.iter().zip(arguments) {
-        cx.checked_bind(param, arg.clone());
+        cx.checked_bind(*param, arg.clone());
       }
       // Inline step 2: Add in body code and change return statements
       let mut rewritten_body = inline_rewrite_stmts(

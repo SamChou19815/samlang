@@ -11,8 +11,9 @@ use std::{ops::Deref, rc::Rc};
 
 pub(super) enum LocationCoverSearchResult<'a> {
   Expression(&'a expr::E<Rc<Type>>),
-  ClassName(Location, ModuleReference, PStr),
-  ClassMemberName(Location, ModuleReference, PStr, PStr, bool /* is method */),
+  ToplevelName(Location, ModuleReference, PStr),
+  PropertyName(Location, ModuleReference, PStr, PStr),
+  InterfaceMemberName(Location, ModuleReference, PStr, PStr, bool /* is method */),
   TypedName(Location, PStr, Type),
 }
 
@@ -24,13 +25,13 @@ fn search_expression(
     expr::E::Literal(_, _) | expr::E::Id(_, _) => None,
     expr::E::ClassFn(e) => {
       if e.class_name.loc.contains_position(position) {
-        Some(LocationCoverSearchResult::ClassName(
+        Some(LocationCoverSearchResult::ToplevelName(
           e.class_name.loc,
           e.module_reference,
           e.class_name.name,
         ))
       } else if e.fn_name.loc.contains_position(position) {
-        Some(LocationCoverSearchResult::ClassMemberName(
+        Some(LocationCoverSearchResult::InterfaceMemberName(
           e.fn_name.loc,
           e.module_reference,
           e.class_name.name,
@@ -41,11 +42,23 @@ fn search_expression(
         None
       }
     }
-    expr::E::FieldAccess(e) => search_expression(&e.object, position),
+    expr::E::FieldAccess(e) => {
+      if e.field_name.loc.contains_position(position) {
+        if let Type::Id(id_type) = e.object.common().type_.deref() {
+          return Some(LocationCoverSearchResult::PropertyName(
+            e.field_name.loc,
+            id_type.module_reference,
+            id_type.id,
+            e.field_name.name,
+          ));
+        }
+      }
+      search_expression(&e.object, position)
+    }
     expr::E::MethodAccess(e) => {
       if e.method_name.loc.contains_position(position) {
         if let Type::Id(id_type) = e.object.common().type_.deref() {
-          return Some(LocationCoverSearchResult::ClassMemberName(
+          return Some(LocationCoverSearchResult::InterfaceMemberName(
             e.method_name.loc,
             id_type.module_reference,
             id_type.id,
@@ -136,11 +149,11 @@ pub(super) fn search_module(
   for toplevel in &module.toplevels {
     let name = toplevel.name();
     if name.loc.contains_position(position) {
-      return Some(LocationCoverSearchResult::ClassName(name.loc, module_reference, name.name));
+      return Some(LocationCoverSearchResult::ToplevelName(name.loc, module_reference, name.name));
     }
     for member in toplevel.members_iter() {
       if member.name.loc.contains_position(position) {
-        return Some(LocationCoverSearchResult::ClassMemberName(
+        return Some(LocationCoverSearchResult::InterfaceMemberName(
           member.name.loc,
           module_reference,
           name.name,

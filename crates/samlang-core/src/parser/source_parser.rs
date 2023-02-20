@@ -347,19 +347,19 @@ impl<'a> SourceParser<'a> {
           vec![]
         };
         loc = if let Some(loc_end) = type_param_loc_end { loc.union(&loc_end) } else { loc };
-        let type_def = TypeDefinition {
-          loc: self.peek().0,
-          is_object: true,
-          names: vec![],
-          mappings: HashMap::new(),
-        };
+        let type_def = TypeDefinition::Struct { loc: self.peek().0, fields: vec![] };
         (type_def, nodes)
       }
       _ => {
         let type_def_loc_start = self.assert_and_consume_operator(TokenOp::LPAREN);
         let mut type_def = self.parse_type_definition_inner();
         let type_def_loc_end = self.assert_and_consume_operator(TokenOp::RPAREN);
-        type_def.loc = type_param_loc_start.unwrap_or(type_def_loc_start).union(&type_def_loc_end);
+        let type_def_loc =
+          type_param_loc_start.unwrap_or(type_def_loc_start).union(&type_def_loc_end);
+        match &mut type_def {
+          TypeDefinition::Struct { loc, fields: _ } => *loc = type_def_loc,
+          TypeDefinition::Enum { loc, variants: _ } => *loc = type_def_loc,
+        }
         loc = loc.union(&type_def_loc_end);
         let nodes = if let TokenContent::Operator(TokenOp::COLON) = self.peek().1 {
           self.consume();
@@ -444,39 +444,32 @@ impl<'a> SourceParser<'a> {
   }
 
   fn parse_type_definition_inner(&mut self) -> TypeDefinition {
-    let mut mappings = HashMap::new();
-    let mut names = vec![];
-    let (name_with_types, is_object) = if let TokenContent::UpperId(_) = self.peek().1 {
-      let name_with_types =
-        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-          let name = s.parse_upper_id();
-          s.assert_and_consume_operator(TokenOp::LPAREN);
-          let type_ = s.parse_annotation();
-          s.assert_and_consume_operator(TokenOp::RPAREN);
-          (name, (type_, false))
-        });
-      (name_with_types, false)
+    if let Token(_, TokenContent::UpperId(_)) = self.peek() {
+      let variants = self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+        let name = s.parse_upper_id();
+        s.assert_and_consume_operator(TokenOp::LPAREN);
+        let associated_data_type = s.parse_annotation();
+        s.assert_and_consume_operator(TokenOp::RPAREN);
+        VariantDefinition { name, associated_data_type }
+      });
+      // Location is later patched by the caller
+      TypeDefinition::Enum { loc: Location::dummy(), variants }
     } else {
-      let name_with_types =
-        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-          let mut is_public = true;
-          if let TokenContent::Keyword(Keyword::PRIVATE) = s.peek().1 {
-            is_public = false;
-            s.consume();
-          }
-          s.assert_and_consume_keyword(Keyword::VAL);
-          let name = s.parse_lower_id();
-          s.assert_and_consume_operator(TokenOp::COLON);
-          let type_ = s.parse_annotation();
-          (name, (type_, is_public))
-        });
-      (name_with_types, true)
-    };
-    for (name, field_type) in name_with_types {
-      names.push(name);
-      mappings.insert(name.name, field_type);
+      let fields = self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+        let mut is_public = true;
+        if let TokenContent::Keyword(Keyword::PRIVATE) = s.peek().1 {
+          is_public = false;
+          s.consume();
+        }
+        s.assert_and_consume_keyword(Keyword::VAL);
+        let name = s.parse_lower_id();
+        s.assert_and_consume_operator(TokenOp::COLON);
+        let annotation = s.parse_annotation();
+        FieldDefinition { name, annotation, is_public }
+      });
+      // Location is later patched by the caller
+      TypeDefinition::Struct { loc: Location::dummy(), fields }
     }
-    TypeDefinition { loc: Location::dummy(), is_object, names, mappings }
   }
 
   fn peeked_class_or_interface_start(&mut self) -> bool {

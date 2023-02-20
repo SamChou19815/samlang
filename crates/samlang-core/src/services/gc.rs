@@ -1,5 +1,5 @@
 use crate::{
-  ast::source::{annotation, expr, Id, Module, Toplevel, TypeParameter},
+  ast::source::{annotation, expr, Id, Module, Toplevel, TypeDefinition, TypeParameter},
   checker::type_::{FunctionType, IdType, Type},
   Heap, ModuleReference,
 };
@@ -177,9 +177,19 @@ fn mark_module(heap: &mut Heap, module: &Module<Rc<Type>>) {
       mark_fn_annot(heap, &m.type_);
     }
     if let Toplevel::Class(c) = toplevel {
-      for (name, (annot, _)) in &c.type_definition.mappings {
-        heap.mark(*name);
-        mark_annot(heap, annot);
+      match &c.type_definition {
+        TypeDefinition::Struct { loc: _, fields } => {
+          for field in fields {
+            mark_id(heap, &field.name);
+            mark_annot(heap, &field.annotation);
+          }
+        }
+        TypeDefinition::Enum { loc: _, variants } => {
+          for variant in variants {
+            mark_id(heap, &variant.name);
+            mark_annot(heap, &variant.associated_data_type);
+          }
+        }
       }
       for m in &c.members {
         mark_expression(heap, &m.body);

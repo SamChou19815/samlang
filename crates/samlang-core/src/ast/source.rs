@@ -1,6 +1,8 @@
+use enum_as_inner::EnumAsInner;
+
 use super::loc::Location;
 use crate::common::{Heap, ModuleReference, PStr};
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CommentKind {
@@ -136,6 +138,14 @@ pub(crate) mod annotation {
         T::Primitive(l, _, _) => *l,
         T::Id(annot) => annot.location,
         T::Fn(annot) => annot.location,
+      }
+    }
+
+    pub(crate) fn associated_comments(&self) -> CommentReference {
+      match self {
+        T::Primitive(_, c, _) => *c,
+        T::Id(annot) => annot.id.associated_comments,
+        T::Fn(annot) => annot.associated_comments,
       }
     }
   }
@@ -480,11 +490,22 @@ pub(crate) struct InterfaceDeclarationCommon<D, M> {
 pub(crate) type InterfaceDeclaration = InterfaceDeclarationCommon<(), ClassMemberDeclaration>;
 
 #[derive(Clone)]
-pub(crate) struct TypeDefinition {
-  pub(crate) loc: Location,
-  pub(crate) is_object: bool,
-  pub(crate) names: Vec<Id>,
-  pub(crate) mappings: HashMap<PStr, (annotation::T, bool)>,
+pub(crate) struct FieldDefinition {
+  pub(crate) name: Id,
+  pub(crate) annotation: annotation::T,
+  pub(crate) is_public: bool,
+}
+
+#[derive(Clone)]
+pub(crate) struct VariantDefinition {
+  pub(crate) name: Id,
+  pub(crate) associated_data_type: annotation::T,
+}
+
+#[derive(Clone, EnumAsInner)]
+pub(crate) enum TypeDefinition {
+  Struct { loc: Location, fields: Vec<FieldDefinition> },
+  Enum { loc: Location, variants: Vec<VariantDefinition> },
 }
 
 pub(crate) type ClassDefinition<T> =

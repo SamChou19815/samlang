@@ -7,7 +7,8 @@ use super::{
 use crate::{
   ast::{
     source::{
-      expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, Module, Toplevel,
+      expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, FieldDefinition,
+      Module, Toplevel, TypeDefinition,
     },
     Location, Position,
   },
@@ -228,7 +229,28 @@ impl LanguageServices {
     position: Position,
   ) -> Option<TypeQueryResult> {
     match self.search_at_pos(module_reference, position)? {
-      LocationCoverSearchResult::ClassMemberName(
+      LocationCoverSearchResult::PropertyName(
+        loc,
+        fetched_function_module_reference,
+        class_name,
+        field_name,
+      ) => {
+        let relevant_field =
+          self.find_field_def(&fetched_function_module_reference, &class_name, &field_name)?;
+        let type_content = TypeQueryContent {
+          language: "samlang",
+          value: Type::from_annotation(&relevant_field.annotation).pretty_print(&self.heap),
+        };
+        Some(self.query_result_with_optional_document(
+          loc,
+          type_content,
+          get_last_doc_comment(
+            &self.checked_modules.get(&fetched_function_module_reference).unwrap().comment_store,
+            relevant_field.name.associated_comments,
+          ),
+        ))
+      }
+      LocationCoverSearchResult::InterfaceMemberName(
         loc,
         fetched_function_module_reference,
         class_name,
@@ -250,7 +272,7 @@ impl LanguageServices {
           ),
         ))
       }
-      LocationCoverSearchResult::ClassName(loc, module_reference, class_name) => {
+      LocationCoverSearchResult::ToplevelName(loc, module_reference, class_name) => {
         let type_content = TypeQueryContent {
           language: "samlang",
           value: format!("class {}", class_name.as_str(&self.heap)),
@@ -294,6 +316,26 @@ impl LanguageServices {
       .toplevels
       .iter()
       .find(|it| it.name().name.eq(class_name))
+  }
+
+  fn find_type_def(
+    &self,
+    module_reference: &ModuleReference,
+    class_name: &PStr,
+  ) -> Option<&TypeDefinition> {
+    self.find_toplevel(module_reference, class_name).and_then(|it| it.type_definition())
+  }
+
+  fn find_field_def(
+    &self,
+    module_reference: &ModuleReference,
+    class_name: &PStr,
+    field_name: &PStr,
+  ) -> Option<&FieldDefinition> {
+    self
+      .find_type_def(module_reference, class_name)
+      .and_then(|it| it.as_struct())
+      .and_then(|(_, fields)| fields.iter().find(|it| it.name.name.eq(field_name)))
   }
 
   fn find_class_member(
@@ -347,6 +389,7 @@ impl LanguageServices {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
         | expr::E::ClassFn(_)
+        | expr::E::FieldAccess(_)
         | expr::E::MethodAccess(_)
         | expr::E::Unary(_)
         | expr::E::Call(_)
@@ -356,10 +399,13 @@ impl LanguageServices {
         | expr::E::Lambda(_)
         | expr::E::Block(_),
       ) => None,
-      LocationCoverSearchResult::ClassMemberName(_, mod_ref, class_name, member_name, _) => {
+      LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => {
+        Some(self.find_field_def(&mod_ref, &class_name, &field_name)?.name.loc)
+      }
+      LocationCoverSearchResult::InterfaceMemberName(_, mod_ref, class_name, member_name, _) => {
         Some(self.find_class_member(&mod_ref, &class_name, &member_name)?.loc)
       }
-      LocationCoverSearchResult::ClassName(_, mod_ref, class_name) => {
+      LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
         Some(self.find_toplevel(&mod_ref, &class_name)?.loc())
       }
       LocationCoverSearchResult::TypedName(loc, _, _) => {
@@ -373,11 +419,6 @@ impl LanguageServices {
         VariableDefinitionLookup::new(&self.heap, module)
           .find_all_definition_and_uses(loc)
           .map(|it| it.definition_location)
-      }
-      LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
-        let t = e.object.type_();
-        let id_t = t.as_id().unwrap();
-        self.find_toplevel(&id_t.module_reference, &id_t.id).map(|it| it.loc())
       }
     }
   }
@@ -408,7 +449,7 @@ impl LanguageServices {
   ) -> Option<Vec<AutoCompletionItem>> {
     let (instance_mod_ref, instance_class_name) =
       match self.search_at_pos(module_reference, position)? {
-        LocationCoverSearchResult::ClassMemberName(_, module_ref, class_name, _, false) => {
+        LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, false) => {
           return self.get_interface_type(&module_ref, &class_name).map(|cx| {
             cx.functions
               .iter()
@@ -423,7 +464,7 @@ impl LanguageServices {
               .collect()
           });
         }
-        LocationCoverSearchResult::ClassMemberName(_, module_ref, class_name, _, true) => {
+        LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, true) => {
           (module_ref, class_name)
         }
         LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {

@@ -161,27 +161,27 @@ fn optimize_stmt(
       if let Expression::IntLiteral(v2, _) = &e2 {
         if *v2 == 0 {
           if operator == Operator::PLUS {
-            value_cx.checked_bind(name, e1);
+            value_cx.checked_bind(*name, e1);
             return vec![];
           }
           if operator == Operator::MUL {
-            value_cx.checked_bind(name, ZERO);
+            value_cx.checked_bind(*name, ZERO);
             return vec![];
           }
         }
         if *v2 == 1 {
           if operator == Operator::MOD {
-            value_cx.checked_bind(name, ZERO);
+            value_cx.checked_bind(*name, ZERO);
             return vec![];
           }
           if operator == Operator::MUL || operator == Operator::DIV {
-            value_cx.checked_bind(name, e1);
+            value_cx.checked_bind(*name, e1);
             return vec![];
           }
         }
         if let Expression::IntLiteral(v1, b) = &e1 {
           if let Some(value) = evaluate_bin_op(operator, *v1, *v2) {
-            value_cx.checked_bind(name, Expression::IntLiteral(value, *b));
+            value_cx.checked_bind(*name, Expression::IntLiteral(value, *b));
             return vec![];
           }
         }
@@ -189,11 +189,11 @@ fn optimize_stmt(
       match (&e1, &e2) {
         (Expression::Variable(v1), Expression::Variable(v2)) if v1.name.eq(&v2.name) => {
           if operator == Operator::MINUS || operator == Operator::MOD {
-            value_cx.checked_bind(name, ZERO);
+            value_cx.checked_bind(*name, ZERO);
             return vec![];
           }
           if operator == Operator::DIV {
-            value_cx.checked_bind(name, ONE);
+            value_cx.checked_bind(*name, ONE);
             return vec![];
           }
         }
@@ -223,7 +223,7 @@ fn optimize_stmt(
           }
         }
         binary_expr_cx
-          .insert(name, BinaryExpression { operator: *operator, e1: v1.clone(), e2: *v2 });
+          .insert(*name, BinaryExpression { operator: *operator, e1: v1.clone(), e2: *v2 });
       }
       vec![Statement::Binary(partially_optimized_binary)]
     }
@@ -235,7 +235,7 @@ fn optimize_stmt(
         pointer_expression.debug_print(heap),
         index
       ))) {
-        value_cx.checked_bind(name, computed.clone());
+        value_cx.checked_bind(*name, computed.clone());
         vec![]
       } else {
         vec![Statement::IndexedAccess {
@@ -272,7 +272,7 @@ fn optimize_stmt(
         for (n, _, e1, e2) in final_assignments {
           let optimized =
             if is_true { optimize_expr(value_cx, e1) } else { optimize_expr(value_cx, e2) };
-          value_cx.checked_bind(n, optimized);
+          value_cx.checked_bind(*n, optimized);
         }
         return stmts;
       }
@@ -291,7 +291,7 @@ fn optimize_stmt(
         branch1_values.into_iter().zip(branch2_values).zip(final_assignments)
       {
         if e1.debug_print(heap) == e2.debug_print(heap) {
-          value_cx.checked_bind(n, e1);
+          value_cx.checked_bind(*n, e1);
         } else {
           optimized_final_assignments.push((*n, t.clone(), e1, e2));
         }
@@ -323,7 +323,7 @@ fn optimize_stmt(
       let mut filtered_loop_variables = vec![];
       for v in loop_variables.iter() {
         if v.initial_value.debug_print(heap) == v.loop_value.debug_print(heap) {
-          value_cx.checked_bind(&v.name, v.initial_value.clone());
+          value_cx.checked_bind(v.name, v.initial_value.clone());
         } else {
           filtered_loop_variables.push(v);
         }
@@ -353,12 +353,12 @@ fn optimize_stmt(
       if let Some((Statement::Break(e), rest)) = stmts.split_last() {
         // Now we know that the loop will only loop once!
         for v in loop_variables {
-          value_cx.checked_bind(&v.name, v.initial_value);
+          value_cx.checked_bind(v.name, v.initial_value);
         }
         let moved_stmts = optimize_stmts(rest, heap, value_cx, index_access_cx, binary_expr_cx);
         if let Some(v) = break_collector {
           let break_value = optimize_expr(value_cx, e);
-          value_cx.checked_bind(&v.name, break_value);
+          value_cx.checked_bind(v.name, break_value);
         }
         moved_stmts
       } else {
@@ -386,7 +386,7 @@ fn optimize_stmt(
           type_.pretty_print(heap),
           i
         ));
-        index_access_cx.insert(&key, optimized.clone());
+        index_access_cx.insert(key, optimized.clone());
         optimized_expression_list.push(optimized);
       }
       vec![Statement::StructInit {
@@ -441,7 +441,7 @@ fn try_optimize_loop_for_some_iterations(
   loop {
     push_scope(value_cx, index_access_cx, binary_expr_cx);
     for v in &loop_variables {
-      value_cx.checked_bind(&v.name, v.initial_value.clone());
+      value_cx.checked_bind(v.name, v.initial_value.clone());
     }
     let mut first_run_optimized_stmts =
       optimize_stmts(&stmts, heap, value_cx, index_access_cx, binary_expr_cx);
@@ -479,7 +479,7 @@ fn try_optimize_loop_for_some_iterations(
     if let Statement::Break(break_v) = last_stmt_of_first_run_optimized_stmt {
       if let Some(v) = break_collector {
         let optimized_break_v = optimize_expr(value_cx, break_v);
-        value_cx.checked_bind(&v.name, optimized_break_v);
+        value_cx.checked_bind(v.name, optimized_break_v);
       }
       first_run_optimized_stmts.remove(first_run_optimized_stmts.len() - 1);
       return Result::Ok(first_run_optimized_stmts);
@@ -532,16 +532,15 @@ mod boilterplate_tests {
   fn panic_test() {
     let mut value_cx = LocalValueContextForOptimization::new();
     let heap = &mut Heap::new();
-    value_cx
-      .checked_bind(&heap.alloc_str("a"), Expression::var_name(heap.alloc_str("a"), INT_TYPE));
+    value_cx.checked_bind(heap.alloc_str("a"), Expression::var_name(heap.alloc_str("a"), INT_TYPE));
     value_cx.checked_bind(
-      &heap.alloc_str("b"),
+      heap.alloc_str("b"),
       Expression::FunctionName(FunctionName::new(
         heap.alloc_str("b"),
         Type::new_fn_unwrapped(vec![], INT_TYPE),
       )),
     );
-    value_cx.checked_bind(&heap.alloc_str("c"), Expression::StringName(heap.alloc_str("")));
+    value_cx.checked_bind(heap.alloc_str("c"), Expression::StringName(heap.alloc_str("")));
     optimize_callee(
       &mut value_cx,
       &Callee::Variable(VariableName { name: heap.alloc_str("a"), type_: INT_TYPE }),

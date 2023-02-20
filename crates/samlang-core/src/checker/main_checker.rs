@@ -17,7 +17,7 @@ use crate::{
     source::{
       expr::{self, ExpressionCommon, ObjectPatternDestucturedName},
       ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon, Literal,
-      Module, OptionallyAnnotatedId, Toplevel, TypeParameter,
+      Module, OptionallyAnnotatedId, Toplevel, TypeDefinition, TypeParameter,
     },
     Reason,
   },
@@ -1568,8 +1568,20 @@ fn validate_signature_types(
     );
   }
   if let Some(type_definition) = toplevel.type_definition() {
-    for field_type in type_definition.mappings.values() {
-      cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(&field_type.0));
+    match type_definition {
+      TypeDefinition::Struct { loc: _, fields } => {
+        for field in fields {
+          cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(&field.annotation))
+        }
+      }
+      TypeDefinition::Enum { loc: _, variants } => {
+        for variant in variants {
+          cx.validate_type_instantiation_strictly(
+            heap,
+            &Type::from_annotation(&variant.associated_data_type),
+          )
+        }
+      }
     }
   }
   for member in toplevel.members_iter() {
@@ -1758,11 +1770,14 @@ pub(crate) fn type_check_module(
           missing_function_members.remove(&n);
         }
       }
-      if c.type_definition.is_object {
-        missing_function_members.remove(&heap.get_allocated_str_opt("init").unwrap());
-      } else {
-        for n in c.type_definition.mappings.keys() {
-          missing_function_members.remove(n);
+      match &c.type_definition {
+        TypeDefinition::Struct { .. } => {
+          missing_function_members.remove(&heap.get_allocated_str_opt("init").unwrap());
+        }
+        TypeDefinition::Enum { loc: _, variants } => {
+          for variant in variants {
+            missing_function_members.remove(&variant.name.name);
+          }
         }
       }
       missing_function_members.extend(&missing_method_members);

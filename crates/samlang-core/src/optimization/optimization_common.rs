@@ -64,8 +64,8 @@ impl Ord for BindedValue {
 pub(super) type LocalValueContextForOptimization = LocalStackedContext<PStr, Expression>;
 
 impl LocalValueContextForOptimization {
-  pub(super) fn checked_bind(&mut self, name: &PStr, expression: Expression) {
-    if !self.insert(name, expression) {
+  pub(super) fn checked_bind(&mut self, name: PStr, expression: Expression) {
+    if self.insert(name, expression).is_some() {
       panic!()
     }
   }
@@ -129,7 +129,7 @@ mod tests {
   fn local_value_context_for_optimization_panic() {
     let mut cx = LocalValueContextForOptimization::new();
     let heap = &mut crate::common::Heap::new();
-    cx.checked_bind(&heap.alloc_str("a"), ZERO);
-    cx.checked_bind(&heap.alloc_str("a"), ZERO);
+    cx.checked_bind(heap.alloc_str("a"), ZERO);
+    cx.checked_bind(heap.alloc_str("a"), ZERO);
   }
 }

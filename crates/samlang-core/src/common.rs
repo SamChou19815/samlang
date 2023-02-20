@@ -139,14 +139,15 @@ impl Heap {
   }
 
   pub(crate) fn alloc_string(&mut self, string: String) -> PStr {
-    if let Some(id) = self.interned_static_str.get(string.deref()) {
+    let key = string.as_str();
+    if let Some(id) = self.interned_static_str.get(&key) {
       *id
-    } else if let Some(id) = self.interned_string.get(string.as_str()) {
+    } else if let Some(id) = self.interned_string.get(&key) {
       *id
     } else {
       let p_str = PStr(self.str_pointer_table.len());
       // The string pointer is managed by the the string pointer table.
-      let unmanaged_str_ptr: &'static str = unsafe { (&string as *const String).as_ref().unwrap() };
+      let unmanaged_str_ptr: &'static str = unsafe { (key as *const str).as_ref().unwrap() };
       self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
       self.interned_string.insert(unmanaged_str_ptr, p_str);
       p_str
@@ -162,9 +163,10 @@ impl Heap {
     match stored_string {
       StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated => {}
       StringStoredInHeap::Temporary(s, _) => {
+        let removed = self.interned_string.remove(s.as_str()).expect(s);
         let static_str: &'static str = Self::make_string_static(s.to_string());
         *stored_string = StringStoredInHeap::Permanent(static_str);
-        self.interned_string.remove(static_str);
+        debug_assert_eq!(removed, p_str);
         self.interned_static_str.insert(static_str, p_str);
       }
     }
@@ -393,21 +395,16 @@ impl<K: Clone + Eq + Hash, V: Clone> LocalStackedContext<K, V> {
     None
   }
 
-  pub(crate) fn insert(&mut self, name: &K, value: V) -> bool {
-    let mut no_collision = true;
-    for m in &self.local_values_stack {
-      if m.contains_key(name) {
-        no_collision = false;
-      }
-    }
+  pub(crate) fn insert(&mut self, name: K, value: V) -> Option<V> {
+    let previous = self.local_values_stack.iter().find_map(|m| m.get(&name)).cloned();
     let stack = &mut self.local_values_stack;
     let last_index = stack.len() - 1;
-    stack[last_index].insert(name.clone(), value);
-    no_collision
+    stack[last_index].insert(name, value);
+    previous
   }
 
-  pub(crate) fn insert_crash_on_error(&mut self, name: &K, value: V) {
-    if !self.insert(name, value) {
+  pub(crate) fn insert_crash_on_error(&mut self, name: K, value: V) {
+    if self.insert(name, value).is_some() {
       panic!()
     }
   }
@@ -595,7 +592,7 @@ mod tests {
   fn local_stacked_context_basic_methods_tests() {
     let mut context = LocalStackedContext::new();
     assert!(context.get(&rcs("b")).is_none());
-    context.insert_crash_on_error(&rcs("a"), 3);
+    context.insert_crash_on_error(rcs("a"), 3);
     assert_eq!(3, *context.get(&rcs("a")).unwrap());
     context.push_scope();
     context.pop_scope();
@@ -606,19 +603,19 @@ mod tests {
   fn local_stacked_context_conflict_detection_tests() {
     let mut context = LocalStackedContext::new();
     let a = rcs("a");
-    context.insert(&a, 3);
-    context.insert(&a, 3);
-    context.insert_crash_on_error(&a, 3);
+    context.insert(a.clone(), 3);
+    context.insert(a.clone(), 3);
+    context.insert_crash_on_error(a, 3);
   }
 
   #[test]
   fn local_stacked_context_captured_values_tests() {
     let mut context = LocalStackedContext::new();
-    context.insert_crash_on_error(&rcs("a"), 3);
-    context.insert_crash_on_error(&rcs("b"), 3);
+    context.insert_crash_on_error(rcs("a"), 3);
+    context.insert_crash_on_error(rcs("b"), 3);
     context.push_scope();
-    context.insert_crash_on_error(&rcs("c"), 3);
-    context.insert_crash_on_error(&rcs("d"), 3);
+    context.insert_crash_on_error(rcs("c"), 3);
+    context.insert_crash_on_error(rcs("d"), 3);
     context.get(&rcs("a"));
     context.push_scope();
     context.get(&rcs("a"));
