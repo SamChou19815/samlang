@@ -2,7 +2,7 @@
   "name": "vscode-samlang",
   "displayName": "vscode-samlang",
   "description": "samlang for VSCode",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "publisher": "dev-sam",
   "repository": {
     "url": "https://github.com/SamChou19815/samlang"
@@ -38,6 +38,13 @@
         "language": "samlang",
         "scopeName": "text.samlang",
         "path": "./syntaxes/samlang.json"
+      }
+    ],
+    "commands": [
+      {
+        "title": "Restart Client",
+        "category": "samlang",
+        "command": "samlang.restartClient"
       }
     ],
     "snippets": [
