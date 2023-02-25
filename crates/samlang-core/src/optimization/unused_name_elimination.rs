@@ -1,7 +1,7 @@
 use crate::{
   ast::hir::{
-    Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
-    Sources, Statement, Type, TypeDefinition,
+    Binary, Callee, ClosureTypeDefinition, Expression, Function, GenenalLoopVariable, Sources,
+    Statement, Type, TypeDefinition,
   },
   common::PStr,
 };
@@ -19,11 +19,12 @@ fn collect_used_names_from_expression(
   type_set: &mut HashSet<PStr>,
   expression: &Expression,
 ) {
-  collect_for_type_set(&expression.type_(), type_set);
   match expression {
-    Expression::IntLiteral(_, _) | Expression::Variable(_) => {}
-    Expression::StringName(n)
-    | Expression::FunctionName(FunctionName { name: n, type_: _, type_arguments: _ }) => {
+    Expression::IntLiteral(_, _) => {}
+    Expression::Variable(v) => {
+      collect_for_type_set(&v.type_, type_set);
+    }
+    Expression::StringName(n) => {
       name_set.insert(*n);
     }
   }
@@ -134,7 +135,10 @@ fn analyze_used_function_names_and_type_names(
   let mut type_def_map = HashMap::new();
   for d in closure_types {
     let mut type_set = HashSet::new();
-    collect_for_type_set(&Type::Fn(d.function_type.clone()), &mut type_set);
+    for t in &d.function_type.argument_types {
+      collect_for_type_set(t, &mut type_set);
+    }
+    collect_for_type_set(&d.function_type.return_type, &mut type_set);
     type_def_map.insert(d.identifier, type_set);
   }
   for d in type_definitions {
@@ -374,10 +378,7 @@ mod tests {
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::Variable(VariableName::new(heap.alloc_str("baz"), INT_TYPE)),
-            arguments: vec![Expression::fn_name(
-              heap.alloc_str("baz"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )],
+            arguments: vec![Expression::var_name(heap.alloc_str("baz"), INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: None,
           }],

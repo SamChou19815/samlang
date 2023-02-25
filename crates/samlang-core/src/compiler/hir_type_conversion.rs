@@ -123,12 +123,6 @@ fn collect_used_generic_types_visitor(
         collect_used_generic_types_visitor(t, generic_types, collector);
       }
     }
-    Type::Fn(f) => {
-      for t in &f.argument_types {
-        collect_used_generic_types_visitor(t, generic_types, collector);
-      }
-      collect_used_generic_types_visitor(&f.return_type, generic_types, collector);
-    }
   }
 }
 
@@ -159,18 +153,6 @@ fn solve_type_arguments_visit(
     }
     (Type::Id(id1), Type::Id(id2)) => {
       solve_type_arguments_visit_id(generic_type_parameter_set, solved, id1, id2)
-    }
-    (Type::Fn(f1), Type::Fn(f2)) => {
-      assert_eq!(f1.argument_types.len(), f2.argument_types.len());
-      for (a1, a2) in f1.argument_types.iter().zip(&f2.argument_types) {
-        solve_type_arguments_visit(generic_type_parameter_set, solved, a1, a2);
-      }
-      solve_type_arguments_visit(
-        generic_type_parameter_set,
-        solved,
-        &f1.return_type,
-        &f2.return_type,
-      );
     }
     _ => panic!(),
   }
@@ -232,10 +214,20 @@ pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Typ
         })
       }
     }
-    Type::Fn(f) => Type::new_fn(
-      f.argument_types.iter().map(|it| type_application(it, replacement_map)).collect_vec(),
-      type_application(&f.return_type, replacement_map),
-    ),
+  }
+}
+
+pub(super) fn fn_type_application(
+  fn_type: &FunctionType,
+  replacement_map: &HashMap<PStr, Type>,
+) -> FunctionType {
+  FunctionType {
+    argument_types: fn_type
+      .argument_types
+      .iter()
+      .map(|it| type_application(it, replacement_map))
+      .collect_vec(),
+    return_type: Box::new(type_application(&fn_type.return_type, replacement_map)),
   }
 }
 
@@ -248,9 +240,6 @@ fn encode_type_for_generics_specialization(heap: &Heap, type_: &Type) -> String 
         "The identifier type argument should already be specialized."
       );
       id.name.as_str(heap).to_string()
-    }
-    Type::Fn(_) => {
-      panic!("Function type should never appear in generics specialization positions.")
     }
   }
 }
@@ -405,91 +394,73 @@ mod tests {
   fn synthesizer_tests() {
     let heap = &mut Heap::new();
     let mut synthesizer = TypeSynthesizer::new();
-
-    assert_eq!(
-      "$SyntheticIDType0",
-      synthesizer
-        .synthesize_tuple_type(
-          heap,
-          vec![BOOL_TYPE, Type::new_fn(vec![INT_TYPE], BOOL_TYPE)],
-          vec![]
-        )
-        .identifier
-        .as_str(heap),
-    );
-    assert_eq!(
-      "$SyntheticIDType1",
-      synthesizer
-        .synthesize_tuple_type(
-          heap,
-          vec![INT_TYPE, Type::new_fn(vec![BOOL_TYPE], BOOL_TYPE)],
-          vec![]
-        )
-        .identifier
-        .as_str(heap),
-    );
-
-    assert_eq!(
-      "$SyntheticIDType0",
-      synthesizer
-        .synthesize_tuple_type(
-          heap,
-          vec![BOOL_TYPE, Type::new_fn(vec![INT_TYPE], BOOL_TYPE)],
-          vec![]
-        )
-        .identifier
-        .as_str(heap),
-    );
-    assert_eq!(
-      "$SyntheticIDType1",
-      synthesizer
-        .synthesize_tuple_type(
-          heap,
-          vec![INT_TYPE, Type::new_fn(vec![BOOL_TYPE], BOOL_TYPE)],
-          vec![]
-        )
-        .identifier
-        .as_str(heap),
-    );
-
-    assert_eq!(
-      "$SyntheticIDType2",
-      synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], INT_TYPE), vec![])
-        .identifier
-        .as_str(heap),
-    );
-    assert_eq!(
-      "$SyntheticIDType2",
-      synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], INT_TYPE), vec![])
-        .identifier
-        .as_str(heap),
-    );
-    assert_eq!(
-      "$SyntheticIDType3",
-      synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], BOOL_TYPE), vec![])
-        .identifier
-        .as_str(heap),
-    );
-    assert_eq!(
-      "$SyntheticIDType3",
-      synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], BOOL_TYPE), vec![])
-        .identifier
-        .as_str(heap),
-    );
-
     let a = heap.alloc_str("A");
+    let b = heap.alloc_str("B");
+    let c = heap.alloc_str("C");
+
+    assert_eq!(
+      "$SyntheticIDType0",
+      synthesizer
+        .synthesize_tuple_type(heap, vec![BOOL_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
+        .identifier
+        .as_str(heap),
+    );
+    assert_eq!(
+      "$SyntheticIDType1",
+      synthesizer
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![BOOL_TYPE])], vec![])
+        .identifier
+        .as_str(heap),
+    );
+
+    assert_eq!(
+      "$SyntheticIDType0",
+      synthesizer
+        .synthesize_tuple_type(heap, vec![BOOL_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
+        .identifier
+        .as_str(heap),
+    );
+    assert_eq!(
+      "$SyntheticIDType1",
+      synthesizer
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![BOOL_TYPE])], vec![])
+        .identifier
+        .as_str(heap),
+    );
+
+    assert_eq!(
+      "$SyntheticIDType2",
+      synthesizer
+        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], INT_TYPE), vec![])
+        .identifier
+        .as_str(heap),
+    );
+    assert_eq!(
+      "$SyntheticIDType2",
+      synthesizer
+        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], INT_TYPE), vec![])
+        .identifier
+        .as_str(heap),
+    );
+    assert_eq!(
+      "$SyntheticIDType3",
+      synthesizer
+        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], BOOL_TYPE), vec![])
+        .identifier
+        .as_str(heap),
+    );
+    assert_eq!(
+      "$SyntheticIDType3",
+      synthesizer
+        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], BOOL_TYPE), vec![])
+        .identifier
+        .as_str(heap),
+    );
+
     assert_eq!(
       "$SyntheticIDType4",
       synthesizer
-        .synthesize_tuple_type(
-          heap,
-          vec![INT_TYPE, Type::new_fn(vec![BOOL_TYPE], BOOL_TYPE)],
-          vec![a]
-        )
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(c, vec![BOOL_TYPE])], vec![a])
         .identifier
         .as_str(heap),
     );
@@ -498,9 +469,9 @@ mod tests {
 
     assert_eq!(
       vec![
-        "object type $SyntheticIDType0 = [bool, (int) -> bool]",
-        "object type $SyntheticIDType1 = [int, (bool) -> bool]",
-        "object type $SyntheticIDType4<A> = [int, (bool) -> bool]"
+        "object type $SyntheticIDType0 = [bool, A<int>]",
+        "object type $SyntheticIDType1 = [int, B<bool>]",
+        "object type $SyntheticIDType4<A> = [int, C<bool>]"
       ],
       tuple_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
@@ -521,7 +492,7 @@ mod tests {
 
     assert!(collect_used_generic_types(
       &Type::new_fn_unwrapped(
-        vec![BOOL_TYPE, Type::new_fn(vec![BOOL_TYPE], INT_TYPE)],
+        vec![BOOL_TYPE, Type::new_id(heap.alloc_str("C"), vec![BOOL_TYPE])],
         Type::new_id_no_targs(heap.alloc_str("C")),
       ),
       &generic_types,
@@ -583,13 +554,10 @@ mod tests {
 
     solve_type_arguments(
       &vec![],
+      &Type::new_id_unwrapped(heap.alloc_str("A"), vec![STRING_TYPE]),
       &Type::new_id_unwrapped(
         heap.alloc_str("A"),
-        vec![Type::new_fn(vec![INT_TYPE, BOOL_TYPE], STRING_TYPE)],
-      ),
-      &Type::new_id_unwrapped(
-        heap.alloc_str("A"),
-        vec![Type::new_fn(vec![INT_TYPE, BOOL_TYPE], Type::new_fn(vec![], STRING_TYPE))],
+        vec![Type::new_id_no_targs(heap.alloc_str("B"))],
       ),
     );
   }
@@ -602,34 +570,28 @@ mod tests {
       &vec![heap.alloc_str("A")],
       &Type::new_id_unwrapped(
         heap.alloc_str("FF"),
-        vec![Type::new_fn(
-          vec![INT_TYPE, BOOL_TYPE],
-          Type::new_fn(
-            vec![
-              Type::new_id(heap.alloc_str("Foo"), vec![STRING_TYPE]),
-              Type::new_fn(vec![], INT_TYPE),
-              Type::new_id_no_targs(heap.alloc_str("B")),
-            ],
-            STRING_TYPE,
-          ),
-        )],
+        vec![
+          INT_TYPE,
+          BOOL_TYPE,
+          Type::new_id(heap.alloc_str("Foo"), vec![STRING_TYPE]),
+          INT_TYPE,
+          Type::new_id_no_targs(heap.alloc_str("B")),
+          STRING_TYPE,
+        ],
       ),
       &Type::new_id_unwrapped(
         heap.alloc_str("FF"),
-        vec![Type::new_fn(
-          vec![INT_TYPE, BOOL_TYPE],
-          Type::new_fn(
-            vec![
-              Type::new_id(heap.alloc_str("Foo"), vec![STRING_TYPE]),
-              Type::new_id_no_targs(heap.alloc_str("A")),
-              Type::new_id_no_targs(heap.alloc_str("B")),
-            ],
-            STRING_TYPE,
-          ),
-        )],
+        vec![
+          INT_TYPE,
+          BOOL_TYPE,
+          Type::new_id(heap.alloc_str("Foo"), vec![STRING_TYPE]),
+          Type::new_id_no_targs(heap.alloc_str("A")),
+          Type::new_id_no_targs(heap.alloc_str("B")),
+          STRING_TYPE,
+        ],
       ),
     );
-    assert_eq!("() -> int", actual.iter().map(|it| it.pretty_print(heap)).join(", "));
+    assert_eq!("int", actual.iter().map(|it| it.pretty_print(heap)).join(", "));
   }
 
   #[test]
@@ -667,8 +629,8 @@ mod tests {
 
     assert_eq!(
       "(int) -> bool",
-      type_application(
-        &Type::new_fn(
+      fn_type_application(
+        &Type::new_fn_unwrapped(
           vec![Type::new_id_no_targs(heap.alloc_str("A"))],
           Type::new_id_no_targs(heap.alloc_str("B"))
         ),
@@ -680,16 +642,7 @@ mod tests {
 
   #[should_panic]
   #[test]
-  fn encode_name_after_generics_specialization_panic_test1() {
-    let heap = &mut Heap::new();
-    let s = heap.alloc_str("");
-
-    encode_name_after_generics_specialization(heap, s, &vec![Type::new_fn(vec![], INT_TYPE)]);
-  }
-
-  #[should_panic]
-  #[test]
-  fn encode_name_after_generics_specialization_panic_test2() {
+  fn encode_name_after_generics_specialization_panic_test() {
     let heap = &mut Heap::new();
     let s = heap.alloc_str("");
     let a = heap.alloc_str("A");

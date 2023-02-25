@@ -31,20 +31,15 @@ mod tests {
       )
     )
     .is_empty());
-    assert!(!format!(
-      "{:?}",
-      Expression::fn_name(
-        heap.alloc_str("a"),
-        Type::new_fn(vec![INT_TYPE], INT_TYPE).as_fn().unwrap().clone()
-      )
-    )
-    .is_empty());
     assert!(!format!("{:?}", Expression::StringName(heap.alloc_str("a"))).is_empty());
     assert!(!format!("{:?}", Operator::GE).is_empty());
     assert!(!format!("{:?}", ZERO.type_()).is_empty());
     assert!(!format!("{:?}", FALSE.type_()).is_empty());
-    assert!(!format!("{:?}", Expression::var_name(heap.alloc_str("a"), INT_TYPE).type_().as_fn())
-      .is_empty());
+    assert!(!format!(
+      "{:?}",
+      Expression::var_name(heap.alloc_str("a"), INT_TYPE).type_().as_primitive()
+    )
+    .is_empty());
     assert!(
       !format!("{:?}", Expression::StringName(heap.alloc_str("a")).type_().as_id()).is_empty()
     );
@@ -56,24 +51,12 @@ mod tests {
     }
     .pretty_print(heap)
     .is_empty());
-    assert!(!format!(
-      "{:?}",
-      Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))
-        .type_()
-    )
-    .is_empty());
+    assert!(!format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).is_empty());
     assert!(PrimitiveType::Int.eq(&PrimitiveType::Int));
     assert_eq!(PrimitiveType::Int, PrimitiveType::Int);
-    Expression::FunctionName(FunctionName {
-      name: heap.alloc_str(""),
-      type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-      type_arguments: vec![INT_TYPE],
-    })
-    .convert_to_callee();
     Expression::var_name(heap.alloc_str(""), INT_TYPE).convert_to_callee();
     Expression::StringName(heap.alloc_str("")).convert_to_callee();
     ZERO.convert_to_callee();
-    Expression::var_name(heap.alloc_str("a"), INT_TYPE).as_function_name();
     Statement::Break(ZERO).as_binary();
     Statement::binary(heap.alloc_str("name"), Operator::DIV, ZERO, ZERO).clone().as_binary();
     Statement::Call {
@@ -92,55 +75,38 @@ mod tests {
     assert!(
       Expression::var_name(
         heap.alloc_str("a"),
-        Type::new_fn(
-          vec![INT_TYPE],
-          Type::new_id(
-            heap.alloc_str("A"),
-            vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
-          )
+        Type::new_id(
+          heap.alloc_str("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
         )
       ) == Expression::var_name(
         heap.alloc_str("a"),
-        Type::new_fn(
-          vec![INT_TYPE],
-          Type::new_id(
-            heap.alloc_str("A"),
-            vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
-          )
+        Type::new_id(
+          heap.alloc_str("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
         )
       )
     );
+    assert!(
+      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+        == FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+    );
     assert!(Expression::var_name(
       heap.alloc_str("a"),
-      Type::new_fn(
-        vec![INT_TYPE],
-        Type::new_id(
-          heap.alloc_str("A"),
-          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
-        )
-      )
+      Type::new_id(heap.alloc_str("A"), vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))])
     )
     .eq(&Expression::var_name(
       heap.alloc_str("a"),
-      Type::new_fn(
-        vec![INT_TYPE],
-        Type::new_id(
-          heap.alloc_str("A"),
-          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
-        )
-      )
-    )));
-    assert!(Type::new_fn(
-      vec![INT_TYPE],
       Type::new_id(heap.alloc_str("A"), vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))])
+    )));
+    assert!(Type::new_id(
+      heap.alloc_str("A"),
+      vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
     )
     .eq(
-      &(Type::new_fn(
-        vec![INT_TYPE],
-        Type::new_id(
-          heap.alloc_str("A"),
-          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
-        )
+      &(Type::new_id(
+        heap.alloc_str("A"),
+        vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str("B"))]
       ))
     ));
     let mut hasher = DefaultHasher::new();
@@ -159,8 +125,6 @@ mod tests {
     ZERO.dump_to_string();
     Expression::var_name(heap.alloc_str("a"), INT_TYPE).dump_to_string();
     Expression::StringName(heap.alloc_str("a")).dump_to_string();
-    Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))
-      .dump_to_string();
     assert_eq!("(a: int)", Expression::var_name(heap.alloc_str("a"), INT_TYPE).debug_print(heap));
     assert_eq!(
       "(a: A<int, B>)",
@@ -175,15 +139,12 @@ mod tests {
       .debug_print(heap)
     );
     assert_eq!(
-      "(a: (int) -> int)",
-      Expression::var_name(heap.alloc_str("a"), Type::new_fn(vec![(INT_TYPE)], INT_TYPE))
-        .debug_print(heap)
-    );
-    assert_eq!(
-      "a",
-      Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE))
-        .clone()
-        .debug_print(heap)
+      "(a: A<int>)",
+      Expression::var_name(
+        heap.alloc_str("a"),
+        Type::new_id(heap.alloc_str("A"), vec![(INT_TYPE)])
+      )
+      .debug_print(heap)
     );
     assert_eq!("a", Expression::StringName(heap.alloc_str("a")).clone().debug_print(heap));
   }
@@ -496,18 +457,6 @@ sources.mains = [ddd]"#;
         Operator::PLUS,
         Expression::StringName(heap.alloc_str("b")),
         ZERO
-      ),
-    );
-    assert_eq!(
-      (
-        Operator::PLUS,
-        Expression::fn_name(heap.alloc_str("b"), Type::new_fn_unwrapped(vec![], INT_TYPE)),
-        Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![], INT_TYPE))
-      ),
-      Statement::flexible_order_binary(
-        Operator::PLUS,
-        Expression::fn_name(heap.alloc_str("b"), Type::new_fn_unwrapped(vec![], INT_TYPE)),
-        Expression::fn_name(heap.alloc_str("a"), Type::new_fn_unwrapped(vec![], INT_TYPE))
       ),
     );
     assert_eq!(

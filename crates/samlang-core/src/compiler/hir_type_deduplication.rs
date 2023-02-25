@@ -20,7 +20,6 @@ fn rewrite_type(state: &State, type_: Type) -> Type {
   match type_ {
     Type::Primitive(k) => Type::Primitive(k),
     Type::Id(id) => Type::Id(rewrite_id_type(state, id)),
-    Type::Fn(f) => Type::Fn(rewrite_fn_type(state, f)),
   }
 }
 
@@ -53,7 +52,6 @@ fn rewrite_expr(state: &State, expr: Expression) -> Expression {
   match expr {
     Expression::IntLiteral(_, _) | Expression::StringName(_) => expr,
     Expression::Variable(n) => Expression::Variable(rewrite_var_name(state, n)),
-    Expression::FunctionName(f) => Expression::FunctionName(rewrite_fn_name(state, f)),
   }
 }
 
@@ -260,19 +258,7 @@ mod tests {
 
     assert_eq!(
       "() -> int",
-      rewrite_type(&HashMap::new(), Type::new_fn(vec![], INT_TYPE)).pretty_print(heap)
-    );
-    assert_eq!(
-      "f<int>",
-      rewrite_expr(
-        &HashMap::new(),
-        Expression::FunctionName(FunctionName {
-          name: heap.alloc_str("f"),
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-          type_arguments: vec![INT_TYPE]
-        })
-      )
-      .debug_print(heap)
+      rewrite_fn_type(&HashMap::new(), Type::new_fn_unwrapped(vec![], INT_TYPE)).pretty_print(heap)
     );
   }
 
@@ -324,7 +310,7 @@ mod tests {
               callee: Callee::FunctionName(FunctionName {
                 name: heap.alloc_str("f"),
                 type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
-                type_arguments: vec![],
+                type_arguments: vec![INT_TYPE],
               }),
               arguments: vec![ZERO],
               return_type: INT_TYPE,
@@ -376,7 +362,7 @@ function main(): int {
   let _: int;
   if 1 {
     let _: int = 0 + 0;
-    f(0);
+    f<int>(0);
     (f: int)();
     let _: A = 0[0];
     _ = 0;

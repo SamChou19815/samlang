@@ -295,7 +295,7 @@ fn get_loop_invariant_expression_opt(
     Expression::IntLiteral(i, true) => Some(PotentialLoopInvariantExpression::Int(*i)),
     Expression::IntLiteral(_, false) => None,
     // We are doing algebraic operations here. Name is hopeless.
-    Expression::StringName(_) | Expression::FunctionName(_) => None,
+    Expression::StringName(_) => None,
     Expression::Variable(v) => {
       if !non_loop_invariant_variables.contains(&v.name) {
         Some(PotentialLoopInvariantExpression::Var(v.clone()))
@@ -774,10 +774,7 @@ mod tests {
       &HashSet::from([heap.alloc_str("a")])
     ));
     assert!(!expression_is_loop_invariant(
-      &Expression::FunctionName(FunctionName::new(
-        heap.alloc_str(""),
-        Type::new_fn_unwrapped(vec![], INT_TYPE)
-      )),
+      &Expression::StringName(heap.alloc_str(""),),
       &HashSet::from([heap.alloc_str("a")])
     ));
     assert!(expression_is_loop_invariant(&ZERO, &HashSet::from([heap.alloc_str("a")])));

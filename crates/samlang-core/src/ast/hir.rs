@@ -63,7 +63,6 @@ impl FunctionType {
 pub(crate) enum Type {
   Primitive(PrimitiveType),
   Id(IdType),
-  Fn(FunctionType),
 }
 
 impl Type {
@@ -87,15 +86,10 @@ impl Type {
     Type::Id(IdType { name, type_arguments: vec![] })
   }
 
-  pub(crate) fn new_fn(argument_types: Vec<Type>, return_type: Type) -> Type {
-    Type::Fn(Self::new_fn_unwrapped(argument_types, return_type))
-  }
-
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       Type::Primitive(t) => t.to_string(),
       Type::Id(id) => id.pretty_print(heap),
-      Type::Fn(function) => function.pretty_print(heap),
     }
   }
 }
@@ -246,7 +240,6 @@ impl FunctionName {
 pub(crate) enum Expression {
   IntLiteral(i32, /* is_int */ bool),
   StringName(PStr),
-  FunctionName(FunctionName),
   Variable(VariableName),
 }
 
@@ -257,15 +250,11 @@ impl Ord for Expression {
         Expression::IntLiteral(i2, _) => i1.cmp(i2),
         _ => Ordering::Less,
       },
-      Expression::StringName(n1) | Expression::FunctionName(FunctionName { name: n1, .. }) => {
-        match other {
-          Expression::IntLiteral(_, _) => Ordering::Greater,
-          Expression::StringName(n2) | Expression::FunctionName(FunctionName { name: n2, .. }) => {
-            n1.cmp(n2)
-          }
-          Expression::Variable(_) => Ordering::Less,
-        }
-      }
+      Expression::StringName(n1) => match other {
+        Expression::IntLiteral(_, _) => Ordering::Greater,
+        Expression::StringName(n2) => n1.cmp(n2),
+        Expression::Variable(_) => Ordering::Less,
+      },
       Expression::Variable(v1) => match other {
         Expression::Variable(v2) => v1.name.cmp(&v2.name),
         _ => Ordering::Greater,
@@ -297,17 +286,12 @@ impl Expression {
     Expression::Variable(VariableName { name, type_ })
   }
 
-  pub(crate) fn fn_name(name: PStr, type_: FunctionType) -> Expression {
-    Expression::FunctionName(FunctionName::new(name, type_))
-  }
-
-  pub(crate) fn type_(&self) -> Type {
+  pub(crate) fn type_(&self) -> &Type {
     match self {
-      Expression::IntLiteral(_, false) => BOOL_TYPE,
-      Expression::IntLiteral(_, true) => INT_TYPE,
-      Expression::StringName(_) => STRING_TYPE,
-      Expression::FunctionName(f) => Type::Fn(f.type_.clone()),
-      Expression::Variable(v) => v.type_.clone(),
+      Expression::IntLiteral(_, false) => &BOOL_TYPE,
+      Expression::IntLiteral(_, true) => &INT_TYPE,
+      Expression::StringName(_) => &STRING_TYPE,
+      Expression::Variable(v) => &v.type_,
     }
   }
 
@@ -315,7 +299,6 @@ impl Expression {
     match self {
       Expression::IntLiteral(i, _) => i.to_string(),
       Expression::StringName(n) => n.as_str(heap).to_string(),
-      Expression::FunctionName(f) => f.debug_print(heap),
       Expression::Variable(v) => v.debug_print(heap),
     }
   }
@@ -324,7 +307,6 @@ impl Expression {
     match self {
       Expression::IntLiteral(i, _) => i.to_string(),
       Expression::StringName(n) => n.opaque_id().to_string(),
-      Expression::FunctionName(f) => f.name.opaque_id().to_string(),
       Expression::Variable(v) => v.name.opaque_id().to_string(),
     }
   }
@@ -332,7 +314,6 @@ impl Expression {
   pub(crate) fn convert_to_callee(self) -> Option<Callee> {
     match self {
       Expression::IntLiteral(_, _) | Expression::StringName(_) => None,
-      Expression::FunctionName(n) => Some(Callee::FunctionName(n)),
       Expression::Variable(v) => Some(Callee::Variable(v)),
     }
   }
