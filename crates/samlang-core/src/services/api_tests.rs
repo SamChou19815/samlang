@@ -336,6 +336,9 @@ class Test2(val a: int) {
     assert!(service.query_for_hover(&test2_mod_ref, Position(3, 28)).is_none());
     // At the () of call
     assert!(service.query_for_hover(&test2_mod_ref, Position(4, 42)).is_none());
+    // Non-existent
+    assert!(service.query_all_references(&ModuleReference::dummy(), Position(4, 100)).is_empty());
+    assert!(service.query_all_references(&test2_mod_ref, Position(4, 100)).is_empty());
   }
 
   #[test]
@@ -343,7 +346,7 @@ class Test2(val a: int) {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
-    let mut service = LanguageServices::new(
+    let service = LanguageServices::new(
       heap,
       false,
       vec![
@@ -385,14 +388,14 @@ class Test2(val a: int) {
   fn query_def_loc_test_2() {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
-    let mut service = LanguageServices::new(
+    let service = LanguageServices::new(
       heap,
       false,
       vec![(
         test_mod_ref,
         r#"class Test1(val a: int) {
   function test(): int = {
-    val [c, b] = [1, 2];
+    val {c, b} = 1 + 2;
 
     a + b + c
   }
@@ -402,7 +405,24 @@ class Test2(val a: int) {
       )],
     );
 
+    assert_eq!(
+      vec![
+        "Test1.sam:3:10-3:11: [UnresolvedName]: Name `c` is not resolved.",
+        "Test1.sam:3:13-3:14: [UnresolvedName]: Name `b` is not resolved.",
+        "Test1.sam:5:5-5:6: [UnresolvedName]: Name `a` is not resolved.",
+      ],
+      service.get_error_strings(&test_mod_ref)
+    );
+
+    // At 1 in `[1, 2]`
+    assert!(service.query_definition_location(&test_mod_ref, Position(2, 18)).is_none());
+    assert!(service.query_all_references(&test_mod_ref, Position(2, 18)).is_empty());
+    // At a in `a + b + c`
     assert!(service.query_definition_location(&test_mod_ref, Position(4, 4)).is_none());
+    assert!(service.query_all_references(&test_mod_ref, Position(4, 4)).is_empty());
+    // At + in `a + b + c`
+    assert!(service.query_definition_location(&test_mod_ref, Position(4, 6)).is_none());
+    assert!(service.query_all_references(&test_mod_ref, Position(4, 6)).is_empty());
   }
 
   #[test]
@@ -411,7 +431,7 @@ class Test2(val a: int) {
     let test1_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test1".to_string()]);
     let test2_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test2".to_string()]);
     let test3_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test3".to_string()]);
-    let mut service = LanguageServices::new(
+    let service = LanguageServices::new(
       heap,
       false,
       vec![
@@ -454,6 +474,7 @@ class Test1(val a: int) {
     assert!(service.query_definition_location(&test1_mod_ref, Position(4, 60)).is_none());
     assert!(service.query_definition_location(&test1_mod_ref, Position(6, 35)).is_none());
 
+    // At t in `(t: TTT)`
     assert_eq!(
       "Test1.sam:5:17-5:18",
       service
@@ -461,7 +482,16 @@ class Test1(val a: int) {
         .unwrap()
         .pretty_print(&service.heap)
     );
+    assert_eq!(
+      "Test1.sam:5:17-5:18, Test1.sam:5:44-5:45, Test1.sam:5:49-5:50",
+      service
+        .query_all_references(&test1_mod_ref, Position(4, 16))
+        .into_iter()
+        .map(|it| it.pretty_print(&service.heap))
+        .join(", ")
+    );
 
+    // At Test1 in `Test1 .test`
     assert_eq!(
       "Test1.sam:3:1-15:2",
       service
@@ -469,7 +499,16 @@ class Test1(val a: int) {
         .unwrap()
         .pretty_print(&service.heap)
     );
+    assert_eq!(
+      "Test1.sam:3:7-3:12, Test1.sam:5:32-5:37, Test1.sam:7:27-7:32",
+      service
+        .query_all_references(&test1_mod_ref, Position(4, 34))
+        .into_iter()
+        .map(|it| it.pretty_print(&service.heap))
+        .join(", ")
+    );
 
+    // At test in `Test1 .test`
     assert_eq!(
       "Test1.sam:5:3-5:61",
       service
@@ -477,15 +516,16 @@ class Test1(val a: int) {
         .unwrap()
         .pretty_print(&service.heap)
     );
-
     assert_eq!(
-      "Test1.sam:5:3-5:61",
+      "Test1.sam:5:12-5:16, Test1.sam:5:39-5:43",
       service
-        .query_definition_location(&test1_mod_ref, Position(4, 40))
-        .unwrap()
-        .pretty_print(&service.heap)
+        .query_all_references(&test1_mod_ref, Position(4, 38))
+        .into_iter()
+        .map(|it| it.pretty_print(&service.heap))
+        .join(", ")
     );
 
+    // At t in `t.test()`
     assert_eq!(
       "Test1.sam:5:17-5:18",
       service
@@ -494,13 +534,31 @@ class Test1(val a: int) {
         .pretty_print(&service.heap)
     );
     assert_eq!(
+      "Test1.sam:5:17-5:18, Test1.sam:5:44-5:45, Test1.sam:5:49-5:50",
+      service
+        .query_all_references(&test1_mod_ref, Position(4, 48))
+        .into_iter()
+        .map(|it| it.pretty_print(&service.heap))
+        .join(", ")
+    );
+    // At test in `t.test()`
+    assert_eq!(
       "Test2.sam:1:13-1:45",
       service
         .query_definition_location(&test1_mod_ref, Position(4, 51))
         .unwrap()
         .pretty_print(&service.heap)
     );
+    assert_eq!(
+      "Test1.sam:5:51-5:55, Test2.sam:1:20-1:24, Test2.sam:1:39-1:43",
+      service
+        .query_all_references(&test1_mod_ref, Position(4, 51))
+        .into_iter()
+        .map(|it| it.pretty_print(&service.heap))
+        .join(", ")
+    );
 
+    // At ABC in `ABC.a`
     assert_eq!(
       "Test3.sam:1:1-1:50",
       service
@@ -508,7 +566,16 @@ class Test1(val a: int) {
         .unwrap()
         .pretty_print(&service.heap)
     );
+    assert_eq!(
+      "Test1.sam:6:28-6:31, Test3.sam:1:7-1:10",
+      service
+        .query_all_references(&test1_mod_ref, Position(5, 30))
+        .into_iter()
+        .map(|it| it.pretty_print(&service.heap))
+        .join(", ")
+    );
 
+    // At Test1 in `Test1.init`
     assert_eq!(
       "Test1.sam:3:1-15:2",
       service
@@ -517,12 +584,21 @@ class Test1(val a: int) {
         .pretty_print(&service.heap)
     );
 
+    // At a in `Test1.init(3).a`
     assert_eq!(
       "Test1.sam:3:17-3:18",
       service
         .query_definition_location(&test1_mod_ref, Position(6, 41))
         .unwrap()
         .pretty_print(&service.heap)
+    );
+    assert_eq!(
+      "Test1.sam:3:17-3:18, Test1.sam:7:41-7:42",
+      service
+        .query_all_references(&test1_mod_ref, Position(6, 41))
+        .into_iter()
+        .map(|it| it.pretty_print(&service.heap))
+        .join(", ")
     );
 
     assert_eq!(

@@ -141,7 +141,7 @@ fn search_expression(
   }
 }
 
-pub(super) fn search_module(
+pub(super) fn search_module_locally(
   module_reference: ModuleReference,
   module: &Module<Rc<Type>>,
   position: Position,
@@ -314,7 +314,7 @@ mod tests {
     for m in checked_sources.values() {
       for i in 0..80 {
         for j in 0..80 {
-          super::search_module(mod_ref, m, Position(i, j));
+          super::search_module_locally(mod_ref, m, Position(i, j));
         }
       }
     }

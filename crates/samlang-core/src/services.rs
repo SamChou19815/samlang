@@ -5,6 +5,8 @@ mod api_tests;
 mod dep_graph;
 /// A service to perform garbage collection on heaps
 mod gc;
+/// A service to perform global search for find references
+mod global_searcher;
 /// A service to find the smallest cover of a meaningful AST node
 mod location_cover;
 /// A service to power go-to-definition requests

@@ -263,6 +263,9 @@ mod lsp {
           definition_provider: Some(OneOf::Right(DefinitionOptions {
             work_done_progress_options: Default::default(),
           })),
+          references_provider: Some(OneOf::Right(ReferencesOptions {
+            work_done_progress_options: Default::default(),
+          })),
           folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
           completion_provider: Some(CompletionOptions {
             resolve_provider: Some(false),
@@ -424,7 +427,7 @@ mod lsp {
       params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
       self.client.log_message(MessageType::INFO, "[lsp] goto_definition").await;
-      let mut service = self.service.write().await;
+      let service = self.service.read().await;
       let mod_ref = self.convert_url_to_module_reference_readonly(
         &service.0.heap,
         &params.text_document_position_params.text_document.uri,
@@ -447,6 +450,30 @@ mod lsp {
             )
           }),
       )
+    }
+
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+      self.client.log_message(MessageType::INFO, "[lsp] references").await;
+      let service = self.service.read().await;
+      let mod_ref = self.convert_url_to_module_reference_readonly(
+        &service.0.heap,
+        &params.text_document_position.text_document.uri,
+      );
+      Ok(Some(
+        service
+          .0
+          .query_all_references(
+            &mod_ref,
+            lsp_pos_to_samlang_pos(params.text_document_position.position),
+          )
+          .into_iter()
+          .filter_map(|location| {
+            self
+              .convert_module_reference_to_url(&service.0.heap, &location.module_reference)
+              .map(|uri| Location { uri, range: samlang_loc_to_lsp_range(&location) })
+          })
+          .collect(),
+      ))
     }
 
     async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
