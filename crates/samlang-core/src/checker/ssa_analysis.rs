@@ -6,19 +6,68 @@ use crate::{
     },
     Location,
   },
-  common::{Heap, LocalStackedContext, PStr},
+  common::{Heap, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
+
+struct SsaLocalStackedContext {
+  local_values_stack: Vec<HashMap<PStr, Location>>,
+  captured_values_stack: Vec<HashMap<PStr, Location>>,
+}
+
+impl SsaLocalStackedContext {
+  fn new() -> SsaLocalStackedContext {
+    SsaLocalStackedContext {
+      local_values_stack: vec![HashMap::new()],
+      captured_values_stack: vec![HashMap::new()],
+    }
+  }
+
+  fn get(&mut self, name: &PStr) -> Option<&Location> {
+    let closest_stack_value = self.local_values_stack.last().unwrap().get(name);
+    if closest_stack_value.is_some() {
+      return closest_stack_value;
+    }
+    for level in (0..(self.local_values_stack.len() - 1)).rev() {
+      let value = self.local_values_stack[level].get(name);
+      if let Some(v) = value {
+        for captured_level in (level + 1)..(self.captured_values_stack.len()) {
+          self.captured_values_stack[captured_level].insert(*name, *v);
+        }
+        return Some(v);
+      }
+    }
+    None
+  }
+
+  fn insert(&mut self, name: PStr, value: Location) -> Option<Location> {
+    let previous = self.local_values_stack.iter().find_map(|m| m.get(&name)).cloned();
+    let stack = &mut self.local_values_stack;
+    let last_index = stack.len() - 1;
+    stack[last_index].insert(name, value);
+    previous
+  }
+
+  fn push_scope(&mut self) {
+    self.local_values_stack.push(HashMap::new());
+    self.captured_values_stack.push(HashMap::new());
+  }
+
+  fn pop_scope(&mut self) -> (HashMap<PStr, Location>, HashMap<PStr, Location>) {
+    (self.local_values_stack.pop().unwrap(), self.captured_values_stack.pop().unwrap())
+  }
+}
 
 struct SsaAnalysisState<'a> {
   unbound_names: HashSet<PStr>,
   invalid_defines: HashSet<Location>,
   use_define_map: HashMap<Location, Location>,
   def_locs: HashSet<Location>,
+  local_scoped_def_locs: HashMap<Location, HashMap<PStr, Location>>,
   lambda_captures: HashMap<Location, HashMap<PStr, Location>>,
-  context: LocalStackedContext<PStr, Location>,
+  context: SsaLocalStackedContext,
   error_set: &'a mut ErrorSet,
 }
 
@@ -29,8 +78,9 @@ impl<'a> SsaAnalysisState<'a> {
       invalid_defines: HashSet::new(),
       use_define_map: HashMap::new(),
       def_locs: HashSet::new(),
+      local_scoped_def_locs: HashMap::new(),
       lambda_captures: HashMap::new(),
-      context: LocalStackedContext::new(),
+      context: SsaLocalStackedContext::new(),
       error_set,
     }
   }
@@ -168,14 +218,19 @@ impl<'a> SsaAnalysisState<'a> {
       }
     }
     for param in member.parameters.iter() {
-      let id = &param.name;
-      self.define_id(heap, id.name, id.loc);
       self.visit_annot(heap, &param.annotation);
     }
     self.visit_annot(heap, &member.type_.return_type);
+    self.context.push_scope();
+    for param in member.parameters.iter() {
+      let id = &param.name;
+      self.define_id(heap, id.name, id.loc);
+    }
     if let Some(b) = body {
       self.visit_expression(heap, b);
     }
+    let (local_defs, _) = self.context.pop_scope();
+    self.local_scoped_def_locs.insert(member.loc, local_defs);
     self.context.pop_scope();
   }
 
@@ -224,7 +279,8 @@ impl<'a> SsaAnalysisState<'a> {
             self.define_id(heap, id.name, id.loc);
           }
           self.visit_expression(heap, &case.body);
-          self.context.pop_scope();
+          let (local_defs, _) = self.context.pop_scope();
+          self.local_scoped_def_locs.insert(case.loc, local_defs);
         }
       }
       expr::E::Lambda(e) => {
@@ -236,7 +292,8 @@ impl<'a> SsaAnalysisState<'a> {
           }
         }
         self.visit_expression(heap, &e.body);
-        let captured = self.context.pop_scope();
+        let (local_defs, captured) = self.context.pop_scope();
+        self.local_scoped_def_locs.insert(e.common.loc, local_defs);
         self.lambda_captures.insert(e.common.loc, captured);
       }
       expr::E::Block(e) => {
@@ -267,7 +324,8 @@ impl<'a> SsaAnalysisState<'a> {
         if let Some(final_expr) = &e.expression {
           self.visit_expression(heap, final_expr);
         }
-        self.context.pop_scope();
+        let (local_defs, _) = self.context.pop_scope();
+        self.local_scoped_def_locs.insert(e.common.loc, local_defs);
       }
     }
   }
@@ -327,15 +385,25 @@ pub(crate) struct SsaAnalysisResult {
   pub(crate) invalid_defines: HashSet<Location>,
   pub(crate) use_define_map: HashMap<Location, Location>,
   pub(crate) def_to_use_map: HashMap<Location, Vec<Location>>,
+  pub(crate) local_scoped_def_locs: HashMap<Location, HashMap<PStr, Location>>,
   pub(crate) lambda_captures: HashMap<Location, HashMap<PStr, Location>>,
 }
 
 impl SsaAnalysisResult {
   pub(super) fn to_string(&self, heap: &Heap) -> String {
     format!(
-      "Unbound names: [{}]\nInvalid defines: [{}]\nLambda Capture Locs: [{}]\ndef_to_use_map:\n{}",
+      "Unbound names: [{}]\nInvalid defines: [{}]\nLocally Scoped Defs:\n{}\nLambda Capture Locs: [{}]\ndef_to_use_map:\n{}",
       self.unbound_names.iter().map(|n| n.as_str(heap)).join(", "),
       self.invalid_defines.iter().map(Location::pretty_print_without_file).sorted().join(", "),
+      self
+        .local_scoped_def_locs
+        .iter()
+        .map(|(k, v)| {
+          let names = v.keys().sorted().map(|s| s.as_str(heap)).join(", ");
+          format!("{}: [{}]", k.pretty_print_without_file(),names)
+        })
+        .sorted()
+        .join("\n"),
       self.lambda_captures.keys().map(|k| k.pretty_print_without_file()).sorted().join(", "),
       self
         .def_to_use_map
@@ -367,6 +435,7 @@ impl SsaAnalysisResult {
       invalid_defines: state.invalid_defines,
       use_define_map: state.use_define_map,
       def_to_use_map,
+      local_scoped_def_locs: state.local_scoped_def_locs,
       lambda_captures: state.lambda_captures,
     }
   }

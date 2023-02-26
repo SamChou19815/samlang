@@ -25,6 +25,7 @@ mod tests {
       invalid_defines: HashSet::new(),
       use_define_map: HashMap::new(),
       def_to_use_map: HashMap::new(),
+      local_scoped_def_locs: HashMap::new(),
       lambda_captures: HashMap::new(),
     })
   }
@@ -38,6 +39,7 @@ mod tests {
       invalid_defines: HashSet::new(),
       use_define_map: HashMap::from([(Location::dummy(), Location::dummy())]),
       def_to_use_map: HashMap::new(),
+      local_scoped_def_locs: HashMap::new(),
       lambda_captures: HashMap::new(),
     })
     .read(&Location::dummy());

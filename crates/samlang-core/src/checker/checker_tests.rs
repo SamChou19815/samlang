@@ -34,6 +34,7 @@ mod tests {
       invalid_defines: HashSet::new(),
       use_define_map: HashMap::new(),
       def_to_use_map: HashMap::new(),
+      local_scoped_def_locs: HashMap::new(),
       lambda_captures: HashMap::new(),
     });
     let global_cx = sandbox_global_cx(&mut heap);
