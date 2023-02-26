@@ -26,13 +26,29 @@ pub(crate) enum InlineInstruction {
 }
 
 impl InlineInstruction {
-  fn pretty_print(&self, heap: &Heap) -> String {
+  fn pretty_print(&self, heap: &Heap, string_builder: &mut String) {
     match self {
-      InlineInstruction::Const(i) => format!("(i32.const {i})"),
-      InlineInstruction::Drop(v) => format!("(drop {})", v.pretty_print(heap)),
-      InlineInstruction::LocalGet(name) => format!("(local.get ${})", name.as_str(heap)),
+      InlineInstruction::Const(i) => {
+        string_builder.push_str("(i32.const ");
+        string_builder.push_str(&i.to_string());
+        string_builder.push(')');
+      }
+      InlineInstruction::Drop(v) => {
+        string_builder.push_str("(drop ");
+        v.pretty_print(heap, string_builder);
+        string_builder.push(')');
+      }
+      InlineInstruction::LocalGet(name) => {
+        string_builder.push_str("(local.get $");
+        string_builder.push_str(name.as_str(heap));
+        string_builder.push(')');
+      }
       InlineInstruction::LocalSet(name, assigned) => {
-        format!("(local.set ${} {})", name.as_str(heap), assigned.pretty_print(heap))
+        string_builder.push_str("(local.set $");
+        string_builder.push_str(name.as_str(heap));
+        string_builder.push(' ');
+        assigned.pretty_print(heap, string_builder);
+        string_builder.push(')');
       }
       InlineInstruction::Binary(v1, op, v2) => {
         let op_s = match op {
@@ -49,41 +65,64 @@ impl InlineInstruction {
           hir::Operator::EQ => "eq",
           hir::Operator::NE => "ne",
         };
-        format!("(i32.{} {} {})", op_s, v1.pretty_print(heap), v2.pretty_print(heap))
+        string_builder.push_str("(i32.");
+        string_builder.push_str(op_s);
+        string_builder.push(' ');
+        v1.pretty_print(heap, string_builder);
+        string_builder.push(' ');
+        v2.pretty_print(heap, string_builder);
+        string_builder.push(')');
       }
       InlineInstruction::Load { index, pointer } => {
         if *index == 0 {
-          format!("(i32.load {})", pointer.pretty_print(heap))
+          string_builder.push_str("(i32.load ");
+          pointer.pretty_print(heap, string_builder);
+          string_builder.push(')');
         } else {
-          format!("(i32.load offset={} {})", index * 4, pointer.pretty_print(heap))
+          string_builder.push_str("(i32.load offset=");
+          string_builder.push_str(&(index * 4).to_string());
+          string_builder.push(' ');
+          pointer.pretty_print(heap, string_builder);
+          string_builder.push(')');
         }
       }
       InlineInstruction::Store { index, pointer, assigned } => {
         if *index == 0 {
-          format!("(i32.store {} {})", pointer.pretty_print(heap), assigned.pretty_print(heap))
+          string_builder.push_str("(i32.store ");
+          pointer.pretty_print(heap, string_builder);
+          string_builder.push(' ');
+          assigned.pretty_print(heap, string_builder);
+          string_builder.push(')');
         } else {
-          format!(
-            "(i32.store offset={} {} {})",
-            index * 4,
-            pointer.pretty_print(heap),
-            assigned.pretty_print(heap)
-          )
+          string_builder.push_str("(i32.store offset=");
+          string_builder.push_str(&(index * 4).to_string());
+          string_builder.push(' ');
+          pointer.pretty_print(heap, string_builder);
+          string_builder.push(' ');
+          assigned.pretty_print(heap, string_builder);
+          string_builder.push(')');
         }
       }
       InlineInstruction::DirectCall(name, arguments) => {
-        format!(
-          "(call ${} {})",
-          name.as_str(heap),
-          arguments.iter().map(|e| e.pretty_print(heap)).join(" ")
-        )
+        string_builder.push_str("(call $");
+        string_builder.push_str(name.as_str(heap));
+        for e in arguments {
+          string_builder.push(' ');
+          e.pretty_print(heap, string_builder);
+        }
+        string_builder.push(')');
       }
       InlineInstruction::IndirectCall { function_index, type_string, arguments } => {
-        format!(
-          "(call_indirect $0 (type ${}) {} {})",
-          type_string.as_str(heap),
-          arguments.iter().map(|e| e.pretty_print(heap)).join(" "),
-          function_index.pretty_print(heap)
-        )
+        string_builder.push_str("(call_indirect $0 (type $");
+        string_builder.push_str(type_string.as_str(heap));
+        string_builder.push(')');
+        for e in arguments {
+          string_builder.push(' ');
+          e.pretty_print(heap, string_builder);
+        }
+        string_builder.push(' ');
+        function_index.pretty_print(heap, string_builder);
+        string_builder.push(')');
       }
     }
   }
@@ -97,39 +136,53 @@ pub(crate) enum Instruction {
 }
 
 impl Instruction {
-  fn print_to_collector(&self, heap: &Heap, collector: &mut Vec<String>, level: usize) {
+  fn print_to_collector(&self, heap: &Heap, collector: &mut String, level: usize) {
     match self {
       Instruction::Inline(i) => {
-        collector.push(format!("{}{}\n", "  ".repeat(level), i.pretty_print(heap)))
+        collector.push_str(&"  ".repeat(level));
+        i.pretty_print(heap, collector);
+        collector.push('\n');
       }
       Instruction::IfElse { condition, s1, s2 } => {
-        collector.push(format!(
-          "{}(if {} (then\n",
-          "  ".repeat(level),
-          condition.pretty_print(heap)
-        ));
+        collector.push_str(&"  ".repeat(level));
+        collector.push_str("(if ");
+        condition.pretty_print(heap, collector);
+        collector.push_str(" (then\n");
         for s in s1 {
           s.print_to_collector(heap, collector, level + 1)
         }
         if !s2.is_empty() {
-          collector.push(format!("{}) (else\n", "  ".repeat(level)));
+          collector.push_str(&"  ".repeat(level));
+          collector.push_str(") (else\n");
           for s in s2 {
             s.print_to_collector(heap, collector, level + 1)
           }
         }
-        collector.push(format!("{}))\n", "  ".repeat(level)));
+        collector.push_str(&"  ".repeat(level));
+        collector.push_str("))\n");
       }
       Instruction::UnconditionalJump(label) => {
-        collector.push(format!("{}(br ${})\n", "  ".repeat(level), label.as_str(heap)))
+        collector.push_str(&"  ".repeat(level));
+        collector.push_str("(br $");
+        collector.push_str(label.as_str(heap));
+        collector.push_str(")\n");
       }
       Instruction::Loop { continue_label, exit_label, instructions } => {
-        collector.push(format!("{}(loop ${}\n", "  ".repeat(level), continue_label.as_str(heap)));
-        collector.push(format!("{}(block ${}\n", "  ".repeat(level + 1), exit_label.as_str(heap)));
+        collector.push_str(&"  ".repeat(level));
+        collector.push_str("(loop $");
+        collector.push_str(continue_label.as_str(heap));
+        collector.push('\n');
+        collector.push_str(&"  ".repeat(level + 1));
+        collector.push_str("(block $");
+        collector.push_str(exit_label.as_str(heap));
+        collector.push('\n');
         for s in instructions {
           s.print_to_collector(heap, collector, level + 2)
         }
-        collector.push(format!("{})\n", "  ".repeat(level + 1)));
-        collector.push(format!("{})\n", "  ".repeat(level)));
+        collector.push_str(&"  ".repeat(level + 1));
+        collector.push_str(")\n");
+        collector.push_str(&"  ".repeat(level));
+        collector.push_str(")\n");
       }
     }
   }
@@ -164,13 +217,13 @@ pub(crate) struct Module {
 
 impl Module {
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
-    let mut collector = vec![];
+    let mut collector = String::new();
     for count in &self.function_type_parameter_counts {
       let type_string = function_type_string(*count);
       if *count == 0 {
-        collector.push(format!("(type ${type_string} (func (result i32)))\n"));
+        collector.push_str(&format!("(type ${type_string} (func (result i32)))\n"));
       } else {
-        collector.push(format!(
+        collector.push_str(&format!(
           "(type ${} (func (param{}) (result i32)))\n",
           type_string,
           " i32".repeat(*count)
@@ -178,34 +231,36 @@ impl Module {
       }
     }
     for GlobalData { constant_pointer, ints } in &self.global_variables {
-      collector.push(format!(
+      collector.push_str(&format!(
         "(data (i32.const {}) \"{}\")\n",
         constant_pointer,
         int_vec_to_data_string(ints)
       ));
     }
-    collector.push(format!("(table $0 {} funcref)\n", self.functions.len()));
-    collector.push(format!(
+    collector.push_str(&format!("(table $0 {} funcref)\n", self.functions.len()));
+    collector.push_str(&format!(
       "(elem $0 (i32.const 0) {})\n",
       self.functions.iter().map(|it| format!("${}", it.name.as_str(heap))).join(" ")
     ));
     for Function { name, parameters, local_variables, instructions } in &self.functions {
-      collector.push(format!(
+      collector.push_str(&format!(
         "(func ${} {} (result i32)\n",
         name.as_str(heap),
         parameters.iter().map(|it| format!("(param ${} i32)", it.as_str(heap))).join(" ")
       ));
       for v in local_variables {
-        collector.push(format!("  (local ${} i32)\n", v.as_str(heap)));
+        collector.push_str("  (local $");
+        collector.push_str(v.as_str(heap));
+        collector.push_str(" i32)\n");
       }
       for i in instructions {
         i.print_to_collector(heap, &mut collector, 1);
       }
-      collector.push(")\n".to_string());
+      collector.push_str(")\n");
     }
     for f in &self.exported_functions {
-      collector.push(format!("(export \"{}\" (func ${}))\n", f.as_str(heap), f.as_str(heap)));
+      collector.push_str(&format!("(export \"{}\" (func ${}))\n", f.as_str(heap), f.as_str(heap)));
     }
-    collector.join("")
+    collector
   }
 }

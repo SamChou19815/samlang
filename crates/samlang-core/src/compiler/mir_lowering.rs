@@ -20,7 +20,6 @@ fn lower_type(type_: hir::Type) -> mir::Type {
       assert!(type_arguments.is_empty());
       mir::Type::Id(name)
     }
-    hir::Type::Fn(f) => mir::Type::Fn(lower_fn_type(f)),
   }
 }
 
@@ -43,10 +42,6 @@ fn lower_expression(expr: hir::Expression) -> mir::Expression {
       mir::Expression::IntLiteral(i, if is_int { mir::INT_TYPE } else { mir::BOOL_TYPE })
     }
     hir::Expression::StringName(n) => mir::Expression::Name(n, mir::STRING_TYPE),
-    hir::Expression::FunctionName(hir::FunctionName { name, type_, type_arguments }) => {
-      assert!(type_arguments.is_empty());
-      mir::Expression::Name(name, mir::Type::Fn(lower_fn_type(type_)))
-    }
     hir::Expression::Variable(hir::VariableName { name, type_ }) => {
       mir::Expression::Variable(name, lower_type(type_))
     }
@@ -552,8 +547,12 @@ impl<'a> LoweringManager<'a> {
         let mut statements = vec![];
         match callee {
           hir::Callee::FunctionName(fn_name) => {
+            assert!(fn_name.type_arguments.is_empty());
             statements.push(mir::Statement::Call {
-              callee: lower_expression(hir::Expression::FunctionName(fn_name)),
+              callee: mir::Expression::Name(
+                fn_name.name,
+                mir::Type::Fn(lower_fn_type(fn_name.type_)),
+              ),
               arguments: arguments.into_iter().map(lower_expression).collect(),
               return_type: lowered_return_type.clone(),
               return_collector,
@@ -895,8 +894,8 @@ mod tests {
       common_names,
       hir::{
         Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
-        Operator, Sources, Statement, Type, TypeDefinition, VariableName, BOOL_TYPE, INT_TYPE,
-        STRING_TYPE, TRUE, ZERO,
+        Operator, Sources, Statement, Type, TypeDefinition, VariableName, INT_TYPE, STRING_TYPE,
+        TRUE, ZERO,
       },
     },
     common::Heap,
@@ -905,10 +904,10 @@ mod tests {
 
   #[test]
   fn boilterplate() {
+    let heap = &mut Heap::new();
     assert_eq!(
-      "(t0: number, t1: Str) => boolean",
-      super::lower_type(Type::new_fn(vec![INT_TYPE, STRING_TYPE], BOOL_TYPE))
-        .pretty_print(&Heap::new())
+      "A",
+      super::lower_type(Type::new_id(heap.alloc_str("A"), vec![])).pretty_print(heap)
     );
   }
 

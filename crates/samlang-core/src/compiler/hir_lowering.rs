@@ -41,8 +41,7 @@ impl LoweringContext {
       hir::Expression::IntLiteral(_, _) | hir::Expression::Variable(_) => {
         self.insert(name, value);
       }
-      hir::Expression::StringName(n)
-      | hir::Expression::FunctionName(hir::FunctionName { name: n, .. }) => {
+      hir::Expression::StringName(n) => {
         let value_to_insert = self.get(n).cloned().unwrap_or(value);
         self.insert(name, value_to_insert);
       }
@@ -58,13 +57,8 @@ mod lowering_cx_boilterplate_tests {
   fn tests() {
     let heap = &mut Heap::new();
 
-    LoweringContext::new().bind(
-      heap.alloc_str("a"),
-      hir::Expression::fn_name(
-        heap.alloc_str("a"),
-        hir::Type::new_fn_unwrapped(vec![], hir::BOOL_TYPE),
-      ),
-    );
+    LoweringContext::new()
+      .bind(heap.alloc_str("a"), hir::Expression::var_name(heap.alloc_str("a"), hir::BOOL_TYPE));
   }
 }
 
@@ -355,7 +349,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       self.lower(&expression.object, None);
     let original_function_type = self.get_function_type_without_context(&expression.common.type_);
     let method_type = hir::FunctionType {
-      argument_types: vec![result_expr.type_()]
+      argument_types: vec![result_expr.type_().clone()]
         .into_iter()
         .chain(original_function_type.argument_types.iter().cloned())
         .collect_vec(),
@@ -474,7 +468,7 @@ impl<'a> ExpressionLoweringManager<'a> {
             callee: hir::Callee::FunctionName(hir::FunctionName {
               name: self.heap.alloc_string(fn_name),
               type_: hir::FunctionType {
-                argument_types: vec![hir_target.type_()]
+                argument_types: vec![hir_target.type_().clone()]
                   .into_iter()
                   .chain(fn_type_without_cx.argument_types.iter().cloned())
                   .collect_vec(),
@@ -685,7 +679,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let final_var_name = self.allocate_temp_variable(favored_temp_variable);
     let LoweringResult { statements: s1, expression: e1 } = self.lower(&expression.e1, None);
     let LoweringResult { statements: s2, expression: e2 } = self.lower(&expression.e2, None);
-    let lowered_return_type = e1.type_();
+    let lowered_return_type = e1.type_().clone();
     lowered_stmts.push(hir::Statement::IfElse {
       condition,
       s1,
@@ -746,7 +740,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     for (tag_order, case_stmts, case_e) in cases_rev_iter {
       let comparison_temp = self.allocate_temp_variable(None);
       let final_assignment_temp = self.allocate_temp_variable(None);
-      let lowered_return_type = acc.1.type_();
+      let lowered_return_type = acc.1.type_().clone();
       let (acc_stmts, acc_e) = acc;
       let new_stmts = vec![
         hir::Statement::Binary(hir::Statement::binary_unwrapped(
@@ -785,7 +779,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     for (index, (name, e)) in captured.iter().enumerate() {
       lambda_stmts.push(hir::Statement::IndexedAccess {
         name: *name,
-        type_: e.type_(),
+        type_: e.type_().clone(),
         pointer_expression: hir::Expression::var_name(underscore_context_str, context_type.clone()),
         index,
       });
@@ -813,7 +807,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           .into_iter()
           .zip(fun_type_without_cx_argument_types.iter().cloned())
           .chain(self.defined_variables.iter().cloned())
-          .chain(captured.iter().map(|(n, e)| (*n, e.type_())))
+          .chain(captured.iter().map(|(n, e)| (*n, e.type_().clone())))
           .collect_vec(),
         self.type_definition_mapping,
         self.heap,
@@ -856,7 +850,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     } else {
       let context_name = self.allocate_temp_variable(None);
       let context_type = self.get_synthetic_identifier_type_from_tuple(
-        captured.iter().map(|(_, v)| v.type_()).collect_vec(),
+        captured.iter().map(|(_, v)| v.type_().clone()).collect_vec(),
       );
       lowered_stmts.push(hir::Statement::StructInit {
         struct_variable_name: context_name,
@@ -870,7 +864,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       hir::Expression::var_name(context_name, hir::Type::Id(context_type))
     };
     let synthetic_lambda =
-      self.create_synthetic_lambda_function(expression, &captured, &context.type_());
+      self.create_synthetic_lambda_function(expression, &captured, context.type_());
     let closure_type = self.get_synthetic_identifier_type_from_closure(hir::FunctionType {
       argument_types: synthetic_lambda.type_.argument_types.iter().skip(1).cloned().collect_vec(),
       return_type: synthetic_lambda.type_.return_type.clone(),
@@ -928,10 +922,10 @@ impl<'a> ExpressionLoweringManager<'a> {
         source::expr::Pattern::Object(_, destructured_names) => {
           let assigned_expr =
             self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
-          let id_type = assigned_expr.type_().into_id().unwrap();
+          let id_type = assigned_expr.type_().as_id().unwrap();
           for destructured_name in destructured_names {
             let field_type =
-              &self.resolve_type_mapping_of_id_type(&id_type)[destructured_name.field_order];
+              &self.resolve_type_mapping_of_id_type(id_type)[destructured_name.field_order];
             let mangled_name = self.get_renamed_variable_for_nesting(
               if let Some(n) = &destructured_name.alias {
                 n.name

@@ -160,7 +160,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
   let expected_return_collector = match &function.return_value {
     Expression::IntLiteral(_, _) => None,
     Expression::Variable(v) => Some(v.name),
-    Expression::StringName(_) | Expression::FunctionName(_) => return Err(function),
+    Expression::StringName(_) => return Err(function),
   };
   let Function { name, parameters, type_parameters, type_, body, return_value } = function;
   let RewriteResult { stmts, args } = match try_rewrite_stmts_for_tailrec_without_using_return_value(

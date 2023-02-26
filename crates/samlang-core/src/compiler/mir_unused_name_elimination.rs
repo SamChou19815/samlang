@@ -16,10 +16,13 @@ fn collect_used_names_from_expression(
   type_set: &mut HashSet<PStr>,
   expression: &Expression,
 ) {
-  if let Expression::Name(n, _) = expression {
-    name_set.insert(*n);
+  match expression {
+    Expression::IntLiteral(_, _) => {}
+    Expression::Name(n, _) => {
+      name_set.insert(*n);
+    }
+    Expression::Variable(_, t) => collect_for_type_set(t, type_set),
   }
-  collect_for_type_set(expression.type_(), type_set);
 }
 
 fn collect_used_names_from_statement(
@@ -299,10 +302,7 @@ mod tests {
       vec!["bar"],
       optimized.global_variables.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
-    assert_eq!(
-      vec!["Foo"],
-      optimized.type_definitions.iter().map(|it| it.name.as_str(heap)).collect_vec()
-    );
+    assert!(optimized.type_definitions.is_empty());
     assert_eq!(
       vec!["main", "foo", "bar", "baz"],
       optimized.functions.iter().map(|it| it.name.as_str(heap)).collect_vec()

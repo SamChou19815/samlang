@@ -102,9 +102,7 @@ fn optimize_variable_name(
 
 fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression) -> Expression {
   match e {
-    Expression::IntLiteral(_, _) | Expression::StringName(_) | Expression::FunctionName(_) => {
-      e.clone()
-    }
+    Expression::IntLiteral(_, _) | Expression::StringName(_) => e.clone(),
     Expression::Variable(v) => optimize_variable_name(value_cx, v),
   }
 }
@@ -533,13 +531,7 @@ mod boilterplate_tests {
     let mut value_cx = LocalValueContextForOptimization::new();
     let heap = &mut Heap::new();
     value_cx.checked_bind(heap.alloc_str("a"), Expression::var_name(heap.alloc_str("a"), INT_TYPE));
-    value_cx.checked_bind(
-      heap.alloc_str("b"),
-      Expression::FunctionName(FunctionName::new(
-        heap.alloc_str("b"),
-        Type::new_fn_unwrapped(vec![], INT_TYPE),
-      )),
-    );
+    value_cx.checked_bind(heap.alloc_str("b"), Expression::StringName(heap.alloc_str("1")));
     value_cx.checked_bind(heap.alloc_str("c"), Expression::StringName(heap.alloc_str("")));
     optimize_callee(
       &mut value_cx,

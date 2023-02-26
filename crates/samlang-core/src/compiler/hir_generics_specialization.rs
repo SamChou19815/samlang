@@ -1,5 +1,6 @@
 use super::hir_type_conversion::{
-  encode_name_after_generics_specialization, solve_type_arguments, type_application,
+  encode_name_after_generics_specialization, fn_type_application, solve_type_arguments,
+  type_application,
 };
 use crate::{
   ast::hir::{
@@ -165,9 +166,6 @@ impl Rewriter {
         name: *name,
         type_: self.rewrite_type(heap, type_, generics_replacement_map),
       }),
-      Expression::FunctionName(fn_name) => {
-        Expression::FunctionName(self.rewrite_fn_name_expr(heap, fn_name, generics_replacement_map))
-      }
     }
   }
 
@@ -251,7 +249,6 @@ impl Rewriter {
     match type_ {
       Type::Primitive(kind) => Type::Primitive(*kind),
       Type::Id(id) => self.rewrite_id_type(heap, id, generics_replacement_map),
-      Type::Fn(f) => Type::Fn(self.rewrite_fn_type(heap, f, generics_replacement_map)),
     }
   }
 
@@ -342,17 +339,11 @@ impl Rewriter {
           ))
           .collect();
         self.specialized_closure_definitions.insert(encoded_name, closure_def.clone());
-        let rewritten_fn_type = self
-          .rewrite_type(
-            heap,
-            &type_application(
-              &Type::Fn(closure_def.function_type.clone()),
-              &solved_targs_replacement_map,
-            ),
-            &HashMap::new(),
-          )
-          .into_fn()
-          .unwrap();
+        let rewritten_fn_type = self.rewrite_fn_type(
+          heap,
+          &fn_type_application(&closure_def.function_type, &solved_targs_replacement_map),
+          &HashMap::new(),
+        );
         self.specialized_closure_definitions.insert(
           encoded_name,
           Rc::new(ClosureTypeDefinition {
@@ -999,10 +990,7 @@ sources.mains = [main]"#,
                 return_collector: None,
               },
             ],
-            return_value: Expression::FunctionName(FunctionName::new(
-              heap.alloc_str("creatorJ"),
-              Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str("J"))),
-            )),
+            return_value: Expression::StringName(heap.alloc_str("creatorJ")),
           },
         ],
       },
