@@ -65,6 +65,14 @@ mod tests {
     let expected = r#"
 Unbound names: [Foo]
 Invalid defines: [13:7-13:8]
+Locally Scoped Defs:
+10:10-12:4: []
+11:5-11:57: [p1, p2]
+14:24-14:26: []
+1:1-16:2: [a, b, c, o1, o3]
+5:26-10:4: []
+7:7-7:23: [d]
+8:7-8:18: []
 Lambda Capture Locs: [11:5-11:57]
 def_to_use_map:
 11:15-11:17 -> [11:15-11:17, 11:36-11:38]
@@ -134,6 +142,20 @@ class MultiInvalidDef<T, T> {}
     let expected = r#"
 Unbound names: []
 Invalid defines: [23:26-23:27]
+Locally Scoped Defs:
+11:3-11:58: [other]
+15:3-15:50: []
+15:48-15:50: []
+16:3-16:53: [t]
+16:51-16:53: []
+17:3-17:36: [t]
+18:3-18:56: [f]
+18:39-18:56: []
+18:40-18:55: [v]
+18:53-18:55: []
+19:3-19:32: []
+20:11-20:59: [other]
+7:3-7:32: [other]
 Lambda Capture Locs: [18:40-18:55]
 def_to_use_map:
 10:1-12:2 -> [10:1-12:2, 11:42-11:46]

@@ -367,32 +367,15 @@ pub(crate) fn int_vec_to_data_string(array: &Vec<i32>) -> String {
 
 pub(crate) struct LocalStackedContext<K: Clone + Eq + Hash, V: Clone> {
   local_values_stack: Vec<HashMap<K, V>>,
-  captured_values_stack: Vec<HashMap<K, V>>,
 }
 
 impl<K: Clone + Eq + Hash, V: Clone> LocalStackedContext<K, V> {
   pub(crate) fn new() -> LocalStackedContext<K, V> {
-    LocalStackedContext {
-      local_values_stack: vec![HashMap::new()],
-      captured_values_stack: vec![HashMap::new()],
-    }
+    LocalStackedContext { local_values_stack: vec![HashMap::new()] }
   }
 
   pub(crate) fn get(&mut self, name: &K) -> Option<&V> {
-    let closest_stack_value = self.local_values_stack.last().unwrap().get(name);
-    if closest_stack_value.is_some() {
-      return closest_stack_value;
-    }
-    for level in (0..(self.local_values_stack.len() - 1)).rev() {
-      let value = self.local_values_stack[level].get(name);
-      if let Some(v) = value {
-        for captured_level in (level + 1)..(self.captured_values_stack.len()) {
-          self.captured_values_stack[captured_level].insert(name.clone(), v.clone());
-        }
-        return Some(v);
-      }
-    }
-    None
+    self.local_values_stack.iter().rev().find_map(|level| level.get(name))
   }
 
   pub(crate) fn insert(&mut self, name: K, value: V) -> Option<V> {
@@ -403,20 +386,12 @@ impl<K: Clone + Eq + Hash, V: Clone> LocalStackedContext<K, V> {
     previous
   }
 
-  pub(crate) fn insert_crash_on_error(&mut self, name: K, value: V) {
-    if self.insert(name, value).is_some() {
-      panic!()
-    }
-  }
-
   pub(crate) fn push_scope(&mut self) {
     self.local_values_stack.push(HashMap::new());
-    self.captured_values_stack.push(HashMap::new());
   }
 
-  pub(crate) fn pop_scope(&mut self) -> HashMap<K, V> {
+  pub(crate) fn pop_scope(&mut self) {
     self.local_values_stack.pop();
-    self.captured_values_stack.pop().unwrap()
   }
 }
 
@@ -426,7 +401,6 @@ mod tests {
     int_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr,
     StringStoredInHeap,
   };
-  use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use std::{cmp::Ordering, collections::HashSet, ops::Deref};
 
@@ -588,11 +562,21 @@ mod tests {
     );
   }
 
+  fn insert_crash_on_error(
+    cx: &mut LocalStackedContext<super::Str, i32>,
+    name: super::Str,
+    value: i32,
+  ) {
+    if cx.insert(name, value).is_some() {
+      panic!()
+    }
+  }
+
   #[test]
   fn local_stacked_context_basic_methods_tests() {
     let mut context = LocalStackedContext::new();
     assert!(context.get(&rcs("b")).is_none());
-    context.insert_crash_on_error(rcs("a"), 3);
+    insert_crash_on_error(&mut context, rcs("a"), 3);
     assert_eq!(3, *context.get(&rcs("a")).unwrap());
     context.push_scope();
     context.pop_scope();
@@ -605,32 +589,21 @@ mod tests {
     let a = rcs("a");
     context.insert(a.clone(), 3);
     context.insert(a.clone(), 3);
-    context.insert_crash_on_error(a, 3);
+    insert_crash_on_error(&mut context, a, 3);
   }
 
   #[test]
   fn local_stacked_context_captured_values_tests() {
     let mut context = LocalStackedContext::new();
-    context.insert_crash_on_error(rcs("a"), 3);
-    context.insert_crash_on_error(rcs("b"), 3);
+    insert_crash_on_error(&mut context, rcs("a"), 3);
+    insert_crash_on_error(&mut context, rcs("b"), 3);
     context.push_scope();
-    context.insert_crash_on_error(rcs("c"), 3);
-    context.insert_crash_on_error(rcs("d"), 3);
+    insert_crash_on_error(&mut context, rcs("c"), 3);
+    insert_crash_on_error(&mut context, rcs("d"), 3);
     context.get(&rcs("a"));
     context.push_scope();
     context.get(&rcs("a"));
     context.get(&rcs("b"));
     context.get(&rcs("d"));
-    let captured_inner = context.pop_scope();
-    let captured_outer = context.pop_scope();
-
-    assert_eq!(
-      vec!["a", "b", "d"],
-      captured_inner.keys().into_iter().map(|s| s.as_str()).sorted().collect_vec()
-    );
-    assert_eq!(
-      vec!["a", "b"],
-      captured_outer.keys().into_iter().map(|s| s.as_str()).sorted().collect_vec()
-    );
   }
 }
