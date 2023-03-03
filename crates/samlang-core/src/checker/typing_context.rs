@@ -6,7 +6,7 @@ use super::{
   },
 };
 use crate::{
-  ast::{Location, Reason},
+  ast::{Location, Position, Reason},
   common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
@@ -33,6 +33,24 @@ impl LocalTypingContext {
     } else {
       Type::Unknown(Reason::new(*loc, None))
     }
+  }
+
+  pub(crate) fn possibly_in_scope_local_variables(
+    &self,
+    position: Position,
+  ) -> Vec<(&PStr, &Type)> {
+    let mut collector = vec![];
+    for (scope_loc, map) in &self.ssa_analysis_result.local_scoped_def_locs {
+      if scope_loc.contains_position(position) {
+        for (name, def_loc) in map {
+          if let Some(t) = self.type_map.get(def_loc) {
+            collector.push((name, t.as_ref()));
+          }
+        }
+      }
+    }
+    collector.sort_by_key(|(n, _)| *n);
+    collector
   }
 
   pub(super) fn write(&mut self, loc: Location, t: Rc<Type>) {

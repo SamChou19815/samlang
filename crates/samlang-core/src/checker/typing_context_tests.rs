@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::{Location, Reason},
+    ast::{Location, Position, Reason},
     checker::{
       ssa_analysis::SsaAnalysisResult,
       type_::{
@@ -13,6 +13,7 @@ mod tests {
     common::{Heap, ModuleReference},
     errors::ErrorSet,
   };
+  use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use std::{
     collections::{HashMap, HashSet},
@@ -43,6 +44,46 @@ mod tests {
       lambda_captures: HashMap::new(),
     })
     .read(&Location::dummy());
+  }
+
+  #[test]
+  fn possibly_in_scope_local_variables_test() {
+    assert!(empty_local_typing_context()
+      .possibly_in_scope_local_variables(Position(0, 0))
+      .is_empty());
+
+    let mut heap = Heap::new();
+    let builder = test_type_builder::create();
+    let mut cx = LocalTypingContext::new(SsaAnalysisResult {
+      unbound_names: HashSet::new(),
+      invalid_defines: HashSet::new(),
+      use_define_map: HashMap::from([(Location::dummy(), Location::dummy())]),
+      def_to_use_map: HashMap::new(),
+      local_scoped_def_locs: HashMap::from([
+        (
+          Location::from_pos(1, 1, 100, 100),
+          HashMap::from([(heap.alloc_str("a"), Location::from_pos(1, 2, 3, 4))]),
+        ),
+        (Location::from_pos(300, 1, 1000, 1000), HashMap::new()),
+        (
+          Location::from_pos(10, 10, 50, 50),
+          HashMap::from([
+            (heap.alloc_str("b"), Location::from_pos(5, 6, 7, 8)),
+            (heap.alloc_str("c"), Location::from_pos(9, 10, 11, 12)),
+          ]),
+        ),
+      ]),
+      lambda_captures: HashMap::new(),
+    });
+    cx.write(Location::from_pos(1, 2, 3, 4), builder.int_type());
+    cx.write(Location::from_pos(5, 6, 7, 8), builder.bool_type());
+
+    let actual = cx
+      .possibly_in_scope_local_variables(Position(20, 20))
+      .into_iter()
+      .map(|(n, t)| format!("{}: {}", n.as_str(&heap), t.pretty_print(&heap)))
+      .join(", ");
+    assert_eq!("a: int, b: bool", actual);
   }
 
   #[test]

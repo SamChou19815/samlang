@@ -513,6 +513,7 @@ mod lsp {
               services::api::CompletionItemKind::Method => CompletionItemKind::METHOD,
               services::api::CompletionItemKind::Function => CompletionItemKind::FUNCTION,
               services::api::CompletionItemKind::Field => CompletionItemKind::FIELD,
+              services::api::CompletionItemKind::Variable => CompletionItemKind::VARIABLE,
             }),
             detail: Some(item.detail),
             insert_text: Some(item.insert_text),

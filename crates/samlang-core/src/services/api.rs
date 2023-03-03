@@ -37,6 +37,7 @@ pub enum CompletionItemKind {
   Method = 2,
   Function = 3,
   Field = 5,
+  Variable = 6,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -128,7 +129,7 @@ impl LanguageServices {
     // Type Checking
     for recheck_mod_ref in recheck_set {
       if let Some(parsed) = self.parsed_modules.get(recheck_mod_ref) {
-        let checked =
+        let (checked, _) =
           type_check_module(*recheck_mod_ref, parsed, &self.global_cx, &self.heap, &mut error_set);
         self.checked_modules.insert(*recheck_mod_ref, checked);
       }
@@ -555,6 +556,32 @@ impl LanguageServices {
         }
         LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
           e.object.type_().as_id().map(|id_type| (id_type.module_reference, id_type.id))?
+        }
+        LocationCoverSearchResult::Expression(expr::E::Id(_, _)) => {
+          let parsed = self.parsed_modules.get(module_reference).unwrap();
+          let (_, local_cx) = type_check_module(
+            *module_reference,
+            parsed,
+            &self.global_cx,
+            &self.heap,
+            &mut ErrorSet::new(),
+          );
+          return Some(
+            local_cx
+              .possibly_in_scope_local_variables(position)
+              .into_iter()
+              .map(|(n, t)| {
+                let name = n.as_str(&self.heap);
+                AutoCompletionItem {
+                  label: name.to_string(),
+                  insert_text: name.to_string(),
+                  insert_text_format: InsertTextFormat::PlainText,
+                  kind: CompletionItemKind::Variable,
+                  detail: t.pretty_print(&self.heap),
+                }
+              })
+              .collect(),
+          );
         }
         _ => return None,
       };
