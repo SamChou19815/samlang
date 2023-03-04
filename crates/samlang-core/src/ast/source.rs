@@ -470,6 +470,7 @@ pub(crate) struct ClassMemberDeclaration {
   pub(crate) parameters: Rc<Vec<AnnotatedId>>,
 }
 
+#[derive(Clone)]
 pub(crate) struct ClassMemberDefinition<T: Clone> {
   pub(crate) decl: ClassMemberDeclaration,
   pub(crate) body: expr::E<T>,
@@ -511,6 +512,7 @@ pub(crate) enum TypeDefinition {
 pub(crate) type ClassDefinition<T> =
   InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition<T>>;
 
+#[derive(Clone)]
 pub(crate) enum Toplevel<T: Clone> {
   Interface(InterfaceDeclaration),
   Class(ClassDefinition<T>),
@@ -598,6 +600,7 @@ pub(crate) struct ModuleMembersImport {
   pub(crate) imported_module_loc: Location,
 }
 
+#[derive(Clone)]
 pub(crate) struct Module<T: Clone> {
   pub(crate) comment_store: CommentStore,
   pub(crate) imports: Vec<ModuleMembersImport>,

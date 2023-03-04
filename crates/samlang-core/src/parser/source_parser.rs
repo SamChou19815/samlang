@@ -1037,11 +1037,19 @@ impl<'a> SourceParser<'a> {
     if let Token(peeked_loc, TokenContent::UpperId(class_name)) = peeked {
       self.consume();
       let next_peeked = self.peek();
-      if let Token(_, TokenContent::Operator(TokenOp::DOT)) = next_peeked {
+      if let Token(dot_loc, TokenContent::Operator(TokenOp::DOT)) = next_peeked {
         let mut member_preceding_comments = self.collect_preceding_comments();
         self.consume();
         member_preceding_comments.append(&mut self.collect_preceding_comments());
-        let (member_name_loc, function_name) = self.assert_and_consume_identifier();
+        let (member_name_loc, function_name) = match self.peek() {
+          Token(_, TokenContent::LowerId(_) | TokenContent::UpperId(_)) => {
+            self.assert_and_consume_identifier()
+          }
+          Token(l, t) => {
+            self.report(l, format!("Expected identifier, but get {}", t.pretty_print(self.heap)));
+            (dot_loc, self.heap.alloc_str_permanent("MISSING"))
+          }
+        };
         let mut loc = peeked_loc.union(&member_name_loc);
         let explicit_type_arguments = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
           member_preceding_comments.append(&mut self.collect_preceding_comments());
@@ -1078,6 +1086,19 @@ impl<'a> SourceParser<'a> {
           },
         });
       }
+      self.report(peeked_loc, "Variable name must start with a lower case letter".to_string());
+      return expr::E::Id(
+        expr::ExpressionCommon {
+          loc: peeked_loc,
+          associated_comments: self.comments_store.create_comment_reference(associated_comments),
+          type_: (),
+        },
+        Id {
+          loc: peeked_loc,
+          associated_comments: self.comments_store.create_comment_reference(vec![]),
+          name: class_name,
+        },
+      );
     }
 
     // Lambda or nested expression

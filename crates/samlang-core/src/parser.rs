@@ -141,6 +141,7 @@ mod tests {
     expect_bad_expr("_sdfsdfdsf");
     expect_bad_expr("9223372036854775808");
     expect_bad_expr("-9223372036854775889223372036854775808");
+    expect_bad_expr("SomeClass.true");
     expect_bad_expr("SomeClass.<>foo");
     expect_bad_expr("SomeClass.<foo");
     expect_bad_expr("SomeClass.");

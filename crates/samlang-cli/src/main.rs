@@ -110,6 +110,8 @@ mod utils {
 }
 
 mod lsp {
+  use std::collections::HashMap;
+
   use super::*;
   use samlang_core::services;
   use tokio::sync::RwLock;
@@ -260,20 +262,25 @@ mod lsp {
         capabilities: ServerCapabilities {
           text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
           hover_provider: Some(HoverProviderCapability::Simple(true)),
-          definition_provider: Some(OneOf::Right(DefinitionOptions {
-            work_done_progress_options: Default::default(),
-          })),
-          references_provider: Some(OneOf::Right(ReferencesOptions {
-            work_done_progress_options: Default::default(),
-          })),
-          folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
           completion_provider: Some(CompletionOptions {
             resolve_provider: Some(false),
             trigger_characters: Some(vec![".".to_string()]),
             all_commit_characters: None,
             work_done_progress_options: Default::default(),
           }),
+          code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
+            code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
+            work_done_progress_options: WorkDoneProgressOptions { work_done_progress: Some(false) },
+            resolve_provider: Some(false),
+          })),
+          definition_provider: Some(OneOf::Right(DefinitionOptions {
+            work_done_progress_options: Default::default(),
+          })),
+          references_provider: Some(OneOf::Right(ReferencesOptions {
+            work_done_progress_options: Default::default(),
+          })),
           document_formatting_provider: Some(OneOf::Right(DocumentFormattingOptions::default())),
+          folding_range_provider: Some(FoldingRangeProviderCapability::Simple(true)),
           workspace: Some(WorkspaceServerCapabilities {
             workspace_folders: None,
             file_operations: Some(WorkspaceFileOperationsServerCapabilities {
@@ -329,15 +336,6 @@ mod lsp {
       Ok(())
     }
 
-    async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
-      self.client.log_message(MessageType::INFO, "[lsp] did_change_watched_files").await;
-      if let Some(TextDocumentContentChangeEvent { text, .. }) = params.content_changes.pop() {
-        let mut service = self.service.write().await;
-        service.update(&self.absolute_source_path, vec![(params.text_document.uri, text)]);
-        self.publish_diagnostics(&mut service).await;
-      }
-    }
-
     async fn did_create_files(&self, params: CreateFilesParams) {
       self.client.log_message(MessageType::INFO, "[lsp] did_create_files").await;
       let mut service = self.service.write().await;
@@ -389,6 +387,49 @@ mod lsp {
         .collect::<Vec<_>>();
       service.0.remove(&remove_set);
       self.publish_diagnostics(&mut service).await;
+    }
+
+    async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
+      self.client.log_message(MessageType::INFO, "[lsp] did_change_watched_files").await;
+      if let Some(TextDocumentContentChangeEvent { text, .. }) = params.content_changes.pop() {
+        let mut service = self.service.write().await;
+        service.update(&self.absolute_source_path, vec![(params.text_document.uri, text)]);
+        self.publish_diagnostics(&mut service).await;
+      }
+    }
+
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+      self.client.log_message(MessageType::INFO, "[lsp] completion").await;
+      let service = self.service.read().await;
+      let mod_ref = self.convert_url_to_module_reference_readonly(
+        &service.0.heap,
+        &params.text_document_position.text_document.uri,
+      );
+      Ok(Some(CompletionResponse::Array(
+        service
+          .0
+          .auto_complete(&mod_ref, lsp_pos_to_samlang_pos(params.text_document_position.position))
+          .into_iter()
+          .map(|item| CompletionItem {
+            label: item.label,
+            kind: Some(match item.kind {
+              services::api::CompletionItemKind::Method => CompletionItemKind::METHOD,
+              services::api::CompletionItemKind::Function => CompletionItemKind::FUNCTION,
+              services::api::CompletionItemKind::Field => CompletionItemKind::FIELD,
+              services::api::CompletionItemKind::Variable => CompletionItemKind::VARIABLE,
+              services::api::CompletionItemKind::Class => CompletionItemKind::CLASS,
+              services::api::CompletionItemKind::Interface => CompletionItemKind::INTERFACE,
+            }),
+            detail: Some(item.detail),
+            insert_text: Some(item.insert_text),
+            insert_text_format: Some(match item.insert_text_format {
+              services::api::InsertTextFormat::PlainText => InsertTextFormat::PLAIN_TEXT,
+              services::api::InsertTextFormat::Snippet => InsertTextFormat::SNIPPET,
+            }),
+            ..Default::default()
+          })
+          .collect(),
+      )))
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
@@ -476,55 +517,56 @@ mod lsp {
       ))
     }
 
-    async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
-      self.client.log_message(MessageType::INFO, "[lsp] folding_range").await;
+    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+      self.client.log_message(MessageType::INFO, "[lsp] code_action").await;
+      let service = self.service.read().await;
+      let location = samlang_core::ast::Location {
+        module_reference: self
+          .convert_url_to_module_reference_readonly(&service.0.heap, &params.text_document.uri),
+        start: lsp_pos_to_samlang_pos(params.range.start),
+        end: lsp_pos_to_samlang_pos(params.range.end),
+      };
+      Ok(Some(
+        service
+          .0
+          .code_actions(location)
+          .into_iter()
+          .map(|code_action| match code_action {
+            services::api::CodeAction::Quickfix { title, new_code } => {
+              CodeActionOrCommand::CodeAction(CodeAction {
+                title,
+                kind: Some(CodeActionKind::QUICKFIX),
+                diagnostics: None,
+                edit: Some(WorkspaceEdit {
+                  changes: Some(HashMap::from([(
+                    params.text_document.uri.clone(),
+                    vec![TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text: new_code }],
+                  )])),
+                  document_changes: None,
+                  change_annotations: None,
+                }),
+                command: None,
+                is_preferred: None,
+                disabled: None,
+                data: None,
+              })
+            }
+          })
+          .collect(),
+      ))
+    }
+
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+      self.client.log_message(MessageType::INFO, "[lsp] formatting").await;
       let service = self.service.read().await;
       let mod_ref =
         self.convert_url_to_module_reference_readonly(&service.0.heap, &params.text_document.uri);
-      Ok(service.0.query_folding_ranges(&mod_ref).map(|ranges| {
-        ranges
-          .into_iter()
-          .map(|location| FoldingRange {
-            start_line: location.start.0 as u32,
-            start_character: Some(location.start.1 as u32),
-            end_line: location.end.0 as u32,
-            end_character: Some(location.end.1 as u32),
-            kind: None,
-          })
-          .collect()
-      }))
-    }
-
-    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
-      self.client.log_message(MessageType::INFO, "[lsp] completion").await;
-      let service = self.service.read().await;
-      let mod_ref = self.convert_url_to_module_reference_readonly(
-        &service.0.heap,
-        &params.text_document_position.text_document.uri,
-      );
-      Ok(Some(CompletionResponse::Array(
+      Ok(
         service
           .0
-          .auto_complete(&mod_ref, lsp_pos_to_samlang_pos(params.text_document_position.position))
-          .into_iter()
-          .map(|item| CompletionItem {
-            label: item.label,
-            kind: Some(match item.kind {
-              services::api::CompletionItemKind::Method => CompletionItemKind::METHOD,
-              services::api::CompletionItemKind::Function => CompletionItemKind::FUNCTION,
-              services::api::CompletionItemKind::Field => CompletionItemKind::FIELD,
-              services::api::CompletionItemKind::Variable => CompletionItemKind::VARIABLE,
-            }),
-            detail: Some(item.detail),
-            insert_text: Some(item.insert_text),
-            insert_text_format: Some(match item.insert_text_format {
-              services::api::InsertTextFormat::PlainText => InsertTextFormat::PLAIN_TEXT,
-              services::api::InsertTextFormat::Snippet => InsertTextFormat::SNIPPET,
-            }),
-            ..Default::default()
-          })
-          .collect(),
-      )))
+          .format_entire_document(&mod_ref)
+          .map(|new_text| vec![TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text }]),
+      )
     }
 
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
@@ -556,17 +598,23 @@ mod lsp {
       )
     }
 
-    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
-      self.client.log_message(MessageType::INFO, "[lsp] formatting").await;
+    async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
+      self.client.log_message(MessageType::INFO, "[lsp] folding_range").await;
       let service = self.service.read().await;
       let mod_ref =
         self.convert_url_to_module_reference_readonly(&service.0.heap, &params.text_document.uri);
-      Ok(
-        service
-          .0
-          .format_entire_document(&mod_ref)
-          .map(|new_text| vec![TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text }]),
-      )
+      Ok(service.0.query_folding_ranges(&mod_ref).map(|ranges| {
+        ranges
+          .into_iter()
+          .map(|location| FoldingRange {
+            start_line: location.start.0 as u32,
+            start_character: Some(location.start.1 as u32),
+            end_line: location.end.0 as u32,
+            end_character: Some(location.end.1 as u32),
+            kind: None,
+          })
+          .collect()
+      }))
     }
   }
 }

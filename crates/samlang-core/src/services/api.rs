@@ -9,7 +9,7 @@ use crate::{
   ast::{
     source::{
       expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, FieldDefinition,
-      Module, Toplevel, TypeDefinition,
+      Id, Module, ModuleMembersImport, Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
     },
     Location, Position,
   },
@@ -21,7 +21,7 @@ use crate::{
     type_check_module, type_check_sources,
   },
   common::{Heap, ModuleReference, PStr},
-  errors::{CompileTimeError, ErrorSet},
+  errors::{CompileTimeError, ErrorDetail, ErrorSet},
   measure_time,
   parser::parse_source_module_from_text,
   printer,
@@ -38,6 +38,8 @@ pub enum CompletionItemKind {
   Function = 3,
   Field = 5,
   Variable = 6,
+  Class = 7,
+  Interface = 8,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -64,6 +66,11 @@ pub struct AutoCompletionItem {
   pub insert_text_format: InsertTextFormat,
   pub kind: CompletionItemKind,
   pub detail: String,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum CodeAction {
+  Quickfix { title: String, new_code: String },
 }
 
 fn get_last_doc_comment(
@@ -557,31 +564,57 @@ impl LanguageServices {
         LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
           e.object.type_().as_id().map(|id_type| (id_type.module_reference, id_type.id))?
         }
-        LocationCoverSearchResult::Expression(expr::E::Id(_, _)) => {
-          let parsed = self.parsed_modules.get(module_reference).unwrap();
-          let (_, local_cx) = type_check_module(
-            *module_reference,
-            parsed,
-            &self.global_cx,
-            &self.heap,
-            &mut ErrorSet::new(),
-          );
-          return Some(
-            local_cx
-              .possibly_in_scope_local_variables(position)
-              .into_iter()
-              .map(|(n, t)| {
-                let name = n.as_str(&self.heap);
-                AutoCompletionItem {
-                  label: name.to_string(),
-                  insert_text: name.to_string(),
-                  insert_text_format: InsertTextFormat::PlainText,
-                  kind: CompletionItemKind::Variable,
-                  detail: t.pretty_print(&self.heap),
-                }
-              })
-              .collect(),
-          );
+        LocationCoverSearchResult::Expression(expr::E::Id(_, Id { name, .. })) => {
+          if name.as_str(&self.heap).starts_with(|c: char| c.is_uppercase()) {
+            return Some(
+              self
+                .global_cx
+                .values()
+                .flat_map(|mod_cx| mod_cx.interfaces.iter())
+                .sorted_by_key(|(n, _)| *n)
+                .map(|(n, interface_sig)| {
+                  let name = n.as_str(&self.heap);
+                  let (kind, detail) = if interface_sig.type_definition.is_some() {
+                    (CompletionItemKind::Class, format!("class {}", name))
+                  } else {
+                    (CompletionItemKind::Interface, format!("interface {}", name))
+                  };
+                  AutoCompletionItem {
+                    label: name.to_string(),
+                    insert_text: name.to_string(),
+                    insert_text_format: InsertTextFormat::PlainText,
+                    kind,
+                    detail,
+                  }
+                })
+                .collect(),
+            );
+          } else {
+            let parsed = self.parsed_modules.get(module_reference).unwrap();
+            let (_, local_cx) = type_check_module(
+              *module_reference,
+              parsed,
+              &self.global_cx,
+              &self.heap,
+              &mut ErrorSet::new(),
+            );
+            return Some(
+              local_cx
+                .possibly_in_scope_local_variables(position)
+                .into_iter()
+                .map(|(n, t)| {
+                  let name = n.as_str(&self.heap);
+                  AutoCompletionItem {
+                    label: name.to_string(),
+                    insert_text: name.to_string(),
+                    insert_text_format: InsertTextFormat::PlainText,
+                    kind: CompletionItemKind::Variable,
+                    detail: t.pretty_print(&self.heap),
+                  }
+                })
+                .collect(),
+            );
+          }
         }
         _ => return None,
       };
@@ -702,6 +735,75 @@ impl LanguageServices {
     let renamed =
       apply_renaming(module, &def_and_uses, self.heap.alloc_string(new_name.to_string()));
     Some(printer::pretty_print_source_module(&self.heap, 100, &renamed))
+  }
+
+  pub fn code_actions(&self, location: Location) -> Vec<CodeAction> {
+    let mut actions = vec![];
+    for error in self.errors.get(&location.module_reference).iter().flat_map(|it| it.iter()) {
+      match &error.detail {
+        ErrorDetail::CannotResolveToplevelName { module_reference, name }
+          if error.location.contains(&location)
+            && module_reference.eq(&error.location.module_reference) =>
+        {
+          for (mod_ref, mod_cx) in self.global_cx.iter() {
+            if mod_cx.interfaces.contains_key(name) {
+              actions.push(self.generate_auto_import_code_action(
+                *module_reference,
+                location,
+                *mod_ref,
+                *name,
+              ))
+            }
+          }
+        }
+        ErrorDetail::CannotResolveName { name }
+          if error.location.contains(&location)
+            && name.as_str(&self.heap).starts_with(|c: char| c.is_uppercase()) =>
+        {
+          for (mod_ref, mod_cx) in self.global_cx.iter() {
+            if mod_cx.interfaces.contains_key(name) {
+              actions.push(self.generate_auto_import_code_action(
+                error.location.module_reference,
+                location,
+                *mod_ref,
+                *name,
+              ))
+            }
+          }
+        }
+        _ => {}
+      }
+    }
+    actions
+  }
+
+  fn generate_auto_import_code_action(
+    &self,
+    module_reference: ModuleReference,
+    dummy_location: Location,
+    imported_module: ModuleReference,
+    imported_member: PStr,
+  ) -> CodeAction {
+    let ast = self.parsed_modules.get(&module_reference).unwrap();
+    let mut changed_ast = ast.clone();
+    changed_ast.imports.push(ModuleMembersImport {
+      loc: dummy_location,
+      imported_members: vec![Id {
+        loc: dummy_location,
+        associated_comments: NO_COMMENT_REFERENCE,
+        name: imported_member,
+      }],
+      imported_module,
+      imported_module_loc: dummy_location,
+    });
+    CodeAction::Quickfix {
+      title: format!(
+        "Import `{}` from `{}`",
+        imported_member.as_str(&self.heap),
+        imported_module.pretty_print(&self.heap)
+      ),
+      new_code: printer::pretty_print_source_module(&self.heap, 100, &changed_ast),
+    }
   }
 
   pub fn format_entire_document(&self, module_reference: &ModuleReference) -> Option<String> {

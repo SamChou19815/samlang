@@ -429,6 +429,25 @@ impl<'a> TypingContext<'a> {
     expression: &expr::ClassFunction<()>,
     hint: Option<&Type>,
   ) -> (expr::ClassFunction<Rc<Type>>, Vec<TypeParameterSignature>) {
+    if !self.toplevel_name_exists(expression.module_reference, expression.class_name.name) {
+      self.error_set.report_cannot_unresolve_toplevel_name_error(
+        expression.class_name.loc,
+        expression.module_reference,
+        expression.class_name.name,
+      );
+      let partially_checked_expr = expr::ClassFunction {
+        common: expression.common.with_new_type(Rc::new(Type::Unknown(Reason::new(
+          expression.common.loc,
+          Some(expression.common.loc),
+        )))),
+        explicit_type_arguments: expression.explicit_type_arguments.clone(),
+        inferred_type_arguments: vec![],
+        module_reference: expression.module_reference,
+        class_name: expression.class_name,
+        fn_name: expression.fn_name,
+      };
+      return (partially_checked_expr, vec![]);
+    }
     if let Some(class_function_type_information) = self.get_function_type(
       expression.module_reference,
       expression.class_name.name,
