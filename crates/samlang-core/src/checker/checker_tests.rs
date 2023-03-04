@@ -478,11 +478,8 @@ mod tests {
 
     let mut temp_ssa_error_set = ErrorSet::new();
     let global_cx = sandbox_global_cx(heap);
-    let mut local_cx = LocalTypingContext::new(perform_ssa_analysis_on_expression(
-      &parsed,
-      heap,
-      &mut temp_ssa_error_set,
-    ));
+    let mut local_cx =
+      LocalTypingContext::new(perform_ssa_analysis_on_expression(&parsed, &mut temp_ssa_error_set));
     let current_class = heap.alloc_str(current_class);
     let mut cx = TypingContext::new(
       &global_cx,
@@ -536,25 +533,25 @@ mod tests {
       heap,
       "true",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:5: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:5: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "false",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "42",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:3: [UnexpectedType]: Expected: `unit`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:3: [incompatible-type]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
       heap,
       "\"a\"",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:4: [UnexpectedType]: Expected: `unit`, actual: `string`."],
+      vec!["__DUMMY__.sam:1:1-1:4: [incompatible-type]: Expected: `unit`, actual: `string`."],
     );
 
     assert_checks(heap, "this", &builder.int_type());
@@ -563,7 +560,7 @@ mod tests {
       heap,
       "{ val foo = true; foo }",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:19-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:19-1:22: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
   }
 
@@ -588,7 +585,7 @@ mod tests {
       "Test.helloWorld<A>",
       &builder.fun_type(vec![builder.string_type()], builder.unit_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:19: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.",
+        "__DUMMY__.sam:1:1-1:19: [invalid-arity]: Incorrect type arguments size. Expected: 0, actual: 1.",
       ],
     );
     assert_errors(
@@ -596,9 +593,9 @@ mod tests {
       "Test.helloWorldWithTypeParameters",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:34: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.",
-        "__DUMMY__.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-        "__DUMMY__.sam:1:1-1:34: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(unknown) -> unit`.",
+        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `(string, string) -> unit`, actual: `(unknown) -> unit`.",
+        "__DUMMY__.sam:1:1-1:34: [invalid-arity]: Incorrect parameter size. Expected: 2, actual: 1.",
+        "__DUMMY__.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ],
     );
     assert_errors(
@@ -606,9 +603,9 @@ mod tests {
       "Test.helloWorldWithTypeParameters",
       &builder.string_type(),
       vec![
-        "__DUMMY__.sam:1:1-1:34: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-        "__DUMMY__.sam:1:1-1:34: [UnexpectedTypeKind]: Expected kind: `string`, actual: `function`.",
-        "__DUMMY__.sam:1:1-1:34: [UnexpectedType]: Expected: `string`, actual: `(unknown) -> unit`.",
+        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `(unknown) -> unit`.",
+        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `function`.",
+        "__DUMMY__.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ]
     );
     assert_errors(
@@ -616,7 +613,7 @@ mod tests {
       "Test.helloWorldWithTypeParameters<int, string>",
       &builder.fun_type(vec![builder.int_type()], builder.unit_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:47: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.",
+        "__DUMMY__.sam:1:1-1:47: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
       ],
     );
     assert_errors(
@@ -624,14 +621,14 @@ mod tests {
       "Test.helloWorldWithTypeParameters<string>",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:42: [UnexpectedType]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.",
+        "__DUMMY__.sam:1:1-1:42: [incompatible-type]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.",
       ],
     );
     assert_errors(
       heap,
       "Test.helloWorld2",
       &builder.fun_type(vec![builder.string_type()], builder.unit_type()),
-      vec!["__DUMMY__.sam:1:1-1:17: [UnresolvedName]: Name `Test.helloWorld2` is not resolved."],
+      vec!["__DUMMY__.sam:1:1-1:17: [member-missing]: Cannot find member `helloWorld2` on `Test`."],
     );
   }
 
@@ -679,47 +676,47 @@ mod tests {
       heap,
       "Test.Foo(true)",
       &builder.simple_id_type(test2_str),
-      vec!["__DUMMY__.sam:1:1-1:9: [UnresolvedName]: Name `Test.Foo` is not resolved."],
+      vec!["__DUMMY__.sam:1:1-1:9: [member-missing]: Cannot find member `Foo` on `Test`."],
     );
     assert_errors(
       heap,
       "Test.Bar(42)",
       &builder.simple_id_type(test2_str),
-      vec!["__DUMMY__.sam:1:1-1:9: [UnresolvedName]: Name `Test.Bar` is not resolved."],
+      vec!["__DUMMY__.sam:1:1-1:9: [member-missing]: Cannot find member `Bar` on `Test`."],
     );
     assert_errors(heap,
       "Test4.Foo<int, bool>(true)",
       &builder.general_id_type(test4_str, vec![builder.bool_type()]),
       vec![
-        "__DUMMY__.sam:1:1-1:21: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.",
+        "__DUMMY__.sam:1:1-1:21: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
       ],
     );
     assert_errors(
       heap,
       "Test4.Foo<int>(true)",
       &builder.general_id_type(test4_str, vec![builder.int_type()]),
-      vec!["__DUMMY__.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:16-1:20: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "Test4.Foo<int>(true)",
       &builder.general_id_type(test4_str, vec![builder.bool_type()]),
       vec![
-        "__DUMMY__.sam:1:1-1:21: [UnexpectedType]: Expected: `Test4<bool>`, actual: `Test4<int>`.",
-        "__DUMMY__.sam:1:16-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.",
+        "__DUMMY__.sam:1:1-1:21: [incompatible-type]: Expected: `Test4<bool>`, actual: `Test4<int>`.",
+        "__DUMMY__.sam:1:16-1:20: [incompatible-type]: Expected: `int`, actual: `bool`.",
       ],
     );
     assert_errors(
       heap,
       "Test44.Bar(42)",
       &builder.simple_id_type(test2_str),
-      vec!["__DUMMY__.sam:1:1-1:11: [UnresolvedName]: Name `Test44.Bar` is not resolved."],
+      vec!["__DUMMY__.sam:1:1-1:11: [member-missing]: Cannot find member `Bar` on `Test44`."],
     );
     assert_errors_with_class(
       heap,
       "Test2.Tars(42)",
       &builder.simple_id_type(test2_str),
-      vec!["__DUMMY__.sam:1:1-1:11: [UnresolvedName]: Name `Test2.Tars` is not resolved."],
+      vec!["__DUMMY__.sam:1:1-1:11: [member-missing]: Cannot find member `Tars` on `Test2`."],
       "Test2",
     );
   }
@@ -756,55 +753,55 @@ mod tests {
       heap,
       "3.foo",
       &builder.int_type(),
-      vec![
-        "__DUMMY__.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `int`.",
-      ],
+      vec!["__DUMMY__.sam:1:1-1:2: [incompatible-type]: Expected: `identifier`, actual: `int`."],
     );
     assert_errors(
       heap,
       "Test.init(true, 3).bazz",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:20-1:24: [UnresolvedName]: Name `bazz` is not resolved."],
+      vec!["__DUMMY__.sam:1:20-1:24: [member-missing]: Cannot find member `bazz` on `Test`."],
     );
     assert_errors(
       heap,
       "{ val _ = (t3: Test3<bool>) -> t3.bar; }",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:35-1:38: [UnresolvedName]: Name `bar` is not resolved."],
+      vec!["__DUMMY__.sam:1:35-1:38: [member-missing]: Cannot find member `bar` on `Test3`."],
     );
     assert_errors_with_class(
       heap,
       "Test2.Foo(true).foo",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:17-1:20: [UnresolvedName]: Name `foo` is not resolved."],
+      vec!["__DUMMY__.sam:1:17-1:20: [member-missing]: Cannot find member `foo` on `Test2`."],
       "Test2",
     );
     assert_errors(heap, "Test.init(true, 3).foo<int>", &builder.bool_type(), vec![
-      "__DUMMY__.sam:1:1-1:28: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.",
+      "__DUMMY__.sam:1:1-1:28: [invalid-arity]: Incorrect type arguments size. Expected: 0, actual: 1.",
     ]);
     assert_errors(
       heap,
       "Test.init(true, 3).foo",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:23: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "Test.init(true, 3).bar",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `bool`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:23: [incompatible-type]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
       heap,
       "Test.init(true, 3).baz",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`."],
+      vec![
+        "__DUMMY__.sam:1:1-1:23: [incompatible-type]: Expected: `int`, actual: `(int) -> bool`.",
+      ],
     );
     assert_errors(heap,
       "Test.init(true, 3).baz<int>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:28: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.",
+        "__DUMMY__.sam:1:1-1:28: [invalid-arity]: Incorrect type arguments size. Expected: 0, actual: 1.",
       ],
     );
     assert_errors(
@@ -812,9 +809,9 @@ mod tests {
       "Test.init(true, 3).bazWithTypeParam",
       &builder.int_type(),
       vec![
-        "__DUMMY__.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-        "__DUMMY__.sam:1:1-1:36: [UnexpectedTypeKind]: Expected kind: `int`, actual: `function`.",
-        "__DUMMY__.sam:1:1-1:36: [UnexpectedType]: Expected: `int`, actual: `(int) -> bool`.",
+        "__DUMMY__.sam:1:1-1:36: [incompatible-type]: Expected: `int`, actual: `(int) -> bool`.",
+        "__DUMMY__.sam:1:1-1:36: [incompatible-type]: Expected: `int`, actual: `function`.",
+        "__DUMMY__.sam:1:1-1:36: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ],
     );
     assert_errors(
@@ -822,9 +819,9 @@ mod tests {
       "Test.init(true, 3).bazWithTypeParam",
       &builder.fun_type(vec![builder.int_type(), builder.int_type()], builder.bool_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:36: [ArityMismatchError]: Incorrect parameter size. Expected: 2, actual: 1.",
-        "__DUMMY__.sam:1:1-1:36: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-        "__DUMMY__.sam:1:1-1:36: [UnexpectedType]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.",
+        "__DUMMY__.sam:1:1-1:36: [incompatible-type]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.",
+        "__DUMMY__.sam:1:1-1:36: [invalid-arity]: Incorrect parameter size. Expected: 2, actual: 1.",
+        "__DUMMY__.sam:1:1-1:36: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ],
     );
     assert_errors(
@@ -832,7 +829,7 @@ mod tests {
       "Test.init(true, 3).bazWithTypeParam<int, int>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:46: [ArityMismatchError]: Incorrect type arguments size. Expected: 1, actual: 2.",
+        "__DUMMY__.sam:1:1-1:46: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
       ],
     );
     assert_errors(
@@ -840,7 +837,7 @@ mod tests {
       "Test.init(true, 3).bazWithUsefulTypeParam<bool>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:48: [UnexpectedType]: Expected: `(int) -> bool`, actual: `(bool) -> bool`.",
+        "__DUMMY__.sam:1:1-1:48: [incompatible-type]: Expected: `(int) -> bool`, actual: `(bool) -> bool`.",
       ],
     );
     assert_errors(
@@ -848,21 +845,21 @@ mod tests {
       "Test.init(true, 3).baz",
       &builder.fun_type(vec![builder.bool_type()], builder.int_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:23: [UnexpectedType]: Expected: `(bool) -> int`, actual: `(int) -> bool`.",
+        "__DUMMY__.sam:1:1-1:23: [incompatible-type]: Expected: `(bool) -> int`, actual: `(int) -> bool`.",
       ],
     );
 
     assert_errors(heap, "{ val _ = (t) -> t.foo; }", &builder.unit_type(), vec![
-      "__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.",
+      "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
+      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `unknown`.",
     ]);
     assert_errors(heap, "{ val _ = (t) -> t.bar; }", &builder.unit_type(), vec![
-      "__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.",
+      "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
+      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `unknown`.",
     ]);
     assert_errors(heap, "{ val _ = (t) -> t.baz; }", &builder.unit_type(), vec![
-      "__DUMMY__.sam:1:12-1:13: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `unknown`.",
+      "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
+      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `unknown`.",
     ]);
   }
 
@@ -888,54 +885,52 @@ mod tests {
       heap,
       "Builtins.panic(3)",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:16-1:17: [UnexpectedType]: Expected: `string`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:16-1:17: [incompatible-type]: Expected: `string`, actual: `int`."],
     );
     assert_errors(
       heap,
       "3(3)",
       &builder.unit_type(),
-      vec![
-        "__DUMMY__.sam:1:1-1:5: [UnexpectedTypeKind]: Expected kind: `function`, actual: `int`.",
-      ],
+      vec!["__DUMMY__.sam:1:1-1:5: [incompatible-type]: Expected: `function`, actual: `int`."],
     );
     assert_errors(
       heap,
       "Test.helloWorld(3)",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:17-1:18: [UnexpectedType]: Expected: `string`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:17-1:18: [incompatible-type]: Expected: `string`, actual: `int`."],
     );
     assert_errors(
       heap,
       "Test.init(true, 3).fff()",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:25: [UnexpectedType]: Expected: `int`, actual: `string`."],
+      vec!["__DUMMY__.sam:1:1-1:25: [incompatible-type]: Expected: `int`, actual: `string`."],
     );
     assert_errors(
       heap,
       "((i: int) -> true)({})",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:20-1:22: [UnexpectedType]: Expected: `int`, actual: `unit`."],
+      vec!["__DUMMY__.sam:1:20-1:22: [incompatible-type]: Expected: `int`, actual: `unit`."],
     );
     assert_errors(
       heap,
       "Test.helloWorld(\"\")",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:1-1:20: [UnexpectedType]: Expected: `bool`, actual: `unit`."],
+      vec!["__DUMMY__.sam:1:1-1:20: [incompatible-type]: Expected: `bool`, actual: `unit`."],
     );
     assert_errors(
       heap,
       "Test.init(true, 3).baz(3)",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:26: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:26: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "((i: int) -> true)(3)",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:2-1:22: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:2-1:22: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(heap, "Test.init(true, 3).bazWithTypeParam(1)", &builder.bool_type(), vec![
-      "__DUMMY__.sam:1:1-1:39: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression."
+      "__DUMMY__.sam:1:1-1:39: [underconstrained]: There is not enough context information to decide the type of this expression."
     ]);
   }
 
@@ -969,226 +964,226 @@ mod tests {
       heap,
       "-(false)",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:3-1:8: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:3-1:8: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "!1",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:2-1:3: [UnexpectedType]: Expected: `bool`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:2-1:3: [incompatible-type]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
       heap,
       "-(1+1)",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `bool`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
       heap,
       "!true",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "!false",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:7: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "\"1\" * \"1\"",
       &builder.int_type(),
       vec![
-        "__DUMMY__.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`.",
-        "__DUMMY__.sam:1:7-1:10: [UnexpectedType]: Expected: `int`, actual: `string`.",
+        "__DUMMY__.sam:1:1-1:4: [incompatible-type]: Expected: `int`, actual: `string`.",
+        "__DUMMY__.sam:1:7-1:10: [incompatible-type]: Expected: `int`, actual: `string`.",
       ],
     );
     assert_errors(
       heap,
       "\"1\" - 1",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`."],
+      vec!["__DUMMY__.sam:1:1-1:4: [incompatible-type]: Expected: `int`, actual: `string`."],
     );
     assert_errors(
       heap,
       "1 % \"1\"",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:5-1:8: [UnexpectedType]: Expected: `int`, actual: `string`."],
+      vec!["__DUMMY__.sam:1:5-1:8: [incompatible-type]: Expected: `int`, actual: `string`."],
     );
     assert_errors(
       heap,
       "1 + false",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:5-1:10: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:5-1:10: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "false - 1",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "\"\" < false",
       &builder.bool_type(),
       vec![
-        "__DUMMY__.sam:1:1-1:3: [UnexpectedType]: Expected: `int`, actual: `string`.",
-        "__DUMMY__.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`.",
+        "__DUMMY__.sam:1:1-1:3: [incompatible-type]: Expected: `int`, actual: `string`.",
+        "__DUMMY__.sam:1:6-1:11: [incompatible-type]: Expected: `int`, actual: `bool`.",
       ],
     );
     assert_errors(
       heap,
       "1 <= false",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:6-1:11: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "1 > \"\"",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:5-1:7: [UnexpectedType]: Expected: `int`, actual: `string`."],
+      vec!["__DUMMY__.sam:1:5-1:7: [incompatible-type]: Expected: `int`, actual: `string`."],
     );
     assert_errors(
       heap,
       "true >= 1",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:1-1:5: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:5: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "false || 4",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:10-1:11: [UnexpectedType]: Expected: `bool`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:10-1:11: [incompatible-type]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
       heap,
       "2 && 3",
       &builder.bool_type(),
       vec![
-        "__DUMMY__.sam:1:1-1:2: [UnexpectedType]: Expected: `bool`, actual: `int`.",
-        "__DUMMY__.sam:1:6-1:7: [UnexpectedType]: Expected: `bool`, actual: `int`.",
+        "__DUMMY__.sam:1:1-1:2: [incompatible-type]: Expected: `bool`, actual: `int`.",
+        "__DUMMY__.sam:1:6-1:7: [incompatible-type]: Expected: `bool`, actual: `int`.",
       ],
     );
     assert_errors(
       heap,
       "1 == false",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:6-1:11: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "true == 3",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:9-1:10: [incompatible-type]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
       heap,
       "true != 3",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:9-1:10: [incompatible-type]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
       heap,
       "\"\" != 3",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:7-1:8: [UnexpectedType]: Expected: `string`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:7-1:8: [incompatible-type]: Expected: `string`, actual: `int`."],
     );
     assert_errors(
       heap,
       "{ val _ = (t: int, f: bool) -> t == f; }",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:37-1:38: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:37-1:38: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "1 * 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
       heap,
       "1 - 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
       heap,
       "1 % 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
       heap,
       "1 + 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
       heap,
       "1 - 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
     );
     assert_errors(
       heap,
       "1 < 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "1 <= 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:7: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "1 > 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "1 >= 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:7: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "true || false",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:14: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "false && true",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:14: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "1 == 1",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:7: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "true == false",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:14: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "true != true",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:13: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:13: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "\"\" != \"3\"",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:1-1:10: [UnexpectedType]: Expected: `unit`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:1-1:10: [incompatible-type]: Expected: `unit`, actual: `bool`."],
     );
   }
 
@@ -1229,19 +1224,19 @@ mod tests {
       heap,
       "if true then false else 1",
       &builder.bool_type(),
-      vec!["__DUMMY__.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:25-1:26: [incompatible-type]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
       heap,
       "if false then 1 else false",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:22-1:27: [UnexpectedType]: Expected: `int`, actual: `bool`."],
+      vec!["__DUMMY__.sam:1:22-1:27: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "if false then \"\" else 3",
       &builder.string_type(),
-      vec!["__DUMMY__.sam:1:23-1:24: [UnexpectedType]: Expected: `string`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:23-1:24: [incompatible-type]: Expected: `string`, actual: `int`."],
     );
     assert_errors(
       heap,
@@ -1251,15 +1246,15 @@ mod tests {
   );
 }"#,
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:3:22-3:23: [UnexpectedType]: Expected: `bool`, actual: `int`."],
+      vec!["__DUMMY__.sam:3:22-3:23: [incompatible-type]: Expected: `bool`, actual: `int`."],
     );
     assert_errors(
       heap,
       "match (3) { Foo(_) -> 1, Bar(s) -> 2 }",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:13-1:16: [UnresolvedName]: Name `Foo` is not resolved.",
-        "__DUMMY__.sam:1:26-1:29: [UnresolvedName]: Name `Bar` is not resolved.",
+        "__DUMMY__.sam:1:13-1:16: [member-missing]: Cannot find member `Foo` on `int`.",
+        "__DUMMY__.sam:1:26-1:29: [member-missing]: Cannot find member `Bar` on `int`.",
       ],
     );
     assert_errors(
@@ -1267,16 +1262,16 @@ mod tests {
       "match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:30-1:33: [UnresolvedName]: Name `Foo` is not resolved.",
-        "__DUMMY__.sam:1:43-1:46: [UnresolvedName]: Name `Bar` is not resolved.",
+        "__DUMMY__.sam:1:30-1:33: [member-missing]: Cannot find member `Foo` on `Test`.",
+        "__DUMMY__.sam:1:43-1:46: [member-missing]: Cannot find member `Bar` on `Test`.",
       ],
     );
     assert_errors_with_class(
       heap,"{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].",
-        "__DUMMY__.sam:1:50-1:53: [UnresolvedName]: Name `Baz` is not resolved.",
+        "__DUMMY__.sam:1:25-1:64: [non-exhaustive-match]: The following tags are not considered in the match: [Bar].",
+        "__DUMMY__.sam:1:50-1:53: [member-missing]: Cannot find member `Baz` on `Test2`.",
       ],
       "Test2",
     );
@@ -1299,12 +1294,12 @@ mod tests {
     );
 
     assert_errors(heap, "(a) -> a", &builder.fun_type(vec![], builder.int_type()), vec![
-      "__DUMMY__.sam:1:1-1:9: [ArityMismatchError]: Incorrect function arguments size. Expected: 0, actual: 1.",
-      "__DUMMY__.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
+      "__DUMMY__.sam:1:1-1:9: [invalid-arity]: Incorrect function arguments size. Expected: 0, actual: 1.",
+      "__DUMMY__.sam:1:2-1:3: [underconstrained]: There is not enough context information to decide the type of this expression.",
     ]);
     assert_errors(heap, "(a) -> a", &builder.int_type(), vec![
-      "__DUMMY__.sam:1:1-1:9: [UnexpectedType]: Expected: `int`, actual: `function type`.",
-      "__DUMMY__.sam:1:2-1:3: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
+      "__DUMMY__.sam:1:1-1:9: [incompatible-type]: Expected: `int`, actual: `function type`.",
+      "__DUMMY__.sam:1:2-1:3: [underconstrained]: There is not enough context information to decide the type of this expression.",
     ]);
   }
 
@@ -1331,15 +1326,15 @@ mod tests {
       heap,
       "{val {a, b as c} = A.init();}",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved."],
+      vec!["__DUMMY__.sam:1:10-1:11: [member-missing]: Cannot find member `b` on `A`."],
     );
     assert_errors(
       heap,
       "{val {a, b as c} = C.init();}",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:7-1:8: [UnresolvedName]: Name `a` is not resolved.",
-        "__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.",
+        "__DUMMY__.sam:1:7-1:8: [member-missing]: Cannot find member `a` on `C`.",
+        "__DUMMY__.sam:1:10-1:11: [member-missing]: Cannot find member `b` on `C`.",
       ],
     );
     assert_errors(
@@ -1347,15 +1342,15 @@ mod tests {
       "{val {a, b as c} = 1;}",
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:1:7-1:8: [UnresolvedName]: Name `a` is not resolved.",
-        "__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `b` is not resolved.",
+        "__DUMMY__.sam:1:7-1:8: [member-missing]: Cannot find member `a` on `int`.",
+        "__DUMMY__.sam:1:10-1:11: [member-missing]: Cannot find member `b` on `int`.",
       ],
     );
     assert_errors(
       heap,
       "{val {a, d as c} = A.init();}",
       &builder.unit_type(),
-      vec!["__DUMMY__.sam:1:10-1:11: [UnresolvedName]: Name `d` is not resolved."],
+      vec!["__DUMMY__.sam:1:10-1:11: [member-missing]: Cannot find member `d` on `A`."],
     );
   }
 
@@ -1382,9 +1377,9 @@ mod tests {
 "#,
       &builder.unit_type(),
       vec![
-        "__DUMMY__.sam:2:12-2:26: [ArityMismatchError]: Incorrect arguments size. Expected: 0, actual: 1.",
-        "__DUMMY__.sam:8:11-8:64: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-        "__DUMMY__.sam:12:11-12:94: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
+        "__DUMMY__.sam:2:12-2:26: [invalid-arity]: Incorrect arguments size. Expected: 0, actual: 1.",
+        "__DUMMY__.sam:8:11-8:64: [underconstrained]: There is not enough context information to decide the type of this expression.",
+        "__DUMMY__.sam:12:11-12:94: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ],
     );
   }
@@ -1483,20 +1478,20 @@ mod tests {
     assert_module_errors(
       vec![("A", source_a), ("B", source_b), ("C", source_c), ("D", source_d)],
       vec![
-        "A.sam:1:1-1:20: [UnresolvedName]: Name `K` is not resolved.",
-        "A.sam:2:14-2:15: [UnresolvedName]: Name `C` is not resolved.",
-        "A.sam:4:39-4:40: [Collision]: Name `a` collides with a previously defined name at A.sam:4:16-4:17.",
-        "B.sam:2:11-2:12: [Collision]: Name `A` collides with a previously defined name at B.sam:1:10-1:11.",
-        "B.sam:2:14-2:15: [Collision]: Name `A` collides with a previously defined name at B.sam:1:10-1:11.",
-        "B.sam:3:35-3:48: [UnexpectedType]: Expected: `B<int, bool>`, actual: `B<int, int>`.",
-        "C.sam:2:21-2:24: [Collision]: Name `Int` collides with a previously defined name at C.sam:2:11-2:14.",
-        "C.sam:2:36-2:37: [ArityMismatchError]: Incorrect type arguments size. Expected: 2, actual: 0.",
-        "C.sam:3:43-3:48: [UnexpectedType]: Expected: `bool`, actual: `int`.",
-        "C.sam:4:21-4:22: [Collision]: Name `T` collides with a previously defined name at C.sam:4:15-4:16.",
-        "C.sam:4:30-4:31: [ArityMismatchError]: Incorrect type arguments size. Expected: 2, actual: 0.",
-        "C.sam:5:55-5:56: [UnexpectedType]: Expected: `int`, actual: `bool`.",
-        "C.sam:5:68-5:80: [UnexpectedType]: Expected: `bool`, actual: `int`.",
-        "D.sam:5:50-5:52: [Collision]: Name `c1` collides with a previously defined name at D.sam:5:43-5:45.",
+        "A.sam:1:1-1:20: [cannot-resolve-module]: Module `K` is not resolved.",
+        "A.sam:2:14-2:15: [missing-export]: There is no `C` export in `B`.",
+        "A.sam:4:39-4:40: [name-already-bound]: Name `a` collides with a previously defined name at A.sam:4:16-4:17.",
+        "B.sam:2:11-2:12: [name-already-bound]: Name `A` collides with a previously defined name at B.sam:1:10-1:11.",
+        "B.sam:2:14-2:15: [name-already-bound]: Name `A` collides with a previously defined name at B.sam:1:10-1:11.",
+        "B.sam:3:35-3:48: [incompatible-type]: Expected: `B<int, bool>`, actual: `B<int, int>`.",
+        "C.sam:2:21-2:24: [name-already-bound]: Name `Int` collides with a previously defined name at C.sam:2:11-2:14.",
+        "C.sam:2:36-2:37: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0.",
+        "C.sam:3:43-3:48: [incompatible-type]: Expected: `bool`, actual: `int`.",
+        "C.sam:4:21-4:22: [name-already-bound]: Name `T` collides with a previously defined name at C.sam:4:15-4:16.",
+        "C.sam:4:30-4:31: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0.",
+        "C.sam:5:55-5:56: [incompatible-type]: Expected: `int`, actual: `bool`.",
+        "C.sam:5:68-5:80: [incompatible-type]: Expected: `bool`, actual: `int`.",
+        "D.sam:5:50-5:52: [name-already-bound]: Name `c1` collides with a previously defined name at D.sam:5:43-5:45.",
       ],
     );
   }
@@ -1562,24 +1557,24 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
 "#;
 
     let expected_errors = vec![
-      "A.sam:8:1-8:17: [MissingDefinitions]: Missing definitions for [a, b].",
-      "A.sam:10:13-10:23: [UnexpectedType]: Expected: `() -> unit`, actual: `() -> string`.",
-      "A.sam:11:11-11:19: [UnexpectedType]: Expected: `() -> string`, actual: `() -> unit`.",
-      "A.sam:13:1-16:2: [MissingDefinitions]: Missing definitions for [a, b].",
-      "A.sam:32:11-32:72: [UnexpectedTypeKind]: Expected kind: `public class member`, actual: `private class member`.",
-      "A.sam:32:25-32:51: [UnexpectedType]: Expected: `(int, int) -> TC`, actual: `(string, string) -> TC`.",
-      "A.sam:33:27-33:53: [UnexpectedType]: Expected: `(TA, TB) -> TC`, actual: `(string, string) -> TC`.",
-      "A.sam:34:17-34:43: [UnexpectedType]: Expected: `(string, bool) -> TC`, actual: `(string, string) -> TC`.",
-      "A.sam:37:17-37:37: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TC>`.",
-      "A.sam:38:31-38:49: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TA, TB, TC>`.",
-      "A.sam:42:24-42:32: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
-      "A.sam:45:19-45:27: [ArityMismatchError]: Incorrect type parameters size. Expected: 1, actual: 0.",
-      "A.sam:48:29-48:37: [TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
-      "A.sam:52:19-52:25: [UnresolvedName]: Name `DumDum` is not resolved.",
-      "A.sam:53:11-53:18: [CyclicTypeDefinition]: Type `Cyclic1` has a cyclic definition.",
-      "A.sam:54:11-54:18: [CyclicTypeDefinition]: Type `Cyclic2` has a cyclic definition.",
-      "A.sam:55:11-55:18: [CyclicTypeDefinition]: Type `Cyclic3` has a cyclic definition.",
-      "A.sam:56:11-56:18: [CyclicTypeDefinition]: Type `Cyclic4` has a cyclic definition.",
+      "A.sam:8:1-8:17: [missing-definitions]: Missing definitions for [a, b].",
+      "A.sam:10:13-10:23: [incompatible-type]: Expected: `() -> unit`, actual: `() -> string`.",
+      "A.sam:11:11-11:19: [incompatible-type]: Expected: `() -> string`, actual: `() -> unit`.",
+      "A.sam:13:1-16:2: [missing-definitions]: Missing definitions for [a, b].",
+      "A.sam:32:11-32:72: [incompatible-type]: Expected: `public class member`, actual: `private class member`.",
+      "A.sam:32:25-32:51: [incompatible-type]: Expected: `(int, int) -> TC`, actual: `(string, string) -> TC`.",
+      "A.sam:33:27-33:53: [incompatible-type]: Expected: `(TA, TB) -> TC`, actual: `(string, string) -> TC`.",
+      "A.sam:34:17-34:43: [incompatible-type]: Expected: `(string, bool) -> TC`, actual: `(string, string) -> TC`.",
+      "A.sam:37:17-37:37: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TC>`.",
+      "A.sam:38:31-38:49: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TA, TB, TC>`.",
+      "A.sam:42:24-42:32: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
+      "A.sam:45:19-45:27: [invalid-arity]: Incorrect type parameters size. Expected: 1, actual: 0.",
+      "A.sam:48:29-48:37: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
+      "A.sam:52:19-52:25: [cannot-resolve-name]: Name `DumDum` is not resolved.",
+      "A.sam:53:11-53:18: [cyclic-type-definition]: Type `Cyclic1` has a cyclic definition.",
+      "A.sam:54:11-54:18: [cyclic-type-definition]: Type `Cyclic2` has a cyclic definition.",
+      "A.sam:55:11-55:18: [cyclic-type-definition]: Type `Cyclic3` has a cyclic definition.",
+      "A.sam:56:11-56:18: [cyclic-type-definition]: Type `Cyclic4` has a cyclic definition.",
     ];
     assert_module_errors(vec![("A", source)], expected_errors);
   }
@@ -1618,14 +1613,14 @@ class ImplTArg<T> : T {} // error: T not resolved
     "#;
 
     let expected_errors = vec![
-      "bounded-generics.sam:15:52-15:55: [UnexpectedSubtype]: Expected: subtype of `Comparable<int>`, actual: `int`.",
-      "bounded-generics.sam:15:57-15:64: [UnexpectedType]: Expected: `int`, actual: `T`.",
-      "bounded-generics.sam:15:66-15:73: [UnexpectedType]: Expected: `int`, actual: `T`.",
-      "bounded-generics.sam:18:20-18:40: [UnexpectedTypeKind]: Expected kind: `non-abstract type`, actual: `Comparable<BoxedInt>`.",
-      "bounded-generics.sam:19:53-19:69: [UnexpectedType]: Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.",
-      "bounded-generics.sam:28:7-28:17: [CyclicTypeDefinition]: Type `ImplItself` has a cyclic definition.",
-      "bounded-generics.sam:28:20-28:30: [UnexpectedTypeKind]: Expected kind: `interface type`, actual: `class type`.",
-      "bounded-generics.sam:29:21-29:22: [UnresolvedName]: Name `T` is not resolved.",
+      "bounded-generics.sam:15:52-15:55: [incompatible-type]: Expected: subtype of `Comparable<int>`, actual: `int`.",
+      "bounded-generics.sam:15:57-15:64: [incompatible-type]: Expected: `int`, actual: `T`.",
+      "bounded-generics.sam:15:66-15:73: [incompatible-type]: Expected: `int`, actual: `T`.",
+      "bounded-generics.sam:18:20-18:40: [incompatible-type]: Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.",
+      "bounded-generics.sam:19:53-19:69: [incompatible-type]: Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.",
+      "bounded-generics.sam:28:7-28:17: [cyclic-type-definition]: Type `ImplItself` has a cyclic definition.",
+      "bounded-generics.sam:28:20-28:30: [incompatible-type]: Expected: `interface type`, actual: `class type`.",
+      "bounded-generics.sam:29:21-29:22: [cannot-resolve-name]: Name `T` is not resolved.",
     ];
     assert_module_errors(vec![("bounded-generics", source)], expected_errors);
   }

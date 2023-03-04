@@ -136,8 +136,8 @@ mod tests {
 
     assert_eq!(
       vec![
-        "Demo.sam:1:40-1:47: [UnexpectedType]: Expected: `string`, actual: `int`.".to_string(),
-        "Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.".to_string()
+        "Demo.sam:1:40-1:47: [incompatible-type]: Expected: `string`, actual: `int`.".to_string(),
+        "Demo.sam:1:45-1:47: [incompatible-type]: Expected: `int`, actual: `string`.".to_string()
       ],
       super::compile_sources(
         heap,

@@ -353,12 +353,12 @@ mod tests {
       &mut error_set,
     );
     let expected_errors = vec![
-      "__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes and interfaces: This",
-      "__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes and interfaces: is",
-      "__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes and interfaces: not",
-      "__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes and interfaces: a",
-      "__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes and interfaces: program",
-      "__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes and interfaces: .",
+      "__DUMMY__.sam:1:1-1:5: [invalid-syntax]: Unexpected token among the classes and interfaces: This",
+      "__DUMMY__.sam:1:6-1:8: [invalid-syntax]: Unexpected token among the classes and interfaces: is",
+      "__DUMMY__.sam:1:9-1:12: [invalid-syntax]: Unexpected token among the classes and interfaces: not",
+      "__DUMMY__.sam:1:13-1:14: [invalid-syntax]: Unexpected token among the classes and interfaces: a",
+      "__DUMMY__.sam:1:15-1:22: [invalid-syntax]: Unexpected token among the classes and interfaces: program",
+      "__DUMMY__.sam:1:22-1:23: [invalid-syntax]: Unexpected token among the classes and interfaces: .",
     ];
     assert_eq!(expected_errors, error_set.error_messages(&heap));
   }

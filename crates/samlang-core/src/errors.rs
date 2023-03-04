@@ -1,20 +1,24 @@
-use crate::{ast::Location, Heap};
+use crate::{
+  ast::Location,
+  common::{Heap, ModuleReference, PStr},
+};
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum ErrorDetail {
-  ArityMismatchError { kind: &'static str, expected: usize, actual: usize },
-  Collision { name: String, old_loc: Location },
+  CannotResolveModule { module_reference: ModuleReference },
+  CannotResolveName { name: PStr },
   CyclicTypeDefinition { type_: String },
-  InsufficientTypeInferenceContext,
+  IncompatibleType { expected: String, actual: String, subtype: bool },
+  InvalidArity { kind: &'static str, expected: usize, actual: usize },
+  InvalidSyntax(String),
+  MemberMissing { parent: String, member: String },
   MissingDefinitions { missing_definitions: Vec<String> },
+  MissingExport { module_reference: ModuleReference, name: PStr },
+  NameAlreadyBound { name: PStr, old_loc: Location },
   NonExhausiveMatch { missing_tags: Vec<String> },
-  SyntaxError(String),
   TypeParameterNameMismatch { expected: String },
-  UnresolvedName { name: String },
-  UnexpectedSubtype { expected: String, actual: String },
-  UnexpectedTypeKind { expected: String, actual: String },
-  UnexpectedType { expected: String, actual: String },
+  Underconstrained,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -25,58 +29,70 @@ pub struct CompileTimeError {
 
 impl CompileTimeError {
   pub(crate) fn is_syntax_error(&self) -> bool {
-    matches!(&self.detail, ErrorDetail::SyntaxError(_))
+    matches!(&self.detail, ErrorDetail::InvalidSyntax(_))
   }
 
   pub fn pretty_print(&self, heap: &Heap) -> String {
     let (error_type, reason) = match &self.detail {
-      ErrorDetail::SyntaxError(reason) => ("SyntaxError", reason.to_string()),
-      ErrorDetail::UnexpectedType { expected, actual } => {
-        ("UnexpectedType", format!("Expected: `{expected}`, actual: `{actual}`."))
+      ErrorDetail::CannotResolveModule { module_reference } => (
+        "cannot-resolve-module",
+        format!("Module `{}` is not resolved.", module_reference.pretty_print(heap)),
+      ),
+      ErrorDetail::CannotResolveName { name } => {
+        ("cannot-resolve-name", format!("Name `{}` is not resolved.", name.as_str(heap)))
       }
-      ErrorDetail::UnexpectedSubtype { expected, actual } => {
-        ("UnexpectedSubtype", format!("Expected: subtype of `{expected}`, actual: `{actual}`."))
+      ErrorDetail::CyclicTypeDefinition { type_ } => {
+        ("cyclic-type-definition", format!("Type `{type_}` has a cyclic definition."))
       }
-      ErrorDetail::UnexpectedTypeKind { expected, actual } => {
-        ("UnexpectedTypeKind", format!("Expected kind: `{expected}`, actual: `{actual}`."))
+      ErrorDetail::IncompatibleType { expected, actual, subtype: false } => {
+        ("incompatible-type", format!("Expected: `{expected}`, actual: `{actual}`.",))
       }
-      ErrorDetail::UnresolvedName { name } => {
-        ("UnresolvedName", format!("Name `{name}` is not resolved."))
+      ErrorDetail::IncompatibleType { expected, actual, subtype: true } => {
+        ("incompatible-type", format!("Expected: subtype of `{expected}`, actual: `{actual}`.",))
       }
-      ErrorDetail::Collision { name, old_loc } => (
-        "Collision",
+      ErrorDetail::InvalidArity { kind, expected, actual } => {
+        ("invalid-arity", format!("Incorrect {kind} size. Expected: {expected}, actual: {actual}."))
+      }
+      ErrorDetail::InvalidSyntax(reason) => ("invalid-syntax", reason.to_string()),
+      ErrorDetail::MemberMissing { parent, member } => {
+        ("member-missing", format!("Cannot find member `{member}` on `{parent}`."))
+      }
+      ErrorDetail::MissingDefinitions { missing_definitions } => (
+        "missing-definitions",
+        format!("Missing definitions for [{}].", missing_definitions.join(", ")),
+      ),
+      ErrorDetail::MissingExport { module_reference, name } => (
+        "missing-export",
         format!(
-          "Name `{name}` collides with a previously defined name at {}.",
+          "There is no `{}` export in `{}`.",
+          name.as_str(heap),
+          module_reference.pretty_print(heap)
+        ),
+      ),
+      ErrorDetail::NameAlreadyBound { name, old_loc } => (
+        "name-already-bound",
+        format!(
+          "Name `{}` collides with a previously defined name at {}.",
+          name.as_str(heap),
           old_loc.pretty_print(heap)
         ),
       ),
-      ErrorDetail::TypeParameterNameMismatch { expected } => (
-        "TypeParameterNameMismatch",
-        format!("Type parameter name mismatch. Expected exact match of `{expected}`."),
-      ),
-      ErrorDetail::MissingDefinitions { missing_definitions } => (
-        "MissingDefinitions",
-        format!("Missing definitions for [{}].", missing_definitions.join(", ")),
-      ),
-      ErrorDetail::ArityMismatchError { kind, expected, actual } => (
-        "ArityMismatchError",
-        format!("Incorrect {kind} size. Expected: {expected}, actual: {actual}."),
-      ),
-      ErrorDetail::InsufficientTypeInferenceContext => (
-        "InsufficientTypeInferenceContext",
-        "There is not enough context information to decide the type of this expression."
-          .to_string(),
-      ),
       ErrorDetail::NonExhausiveMatch { missing_tags } => (
-        "NonExhausiveMatch",
+        "non-exhaustive-match",
         format!(
           "The following tags are not considered in the match: [{}].",
           missing_tags.join(", ")
         ),
       ),
-      ErrorDetail::CyclicTypeDefinition { type_ } => {
-        ("CyclicTypeDefinition", format!("Type `{type_}` has a cyclic definition."))
-      }
+      ErrorDetail::TypeParameterNameMismatch { expected } => (
+        "type-parameter-name-mismatch",
+        format!("Type parameter name mismatch. Expected exact match of `{expected}`."),
+      ),
+      ErrorDetail::Underconstrained => (
+        "underconstrained",
+        "There is not enough context information to decide the type of this expression."
+          .to_string(),
+      ),
     };
     format!("{}: [{}]: {}", self.location.pretty_print(heap), error_type, reason)
   }
@@ -111,52 +127,64 @@ impl ErrorSet {
     self.errors.insert(CompileTimeError { location, detail });
   }
 
-  pub(crate) fn report_syntax_error(&mut self, loc: Location, reason: String) {
-    self.report_error(loc, ErrorDetail::SyntaxError(reason))
+  pub(crate) fn report_cannot_unresolve_module_error(
+    &mut self,
+    loc: Location,
+    module_reference: ModuleReference,
+  ) {
+    self.report_error(loc, ErrorDetail::CannotResolveModule { module_reference })
   }
 
-  pub(crate) fn report_unexpected_type_error(
+  pub(crate) fn report_cannot_unresolve_name_error(&mut self, loc: Location, name: PStr) {
+    self.report_error(loc, ErrorDetail::CannotResolveName { name })
+  }
+
+  pub(crate) fn report_cyclic_type_definition_error(&mut self, type_loc: Location, type_: String) {
+    self.report_error(type_loc, ErrorDetail::CyclicTypeDefinition { type_ });
+  }
+
+  pub(crate) fn report_incompatible_type_error(
     &mut self,
     loc: Location,
     expected: String,
     actual: String,
   ) {
-    self.report_error(loc, ErrorDetail::UnexpectedType { expected, actual })
+    self.report_error(loc, ErrorDetail::IncompatibleType { expected, actual, subtype: false })
   }
 
-  pub(crate) fn report_unexpected_subtype_error(
+  pub(crate) fn report_incompatible_subtype_error(
     &mut self,
     loc: Location,
     expected: String,
     actual: String,
   ) {
-    self.report_error(loc, ErrorDetail::UnexpectedSubtype { expected, actual })
+    self.report_error(loc, ErrorDetail::IncompatibleType { expected, actual, subtype: true })
   }
 
-  pub(crate) fn report_unexpected_type_kind_error(
+  pub(crate) fn report_invalid_arity_error(
     &mut self,
     loc: Location,
-    expected: String,
-    actual: String,
+    kind: &'static str,
+    expected_size: usize,
+    actual_size: usize,
   ) {
-    self.report_error(loc, ErrorDetail::UnexpectedTypeKind { expected, actual })
+    self.report_error(
+      loc,
+      ErrorDetail::InvalidArity { kind, expected: expected_size, actual: actual_size },
+    )
   }
 
-  pub(crate) fn report_unresolved_name_error(&mut self, loc: Location, name: String) {
-    self.report_error(loc, ErrorDetail::UnresolvedName { name })
+  pub(crate) fn report_invalid_syntax_error(&mut self, loc: Location, reason: String) {
+    self.report_error(loc, ErrorDetail::InvalidSyntax(reason))
   }
 
-  pub(crate) fn report_collision_error(
+  pub(crate) fn report_member_missing_error(
     &mut self,
-    new_loc: Location,
-    name: String,
-    old_loc: Location,
+    loc: Location,
+    parent: String,
+    member: String,
   ) {
-    self.report_error(new_loc, ErrorDetail::Collision { name, old_loc })
-  }
-
-  pub(crate) fn report_type_parameter_mismatch_error(&mut self, loc: Location, expected: String) {
-    self.report_error(loc, ErrorDetail::TypeParameterNameMismatch { expected })
+    self.report_error(loc, ErrorDetail::MemberMissing { parent, member })
   }
 
   pub(crate) fn report_missing_definition_error(
@@ -167,21 +195,22 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::MissingDefinitions { missing_definitions })
   }
 
-  pub(crate) fn report_arity_mismatch_error(
+  pub(crate) fn report_missing_export_error(
     &mut self,
     loc: Location,
-    kind: &'static str,
-    expected_size: usize,
-    actual_size: usize,
+    module_reference: ModuleReference,
+    name: PStr,
   ) {
-    self.report_error(
-      loc,
-      ErrorDetail::ArityMismatchError { kind, expected: expected_size, actual: actual_size },
-    )
+    self.report_error(loc, ErrorDetail::MissingExport { module_reference, name })
   }
 
-  pub(crate) fn report_insufficient_type_inference_context_error(&mut self, loc: Location) {
-    self.report_error(loc, ErrorDetail::InsufficientTypeInferenceContext)
+  pub(crate) fn report_name_already_bound_error(
+    &mut self,
+    new_loc: Location,
+    name: PStr,
+    old_loc: Location,
+  ) {
+    self.report_error(new_loc, ErrorDetail::NameAlreadyBound { name, old_loc })
   }
 
   pub(crate) fn report_non_exhausive_match_error(
@@ -192,8 +221,11 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::NonExhausiveMatch { missing_tags })
   }
 
-  pub(crate) fn report_cyclic_type_definition_error(&mut self, type_loc: Location, type_: String) {
-    self.report_error(type_loc, ErrorDetail::CyclicTypeDefinition { type_ });
+  pub(crate) fn report_type_parameter_mismatch_error(&mut self, loc: Location, expected: String) {
+    self.report_error(loc, ErrorDetail::TypeParameterNameMismatch { expected })
+  }
+  pub(crate) fn report_underconstrained_error(&mut self, loc: Location) {
+    self.report_error(loc, ErrorDetail::Underconstrained)
   }
 }
 
@@ -210,71 +242,66 @@ mod tests {
   fn boilterplate() {
     assert!(!format!(
       "{:?}",
-      CompileTimeError {
-        location: Location::dummy(),
-        detail: ErrorDetail::InsufficientTypeInferenceContext
-      }
+      CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
     )
     .is_empty());
     assert_eq!(
       Some(std::cmp::Ordering::Equal),
-      CompileTimeError {
-        location: Location::dummy(),
-        detail: ErrorDetail::InsufficientTypeInferenceContext
-      }
-      .partial_cmp(&CompileTimeError {
-        location: Location::dummy(),
-        detail: ErrorDetail::InsufficientTypeInferenceContext
-      })
+      CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
+        .partial_cmp(&CompileTimeError {
+          location: Location::dummy(),
+          detail: ErrorDetail::Underconstrained
+        })
     );
     assert!(
-      CompileTimeError {
-        location: Location::dummy(),
-        detail: ErrorDetail::InsufficientTypeInferenceContext
-      } == CompileTimeError {
-        location: Location::dummy(),
-        detail: ErrorDetail::InsufficientTypeInferenceContext
-      }
+      CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
+        == CompileTimeError { location: Location::dummy(), detail: ErrorDetail::Underconstrained }
     );
   }
 
   #[test]
   fn error_message_tests() {
-    let heap = Heap::new();
+    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let builder = test_type_builder::create();
 
-    error_set.report_syntax_error(Location::dummy(), "bad code".to_string());
-    error_set.report_unexpected_type_error(
-      Location::dummy(),
-      builder.int_type().pretty_print(&heap),
-      builder.bool_type().pretty_print(&heap),
-    );
-    error_set.report_unexpected_subtype_error(
-      Location::dummy(),
-      builder.int_type().pretty_print(&heap),
-      builder.bool_type().pretty_print(&heap),
-    );
-    error_set.report_unresolved_name_error(Location::dummy(), "global".to_string());
-    error_set.report_type_parameter_mismatch_error(Location::dummy(), "".to_string());
-    error_set.report_unexpected_type_kind_error(
-      Location::dummy(),
-      "array".to_string(),
-      "object".to_string(),
-    );
-    error_set.report_arity_mismatch_error(Location::dummy(), "pair", 1, 2);
-    error_set.report_insufficient_type_inference_context_error(Location::dummy());
-    error_set.report_collision_error(Location::dummy(), "a".to_string(), Location::dummy());
-    error_set
-      .report_non_exhausive_match_error(Location::dummy(), vec!["A".to_string(), "B".to_string()]);
-    error_set.report_missing_definition_error(
-      Location::dummy(),
-      vec!["foo".to_string(), "bar".to_string()],
-    );
+    error_set.report_cannot_unresolve_module_error(Location::dummy(), ModuleReference::dummy());
+    error_set.report_cannot_unresolve_name_error(Location::dummy(), heap.alloc_str("global"));
     error_set.report_cyclic_type_definition_error(
       builder.int_type().get_reason().use_loc,
       builder.int_type().pretty_print(&heap),
     );
+    error_set.report_incompatible_type_error(
+      Location::dummy(),
+      builder.int_type().pretty_print(&heap),
+      builder.bool_type().pretty_print(&heap),
+    );
+    error_set.report_invalid_arity_error(Location::dummy(), "pair", 1, 2);
+    error_set.report_incompatible_subtype_error(
+      Location::dummy(),
+      builder.int_type().pretty_print(&heap),
+      builder.bool_type().pretty_print(&heap),
+    );
+    error_set.report_invalid_syntax_error(Location::dummy(), "bad code".to_string());
+    error_set.report_member_missing_error(Location::dummy(), "Foo".to_string(), "bar".to_string());
+    error_set.report_missing_definition_error(
+      Location::dummy(),
+      vec!["foo".to_string(), "bar".to_string()],
+    );
+    error_set.report_missing_export_error(
+      Location::dummy(),
+      ModuleReference::dummy(),
+      heap.alloc_str("bar"),
+    );
+    error_set.report_name_already_bound_error(
+      Location::dummy(),
+      heap.alloc_str("a"),
+      Location::dummy(),
+    );
+    error_set
+      .report_non_exhausive_match_error(Location::dummy(), vec!["A".to_string(), "B".to_string()]);
+    error_set.report_type_parameter_mismatch_error(Location::dummy(), "".to_string());
+    error_set.report_underconstrained_error(Location::dummy());
 
     assert!(error_set.errors().iter().any(|e| e.is_syntax_error()));
 
@@ -286,18 +313,20 @@ mod tests {
       })
       .collect::<Vec<_>>();
     let expected_errors = vec![
-      "[ArityMismatchError]: Incorrect pair size. Expected: 1, actual: 2.",
-      "[Collision]: Name `a` collides with a previously defined name at __DUMMY__.sam:0:0-0:0.",
-      "[CyclicTypeDefinition]: Type `int` has a cyclic definition.",
-      "[InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.",
-      "[MissingDefinitions]: Missing definitions for [foo, bar].",
-      "[NonExhausiveMatch]: The following tags are not considered in the match: [A, B].",
-      "[SyntaxError]: bad code",
-      "[TypeParameterNameMismatch]: Type parameter name mismatch. Expected exact match of ``.",
-      "[UnresolvedName]: Name `global` is not resolved.",
-      "[UnexpectedSubtype]: Expected: subtype of `int`, actual: `bool`.",
-      "[UnexpectedTypeKind]: Expected kind: `array`, actual: `object`.",
-      "[UnexpectedType]: Expected: `int`, actual: `bool`.",
+      "[cannot-resolve-module]: Module `__DUMMY__` is not resolved.",
+      "[cannot-resolve-name]: Name `global` is not resolved.",
+      "[cyclic-type-definition]: Type `int` has a cyclic definition.",
+      "[incompatible-type]: Expected: `int`, actual: `bool`.",
+      "[incompatible-type]: Expected: subtype of `int`, actual: `bool`.",
+      "[invalid-arity]: Incorrect pair size. Expected: 1, actual: 2.",
+      "[invalid-syntax]: bad code",
+      "[member-missing]: Cannot find member `bar` on `Foo`.",
+      "[missing-definitions]: Missing definitions for [foo, bar].",
+      "[missing-export]: There is no `bar` export in `__DUMMY__`.",
+      "[name-already-bound]: Name `a` collides with a previously defined name at __DUMMY__.sam:0:0-0:0.",
+      "[non-exhaustive-match]: The following tags are not considered in the match: [A, B].",
+      "[type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of ``.",
+      "[underconstrained]: There is not enough context information to decide the type of this expression.",
     ];
     assert_eq!(expected_errors, actual_errors);
     assert!(error_set.has_errors());

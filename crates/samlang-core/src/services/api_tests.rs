@@ -43,7 +43,7 @@ interface I { function test(): int }
     assert_eq!(1, service.all_modules().len());
     assert!(service.get_errors(&ModuleReference::root()).is_empty());
     assert_eq!(
-      vec!["test.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`."],
+      vec!["test.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `string`."],
       service.get_error_strings(&test_mod_ref)
     );
 
@@ -84,14 +84,14 @@ class Test2 {
     );
 
     assert_eq!(
-      vec!["Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`."],
+      vec!["Test1.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `string`."],
       service.get_error_strings(&test1_mod_ref)
     );
     assert_eq!(
       vec![
-        "Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.",
-        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.",
+        "Test2.sam:2:17-2:22: [missing-export]: There is no `Test2` export in `Test1`.",
+        "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
+        "Test2.sam:5:29-5:30: [incompatible-type]: Expected: `string`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
     );
@@ -108,13 +108,13 @@ class Test2 {}
       .to_string(),
     )]);
     assert_eq!(
-      vec!["Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`."],
+      vec!["Test1.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `string`."],
       service.get_error_strings(&test1_mod_ref)
     );
     assert_eq!(
       vec![
-        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.",
+        "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
+        "Test2.sam:5:29-5:30: [incompatible-type]: Expected: `string`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
     );
@@ -132,9 +132,9 @@ class Test1 {
     assert!(service.get_errors(&test1_mod_ref).is_empty());
     assert_eq!(
       vec![
-        "Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.",
-        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.",
+        "Test2.sam:2:17-2:22: [missing-export]: There is no `Test2` export in `Test1`.",
+        "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
+        "Test2.sam:5:29-5:30: [incompatible-type]: Expected: `string`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
     );
@@ -154,8 +154,8 @@ class Test2 {
     assert!(service.get_errors(&test1_mod_ref).is_empty());
     assert_eq!(
       vec![
-        "Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.",
-        "Test2.sam:4:7-4:12: [Collision]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
+        "Test2.sam:2:17-2:22: [missing-export]: There is no `Test2` export in `Test1`.",
+        "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
       ],
       service.get_error_strings(&test2_mod_ref)
     );
@@ -193,8 +193,8 @@ class Test2 {
 
     assert_eq!(
       vec![
-        "Test.sam:2:1-2:18: [UnresolvedName]: Name `B` is not resolved.",
-        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
+        "Test.sam:2:1-2:18: [cannot-resolve-module]: Module `B` is not resolved.",
+        "Test.sam:2:9-2:10: [name-already-bound]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
       ],
       service.get_error_strings(&test_mod_ref)
     );
@@ -202,8 +202,8 @@ class Test2 {
     service.rename_module(vec![(a_mod_ref, b_mod_ref)]);
     assert_eq!(
       vec![
-        "Test.sam:1:1-1:18: [UnresolvedName]: Name `A` is not resolved.",
-        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
+        "Test.sam:1:1-1:18: [cannot-resolve-module]: Module `A` is not resolved.",
+        "Test.sam:2:9-2:10: [name-already-bound]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
       ],
       service.get_error_strings(&test_mod_ref)
     );
@@ -211,8 +211,8 @@ class Test2 {
     service.rename_module(vec![(ModuleReference::dummy(), test_mod_ref)]);
     assert_eq!(
       vec![
-        "Test.sam:1:1-1:18: [UnresolvedName]: Name `A` is not resolved.",
-        "Test.sam:2:9-2:10: [Collision]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
+        "Test.sam:1:1-1:18: [cannot-resolve-module]: Module `A` is not resolved.",
+        "Test.sam:2:9-2:10: [name-already-bound]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
       ],
       service.get_error_strings(&test_mod_ref)
     );
@@ -407,9 +407,9 @@ class Test2(val a: int) {
 
     assert_eq!(
       vec![
-        "Test1.sam:3:10-3:11: [UnresolvedName]: Name `c` is not resolved.",
-        "Test1.sam:3:13-3:14: [UnresolvedName]: Name `b` is not resolved.",
-        "Test1.sam:5:5-5:6: [UnresolvedName]: Name `a` is not resolved.",
+        "Test1.sam:3:10-3:11: [member-missing]: Cannot find member `c` on `int`.",
+        "Test1.sam:3:13-3:14: [member-missing]: Cannot find member `b` on `int`.",
+        "Test1.sam:5:5-5:6: [cannot-resolve-name]: Name `a` is not resolved.",
       ],
       service.get_error_strings(&test_mod_ref)
     );
@@ -461,7 +461,7 @@ class Test1(val a: int) {
     );
 
     assert_eq!(
-      vec!["Test1.sam:12:15-12:16: [UnresolvedName]: Name `c` is not resolved."],
+      vec!["Test1.sam:12:15-12:16: [cannot-resolve-name]: Name `c` is not resolved."],
       service.get_error_strings(&test1_mod_ref)
     );
 
