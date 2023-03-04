@@ -688,8 +688,8 @@ class Developer(
   val projects: List<string>
 ) {
   function sam(): Developer = {
-    val l = List.of("SAMLANG").cons("...")
-    val github = "SamChou19815"
+    val l = List.of("SAMLANG").cons("...");
+    val github = "SamChou19815";
     Developer.init("Sam Zhou", github, l).
   }
 }
@@ -942,6 +942,81 @@ class Main {
       )],
     );
     assert!(service.auto_complete(&mod_ref, Position(2, 32)).is_empty());
+  }
+
+  #[test]
+  fn autocomplete_test_8() {
+    let mod_ref = ModuleReference::dummy();
+    let service = LanguageServices::new(
+      Heap::new(),
+      false,
+      vec![(
+        mod_ref,
+        r#"
+class Main {
+  function main(): unit = {
+    val foo = "";
+    val bar = 3;
+    val baz = true;
+    a
+  }
+}
+"#
+        .to_string(),
+      )],
+    );
+    assert_eq!(
+      vec![
+        AutoCompletionItem {
+          kind: CompletionItemKind::Variable,
+          insert_text_format: InsertTextFormat::PlainText,
+          label: "foo".to_string(),
+          insert_text: "foo".to_string(),
+          detail: "string".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Variable,
+          insert_text_format: InsertTextFormat::PlainText,
+          label: "bar".to_string(),
+          insert_text: "bar".to_string(),
+          detail: "int".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Variable,
+          insert_text_format: InsertTextFormat::PlainText,
+          label: "baz".to_string(),
+          insert_text: "baz".to_string(),
+          detail: "bool".to_string(),
+        }
+      ],
+      service.auto_complete(&mod_ref, Position(6, 4))
+    );
+    assert_eq!(
+      vec![
+        AutoCompletionItem {
+          kind: CompletionItemKind::Variable,
+          insert_text_format: InsertTextFormat::PlainText,
+          label: "foo".to_string(),
+          insert_text: "foo".to_string(),
+          detail: "string".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Variable,
+          insert_text_format: InsertTextFormat::PlainText,
+          label: "bar".to_string(),
+          insert_text: "bar".to_string(),
+          detail: "int".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Variable,
+          insert_text_format: InsertTextFormat::PlainText,
+          label: "baz".to_string(),
+          insert_text: "baz".to_string(),
+          detail: "bool".to_string(),
+        }
+      ],
+      service.auto_complete(&mod_ref, Position(6, 5))
+    );
   }
 
   #[test]

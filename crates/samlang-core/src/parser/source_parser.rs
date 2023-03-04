@@ -170,7 +170,14 @@ impl<'a> SourceParser<'a> {
     }
     self
       .report(location, format!("Expected: lowerId, actual: {}.", content.pretty_print(self.heap)));
-    (location, self.heap.alloc_str("MISSING"))
+    (
+      Location {
+        module_reference: location.module_reference,
+        start: location.start,
+        end: location.start,
+      },
+      self.heap.alloc_str("MISSING"),
+    )
   }
 
   fn assert_and_peek_upper_id(&mut self) -> (Location, PStr) {
@@ -181,7 +188,14 @@ impl<'a> SourceParser<'a> {
     }
     self
       .report(location, format!("Expected: upperId, actual: {}.", content.pretty_print(self.heap)));
-    (location, self.heap.alloc_str("MISSING"))
+    (
+      Location {
+        module_reference: location.module_reference,
+        start: location.start,
+        end: location.start,
+      },
+      self.heap.alloc_str("MISSING"),
+    )
   }
 
   fn assert_and_consume_identifier(&mut self) -> (Location, PStr) {

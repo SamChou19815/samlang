@@ -1669,7 +1669,7 @@ pub(crate) fn type_check_module(
   global_cx: &GlobalSignature,
   heap: &Heap,
   error_set: &mut ErrorSet,
-) -> Module<Rc<Type>> {
+) -> (Module<Rc<Type>>, LocalTypingContext) {
   let mut local_cx =
     LocalTypingContext::new(perform_ssa_analysis_on_module(module, heap, error_set));
 
@@ -1840,9 +1840,12 @@ pub(crate) fn type_check_module(
     checked_toplevels.push(checked);
   }
 
-  Module {
-    comment_store: module.comment_store.clone(),
-    imports: module.imports.clone(),
-    toplevels: checked_toplevels,
-  }
+  (
+    Module {
+      comment_store: module.comment_store.clone(),
+      imports: module.imports.clone(),
+      toplevels: checked_toplevels,
+    },
+    local_cx,
+  )
 }
