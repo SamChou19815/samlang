@@ -50,7 +50,7 @@ fn lower_expression(expr: hir::Expression) -> mir::Expression {
 
 fn reference_type_name(heap: &mut Heap, type_: &mir::Type) -> Option<PStr> {
   match type_ {
-    mir::Type::Primitive(mir::PrimitiveType::String) => Some(heap.alloc_str("string")),
+    mir::Type::Primitive(mir::PrimitiveType::String) => Some(heap.alloc_str_permanent("string")),
     mir::Type::Id(n) => Some(*n),
     _ => None,
   }
@@ -83,7 +83,7 @@ fn generate_single_destructor_function<
   heap: &mut Heap,
   get_destruct_member_stmts: F,
 ) -> mir::Function {
-  let parameter_name = heap.alloc_str("o");
+  let parameter_name = heap.alloc_str_permanent("o");
   let parameter_type = dec_ref_fn_arg_type(heap, type_name);
   let mut destruct_member_statements = vec![];
   get_destruct_member_stmts(
@@ -127,7 +127,7 @@ fn generate_single_destructor_construct_body(
     });
   } else {
     destruct_member_statements.push(mir::Statement::Cast {
-      name: heap.alloc_str("pointer_casted"),
+      name: heap.alloc_str_permanent("pointer_casted"),
       type_: mir::ANY_TYPE,
       assigned_expression: parameter.clone(),
     });
@@ -136,7 +136,10 @@ fn generate_single_destructor_construct_body(
         heap.alloc_string(encoded_fn_name_free()),
         mir::Type::Fn(unknown_member_destructor_type()),
       ),
-      arguments: vec![mir::Expression::Variable(heap.alloc_str("pointer_casted"), mir::ANY_TYPE)],
+      arguments: vec![mir::Expression::Variable(
+        heap.alloc_str_permanent("pointer_casted"),
+        mir::ANY_TYPE,
+      )],
       return_type: mir::INT_TYPE,
       return_collector: None,
     });
@@ -145,22 +148,22 @@ fn generate_single_destructor_construct_body(
     vec![
       /* currentRefCount = parameter[0] */
       mir::Statement::IndexedAccess {
-        name: heap.alloc_str("currentRefCount"),
+        name: heap.alloc_str_permanent("currentRefCount"),
         type_: mir::INT_TYPE,
         pointer_expression: parameter.clone(),
         index: 0,
       },
       /* decrementedRefCount = currentRefCount - 1 */
       mir::Statement::binary(
-        heap.alloc_str("decrementedRefCount"),
+        heap.alloc_str_permanent("decrementedRefCount"),
         hir::Operator::MINUS,
-        mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
+        mir::Expression::Variable(heap.alloc_str_permanent("currentRefCount"), mir::INT_TYPE),
         mir::ONE,
       ),
       /* parameter[0] = decrementedRefCount */
       mir::Statement::IndexedAssign {
         assigned_expression: mir::Expression::Variable(
-          heap.alloc_str("decrementedRefCount"),
+          heap.alloc_str_permanent("decrementedRefCount"),
           mir::INT_TYPE,
         ),
         pointer_expression: parameter,
@@ -168,14 +171,14 @@ fn generate_single_destructor_construct_body(
       },
       /* dead = currentRefCount <= 1 */
       mir::Statement::binary(
-        heap.alloc_str("dead"),
+        heap.alloc_str_permanent("dead"),
         hir::Operator::LE,
-        mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
+        mir::Expression::Variable(heap.alloc_str_permanent("currentRefCount"), mir::INT_TYPE),
         mir::ONE,
       ),
       /* if (dead) destructMemberStatements; */
       mir::Statement::SingleIf {
-        condition: mir::Expression::Variable(heap.alloc_str("dead"), mir::BOOL_TYPE),
+        condition: mir::Expression::Variable(heap.alloc_str_permanent("dead"), mir::BOOL_TYPE),
         invert_condition: false,
         statements: destruct_member_statements,
       },
@@ -184,33 +187,33 @@ fn generate_single_destructor_construct_body(
     vec![
       /* currentRefCount = parameter[0] */
       mir::Statement::IndexedAccess {
-        name: heap.alloc_str("currentRefCount"),
+        name: heap.alloc_str_permanent("currentRefCount"),
         type_: mir::INT_TYPE,
         pointer_expression: parameter.clone(),
         index: 0,
       },
       /* performGC = currentRefCount > 0 */
       mir::Statement::binary(
-        heap.alloc_str("performGC"),
+        heap.alloc_str_permanent("performGC"),
         hir::Operator::GT,
-        mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
+        mir::Expression::Variable(heap.alloc_str_permanent("currentRefCount"), mir::INT_TYPE),
         mir::ZERO,
       ),
       mir::Statement::SingleIf {
-        condition: mir::Expression::Variable(heap.alloc_str("performGC"), mir::BOOL_TYPE),
+        condition: mir::Expression::Variable(heap.alloc_str_permanent("performGC"), mir::BOOL_TYPE),
         invert_condition: false,
         statements: vec![
           /* decrementedRefCount = currentRefCount - 1 */
           mir::Statement::binary(
-            heap.alloc_str("decrementedRefCount"),
+            heap.alloc_str_permanent("decrementedRefCount"),
             hir::Operator::MINUS,
-            mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
+            mir::Expression::Variable(heap.alloc_str_permanent("currentRefCount"), mir::INT_TYPE),
             mir::ONE,
           ),
           /* parameter[0] = decrementedRefCount */
           mir::Statement::IndexedAssign {
             assigned_expression: mir::Expression::Variable(
-              heap.alloc_str("decrementedRefCount"),
+              heap.alloc_str_permanent("decrementedRefCount"),
               mir::INT_TYPE,
             ),
             pointer_expression: parameter,
@@ -218,14 +221,14 @@ fn generate_single_destructor_construct_body(
           },
           /* dead = currentRefCount <= 1 */
           mir::Statement::binary(
-            heap.alloc_str("dead"),
+            heap.alloc_str_permanent("dead"),
             hir::Operator::LE,
-            mir::Expression::Variable(heap.alloc_str("currentRefCount"), mir::INT_TYPE),
+            mir::Expression::Variable(heap.alloc_str_permanent("currentRefCount"), mir::INT_TYPE),
             mir::ONE,
           ),
           /* if (dead) destructMemberStatements; */
           mir::Statement::SingleIf {
-            condition: mir::Expression::Variable(heap.alloc_str("dead"), mir::BOOL_TYPE),
+            condition: mir::Expression::Variable(heap.alloc_str_permanent("dead"), mir::BOOL_TYPE),
             invert_condition: false,
             statements: destruct_member_statements,
           },
@@ -294,7 +297,7 @@ impl<'a> LoweringManager<'a> {
               .any(|t| reference_type_name(heap, &lower_type(t.clone())).is_some())
             {
               destruct_member_stmts.push(mir::Statement::IndexedAccess {
-                name: heap.alloc_str("tag"),
+                name: heap.alloc_str_permanent("tag"),
                 type_: mir::INT_TYPE,
                 pointer_expression: pointer_expression.clone(),
                 index: 1,
@@ -340,7 +343,7 @@ impl<'a> LoweringManager<'a> {
                 destruct_member_stmts.push(mir::Statement::binary(
                   heap.alloc_string(format!("tagComparison{index}")),
                   hir::Operator::EQ,
-                  mir::Expression::Variable(heap.alloc_str("tag"), mir::INT_TYPE),
+                  mir::Expression::Variable(heap.alloc_str_permanent("tag"), mir::INT_TYPE),
                   mir::Expression::int(i32::try_from(index).unwrap() + 1),
                 ));
                 destruct_member_stmts.push(mir::Statement::SingleIf {
@@ -365,23 +368,26 @@ impl<'a> LoweringManager<'a> {
         |heap, n, t, stmts| {
           let pointer_expression = mir::Expression::Variable(n, t);
           stmts.push(mir::Statement::IndexedAccess {
-            name: heap.alloc_str("destructor"),
+            name: heap.alloc_str_permanent("destructor"),
             type_: mir::Type::Fn(unknown_member_destructor_type()),
             pointer_expression: pointer_expression.clone(),
             index: 1,
           });
           stmts.push(mir::Statement::IndexedAccess {
-            name: heap.alloc_str("context"),
+            name: heap.alloc_str_permanent("context"),
             type_: mir::ANY_TYPE,
             pointer_expression,
             index: 3,
           });
           stmts.push(mir::Statement::Call {
             callee: mir::Expression::Variable(
-              heap.alloc_str("destructor"),
+              heap.alloc_str_permanent("destructor"),
               mir::Type::Fn(unknown_member_destructor_type()),
             ),
-            arguments: vec![mir::Expression::Variable(heap.alloc_str("context"), mir::ANY_TYPE)],
+            arguments: vec![mir::Expression::Variable(
+              heap.alloc_str_permanent("context"),
+              mir::ANY_TYPE,
+            )],
             return_type: mir::INT_TYPE,
             return_collector: None,
           });
@@ -390,14 +396,14 @@ impl<'a> LoweringManager<'a> {
     }
 
     functions.push(generate_single_destructor_function(
-      self.heap.alloc_str("string"),
+      self.heap.alloc_str_permanent("string"),
       self.heap,
       |_, _, _, _| {},
     ));
 
     functions.push(mir::Function {
       name: self.heap.alloc_string(dec_ref_fn_name("nothing")),
-      parameters: vec![self.heap.alloc_str("o")],
+      parameters: vec![self.heap.alloc_str_permanent("o")],
       type_: unknown_member_destructor_type(),
       body: vec![],
       return_value: mir::ZERO,
@@ -907,7 +913,7 @@ mod tests {
     let heap = &mut Heap::new();
     assert_eq!(
       "A",
-      super::lower_type(Type::new_id(heap.alloc_str("A"), vec![])).pretty_print(heap)
+      super::lower_type(Type::new_id(heap.alloc_str_for_test("A"), vec![])).pretty_print(heap)
     );
   }
 
@@ -924,7 +930,9 @@ mod tests {
         global_variables: vec![],
         closure_types: vec![],
         type_definitions: vec![],
-        main_function_names: vec![heap.alloc_str(common_names::ENCODED_COMPILED_PROGRAM_MAIN)],
+        main_function_names: vec![
+          heap.alloc_str_for_test(common_names::ENCODED_COMPILED_PROGRAM_MAIN)
+        ],
         functions: vec![],
       },
       heap,
@@ -951,64 +959,66 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
   fn comprehensive_test() {
     let heap = &mut Heap::new();
 
-    let closure_type = &Type::new_id_no_targs(heap.alloc_str("CC"));
-    let obj_type = &Type::new_id_no_targs(heap.alloc_str("Object"));
-    let variant_type = &Type::new_id_no_targs(heap.alloc_str("Variant"));
+    let closure_type = &Type::new_id_no_targs(heap.alloc_str_for_test("CC"));
+    let obj_type = &Type::new_id_no_targs(heap.alloc_str_for_test("Object"));
+    let variant_type = &Type::new_id_no_targs(heap.alloc_str_for_test("Variant"));
     let sources = Sources {
       global_variables: vec![],
       closure_types: vec![ClosureTypeDefinition {
-        identifier: heap.alloc_str("CC"),
+        identifier: heap.alloc_str_for_test("CC"),
         type_parameters: vec![],
         function_type: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
       }],
       type_definitions: vec![
         TypeDefinition {
-          identifier: heap.alloc_str("Object"),
+          identifier: heap.alloc_str_for_test("Object"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
           mappings: vec![INT_TYPE, INT_TYPE],
         },
         TypeDefinition {
-          identifier: heap.alloc_str("Variant"),
+          identifier: heap.alloc_str_for_test("Variant"),
           is_object: false,
           type_parameters: vec![],
           names: vec![],
           mappings: vec![INT_TYPE, INT_TYPE],
         },
         TypeDefinition {
-          identifier: heap.alloc_str("Object2"),
+          identifier: heap.alloc_str_for_test("Object2"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![STRING_TYPE, Type::new_id_no_targs(heap.alloc_str("Foo"))],
+          mappings: vec![STRING_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("Foo"))],
         },
         TypeDefinition {
-          identifier: heap.alloc_str("Variant2"),
+          identifier: heap.alloc_str_for_test("Variant2"),
           is_object: false,
           type_parameters: vec![],
           names: vec![],
           mappings: vec![STRING_TYPE],
         },
         TypeDefinition {
-          identifier: heap.alloc_str("Variant3"),
+          identifier: heap.alloc_str_for_test("Variant3"),
           is_object: false,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![STRING_TYPE, Type::new_id_no_targs(heap.alloc_str("Foo"))],
+          mappings: vec![STRING_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("Foo"))],
         },
       ],
-      main_function_names: vec![heap.alloc_str(common_names::ENCODED_COMPILED_PROGRAM_MAIN)],
+      main_function_names: vec![
+        heap.alloc_str_for_test(common_names::ENCODED_COMPILED_PROGRAM_MAIN)
+      ],
       functions: vec![
         Function {
-          name: heap.alloc_str("cc"),
+          name: heap.alloc_str_for_test("cc"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::Call {
               callee: Callee::Variable(VariableName::new(
-                heap.alloc_str("cc"),
+                heap.alloc_str_for_test("cc"),
                 closure_type.clone(),
               )),
               arguments: vec![ZERO],
@@ -1016,27 +1026,39 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               return_collector: None,
             },
             Statement::IndexedAccess {
-              name: heap.alloc_str("v1"),
+              name: heap.alloc_str_for_test("v1"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str("a"), obj_type.clone()),
+              pointer_expression: Expression::var_name(
+                heap.alloc_str_for_test("a"),
+                obj_type.clone(),
+              ),
               index: 0,
             },
             Statement::IndexedAccess {
-              name: heap.alloc_str("v2"),
+              name: heap.alloc_str_for_test("v2"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str("b"), variant_type.clone()),
+              pointer_expression: Expression::var_name(
+                heap.alloc_str_for_test("b"),
+                variant_type.clone(),
+              ),
               index: 0,
             },
             Statement::IndexedAccess {
-              name: heap.alloc_str("v3"),
+              name: heap.alloc_str_for_test("v3"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str("b"), variant_type.clone()),
+              pointer_expression: Expression::var_name(
+                heap.alloc_str_for_test("b"),
+                variant_type.clone(),
+              ),
               index: 1,
             },
             Statement::IndexedAccess {
-              name: heap.alloc_str("v4"),
+              name: heap.alloc_str_for_test("v4"),
               type_: STRING_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str("b"), variant_type.clone()),
+              pointer_expression: Expression::var_name(
+                heap.alloc_str_for_test("b"),
+                variant_type.clone(),
+              ),
               index: 1,
             },
             Statement::While {
@@ -1050,7 +1072,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: heap.alloc_str("_"),
+                name: heap.alloc_str_for_test("_"),
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
@@ -1061,55 +1083,55 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
                 statements: vec![Statement::Break(ZERO)],
               }],
               break_collector: Some(VariableName::new(
-                heap.alloc_str("_"),
-                Type::new_id_no_targs(heap.alloc_str("_")),
+                heap.alloc_str_for_test("_"),
+                Type::new_id_no_targs(heap.alloc_str_for_test("_")),
               )),
             },
           ],
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("main"),
+          name: heap.alloc_str_for_test("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
-            Statement::binary(heap.alloc_str("v1"), Operator::PLUS, ZERO, ZERO),
+            Statement::binary(heap.alloc_str_for_test("v1"), Operator::PLUS, ZERO, ZERO),
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str("O"),
+              struct_variable_name: heap.alloc_str_for_test("O"),
               type_: obj_type.as_id().unwrap().clone(),
               expression_list: vec![
                 ZERO,
                 Expression::var_name(
-                  heap.alloc_str("obj"),
-                  Type::new_id_no_targs(heap.alloc_str("Obj")),
+                  heap.alloc_str_for_test("obj"),
+                  Type::new_id_no_targs(heap.alloc_str_for_test("Obj")),
                 ),
               ],
             },
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str("v1"),
+              struct_variable_name: heap.alloc_str_for_test("v1"),
               type_: variant_type.as_id().unwrap().clone(),
               expression_list: vec![ZERO, ZERO],
             },
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str("v2"),
+              struct_variable_name: heap.alloc_str_for_test("v2"),
               type_: variant_type.as_id().unwrap().clone(),
-              expression_list: vec![ZERO, Expression::StringName(heap.alloc_str("G1"))],
+              expression_list: vec![ZERO, Expression::StringName(heap.alloc_str_for_test("G1"))],
             },
             Statement::ClosureInit {
-              closure_variable_name: heap.alloc_str("c1"),
+              closure_variable_name: heap.alloc_str_for_test("c1"),
               closure_type: closure_type.as_id().unwrap().clone(),
               function_name: FunctionName::new(
-                heap.alloc_str("aaa"),
+                heap.alloc_str_for_test("aaa"),
                 Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
               ),
-              context: Expression::StringName(heap.alloc_str("G1")),
+              context: Expression::StringName(heap.alloc_str_for_test("G1")),
             },
             Statement::ClosureInit {
-              closure_variable_name: heap.alloc_str("c2"),
+              closure_variable_name: heap.alloc_str_for_test("c2"),
               closure_type: closure_type.as_id().unwrap().clone(),
               function_name: FunctionName::new(
-                heap.alloc_str("bbb"),
+                heap.alloc_str_for_test("bbb"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               ),
               context: ZERO,
@@ -1118,7 +1140,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str(common_names::ENCODED_COMPILED_PROGRAM_MAIN),
+          name: heap.alloc_str_for_test(common_names::ENCODED_COMPILED_PROGRAM_MAIN),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -1128,7 +1150,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               s1: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName::new(
-                    heap.alloc_str("main"),
+                    heap.alloc_str_for_test("main"),
                     Type::new_fn_unwrapped(vec![], INT_TYPE),
                   )),
                   arguments: vec![ZERO],
@@ -1137,54 +1159,57 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName::new(
-                    heap.alloc_str("cc"),
+                    heap.alloc_str_for_test("cc"),
                     Type::new_fn_unwrapped(vec![], INT_TYPE),
                   )),
                   arguments: vec![ZERO],
                   return_type: INT_TYPE,
-                  return_collector: Some(heap.alloc_str("ccc")),
+                  return_collector: Some(heap.alloc_str_for_test("ccc")),
                 },
               ],
               s2: vec![
                 Statement::Call {
                   callee: Callee::Variable(VariableName::new(
-                    heap.alloc_str("cc"),
+                    heap.alloc_str_for_test("cc"),
                     closure_type.clone(),
                   )),
                   arguments: vec![ZERO],
-                  return_type: Type::new_id_no_targs(heap.alloc_str("CC")),
+                  return_type: Type::new_id_no_targs(heap.alloc_str_for_test("CC")),
                   return_collector: None,
                 },
                 Statement::ClosureInit {
-                  closure_variable_name: heap.alloc_str("v2"),
+                  closure_variable_name: heap.alloc_str_for_test("v2"),
                   closure_type: closure_type.as_id().unwrap().clone(),
                   function_name: FunctionName::new(
-                    heap.alloc_str("aaa"),
+                    heap.alloc_str_for_test("aaa"),
                     Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
                   ),
                   context: Expression::var_name(
-                    heap.alloc_str("G1"),
-                    Type::new_id_no_targs(heap.alloc_str("CC")),
+                    heap.alloc_str_for_test("G1"),
+                    Type::new_id_no_targs(heap.alloc_str_for_test("CC")),
                   ),
                 },
               ],
               final_assignments: vec![(
-                heap.alloc_str("finalV"),
+                heap.alloc_str_for_test("finalV"),
                 closure_type.clone(),
-                Expression::var_name(heap.alloc_str("v1"), closure_type.clone()),
-                Expression::var_name(heap.alloc_str("v2"), closure_type.clone()),
+                Expression::var_name(heap.alloc_str_for_test("v1"), closure_type.clone()),
+                Expression::var_name(heap.alloc_str_for_test("v2"), closure_type.clone()),
               )],
             },
             Statement::IfElse {
               condition: TRUE,
               s1: vec![],
               s2: vec![],
-              final_assignments: vec![(heap.alloc_str("finalV2"), INT_TYPE, ZERO, ZERO)],
+              final_assignments: vec![(heap.alloc_str_for_test("finalV2"), INT_TYPE, ZERO, ZERO)],
             },
             Statement::While {
               loop_variables: vec![],
               statements: vec![],
-              break_collector: Some(VariableName::new(heap.alloc_str("finalV3"), INT_TYPE)),
+              break_collector: Some(VariableName::new(
+                heap.alloc_str_for_test("finalV3"),
+                INT_TYPE,
+              )),
             },
           ],
           return_value: ZERO,

@@ -100,7 +100,7 @@ impl Heap {
       sweep_index: 0,
     };
     heap.alloc_module_reference(vec![]); // Root
-    let dummy_parts = vec![heap.alloc_str("__DUMMY__")];
+    let dummy_parts = vec![heap.alloc_str_permanent("__DUMMY__")];
     let allocated_dummy = heap.alloc_module_reference(dummy_parts);
     debug_assert!(ModuleReference::dummy() == allocated_dummy); // Dummy
     heap
@@ -110,7 +110,16 @@ impl Heap {
     self.interned_static_str.get(&str).or_else(|| self.interned_string.get(&str)).copied()
   }
 
-  pub(crate) fn alloc_str(&mut self, str: &'static str) -> PStr {
+  pub(crate) fn alloc_str_permanent(&mut self, s: &'static str) -> PStr {
+    self.alloc_str_internal(s)
+  }
+
+  #[cfg(test)]
+  pub(crate) fn alloc_str_for_test(&mut self, s: &'static str) -> PStr {
+    self.alloc_str_internal(s)
+  }
+
+  fn alloc_str_internal(&mut self, str: &'static str) -> PStr {
     if let Some(id) = self.interned_static_str.get(&str) {
       *id
     } else if let Some(p_str) = self.interned_string.remove(&str) {
@@ -197,13 +206,15 @@ impl Heap {
   }
 
   pub fn alloc_module_reference_from_string_vec(&mut self, parts: Vec<String>) -> ModuleReference {
-    let parts =
-      parts.into_iter().map(|p| self.alloc_str(Self::make_string_static(p))).collect_vec();
+    let parts = parts
+      .into_iter()
+      .map(|p| self.alloc_str_permanent(Self::make_string_static(p)))
+      .collect_vec();
     self.alloc_module_reference(parts)
   }
 
   pub(crate) fn alloc_dummy_module_reference(&mut self) -> ModuleReference {
-    let parts = vec![self.alloc_str("__DUMMY__")];
+    let parts = vec![self.alloc_str_permanent("__DUMMY__")];
     self.alloc_module_reference(parts)
   }
 
@@ -427,9 +438,9 @@ mod tests {
   fn heap_tests() {
     let mut heap = Heap::default();
     assert_eq!(1, heap.alloc_dummy_module_reference().0);
-    let a1 = heap.alloc_str("a");
-    let b = heap.alloc_str("b");
-    let a2 = heap.alloc_str("a");
+    let a1 = heap.alloc_str_for_test("a");
+    let b = heap.alloc_str_for_test("b");
+    let a2 = heap.alloc_str_for_test("a");
     a1.opaque_id();
     heap.alloc_temp_str();
     assert!(heap.get_allocated_str_opt("a").is_some());
@@ -495,8 +506,8 @@ mod tests {
   #[test]
   fn gc_marked_full_sweep_test() {
     let heap = &mut Heap::new();
-    let p1 = heap.alloc_str("static1");
-    heap.alloc_str("static2");
+    let p1 = heap.alloc_str_for_test("static1");
+    heap.alloc_str_for_test("static2");
     let p2 = heap.alloc_string("string1".to_string());
     heap.alloc_string("string2".to_string());
     heap.mark(p1);

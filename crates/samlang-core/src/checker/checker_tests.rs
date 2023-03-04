@@ -38,7 +38,7 @@ mod tests {
       lambda_captures: HashMap::new(),
     });
     let global_cx = sandbox_global_cx(&mut heap);
-    let test_str = heap.alloc_str("Test");
+    let test_str = heap.alloc_str_for_test("Test");
     let mut cx = TypingContext::new(
       &global_cx,
       &mut local_cx,
@@ -80,35 +80,39 @@ mod tests {
         ModuleSignature {
           interfaces: HashMap::from([
             (
-              heap.alloc_str("Test"),
+              heap.alloc_str_for_test("Test"),
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: true,
-                  names: vec![heap.alloc_str("foo"), heap.alloc_str("bar"), heap.alloc_str("fff")],
+                  names: vec![
+                    heap.alloc_str_for_test("foo"),
+                    heap.alloc_str_for_test("bar"),
+                    heap.alloc_str_for_test("fff"),
+                  ],
                   mappings: HashMap::from([
-                    (heap.alloc_str("foo"), (builder.bool_type(), true)),
-                    (heap.alloc_str("bar"), (builder.int_type(), false)),
+                    (heap.alloc_str_for_test("foo"), (builder.bool_type(), true)),
+                    (heap.alloc_str_for_test("bar"), (builder.int_type(), false)),
                     (
-                      heap.alloc_str("fff"),
+                      heap.alloc_str_for_test("fff"),
                       (builder.fun_type(vec![], builder.string_type()), false),
                     ),
                   ]),
                 }),
                 functions: HashMap::from([
                   (
-                    heap.alloc_str("init"),
+                    heap.alloc_str_for_test("init"),
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.bool_type(), builder.int_type()],
-                        return_type: builder.simple_id_type(heap.alloc_str("Test")),
+                        return_type: builder.simple_id_type(heap.alloc_str_for_test("Test")),
                       },
                     },
                   ),
                   (
-                    heap.alloc_str("helloWorld"),
+                    heap.alloc_str_for_test("helloWorld"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![],
@@ -120,79 +124,79 @@ mod tests {
                     },
                   ),
                   (
-                    heap.alloc_str("helloWorldWithTypeParameters"),
+                    heap.alloc_str_for_test("helloWorldWithTypeParameters"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str("A"),
+                        name: heap.alloc_str_for_test("A"),
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type(heap.alloc_str("A"))],
+                        argument_types: vec![builder.simple_id_type(heap.alloc_str_for_test("A"))],
                         return_type: builder.unit_type(),
                       },
                     },
                   ),
                   (
-                    heap.alloc_str("generic1"),
+                    heap.alloc_str_for_test("generic1"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![
-                        TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
-                        TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
-                        TypeParameterSignature { name: heap.alloc_str("C"), bound: None },
-                        TypeParameterSignature { name: heap.alloc_str("D"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str_for_test("C"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str_for_test("D"), bound: None },
                       ],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![
-                          builder.simple_id_type(heap.alloc_str("A")),
-                          builder.simple_id_type(heap.alloc_str("B")),
-                          builder.simple_id_type(heap.alloc_str("C")),
+                          builder.simple_id_type(heap.alloc_str_for_test("A")),
+                          builder.simple_id_type(heap.alloc_str_for_test("B")),
+                          builder.simple_id_type(heap.alloc_str_for_test("C")),
                         ],
-                        return_type: builder.simple_id_type(heap.alloc_str("D")),
+                        return_type: builder.simple_id_type(heap.alloc_str_for_test("D")),
                       },
                     },
                   ),
                   (
-                    heap.alloc_str("generic2"),
+                    heap.alloc_str_for_test("generic2"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str("T"),
+                        name: heap.alloc_str_for_test("T"),
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![
                           builder.fun_type(vec![builder.int_type()], builder.int_type()),
-                          builder.simple_id_type(heap.alloc_str("T")),
+                          builder.simple_id_type(heap.alloc_str_for_test("T")),
                         ],
                         return_type: builder.bool_type(),
                       },
                     },
                   ),
                   (
-                    heap.alloc_str("generic3"),
+                    heap.alloc_str_for_test("generic3"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![
-                        TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
-                        TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
+                        TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
                       ],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.fun_type(
-                          vec![builder.simple_id_type(heap.alloc_str("A"))],
-                          builder.simple_id_type(heap.alloc_str("B")),
+                          vec![builder.simple_id_type(heap.alloc_str_for_test("A"))],
+                          builder.simple_id_type(heap.alloc_str_for_test("B")),
                         )],
                         return_type: builder.bool_type(),
                       },
                     },
                   ),
                   (
-                    heap.alloc_str("generic4"),
+                    heap.alloc_str_for_test("generic4"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![],
@@ -209,7 +213,7 @@ mod tests {
                 ]),
                 methods: HashMap::from([
                   (
-                    heap.alloc_str("baz"),
+                    heap.alloc_str_for_test("baz"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![],
@@ -221,11 +225,11 @@ mod tests {
                     },
                   ),
                   (
-                    heap.alloc_str("bazWithTypeParam"),
+                    heap.alloc_str_for_test("bazWithTypeParam"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str("A"),
+                        name: heap.alloc_str_for_test("A"),
                         bound: None,
                       }],
                       type_: FunctionType {
@@ -236,16 +240,16 @@ mod tests {
                     },
                   ),
                   (
-                    heap.alloc_str("bazWithUsefulTypeParam"),
+                    heap.alloc_str_for_test("bazWithUsefulTypeParam"),
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str("A"),
+                        name: heap.alloc_str_for_test("A"),
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type(heap.alloc_str("A"))],
+                        argument_types: vec![builder.simple_id_type(heap.alloc_str_for_test("A"))],
                         return_type: builder.bool_type(),
                       },
                     },
@@ -256,38 +260,38 @@ mod tests {
               },
             ),
             (
-              heap.alloc_str("Test2"),
+              heap.alloc_str_for_test("Test2"),
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: false,
-                  names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
+                  names: vec![heap.alloc_str_for_test("Foo"), heap.alloc_str_for_test("Bar")],
                   mappings: HashMap::from([
-                    (heap.alloc_str("Foo"), (builder.bool_type(), true)),
-                    (heap.alloc_str("Bar"), (builder.int_type(), true)),
+                    (heap.alloc_str_for_test("Foo"), (builder.bool_type(), true)),
+                    (heap.alloc_str_for_test("Bar"), (builder.int_type(), true)),
                   ]),
                 }),
                 functions: HashMap::from([
                   (
-                    heap.alloc_str("Foo"),
+                    heap.alloc_str_for_test("Foo"),
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.bool_type()],
-                        return_type: builder.simple_id_type(heap.alloc_str("Test2")),
+                        return_type: builder.simple_id_type(heap.alloc_str_for_test("Test2")),
                       },
                     },
                   ),
                   (
-                    heap.alloc_str("Bar"),
+                    heap.alloc_str_for_test("Bar"),
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
-                        return_type: builder.simple_id_type(heap.alloc_str("Test2")),
+                        return_type: builder.simple_id_type(heap.alloc_str_for_test("Test2")),
                       },
                     },
                   ),
@@ -298,69 +302,75 @@ mod tests {
               },
             ),
             (
-              heap.alloc_str("Test3"),
+              heap.alloc_str_for_test("Test3"),
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: true,
-                  names: vec![heap.alloc_str("foo"), heap.alloc_str("bar")],
+                  names: vec![heap.alloc_str_for_test("foo"), heap.alloc_str_for_test("bar")],
                   mappings: HashMap::from([
-                    (heap.alloc_str("foo"), (builder.simple_id_type(heap.alloc_str("E")), true)),
-                    (heap.alloc_str("bar"), (builder.int_type(), false)),
+                    (
+                      heap.alloc_str_for_test("foo"),
+                      (builder.simple_id_type(heap.alloc_str_for_test("E")), true),
+                    ),
+                    (heap.alloc_str_for_test("bar"), (builder.int_type(), false)),
                   ]),
                 }),
                 functions: HashMap::new(),
                 methods: HashMap::new(),
                 type_parameters: vec![TypeParameterSignature {
-                  name: heap.alloc_str("E"),
+                  name: heap.alloc_str_for_test("E"),
                   bound: None,
                 }],
                 super_types: vec![],
               },
             ),
             (
-              heap.alloc_str("Test4"),
+              heap.alloc_str_for_test("Test4"),
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: false,
-                  names: vec![heap.alloc_str("Foo"), heap.alloc_str("Bar")],
+                  names: vec![heap.alloc_str_for_test("Foo"), heap.alloc_str_for_test("Bar")],
                   mappings: HashMap::from([
-                    (heap.alloc_str("Foo"), (builder.simple_id_type(heap.alloc_str("E")), true)),
-                    (heap.alloc_str("Bar"), (builder.int_type(), true)),
+                    (
+                      heap.alloc_str_for_test("Foo"),
+                      (builder.simple_id_type(heap.alloc_str_for_test("E")), true),
+                    ),
+                    (heap.alloc_str_for_test("Bar"), (builder.int_type(), true)),
                   ]),
                 }),
                 functions: HashMap::from([
                   (
-                    heap.alloc_str("Foo"),
+                    heap.alloc_str_for_test("Foo"),
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str("E"),
+                        name: heap.alloc_str_for_test("E"),
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type(heap.alloc_str("E"))],
+                        argument_types: vec![builder.simple_id_type(heap.alloc_str_for_test("E"))],
                         return_type: builder.general_id_type(
-                          heap.alloc_str("Test4"),
-                          vec![builder.simple_id_type(heap.alloc_str("E"))],
+                          heap.alloc_str_for_test("Test4"),
+                          vec![builder.simple_id_type(heap.alloc_str_for_test("E"))],
                         ),
                       },
                     },
                   ),
                   (
-                    heap.alloc_str("Bar"),
+                    heap.alloc_str_for_test("Bar"),
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str("E"),
+                        name: heap.alloc_str_for_test("E"),
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
                         return_type: builder.general_id_type(
-                          heap.alloc_str("Test4"),
-                          vec![builder.simple_id_type(heap.alloc_str("E"))],
+                          heap.alloc_str_for_test("Test4"),
+                          vec![builder.simple_id_type(heap.alloc_str_for_test("E"))],
                         ),
                       },
                     },
@@ -368,32 +378,32 @@ mod tests {
                 ]),
                 methods: HashMap::new(),
                 type_parameters: vec![TypeParameterSignature {
-                  name: heap.alloc_str("E"),
+                  name: heap.alloc_str_for_test("E"),
                   bound: None,
                 }],
                 super_types: vec![],
               },
             ),
             (
-              heap.alloc_str("A"),
+              heap.alloc_str_for_test("A"),
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: true,
-                  names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+                  names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
                   mappings: HashMap::from([
-                    (heap.alloc_str("a"), (builder.int_type(), true)),
-                    (heap.alloc_str("b"), (builder.bool_type(), false)),
+                    (heap.alloc_str_for_test("a"), (builder.int_type(), true)),
+                    (heap.alloc_str_for_test("b"), (builder.bool_type(), false)),
                   ]),
                 }),
                 functions: HashMap::from([(
-                  heap.alloc_str("init"),
+                  heap.alloc_str_for_test("init"),
                   MemberSignature {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type(heap.alloc_str("A")),
+                      return_type: builder.simple_id_type(heap.alloc_str_for_test("A")),
                     },
                   },
                 )]),
@@ -403,25 +413,25 @@ mod tests {
               },
             ),
             (
-              heap.alloc_str("B"),
+              heap.alloc_str_for_test("B"),
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: true,
-                  names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+                  names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
                   mappings: HashMap::from([
-                    (heap.alloc_str("a"), (builder.int_type(), true)),
-                    (heap.alloc_str("b"), (builder.bool_type(), false)),
+                    (heap.alloc_str_for_test("a"), (builder.int_type(), true)),
+                    (heap.alloc_str_for_test("b"), (builder.bool_type(), false)),
                   ]),
                 }),
                 functions: HashMap::from([(
-                  heap.alloc_str("init"),
+                  heap.alloc_str_for_test("init"),
                   MemberSignature {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type(heap.alloc_str("B")),
+                      return_type: builder.simple_id_type(heap.alloc_str_for_test("B")),
                     },
                   },
                 )]),
@@ -431,25 +441,25 @@ mod tests {
               },
             ),
             (
-              heap.alloc_str("C"),
+              heap.alloc_str_for_test("C"),
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: false,
-                  names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+                  names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
                   mappings: HashMap::from([
-                    (heap.alloc_str("a"), (builder.int_type(), true)),
-                    (heap.alloc_str("b"), (builder.bool_type(), true)),
+                    (heap.alloc_str_for_test("a"), (builder.int_type(), true)),
+                    (heap.alloc_str_for_test("b"), (builder.bool_type(), true)),
                   ]),
                 }),
                 functions: HashMap::from([(
-                  heap.alloc_str("init"),
+                  heap.alloc_str_for_test("init"),
                   MemberSignature {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type(heap.alloc_str("C")),
+                      return_type: builder.simple_id_type(heap.alloc_str_for_test("C")),
                     },
                   },
                 )]),
@@ -480,7 +490,7 @@ mod tests {
     let global_cx = sandbox_global_cx(heap);
     let mut local_cx =
       LocalTypingContext::new(perform_ssa_analysis_on_expression(&parsed, &mut temp_ssa_error_set));
-    let current_class = heap.alloc_str(current_class);
+    let current_class = heap.alloc_str_for_test(current_class);
     let mut cx = TypingContext::new(
       &global_cx,
       &mut local_cx,
@@ -637,9 +647,9 @@ mod tests {
     let heap = &mut Heap::new();
     let builder = test_type_builder::create();
 
-    let test_str = heap.alloc_str("Test");
-    let test2_str = heap.alloc_str("Test2");
-    let test4_str = heap.alloc_str("Test4");
+    let test_str = heap.alloc_str_for_test("Test");
+    let test2_str = heap.alloc_str_for_test("Test2");
+    let test4_str = heap.alloc_str_for_test("Test4");
 
     assert_checks(heap, "Test.init(true, 3)", &builder.simple_id_type(test_str));
     assert_checks(heap, "{ val foo=true; Test.init(foo, 3) }", &builder.simple_id_type(test_str));

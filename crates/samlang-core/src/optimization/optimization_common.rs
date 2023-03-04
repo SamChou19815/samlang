@@ -129,7 +129,7 @@ mod tests {
   fn local_value_context_for_optimization_panic() {
     let mut cx = LocalValueContextForOptimization::new();
     let heap = &mut crate::common::Heap::new();
-    cx.checked_bind(heap.alloc_str("a"), ZERO);
-    cx.checked_bind(heap.alloc_str("a"), ZERO);
+    cx.checked_bind(heap.alloc_str_for_test("a"), ZERO);
+    cx.checked_bind(heap.alloc_str_for_test("a"), ZERO);
   }
 }

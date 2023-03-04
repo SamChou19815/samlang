@@ -544,7 +544,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("C"),
+          id: heap.alloc_str_for_test("C"),
           type_arguments: vec![]
         },
       )
@@ -557,7 +557,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("IUseNonExistent"),
+          id: heap.alloc_str_for_test("IUseNonExistent"),
           type_arguments: vec![]
         },
       )
@@ -570,7 +570,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("ILevel2"),
+          id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()]
         },
       )
@@ -583,7 +583,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("ICyclic1"),
+          id: heap.alloc_str_for_test("ICyclic1"),
           type_arguments: vec![]
         },
       )
@@ -596,7 +596,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("ICyclic2"),
+          id: heap.alloc_str_for_test("ICyclic2"),
           type_arguments: vec![]
         },
       )
@@ -609,7 +609,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("UsingConflictingExtends"),
+          id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
         },
       )
@@ -623,7 +623,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &[IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("ILevel2"),
+          id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()],
         }],
         true,
@@ -640,7 +640,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &[IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("ILevel2"),
+          id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()],
         }],
         false,
@@ -659,34 +659,37 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
 
     assert!(resolve_function_signature(
       &global_cx,
-      (heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]), heap.alloc_str("C")),
-      heap.alloc_str("a"),
+      (
+        heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
+        heap.alloc_str_for_test("C")
+      ),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::root(), heap.alloc_str("C")),
-      heap.alloc_str("a"),
+      (ModuleReference::root(), heap.alloc_str_for_test("C")),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), heap.alloc_str("C")),
-      heap.alloc_str("a"),
+      (ModuleReference::dummy(), heap.alloc_str_for_test("C")),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), heap.alloc_str("IUseNonExistent")),
-      heap.alloc_str("a"),
+      (ModuleReference::dummy(), heap.alloc_str_for_test("IUseNonExistent")),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert_eq!(
       "public <C>(A, B) -> C",
       resolve_function_signature(
         &global_cx,
-        (ModuleReference::dummy(), heap.alloc_str("ILevel2")),
-        heap.alloc_str("f1"),
+        (ModuleReference::dummy(), heap.alloc_str_for_test("ILevel2")),
+        heap.alloc_str_for_test("f1"),
       )
       .iter()
       .map(|it| it.to_string(heap))
@@ -694,14 +697,14 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
     );
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), heap.alloc_str("ICyclic1")),
-      heap.alloc_str("a"),
+      (ModuleReference::dummy(), heap.alloc_str_for_test("ICyclic1")),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), heap.alloc_str("ICyclic2")),
-      heap.alloc_str("a"),
+      (ModuleReference::dummy(), heap.alloc_str_for_test("ICyclic2")),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert_eq!(
@@ -715,10 +718,10 @@ public () -> int
         &[IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("UsingConflictingExtends"),
+          id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
         }],
-        heap.alloc_str("f"),
+        heap.alloc_str_for_test("f"),
       )
       .iter()
       .map(|it| it.to_string(heap))
@@ -728,8 +731,8 @@ public () -> int
       "public () -> int",
       resolve_function_signature(
         &global_cx,
-        (ModuleReference::dummy(), heap.alloc_str("UsingConflictingExtends")),
-        heap.alloc_str("f"),
+        (ModuleReference::dummy(), heap.alloc_str_for_test("UsingConflictingExtends")),
+        heap.alloc_str_for_test("f"),
       )
       .iter()
       .map(|it| it.to_string(heap))
@@ -748,10 +751,10 @@ public () -> int
       &IdType {
         reason: Reason::dummy(),
         module_reference: ModuleReference::dummy(),
-        id: heap.alloc_str("C"),
+        id: heap.alloc_str_for_test("C"),
         type_arguments: vec![]
       },
-      heap.alloc_str("a"),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert!(resolve_method_signature(
@@ -759,10 +762,10 @@ public () -> int
       &IdType {
         reason: Reason::dummy(),
         module_reference: ModuleReference::dummy(),
-        id: heap.alloc_str("IUseNonExistent"),
+        id: heap.alloc_str_for_test("IUseNonExistent"),
         type_arguments: vec![]
       },
-      heap.alloc_str("a"),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert_eq!(
@@ -776,10 +779,10 @@ public <C : A>(int, int) -> C
         &[IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("ILevel2"),
+          id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![]
         }],
-        heap.alloc_str("m1"),
+        heap.alloc_str_for_test("m1"),
       )
       .iter()
       .map(|it| it.to_string(heap))
@@ -792,10 +795,10 @@ public <C : A>(int, int) -> C
         &IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("ILevel2"),
+          id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()]
         },
-        heap.alloc_str("m2"),
+        heap.alloc_str_for_test("m2"),
       )
       .iter()
       .map(|it| it.to_string(heap))
@@ -806,10 +809,10 @@ public <C : A>(int, int) -> C
       &IdType {
         reason: Reason::dummy(),
         module_reference: ModuleReference::dummy(),
-        id: heap.alloc_str("ICyclic1"),
+        id: heap.alloc_str_for_test("ICyclic1"),
         type_arguments: vec![]
       },
-      heap.alloc_str("a"),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert!(resolve_method_signature(
@@ -817,10 +820,10 @@ public <C : A>(int, int) -> C
       &IdType {
         reason: Reason::dummy(),
         module_reference: ModuleReference::dummy(),
-        id: heap.alloc_str("ICyclic2"),
+        id: heap.alloc_str_for_test("ICyclic2"),
         type_arguments: vec![]
       },
-      heap.alloc_str("a"),
+      heap.alloc_str_for_test("a"),
     )
     .is_empty());
     assert_eq!(
@@ -833,10 +836,10 @@ public () -> bool"#
         &[IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("UsingConflictingExtends"),
+          id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
         }],
-        heap.alloc_str("m"),
+        heap.alloc_str_for_test("m"),
       )
       .iter()
       .map(|it| it.to_string(heap))
@@ -849,10 +852,10 @@ public () -> bool"#
         &IdType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str("UsingConflictingExtends"),
+          id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
         },
-        heap.alloc_str("m"),
+        heap.alloc_str_for_test("m"),
       )
       .iter()
       .map(|it| it.to_string(heap))

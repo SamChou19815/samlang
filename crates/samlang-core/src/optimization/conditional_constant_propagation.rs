@@ -530,20 +530,29 @@ mod boilterplate_tests {
   fn panic_test() {
     let mut value_cx = LocalValueContextForOptimization::new();
     let heap = &mut Heap::new();
-    value_cx.checked_bind(heap.alloc_str("a"), Expression::var_name(heap.alloc_str("a"), INT_TYPE));
-    value_cx.checked_bind(heap.alloc_str("b"), Expression::StringName(heap.alloc_str("1")));
-    value_cx.checked_bind(heap.alloc_str("c"), Expression::StringName(heap.alloc_str("")));
-    optimize_callee(
-      &mut value_cx,
-      &Callee::Variable(VariableName { name: heap.alloc_str("a"), type_: INT_TYPE }),
+    value_cx.checked_bind(
+      heap.alloc_str_for_test("a"),
+      Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+    );
+    value_cx.checked_bind(
+      heap.alloc_str_for_test("b"),
+      Expression::StringName(heap.alloc_str_for_test("1")),
+    );
+    value_cx.checked_bind(
+      heap.alloc_str_for_test("c"),
+      Expression::StringName(heap.alloc_str_for_test("")),
     );
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: heap.alloc_str("b"), type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: heap.alloc_str_for_test("a"), type_: INT_TYPE }),
     );
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: heap.alloc_str("c"), type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: heap.alloc_str_for_test("b"), type_: INT_TYPE }),
+    );
+    optimize_callee(
+      &mut value_cx,
+      &Callee::Variable(VariableName { name: heap.alloc_str_for_test("c"), type_: INT_TYPE }),
     );
   }
 }

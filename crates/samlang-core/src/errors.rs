@@ -266,7 +266,8 @@ mod tests {
     let builder = test_type_builder::create();
 
     error_set.report_cannot_unresolve_module_error(Location::dummy(), ModuleReference::dummy());
-    error_set.report_cannot_unresolve_name_error(Location::dummy(), heap.alloc_str("global"));
+    error_set
+      .report_cannot_unresolve_name_error(Location::dummy(), heap.alloc_str_for_test("global"));
     error_set.report_cyclic_type_definition_error(
       builder.int_type().get_reason().use_loc,
       builder.int_type().pretty_print(&heap),
@@ -291,11 +292,11 @@ mod tests {
     error_set.report_missing_export_error(
       Location::dummy(),
       ModuleReference::dummy(),
-      heap.alloc_str("bar"),
+      heap.alloc_str_for_test("bar"),
     );
     error_set.report_name_already_bound_error(
       Location::dummy(),
-      heap.alloc_str("a"),
+      heap.alloc_str_for_test("a"),
       Location::dummy(),
     );
     error_set

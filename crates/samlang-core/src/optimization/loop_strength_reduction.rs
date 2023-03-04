@@ -107,43 +107,43 @@ mod tests {
     } = super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str("i"),
+          name: heap.alloc_str_for_test("i"),
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(10),
         },
         general_induction_variables: vec![GeneralBasicInductionVariable {
-          name: heap.alloc_str("j"),
+          name: heap.alloc_str_for_test("j"),
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
-            heap.alloc_str("c"),
+            heap.alloc_str_for_test("c"),
             INT_TYPE,
           )),
         }],
         loop_variables_that_are_not_basic_induction_variables: vec![],
         derived_induction_variables: vec![
           DerivedInductionVariableWithName {
-            name: heap.alloc_str("x"),
-            base_name: heap.alloc_str("i"),
+            name: heap.alloc_str_for_test("x"),
+            base_name: heap.alloc_str_for_test("i"),
             multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
-              heap.alloc_str("a"),
+              heap.alloc_str_for_test("a"),
               INT_TYPE,
             )),
             immediate: PotentialLoopInvariantExpression::Var(VariableName::new(
-              heap.alloc_str("b"),
+              heap.alloc_str_for_test("b"),
               INT_TYPE,
             )),
           },
           DerivedInductionVariableWithName {
-            name: heap.alloc_str("y"),
-            base_name: heap.alloc_str("j"),
+            name: heap.alloc_str_for_test("y"),
+            base_name: heap.alloc_str_for_test("j"),
             multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
-              heap.alloc_str("a"),
+              heap.alloc_str_for_test("a"),
               INT_TYPE,
             )),
             immediate: PotentialLoopInvariantExpression::Var(VariableName::new(
-              heap.alloc_str("b"),
+              heap.alloc_str_for_test("b"),
               INT_TYPE,
             )),
           },

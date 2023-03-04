@@ -349,12 +349,12 @@ impl MemberSignature {
     type_parameters: Vec<&'static str>,
   ) -> (PStr, MemberSignature) {
     (
-      heap.alloc_str(name),
+      heap.alloc_str_permanent(name),
       MemberSignature {
         is_public,
         type_parameters: type_parameters
           .into_iter()
-          .map(|name| TypeParameterSignature { name: heap.alloc_str(name), bound: None })
+          .map(|name| TypeParameterSignature { name: heap.alloc_str_permanent(name), bound: None })
           .collect_vec(),
         type_: FunctionType { reason: Reason::builtin(), argument_types, return_type },
       },
@@ -483,12 +483,12 @@ impl ModuleSignature {
 }
 
 pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignature {
-  heap.alloc_str("init");
-  heap.alloc_str("this");
-  let str_t = heap.alloc_str("T");
+  heap.alloc_str_permanent("init");
+  heap.alloc_str_permanent("this");
+  let str_t = heap.alloc_str_permanent("T");
   ModuleSignature {
     interfaces: HashMap::from([(
-      heap.alloc_str("Builtins"),
+      heap.alloc_str_permanent("Builtins"),
       InterfaceSignature {
         type_definition: Some(TypeDefinitionSignature {
           is_object: false,
@@ -563,7 +563,7 @@ mod type_tests {
     let builder = test_type_builder::create();
     builder.int_type().as_id();
     builder.int_type().as_fn();
-    builder.simple_id_type(Heap::new().alloc_str("")).as_id();
+    builder.simple_id_type(Heap::new().alloc_str_for_test("")).as_id();
     builder.fun_type(vec![], builder.int_type()).as_fn();
   }
 
@@ -577,11 +577,14 @@ mod type_tests {
     assert_eq!("int", builder.int_type().pretty_print(&heap));
     assert_eq!("bool", builder.bool_type().pretty_print(&heap));
     assert_eq!("string", builder.string_type().pretty_print(&heap));
-    assert_eq!("I", builder.simple_id_type(heap.alloc_str("I")).clone().pretty_print(&heap));
+    assert_eq!(
+      "I",
+      builder.simple_id_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap)
+    );
     assert_eq!(
       "I",
       builder
-        .simple_id_type_unwrapped(heap.alloc_str("I"))
+        .simple_id_type_unwrapped(heap.alloc_str_for_test("I"))
         .reposition(Location::dummy())
         .clone()
         .pretty_print(&heap)
@@ -590,8 +593,8 @@ mod type_tests {
       "Foo<unit, Bar>",
       builder
         .general_id_type(
-          heap.alloc_str("Foo"),
-          vec![builder.unit_type(), builder.simple_id_type(heap.alloc_str("Bar"))]
+          heap.alloc_str_for_test("Foo"),
+          vec![builder.unit_type(), builder.simple_id_type(heap.alloc_str_for_test("Bar"))]
         )
         .clone()
         .pretty_print(&heap)
@@ -624,7 +627,7 @@ mod type_tests {
       "A",
       TypeParameterSignature::from(&TypeParameter {
         loc: Location::dummy(),
-        name: Id::from(heap.alloc_str("A")),
+        name: Id::from(heap.alloc_str_for_test("A")),
         bound: None
       })
       .pretty_print(&heap)
@@ -633,11 +636,11 @@ mod type_tests {
       "A : B",
       TypeParameterSignature::from(&TypeParameter {
         loc: Location::dummy(),
-        name: Id::from(heap.alloc_str("A")),
+        name: Id::from(heap.alloc_str_for_test("A")),
         bound: Some(annotation::Id {
           location: Location::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: Id::from(heap.alloc_str("B")),
+          id: Id::from(heap.alloc_str_for_test("B")),
           type_arguments: vec![]
         })
       })
@@ -650,10 +653,12 @@ mod type_tests {
       TypeParameterSignature::pretty_print_list(
         &vec![
           TypeParameterSignature {
-            name: heap.alloc_str("A"),
-            bound: Option::Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B"))))
+            name: heap.alloc_str_for_test("A"),
+            bound: Option::Some(Rc::new(
+              builder.simple_id_type_unwrapped(heap.alloc_str_for_test("B"))
+            ))
           },
-          TypeParameterSignature { name: heap.alloc_str("C"), bound: Option::None }
+          TypeParameterSignature { name: heap.alloc_str_for_test("C"), bound: Option::None }
         ],
         &heap
       )
@@ -674,7 +679,7 @@ methods:
       .trim(),
       create_builtin_module_signature(&mut heap)
         .interfaces
-        .get(&heap.alloc_str("Builtins"))
+        .get(&heap.alloc_str_for_test("Builtins"))
         .unwrap()
         .to_string(&heap)
     );
@@ -690,10 +695,10 @@ m2: public () -> unknown
       InterfaceSignature {
         type_definition: Some(TypeDefinitionSignature {
           is_object: true,
-          names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+          names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
           mappings: HashMap::from([
-            (heap.alloc_str("a"), (builder.bool_type(), true)),
-            (heap.alloc_str("b"), (builder.bool_type(), false)),
+            (heap.alloc_str_for_test("a"), (builder.bool_type(), true)),
+            (heap.alloc_str_for_test("b"), (builder.bool_type(), false)),
           ])
         }),
         type_parameters: vec![],
@@ -701,7 +706,7 @@ m2: public () -> unknown
         functions: HashMap::new(),
         methods: HashMap::from([
           (
-            heap.alloc_str("m1"),
+            heap.alloc_str_for_test("m1"),
             MemberSignature {
               is_public: true,
               type_parameters: vec![],
@@ -713,7 +718,7 @@ m2: public () -> unknown
             }
           ),
           (
-            heap.alloc_str("m2"),
+            heap.alloc_str_for_test("m2"),
             MemberSignature {
               is_public: true,
               type_parameters: vec![],
@@ -734,8 +739,8 @@ m2: public () -> unknown
       "A(bool)",
       TypeDefinitionSignature {
         is_object: false,
-        names: vec![heap.alloc_str("A")],
-        mappings: HashMap::from([(heap.alloc_str("A"), (builder.bool_type(), true))])
+        names: vec![heap.alloc_str_for_test("A")],
+        mappings: HashMap::from([(heap.alloc_str_for_test("A"), (builder.bool_type(), true))])
       }
       .to_string(&heap)
     );
@@ -777,7 +782,7 @@ m2: public () -> unknown
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
       builder
-        .simple_id_type(heap.alloc_str("I"))
+        .simple_id_type(heap.alloc_str_for_test("I"))
         .reposition(Location::from_pos(1, 2, 3, 4))
         .get_reason()
         .use_loc
@@ -786,7 +791,7 @@ m2: public () -> unknown
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
       builder
-        .general_id_type(heap.alloc_str("I"), vec![builder.unit_type()])
+        .general_id_type(heap.alloc_str_for_test("I"), vec![builder.unit_type()])
         .reposition(Location::from_pos(1, 2, 3, 4))
         .get_reason()
         .use_loc
@@ -817,7 +822,7 @@ m2: public () -> unknown
       "(bool) -> I<int>",
       Type::from_annotation(&builder.fn_annot(
         vec![builder.bool_annot()],
-        builder.general_id_annot(heap.alloc_str("I"), vec![builder.int_annot()])
+        builder.general_id_annot(heap.alloc_str_for_test("I"), vec![builder.int_annot()])
       ))
       .pretty_print(heap)
     )
@@ -828,27 +833,33 @@ m2: public () -> unknown
     let mut heap = Heap::new();
     let builder = test_type_builder::create();
 
-    assert!(!builder.unit_type().is_the_same_type(&builder.simple_id_type(heap.alloc_str("A"))));
+    assert!(!builder
+      .unit_type()
+      .is_the_same_type(&builder.simple_id_type(heap.alloc_str_for_test("A"))));
 
     assert!(Type::Unknown(Reason::dummy()).is_the_same_type(&Type::Unknown(Reason::dummy())));
     assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
     assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
 
     assert!(builder
-      .simple_id_type(heap.alloc_str("A"))
-      .is_the_same_type(&builder.simple_id_type(heap.alloc_str("A"))));
+      .simple_id_type(heap.alloc_str_for_test("A"))
+      .is_the_same_type(&builder.simple_id_type(heap.alloc_str_for_test("A"))));
     assert!(!builder
-      .simple_id_type(heap.alloc_str("A"))
-      .is_the_same_type(&builder.simple_id_type(heap.alloc_str("B"))));
+      .simple_id_type(heap.alloc_str_for_test("A"))
+      .is_the_same_type(&builder.simple_id_type(heap.alloc_str_for_test("B"))));
     assert!(builder
-      .general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])));
+      .general_id_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+      .is_the_same_type(
+        &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+      ));
     assert!(!builder
-      .general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])
-      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type()])));
-    assert!(!builder
-      .simple_id_type(heap.alloc_str("A"))
-      .is_the_same_type(&builder.general_id_type(heap.alloc_str("A"), vec![builder.bool_type()])));
+      .general_id_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+      .is_the_same_type(
+        &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.int_type()])
+      ));
+    assert!(!builder.simple_id_type(heap.alloc_str_for_test("A")).is_the_same_type(
+      &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+    ));
 
     assert!(builder
       .fun_type(vec![builder.unit_type()], builder.string_type())

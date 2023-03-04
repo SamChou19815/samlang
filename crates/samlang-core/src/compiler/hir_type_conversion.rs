@@ -394,9 +394,9 @@ mod tests {
   fn synthesizer_tests() {
     let heap = &mut Heap::new();
     let mut synthesizer = TypeSynthesizer::new();
-    let a = heap.alloc_str("A");
-    let b = heap.alloc_str("B");
-    let c = heap.alloc_str("C");
+    let a = heap.alloc_str_for_test("A");
+    let b = heap.alloc_str_for_test("B");
+    let c = heap.alloc_str_for_test("C");
 
     assert_eq!(
       "$SyntheticIDType0",
@@ -488,21 +488,21 @@ mod tests {
   fn collect_used_generic_types_works() {
     let heap = &mut Heap::new();
     let generic_types: HashSet<PStr> =
-      vec![heap.alloc_str("A"), heap.alloc_str("B")].into_iter().collect();
+      vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")].into_iter().collect();
 
     assert!(collect_used_generic_types(
       &Type::new_fn_unwrapped(
-        vec![BOOL_TYPE, Type::new_id(heap.alloc_str("C"), vec![BOOL_TYPE])],
-        Type::new_id_no_targs(heap.alloc_str("C")),
+        vec![BOOL_TYPE, Type::new_id(heap.alloc_str_for_test("C"), vec![BOOL_TYPE])],
+        Type::new_id_no_targs(heap.alloc_str_for_test("C")),
       ),
       &generic_types,
     )
     .is_empty());
 
     assert_eq!(
-      vec![heap.alloc_str("A")],
+      vec![heap.alloc_str_for_test("A")],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str("A"))),
+        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str_for_test("A"))),
         &generic_types,
       )
       .into_iter()
@@ -510,9 +510,9 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![heap.alloc_str("B")],
+      vec![heap.alloc_str_for_test("B")],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str("B"))),
+        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str_for_test("B"))),
         &generic_types,
       )
       .into_iter()
@@ -520,11 +520,11 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![heap.alloc_str("A"), heap.alloc_str("B")],
+      vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
       collect_used_generic_types(
         &Type::new_fn_unwrapped(
-          vec![Type::new_id_no_targs(heap.alloc_str("B"))],
-          Type::new_id_no_targs(heap.alloc_str("A"))
+          vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))],
+          Type::new_id_no_targs(heap.alloc_str_for_test("A"))
         ),
         &generic_types,
       )
@@ -533,11 +533,14 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![heap.alloc_str("B")],
+      vec![heap.alloc_str_for_test("B")],
       collect_used_generic_types(
         &Type::new_fn_unwrapped(
           vec![],
-          Type::new_id(heap.alloc_str("A"), vec![Type::new_id_no_targs(heap.alloc_str("B"))])
+          Type::new_id(
+            heap.alloc_str_for_test("A"),
+            vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+          )
         ),
         &generic_types,
       )
@@ -554,10 +557,10 @@ mod tests {
 
     solve_type_arguments(
       &vec![],
-      &Type::new_id_unwrapped(heap.alloc_str("A"), vec![STRING_TYPE]),
+      &Type::new_id_unwrapped(heap.alloc_str_for_test("A"), vec![STRING_TYPE]),
       &Type::new_id_unwrapped(
-        heap.alloc_str("A"),
-        vec![Type::new_id_no_targs(heap.alloc_str("B"))],
+        heap.alloc_str_for_test("A"),
+        vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))],
       ),
     );
   }
@@ -567,26 +570,26 @@ mod tests {
     let heap = &mut Heap::new();
 
     let actual = solve_type_arguments(
-      &vec![heap.alloc_str("A")],
+      &vec![heap.alloc_str_for_test("A")],
       &Type::new_id_unwrapped(
-        heap.alloc_str("FF"),
+        heap.alloc_str_for_test("FF"),
         vec![
           INT_TYPE,
           BOOL_TYPE,
-          Type::new_id(heap.alloc_str("Foo"), vec![STRING_TYPE]),
+          Type::new_id(heap.alloc_str_for_test("Foo"), vec![STRING_TYPE]),
           INT_TYPE,
-          Type::new_id_no_targs(heap.alloc_str("B")),
+          Type::new_id_no_targs(heap.alloc_str_for_test("B")),
           STRING_TYPE,
         ],
       ),
       &Type::new_id_unwrapped(
-        heap.alloc_str("FF"),
+        heap.alloc_str_for_test("FF"),
         vec![
           INT_TYPE,
           BOOL_TYPE,
-          Type::new_id(heap.alloc_str("Foo"), vec![STRING_TYPE]),
-          Type::new_id_no_targs(heap.alloc_str("A")),
-          Type::new_id_no_targs(heap.alloc_str("B")),
+          Type::new_id(heap.alloc_str_for_test("Foo"), vec![STRING_TYPE]),
+          Type::new_id_no_targs(heap.alloc_str_for_test("A")),
+          Type::new_id_no_targs(heap.alloc_str_for_test("B")),
           STRING_TYPE,
         ],
       ),
@@ -605,24 +608,24 @@ mod tests {
     assert_eq!(
       "A<int>",
       type_application(
-        &Type::new_id(heap.alloc_str("A"), vec![INT_TYPE]),
-        &HashMap::from([(heap.alloc_str("A"), INT_TYPE)])
+        &Type::new_id(heap.alloc_str_for_test("A"), vec![INT_TYPE]),
+        &HashMap::from([(heap.alloc_str_for_test("A"), INT_TYPE)])
       )
       .pretty_print(heap)
     );
     assert_eq!(
       "A",
       type_application(
-        &Type::new_id_no_targs(heap.alloc_str("A")),
-        &HashMap::from([(heap.alloc_str("B"), INT_TYPE)])
+        &Type::new_id_no_targs(heap.alloc_str_for_test("A")),
+        &HashMap::from([(heap.alloc_str_for_test("B"), INT_TYPE)])
       )
       .pretty_print(heap)
     );
     assert_eq!(
       "int",
       type_application(
-        &Type::new_id_no_targs(heap.alloc_str("A")),
-        &HashMap::from([(heap.alloc_str("A"), INT_TYPE)])
+        &Type::new_id_no_targs(heap.alloc_str_for_test("A")),
+        &HashMap::from([(heap.alloc_str_for_test("A"), INT_TYPE)])
       )
       .pretty_print(heap)
     );
@@ -631,10 +634,13 @@ mod tests {
       "(int) -> bool",
       fn_type_application(
         &Type::new_fn_unwrapped(
-          vec![Type::new_id_no_targs(heap.alloc_str("A"))],
-          Type::new_id_no_targs(heap.alloc_str("B"))
+          vec![Type::new_id_no_targs(heap.alloc_str_for_test("A"))],
+          Type::new_id_no_targs(heap.alloc_str_for_test("B"))
         ),
-        &HashMap::from([(heap.alloc_str("A"), INT_TYPE), (heap.alloc_str("B"), BOOL_TYPE)])
+        &HashMap::from([
+          (heap.alloc_str_for_test("A"), INT_TYPE),
+          (heap.alloc_str_for_test("B"), BOOL_TYPE)
+        ])
       )
       .pretty_print(heap)
     );
@@ -644,8 +650,8 @@ mod tests {
   #[test]
   fn encode_name_after_generics_specialization_panic_test() {
     let heap = &mut Heap::new();
-    let s = heap.alloc_str("");
-    let a = heap.alloc_str("A");
+    let s = heap.alloc_str_for_test("");
+    let a = heap.alloc_str_for_test("A");
 
     encode_name_after_generics_specialization(heap, s, &vec![Type::new_id(a, vec![INT_TYPE])]);
   }
@@ -653,8 +659,8 @@ mod tests {
   #[test]
   fn encode_name_after_generics_specialization_tests() {
     let heap = &mut Heap::new();
-    let a = heap.alloc_str("A");
-    let b = heap.alloc_str("B");
+    let a = heap.alloc_str_for_test("A");
+    let b = heap.alloc_str_for_test("B");
 
     assert_eq!("A", encode_name_after_generics_specialization(heap, a, &vec![]));
     assert_eq!(
@@ -697,17 +703,17 @@ mod tests {
     );
 
     assert_eq!("__DUMMY___A<int>", {
-      let t = builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type()]);
+      let t = builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]);
       manager.lower_source_type(heap, &t).pretty_print(heap)
     });
 
     let mut manager2 = TypeLoweringManager {
-      generic_types: HashSet::from([heap.alloc_str("T")]),
+      generic_types: HashSet::from([heap.alloc_str_for_test("T")]),
       type_synthesizer: manager.type_synthesizer,
     };
     assert_eq!("$SyntheticIDType0<T>", {
       let t = builder.fun_type(
-        vec![builder.simple_id_type(heap.alloc_str("T")), builder.bool_type()],
+        vec![builder.simple_id_type(heap.alloc_str_for_test("T")), builder.bool_type()],
         builder.int_type(),
       );
       manager2.lower_source_type(heap, &t).pretty_print(heap)
@@ -726,7 +732,7 @@ mod tests {
   fn type_lowering_manager_lower_type_definition_tests() {
     let heap = &mut Heap::new();
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::from([heap.alloc_str("A")]),
+      generic_types: HashSet::from([heap.alloc_str_for_test("A")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let annot_builder = test_builder::create();
@@ -735,10 +741,10 @@ mod tests {
       loc: Location::dummy(),
       fields: vec![
         source::FieldDefinition {
-          name: source::Id::from(heap.alloc_str("a")),
+          name: source::Id::from(heap.alloc_str_for_test("a")),
           annotation: annot_builder.fn_annot(
             vec![annot_builder.fn_annot(
-              vec![annot_builder.simple_id_annot(heap.alloc_str("A"))],
+              vec![annot_builder.simple_id_annot(heap.alloc_str_for_test("A"))],
               annot_builder.bool_annot(),
             )],
             annot_builder.bool_annot(),
@@ -746,10 +752,10 @@ mod tests {
           is_public: true,
         },
         source::FieldDefinition {
-          name: source::Id::from(heap.alloc_str("b")),
+          name: source::Id::from(heap.alloc_str_for_test("b")),
           annotation: annot_builder.fn_annot(
             vec![annot_builder.fn_annot(
-              vec![annot_builder.simple_id_annot(heap.alloc_str("A"))],
+              vec![annot_builder.simple_id_annot(heap.alloc_str_for_test("A"))],
               annot_builder.bool_annot(),
             )],
             annot_builder.bool_annot(),
@@ -758,7 +764,7 @@ mod tests {
         },
       ],
     };
-    let foo_str = heap.alloc_str("Foo");
+    let foo_str = heap.alloc_str_for_test("Foo");
     let type_def =
       manager.lower_source_type_definition(heap, &ModuleReference::root(), foo_str, &type_def);
     let SynthesizedTypes { closure_types, mut tuple_types } =
@@ -783,7 +789,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::from([heap.alloc_str("A")]),
+      generic_types: HashSet::from([heap.alloc_str_for_test("A")]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = test_type_builder::create();

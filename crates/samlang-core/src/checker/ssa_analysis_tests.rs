@@ -27,7 +27,7 @@ mod tests {
         explicit_type_arguments: vec![test_builder::create().bool_annot()],
         inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(true))),
-        method_name: Id::from(heap.alloc_str("name")),
+        method_name: Id::from(heap.alloc_str_for_test("name")),
       }),
       &mut error_set,
     )

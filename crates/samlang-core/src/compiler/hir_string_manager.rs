@@ -43,8 +43,8 @@ mod tests {
   fn tests() {
     let heap = &mut Heap::new();
     let mut s = StringManager::new();
-    let a = heap.alloc_str("a");
-    let b = heap.alloc_str("b");
+    let a = heap.alloc_str_for_test("a");
+    let b = heap.alloc_str_for_test("b");
     assert_eq!(a, s.allocate(heap, a).content);
     assert_eq!(b, s.allocate(heap, b).content);
     assert_eq!(a, s.allocate(heap, a).content);

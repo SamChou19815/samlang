@@ -270,26 +270,26 @@ mod tests {
       global_variables: vec![],
       closure_types: vec![
         ClosureTypeDefinition {
-          identifier: heap.alloc_str("A"),
+          identifier: heap.alloc_str_for_test("A"),
           type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
         ClosureTypeDefinition {
-          identifier: heap.alloc_str("B"),
+          identifier: heap.alloc_str_for_test("B"),
           type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
       ],
       type_definitions: vec![
         TypeDefinition {
-          identifier: heap.alloc_str("C"),
+          identifier: heap.alloc_str_for_test("C"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
           mappings: vec![INT_TYPE, STRING_TYPE],
         },
         TypeDefinition {
-          identifier: heap.alloc_str("D"),
+          identifier: heap.alloc_str_for_test("D"),
           is_object: true,
           type_parameters: vec![],
           names: vec![],
@@ -298,17 +298,22 @@ mod tests {
       ],
       main_function_names: vec![],
       functions: vec![Function {
-        name: heap.alloc_str("main"),
+        name: heap.alloc_str_for_test("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IfElse {
           condition: TRUE,
           s1: vec![
-            Statement::binary(heap.alloc_str("_"), crate::ast::hir::Operator::PLUS, ZERO, ZERO),
+            Statement::binary(
+              heap.alloc_str_for_test("_"),
+              crate::ast::hir::Operator::PLUS,
+              ZERO,
+              ZERO,
+            ),
             Statement::Call {
               callee: Callee::FunctionName(FunctionName {
-                name: heap.alloc_str("f"),
+                name: heap.alloc_str_for_test("f"),
                 type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
                 type_arguments: vec![INT_TYPE],
               }),
@@ -317,39 +322,42 @@ mod tests {
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName { name: heap.alloc_str("f"), type_: INT_TYPE }),
+              callee: Callee::Variable(VariableName {
+                name: heap.alloc_str_for_test("f"),
+                type_: INT_TYPE,
+              }),
               arguments: vec![],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::IndexedAccess {
-              name: heap.alloc_str("_"),
-              type_: Type::new_id_no_targs(heap.alloc_str("B")),
+              name: heap.alloc_str_for_test("_"),
+              type_: Type::new_id_no_targs(heap.alloc_str_for_test("B")),
               pointer_expression: ZERO,
               index: 0,
             },
           ],
           s2: vec![
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str("_"),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("D")),
+              struct_variable_name: heap.alloc_str_for_test("_"),
+              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("D")),
               expression_list: vec![ZERO],
             },
             Statement::ClosureInit {
-              closure_variable_name: heap.alloc_str("_"),
-              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str("C")),
+              closure_variable_name: heap.alloc_str_for_test("_"),
+              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("C")),
               function_name: FunctionName {
-                name: heap.alloc_str("f"),
+                name: heap.alloc_str_for_test("f"),
                 type_: Type::new_fn_unwrapped(
-                  vec![Type::new_id_no_targs(heap.alloc_str("E"))],
+                  vec![Type::new_id_no_targs(heap.alloc_str_for_test("E"))],
                   INT_TYPE,
                 ),
                 type_arguments: vec![],
               },
-              context: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+              context: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
             },
           ],
-          final_assignments: vec![(heap.alloc_str("_"), INT_TYPE, ZERO, ZERO)],
+          final_assignments: vec![(heap.alloc_str_for_test("_"), INT_TYPE, ZERO, ZERO)],
         }],
         return_value: ZERO,
       }],

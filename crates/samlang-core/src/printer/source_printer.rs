@@ -1080,9 +1080,9 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
           inferred_type_arguments: vec![],
           object: Box::new(expr::E::Id(
             expr::ExpressionCommon::dummy(()),
-            Id::from(heap.alloc_str("foo"))
+            Id::from(heap.alloc_str_for_test("foo"))
           )),
-          method_name: Id::from(heap.alloc_str("bar"))
+          method_name: Id::from(heap.alloc_str_for_test("bar"))
         })
         .create_doc(&heap, &empty_comment_store)
       )
@@ -1098,9 +1098,9 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
           inferred_type_arguments: vec![],
           object: Box::new(expr::E::Id(
             expr::ExpressionCommon::dummy(()),
-            Id::from(heap.alloc_str("foo"))
+            Id::from(heap.alloc_str_for_test("foo"))
           )),
-          method_name: Id::from(heap.alloc_str("bar"))
+          method_name: Id::from(heap.alloc_str_for_test("bar"))
         })
         .create_doc(&heap, &empty_comment_store)
       )

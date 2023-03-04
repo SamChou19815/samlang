@@ -62,14 +62,14 @@ mod tests {
       local_scoped_def_locs: HashMap::from([
         (
           Location::from_pos(1, 1, 100, 100),
-          HashMap::from([(heap.alloc_str("a"), Location::from_pos(1, 2, 3, 4))]),
+          HashMap::from([(heap.alloc_str_for_test("a"), Location::from_pos(1, 2, 3, 4))]),
         ),
         (Location::from_pos(300, 1, 1000, 1000), HashMap::new()),
         (
           Location::from_pos(10, 10, 50, 50),
           HashMap::from([
-            (heap.alloc_str("b"), Location::from_pos(5, 6, 7, 8)),
-            (heap.alloc_str("c"), Location::from_pos(9, 10, 11, 12)),
+            (heap.alloc_str_for_test("b"), Location::from_pos(5, 6, 7, 8)),
+            (heap.alloc_str_for_test("c"), Location::from_pos(9, 10, 11, 12)),
           ]),
         ),
       ]),
@@ -96,7 +96,7 @@ mod tests {
       ModuleReference::dummy(),
       ModuleSignature {
         interfaces: HashMap::from([(
-          heap.alloc_str("A"),
+          heap.alloc_str_for_test("A"),
           InterfaceSignature {
             type_definition: Some(TypeDefinitionSignature {
               is_object: false,
@@ -104,12 +104,12 @@ mod tests {
               mappings: HashMap::new(),
             }),
             type_parameters: vec![TypeParameterSignature {
-              name: heap.alloc_str("T"),
+              name: heap.alloc_str_for_test("T"),
               bound: None,
             }],
             super_types: vec![builder.general_id_type_unwrapped(
-              heap.alloc_str("B"),
-              vec![builder.simple_id_type(heap.alloc_str("T")), builder.int_type()],
+              heap.alloc_str_for_test("B"),
+              vec![builder.simple_id_type(heap.alloc_str_for_test("T")), builder.int_type()],
             )],
             functions: HashMap::new(),
             methods: HashMap::new(),
@@ -122,38 +122,46 @@ mod tests {
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str("A"),
+      heap.alloc_str_for_test("A"),
       vec![],
     );
 
     // Non-id lower type
-    assert!(!cx.is_subtype(&builder.int_type(), &builder.simple_id_type(heap.alloc_str("B"))));
+    assert!(
+      !cx.is_subtype(&builder.int_type(), &builder.simple_id_type(heap.alloc_str_for_test("B")))
+    );
     // Non-existent type
     assert!(!cx.is_subtype(
-      &builder.simple_id_type(heap.alloc_str("B")),
-      &builder.simple_id_type(heap.alloc_str("C"))
+      &builder.simple_id_type(heap.alloc_str_for_test("B")),
+      &builder.simple_id_type(heap.alloc_str_for_test("C"))
     ));
     // Type-args length mismatch
     assert!(!cx.is_subtype(
-      &builder.simple_id_type(heap.alloc_str("A")),
-      &builder.simple_id_type(heap.alloc_str("B"))
+      &builder.simple_id_type(heap.alloc_str_for_test("A")),
+      &builder.simple_id_type(heap.alloc_str_for_test("B"))
     ));
     // Type-args mismatch
     assert!(!cx.is_subtype(
-      &builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type()]),
-      &builder
-        .general_id_type(heap.alloc_str("B"), vec![builder.string_type(), builder.int_type()])
+      &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
+      &builder.general_id_type(
+        heap.alloc_str_for_test("B"),
+        vec![builder.string_type(), builder.int_type()]
+      )
     ));
     assert!(!cx.is_subtype(
-      &builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type()]),
-      &builder
-        .general_id_type(heap.alloc_str("B"), vec![builder.string_type(), builder.string_type()])
+      &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
+      &builder.general_id_type(
+        heap.alloc_str_for_test("B"),
+        vec![builder.string_type(), builder.string_type()]
+      )
     ));
     // Good
     assert!(cx.is_subtype(
-      &builder.general_id_type(heap.alloc_str("A"), vec![builder.string_type()]),
-      &builder
-        .general_id_type(heap.alloc_str("B"), vec![builder.string_type(), builder.int_type()])
+      &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.string_type()]),
+      &builder.general_id_type(
+        heap.alloc_str_for_test("B"),
+        vec![builder.string_type(), builder.int_type()]
+      )
     ));
   }
 
@@ -168,7 +176,7 @@ mod tests {
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            heap.alloc_str("A"),
+            heap.alloc_str_for_test("A"),
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature {
                 is_object: false,
@@ -176,10 +184,12 @@ mod tests {
                 mappings: HashMap::new(),
               }),
               type_parameters: vec![
-                TypeParameterSignature { name: heap.alloc_str("T1"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str_for_test("T1"), bound: None },
                 TypeParameterSignature {
-                  name: heap.alloc_str("T2"),
-                  bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("B")))),
+                  name: heap.alloc_str_for_test("T2"),
+                  bound: Some(Rc::new(
+                    builder.simple_id_type_unwrapped(heap.alloc_str_for_test("B")),
+                  )),
                 },
               ],
               super_types: vec![],
@@ -188,11 +198,11 @@ mod tests {
             },
           ),
           (
-            heap.alloc_str("B"),
+            heap.alloc_str_for_test("B"),
             InterfaceSignature {
               type_definition: None,
               type_parameters: vec![],
-              super_types: vec![builder.simple_id_type_unwrapped(heap.alloc_str("B"))],
+              super_types: vec![builder.simple_id_type_unwrapped(heap.alloc_str_for_test("B"))],
               functions: HashMap::new(),
               methods: HashMap::new(),
             },
@@ -205,20 +215,20 @@ mod tests {
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str("A"),
+      heap.alloc_str_for_test("A"),
       vec![
-        TypeParameterSignature { name: heap.alloc_str("TPARAM"), bound: None },
+        TypeParameterSignature { name: heap.alloc_str_for_test("TPARAM"), bound: None },
         TypeParameterSignature {
-          name: heap.alloc_str("T2"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("A")))),
+          name: heap.alloc_str_for_test("T2"),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str_for_test("A")))),
         },
       ],
     );
 
-    let str_tparam = heap.alloc_str("TPARAM");
-    let str_t = heap.alloc_str("T");
-    let str_a = heap.alloc_str("A");
-    let str_b = heap.alloc_str("B");
+    let str_tparam = heap.alloc_str_for_test("TPARAM");
+    let str_t = heap.alloc_str_for_test("T");
+    let str_a = heap.alloc_str_for_test("A");
+    let str_b = heap.alloc_str_for_test("B");
     cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.int_type());
     cx.validate_type_instantiation_allow_abstract_types(
       &heap,
@@ -258,14 +268,14 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     let mut local_cx = empty_local_typing_context();
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let str_a = heap.alloc_str("A");
-    let str_b = heap.alloc_str("B");
+    let str_a = heap.alloc_str_for_test("A");
+    let str_b = heap.alloc_str_for_test("B");
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            heap.alloc_str("A"),
+            heap.alloc_str_for_test("A"),
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature {
                 is_object: false,
@@ -312,12 +322,12 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
             },
           ),
           (
-            heap.alloc_str("B"),
+            heap.alloc_str_for_test("B"),
             InterfaceSignature {
               type_definition: None,
               type_parameters: vec![
-                TypeParameterSignature { name: heap.alloc_str("E"), bound: None },
-                TypeParameterSignature { name: heap.alloc_str("F"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str_for_test("E"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str_for_test("F"), bound: None },
               ],
               super_types: vec![],
               functions: HashMap::from([
@@ -362,16 +372,18 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str("A"),
+      heap.alloc_str_for_test("A"),
       vec![
         TypeParameterSignature {
-          name: heap.alloc_str("TT1"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("A")))),
+          name: heap.alloc_str_for_test("TT1"),
+          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str_for_test("A")))),
         },
-        TypeParameterSignature { name: heap.alloc_str("TT2"), bound: None },
+        TypeParameterSignature { name: heap.alloc_str_for_test("TT2"), bound: None },
         TypeParameterSignature {
-          name: heap.alloc_str("TT3"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str("sdfasdfasfs")))),
+          name: heap.alloc_str_for_test("TT3"),
+          bound: Some(Rc::new(
+            builder.simple_id_type_unwrapped(heap.alloc_str_for_test("sdfasdfasfs")),
+          )),
         },
       ],
     );
@@ -379,112 +391,112 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     assert!(cx
       .get_function_type(
         heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-        heap.alloc_str("A"),
-        heap.alloc_str("f1"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("A"),
-        heap.alloc_str("f1"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .is_some());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("A"),
-        heap.alloc_str("f2"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("f2"),
         Location::dummy()
       )
       .is_some());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("A"),
-        heap.alloc_str("f3"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("f3"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("A"),
-        heap.alloc_str("m1"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("m1"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("A"),
-        heap.alloc_str("m2"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("m2"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("A"),
-        heap.alloc_str("m3"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("m3"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("B"),
-        heap.alloc_str("f1"),
+        heap.alloc_str_for_test("B"),
+        heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .is_some());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("B"),
-        heap.alloc_str("f2"),
+        heap.alloc_str_for_test("B"),
+        heap.alloc_str_for_test("f2"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("B"),
-        heap.alloc_str("f3"),
+        heap.alloc_str_for_test("B"),
+        heap.alloc_str_for_test("f3"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("B"),
-        heap.alloc_str("m1"),
+        heap.alloc_str_for_test("B"),
+        heap.alloc_str_for_test("m1"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("B"),
-        heap.alloc_str("m2"),
+        heap.alloc_str_for_test("B"),
+        heap.alloc_str_for_test("m2"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("B"),
-        heap.alloc_str("m3"),
+        heap.alloc_str_for_test("B"),
+        heap.alloc_str_for_test("m3"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_method_type(
         ModuleReference::dummy(),
-        heap.alloc_str("B"),
-        heap.alloc_str("m2"),
+        heap.alloc_str_for_test("B"),
+        heap.alloc_str_for_test("m2"),
         vec![],
         Location::dummy(),
       )
@@ -492,8 +504,8 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     assert!(cx
       .get_method_type(
         ModuleReference::dummy(),
-        heap.alloc_str("B"),
-        heap.alloc_str("m3"),
+        heap.alloc_str_for_test("B"),
+        heap.alloc_str_for_test("m3"),
         vec![],
         Location::dummy(),
       )
@@ -501,8 +513,8 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     assert!(cx
       .get_method_type(
         ModuleReference::dummy(),
-        heap.alloc_str("C"),
-        heap.alloc_str("m3"),
+        heap.alloc_str_for_test("C"),
+        heap.alloc_str_for_test("m3"),
         vec![],
         Location::dummy(),
       )
@@ -512,8 +524,8 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       "public <C>(int, int) -> int",
       cx.get_method_type(
         ModuleReference::dummy(),
-        heap.alloc_str("A"),
-        heap.alloc_str("m1"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("m1"),
         vec![builder.int_type(), builder.int_type()],
         Location::dummy(),
       )
@@ -524,8 +536,8 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       "private <C>() -> int",
       cx.get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("A"),
-        heap.alloc_str("f2"),
+        heap.alloc_str_for_test("A"),
+        heap.alloc_str_for_test("f2"),
         Location::dummy(),
       )
       .unwrap()
@@ -535,8 +547,8 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       "public <C>() -> int",
       cx.get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("TT1"),
-        heap.alloc_str("f1"),
+        heap.alloc_str_for_test("TT1"),
+        heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .unwrap()
@@ -546,16 +558,16 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("TT2"),
-        heap.alloc_str("f1"),
+        heap.alloc_str_for_test("TT2"),
+        heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
       .get_function_type(
         ModuleReference::dummy(),
-        heap.alloc_str("TT3"),
-        heap.alloc_str("f1"),
+        heap.alloc_str_for_test("TT3"),
+        heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .is_none());
@@ -572,19 +584,25 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            heap.alloc_str("A"),
+            heap.alloc_str_for_test("A"),
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature {
                 is_object: false,
-                names: vec![heap.alloc_str("a"), heap.alloc_str("b")],
+                names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
                 mappings: HashMap::from([
-                  (heap.alloc_str("a"), (builder.simple_id_type(heap.alloc_str("A")), true)),
-                  (heap.alloc_str("b"), (builder.simple_id_type(heap.alloc_str("B")), false)),
+                  (
+                    heap.alloc_str_for_test("a"),
+                    (builder.simple_id_type(heap.alloc_str_for_test("A")), true),
+                  ),
+                  (
+                    heap.alloc_str_for_test("b"),
+                    (builder.simple_id_type(heap.alloc_str_for_test("B")), false),
+                  ),
                 ]),
               }),
               type_parameters: vec![
-                TypeParameterSignature { name: heap.alloc_str("A"), bound: None },
-                TypeParameterSignature { name: heap.alloc_str("B"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
               ],
               super_types: vec![],
               functions: HashMap::new(),
@@ -592,7 +610,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
             },
           ),
           (
-            heap.alloc_str("B"),
+            heap.alloc_str_for_test("B"),
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature {
                 is_object: true,
@@ -600,8 +618,8 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
                 mappings: HashMap::new(),
               }),
               type_parameters: vec![
-                TypeParameterSignature { name: heap.alloc_str("E"), bound: None },
-                TypeParameterSignature { name: heap.alloc_str("F"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str_for_test("E"), bound: None },
+                TypeParameterSignature { name: heap.alloc_str_for_test("F"), bound: None },
               ],
               super_types: vec![],
               functions: HashMap::new(),
@@ -616,28 +634,37 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str("A"),
+      heap.alloc_str_for_test("A"),
       vec![],
     );
 
     assert!(cx.resolve_type_definition(&builder.bool_type(), true).names.is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type(), builder.int_type()]),
+        &builder.general_id_type(
+          heap.alloc_str_for_test("A"),
+          vec![builder.int_type(), builder.int_type()]
+        ),
         true,
       )
       .names
       .is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type(), builder.int_type()]),
+        &builder.general_id_type(
+          heap.alloc_str_for_test("A"),
+          vec![builder.int_type(), builder.int_type()]
+        ),
         true,
       )
       .names
       .is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type(heap.alloc_str("C"), vec![builder.int_type(), builder.int_type()]),
+        &builder.general_id_type(
+          heap.alloc_str_for_test("C"),
+          vec![builder.int_type(), builder.int_type()]
+        ),
         true,
       )
       .names
@@ -645,13 +672,16 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
 
     let resolved = cx
       .resolve_type_definition(
-        &builder.general_id_type(heap.alloc_str("A"), vec![builder.int_type(), builder.int_type()]),
+        &builder.general_id_type(
+          heap.alloc_str_for_test("A"),
+          vec![builder.int_type(), builder.int_type()],
+        ),
         false,
       )
       .mappings;
     assert_eq!(2, resolved.len());
-    let resolved_a = resolved.get(&heap.alloc_str("a")).unwrap();
-    let resolved_b = resolved.get(&heap.alloc_str("b")).unwrap();
+    let resolved_a = resolved.get(&heap.alloc_str_for_test("a")).unwrap();
+    let resolved_b = resolved.get(&heap.alloc_str_for_test("b")).unwrap();
     assert_eq!(true, resolved_a.1);
     assert_eq!(false, resolved_b.1);
     assert_eq!("int", resolved_a.0.pretty_print(&heap));

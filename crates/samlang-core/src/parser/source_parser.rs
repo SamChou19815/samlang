@@ -176,7 +176,7 @@ impl<'a> SourceParser<'a> {
         start: location.start,
         end: location.start,
       },
-      self.heap.alloc_str("MISSING"),
+      self.heap.alloc_str_permanent("MISSING"),
     )
   }
 
@@ -194,7 +194,7 @@ impl<'a> SourceParser<'a> {
         start: location.start,
         end: location.start,
       },
-      self.heap.alloc_str("MISSING"),
+      self.heap.alloc_str_permanent("MISSING"),
     )
   }
 
@@ -211,7 +211,7 @@ impl<'a> SourceParser<'a> {
       location,
       format!("Expected: identifier, actual: {}.", content.pretty_print(self.heap)),
     );
-    (location, self.heap.alloc_str("MISSING"))
+    (location, self.heap.alloc_str_permanent("MISSING"))
   }
 
   fn report(&mut self, loc: Location, reason: String) {
@@ -1028,7 +1028,7 @@ impl<'a> SourceParser<'a> {
         Id {
           loc: peeked_loc,
           associated_comments: self.comments_store.create_comment_reference(vec![]),
-          name: self.heap.alloc_str("this"),
+          name: self.heap.alloc_str_permanent("this"),
         },
       );
     }
@@ -1474,7 +1474,7 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let mut parser = SourceParser::new(
-      vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str("ouch")))],
+      vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str_for_test("ouch")))],
       &mut heap,
       &mut error_set,
       ModuleReference::dummy(),
@@ -1509,7 +1509,8 @@ mod tests {
   #[test]
   fn error_robustness_tests() {
     let heap = &mut Heap::new();
-    let tokens = vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str("ouch")))];
+    let tokens =
+      vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str_for_test("ouch")))];
     with_tokens_robustness_tests(heap, tokens);
   }
 }

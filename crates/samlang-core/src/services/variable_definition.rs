@@ -327,13 +327,13 @@ mod tests {
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0))),
-        method_name: Id::from(heap.alloc_str("")),
+        method_name: Id::from(heap.alloc_str_for_test("")),
       }),
       &DefinitionAndUses {
         definition_location: Location::dummy(),
         use_locations: vec![Location::dummy()],
       },
-      heap.alloc_str(""),
+      heap.alloc_str_for_test(""),
     );
   }
 
@@ -471,7 +471,7 @@ interface Foo {}
     let renamed = apply_renaming(
       &parsed,
       &lookup.find_all_definition_and_uses(&Location::from_pos(3, 12, 3, 13)).unwrap(),
-      heap.alloc_str("renAmeD"),
+      heap.alloc_str_for_test("renAmeD"),
     );
     assert_eq!(
       r#"class Main {
@@ -496,7 +496,7 @@ interface Foo
     let renamed = apply_renaming(
       &parsed,
       &lookup.find_all_definition_and_uses(&location).unwrap(),
-      heap.alloc_str("renAmeD"),
+      heap.alloc_str_for_test("renAmeD"),
     );
     assert_eq!(expected, printer::pretty_print_source_module(&heap, 60, &renamed));
   }

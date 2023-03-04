@@ -113,7 +113,7 @@ mod tests {
   fn assert_correctly_optimized(stmts: Vec<Statement>, heap: &mut Heap, expected: &str) {
     let actual = super::super::local_value_numbering::optimize_function(super::optimize_function(
       Function {
-        name: heap.alloc_str(""),
+        name: heap.alloc_str_for_test(""),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -136,42 +136,42 @@ mod tests {
 
     assert_correctly_optimized(
       vec![Statement::IfElse {
-        condition: Expression::var_name(heap.alloc_str("b"), BOOL_TYPE),
+        condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
         s1: vec![
-          Statement::binary(heap.alloc_str("ddddd"), Operator::PLUS, ONE, ONE),
-          Statement::binary(heap.alloc_str("a"), Operator::PLUS, ONE, ZERO),
+          Statement::binary(heap.alloc_str_for_test("ddddd"), Operator::PLUS, ONE, ONE),
+          Statement::binary(heap.alloc_str_for_test("a"), Operator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
-            name: heap.alloc_str("ddd"),
+            name: heap.alloc_str_for_test("ddd"),
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("fff"),
+              heap.alloc_str_for_test("fff"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![
-              Expression::var_name(heap.alloc_str("a"), INT_TYPE),
-              Expression::var_name(heap.alloc_str("ddd"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("ddd"), INT_TYPE),
             ],
             return_type: INT_TYPE,
             return_collector: None,
           },
         ],
         s2: vec![
-          Statement::binary(heap.alloc_str("fd"), Operator::PLUS, ONE, ZERO),
+          Statement::binary(heap.alloc_str_for_test("fd"), Operator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
-            name: heap.alloc_str("eee"),
+            name: heap.alloc_str_for_test("eee"),
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::Call {
-            callee: Callee::Variable(VariableName::new(heap.alloc_str("eeee"), INT_TYPE)),
+            callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test("eeee"), INT_TYPE)),
             arguments: vec![
-              Expression::var_name(heap.alloc_str("fd"), INT_TYPE),
-              Expression::var_name(heap.alloc_str("eee"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("fd"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("eee"), INT_TYPE),
             ],
             return_type: INT_TYPE,
             return_collector: None,

@@ -459,10 +459,10 @@ mod tests {
         global_variables: vec![],
         closure_types: vec![],
         type_definitions: vec![],
-        main_function_names: vec![heap.alloc_str("main")],
+        main_function_names: vec![heap.alloc_str_for_test("main")],
         functions: vec![
           Function {
-            name: heap.alloc_str("main"),
+            name: heap.alloc_str_for_test("main"),
             parameters: vec![],
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -470,7 +470,7 @@ mod tests {
             return_value: ZERO,
           },
           Function {
-            name: heap.alloc_str("main2"),
+            name: heap.alloc_str_for_test("main2"),
             parameters: vec![],
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -497,23 +497,23 @@ sources.mains = [main]
     assert_specialized(
       Sources {
         global_variables: vec![GlobalVariable {
-          name: heap.alloc_str("G1"),
-          content: heap.alloc_str(""),
+          name: heap.alloc_str_for_test("G1"),
+          content: heap.alloc_str_for_test(""),
         }],
         closure_types: vec![],
         type_definitions: vec![],
-        main_function_names: vec![heap.alloc_str("main")],
+        main_function_names: vec![heap.alloc_str_for_test("main")],
         functions: vec![Function {
-          name: heap.alloc_str("main"),
+          name: heap.alloc_str_for_test("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("__builtins_println"),
+              heap.alloc_str_for_test("__builtins_println"),
               Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
             )),
-            arguments: vec![Expression::StringName(heap.alloc_str("G1"))],
+            arguments: vec![Expression::StringName(heap.alloc_str_for_test("G1"))],
             return_type: INT_TYPE,
             return_collector: None,
           }],
@@ -542,9 +542,9 @@ sources.mains = [main]
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![heap.alloc_str("main")],
+      main_function_names: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
-        name: heap.alloc_str("main"),
+        name: heap.alloc_str_for_test("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -564,9 +564,9 @@ sources.mains = [main]
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![heap.alloc_str("main")],
+      main_function_names: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
-        name: heap.alloc_str("main"),
+        name: heap.alloc_str_for_test("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -590,9 +590,9 @@ sources.mains = [main]
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![heap.alloc_str("main")],
+      main_function_names: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
-        name: heap.alloc_str("main"),
+        name: heap.alloc_str_for_test("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -611,53 +611,59 @@ sources.mains = [main]
   fn comprehensive_test() {
     let heap = &mut Heap::new();
 
-    let type_a = Type::new_id_no_targs(heap.alloc_str("A"));
-    let type_b = Type::new_id_no_targs(heap.alloc_str("B"));
-    let type_j = Type::new_id_no_targs(heap.alloc_str("J"));
-    let type_ia = Type::new_id(heap.alloc_str("I"), vec![type_a.clone(), STRING_TYPE]);
-    let type_ib = Type::new_id(heap.alloc_str("I"), vec![INT_TYPE, type_b.clone()]);
-    let type_i = Type::new_id(heap.alloc_str("I"), vec![INT_TYPE, STRING_TYPE]);
-    let g1 = Expression::StringName(heap.alloc_str("G1"));
+    let type_a = Type::new_id_no_targs(heap.alloc_str_for_test("A"));
+    let type_b = Type::new_id_no_targs(heap.alloc_str_for_test("B"));
+    let type_j = Type::new_id_no_targs(heap.alloc_str_for_test("J"));
+    let type_ia = Type::new_id(heap.alloc_str_for_test("I"), vec![type_a.clone(), STRING_TYPE]);
+    let type_ib = Type::new_id(heap.alloc_str_for_test("I"), vec![INT_TYPE, type_b.clone()]);
+    let type_i = Type::new_id(heap.alloc_str_for_test("I"), vec![INT_TYPE, STRING_TYPE]);
+    let g1 = Expression::StringName(heap.alloc_str_for_test("G1"));
     assert_specialized(
       Sources {
         global_variables: vec![
-          GlobalVariable { name: heap.alloc_str("G1"), content: heap.alloc_str("") },
-          GlobalVariable { name: heap.alloc_str("G2"), content: heap.alloc_str("") },
+          GlobalVariable {
+            name: heap.alloc_str_for_test("G1"),
+            content: heap.alloc_str_for_test(""),
+          },
+          GlobalVariable {
+            name: heap.alloc_str_for_test("G2"),
+            content: heap.alloc_str_for_test(""),
+          },
         ],
         closure_types: vec![ClosureTypeDefinition {
-          identifier: heap.alloc_str("CC"),
-          type_parameters: vec![heap.alloc_str("A"), heap.alloc_str("B")],
+          identifier: heap.alloc_str_for_test("CC"),
+          type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
           function_type: Type::new_fn_unwrapped(vec![type_a.clone()], type_b.clone()),
         }],
         type_definitions: vec![
           TypeDefinition {
-            identifier: heap.alloc_str("I"),
+            identifier: heap.alloc_str_for_test("I"),
             is_object: false,
-            type_parameters: vec![heap.alloc_str("A"), heap.alloc_str("B")],
+            type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
             names: vec![],
             mappings: vec![
-              Type::new_id_no_targs(heap.alloc_str("A")),
-              Type::new_id_no_targs(heap.alloc_str("B")),
+              Type::new_id_no_targs(heap.alloc_str_for_test("A")),
+              Type::new_id_no_targs(heap.alloc_str_for_test("B")),
             ],
           },
           TypeDefinition {
-            identifier: heap.alloc_str("J"),
+            identifier: heap.alloc_str_for_test("J"),
             is_object: true,
             type_parameters: vec![],
             names: vec![],
             mappings: vec![INT_TYPE],
           },
         ],
-        main_function_names: vec![heap.alloc_str("main")],
+        main_function_names: vec![heap.alloc_str_for_test("main")],
         functions: vec![
           Function {
-            name: heap.alloc_str("functor_fun"),
-            parameters: vec![heap.alloc_str("a")],
-            type_parameters: vec![heap.alloc_str("A")],
+            name: heap.alloc_str_for_test("functor_fun"),
+            parameters: vec![heap.alloc_str_for_test("a")],
+            type_parameters: vec![heap.alloc_str_for_test("A")],
             type_: Type::new_fn_unwrapped(vec![type_a.clone()], INT_TYPE),
             body: vec![Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("$GENERICS$_A$bar"),
+                heap.alloc_str_for_test("$GENERICS$_A$bar"),
                 Type::new_fn_unwrapped(vec![type_a.clone()], INT_TYPE),
               )),
               arguments: vec![ZERO],
@@ -667,53 +673,53 @@ sources.mains = [main]
             return_value: ZERO,
           },
           Function {
-            name: heap.alloc_str("_I$bar"),
-            parameters: vec![heap.alloc_str("a")],
-            type_parameters: vec![heap.alloc_str("A")],
+            name: heap.alloc_str_for_test("_I$bar"),
+            parameters: vec![heap.alloc_str_for_test("a")],
+            type_parameters: vec![heap.alloc_str_for_test("A")],
             type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
             body: vec![],
             return_value: ZERO,
           },
           Function {
-            name: heap.alloc_str("_J$bar"),
-            parameters: vec![heap.alloc_str("a")],
-            type_parameters: vec![heap.alloc_str("A")],
+            name: heap.alloc_str_for_test("_J$bar"),
+            parameters: vec![heap.alloc_str_for_test("a")],
+            type_parameters: vec![heap.alloc_str_for_test("A")],
             type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
             body: vec![],
             return_value: ZERO,
           },
           Function {
-            name: heap.alloc_str("creatorIA"),
-            parameters: vec![heap.alloc_str("a")],
-            type_parameters: vec![heap.alloc_str("A")],
+            name: heap.alloc_str_for_test("creatorIA"),
+            parameters: vec![heap.alloc_str_for_test("a")],
+            type_parameters: vec![heap.alloc_str_for_test("A")],
             type_: Type::new_fn_unwrapped(vec![type_a.clone()], type_ia.clone()),
             body: vec![Statement::StructInit {
-              struct_variable_name: heap.alloc_str("v"),
+              struct_variable_name: heap.alloc_str_for_test("v"),
               type_: type_ia.clone().into_id().unwrap(),
               expression_list: vec![
                 Expression::int(0),
-                Expression::var_name(heap.alloc_str("a"), type_a),
+                Expression::var_name(heap.alloc_str_for_test("a"), type_a),
               ],
             }],
-            return_value: Expression::var_name(heap.alloc_str("v"), type_ia),
+            return_value: Expression::var_name(heap.alloc_str_for_test("v"), type_ia),
           },
           Function {
-            name: heap.alloc_str("creatorIB"),
-            parameters: vec![heap.alloc_str("b")],
-            type_parameters: vec![heap.alloc_str("B")],
+            name: heap.alloc_str_for_test("creatorIB"),
+            parameters: vec![heap.alloc_str_for_test("b")],
+            type_parameters: vec![heap.alloc_str_for_test("B")],
             type_: Type::new_fn_unwrapped(vec![type_b.clone()], type_ib.clone()),
             body: vec![Statement::StructInit {
-              struct_variable_name: heap.alloc_str("v"),
+              struct_variable_name: heap.alloc_str_for_test("v"),
               type_: type_ib.clone().into_id().unwrap(),
               expression_list: vec![
                 Expression::int(1),
-                Expression::var_name(heap.alloc_str("b"), type_b),
+                Expression::var_name(heap.alloc_str_for_test("b"), type_b),
               ],
             }],
-            return_value: Expression::var_name(heap.alloc_str("v"), type_ib),
+            return_value: Expression::var_name(heap.alloc_str_for_test("v"), type_ib),
           },
           Function {
-            name: heap.alloc_str("main"),
+            name: heap.alloc_str_for_test("main"),
             parameters: vec![],
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -722,40 +728,40 @@ sources.mains = [main]
               s1: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: heap.alloc_str("creatorIA"),
+                    name: heap.alloc_str_for_test("creatorIA"),
                     type_: Type::new_fn_unwrapped(vec![INT_TYPE], type_i.clone()),
                     type_arguments: vec![INT_TYPE],
                   }),
                   arguments: vec![ZERO],
                   return_type: type_i.clone(),
-                  return_collector: Some(heap.alloc_str("a")),
+                  return_collector: Some(heap.alloc_str_for_test("a")),
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: heap.alloc_str("creatorIA"),
+                    name: heap.alloc_str_for_test("creatorIA"),
                     type_: Type::new_fn_unwrapped(
                       vec![STRING_TYPE],
-                      Type::new_id(heap.alloc_str("I"), vec![STRING_TYPE, STRING_TYPE]),
+                      Type::new_id(heap.alloc_str_for_test("I"), vec![STRING_TYPE, STRING_TYPE]),
                     ),
                     type_arguments: vec![STRING_TYPE],
                   }),
                   arguments: vec![g1.clone()],
                   return_type: type_i.clone(),
-                  return_collector: Some(heap.alloc_str("a2")),
+                  return_collector: Some(heap.alloc_str_for_test("a2")),
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: heap.alloc_str("creatorIB"),
+                    name: heap.alloc_str_for_test("creatorIB"),
                     type_: Type::new_fn_unwrapped(vec![STRING_TYPE], type_i.clone()),
                     type_arguments: vec![STRING_TYPE],
                   }),
                   arguments: vec![g1.clone()],
                   return_type: type_i.clone(),
-                  return_collector: Some(heap.alloc_str("b")),
+                  return_collector: Some(heap.alloc_str_for_test("b")),
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: heap.alloc_str("functor_fun"),
+                    name: heap.alloc_str_for_test("functor_fun"),
                     type_: Type::new_fn_unwrapped(vec![type_i.clone()], INT_TYPE),
                     type_arguments: vec![type_i.clone()],
                   }),
@@ -765,7 +771,7 @@ sources.mains = [main]
                 },
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
-                    name: heap.alloc_str("functor_fun"),
+                    name: heap.alloc_str_for_test("functor_fun"),
                     type_: Type::new_fn_unwrapped(vec![type_j.clone()], INT_TYPE),
                     type_arguments: vec![type_j.clone()],
                   }),
@@ -774,61 +780,61 @@ sources.mains = [main]
                   return_collector: None,
                 },
                 Statement::IndexedAccess {
-                  name: heap.alloc_str("v1"),
+                  name: heap.alloc_str_for_test("v1"),
                   type_: INT_TYPE,
-                  pointer_expression: Expression::var_name(heap.alloc_str("a"), type_i),
+                  pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), type_i),
                   index: 0,
                 },
               ],
               s2: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName::new(
-                    heap.alloc_str("main"),
+                    heap.alloc_str_for_test("main"),
                     Type::new_fn_unwrapped(vec![], INT_TYPE),
                   )),
                   arguments: vec![],
                   return_type: INT_TYPE,
                   return_collector: None,
                 },
-                Statement::binary(heap.alloc_str("v1"), Operator::PLUS, ZERO, ZERO),
+                Statement::binary(heap.alloc_str_for_test("v1"), Operator::PLUS, ZERO, ZERO),
                 Statement::StructInit {
-                  struct_variable_name: heap.alloc_str("j"),
+                  struct_variable_name: heap.alloc_str_for_test("j"),
                   type_: type_j.clone().into_id().unwrap(),
                   expression_list: vec![Expression::int(0)],
                 },
                 Statement::IndexedAccess {
-                  name: heap.alloc_str("v2"),
+                  name: heap.alloc_str_for_test("v2"),
                   type_: INT_TYPE,
-                  pointer_expression: Expression::var_name(heap.alloc_str("j"), type_j),
+                  pointer_expression: Expression::var_name(heap.alloc_str_for_test("j"), type_j),
                   index: 0,
                 },
                 Statement::ClosureInit {
-                  closure_variable_name: heap.alloc_str("c1"),
+                  closure_variable_name: heap.alloc_str_for_test("c1"),
                   closure_type: Type::new_id_unwrapped(
-                    heap.alloc_str("CC"),
+                    heap.alloc_str_for_test("CC"),
                     vec![STRING_TYPE, STRING_TYPE],
                   ),
                   function_name: FunctionName {
-                    name: heap.alloc_str("creatorIA"),
+                    name: heap.alloc_str_for_test("creatorIA"),
                     type_: Type::new_fn_unwrapped(
                       vec![STRING_TYPE],
-                      Type::new_id(heap.alloc_str("I"), vec![STRING_TYPE, STRING_TYPE]),
+                      Type::new_id(heap.alloc_str_for_test("I"), vec![STRING_TYPE, STRING_TYPE]),
                     ),
                     type_arguments: vec![STRING_TYPE],
                   },
                   context: g1.clone(),
                 },
                 Statement::ClosureInit {
-                  closure_variable_name: heap.alloc_str("c2"),
+                  closure_variable_name: heap.alloc_str_for_test("c2"),
                   closure_type: Type::new_id_unwrapped(
-                    heap.alloc_str("CC"),
+                    heap.alloc_str_for_test("CC"),
                     vec![INT_TYPE, STRING_TYPE],
                   ),
                   function_name: FunctionName {
-                    name: heap.alloc_str("creatorIA"),
+                    name: heap.alloc_str_for_test("creatorIA"),
                     type_: Type::new_fn_unwrapped(
                       vec![STRING_TYPE],
-                      Type::new_id(heap.alloc_str("I"), vec![STRING_TYPE, STRING_TYPE]),
+                      Type::new_id(heap.alloc_str_for_test("I"), vec![STRING_TYPE, STRING_TYPE]),
                     ),
                     type_arguments: vec![STRING_TYPE],
                   },
@@ -836,10 +842,10 @@ sources.mains = [main]
                 },
               ],
               final_assignments: vec![(
-                heap.alloc_str("finalV"),
+                heap.alloc_str_for_test("finalV"),
                 INT_TYPE,
-                Expression::var_name(heap.alloc_str("v1"), INT_TYPE),
-                Expression::var_name(heap.alloc_str("v2"), INT_TYPE),
+                Expression::var_name(heap.alloc_str_for_test("v1"), INT_TYPE),
+                Expression::var_name(heap.alloc_str_for_test("v2"), INT_TYPE),
               )],
             }],
             return_value: ZERO,
@@ -924,73 +930,82 @@ sources.mains = [main]"#,
         closure_types: vec![],
         type_definitions: vec![
           TypeDefinition {
-            identifier: heap.alloc_str("I"),
+            identifier: heap.alloc_str_for_test("I"),
             is_object: false,
-            type_parameters: vec![heap.alloc_str("A"), heap.alloc_str("B")],
+            type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
             names: vec![],
             mappings: vec![
-              Type::new_id_no_targs(heap.alloc_str("A")),
-              Type::new_id_no_targs(heap.alloc_str("B")),
+              Type::new_id_no_targs(heap.alloc_str_for_test("A")),
+              Type::new_id_no_targs(heap.alloc_str_for_test("B")),
             ],
           },
           TypeDefinition {
-            identifier: heap.alloc_str("J"),
+            identifier: heap.alloc_str_for_test("J"),
             is_object: true,
             type_parameters: vec![],
             names: vec![],
-            mappings: vec![Type::new_id(heap.alloc_str("I"), vec![INT_TYPE, INT_TYPE])],
+            mappings: vec![Type::new_id(heap.alloc_str_for_test("I"), vec![INT_TYPE, INT_TYPE])],
           },
         ],
-        main_function_names: vec![heap.alloc_str("main")],
+        main_function_names: vec![heap.alloc_str_for_test("main")],
         functions: vec![
           Function {
-            name: heap.alloc_str("creatorJ"),
+            name: heap.alloc_str_for_test("creatorJ"),
             parameters: vec![],
             type_parameters: vec![],
-            type_: Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str("J"))),
+            type_: Type::new_fn_unwrapped(
+              vec![],
+              Type::new_id_no_targs(heap.alloc_str_for_test("J")),
+            ),
             body: vec![
               Statement::StructInit {
-                struct_variable_name: heap.alloc_str("v1"),
-                type_: Type::new_id_unwrapped(heap.alloc_str("I"), vec![INT_TYPE, INT_TYPE]),
+                struct_variable_name: heap.alloc_str_for_test("v1"),
+                type_: Type::new_id_unwrapped(
+                  heap.alloc_str_for_test("I"),
+                  vec![INT_TYPE, INT_TYPE],
+                ),
                 expression_list: vec![],
               },
               Statement::StructInit {
-                struct_variable_name: heap.alloc_str("v2"),
-                type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("J")),
+                struct_variable_name: heap.alloc_str_for_test("v2"),
+                type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("J")),
                 expression_list: vec![ZERO, ZERO],
               },
             ],
             return_value: Expression::var_name(
-              heap.alloc_str("v2"),
-              Type::new_id_no_targs(heap.alloc_str("J")),
+              heap.alloc_str_for_test("v2"),
+              Type::new_id_no_targs(heap.alloc_str_for_test("J")),
             ),
           },
           Function {
-            name: heap.alloc_str("main"),
+            name: heap.alloc_str_for_test("main"),
             parameters: vec![],
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
             body: vec![
               Statement::Call {
                 callee: Callee::FunctionName(FunctionName::new(
-                  heap.alloc_str("creatorJ"),
-                  Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str("J"))),
+                  heap.alloc_str_for_test("creatorJ"),
+                  Type::new_fn_unwrapped(
+                    vec![],
+                    Type::new_id_no_targs(heap.alloc_str_for_test("J")),
+                  ),
                 )),
                 arguments: vec![],
-                return_type: Type::new_id_no_targs(heap.alloc_str("J")),
+                return_type: Type::new_id_no_targs(heap.alloc_str_for_test("J")),
                 return_collector: None,
               },
               Statement::Call {
                 callee: Callee::Variable(VariableName {
-                  name: heap.alloc_str("v"),
+                  name: heap.alloc_str_for_test("v"),
                   type_: INT_TYPE,
                 }),
                 arguments: vec![],
-                return_type: Type::new_id_no_targs(heap.alloc_str("J")),
+                return_type: Type::new_id_no_targs(heap.alloc_str_for_test("J")),
                 return_collector: None,
               },
             ],
-            return_value: Expression::StringName(heap.alloc_str("creatorJ")),
+            return_value: Expression::StringName(heap.alloc_str_for_test("creatorJ")),
           },
         ],
       },

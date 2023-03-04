@@ -14,20 +14,20 @@ mod tests {
         GlobalData { constant_pointer: 1024, ints: vec![0, 0] },
         GlobalData { constant_pointer: 323, ints: vec![3, 2] },
       ],
-      exported_functions: vec![heap.alloc_str("main")],
+      exported_functions: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
-        name: heap.alloc_str("main"),
-        parameters: vec![heap.alloc_str("a"), heap.alloc_str("b")],
-        local_variables: vec![heap.alloc_str("c"), heap.alloc_str("d")],
+        name: heap.alloc_str_for_test("main"),
+        parameters: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
+        local_variables: vec![heap.alloc_str_for_test("c"), heap.alloc_str_for_test("d")],
         instructions: vec![
           Instruction::IfElse {
             condition: InlineInstruction::Const(1),
             s1: vec![
               Instruction::Inline(InlineInstruction::Const(1)),
               Instruction::Inline(InlineInstruction::Drop(Box::new(InlineInstruction::Const(0)))),
-              Instruction::Inline(InlineInstruction::LocalGet(heap.alloc_str("a"))),
+              Instruction::Inline(InlineInstruction::LocalGet(heap.alloc_str_for_test("a"))),
               Instruction::Inline(InlineInstruction::LocalSet(
-                heap.alloc_str("b"),
+                heap.alloc_str_for_test("b"),
                 Box::new(InlineInstruction::Const(0)),
               )),
             ],
@@ -94,10 +94,10 @@ mod tests {
               )),
             ],
           },
-          Instruction::UnconditionalJump(heap.alloc_str("aa")),
+          Instruction::UnconditionalJump(heap.alloc_str_for_test("aa")),
           Instruction::Loop {
-            continue_label: heap.alloc_str("cl"),
-            exit_label: heap.alloc_str("el"),
+            continue_label: heap.alloc_str_for_test("cl"),
+            exit_label: heap.alloc_str_for_test("el"),
             instructions: vec![
               Instruction::Inline(InlineInstruction::Load {
                 index: 0,
@@ -118,12 +118,12 @@ mod tests {
                 assigned: Box::new(InlineInstruction::Const(0)),
               }),
               Instruction::Inline(InlineInstruction::DirectCall(
-                heap.alloc_str("main"),
+                heap.alloc_str_for_test("main"),
                 vec![InlineInstruction::Const(0)],
               )),
               Instruction::Inline(InlineInstruction::IndirectCall {
                 function_index: Box::new(InlineInstruction::Const(0)),
-                type_string: heap.alloc_str("dff"),
+                type_string: heap.alloc_str_for_test("dff"),
                 arguments: vec![InlineInstruction::Const(0)],
               }),
             ],
