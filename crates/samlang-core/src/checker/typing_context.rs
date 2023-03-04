@@ -167,7 +167,7 @@ impl<'a> TypingContext<'a> {
     // Generic type is assumed to be good, but it must have zero type args.\
     if self.available_type_parameters.iter().any(|it| it.name == id_type.id) {
       if !id_type.type_arguments.is_empty() {
-        self.error_set.report_arity_mismatch_error(
+        self.error_set.report_invalid_arity_error(
           id_type.reason.use_loc,
           "type arguments",
           0,
@@ -186,14 +186,14 @@ impl<'a> TypingContext<'a> {
     ) {
       let interface_type_parameters = interface_info.type_parameters.clone();
       if interface_info.type_definition.is_none() && enforce_concrete_types {
-        self.error_set.report_unexpected_type_kind_error(
+        self.error_set.report_incompatible_type_error(
           id_type.reason.use_loc,
           "non-abstract type".to_string(),
           id_type.pretty_print(heap),
         )
       }
       if interface_type_parameters.len() != id_type.type_arguments.len() {
-        self.error_set.report_arity_mismatch_error(
+        self.error_set.report_invalid_arity_error(
           id_type.reason.use_loc,
           "type arguments",
           interface_type_parameters.len(),
@@ -204,7 +204,7 @@ impl<'a> TypingContext<'a> {
       for (tparam, targ) in interface_type_parameters.into_iter().zip(&id_type.type_arguments) {
         if let Some(bound) = tparam.bound {
           if !self.is_subtype_with_id_upper(targ, &bound) {
-            self.error_set.report_unexpected_subtype_error(
+            self.error_set.report_incompatible_subtype_error(
               targ.get_reason().use_loc,
               bound.pretty_print(heap),
               targ.pretty_print(heap),

@@ -81,7 +81,7 @@ pub(super) fn contextual_type_meet(
   if let Some(t) = contextual_type_meet_opt(general, specific) {
     t
   } else {
-    error_set.report_unexpected_type_error(
+    error_set.report_incompatible_type_error(
       specific.get_reason().use_loc,
       general.pretty_print(heap),
       specific.pretty_print(heap),

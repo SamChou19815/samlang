@@ -32,7 +32,7 @@ _Demo_Main$main();
 
 assertEqual(
   await samlang.typeCheck('class Foo { function main(): int = true }'),
-  'Demo.sam:1:36-1:40: [UnexpectedType]: Expected: `int`, actual: `bool`.'
+  'Demo.sam:1:36-1:40: [incompatible-type]: Expected: `int`, actual: `bool`.'
 );
 assertEqual(await samlang.typeCheck('class Foo {}'), '');
 

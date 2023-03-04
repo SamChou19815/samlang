@@ -29,7 +29,6 @@ mod tests {
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Bool(true))),
         method_name: Id::from(heap.alloc_str("name")),
       }),
-      &heap,
       &mut error_set,
     )
     .to_string(&heap);
@@ -86,8 +85,7 @@ def_to_use_map:
 7:11-7:12 -> [7:11-7:12, 7:17-7:18]
 "#
     .trim();
-    let analysis_result =
-      ssa_analysis::perform_ssa_analysis_on_expression(&expr, &heap, &mut error_set);
+    let analysis_result = ssa_analysis::perform_ssa_analysis_on_expression(&expr, &mut error_set);
     assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
     let builder = test_type_builder::create();

@@ -215,7 +215,7 @@ impl<'a> SourceParser<'a> {
   }
 
   fn report(&mut self, loc: Location, reason: String) {
-    self.error_set.report_syntax_error(loc, reason)
+    self.error_set.report_invalid_syntax_error(loc, reason)
   }
 
   fn parse_punctuation_separated_list<T, F: FnMut(&mut Self) -> T>(

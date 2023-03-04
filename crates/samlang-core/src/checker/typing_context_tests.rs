@@ -243,10 +243,10 @@ mod tests {
     cx.validate_type_instantiation_strictly(&heap, &builder.simple_id_type(str_b));
 
     let expected_errors = r#"
-__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 0, actual: 1.
-__DUMMY__.sam:0:0-0:0: [ArityMismatchError]: Incorrect type arguments size. Expected: 2, actual: 0.
-__DUMMY__.sam:0:0-0:0: [UnexpectedSubtype]: Expected: subtype of `B`, actual: `int`.
-__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `non-abstract type`, actual: `B`."#
+__DUMMY__.sam:0:0-0:0: [incompatible-type]: Expected: subtype of `B`, actual: `int`.
+__DUMMY__.sam:0:0-0:0: [incompatible-type]: Expected: `non-abstract type`, actual: `B`.
+__DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 0, actual: 1.
+__DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0."#
       .trim();
     let actual_errors = cx.error_set.error_messages(&heap).join("\n");
     assert_eq!(expected_errors, actual_errors);

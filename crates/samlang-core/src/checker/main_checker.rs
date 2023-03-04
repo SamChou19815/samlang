@@ -362,7 +362,7 @@ impl<'a> TypingContext<'a> {
         if !solved_type_argument.is_the_same_type(&substituted_bound)
           && !self.is_subtype(solved_type_argument, &substituted_bound)
         {
-          self.error_set.report_unexpected_subtype_error(
+          self.error_set.report_incompatible_subtype_error(
             solved_type_argument.get_reason().use_loc,
             substituted_bound.pretty_print(heap),
             solved_type_argument.pretty_print(heap),
@@ -475,7 +475,7 @@ impl<'a> TypingContext<'a> {
           };
           return (partially_checked_expr, vec![]);
         }
-        self.error_set.report_arity_mismatch_error(
+        self.error_set.report_invalid_arity_error(
           expression.common.loc,
           "type arguments",
           class_function_type_information.type_parameters.len(),
@@ -541,14 +541,14 @@ impl<'a> TypingContext<'a> {
             };
             return (partially_checked_expr, vec![]);
           }
-          self.error_set.report_arity_mismatch_error(
+          self.error_set.report_invalid_arity_error(
             expression.common.loc,
             "parameter",
             fun_hint.argument_types.len(),
             class_function_type_information.type_.argument_types.len(),
           );
         } else {
-          self.error_set.report_unexpected_type_kind_error(
+          self.error_set.report_incompatible_type_error(
             expression.common.loc,
             hint.pretty_print(heap),
             "function".to_string(),
@@ -583,13 +583,10 @@ impl<'a> TypingContext<'a> {
       };
       (partially_checked_expr, class_function_type_information.type_parameters.clone())
     } else {
-      self.error_set.report_unresolved_name_error(
+      self.error_set.report_member_missing_error(
         expression.common.loc,
-        format!(
-          "{}.{}",
-          expression.class_name.name.as_str(heap),
-          expression.fn_name.name.as_str(heap)
-        ),
+        expression.class_name.name.as_str(heap).to_string(),
+        expression.fn_name.name.as_str(heap).to_string(),
       );
       let type_ = Rc::new(self.type_meet(
         heap,
@@ -618,7 +615,7 @@ impl<'a> TypingContext<'a> {
     hint: Option<&Type>,
   ) -> expr::E<Rc<Type>> {
     if !unresolved_type_parameters.is_empty() {
-      self.error_set.report_insufficient_type_inference_context_error(expression.loc());
+      self.error_set.report_underconstrained_error(expression.loc());
     }
     let mut subst_map = HashMap::new();
     for tparam in unresolved_type_parameters {
@@ -698,7 +695,7 @@ impl<'a> TypingContext<'a> {
     let obj_type = match checked_expression.type_().deref() {
       Type::Id(t) => t,
       _ => {
-        self.error_set.report_unexpected_type_kind_error(
+        self.error_set.report_incompatible_type_error(
           checked_expression.loc(),
           "identifier".to_string(),
           checked_expression.type_().pretty_print(heap),
@@ -758,7 +755,7 @@ impl<'a> TypingContext<'a> {
           });
           return (partially_checked_expr, vec![]);
         }
-        self.error_set.report_arity_mismatch_error(
+        self.error_set.report_invalid_arity_error(
           expression.common.loc,
           "type arguments",
           method_type_info.type_parameters.len(),
@@ -817,14 +814,14 @@ impl<'a> TypingContext<'a> {
             });
             return (partially_checked_expr, vec![]);
           }
-          self.error_set.report_arity_mismatch_error(
+          self.error_set.report_invalid_arity_error(
             expression.common.loc,
             "parameter",
             fun_hint.argument_types.len(),
             method_type_info.type_.argument_types.len(),
           );
         } else {
-          self.error_set.report_unexpected_type_kind_error(
+          self.error_set.report_incompatible_type_error(
             expression.common.loc,
             hint.pretty_print(heap),
             "function".to_string(),
@@ -854,7 +851,7 @@ impl<'a> TypingContext<'a> {
     } else {
       // Now it should be checked as field access.
       if !expression.explicit_type_arguments.is_empty() {
-        self.error_set.report_arity_mismatch_error(
+        self.error_set.report_invalid_arity_error(
           expression.common.loc,
           "type arguments",
           0,
@@ -878,8 +875,9 @@ impl<'a> TypingContext<'a> {
         });
         (partially_checked_expr, vec![])
       } else {
-        self.error_set.report_unresolved_name_error(
+        self.error_set.report_member_missing_error(
           expression.field_name.loc,
+          obj_type.id.as_str(heap).to_string(),
           expression.field_name.name.as_str(heap).to_string(),
         );
         let unknown_type = Rc::new(self.type_meet(
@@ -961,7 +959,7 @@ impl<'a> TypingContext<'a> {
     return_type_hint: Option<&Type>,
   ) -> FunctionCallTypeCheckingResult {
     if generic_function_type.argument_types.len() != function_arguments.len() {
-      self.error_set.report_arity_mismatch_error(
+      self.error_set.report_invalid_arity_error(
         function_call_reason.use_loc,
         "arguments",
         generic_function_type.argument_types.len(),
@@ -1048,7 +1046,7 @@ impl<'a> TypingContext<'a> {
       .filter(|it| !fully_solved_substitution.contains_key(&it.name))
       .collect_vec();
     if !still_unresolved_type_parameters.is_empty() {
-      self.error_set.report_insufficient_type_inference_context_error(function_call_reason.use_loc);
+      self.error_set.report_underconstrained_error(function_call_reason.use_loc);
     }
     for type_parameter in still_unresolved_type_parameters {
       fully_solved_substitution
@@ -1100,7 +1098,7 @@ impl<'a> TypingContext<'a> {
       Type::Fn(fn_type) => fn_type,
       t => {
         if !matches!(t, Type::Unknown(_)) {
-          self.error_set.report_unexpected_type_kind_error(
+          self.error_set.report_incompatible_type_error(
             expression.common.loc,
             "function".to_string(),
             t.pretty_print(heap),
@@ -1294,7 +1292,11 @@ impl<'a> TypingContext<'a> {
       let mapping_data_type = match unused_mappings.remove(&tag.name) {
         Some((field_type, _)) => field_type,
         None => {
-          self.error_set.report_unresolved_name_error(tag.loc, tag.name.as_str(heap).to_string());
+          self.error_set.report_member_missing_error(
+            tag.loc,
+            checked_matched_type.pretty_print(heap),
+            tag.name.as_str(heap).to_string(),
+          );
           continue;
         }
       };
@@ -1355,7 +1357,7 @@ impl<'a> TypingContext<'a> {
             })
             .collect_vec();
         } else {
-          self.error_set.report_arity_mismatch_error(
+          self.error_set.report_invalid_arity_error(
             expression.common.loc,
             "function arguments",
             fun_hint.argument_types.len(),
@@ -1363,7 +1365,7 @@ impl<'a> TypingContext<'a> {
           )
         }
       } else {
-        self.error_set.report_unexpected_type_error(
+        self.error_set.report_incompatible_type_error(
           expression.common.loc,
           hint.pretty_print(heap),
           "function type".to_string(),
@@ -1375,7 +1377,7 @@ impl<'a> TypingContext<'a> {
       let type_ = if let Some(annot) = annotation {
         Rc::new(Type::from_annotation(annot))
       } else {
-        self.error_set.report_insufficient_type_inference_context_error(name.loc);
+        self.error_set.report_underconstrained_error(name.loc);
         Rc::new(Type::Unknown(Reason::new(name.loc, None)))
       };
       self.validate_type_instantiation_strictly(heap, &type_);
@@ -1457,9 +1459,11 @@ impl<'a> TypingContext<'a> {
             });
             continue;
           }
-          self
-            .error_set
-            .report_unresolved_name_error(field_name.loc, field_name.name.as_str(heap).to_string());
+          self.error_set.report_member_missing_error(
+            field_name.loc,
+            checked_assigned_expr_type.pretty_print(heap),
+            field_name.name.as_str(heap).to_string(),
+          );
           checked_destructured_names.push(ObjectPatternDestucturedName {
             loc: *loc,
             field_order: *field_order,
@@ -1622,7 +1626,7 @@ fn check_class_member_conformance_with_signature(
   actual: &ClassMemberDeclaration,
 ) {
   if expected.type_parameters.len() != actual.type_parameters.len() {
-    error_set.report_arity_mismatch_error(
+    error_set.report_invalid_arity_error(
       actual.type_.location,
       "type parameters",
       expected.type_parameters.len(),
@@ -1654,7 +1658,7 @@ fn check_class_member_conformance_with_signature(
   } else {
     let actual_fn_type = FunctionType::from_annotation(&actual.type_);
     if !expected.type_.is_the_same_type(&actual_fn_type) {
-      error_set.report_unexpected_type_error(
+      error_set.report_incompatible_type_error(
         actual.type_.location,
         expected.type_.pretty_print(heap),
         actual_fn_type.pretty_print(heap),
@@ -1677,14 +1681,11 @@ pub(crate) fn type_check_module(
     if let Some(module_cx) = global_cx.get(&one_import.imported_module) {
       for id in one_import.imported_members.iter() {
         if !module_cx.interfaces.contains_key(&id.name) {
-          error_set.report_unresolved_name_error(id.loc, id.name.as_str(heap).to_string());
+          error_set.report_missing_export_error(id.loc, one_import.imported_module, id.name);
         }
       }
     } else {
-      error_set.report_unresolved_name_error(
-        one_import.loc,
-        one_import.imported_module.pretty_print(heap),
-      );
+      error_set.report_cannot_unresolve_module_error(one_import.loc, one_import.imported_module);
     }
   }
 
@@ -1720,7 +1721,7 @@ pub(crate) fn type_check_module(
         .map(|it| it.type_definition.is_some())
         .unwrap_or(false)
       {
-        error_set.report_unexpected_type_kind_error(
+        error_set.report_incompatible_type_error(
           super_type.reason.use_loc,
           "interface type".to_string(),
           "class type".to_string(),
@@ -1750,7 +1751,7 @@ pub(crate) fn type_check_module(
         !resolved.is_empty()
       };
       if !member.is_public && has_interface_def {
-        error_set.report_unexpected_type_kind_error(
+        error_set.report_incompatible_type_error(
           member.loc,
           "public class member".to_string(),
           "private class member".to_string(),
