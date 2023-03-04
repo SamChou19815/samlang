@@ -86,7 +86,7 @@ mod estimator {
 
     #[test]
     fn cost_estimator_test() {
-      let s = Heap::new().alloc_str("");
+      let s = Heap::new().alloc_str_for_test("");
 
       let actual = super::estimate_fn_inline_cost(&Function {
         name: s,

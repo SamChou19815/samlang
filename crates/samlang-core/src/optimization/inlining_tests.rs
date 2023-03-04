@@ -30,42 +30,42 @@ mod tests {
     for _ in 0..100 {
       stmts.push(Statement::While {
         loop_variables: vec![GenenalLoopVariable {
-          name: heap.alloc_str(""),
+          name: heap.alloc_str_for_test(""),
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: ZERO,
         }],
         statements: vec![
           Statement::IndexedAccess {
-            name: heap.alloc_str("i0"),
+            name: heap.alloc_str_for_test("i0"),
             type_: INT_TYPE,
-            pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+            pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
             index: 2,
           },
           Statement::binary(
-            heap.alloc_str("b0"),
+            heap.alloc_str_for_test("b0"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str("i0"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("i0"), INT_TYPE),
             Expression::int(3),
           ),
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str("s"),
-            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("SS")),
+            struct_variable_name: heap.alloc_str_for_test("s"),
+            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("SS")),
             expression_list: vec![
-              Expression::var_name(heap.alloc_str("i1"), INT_TYPE),
-              Expression::var_name(heap.alloc_str("b1"), INT_TYPE),
-              Expression::var_name(heap.alloc_str("b3"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("b3"), INT_TYPE),
             ],
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("fff"),
+              heap.alloc_str_for_test("fff"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![
-              Expression::var_name(heap.alloc_str("i1"), INT_TYPE),
-              Expression::var_name(heap.alloc_str("b1"), INT_TYPE),
-              Expression::var_name(heap.alloc_str("b3"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("b3"), INT_TYPE),
             ],
             return_type: INT_TYPE,
             return_collector: None,
@@ -73,15 +73,15 @@ mod tests {
           Statement::IfElse {
             condition: ZERO,
             s1: vec![Statement::binary(
-              heap.alloc_str(""),
+              heap.alloc_str_for_test(""),
               Operator::PLUS,
-              Expression::var_name(heap.alloc_str(""), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
               Expression::int(3),
             )],
             s2: vec![Statement::binary(
-              heap.alloc_str(""),
+              heap.alloc_str_for_test(""),
               Operator::PLUS,
-              Expression::var_name(heap.alloc_str(""), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
               Expression::int(3),
             )],
             final_assignments: vec![],
@@ -90,22 +90,22 @@ mod tests {
             condition: ZERO,
             s1: vec![],
             s2: vec![],
-            final_assignments: vec![(heap.alloc_str("a"), INT_TYPE, ZERO, ZERO)],
+            final_assignments: vec![(heap.alloc_str_for_test("a"), INT_TYPE, ZERO, ZERO)],
           },
           Statement::SingleIf {
             condition: ZERO,
             invert_condition: false,
             statements: vec![Statement::binary(
-              heap.alloc_str(""),
+              heap.alloc_str_for_test(""),
               Operator::PLUS,
-              Expression::var_name(heap.alloc_str(""), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
               Expression::int(3),
             )],
           },
           Statement::binary(
-            heap.alloc_str(""),
+            heap.alloc_str_for_test(""),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str(""), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
             Expression::int(3),
           ),
         ],
@@ -121,7 +121,7 @@ mod tests {
 
     super::super::inlining::optimize_functions(
       vec![Function {
-        name: heap.alloc_str(""),
+        name: heap.alloc_str_for_test(""),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -134,13 +134,13 @@ mod tests {
     super::super::inlining::optimize_functions(
       vec![
         Function {
-          name: heap.alloc_str("loop"),
+          name: heap.alloc_str_for_test("loop"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("loop"),
+              heap.alloc_str_for_test("loop"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
@@ -150,7 +150,7 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str(""),
+          name: heap.alloc_str_for_test(""),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -169,64 +169,64 @@ mod tests {
     assert_correctly_inlined(
       vec![
         Function {
-          name: heap.alloc_str("factorial"),
-          parameters: vec![heap.alloc_str("n"), heap.alloc_str("acc")],
+          name: heap.alloc_str_for_test("factorial"),
+          parameters: vec![heap.alloc_str_for_test("n"), heap.alloc_str_for_test("acc")],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE, INT_TYPE], INT_TYPE),
           body: vec![
             Statement::binary(
-              heap.alloc_str("c"),
+              heap.alloc_str_for_test("c"),
               Operator::EQ,
-              Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
               ZERO,
             ),
             Statement::IfElse {
-              condition: Expression::var_name(heap.alloc_str("c"), BOOL_TYPE),
+              condition: Expression::var_name(heap.alloc_str_for_test("c"), BOOL_TYPE),
               s1: vec![],
               s2: vec![
                 Statement::binary(
-                  heap.alloc_str("n1"),
+                  heap.alloc_str_for_test("n1"),
                   Operator::MINUS,
-                  Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+                  Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
                   ONE,
                 ),
                 Statement::binary(
-                  heap.alloc_str("acc1"),
+                  heap.alloc_str_for_test("acc1"),
                   Operator::MUL,
-                  Expression::var_name(heap.alloc_str("n"), INT_TYPE),
-                  Expression::var_name(heap.alloc_str("acc"), INT_TYPE),
+                  Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
+                  Expression::var_name(heap.alloc_str_for_test("acc"), INT_TYPE),
                 ),
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName::new(
-                    heap.alloc_str("factorial"),
+                    heap.alloc_str_for_test("factorial"),
                     Type::new_fn_unwrapped(vec![INT_TYPE, INT_TYPE], INT_TYPE),
                   )),
                   arguments: vec![
-                    Expression::var_name(heap.alloc_str("n1"), INT_TYPE),
-                    Expression::var_name(heap.alloc_str("acc1"), INT_TYPE),
+                    Expression::var_name(heap.alloc_str_for_test("n1"), INT_TYPE),
+                    Expression::var_name(heap.alloc_str_for_test("acc1"), INT_TYPE),
                   ],
                   return_type: INT_TYPE,
-                  return_collector: Some(heap.alloc_str("v")),
+                  return_collector: Some(heap.alloc_str_for_test("v")),
                 },
               ],
               final_assignments: vec![(
-                heap.alloc_str("fa"),
+                heap.alloc_str_for_test("fa"),
                 INT_TYPE,
-                Expression::var_name(heap.alloc_str("acc"), INT_TYPE),
-                Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+                Expression::var_name(heap.alloc_str_for_test("acc"), INT_TYPE),
+                Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
               )],
             },
           ],
-          return_value: Expression::var_name(heap.alloc_str("fa"), INT_TYPE),
+          return_value: Expression::var_name(heap.alloc_str_for_test("fa"), INT_TYPE),
         },
         Function {
-          name: heap.alloc_str("loop"),
+          name: heap.alloc_str_for_test("loop"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("loop"),
+              heap.alloc_str_for_test("loop"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
@@ -236,14 +236,14 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("insanelyBigFunction"),
-          parameters: vec![heap.alloc_str("a")],
+          name: heap.alloc_str_for_test("insanelyBigFunction"),
+          parameters: vec![heap.alloc_str_for_test("a")],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("bb"),
+                heap.alloc_str_for_test("bb"),
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
               )),
               arguments: vec![],
@@ -252,7 +252,7 @@ mod tests {
             },
             Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("cc"),
+                heap.alloc_str_for_test("cc"),
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
               )),
               arguments: vec![],
@@ -261,7 +261,7 @@ mod tests {
             },
             Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("moveMove"),
+                heap.alloc_str_for_test("moveMove"),
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
               )),
               arguments: vec![],
@@ -269,7 +269,7 @@ mod tests {
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName::new(heap.alloc_str("a"), INT_TYPE)),
+              callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test("a"), INT_TYPE)),
               arguments: vec![],
               return_type: INT_TYPE,
               return_collector: None,
@@ -278,7 +278,7 @@ mod tests {
           .into_iter()
           .chain((0..10).into_iter().map(|_| Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("non-existing-function"),
+              heap.alloc_str_for_test("non-existing-function"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
@@ -289,35 +289,35 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("moveMove"),
-          parameters: vec![heap.alloc_str("a")],
+          name: heap.alloc_str_for_test("moveMove"),
+          parameters: vec![heap.alloc_str_for_test("a")],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![Statement::IndexedAccess {
-            name: heap.alloc_str("c"),
+            name: heap.alloc_str_for_test("c"),
             type_: INT_TYPE,
-            pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+            pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
             index: 0,
           }],
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("bb"),
+          name: heap.alloc_str_for_test("bb"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::IfElse {
             condition: ZERO,
             s1: vec![Statement::IndexedAccess {
-              name: heap.alloc_str("c"),
+              name: heap.alloc_str_for_test("c"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
               index: 0,
             }],
             s2: vec![Statement::IndexedAccess {
-              name: heap.alloc_str("c"),
+              name: heap.alloc_str_for_test("c"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+              pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
               index: 0,
             }],
             final_assignments: vec![],
@@ -325,12 +325,12 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("cc"),
+          name: heap.alloc_str_for_test("cc"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
-            callee: Callee::Variable(VariableName::new(heap.alloc_str("a"), INT_TYPE)),
+            callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test("a"), INT_TYPE)),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: None,
@@ -401,18 +401,18 @@ function moveMove(a: int): int {
     assert_correctly_inlined(
       vec![
         Function {
-          name: heap.alloc_str("fooBar"),
+          name: heap.alloc_str_for_test("fooBar"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::IfElse {
-            condition: Expression::var_name(heap.alloc_str("bar"), INT_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("bar"), INT_TYPE),
             s1: vec![],
             s2: vec![
-              Statement::binary(heap.alloc_str("vvv"), Operator::PLUS, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("vvv"), Operator::PLUS, ZERO, ZERO),
               Statement::Call {
                 callee: Callee::FunctionName(FunctionName::new(
-                  heap.alloc_str("fooBar"),
+                  heap.alloc_str_for_test("fooBar"),
                   Type::new_fn_unwrapped(vec![], INT_TYPE),
                 )),
                 arguments: vec![],
@@ -425,20 +425,20 @@ function moveMove(a: int): int {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("main"),
+          name: heap.alloc_str_for_test("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("fooBar"),
+              heap.alloc_str_for_test("fooBar"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
             return_type: INT_TYPE,
-            return_collector: Some(heap.alloc_str("v")),
+            return_collector: Some(heap.alloc_str_for_test("v")),
           }],
-          return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+          return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
         },
       ],
       heap,
@@ -480,18 +480,18 @@ function main(): int {
     assert_correctly_inlined(
       vec![
         Function {
-          name: heap.alloc_str("fooBar"),
+          name: heap.alloc_str_for_test("fooBar"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str("bar"), INT_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("bar"), INT_TYPE),
             invert_condition: false,
             statements: vec![
-              Statement::binary(heap.alloc_str("vvv"), Operator::PLUS, ZERO, ZERO),
+              Statement::binary(heap.alloc_str_for_test("vvv"), Operator::PLUS, ZERO, ZERO),
               Statement::Call {
                 callee: Callee::FunctionName(FunctionName::new(
-                  heap.alloc_str("fooBar"),
+                  heap.alloc_str_for_test("fooBar"),
                   Type::new_fn_unwrapped(vec![], INT_TYPE),
                 )),
                 arguments: vec![],
@@ -503,20 +503,20 @@ function main(): int {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("main"),
+          name: heap.alloc_str_for_test("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("fooBar"),
+              heap.alloc_str_for_test("fooBar"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
             return_type: INT_TYPE,
-            return_collector: Some(heap.alloc_str("v")),
+            return_collector: Some(heap.alloc_str_for_test("v")),
           }],
-          return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+          return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
         },
       ],
       heap,
@@ -552,15 +552,15 @@ function main(): int {
     assert_correctly_inlined(
       vec![
         Function {
-          name: heap.alloc_str("fooBar"),
+          name: heap.alloc_str_for_test("fooBar"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::IfElse {
-            condition: Expression::var_name(heap.alloc_str("bar"), INT_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("bar"), INT_TYPE),
             s1: vec![Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("fooBar"),
+                heap.alloc_str_for_test("fooBar"),
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
               )),
               arguments: vec![],
@@ -569,29 +569,29 @@ function main(): int {
             }],
             s2: vec![],
             final_assignments: vec![(
-              heap.alloc_str("b"),
+              heap.alloc_str_for_test("b"),
               INT_TYPE,
               ZERO,
-              Expression::var_name(heap.alloc_str("a"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
             )],
           }],
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("main"),
+          name: heap.alloc_str_for_test("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("fooBar"),
+              heap.alloc_str_for_test("fooBar"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
             return_type: INT_TYPE,
-            return_collector: Some(heap.alloc_str("v")),
+            return_collector: Some(heap.alloc_str_for_test("v")),
           }],
-          return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+          return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
         },
       ],
       heap,
@@ -651,24 +651,24 @@ function main(): int {
     assert_correctly_inlined(
       vec![
         Function {
-          name: heap.alloc_str("fooBar"),
-          parameters: vec![heap.alloc_str("bar"), heap.alloc_str("baz")],
+          name: heap.alloc_str_for_test("fooBar"),
+          parameters: vec![heap.alloc_str_for_test("bar"), heap.alloc_str_for_test("baz")],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE, INT_TYPE], INT_TYPE),
           body: vec![
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str("ff"),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str("FF")),
+              struct_variable_name: heap.alloc_str_for_test("ff"),
+              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("FF")),
               expression_list: vec![
-                Expression::var_name(heap.alloc_str("bar"), INT_TYPE),
-                Expression::var_name(heap.alloc_str("baz"), INT_TYPE),
+                Expression::var_name(heap.alloc_str_for_test("bar"), INT_TYPE),
+                Expression::var_name(heap.alloc_str_for_test("baz"), INT_TYPE),
               ],
             },
             Statement::ClosureInit {
-              closure_variable_name: heap.alloc_str("s"),
-              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str("SS")),
+              closure_variable_name: heap.alloc_str_for_test("s"),
+              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("SS")),
               function_name: FunctionName::new(
-                heap.alloc_str("aaa"),
+                heap.alloc_str_for_test("aaa"),
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
               ),
               context: ZERO,
@@ -678,18 +678,18 @@ function main(): int {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str("main"),
+          name: heap.alloc_str_for_test("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("fooBar"),
+              heap.alloc_str_for_test("fooBar"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![ONE, ZERO],
             return_type: INT_TYPE,
-            return_collector: Some(heap.alloc_str("v")),
+            return_collector: Some(heap.alloc_str_for_test("v")),
           }],
           return_value: ZERO,
         },
@@ -720,25 +720,28 @@ function main(): int {
 
     assert_correctly_inlined(
       vec![Function {
-        name: heap.alloc_str("fooBar"),
+        name: heap.alloc_str_for_test("fooBar"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::While {
           loop_variables: vec![GenenalLoopVariable {
-            name: heap.alloc_str("n"),
+            name: heap.alloc_str_for_test("n"),
             type_: INT_TYPE,
             initial_value: Expression::int(10),
-            loop_value: Expression::var_name(heap.alloc_str("_tmp_n"), INT_TYPE),
+            loop_value: Expression::var_name(heap.alloc_str_for_test("_tmp_n"), INT_TYPE),
           }],
           statements: vec![Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str("n"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("n"), BOOL_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(ZERO)],
           }],
-          break_collector: Some(VariableName { name: heap.alloc_str("v"), type_: INT_TYPE }),
+          break_collector: Some(VariableName {
+            name: heap.alloc_str_for_test("v"),
+            type_: INT_TYPE,
+          }),
         }],
-        return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
       }],
       heap,
       r#"function fooBar(): int {
@@ -755,45 +758,45 @@ function main(): int {
     assert_correctly_inlined(
       vec![
         Function {
-          name: heap.alloc_str("fooBar"),
+          name: heap.alloc_str_for_test("fooBar"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::While {
             loop_variables: vec![GenenalLoopVariable {
-              name: heap.alloc_str("n"),
+              name: heap.alloc_str_for_test("n"),
               type_: INT_TYPE,
               initial_value: Expression::int(10),
-              loop_value: Expression::var_name(heap.alloc_str("_tmp_n"), INT_TYPE),
+              loop_value: Expression::var_name(heap.alloc_str_for_test("_tmp_n"), INT_TYPE),
             }],
             statements: vec![Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("fooBar"),
+                heap.alloc_str_for_test("fooBar"),
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
               )),
               arguments: vec![],
               return_type: INT_TYPE,
-              return_collector: Some(heap.alloc_str("_tmp_n")),
+              return_collector: Some(heap.alloc_str_for_test("_tmp_n")),
             }],
             break_collector: None,
           }],
-          return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+          return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
         },
         Function {
-          name: heap.alloc_str("main"),
+          name: heap.alloc_str_for_test("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("fooBar"),
+              heap.alloc_str_for_test("fooBar"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
             return_type: INT_TYPE,
-            return_collector: Some(heap.alloc_str("v")),
+            return_collector: Some(heap.alloc_str_for_test("v")),
           }],
-          return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+          return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
         },
       ],
       heap,
@@ -841,32 +844,35 @@ function main(): int {
     assert_correctly_inlined(
       vec![
         Function {
-          name: heap.alloc_str("fooBar"),
+          name: heap.alloc_str_for_test("fooBar"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::While {
             loop_variables: vec![],
             statements: vec![Statement::Break(ZERO)],
-            break_collector: Some(VariableName { name: heap.alloc_str("v"), type_: INT_TYPE }),
+            break_collector: Some(VariableName {
+              name: heap.alloc_str_for_test("v"),
+              type_: INT_TYPE,
+            }),
           }],
-          return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+          return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
         },
         Function {
-          name: heap.alloc_str("main"),
+          name: heap.alloc_str_for_test("main"),
           parameters: vec![],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("fooBar"),
+              heap.alloc_str_for_test("fooBar"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![],
             return_type: INT_TYPE,
-            return_collector: Some(heap.alloc_str("v")),
+            return_collector: Some(heap.alloc_str_for_test("v")),
           }],
-          return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+          return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
         },
       ],
       heap,

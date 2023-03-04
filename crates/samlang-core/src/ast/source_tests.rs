@@ -11,7 +11,7 @@ mod tests {
     assert!(CommentKind::DOC == CommentKind::DOC.clone());
     assert!(!format!(
       "{:?}",
-      Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str("d") }.clone().text
+      Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str_for_test("d") }.clone().text
     )
     .is_empty());
     assert!(!format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone())
@@ -55,7 +55,10 @@ mod tests {
     assert_eq!("true", Literal::true_literal().pretty_print(&heap));
     assert_eq!("false", Literal::false_literal().pretty_print(&heap));
     assert_eq!("0", Literal::int_literal(0).clone().pretty_print(&heap));
-    assert_eq!("\"hi\"", Literal::string_literal(heap.alloc_str("hi")).clone().pretty_print(&heap));
+    assert_eq!(
+      "\"hi\"",
+      Literal::string_literal(heap.alloc_str_for_test("hi")).clone().pretty_print(&heap)
+    );
   }
 
   #[test]
@@ -79,12 +82,12 @@ mod tests {
           builder.int_annot(),
           builder.string_annot(),
         ],
-        builder.simple_id_annot(heap.alloc_str("str")),
+        builder.simple_id_annot(heap.alloc_str_for_test("str")),
       )
       .clone()
       .associated_comments();
     builder.unit_annot().associated_comments();
-    builder.simple_id_annot(heap.alloc_str("str")).associated_comments();
+    builder.simple_id_annot(heap.alloc_str_for_test("str")).associated_comments();
   }
 
   #[test]
@@ -99,8 +102,8 @@ mod tests {
       explicit_type_arguments: vec![],
       inferred_type_arguments: vec![],
       module_reference: ModuleReference::dummy(),
-      class_name: Id::from(heap.alloc_str("name")),
-      fn_name: Id::from(heap.alloc_str("name")),
+      class_name: Id::from(heap.alloc_str_for_test("name")),
+      fn_name: Id::from(heap.alloc_str_for_test("name")),
     })
     .precedence();
     E::Block(Block { common: common.clone(), statements: vec![], expression: None }).precedence();
@@ -136,7 +139,7 @@ mod tests {
     E::Lambda(Lambda {
       common: common.clone(),
       parameters: vec![OptionallyAnnotatedId {
-        name: Id::from(heap.alloc_str("name")),
+        name: Id::from(heap.alloc_str_for_test("name")),
         annotation: None,
       }],
       captured: HashMap::new(),
@@ -150,17 +153,21 @@ mod tests {
     let mut heap = Heap::new();
     assert_eq!(
       "name",
-      TypeParameter { loc: Location::dummy(), name: Id::from(heap.alloc_str("name")), bound: None }
-        .clone()
-        .name
-        .name
-        .as_str(&heap)
+      TypeParameter {
+        loc: Location::dummy(),
+        name: Id::from(heap.alloc_str_for_test("name")),
+        bound: None
+      }
+      .clone()
+      .name
+      .name
+      .as_str(&heap)
     );
 
     assert_eq!(
       "s",
       AnnotatedId {
-        name: Id::from(heap.alloc_str("s")),
+        name: Id::from(heap.alloc_str_for_test("s")),
         annotation: annotation::T::Primitive(
           Location::dummy(),
           NO_COMMENT_REFERENCE,
@@ -177,7 +184,7 @@ mod tests {
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      name: Id::from(heap.alloc_str("")),
+      name: Id::from(heap.alloc_str_for_test("")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -186,7 +193,7 @@ mod tests {
         associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
-        name: Id::from(heap.alloc_str("")),
+        name: Id::from(heap.alloc_str_for_test("")),
         type_parameters: Rc::new(vec![]),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![])
@@ -207,7 +214,7 @@ mod tests {
     let _ = TypeDefinition::Struct {
       loc: Location::dummy(),
       fields: vec![FieldDefinition {
-        name: Id::from(heap.alloc_str("str")),
+        name: Id::from(heap.alloc_str_for_test("str")),
         annotation: builder.bool_annot(),
         is_public: true,
       }],
@@ -216,7 +223,7 @@ mod tests {
     let _ = TypeDefinition::Enum {
       loc: Location::dummy(),
       variants: vec![VariantDefinition {
-        name: Id::from(heap.alloc_str("str")),
+        name: Id::from(heap.alloc_str_for_test("str")),
         associated_data_type: builder.bool_annot(),
       }],
     };
@@ -224,13 +231,13 @@ mod tests {
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      name: Id::from(heap.alloc_str("name")),
+      name: Id::from(heap.alloc_str_for_test("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: TypeDefinition::Struct {
         loc: Location::dummy(),
         fields: vec![FieldDefinition {
-          name: Id::from(heap.alloc_str("str")),
+          name: Id::from(heap.alloc_str_for_test("str")),
           annotation: builder.bool_annot(),
           is_public: true,
         }],
@@ -241,7 +248,7 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           is_public: true,
           is_method: true,
-          name: Id::from(heap.alloc_str("")),
+          name: Id::from(heap.alloc_str_for_test("")),
           type_parameters: Rc::new(vec![]),
           type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
           parameters: Rc::new(vec![]),
@@ -256,7 +263,7 @@ mod tests {
     let interface: Toplevel<()> = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      name: Id::from(heap.alloc_str("name")),
+      name: Id::from(heap.alloc_str_for_test("name")),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -265,7 +272,7 @@ mod tests {
         associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
-        name: Id::from(heap.alloc_str("")),
+        name: Id::from(heap.alloc_str_for_test("")),
         type_parameters: Rc::new(vec![]),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![]),

@@ -299,7 +299,7 @@ mod tests {
   fn boilterplate() {
     let heap = &mut Heap::new();
 
-    assert!(super::LoopContext { break_collector: None, exit_label: heap.alloc_str("") }
+    assert!(super::LoopContext { break_collector: None, exit_label: heap.alloc_str_for_test("") }
       .clone()
       .break_collector
       .is_none());
@@ -311,14 +311,20 @@ mod tests {
 
     let sources = Sources {
       global_variables: vec![
-        GlobalVariable { name: heap.alloc_str("FOO"), content: heap.alloc_str("foo") },
-        GlobalVariable { name: heap.alloc_str("BAR"), content: heap.alloc_str("bar") },
+        GlobalVariable {
+          name: heap.alloc_str_for_test("FOO"),
+          content: heap.alloc_str_for_test("foo"),
+        },
+        GlobalVariable {
+          name: heap.alloc_str_for_test("BAR"),
+          content: heap.alloc_str_for_test("bar"),
+        },
       ],
       type_definitions: vec![],
-      main_function_names: vec![heap.alloc_str("main")],
+      main_function_names: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
-        name: heap.alloc_str("main"),
-        parameters: vec![heap.alloc_str("bar")],
+        name: heap.alloc_str_for_test("main"),
+        parameters: vec![heap.alloc_str_for_test("bar")],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
           Statement::IfElse { condition: FALSE, s1: vec![], s2: vec![], final_assignments: vec![] },
@@ -326,7 +332,7 @@ mod tests {
             condition: FALSE,
             s1: vec![],
             s2: vec![Statement::Cast {
-              name: heap.alloc_str("c"),
+              name: heap.alloc_str_for_test("c"),
               type_: INT_TYPE,
               assigned_expression: ZERO,
             }],
@@ -336,13 +342,13 @@ mod tests {
             condition: FALSE,
             s1: vec![Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: heap.alloc_str("i"),
+                name: heap.alloc_str_for_test("i"),
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![Statement::Cast {
-                name: heap.alloc_str("c"),
+                name: heap.alloc_str_for_test("c"),
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               }],
@@ -356,7 +362,7 @@ mod tests {
                   invert_condition: false,
                   statements: vec![Statement::Break(ZERO)],
                 }],
-                break_collector: Some((heap.alloc_str("b"), INT_TYPE)),
+                break_collector: Some((heap.alloc_str_for_test("b"), INT_TYPE)),
               },
               Statement::While {
                 loop_variables: vec![],
@@ -369,45 +375,51 @@ mod tests {
               },
             ],
             final_assignments: vec![(
-              heap.alloc_str("f"),
+              heap.alloc_str_for_test("f"),
               INT_TYPE,
-              Expression::Name(heap.alloc_str("FOO"), INT_TYPE),
-              Expression::Name(heap.alloc_str("main"), Type::new_fn(vec![], INT_TYPE)),
+              Expression::Name(heap.alloc_str_for_test("FOO"), INT_TYPE),
+              Expression::Name(heap.alloc_str_for_test("main"), Type::new_fn(vec![], INT_TYPE)),
             )],
           },
           Statement::binary(
-            heap.alloc_str("bin"),
+            heap.alloc_str_for_test("bin"),
             Operator::PLUS,
-            Expression::Variable(heap.alloc_str("f"), INT_TYPE),
+            Expression::Variable(heap.alloc_str_for_test("f"), INT_TYPE),
             ZERO,
           ),
           Statement::Call {
-            callee: Expression::Name(heap.alloc_str("main"), Type::new_fn(vec![], INT_TYPE)),
+            callee: Expression::Name(
+              heap.alloc_str_for_test("main"),
+              Type::new_fn(vec![], INT_TYPE),
+            ),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
             return_collector: None,
           },
           Statement::Call {
-            callee: Expression::Variable(heap.alloc_str("f"), INT_TYPE),
+            callee: Expression::Variable(heap.alloc_str_for_test("f"), INT_TYPE),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
-            return_collector: Some(heap.alloc_str("rc")),
+            return_collector: Some(heap.alloc_str_for_test("rc")),
           },
           Statement::IndexedAccess {
-            name: heap.alloc_str("v"),
+            name: heap.alloc_str_for_test("v"),
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::IndexedAssign {
-            assigned_expression: Expression::Variable(heap.alloc_str("v"), INT_TYPE),
+            assigned_expression: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
             pointer_expression: ZERO,
             index: 3,
           },
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str("s"),
+            struct_variable_name: heap.alloc_str_for_test("s"),
             type_: INT_TYPE,
-            expression_list: vec![ZERO, Expression::Variable(heap.alloc_str("v"), INT_TYPE)],
+            expression_list: vec![
+              ZERO,
+              Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
+            ],
           },
         ],
         return_value: ZERO,

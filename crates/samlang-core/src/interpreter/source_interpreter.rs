@@ -177,7 +177,7 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
         FunctionValue {
           parameters: method_value.parameters.clone(),
           body: method_value.body.clone(),
-          captured: HashMap::from([(heap.alloc_str("this"), this_value)]),
+          captured: HashMap::from([(heap.alloc_str_permanent("this"), this_value)]),
         },
       )
     }
@@ -209,26 +209,27 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
           new_obj(cx, map)
         }
         FunctionImpl::InitVariant(tag) => {
-          let data = cx.local_values.get(&heap.alloc_str("data")).cloned().unwrap();
+          let data = cx.local_values.get(&heap.alloc_str_permanent("data")).cloned().unwrap();
           new_variant(cx, tag, data)
         }
         FunctionImpl::StringToInt => {
-          let v = cx.local_values.get(&heap.alloc_str("v")).cloned().unwrap();
+          let v = cx.local_values.get(&heap.alloc_str_permanent("v")).cloned().unwrap();
           let s = v.string_value(cx);
           Value::Int(s.parse::<i32>().unwrap())
         }
         FunctionImpl::IntToString => {
-          let v = cx.local_values.get(&heap.alloc_str("v")).unwrap().int_value().to_string();
+          let v =
+            cx.local_values.get(&heap.alloc_str_permanent("v")).unwrap().int_value().to_string();
           new_str(cx, v)
         }
         FunctionImpl::Println => {
-          let v = cx.local_values.get(&heap.alloc_str("v")).cloned().unwrap();
+          let v = cx.local_values.get(&heap.alloc_str_permanent("v")).cloned().unwrap();
           let s = v.string_value(cx);
           cx.printed.push(s.to_string());
           Value::Unit
         }
         FunctionImpl::Panic => {
-          let v = cx.local_values.get(&heap.alloc_str("v")).cloned().unwrap();
+          let v = cx.local_values.get(&heap.alloc_str_permanent("v")).cloned().unwrap();
           panic!("{}", v.string_value(cx))
         }
       };
@@ -383,7 +384,7 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
           let parameters = fields.iter().map(|it| it.name.name).collect_vec();
           let body = FunctionImpl::InitObject(parameters.clone());
           functions.insert(
-            heap.alloc_str("init"),
+            heap.alloc_str_permanent("init"),
             FunctionValue { parameters, body, captured: HashMap::new() },
           );
         }
@@ -393,7 +394,7 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
             functions.insert(
               variant.name.name,
               FunctionValue {
-                parameters: vec![heap.alloc_str("data")],
+                parameters: vec![heap.alloc_str_permanent("data")],
                 body,
                 captured: HashMap::new(),
               },
@@ -405,37 +406,37 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
     }
   }
   classes.insert(
-    heap.alloc_str("Builtins"),
+    heap.alloc_str_permanent("Builtins"),
     ClassValue {
       functions: HashMap::from([
         (
-          heap.alloc_str("stringToInt"),
+          heap.alloc_str_permanent("stringToInt"),
           FunctionValue {
-            parameters: vec![heap.alloc_str("v")],
+            parameters: vec![heap.alloc_str_permanent("v")],
             body: FunctionImpl::StringToInt,
             captured: HashMap::new(),
           },
         ),
         (
-          heap.alloc_str("intToString"),
+          heap.alloc_str_permanent("intToString"),
           FunctionValue {
-            parameters: vec![heap.alloc_str("v")],
+            parameters: vec![heap.alloc_str_permanent("v")],
             body: FunctionImpl::IntToString,
             captured: HashMap::new(),
           },
         ),
         (
-          heap.alloc_str("println"),
+          heap.alloc_str_permanent("println"),
           FunctionValue {
-            parameters: vec![heap.alloc_str("v")],
+            parameters: vec![heap.alloc_str_permanent("v")],
             body: FunctionImpl::Println,
             captured: HashMap::new(),
           },
         ),
         (
-          heap.alloc_str("panic"),
+          heap.alloc_str_permanent("panic"),
           FunctionValue {
-            parameters: vec![heap.alloc_str("v")],
+            parameters: vec![heap.alloc_str_permanent("v")],
             body: FunctionImpl::Panic,
             captured: HashMap::new(),
           },
@@ -468,10 +469,10 @@ pub(super) fn run(heap: &mut Heap, module: &Module<Rc<Type>>) -> String {
   let mut cx = new_cx(heap, module);
   let main_fun_body = cx
     .classes
-    .get(&heap.alloc_str("Main"))
+    .get(&heap.alloc_str_permanent("Main"))
     .unwrap()
     .functions
-    .get(&heap.alloc_str("main"))
+    .get(&heap.alloc_str_permanent("main"))
     .unwrap()
     .body
     .clone();
@@ -573,7 +574,7 @@ mod tests {
       Value::Boolean(true),
       eval_expr_simple(heap, &expr::E::Literal(dummy_expr_common(), Literal::Bool(true)))
     );
-    let expr = expr::E::Literal(dummy_expr_common(), Literal::String(heap.alloc_str("a")));
+    let expr = expr::E::Literal(dummy_expr_common(), Literal::String(heap.alloc_str_for_test("a")));
     eval_expr_simple(heap, &expr);
   }
 
@@ -581,7 +582,7 @@ mod tests {
   #[test]
   fn this_panic_tests() {
     let heap = &mut Heap::new();
-    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str("a")));
+    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str_for_test("a")));
     eval_expr_simple(heap, &expr);
   }
 
@@ -589,18 +590,21 @@ mod tests {
   #[test]
   fn variable_panic_tests() {
     let heap = &mut Heap::new();
-    eval_expr_simple(heap, &expr::E::Id(dummy_expr_common(), Id::from(Heap::new().alloc_str("a"))));
+    eval_expr_simple(
+      heap,
+      &expr::E::Id(dummy_expr_common(), Id::from(Heap::new().alloc_str_for_test("a"))),
+    );
   }
 
   #[test]
   fn this_variable_passing_tests() {
     let mut cx = empty_cx();
     let mut heap = Heap::new();
-    cx.local_values.insert(heap.alloc_str("a"), Value::Int(1));
-    cx.local_values.insert(heap.alloc_str("this"), Value::Int(1));
-    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str("this")));
+    cx.local_values.insert(heap.alloc_str_for_test("a"), Value::Int(1));
+    cx.local_values.insert(heap.alloc_str_for_test("this"), Value::Int(1));
+    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str_for_test("this")));
     assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
-    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str("a")));
+    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str_for_test("a")));
     assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
   }
 
@@ -614,7 +618,7 @@ mod tests {
       toplevels: vec![Toplevel::Interface(InterfaceDeclarationCommon {
         loc: Location::dummy(),
         associated_comments: NO_COMMENT_REFERENCE,
-        name: Id::from(heap.alloc_str("")),
+        name: Id::from(heap.alloc_str_for_test("")),
         type_parameters: vec![],
         extends_or_implements_nodes: vec![],
         type_definition: (),

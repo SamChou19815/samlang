@@ -214,7 +214,7 @@ mod tests {
             associated_comments: NO_COMMENT_REFERENCE,
             type_: Rc::new(Type::Unknown(Reason::dummy())),
           },
-          Id::from(heap.alloc_str("id")),
+          Id::from(heap.alloc_str_for_test("id")),
         )),
         method_name: Id {
           loc: Location {
@@ -223,7 +223,7 @@ mod tests {
             end: Position(10, 20),
           },
           associated_comments: NO_COMMENT_REFERENCE,
-          name: heap.alloc_str("meth")
+          name: heap.alloc_str_for_test("meth")
         },
       }),
       Position(10, 15),

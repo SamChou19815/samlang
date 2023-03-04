@@ -137,15 +137,15 @@ mod mod_type_tests {
     let builder = test_type_builder::create();
 
     mod_type(zero_expr(), builder.bool_type());
-    mod_type(E::Id(common(), Id::from(heap.alloc_str("d"))), builder.bool_type());
+    mod_type(E::Id(common(), Id::from(heap.alloc_str_for_test("d"))), builder.bool_type());
     mod_type(
       E::ClassFn(ClassFunction {
         common: common(),
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
         module_reference: ModuleReference::dummy(),
-        class_name: Id::from(heap.alloc_str("name")),
-        fn_name: Id::from(heap.alloc_str("name")),
+        class_name: Id::from(heap.alloc_str_for_test("name")),
+        fn_name: Id::from(heap.alloc_str_for_test("name")),
       }),
       builder.bool_type(),
     );
@@ -155,7 +155,7 @@ mod mod_type_tests {
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
         object: Box::new(zero_expr()),
-        field_name: Id::from(heap.alloc_str("name")),
+        field_name: Id::from(heap.alloc_str_for_test("name")),
         field_order: -1,
       }),
       builder.bool_type(),
@@ -166,7 +166,7 @@ mod mod_type_tests {
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
         object: Box::new(zero_expr()),
-        method_name: Id::from(heap.alloc_str("name")),
+        method_name: Id::from(heap.alloc_str_for_test("name")),
       }),
       builder.bool_type(),
     );
@@ -207,7 +207,7 @@ mod mod_type_tests {
         matched: Box::new(zero_expr()),
         cases: vec![VariantPatternToExpression {
           loc: Location::dummy(),
-          tag: Id::from(heap.alloc_str("name")),
+          tag: Id::from(heap.alloc_str_for_test("name")),
           tag_order: 1,
           data_variable: None,
           body: Box::new(zero_expr()),
@@ -219,7 +219,7 @@ mod mod_type_tests {
       E::Lambda(Lambda {
         common: common(),
         parameters: vec![OptionallyAnnotatedId {
-          name: Id::from(heap.alloc_str("name")),
+          name: Id::from(heap.alloc_str_for_test("name")),
           annotation: None,
         }],
         captured: HashMap::new(),
@@ -238,7 +238,7 @@ mod mod_type_tests {
             vec![ObjectPatternDestucturedName {
               loc: Location::dummy(),
               field_order: 0,
-              field_name: Id::from(heap.alloc_str("name")),
+              field_name: Id::from(heap.alloc_str_for_test("name")),
               alias: None,
               type_: builder.unit_type(),
             }],

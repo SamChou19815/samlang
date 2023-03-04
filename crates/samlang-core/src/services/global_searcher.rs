@@ -330,30 +330,30 @@ mod tests {
     assert!(error_set.into_errors().is_empty());
     super::search_modules_globally(
       &checked_sources,
-      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str("Foo")),
+      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str_for_test("Foo")),
     );
     super::search_modules_globally(
       &checked_sources,
-      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str("Option")),
+      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str_for_test("Option")),
     );
     super::search_modules_globally(
       &checked_sources,
-      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str("Obj")),
+      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str_for_test("Obj")),
     );
     super::search_modules_globally(
       &checked_sources,
-      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str("Interface")),
+      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str_for_test("Interface")),
     );
     super::search_modules_globally(
       &checked_sources,
-      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str("Main")),
+      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str_for_test("Main")),
     );
     super::search_modules_globally(
       &checked_sources,
       &super::GlobalNameSearchRequest::InterfaceMember(
         mod_ref,
-        heap.alloc_str("Main"),
-        heap.alloc_str("main"),
+        heap.alloc_str_for_test("Main"),
+        heap.alloc_str_for_test("main"),
         false,
       ),
     );
@@ -361,8 +361,8 @@ mod tests {
       &checked_sources,
       &super::GlobalNameSearchRequest::InterfaceMember(
         mod_ref,
-        heap.alloc_str("Option"),
-        heap.alloc_str("matchExample"),
+        heap.alloc_str_for_test("Option"),
+        heap.alloc_str_for_test("matchExample"),
         true,
       ),
     );
@@ -370,8 +370,8 @@ mod tests {
       &checked_sources,
       &super::GlobalNameSearchRequest::InterfaceMember(
         mod_ref,
-        heap.alloc_str("Option"),
-        heap.alloc_str("None"),
+        heap.alloc_str_for_test("Option"),
+        heap.alloc_str_for_test("None"),
         false,
       ),
     );
@@ -379,8 +379,8 @@ mod tests {
       &checked_sources,
       &super::GlobalNameSearchRequest::Property(
         mod_ref,
-        heap.alloc_str("Foo"),
-        heap.alloc_str("a"),
+        heap.alloc_str_for_test("Foo"),
+        heap.alloc_str_for_test("a"),
       ),
     );
   }

@@ -10,7 +10,7 @@ mod lexer_test;
 mod source_parser;
 
 fn builtin_classes(heap: &mut Heap) -> HashSet<PStr> {
-  HashSet::from([heap.alloc_str("Builtins")])
+  HashSet::from([heap.alloc_str_permanent("Builtins")])
 }
 
 pub(crate) fn parse_source_module_from_text(

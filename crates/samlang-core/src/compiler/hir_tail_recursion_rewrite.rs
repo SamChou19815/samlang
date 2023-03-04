@@ -231,80 +231,80 @@ mod tests {
 
     assert_optimization_failed(
       Function {
-        name: heap.alloc_str("ff"),
+        name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],
-        return_value: Expression::StringName(heap.alloc_str("")),
+        return_value: Expression::StringName(heap.alloc_str_for_test("")),
       },
       heap,
     );
 
     assert_optimization_failed(
       Function {
-        name: heap.alloc_str("ff"),
+        name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],
-        return_value: Expression::var_name(heap.alloc_str(""), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
       },
       heap,
     );
 
     assert_optimization_failed(
       Function {
-        name: heap.alloc_str("ff"),
+        name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-        body: vec![Statement::binary(heap.alloc_str(""), Operator::PLUS, ZERO, ZERO)],
-        return_value: Expression::var_name(heap.alloc_str(""), INT_TYPE),
+        body: vec![Statement::binary(heap.alloc_str_for_test(""), Operator::PLUS, ZERO, ZERO)],
+        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
       },
       heap,
     );
 
     assert_optimization_failed(
       Function {
-        name: heap.alloc_str("ff"),
+        name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
-          callee: Callee::Variable(VariableName::new(heap.alloc_str(""), INT_TYPE)),
+          callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test(""), INT_TYPE)),
           arguments: vec![],
           return_type: INT_TYPE,
           return_collector: None,
         }],
-        return_value: Expression::var_name(heap.alloc_str(""), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
       },
       heap,
     );
 
     assert_optimization_failed(
       Function {
-        name: heap.alloc_str("ff"),
+        name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
-            heap.alloc_str(""),
+            heap.alloc_str_for_test(""),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           )),
           arguments: vec![],
           return_type: INT_TYPE,
           return_collector: None,
         }],
-        return_value: Expression::var_name(heap.alloc_str(""), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
       },
       heap,
     );
 
     assert_optimization_failed(
       Function {
-        name: heap.alloc_str("ff"),
+        name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -314,14 +314,14 @@ mod tests {
           s2: vec![],
           final_assignments: vec![],
         }],
-        return_value: Expression::var_name(heap.alloc_str(""), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
       },
       heap,
     );
 
     assert_optimization_failed(
       Function {
-        name: heap.alloc_str("ff"),
+        name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -338,20 +338,20 @@ mod tests {
 
     assert_optimization_failed(
       Function {
-        name: heap.alloc_str("ff"),
+        name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
-            heap.alloc_str("ff"),
+            heap.alloc_str_for_test("ff"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           )),
           arguments: vec![],
           return_type: INT_TYPE,
           return_collector: None,
         }],
-        return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
       },
       heap,
     );
@@ -362,28 +362,28 @@ mod tests {
     let heap = &mut Heap::new();
     assert_optimization_succeed(
       Function {
-        name: heap.alloc_str("loopy"),
-        parameters: vec![heap.alloc_str("n")],
+        name: heap.alloc_str_for_test("loopy"),
+        parameters: vec![heap.alloc_str_for_test("n")],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str("a"),
+            heap.alloc_str_for_test("a"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("loopy"),
+              heap.alloc_str_for_test("loopy"),
               Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
             )),
-            arguments: vec![Expression::var_name(heap.alloc_str("a"), INT_TYPE)],
+            arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
             return_type: INT_TYPE,
-            return_collector: Some(heap.alloc_str("r")),
+            return_collector: Some(heap.alloc_str_for_test("r")),
           },
         ],
-        return_value: Expression::var_name(heap.alloc_str("r"), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test("r"), INT_TYPE),
       },
       heap,
       r#"function loopy(_tailrec_param_n: int): int {
@@ -402,23 +402,23 @@ mod tests {
     let heap = &mut Heap::new();
     assert_optimization_succeed(
       Function {
-        name: heap.alloc_str("loopy"),
-        parameters: vec![heap.alloc_str("n")],
+        name: heap.alloc_str_for_test("loopy"),
+        parameters: vec![heap.alloc_str_for_test("n")],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str("a"),
+            heap.alloc_str_for_test("a"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str("loopy"),
+              heap.alloc_str_for_test("loopy"),
               Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
             )),
-            arguments: vec![Expression::var_name(heap.alloc_str("a"), INT_TYPE)],
+            arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: None,
           },
@@ -443,46 +443,46 @@ mod tests {
     let heap = &mut Heap::new();
     assert_optimization_succeed(
       Function {
-        name: heap.alloc_str("loopy"),
-        parameters: vec![heap.alloc_str("n")],
+        name: heap.alloc_str_for_test("loopy"),
+        parameters: vec![heap.alloc_str_for_test("n")],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str("a"),
+            heap.alloc_str_for_test("a"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
           Statement::IfElse {
             condition: ZERO,
             s1: vec![Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("loopy"),
+                heap.alloc_str_for_test("loopy"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               )),
-              arguments: vec![Expression::var_name(heap.alloc_str("a"), INT_TYPE)],
+              arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
               return_type: INT_TYPE,
-              return_collector: Some(heap.alloc_str("r1")),
+              return_collector: Some(heap.alloc_str_for_test("r1")),
             }],
             s2: vec![Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("loopy"),
+                heap.alloc_str_for_test("loopy"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               )),
-              arguments: vec![Expression::var_name(heap.alloc_str("a"), INT_TYPE)],
+              arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
               return_type: INT_TYPE,
-              return_collector: Some(heap.alloc_str("r2")),
+              return_collector: Some(heap.alloc_str_for_test("r2")),
             }],
             final_assignments: vec![(
-              heap.alloc_str("r"),
+              heap.alloc_str_for_test("r"),
               INT_TYPE,
-              Expression::var_name(heap.alloc_str("r1"), INT_TYPE),
-              Expression::var_name(heap.alloc_str("r2"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("r1"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("r2"), INT_TYPE),
             )],
           },
         ],
-        return_value: Expression::var_name(heap.alloc_str("r"), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test("r"), INT_TYPE),
       },
       heap,
       r#"function loopy(_tailrec_param_n: int): int {
@@ -508,38 +508,38 @@ mod tests {
     let heap = &mut Heap::new();
     assert_optimization_succeed(
       Function {
-        name: heap.alloc_str("loopy"),
-        parameters: vec![heap.alloc_str("n")],
+        name: heap.alloc_str_for_test("loopy"),
+        parameters: vec![heap.alloc_str_for_test("n")],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str("a"),
+            heap.alloc_str_for_test("a"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
           Statement::IfElse {
             condition: ZERO,
             s1: vec![Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("loopy"),
+                heap.alloc_str_for_test("loopy"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               )),
-              arguments: vec![Expression::var_name(heap.alloc_str("a"), INT_TYPE)],
+              arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
               return_type: INT_TYPE,
-              return_collector: Some(heap.alloc_str("r1")),
+              return_collector: Some(heap.alloc_str_for_test("r1")),
             }],
             s2: vec![],
             final_assignments: vec![(
-              heap.alloc_str("r"),
+              heap.alloc_str_for_test("r"),
               INT_TYPE,
-              Expression::var_name(heap.alloc_str("r1"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("r1"), INT_TYPE),
               ZERO,
             )],
           },
         ],
-        return_value: Expression::var_name(heap.alloc_str("r"), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test("r"), INT_TYPE),
       },
       heap,
       r#"function loopy(_tailrec_param_n: int): int {
@@ -562,25 +562,25 @@ mod tests {
     let heap = &mut Heap::new();
     assert_optimization_succeed(
       Function {
-        name: heap.alloc_str("loopy"),
-        parameters: vec![heap.alloc_str("n")],
+        name: heap.alloc_str_for_test("loopy"),
+        parameters: vec![heap.alloc_str_for_test("n")],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str("a"),
+            heap.alloc_str_for_test("a"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
           ),
           Statement::IfElse {
             condition: ZERO,
             s1: vec![Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str("loopy"),
+                heap.alloc_str_for_test("loopy"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               )),
-              arguments: vec![Expression::var_name(heap.alloc_str("a"), INT_TYPE)],
+              arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             }],
@@ -612,8 +612,8 @@ mod tests {
     let heap = &mut Heap::new();
     assert_optimization_succeed(
       Function {
-        name: heap.alloc_str("loopy"),
-        parameters: vec![heap.alloc_str("n")],
+        name: heap.alloc_str_for_test("loopy"),
+        parameters: vec![heap.alloc_str_for_test("n")],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IfElse {
@@ -624,36 +624,36 @@ mod tests {
             s1: vec![],
             s2: vec![
               Statement::binary(
-                heap.alloc_str("nn"),
+                heap.alloc_str_for_test("nn"),
                 Operator::MINUS,
-                Expression::var_name(heap.alloc_str("n"), INT_TYPE),
+                Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
                 Expression::int(1),
               ),
               Statement::Call {
                 callee: Callee::FunctionName(FunctionName::new(
-                  heap.alloc_str("loopy"),
+                  heap.alloc_str_for_test("loopy"),
                   Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
                 )),
-                arguments: vec![Expression::var_name(heap.alloc_str("nn"), INT_TYPE)],
+                arguments: vec![Expression::var_name(heap.alloc_str_for_test("nn"), INT_TYPE)],
                 return_type: INT_TYPE,
-                return_collector: Some(heap.alloc_str("r")),
+                return_collector: Some(heap.alloc_str_for_test("r")),
               },
             ],
             final_assignments: vec![(
-              heap.alloc_str("nested_return"),
+              heap.alloc_str_for_test("nested_return"),
               INT_TYPE,
               Expression::int(1),
-              Expression::var_name(heap.alloc_str("r"), INT_TYPE),
+              Expression::var_name(heap.alloc_str_for_test("r"), INT_TYPE),
             )],
           }],
           final_assignments: vec![(
-            heap.alloc_str("v"),
+            heap.alloc_str_for_test("v"),
             INT_TYPE,
             ZERO,
-            Expression::var_name(heap.alloc_str("nested_return"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("nested_return"), INT_TYPE),
           )],
         }],
-        return_value: Expression::var_name(heap.alloc_str("v"), INT_TYPE),
+        return_value: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
       },
       heap,
       r#"function loopy(_tailrec_param_n: int): int {

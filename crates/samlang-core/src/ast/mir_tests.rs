@@ -19,10 +19,12 @@ mod tests {
 
     assert!(!format!(
       "{:?}",
-      Expression::Variable(heap.alloc_str("a"), Type::Id(heap.alloc_str("A"))).clone()
+      Expression::Variable(heap.alloc_str_for_test("a"), Type::Id(heap.alloc_str_for_test("A")))
+        .clone()
     )
     .is_empty());
-    assert!(!format!("{:?}", Expression::Name(heap.alloc_str("a"), STRING_TYPE).clone()).is_empty());
+    assert!(!format!("{:?}", Expression::Name(heap.alloc_str_for_test("a"), STRING_TYPE).clone())
+      .is_empty());
     assert!(!format!("{:?}", Type::new_fn(vec![(INT_TYPE)], INT_TYPE).clone()).is_empty());
   }
 
@@ -30,12 +32,16 @@ mod tests {
   fn type_eq_test() {
     let heap = &mut Heap::new();
 
-    assert!(INT_TYPE.is_the_same_type(Expression::Variable(heap.alloc_str("a"), INT_TYPE).type_()));
-    assert!(BOOL_TYPE.is_the_same_type(Expression::Name(heap.alloc_str("a"), BOOL_TYPE).type_()));
+    assert!(INT_TYPE
+      .is_the_same_type(Expression::Variable(heap.alloc_str_for_test("a"), INT_TYPE).type_()));
+    assert!(
+      BOOL_TYPE.is_the_same_type(Expression::Name(heap.alloc_str_for_test("a"), BOOL_TYPE).type_())
+    );
     assert!(STRING_TYPE.is_the_same_type(Expression::IntLiteral(1, STRING_TYPE).type_()));
     assert!(STRING_TYPE.is_the_same_type(&ANY_TYPE));
-    assert!(!Type::Id(heap.alloc_str("a")).is_the_same_type(&Type::Id(heap.alloc_str("b"))));
-    assert!(!Type::Id(heap.alloc_str("a")).is_the_same_type(&INT_TYPE));
+    assert!(!Type::Id(heap.alloc_str_for_test("a"))
+      .is_the_same_type(&Type::Id(heap.alloc_str_for_test("b"))));
+    assert!(!Type::Id(heap.alloc_str_for_test("a")).is_the_same_type(&INT_TYPE));
     assert!(Type::new_fn(vec![(INT_TYPE)], INT_TYPE)
       .is_the_same_type(&Type::new_fn(vec![(INT_TYPE)], INT_TYPE)));
   }
@@ -51,8 +57,11 @@ mod tests {
     assert_eq!("0", ZERO.clone().pretty_print(heap));
     assert_eq!("true", TRUE.clone().pretty_print(heap));
     assert_eq!("false", FALSE.clone().pretty_print(heap));
-    assert_eq!("a", Expression::Variable(heap.alloc_str("a"), STRING_TYPE).pretty_print(heap));
-    assert_eq!("a", Expression::Name(heap.alloc_str("a"), STRING_TYPE).pretty_print(heap));
+    assert_eq!(
+      "a",
+      Expression::Variable(heap.alloc_str_for_test("a"), STRING_TYPE).pretty_print(heap)
+    );
+    assert_eq!("a", Expression::Name(heap.alloc_str_for_test("a"), STRING_TYPE).pretty_print(heap));
     assert_eq!(
       "(t0: number) => number",
       Type::new_fn(vec![(INT_TYPE)], INT_TYPE).pretty_print(heap)
@@ -67,17 +76,17 @@ mod tests {
       condition: ZERO,
       s1: vec![
         Statement::StructInit {
-          struct_variable_name: heap.alloc_str("baz"),
-          type_: Type::Id(heap.alloc_str("FooBar")),
-          expression_list: vec![Expression::Name(heap.alloc_str("meggo"), STRING_TYPE)],
+          struct_variable_name: heap.alloc_str_for_test("baz"),
+          type_: Type::Id(heap.alloc_str_for_test("FooBar")),
+          expression_list: vec![Expression::Name(heap.alloc_str_for_test("meggo"), STRING_TYPE)],
         },
-        Statement::binary(heap.alloc_str("dd"), Operator::LT, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::LE, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::GT, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::GE, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::EQ, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::NE, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::XOR.clone(), ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::LT, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::LE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::GT, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::GE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::EQ, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::NE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::XOR.clone(), ZERO, ZERO),
         Statement::While {
           loop_variables: vec![],
           statements: vec![Statement::SingleIf {
@@ -89,7 +98,7 @@ mod tests {
         },
         Statement::While {
           loop_variables: vec![GenenalLoopVariable {
-            name: heap.alloc_str("_"),
+            name: heap.alloc_str_for_test("_"),
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: ZERO,
@@ -99,65 +108,72 @@ mod tests {
             invert_condition: true,
             statements: vec![Statement::Break(ZERO)],
           }],
-          break_collector: Some((heap.alloc_str("_"), INT_TYPE)),
+          break_collector: Some((heap.alloc_str_for_test("_"), INT_TYPE)),
         },
       ],
       s2: vec![
-        Statement::binary(heap.alloc_str("dd"), Operator::PLUS, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::MINUS, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::PLUS, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::MINUS, ZERO, ZERO),
         Statement::binary(
-          heap.alloc_str("dd"),
+          heap.alloc_str_for_test("dd"),
           Operator::MINUS,
           ZERO,
           Expression::int(-2147483648),
         ),
-        Statement::binary(heap.alloc_str("dd"), Operator::MUL, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::DIV, ZERO, ZERO),
-        Statement::binary(heap.alloc_str("dd"), Operator::MOD, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::MUL, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::DIV, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::MOD, ZERO, ZERO),
         Statement::Call {
-          callee: Expression::Name(heap.alloc_str("h"), Type::new_fn(vec![], INT_TYPE)),
+          callee: Expression::Name(heap.alloc_str_for_test("h"), Type::new_fn(vec![], INT_TYPE)),
           arguments: vec![Expression::Variable(
-            heap.alloc_str("big"),
-            Type::Id(heap.alloc_str("FooBar")),
+            heap.alloc_str_for_test("big"),
+            Type::Id(heap.alloc_str_for_test("FooBar")),
           )],
           return_type: INT_TYPE,
-          return_collector: Some(heap.alloc_str("vibez")),
+          return_collector: Some(heap.alloc_str_for_test("vibez")),
         },
         Statement::Call {
-          callee: Expression::Name(heap.alloc_str("stresso"), Type::new_fn(vec![], INT_TYPE)),
-          arguments: vec![Expression::Variable(heap.alloc_str("d"), INT_TYPE)],
+          callee: Expression::Name(
+            heap.alloc_str_for_test("stresso"),
+            Type::new_fn(vec![], INT_TYPE),
+          ),
+          arguments: vec![Expression::Variable(heap.alloc_str_for_test("d"), INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::Call {
-          callee: Expression::Variable(heap.alloc_str("d"), INT_TYPE),
-          arguments: vec![Expression::Variable(heap.alloc_str("d"), INT_TYPE)],
+          callee: Expression::Variable(heap.alloc_str_for_test("d"), INT_TYPE),
+          arguments: vec![Expression::Variable(heap.alloc_str_for_test("d"), INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::IndexedAccess {
-          name: heap.alloc_str("f"),
+          name: heap.alloc_str_for_test("f"),
           type_: INT_TYPE,
           pointer_expression: Expression::Variable(
-            heap.alloc_str("big"),
-            Type::Id(heap.alloc_str("FooBar")),
+            heap.alloc_str_for_test("big"),
+            Type::Id(heap.alloc_str_for_test("FooBar")),
           ),
           index: 0,
         },
         Statement::IndexedAssign { assigned_expression: ZERO, pointer_expression: ZERO, index: 0 },
-        Statement::Cast { name: heap.alloc_str("c"), type_: BOOL_TYPE, assigned_expression: ZERO },
+        Statement::Cast {
+          name: heap.alloc_str_for_test("c"),
+          type_: BOOL_TYPE,
+          assigned_expression: ZERO,
+        },
         Statement::Break(ZERO),
       ],
       final_assignments: vec![(
-        heap.alloc_str("bar"),
+        heap.alloc_str_for_test("bar"),
         INT_TYPE,
-        Expression::Variable(heap.alloc_str("b1"), INT_TYPE),
-        Expression::Variable(heap.alloc_str("b2"), INT_TYPE),
+        Expression::Variable(heap.alloc_str_for_test("b1"), INT_TYPE),
+        Expression::Variable(heap.alloc_str_for_test("b2"), INT_TYPE),
       )],
     };
     let f = Function {
-      name: heap.alloc_str("f"),
-      parameters: vec![heap.alloc_str("v1")],
+      name: heap.alloc_str_for_test("f"),
+      parameters: vec![heap.alloc_str_for_test("v1")],
       type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
       body: vec![stmt],
       return_value: ZERO,
@@ -215,24 +231,30 @@ mod tests {
 
     let sources = Sources {
       global_variables: vec![
-        GlobalVariable { name: heap.alloc_str("dev_meggo"), content: heap.alloc_str("vibez") },
-        GlobalVariable { name: heap.alloc_str("esc"), content: heap.alloc_str(r#"f"\""#) },
+        GlobalVariable {
+          name: heap.alloc_str_for_test("dev_meggo"),
+          content: heap.alloc_str_for_test("vibez"),
+        },
+        GlobalVariable {
+          name: heap.alloc_str_for_test("esc"),
+          content: heap.alloc_str_for_test(r#"f"\""#),
+        },
       ],
       type_definitions: vec![TypeDefinition {
-        name: heap.alloc_str("Foo"),
+        name: heap.alloc_str_for_test("Foo"),
         mappings: vec![INT_TYPE, BOOL_TYPE],
       }],
       main_function_names: vec![],
       functions: vec![Function {
-        name: heap.alloc_str("Bar"),
-        parameters: vec![heap.alloc_str("f")],
+        name: heap.alloc_str_for_test("Bar"),
+        parameters: vec![heap.alloc_str_for_test("f")],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IndexedAccess {
-          name: heap.alloc_str("f"),
+          name: heap.alloc_str_for_test("f"),
           type_: INT_TYPE,
           pointer_expression: Expression::Variable(
-            heap.alloc_str("big"),
-            Type::Id(heap.alloc_str("FooBar")),
+            heap.alloc_str_for_test("big"),
+            Type::Id(heap.alloc_str_for_test("FooBar")),
           ),
           index: 0,
         }],

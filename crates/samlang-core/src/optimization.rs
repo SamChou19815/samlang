@@ -138,9 +138,9 @@ mod tests {
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![heap.alloc_str("main")],
+      main_function_names: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
-        name: heap.alloc_str("main"),
+        name: heap.alloc_str_for_test("main"),
         parameters: vec![],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
