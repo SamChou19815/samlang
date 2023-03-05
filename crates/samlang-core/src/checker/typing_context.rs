@@ -215,6 +215,19 @@ impl<'a> TypingContext<'a> {
     }
   }
 
+  pub(super) fn toplevel_name_exists(
+    &self,
+    module_reference: ModuleReference,
+    toplevel_name: PStr,
+  ) -> bool {
+    self.resolve_to_potentially_in_scope_type_parameter_bound(toplevel_name).is_some()
+      || self
+        .global_signature
+        .get(&module_reference)
+        .map(|module_cx| module_cx.interfaces.contains_key(&toplevel_name))
+        .unwrap_or(false)
+  }
+
   pub(crate) fn get_function_type(
     &self,
     module_reference: ModuleReference,

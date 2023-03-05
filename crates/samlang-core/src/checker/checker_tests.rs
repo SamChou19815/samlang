@@ -720,7 +720,7 @@ mod tests {
       heap,
       "Test44.Bar(42)",
       &builder.simple_id_type(test2_str),
-      vec!["__DUMMY__.sam:1:1-1:11: [member-missing]: Cannot find member `Bar` on `Test44`."],
+      vec!["__DUMMY__.sam:1:1-1:7: [cannot-resolve-name]: Name `Test44` is not resolved."],
     );
     assert_errors_with_class(
       heap,

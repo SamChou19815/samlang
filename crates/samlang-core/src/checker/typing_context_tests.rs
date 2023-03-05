@@ -388,6 +388,11 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       ],
     );
 
+    assert!(!cx.toplevel_name_exists(ModuleReference::dummy(), heap.alloc_str_for_test("s")));
+    assert!(!cx.toplevel_name_exists(
+      heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
+      heap.alloc_str_for_test("A")
+    ));
     assert!(cx
       .get_function_type(
         heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),

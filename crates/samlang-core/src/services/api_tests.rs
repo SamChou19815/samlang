@@ -2,7 +2,7 @@
 mod tests {
   use super::super::api::*;
   use crate::{
-    ast::Position,
+    ast::{Location, Position},
     common::{Heap, ModuleReference},
   };
   use itertools::Itertools;
@@ -11,6 +11,11 @@ mod tests {
   #[test]
   fn coverage_tests() {
     assert!(!format!("{:?}", TypeQueryContent { language: "", value: "".to_string() }).is_empty());
+    assert!(!format!(
+      "{:?}",
+      CodeAction::Quickfix { title: "".to_string(), new_code: "".to_string() }
+    )
+    .is_empty());
     assert!(!format!(
       "{:?}",
       AutoCompletionItem {
@@ -679,9 +684,9 @@ class Main {
 class Pair<A, B>(val a: A, val b: B) {}
 class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
   function <T> of(t: T): List<T> =
-    Cons(Pair.init(t, Nil({})))
+    Cons
   method cons(t: T): List<T> =
-    Cons(Pair.init(t, this))
+    Cons
 }
 class Developer(
   val name: string, val github: string,
@@ -696,12 +701,61 @@ class Developer(
 class Main {
   function main(): Developer = Developer.sam()
 }
+interface Interface {}
 "#
         .to_string(),
       )],
     );
 
-    assert!(service.auto_complete(&test_mod_ref, Position(4, 5)).is_empty());
+    assert!(service.auto_complete(&test_mod_ref, Position(4, 3)).is_empty());
+    assert!(service.auto_complete(&test_mod_ref, Position(14, 22)).is_empty());
+    assert_eq!(
+      vec![
+        AutoCompletionItem {
+          kind: CompletionItemKind::Class,
+          insert_text_format: InsertTextFormat::PlainText,
+          detail: "class Builtins".to_string(),
+          insert_text: "Builtins".to_string(),
+          label: "Builtins".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Class,
+          insert_text_format: InsertTextFormat::PlainText,
+          detail: "class Pair".to_string(),
+          insert_text: "Pair".to_string(),
+          label: "Pair".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Class,
+          insert_text_format: InsertTextFormat::PlainText,
+          detail: "class List".to_string(),
+          insert_text: "List".to_string(),
+          label: "List".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Class,
+          insert_text_format: InsertTextFormat::PlainText,
+          detail: "class Developer".to_string(),
+          insert_text: "Developer".to_string(),
+          label: "Developer".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Class,
+          insert_text_format: InsertTextFormat::PlainText,
+          detail: "class Main".to_string(),
+          insert_text: "Main".to_string(),
+          label: "Main".to_string(),
+        },
+        AutoCompletionItem {
+          kind: CompletionItemKind::Interface,
+          insert_text_format: InsertTextFormat::PlainText,
+          detail: "interface Interface".to_string(),
+          insert_text: "Interface".to_string(),
+          label: "Interface".to_string(),
+        },
+      ],
+      service.auto_complete(&test_mod_ref, Position(4, 5))
+    );
     assert_eq!(
       vec![
         AutoCompletionItem {
@@ -1091,6 +1145,103 @@ class Test {
 }
 "#,
       service.rename_variable(&mod_ref, Position(2, 32), "c").unwrap()
+    );
+  }
+
+  #[test]
+  fn error_quickfix_test1() {
+    // Intentional syntax error
+    let service = LanguageServices::new(
+      Heap::new(),
+      false,
+      vec![(ModuleReference::dummy(), "dfsf".to_string())],
+    );
+    assert!(service.code_actions(Location::from_pos(0, 1, 0, 2)).is_empty());
+  }
+
+  #[test]
+  fn error_quickfix_test2() {
+    let mut heap = Heap::new();
+    let mod_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
+    let service = LanguageServices::new(
+      heap,
+      false,
+      vec![
+        (
+          ModuleReference::dummy(),
+          r#"
+class Main {
+  function main(): int = Foo.bar()
+}
+"#
+          .to_string(),
+        ),
+        (
+          mod_a,
+          r#"
+class Foo {
+  function bar(): int = 2
+}
+"#
+          .to_string(),
+        ),
+      ],
+    );
+    // At Foo in `Foo.bar`
+    assert_eq!(
+      vec![CodeAction::Quickfix {
+        title: "Import `Foo` from `A`".to_string(),
+        new_code: r#"import { Foo } from A
+
+class Main {
+  function main(): int = Foo.bar()
+}
+"#
+        .to_string()
+      }],
+      service.code_actions(Location::from_pos(2, 28, 2, 28))
+    );
+  }
+
+  #[test]
+  fn error_quickfix_test3() {
+    let mut heap = Heap::new();
+    let mod_a = heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]);
+    let service = LanguageServices::new(
+      heap,
+      false,
+      vec![
+        (
+          ModuleReference::dummy(),
+          r#"
+class Main {
+  function main(): int = Foo
+}
+"#
+          .to_string(),
+        ),
+        (
+          mod_a,
+          r#"
+class Foo {}
+"#
+          .to_string(),
+        ),
+      ],
+    );
+    // At Foo in `function main(): int = Foo`
+    assert_eq!(
+      vec![CodeAction::Quickfix {
+        title: "Import `Foo` from `A`".to_string(),
+        new_code: r#"import { Foo } from A
+
+class Main {
+  function main(): int = Foo
+}
+"#
+        .to_string()
+      }],
+      service.code_actions(Location::from_pos(2, 28, 2, 28))
     );
   }
 

@@ -282,5 +282,13 @@ mod tests {
     interface.loc();
     interface.associated_comments();
     assert!(!interface.is_class());
+    Module {
+      comment_store: CommentStore::new(),
+      imports: vec![],
+      toplevels: vec![class, interface],
+    }
+    .clone()
+    .comment_store
+    .all_comments();
   }
 }
