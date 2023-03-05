@@ -32,7 +32,7 @@ use std::{
   rc::Rc,
 };
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum CompletionItemKind {
   Method = 2,
   Function = 3,
@@ -42,16 +42,20 @@ pub enum CompletionItemKind {
   Interface = 8,
 }
 
-#[derive(Debug, PartialEq, Eq)]
 pub enum InsertTextFormat {
   PlainText = 1,
   Snippet = 2,
 }
 
-#[derive(Debug, PartialEq, Eq)]
 pub struct TypeQueryContent {
   pub language: &'static str,
   pub value: String,
+}
+
+impl ToString for TypeQueryContent {
+  fn to_string(&self) -> String {
+    format!("{} [lang={}]", self.value, self.language)
+  }
 }
 
 pub struct TypeQueryResult {
@@ -59,13 +63,18 @@ pub struct TypeQueryResult {
   pub location: Location,
 }
 
-#[derive(Debug, PartialEq, Eq)]
 pub struct AutoCompletionItem {
   pub label: String,
   pub insert_text: String,
   pub insert_text_format: InsertTextFormat,
   pub kind: CompletionItemKind,
   pub detail: String,
+}
+
+impl ToString for AutoCompletionItem {
+  fn to_string(&self) -> String {
+    format!("{} [kind={:?}, detail={}]", self.label, self.kind, self.detail)
+  }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -668,7 +677,11 @@ impl LanguageServices {
     let (insert_text, insert_text_format) =
       Self::get_insert_text(name, type_information.type_.argument_types.len());
     AutoCompletionItem {
-      label: format!(
+      label: name.to_string(),
+      insert_text,
+      insert_text_format,
+      kind,
+      detail: format!(
         "{}({}): {}",
         name,
         type_information
@@ -680,22 +693,6 @@ impl LanguageServices {
           .join(", "),
         type_information.type_.return_type.pretty_print(&self.heap)
       ),
-      insert_text,
-      insert_text_format,
-      kind,
-      detail: self.pretty_print_type_info(type_information),
-    }
-  }
-
-  fn pretty_print_type_info(&self, type_information: &MemberSignature) -> String {
-    if type_information.type_parameters.is_empty() {
-      type_information.type_.pretty_print(&self.heap)
-    } else {
-      format!(
-        "<{}>({})",
-        type_information.type_parameters.iter().map(|it| it.pretty_print(&self.heap)).join(", "),
-        type_information.type_.pretty_print(&self.heap)
-      )
     }
   }
 

@@ -10,21 +10,9 @@ mod tests {
 
   #[test]
   fn coverage_tests() {
-    assert!(!format!("{:?}", TypeQueryContent { language: "", value: "".to_string() }).is_empty());
     assert!(!format!(
       "{:?}",
       CodeAction::Quickfix { title: "".to_string(), new_code: "".to_string() }
-    )
-    .is_empty());
-    assert!(!format!(
-      "{:?}",
-      AutoCompletionItem {
-        kind: CompletionItemKind::Function,
-        insert_text_format: InsertTextFormat::Snippet,
-        detail: "".to_string(),
-        insert_text: "".to_string(),
-        label: "".to_string(),
-      }
     )
     .is_empty());
   }
@@ -262,38 +250,74 @@ class Test1(val a: int) {
 
     assert!(service.query_for_hover(&test_mod_ref, Position(100, 100)).is_none());
     assert_eq!(
-      vec![TypeQueryContent { language: "samlang", value: "string".to_string() }],
-      service.query_for_hover(&test_mod_ref, Position(3, 27)).unwrap().contents
+      "string [lang=samlang]",
+      service
+        .query_for_hover(&test_mod_ref, Position(3, 27))
+        .unwrap()
+        .contents
+        .iter()
+        .map(TypeQueryContent::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![
-        TypeQueryContent { language: "samlang", value: "class Test1".to_string() },
-        TypeQueryContent { language: "markdown", value: "Test".to_string() }
-      ],
-      service.query_for_hover(&test_mod_ref, Position(1, 9)).unwrap().contents
+      "class Test1 [lang=samlang]\nTest [lang=markdown]",
+      service
+        .query_for_hover(&test_mod_ref, Position(1, 9))
+        .unwrap()
+        .contents
+        .iter()
+        .map(TypeQueryContent::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![
-        TypeQueryContent { language: "samlang", value: "() -> int".to_string() },
-        TypeQueryContent { language: "markdown", value: "test".to_string() }
-      ],
-      service.query_for_hover(&test_mod_ref, Position(5, 34)).unwrap().contents
+      "() -> int [lang=samlang]\ntest [lang=markdown]",
+      service
+        .query_for_hover(&test_mod_ref, Position(5, 34))
+        .unwrap()
+        .contents
+        .iter()
+        .map(TypeQueryContent::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![TypeQueryContent { language: "samlang", value: "class Test1".to_string() }],
-      service.query_for_hover(&test2_mod_ref, Position(1, 9)).unwrap().contents
+      "class Test1 [lang=samlang]",
+      service
+        .query_for_hover(&test2_mod_ref, Position(1, 9))
+        .unwrap()
+        .contents
+        .iter()
+        .map(TypeQueryContent::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![TypeQueryContent { language: "samlang", value: "int".to_string() }],
-      service.query_for_hover(&test2_mod_ref, Position(3, 28)).unwrap().contents
+      "int [lang=samlang]",
+      service
+        .query_for_hover(&test2_mod_ref, Position(3, 28))
+        .unwrap()
+        .contents
+        .iter()
+        .map(TypeQueryContent::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![TypeQueryContent { language: "samlang", value: "() -> int".to_string() }],
-      service.query_for_hover(&test2_mod_ref, Position(4, 44)).unwrap().contents
+      "() -> int [lang=samlang]",
+      service
+        .query_for_hover(&test2_mod_ref, Position(4, 44))
+        .unwrap()
+        .contents
+        .iter()
+        .map(TypeQueryContent::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![TypeQueryContent { language: "samlang", value: "class NonExisting".to_string() }],
-      service.query_for_hover(&test3_mod_ref, Position(0, 45)).unwrap().contents
+      "class NonExisting [lang=samlang]",
+      service
+        .query_for_hover(&test3_mod_ref, Position(0, 45))
+        .unwrap()
+        .contents
+        .iter()
+        .map(TypeQueryContent::to_string)
+        .join("\n")
     );
   }
 
@@ -334,8 +358,14 @@ class Test2(val a: int) {
 
     // At v in v: int
     assert_eq!(
-      vec![TypeQueryContent { language: "samlang", value: "int".to_string() }],
-      service.query_for_hover(&test2_mod_ref, Position(4, 17)).unwrap().contents
+      "int [lang=samlang]",
+      service
+        .query_for_hover(&test2_mod_ref, Position(4, 17))
+        .unwrap()
+        .contents
+        .iter()
+        .map(TypeQueryContent::to_string)
+        .join("\n")
     );
     // At b in this.b
     assert!(service.query_for_hover(&test2_mod_ref, Position(3, 28)).is_none());
@@ -710,132 +740,54 @@ interface Interface {}
     assert!(service.auto_complete(&test_mod_ref, Position(4, 3)).is_empty());
     assert!(service.auto_complete(&test_mod_ref, Position(14, 22)).is_empty());
     assert_eq!(
-      vec![
-        AutoCompletionItem {
-          kind: CompletionItemKind::Class,
-          insert_text_format: InsertTextFormat::PlainText,
-          detail: "class Builtins".to_string(),
-          insert_text: "Builtins".to_string(),
-          label: "Builtins".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Class,
-          insert_text_format: InsertTextFormat::PlainText,
-          detail: "class Pair".to_string(),
-          insert_text: "Pair".to_string(),
-          label: "Pair".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Class,
-          insert_text_format: InsertTextFormat::PlainText,
-          detail: "class List".to_string(),
-          insert_text: "List".to_string(),
-          label: "List".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Class,
-          insert_text_format: InsertTextFormat::PlainText,
-          detail: "class Developer".to_string(),
-          insert_text: "Developer".to_string(),
-          label: "Developer".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Class,
-          insert_text_format: InsertTextFormat::PlainText,
-          detail: "class Main".to_string(),
-          insert_text: "Main".to_string(),
-          label: "Main".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Interface,
-          insert_text_format: InsertTextFormat::PlainText,
-          detail: "interface Interface".to_string(),
-          insert_text: "Interface".to_string(),
-          label: "Interface".to_string(),
-        },
-      ],
-      service.auto_complete(&test_mod_ref, Position(4, 5))
+      r#"Builtins [kind=Class, detail=class Builtins]
+Pair [kind=Class, detail=class Pair]
+List [kind=Class, detail=class List]
+Developer [kind=Class, detail=class Developer]
+Main [kind=Class, detail=class Main]
+Interface [kind=Interface, detail=interface Interface]"#,
+      service
+        .auto_complete(&test_mod_ref, Position(4, 5))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![
-        AutoCompletionItem {
-          kind: CompletionItemKind::Function,
-          insert_text_format: InsertTextFormat::Snippet,
-          detail: "<T>((Pair<T, List<T>>) -> List<T>)".to_string(),
-          insert_text: "Cons($0)$1".to_string(),
-          label: "Cons(a0: Pair<T, List<T>>): List<T>".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Function,
-          insert_text_format: InsertTextFormat::Snippet,
-          detail: "<T>((unit) -> List<T>)".to_string(),
-          insert_text: "Nil($0)$1".to_string(),
-          label: "Nil(a0: unit): List<T>".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Function,
-          insert_text_format: InsertTextFormat::Snippet,
-          label: "of(a0: T): List<T>".to_string(),
-          insert_text: "of($0)$1".to_string(),
-          detail: "<T>((T) -> List<T>)".to_string(),
-        },
-      ],
-      service.auto_complete(&test_mod_ref, Position(13, 17))
+      r#"Cons [kind=Function, detail=Cons(a0: Pair<T, List<T>>): List<T>]
+Nil [kind=Function, detail=Nil(a0: unit): List<T>]
+of [kind=Function, detail=of(a0: T): List<T>]"#,
+      service
+        .auto_complete(&test_mod_ref, Position(13, 17))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![AutoCompletionItem {
-        kind: CompletionItemKind::Method,
-        insert_text_format: InsertTextFormat::Snippet,
-        label: "cons(a0: T): List<T>".to_string(),
-        insert_text: "cons($0)$1".to_string(),
-        detail: "(T) -> List<T>".to_string(),
-      },],
-      service.auto_complete(&test_mod_ref, Position(13, 31))
+      "cons [kind=Method, detail=cons(a0: T): List<T>]",
+      service
+        .auto_complete(&test_mod_ref, Position(13, 31))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![
-        AutoCompletionItem {
-          kind: CompletionItemKind::Field,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "github".to_string(),
-          insert_text: "github".to_string(),
-          detail: "string".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Field,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "name".to_string(),
-          insert_text: "name".to_string(),
-          detail: "string".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Field,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "projects".to_string(),
-          insert_text: "projects".to_string(),
-          detail: "List<string>".to_string(),
-        }
-      ],
-      service.auto_complete(&test_mod_ref, Position(15, 46))
+      r#"github [kind=Field, detail=string]
+name [kind=Field, detail=string]
+projects [kind=Field, detail=List<string>]"#,
+      service
+        .auto_complete(&test_mod_ref, Position(15, 46))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![
-        AutoCompletionItem {
-          kind: CompletionItemKind::Function,
-          insert_text_format: InsertTextFormat::Snippet,
-          detail: "(string, string, List<string>) -> Developer".to_string(),
-          insert_text: "init($0, $1, $2)$3".to_string(),
-          label: "init(a0: string, a1: string, a2: List<string>): Developer".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Function,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "sam(): Developer".to_string(),
-          insert_text: "sam()".to_string(),
-          detail: "() -> Developer".to_string(),
-        },
-      ],
-      service.auto_complete(&test_mod_ref, Position(19, 41))
+      r#"init [kind=Function, detail=init(a0: string, a1: string, a2: List<string>): Developer]
+sam [kind=Function, detail=sam(): Developer]"#,
+      service
+        .auto_complete(&test_mod_ref, Position(19, 41))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
   }
 
@@ -875,30 +827,14 @@ class Main {
     );
 
     assert_eq!(
-      vec![
-        AutoCompletionItem {
-          kind: CompletionItemKind::Field,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "github".to_string(),
-          insert_text: "github".to_string(),
-          detail: "string".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Field,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "name".to_string(),
-          insert_text: "name".to_string(),
-          detail: "string".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Field,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "projects".to_string(),
-          insert_text: "projects".to_string(),
-          detail: "List<string>".to_string(),
-        }
-      ],
-      service.auto_complete(&test_mod_ref, Position(15, 43))
+      r#"github [kind=Field, detail=string]
+name [kind=Field, detail=string]
+projects [kind=Field, detail=List<string>]"#,
+      service
+        .auto_complete(&test_mod_ref, Position(15, 43))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
   }
 
@@ -968,14 +904,12 @@ class Developer {
       )],
     );
     assert_eq!(
-      vec![AutoCompletionItem {
-        kind: CompletionItemKind::Method,
-        insert_text_format: InsertTextFormat::PlainText,
-        label: "b(): unit".to_string(),
-        insert_text: "b()".to_string(),
-        detail: "() -> unit".to_string(),
-      }],
-      service.auto_complete(&mod_ref, Position(2, 45))
+      "b [kind=Method, detail=b(): unit]",
+      service
+        .auto_complete(&mod_ref, Position(2, 45))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
   }
 
@@ -1020,56 +954,24 @@ class Main {
       )],
     );
     assert_eq!(
-      vec![
-        AutoCompletionItem {
-          kind: CompletionItemKind::Variable,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "foo".to_string(),
-          insert_text: "foo".to_string(),
-          detail: "string".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Variable,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "bar".to_string(),
-          insert_text: "bar".to_string(),
-          detail: "int".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Variable,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "baz".to_string(),
-          insert_text: "baz".to_string(),
-          detail: "bool".to_string(),
-        }
-      ],
-      service.auto_complete(&mod_ref, Position(6, 4))
+      r#"foo [kind=Variable, detail=string]
+bar [kind=Variable, detail=int]
+baz [kind=Variable, detail=bool]"#,
+      service
+        .auto_complete(&mod_ref, Position(6, 4))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
     assert_eq!(
-      vec![
-        AutoCompletionItem {
-          kind: CompletionItemKind::Variable,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "foo".to_string(),
-          insert_text: "foo".to_string(),
-          detail: "string".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Variable,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "bar".to_string(),
-          insert_text: "bar".to_string(),
-          detail: "int".to_string(),
-        },
-        AutoCompletionItem {
-          kind: CompletionItemKind::Variable,
-          insert_text_format: InsertTextFormat::PlainText,
-          label: "baz".to_string(),
-          insert_text: "baz".to_string(),
-          detail: "bool".to_string(),
-        }
-      ],
-      service.auto_complete(&mod_ref, Position(6, 5))
+      r#"foo [kind=Variable, detail=string]
+bar [kind=Variable, detail=int]
+baz [kind=Variable, detail=bool]"#,
+      service
+        .auto_complete(&mod_ref, Position(6, 5))
+        .iter()
+        .map(AutoCompletionItem::to_string)
+        .join("\n")
     );
   }
 
