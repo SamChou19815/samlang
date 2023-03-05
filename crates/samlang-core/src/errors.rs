@@ -6,9 +6,9 @@ use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ErrorDetail {
+  CannotResolveClass { module_reference: ModuleReference, name: PStr },
   CannotResolveModule { module_reference: ModuleReference },
   CannotResolveName { name: PStr },
-  CannotResolveToplevelName { module_reference: ModuleReference, name: PStr },
   CyclicTypeDefinition { type_: String },
   IncompatibleType { expected: String, actual: String, subtype: bool },
   InvalidArity { kind: &'static str, expected: usize, actual: usize },
@@ -35,12 +35,14 @@ impl CompileTimeError {
 
   pub fn pretty_print(&self, heap: &Heap) -> String {
     let (error_type, reason) = match &self.detail {
+      ErrorDetail::CannotResolveClass { module_reference: _, name } => {
+        ("cannot-resolve-class", format!("Class `{}` is not resolved.", name.as_str(heap)))
+      }
       ErrorDetail::CannotResolveModule { module_reference } => (
         "cannot-resolve-module",
         format!("Module `{}` is not resolved.", module_reference.pretty_print(heap)),
       ),
-      ErrorDetail::CannotResolveName { name }
-      | ErrorDetail::CannotResolveToplevelName { module_reference: _, name } => {
+      ErrorDetail::CannotResolveName { name } => {
         ("cannot-resolve-name", format!("Name `{}` is not resolved.", name.as_str(heap)))
       }
       ErrorDetail::CyclicTypeDefinition { type_ } => {
@@ -137,17 +139,17 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::CannotResolveModule { module_reference })
   }
 
-  pub(crate) fn report_cannot_unresolve_name_error(&mut self, loc: Location, name: PStr) {
-    self.report_error(loc, ErrorDetail::CannotResolveName { name })
-  }
-
-  pub(crate) fn report_cannot_unresolve_toplevel_name_error(
+  pub(crate) fn report_cannot_unresolve_class_error(
     &mut self,
     loc: Location,
     module_reference: ModuleReference,
     name: PStr,
   ) {
-    self.report_error(loc, ErrorDetail::CannotResolveToplevelName { module_reference, name })
+    self.report_error(loc, ErrorDetail::CannotResolveClass { module_reference, name })
+  }
+
+  pub(crate) fn report_cannot_unresolve_name_error(&mut self, loc: Location, name: PStr) {
+    self.report_error(loc, ErrorDetail::CannotResolveName { name })
   }
 
   pub(crate) fn report_cyclic_type_definition_error(&mut self, type_loc: Location, type_: String) {
@@ -279,7 +281,7 @@ mod tests {
     error_set.report_cannot_unresolve_module_error(Location::dummy(), ModuleReference::dummy());
     error_set
       .report_cannot_unresolve_name_error(Location::dummy(), heap.alloc_str_for_test("global"));
-    error_set.report_cannot_unresolve_toplevel_name_error(
+    error_set.report_cannot_unresolve_class_error(
       Location::dummy(),
       ModuleReference::dummy(),
       heap.alloc_str_for_test("global"),
@@ -330,8 +332,8 @@ mod tests {
       })
       .collect::<Vec<_>>();
     let expected_errors = vec![
+      "[cannot-resolve-class]: Class `global` is not resolved.",
       "[cannot-resolve-module]: Module `__DUMMY__` is not resolved.",
-      "[cannot-resolve-name]: Name `global` is not resolved.",
       "[cannot-resolve-name]: Name `global` is not resolved.",
       "[cyclic-type-definition]: Type `int` has a cyclic definition.",
       "[incompatible-type]: Expected: `int`, actual: `bool`.",

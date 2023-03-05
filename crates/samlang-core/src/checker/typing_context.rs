@@ -215,7 +215,7 @@ impl<'a> TypingContext<'a> {
     }
   }
 
-  pub(super) fn toplevel_name_exists(
+  pub(super) fn class_exists(
     &self,
     module_reference: ModuleReference,
     toplevel_name: PStr,
@@ -224,7 +224,9 @@ impl<'a> TypingContext<'a> {
       || self
         .global_signature
         .get(&module_reference)
-        .map(|module_cx| module_cx.interfaces.contains_key(&toplevel_name))
+        .and_then(|module_cx| {
+          module_cx.interfaces.get(&toplevel_name).map(|sig| sig.type_definition.is_some())
+        })
         .unwrap_or(false)
   }
 

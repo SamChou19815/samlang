@@ -741,7 +741,7 @@ impl LanguageServices {
     let mut actions = vec![];
     for error in self.errors.get(&location.module_reference).iter().flat_map(|it| it.iter()) {
       match &error.detail {
-        ErrorDetail::CannotResolveToplevelName { module_reference, name }
+        ErrorDetail::CannotResolveClass { module_reference, name }
           if error.location.contains(&location)
             && module_reference.eq(&error.location.module_reference) =>
         {

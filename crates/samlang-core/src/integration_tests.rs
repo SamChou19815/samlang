@@ -136,6 +136,13 @@ class ImplItself : ImplItself {} // error: expect interface type
 class ImplTArg<T> : T {} // error: T not resolved
 "#,
       },
+      CheckerTestSource {
+        test_name: "call-interface-function",
+        source_code: r#"
+interface Foo { function bar(): int }
+class Ouch { function call(foo: Foo): int = Foo.bar() }
+"#,
+      },
       CheckerTestSource { test_name: "complete-trash", source_code: "This is a bad source." },
       CheckerTestSource {
         test_name: "forty-two",
@@ -476,6 +483,8 @@ class Main {
       "bounded-generics.sam:28:7-28:17: [cyclic-type-definition]: Type `ImplItself` has a cyclic definition.",
       "bounded-generics.sam:28:20-28:30: [incompatible-type]: Expected: `interface type`, actual: `class type`.",
       "bounded-generics.sam:29:21-29:22: [cannot-resolve-name]: Name `T` is not resolved.",
+      "call-interface-function.sam:3:33-3:36: [incompatible-type]: Expected: `non-abstract type`, actual: `Foo`.",
+      "call-interface-function.sam:3:45-3:48: [cannot-resolve-class]: Class `Foo` is not resolved.",
       "complete-trash.sam:1:1-1:5: [invalid-syntax]: Unexpected token among the classes and interfaces: This",
       "complete-trash.sam:1:6-1:8: [invalid-syntax]: Unexpected token among the classes and interfaces: is",
       "complete-trash.sam:1:9-1:10: [invalid-syntax]: Unexpected token among the classes and interfaces: a",

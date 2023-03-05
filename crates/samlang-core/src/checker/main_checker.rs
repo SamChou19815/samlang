@@ -429,8 +429,8 @@ impl<'a> TypingContext<'a> {
     expression: &expr::ClassFunction<()>,
     hint: Option<&Type>,
   ) -> (expr::ClassFunction<Rc<Type>>, Vec<TypeParameterSignature>) {
-    if !self.toplevel_name_exists(expression.module_reference, expression.class_name.name) {
-      self.error_set.report_cannot_unresolve_toplevel_name_error(
+    if !self.class_exists(expression.module_reference, expression.class_name.name) {
+      self.error_set.report_cannot_unresolve_class_error(
         expression.class_name.loc,
         expression.module_reference,
         expression.class_name.name,
