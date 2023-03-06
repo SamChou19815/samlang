@@ -110,10 +110,9 @@ mod utils {
 }
 
 mod lsp {
-  use std::collections::HashMap;
-
   use super::*;
   use samlang_core::services;
+  use std::collections::HashMap;
   use tokio::sync::RwLock;
   use tower_lsp::jsonrpc::Result;
   use tower_lsp::lsp_types::*;
@@ -133,12 +132,12 @@ mod lsp {
   pub(super) struct Backend {
     client: Client,
     absolute_source_path: PathBuf,
-    service: RwLock<WrappedService>,
+    state: RwLock<WrappedState>,
   }
 
-  struct WrappedService(services::api::LanguageServices);
+  struct WrappedState(services::server_state::ServerState);
 
-  impl WrappedService {
+  impl WrappedState {
     fn update(&mut self, absolute_source_path: &Path, updates: Vec<(Url, String)>) {
       let mut mod_ref_updates = vec![];
       for (url, code) in updates {
@@ -202,8 +201,8 @@ mod lsp {
     .unwrap()
   }
 
-  unsafe impl Send for WrappedService {}
-  unsafe impl Sync for WrappedService {}
+  unsafe impl Send for WrappedState {}
+  unsafe impl Sync for WrappedState {}
 
   const ENTIRE_DOCUMENT_RANGE: Range = Range {
     start: Position { line: 0, character: 0 },
@@ -214,9 +213,9 @@ mod lsp {
     pub(super) fn new(
       client: Client,
       absolute_source_path: PathBuf,
-      service: services::api::LanguageServices,
+      state: services::server_state::ServerState,
     ) -> Backend {
-      Backend { client, absolute_source_path, service: RwLock::new(WrappedService(service)) }
+      Backend { client, absolute_source_path, state: RwLock::new(WrappedState(state)) }
     }
 
     fn convert_url_to_module_reference_readonly(
@@ -247,8 +246,8 @@ mod lsp {
       convert_module_reference_to_url_helper(heap, &self.absolute_source_path, module_reference)
     }
 
-    async fn publish_diagnostics(&self, service: &mut WrappedService) {
-      let to_publish = service.get_diagnostics(&self.absolute_source_path);
+    async fn publish_diagnostics(&self, state: &mut WrappedState) {
+      let to_publish = state.get_diagnostics(&self.absolute_source_path);
       for (url, diagnostics) in to_publish {
         self.client.publish_diagnostics(url, diagnostics, None).await;
       }
@@ -327,8 +326,8 @@ mod lsp {
 
     async fn initialized(&self, _: InitializedParams) {
       self.client.log_message(MessageType::INFO, "[lsp] initialized").await;
-      let mut services = self.service.write().await;
-      self.publish_diagnostics(&mut services).await;
+      let mut state = self.state.write().await;
+      self.publish_diagnostics(&mut state).await;
     }
 
     async fn shutdown(&self) -> Result<()> {
@@ -338,7 +337,7 @@ mod lsp {
 
     async fn did_create_files(&self, params: CreateFilesParams) {
       self.client.log_message(MessageType::INFO, "[lsp] did_create_files").await;
-      let mut service = self.service.write().await;
+      let mut state = self.state.write().await;
       let added_set = params
         .files
         .iter()
@@ -346,7 +345,7 @@ mod lsp {
         .filter_map(|uri| {
           if let Ok(content) = fs::read_to_string(uri.path()) {
             Some((
-              self.convert_url_to_module_reference_add_if_absent(&mut service.0.heap, &uri),
+              self.convert_url_to_module_reference_add_if_absent(&mut state.0.heap, &uri),
               content,
             ))
           } else {
@@ -354,112 +353,116 @@ mod lsp {
           }
         })
         .collect::<Vec<_>>();
-      service.0.update(added_set);
-      self.publish_diagnostics(&mut service).await;
+      state.0.update(added_set);
+      self.publish_diagnostics(&mut state).await;
     }
 
     async fn did_rename_files(&self, params: RenameFilesParams) {
       self.client.log_message(MessageType::INFO, "[lsp] did_rename_files").await;
-      let mut service = self.service.write().await;
+      let mut state = self.state.write().await;
       let rename_set = params
         .files
         .iter()
         .filter_map(|f| Option::zip(Url::parse(&f.old_uri).ok(), Url::parse(&f.new_uri).ok()))
         .map(|(old_uri, new_uri)| {
           (
-            self.convert_url_to_module_reference_add_if_absent(&mut service.0.heap, &old_uri),
-            self.convert_url_to_module_reference_add_if_absent(&mut service.0.heap, &new_uri),
+            self.convert_url_to_module_reference_add_if_absent(&mut state.0.heap, &old_uri),
+            self.convert_url_to_module_reference_add_if_absent(&mut state.0.heap, &new_uri),
           )
         })
         .collect::<Vec<_>>();
-      service.0.rename_module(rename_set);
-      self.publish_diagnostics(&mut service).await;
+      state.0.rename_module(rename_set);
+      self.publish_diagnostics(&mut state).await;
     }
 
     async fn did_delete_files(&self, params: DeleteFilesParams) {
       self.client.log_message(MessageType::INFO, "[lsp] did_delete_files").await;
-      let mut service = self.service.write().await;
+      let mut state = self.state.write().await;
       let remove_set = params
         .files
         .iter()
         .filter_map(|f| Url::parse(&f.uri).ok())
-        .map(|uri| self.convert_url_to_module_reference_readonly(&service.0.heap, &uri))
+        .map(|uri| self.convert_url_to_module_reference_readonly(&state.0.heap, &uri))
         .collect::<Vec<_>>();
-      service.0.remove(&remove_set);
-      self.publish_diagnostics(&mut service).await;
+      state.0.remove(&remove_set);
+      self.publish_diagnostics(&mut state).await;
     }
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
       self.client.log_message(MessageType::INFO, "[lsp] did_change_watched_files").await;
       if let Some(TextDocumentContentChangeEvent { text, .. }) = params.content_changes.pop() {
-        let mut service = self.service.write().await;
-        service.update(&self.absolute_source_path, vec![(params.text_document.uri, text)]);
-        self.publish_diagnostics(&mut service).await;
+        let mut state = self.state.write().await;
+        state.update(&self.absolute_source_path, vec![(params.text_document.uri, text)]);
+        self.publish_diagnostics(&mut state).await;
       }
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
       self.client.log_message(MessageType::INFO, "[lsp] completion").await;
-      let service = self.service.read().await;
+      let state = self.state.read().await;
       let mod_ref = self.convert_url_to_module_reference_readonly(
-        &service.0.heap,
+        &state.0.heap,
         &params.text_document_position.text_document.uri,
       );
       Ok(Some(CompletionResponse::Array(
-        service
-          .0
-          .auto_complete(&mod_ref, lsp_pos_to_samlang_pos(params.text_document_position.position))
-          .into_iter()
-          .map(|item| CompletionItem {
-            label: item.label,
-            kind: Some(match item.kind {
-              services::api::CompletionItemKind::Method => CompletionItemKind::METHOD,
-              services::api::CompletionItemKind::Function => CompletionItemKind::FUNCTION,
-              services::api::CompletionItemKind::Field => CompletionItemKind::FIELD,
-              services::api::CompletionItemKind::Variable => CompletionItemKind::VARIABLE,
-              services::api::CompletionItemKind::Class => CompletionItemKind::CLASS,
-              services::api::CompletionItemKind::Interface => CompletionItemKind::INTERFACE,
-            }),
-            detail: Some(item.detail),
-            insert_text: Some(item.insert_text),
-            insert_text_format: Some(match item.insert_text_format {
-              services::api::InsertTextFormat::PlainText => InsertTextFormat::PLAIN_TEXT,
-              services::api::InsertTextFormat::Snippet => InsertTextFormat::SNIPPET,
-            }),
-            ..Default::default()
-          })
-          .collect(),
+        samlang_core::services::api::completion::auto_complete(
+          &state.0,
+          &mod_ref,
+          lsp_pos_to_samlang_pos(params.text_document_position.position),
+        )
+        .into_iter()
+        .map(|item| CompletionItem {
+          label: item.label,
+          kind: Some(match item.kind {
+            services::api::completion::CompletionItemKind::Method => CompletionItemKind::METHOD,
+            services::api::completion::CompletionItemKind::Function => CompletionItemKind::FUNCTION,
+            services::api::completion::CompletionItemKind::Field => CompletionItemKind::FIELD,
+            services::api::completion::CompletionItemKind::Variable => CompletionItemKind::VARIABLE,
+            services::api::completion::CompletionItemKind::Class => CompletionItemKind::CLASS,
+            services::api::completion::CompletionItemKind::Interface => {
+              CompletionItemKind::INTERFACE
+            }
+          }),
+          detail: Some(item.detail),
+          insert_text: Some(item.insert_text),
+          insert_text_format: Some(match item.insert_text_format {
+            services::api::completion::InsertTextFormat::PlainText => InsertTextFormat::PLAIN_TEXT,
+            services::api::completion::InsertTextFormat::Snippet => InsertTextFormat::SNIPPET,
+          }),
+          ..Default::default()
+        })
+        .collect(),
       )))
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
       self.client.log_message(MessageType::INFO, "[lsp] hover").await;
-      let service = self.service.read().await;
+      let state = self.state.read().await;
       let mod_ref = self.convert_url_to_module_reference_readonly(
-        &service.0.heap,
+        &state.0.heap,
         &params.text_document_position_params.text_document.uri,
       );
       Ok(
-        service
-          .0
-          .query_for_hover(
-            &mod_ref,
-            lsp_pos_to_samlang_pos(params.text_document_position_params.position),
-          )
-          .map(|samlang_core::services::api::TypeQueryResult { location, contents }| Hover {
-            contents: HoverContents::Array(
-              contents
-                .into_iter()
-                .map(|content| {
-                  MarkedString::LanguageString(LanguageString {
-                    language: content.language.to_string(),
-                    value: content.value,
-                  })
+        samlang_core::services::api::query::hover(
+          &state.0,
+          &mod_ref,
+          lsp_pos_to_samlang_pos(params.text_document_position_params.position),
+        )
+        .map(|result| Hover {
+          contents: HoverContents::Array(
+            result
+              .contents
+              .into_iter()
+              .map(|content| {
+                MarkedString::LanguageString(LanguageString {
+                  language: content.language.to_string(),
+                  value: content.value,
                 })
-                .collect(),
-            ),
-            range: Some(samlang_loc_to_lsp_range(&location)),
-          }),
+              })
+              .collect(),
+          ),
+          range: Some(samlang_loc_to_lsp_range(&result.location)),
+        }),
       )
     }
 
@@ -468,71 +471,67 @@ mod lsp {
       params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
       self.client.log_message(MessageType::INFO, "[lsp] goto_definition").await;
-      let service = self.service.read().await;
+      let state = self.state.read().await;
       let mod_ref = self.convert_url_to_module_reference_readonly(
-        &service.0.heap,
+        &state.0.heap,
         &params.text_document_position_params.text_document.uri,
       );
       Ok(
-        service
-          .0
-          .query_definition_location(
-            &mod_ref,
-            lsp_pos_to_samlang_pos(params.text_document_position_params.position),
+        samlang_core::services::api::query::definition_location(
+          &state.0,
+          &mod_ref,
+          lsp_pos_to_samlang_pos(params.text_document_position_params.position),
+        )
+        .and_then(|location| {
+          self.convert_module_reference_to_url(&state.0.heap, &location.module_reference).map(
+            |uri| {
+              GotoDefinitionResponse::Scalar(Location {
+                uri,
+                range: samlang_loc_to_lsp_range(&location),
+              })
+            },
           )
-          .and_then(|location| {
-            self.convert_module_reference_to_url(&service.0.heap, &location.module_reference).map(
-              |uri| {
-                GotoDefinitionResponse::Scalar(Location {
-                  uri,
-                  range: samlang_loc_to_lsp_range(&location),
-                })
-              },
-            )
-          }),
+        }),
       )
     }
 
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
       self.client.log_message(MessageType::INFO, "[lsp] references").await;
-      let service = self.service.read().await;
+      let state = self.state.read().await;
       let mod_ref = self.convert_url_to_module_reference_readonly(
-        &service.0.heap,
+        &state.0.heap,
         &params.text_document_position.text_document.uri,
       );
       Ok(Some(
-        service
-          .0
-          .query_all_references(
-            &mod_ref,
-            lsp_pos_to_samlang_pos(params.text_document_position.position),
-          )
-          .into_iter()
-          .filter_map(|location| {
-            self
-              .convert_module_reference_to_url(&service.0.heap, &location.module_reference)
-              .map(|uri| Location { uri, range: samlang_loc_to_lsp_range(&location) })
-          })
-          .collect(),
+        samlang_core::services::api::query::all_references(
+          &state.0,
+          &mod_ref,
+          lsp_pos_to_samlang_pos(params.text_document_position.position),
+        )
+        .into_iter()
+        .filter_map(|location| {
+          self
+            .convert_module_reference_to_url(&state.0.heap, &location.module_reference)
+            .map(|uri| Location { uri, range: samlang_loc_to_lsp_range(&location) })
+        })
+        .collect(),
       ))
     }
 
     async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
       self.client.log_message(MessageType::INFO, "[lsp] code_action").await;
-      let service = self.service.read().await;
+      let state = self.state.read().await;
       let location = samlang_core::ast::Location {
         module_reference: self
-          .convert_url_to_module_reference_readonly(&service.0.heap, &params.text_document.uri),
+          .convert_url_to_module_reference_readonly(&state.0.heap, &params.text_document.uri),
         start: lsp_pos_to_samlang_pos(params.range.start),
         end: lsp_pos_to_samlang_pos(params.range.end),
       };
       Ok(Some(
-        service
-          .0
-          .code_actions(location)
+        samlang_core::services::api::rewrite::code_actions(&state.0, location)
           .into_iter()
           .map(|code_action| match code_action {
-            services::api::CodeAction::Quickfix { title, new_code } => {
+            services::api::rewrite::CodeAction::Quickfix { title, new_code } => {
               CodeActionOrCommand::CodeAction(CodeAction {
                 title,
                 kind: Some(CodeActionKind::QUICKFIX),
@@ -558,52 +557,49 @@ mod lsp {
 
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
       self.client.log_message(MessageType::INFO, "[lsp] formatting").await;
-      let service = self.service.read().await;
+      let state = self.state.read().await;
       let mod_ref =
-        self.convert_url_to_module_reference_readonly(&service.0.heap, &params.text_document.uri);
+        self.convert_url_to_module_reference_readonly(&state.0.heap, &params.text_document.uri);
       Ok(
-        service
-          .0
-          .format_entire_document(&mod_ref)
+        samlang_core::services::api::rewrite::format_entire_document(&state.0, &mod_ref)
           .map(|new_text| vec![TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text }]),
       )
     }
 
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
       self.client.log_message(MessageType::INFO, "[lsp] rename").await;
-      let mut service = self.service.write().await;
+      let mut state = self.state.write().await;
       let mod_ref = self.convert_url_to_module_reference_readonly(
-        &service.0.heap,
+        &state.0.heap,
         &params.text_document_position.text_document.uri,
       );
       Ok(
-        service
-          .0
-          .rename_variable(
-            &mod_ref,
-            lsp_pos_to_samlang_pos(params.text_document_position.position),
-            &params.new_name,
-          )
-          .map(|new_text| WorkspaceEdit {
-            changes: None,
-            document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
-              text_document: OptionalVersionedTextDocumentIdentifier {
-                uri: params.text_document_position.text_document.uri,
-                version: None,
-              },
-              edits: vec![OneOf::Left(TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text })],
-            }])),
-            change_annotations: None,
-          }),
+        samlang_core::services::api::rewrite::rename(
+          &mut state.0,
+          &mod_ref,
+          lsp_pos_to_samlang_pos(params.text_document_position.position),
+          &params.new_name,
+        )
+        .map(|new_text| WorkspaceEdit {
+          changes: None,
+          document_changes: Some(DocumentChanges::Edits(vec![TextDocumentEdit {
+            text_document: OptionalVersionedTextDocumentIdentifier {
+              uri: params.text_document_position.text_document.uri,
+              version: None,
+            },
+            edits: vec![OneOf::Left(TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text })],
+          }])),
+          change_annotations: None,
+        }),
       )
     }
 
     async fn folding_range(&self, params: FoldingRangeParams) -> Result<Option<Vec<FoldingRange>>> {
       self.client.log_message(MessageType::INFO, "[lsp] folding_range").await;
-      let service = self.service.read().await;
+      let state = self.state.read().await;
       let mod_ref =
-        self.convert_url_to_module_reference_readonly(&service.0.heap, &params.text_document.uri);
-      Ok(service.0.query_folding_ranges(&mod_ref).map(|ranges| {
+        self.convert_url_to_module_reference_readonly(&state.0.heap, &params.text_document.uri);
+      Ok(samlang_core::services::api::query::folding_ranges(&state.0, &mod_ref).map(|ranges| {
         ranges
           .into_iter()
           .map(|location| FoldingRange {
@@ -708,10 +704,10 @@ mod runners {
       {
         let mut heap = samlang_core::Heap::new();
         let collected_sources = utils::collect_sources(&configuration, &mut heap);
-        let service =
-          samlang_core::services::api::LanguageServices::new(heap, true, collected_sources);
+        let state =
+          samlang_core::services::server_state::ServerState::new(heap, true, collected_sources);
         let (service, socket) =
-          LspService::new(|client| lsp::Backend::new(client, absolute_source_path, service));
+          LspService::new(|client| lsp::Backend::new(client, absolute_source_path, state));
 
         let stdin = tokio::io::stdin();
         let stdout = tokio::io::stdout();

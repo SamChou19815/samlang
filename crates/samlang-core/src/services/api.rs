@@ -1,269 +1,159 @@
 use super::{
-  dep_graph::DependencyGraph,
-  gc::perform_gc_after_recheck,
   global_searcher::search_modules_globally,
   location_cover::{search_module_locally, LocationCoverSearchResult},
+  server_state::ServerState,
   variable_definition::{apply_renaming, VariableDefinitionLookup},
 };
 use crate::{
   ast::{
     source::{
       expr, ClassMemberDeclaration, CommentKind, CommentReference, CommentStore, FieldDefinition,
-      Id, Module, ModuleMembersImport, Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
+      Id, ModuleMembersImport, Toplevel, TypeDefinition, NO_COMMENT_REFERENCE,
     },
     Location, Position,
   },
   checker::{
-    build_module_signature,
-    type_::{
-      FunctionType, GlobalSignature, ISourceType, InterfaceSignature, MemberSignature, Type,
-    },
-    type_check_module, type_check_sources,
+    type_::{FunctionType, ISourceType, InterfaceSignature, MemberSignature, Type},
+    type_check_module,
   },
-  common::{Heap, ModuleReference, PStr},
-  errors::{CompileTimeError, ErrorDetail, ErrorSet},
-  measure_time,
-  parser::parse_source_module_from_text,
+  common::{ModuleReference, PStr},
+  errors::{ErrorDetail, ErrorSet},
   printer,
 };
 use itertools::Itertools;
-use std::{
-  collections::{HashMap, HashSet},
-  rc::Rc,
-};
+use std::rc::Rc;
 
-#[derive(Debug)]
-pub enum CompletionItemKind {
-  Method = 2,
-  Function = 3,
-  Field = 5,
-  Variable = 6,
-  Class = 7,
-  Interface = 8,
-}
+mod state_searcher_utils {
+  use super::*;
 
-pub enum InsertTextFormat {
-  PlainText = 1,
-  Snippet = 2,
-}
-
-pub struct TypeQueryContent {
-  pub language: &'static str,
-  pub value: String,
-}
-
-impl ToString for TypeQueryContent {
-  fn to_string(&self) -> String {
-    format!("{} [lang={}]", self.value, self.language)
-  }
-}
-
-pub struct TypeQueryResult {
-  pub contents: Vec<TypeQueryContent>,
-  pub location: Location,
-}
-
-pub struct AutoCompletionItem {
-  pub label: String,
-  pub insert_text: String,
-  pub insert_text_format: InsertTextFormat,
-  pub kind: CompletionItemKind,
-  pub detail: String,
-}
-
-impl ToString for AutoCompletionItem {
-  fn to_string(&self) -> String {
-    format!("{} [kind={:?}, detail={}]", self.label, self.kind, self.detail)
-  }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum CodeAction {
-  Quickfix { title: String, new_code: String },
-}
-
-fn get_last_doc_comment(
-  comment_store: &CommentStore,
-  comment_ref: CommentReference,
-) -> Option<PStr> {
-  comment_store.get(comment_ref).iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| c.text)
-}
-
-pub struct LanguageServices {
-  pub heap: Heap,
-  enable_profiling: bool,
-  parsed_modules: HashMap<ModuleReference, Module<()>>,
-  dep_graph: DependencyGraph,
-  checked_modules: HashMap<ModuleReference, Module<Rc<Type>>>,
-  global_cx: GlobalSignature,
-  errors: HashMap<ModuleReference, Vec<CompileTimeError>>,
-}
-
-impl LanguageServices {
-  // Section 1: Init
-
-  pub fn new(
-    mut heap: Heap,
-    enable_profiling: bool,
-    source_handles: Vec<(ModuleReference, String)>,
-  ) -> LanguageServices {
-    measure_time(enable_profiling, "LSP Init", || {
-      let mut error_set = ErrorSet::new();
-      let parsed_modules = source_handles
-        .iter()
-        .map(|(mod_ref, text)| {
-          (*mod_ref, parse_source_module_from_text(text, *mod_ref, &mut heap, &mut error_set))
-        })
-        .collect::<HashMap<_, _>>();
-      let dep_graph = DependencyGraph::new(&parsed_modules);
-      let (checked_modules, global_cx) =
-        type_check_sources(&parsed_modules, &mut heap, &mut error_set);
-      let errors = Self::group_errors(error_set);
-      LanguageServices {
-        heap,
-        enable_profiling,
-        parsed_modules,
-        dep_graph,
-        checked_modules,
-        global_cx,
-        errors,
-      }
-    })
-  }
-
-  fn group_errors(error_set: ErrorSet) -> HashMap<ModuleReference, Vec<CompileTimeError>> {
-    let grouped = error_set.errors().into_iter().group_by(|e| e.location.module_reference);
-    grouped.into_iter().map(|(k, v)| (k, v.cloned().collect_vec())).collect::<HashMap<_, _>>()
-  }
-
-  /// Preconditions:
-  /// - Parsed modules updated
-  /// - Global context updated
-  /// - Dependency graph updated
-  /// - recheck_set is the conservative estimate of moduled need to recheck
-  fn recheck(&mut self, mut error_set: ErrorSet, recheck_set: &HashSet<ModuleReference>) {
-    // Type Checking
-    for recheck_mod_ref in recheck_set {
-      if let Some(parsed) = self.parsed_modules.get(recheck_mod_ref) {
-        let (checked, _) =
-          type_check_module(*recheck_mod_ref, parsed, &self.global_cx, &self.heap, &mut error_set);
-        self.checked_modules.insert(*recheck_mod_ref, checked);
-      }
-    }
-
-    // Collating Errors
-    let mut grouped_errors = Self::group_errors(error_set);
-    for rechecked_module in recheck_set {
-      if !grouped_errors.contains_key(rechecked_module) {
-        grouped_errors.insert(*rechecked_module, vec![]);
-      }
-    }
-    for (mod_ref, mod_scoped_errors) in grouped_errors {
-      self.errors.insert(mod_ref, mod_scoped_errors);
-    }
-
-    // GC
-    measure_time(self.enable_profiling, "GC", || {
-      perform_gc_after_recheck(
-        &mut self.heap,
-        &self.checked_modules,
-        self.checked_modules.keys().copied().collect(),
-      )
-    });
-  }
-
-  // Section 2: Getters and Setters
-
-  pub fn all_modules(&self) -> Vec<&ModuleReference> {
-    self.parsed_modules.keys().into_iter().collect()
-  }
-
-  pub fn get_errors(&self, module_reference: &ModuleReference) -> &[CompileTimeError] {
-    if let Some(errors) = self.errors.get(module_reference) {
-      errors
-    } else {
-      &[]
-    }
-  }
-
-  pub fn get_error_strings(&self, module_reference: &ModuleReference) -> Vec<String> {
-    self.get_errors(module_reference).iter().map(|e| e.pretty_print(&self.heap)).collect()
-  }
-
-  pub fn update(&mut self, updates: Vec<(ModuleReference, String)>) {
-    let mut error_set = ErrorSet::new();
-    let initial_update_set = updates.iter().map(|(m, _)| *m).collect::<HashSet<_>>();
-    for (mod_ref, source_code) in updates {
-      let parsed =
-        parse_source_module_from_text(&source_code, mod_ref, &mut self.heap, &mut error_set);
-      self.global_cx.insert(mod_ref, build_module_signature(mod_ref, &parsed, &self.heap));
-      self.parsed_modules.insert(mod_ref, parsed);
-    }
-    self.dep_graph = DependencyGraph::new(&self.parsed_modules);
-    let recheck_set = self.dep_graph.affected_set(initial_update_set);
-    self.recheck(error_set, &recheck_set);
-  }
-
-  pub fn rename_module(&mut self, renames: Vec<(ModuleReference, ModuleReference)>) {
-    let recheck_set = self
-      .dep_graph
-      .affected_set(renames.iter().flat_map(|(a, b)| vec![*a, *b].into_iter()).collect());
-    for (old_mod_ref, new_mod_ref) in renames {
-      if let Some(parsed) = self.parsed_modules.remove(&old_mod_ref) {
-        self.parsed_modules.insert(new_mod_ref, parsed);
-        let mod_cx = self.global_cx.remove(&old_mod_ref).unwrap();
-        self.global_cx.insert(new_mod_ref, mod_cx);
-      }
-      self.checked_modules.remove(&old_mod_ref);
-    }
-    self.dep_graph = DependencyGraph::new(&self.parsed_modules);
-    self.recheck(ErrorSet::new(), &recheck_set);
-  }
-
-  pub fn remove(&mut self, module_references: &[ModuleReference]) {
-    let recheck_set = self.dep_graph.affected_set(module_references.iter().copied().collect());
-    for mod_ref in module_references {
-      self.parsed_modules.remove(mod_ref);
-      self.checked_modules.remove(mod_ref);
-      self.global_cx.remove(mod_ref);
-    }
-    self.dep_graph = DependencyGraph::new(&self.parsed_modules);
-    self.recheck(ErrorSet::new(), &recheck_set);
-  }
-
-  // Section 3: LSP Providers
-
-  fn search_at_pos(
-    &self,
+  pub(super) fn search_at_pos<'a>(
+    state: &'a ServerState,
     module_reference: &ModuleReference,
     position: Position,
-  ) -> Option<LocationCoverSearchResult> {
-    search_module_locally(*module_reference, self.checked_modules.get(module_reference)?, position)
+    stop_at_call: bool,
+  ) -> Option<LocationCoverSearchResult<'a>> {
+    search_module_locally(
+      *module_reference,
+      state.checked_modules.get(module_reference)?,
+      position,
+      stop_at_call,
+    )
   }
 
-  pub fn query_for_hover(
-    &self,
+  pub(super) fn find_toplevel<'a>(
+    state: &'a ServerState,
+    module_reference: &ModuleReference,
+    class_name: &PStr,
+  ) -> Option<&'a Toplevel<Rc<Type>>> {
+    state
+      .checked_modules
+      .get(module_reference)?
+      .toplevels
+      .iter()
+      .find(|it| it.name().name.eq(class_name))
+  }
+
+  pub(super) fn find_interface_type<'a>(
+    state: &'a ServerState,
+    module_reference: &ModuleReference,
+    class_name: &PStr,
+  ) -> Option<&'a InterfaceSignature> {
+    state.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(class_name))
+  }
+
+  pub(super) fn find_type_def<'a>(
+    state: &'a ServerState,
+    module_reference: &ModuleReference,
+    class_name: &PStr,
+  ) -> Option<&'a TypeDefinition> {
+    find_toplevel(state, module_reference, class_name).and_then(|it| it.type_definition())
+  }
+
+  pub(super) fn find_field_def<'a>(
+    state: &'a ServerState,
+    module_reference: &ModuleReference,
+    class_name: &PStr,
+    field_name: &PStr,
+  ) -> Option<&'a FieldDefinition> {
+    find_type_def(state, module_reference, class_name)
+      .and_then(|it| it.as_struct())
+      .and_then(|(_, fields)| fields.iter().find(|it| it.name.name.eq(field_name)))
+  }
+
+  pub(super) fn find_class_member<'a>(
+    state: &'a ServerState,
+    module_reference: &ModuleReference,
+    class_name: &PStr,
+    member_name: &PStr,
+  ) -> Option<&'a ClassMemberDeclaration> {
+    find_toplevel(state, module_reference, class_name)?
+      .members_iter()
+      .find(|it| it.name.name.eq(member_name))
+  }
+
+  pub(super) fn find_class_name(
+    state: &ServerState,
+    module_reference: &ModuleReference,
+    position: Position,
+  ) -> PStr {
+    let module = state.checked_modules.get(module_reference).unwrap();
+    module
+      .toplevels
+      .iter()
+      .find(|toplevel| toplevel.loc().contains_position(position))
+      .unwrap()
+      .name()
+      .name
+  }
+}
+
+pub mod query {
+  use super::*;
+
+  pub struct TypeQueryContent {
+    pub language: &'static str,
+    pub value: String,
+  }
+
+  impl ToString for TypeQueryContent {
+    fn to_string(&self) -> String {
+      format!("{} [lang={}]", self.value, self.language)
+    }
+  }
+
+  pub struct TypeQueryResult {
+    pub contents: Vec<TypeQueryContent>,
+    pub location: Location,
+  }
+
+  pub fn hover(
+    state: &ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<TypeQueryResult> {
-    match self.search_at_pos(module_reference, position)? {
+    match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
       LocationCoverSearchResult::PropertyName(
         loc,
         fetched_function_module_reference,
         class_name,
         field_name,
       ) => {
-        let relevant_field =
-          self.find_field_def(&fetched_function_module_reference, &class_name, &field_name)?;
+        let relevant_field = state_searcher_utils::find_field_def(
+          state,
+          &fetched_function_module_reference,
+          &class_name,
+          &field_name,
+        )?;
         let type_content = TypeQueryContent {
           language: "samlang",
-          value: Type::from_annotation(&relevant_field.annotation).pretty_print(&self.heap),
+          value: Type::from_annotation(&relevant_field.annotation).pretty_print(&state.heap),
         };
-        Some(self.query_result_with_optional_document(
+        Some(query_result_with_optional_document(
+          state,
           loc,
           type_content,
           get_last_doc_comment(
-            &self.checked_modules.get(&fetched_function_module_reference).unwrap().comment_store,
+            &state.checked_modules.get(&fetched_function_module_reference).unwrap().comment_store,
             relevant_field.name.associated_comments,
           ),
         ))
@@ -275,17 +165,22 @@ impl LanguageServices {
         fn_name,
         _,
       ) => {
-        let relevant_fn =
-          self.find_class_member(&fetched_function_module_reference, &class_name, &fn_name)?;
+        let relevant_fn = state_searcher_utils::find_class_member(
+          state,
+          &fetched_function_module_reference,
+          &class_name,
+          &fn_name,
+        )?;
         let type_content = TypeQueryContent {
           language: "samlang",
-          value: FunctionType::from_annotation(&relevant_fn.type_).pretty_print(&self.heap),
+          value: FunctionType::from_annotation(&relevant_fn.type_).pretty_print(&state.heap),
         };
-        Some(self.query_result_with_optional_document(
+        Some(query_result_with_optional_document(
+          state,
           loc,
           type_content,
           get_last_doc_comment(
-            &self.checked_modules.get(&fetched_function_module_reference).unwrap().comment_store,
+            &state.checked_modules.get(&fetched_function_module_reference).unwrap().comment_store,
             relevant_fn.associated_comments,
           ),
         ))
@@ -293,83 +188,48 @@ impl LanguageServices {
       LocationCoverSearchResult::ToplevelName(loc, module_reference, class_name) => {
         let type_content = TypeQueryContent {
           language: "samlang",
-          value: format!("class {}", class_name.as_str(&self.heap)),
+          value: format!("class {}", class_name.as_str(&state.heap)),
         };
-        Some(self.query_result_with_optional_document(
+        Some(query_result_with_optional_document(
+          state,
           loc,
           type_content,
-          self.find_toplevel(&module_reference, &class_name).and_then(|toplevel| {
-            get_last_doc_comment(
-              &self.checked_modules.get(&module_reference).unwrap().comment_store,
-              toplevel.associated_comments(),
-            )
-          }),
+          state_searcher_utils::find_toplevel(state, &module_reference, &class_name).and_then(
+            |toplevel| {
+              get_last_doc_comment(
+                &state.checked_modules.get(&module_reference).unwrap().comment_store,
+                toplevel.associated_comments(),
+              )
+            },
+          ),
         ))
       }
       LocationCoverSearchResult::Expression(expression) => Some(TypeQueryResult {
         contents: vec![TypeQueryContent {
           language: "samlang",
-          value: expression.type_().pretty_print(&self.heap),
+          value: expression.type_().pretty_print(&state.heap),
         }],
         location: expression.loc(),
       }),
       LocationCoverSearchResult::TypedName(location, _, type_) => Some(TypeQueryResult {
         contents: vec![TypeQueryContent {
           language: "samlang",
-          value: type_.pretty_print(&self.heap),
+          value: type_.pretty_print(&state.heap),
         }],
         location,
       }),
     }
   }
 
-  fn find_toplevel(
-    &self,
-    module_reference: &ModuleReference,
-    class_name: &PStr,
-  ) -> Option<&Toplevel<Rc<Type>>> {
-    self
-      .checked_modules
-      .get(module_reference)?
-      .toplevels
-      .iter()
-      .find(|it| it.name().name.eq(class_name))
-  }
-
-  fn find_type_def(
-    &self,
-    module_reference: &ModuleReference,
-    class_name: &PStr,
-  ) -> Option<&TypeDefinition> {
-    self.find_toplevel(module_reference, class_name).and_then(|it| it.type_definition())
-  }
-
-  fn find_field_def(
-    &self,
-    module_reference: &ModuleReference,
-    class_name: &PStr,
-    field_name: &PStr,
-  ) -> Option<&FieldDefinition> {
-    self
-      .find_type_def(module_reference, class_name)
-      .and_then(|it| it.as_struct())
-      .and_then(|(_, fields)| fields.iter().find(|it| it.name.name.eq(field_name)))
-  }
-
-  fn find_class_member(
-    &self,
-    module_reference: &ModuleReference,
-    class_name: &PStr,
-    member_name: &PStr,
-  ) -> Option<&ClassMemberDeclaration> {
-    self
-      .find_toplevel(module_reference, class_name)?
-      .members_iter()
-      .find(|it| it.name.name.eq(member_name))
+  fn get_last_doc_comment(
+    comment_store: &CommentStore,
+    comment_ref: CommentReference,
+  ) -> Option<PStr> {
+    comment_store.get(comment_ref).iter().rev().find(|c| c.kind == CommentKind::DOC).map(|c| c.text)
   }
 
   fn query_result_with_optional_document(
-    &self,
+    state: &ServerState,
     location: Location,
     type_content: TypeQueryContent,
     document_opt: Option<PStr>,
@@ -377,7 +237,7 @@ impl LanguageServices {
     let contents = if let Some(document) = document_opt {
       vec![
         type_content,
-        TypeQueryContent { language: "markdown", value: document.as_str(&self.heap).to_string() },
+        TypeQueryContent { language: "markdown", value: document.as_str(&state.heap).to_string() },
       ]
     } else {
       vec![type_content]
@@ -385,8 +245,11 @@ impl LanguageServices {
     TypeQueryResult { contents, location }
   }
 
-  pub fn query_folding_ranges(&self, module_reference: &ModuleReference) -> Option<Vec<Location>> {
-    let module = self.checked_modules.get(module_reference)?;
+  pub fn folding_ranges(
+    state: &ServerState,
+    module_reference: &ModuleReference,
+  ) -> Option<Vec<Location>> {
+    let module = state.checked_modules.get(module_reference)?;
     Some(
       module
         .toplevels
@@ -398,13 +261,12 @@ impl LanguageServices {
     )
   }
 
-  pub fn query_all_references(
-    &self,
+  pub fn all_references(
+    state: &ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Vec<Location> {
-    self
-      .query_all_references_opt(module_reference, position)
+    all_references_opt(state, module_reference, position)
       .unwrap_or(vec![])
       .into_iter()
       .sorted()
@@ -412,15 +274,16 @@ impl LanguageServices {
       .collect()
   }
 
-  fn query_all_references_opt(
-    &self,
+  fn all_references_opt(
+    state: &ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Vec<Location>> {
     match search_module_locally(
       *module_reference,
-      self.checked_modules.get(module_reference)?,
+      state.checked_modules.get(module_reference)?,
       position,
+      false,
     )? {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
@@ -437,8 +300,8 @@ impl LanguageServices {
       ) => None,
       LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => {
         Some(search_modules_globally(
-          &self.checked_modules,
-          &super::global_searcher::GlobalNameSearchRequest::Property(
+          &state.checked_modules,
+          &super::super::global_searcher::GlobalNameSearchRequest::Property(
             mod_ref, class_name, field_name,
           ),
         ))
@@ -450,8 +313,8 @@ impl LanguageServices {
         member_name,
         is_method,
       ) => Some(search_modules_globally(
-        &self.checked_modules,
-        &super::global_searcher::GlobalNameSearchRequest::InterfaceMember(
+        &state.checked_modules,
+        &super::super::global_searcher::GlobalNameSearchRequest::InterfaceMember(
           mod_ref,
           class_name,
           member_name,
@@ -460,35 +323,31 @@ impl LanguageServices {
       )),
       LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
         Some(search_modules_globally(
-          &self.checked_modules,
-          &super::global_searcher::GlobalNameSearchRequest::Toplevel(mod_ref, class_name),
+          &state.checked_modules,
+          &super::super::global_searcher::GlobalNameSearchRequest::Toplevel(mod_ref, class_name),
         ))
       }
       LocationCoverSearchResult::TypedName(loc, _, _) => {
-        let module = self.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(&self.heap, module)
+        let module = state.parsed_modules.get(module_reference).unwrap();
+        VariableDefinitionLookup::new(&state.heap, module)
           .find_all_definition_and_uses(&loc)
           .map(|it| it.all_locations())
       }
       LocationCoverSearchResult::Expression(expr::E::Id(expr::ExpressionCommon { loc, .. }, _)) => {
-        let module = self.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(&self.heap, module)
+        let module = state.parsed_modules.get(module_reference).unwrap();
+        VariableDefinitionLookup::new(&state.heap, module)
           .find_all_definition_and_uses(loc)
           .map(|it| it.all_locations())
       }
     }
   }
 
-  pub fn query_definition_location(
-    &self,
+  pub fn definition_location(
+    state: &ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Location> {
-    match search_module_locally(
-      *module_reference,
-      self.checked_modules.get(module_reference)?,
-      position,
-    )? {
+    match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
         | expr::E::ClassFn(_)
@@ -502,70 +361,217 @@ impl LanguageServices {
         | expr::E::Lambda(_)
         | expr::E::Block(_),
       ) => None,
-      LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => {
-        Some(self.find_field_def(&mod_ref, &class_name, &field_name)?.name.loc)
-      }
+      LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => Some(
+        state_searcher_utils::find_field_def(state, &mod_ref, &class_name, &field_name)?.name.loc,
+      ),
       LocationCoverSearchResult::InterfaceMemberName(_, mod_ref, class_name, member_name, _) => {
-        Some(self.find_class_member(&mod_ref, &class_name, &member_name)?.loc)
+        Some(
+          state_searcher_utils::find_class_member(state, &mod_ref, &class_name, &member_name)?.loc,
+        )
       }
       LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
-        Some(self.find_toplevel(&mod_ref, &class_name)?.loc())
+        Some(state_searcher_utils::find_toplevel(state, &mod_ref, &class_name)?.loc())
       }
       LocationCoverSearchResult::TypedName(loc, _, _) => {
-        let module = self.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(&self.heap, module)
+        let module = state.parsed_modules.get(module_reference).unwrap();
+        VariableDefinitionLookup::new(&state.heap, module)
           .find_all_definition_and_uses(&loc)
           .map(|it| it.definition_location)
       }
       LocationCoverSearchResult::Expression(expr::E::Id(expr::ExpressionCommon { loc, .. }, _)) => {
-        let module = self.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(&self.heap, module)
+        let module = state.parsed_modules.get(module_reference).unwrap();
+        VariableDefinitionLookup::new(&state.heap, module)
           .find_all_definition_and_uses(loc)
           .map(|it| it.definition_location)
       }
     }
   }
+}
+
+pub mod rewrite {
+  use super::*;
+
+  #[derive(Debug, PartialEq, Eq)]
+  pub enum CodeAction {
+    Quickfix { title: String, new_code: String },
+  }
+
+  pub fn format_entire_document(
+    state: &ServerState,
+    module_reference: &ModuleReference,
+  ) -> Option<String> {
+    let module = state.parsed_modules.get(module_reference)?;
+    let errors = state.errors.get(module_reference).unwrap();
+    if errors.iter().any(|e| e.is_syntax_error()) {
+      None
+    } else {
+      Some(printer::pretty_print_source_module(&state.heap, 100, module))
+    }
+  }
+
+  pub fn rename(
+    state: &mut ServerState,
+    module_reference: &ModuleReference,
+    position: Position,
+    new_name: &str,
+  ) -> Option<String> {
+    let trimmed_new_name = new_name.trim();
+    if !(trimmed_new_name.starts_with(|c: char| c.is_ascii_lowercase())
+      && trimmed_new_name.chars().all(|c: char| c.is_ascii_alphanumeric()))
+    {
+      return None;
+    }
+    let def_or_use_loc =
+      match state_searcher_utils::search_at_pos(state, module_reference, position, false) {
+        Some(LocationCoverSearchResult::TypedName(loc, _, _)) => loc,
+        Some(LocationCoverSearchResult::Expression(e)) => e.loc(),
+        _ => return None,
+      };
+
+    let module = state.parsed_modules.get(module_reference).unwrap();
+    let def_and_uses = VariableDefinitionLookup::new(&state.heap, module)
+      .find_all_definition_and_uses(&def_or_use_loc)?;
+    let renamed =
+      apply_renaming(module, &def_and_uses, state.heap.alloc_string(new_name.to_string()));
+    Some(printer::pretty_print_source_module(&state.heap, 100, &renamed))
+  }
+
+  pub fn code_actions(state: &ServerState, location: Location) -> Vec<CodeAction> {
+    let mut actions = vec![];
+    for error in state.errors.get(&location.module_reference).iter().flat_map(|it| it.iter()) {
+      match &error.detail {
+        ErrorDetail::CannotResolveClass { module_reference, name }
+          if error.location.contains(&location)
+            && module_reference.eq(&error.location.module_reference) =>
+        {
+          for (mod_ref, mod_cx) in state.global_cx.iter() {
+            if mod_cx.interfaces.contains_key(name) {
+              actions.push(generate_auto_import_code_action(
+                state,
+                *module_reference,
+                location,
+                *mod_ref,
+                *name,
+              ))
+            }
+          }
+        }
+        ErrorDetail::CannotResolveName { name }
+          if error.location.contains(&location)
+            && name.as_str(&state.heap).starts_with(|c: char| c.is_uppercase()) =>
+        {
+          for (mod_ref, mod_cx) in state.global_cx.iter() {
+            if mod_cx.interfaces.contains_key(name) {
+              actions.push(generate_auto_import_code_action(
+                state,
+                error.location.module_reference,
+                location,
+                *mod_ref,
+                *name,
+              ))
+            }
+          }
+        }
+        _ => {}
+      }
+    }
+    actions
+  }
+
+  fn generate_auto_import_code_action(
+    state: &ServerState,
+    module_reference: ModuleReference,
+    dummy_location: Location,
+    imported_module: ModuleReference,
+    imported_member: PStr,
+  ) -> CodeAction {
+    let ast = state.parsed_modules.get(&module_reference).unwrap();
+    let mut changed_ast = ast.clone();
+    changed_ast.imports.push(ModuleMembersImport {
+      loc: dummy_location,
+      imported_members: vec![Id {
+        loc: dummy_location,
+        associated_comments: NO_COMMENT_REFERENCE,
+        name: imported_member,
+      }],
+      imported_module,
+      imported_module_loc: dummy_location,
+    });
+    CodeAction::Quickfix {
+      title: format!(
+        "Import `{}` from `{}`",
+        imported_member.as_str(&state.heap),
+        imported_module.pretty_print(&state.heap)
+      ),
+      new_code: printer::pretty_print_source_module(&state.heap, 100, &changed_ast),
+    }
+  }
+}
+
+pub mod completion {
+  use super::*;
+
+  #[derive(Debug)]
+  pub enum CompletionItemKind {
+    Method = 2,
+    Function = 3,
+    Field = 5,
+    Variable = 6,
+    Class = 7,
+    Interface = 8,
+  }
+
+  pub enum InsertTextFormat {
+    PlainText = 1,
+    Snippet = 2,
+  }
+
+  pub struct AutoCompletionItem {
+    pub label: String,
+    pub insert_text: String,
+    pub insert_text_format: InsertTextFormat,
+    pub kind: CompletionItemKind,
+    pub detail: String,
+  }
+
+  impl ToString for AutoCompletionItem {
+    fn to_string(&self) -> String {
+      format!("{} [kind={:?}, detail={}]", self.label, self.kind, self.detail)
+    }
+  }
 
   pub fn auto_complete(
-    &self,
+    state: &ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Vec<AutoCompletionItem> {
-    self.autocomplete_opt(module_reference, position).unwrap_or(vec![])
-  }
-
-  fn find_class_name(&self, module_reference: &ModuleReference, position: Position) -> PStr {
-    let module = self.checked_modules.get(module_reference).unwrap();
-    module
-      .toplevels
-      .iter()
-      .find(|toplevel| toplevel.loc().contains_position(position))
-      .unwrap()
-      .name()
-      .name
+    autocomplete_opt(state, module_reference, position).unwrap_or(vec![])
   }
 
   fn autocomplete_opt(
-    &self,
+    state: &ServerState,
     module_reference: &ModuleReference,
     position: Position,
   ) -> Option<Vec<AutoCompletionItem>> {
     let (instance_mod_ref, instance_class_name) =
-      match self.search_at_pos(module_reference, position)? {
+      match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
         LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, false) => {
-          return self.get_interface_type(&module_ref, &class_name).map(|cx| {
-            cx.functions
-              .iter()
-              .map(|(name, info)| {
-                self.get_completion_result_from_type_info(
-                  name.as_str(&self.heap),
-                  info,
-                  CompletionItemKind::Function,
-                )
-              })
-              .sorted_by_key(|r| r.label.to_string())
-              .collect()
-          });
+          return state_searcher_utils::find_interface_type(state, &module_ref, &class_name).map(
+            |cx| {
+              cx.functions
+                .iter()
+                .map(|(name, info)| {
+                  get_completion_result_from_type_info(
+                    state,
+                    name.as_str(&state.heap),
+                    info,
+                    CompletionItemKind::Function,
+                  )
+                })
+                .sorted_by_key(|r| r.label.to_string())
+                .collect()
+            },
+          );
         }
         LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, true) => {
           (module_ref, class_name)
@@ -574,15 +580,15 @@ impl LanguageServices {
           e.object.type_().as_id().map(|id_type| (id_type.module_reference, id_type.id))?
         }
         LocationCoverSearchResult::Expression(expr::E::Id(_, Id { name, .. })) => {
-          if name.as_str(&self.heap).starts_with(|c: char| c.is_uppercase()) {
+          if name.as_str(&state.heap).starts_with(|c: char| c.is_uppercase()) {
             return Some(
-              self
+              state
                 .global_cx
                 .values()
                 .flat_map(|mod_cx| mod_cx.interfaces.iter())
                 .sorted_by_key(|(n, _)| *n)
                 .map(|(n, interface_sig)| {
-                  let name = n.as_str(&self.heap);
+                  let name = n.as_str(&state.heap);
                   let (kind, detail) = if interface_sig.type_definition.is_some() {
                     (CompletionItemKind::Class, format!("class {}", name))
                   } else {
@@ -599,12 +605,12 @@ impl LanguageServices {
                 .collect(),
             );
           } else {
-            let parsed = self.parsed_modules.get(module_reference).unwrap();
+            let parsed = state.parsed_modules.get(module_reference).unwrap();
             let (_, local_cx) = type_check_module(
               *module_reference,
               parsed,
-              &self.global_cx,
-              &self.heap,
+              &state.global_cx,
+              &state.heap,
               &mut ErrorSet::new(),
             );
             return Some(
@@ -612,13 +618,13 @@ impl LanguageServices {
                 .possibly_in_scope_local_variables(position)
                 .into_iter()
                 .map(|(n, t)| {
-                  let name = n.as_str(&self.heap);
+                  let name = n.as_str(&state.heap);
                   AutoCompletionItem {
                     label: name.to_string(),
                     insert_text: name.to_string(),
                     insert_text_format: InsertTextFormat::PlainText,
                     kind: CompletionItemKind::Variable,
-                    detail: t.pretty_print(&self.heap),
+                    detail: t.pretty_print(&state.heap),
                   }
                 })
                 .collect(),
@@ -627,9 +633,9 @@ impl LanguageServices {
         }
         _ => return None,
       };
-    let class_of_expr = self.find_class_name(module_reference, position);
+    let class_of_expr = state_searcher_utils::find_class_name(state, module_reference, position);
     let relevant_interface_type =
-      self.get_interface_type(&instance_mod_ref, &instance_class_name)?;
+      state_searcher_utils::find_interface_type(state, &instance_mod_ref, &instance_class_name)?;
     let mut completion_results = vec![];
     let is_inside_class = class_of_expr.eq(&instance_class_name);
     match &relevant_interface_type.type_definition {
@@ -637,11 +643,11 @@ impl LanguageServices {
         for name in &def.names {
           let field_type = def.mappings.get(name).unwrap();
           completion_results.push(AutoCompletionItem {
-            label: name.as_str(&self.heap).to_string(),
-            insert_text: name.as_str(&self.heap).to_string(),
+            label: name.as_str(&state.heap).to_string(),
+            insert_text: name.as_str(&state.heap).to_string(),
             insert_text_format: InsertTextFormat::PlainText,
             kind: CompletionItemKind::Field,
-            detail: field_type.0.pretty_print(&self.heap),
+            detail: field_type.0.pretty_print(&state.heap),
           });
         }
       }
@@ -649,8 +655,9 @@ impl LanguageServices {
     }
     for (name, info) in relevant_interface_type.methods.iter() {
       if is_inside_class || info.is_public {
-        completion_results.push(self.get_completion_result_from_type_info(
-          name.as_str(&self.heap),
+        completion_results.push(get_completion_result_from_type_info(
+          state,
+          name.as_str(&state.heap),
           info,
           CompletionItemKind::Method,
         ));
@@ -660,22 +667,14 @@ impl LanguageServices {
     Some(completion_results)
   }
 
-  fn get_interface_type(
-    &self,
-    module_reference: &ModuleReference,
-    class_name: &PStr,
-  ) -> Option<&InterfaceSignature> {
-    self.global_cx.get(module_reference).and_then(|cx| cx.interfaces.get(class_name))
-  }
-
   fn get_completion_result_from_type_info(
-    &self,
+    state: &ServerState,
     name: &str,
     type_information: &MemberSignature,
     kind: CompletionItemKind,
   ) -> AutoCompletionItem {
     let (insert_text, insert_text_format) =
-      Self::get_insert_text(name, type_information.type_.argument_types.len());
+      get_insert_text(name, type_information.type_.argument_types.len());
     AutoCompletionItem {
       label: name.to_string(),
       insert_text,
@@ -689,9 +688,9 @@ impl LanguageServices {
           .argument_types
           .iter()
           .enumerate()
-          .map(|(id, t)| format!("a{}: {}", id, t.pretty_print(&self.heap)))
+          .map(|(id, t)| format!("a{}: {}", id, t.pretty_print(&state.heap)))
           .join(", "),
-        type_information.type_.return_type.pretty_print(&self.heap)
+        type_information.type_.return_type.pretty_print(&state.heap)
       ),
     }
   }
@@ -705,111 +704,6 @@ impl LanguageServices {
         items.push(format!("${i}"));
       }
       (format!("{}({})${}", name, items.join(", "), argument_length), InsertTextFormat::Snippet)
-    }
-  }
-
-  pub fn rename_variable(
-    &mut self,
-    module_reference: &ModuleReference,
-    position: Position,
-    new_name: &str,
-  ) -> Option<String> {
-    let trimmed_new_name = new_name.trim();
-    if !(trimmed_new_name.starts_with(|c: char| c.is_ascii_lowercase())
-      && trimmed_new_name.chars().all(|c: char| c.is_ascii_alphanumeric()))
-    {
-      return None;
-    }
-    let def_or_use_loc = match self.search_at_pos(module_reference, position) {
-      Some(LocationCoverSearchResult::TypedName(loc, _, _)) => loc,
-      Some(LocationCoverSearchResult::Expression(e)) => e.loc(),
-      _ => return None,
-    };
-
-    let module = self.parsed_modules.get(module_reference).unwrap();
-    let def_and_uses = VariableDefinitionLookup::new(&self.heap, module)
-      .find_all_definition_and_uses(&def_or_use_loc)?;
-    let renamed =
-      apply_renaming(module, &def_and_uses, self.heap.alloc_string(new_name.to_string()));
-    Some(printer::pretty_print_source_module(&self.heap, 100, &renamed))
-  }
-
-  pub fn code_actions(&self, location: Location) -> Vec<CodeAction> {
-    let mut actions = vec![];
-    for error in self.errors.get(&location.module_reference).iter().flat_map(|it| it.iter()) {
-      match &error.detail {
-        ErrorDetail::CannotResolveClass { module_reference, name }
-          if error.location.contains(&location)
-            && module_reference.eq(&error.location.module_reference) =>
-        {
-          for (mod_ref, mod_cx) in self.global_cx.iter() {
-            if mod_cx.interfaces.contains_key(name) {
-              actions.push(self.generate_auto_import_code_action(
-                *module_reference,
-                location,
-                *mod_ref,
-                *name,
-              ))
-            }
-          }
-        }
-        ErrorDetail::CannotResolveName { name }
-          if error.location.contains(&location)
-            && name.as_str(&self.heap).starts_with(|c: char| c.is_uppercase()) =>
-        {
-          for (mod_ref, mod_cx) in self.global_cx.iter() {
-            if mod_cx.interfaces.contains_key(name) {
-              actions.push(self.generate_auto_import_code_action(
-                error.location.module_reference,
-                location,
-                *mod_ref,
-                *name,
-              ))
-            }
-          }
-        }
-        _ => {}
-      }
-    }
-    actions
-  }
-
-  fn generate_auto_import_code_action(
-    &self,
-    module_reference: ModuleReference,
-    dummy_location: Location,
-    imported_module: ModuleReference,
-    imported_member: PStr,
-  ) -> CodeAction {
-    let ast = self.parsed_modules.get(&module_reference).unwrap();
-    let mut changed_ast = ast.clone();
-    changed_ast.imports.push(ModuleMembersImport {
-      loc: dummy_location,
-      imported_members: vec![Id {
-        loc: dummy_location,
-        associated_comments: NO_COMMENT_REFERENCE,
-        name: imported_member,
-      }],
-      imported_module,
-      imported_module_loc: dummy_location,
-    });
-    CodeAction::Quickfix {
-      title: format!(
-        "Import `{}` from `{}`",
-        imported_member.as_str(&self.heap),
-        imported_module.pretty_print(&self.heap)
-      ),
-      new_code: printer::pretty_print_source_module(&self.heap, 100, &changed_ast),
-    }
-  }
-
-  pub fn format_entire_document(&self, module_reference: &ModuleReference) -> Option<String> {
-    let module = self.parsed_modules.get(module_reference)?;
-    let errors = self.errors.get(module_reference).unwrap();
-    if errors.iter().any(|e| e.is_syntax_error()) {
-      None
-    } else {
-      Some(printer::pretty_print_source_module(&self.heap, 100, module))
     }
   }
 }
