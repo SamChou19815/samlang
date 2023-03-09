@@ -20,6 +20,7 @@ pub(super) enum LocationCoverSearchResult<'a> {
 fn search_expression(
   expr: &expr::E<Rc<Type>>,
   position: Position,
+  stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult> {
   let found_from_children = match expr {
     expr::E::Literal(_, _) | expr::E::Id(_, _) => None,
@@ -53,7 +54,7 @@ fn search_expression(
           ));
         }
       }
-      search_expression(&e.object, position)
+      search_expression(&e.object, position, stop_at_call)
     }
     expr::E::MethodAccess(e) => {
       if e.method_name.loc.contains_position(position) {
@@ -67,32 +68,35 @@ fn search_expression(
           ));
         }
       }
-      search_expression(&e.object, position)
+      search_expression(&e.object, position, stop_at_call)
     }
-    expr::E::Unary(e) => search_expression(&e.argument, position),
+    expr::E::Unary(e) => search_expression(&e.argument, position, stop_at_call),
     expr::E::Call(e) => {
-      let mut found = search_expression(&e.callee, position);
-      for e in &e.arguments {
-        if Option::is_some(&found) {
-          return found;
+      if stop_at_call {
+        None
+      } else {
+        let mut found = search_expression(&e.callee, position, stop_at_call);
+        for e in &e.arguments {
+          if Option::is_some(&found) {
+            return found;
+          }
+          found = search_expression(e, position, stop_at_call);
         }
-        found = search_expression(e, position);
+        found
       }
-      found
     }
-    expr::E::Binary(e) => {
-      search_expression(&e.e1, position).or_else(|| search_expression(&e.e2, position))
-    }
-    expr::E::IfElse(e) => search_expression(&e.condition, position)
-      .or_else(|| search_expression(&e.e1, position))
-      .or_else(|| search_expression(&e.e2, position)),
+    expr::E::Binary(e) => search_expression(&e.e1, position, stop_at_call)
+      .or_else(|| search_expression(&e.e2, position, stop_at_call)),
+    expr::E::IfElse(e) => search_expression(&e.condition, position, stop_at_call)
+      .or_else(|| search_expression(&e.e1, position, stop_at_call))
+      .or_else(|| search_expression(&e.e2, position, stop_at_call)),
     expr::E::Match(e) => {
-      let mut found = search_expression(&e.matched, position);
+      let mut found = search_expression(&e.matched, position, stop_at_call);
       for case in &e.cases {
         if Option::is_some(&found) {
           return found;
         }
-        found = search_expression(&case.body, position);
+        found = search_expression(&case.body, position, stop_at_call);
       }
       found
     }
@@ -108,11 +112,11 @@ fn search_expression(
           }
         }
       }
-      search_expression(&e.body, position)
+      search_expression(&e.body, position, stop_at_call)
     }
     expr::E::Block(e) => {
       for stmt in &e.statements {
-        if let Some(found) = search_expression(&stmt.assigned_expression, position) {
+        if let Some(found) = search_expression(&stmt.assigned_expression, position, stop_at_call) {
           return Some(found);
         }
         match &stmt.pattern {
@@ -127,7 +131,7 @@ fn search_expression(
         };
       }
       if let Some(e) = &e.expression {
-        return search_expression(e, position);
+        return search_expression(e, position, stop_at_call);
       }
       None
     }
@@ -145,6 +149,7 @@ pub(super) fn search_module_locally(
   module_reference: ModuleReference,
   module: &Module<Rc<Type>>,
   position: Position,
+  stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult> {
   for toplevel in &module.toplevels {
     let name = toplevel.name();
@@ -173,7 +178,7 @@ pub(super) fn search_module_locally(
     }
     if let Toplevel::Class(c) = toplevel {
       for member in &c.members {
-        if let Some(found) = search_expression(&member.body, position) {
+        if let Some(found) = search_expression(&member.body, position, stop_at_call) {
           return Some(found);
         }
       }
@@ -227,6 +232,7 @@ mod tests {
         },
       }),
       Position(10, 15),
+      false,
     )
     .is_none());
   }
@@ -314,7 +320,8 @@ mod tests {
     for m in checked_sources.values() {
       for i in 0..80 {
         for j in 0..80 {
-          super::search_module_locally(mod_ref, m, Position(i, j));
+          super::search_module_locally(mod_ref, m, Position(i, j), true);
+          super::search_module_locally(mod_ref, m, Position(i, j), false);
         }
       }
     }

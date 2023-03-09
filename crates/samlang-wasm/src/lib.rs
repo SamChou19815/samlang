@@ -78,69 +78,78 @@ impl Range {
   }
 }
 
-fn new_services(source: String) -> samlang_core::services::api::LanguageServices {
+fn new_state(source: String) -> samlang_core::services::server_state::ServerState {
   let mut heap = samlang_core::Heap::new();
   let mod_ref = demo_mod_ref(&mut heap);
-  samlang_core::services::api::LanguageServices::new(heap, false, vec![(mod_ref, source)])
+  samlang_core::services::server_state::ServerState::new(heap, false, vec![(mod_ref, source)])
 }
 
 #[wasm_bindgen(js_name=typeCheck)]
 pub fn type_check(source: String) -> String {
-  let services = &mut new_services(source);
-  let mod_ref = demo_mod_ref(&mut services.heap);
-  services.get_error_strings(&mod_ref).join("\n")
+  let state = &mut new_state(source);
+  let mod_ref = demo_mod_ref(&mut state.heap);
+  state.get_error_strings(&mod_ref).join("\n")
 }
 
 #[wasm_bindgen(js_name=queryType)]
 pub fn query_type(source: String, line: i32, column: i32) -> JsValue {
-  let services = &mut new_services(source);
-  let mod_ref = demo_mod_ref(&mut services.heap);
-  services
-    .query_for_hover(&mod_ref, samlang_core::ast::Position(line - 1, column - 1))
-    .map(|result| {
-      serde_wasm_bindgen::to_value(&TypeQueryResult {
-        range: Range::from(&result.location),
-        contents: result
-          .contents
-          .into_iter()
-          .map(|c| TypeQueryContent { language: c.language.to_string(), value: c.value })
-          .collect(),
-      })
-      .unwrap()
+  let state = &mut new_state(source);
+  let mod_ref = demo_mod_ref(&mut state.heap);
+  samlang_core::services::api::query::hover(
+    state,
+    &mod_ref,
+    samlang_core::ast::Position(line - 1, column - 1),
+  )
+  .map(|result| {
+    serde_wasm_bindgen::to_value(&TypeQueryResult {
+      range: Range::from(&result.location),
+      contents: result
+        .contents
+        .into_iter()
+        .map(|c| TypeQueryContent { language: c.language.to_string(), value: c.value })
+        .collect(),
     })
-    .unwrap_or(JsValue::NULL)
+    .unwrap()
+  })
+  .unwrap_or(JsValue::NULL)
 }
 
 #[wasm_bindgen(js_name=queryDefinitionLocation)]
 pub fn query_definition_location(source: String, line: i32, column: i32) -> JsValue {
-  let services = &mut new_services(source);
-  let mod_ref = demo_mod_ref(&mut services.heap);
-  services
-    .query_definition_location(&mod_ref, samlang_core::ast::Position(line - 1, column - 1))
-    .map(|loc| serde_wasm_bindgen::to_value(&Range::from(&loc)).unwrap())
-    .unwrap_or(JsValue::NULL)
+  let state = &mut new_state(source);
+  let mod_ref = demo_mod_ref(&mut state.heap);
+  samlang_core::services::api::query::definition_location(
+    state,
+    &mod_ref,
+    samlang_core::ast::Position(line - 1, column - 1),
+  )
+  .map(|loc| serde_wasm_bindgen::to_value(&Range::from(&loc)).unwrap())
+  .unwrap_or(JsValue::NULL)
 }
 
 #[wasm_bindgen(js_name=autoComplete)]
 pub fn autocomplete(source: String, line: i32, column: i32) -> JsValue {
-  let services = &mut new_services(source);
-  let mod_ref = demo_mod_ref(&mut services.heap);
+  let state = &mut new_state(source);
+  let mod_ref = demo_mod_ref(&mut state.heap);
   serde_wasm_bindgen::to_value(
-    &(services
-      .auto_complete(&mod_ref, samlang_core::ast::Position(line - 1, column))
-      .into_iter()
-      .map(|item| AutoCompletionItem {
-        range: Range { start_line: line, start_col: column, end_line: line, end_col: column },
-        label: item.label,
-        insert_text: item.insert_text,
-        insert_text_rules: match item.insert_text_format {
-          samlang_core::services::api::InsertTextFormat::PlainText => 1,
-          samlang_core::services::api::InsertTextFormat::Snippet => 4,
-        },
-        kind: item.kind as i32,
-        detail: item.detail,
-      })
-      .collect::<Vec<_>>()),
+    &(samlang_core::services::api::completion::auto_complete(
+      state,
+      &mod_ref,
+      samlang_core::ast::Position(line - 1, column),
+    )
+    .into_iter()
+    .map(|item| AutoCompletionItem {
+      range: Range { start_line: line, start_col: column, end_line: line, end_col: column },
+      label: item.label,
+      insert_text: item.insert_text,
+      insert_text_rules: match item.insert_text_format {
+        samlang_core::services::api::completion::InsertTextFormat::PlainText => 1,
+        samlang_core::services::api::completion::InsertTextFormat::Snippet => 4,
+      },
+      kind: item.kind as i32,
+      detail: item.detail,
+    })
+    .collect::<Vec<_>>()),
   )
   .unwrap()
 }

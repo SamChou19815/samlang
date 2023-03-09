@@ -9,5 +9,7 @@ mod gc;
 mod global_searcher;
 /// A service to find the smallest cover of a meaningful AST node
 mod location_cover;
+/// The internal state of a long-running language server
+pub mod server_state;
 /// A service to power go-to-definition requests
 mod variable_definition;
