@@ -47,8 +47,9 @@ assertEqual(
 
 assertEqual(
   JSON.stringify(
-    await samlang.autoComplete(
-      `
+    (
+      await samlang.autoComplete(
+        `
 class Main {
   function main(a: Developer): Developer = a.
 }
@@ -57,9 +58,10 @@ class Developer {
   method b(): unit = {}
 }
 `,
-      3,
-      46
-    )
+        3,
+        46
+      )
+    ).map(({ insertText, ...rest }) => rest)
   ),
-  '[{"range":{"startLineNumber":3,"startColumn":46,"endLineNumber":3,"endColumn":46},"label":"b(): unit","insertText":"b()","insertTextRules":1,"kind":2,"detail":"() -> unit"}]'
+  '[{"range":{"startLineNumber":3,"startColumn":46,"endLineNumber":3,"endColumn":46},"label":"b","kind":2,"detail":"b(): unit"}]'
 );

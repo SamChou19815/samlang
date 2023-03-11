@@ -61,8 +61,6 @@ struct AutoCompletionItem {
   label: String,
   #[serde(rename(serialize = "insertText"))]
   insert_text: String,
-  #[serde(rename(serialize = "insertTextRules"))]
-  insert_text_rules: i32,
   kind: i32,
   detail: String,
 }
@@ -142,10 +140,6 @@ pub fn autocomplete(source: String, line: i32, column: i32) -> JsValue {
       range: Range { start_line: line, start_col: column, end_line: line, end_col: column },
       label: item.label,
       insert_text: item.insert_text,
-      insert_text_rules: match item.insert_text_format {
-        samlang_core::services::api::completion::InsertTextFormat::PlainText => 1,
-        samlang_core::services::api::completion::InsertTextFormat::Snippet => 4,
-      },
       kind: item.kind as i32,
       detail: item.detail,
     })

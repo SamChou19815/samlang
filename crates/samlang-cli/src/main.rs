@@ -429,10 +429,6 @@ mod lsp {
           }),
           detail: Some(item.detail),
           insert_text: Some(item.insert_text),
-          insert_text_format: Some(match item.insert_text_format {
-            services::api::completion::InsertTextFormat::PlainText => InsertTextFormat::PLAIN_TEXT,
-            services::api::completion::InsertTextFormat::Snippet => InsertTextFormat::SNIPPET,
-          }),
           ..Default::default()
         })
         .collect(),
