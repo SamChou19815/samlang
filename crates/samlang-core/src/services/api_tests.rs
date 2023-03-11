@@ -484,6 +484,69 @@ class Main {
   }
 
   #[test]
+  fn query_signature_help_tests() {
+    let heap = Heap::new();
+    let mod_ref = ModuleReference::dummy();
+    let state = ServerState::new(
+      heap,
+      false,
+      vec![(
+        mod_ref,
+        r#"
+class Func { function a(x: int, y: bool, z: string): int = 1 }
+class Main {
+  function test1(): int = Func.a()
+  function test2(): int = Func.a(0,)
+  function test3(): int = Func.a(0,true,)
+  function test4(): int = Func.a(0,true,"")
+  function test5(): int = 1(0)
+  function test6(): int = Func.a(0)
+}
+"#
+        .to_string(),
+      )],
+    );
+
+    // Bad location
+    assert!(query::signature_help(&state, &mod_ref, Position(2, 3)).is_none());
+    // At 0 in test5
+    assert!(query::signature_help(&state, &mod_ref, Position(7, 29)).is_none());
+    // At callee in test6
+    assert!(query::signature_help(&state, &mod_ref, Position(8, 26)).is_none());
+
+    // Mid of () in test1
+    assert_eq!(
+      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=0]",
+      query::signature_help(&state, &mod_ref, Position(3, 33)).unwrap().to_string()
+    );
+    // After , in test2
+    assert_eq!(
+      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=1]",
+      query::signature_help(&state, &mod_ref, Position(4, 35)).unwrap().to_string()
+    );
+    // At true in test2
+    assert_eq!(
+      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=1]",
+      query::signature_help(&state, &mod_ref, Position(5, 35)).unwrap().to_string()
+    );
+    // At final , in test2
+    assert_eq!(
+      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=2]",
+      query::signature_help(&state, &mod_ref, Position(5, 40)).unwrap().to_string()
+    );
+    // At true in test3
+    assert_eq!(
+      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=1]",
+      query::signature_help(&state, &mod_ref, Position(6, 35)).unwrap().to_string()
+    );
+    // At "" in test3
+    assert_eq!(
+      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=2]",
+      query::signature_help(&state, &mod_ref, Position(6, 40)).unwrap().to_string()
+    );
+  }
+
+  #[test]
   fn reformat_good_program_tests() {
     let mut heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);

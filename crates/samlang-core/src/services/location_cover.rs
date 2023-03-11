@@ -72,17 +72,17 @@ fn search_expression(
     }
     expr::E::Unary(e) => search_expression(&e.argument, position, stop_at_call),
     expr::E::Call(e) => {
-      if stop_at_call {
-        None
-      } else {
-        let mut found = search_expression(&e.callee, position, stop_at_call);
-        for e in &e.arguments {
-          if Option::is_some(&found) {
-            return found;
-          }
-          found = search_expression(e, position, stop_at_call);
+      let mut found = search_expression(&e.callee, position, stop_at_call);
+      for e in &e.arguments {
+        if Option::is_some(&found) {
+          break;
         }
-        found
+        found = search_expression(e, position, stop_at_call);
+      }
+      match &found {
+        Some(LocationCoverSearchResult::Expression(expr::E::Call(_))) if stop_at_call => found,
+        _ if stop_at_call => None,
+        _ => found,
       }
     }
     expr::E::Binary(e) => search_expression(&e.e1, position, stop_at_call)

@@ -267,6 +267,10 @@ mod lsp {
             all_commit_characters: None,
             work_done_progress_options: Default::default(),
           }),
+          signature_help_provider: Some(SignatureHelpOptions {
+            trigger_characters: Some(vec!["(".to_string(), ",".to_string()]),
+            ..Default::default()
+          }),
           code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
             code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
             work_done_progress_options: WorkDoneProgressOptions { work_done_progress: Some(false) },
@@ -462,6 +466,41 @@ mod lsp {
               .collect(),
           ),
           range: Some(samlang_loc_to_lsp_range(&result.location)),
+        }),
+      )
+    }
+
+    async fn signature_help(&self, params: SignatureHelpParams) -> Result<Option<SignatureHelp>> {
+      self.client.log_message(MessageType::INFO, "[lsp] signature_help").await;
+      let state = self.state.read().await;
+      let mod_ref = self.convert_url_to_module_reference_readonly(
+        &state.0.heap,
+        &params.text_document_position_params.text_document.uri,
+      );
+      Ok(
+        samlang_core::services::api::query::signature_help(
+          &state.0,
+          &mod_ref,
+          lsp_pos_to_samlang_pos(params.text_document_position_params.position),
+        )
+        .map(|result| SignatureHelp {
+          signatures: vec![SignatureInformation {
+            label: result.label,
+            documentation: None,
+            parameters: Some(
+              result
+                .parameters
+                .into_iter()
+                .map(|s| ParameterInformation {
+                  label: ParameterLabel::Simple(s),
+                  documentation: None,
+                })
+                .collect(),
+            ),
+            active_parameter: Some(result.active_parameter as u32),
+          }],
+          active_parameter: Some(result.active_parameter as u32),
+          active_signature: None,
         }),
       )
     }
