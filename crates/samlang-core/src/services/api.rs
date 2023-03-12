@@ -583,15 +583,9 @@ pub mod completion {
     Interface = 8,
   }
 
-  pub enum InsertTextFormat {
-    PlainText = 1,
-    Snippet = 2,
-  }
-
   pub struct AutoCompletionItem {
     pub label: String,
     pub insert_text: String,
-    pub insert_text_format: InsertTextFormat,
     pub kind: CompletionItemKind,
     pub detail: String,
   }
@@ -635,12 +629,6 @@ pub mod completion {
             },
           );
         }
-        LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, true) => {
-          (module_ref, class_name)
-        }
-        LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
-          e.object.type_().as_id().map(|id_type| (id_type.module_reference, id_type.id))?
-        }
         LocationCoverSearchResult::Expression(expr::E::Id(_, Id { name, .. })) => {
           if name.as_str(&state.heap).starts_with(|c: char| c.is_uppercase()) {
             return Some(
@@ -659,7 +647,6 @@ pub mod completion {
                   AutoCompletionItem {
                     label: name.to_string(),
                     insert_text: name.to_string(),
-                    insert_text_format: InsertTextFormat::PlainText,
                     kind,
                     detail,
                   }
@@ -684,7 +671,6 @@ pub mod completion {
                   AutoCompletionItem {
                     label: name.to_string(),
                     insert_text: name.to_string(),
-                    insert_text_format: InsertTextFormat::PlainText,
                     kind: CompletionItemKind::Variable,
                     detail: t.pretty_print(&state.heap),
                   }
@@ -692,6 +678,12 @@ pub mod completion {
                 .collect(),
             );
           }
+        }
+        LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, true) => {
+          (module_ref, class_name)
+        }
+        LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
+          e.object.type_().as_id().map(|id_type| (id_type.module_reference, id_type.id))?
         }
         _ => return None,
       };
@@ -707,7 +699,6 @@ pub mod completion {
           completion_results.push(AutoCompletionItem {
             label: name.as_str(&state.heap).to_string(),
             insert_text: name.as_str(&state.heap).to_string(),
-            insert_text_format: InsertTextFormat::PlainText,
             kind: CompletionItemKind::Field,
             detail: field_type.0.pretty_print(&state.heap),
           });
@@ -735,12 +726,9 @@ pub mod completion {
     type_information: &MemberSignature,
     kind: CompletionItemKind,
   ) -> AutoCompletionItem {
-    let (insert_text, insert_text_format) =
-      get_insert_text(name, type_information.type_.argument_types.len());
     AutoCompletionItem {
       label: name.to_string(),
-      insert_text,
-      insert_text_format,
+      insert_text: name.to_string(),
       kind,
       detail: format!(
         "{}({}): {}",
@@ -754,18 +742,6 @@ pub mod completion {
           .join(", "),
         type_information.type_.return_type.pretty_print(&state.heap)
       ),
-    }
-  }
-
-  fn get_insert_text(name: &str, argument_length: usize) -> (String, InsertTextFormat) {
-    if argument_length == 0 {
-      (format!("{name}()"), InsertTextFormat::PlainText)
-    } else {
-      let mut items = vec![];
-      for i in 0..argument_length {
-        items.push(format!("${i}"));
-      }
-      (format!("{}({})${}", name, items.join(", "), argument_length), InsertTextFormat::Snippet)
     }
   }
 }
