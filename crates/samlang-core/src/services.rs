@@ -1,6 +1,8 @@
 /// The public LSP services
 pub mod api;
 mod api_tests;
+// A service to compute the minimal diff between two ASTs
+mod ast_differ;
 /// A service to maintain up-to-date dependency graph
 mod dep_graph;
 /// A service to perform garbage collection on heaps
