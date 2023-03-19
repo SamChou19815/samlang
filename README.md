@@ -4,8 +4,6 @@
 
 Sam's Programming Language
 
-<img alt="samlang" src="https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png" width=300 height=300/>
-
 Read the docs at [the official documentation site](https://samlang.io).
 
 Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=dev-sam.vscode-samlang).
@@ -22,11 +20,6 @@ repository and run `pnpm install`.
 - First Class Functions
 - Pattern Matching
 - Produce Optimized WebAssembly Code
-
-## Planned Language Features
-
-- Interfaces
-- Functors
 
 ## Planned Optimizations
 
