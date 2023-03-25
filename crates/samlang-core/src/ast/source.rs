@@ -17,7 +17,7 @@ pub(crate) struct Comment {
   pub(crate) text: PStr,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct CommentReference(usize);
 
 pub(crate) const NO_COMMENT_REFERENCE: CommentReference = CommentReference(0);
@@ -51,7 +51,7 @@ impl CommentStore {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Literal {
   Bool(bool),
   Int(i32),
@@ -88,7 +88,7 @@ pub(crate) mod annotation {
   use super::CommentReference;
   use crate::{ast::Location, ModuleReference};
 
-  #[derive(Copy, Clone)]
+  #[derive(Copy, Clone, PartialEq, Eq)]
   pub(crate) enum PrimitiveTypeKind {
     Unit,
     Bool,
@@ -109,7 +109,7 @@ pub(crate) mod annotation {
     }
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Id {
     pub(crate) location: Location,
     pub(crate) module_reference: ModuleReference,
@@ -117,7 +117,7 @@ pub(crate) mod annotation {
     pub(crate) type_arguments: Vec<T>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Function {
     pub(crate) location: Location,
     pub(crate) associated_comments: CommentReference,
@@ -125,7 +125,7 @@ pub(crate) mod annotation {
     pub(crate) return_type: Box<T>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) enum T {
     Primitive(Location, CommentReference, PrimitiveTypeKind),
     Id(Id),
@@ -151,7 +151,7 @@ pub(crate) mod annotation {
   }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Id {
   pub(crate) loc: Location,
   pub(crate) associated_comments: CommentReference,
@@ -164,12 +164,13 @@ impl Id {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct OptionallyAnnotatedId {
   pub(crate) name: Id,
   pub(crate) annotation: Option<annotation::T>,
 }
 
+#[derive(PartialEq, Eq)]
 pub(crate) struct AnnotatedId {
   pub(crate) name: Id,
   pub(crate) annotation: annotation::T,
@@ -181,7 +182,7 @@ pub(crate) mod expr {
   use crate::common::{ModuleReference, PStr};
   use std::collections::HashMap;
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct ExpressionCommon<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) associated_comments: CommentReference,
@@ -203,7 +204,7 @@ pub(crate) mod expr {
     }
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct ClassFunction<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) explicit_type_arguments: Vec<annotation::T>,
@@ -213,7 +214,7 @@ pub(crate) mod expr {
     pub(crate) fn_name: Id,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct FieldAccess<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) explicit_type_arguments: Vec<annotation::T>,
@@ -223,7 +224,7 @@ pub(crate) mod expr {
     pub(crate) field_order: i32,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct MethodAccess<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) explicit_type_arguments: Vec<annotation::T>,
@@ -232,7 +233,7 @@ pub(crate) mod expr {
     pub(crate) method_name: Id,
   }
 
-  #[derive(Copy, Clone)]
+  #[derive(Copy, Clone, PartialEq, Eq)]
   pub(crate) enum UnaryOperator {
     NOT,
     NEG,
@@ -247,21 +248,21 @@ pub(crate) mod expr {
     }
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Unary<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) operator: UnaryOperator,
     pub(crate) argument: Box<E<T>>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Call<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) callee: Box<E<T>>,
     pub(crate) arguments: Vec<E<T>>,
   }
 
-  #[derive(Copy, Clone)]
+  #[derive(Copy, Clone, PartialEq, Eq)]
   pub(crate) enum BinaryOperator {
     MUL,
     DIV,
@@ -321,7 +322,7 @@ pub(crate) mod expr {
     }
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Binary<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) operator_preceding_comments: CommentReference,
@@ -330,7 +331,7 @@ pub(crate) mod expr {
     pub(crate) e2: Box<E<T>>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct IfElse<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) condition: Box<E<T>>,
@@ -338,7 +339,7 @@ pub(crate) mod expr {
     pub(crate) e2: Box<E<T>>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct VariantPatternToExpression<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) tag: Id,
@@ -347,14 +348,14 @@ pub(crate) mod expr {
     pub(crate) body: Box<E<T>>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Match<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) matched: Box<E<T>>,
     pub(crate) cases: Vec<VariantPatternToExpression<T>>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Lambda<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) parameters: Vec<super::OptionallyAnnotatedId>,
@@ -362,7 +363,7 @@ pub(crate) mod expr {
     pub(crate) body: Box<E<T>>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct ObjectPatternDestucturedName<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) field_order: usize,
@@ -371,14 +372,14 @@ pub(crate) mod expr {
     pub(crate) type_: T,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) enum Pattern<T: Clone> {
     Object(Location, Vec<ObjectPatternDestucturedName<T>>),
     Id(Location, PStr),
     Wildcard(Location),
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct DeclarationStatement<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) associated_comments: CommentReference,
@@ -387,14 +388,14 @@ pub(crate) mod expr {
     pub(crate) assigned_expression: Box<E<T>>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Block<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) statements: Vec<DeclarationStatement<T>>,
     pub(crate) expression: Option<Box<E<T>>>,
   }
 
-  #[derive(Clone)]
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) enum E<T: Clone> {
     Literal(ExpressionCommon<T>, Literal),
     Id(ExpressionCommon<T>, Id),
@@ -451,14 +452,14 @@ pub(crate) mod expr {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct TypeParameter {
   pub(crate) loc: Location,
   pub(crate) name: Id,
   pub(crate) bound: Option<annotation::Id>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct ClassMemberDeclaration {
   pub(crate) loc: Location,
   pub(crate) associated_comments: CommentReference,
@@ -470,13 +471,13 @@ pub(crate) struct ClassMemberDeclaration {
   pub(crate) parameters: Rc<Vec<AnnotatedId>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct ClassMemberDefinition<T: Clone> {
   pub(crate) decl: ClassMemberDeclaration,
   pub(crate) body: expr::E<T>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct InterfaceDeclarationCommon<D, M> {
   pub(crate) loc: Location,
   pub(crate) associated_comments: CommentReference,
@@ -490,20 +491,20 @@ pub(crate) struct InterfaceDeclarationCommon<D, M> {
 
 pub(crate) type InterfaceDeclaration = InterfaceDeclarationCommon<(), ClassMemberDeclaration>;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct FieldDefinition {
   pub(crate) name: Id,
   pub(crate) annotation: annotation::T,
   pub(crate) is_public: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct VariantDefinition {
   pub(crate) name: Id,
   pub(crate) associated_data_type: annotation::T,
 }
 
-#[derive(Clone, EnumAsInner)]
+#[derive(Clone, EnumAsInner, PartialEq, Eq)]
 pub(crate) enum TypeDefinition {
   Struct { loc: Location, fields: Vec<FieldDefinition> },
   Enum { loc: Location, variants: Vec<VariantDefinition> },
@@ -512,7 +513,7 @@ pub(crate) enum TypeDefinition {
 pub(crate) type ClassDefinition<T> =
   InterfaceDeclarationCommon<TypeDefinition, ClassMemberDefinition<T>>;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) enum Toplevel<T: Clone> {
   Interface(InterfaceDeclaration),
   Class(ClassDefinition<T>),
@@ -592,7 +593,7 @@ impl<T: Clone> Toplevel<T> {
   }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct ModuleMembersImport {
   pub(crate) loc: Location,
   pub(crate) imported_members: Vec<Id>,
