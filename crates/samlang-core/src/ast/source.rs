@@ -13,8 +13,35 @@ pub(crate) enum CommentKind {
 
 #[derive(Clone, Copy)]
 pub(crate) struct Comment {
+  pub(crate) location: Location,
   pub(crate) kind: CommentKind,
   pub(crate) text: PStr,
+}
+
+#[derive(Clone)]
+pub(crate) enum CommentsNode {
+  NoComment,
+  Comments(Location, Vec<Comment>),
+}
+
+static EMPTY_COMMENTS: Vec<Comment> = vec![];
+
+impl CommentsNode {
+  pub(crate) fn iter(&self) -> std::slice::Iter<'_, Comment> {
+    match self {
+      CommentsNode::NoComment => EMPTY_COMMENTS.iter(),
+      CommentsNode::Comments(_, comments) => comments.iter(),
+    }
+  }
+
+  pub(crate) fn from(comments: Vec<Comment>) -> CommentsNode {
+    if !comments.is_empty() {
+      let loc = comments.iter().map(|it| it.location).reduce(|l1, l2| l1.union(&l2)).unwrap();
+      CommentsNode::Comments(loc, comments)
+    } else {
+      CommentsNode::NoComment
+    }
+  }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,29 +51,29 @@ pub(crate) const NO_COMMENT_REFERENCE: CommentReference = CommentReference(0);
 
 #[derive(Clone)]
 pub(crate) struct CommentStore {
-  store: Vec<Vec<Comment>>,
+  store: Vec<CommentsNode>,
 }
 
 impl CommentStore {
   pub(crate) fn new() -> CommentStore {
-    CommentStore { store: vec![vec![]] }
+    CommentStore { store: vec![CommentsNode::NoComment] }
   }
 
-  pub(crate) fn all_comments(&self) -> &Vec<Vec<Comment>> {
+  pub(crate) fn all_comments(&self) -> &Vec<CommentsNode> {
     &self.store
   }
 
-  pub(crate) fn get(&self, reference: CommentReference) -> &Vec<Comment> {
+  pub(crate) fn get(&self, reference: CommentReference) -> &CommentsNode {
     &self.store[reference.0]
   }
 
-  pub(crate) fn get_mut(&mut self, reference: CommentReference) -> &mut Vec<Comment> {
+  pub(crate) fn get_mut(&mut self, reference: CommentReference) -> &mut CommentsNode {
     &mut self.store[reference.0]
   }
 
   pub(crate) fn create_comment_reference(&mut self, comments: Vec<Comment>) -> CommentReference {
     let id = self.store.len();
-    self.store.push(comments);
+    self.store.push(CommentsNode::from(comments));
     CommentReference(id)
   }
 }
