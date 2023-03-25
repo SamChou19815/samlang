@@ -61,7 +61,7 @@ fn associated_comments_doc(
   add_final_line_break: bool,
 ) -> Option<Document> {
   let mut documents = vec![];
-  for comment in comment_store.get(associated_comments) {
+  for comment in comment_store.get(associated_comments).iter() {
     documents.append(&mut match comment.kind {
       CommentKind::LINE => {
         vec![Document::line_comment(comment.text.as_str(heap)), Document::LineHard]

@@ -255,3 +255,30 @@ mod list_differ {
     }
   }
 }
+
+/*
+
+type node =
+  | Raw of string
+  | Comment of Loc.t Flow_ast.Comment.t
+  | Literal of Loc.t * Loc.t Ast.Literal.t
+  | StringLiteral of Loc.t * Loc.t Ast.StringLiteral.t
+  | NumberLiteral of Loc.t * Loc.t Ast.NumberLiteral.t
+  | BigIntLiteral of Loc.t * Loc.t Ast.BigIntLiteral.t
+  | BooleanLiteral of Loc.t * Loc.t Ast.BooleanLiteral.t
+  | Statement of ((Loc.t, Loc.t) Ast.Statement.t * statement_node_parent)
+  | Program of (Loc.t, Loc.t) Ast.Program.t
+  | Expression of ((Loc.t, Loc.t) Ast.Expression.t * expression_node_parent)
+  | Pattern of (Loc.t, Loc.t) Ast.Pattern.t
+  | Params of (Loc.t, Loc.t) Ast.Function.Params.t
+  | Variance of Loc.t Ast.Variance.t
+  | Type of (Loc.t, Loc.t) Flow_ast.Type.t
+  | TypeParam of (Loc.t, Loc.t) Ast.Type.TypeParam.t
+  | TypeAnnotation of (Loc.t, Loc.t) Flow_ast.Type.annotation
+  | FunctionTypeAnnotation of (Loc.t, Loc.t) Flow_ast.Type.annotation
+  | ClassProperty of (Loc.t, Loc.t) Flow_ast.Class.Property.t
+  | ObjectProperty of (Loc.t, Loc.t) Flow_ast.Expression.Object.property
+  | TemplateLiteral of Loc.t * (Loc.t, Loc.t) Ast.Expression.TemplateLiteral.t
+  | JSXChild of (Loc.t, Loc.t) Ast.JSX.child
+  | JSXIdentifier of (Loc.t, Loc.t) Ast.JSX.Identifier.t
+ */

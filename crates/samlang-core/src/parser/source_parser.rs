@@ -596,7 +596,16 @@ impl<'a> SourceParser<'a> {
     let expr = self.parse_expression();
     let mut new_comments = self.collect_preceding_comments();
     let associated_comments = self.comments_store.get_mut(expr.common().associated_comments);
-    associated_comments.append(&mut new_comments);
+    match associated_comments {
+      CommentsNode::NoComment => {
+        *associated_comments = CommentsNode::from(new_comments);
+      }
+      CommentsNode::Comments(existing_loc, existing_comments) => {
+        let new_loc = new_comments.iter().fold(*existing_loc, |l1, c| l1.union(&c.location));
+        *existing_loc = new_loc;
+        existing_comments.append(&mut new_comments);
+      }
+    }
     expr
   }
 
@@ -1324,18 +1333,18 @@ impl<'a> SourceParser<'a> {
     self.unconsume_comments();
     let mut comments = vec![];
     loop {
-      match self.simple_peek().1 {
-        TokenContent::LineComment(text) => {
+      match self.simple_peek() {
+        Token(location, TokenContent::LineComment(text)) => {
           self.consume();
-          comments.push(Comment { kind: CommentKind::LINE, text });
+          comments.push(Comment { location, kind: CommentKind::LINE, text });
         }
-        TokenContent::BlockComment(text) => {
+        Token(location, TokenContent::BlockComment(text)) => {
           self.consume();
-          comments.push(Comment { kind: CommentKind::BLOCK, text })
+          comments.push(Comment { location, kind: CommentKind::BLOCK, text })
         }
-        TokenContent::DocComment(text) => {
+        Token(location, TokenContent::DocComment(text)) => {
           self.consume();
-          comments.push(Comment { kind: CommentKind::DOC, text })
+          comments.push(Comment { location, kind: CommentKind::DOC, text })
         }
         _ => break,
       }

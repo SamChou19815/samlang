@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+  use itertools::Itertools;
+
   use super::super::source::expr::*;
   use super::super::source::*;
   use crate::{ast::loc::Location, common::Heap, common::ModuleReference};
@@ -11,14 +13,37 @@ mod tests {
     assert!(CommentKind::DOC == CommentKind::DOC.clone());
     assert!(!format!(
       "{:?}",
-      Comment { kind: CommentKind::BLOCK, text: Heap::new().alloc_str_for_test("d") }.clone().text
+      Comment {
+        location: Location::dummy(),
+        kind: CommentKind::BLOCK,
+        text: Heap::new().alloc_str_for_test("d")
+      }
+      .clone()
+      .text
     )
     .is_empty());
     assert!(!format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone())
       .is_empty());
+    assert!(!format!(
+      "{:?}",
+      CommentStore::new()
+        .clone()
+        .create_comment_reference(vec![Comment {
+          location: Location::dummy(),
+          kind: CommentKind::BLOCK,
+          text: Heap::new().alloc_str_for_test("d")
+        }])
+        .clone()
+    )
+    .is_empty());
     assert!(!CommentStore::new().all_comments().is_empty());
-    assert!(CommentStore::new().clone().get(NO_COMMENT_REFERENCE).is_empty());
-    assert!(CommentStore::new().clone().get_mut(NO_COMMENT_REFERENCE).is_empty());
+    assert!(CommentStore::new().clone().get(NO_COMMENT_REFERENCE).iter().collect_vec().is_empty());
+    assert!(CommentStore::new()
+      .clone()
+      .get_mut(NO_COMMENT_REFERENCE)
+      .iter()
+      .collect_vec()
+      .is_empty());
 
     assert_eq!("!", expr::UnaryOperator::NOT.clone().to_string());
     assert_eq!("-", expr::UnaryOperator::NEG.clone().to_string());
