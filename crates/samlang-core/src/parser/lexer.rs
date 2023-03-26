@@ -122,7 +122,6 @@ mod char_stream {
     fn post_process_block_comment(block_comment: &str) -> String {
       block_comment
         .split('\n')
-        .into_iter()
         .map(|line| {
           let l = line.trim_start();
           if l.starts_with('*') {

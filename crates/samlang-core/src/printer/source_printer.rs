@@ -118,7 +118,7 @@ fn create_opt_preceding_comment_doc(
   }
 }
 
-fn annotation_to_doc(
+pub(super) fn annotation_to_doc(
   heap: &Heap,
   comment_store: &CommentStore,
   annotation: &annotation::T,
@@ -623,44 +623,7 @@ impl expr::E<()> {
       expr::E::Block(e) => {
         let mut segments = vec![];
         for stmt in &e.statements {
-          let pattern_doc = match &stmt.pattern {
-            expr::Pattern::Object(_, names) => braces_surrounded_doc(comma_sep_list(names, |it| {
-              Document::Text(if let Some(alias) = &it.alias {
-                rc_string(format!(
-                  "{} as {}",
-                  it.field_name.name.as_str(heap),
-                  alias.name.as_str(heap)
-                ))
-              } else {
-                rc_pstr(heap, it.field_name.name)
-              })
-            })),
-            expr::Pattern::Id(_, n) => Document::Text(rc_pstr(heap, *n)),
-            expr::Pattern::Wildcard(_) => Document::Text(rcs("_")),
-          };
-          segments.push(
-            associated_comments_doc(
-              heap,
-              comment_store,
-              stmt.associated_comments,
-              DocumentGrouping::Grouped,
-              true,
-            )
-            .unwrap_or(Document::Nil),
-          );
-          segments.push(Document::Text(rcs("val ")));
-          segments.push(pattern_doc);
-          segments.push(if let Some(annot) = &stmt.annotation {
-            Document::Concat(
-              Rc::new(Document::Text(rcs(": "))),
-              Rc::new(annotation_to_doc(heap, comment_store, annot)),
-            )
-          } else {
-            Document::Nil
-          });
-          segments.push(Document::Text(rcs(" = ")));
-          segments.push(stmt.assigned_expression.create_doc(heap, comment_store));
-          segments.push(Document::Text(rcs(";")));
+          segments.push(statement_to_document(heap, comment_store, stmt));
           segments.push(Document::LineHard);
         }
         let final_expr_doc = e.expression.as_ref().map(|e| e.create_doc(heap, comment_store));
@@ -690,6 +653,49 @@ impl expr::E<()> {
       main_doc,
     )
   }
+}
+
+pub(super) fn statement_to_document(
+  heap: &Heap,
+  comment_store: &CommentStore,
+  stmt: &expr::DeclarationStatement<()>,
+) -> Document {
+  let mut segments = vec![];
+  let pattern_doc = match &stmt.pattern {
+    expr::Pattern::Object(_, names) => braces_surrounded_doc(comma_sep_list(names, |it| {
+      Document::Text(if let Some(alias) = &it.alias {
+        rc_string(format!("{} as {}", it.field_name.name.as_str(heap), alias.name.as_str(heap)))
+      } else {
+        rc_pstr(heap, it.field_name.name)
+      })
+    })),
+    expr::Pattern::Id(_, n) => Document::Text(rc_pstr(heap, *n)),
+    expr::Pattern::Wildcard(_) => Document::Text(rcs("_")),
+  };
+  segments.push(
+    associated_comments_doc(
+      heap,
+      comment_store,
+      stmt.associated_comments,
+      DocumentGrouping::Grouped,
+      true,
+    )
+    .unwrap_or(Document::Nil),
+  );
+  segments.push(Document::Text(rcs("val ")));
+  segments.push(pattern_doc);
+  segments.push(if let Some(annot) = &stmt.annotation {
+    Document::Concat(
+      Rc::new(Document::Text(rcs(": "))),
+      Rc::new(annotation_to_doc(heap, comment_store, annot)),
+    )
+  } else {
+    Document::Nil
+  });
+  segments.push(Document::Text(rcs(" = ")));
+  segments.push(stmt.assigned_expression.create_doc(heap, comment_store));
+  segments.push(Document::Text(rcs(";")));
+  Document::concat(segments)
 }
 
 fn type_parameters_to_doc(
@@ -725,13 +731,22 @@ fn type_parameters_to_doc(
   }
 }
 
+pub(super) fn expression_to_document(
+  heap: &Heap,
+  comment_store: &CommentStore,
+  expression: &expr::E<()>,
+) -> Document {
+  expression.create_doc(heap, comment_store)
+}
+
 fn create_doc_for_interface_member(
   heap: &Heap,
   comment_store: &CommentStore,
   member: &ClassMemberDeclaration,
   body: Option<&expr::E<()>>,
 ) -> Vec<Document> {
-  let body_doc = body.map(|e| e.create_doc(heap, comment_store)).unwrap_or(Document::Nil);
+  let body_doc =
+    body.map(|e| expression_to_document(heap, comment_store, e)).unwrap_or(Document::Nil);
 
   // Special case for statement block as body for prettier result.
   // We want to lift the leading `{` to the same line as `=`.
@@ -912,6 +927,33 @@ fn class_to_doc(
   documents
 }
 
+pub(super) fn import_to_document(
+  heap: &Heap,
+  imported_module: ModuleReference,
+  imported_members: &[Id],
+) -> Document {
+  let mut documents = vec![];
+  documents.push(Document::Text(rcs("import ")));
+  documents.push(braces_surrounded_doc(comma_sep_list(imported_members, |m| {
+    Document::Text(rc_pstr(heap, m.name))
+  })));
+  documents
+    .push(Document::Text(rc_string(format!(" from {}", imported_module.pretty_print(heap)))));
+  documents.push(Document::LineHard);
+  Document::concat(documents)
+}
+
+pub(super) fn toplevel_to_document(
+  heap: &Heap,
+  comment_store: &CommentStore,
+  toplevel: &Toplevel<()>,
+) -> Document {
+  Document::concat(match toplevel {
+    Toplevel::Interface(interface) => interface_to_doc(heap, comment_store, interface),
+    Toplevel::Class(class) => class_to_doc(heap, comment_store, class),
+  })
+}
+
 pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Document {
   let mut documents = vec![];
 
@@ -931,23 +973,14 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Doc
       (mod_ref, members.into_iter().sorted_by_key(|m| m.name.as_str(heap)).collect_vec())
     })
   {
-    documents.push(Document::Text(rcs("import ")));
-    documents.push(braces_surrounded_doc(comma_sep_list(&imported_members, |m| {
-      Document::Text(rc_pstr(heap, m.name))
-    })));
-    documents
-      .push(Document::Text(rc_string(format!(" from {}", imported_module.pretty_print(heap)))));
-    documents.push(Document::LineHard);
+    documents.push(import_to_document(heap, imported_module, &imported_members))
   }
   if !module.imports.is_empty() {
     documents.push(Document::LineHard);
   }
 
   for toplevel in &module.toplevels {
-    documents.append(&mut match toplevel {
-      Toplevel::Interface(interface) => interface_to_doc(heap, &module.comment_store, interface),
-      Toplevel::Class(class) => class_to_doc(heap, &module.comment_store, class),
-    });
+    documents.push(toplevel_to_document(heap, &module.comment_store, toplevel));
     documents.push(Document::LineHard);
     documents.push(Document::LineHard);
   }

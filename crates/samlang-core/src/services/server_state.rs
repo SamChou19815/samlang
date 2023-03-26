@@ -99,7 +99,7 @@ impl ServerState {
   }
 
   pub fn all_modules(&self) -> Vec<&ModuleReference> {
-    self.parsed_modules.keys().into_iter().collect()
+    self.parsed_modules.keys().collect()
   }
 
   pub fn get_errors(&self, module_reference: &ModuleReference) -> &[CompileTimeError] {

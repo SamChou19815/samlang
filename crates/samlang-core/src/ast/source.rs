@@ -11,14 +11,14 @@ pub(crate) enum CommentKind {
   DOC,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Comment {
   pub(crate) location: Location,
   pub(crate) kind: CommentKind,
   pub(crate) text: PStr,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) enum CommentsNode {
   NoComment,
   Comments(Location, Vec<Comment>),
@@ -49,7 +49,7 @@ pub(crate) struct CommentReference(usize);
 
 pub(crate) const NO_COMMENT_REFERENCE: CommentReference = CommentReference(0);
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) struct CommentStore {
   store: Vec<CommentsNode>,
 }
@@ -72,9 +72,14 @@ impl CommentStore {
   }
 
   pub(crate) fn create_comment_reference(&mut self, comments: Vec<Comment>) -> CommentReference {
-    let id = self.store.len();
-    self.store.push(CommentsNode::from(comments));
-    CommentReference(id)
+    let node = CommentsNode::from(comments);
+    if matches!(node, CommentsNode::NoComment) {
+      NO_COMMENT_REFERENCE
+    } else {
+      let id = self.store.len();
+      self.store.push(node);
+      CommentReference(id)
+    }
   }
 }
 
@@ -456,6 +461,23 @@ pub(crate) mod expr {
       }
     }
 
+    pub(crate) fn common_mut(&mut self) -> &mut ExpressionCommon<T> {
+      match self {
+        E::Literal(common, _)
+        | E::Id(common, _)
+        | E::ClassFn(ClassFunction { common, .. })
+        | E::FieldAccess(FieldAccess { common, .. })
+        | E::MethodAccess(MethodAccess { common, .. })
+        | E::Unary(Unary { common, .. })
+        | E::Call(Call { common, .. })
+        | E::Binary(Binary { common, .. })
+        | E::IfElse(IfElse { common, .. })
+        | E::Match(Match { common, .. })
+        | E::Lambda(Lambda { common, .. })
+        | E::Block(Block { common, .. }) => common,
+      }
+    }
+
     pub(crate) fn loc(&self) -> Location {
       self.common().loc
     }
@@ -633,6 +655,7 @@ pub(crate) struct Module<T: Clone> {
   pub(crate) comment_store: CommentStore,
   pub(crate) imports: Vec<ModuleMembersImport>,
   pub(crate) toplevels: Vec<Toplevel<T>>,
+  pub(crate) trailing_comments: CommentReference,
 }
 
 #[cfg(test)]

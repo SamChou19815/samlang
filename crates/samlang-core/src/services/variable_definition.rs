@@ -236,7 +236,7 @@ fn apply_expr_renaming(
 }
 
 pub(super) fn apply_renaming(
-  Module { comment_store, imports, toplevels }: &Module<()>,
+  Module { comment_store, imports, toplevels, trailing_comments }: &Module<()>,
   definition_and_uses: &DefinitionAndUses,
   new_name: PStr,
 ) -> Module<()> {
@@ -299,6 +299,7 @@ pub(super) fn apply_renaming(
         }),
       })
       .collect(),
+    trailing_comments: *trailing_comments,
   }
 }
 

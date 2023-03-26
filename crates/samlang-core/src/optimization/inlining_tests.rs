@@ -276,7 +276,7 @@ mod tests {
             },
           ]
           .into_iter()
-          .chain((0..10).into_iter().map(|_| Statement::Call {
+          .chain((0..10).map(|_| Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("non-existing-function"),
               Type::new_fn_unwrapped(vec![], INT_TYPE),
