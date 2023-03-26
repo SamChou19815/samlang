@@ -1,7 +1,7 @@
 use crate::{
   ast::{
     source::{annotation, expr, CommentStore, Module, ModuleMembersImport, Toplevel},
-    Location, Position,
+    Location,
   },
   common::{Heap, ModuleReference},
   printer,
@@ -376,7 +376,7 @@ fn compute_module_diff<'a>(
     Ok(d) => d,
     Err((items, leading_separator)) => {
       vec![Change::Insert {
-        location: Location { module_reference, start: Position(0, 0), end: Position(0, 0) },
+        location: Location::document_start(module_reference),
         items,
         separator: None,
         leading_separator,
@@ -396,7 +396,7 @@ fn compute_module_diff<'a>(
         loc.start = loc.end;
         loc
       } else {
-        Location { module_reference, start: Position(0, 0), end: Position(0, 0) }
+        Location::document_start(module_reference)
       },
       items,
       separator: None,
@@ -411,13 +411,15 @@ pub(super) fn compute_module_diff_edits(
   module_reference: ModuleReference,
   old: &Module<()>,
   new: &Module<()>,
-) -> Option<Vec<(Location, String)>> {
-  Some(
-    compute_module_diff(module_reference, old, new)?
-      .iter()
-      .map(|c| c.to_edit(heap, &new.comment_store))
-      .collect(),
-  )
+) -> Vec<(Location, String)> {
+  if let Some(diff) = compute_module_diff(module_reference, old, new) {
+    diff.iter().map(|c| c.to_edit(heap, &new.comment_store)).collect()
+  } else {
+    vec![(
+      Location::full_document(module_reference),
+      printer::pretty_print_source_module(heap, 100, new),
+    )]
+  }
 }
 
 #[cfg(test)]
@@ -535,7 +537,7 @@ mod tests {
     );
   }
 
-  fn produce_module_diff(old_source: &str, new_source: &str) -> Option<Vec<(String, String)>> {
+  fn produce_module_diff(old_source: &str, new_source: &str) -> Vec<(String, String)> {
     let heap = &mut Heap::new();
     let error_set = &mut ErrorSet::new();
     let old =
@@ -543,64 +545,75 @@ mod tests {
     let new =
       parser::parse_source_module_from_text(new_source, ModuleReference::dummy(), heap, error_set);
     assert!(!error_set.has_errors());
-    Some(
-      compute_module_diff_edits(heap, ModuleReference::dummy(), &old, &new)?
-        .into_iter()
-        .map(|(loc, edit)| (loc.pretty_print_without_file(), edit))
-        .collect(),
-    )
+    compute_module_diff_edits(heap, ModuleReference::dummy(), &old, &new)
+      .into_iter()
+      .map(|(loc, edit)| (loc.pretty_print_without_file(), edit))
+      .collect()
   }
 
   #[test]
   fn toplevel_module_diff_tests() {
-    assert_eq!(None, produce_module_diff("// a", ""));
-    assert_eq!(None, produce_module_diff("/* A */ class A {}", "/* B */ class A {}"));
-
     assert_eq!(
-      Some(vec![]),
-      produce_module_diff("import {Foo} from Bar\nclass A{}", "import {Foo} from Bar\nclass A{}")
+      vec![(
+        Location::full_document(ModuleReference::dummy()).pretty_print_without_file(),
+        "".to_string()
+      )],
+      produce_module_diff("// a", "")
     );
     assert_eq!(
-      Some(vec![("1:1-1:1".to_string(), "\nimport { Foo } from Bar".to_string())]),
+      vec![(
+        Location::full_document(ModuleReference::dummy()).pretty_print_without_file(),
+        "/* B */\nclass A\n".to_string()
+      )],
+      produce_module_diff("/* A */ class A {}", "/* B */ class A {}")
+    );
+
+    assert!(produce_module_diff(
+      "import {Foo} from Bar\nclass A{}",
+      "import {Foo} from Bar\nclass A{}"
+    )
+    .is_empty());
+    assert_eq!(
+      vec![("1:1-1:1".to_string(), "\nimport { Foo } from Bar".to_string())],
       produce_module_diff("", "import {Foo} from Bar")
     );
     assert_eq!(
-      Some(vec![("1:1-1:24".to_string(), "import { Foo1 } from Bar".to_string())]),
+      vec![("1:1-1:24".to_string(), "import { Foo1 } from Bar".to_string())],
       produce_module_diff("import { Foo } from Bar", "import {Foo1} from Bar")
     );
     assert_eq!(
-      Some(vec![("1:22-1:22".to_string(), "\nimport { Foo } from Bar".to_string())]),
+      vec![("1:22-1:22".to_string(), "\nimport { Foo } from Bar".to_string())],
       produce_module_diff("import {Foo} from Bar", "import {Foo} from Bar\nimport {Foo} from Bar")
     );
     assert_eq!(
-      Some(vec![("1:1-1:1".to_string(), "\nclass A".to_string())]),
+      vec![("1:1-1:1".to_string(), "\nclass A".to_string())],
       produce_module_diff("", "class A {}")
     );
     assert_eq!(
-      Some(vec![("1:22-1:22".to_string(), "\nclass A".to_string())]),
+      vec![("1:22-1:22".to_string(), "\nclass A".to_string())],
       produce_module_diff("import {Foo} from Bar", "import {Foo} from Bar\nclass A {}")
     );
     assert_eq!(
-      Some(vec![("1:1-1:11".to_string(), "class B".to_string())]),
+      vec![("1:1-1:11".to_string(), "class B".to_string())],
       produce_module_diff("class A {}", "class B {}")
     );
     assert_eq!(
-      Some(vec![("1:1-1:11".to_string(), "interface A".to_string())]),
+      vec![("1:1-1:11".to_string(), "interface A".to_string())],
       produce_module_diff("class A {}", "interface A {}")
     );
     assert_eq!(
-      Some(vec![("1:11-1:11".to_string(), "\nclass B".to_string())]),
+      vec![("1:11-1:11".to_string(), "\nclass B".to_string())],
       produce_module_diff("class A {}", "class A {}\nclass B {}")
     );
     assert_eq!(
-      Some(vec![("2:1-2:1".to_string(), "\nclass A".to_string())]),
+      vec![("2:1-2:1".to_string(), "\nclass A".to_string())],
       produce_module_diff(
         "          \nclass B {}\nclass C {}\nclass D {}",
         "class A {}\nclass B {}\nclass C {}\nclass D {}"
       )
     );
     assert_eq!(
-      Some(vec![("1:1-1:11".to_string(), "".to_string())]),
+      vec![("1:1-1:11".to_string(), "".to_string())],
       produce_module_diff("class A {}", "")
     );
   }

@@ -13,7 +13,7 @@ mod tests {
   fn coverage_tests() {
     assert!(!format!(
       "{:?}",
-      rewrite::CodeAction::Quickfix { title: "".to_string(), new_code: "".to_string() }
+      rewrite::CodeAction::Quickfix { title: "".to_string(), edits: vec![] }
     )
     .is_empty());
   }
@@ -715,13 +715,10 @@ class Foo {
     assert_eq!(
       vec![rewrite::CodeAction::Quickfix {
         title: "Import `Foo` from `A`".to_string(),
-        new_code: r#"import { Foo } from A
-
-class Main {
-  function main(): int = Foo.bar()
-}
-"#
-        .to_string()
+        edits: vec![(
+          Location::document_start(ModuleReference::dummy()),
+          "\nimport { Foo } from A".to_string()
+        )]
       }],
       rewrite::code_actions(&state, Location::from_pos(2, 28, 2, 28))
     );
@@ -757,13 +754,10 @@ class Foo {}
     assert_eq!(
       vec![rewrite::CodeAction::Quickfix {
         title: "Import `Foo` from `A`".to_string(),
-        new_code: r#"import { Foo } from A
-
-class Main {
-  function main(): int = Foo
-}
-"#
-        .to_string()
+        edits: vec![(
+          Location::document_start(ModuleReference::dummy()),
+          "\nimport { Foo } from A".to_string()
+        )]
       }],
       rewrite::code_actions(&state, Location::from_pos(2, 28, 2, 28))
     );
@@ -778,7 +772,7 @@ class Main {
       false,
       vec![(
         test_mod_ref,
-        r#"
+        r#"import {A} from B
 class Pair<A, B>(val a: A, val b: B) {}
 class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
   function <T> of(t: T): List<T> =

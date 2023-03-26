@@ -451,11 +451,13 @@ pub mod query {
 }
 
 pub mod rewrite {
+  use crate::services::ast_differ::compute_module_diff_edits;
+
   use super::*;
 
   #[derive(Debug, PartialEq, Eq)]
   pub enum CodeAction {
-    Quickfix { title: String, new_code: String },
+    Quickfix { title: String, edits: Vec<(Location, String)> },
   }
 
   pub fn format_entire_document(
@@ -547,6 +549,29 @@ pub mod rewrite {
     imported_module: ModuleReference,
     imported_member: PStr,
   ) -> CodeAction {
+    CodeAction::Quickfix {
+      title: format!(
+        "Import `{}` from `{}`",
+        imported_member.as_str(&state.heap),
+        imported_module.pretty_print(&state.heap)
+      ),
+      edits: generate_auto_import_edits(
+        state,
+        module_reference,
+        dummy_location,
+        imported_module,
+        imported_member,
+      ),
+    }
+  }
+
+  pub(super) fn generate_auto_import_edits(
+    state: &ServerState,
+    module_reference: ModuleReference,
+    dummy_location: Location,
+    imported_module: ModuleReference,
+    imported_member: PStr,
+  ) -> Vec<(Location, String)> {
     let ast = state.parsed_modules.get(&module_reference).unwrap();
     let mut changed_ast = ast.clone();
     changed_ast.imports.push(ModuleMembersImport {
@@ -559,18 +584,13 @@ pub mod rewrite {
       imported_module,
       imported_module_loc: dummy_location,
     });
-    CodeAction::Quickfix {
-      title: format!(
-        "Import `{}` from `{}`",
-        imported_member.as_str(&state.heap),
-        imported_module.pretty_print(&state.heap)
-      ),
-      new_code: printer::pretty_print_source_module(&state.heap, 100, &changed_ast),
-    }
+    compute_module_diff_edits(&state.heap, module_reference, ast, &changed_ast)
   }
 }
 
 pub mod completion {
+  use std::collections::HashSet;
+
   use super::*;
 
   #[derive(Debug)]
@@ -588,6 +608,7 @@ pub mod completion {
     pub insert_text: String,
     pub kind: CompletionItemKind,
     pub detail: String,
+    pub additional_edits: Vec<(Location, String)>,
   }
 
   impl ToString for AutoCompletionItem {
@@ -631,27 +652,52 @@ pub mod completion {
         }
         LocationCoverSearchResult::Expression(expr::E::Id(_, Id { name, .. })) => {
           if name.as_str(&state.heap).starts_with(|c: char| c.is_uppercase()) {
-            return Some(
-              state
-                .global_cx
-                .values()
-                .flat_map(|mod_cx| mod_cx.interfaces.iter())
-                .sorted_by_key(|(n, _)| *n)
-                .map(|(n, interface_sig)| {
-                  let name = n.as_str(&state.heap);
-                  let (kind, detail) = if interface_sig.type_definition.is_some() {
-                    (CompletionItemKind::Class, format!("class {}", name))
-                  } else {
-                    (CompletionItemKind::Interface, format!("interface {}", name))
-                  };
+            let ast = state.checked_modules.get(module_reference).unwrap();
+            let available_names = ast
+              .imports
+              .iter()
+              .flat_map(|it| it.imported_members.iter())
+              .chain(ast.toplevels.iter().map(|t| t.name()))
+              .map(|id| id.name)
+              .collect::<HashSet<_>>();
+            let mut items = vec![];
+            for (import_mod_ref, mod_cx) in &state.global_cx {
+              for (n, interface_sig) in &mod_cx.interfaces {
+                let name = n.as_str(&state.heap);
+                let (kind, detail) = if interface_sig.type_definition.is_some() {
+                  (CompletionItemKind::Class, format!("class {}", name))
+                } else {
+                  (CompletionItemKind::Interface, format!("interface {}", name))
+                };
+                let additional_edits = if available_names.contains(n) {
+                  vec![]
+                } else {
+                  rewrite::generate_auto_import_edits(
+                    state,
+                    *module_reference,
+                    Location {
+                      module_reference: *module_reference,
+                      start: position,
+                      end: position,
+                    },
+                    *import_mod_ref,
+                    *n,
+                  )
+                };
+                items.push((
+                  n,
                   AutoCompletionItem {
                     label: name.to_string(),
                     insert_text: name.to_string(),
                     kind,
                     detail,
-                  }
-                })
-                .collect(),
+                    additional_edits,
+                  },
+                ));
+              }
+            }
+            return Some(
+              items.into_iter().sorted_by_key(|(n, _)| *n).map(|(_, item)| item).collect(),
             );
           } else {
             let parsed = state.parsed_modules.get(module_reference).unwrap();
@@ -673,6 +719,7 @@ pub mod completion {
                     insert_text: name.to_string(),
                     kind: CompletionItemKind::Variable,
                     detail: t.pretty_print(&state.heap),
+                    additional_edits: vec![],
                   }
                 })
                 .collect(),
@@ -701,6 +748,7 @@ pub mod completion {
             insert_text: name.as_str(&state.heap).to_string(),
             kind: CompletionItemKind::Field,
             detail: field_type.0.pretty_print(&state.heap),
+            additional_edits: vec![],
           });
         }
       }
@@ -742,6 +790,7 @@ pub mod completion {
           .join(", "),
         type_information.type_.return_type.pretty_print(&state.heap)
       ),
+      additional_edits: vec![],
     }
   }
 }
