@@ -1,5 +1,5 @@
 use crate::{
-  ast::source::{annotation, expr, Id, Module, Toplevel, TypeDefinition, TypeParameter},
+  ast::source::{annotation, expr, Id, Literal, Module, Toplevel, TypeDefinition, TypeParameter},
   checker::type_::{FunctionType, IdType, Type},
   Heap, ModuleReference,
 };
@@ -66,6 +66,7 @@ fn mark_id(heap: &mut Heap, id: &Id) {
 fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
   mark_type(heap, &expr.common().type_);
   match expr {
+    expr::E::Literal(_, Literal::String(s)) => heap.mark(*s),
     expr::E::Literal(_, _) => {}
     expr::E::Id(_, id) => mark_id(heap, id),
     expr::E::ClassFn(e) => {
@@ -253,6 +254,7 @@ mod tests {
 
       class Foo(val a: int) {
         function bar(): int = 3
+        function baz(): string = "3"
       }
 
       class Option<T>(None(unit), Some(T)) {
