@@ -1865,6 +1865,7 @@ pub(crate) fn type_check_module(
       comment_store: module.comment_store.clone(),
       imports: module.imports.clone(),
       toplevels: checked_toplevels,
+      trailing_comments: module.trailing_comments,
     },
     local_cx,
   )

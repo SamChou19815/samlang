@@ -624,6 +624,7 @@ mod tests {
         type_definition: (),
         members: vec![],
       })],
+      trailing_comments: NO_COMMENT_REFERENCE,
     };
     run(&mut heap, &module);
   }

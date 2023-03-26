@@ -20,7 +20,6 @@ fn post_process_block_comment(heap: &mut Heap, block_comment: &str) -> PStr {
   heap.alloc_string(
     block_comment
       .split('\n')
-      .into_iter()
       .map(|line| {
         let l = line.trim_start();
         if l.starts_with('*') {
@@ -320,8 +319,10 @@ impl<'a> SourceParser<'a> {
       }
       toplevels.push(self.parse_toplevel());
     }
+    let comments = self.collect_preceding_comments();
+    let trailing_comments = self.comments_store.create_comment_reference(comments);
 
-    Module { comment_store: self.comments_store, imports, toplevels }
+    Module { comment_store: self.comments_store, imports, toplevels, trailing_comments }
   }
 
   fn parse_toplevel(&mut self) -> Toplevel<()> {
@@ -593,12 +594,13 @@ impl<'a> SourceParser<'a> {
   }
 
   fn parse_expression_with_ending_comments(&mut self) -> expr::E<()> {
-    let expr = self.parse_expression();
+    let mut expr = self.parse_expression();
     let mut new_comments = self.collect_preceding_comments();
-    let associated_comments = self.comments_store.get_mut(expr.common().associated_comments);
+    let mut common = expr.common_mut();
+    let associated_comments = self.comments_store.get_mut(common.associated_comments);
     match associated_comments {
       CommentsNode::NoComment => {
-        *associated_comments = CommentsNode::from(new_comments);
+        common.associated_comments = self.comments_store.create_comment_reference(new_comments);
       }
       CommentsNode::Comments(existing_loc, existing_comments) => {
         let new_loc = new_comments.iter().fold(*existing_loc, |l1, c| l1.union(&c.location));
@@ -1000,7 +1002,7 @@ impl<'a> SourceParser<'a> {
     }
     if let Token(peeked_loc, TokenContent::StringLiteral(s)) = peeked {
       self.consume();
-      let chars = s.as_str(self.heap).chars().into_iter().collect_vec();
+      let chars = s.as_str(self.heap).chars().collect_vec();
       let str_lit = unescape_quotes(&chars[1..(chars.len() - 1)].iter().collect::<String>());
       return expr::E::Literal(
         expr::ExpressionCommon {

@@ -1,4 +1,11 @@
-use crate::ast::Location;
+use crate::{
+  ast::{
+    source::{annotation, expr, CommentStore, Module, ModuleMembersImport, Toplevel},
+    Location, Position,
+  },
+  common::{Heap, ModuleReference},
+  printer,
+};
 use itertools::Itertools;
 use std::{
   collections::{HashMap, HashSet, VecDeque},
@@ -9,11 +16,6 @@ enum ChangeWithoutLoc<'a, T> {
   Replace(&'a T, &'a T),
   Delete(&'a T),
   Insert { items: &'a [T], separator: Option<&'static str>, leading_separator: bool },
-}
-
-struct Change<'a, T> {
-  location: Location,
-  change: ChangeWithoutLoc<'a, T>,
 }
 
 /// differ based on http://www.xmailserver.org/diff2.pdf on page 6
@@ -91,27 +93,11 @@ mod list_differ {
     }
   }
 
-  fn cmp_change_ignore_content<T>(
-    c1: &ChangeWithoutLoc<T>,
-    c2: &ChangeWithoutLoc<T>,
-  ) -> std::cmp::Ordering {
-    match (c1, c2) {
-      // Orders the change types alphabetically. This puts same-indexed inserts before deletes
-      (ChangeWithoutLoc::Insert { .. }, ChangeWithoutLoc::Delete(_))
-      | (ChangeWithoutLoc::Delete(_), ChangeWithoutLoc::Replace(_, _))
-      | (ChangeWithoutLoc::Insert { .. }, ChangeWithoutLoc::Replace(_, _)) => {
-        std::cmp::Ordering::Less
-      }
-      (ChangeWithoutLoc::Delete(_), ChangeWithoutLoc::Insert { .. })
-      | (ChangeWithoutLoc::Replace(_, _), ChangeWithoutLoc::Delete(_))
-      | (ChangeWithoutLoc::Replace(_, _), ChangeWithoutLoc::Insert { .. }) => {
-        std::cmp::Ordering::Greater
-      }
-      (ChangeWithoutLoc::Replace(_, _), ChangeWithoutLoc::Replace(_, _))
-      | (ChangeWithoutLoc::Delete(_), ChangeWithoutLoc::Delete(_))
-      | (ChangeWithoutLoc::Insert { .. }, ChangeWithoutLoc::Insert { .. }) => {
-        std::cmp::Ordering::Equal
-      }
+  fn cmp_change_type_to_int<T>(c: &ChangeWithoutLoc<T>) -> i32 {
+    match c {
+      ChangeWithoutLoc::Insert { .. } => 1,
+      ChangeWithoutLoc::Delete(_) => 2,
+      ChangeWithoutLoc::Replace(_, _) => 3,
     }
   }
 
@@ -119,11 +105,7 @@ mod list_differ {
     (pos1, c1): &(i32, ChangeWithoutLoc<T>),
     (pos2, c2): &(i32, ChangeWithoutLoc<T>),
   ) -> std::cmp::Ordering {
-    if pos1.ne(pos2) {
-      pos1.cmp(pos2)
-    } else {
-      cmp_change_ignore_content(c1, c2)
-    }
+    pos1.cmp(pos2).then(cmp_change_type_to_int(c1).cmp(&cmp_change_type_to_int(c2)))
   }
 
   pub(super) fn compute<'a, T: PartialEq>(
@@ -136,7 +118,6 @@ mod list_differ {
     let m = new_list.len();
     // We start with delete script
     let mut script = (0..n)
-      .into_iter()
       .collect::<HashSet<_>>()
       .difference(&trace.iter().map(|(x, _)| *x).collect::<HashSet<_>>())
       .sorted()
@@ -203,18 +184,13 @@ mod list_differ {
 
     #[test]
     fn cmp_tests() {
-      super::cmp_change_ignore_content(
-        &ChangeWithoutLoc::Delete(&1),
-        &ChangeWithoutLoc::Replace(&1, &2),
-      );
-      super::cmp_change_ignore_content(
-        &ChangeWithoutLoc::Replace(&1, &2),
-        &ChangeWithoutLoc::Delete(&1),
-      );
-      super::cmp_change_ignore_content(
-        &ChangeWithoutLoc::Delete(&1),
-        &ChangeWithoutLoc::Delete(&1),
-      );
+      super::cmp_change_type_to_int(&ChangeWithoutLoc::Delete(&1));
+      super::cmp_change_type_to_int(&ChangeWithoutLoc::Replace(&1, &2));
+      super::cmp_change_type_to_int(&ChangeWithoutLoc::Insert {
+        items: &[1],
+        separator: None,
+        leading_separator: false,
+      });
       super::cmp_indexed_change_without_loc(
         &(0, ChangeWithoutLoc::Delete(&1)),
         &(0, ChangeWithoutLoc::Delete(&1)),
@@ -251,34 +227,381 @@ mod list_differ {
       assert_eq!("+ 2\n- 4", diff_string(&[1, 3, 4, 5], &[1, 2, 3, 5]));
       assert_eq!("M 22 -> 2\nM 4 -> 44", diff_string(&[1, 22, 3, 4, 5], &[1, 2, 3, 44, 5]));
       assert_eq!("M 22 -> 2\n+ 33", diff_string(&[1, 22, 3, 4, 5], &[1, 2, 33, 3, 4, 5]));
-      assert_eq!("M foo -> bar", diff_string(&["foo"], &["bar"]));
     }
   }
 }
 
-/*
+enum DiffNode<'a> {
+  Annotation(&'a annotation::T),
+  Expression(&'a expr::E<()>),
+  Statement(&'a expr::DeclarationStatement<()>),
+  Import(&'a ModuleMembersImport),
+  Toplevel(&'a Toplevel<()>),
+}
 
-type node =
-  | Raw of string
-  | Comment of Loc.t Flow_ast.Comment.t
-  | Literal of Loc.t * Loc.t Ast.Literal.t
-  | StringLiteral of Loc.t * Loc.t Ast.StringLiteral.t
-  | NumberLiteral of Loc.t * Loc.t Ast.NumberLiteral.t
-  | BigIntLiteral of Loc.t * Loc.t Ast.BigIntLiteral.t
-  | BooleanLiteral of Loc.t * Loc.t Ast.BooleanLiteral.t
-  | Statement of ((Loc.t, Loc.t) Ast.Statement.t * statement_node_parent)
-  | Program of (Loc.t, Loc.t) Ast.Program.t
-  | Expression of ((Loc.t, Loc.t) Ast.Expression.t * expression_node_parent)
-  | Pattern of (Loc.t, Loc.t) Ast.Pattern.t
-  | Params of (Loc.t, Loc.t) Ast.Function.Params.t
-  | Variance of Loc.t Ast.Variance.t
-  | Type of (Loc.t, Loc.t) Flow_ast.Type.t
-  | TypeParam of (Loc.t, Loc.t) Ast.Type.TypeParam.t
-  | TypeAnnotation of (Loc.t, Loc.t) Flow_ast.Type.annotation
-  | FunctionTypeAnnotation of (Loc.t, Loc.t) Flow_ast.Type.annotation
-  | ClassProperty of (Loc.t, Loc.t) Flow_ast.Class.Property.t
-  | ObjectProperty of (Loc.t, Loc.t) Flow_ast.Expression.Object.property
-  | TemplateLiteral of Loc.t * (Loc.t, Loc.t) Ast.Expression.TemplateLiteral.t
-  | JSXChild of (Loc.t, Loc.t) Ast.JSX.child
-  | JSXIdentifier of (Loc.t, Loc.t) Ast.JSX.Identifier.t
- */
+impl DiffNode<'_> {
+  fn location(&self) -> Location {
+    match self {
+      DiffNode::Annotation(n) => n.location(),
+      DiffNode::Expression(n) => n.loc(),
+      DiffNode::Statement(n) => n.loc,
+      DiffNode::Import(n) => n.loc,
+      DiffNode::Toplevel(n) => n.loc(),
+    }
+  }
+
+  fn printed(&self, heap: &Heap, comment_store: &CommentStore) -> String {
+    match self {
+      DiffNode::Annotation(n) => printer::pretty_print_annotation(heap, 100, comment_store, n),
+      DiffNode::Expression(n) => printer::pretty_print_expression(heap, 100, comment_store, n),
+      DiffNode::Statement(n) => printer::pretty_print_statement(heap, 100, comment_store, n),
+      DiffNode::Import(n) => printer::pretty_print_import(heap, 100, n),
+      DiffNode::Toplevel(n) => printer::pretty_print_toplevel(heap, 100, comment_store, n),
+    }
+  }
+}
+
+enum Change<'a> {
+  Replace(DiffNode<'a>, DiffNode<'a>),
+  Delete(DiffNode<'a>),
+  Insert {
+    location: Location,
+    items: Vec<DiffNode<'a>>,
+    separator: Option<&'static str>,
+    leading_separator: bool,
+  },
+}
+
+impl Change<'_> {
+  fn to_edit(&self, heap: &Heap, comment_store: &CommentStore) -> (Location, String) {
+    match self {
+      Change::Replace(old, new) => {
+        (old.location(), new.printed(heap, comment_store).trim_end().to_string())
+      }
+      Change::Delete(node) => (node.location(), "".to_string()),
+      Change::Insert { location, items, separator, leading_separator } => {
+        let separator = separator.unwrap_or("\n");
+        let mut collector = String::new();
+        if *leading_separator || separator == "\n" {
+          collector.push_str(separator);
+        }
+        for (i, item) in items.iter().enumerate() {
+          collector.push_str(item.printed(heap, comment_store).trim_end());
+          if i + 1 < items.len() {
+            collector.push_str(separator);
+          }
+        }
+        (*location, collector)
+      }
+    }
+  }
+}
+
+fn wrapped_list_diff<
+  'a,
+  T: PartialEq,
+  ToNode: Fn(&'a T) -> DiffNode<'a>,
+  FlatMapChange: Fn(&'a T, &'a T) -> Option<Vec<Change<'a>>>,
+>(
+  old_list: &'a [T],
+  new_list: &'a [T],
+  to_diff_node: &ToNode,
+  flat_map_change: FlatMapChange,
+) -> Result<Vec<Change<'a>>, (Vec<DiffNode<'a>>, bool)> {
+  let unwrapped = list_differ::compute(old_list, new_list);
+  let mut wrapped = vec![];
+  for (insert_index, change_without_loc) in unwrapped {
+    match change_without_loc {
+      ChangeWithoutLoc::Replace(old, new) => {
+        if let Some(mut diffs) = flat_map_change(old, new) {
+          wrapped.append(&mut diffs);
+        } else {
+          wrapped.push(Change::Replace(to_diff_node(old), to_diff_node(new)));
+        }
+      }
+      ChangeWithoutLoc::Delete(old) => wrapped.push(Change::Delete(to_diff_node(old))),
+      ChangeWithoutLoc::Insert { items, separator, leading_separator } => {
+        let items = items.iter().map(to_diff_node).collect_vec();
+        let location = if insert_index == -1 {
+          if old_list.is_empty() {
+            return Err((items, leading_separator));
+          }
+          let mut loc = to_diff_node(&old_list[0]).location();
+          loc.end = loc.start;
+          loc
+        } else {
+          let mut loc = to_diff_node(&old_list[insert_index as usize]).location();
+          loc.start = loc.end;
+          loc
+        };
+        wrapped.push(Change::Insert { location, items, separator, leading_separator });
+      }
+    }
+  }
+  Ok(wrapped)
+}
+
+fn generic_non_recursive_compute_diff<'a, T>(_old: &'a T, _new: &'a T) -> Option<Vec<Change<'a>>> {
+  None
+}
+
+fn compute_toplevel_diff<'a>(
+  old: &'a Toplevel<()>,
+  new: &'a Toplevel<()>,
+) -> Option<Vec<Change<'a>>> {
+  if !(old.is_class() ^ new.is_class()) {
+    return None;
+  }
+
+  // Better implementation pending. So far we just need imports diff
+  Some(vec![Change::Replace(DiffNode::Toplevel(old), DiffNode::Toplevel(new))])
+}
+
+fn compute_module_diff<'a>(
+  module_reference: ModuleReference,
+  old: &'a Module<()>,
+  new: &'a Module<()>,
+) -> Option<Vec<Change<'a>>> {
+  if old.comment_store.ne(&new.comment_store) {
+    // When the comment store is different, per node diffing can be dangerous.
+    // Therefore, we choose to give up and replace the entire module.
+    return None;
+  }
+  let mut diffs = match wrapped_list_diff(
+    &old.imports,
+    &new.imports,
+    &DiffNode::Import,
+    generic_non_recursive_compute_diff,
+  ) {
+    Ok(d) => d,
+    Err((items, leading_separator)) => {
+      vec![Change::Insert {
+        location: Location { module_reference, start: Position(0, 0), end: Position(0, 0) },
+        items,
+        separator: None,
+        leading_separator,
+      }]
+    }
+  };
+  match wrapped_list_diff(
+    &old.toplevels,
+    &new.toplevels,
+    &DiffNode::Toplevel,
+    compute_toplevel_diff,
+  ) {
+    Ok(mut new_diff) => diffs.append(&mut new_diff),
+    Err((items, leading_separator)) => diffs.push(Change::Insert {
+      location: if let Some(last_old_import) = old.imports.last() {
+        let mut loc = last_old_import.loc;
+        loc.start = loc.end;
+        loc
+      } else {
+        Location { module_reference, start: Position(0, 0), end: Position(0, 0) }
+      },
+      items,
+      separator: None,
+      leading_separator,
+    }),
+  }
+  Some(diffs)
+}
+
+pub(super) fn compute_module_diff_edits(
+  heap: &Heap,
+  module_reference: ModuleReference,
+  old: &Module<()>,
+  new: &Module<()>,
+) -> Option<Vec<(Location, String)>> {
+  Some(
+    compute_module_diff(module_reference, old, new)?
+      .iter()
+      .map(|c| c.to_edit(heap, &new.comment_store))
+      .collect(),
+  )
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::{
+    ast::source::{test_builder, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE},
+    errors::ErrorSet,
+    parser,
+  };
+  use pretty_assertions::assert_eq;
+
+  #[test]
+  fn change_to_edit_tests() {
+    let heap = &mut Heap::new();
+    let builder = test_builder::create();
+
+    assert_eq!(
+      "",
+      Change::Delete(DiffNode::Annotation(&builder.bool_annot()))
+        .to_edit(heap, &CommentStore::new())
+        .1
+    );
+    assert_eq!(
+      "bool",
+      Change::Replace(
+        DiffNode::Annotation(&builder.bool_annot()),
+        DiffNode::Annotation(&builder.bool_annot())
+      )
+      .to_edit(heap, &CommentStore::new())
+      .1
+    );
+    assert_eq!(
+      "bool,bool",
+      Change::Insert {
+        location: Location::dummy(),
+        items: vec![
+          DiffNode::Annotation(&builder.bool_annot()),
+          DiffNode::Annotation(&builder.bool_annot())
+        ],
+        separator: Some(","),
+        leading_separator: false
+      }
+      .to_edit(heap, &CommentStore::new())
+      .1
+    );
+    assert_eq!(
+      "\nbool\nbool",
+      Change::Insert {
+        location: Location::dummy(),
+        items: vec![
+          DiffNode::Annotation(&builder.bool_annot()),
+          DiffNode::Annotation(&builder.bool_annot())
+        ],
+        separator: None,
+        leading_separator: true
+      }
+      .to_edit(heap, &CommentStore::new())
+      .1
+    );
+
+    let expression =
+      expr::E::Id(expr::ExpressionCommon::dummy(()), Id::from(heap.alloc_str_for_test("s")));
+    assert_eq!(
+      "s",
+      Change::Replace(DiffNode::Expression(&expression), DiffNode::Expression(&expression))
+        .to_edit(heap, &CommentStore::new())
+        .1
+    );
+
+    let stmt = expr::DeclarationStatement {
+      loc: Location::dummy(),
+      associated_comments: NO_COMMENT_REFERENCE,
+      pattern: expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("v")),
+      annotation: Some(builder.bool_annot()),
+      assigned_expression: Box::new(expr::E::Id(
+        expr::ExpressionCommon::dummy(()),
+        Id::from(heap.alloc_str_for_test("s")),
+      )),
+    };
+    assert_eq!(
+      "val v: bool = s;",
+      Change::Replace(DiffNode::Statement(&stmt), DiffNode::Statement(&stmt))
+        .to_edit(heap, &CommentStore::new())
+        .1
+    );
+
+    let import = ModuleMembersImport {
+      loc: Location::dummy(),
+      imported_members: vec![Id::from(heap.alloc_str_for_test("A"))],
+      imported_module: ModuleReference::dummy(),
+      imported_module_loc: Location::dummy(),
+    };
+    assert_eq!(
+      "import { A } from __DUMMY__",
+      Change::Replace(DiffNode::Import(&import), DiffNode::Import(&import))
+        .to_edit(heap, &CommentStore::new())
+        .1
+    );
+
+    let toplevel = Toplevel::Interface(InterfaceDeclarationCommon {
+      loc: Location::dummy(),
+      associated_comments: NO_COMMENT_REFERENCE,
+      name: Id::from(heap.alloc_str_for_test("A")),
+      type_parameters: vec![],
+      extends_or_implements_nodes: vec![],
+      type_definition: (),
+      members: vec![],
+    });
+    assert_eq!(
+      "interface A",
+      Change::Replace(DiffNode::Toplevel(&toplevel), DiffNode::Toplevel(&toplevel))
+        .to_edit(heap, &CommentStore::new())
+        .1
+    );
+  }
+
+  fn produce_module_diff(old_source: &str, new_source: &str) -> Option<Vec<(String, String)>> {
+    let heap = &mut Heap::new();
+    let error_set = &mut ErrorSet::new();
+    let old =
+      parser::parse_source_module_from_text(old_source, ModuleReference::dummy(), heap, error_set);
+    let new =
+      parser::parse_source_module_from_text(new_source, ModuleReference::dummy(), heap, error_set);
+    assert!(!error_set.has_errors());
+    Some(
+      compute_module_diff_edits(heap, ModuleReference::dummy(), &old, &new)?
+        .into_iter()
+        .map(|(loc, edit)| (loc.pretty_print_without_file(), edit))
+        .collect(),
+    )
+  }
+
+  #[test]
+  fn toplevel_module_diff_tests() {
+    assert_eq!(None, produce_module_diff("// a", ""));
+    assert_eq!(None, produce_module_diff("/* A */ class A {}", "/* B */ class A {}"));
+
+    assert_eq!(
+      Some(vec![]),
+      produce_module_diff("import {Foo} from Bar\nclass A{}", "import {Foo} from Bar\nclass A{}")
+    );
+    assert_eq!(
+      Some(vec![("1:1-1:1".to_string(), "\nimport { Foo } from Bar".to_string())]),
+      produce_module_diff("", "import {Foo} from Bar")
+    );
+    assert_eq!(
+      Some(vec![("1:1-1:24".to_string(), "import { Foo1 } from Bar".to_string())]),
+      produce_module_diff("import { Foo } from Bar", "import {Foo1} from Bar")
+    );
+    assert_eq!(
+      Some(vec![("1:22-1:22".to_string(), "\nimport { Foo } from Bar".to_string())]),
+      produce_module_diff("import {Foo} from Bar", "import {Foo} from Bar\nimport {Foo} from Bar")
+    );
+    assert_eq!(
+      Some(vec![("1:1-1:1".to_string(), "\nclass A".to_string())]),
+      produce_module_diff("", "class A {}")
+    );
+    assert_eq!(
+      Some(vec![("1:22-1:22".to_string(), "\nclass A".to_string())]),
+      produce_module_diff("import {Foo} from Bar", "import {Foo} from Bar\nclass A {}")
+    );
+    assert_eq!(
+      Some(vec![("1:1-1:11".to_string(), "class B".to_string())]),
+      produce_module_diff("class A {}", "class B {}")
+    );
+    assert_eq!(
+      Some(vec![("1:1-1:11".to_string(), "interface A".to_string())]),
+      produce_module_diff("class A {}", "interface A {}")
+    );
+    assert_eq!(
+      Some(vec![("1:11-1:11".to_string(), "\nclass B".to_string())]),
+      produce_module_diff("class A {}", "class A {}\nclass B {}")
+    );
+    assert_eq!(
+      Some(vec![("2:1-2:1".to_string(), "\nclass A".to_string())]),
+      produce_module_diff(
+        "          \nclass B {}\nclass C {}\nclass D {}",
+        "class A {}\nclass B {}\nclass C {}\nclass D {}"
+      )
+    );
+    assert_eq!(
+      Some(vec![("1:1-1:11".to_string(), "".to_string())]),
+      produce_module_diff("class A {}", "")
+    );
+  }
+}

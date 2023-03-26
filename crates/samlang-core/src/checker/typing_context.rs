@@ -61,7 +61,7 @@ impl LocalTypingContext {
     let mut map = HashMap::new();
     for (name, loc) in self.ssa_analysis_result.lambda_captures.get(lambda_loc).unwrap() {
       let first_letter = name.as_str(heap).chars().next().unwrap();
-      if ('A'..='Z').contains(&first_letter) {
+      if first_letter.is_ascii_uppercase() {
         // We captured a type id, which we don't care.
         continue;
       }

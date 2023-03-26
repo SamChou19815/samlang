@@ -2725,12 +2725,18 @@ return 0;"#,
           members: vec![],
         }),
       ],
+      trailing_comments: NO_COMMENT_REFERENCE,
     };
     let sources = HashMap::from([
       (ModuleReference::dummy(), source_module),
       (
         heap.alloc_module_reference_from_string_vec(vec!["Foo".to_string()]),
-        source::Module { comment_store: CommentStore::new(), imports: vec![], toplevels: vec![] },
+        source::Module {
+          comment_store: CommentStore::new(),
+          imports: vec![],
+          toplevels: vec![],
+          trailing_comments: NO_COMMENT_REFERENCE,
+        },
       ),
     ]);
 

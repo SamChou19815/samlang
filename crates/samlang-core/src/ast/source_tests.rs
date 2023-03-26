@@ -10,30 +10,19 @@ mod tests {
 
   #[test]
   fn boilterplate() {
+    let comment = Comment {
+      location: Location::dummy(),
+      kind: CommentKind::BLOCK,
+      text: Heap::new().alloc_str_for_test("d"),
+    };
+
     assert!(CommentKind::DOC == CommentKind::DOC.clone());
-    assert!(!format!(
-      "{:?}",
-      Comment {
-        location: Location::dummy(),
-        kind: CommentKind::BLOCK,
-        text: Heap::new().alloc_str_for_test("d")
-      }
-      .clone()
-      .text
-    )
-    .is_empty());
+    assert!(!format!("{:?}", comment.clone().text).is_empty());
     assert!(!format!("{:?}", CommentStore::new().clone().create_comment_reference(vec![]).clone())
       .is_empty());
     assert!(!format!(
       "{:?}",
-      CommentStore::new()
-        .clone()
-        .create_comment_reference(vec![Comment {
-          location: Location::dummy(),
-          kind: CommentKind::BLOCK,
-          text: Heap::new().alloc_str_for_test("d")
-        }])
-        .clone()
+      CommentStore::new().clone().create_comment_reference(vec![comment]).clone()
     )
     .is_empty());
     assert!(!CommentStore::new().all_comments().is_empty());
@@ -44,6 +33,9 @@ mod tests {
       .iter()
       .collect_vec()
       .is_empty());
+    assert!(CommentsNode::Comments(Location::dummy(), vec![comment])
+      .eq(&CommentsNode::Comments(Location::dummy(), vec![comment])));
+    assert!(CommentStore::new().eq(&CommentStore::new()));
 
     assert_eq!("!", expr::UnaryOperator::NOT.clone().to_string());
     assert_eq!("-", expr::UnaryOperator::NEG.clone().to_string());
@@ -117,7 +109,8 @@ mod tests {
 
   fn coverage_hack_for_expr(expr: expr::E<()>) {
     expr.precedence();
-    assert!(expr.eq(&expr.clone()));
+    expr.clone().common_mut();
+    assert!(expr.eq(&expr));
   }
 
   #[test]
@@ -422,6 +415,7 @@ mod tests {
       comment_store: CommentStore::new(),
       imports: vec![one_import],
       toplevels: vec![class, interface],
+      trailing_comments: NO_COMMENT_REFERENCE,
     }
     .clone()
     .comment_store
