@@ -24,6 +24,14 @@ impl Location {
     }
   }
 
+  pub(crate) fn document_start(module_reference: ModuleReference) -> Location {
+    Location { module_reference, start: Position(0, 0), end: Position(0, 0) }
+  }
+
+  pub(crate) fn full_document(module_reference: ModuleReference) -> Location {
+    Location { module_reference, start: Position(0, 0), end: Position(i32::MAX - 1, i32::MAX - 1) }
+  }
+
   pub(crate) fn from_pos(sl: i32, sc: i32, el: i32, ec: i32) -> Location {
     Location {
       module_reference: ModuleReference::dummy(),

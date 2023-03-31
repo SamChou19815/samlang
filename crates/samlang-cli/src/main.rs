@@ -429,6 +429,13 @@ mod lsp {
           }),
           detail: Some(item.detail),
           insert_text: Some(item.insert_text),
+          additional_text_edits: Some(
+            item
+              .additional_edits
+              .into_iter()
+              .map(|(loc, new_text)| TextEdit { range: samlang_loc_to_lsp_range(&loc), new_text })
+              .collect(),
+          ),
           ..Default::default()
         })
         .collect(),
@@ -566,7 +573,7 @@ mod lsp {
         samlang_core::services::api::rewrite::code_actions(&state.0, location)
           .into_iter()
           .map(|code_action| match code_action {
-            services::api::rewrite::CodeAction::Quickfix { title, new_code } => {
+            services::api::rewrite::CodeAction::Quickfix { title, edits } => {
               CodeActionOrCommand::CodeAction(CodeAction {
                 title,
                 kind: Some(CodeActionKind::QUICKFIX),
@@ -574,7 +581,13 @@ mod lsp {
                 edit: Some(WorkspaceEdit {
                   changes: Some(HashMap::from([(
                     params.text_document.uri.clone(),
-                    vec![TextEdit { range: ENTIRE_DOCUMENT_RANGE, new_text: new_code }],
+                    edits
+                      .into_iter()
+                      .map(|(loc, new_text)| TextEdit {
+                        range: samlang_loc_to_lsp_range(&loc),
+                        new_text,
+                      })
+                      .collect(),
                   )])),
                   document_changes: None,
                   change_annotations: None,

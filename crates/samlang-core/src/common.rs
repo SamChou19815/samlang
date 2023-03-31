@@ -61,7 +61,7 @@ enum StringStoredInHeap {
   // (string, marked)
   Permanent(&'static str),
   Temporary(String, bool),
-  Deallocated,
+  Deallocated(Option<String>),
 }
 
 impl Deref for StringStoredInHeap {
@@ -71,7 +71,19 @@ impl Deref for StringStoredInHeap {
     match self {
       StringStoredInHeap::Permanent(s) => s,
       StringStoredInHeap::Temporary(s, _) => s,
-      StringStoredInHeap::Deallocated => panic!("Dereferencing deallocated strings"),
+      StringStoredInHeap::Deallocated(s) => {
+        panic!("Dereferencing deallocated string: {}", s.as_deref().unwrap_or("???"))
+      }
+    }
+  }
+}
+
+impl StringStoredInHeap {
+  fn deallocated(keep: bool, str: &str) -> StringStoredInHeap {
+    if keep {
+      StringStoredInHeap::Deallocated(Some(str.to_string()))
+    } else {
+      StringStoredInHeap::Deallocated(None)
     }
   }
 }
@@ -170,7 +182,7 @@ impl Heap {
   fn make_string_permanent(&mut self, p_str: PStr) {
     let stored_string = &mut self.str_pointer_table[p_str.0];
     match stored_string {
-      StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated => {}
+      StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
       StringStoredInHeap::Temporary(s, _) => {
         let removed = self.interned_string.remove(s.as_str()).expect(s);
         let static_str: &'static str = Self::make_string_static(s.to_string());
@@ -224,7 +236,7 @@ impl Heap {
     let total_unused = self
       .str_pointer_table
       .iter()
-      .filter(|it| matches!(it, StringStoredInHeap::Deallocated))
+      .filter(|it| matches!(it, StringStoredInHeap::Deallocated(_)))
       .count();
     let total_used = total_slots - total_unused;
     format!("Total slots: {total_slots}. Total used: {total_used}. Total unused: {total_unused}")
@@ -238,7 +250,7 @@ impl Heap {
       .iter()
       .filter_map(|stored| match stored {
         StringStoredInHeap::Permanent(_)
-        | StringStoredInHeap::Deallocated
+        | StringStoredInHeap::Deallocated(_)
         | StringStoredInHeap::Temporary(_, true) => None,
         StringStoredInHeap::Temporary(s, false) => Some(s),
       })
@@ -274,7 +286,7 @@ impl Heap {
   /// It should be called during incremental marking.
   pub(crate) fn mark(&mut self, p_str: PStr) {
     match &mut self.str_pointer_table[p_str.0] {
-      StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated => {}
+      StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
       StringStoredInHeap::Temporary(_, marked) => *marked = true,
     }
   }
@@ -302,13 +314,14 @@ impl Heap {
     }
     for string_stored in self.str_pointer_table[sweep_start..sweep_end].iter_mut() {
       match string_stored {
-        StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated => {}
+        StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
         StringStoredInHeap::Temporary(str, marked) => {
           if *marked {
             *marked = false;
           } else {
             self.interned_string.remove(str.as_str());
-            *string_stored = StringStoredInHeap::Deallocated
+            // In dev mode, we keep the string to help debug
+            *string_stored = StringStoredInHeap::deallocated(cfg!(test), str)
           }
         }
       }
@@ -429,6 +442,9 @@ mod tests {
 
     measure_time(true, "", test_closure);
     measure_time(false, "", test_closure);
+
+    StringStoredInHeap::deallocated(true, "");
+    StringStoredInHeap::deallocated(false, "");
 
     let mut set = HashSet::new();
     set.insert(rcs("sam"));
@@ -551,7 +567,7 @@ mod tests {
   #[should_panic]
   #[test]
   fn heap_str_stored_crash() {
-    let _ = StringStoredInHeap::Deallocated.deref();
+    let _ = StringStoredInHeap::Deallocated(None).deref();
   }
 
   #[should_panic]
