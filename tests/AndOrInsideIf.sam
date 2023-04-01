@@ -1,4 +1,4 @@
-import { ForTests } from tests.StdLib
+import { ForTests } from tests.StdLib;
 
 class AndOrInsideIf {
   private function test(): int = {

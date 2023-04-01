@@ -1,4 +1,4 @@
-import { ForTests } from tests.StdLib
+import { ForTests } from tests.StdLib;
 
 class CSETest {
   private function test1(a: int, b: int, c: int, d: int, e: int): unit = {

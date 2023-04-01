@@ -717,7 +717,7 @@ class Foo {
         title: "Import `Foo` from `A`".to_string(),
         edits: vec![(
           Location::document_start(ModuleReference::dummy()),
-          "\nimport { Foo } from A".to_string()
+          "import { Foo } from A;".to_string()
         )]
       }],
       rewrite::code_actions(&state, Location::from_pos(2, 28, 2, 28))
@@ -756,7 +756,7 @@ class Foo {}
         title: "Import `Foo` from `A`".to_string(),
         edits: vec![(
           Location::document_start(ModuleReference::dummy()),
-          "\nimport { Foo } from A".to_string()
+          "import { Foo } from A;".to_string()
         )]
       }],
       rewrite::code_actions(&state, Location::from_pos(2, 28, 2, 28))

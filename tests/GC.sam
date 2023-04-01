@@ -1,4 +1,4 @@
-import { ForTests } from tests.StdLib
+import { ForTests } from tests.StdLib;
 
 class GC {
   private function allocateStringALot(n: int, acc: int): int =

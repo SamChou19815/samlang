@@ -288,6 +288,9 @@ impl<'a> SourceParser<'a> {
       for variable in imported_members.iter() {
         self.class_source_map.insert(variable.name, imported_module);
       }
+      if matches!(self.peek(), Token(_, TokenContent::Operator(TokenOp::SEMICOLON))) {
+        self.consume();
+      }
       imports.push(ModuleMembersImport {
         loc: import_start.union(&imported_module_loc),
         imported_members,

@@ -938,7 +938,7 @@ pub(super) fn import_to_document(
     Document::Text(rc_pstr(heap, m.name))
   })));
   documents
-    .push(Document::Text(rc_string(format!(" from {}", imported_module.pretty_print(heap)))));
+    .push(Document::Text(rc_string(format!(" from {};", imported_module.pretty_print(heap)))));
   documents.push(Document::LineHard);
   Document::concat(documents)
 }
@@ -1370,8 +1370,8 @@ import {
   F7,
   F8,
   F9
-} from Bar.Baz
-import { Foo } from Foo.Baz
+} from Bar.Baz;
+import { Foo } from Foo.Baz;
 
 class Option<T>(None(unit), Some(T)) :
   F1,

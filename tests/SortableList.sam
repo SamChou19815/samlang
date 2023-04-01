@@ -1,4 +1,4 @@
-import { Pair } from stdlib.utils
+import { Pair } from stdlib.utils;
 
 interface Useless
 

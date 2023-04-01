@@ -1,19 +1,19 @@
-import { List } from stdlib.utils
-import { AndOrInsideIf } from tests.AndOrInsideIf
-import { Benchmark } from tests.Benchmark
-import { BlockInIfElse } from tests.BlockInIfElse
-import { CSETest } from tests.CSETest
-import { ConstantFoldingTest } from tests.ConstantFoldingTest
-import { DevMeggo } from tests.DevMeggo
-import { DifferentExpressionDemo } from tests.DifferentExpressionDemo
-import { DifferentModulesDemo } from tests.DifferentModulesDemo
-import { EvaluationOrder } from tests.EvaluationOrder
-import { GC } from tests.GC
-import { IntToString } from tests.IntToString
-import { LoopOptimization } from tests.LoopOptimization
-import { MathFunctions } from tests.MathFunctions
-import { PrintHelloWorld } from tests.PrintHelloWorld
-import { SortableListTest } from tests.SortableList
+import { List } from stdlib.utils;
+import { AndOrInsideIf } from tests.AndOrInsideIf;
+import { Benchmark } from tests.Benchmark;
+import { BlockInIfElse } from tests.BlockInIfElse;
+import { CSETest } from tests.CSETest;
+import { ConstantFoldingTest } from tests.ConstantFoldingTest;
+import { DevMeggo } from tests.DevMeggo;
+import { DifferentExpressionDemo } from tests.DifferentExpressionDemo;
+import { DifferentModulesDemo } from tests.DifferentModulesDemo;
+import { EvaluationOrder } from tests.EvaluationOrder;
+import { GC } from tests.GC;
+import { IntToString } from tests.IntToString;
+import { LoopOptimization } from tests.LoopOptimization;
+import { MathFunctions } from tests.MathFunctions;
+import { PrintHelloWorld } from tests.PrintHelloWorld;
+import { SortableListTest } from tests.SortableList;
 
 class TestCase(val name: string, val runner: () -> unit) {
   method run(): unit = {

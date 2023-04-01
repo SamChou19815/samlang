@@ -1,4 +1,4 @@
-import { ForTests } from tests.StdLib
+import { ForTests } from tests.StdLib;
 
 class Math {
   function plus(a: int, b: int): int = a + b

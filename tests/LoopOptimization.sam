@@ -1,4 +1,4 @@
-import { ForTests } from tests.StdLib
+import { ForTests } from tests.StdLib;
 
 class LoopOptimization {
   private function loopy(i: int): int =
