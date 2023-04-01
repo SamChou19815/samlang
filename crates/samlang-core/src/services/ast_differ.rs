@@ -282,7 +282,7 @@ impl Change<'_> {
       Change::Insert { location, items, separator, leading_separator } => {
         let separator = separator.unwrap_or("\n");
         let mut collector = String::new();
-        if *leading_separator || separator == "\n" {
+        if *leading_separator {
           collector.push_str(separator);
         }
         for (i, item) in items.iter().enumerate() {
@@ -514,7 +514,7 @@ mod tests {
       imported_module_loc: Location::dummy(),
     };
     assert_eq!(
-      "import { A } from __DUMMY__",
+      "import { A } from __DUMMY__;",
       Change::Replace(DiffNode::Import(&import), DiffNode::Import(&import))
         .to_edit(heap, &CommentStore::new())
         .1
@@ -574,23 +574,23 @@ mod tests {
     )
     .is_empty());
     assert_eq!(
-      vec![("1:1-1:1".to_string(), "\nimport { Foo } from Bar".to_string())],
+      vec![("1:1-1:1".to_string(), "import { Foo } from Bar;".to_string())],
       produce_module_diff("", "import {Foo} from Bar")
     );
     assert_eq!(
-      vec![("1:1-1:24".to_string(), "import { Foo1 } from Bar".to_string())],
+      vec![("1:1-1:24".to_string(), "import { Foo1 } from Bar;".to_string())],
       produce_module_diff("import { Foo } from Bar", "import {Foo1} from Bar")
     );
     assert_eq!(
-      vec![("1:22-1:22".to_string(), "\nimport { Foo } from Bar".to_string())],
+      vec![("1:22-1:22".to_string(), "import { Foo } from Bar;".to_string())],
       produce_module_diff("import {Foo} from Bar", "import {Foo} from Bar\nimport {Foo} from Bar")
     );
     assert_eq!(
-      vec![("1:1-1:1".to_string(), "\nclass A".to_string())],
+      vec![("1:1-1:1".to_string(), "class A".to_string())],
       produce_module_diff("", "class A {}")
     );
     assert_eq!(
-      vec![("1:22-1:22".to_string(), "\nclass A".to_string())],
+      vec![("1:22-1:22".to_string(), "class A".to_string())],
       produce_module_diff("import {Foo} from Bar", "import {Foo} from Bar\nclass A {}")
     );
     assert_eq!(
@@ -602,11 +602,11 @@ mod tests {
       produce_module_diff("class A {}", "interface A {}")
     );
     assert_eq!(
-      vec![("1:11-1:11".to_string(), "\nclass B".to_string())],
+      vec![("1:11-1:11".to_string(), "class B".to_string())],
       produce_module_diff("class A {}", "class A {}\nclass B {}")
     );
     assert_eq!(
-      vec![("2:1-2:1".to_string(), "\nclass A".to_string())],
+      vec![("2:1-2:1".to_string(), "class A".to_string())],
       produce_module_diff(
         "          \nclass B {}\nclass C {}\nclass D {}",
         "class A {}\nclass B {}\nclass C {}\nclass D {}"

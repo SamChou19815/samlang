@@ -1,4 +1,4 @@
-import { ForTests } from tests.StdLib
+import { ForTests } from tests.StdLib;
 
 class MathFunctions {
   private function factorial(n: int): int = if n == 0 then 1 else MathFunctions.factorial(n - 1) * n
