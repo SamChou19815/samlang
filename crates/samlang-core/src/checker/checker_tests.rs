@@ -603,7 +603,7 @@ mod tests {
       "Test.helloWorldWithTypeParameters",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `(string, string) -> unit`, actual: `(unknown) -> unit`.",
+        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `(string, string) -> unit`, actual: `(placeholder) -> unit`.",
         "__DUMMY__.sam:1:1-1:34: [invalid-arity]: Incorrect parameter size. Expected: 2, actual: 1.",
         "__DUMMY__.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ],
@@ -613,7 +613,7 @@ mod tests {
       "Test.helloWorldWithTypeParameters",
       &builder.string_type(),
       vec![
-        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `(unknown) -> unit`.",
+        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `(placeholder) -> unit`.",
         "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `function`.",
         "__DUMMY__.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ]
@@ -861,15 +861,15 @@ mod tests {
 
     assert_errors(heap, "{ val _ = (t) -> t.foo; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `unknown`.",
+      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `any`.",
     ]);
     assert_errors(heap, "{ val _ = (t) -> t.bar; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `unknown`.",
+      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `any`.",
     ]);
     assert_errors(heap, "{ val _ = (t) -> t.baz; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `unknown`.",
+      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `any`.",
     ]);
   }
 

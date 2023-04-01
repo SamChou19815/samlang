@@ -92,7 +92,7 @@ def_to_use_map:
     let mut cx = LocalTypingContext::new(analysis_result);
     cx.write(Location::from_pos(1, 6, 1, 7), builder.bool_type());
     assert_eq!("bool", cx.read(&Location::from_pos(3, 10, 3, 11)).pretty_print(&heap));
-    assert_eq!("unknown", cx.read(&Location::from_pos(3, 10, 3, 12)).pretty_print(&heap));
+    assert_eq!("any", cx.read(&Location::from_pos(3, 10, 3, 12)).pretty_print(&heap));
     assert_eq!(
       vec!["a"],
       cx.get_captured(&heap, &Location::from_pos(10, 4, 10, 56))

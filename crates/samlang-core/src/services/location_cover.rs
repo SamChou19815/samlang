@@ -209,7 +209,7 @@ mod tests {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          type_: Rc::new(Type::Unknown(Reason::dummy())),
+          type_: Rc::new(Type::Any(Reason::dummy(), false)),
         },
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
@@ -217,7 +217,7 @@ mod tests {
           expr::ExpressionCommon {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            type_: Rc::new(Type::Unknown(Reason::dummy())),
+            type_: Rc::new(Type::Any(Reason::dummy(), false)),
           },
           Id::from(heap.alloc_str_for_test("id")),
         )),

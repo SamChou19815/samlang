@@ -234,7 +234,7 @@ mod tests {
       &heap,
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
-    cx.validate_type_instantiation_allow_abstract_types(&heap, &Type::Unknown(Reason::dummy()));
+    cx.validate_type_instantiation_allow_abstract_types(&heap, &Type::Any(Reason::dummy(), false));
     cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.simple_id_type(str_tparam));
     cx.validate_type_instantiation_allow_abstract_types(
       &heap,

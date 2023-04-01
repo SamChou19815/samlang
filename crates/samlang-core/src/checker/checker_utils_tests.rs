@@ -24,13 +24,21 @@ mod tests {
 
     assert_eq!(meet(&builder.unit_type(), &builder.unit_type(), heap), "unit");
     assert_eq!(meet(&builder.unit_type(), &builder.int_type(), heap), "FAILED_MEET");
-    assert_eq!(meet(&Type::Unknown(Reason::dummy()), &builder.string_type(), heap), "string");
+    assert_eq!(meet(&Type::Any(Reason::dummy(), false), &builder.string_type(), heap), "string");
     assert_eq!(
       meet(&builder.unit_type(), &builder.simple_id_type(heap.alloc_str_for_test("A")), heap),
       "FAILED_MEET"
     );
 
-    assert_eq!(meet(&builder.unit_type(), &Type::Unknown(Reason::dummy()), heap), "unit");
+    assert_eq!(meet(&builder.unit_type(), &Type::Any(Reason::dummy(), false), heap), "unit");
+    assert_eq!(
+      meet(&Type::Any(Reason::dummy(), true), &Type::Any(Reason::dummy(), false), heap),
+      "any"
+    );
+    assert_eq!(
+      meet(&Type::Any(Reason::dummy(), true), &Type::Any(Reason::dummy(), true), heap),
+      "placeholder"
+    );
 
     assert_eq!(
       meet(&builder.simple_id_type(heap.alloc_str_for_test("A")), &builder.unit_type(), heap),
@@ -89,7 +97,7 @@ mod tests {
         ),
         &builder.general_id_type(
           heap.alloc_str_for_test("A"),
-          vec![Rc::new(Type::Unknown(Reason::dummy()))]
+          vec![Rc::new(Type::Any(Reason::dummy(), false))]
         ),
         heap,
       ),
@@ -98,7 +106,7 @@ mod tests {
     assert_eq!(
       meet(
         &builder.simple_id_type(heap.alloc_str_for_test("B")),
-        &Type::Unknown(Reason::dummy()),
+        &Type::Any(Reason::dummy(), false),
         heap
       ),
       "B"
@@ -151,7 +159,7 @@ mod tests {
     assert_eq!(
       meet(
         &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
-        &Type::Unknown(Reason::dummy()),
+        &Type::Any(Reason::dummy(), false),
         heap
       ),
       "(int) -> bool"
@@ -160,8 +168,8 @@ mod tests {
       meet(
         &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
         &builder.fun_type(
-          vec![Rc::new(Type::Unknown(Reason::dummy()))],
-          Rc::new(Type::Unknown(Reason::dummy()))
+          vec![Rc::new(Type::Any(Reason::dummy(), false))],
+          Rc::new(Type::Any(Reason::dummy(), false))
         ),
         heap,
       ),
@@ -268,7 +276,7 @@ mod tests {
       &builder.int_type(),
       &builder.unit_type(),
       vec![TypeParameterSignature { name: heap.alloc_str_for_test("T"), bound: None }],
-      &HashMap::from([("has_error", "true"), ("T", "unknown")]),
+      &HashMap::from([("has_error", "true"), ("T", "placeholder")]),
       heap,
     );
 
@@ -305,7 +313,7 @@ mod tests {
       &builder.int_type(),
       &builder.general_id_type(heap.alloc_str_for_test("Bar"), vec![builder.int_type()]),
       vec![TypeParameterSignature { name: heap.alloc_str_for_test("Foo"), bound: None }],
-      &HashMap::from([("has_error", "true"), ("Foo", "unknown")]),
+      &HashMap::from([("has_error", "true"), ("Foo", "placeholder")]),
       heap,
     );
     solver_test(
@@ -360,7 +368,12 @@ mod tests {
         TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
         TypeParameterSignature { name: heap.alloc_str_for_test("C"), bound: None },
       ],
-      &HashMap::from([("has_error", "true"), ("A", "unknown"), ("B", "unknown"), ("C", "unknown")]),
+      &HashMap::from([
+        ("has_error", "true"),
+        ("A", "placeholder"),
+        ("B", "placeholder"),
+        ("C", "placeholder"),
+      ]),
       heap,
     );
   }
@@ -379,8 +392,8 @@ mod tests {
       &builder.fun_type(
         vec![
           builder.fun_type(
-            vec![Rc::new(Type::Unknown(Reason::dummy()))],
-            Rc::new(Type::Unknown(Reason::dummy())),
+            vec![Rc::new(Type::Any(Reason::dummy(), true))],
+            Rc::new(Type::Any(Reason::dummy(), false)),
           ),
           builder.int_type(),
         ],
@@ -404,9 +417,9 @@ mod tests {
       &mut error_set,
     );
 
-    assert_eq!("((unknown) -> unknown, int) -> unit", solved_generic_type.pretty_print(&heap));
+    assert_eq!("((any) -> any, int) -> unit", solved_generic_type.pretty_print(&heap));
     assert_eq!(
-      "((unknown) -> unknown, int) -> unit",
+      "((any) -> any, int) -> unit",
       solved_contextually_typed_concrete_type.pretty_print(&heap)
     );
     assert!(!error_set.has_errors());
@@ -426,8 +439,8 @@ mod tests {
       &builder.fun_type(
         vec![
           builder.fun_type(
-            vec![Rc::new(Type::Unknown(Reason::dummy()))],
-            Rc::new(Type::Unknown(Reason::dummy())),
+            vec![Rc::new(Type::Any(Reason::dummy(), false))],
+            Rc::new(Type::Any(Reason::dummy(), true)),
           ),
           builder.int_type(),
         ],

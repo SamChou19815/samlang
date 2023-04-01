@@ -317,7 +317,7 @@ fn solve_type_arguments(
     partially_solved_substitution
       .entry(type_parameter.name)
       // Fill in unknown for unsolved types.
-      .or_insert_with(|| Rc::new(Type::Unknown(*function_call_reason)));
+      .or_insert_with(|| Rc::new(Type::Any(*function_call_reason, true)));
   }
   perform_fn_type_substitution(generic_function_type, &partially_solved_substitution)
 }
@@ -436,10 +436,10 @@ impl<'a> TypingContext<'a> {
         expression.class_name.name,
       );
       let partially_checked_expr = expr::ClassFunction {
-        common: expression.common.with_new_type(Rc::new(Type::Unknown(Reason::new(
-          expression.common.loc,
-          Some(expression.common.loc),
-        )))),
+        common: expression.common.with_new_type(Rc::new(Type::Any(
+          Reason::new(expression.common.loc, Some(expression.common.loc)),
+          false,
+        ))),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments: vec![],
         module_reference: expression.module_reference,
@@ -610,7 +610,7 @@ impl<'a> TypingContext<'a> {
       let type_ = Rc::new(self.type_meet(
         heap,
         hint,
-        &Type::Unknown(Reason::new(expression.common.loc, None)),
+        &Type::Any(Reason::new(expression.common.loc, None), false),
       ));
       (
         expr::ClassFunction {
@@ -640,7 +640,7 @@ impl<'a> TypingContext<'a> {
     for tparam in unresolved_type_parameters {
       subst_map.insert(
         tparam.name,
-        Rc::new(self.type_meet(heap, None, &Type::Unknown(Reason::new(expression.loc(), None)))),
+        Rc::new(self.type_meet(heap, None, &Type::Any(Reason::new(expression.loc(), None), true))),
       );
     }
 
@@ -722,7 +722,7 @@ impl<'a> TypingContext<'a> {
         let unknown_type = Rc::new(self.type_meet(
           heap,
           hint,
-          &Type::Unknown(Reason::new(expression.common.loc, None)),
+          &Type::Any(Reason::new(expression.common.loc, None), false),
         ));
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(unknown_type),
@@ -902,7 +902,7 @@ impl<'a> TypingContext<'a> {
         let unknown_type = Rc::new(self.type_meet(
           heap,
           hint,
-          &Type::Unknown(Reason::new(expression.common.loc, None)),
+          &Type::Any(Reason::new(expression.common.loc, None), false),
         ));
         let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
           common: expression.common.with_new_type(Rc::new(self.type_meet(
@@ -986,7 +986,7 @@ impl<'a> TypingContext<'a> {
       );
       return FunctionCallTypeCheckingResult {
         solved_generic_type: generic_function_type.clone(),
-        solved_return_type: Type::Unknown(*function_call_reason),
+        solved_return_type: Type::Any(*function_call_reason, false),
         solved_substitution: HashMap::new(),
         checked_arguments: function_arguments.iter().map(|e| self.check(heap, e, None)).collect(),
       };
@@ -1001,7 +1001,7 @@ impl<'a> TypingContext<'a> {
         partially_checked_arguments.push(MaybeCheckedExpression::Checked(checked));
       } else {
         let loc = arg.loc();
-        let unknown_t = Rc::new(Type::Unknown(Reason::new(loc, Some(loc))));
+        let unknown_t = Rc::new(Type::Any(Reason::new(loc, Some(loc)), true));
         checked_argument_types.push(unknown_t.clone());
         partially_checked_arguments.push(MaybeCheckedExpression::Unchecked(arg, unknown_t));
       }
@@ -1069,12 +1069,12 @@ impl<'a> TypingContext<'a> {
     }
     for type_parameter in still_unresolved_type_parameters {
       fully_solved_substitution
-        .insert(type_parameter.name, Rc::new(Type::Unknown(*function_call_reason)));
+        .insert(type_parameter.name, Rc::new(Type::Any(*function_call_reason, true)));
     }
     let fully_solved_generic_type =
       perform_fn_type_substitution(generic_function_type, &fully_solved_substitution);
     let fully_solved_concrete_return_type = contextual_type_meet(
-      &return_type_hint.cloned().unwrap_or(Type::Unknown(*function_call_reason)),
+      &return_type_hint.cloned().unwrap_or(Type::Any(*function_call_reason, true)),
       &fully_solved_generic_type.return_type.reposition(function_call_reason.use_loc),
       heap,
       self.error_set,
@@ -1116,7 +1116,7 @@ impl<'a> TypingContext<'a> {
     let callee_function_type = match partially_checked_callee_type {
       Type::Fn(fn_type) => fn_type,
       t => {
-        if !matches!(t, Type::Unknown(_)) {
+        if !matches!(t, Type::Any(_, _)) {
           self.error_set.report_incompatible_type_error(
             expression.common.loc,
             "function".to_string(),
@@ -1124,7 +1124,7 @@ impl<'a> TypingContext<'a> {
           );
         }
         let loc = expression.common.loc;
-        let type_ = Rc::new(self.type_meet(heap, hint, &Type::Unknown(Reason::new(loc, None))));
+        let type_ = Rc::new(self.type_meet(heap, hint, &Type::Any(Reason::new(loc, None), true)));
         return expr::E::Call(expr::Call {
           common: expression.common.with_new_type(type_),
           callee: Box::new(self.replace_undecided_tparam_with_unknown_and_update_type(
@@ -1341,7 +1341,12 @@ impl<'a> TypingContext<'a> {
       self.error_set.report_non_exhausive_match_error(expression.common.loc, missing_tags);
     }
     let final_type = matching_list_types.iter().fold(
-      Rc::new(self.type_meet(heap, hint, &Type::Unknown(Reason::new(expression.common.loc, None)))),
+      Rc::new(self.type_meet(
+        heap,
+        hint,
+        // This any type shouldn't compromise soundness, because there must be at least one branch.
+        &Type::Any(Reason::new(expression.common.loc, None), true),
+      )),
       |general, specific| Rc::new(self.type_meet(heap, Some(&general), specific)),
     );
     expr::E::Match(expr::Match {
@@ -1368,7 +1373,7 @@ impl<'a> TypingContext<'a> {
               let annot = if let Some(annot) = &parameter.annotation {
                 Rc::new(Type::from_annotation(annot))
               } else {
-                Rc::new(Type::Unknown(Reason::new(parameter.name.loc, None)))
+                Rc::new(Type::Any(Reason::new(parameter.name.loc, None), true))
               };
               let type_ = Rc::new(self.type_meet(heap, Some(parameter_hint), &annot));
               self.local_typing_context.write(parameter.name.loc, type_.clone());
@@ -1397,7 +1402,7 @@ impl<'a> TypingContext<'a> {
         Rc::new(Type::from_annotation(annot))
       } else {
         self.error_set.report_underconstrained_error(name.loc);
-        Rc::new(Type::Unknown(Reason::new(name.loc, None)))
+        Rc::new(Type::Any(Reason::new(name.loc, None), false))
       };
       self.validate_type_instantiation_strictly(heap, &type_);
       self.local_typing_context.write(name.loc, type_.clone());
@@ -1488,7 +1493,7 @@ impl<'a> TypingContext<'a> {
             field_order: *field_order,
             field_name: *field_name,
             alias: *alias,
-            type_: Rc::new(Type::Unknown(Reason::new(*loc, Some(*loc)))),
+            type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
           });
         }
         expr::Pattern::Object(*pattern_loc, checked_destructured_names)

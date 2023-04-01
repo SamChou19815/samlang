@@ -140,7 +140,7 @@ impl FunctionType {
 
 #[derive(Clone, EnumAsInner)]
 pub(crate) enum Type {
-  Unknown(Reason),
+  Any(Reason, /** is_placeholder */ bool),
   Primitive(Reason, PrimitiveTypeKind),
   Id(IdType),
   Fn(FunctionType),
@@ -149,7 +149,9 @@ pub(crate) enum Type {
 impl ISourceType for Type {
   fn pretty_print(&self, heap: &Heap) -> String {
     match self {
-      Self::Unknown(_) => String::from("unknown"),
+      Self::Any(_, is_placeholder) => {
+        String::from(if *is_placeholder { "placeholder" } else { "any" })
+      }
       Self::Primitive(_, p) => p.to_string(),
       Self::Id(id_type) => id_type.pretty_print(heap),
       Self::Fn(fn_type) => fn_type.pretty_print(heap),
@@ -158,7 +160,7 @@ impl ISourceType for Type {
 
   fn is_the_same_type(&self, other: &Self) -> bool {
     match (self, other) {
-      (Self::Unknown(_), Self::Unknown(_)) => true,
+      (Self::Any(_, _), Self::Any(_, _)) => true,
       (Self::Primitive(_, p1), Self::Primitive(_, p2)) => *p1 == *p2,
       (Self::Id(id1), Self::Id(id2)) => id1.is_the_same_type(id2),
       (Self::Fn(f1), Self::Fn(f2)) => f1.is_the_same_type(f2),
@@ -183,7 +185,7 @@ impl Type {
 
   pub(crate) fn get_reason(&self) -> &Reason {
     match self {
-      Self::Unknown(reason) => reason,
+      Self::Any(reason, _) => reason,
       Self::Primitive(reason, _) => reason,
       Self::Id(IdType { reason, .. }) => reason,
       Self::Fn(FunctionType { reason, .. }) => reason,
@@ -192,7 +194,9 @@ impl Type {
 
   pub(crate) fn reposition(&self, use_loc: Location) -> Type {
     match self {
-      Self::Unknown(reason) => Type::Unknown(reason.to_use_reason(use_loc)),
+      Self::Any(reason, is_placeholder) => {
+        Type::Any(reason.to_use_reason(use_loc), *is_placeholder)
+      }
       Self::Primitive(reason, p) => Type::Primitive(reason.to_use_reason(use_loc), *p),
       Self::Id(IdType { reason, module_reference, id, type_arguments }) => Type::Id(IdType {
         reason: reason.to_use_reason(use_loc),
@@ -223,7 +227,7 @@ impl Type {
         Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::String)
       }
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Any) => {
-        Type::Unknown(Reason::new(*loc, Some(*loc)))
+        Type::Any(Reason::new(*loc, Some(*loc)), false)
       }
       annotation::T::Id(annot) => Type::Id(IdType::from_annotation(annot)),
       annotation::T::Fn(annot) => Type::Fn(FunctionType::from_annotation(annot)),
@@ -572,7 +576,8 @@ mod type_tests {
     let builder = test_type_builder::create();
     let mut heap = Heap::new();
 
-    assert_eq!("unknown", Type::Unknown(Reason::dummy()).clone().pretty_print(&heap));
+    assert_eq!("any", Type::Any(Reason::dummy(), false).clone().pretty_print(&heap));
+    assert_eq!("placeholder", Type::Any(Reason::dummy(), true).clone().pretty_print(&heap));
     assert_eq!("unit", builder.unit_type().clone().pretty_print(&heap));
     assert_eq!("int", builder.int_type().pretty_print(&heap));
     assert_eq!("bool", builder.bool_type().pretty_print(&heap));
@@ -688,8 +693,8 @@ methods:
 class(a:bool, b:(private) bool)  : []
 functions:
 methods:
-m1: public () -> unknown
-m2: public () -> unknown
+m1: public () -> any
+m2: public () -> any
 "#
       .trim(),
       InterfaceSignature {
@@ -713,7 +718,7 @@ m2: public () -> unknown
               type_: FunctionType {
                 reason: Reason::dummy(),
                 argument_types: vec![],
-                return_type: Rc::new(Type::Unknown(Reason::dummy()))
+                return_type: Rc::new(Type::Any(Reason::dummy(), false))
               }
             }
           ),
@@ -725,7 +730,7 @@ m2: public () -> unknown
               type_: FunctionType {
                 reason: Reason::dummy(),
                 argument_types: vec![],
-                return_type: Rc::new(Type::Unknown(Reason::dummy()))
+                return_type: Rc::new(Type::Any(Reason::dummy(), false))
               }
             }
           )
@@ -813,7 +818,7 @@ m2: public () -> unknown
     let heap = &mut Heap::new();
     let builder = test_builder::create();
 
-    assert_eq!("unknown", Type::from_annotation(&builder.any_annot()).pretty_print(heap));
+    assert_eq!("any", Type::from_annotation(&builder.any_annot()).pretty_print(heap));
     assert_eq!("unit", Type::from_annotation(&builder.unit_annot()).pretty_print(heap));
     assert_eq!("bool", Type::from_annotation(&builder.bool_annot()).pretty_print(heap));
     assert_eq!("int", Type::from_annotation(&builder.int_annot()).pretty_print(heap));
@@ -837,7 +842,7 @@ m2: public () -> unknown
       .unit_type()
       .is_the_same_type(&builder.simple_id_type(heap.alloc_str_for_test("A"))));
 
-    assert!(Type::Unknown(Reason::dummy()).is_the_same_type(&Type::Unknown(Reason::dummy())));
+    assert!(Type::Any(Reason::dummy(), true).is_the_same_type(&Type::Any(Reason::dummy(), false)));
     assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
     assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
 

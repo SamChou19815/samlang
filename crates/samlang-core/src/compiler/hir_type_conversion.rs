@@ -268,7 +268,7 @@ pub(super) struct TypeLoweringManager {
 impl TypeLoweringManager {
   pub(super) fn lower_source_type(&mut self, heap: &mut Heap, type_: &type_::Type) -> Type {
     match type_ {
-      type_::Type::Unknown(_) => panic!(),
+      type_::Type::Any(_, _) => panic!(),
       type_::Type::Primitive(_, kind) => Type::Primitive(match kind {
         type_::PrimitiveTypeKind::Bool => PrimitiveType::Bool,
         type_::PrimitiveTypeKind::Unit => PrimitiveType::Int,
@@ -674,7 +674,7 @@ mod tests {
   fn type_lowering_manager_lower_source_type_panic_test() {
     let heap = &mut Heap::new();
     TypeLoweringManager { generic_types: HashSet::new(), type_synthesizer: TypeSynthesizer::new() }
-      .lower_source_type(heap, &type_::Type::Unknown(Reason::dummy()));
+      .lower_source_type(heap, &type_::Type::Any(Reason::dummy(), true));
   }
 
   #[test]

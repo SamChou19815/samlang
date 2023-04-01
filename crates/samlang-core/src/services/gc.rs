@@ -37,7 +37,7 @@ fn mark_annot_opt(heap: &mut Heap, opt_t: &Option<annotation::T>) {
 
 fn mark_type(heap: &mut Heap, type_: &Type) {
   match type_ {
-    Type::Unknown(_) | Type::Primitive(_, _) => {}
+    Type::Any(_, _) | Type::Primitive(_, _) => {}
     Type::Id(t) => mark_id_type(heap, t),
     Type::Fn(t) => mark_fn_type(heap, t),
   }

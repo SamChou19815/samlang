@@ -12,11 +12,14 @@ use std::{
 };
 
 fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
-  if let Type::Unknown(_) = specific {
+  if let Type::Any(reason, specific_is_placeholder) = specific {
+    if let Type::Any(_, general_is_placeholder) = general {
+      return Some(Type::Any(*reason, *specific_is_placeholder && *general_is_placeholder));
+    }
     return Some(general.reposition(specific.get_reason().use_loc));
   }
   match general {
-    Type::Unknown(_) => Some(specific.clone()),
+    Type::Any(_, _) => Some(specific.clone()),
     Type::Primitive(_, _) => {
       if general.is_the_same_type(specific) {
         Some(specific.clone())
@@ -107,7 +110,7 @@ pub(super) fn perform_fn_type_substitution(
 
 pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type> {
   match t {
-    Type::Unknown(_) | Type::Primitive(_, _) => Rc::new((*t).clone()),
+    Type::Any(_, _) | Type::Primitive(_, _) => Rc::new((*t).clone()),
     Type::Id(id_type) => perform_id_type_substitution(id_type, mapping),
     Type::Fn(f) => Rc::new(Type::Fn(perform_fn_type_substitution(f, mapping))),
   }
@@ -147,22 +150,33 @@ pub(super) fn perform_id_type_substitution_asserting_id_type_return(
   }
 }
 
+fn has_placeholder_type(type_: &Type) -> bool {
+  match type_ {
+    Type::Any(_, is_placeholder) => *is_placeholder,
+    Type::Primitive(_, _) => false,
+    Type::Id(id_type) => id_type.type_arguments.iter().any(|t| has_placeholder_type(t)),
+    Type::Fn(fn_type) => {
+      fn_type.argument_types.iter().any(|t| has_placeholder_type(t))
+        || has_placeholder_type(&fn_type.return_type)
+    }
+  }
+}
+
 fn solve_type_constraints_internal(
   concrete: &Type,
   generic: &Type,
   type_parameters: &HashSet<PStr>,
   partially_solved: &mut HashMap<PStr, Rc<Type>>,
 ) {
-  // Unknown types, which might come from expressions that need to be contextually typed (e.g. lambda),
-  // do not participate in constraint solving.
-  if let Type::Unknown(_) = concrete {
-    return;
-  }
   match generic {
-    Type::Unknown(_) | Type::Primitive(_, _) => {}
+    Type::Any(_, _) | Type::Primitive(_, _) => {}
     Type::Id(g) => {
       if type_parameters.contains(&g.id) && !partially_solved.contains_key(&g.id) {
-        partially_solved.insert(g.id, Rc::new((*concrete).clone()));
+        // Placeholder types, which might come from expressions that need to be contextually typed (e.g. lambda),
+        // do not participate in constraint solving.
+        if !has_placeholder_type(concrete) {
+          partially_solved.insert(g.id, Rc::new(concrete.clone()));
+        }
         return;
       }
       if let Type::Id(c) = concrete {
@@ -236,8 +250,8 @@ pub(super) fn solve_type_constraints(
   );
   for type_param in type_parameter_signatures {
     solved_substitution.entry(type_param.name).or_insert_with(|| {
-      // Fill in unknown for unsolved types.
-      Rc::new(Type::Unknown(Reason::new(concrete.get_reason().use_loc, None)))
+      // Fill in placeholder for unsolved types.
+      Rc::new(Type::Any(Reason::new(concrete.get_reason().use_loc, None), true))
     });
   }
   let solved_generic_type = perform_type_substitution(generic, &solved_substitution);
