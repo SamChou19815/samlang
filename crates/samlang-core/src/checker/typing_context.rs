@@ -31,7 +31,7 @@ impl LocalTypingContext {
     if let Some(t) = self.read_opt(loc) {
       t
     } else {
-      Type::Unknown(Reason::new(*loc, None))
+      Type::Any(Reason::new(*loc, None), false)
     }
   }
 
@@ -154,7 +154,7 @@ impl<'a> TypingContext<'a> {
     enforce_concrete_types: bool,
   ) {
     let id_type = match t {
-      Type::Unknown(_) | Type::Primitive(_, _) => return,
+      Type::Any(_, _) | Type::Primitive(_, _) => return,
       Type::Fn(f) => {
         for arg in &f.argument_types {
           self.validate_type_instantiation_customized(heap, arg, true)
@@ -295,7 +295,7 @@ impl<'a> TypingContext<'a> {
   ) -> TypeDefinitionSignature {
     let id_type = match type_ {
       Type::Id(t) => t,
-      Type::Unknown(_) | Type::Primitive(_, _) | Type::Fn(_) => {
+      Type::Any(_, _) | Type::Primitive(_, _) | Type::Fn(_) => {
         return TypeDefinitionSignature {
           is_object: expect_object,
           names: vec![],
