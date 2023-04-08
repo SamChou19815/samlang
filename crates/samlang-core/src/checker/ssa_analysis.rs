@@ -2,7 +2,7 @@ use crate::{
   ast::{
     source::{
       annotation, expr, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
-      TypeDefinition,
+      TypeDefinition, TypeParameter,
     },
     Location,
   },
@@ -110,15 +110,7 @@ impl<'a> SsaAnalysisState<'a> {
       {
         self.context.push_scope();
         {
-          for tparam in type_parameters {
-            let id = &tparam.name;
-            self.define_id(id.name, id.loc);
-          }
-          for tparam in type_parameters {
-            if let Some(bound) = &tparam.bound {
-              self.visit_id_annot(bound);
-            };
-          }
+          self.visit_type_parameters_with_bounds(type_parameters);
           for t in toplevel.extends_or_implements_nodes() {
             for annot in &t.type_arguments {
               self.visit_annot(annot);
@@ -207,15 +199,7 @@ impl<'a> SsaAnalysisState<'a> {
     body: Option<&expr::E<()>>,
   ) {
     self.context.push_scope();
-    for tparam in member.type_parameters.iter() {
-      let id = &tparam.name;
-      self.define_id(id.name, id.loc);
-    }
-    for tparam in member.type_parameters.iter() {
-      if let Some(bound) = &tparam.bound {
-        self.visit_id_annot(bound);
-      }
-    }
+    self.visit_type_parameters_with_bounds(&member.type_parameters);
     for param in member.parameters.iter() {
       self.visit_annot(&param.annotation);
     }
@@ -231,6 +215,25 @@ impl<'a> SsaAnalysisState<'a> {
     let (local_defs, _) = self.context.pop_scope();
     self.local_scoped_def_locs.insert(member.loc, local_defs);
     self.context.pop_scope();
+  }
+
+  fn visit_type_parameters_with_bounds(&mut self, type_parameters: &[TypeParameter]) {
+    for tparam in type_parameters {
+      if let Some(bound) = &tparam.bound {
+        self.use_id(&bound.id.name, bound.id.loc)
+      }
+    }
+    for tparam in type_parameters {
+      let id = &tparam.name;
+      self.define_id(id.name, id.loc);
+    }
+    for tparam in type_parameters {
+      if let Some(bound) = &tparam.bound {
+        for annot in &bound.type_arguments {
+          self.visit_annot(annot);
+        }
+      }
+    }
   }
 
   fn visit_expression(&mut self, expression: &expr::E<()>) {
