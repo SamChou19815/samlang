@@ -42,6 +42,7 @@ pub(super) struct SourceParser<'a> {
   builtin_classes: HashSet<PStr>,
   position: usize,
   class_source_map: HashMap<PStr, ModuleReference>,
+  available_tparams: HashSet<PStr>,
 }
 
 impl<'a> SourceParser<'a> {
@@ -266,6 +267,7 @@ impl<'a> SourceParser<'a> {
       builtin_classes,
       position: 0,
       class_source_map: HashMap::new(),
+      available_tparams: HashSet::new(),
     }
   }
 
@@ -343,7 +345,7 @@ impl<'a> SourceParser<'a> {
     let mut loc = self.assert_and_consume_keyword(Keyword::CLASS);
     let name = self.parse_upper_id();
     loc = loc.union(&name.loc);
-    let (type_param_loc_start, type_param_loc_end, type_parameters) =
+    let (type_param_loc_start, type_param_loc_end, mut type_parameters) =
       if let Token(loc_start, TokenContent::Operator(TokenOp::LT)) = self.peek() {
         self.consume();
         let type_params = self
@@ -353,6 +355,8 @@ impl<'a> SourceParser<'a> {
       } else {
         (None, None, vec![])
       };
+    self.available_tparams = type_parameters.iter().map(|it| it.name.name).collect();
+    self.fix_tparams_with_generic_annot(&mut type_parameters);
     let (type_definition, extends_or_implements_nodes) = match self.peek().1 {
       TokenContent::Operator(TokenOp::LBRACE | TokenOp::COLON)
       | TokenContent::Keyword(Keyword::CLASS | Keyword::INTERFACE) => {
@@ -396,7 +400,9 @@ impl<'a> SourceParser<'a> {
       while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
         self.peek().1
       {
+        let saved_upper_type_parameters = self.available_tparams.clone();
         members.push(self.parse_class_member_definition());
+        self.available_tparams = saved_upper_type_parameters;
       }
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
     }
@@ -415,7 +421,7 @@ impl<'a> SourceParser<'a> {
     let associated_comments = self.collect_preceding_comments();
     let mut loc = self.assert_and_consume_keyword(Keyword::INTERFACE);
     let name = self.parse_upper_id();
-    let type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
+    let mut type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
       self.consume();
       let type_params =
         self.parse_comma_separated_list(Some(TokenOp::GT), &mut SourceParser::parse_type_parameter);
@@ -424,6 +430,8 @@ impl<'a> SourceParser<'a> {
     } else {
       vec![]
     };
+    self.available_tparams = type_parameters.iter().map(|it| it.name.name).collect();
+    self.fix_tparams_with_generic_annot(&mut type_parameters);
     let extends_or_implements_nodes = if let TokenContent::Operator(TokenOp::COLON) = self.peek().1
     {
       self.consume();
@@ -439,7 +447,9 @@ impl<'a> SourceParser<'a> {
       while let TokenContent::Keyword(Keyword::FUNCTION | Keyword::METHOD | Keyword::PRIVATE) =
         self.peek().1
       {
+        let saved_upper_type_parameters = self.available_tparams.clone();
         members.push(self.parse_class_member_declaration());
+        self.available_tparams = saved_upper_type_parameters;
       }
       loc = loc.union(&self.assert_and_consume_operator(TokenOp::RBRACE));
     }
@@ -530,7 +540,10 @@ impl<'a> SourceParser<'a> {
     } else {
       self.assert_and_consume_keyword(Keyword::METHOD);
     }
-    let type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
+    if !is_method {
+      self.available_tparams = HashSet::new();
+    }
+    let mut type_parameters = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
       self.consume();
       let type_params = self.parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| {
         s.parse_type_parameter()
@@ -540,6 +553,8 @@ impl<'a> SourceParser<'a> {
     } else {
       vec![]
     };
+    self.available_tparams.extend(type_parameters.iter().map(|it| it.name.name));
+    self.fix_tparams_with_generic_annot(&mut type_parameters);
     let name = self.parse_lower_id();
     let fun_type_loc_start = self.assert_and_consume_operator(TokenOp::LPAREN);
     let parameters = if let TokenContent::Operator(TokenOp::RPAREN) = self.peek().1 {
@@ -549,7 +564,7 @@ impl<'a> SourceParser<'a> {
         let name = s.parse_lower_id();
         s.assert_and_consume_operator(TokenOp::COLON);
         let annotation = s.parse_annotation();
-        AnnotatedId { name, annotation }
+        AnnotatedId { name, type_: (), annotation }
       })
     };
     self.assert_and_consume_operator(TokenOp::RPAREN);
@@ -1150,9 +1165,9 @@ impl<'a> SourceParser<'a> {
                 let name = s.parse_lower_id();
                 if let Token(_, TokenContent::Operator(TokenOp::COLON)) = s.peek() {
                   s.consume();
-                  OptionallyAnnotatedId { name, annotation: Some(s.parse_annotation()) }
+                  OptionallyAnnotatedId { name, type_: (), annotation: Some(s.parse_annotation()) }
                 } else {
-                  OptionallyAnnotatedId { name, annotation: None }
+                  OptionallyAnnotatedId { name, type_: (), annotation: None }
                 }
               });
             self.assert_and_consume_operator(TokenOp::RPAREN);
@@ -1193,6 +1208,7 @@ impl<'a> SourceParser<'a> {
                     associated_comments: self.comments_store.create_comment_reference(vec![]),
                     name: id_for_lambda,
                   },
+                  type_: (),
                   annotation: None,
                 }],
                 captured: HashMap::new(),
@@ -1396,11 +1412,13 @@ impl<'a> SourceParser<'a> {
       TokenContent::UpperId(name) => {
         self.consume();
         let associated_comments = self.comments_store.create_comment_reference(vec![]);
-        annotation::T::Id(self.parse_identifier_annot(Id {
-          loc: peeked.0,
-          associated_comments,
-          name,
-        }))
+        let id_annot = self.parse_identifier_annot(Id { loc: peeked.0, associated_comments, name });
+        if id_annot.type_arguments.is_empty() && self.available_tparams.contains(&id_annot.id.name)
+        {
+          annotation::T::Generic(id_annot.location, id_annot.id)
+        } else {
+          annotation::T::Id(id_annot)
+        }
       }
       TokenContent::Operator(TokenOp::LPAREN) => {
         self.consume();
@@ -1436,6 +1454,34 @@ impl<'a> SourceParser<'a> {
           self.comments_store.create_comment_reference(associated_comments),
           annotation::PrimitiveTypeKind::Any,
         )
+      }
+    }
+  }
+
+  fn fix_tparams_with_generic_annot(&self, tparams: &mut [TypeParameter]) {
+    for tparam in tparams {
+      if let Some(bound) = &mut tparam.bound {
+        for annot in &mut bound.type_arguments {
+          self.fix_annot_with_generic_annot(annot);
+        }
+      }
+    }
+  }
+
+  fn fix_annot_with_generic_annot(&self, annot: &mut annotation::T) {
+    match annot {
+      annotation::T::Primitive(_, _, _) | annotation::T::Generic(_, _) => {}
+      annotation::T::Id(id_annot) => {
+        if id_annot.type_arguments.is_empty() && self.available_tparams.contains(&id_annot.id.name)
+        {
+          *annot = annotation::T::Generic(id_annot.location, id_annot.id)
+        }
+      }
+      annotation::T::Fn(t) => {
+        for annot in &mut t.argument_types {
+          self.fix_annot_with_generic_annot(annot);
+        }
+        self.fix_annot_with_generic_annot(&mut t.return_type);
       }
     }
   }

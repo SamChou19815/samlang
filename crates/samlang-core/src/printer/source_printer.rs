@@ -131,6 +131,12 @@ pub(super) fn annotation_to_doc(
       Document::Text(rc_string(kind.to_string())),
     ),
     annotation::T::Id(annot) => id_annot_to_doc(heap, comment_store, annot),
+    annotation::T::Generic(_, id) => create_opt_preceding_comment_doc(
+      heap,
+      comment_store,
+      id.associated_comments,
+      Document::Text(rc_pstr(heap, id.name)),
+    ),
     annotation::T::Fn(annotation::Function {
       location: _,
       associated_comments,

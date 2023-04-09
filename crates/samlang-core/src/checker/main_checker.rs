@@ -1,14 +1,14 @@
 use super::{
   checker_utils::{
-    contextual_type_meet, perform_fn_type_substitution, perform_id_type_substitution,
+    contextual_type_meet, perform_fn_type_substitution, perform_nominal_type_substitution,
     perform_type_substitution, solve_multiple_type_constrains, TypeConstraint,
     TypeConstraintSolution,
   },
   global_signature,
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{
-    FunctionType, GlobalSignature, ISourceType, IdType, MemberSignature, PrimitiveTypeKind, Type,
-    TypeDefinitionSignature, TypeParameterSignature,
+    FunctionType, GlobalSignature, ISourceType, MemberSignature, NominalType, PrimitiveTypeKind,
+    Type, TypeDefinitionSignature, TypeParameterSignature,
   },
   typing_context::{LocalTypingContext, TypingContext},
 };
@@ -17,7 +17,7 @@ use crate::{
     source::{
       expr::{self, ExpressionCommon, ObjectPatternDestucturedName},
       ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon, Literal,
-      Module, OptionallyAnnotatedId, Toplevel, TypeDefinition, TypeParameter,
+      Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
     },
     Reason,
   },
@@ -28,7 +28,7 @@ use crate::{
 use itertools::Itertools;
 use std::{collections::HashMap, ops::Deref, rc::Rc};
 
-pub(crate) fn mod_type(expression: expr::E<Rc<Type>>, new_type: Rc<Type>) -> expr::E<Rc<Type>> {
+fn mod_type(expression: expr::E<Rc<Type>>, new_type: Rc<Type>) -> expr::E<Rc<Type>> {
   let f = |common: expr::ExpressionCommon<Rc<Type>>| ExpressionCommon {
     loc: common.loc,
     associated_comments: common.associated_comments,
@@ -220,6 +220,7 @@ mod mod_type_tests {
         common: common(),
         parameters: vec![OptionallyAnnotatedId {
           name: Id::from(heap.alloc_str_for_test("name")),
+          type_: builder.bool_type(),
           annotation: None,
         }],
         captured: HashMap::new(),
@@ -349,7 +350,7 @@ fn validate_type_arguments(
     if let (Some(bound), Some(solved_type_argument)) =
       (&type_param.bound, subst_map.get(&type_param.name))
     {
-      let substituted_bound = perform_id_type_substitution(bound, subst_map);
+      let substituted_bound = Type::Nominal(perform_nominal_type_substitution(bound, subst_map));
       if !solved_type_argument.is_the_same_type(&substituted_bound)
         && !cx.is_subtype(solved_type_argument, &substituted_bound)
       {
@@ -542,12 +543,7 @@ fn check_class_fn_with_unresolved_tparams(
             .iter()
             .map(|it| {
               perform_type_substitution(
-                &Type::Id(IdType {
-                  reason: Reason::dummy(),
-                  module_reference: cx.current_module_reference,
-                  id: it.name,
-                  type_arguments: vec![],
-                }),
+                &Type::Generic(Reason::dummy(), it.name),
                 &solved_substitution,
               )
             })
@@ -579,14 +575,7 @@ fn check_class_fn_with_unresolved_tparams(
     let inferred_type_arguments = class_function_type_information
       .type_parameters
       .iter()
-      .map(|it| {
-        Rc::new(Type::Id(IdType {
-          reason: Reason::dummy(),
-          module_reference: cx.current_module_reference,
-          id: it.name,
-          type_arguments: vec![],
-        }))
-      })
+      .map(|it| Rc::new(Type::Generic(Reason::dummy(), it.name)))
       .collect_vec();
     for targ in &expression.explicit_type_arguments {
       cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(targ));
@@ -712,9 +701,9 @@ fn check_member_with_unresolved_tparams(
   hint: Option<&Type>,
 ) -> (FieldOrMethodAccesss, Vec<TypeParameterSignature>) {
   let checked_expression = type_check_expression(cx, heap, &expression.object, None);
-  let obj_type = match checked_expression.type_().deref() {
-    Type::Id(t) => t,
-    _ => {
+  let obj_type = match cx.nominal_type_upper_bound(checked_expression.type_()) {
+    Some(t) => t,
+    None => {
       cx.error_set.report_incompatible_type_error(
         checked_expression.loc(),
         "identifier".to_string(),
@@ -737,11 +726,14 @@ fn check_member_with_unresolved_tparams(
       return (partially_checked_expr, vec![]);
     }
   };
+  let method_targs = obj_type.type_arguments.clone();
+  let &NominalType { reason: _, module_reference: method_mod_ref, id: class_id, type_arguments: _ } =
+    obj_type;
   if let Some(method_type_info) = cx.get_method_type(
-    obj_type.module_reference,
-    obj_type.id,
+    method_mod_ref,
+    class_id,
     expression.field_name.name,
-    obj_type.type_arguments.clone(),
+    method_targs,
     expression.common.loc,
   ) {
     // This is a valid method. We will now type check it as a method access
@@ -817,12 +809,7 @@ fn check_member_with_unresolved_tparams(
             .iter()
             .map(|it| {
               perform_type_substitution(
-                &Type::Id(IdType {
-                  reason: Reason::dummy(),
-                  module_reference: cx.current_module_reference,
-                  id: it.name,
-                  type_arguments: vec![],
-                }),
+                &Type::Generic(Reason::dummy(), it.name),
                 &solved_substitution,
               )
             })
@@ -857,14 +844,7 @@ fn check_member_with_unresolved_tparams(
       inferred_type_arguments: method_type_info
         .type_parameters
         .iter()
-        .map(|it| {
-          Rc::new(Type::Id(IdType {
-            reason: Reason::dummy(),
-            module_reference: cx.current_module_reference,
-            id: it.name,
-            type_arguments: vec![],
-          }))
-        })
+        .map(|it| Rc::new(Type::Generic(Reason::dummy(), it.name)))
         .collect_vec(),
       object: Box::new(checked_expression),
       method_name: expression.field_name,
@@ -898,7 +878,7 @@ fn check_member_with_unresolved_tparams(
     } else {
       cx.error_set.report_member_missing_error(
         expression.field_name.loc,
-        obj_type.id.as_str(heap).to_string(),
+        class_id.as_str(heap).to_string(),
         expression.field_name.name.as_str(heap).to_string(),
       );
       let unknown_type = Rc::new(type_meet(
@@ -1367,6 +1347,7 @@ fn check_match(
   })
 }
 
+/// Invariant: returned type list has the same length as the param list
 fn infer_lambda_parameter_types(
   cx: &mut TypingContext,
   heap: &Heap,
@@ -1408,7 +1389,7 @@ fn infer_lambda_parameter_types(
     }
   }
   let mut types_ = vec![];
-  for OptionallyAnnotatedId { name, annotation } in &expression.parameters {
+  for OptionallyAnnotatedId { name, type_: _, annotation } in &expression.parameters {
     let type_ = if let Some(annot) = annotation {
       Rc::new(Type::from_annotation(annot))
     } else {
@@ -1429,6 +1410,16 @@ fn check_lambda(
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
   let argument_types = infer_lambda_parameter_types(cx, heap, expression, hint);
+  let checked_parameters = expression
+    .parameters
+    .iter()
+    .zip(&argument_types)
+    .map(|(param, t)| OptionallyAnnotatedId {
+      name: param.name,
+      type_: t.clone(),
+      annotation: param.annotation.clone(),
+    })
+    .collect_vec();
   let body = type_check_expression(
     cx,
     heap,
@@ -1443,7 +1434,7 @@ fn check_lambda(
   });
   expr::E::Lambda(expr::Lambda {
     common: expression.common.with_new_type(Rc::new(type_)),
-    parameters: expression.parameters.clone(),
+    parameters: checked_parameters,
     captured,
     body: Box::new(body),
   })
@@ -1554,94 +1545,15 @@ fn check_block(
   })
 }
 
-fn type_params_to_type_params_sig(
-  type_parameters: &[TypeParameter],
-) -> Vec<TypeParameterSignature> {
-  type_parameters
-    .iter()
-    .map(|it| TypeParameterSignature {
-      name: it.name.name,
-      bound: it.bound.as_ref().map(|b| Rc::new(IdType::from_annotation(b))),
-    })
-    .collect_vec()
-}
-
-fn validate_signature_types(
-  toplevel: &Toplevel<()>,
-  global_cx: &GlobalSignature,
-  local_cx: &mut LocalTypingContext,
-  module_reference: ModuleReference,
+fn validate_tparams_signature_type_instantiation(
+  cx: &mut TypingContext,
   heap: &Heap,
-  error_set: &mut ErrorSet,
+  tparams_sig: &[TypeParameterSignature],
 ) {
-  let mut cx = TypingContext::new(
-    global_cx,
-    local_cx,
-    error_set,
-    module_reference,
-    toplevel.name().name,
-    type_params_to_type_params_sig(toplevel.type_parameters()),
-  );
-
-  for tparam in toplevel.type_parameters() {
+  for tparam in tparams_sig {
     if let Some(bound) = &tparam.bound {
-      cx.validate_type_instantiation_allow_abstract_types(
-        heap,
-        &Type::Id(IdType::from_annotation(bound)),
-      );
+      cx.validate_type_instantiation_allow_abstract_types(heap, &Type::Nominal(bound.clone()));
     }
-  }
-  for node in toplevel.extends_or_implements_nodes() {
-    cx.validate_type_instantiation_allow_abstract_types(
-      heap,
-      &Type::Id(IdType::from_annotation(node)),
-    );
-  }
-  if let Some(type_definition) = toplevel.type_definition() {
-    match type_definition {
-      TypeDefinition::Struct { loc: _, fields } => {
-        for field in fields {
-          cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(&field.annotation))
-        }
-      }
-      TypeDefinition::Enum { loc: _, variants } => {
-        for variant in variants {
-          cx.validate_type_instantiation_strictly(
-            heap,
-            &Type::from_annotation(&variant.associated_data_type),
-          )
-        }
-      }
-    }
-  }
-  for member in toplevel.members_iter() {
-    let tparam_sigs = if member.is_method {
-      let mut sigs = type_params_to_type_params_sig(toplevel.type_parameters());
-      sigs.append(&mut type_params_to_type_params_sig(&member.type_parameters));
-      sigs
-    } else {
-      type_params_to_type_params_sig(&member.type_parameters)
-    };
-    let mut member_cx = TypingContext::new(
-      global_cx,
-      local_cx,
-      error_set,
-      module_reference,
-      toplevel.name().name,
-      tparam_sigs,
-    );
-    for tparam in member.type_parameters.iter() {
-      if let Some(bound) = &tparam.bound {
-        member_cx.validate_type_instantiation_allow_abstract_types(
-          heap,
-          &Type::Id(IdType::from_annotation(bound)),
-        );
-      }
-    }
-    member_cx.validate_type_instantiation_strictly(
-      heap,
-      &Type::Fn(FunctionType::from_annotation(&member.type_)),
-    );
   }
 }
 
@@ -1670,7 +1582,7 @@ fn check_class_member_conformance_with_signature(
       }
       (None, None) => { /* Great! */ }
       (Some(e_bound), Some(a_bound)) => {
-        if !e_bound.is_the_same_type(&IdType::from_annotation(a_bound)) {
+        if !e_bound.is_the_same_type(&NominalType::from_annotation(a_bound)) {
           has_type_parameter_conformance_errors = true;
         }
       }
@@ -1715,30 +1627,25 @@ pub(crate) fn type_check_module(
     }
   }
 
+  let mut checked_toplevels = vec![];
   for toplevel in &module.toplevels {
-    validate_signature_types(toplevel, global_cx, &mut local_cx, module_reference, heap, error_set);
-    let id_type = IdType {
+    let nominal_type = NominalType {
       reason: Reason::new(toplevel.name().loc, None),
       module_reference,
       id: toplevel.name().name,
       type_arguments: toplevel
         .type_parameters()
         .iter()
-        .map(|it| {
-          Rc::new(Type::Id(IdType {
-            reason: Reason::new(it.loc, Some(it.loc)),
-            module_reference,
-            id: it.name.name,
-            type_arguments: vec![],
-          }))
-        })
+        .map(|it| Rc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
         .collect_vec(),
     };
     let global_signature::SuperTypesResolutionResult { types: resolved_super_types, is_cyclic } =
-      global_signature::resolve_all_transitive_super_types(global_cx, &id_type);
+      global_signature::resolve_all_transitive_super_types(global_cx, &nominal_type);
     if is_cyclic {
-      error_set
-        .report_cyclic_type_definition_error(id_type.reason.use_loc, id_type.pretty_print(heap));
+      error_set.report_cyclic_type_definition_error(
+        nominal_type.reason.use_loc,
+        nominal_type.pretty_print(heap),
+      );
     }
     for super_type in &resolved_super_types {
       if global_cx
@@ -1754,7 +1661,47 @@ pub(crate) fn type_check_module(
         );
       }
     }
+    let toplevel_tparams_sig = TypeParameterSignature::from_list(toplevel.type_parameters());
+    let mut cx = TypingContext::new(
+      global_cx,
+      &mut local_cx,
+      error_set,
+      module_reference,
+      toplevel.name().name,
+      toplevel_tparams_sig.clone(),
+    );
+    validate_tparams_signature_type_instantiation(&mut cx, heap, &toplevel_tparams_sig);
+    for bound in toplevel.extends_or_implements_nodes() {
+      cx.validate_type_instantiation_allow_abstract_types(
+        heap,
+        &Type::Nominal(NominalType::from_annotation(bound)),
+      );
+    }
+    if let Some(type_definition) = toplevel.type_definition() {
+      match type_definition {
+        TypeDefinition::Struct { loc: _, fields } => {
+          for field in fields {
+            cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(&field.annotation))
+          }
+        }
+        TypeDefinition::Enum { loc: _, variants } => {
+          for variant in variants {
+            cx.validate_type_instantiation_strictly(
+              heap,
+              &Type::from_annotation(&variant.associated_data_type),
+            )
+          }
+        }
+      }
+    }
     for member in toplevel.members_iter() {
+      let tparam_sigs = if member.is_method {
+        let mut sigs = TypeParameterSignature::from_list(toplevel.type_parameters());
+        sigs.append(&mut TypeParameterSignature::from_list(&member.type_parameters));
+        sigs
+      } else {
+        TypeParameterSignature::from_list(&member.type_parameters)
+      };
       let has_interface_def = if member.is_method {
         let resolved = global_signature::resolve_all_method_signatures(
           global_cx,
@@ -1783,61 +1730,75 @@ pub(crate) fn type_check_module(
           "private class member".to_string(),
         );
       }
-    }
-    if let Toplevel::Class(c) = toplevel {
-      let mut missing_function_members =
-        global_signature::resolve_all_member_names(global_cx, &resolved_super_types, false);
-      let mut missing_method_members =
-        global_signature::resolve_all_member_names(global_cx, &resolved_super_types, true);
-      for member in &c.members {
-        let n = member.decl.name.name;
-        if member.decl.is_method {
-          missing_method_members.remove(&n);
-        } else {
-          missing_function_members.remove(&n);
+
+      let mut member_cx = TypingContext::new(
+        global_cx,
+        &mut local_cx,
+        error_set,
+        module_reference,
+        toplevel.name().name,
+        tparam_sigs,
+      );
+      for tparam in member.type_parameters.iter() {
+        if let Some(bound) = &tparam.bound {
+          member_cx.validate_type_instantiation_allow_abstract_types(
+            heap,
+            &Type::Nominal(NominalType::from_annotation(bound)),
+          );
         }
       }
-      match &c.type_definition {
-        TypeDefinition::Struct { .. } => {
-          missing_function_members.remove(&heap.get_allocated_str_opt("init").unwrap());
-        }
-        TypeDefinition::Enum { loc: _, variants } => {
-          for variant in variants {
-            missing_function_members.remove(&variant.name.name);
-          }
-        }
-      }
-      missing_function_members.extend(&missing_method_members);
-      if !missing_function_members.is_empty() {
-        error_set.report_missing_definition_error(
-          toplevel.loc(),
-          missing_function_members.iter().sorted().map(|p| p.as_str(heap).to_string()).collect(),
-        );
-      }
-    }
-    if let Toplevel::Class(c) = toplevel {
-      local_cx.write(c.loc, Rc::new(Type::Id(id_type)));
-    }
-    for member in toplevel.members_iter() {
+      member_cx.validate_type_instantiation_strictly(
+        heap,
+        &Type::Fn(FunctionType::from_annotation(&member.type_)),
+      );
       for param in member.parameters.iter() {
         local_cx.write(param.name.loc, Rc::new(Type::from_annotation(&param.annotation)));
       }
     }
-  }
 
-  let mut checked_toplevels = vec![];
-  for toplevel in &module.toplevels {
     let checked = match toplevel {
       Toplevel::Interface(i) => Toplevel::Interface(i.clone()),
       Toplevel::Class(c) => {
+        let mut missing_function_members =
+          global_signature::resolve_all_member_names(global_cx, &resolved_super_types, false);
+        let mut missing_method_members =
+          global_signature::resolve_all_member_names(global_cx, &resolved_super_types, true);
+        for member in &c.members {
+          let n = member.decl.name.name;
+          if member.decl.is_method {
+            missing_method_members.remove(&n);
+          } else {
+            missing_function_members.remove(&n);
+          }
+        }
+        match &c.type_definition {
+          TypeDefinition::Struct { .. } => {
+            missing_function_members.remove(&heap.get_allocated_str_opt("init").unwrap());
+          }
+          TypeDefinition::Enum { loc: _, variants } => {
+            for variant in variants {
+              missing_function_members.remove(&variant.name.name);
+            }
+          }
+        }
+        missing_function_members.extend(&missing_method_members);
+        if !missing_function_members.is_empty() {
+          error_set.report_missing_definition_error(
+            toplevel.loc(),
+            missing_function_members.iter().sorted().map(|p| p.as_str(heap).to_string()).collect(),
+          );
+        }
+        local_cx.write(c.loc, Rc::new(Type::Nominal(nominal_type)));
+
         let mut checked_members = vec![];
         for member in &c.members {
           let tparam_sigs = if member.decl.is_method {
-            let mut sigs = type_params_to_type_params_sig(&c.type_parameters);
-            sigs.append(&mut type_params_to_type_params_sig(&member.decl.type_parameters));
+            let mut sigs = TypeParameterSignature::from_list(toplevel.type_parameters());
+            let mut local_sigs = TypeParameterSignature::from_list(&member.decl.type_parameters);
+            sigs.append(&mut local_sigs);
             sigs
           } else {
-            type_params_to_type_params_sig(&member.decl.type_parameters)
+            TypeParameterSignature::from_list(&member.decl.type_parameters)
           };
           let mut cx = TypingContext::new(
             global_cx,

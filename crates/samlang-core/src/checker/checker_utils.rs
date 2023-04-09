@@ -1,15 +1,37 @@
 use crate::{
   ast::Reason,
-  checker::type_::{FunctionType, ISourceType, IdType, Type, TypeParameterSignature},
+  checker::type_::{FunctionType, ISourceType, NominalType, Type, TypeParameterSignature},
   common::{Heap, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
 use std::{
   collections::{HashMap, HashSet},
-  ops::Deref,
   rc::Rc,
 };
+
+fn contextual_nominal_type_meet_opt(
+  general: &NominalType,
+  specific: &NominalType,
+) -> Option<NominalType> {
+  if general.module_reference == specific.module_reference
+    && general.id == specific.id
+    && general.type_arguments.len() == specific.type_arguments.len()
+  {
+    let mut type_arguments = vec![];
+    for (g, s) in general.type_arguments.iter().zip(&specific.type_arguments) {
+      let targ = contextual_type_meet_opt(g, s)?;
+      type_arguments.push(Rc::new(targ));
+    }
+    return Some(NominalType {
+      reason: specific.reason,
+      module_reference: specific.module_reference,
+      id: specific.id,
+      type_arguments,
+    });
+  }
+  None
+}
 
 fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
   if let Type::Any(reason, specific_is_placeholder) = specific {
@@ -27,47 +49,34 @@ fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
         None
       }
     }
-    Type::Id(IdType { reason: _, module_reference: mod_ref1, id: id1, type_arguments: targs1 }) => {
-      if let Some(IdType { reason, module_reference: mod_ref2, id: id2, type_arguments: targs2 }) =
-        specific.as_id()
-      {
-        if mod_ref1 == mod_ref2 && id1 == id2 && targs1.len() == targs2.len() {
-          let mut type_arguments = vec![];
-          for (g, s) in targs1.iter().zip(targs2) {
-            if let Some(targ) = contextual_type_meet_opt(g, s) {
-              type_arguments.push(Rc::new(targ));
-            } else {
-              return None;
-            }
-          }
-          return Some(Type::Id(IdType {
-            reason: *reason,
-            module_reference: *mod_ref2,
-            id: *id2,
-            type_arguments,
-          }));
-        }
+    Type::Nominal(g) => {
+      Some(Type::Nominal(contextual_nominal_type_meet_opt(g, specific.as_nominal()?)?))
+    }
+    Type::Generic(_, id1) => {
+      let (_, id2) = specific.as_generic()?;
+      if id1.eq(id2) {
+        Some(specific.clone())
+      } else {
+        None
       }
-      None
     }
     Type::Fn(FunctionType { reason: _, argument_types: args1, return_type: r1 }) => {
-      if let Type::Fn(FunctionType { reason, argument_types: args2, return_type: r2 }) = specific {
-        if args1.len() == args2.len() {
-          let mut argument_types = vec![];
-          for (g, s) in args1.iter().zip(args2) {
-            if let Some(arg) = contextual_type_meet_opt(g, s) {
-              argument_types.push(Rc::new(arg));
-            } else {
-              return None;
-            }
+      let FunctionType { reason, argument_types: args2, return_type: r2 } = specific.as_fn()?;
+      if args1.len() == args2.len() {
+        let mut argument_types = vec![];
+        for (g, s) in args1.iter().zip(args2) {
+          if let Some(arg) = contextual_type_meet_opt(g, s) {
+            argument_types.push(Rc::new(arg));
+          } else {
+            return None;
           }
-          if let Some(r) = contextual_type_meet_opt(r1, r2) {
-            return Some(Type::Fn(FunctionType {
-              reason: *reason,
-              argument_types,
-              return_type: Rc::new(r),
-            }));
-          }
+        }
+        if let Some(r) = contextual_type_meet_opt(r1, r2) {
+          return Some(Type::Fn(FunctionType {
+            reason: *reason,
+            argument_types,
+            return_type: Rc::new(r),
+          }));
         }
       }
       None
@@ -111,50 +120,45 @@ pub(super) fn perform_fn_type_substitution(
 pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type> {
   match t {
     Type::Any(_, _) | Type::Primitive(_, _) => Rc::new((*t).clone()),
-    Type::Id(id_type) => perform_id_type_substitution(id_type, mapping),
+    Type::Nominal(nominal_type) => {
+      Rc::new(Type::Nominal(perform_nominal_type_substitution(nominal_type, mapping)))
+    }
+    Type::Generic(_, id) => {
+      if let Some(replaced) = mapping.get(id) {
+        replaced.clone()
+      } else {
+        Rc::new((*t).clone())
+      }
+    }
     Type::Fn(f) => Rc::new(Type::Fn(perform_fn_type_substitution(f, mapping))),
   }
 }
 
-pub(super) fn perform_id_type_substitution(
-  id_type: &IdType,
+pub(super) fn perform_nominal_type_substitution(
+  type_: &NominalType,
   mapping: &HashMap<PStr, Rc<Type>>,
-) -> Rc<Type> {
-  if id_type.type_arguments.is_empty() {
-    if let Some(replaced) = mapping.get(&id_type.id) {
-      return replaced.clone();
-    }
-  }
-  Rc::new(Type::Id(IdType {
-    reason: id_type.reason,
-    module_reference: id_type.module_reference,
-    id: id_type.id,
-    type_arguments: id_type
+) -> NominalType {
+  NominalType {
+    reason: type_.reason,
+    module_reference: type_.module_reference,
+    id: type_.id,
+    type_arguments: type_
       .type_arguments
       .iter()
       .map(|it| perform_type_substitution(it, mapping))
       .collect_vec(),
-  }))
+  }
 }
 
-pub(super) fn perform_id_type_substitution_asserting_id_type_return(
-  id_type: &IdType,
-  mapping: &HashMap<PStr, Rc<Type>>,
-) -> IdType {
-  let t = perform_type_substitution(&Type::Id(id_type.clone()), mapping);
-  if let Type::Id(new_id_type) = t.deref() {
-    new_id_type.clone()
-  } else {
-    // panic!("{} => subst => {}", id_type.pretty_print(), t.pretty_print());
-    id_type.clone()
-  }
+fn nominal_type_has_placeholder_type(type_: &NominalType) -> bool {
+  type_.type_arguments.iter().any(|t| has_placeholder_type(t))
 }
 
 fn has_placeholder_type(type_: &Type) -> bool {
   match type_ {
     Type::Any(_, is_placeholder) => *is_placeholder,
-    Type::Primitive(_, _) => false,
-    Type::Id(id_type) => id_type.type_arguments.iter().any(|t| has_placeholder_type(t)),
+    Type::Primitive(_, _) | Type::Generic(_, _) => false,
+    Type::Nominal(nominal_type) => nominal_type_has_placeholder_type(nominal_type),
     Type::Fn(fn_type) => {
       fn_type.argument_types.iter().any(|t| has_placeholder_type(t))
         || has_placeholder_type(&fn_type.return_type)
@@ -170,16 +174,8 @@ fn solve_type_constraints_internal(
 ) {
   match generic {
     Type::Any(_, _) | Type::Primitive(_, _) => {}
-    Type::Id(g) => {
-      if type_parameters.contains(&g.id) && !partially_solved.contains_key(&g.id) {
-        // Placeholder types, which might come from expressions that need to be contextually typed (e.g. lambda),
-        // do not participate in constraint solving.
-        if !has_placeholder_type(concrete) {
-          partially_solved.insert(g.id, Rc::new(concrete.clone()));
-        }
-        return;
-      }
-      if let Type::Id(c) = concrete {
+    Type::Nominal(g) => {
+      if let Type::Nominal(c) = concrete {
         if g.module_reference == c.module_reference
           && g.id == c.id
           && g.type_arguments.len() == c.type_arguments.len()
@@ -187,6 +183,15 @@ fn solve_type_constraints_internal(
           for (g_targ, c_targ) in g.type_arguments.iter().zip(&c.type_arguments) {
             solve_type_constraints_internal(c_targ, g_targ, type_parameters, partially_solved);
           }
+        }
+      }
+    }
+    Type::Generic(_, id) => {
+      if type_parameters.contains(id) && !partially_solved.contains_key(id) {
+        // Placeholder types, which might come from expressions that need to be contextually typed (e.g. lambda),
+        // do not participate in constraint solving.
+        if !has_placeholder_type(concrete) {
+          partially_solved.insert(*id, Rc::new(concrete.clone()));
         }
       }
     }

@@ -1,7 +1,7 @@
 use super::{
   checker_utils, global_signature, ssa_analysis,
   type_::{
-    GlobalSignature, ISourceType, IdType, MemberSignature, Type, TypeDefinitionSignature,
+    GlobalSignature, ISourceType, MemberSignature, NominalType, Type, TypeDefinitionSignature,
     TypeParameterSignature,
   },
 };
@@ -102,28 +102,29 @@ impl<'a> TypingContext<'a> {
   fn resolve_to_potentially_in_scope_type_parameter_bound(
     &self,
     identifier: PStr,
-  ) -> Option<&IdType> {
+  ) -> Option<&NominalType> {
     self.available_type_parameters.iter().find_map(|it| {
       if it.name == identifier {
-        it.bound.as_deref()
+        it.bound.as_ref()
       } else {
         None
       }
     })
   }
 
-  fn is_subtype_with_id_upper(&self, lower: &Type, upper: &IdType) -> bool {
-    let lower_id_type = if let Type::Id(t) = lower {
+  pub(crate) fn nominal_type_upper_bound(&'a self, type_: &'a Type) -> Option<&'a NominalType> {
+    match type_ {
+      Type::Any(_, _) | Type::Primitive(_, _) | Type::Fn(_) => None,
+      Type::Nominal(t) => Some(t),
+      Type::Generic(_, id) => self.resolve_to_potentially_in_scope_type_parameter_bound(*id),
+    }
+  }
+
+  fn is_subtype_with_id_upper(&self, lower: &Type, upper: &NominalType) -> bool {
+    let interface_type = if let Some(t) = self.nominal_type_upper_bound(lower) {
       t
     } else {
       return false;
-    };
-    let interface_type = if let Some(bound) =
-      self.resolve_to_potentially_in_scope_type_parameter_bound(lower_id_type.id)
-    {
-      bound
-    } else {
-      lower_id_type
     };
     vec![interface_type]
       .into_iter()
@@ -135,15 +136,15 @@ impl<'a> TypingContext<'a> {
       .any(|super_type| super_type.is_the_same_type(upper))
   }
 
-  pub(crate) fn is_subtype(&self, lower: &Type, upper: &Type) -> bool {
-    upper.as_id().map(|u| self.is_subtype_with_id_upper(lower, u)).unwrap_or(false)
+  pub(super) fn is_subtype(&self, lower: &Type, upper: &Type) -> bool {
+    upper.as_nominal().map(|u| self.is_subtype_with_id_upper(lower, u)).unwrap_or(false)
   }
 
-  pub(crate) fn validate_type_instantiation_allow_abstract_types(&mut self, heap: &Heap, t: &Type) {
+  pub(super) fn validate_type_instantiation_allow_abstract_types(&mut self, heap: &Heap, t: &Type) {
     self.validate_type_instantiation_customized(heap, t, false)
   }
 
-  pub(crate) fn validate_type_instantiation_strictly(&mut self, heap: &Heap, t: &Type) {
+  pub(super) fn validate_type_instantiation_strictly(&mut self, heap: &Heap, t: &Type) {
     self.validate_type_instantiation_customized(heap, t, true)
   }
 
@@ -153,8 +154,8 @@ impl<'a> TypingContext<'a> {
     t: &Type,
     enforce_concrete_types: bool,
   ) {
-    let id_type = match t {
-      Type::Any(_, _) | Type::Primitive(_, _) => return,
+    let nominal_type = match t {
+      Type::Any(_, _) | Type::Primitive(_, _) | Type::Generic(_, _) => return,
       Type::Fn(f) => {
         for arg in &f.argument_types {
           self.validate_type_instantiation_customized(heap, arg, true)
@@ -162,46 +163,35 @@ impl<'a> TypingContext<'a> {
         self.validate_type_instantiation_customized(heap, &f.return_type, true);
         return;
       }
-      Type::Id(id_type) => id_type,
+      Type::Nominal(t) => t,
     };
-    // Generic type is assumed to be good, but it must have zero type args.\
-    if self.available_type_parameters.iter().any(|it| it.name == id_type.id) {
-      if !id_type.type_arguments.is_empty() {
-        self.error_set.report_invalid_arity_error(
-          id_type.reason.use_loc,
-          "type arguments",
-          0,
-          id_type.type_arguments.len(),
-        )
-      }
-      return;
-    }
-    for targ in &id_type.type_arguments {
+    for targ in &nominal_type.type_arguments {
       self.validate_type_instantiation_customized(heap, targ, true)
     }
     if let Some(interface_info) = global_signature::resolve_interface_cx(
       self.global_signature,
-      id_type.module_reference,
-      id_type.id,
+      nominal_type.module_reference,
+      nominal_type.id,
     ) {
       let interface_type_parameters = interface_info.type_parameters.clone();
       if interface_info.type_definition.is_none() && enforce_concrete_types {
         self.error_set.report_incompatible_type_error(
-          id_type.reason.use_loc,
+          nominal_type.reason.use_loc,
           "non-abstract type".to_string(),
-          id_type.pretty_print(heap),
+          nominal_type.pretty_print(heap),
         )
       }
-      if interface_type_parameters.len() != id_type.type_arguments.len() {
+      if interface_type_parameters.len() != nominal_type.type_arguments.len() {
         self.error_set.report_invalid_arity_error(
-          id_type.reason.use_loc,
+          nominal_type.reason.use_loc,
           "type arguments",
           interface_type_parameters.len(),
-          id_type.type_arguments.len(),
+          nominal_type.type_arguments.len(),
         );
         return;
       }
-      for (tparam, targ) in interface_type_parameters.into_iter().zip(&id_type.type_arguments) {
+      for (tparam, targ) in interface_type_parameters.into_iter().zip(&nominal_type.type_arguments)
+      {
         if let Some(bound) = tparam.bound {
           if !self.is_subtype_with_id_upper(targ, &bound) {
             self.error_set.report_incompatible_subtype_error(
@@ -230,7 +220,7 @@ impl<'a> TypingContext<'a> {
         .unwrap_or(false)
   }
 
-  pub(crate) fn get_function_type(
+  pub(super) fn get_function_type(
     &self,
     module_reference: ModuleReference,
     class_name: PStr,
@@ -256,7 +246,7 @@ impl<'a> TypingContext<'a> {
     }
   }
 
-  pub(crate) fn get_method_type(
+  pub(super) fn get_method_type(
     &self,
     module_reference: ModuleReference,
     class_name: PStr,
@@ -264,18 +254,16 @@ impl<'a> TypingContext<'a> {
     class_type_arguments: Vec<Rc<Type>>,
     use_loc: Location,
   ) -> Option<MemberSignature> {
-    let resolved =
-      if let Some(t) = self.resolve_to_potentially_in_scope_type_parameter_bound(class_name) {
-        global_signature::resolve_method_signature(self.global_signature, t, method_name)
-      } else {
-        let t = IdType {
-          reason: Reason::new(use_loc, None),
-          module_reference,
-          id: class_name,
-          type_arguments: class_type_arguments,
-        };
-        global_signature::resolve_method_signature(self.global_signature, &t, method_name)
-      };
+    let resolved = global_signature::resolve_method_signature(
+      self.global_signature,
+      &NominalType {
+        reason: Reason::new(use_loc, None),
+        module_reference,
+        id: class_name,
+        type_arguments: class_type_arguments,
+      },
+      method_name,
+    );
     let type_info = resolved.first()?;
     if type_info.is_public || self.in_same_class(module_reference, class_name) {
       Some(type_info.reposition(use_loc))
@@ -288,14 +276,14 @@ impl<'a> TypingContext<'a> {
     self.current_module_reference == module_reference && class_name == self.current_class
   }
 
-  pub(crate) fn resolve_type_definition(
+  pub(super) fn resolve_type_definition(
     &self,
     type_: &Type,
     expect_object: bool,
   ) -> TypeDefinitionSignature {
-    let id_type = match type_ {
-      Type::Id(t) => t,
-      Type::Any(_, _) | Type::Primitive(_, _) | Type::Fn(_) => {
+    let nominal_type = match self.nominal_type_upper_bound(type_) {
+      Some(t) => t,
+      None => {
         return TypeDefinitionSignature {
           is_object: expect_object,
           names: vec![],
@@ -303,13 +291,11 @@ impl<'a> TypingContext<'a> {
         }
       }
     };
-    let id_type =
-      self.resolve_to_potentially_in_scope_type_parameter_bound(id_type.id).unwrap_or(id_type);
     if let Some(TypeDefinitionSignature { is_object, names, mappings }) =
       global_signature::resolve_interface_cx(
         self.global_signature,
-        id_type.module_reference,
-        id_type.id,
+        nominal_type.module_reference,
+        nominal_type.id,
       )
       .and_then(|toplevel_cx| toplevel_cx.type_definition.as_ref())
     {
@@ -323,19 +309,19 @@ impl<'a> TypingContext<'a> {
       let mut subst_map = HashMap::new();
       for (tparam, targ) in global_signature::resolve_interface_cx(
         self.global_signature,
-        id_type.module_reference,
-        id_type.id,
+        nominal_type.module_reference,
+        nominal_type.id,
       )
       .unwrap()
       .type_parameters
       .iter()
-      .zip(&id_type.type_arguments)
+      .zip(&nominal_type.type_arguments)
       {
         subst_map.insert(tparam.name, targ.clone());
       }
       let mut new_mappings = HashMap::new();
       for (name, (t, is_public)) in mappings {
-        if !expect_object || id_type.id.eq(&self.current_class) || *is_public {
+        if !expect_object || nominal_type.id.eq(&self.current_class) || *is_public {
           new_mappings
             .insert(*name, (checker_utils::perform_type_substitution(t, &subst_map), *is_public));
         }

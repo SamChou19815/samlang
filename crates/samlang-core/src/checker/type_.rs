@@ -35,16 +35,16 @@ pub(crate) trait ISourceType {
 }
 
 #[derive(Clone)]
-pub(crate) struct IdType {
+pub(crate) struct NominalType {
   pub(crate) reason: Reason,
   pub(crate) module_reference: ModuleReference,
   pub(crate) id: PStr,
   pub(crate) type_arguments: Vec<Rc<Type>>,
 }
 
-impl ISourceType for IdType {
+impl ISourceType for NominalType {
   fn pretty_print(&self, heap: &Heap) -> String {
-    let IdType { reason: _, module_reference: _, id, type_arguments } = self;
+    let NominalType { reason: _, module_reference: _, id, type_arguments } = self;
     if type_arguments.is_empty() {
       id.as_str(heap).to_string()
     } else {
@@ -57,8 +57,8 @@ impl ISourceType for IdType {
   }
 
   fn is_the_same_type(&self, other: &Self) -> bool {
-    let IdType { module_reference: mod_ref1, id: id1, type_arguments: targs1, .. } = self;
-    let IdType { module_reference: mod_ref2, id: id2, type_arguments: targs2, .. } = other;
+    let NominalType { module_reference: mod_ref1, id: id1, type_arguments: targs1, .. } = self;
+    let NominalType { module_reference: mod_ref2, id: id2, type_arguments: targs2, .. } = other;
     mod_ref1 == mod_ref2
       && id1 == id2
       && targs1.len() == targs2.len()
@@ -66,9 +66,9 @@ impl ISourceType for IdType {
   }
 }
 
-impl IdType {
-  pub(crate) fn reposition(self, use_loc: Location) -> IdType {
-    IdType {
+impl NominalType {
+  pub(crate) fn reposition(self, use_loc: Location) -> NominalType {
+    NominalType {
       reason: self.reason.to_use_reason(use_loc),
       module_reference: self.module_reference,
       id: self.id,
@@ -76,8 +76,8 @@ impl IdType {
     }
   }
 
-  pub(crate) fn from_annotation(annotation: &annotation::Id) -> IdType {
-    IdType {
+  pub(crate) fn from_annotation(annotation: &annotation::Id) -> NominalType {
+    NominalType {
       reason: Reason::new(annotation.location, Some(annotation.location)),
       module_reference: annotation.module_reference,
       id: annotation.id.name,
@@ -142,7 +142,8 @@ impl FunctionType {
 pub(crate) enum Type {
   Any(Reason, /** is_placeholder */ bool),
   Primitive(Reason, PrimitiveTypeKind),
-  Id(IdType),
+  Nominal(NominalType),
+  Generic(Reason, PStr),
   Fn(FunctionType),
 }
 
@@ -153,16 +154,18 @@ impl ISourceType for Type {
         String::from(if *is_placeholder { "placeholder" } else { "any" })
       }
       Self::Primitive(_, p) => p.to_string(),
-      Self::Id(id_type) => id_type.pretty_print(heap),
-      Self::Fn(fn_type) => fn_type.pretty_print(heap),
+      Self::Nominal(t) => t.pretty_print(heap),
+      Self::Generic(_, s) => s.as_str(heap).to_string(),
+      Self::Fn(t) => t.pretty_print(heap),
     }
   }
 
   fn is_the_same_type(&self, other: &Self) -> bool {
     match (self, other) {
       (Self::Any(_, _), Self::Any(_, _)) => true,
-      (Self::Primitive(_, p1), Self::Primitive(_, p2)) => *p1 == *p2,
-      (Self::Id(id1), Self::Id(id2)) => id1.is_the_same_type(id2),
+      (Self::Primitive(_, p1), Self::Primitive(_, p2)) => p1 == p2,
+      (Self::Nominal(n1), Self::Nominal(n2)) => n1.is_the_same_type(n2),
+      (Self::Generic(_, s1), Self::Generic(_, s2)) => s1 == s2,
       (Self::Fn(f1), Self::Fn(f2)) => f1.is_the_same_type(f2),
       _ => false,
     }
@@ -187,7 +190,8 @@ impl Type {
     match self {
       Self::Any(reason, _) => reason,
       Self::Primitive(reason, _) => reason,
-      Self::Id(IdType { reason, .. }) => reason,
+      Self::Nominal(NominalType { reason, .. }) => reason,
+      Self::Generic(reason, _) => reason,
       Self::Fn(FunctionType { reason, .. }) => reason,
     }
   }
@@ -198,12 +202,15 @@ impl Type {
         Type::Any(reason.to_use_reason(use_loc), *is_placeholder)
       }
       Self::Primitive(reason, p) => Type::Primitive(reason.to_use_reason(use_loc), *p),
-      Self::Id(IdType { reason, module_reference, id, type_arguments }) => Type::Id(IdType {
-        reason: reason.to_use_reason(use_loc),
-        module_reference: *module_reference,
-        id: *id,
-        type_arguments: type_arguments.clone(),
-      }),
+      Self::Nominal(NominalType { reason, module_reference, id, type_arguments }) => {
+        Type::Nominal(NominalType {
+          reason: reason.to_use_reason(use_loc),
+          module_reference: *module_reference,
+          id: *id,
+          type_arguments: type_arguments.clone(),
+        })
+      }
+      Self::Generic(reason, s) => Type::Generic(reason.to_use_reason(use_loc), *s),
       Self::Fn(FunctionType { reason, argument_types, return_type }) => Type::Fn(FunctionType {
         reason: reason.to_use_reason(use_loc),
         argument_types: argument_types.clone(),
@@ -229,7 +236,8 @@ impl Type {
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Any) => {
         Type::Any(Reason::new(*loc, Some(*loc)), false)
       }
-      annotation::T::Id(annot) => Type::Id(IdType::from_annotation(annot)),
+      annotation::T::Id(annot) => Type::Nominal(NominalType::from_annotation(annot)),
+      annotation::T::Generic(loc, id) => Type::Generic(Reason::new(*loc, Some(*loc)), id.name),
       annotation::T::Fn(annot) => Type::Fn(FunctionType::from_annotation(annot)),
     }
   }
@@ -238,22 +246,26 @@ impl Type {
 #[derive(Clone)]
 pub(crate) struct TypeParameterSignature {
   pub(crate) name: PStr,
-  pub(crate) bound: Option<Rc<IdType>>,
+  pub(crate) bound: Option<NominalType>,
 }
 
 impl TypeParameterSignature {
-  pub(crate) fn from(type_parameter: &TypeParameter) -> TypeParameterSignature {
-    TypeParameterSignature {
-      name: type_parameter.name.name,
-      bound: type_parameter.bound.as_ref().map(|b| Rc::new(IdType::from_annotation(b))),
+  pub(crate) fn from_list(type_parameters: &[TypeParameter]) -> Vec<TypeParameterSignature> {
+    let mut tparam_sigs = vec![];
+    for tparam in type_parameters {
+      tparam_sigs.push(TypeParameterSignature {
+        name: tparam.name.name,
+        bound: tparam.bound.as_ref().map(NominalType::from_annotation),
+      });
     }
+    tparam_sigs
   }
 
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match &self.bound {
       Option::None => self.name.as_str(heap).to_string(),
-      Option::Some(id_type) => {
-        format!("{} : {}", self.name.as_str(heap), id_type.pretty_print(heap))
+      Option::Some(t) => {
+        format!("{} : {}", self.name.as_str(heap), t.pretty_print(heap))
       }
     }
   }
@@ -290,8 +302,8 @@ pub(crate) mod test_type_builder {
       Rc::new(Type::string_type(self.reason))
     }
 
-    pub(crate) fn simple_id_type_unwrapped(&self, id: PStr) -> IdType {
-      IdType {
+    pub(crate) fn simple_nominal_type_unwrapped(&self, id: PStr) -> NominalType {
+      NominalType {
         reason: self.reason,
         module_reference: self.module_reference,
         id,
@@ -299,20 +311,29 @@ pub(crate) mod test_type_builder {
       }
     }
 
-    pub(crate) fn general_id_type_unwrapped(
+    pub(crate) fn general_nominal_type_unwrapped(
       &self,
       id: PStr,
       type_arguments: Vec<Rc<Type>>,
-    ) -> IdType {
-      IdType { reason: self.reason, module_reference: self.module_reference, id, type_arguments }
+    ) -> NominalType {
+      NominalType {
+        reason: self.reason,
+        module_reference: self.module_reference,
+        id,
+        type_arguments,
+      }
     }
 
-    pub(crate) fn simple_id_type(&self, id: PStr) -> Rc<Type> {
-      Rc::new(Type::Id(self.simple_id_type_unwrapped(id)))
+    pub(crate) fn simple_nominal_type(&self, id: PStr) -> Rc<Type> {
+      Rc::new(Type::Nominal(self.simple_nominal_type_unwrapped(id)))
     }
 
-    pub(crate) fn general_id_type(&self, id: PStr, type_arguments: Vec<Rc<Type>>) -> Rc<Type> {
-      Rc::new(Type::Id(self.general_id_type_unwrapped(id, type_arguments)))
+    pub(crate) fn general_nominal_type(&self, id: PStr, type_arguments: Vec<Rc<Type>>) -> Rc<Type> {
+      Rc::new(Type::Nominal(self.general_nominal_type_unwrapped(id, type_arguments)))
+    }
+
+    pub(crate) fn generic_type(&self, id: PStr) -> Rc<Type> {
+      Rc::new(Type::Generic(self.reason, id))
     }
 
     pub(crate) fn fun_type(
@@ -419,7 +440,7 @@ pub(crate) struct InterfaceSignature {
   pub(crate) functions: HashMap<PStr, MemberSignature>,
   pub(crate) methods: HashMap<PStr, MemberSignature>,
   pub(crate) type_parameters: Vec<TypeParameterSignature>,
-  pub(crate) super_types: Vec<IdType>,
+  pub(crate) super_types: Vec<NominalType>,
 }
 
 impl InterfaceSignature {
@@ -528,12 +549,7 @@ pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignatur
             heap,
             "panic",
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
-            Rc::new(Type::Id(IdType {
-              reason: Reason::builtin(),
-              module_reference: ModuleReference::root(),
-              id: str_t,
-              type_arguments: vec![],
-            })),
+            Rc::new(Type::Generic(Reason::builtin(), str_t)),
             vec!["T"],
           ),
           MemberSignature::create_builtin_function(
@@ -565,9 +581,10 @@ mod type_tests {
     assert!(PrimitiveTypeKind::Unit == PrimitiveTypeKind::Unit);
 
     let builder = test_type_builder::create();
-    builder.int_type().as_id();
+    builder.int_type().as_nominal();
+    builder.int_type().as_generic();
     builder.int_type().as_fn();
-    builder.simple_id_type(Heap::new().alloc_str_for_test("")).as_id();
+    builder.simple_nominal_type(Heap::new().alloc_str_for_test("")).as_nominal();
     builder.fun_type(vec![], builder.int_type()).as_fn();
   }
 
@@ -584,12 +601,13 @@ mod type_tests {
     assert_eq!("string", builder.string_type().pretty_print(&heap));
     assert_eq!(
       "I",
-      builder.simple_id_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap)
+      builder.simple_nominal_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap)
     );
+    assert_eq!("I", builder.generic_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap));
     assert_eq!(
       "I",
       builder
-        .simple_id_type_unwrapped(heap.alloc_str_for_test("I"))
+        .simple_nominal_type_unwrapped(heap.alloc_str_for_test("I"))
         .reposition(Location::dummy())
         .clone()
         .pretty_print(&heap)
@@ -597,9 +615,9 @@ mod type_tests {
     assert_eq!(
       "Foo<unit, Bar>",
       builder
-        .general_id_type(
+        .general_nominal_type(
           heap.alloc_str_for_test("Foo"),
-          vec![builder.unit_type(), builder.simple_id_type(heap.alloc_str_for_test("Bar"))]
+          vec![builder.unit_type(), builder.simple_nominal_type(heap.alloc_str_for_test("Bar"))]
         )
         .clone()
         .pretty_print(&heap)
@@ -630,16 +648,16 @@ mod type_tests {
 
     assert_eq!(
       "A",
-      TypeParameterSignature::from(&TypeParameter {
+      TypeParameterSignature::from_list(&[TypeParameter {
         loc: Location::dummy(),
         name: Id::from(heap.alloc_str_for_test("A")),
         bound: None
-      })
-      .pretty_print(&heap)
+      }])[0]
+        .pretty_print(&heap)
     );
     assert_eq!(
       "A : B",
-      TypeParameterSignature::from(&TypeParameter {
+      TypeParameterSignature::from_list(&[TypeParameter {
         loc: Location::dummy(),
         name: Id::from(heap.alloc_str_for_test("A")),
         bound: Some(annotation::Id {
@@ -648,8 +666,8 @@ mod type_tests {
           id: Id::from(heap.alloc_str_for_test("B")),
           type_arguments: vec![]
         })
-      })
-      .pretty_print(&heap)
+      }])[0]
+        .pretty_print(&heap)
     );
 
     assert_eq!("", TypeParameterSignature::pretty_print_list(&vec![], &heap));
@@ -659,9 +677,9 @@ mod type_tests {
         &vec![
           TypeParameterSignature {
             name: heap.alloc_str_for_test("A"),
-            bound: Option::Some(Rc::new(
-              builder.simple_id_type_unwrapped(heap.alloc_str_for_test("B"))
-            ))
+            bound: Option::Some(
+              builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("B"))
+            )
           },
           TypeParameterSignature { name: heap.alloc_str_for_test("C"), bound: Option::None }
         ],
@@ -787,7 +805,7 @@ m2: public () -> any
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
       builder
-        .simple_id_type(heap.alloc_str_for_test("I"))
+        .simple_nominal_type(heap.alloc_str_for_test("I"))
         .reposition(Location::from_pos(1, 2, 3, 4))
         .get_reason()
         .use_loc
@@ -796,7 +814,7 @@ m2: public () -> any
     assert_eq!(
       "__DUMMY__.sam:2:3-4:5",
       builder
-        .general_id_type(heap.alloc_str_for_test("I"), vec![builder.unit_type()])
+        .general_nominal_type(heap.alloc_str_for_test("I"), vec![builder.unit_type()])
         .reposition(Location::from_pos(1, 2, 3, 4))
         .get_reason()
         .use_loc
@@ -824,10 +842,13 @@ m2: public () -> any
     assert_eq!("int", Type::from_annotation(&builder.int_annot()).pretty_print(heap));
     assert_eq!("string", Type::from_annotation(&builder.string_annot()).pretty_print(heap));
     assert_eq!(
-      "(bool) -> I<int>",
+      "(bool) -> I<int, A>",
       Type::from_annotation(&builder.fn_annot(
         vec![builder.bool_annot()],
-        builder.general_id_annot(heap.alloc_str_for_test("I"), vec![builder.int_annot()])
+        builder.general_id_annot(
+          heap.alloc_str_for_test("I"),
+          vec![builder.int_annot(), builder.generic_annot(heap.alloc_str_for_test("A"))]
+        )
       ))
       .pretty_print(heap)
     )
@@ -840,30 +861,30 @@ m2: public () -> any
 
     assert!(!builder
       .unit_type()
-      .is_the_same_type(&builder.simple_id_type(heap.alloc_str_for_test("A"))));
+      .is_the_same_type(&builder.simple_nominal_type(heap.alloc_str_for_test("A"))));
 
     assert!(Type::Any(Reason::dummy(), true).is_the_same_type(&Type::Any(Reason::dummy(), false)));
     assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
     assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
 
     assert!(builder
-      .simple_id_type(heap.alloc_str_for_test("A"))
-      .is_the_same_type(&builder.simple_id_type(heap.alloc_str_for_test("A"))));
+      .simple_nominal_type(heap.alloc_str_for_test("A"))
+      .is_the_same_type(&builder.simple_nominal_type(heap.alloc_str_for_test("A"))));
     assert!(!builder
-      .simple_id_type(heap.alloc_str_for_test("A"))
-      .is_the_same_type(&builder.simple_id_type(heap.alloc_str_for_test("B"))));
+      .simple_nominal_type(heap.alloc_str_for_test("A"))
+      .is_the_same_type(&builder.simple_nominal_type(heap.alloc_str_for_test("B"))));
     assert!(builder
-      .general_id_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+      .general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
       .is_the_same_type(
-        &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+        &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
       ));
     assert!(!builder
-      .general_id_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+      .general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
       .is_the_same_type(
-        &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.int_type()])
+        &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()])
       ));
-    assert!(!builder.simple_id_type(heap.alloc_str_for_test("A")).is_the_same_type(
-      &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+    assert!(!builder.simple_nominal_type(heap.alloc_str_for_test("A")).is_the_same_type(
+      &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
     ));
 
     assert!(builder

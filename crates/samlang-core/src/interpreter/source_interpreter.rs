@@ -159,18 +159,18 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
       .deref(),
     expr::E::MethodAccess(e) => {
       let obj_type = e.object.type_();
-      let id_type = obj_type.as_id().unwrap();
+      let class_name = obj_type.as_nominal().unwrap().id;
       let this_value = eval_expr(cx, heap, &e.object);
       let method_value = cx
         .classes
-        .get(&id_type.id)
-        .expect(&format!("Missing class: {}", id_type.id.as_str(heap)))
+        .get(&class_name)
+        .expect(&format!("Missing class: {}", class_name.as_str(heap)))
         .methods
         .get(&e.method_name.name)
         .expect(&format!(
           "Missing method: {} from class {}",
           e.method_name.name.as_str(heap),
-          id_type.id.as_str(heap)
+          class_name.as_str(heap)
         ));
       new_fn(
         cx,

@@ -104,6 +104,7 @@ mod tests {
       .clone()
       .associated_comments();
     builder.unit_annot().associated_comments();
+    builder.generic_annot(heap.alloc_str_for_test("str")).associated_comments();
     builder.simple_id_annot(heap.alloc_str_for_test("str")).associated_comments();
   }
 
@@ -181,6 +182,7 @@ mod tests {
       common: common.clone(),
       parameters: vec![OptionallyAnnotatedId {
         name: Id::from(heap.alloc_str_for_test("name")),
+        type_: (),
         annotation: None,
       }],
       captured: HashMap::new(),
@@ -266,6 +268,7 @@ mod tests {
       "s",
       AnnotatedId {
         name: Id::from(heap.alloc_str_for_test("s")),
+        type_: (),
         annotation: annotation::T::Primitive(
           Location::dummy(),
           NO_COMMENT_REFERENCE,
@@ -294,7 +297,11 @@ mod tests {
         name: Id::from(heap.alloc_str_for_test("")),
         type_parameters: Rc::new(vec![]),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
-        parameters: Rc::new(vec![])
+        parameters: Rc::new(vec![AnnotatedId {
+          name: Id::from(heap.alloc_str_for_test("")),
+          type_: (),
+          annotation: builder.int_annot()
+        }])
       }]
     }
     .clone()
@@ -329,10 +336,12 @@ mod tests {
 
     assert!(AnnotatedId {
       name: Id::from(heap.alloc_str_for_test("")),
+      type_: (),
       annotation: builder.int_annot(),
     }
     .eq(&AnnotatedId {
       name: Id::from(heap.alloc_str_for_test("")),
+      type_: (),
       annotation: builder.int_annot(),
     }));
     assert!(TypeParameter {

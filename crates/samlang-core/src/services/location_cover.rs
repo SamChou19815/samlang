@@ -45,11 +45,11 @@ fn search_expression(
     }
     expr::E::FieldAccess(e) => {
       if e.field_name.loc.contains_position(position) {
-        if let Type::Id(id_type) = e.object.common().type_.deref() {
+        if let Some(nominal_type) = e.object.common().type_.as_nominal() {
           return Some(LocationCoverSearchResult::PropertyName(
             e.field_name.loc,
-            id_type.module_reference,
-            id_type.id,
+            nominal_type.module_reference,
+            nominal_type.id,
             e.field_name.name,
           ));
         }
@@ -58,11 +58,11 @@ fn search_expression(
     }
     expr::E::MethodAccess(e) => {
       if e.method_name.loc.contains_position(position) {
-        if let Type::Id(id_type) = e.object.common().type_.deref() {
+        if let Some(nominal_type) = e.object.common().type_.as_nominal() {
           return Some(LocationCoverSearchResult::InterfaceMemberName(
             e.method_name.loc,
-            id_type.module_reference,
-            id_type.id,
+            nominal_type.module_reference,
+            nominal_type.id,
             e.method_name.name,
             true,
           ));

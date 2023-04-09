@@ -20,7 +20,7 @@ fn search_annot(
   collector: &mut Vec<Location>,
 ) {
   match annotation {
-    annotation::T::Primitive(_, _, _) => {}
+    annotation::T::Primitive(_, _, _) | annotation::T::Generic(_, _) => {}
     annotation::T::Id(annot) => search_id_annot(annot, request, collector),
     annotation::T::Fn(annot) => {
       for a in &annot.argument_types {
@@ -72,12 +72,12 @@ fn search_expression(
       _ => {}
     },
     expr::E::FieldAccess(e) => {
-      match (request, e.object.type_().as_ref()) {
+      match (request, e.object.type_().as_nominal()) {
         (
           GlobalNameSearchRequest::Property(mod_ref, toplevel_name, field_name),
-          Type::Id(id_type),
-        ) if mod_ref.eq(&id_type.module_reference)
-          && toplevel_name.eq(&id_type.id)
+          Some(nominal_type),
+        ) if mod_ref.eq(&nominal_type.module_reference)
+          && toplevel_name.eq(&nominal_type.id)
           && field_name.eq(&e.field_name.name) =>
         {
           collector.push(e.field_name.loc);
@@ -87,12 +87,12 @@ fn search_expression(
       search_expression(&e.object, request, collector);
     }
     expr::E::MethodAccess(e) => {
-      match (request, e.object.type_().as_ref()) {
+      match (request, e.object.type_().as_nominal()) {
         (
           GlobalNameSearchRequest::InterfaceMember(mod_ref, toplevel_name, method_name, true),
-          Type::Id(id_type),
-        ) if mod_ref.eq(&id_type.module_reference)
-          && toplevel_name.eq(&id_type.id)
+          Some(nominal_type),
+        ) if mod_ref.eq(&nominal_type.module_reference)
+          && toplevel_name.eq(&nominal_type.id)
           && method_name.eq(&e.method_name.name) =>
         {
           collector.push(e.method_name.loc);
@@ -119,14 +119,13 @@ fn search_expression(
     }
     expr::E::Match(e) => {
       search_expression(&e.matched, request, collector);
-      let type_ = e.matched.type_().as_ref();
       for case in &e.cases {
-        match (request, type_) {
+        match (request, e.matched.type_().as_nominal()) {
           (
             GlobalNameSearchRequest::InterfaceMember(mod_ref, toplevel_name, fn_name, false),
-            Type::Id(id_type),
-          ) if mod_ref.eq(&id_type.module_reference)
-            && toplevel_name.eq(&id_type.id)
+            Some(nominal_type),
+          ) if mod_ref.eq(&nominal_type.module_reference)
+            && toplevel_name.eq(&nominal_type.id)
             && fn_name.eq(&case.tag.name) =>
           {
             collector.push(case.tag.loc);
@@ -149,12 +148,12 @@ fn search_expression(
         if let Some(annot) = &stmt.annotation {
           search_annot(annot, request, collector);
         }
-        match (&stmt.pattern, request, stmt.assigned_expression.type_().as_ref()) {
+        match (&stmt.pattern, request, stmt.assigned_expression.type_().as_nominal()) {
           (
             expr::Pattern::Object(_, destructured_names),
             GlobalNameSearchRequest::Property(mod_ref, toplevel_name, field_name),
-            Type::Id(id_type),
-          ) if mod_ref.eq(&id_type.module_reference) && toplevel_name.eq(&id_type.id) => {
+            Some(nominal_type),
+          ) if mod_ref.eq(&nominal_type.module_reference) && toplevel_name.eq(&nominal_type.id) => {
             for n in destructured_names {
               if field_name.eq(&n.field_name.name) {
                 collector.push(n.field_name.loc);
