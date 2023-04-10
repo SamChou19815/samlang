@@ -287,7 +287,7 @@ impl<'a> SsaAnalysisState<'a> {
       }
       expr::E::Lambda(e) => {
         self.context.push_scope();
-        for OptionallyAnnotatedId { name, annotation } in &e.parameters {
+        for OptionallyAnnotatedId { name, type_: _, annotation } in &e.parameters {
           self.define_id(name.name, name.loc);
           if let Some(annot) = annotation {
             self.visit_annot(annot)
@@ -346,6 +346,7 @@ impl<'a> SsaAnalysisState<'a> {
     match annot {
       annotation::T::Primitive(_, _, _) => {}
       annotation::T::Id(annot) => self.visit_id_annot(annot),
+      annotation::T::Generic(_, id) => self.use_id(&id.name, id.loc),
       annotation::T::Fn(annotation::Function {
         location: _,
         associated_comments: _,

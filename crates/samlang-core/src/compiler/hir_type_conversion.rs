@@ -275,7 +275,7 @@ impl TypeLoweringManager {
         type_::PrimitiveTypeKind::Int => PrimitiveType::Int,
         type_::PrimitiveTypeKind::String => PrimitiveType::String,
       }),
-      type_::Type::Id(id) => {
+      type_::Type::Nominal(id) => {
         let id_string = id.id;
         if self.generic_types.contains(&id_string) {
           Type::new_id_no_targs(id_string)
@@ -285,6 +285,10 @@ impl TypeLoweringManager {
             id.type_arguments.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
           )
         }
+      }
+      type_::Type::Generic(_, id) => {
+        debug_assert!(self.generic_types.contains(id));
+        Type::new_id_no_targs(*id)
       }
       type_::Type::Fn(f) => {
         let rewritten_function_type = Type::new_fn_unwrapped(
@@ -703,7 +707,7 @@ mod tests {
     );
 
     assert_eq!("__DUMMY___A<int>", {
-      let t = builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]);
+      let t = builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]);
       manager.lower_source_type(heap, &t).pretty_print(heap)
     });
 
@@ -713,7 +717,7 @@ mod tests {
     };
     assert_eq!("$SyntheticIDType0<T>", {
       let t = builder.fun_type(
-        vec![builder.simple_id_type(heap.alloc_str_for_test("T")), builder.bool_type()],
+        vec![builder.simple_nominal_type(heap.alloc_str_for_test("T")), builder.bool_type()],
         builder.int_type(),
       );
       manager2.lower_source_type(heap, &t).pretty_print(heap)

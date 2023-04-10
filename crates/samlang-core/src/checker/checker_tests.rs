@@ -107,7 +107,7 @@ mod tests {
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.bool_type(), builder.int_type()],
-                        return_type: builder.simple_id_type(heap.alloc_str_for_test("Test")),
+                        return_type: builder.simple_nominal_type(heap.alloc_str_for_test("Test")),
                       },
                     },
                   ),
@@ -133,7 +133,7 @@ mod tests {
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type(heap.alloc_str_for_test("A"))],
+                        argument_types: vec![builder.generic_type(heap.alloc_str_for_test("A"))],
                         return_type: builder.unit_type(),
                       },
                     },
@@ -151,11 +151,11 @@ mod tests {
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![
-                          builder.simple_id_type(heap.alloc_str_for_test("A")),
-                          builder.simple_id_type(heap.alloc_str_for_test("B")),
-                          builder.simple_id_type(heap.alloc_str_for_test("C")),
+                          builder.generic_type(heap.alloc_str_for_test("A")),
+                          builder.generic_type(heap.alloc_str_for_test("B")),
+                          builder.generic_type(heap.alloc_str_for_test("C")),
                         ],
-                        return_type: builder.simple_id_type(heap.alloc_str_for_test("D")),
+                        return_type: builder.generic_type(heap.alloc_str_for_test("D")),
                       },
                     },
                   ),
@@ -171,7 +171,7 @@ mod tests {
                         reason: Reason::dummy(),
                         argument_types: vec![
                           builder.fun_type(vec![builder.int_type()], builder.int_type()),
-                          builder.simple_id_type(heap.alloc_str_for_test("T")),
+                          builder.generic_type(heap.alloc_str_for_test("T")),
                         ],
                         return_type: builder.bool_type(),
                       },
@@ -188,8 +188,8 @@ mod tests {
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.fun_type(
-                          vec![builder.simple_id_type(heap.alloc_str_for_test("A"))],
-                          builder.simple_id_type(heap.alloc_str_for_test("B")),
+                          vec![builder.generic_type(heap.alloc_str_for_test("A"))],
+                          builder.generic_type(heap.alloc_str_for_test("B")),
                         )],
                         return_type: builder.bool_type(),
                       },
@@ -249,7 +249,7 @@ mod tests {
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type(heap.alloc_str_for_test("A"))],
+                        argument_types: vec![builder.generic_type(heap.alloc_str_for_test("A"))],
                         return_type: builder.bool_type(),
                       },
                     },
@@ -279,7 +279,7 @@ mod tests {
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.bool_type()],
-                        return_type: builder.simple_id_type(heap.alloc_str_for_test("Test2")),
+                        return_type: builder.simple_nominal_type(heap.alloc_str_for_test("Test2")),
                       },
                     },
                   ),
@@ -291,7 +291,7 @@ mod tests {
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
-                        return_type: builder.simple_id_type(heap.alloc_str_for_test("Test2")),
+                        return_type: builder.simple_nominal_type(heap.alloc_str_for_test("Test2")),
                       },
                     },
                   ),
@@ -304,36 +304,40 @@ mod tests {
             (
               heap.alloc_str_for_test("Test3"),
               InterfaceSignature {
+                type_parameters: vec![TypeParameterSignature {
+                  name: heap.alloc_str_for_test("E"),
+                  bound: None,
+                }],
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: true,
                   names: vec![heap.alloc_str_for_test("foo"), heap.alloc_str_for_test("bar")],
                   mappings: HashMap::from([
                     (
                       heap.alloc_str_for_test("foo"),
-                      (builder.simple_id_type(heap.alloc_str_for_test("E")), true),
+                      (builder.generic_type(heap.alloc_str_for_test("E")), true),
                     ),
                     (heap.alloc_str_for_test("bar"), (builder.int_type(), false)),
                   ]),
                 }),
                 functions: HashMap::new(),
                 methods: HashMap::new(),
-                type_parameters: vec![TypeParameterSignature {
-                  name: heap.alloc_str_for_test("E"),
-                  bound: None,
-                }],
                 super_types: vec![],
               },
             ),
             (
               heap.alloc_str_for_test("Test4"),
               InterfaceSignature {
+                type_parameters: vec![TypeParameterSignature {
+                  name: heap.alloc_str_for_test("E"),
+                  bound: None,
+                }],
                 type_definition: Some(TypeDefinitionSignature {
                   is_object: false,
                   names: vec![heap.alloc_str_for_test("Foo"), heap.alloc_str_for_test("Bar")],
                   mappings: HashMap::from([
                     (
                       heap.alloc_str_for_test("Foo"),
-                      (builder.simple_id_type(heap.alloc_str_for_test("E")), true),
+                      (builder.generic_type(heap.alloc_str_for_test("E")), true),
                     ),
                     (heap.alloc_str_for_test("Bar"), (builder.int_type(), true)),
                   ]),
@@ -349,10 +353,10 @@ mod tests {
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.simple_id_type(heap.alloc_str_for_test("E"))],
-                        return_type: builder.general_id_type(
+                        argument_types: vec![builder.generic_type(heap.alloc_str_for_test("E"))],
+                        return_type: builder.general_nominal_type(
                           heap.alloc_str_for_test("Test4"),
-                          vec![builder.simple_id_type(heap.alloc_str_for_test("E"))],
+                          vec![builder.generic_type(heap.alloc_str_for_test("E"))],
                         ),
                       },
                     },
@@ -368,19 +372,15 @@ mod tests {
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.int_type()],
-                        return_type: builder.general_id_type(
+                        return_type: builder.general_nominal_type(
                           heap.alloc_str_for_test("Test4"),
-                          vec![builder.simple_id_type(heap.alloc_str_for_test("E"))],
+                          vec![builder.generic_type(heap.alloc_str_for_test("E"))],
                         ),
                       },
                     },
                   ),
                 ]),
                 methods: HashMap::new(),
-                type_parameters: vec![TypeParameterSignature {
-                  name: heap.alloc_str_for_test("E"),
-                  bound: None,
-                }],
                 super_types: vec![],
               },
             ),
@@ -403,7 +403,7 @@ mod tests {
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type(heap.alloc_str_for_test("A")),
+                      return_type: builder.simple_nominal_type(heap.alloc_str_for_test("A")),
                     },
                   },
                 )]),
@@ -431,7 +431,7 @@ mod tests {
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type(heap.alloc_str_for_test("B")),
+                      return_type: builder.simple_nominal_type(heap.alloc_str_for_test("B")),
                     },
                   },
                 )]),
@@ -459,7 +459,7 @@ mod tests {
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_id_type(heap.alloc_str_for_test("C")),
+                      return_type: builder.simple_nominal_type(heap.alloc_str_for_test("C")),
                     },
                   },
                 )]),
@@ -651,33 +651,37 @@ mod tests {
     let test2_str = heap.alloc_str_for_test("Test2");
     let test4_str = heap.alloc_str_for_test("Test4");
 
-    assert_checks(heap, "Test.init(true, 3)", &builder.simple_id_type(test_str));
-    assert_checks(heap, "{ val foo=true; Test.init(foo, 3) }", &builder.simple_id_type(test_str));
+    assert_checks(heap, "Test.init(true, 3)", &builder.simple_nominal_type(test_str));
+    assert_checks(
+      heap,
+      "{ val foo=true; Test.init(foo, 3) }",
+      &builder.simple_nominal_type(test_str),
+    );
     assert_errors_with_class(
       heap,
       "Test2.Foo(true)",
-      &builder.simple_id_type(test2_str),
+      &builder.simple_nominal_type(test2_str),
       vec![],
       "Test2",
     );
     assert_errors_with_class(
       heap,
       "Test2.Bar(42)",
-      &builder.simple_id_type(test2_str),
+      &builder.simple_nominal_type(test2_str),
       vec![],
       "Test2",
     );
     assert_errors_with_class(
       heap,
       "Test4.Foo(true)",
-      &builder.general_id_type(test4_str, vec![builder.bool_type()]),
+      &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
       vec![],
       "Test4",
     );
     assert_errors_with_class(
       heap,
       "Test4.Foo<bool>(true)",
-      &builder.general_id_type(test4_str, vec![builder.bool_type()]),
+      &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
       vec![],
       "Test4",
     );
@@ -685,18 +689,18 @@ mod tests {
     assert_errors(
       heap,
       "Test.Foo(true)",
-      &builder.simple_id_type(test2_str),
+      &builder.simple_nominal_type(test2_str),
       vec!["__DUMMY__.sam:1:1-1:9: [member-missing]: Cannot find member `Foo` on `Test`."],
     );
     assert_errors(
       heap,
       "Test.Bar(42)",
-      &builder.simple_id_type(test2_str),
+      &builder.simple_nominal_type(test2_str),
       vec!["__DUMMY__.sam:1:1-1:9: [member-missing]: Cannot find member `Bar` on `Test`."],
     );
     assert_errors(heap,
       "Test4.Foo<int, bool>(true)",
-      &builder.general_id_type(test4_str, vec![builder.bool_type()]),
+      &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
       vec![
         "__DUMMY__.sam:1:1-1:21: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
       ],
@@ -704,13 +708,13 @@ mod tests {
     assert_errors(
       heap,
       "Test4.Foo<int>(true)",
-      &builder.general_id_type(test4_str, vec![builder.int_type()]),
+      &builder.general_nominal_type(test4_str, vec![builder.int_type()]),
       vec!["__DUMMY__.sam:1:16-1:20: [incompatible-type]: Expected: `int`, actual: `bool`."],
     );
     assert_errors(
       heap,
       "Test4.Foo<int>(true)",
-      &builder.general_id_type(test4_str, vec![builder.bool_type()]),
+      &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
       vec![
         "__DUMMY__.sam:1:1-1:21: [incompatible-type]: Expected: `Test4<bool>`, actual: `Test4<int>`.",
         "__DUMMY__.sam:1:16-1:20: [incompatible-type]: Expected: `int`, actual: `bool`.",
@@ -719,13 +723,13 @@ mod tests {
     assert_errors(
       heap,
       "Test44.Bar(42)",
-      &builder.simple_id_type(test2_str),
+      &builder.simple_nominal_type(test2_str),
       vec!["__DUMMY__.sam:1:1-1:7: [cannot-resolve-class]: Class `Test44` is not resolved."],
     );
     assert_errors_with_class(
       heap,
       "Test2.Tars(42)",
-      &builder.simple_id_type(test2_str),
+      &builder.simple_nominal_type(test2_str),
       vec!["__DUMMY__.sam:1:1-1:11: [member-missing]: Cannot find member `Tars` on `Test2`."],
       "Test2",
     );

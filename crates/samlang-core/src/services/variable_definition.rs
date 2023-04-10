@@ -150,8 +150,9 @@ fn apply_expr_renaming(
       parameters: e
         .parameters
         .iter()
-        .map(|OptionallyAnnotatedId { name, annotation }| OptionallyAnnotatedId {
+        .map(|OptionallyAnnotatedId { name, type_, annotation }| OptionallyAnnotatedId {
           name: mod_def_id(name, definition_and_uses, new_name),
+          type_: *type_,
           annotation: annotation.clone(),
         })
         .collect(),
@@ -284,8 +285,9 @@ pub(super) fn apply_renaming(
                     parameters: Rc::new(
                       parameters
                         .iter()
-                        .map(|AnnotatedId { name, annotation }| AnnotatedId {
+                        .map(|AnnotatedId { name, type_, annotation }| AnnotatedId {
                           name: mod_def_id(name, definition_and_uses, new_name),
+                          type_: *type_,
                           annotation: annotation.clone(),
                         })
                         .collect(),

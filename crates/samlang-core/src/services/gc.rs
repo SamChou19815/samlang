@@ -1,6 +1,6 @@
 use crate::{
   ast::source::{annotation, expr, Id, Literal, Module, Toplevel, TypeDefinition, TypeParameter},
-  checker::type_::{FunctionType, IdType, Type},
+  checker::type_::{FunctionType, NominalType, Type},
   Heap, ModuleReference,
 };
 use std::{collections::HashMap, rc::Rc};
@@ -9,6 +9,7 @@ fn mark_annot(heap: &mut Heap, type_: &annotation::T) {
   match type_ {
     annotation::T::Primitive(_, _, _) => {}
     annotation::T::Id(annot) => mark_id_annot(heap, annot),
+    annotation::T::Generic(_, id) => heap.mark(id.name),
     annotation::T::Fn(annot) => mark_fn_annot(heap, annot),
   }
 }
@@ -38,12 +39,13 @@ fn mark_annot_opt(heap: &mut Heap, opt_t: &Option<annotation::T>) {
 fn mark_type(heap: &mut Heap, type_: &Type) {
   match type_ {
     Type::Any(_, _) | Type::Primitive(_, _) => {}
-    Type::Id(t) => mark_id_type(heap, t),
+    Type::Nominal(t) => mark_nominal_type(heap, t),
+    Type::Generic(_, id) => heap.mark(*id),
     Type::Fn(t) => mark_fn_type(heap, t),
   }
 }
 
-fn mark_id_type(heap: &mut Heap, type_: &IdType) {
+fn mark_nominal_type(heap: &mut Heap, type_: &NominalType) {
   heap.mark(type_.id);
   mark_types(heap, &type_.type_arguments);
 }

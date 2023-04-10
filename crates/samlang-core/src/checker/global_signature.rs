@@ -1,10 +1,8 @@
 use super::{
-  checker_utils::{
-    perform_fn_type_substitution, perform_id_type_substitution_asserting_id_type_return,
-  },
+  checker_utils::{perform_fn_type_substitution, perform_nominal_type_substitution},
   type_::{
-    FunctionType, GlobalSignature, ISourceType, IdType, InterfaceSignature, MemberSignature,
-    ModuleSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
+    FunctionType, GlobalSignature, ISourceType, InterfaceSignature, MemberSignature,
+    ModuleSignature, NominalType, Type, TypeDefinitionSignature, TypeParameterSignature,
   },
 };
 use crate::{
@@ -33,7 +31,7 @@ pub(crate) fn build_module_signature(
     for member in toplevel.members_iter() {
       let type_info = MemberSignature {
         is_public: member.is_public,
-        type_parameters: member.type_parameters.iter().map(TypeParameterSignature::from).collect(),
+        type_parameters: TypeParameterSignature::from_list(&member.type_parameters),
         type_: FunctionType::from_annotation(&member.type_),
       };
       if member.is_method {
@@ -42,22 +40,16 @@ pub(crate) fn build_module_signature(
         functions.insert(member.name.name, type_info);
       }
     }
+    let toplevel_tparams_sig = TypeParameterSignature::from_list(toplevel.type_parameters());
     let type_definition = if let Toplevel::Class(class) = toplevel {
-      let class_type = Rc::new(Type::Id(IdType {
+      let class_type = Rc::new(Type::Nominal(NominalType {
         reason: Reason::new(class.name.loc, Some(class.name.loc)),
         module_reference,
         id: class.name.name,
         type_arguments: class
           .type_parameters
           .iter()
-          .map(|it| {
-            Rc::new(Type::Id(IdType {
-              reason: Reason::new(it.loc, Some(it.loc)),
-              module_reference,
-              id: it.name.name,
-              type_arguments: vec![],
-            }))
-          })
+          .map(|it| Rc::new(Type::Generic(Reason::new(it.loc, Some(it.loc)), it.name.name)))
           .collect_vec(),
       }));
       match &class.type_definition {
@@ -65,11 +57,7 @@ pub(crate) fn build_module_signature(
           let type_def_reason = Reason::new(*loc, Some(*loc));
           let ctor_fn = MemberSignature {
             is_public: true,
-            type_parameters: class
-              .type_parameters
-              .iter()
-              .map(TypeParameterSignature::from)
-              .collect(),
+            type_parameters: toplevel_tparams_sig.clone(),
             type_: FunctionType {
               reason: type_def_reason,
               argument_types: fields
@@ -100,11 +88,7 @@ pub(crate) fn build_module_signature(
           for variant in variants {
             let ctor_fn = MemberSignature {
               is_public: true,
-              type_parameters: class
-                .type_parameters
-                .iter()
-                .map(TypeParameterSignature::from)
-                .collect(),
+              type_parameters: toplevel_tparams_sig.clone(),
               type_: FunctionType {
                 reason: type_def_reason,
                 argument_types: vec![Rc::new(Type::from_annotation(&variant.associated_data_type))],
@@ -134,15 +118,11 @@ pub(crate) fn build_module_signature(
         type_definition,
         functions,
         methods,
-        type_parameters: toplevel
-          .type_parameters()
-          .iter()
-          .map(TypeParameterSignature::from)
-          .collect(),
+        type_parameters: toplevel_tparams_sig,
         super_types: toplevel
           .extends_or_implements_nodes()
           .iter()
-          .map(IdType::from_annotation)
+          .map(NominalType::from_annotation)
           .collect(),
       },
     );
@@ -172,7 +152,7 @@ pub(super) fn resolve_interface_cx(
 }
 
 pub(super) struct SuperTypesResolutionResult {
-  pub(super) types: Vec<IdType>,
+  pub(super) types: Vec<NominalType>,
   pub(super) is_cyclic: bool,
 }
 
@@ -188,12 +168,12 @@ impl SuperTypesResolutionResult {
 
 pub(super) fn resolve_all_member_names(
   global_cx: &GlobalSignature,
-  interface_types: &[IdType],
+  interface_types: &[NominalType],
   method: bool,
 ) -> HashSet<PStr> {
   let mut collector = HashSet::new();
   let mut lookup_candidates =
-    interface_types.iter().map(|id_type| (id_type.module_reference, id_type.id)).collect_vec();
+    interface_types.iter().map(|t| (t.module_reference, t.id)).collect_vec();
   let mut visited = HashSet::new();
   loop {
     if let Some((mod_ref, toplevel_name)) = lookup_candidates.pop() {
@@ -218,7 +198,7 @@ pub(super) fn resolve_all_member_names(
 
 fn resolve_all_transitive_super_types_recursive(
   global_cx: &GlobalSignature,
-  interface_type: &IdType,
+  interface_type: &NominalType,
   collector: &mut SuperTypesResolutionResult,
   visited: &mut HashSet<(ModuleReference, PStr)>,
 ) {
@@ -234,8 +214,7 @@ fn resolve_all_transitive_super_types_recursive(
       subst_mapping.insert(tparam.name, targ.clone());
     }
     for super_type in &interface_cx.super_types {
-      let instantiated_super_type =
-        perform_id_type_substitution_asserting_id_type_return(super_type, &subst_mapping);
+      let instantiated_super_type = perform_nominal_type_substitution(super_type, &subst_mapping);
       resolve_all_transitive_super_types_recursive(
         global_cx,
         &instantiated_super_type,
@@ -250,7 +229,7 @@ fn resolve_all_transitive_super_types_recursive(
 
 pub(super) fn resolve_all_transitive_super_types(
   global_cx: &GlobalSignature,
-  interface_type: &IdType,
+  interface_type: &NominalType,
 ) -> SuperTypesResolutionResult {
   let mut collector = SuperTypesResolutionResult { types: vec![], is_cyclic: false };
   resolve_all_transitive_super_types_recursive(
@@ -313,7 +292,7 @@ pub(super) fn resolve_function_signature(
 
 pub(super) fn resolve_all_function_signatures<'a>(
   global_cx: &'a GlobalSignature,
-  interface_types: &[IdType],
+  interface_types: &[NominalType],
   fn_name: PStr,
 ) -> Vec<&'a MemberSignature> {
   let mut collector = vec![];
@@ -321,7 +300,7 @@ pub(super) fn resolve_all_function_signatures<'a>(
     global_cx,
     fn_name,
     true,
-    interface_types.iter().map(|id_type| (id_type.module_reference, id_type.id)).collect(),
+    interface_types.iter().map(|t| (t.module_reference, t.id)).collect(),
     &mut collector,
     &mut HashSet::new(),
   );
@@ -330,7 +309,7 @@ pub(super) fn resolve_all_function_signatures<'a>(
 
 fn resolve_method_signature_recursive(
   global_cx: &GlobalSignature,
-  interface_type: &IdType,
+  interface_type: &NominalType,
   method_name: PStr,
   all: bool,
   collector: &mut Vec<MemberSignature>,
@@ -353,9 +332,8 @@ fn resolve_method_signature_recursive(
           .type_parameters
           .iter()
           .map(|tparam| {
-            let bound = tparam.bound.as_ref().map(|t| {
-              Rc::new(perform_id_type_substitution_asserting_id_type_return(t, &subst_mapping))
-            });
+            let bound =
+              tparam.bound.as_ref().map(|t| perform_nominal_type_substitution(t, &subst_mapping));
             TypeParameterSignature { name: tparam.name, bound }
           })
           .collect(),
@@ -366,7 +344,7 @@ fn resolve_method_signature_recursive(
       if collector.is_empty() || all {
         resolve_method_signature_recursive(
           global_cx,
-          &perform_id_type_substitution_asserting_id_type_return(super_type, &subst_mapping),
+          &perform_nominal_type_substitution(super_type, &subst_mapping),
           method_name,
           all,
           collector,
@@ -380,7 +358,7 @@ fn resolve_method_signature_recursive(
 
 pub(super) fn resolve_method_signature(
   global_cx: &GlobalSignature,
-  interface_type: &IdType,
+  interface_type: &NominalType,
   method_name: PStr,
 ) -> Vec<MemberSignature> {
   let mut collector = vec![];
@@ -397,7 +375,7 @@ pub(super) fn resolve_method_signature(
 
 pub(super) fn resolve_all_method_signatures(
   global_cx: &GlobalSignature,
-  interface_types: &[IdType],
+  interface_types: &[NominalType],
   method_name: PStr,
 ) -> Vec<MemberSignature> {
   let mut collector = vec![];
@@ -422,7 +400,9 @@ mod tests {
   };
   use crate::{
     ast::Reason,
-    checker::type_::{create_builtin_module_signature, test_type_builder, GlobalSignature, IdType},
+    checker::type_::{
+      create_builtin_module_signature, test_type_builder, GlobalSignature, NominalType,
+    },
     errors::ErrorSet,
     parser::parse_source_module_from_text,
     Heap, ModuleReference,
@@ -541,7 +521,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       "resolved: [], is_cyclic: false",
       resolve_all_transitive_super_types(
         &global_cx,
-        &IdType {
+        &NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("C"),
@@ -554,7 +534,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       "resolved: [NotExist, C], is_cyclic: false",
       resolve_all_transitive_super_types(
         &global_cx,
-        &IdType {
+        &NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("IUseNonExistent"),
@@ -567,7 +547,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       "resolved: [IBase<int, int>, ILevel1<bool, int>], is_cyclic: false",
       resolve_all_transitive_super_types(
         &global_cx,
-        &IdType {
+        &NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
@@ -580,7 +560,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       "resolved: [ICyclic1, ICyclic2], is_cyclic: true",
       resolve_all_transitive_super_types(
         &global_cx,
-        &IdType {
+        &NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ICyclic1"),
@@ -593,7 +573,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       "resolved: [ICyclic2, ICyclic1], is_cyclic: true",
       resolve_all_transitive_super_types(
         &global_cx,
-        &IdType {
+        &NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ICyclic2"),
@@ -606,7 +586,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       "resolved: [ConflictExtends1, ConflictExtends2], is_cyclic: false",
       resolve_all_transitive_super_types(
         &global_cx,
-        &IdType {
+        &NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
@@ -620,7 +600,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       vec!["m1", "m2"],
       resolve_all_member_names(
         &global_cx,
-        &[IdType {
+        &[NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
@@ -637,7 +617,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       vec!["f1"],
       resolve_all_member_names(
         &global_cx,
-        &[IdType {
+        &[NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
@@ -715,7 +695,7 @@ public () -> int
       .trim(),
       resolve_all_function_signatures(
         &global_cx,
-        &[IdType {
+        &[NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
@@ -748,7 +728,7 @@ public () -> int
 
     assert!(resolve_method_signature(
       &global_cx,
-      &IdType {
+      &NominalType {
         reason: Reason::dummy(),
         module_reference: ModuleReference::dummy(),
         id: heap.alloc_str_for_test("C"),
@@ -759,7 +739,7 @@ public () -> int
     .is_empty());
     assert!(resolve_method_signature(
       &global_cx,
-      &IdType {
+      &NominalType {
         reason: Reason::dummy(),
         module_reference: ModuleReference::dummy(),
         id: heap.alloc_str_for_test("IUseNonExistent"),
@@ -776,7 +756,7 @@ public <C : A>(int, int) -> C
       .trim(),
       resolve_all_method_signatures(
         &global_cx,
-        &[IdType {
+        &[NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
@@ -792,7 +772,7 @@ public <C : A>(int, int) -> C
       "public <C>(bool, int) -> C",
       resolve_method_signature(
         &global_cx,
-        &IdType {
+        &NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
@@ -806,7 +786,7 @@ public <C : A>(int, int) -> C
     );
     assert!(resolve_method_signature(
       &global_cx,
-      &IdType {
+      &NominalType {
         reason: Reason::dummy(),
         module_reference: ModuleReference::dummy(),
         id: heap.alloc_str_for_test("ICyclic1"),
@@ -817,7 +797,7 @@ public <C : A>(int, int) -> C
     .is_empty());
     assert!(resolve_method_signature(
       &global_cx,
-      &IdType {
+      &NominalType {
         reason: Reason::dummy(),
         module_reference: ModuleReference::dummy(),
         id: heap.alloc_str_for_test("ICyclic2"),
@@ -833,7 +813,7 @@ public () -> bool"#
         .trim(),
       resolve_all_method_signatures(
         &global_cx,
-        &[IdType {
+        &[NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
@@ -849,7 +829,7 @@ public () -> bool"#
       "public () -> int",
       resolve_method_signature(
         &global_cx,
-        &IdType {
+        &NominalType {
           reason: Reason::dummy(),
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("UsingConflictingExtends"),

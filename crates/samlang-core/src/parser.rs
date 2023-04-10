@@ -210,6 +210,10 @@ mod tests {
     class A(val a: () -> int) : Baz
     class A(val a: (string) -> int) : Baz
 
+    class TParamFixParserTest {
+      function <T: Foo<T>, R: Bar<(A) -> int>> f(): unit = {}
+    }
+
     /**
      * docs
      */
@@ -261,6 +265,7 @@ mod tests {
         "Util",
         "A",
         "A",
+        "TParamFixParserTest",
         "Option",
         "TypeInference",
         "Developer"

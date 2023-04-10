@@ -266,6 +266,26 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
+  fn encode_function_name_globally_considering_generics_from_receiver_type(
+    &self,
+    receiver: &type_::Type,
+    function_name: &str,
+  ) -> String {
+    if let Some(t) = receiver.as_nominal() {
+      common_names::encode_function_name_globally(
+        self.heap,
+        &t.module_reference,
+        t.id.as_str(self.heap),
+        function_name,
+      )
+    } else {
+      common_names::encode_generic_function_name_globally(
+        receiver.as_generic().unwrap().1.as_str(self.heap),
+        function_name,
+      )
+    }
+  }
+
   fn lower_class_fn(
     &mut self,
     expression: &source::expr::ClassFunction<Rc<type_::Type>>,
@@ -341,10 +361,8 @@ impl<'a> ExpressionLoweringManager<'a> {
     favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let source_obj_type = expression.object.type_();
-    let source_obj_id_type = source_obj_type.as_id().unwrap();
-    let function_name = self.encode_function_name_globally_considering_generics(
-      &source_obj_id_type.module_reference,
-      &source_obj_id_type.id,
+    let function_name = self.encode_function_name_globally_considering_generics_from_receiver_type(
+      source_obj_type,
       expression.method_name.name.as_str(self.heap),
     );
     let LoweringResult { mut statements, expression: result_expr } =
@@ -453,10 +471,8 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
       source::expr::E::MethodAccess(source_callee) => {
         let source_target_type = source_callee.object.type_();
-        let source_target_id_type = source_target_type.as_id().unwrap();
-        let fn_name = self.encode_function_name_globally_considering_generics(
-          &source_target_id_type.module_reference,
-          &source_target_id_type.id,
+        let fn_name = self.encode_function_name_globally_considering_generics_from_receiver_type(
+          source_target_type,
           source_callee.method_name.name.as_str(self.heap),
         );
         let fn_type_without_cx =
@@ -1444,12 +1460,12 @@ mod tests {
     assert_eq!(expected_str, actual_string.trim());
   }
 
-  fn dummy_source_id_type_unwrapped(heap: &mut Heap) -> type_::IdType {
-    test_type_builder::create().simple_id_type_unwrapped(heap.alloc_str_for_test("Dummy"))
+  fn dummy_source_id_type_unwrapped(heap: &mut Heap) -> type_::NominalType {
+    test_type_builder::create().simple_nominal_type_unwrapped(heap.alloc_str_for_test("Dummy"))
   }
 
   fn dummy_source_id_type(heap: &mut Heap) -> type_::Type {
-    type_::Type::Id(dummy_source_id_type_unwrapped(heap))
+    type_::Type::Nominal(dummy_source_id_type_unwrapped(heap))
   }
 
   fn dummy_source_id_annot(heap: &mut Heap) -> source::annotation::T {
@@ -2039,6 +2055,7 @@ return (_t14: string);"#,
         ),
         parameters: vec![source::OptionallyAnnotatedId {
           name: source::Id::from(heap.alloc_str_for_test("a")),
+          type_: builder.unit_type(),
           annotation: Some(annot_builder.unit_annot()),
         }],
         captured: HashMap::from([(heap.alloc_str_for_test("captured_a"), builder.unit_type())]),
@@ -2065,6 +2082,7 @@ return (_t15: $SyntheticIDType1);"#,
         ),
         parameters: vec![source::OptionallyAnnotatedId {
           name: source::Id::from(heap.alloc_str_for_test("a")),
+          type_: builder.unit_type(),
           annotation: Some(annot_builder.unit_annot()),
         }],
         captured: HashMap::from([(heap.alloc_str_for_test("captured_a"), builder.unit_type())]),
@@ -2091,6 +2109,7 @@ return (_t15: $SyntheticIDType1);"#,
         ),
         parameters: vec![source::OptionallyAnnotatedId {
           name: source::Id::from(heap.alloc_str_for_test("a")),
+          type_: builder.unit_type(),
           annotation: Some(annot_builder.unit_annot()),
         }],
         captured: HashMap::from([(heap.alloc_str_for_test("captured_a"), builder.unit_type())]),
@@ -2117,6 +2136,7 @@ return (_t15: $SyntheticIDType1);"#,
         ),
         parameters: vec![source::OptionallyAnnotatedId {
           name: source::Id::from(heap.alloc_str_for_test("a")),
+          type_: builder.unit_type(),
           annotation: Some(annot_builder.unit_annot()),
         }],
         captured: HashMap::new(),
@@ -2459,7 +2479,7 @@ return 0;"#,
 
     let this_expr = &source::expr::E::Id(
       source::expr::ExpressionCommon::dummy(
-        builder.simple_id_type(heap.alloc_str_for_test("Dummy")),
+        builder.simple_nominal_type(heap.alloc_str_for_test("Dummy")),
       ),
       source::Id::from(heap.alloc_str_for_test("this")),
     );
@@ -2573,6 +2593,7 @@ return 0;"#,
                   .fn_annot_unwrapped(vec![annot_builder.int_annot()], annot_builder.int_annot()),
                 parameters: Rc::new(vec![source::AnnotatedId {
                   name: source::Id::from(heap.alloc_str_for_test("a")),
+                  type_: (), // builder.int_type(),
                   annotation: annot_builder.int_annot(),
                 }]),
               },
@@ -2619,10 +2640,12 @@ return 0;"#,
                 parameters: Rc::new(vec![
                   source::AnnotatedId {
                     name: source::Id::from(heap.alloc_str_for_test("n")),
+                    type_: (), // builder.int_type(),
                     annotation: annot_builder.int_annot(),
                   },
                   source::AnnotatedId {
                     name: source::Id::from(heap.alloc_str_for_test("acc")),
+                    type_: (), // builder.int_type(),
                     annotation: annot_builder.int_annot(),
                   },
                 ]),

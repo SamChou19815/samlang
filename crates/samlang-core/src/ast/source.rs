@@ -161,6 +161,7 @@ pub(crate) mod annotation {
   pub(crate) enum T {
     Primitive(Location, CommentReference, PrimitiveTypeKind),
     Id(Id),
+    Generic(Location, super::Id),
     Fn(Function),
   }
 
@@ -169,6 +170,7 @@ pub(crate) mod annotation {
       match self {
         T::Primitive(l, _, _) => *l,
         T::Id(annot) => annot.location,
+        T::Generic(l, _) => *l,
         T::Fn(annot) => annot.location,
       }
     }
@@ -177,6 +179,7 @@ pub(crate) mod annotation {
       match self {
         T::Primitive(_, c, _) => *c,
         T::Id(annot) => annot.id.associated_comments,
+        T::Generic(_, id) => id.associated_comments,
         T::Fn(annot) => annot.associated_comments,
       }
     }
@@ -197,14 +200,16 @@ impl Id {
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) struct OptionallyAnnotatedId {
+pub(crate) struct OptionallyAnnotatedId<T: Clone> {
   pub(crate) name: Id,
+  pub(crate) type_: T,
   pub(crate) annotation: Option<annotation::T>,
 }
 
 #[derive(PartialEq, Eq)]
-pub(crate) struct AnnotatedId {
+pub(crate) struct AnnotatedId<T: Clone> {
   pub(crate) name: Id,
+  pub(crate) type_: T,
   pub(crate) annotation: annotation::T,
 }
 
@@ -390,7 +395,7 @@ pub(crate) mod expr {
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct Lambda<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
-    pub(crate) parameters: Vec<super::OptionallyAnnotatedId>,
+    pub(crate) parameters: Vec<super::OptionallyAnnotatedId<T>>,
     pub(crate) captured: HashMap<PStr, T>,
     pub(crate) body: Box<E<T>>,
   }
@@ -517,7 +522,7 @@ pub(crate) struct ClassMemberDeclaration {
   pub(crate) name: Id,
   pub(crate) type_parameters: Rc<Vec<TypeParameter>>,
   pub(crate) type_: annotation::Function,
-  pub(crate) parameters: Rc<Vec<AnnotatedId>>,
+  pub(crate) parameters: Rc<Vec<AnnotatedId<()>>>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -729,6 +734,10 @@ pub(crate) mod test_builder {
 
     pub(crate) fn simple_id_annot(&self, id: PStr) -> annotation::T {
       self.general_id_annot(id, vec![])
+    }
+
+    pub(crate) fn generic_annot(&self, id: PStr) -> annotation::T {
+      annotation::T::Generic(Location::dummy(), Id::from(id))
     }
 
     pub(crate) fn fn_annot_unwrapped(

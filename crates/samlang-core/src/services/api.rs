@@ -730,7 +730,7 @@ pub mod completion {
           (module_ref, class_name)
         }
         LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
-          e.object.type_().as_id().map(|id_type| (id_type.module_reference, id_type.id))?
+          e.object.type_().as_nominal().map(|t| (t.module_reference, t.id))?
         }
         _ => return None,
       };

@@ -15,10 +15,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
-  use std::{
-    collections::{HashMap, HashSet},
-    rc::Rc,
-  };
+  use std::collections::{HashMap, HashSet};
 
   fn empty_local_typing_context() -> LocalTypingContext {
     LocalTypingContext::new(SsaAnalysisResult {
@@ -107,9 +104,9 @@ mod tests {
               name: heap.alloc_str_for_test("T"),
               bound: None,
             }],
-            super_types: vec![builder.general_id_type_unwrapped(
+            super_types: vec![builder.general_nominal_type_unwrapped(
               heap.alloc_str_for_test("B"),
-              vec![builder.simple_id_type(heap.alloc_str_for_test("T")), builder.int_type()],
+              vec![builder.generic_type(heap.alloc_str_for_test("T")), builder.int_type()],
             )],
             functions: HashMap::new(),
             methods: HashMap::new(),
@@ -127,38 +124,37 @@ mod tests {
     );
 
     // Non-id lower type
-    assert!(
-      !cx.is_subtype(&builder.int_type(), &builder.simple_id_type(heap.alloc_str_for_test("B")))
-    );
+    assert!(!cx
+      .is_subtype(&builder.int_type(), &builder.simple_nominal_type(heap.alloc_str_for_test("B"))));
     // Non-existent type
     assert!(!cx.is_subtype(
-      &builder.simple_id_type(heap.alloc_str_for_test("B")),
-      &builder.simple_id_type(heap.alloc_str_for_test("C"))
+      &builder.simple_nominal_type(heap.alloc_str_for_test("B")),
+      &builder.simple_nominal_type(heap.alloc_str_for_test("C"))
     ));
     // Type-args length mismatch
     assert!(!cx.is_subtype(
-      &builder.simple_id_type(heap.alloc_str_for_test("A")),
-      &builder.simple_id_type(heap.alloc_str_for_test("B"))
+      &builder.simple_nominal_type(heap.alloc_str_for_test("A")),
+      &builder.simple_nominal_type(heap.alloc_str_for_test("B"))
     ));
     // Type-args mismatch
     assert!(!cx.is_subtype(
-      &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
-      &builder.general_id_type(
+      &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
+      &builder.general_nominal_type(
         heap.alloc_str_for_test("B"),
         vec![builder.string_type(), builder.int_type()]
       )
     ));
     assert!(!cx.is_subtype(
-      &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
-      &builder.general_id_type(
+      &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
+      &builder.general_nominal_type(
         heap.alloc_str_for_test("B"),
         vec![builder.string_type(), builder.string_type()]
       )
     ));
     // Good
     assert!(cx.is_subtype(
-      &builder.general_id_type(heap.alloc_str_for_test("A"), vec![builder.string_type()]),
-      &builder.general_id_type(
+      &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.string_type()]),
+      &builder.general_nominal_type(
         heap.alloc_str_for_test("B"),
         vec![builder.string_type(), builder.int_type()]
       )
@@ -187,9 +183,7 @@ mod tests {
                 TypeParameterSignature { name: heap.alloc_str_for_test("T1"), bound: None },
                 TypeParameterSignature {
                   name: heap.alloc_str_for_test("T2"),
-                  bound: Some(Rc::new(
-                    builder.simple_id_type_unwrapped(heap.alloc_str_for_test("B")),
-                  )),
+                  bound: Some(builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("B"))),
                 },
               ],
               super_types: vec![],
@@ -202,7 +196,7 @@ mod tests {
             InterfaceSignature {
               type_definition: None,
               type_parameters: vec![],
-              super_types: vec![builder.simple_id_type_unwrapped(heap.alloc_str_for_test("B"))],
+              super_types: vec![builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("B"))],
               functions: HashMap::new(),
               methods: HashMap::new(),
             },
@@ -220,7 +214,7 @@ mod tests {
         TypeParameterSignature { name: heap.alloc_str_for_test("TPARAM"), bound: None },
         TypeParameterSignature {
           name: heap.alloc_str_for_test("T2"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str_for_test("A")))),
+          bound: Some(builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("A"))),
         },
       ],
     );
@@ -235,27 +229,30 @@ mod tests {
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
     cx.validate_type_instantiation_allow_abstract_types(&heap, &Type::Any(Reason::dummy(), false));
-    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.simple_id_type(str_tparam));
     cx.validate_type_instantiation_allow_abstract_types(
       &heap,
-      &builder.general_id_type(str_tparam, vec![builder.int_type()]),
-    );
-    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.simple_id_type(str_t));
-    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.simple_id_type(str_a));
-    cx.validate_type_instantiation_allow_abstract_types(
-      &heap,
-      &builder.general_id_type(str_a, vec![builder.int_type(), builder.int_type()]),
+      &builder.simple_nominal_type(str_tparam),
     );
     cx.validate_type_instantiation_allow_abstract_types(
       &heap,
-      &builder.general_id_type(str_a, vec![builder.int_type(), builder.simple_id_type(str_b)]),
+      &builder.general_nominal_type(str_tparam, vec![builder.int_type()]),
     );
-    cx.validate_type_instantiation_strictly(&heap, &builder.simple_id_type(str_b));
+    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.generic_type(str_t));
+    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.simple_nominal_type(str_a));
+    cx.validate_type_instantiation_allow_abstract_types(
+      &heap,
+      &builder.general_nominal_type(str_a, vec![builder.int_type(), builder.int_type()]),
+    );
+    cx.validate_type_instantiation_allow_abstract_types(
+      &heap,
+      &builder
+        .general_nominal_type(str_a, vec![builder.int_type(), builder.simple_nominal_type(str_b)]),
+    );
+    cx.validate_type_instantiation_strictly(&heap, &builder.simple_nominal_type(str_b));
 
     let expected_errors = r#"
 __DUMMY__.sam:0:0-0:0: [incompatible-type]: Expected: subtype of `B`, actual: `int`.
 __DUMMY__.sam:0:0-0:0: [incompatible-type]: Expected: `non-abstract type`, actual: `B`.
-__DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 0, actual: 1.
 __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0."#
       .trim();
     let actual_errors = cx.error_set.error_messages(&heap).join("\n");
@@ -307,7 +304,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
                 MemberSignature::create_builtin_function(
                   &mut heap,
                   "m1",
-                  vec![builder.simple_id_type(str_a), builder.simple_id_type(str_b)],
+                  vec![builder.generic_type(str_a), builder.generic_type(str_b)],
                   builder.int_type(),
                   vec!["C"],
                 ),
@@ -376,14 +373,14 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       vec![
         TypeParameterSignature {
           name: heap.alloc_str_for_test("TT1"),
-          bound: Some(Rc::new(builder.simple_id_type_unwrapped(heap.alloc_str_for_test("A")))),
+          bound: Some(builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("A"))),
         },
         TypeParameterSignature { name: heap.alloc_str_for_test("TT2"), bound: None },
         TypeParameterSignature {
           name: heap.alloc_str_for_test("TT3"),
-          bound: Some(Rc::new(
-            builder.simple_id_type_unwrapped(heap.alloc_str_for_test("sdfasdfasfs")),
-          )),
+          bound: Some(
+            builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("sdfasdfasfs")),
+          ),
         },
       ],
     );
@@ -597,11 +594,11 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
                 mappings: HashMap::from([
                   (
                     heap.alloc_str_for_test("a"),
-                    (builder.simple_id_type(heap.alloc_str_for_test("A")), true),
+                    (builder.generic_type(heap.alloc_str_for_test("A")), true),
                   ),
                   (
                     heap.alloc_str_for_test("b"),
-                    (builder.simple_id_type(heap.alloc_str_for_test("B")), false),
+                    (builder.generic_type(heap.alloc_str_for_test("B")), false),
                   ),
                 ]),
               }),
@@ -646,7 +643,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     assert!(cx.resolve_type_definition(&builder.bool_type(), true).names.is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type(
+        &builder.general_nominal_type(
           heap.alloc_str_for_test("A"),
           vec![builder.int_type(), builder.int_type()]
         ),
@@ -656,7 +653,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       .is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type(
+        &builder.general_nominal_type(
           heap.alloc_str_for_test("A"),
           vec![builder.int_type(), builder.int_type()]
         ),
@@ -666,7 +663,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       .is_empty());
     assert!(cx
       .resolve_type_definition(
-        &builder.general_id_type(
+        &builder.general_nominal_type(
           heap.alloc_str_for_test("C"),
           vec![builder.int_type(), builder.int_type()]
         ),
@@ -677,7 +674,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
 
     let resolved = cx
       .resolve_type_definition(
-        &builder.general_id_type(
+        &builder.general_nominal_type(
           heap.alloc_str_for_test("A"),
           vec![builder.int_type(), builder.int_type()],
         ),
