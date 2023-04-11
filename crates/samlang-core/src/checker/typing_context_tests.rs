@@ -84,6 +84,29 @@ mod tests {
   }
 
   #[test]
+  fn run_in_synthesis_mode_tests() {
+    let mut heap = Heap::new();
+    let mut error_set = ErrorSet::new();
+    let global_cx = HashMap::new();
+    let mut local_cx = empty_local_typing_context();
+    let mut cx = TypingContext::new(
+      &global_cx,
+      &mut local_cx,
+      &mut error_set,
+      ModuleReference::dummy(),
+      heap.alloc_str_for_test("A"),
+      vec![],
+    );
+
+    let (a, b) = cx.run_in_synthesis_mode(|cx| cx.in_synthesis_mode());
+    assert!(a);
+    assert!(!b);
+
+    let (_, c) = cx.run_in_synthesis_mode(|cx| cx.mk_underconstrained_any_type(Reason::dummy()));
+    assert!(c);
+  }
+
+  #[test]
   fn is_subtype_tests() {
     let mut heap = Heap::new();
     let builder = test_type_builder::create();
