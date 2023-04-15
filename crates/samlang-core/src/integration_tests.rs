@@ -1857,11 +1857,9 @@ class Main {
     let mut len_bytes = [0; 4];
     let ptr = usize::try_from(param).unwrap();
     mem.read(caller.as_context(), ptr + 4, &mut len_bytes).unwrap();
-    let length = usize::try_from(i32::from_le_bytes(len_bytes)).unwrap();
-    let mut str_bytes = vec![0; length * 4];
+    let length = usize::try_from(u32::from_le_bytes(len_bytes)).unwrap();
+    let mut str_bytes = vec![0; length];
     mem.read(caller.as_context(), ptr + 8, &mut str_bytes).unwrap();
-    // We sadly use 4 bytes to store 1 byte of data :(
-    str_bytes.retain(|c| *c != 0);
     String::from_utf8(str_bytes).unwrap()
   }
 }

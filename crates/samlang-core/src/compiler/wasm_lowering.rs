@@ -245,13 +245,12 @@ pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &mir::Sources) -> wa
   let mut global_variables = vec![];
   for hir::GlobalVariable { name, content } in &sources.global_variables {
     let content_str = content.as_str(heap);
-    let mut ints = vec![0, i32::try_from(content_str.len()).unwrap()];
-    for b in content_str.as_bytes() {
-      ints.push(i32::from(*b));
-    }
-    let global_variable = wasm::GlobalData { constant_pointer: data_start, ints };
+    let mut bytes = vec![0, 0, 0, 0];
+    bytes.extend_from_slice(&(content_str.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(content_str.as_bytes());
+    let global_variable = wasm::GlobalData { constant_pointer: data_start, bytes };
     global_variables_to_pointer_mapping.insert(*name, data_start);
-    data_start += (content_str.len() + 2) * 4;
+    data_start += content_str.len() + 8;
     global_variables.push(global_variable);
   }
   for (i, f) in sources.functions.iter().enumerate() {
@@ -427,8 +426,8 @@ mod tests {
     };
     let actual = super::compile_mir_to_wasm(heap, &sources).pretty_print(heap);
     let expected = r#"(type $i32_=>_i32 (func (param i32) (result i32)))
-(data (i32.const 4096) "\00\00\00\00\03\00\00\00\66\00\00\00\6f\00\00\00\6f\00\00\00")
-(data (i32.const 4116) "\00\00\00\00\03\00\00\00\62\00\00\00\61\00\00\00\72\00\00\00")
+(data (i32.const 4096) "\00\00\00\00\03\00\00\00\66\6f\6f")
+(data (i32.const 4107) "\00\00\00\00\03\00\00\00\62\61\72")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $main)
 (func $main (param $bar i32) (result i32)

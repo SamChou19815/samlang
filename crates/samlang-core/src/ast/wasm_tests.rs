@@ -11,8 +11,8 @@ mod tests {
     let module = Module {
       function_type_parameter_counts: vec![0, 1, 2, 3],
       global_variables: vec![
-        GlobalData { constant_pointer: 1024, ints: vec![0, 0] },
-        GlobalData { constant_pointer: 323, ints: vec![3, 2] },
+        GlobalData { constant_pointer: 1024, bytes: vec![0, 0] },
+        GlobalData { constant_pointer: 323, bytes: vec![3, 2] },
       ],
       exported_functions: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
@@ -140,8 +140,8 @@ mod tests {
 (type $i32_=>_i32 (func (param i32) (result i32)))
 (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
 (type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
-(data (i32.const 1024) "\00\00\00\00\00\00\00\00")
-(data (i32.const 323) "\03\00\00\00\02\00\00\00")
+(data (i32.const 1024) "\00\00")
+(data (i32.const 323) "\03\02")
 (table $0 1 funcref)
 (elem $0 (i32.const 0) $main)
 (func $main (param $a i32) (param $b i32) (result i32)
