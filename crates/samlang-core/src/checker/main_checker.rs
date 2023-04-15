@@ -1,8 +1,8 @@
 use super::{
   checker_utils::{
-    contextual_type_meet, perform_fn_type_substitution, perform_nominal_type_substitution,
-    perform_type_substitution, solve_multiple_type_constrains, TypeConstraint,
-    TypeConstraintSolution,
+    contextual_type_meet, has_placeholder_type, perform_fn_type_substitution,
+    perform_nominal_type_substitution, perform_type_substitution, solve_multiple_type_constrains,
+    TypeConstraint, TypeConstraintSolution,
   },
   global_signature,
   ssa_analysis::perform_ssa_analysis_on_module,
@@ -263,7 +263,7 @@ fn arguments_should_be_checked_without_hint(e: &expr::E<()>) -> bool {
     | expr::E::MethodAccess(_)
     | expr::E::Unary(_)
     | expr::E::Binary(_) => true,
-    expr::E::Call(_) => true, /* TODO: revisit after rust migration */
+    expr::E::Call(_) => false,
     expr::E::IfElse(expr::IfElse { common: _, condition: _, e1, e2 }) => {
       arguments_should_be_checked_without_hint(e1) && arguments_should_be_checked_without_hint(e2)
     }
@@ -625,15 +625,11 @@ fn replace_undecided_tparam_with_unknown_and_update_type(
   unresolved_type_parameters: Vec<TypeParameterSignature>,
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
-  if !unresolved_type_parameters.is_empty() {
-    cx.error_set.report_underconstrained_error(expression.loc());
-  }
   let mut subst_map = HashMap::new();
   for tparam in unresolved_type_parameters {
-    subst_map.insert(
-      tparam.name,
-      Rc::new(type_meet(cx, heap, None, &Type::Any(Reason::new(expression.loc(), None), true))),
-    );
+    let reason = Reason::new(expression.loc(), None);
+    let t = cx.mk_underconstrained_any_type(reason);
+    subst_map.insert(tparam.name, Rc::new(type_meet(cx, heap, None, &t)));
   }
 
   let type_ =
@@ -704,11 +700,13 @@ fn check_member_with_unresolved_tparams(
   let obj_type = match cx.nominal_type_upper_bound(checked_expression.type_()) {
     Some(t) => t,
     None => {
-      cx.error_set.report_incompatible_type_error(
-        checked_expression.loc(),
-        "identifier".to_string(),
-        checked_expression.type_().pretty_print(heap),
-      );
+      if checked_expression.type_().as_any().is_none() {
+        cx.error_set.report_incompatible_type_error(
+          checked_expression.loc(),
+          "identifier".to_string(),
+          checked_expression.type_().pretty_print(heap),
+        );
+      }
       let unknown_type = Rc::new(type_meet(
         cx,
         heap,
@@ -984,10 +982,15 @@ fn check_function_call_aux(
       checked_argument_types.push(checked.type_().clone());
       partially_checked_arguments.push(MaybeCheckedExpression::Checked(checked));
     } else {
-      let loc = arg.loc();
-      let unknown_t = Rc::new(Type::Any(Reason::new(loc, Some(loc)), true));
-      checked_argument_types.push(unknown_t.clone());
-      partially_checked_arguments.push(MaybeCheckedExpression::Unchecked(arg, unknown_t));
+      let (checked, produced_placeholders) =
+        cx.run_in_synthesis_mode(|cx| type_check_expression(cx, heap, arg, None));
+      checked_argument_types.push(checked.type_().clone());
+      if produced_placeholders {
+        partially_checked_arguments
+          .push(MaybeCheckedExpression::Unchecked(arg, checked.type_().clone()));
+      } else {
+        partially_checked_arguments.push(MaybeCheckedExpression::Checked(checked));
+      }
     }
   }
   // Phase 1-n: Best effort inference through arguments that are already checked.
@@ -1048,20 +1051,18 @@ fn check_function_call_aux(
     .iter()
     .filter(|it| !fully_solved_substitution.contains_key(&it.name))
     .collect_vec();
-  if !still_unresolved_type_parameters.is_empty() {
-    cx.error_set.report_underconstrained_error(function_call_reason.use_loc);
-  }
   for type_parameter in still_unresolved_type_parameters {
-    fully_solved_substitution
-      .insert(type_parameter.name, Rc::new(Type::Any(*function_call_reason, true)));
+    let t = cx.mk_underconstrained_any_type(*function_call_reason);
+    fully_solved_substitution.insert(type_parameter.name, Rc::new(t));
   }
   let fully_solved_generic_type =
     perform_fn_type_substitution(generic_function_type, &fully_solved_substitution);
-  let fully_solved_concrete_return_type = contextual_type_meet(
-    &return_type_hint.cloned().unwrap_or(Type::Any(*function_call_reason, true)),
-    &fully_solved_generic_type.return_type.reposition(function_call_reason.use_loc),
+
+  let fully_solved_concrete_return_type = type_meet(
+    cx,
     heap,
-    cx.error_set,
+    return_type_hint,
+    &fully_solved_generic_type.return_type.reposition(function_call_reason.use_loc),
   );
   validate_type_arguments(cx, heap, type_parameters, &fully_solved_substitution);
 
@@ -1108,7 +1109,7 @@ fn check_function_call(
         );
       }
       let loc = expression.common.loc;
-      let type_ = Rc::new(type_meet(cx, heap, hint, &Type::Any(Reason::new(loc, None), true)));
+      let type_ = Rc::new(type_meet(cx, heap, hint, &Type::Any(Reason::new(loc, None), false)));
       return expr::E::Call(expr::Call {
         common: expression.common.with_new_type(type_),
         callee: Box::new(replace_undecided_tparam_with_unknown_and_update_type(
@@ -1336,7 +1337,7 @@ fn check_match(
       heap,
       hint,
       // This any type shouldn't compromise soundness, because there must be at least one branch.
-      &Type::Any(Reason::new(expression.common.loc, None), true),
+      &Type::Any(Reason::new(expression.common.loc, None), false),
     )),
     |general, specific| Rc::new(type_meet(cx, heap, Some(&general), specific)),
   );
@@ -1362,12 +1363,14 @@ fn infer_lambda_parameter_types(
           .iter()
           .zip(&expression.parameters)
           .map(|(parameter_hint, parameter)| {
-            let annot = if let Some(annot) = &parameter.annotation {
-              Rc::new(Type::from_annotation(annot))
+            let type_ = if let Some(annot) = &parameter.annotation {
+              Rc::new(type_meet(cx, heap, Some(parameter_hint), &Type::from_annotation(annot)))
+            } else if cx.in_synthesis_mode() || !has_placeholder_type(parameter_hint) {
+              Rc::new(parameter_hint.reposition(parameter.name.loc))
             } else {
-              Rc::new(Type::Any(Reason::new(parameter.name.loc, None), true))
+              cx.error_set.report_underconstrained_error(parameter.name.loc);
+              Rc::new(Type::Any(Reason::new(parameter.name.loc, None), false))
             };
-            let type_ = Rc::new(type_meet(cx, heap, Some(parameter_hint), &annot));
             cx.local_typing_context.write(parameter.name.loc, type_.clone());
             type_
           })
@@ -1393,8 +1396,7 @@ fn infer_lambda_parameter_types(
     let type_ = if let Some(annot) = annotation {
       Rc::new(Type::from_annotation(annot))
     } else {
-      cx.error_set.report_underconstrained_error(name.loc);
-      Rc::new(Type::Any(Reason::new(name.loc, None), false))
+      Rc::new(cx.mk_underconstrained_any_type(Reason::new(name.loc, None)))
     };
     cx.validate_type_instantiation_strictly(heap, &type_);
     cx.local_typing_context.write(name.loc, type_.clone());

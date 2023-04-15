@@ -78,6 +78,8 @@ pub(crate) struct TypingContext<'a> {
   pub(crate) current_module_reference: ModuleReference,
   current_class: PStr,
   available_type_parameters: Vec<TypeParameterSignature>,
+  in_synthesis_mode: bool,
+  produced_placeholders: bool,
 }
 
 impl<'a> TypingContext<'a> {
@@ -96,6 +98,36 @@ impl<'a> TypingContext<'a> {
       current_module_reference,
       current_class,
       available_type_parameters,
+      in_synthesis_mode: false,
+      produced_placeholders: false,
+    }
+  }
+
+  pub(super) fn in_synthesis_mode(&self) -> bool {
+    self.in_synthesis_mode
+  }
+
+  pub(super) fn run_in_synthesis_mode<R, F: FnOnce(&mut TypingContext<'a>) -> R>(
+    &mut self,
+    f: F,
+  ) -> (R, bool) {
+    let saved_in_synthesis_mode = self.in_synthesis_mode;
+    let saved_produced_placeholders = self.produced_placeholders;
+    self.in_synthesis_mode = true;
+    let result = f(self);
+    let produced = self.produced_placeholders;
+    self.produced_placeholders = saved_produced_placeholders;
+    self.in_synthesis_mode = saved_in_synthesis_mode;
+    (result, produced)
+  }
+
+  pub(super) fn mk_underconstrained_any_type(&mut self, reason: Reason) -> Type {
+    if self.in_synthesis_mode {
+      self.produced_placeholders = true;
+      Type::Any(reason, true)
+    } else {
+      self.error_set.report_underconstrained_error(reason.use_loc);
+      Type::Any(reason, false)
     }
   }
 

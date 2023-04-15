@@ -154,7 +154,7 @@ fn nominal_type_has_placeholder_type(type_: &NominalType) -> bool {
   type_.type_arguments.iter().any(|t| has_placeholder_type(t))
 }
 
-fn has_placeholder_type(type_: &Type) -> bool {
+pub(super) fn has_placeholder_type(type_: &Type) -> bool {
   match type_ {
     Type::Any(_, is_placeholder) => *is_placeholder,
     Type::Primitive(_, _) | Type::Generic(_, _) => false,

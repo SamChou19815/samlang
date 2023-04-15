@@ -453,6 +453,24 @@ class Main {
 "#,
       },
       CheckerTestSource {
+        test_name: "synthesis-mode",
+        source_code: r#"
+class Main {
+  function <Acc> reduce(f: (Acc, int) -> Acc, init: Acc): Acc = Builtins.panic("")
+  function getInt(): int = 10
+
+  function <T> id(v: T): T = v
+
+  function main(): unit = {
+    val _ = Main.reduce((acc, n) -> acc + n, Main.getInt());
+    val _: (int) -> int = Main.id((x) -> x);
+    val _: (int) -> int = Main.id(Main.id((x) -> x));
+    val _: (int) -> int = Main.id(Main.id(Main.id((x) -> x)));
+  }
+}
+"#,
+      },
+      CheckerTestSource {
         test_name: "undefined-type",
         source_code: r#"
 class Main {
@@ -1752,7 +1770,7 @@ class Main {
       })
       .collect::<HashMap<_, _>>();
     let (checked_sources, _) = type_check_sources(&sources, heap, &mut error_set);
-    assert!(error_set.into_errors().is_empty());
+    assert_eq!("", error_set.error_messages(heap).join("\n"));
     let unoptimized_hir_sources = compiler::compile_sources_to_hir(heap, &checked_sources);
     let optimized_hir_sources = optimization::optimize_sources(
       heap,

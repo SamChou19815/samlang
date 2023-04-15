@@ -603,7 +603,7 @@ mod tests {
       "Test.helloWorldWithTypeParameters",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       vec![
-        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `(string, string) -> unit`, actual: `(placeholder) -> unit`.",
+        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `(string, string) -> unit`, actual: `(any) -> unit`.",
         "__DUMMY__.sam:1:1-1:34: [invalid-arity]: Incorrect parameter size. Expected: 2, actual: 1.",
         "__DUMMY__.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ],
@@ -613,7 +613,7 @@ mod tests {
       "Test.helloWorldWithTypeParameters",
       &builder.string_type(),
       vec![
-        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `(placeholder) -> unit`.",
+        "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `(any) -> unit`.",
         "__DUMMY__.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `function`.",
         "__DUMMY__.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ]
@@ -865,15 +865,12 @@ mod tests {
 
     assert_errors(heap, "{ val _ = (t) -> t.foo; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `any`.",
     ]);
     assert_errors(heap, "{ val _ = (t) -> t.bar; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `any`.",
     ]);
     assert_errors(heap, "{ val _ = (t) -> t.baz; }", &builder.unit_type(), vec![
       "__DUMMY__.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      "__DUMMY__.sam:1:18-1:19: [incompatible-type]: Expected: `identifier`, actual: `any`.",
     ]);
   }
 
@@ -1393,7 +1390,8 @@ mod tests {
       vec![
         "__DUMMY__.sam:2:12-2:26: [invalid-arity]: Incorrect arguments size. Expected: 0, actual: 1.",
         "__DUMMY__.sam:8:11-8:64: [underconstrained]: There is not enough context information to decide the type of this expression.",
-        "__DUMMY__.sam:12:11-12:94: [underconstrained]: There is not enough context information to decide the type of this expression.",
+        "__DUMMY__.sam:12:63-12:64: [underconstrained]: There is not enough context information to decide the type of this expression.",
+        "__DUMMY__.sam:12:83-12:84: [underconstrained]: There is not enough context information to decide the type of this expression."
       ],
     );
   }
