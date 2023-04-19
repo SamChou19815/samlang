@@ -377,14 +377,12 @@ fn byte_digit_to_char(byte: u8) -> char {
   u as char
 }
 
-pub(crate) fn int_vec_to_data_string(array: &Vec<i32>) -> String {
+pub(crate) fn byte_vec_to_data_string(array: &Vec<u8>) -> String {
   let mut collector = vec![];
-  for i in array {
-    for b in i.to_le_bytes() {
-      collector.push('\\');
-      collector.push(byte_digit_to_char(b / 16));
-      collector.push(byte_digit_to_char(b % 16));
-    }
+  for b in array {
+    collector.push('\\');
+    collector.push(byte_digit_to_char(b / 16));
+    collector.push(byte_digit_to_char(b % 16));
   }
   String::from_iter(collector.iter())
 }
@@ -422,7 +420,7 @@ impl<K: Clone + Eq + Hash, V: Clone> LocalStackedContext<K, V> {
 #[cfg(test)]
 mod tests {
   use super::{
-    int_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr,
+    byte_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr,
     StringStoredInHeap,
   };
   use pretty_assertions::assert_eq;
@@ -581,11 +579,11 @@ mod tests {
   fn int_vec_to_data_string_tests() {
     assert_eq!(
       "\\01\\00\\00\\00\\02\\00\\00\\00\\03\\00\\00\\00\\04\\00\\00\\00",
-      int_vec_to_data_string(&vec![1, 2, 3, 4])
+      byte_vec_to_data_string(&vec![1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0,])
     );
     assert_eq!(
-      "\\01\\00\\00\\00\\7c\\00\\00\\00\\b3\\11\\00\\00\\21\\00\\00\\00",
-      int_vec_to_data_string(&vec![1, 124, 4531, 33])
+      "\\01\\00\\00\\00\\7c\\00\\00\\00\\16\\00\\00\\00\\21\\00\\00\\00",
+      byte_vec_to_data_string(&vec![1, 0, 0, 0, 124, 0, 0, 0, 22, 0, 0, 0, 33, 0, 0, 0,])
     );
   }
 

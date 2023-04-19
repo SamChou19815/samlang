@@ -10,7 +10,7 @@ typedef samlang_int *samlang_string;
 
 // Internal helper for making arrays
 static void* mkArray(int bytes, int cells) {
-  samlang_int* memory = _builtin_malloc(bytes + 16);
+  samlang_int* memory = _builtin_malloc(bytes + 8);
   memory[0] = 1;
   memory[1] = cells;
   return memory;
@@ -27,9 +27,9 @@ static int strlen(const char *str) {
 static samlang_string mkString(const char* in) {
   int c;
   int len = strlen(in);
-  samlang_string out = mkArray(len * sizeof(samlang_int), len);
-  for (c = 0; c < len; ++c) out[c + 2] = in[c];
-  return out;
+  char* out = mkArray(len, len);
+  for (c = 0; c < len; ++c) out[c + 8] = in[c];
+  return (samlang_string) out;
 }
 
 samlang_string WASM_EXPORT(__Builtins_intToString)(samlang_int in) {
@@ -63,7 +63,7 @@ samlang_string WASM_EXPORT(__Builtins_intToString)(samlang_int in) {
 samlang_int WASM_EXPORT(__Builtins_stringToInt)(samlang_string str) {
   // ### should this worry about overflow?
   samlang_int len = str[1];
-  str = &str[2];
+  char* chars = (char *) &str[2];
   samlang_int neg = 0;
   samlang_int num = 0;
 
@@ -71,8 +71,9 @@ samlang_int WASM_EXPORT(__Builtins_stringToInt)(samlang_string str) {
   if (str[0] == '-') neg = 1;
 
   for (samlang_int c = neg; c < len; ++c) {
-    if (str[c] >= '0' && str[c] <= '9') {
-      num = 10 * num + (str[c] - '0');
+    char character = chars[c];
+    if (character >= '0' && character <= '9') {
+      num = 10 * num + (character - '0');
     } else {
       return 0;
     }
@@ -86,11 +87,11 @@ samlang_string WASM_EXPORT(_builtin_stringConcat)(samlang_string s1, samlang_str
   samlang_int l1 = s1[1];
   samlang_int l2 = s2[1];
   samlang_int total_length = l1 + l2;
-  samlang_int* stringArray = (samlang_int*) _builtin_malloc((total_length + 2) * 8);
-  stringArray[0] = 1;
-  stringArray[1] = total_length;
-  samlang_string string = &stringArray[2];
-  for (samlang_int i = 0; i < l1; i++) string[i] = s1[i+2];
-  for (samlang_int i = 0; i < l2; i++) string[l1 + i] = s2[i+2];
-  return stringArray;
+  char* stringArray = (char*) mkArray(total_length, total_length);
+  char* string = &stringArray[8];
+  char* chars1 = (char*) &s1[2];
+  char* chars2 = (char*) &s2[2];
+  for (samlang_int i = 0; i < l1; i++) string[i] = chars1[i];
+  for (samlang_int i = 0; i < l2; i++) string[l1 + i] = chars2[i];
+  return (samlang_string) stringArray;
 }

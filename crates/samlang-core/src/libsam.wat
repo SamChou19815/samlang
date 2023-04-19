@@ -483,80 +483,79 @@
 )
 (func $mkString (type $t0) (param $p0 i32) (result i32)
   (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32)
-  (local.set $l1 (i32.const 0))
-  (local.set $l2 (i32.const 12))
+  (local.set $l1 (i32.add (local.get $p0) (i32.const -1)))
   (loop $L0
-    (local.set $l2 (i32.add (local.get $l2) (i32.const 4)))
-    (local.set $l3 (i32.add (local.get $p0) (local.get $l1)))
-    (local.set $l1 (local.tee $l4 (i32.add (local.get $l1) (i32.const 1))))
-    (br_if $L0 (i32.load8_u (local.get $l3)))
+    (br_if $L0 (i32.load8_u (local.tee $l1 (i32.add (local.get $l1) (i32.const 1)))))
   )
-  (i32.store offset=4
-    (local.tee $l3 (call $_builtin_malloc (local.get $l2)))
-    (local.tee $l1 (i32.add (local.get $l4) (i32.const -1)))
-  )
-  (i32.store (local.get $l3) (i32.const 1))
-  (local.set $l1
-    (select
-      (local.get $l1)
-      (i32.const 0)
-      (i32.gt_s (local.get $l1) (i32.const 0))
+  (local.set $l4
+    (i32.add
+      (local.tee $l3
+        (call $mkArray
+          (local.tee $l2 (i32.sub (local.get $l1) (local.get $p0)))
+          (local.get $l2)))
+      (i32.const 8)
     )
   )
-  (local.set $l2 (i32.add (local.get $l3) (i32.const 8)))
+  (local.set $l1 (i32.const 0))
   (block $B1
     (loop $L2
-      (br_if $B1 (i32.eqz (local.get $l1)))
-      (i32.store (local.get $l2) (i32.load8_s (local.get $p0)))
-      (local.set $l2 (i32.add (local.get $l2) (i32.const 4)))
-      (local.set $p0 (i32.add (local.get $p0) (i32.const 1)))
-      (local.set $l1 (i32.add (local.get $l1) (i32.const -1)))
+      (br_if $B1 (i32.ge_s (local.get $l1) (local.get $l2)))
+      (i32.store8
+        (i32.add (local.get $l4) (local.get $l1))
+        (i32.load8_u (i32.add (local.get $p0) (local.get $l1)))
+      )
+      (local.set $l1 (i32.add (local.get $l1) (i32.const 1)))
       (br $L2)
     )
   )
   (local.get $l3)
 )
+(func $mkArray (type $t1) (param $p0 i32) (param $p1 i32) (result i32)
+  (i32.store offset=4
+    (local.tee $p0
+      (call $_builtin_malloc (i32.add (local.get $p0) (i32.const 8))))
+      (local.get $p1)
+  )
+  (i32.store (local.get $p0) (i32.const 1))
+  (local.get $p0)
+)
 (func $__Builtins$stringToInt (type $t0) (param $p0 i32) (result i32)
-  (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32)
+  (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32)
   (block $B0
     (br_if $B0 (i32.eqz (local.tee $l1 (i32.load offset=4 (local.get $p0)))))
-    (local.set $l1
-      (i32.sub
-        (select
-          (local.get $l1)
-          (local.tee $l3 (i32.eq (local.tee $l2 (i32.load offset=8 (local.get $p0))) (i32.const 45)))
-          (i32.gt_s (local.get $l1) (local.get $l3))
-        )
-        (local.get $l3)
-      )
-    )
-    (local.set $p0
-      (i32.add
-        (i32.add (i32.shl (local.get $l3) (i32.const 2)) (local.get $p0))
-        (i32.const 8)
-      )
-    )
-    (local.set $l3 (i32.const 0))
+    (local.set $l2 (i32.add (local.get $p0) (i32.const 8)))
+    (local.set $p0 (i32.eq (local.tee $l3 (i32.load (local.get $p0))) (i32.const 45)))
+    (local.set $l4 (i32.const 0))
     (block $B1
       (loop $L2
-        (br_if $B1 (i32.eqz (local.get $l1)))
+        (br_if $B1 (i32.ge_s (local.get $p0) (local.get $l1)))
         (br_if $B0
           (i32.gt_u
-            (local.tee $l4 (i32.add (i32.load (local.get $p0)) (i32.const -48)))
+            (i32.and
+              (i32.add
+                (local.tee $l5 (i32.load8_u (i32.add (local.get $l2) (local.get $p0))))
+                (i32.const -48)
+              )
+              (i32.const 255)
+            )
             (i32.const 9)
           )
         )
-        (local.set $p0 (i32.add (local.get $p0) (i32.const 4)))
-        (local.set $l1 (i32.add (local.get $l1) (i32.const -1)))
-        (local.set $l3 (i32.add (local.get $l4) (i32.mul (local.get $l3) (i32.const 10))))
+        (local.set $p0 (i32.add (local.get $p0) (i32.const 1)))
+        (local.set $l4
+          (i32.add
+            (i32.add (i32.mul (local.get $l4) (i32.const 10)) (local.get $l5))
+            (i32.const -48)
+          )
+        )
         (br $L2)
       )
     )
     (return
       (select
-        (i32.sub (i32.const 0) (local.get $l3))
-        (local.get $l3)
-        (i32.eq (local.get $l2) (i32.const 45))
+        (i32.sub (i32.const 0) (local.get $l4))
+        (local.get $l4)
+        (i32.eq (local.get $l3) (i32.const 45))
       )
     )
   )
@@ -564,67 +563,44 @@
 )
 (func $__Builtins$stringConcat (type $t1) (param $p0 i32) (param $p1 i32) (result i32)
   (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local $l6 i32)
-  (i32.store offset=4
-    (local.tee $l5
-      (call $_builtin_malloc
-        (i32.add
-          (i32.shl
-            (local.tee $l4
-              (i32.add
-                (local.tee $l2 (i32.load offset=4 (local.get $p1)))
-                (local.tee $l3 (i32.load offset=4 (local.get $p0)))
-              )
+  (local.set $l2 (i32.add (local.get $p1) (i32.const 8)))
+  (local.set $l3 (i32.add (local.get $p0) (i32.const 8)))
+  (local.set $l6
+    (i32.add
+      (local.tee $l5
+        (call $mkArray
+          (local.tee $p0
+            (i32.add
+              (local.tee $l4 (i32.load offset=4 (local.get $p1)))
+              (local.tee $p1 (i32.load offset=4 (local.get $p0)))
             )
-            (i32.const 3))
-          (i32.const 16)
+          )
+          (local.get $p0)
         )
       )
-    )
-    (local.get $l4)
-  )
-  (i32.store (local.get $l5) (i32.const 1))
-  (local.set $l4
-    (select
-      (local.get $l3)
-      (i32.const 0)
-      (i32.gt_s (local.get $l3) (i32.const 0))
+      (i32.const 8)
     )
   )
-  (local.set $p0 (i32.add (local.get $p0) (i32.const 8)))
-  (local.set $l6 (i32.add (local.get $l5) (i32.const 8)))
+  (local.set $p0 (i32.const 0))
   (block $B0
     (loop $L1
       (block $B2
-        (br_if $B2 (local.get $l4))
-        (local.set $l4
-          (select
-            (local.get $l2)
-            (i32.const 0)
-            (i32.gt_s (local.get $l2) (i32.const 0))
-          )
-        )
-        (local.set $p0 (i32.add (local.get $p1) (i32.const 8)))
-        (local.set $l6
-          (i32.add
-            (i32.add
-              (i32.shl (local.get $l3) (i32.const 2))
-              (local.get $l5))
-            (i32.const 8)
-          )
-        )
+        (br_if $B2 (i32.lt_s (local.get $p0) (local.get $p1)))
+        (local.set $p1 (i32.add (i32.add (local.get $p1) (local.get $l5)) (i32.const 8)))
+        (local.set $p0 (i32.const 0))
         (loop $L3
-          (br_if $B0 (i32.eqz (local.get $l4)))
-          (i32.store (local.get $l6) (i32.load (local.get $p0)))
-          (local.set $l6 (i32.add (local.get $l6) (i32.const 4)))
-          (local.set $p0 (i32.add (local.get $p0) (i32.const 4)))
-          (local.set $l4 (i32.add (local.get $l4) (i32.const -1)))
+          (br_if $B0 (i32.ge_s (local.get $p0) (local.get $l4)))
+          (i32.store8 (i32.add (local.get $p1) (local.get $p0))
+          (i32.load8_u (i32.add (local.get $l2) (local.get $p0))))
+          (local.set $p0 (i32.add (local.get $p0) (i32.const 1)))
           (br $L3)
         )
       )
-      (i32.store (local.get $l6) (i32.load (local.get $p0)))
-      (local.set $l6 (i32.add (local.get $l6) (i32.const 4)))
-      (local.set $p0 (i32.add (local.get $p0) (i32.const 4)))
-      (local.set $l4 (i32.add (local.get $l4) (i32.const -1)))
+      (i32.store8
+        (i32.add (local.get $l6) (local.get $p0))
+        (i32.load8_u (i32.add (local.get $l3) (local.get $p0)))
+      )
+      (local.set $p0 (i32.add (local.get $p0) (i32.const 1)))
       (br $L1)
     )
   )

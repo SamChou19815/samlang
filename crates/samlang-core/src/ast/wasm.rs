@@ -1,5 +1,5 @@
 use super::hir;
-use crate::common::{int_vec_to_data_string, Heap, PStr};
+use crate::common::{byte_vec_to_data_string, Heap, PStr};
 use itertools::Itertools;
 
 pub(crate) enum InlineInstruction {
@@ -205,7 +205,7 @@ pub(crate) struct Function {
 
 pub(crate) struct GlobalData {
   pub(crate) constant_pointer: usize,
-  pub(crate) ints: Vec<i32>,
+  pub(crate) bytes: Vec<u8>,
 }
 
 pub(crate) struct Module {
@@ -230,11 +230,11 @@ impl Module {
         ));
       }
     }
-    for GlobalData { constant_pointer, ints } in &self.global_variables {
+    for GlobalData { constant_pointer, bytes } in &self.global_variables {
       collector.push_str(&format!(
         "(data (i32.const {}) \"{}\")\n",
         constant_pointer,
-        int_vec_to_data_string(ints)
+        byte_vec_to_data_string(bytes)
       ));
     }
     collector.push_str(&format!("(table $0 {} funcref)\n", self.functions.len()));
