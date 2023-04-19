@@ -119,6 +119,11 @@ mod tests {
     let mut hasher = DefaultHasher::new();
     Operator::DIV.hash(&mut hasher);
     Statement::binary_flexible_unwrapped(heap.alloc_str_for_test(""), Operator::DIV, ZERO, ZERO);
+    Callee::FunctionName(FunctionName::new(
+      heap.alloc_str_for_test("s"),
+      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
+    ))
+    .as_function_name();
   }
 
   #[test]

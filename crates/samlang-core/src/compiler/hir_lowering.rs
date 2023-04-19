@@ -1,5 +1,5 @@
 use super::{
-  hir_generics_specialization,
+  hir_constant_param_elimination, hir_generics_specialization,
   hir_string_manager::StringManager,
   hir_tail_recursion_rewrite,
   hir_type_conversion::{
@@ -1355,7 +1355,9 @@ pub(crate) fn compile_sources_to_hir(
   let mut sources = compile_sources_with_generics_preserved(heap, sources);
   sources = hir_generics_specialization::perform_generics_specialization(heap, sources);
   sources = hir_type_deduplication::deduplicate(heap, sources);
-  optimize_by_tail_rec_rewrite(heap, sources)
+  sources = optimize_by_tail_rec_rewrite(heap, sources);
+  sources = hir_constant_param_elimination::rewrite_sources(sources);
+  sources
 }
 
 #[cfg(test)]

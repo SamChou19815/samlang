@@ -333,7 +333,7 @@ pub(crate) struct Binary {
   pub(crate) e2: Expression,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Callee {
   FunctionName(FunctionName),
   Variable(VariableName),

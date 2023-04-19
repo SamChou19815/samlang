@@ -1,3 +1,4 @@
+mod hir_constant_param_elimination;
 mod hir_generics_specialization;
 mod hir_lowering;
 mod hir_string_manager;
