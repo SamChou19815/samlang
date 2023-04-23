@@ -5,8 +5,8 @@ mod tests {
     checker::{
       ssa_analysis::SsaAnalysisResult,
       type_::{
-        test_type_builder, ISourceType, InterfaceSignature, MemberSignature, ModuleSignature, Type,
-        TypeDefinitionSignature, TypeParameterSignature,
+        test_type_builder, ISourceType, InterfaceSignature, MemberSignature, ModuleSignature,
+        NominalType, Type, TypeDefinitionSignature, TypeParameterSignature,
       },
       typing_context::{LocalTypingContext, TypingContext},
     },
@@ -519,28 +519,37 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       .is_none());
     assert!(cx
       .get_method_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("B"),
+        &NominalType {
+          reason: Reason::dummy(),
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("B"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("m2"),
-        vec![],
         Location::dummy(),
       )
       .is_none());
     assert!(cx
       .get_method_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("B"),
+        &NominalType {
+          reason: Reason::dummy(),
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("B"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("m3"),
-        vec![],
         Location::dummy(),
       )
       .is_none());
     assert!(cx
       .get_method_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("C"),
+        &NominalType {
+          reason: Reason::dummy(),
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("C"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("m3"),
-        vec![],
         Location::dummy(),
       )
       .is_none());
@@ -548,10 +557,13 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     assert_eq!(
       "public <C>(int, int) -> int",
       cx.get_method_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("A"),
+        &NominalType {
+          reason: Reason::dummy(),
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![builder.int_type(), builder.int_type()]
+        },
         heap.alloc_str_for_test("m1"),
-        vec![builder.int_type(), builder.int_type()],
         Location::dummy(),
       )
       .unwrap()
