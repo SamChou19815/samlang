@@ -280,24 +280,14 @@ impl<'a> TypingContext<'a> {
 
   pub(super) fn get_method_type(
     &self,
-    module_reference: ModuleReference,
-    class_name: PStr,
+    nominal_type: &NominalType,
     method_name: PStr,
-    class_type_arguments: Vec<Rc<Type>>,
     use_loc: Location,
   ) -> Option<MemberSignature> {
-    let resolved = global_signature::resolve_method_signature(
-      self.global_signature,
-      &NominalType {
-        reason: Reason::new(use_loc, None),
-        module_reference,
-        id: class_name,
-        type_arguments: class_type_arguments,
-      },
-      method_name,
-    );
+    let resolved =
+      global_signature::resolve_method_signature(self.global_signature, nominal_type, method_name);
     let type_info = resolved.first()?;
-    if type_info.is_public || self.in_same_class(module_reference, class_name) {
+    if type_info.is_public || self.in_same_class(nominal_type.module_reference, nominal_type.id) {
       Some(type_info.reposition(use_loc))
     } else {
       None

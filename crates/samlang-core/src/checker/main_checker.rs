@@ -724,16 +724,10 @@ fn check_member_with_unresolved_tparams(
       return (partially_checked_expr, vec![]);
     }
   };
-  let method_targs = obj_type.type_arguments.clone();
-  let &NominalType { reason: _, module_reference: method_mod_ref, id: class_id, type_arguments: _ } =
-    obj_type;
-  if let Some(method_type_info) = cx.get_method_type(
-    method_mod_ref,
-    class_id,
-    expression.field_name.name,
-    method_targs,
-    expression.common.loc,
-  ) {
+  let class_id = obj_type.id;
+  if let Some(method_type_info) =
+    cx.get_method_type(obj_type, expression.field_name.name, expression.common.loc)
+  {
     // This is a valid method. We will now type check it as a method access
     for targ in &expression.explicit_type_arguments {
       cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(targ))
