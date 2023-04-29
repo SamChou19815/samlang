@@ -703,7 +703,7 @@ fn check_member_with_unresolved_tparams(
       if checked_expression.type_().as_any().is_none() {
         cx.error_set.report_incompatible_type_error(
           checked_expression.loc(),
-          "identifier".to_string(),
+          "nominal type".to_string(),
           checked_expression.type_().pretty_print(heap),
         );
       }
@@ -1696,6 +1696,9 @@ pub(crate) fn type_check_module(
         sigs.append(&mut TypeParameterSignature::from_list(&member.type_parameters));
         sigs
       } else {
+        if !toplevel.is_class() {
+          error_set.report_illegal_function_in_interface(member.loc);
+        }
         TypeParameterSignature::from_list(&member.type_parameters)
       };
       let has_interface_def = if member.is_method {
@@ -1709,15 +1712,7 @@ pub(crate) fn type_check_module(
         }
         !resolved.is_empty()
       } else {
-        let resolved = global_signature::resolve_all_function_signatures(
-          global_cx,
-          &resolved_super_types,
-          member.name.name,
-        );
-        for expected in &resolved {
-          check_class_member_conformance_with_signature(heap, error_set, expected, member);
-        }
-        !resolved.is_empty()
+        false
       };
       if !member.is_public && has_interface_def {
         error_set.report_incompatible_type_error(

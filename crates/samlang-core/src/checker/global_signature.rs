@@ -25,6 +25,7 @@ pub(crate) fn build_module_signature(
 ) -> ModuleSignature {
   let mut interfaces = HashMap::new();
   for toplevel in &module.toplevels {
+    let is_class = toplevel.is_class();
     let name = toplevel.name().name;
     let mut functions = HashMap::new();
     let mut methods = HashMap::new();
@@ -36,7 +37,7 @@ pub(crate) fn build_module_signature(
       };
       if member.is_method {
         methods.insert(member.name.name, type_info);
-      } else {
+      } else if is_class {
         functions.insert(member.name.name, type_info);
       }
     }
@@ -290,23 +291,6 @@ pub(super) fn resolve_function_signature(
   collector
 }
 
-pub(super) fn resolve_all_function_signatures<'a>(
-  global_cx: &'a GlobalSignature,
-  interface_types: &[NominalType],
-  fn_name: PStr,
-) -> Vec<&'a MemberSignature> {
-  let mut collector = vec![];
-  resolve_function_signature_internal(
-    global_cx,
-    fn_name,
-    true,
-    interface_types.iter().map(|t| (t.module_reference, t.id)).collect(),
-    &mut collector,
-    &mut HashSet::new(),
-  );
-  collector
-}
-
 fn resolve_method_signature_recursive(
   global_cx: &GlobalSignature,
   interface_type: &NominalType,
@@ -395,8 +379,8 @@ pub(super) fn resolve_all_method_signatures(
 #[cfg(test)]
 mod tests {
   use super::{
-    resolve_all_function_signatures, resolve_all_member_names, resolve_all_method_signatures,
-    resolve_all_transitive_super_types, resolve_function_signature, resolve_method_signature,
+    resolve_all_member_names, resolve_all_method_signatures, resolve_all_transitive_super_types,
+    resolve_function_signature, resolve_method_signature,
   };
   use crate::{
     ast::Reason,
@@ -613,23 +597,6 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       .sorted()
       .collect_vec()
     );
-    assert_eq!(
-      vec!["f1"],
-      resolve_all_member_names(
-        &global_cx,
-        &[NominalType {
-          reason: Reason::dummy(),
-          module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("ILevel2"),
-          type_arguments: vec![builder.bool_type(), builder.int_type()],
-        }],
-        false,
-      )
-      .into_iter()
-      .map(|p| p.as_str(heap))
-      .sorted()
-      .collect_vec()
-    );
   }
 
   #[test]
@@ -664,17 +631,6 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       heap.alloc_str_for_test("a"),
     )
     .is_empty());
-    assert_eq!(
-      "public <C>(A, B) -> C",
-      resolve_function_signature(
-        &global_cx,
-        (ModuleReference::dummy(), heap.alloc_str_for_test("ILevel2")),
-        heap.alloc_str_for_test("f1"),
-      )
-      .iter()
-      .map(|it| it.to_string(heap))
-      .join("\n")
-    );
     assert!(resolve_function_signature(
       &global_cx,
       (ModuleReference::dummy(), heap.alloc_str_for_test("ICyclic1")),
@@ -687,37 +643,6 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       heap.alloc_str_for_test("a"),
     )
     .is_empty());
-    assert_eq!(
-      r#"
-public () -> int
-public () -> int
-"#
-      .trim(),
-      resolve_all_function_signatures(
-        &global_cx,
-        &[NominalType {
-          reason: Reason::dummy(),
-          module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("UsingConflictingExtends"),
-          type_arguments: vec![]
-        }],
-        heap.alloc_str_for_test("f"),
-      )
-      .iter()
-      .map(|it| it.to_string(heap))
-      .join("\n")
-    );
-    assert_eq!(
-      "public () -> int",
-      resolve_function_signature(
-        &global_cx,
-        (ModuleReference::dummy(), heap.alloc_str_for_test("UsingConflictingExtends")),
-        heap.alloc_str_for_test("f"),
-      )
-      .iter()
-      .map(|it| it.to_string(heap))
-      .join("\n")
-    );
   }
 
   #[test]

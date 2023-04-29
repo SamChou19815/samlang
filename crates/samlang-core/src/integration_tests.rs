@@ -126,10 +126,10 @@ class TestLimitedSubtyping {
   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
 }
 interface Conflicting1 {
-  function foo(): int
+  method foo(): int
 }
 interface Conflicting2 {
-  function foo(): bool
+  method foo(): bool
 }
 interface ExtendingConfliting : Conflicting1, Conflicting2
 class ImplItself : ImplItself {} // error: expect interface type
@@ -501,6 +501,7 @@ class Main {
       "bounded-generics.sam:28:7-28:17: [cyclic-type-definition]: Type `ImplItself` has a cyclic definition.",
       "bounded-generics.sam:28:20-28:30: [incompatible-type]: Expected: `interface type`, actual: `class type`.",
       "bounded-generics.sam:29:21-29:22: [cannot-resolve-name]: Name `T` is not resolved.",
+      "call-interface-function.sam:2:17-2:36: [illegal-function-in-interface]: Function declarations are not allowed in interfaces.",
       "call-interface-function.sam:3:33-3:36: [incompatible-type]: Expected: `non-abstract type`, actual: `Foo`.",
       "call-interface-function.sam:3:45-3:48: [cannot-resolve-class]: Class `Foo` is not resolved.",
       "complete-trash.sam:1:1-1:5: [invalid-syntax]: Unexpected token among the classes and interfaces: This",

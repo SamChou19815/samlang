@@ -580,17 +580,6 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       .unwrap()
       .to_string(&heap)
     );
-    assert_eq!(
-      "public <C>() -> int",
-      cx.get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("TT1"),
-        heap.alloc_str_for_test("f1"),
-        Location::dummy()
-      )
-      .unwrap()
-      .to_string(&heap)
-    );
 
     assert!(cx
       .get_function_type(
