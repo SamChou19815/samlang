@@ -135,13 +135,7 @@ impl<'a> TypingContext<'a> {
     &self,
     identifier: PStr,
   ) -> Option<&NominalType> {
-    self.available_type_parameters.iter().find_map(|it| {
-      if it.name == identifier {
-        it.bound.as_ref()
-      } else {
-        None
-      }
-    })
+    self.available_type_parameters.iter().find(|it| it.name == identifier).unwrap().bound.as_ref()
   }
 
   pub(crate) fn nominal_type_upper_bound(&'a self, type_: &'a Type) -> Option<&'a NominalType> {
@@ -242,14 +236,13 @@ impl<'a> TypingContext<'a> {
     module_reference: ModuleReference,
     toplevel_name: PStr,
   ) -> bool {
-    self.resolve_to_potentially_in_scope_type_parameter_bound(toplevel_name).is_some()
-      || self
-        .global_signature
-        .get(&module_reference)
-        .and_then(|module_cx| {
-          module_cx.interfaces.get(&toplevel_name).map(|sig| sig.type_definition.is_some())
-        })
-        .unwrap_or(false)
+    self
+      .global_signature
+      .get(&module_reference)
+      .and_then(|module_cx| {
+        module_cx.interfaces.get(&toplevel_name).map(|sig| sig.type_definition.is_some())
+      })
+      .unwrap_or(false)
   }
 
   pub(super) fn get_function_type(
@@ -259,15 +252,9 @@ impl<'a> TypingContext<'a> {
     function_name: PStr,
     use_loc: Location,
   ) -> Option<MemberSignature> {
-    let (module_reference, id) =
-      if let Some(t) = self.resolve_to_potentially_in_scope_type_parameter_bound(class_name) {
-        (t.module_reference, t.id)
-      } else {
-        (module_reference, class_name)
-      };
     let resolved = global_signature::resolve_function_signature(
       self.global_signature,
-      (module_reference, id),
+      (module_reference, class_name),
       function_name,
     );
     let type_info = resolved.first()?.deref();

@@ -173,7 +173,7 @@ mod tests {
 class Test {
   function test(): int = "haha"
 }
-interface I { function test(): int }
+interface I { method test(): int }
 "#
       .to_string(),
     )]);

@@ -767,7 +767,7 @@ mod tests {
       heap,
       "3.foo",
       &builder.int_type(),
-      vec!["__DUMMY__.sam:1:1-1:2: [incompatible-type]: Expected: `identifier`, actual: `int`."],
+      vec!["__DUMMY__.sam:1:1-1:2: [incompatible-type]: Expected: `nominal type`, actual: `int`."],
     );
     assert_errors(
       heap,
@@ -1519,7 +1519,7 @@ interface Bar {
 }
 class B : Bar {} // Error
 class C : Bar {
-  function a(): string = "" // error
+  function a(): string = ""
   method b(): unit = {} // error
 }
 class D : Bar {
@@ -1530,24 +1530,24 @@ interface Base<TA, TB> {
   method <TC> m1(a: TA, b: TB): TC
 }
 interface Baz1<TA, TB> : Base<int, TB> {
-  function <TA, TB, TC> f1(a: TA, b: TB): TC
+  method <TA1, TB1, TC> f1(a: TA1, b: TB1): TC
 }
 interface Baz2<TA, TB> : Baz1<TA, int> {
   method <TC> m2(a: TA, b: TB): TC
 }
 class E : Baz2<string, bool> { // all good
   method <TC> m1(a: int, b: int): TC = Builtins.panic("")
-  function <TA, TB, TC> f1(a: TA, b: TB): TC = Builtins.panic("")
+  method <TA1, TB1, TC> f1(a: TA1, b: TB1): TC = Builtins.panic("")
   method <TC> m2(a: string, b: bool): TC = Builtins.panic("")
 }
 class F : Baz2<string, bool> {
   private method <TC> m1(a: string, b: string): TC = Builtins.panic("") // error
-  function <TA, TB, TC> f1(a: string, b: string): TC = Builtins.panic("") // error
+  method <TA1, TB1, TC> f1(a: string, b: string): TC = Builtins.panic("") // error
   method <TC> m2(a: string, b: string): TC = Builtins.panic("") // error
 }
 interface G : Baz2<string, bool> {
   method <TD> m1(a: int, b: int): TD // tparam name mismatch
-  function <TA: TA, TB, TC> f1(a: TA, b: TB): TC // has bound mismatch
+  method <TA1: TA, TB1, TC> f1(a: TA1, b: TB1): TC // has bound mismatch
   method <TE: Foo> unrelated(): unit
 }
 interface H : G {
@@ -1559,8 +1559,8 @@ interface J : G {
 interface K : G {
   method <TE: Bar> unrelated(): unit
 }
-interface WithBound { function <T: T> f(): int }
-interface WithBound2 : WithBound { function <T: T> f(): int }
+interface WithBound { method <T: T> f(): int }
+interface WithBound2 : WithBound { method <T: T> f(): int }
 class Z<T: Foo> : DumDum {} // error
 interface Cyclic1 : Cyclic2 {} // error: cyclic
 interface Cyclic2 : Cyclic3 {} // error: cyclic
@@ -1569,22 +1569,22 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
 "#;
 
     let expected_errors = vec![
-      "A.sam:8:1-8:17: [missing-definitions]: Missing definitions for [a, b].",
-      "A.sam:10:13-10:23: [incompatible-type]: Expected: `() -> unit`, actual: `() -> string`.",
+      "A.sam:5:3-5:21: [illegal-function-in-interface]: Function declarations are not allowed in interfaces.",
+      "A.sam:8:1-8:17: [missing-definitions]: Missing definitions for [b].",
       "A.sam:11:11-11:19: [incompatible-type]: Expected: `() -> string`, actual: `() -> unit`.",
-      "A.sam:13:1-16:2: [missing-definitions]: Missing definitions for [a, b].",
+      "A.sam:13:1-16:2: [missing-definitions]: Missing definitions for [b].",
       "A.sam:32:11-32:72: [incompatible-type]: Expected: `public class member`, actual: `private class member`.",
       "A.sam:32:25-32:51: [incompatible-type]: Expected: `(int, int) -> TC`, actual: `(string, string) -> TC`.",
-      "A.sam:33:27-33:53: [incompatible-type]: Expected: `(TA, TB) -> TC`, actual: `(string, string) -> TC`.",
+      "A.sam:33:27-33:53: [incompatible-type]: Expected: `(TA1, TB1) -> TC`, actual: `(string, string) -> TC`.",
       "A.sam:34:17-34:43: [incompatible-type]: Expected: `(string, bool) -> TC`, actual: `(string, string) -> TC`.",
       "A.sam:37:17-37:37: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TC>`.",
-      "A.sam:38:17-38:19: [cannot-resolve-name]: Name `TA` is not resolved.",
-      "A.sam:38:31-38:49: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TA, TB, TC>`.",
+      "A.sam:38:16-38:18: [cannot-resolve-name]: Name `TA` is not resolved.",
+      "A.sam:38:31-38:51: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TA1, TB1, TC>`.",
       "A.sam:42:24-42:32: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
       "A.sam:45:19-45:27: [invalid-arity]: Incorrect type parameters size. Expected: 1, actual: 0.",
       "A.sam:48:29-48:37: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
-      "A.sam:50:36-50:37: [cannot-resolve-name]: Name `T` is not resolved.",
-      "A.sam:51:49-51:50: [cannot-resolve-name]: Name `T` is not resolved.",
+      "A.sam:50:34-50:35: [cannot-resolve-name]: Name `T` is not resolved.",
+      "A.sam:51:47-51:48: [cannot-resolve-name]: Name `T` is not resolved.",
       "A.sam:52:19-52:25: [cannot-resolve-name]: Name `DumDum` is not resolved.",
       "A.sam:53:11-53:18: [cyclic-type-definition]: Type `Cyclic1` has a cyclic definition.",
       "A.sam:54:11-54:18: [cyclic-type-definition]: Type `Cyclic2` has a cyclic definition.",
@@ -1617,14 +1617,17 @@ class TestLimitedSubtyping {
   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
 }
 interface Conflicting1 {
-  function foo(): int
+  method foo(): int
 }
 interface Conflicting2 {
-  function foo(): bool
+  method foo(): bool
 }
 interface ExtendingConfliting : Conflicting1, Conflicting2 // no error, we only complain if it's used by classes
 class ImplItself : ImplItself {} // error: expect interface type
 class ImplTArg<T> : T {} // error: T not resolved
+class NoBoundMethodCall {
+  function <T> foo(t: T): unit = t.bar()
+}
     "#;
 
     let expected_errors = vec![
@@ -1636,6 +1639,7 @@ class ImplTArg<T> : T {} // error: T not resolved
       "bounded-generics.sam:28:7-28:17: [cyclic-type-definition]: Type `ImplItself` has a cyclic definition.",
       "bounded-generics.sam:28:20-28:30: [incompatible-type]: Expected: `interface type`, actual: `class type`.",
       "bounded-generics.sam:29:21-29:22: [cannot-resolve-name]: Name `T` is not resolved.",
+      "bounded-generics.sam:31:34-31:35: [incompatible-type]: Expected: `nominal type`, actual: `T`.",
     ];
     assert_module_errors(vec![("bounded-generics", source)], expected_errors);
   }

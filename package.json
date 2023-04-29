@@ -2,7 +2,7 @@
   "packageManager": "pnpm@7.13.3",
   "private": true,
   "scripts": {
-    "test": "rm target/llvm-cov-target/*.profraw && cargo th",
+    "test": "rm -f target/llvm-cov-target/*.profraw && cargo th",
     "build:samlang-wasm": "cd crates/samlang-wasm && ./setup-generated-package.sh"
   },
   "devDependencies": {

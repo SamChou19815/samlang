@@ -10,6 +10,7 @@ pub(crate) enum ErrorDetail {
   CannotResolveModule { module_reference: ModuleReference },
   CannotResolveName { name: PStr },
   CyclicTypeDefinition { type_: String },
+  IllegalFunctionInInterface,
   IncompatibleType { expected: String, actual: String, subtype: bool },
   InvalidArity { kind: &'static str, expected: usize, actual: usize },
   InvalidSyntax(String),
@@ -48,6 +49,10 @@ impl CompileTimeError {
       ErrorDetail::CyclicTypeDefinition { type_ } => {
         ("cyclic-type-definition", format!("Type `{type_}` has a cyclic definition."))
       }
+      ErrorDetail::IllegalFunctionInInterface => (
+        "illegal-function-in-interface",
+        "Function declarations are not allowed in interfaces.".to_string(),
+      ),
       ErrorDetail::IncompatibleType { expected, actual, subtype: false } => {
         ("incompatible-type", format!("Expected: `{expected}`, actual: `{actual}`.",))
       }
@@ -154,6 +159,10 @@ impl ErrorSet {
 
   pub(crate) fn report_cyclic_type_definition_error(&mut self, type_loc: Location, type_: String) {
     self.report_error(type_loc, ErrorDetail::CyclicTypeDefinition { type_ });
+  }
+
+  pub(crate) fn report_illegal_function_in_interface(&mut self, loc: Location) {
+    self.report_error(loc, ErrorDetail::IllegalFunctionInInterface);
   }
 
   pub(crate) fn report_incompatible_type_error(
