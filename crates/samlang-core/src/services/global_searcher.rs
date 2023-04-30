@@ -55,19 +55,12 @@ fn search_expression(
   collector: &mut Vec<Location>,
 ) {
   match expr {
-    expr::E::Literal(_, _) | expr::E::Id(_, _) => {}
-    expr::E::ClassFn(e) => match request {
+    expr::E::Literal(_, _) | expr::E::LocalId(_, _) => {}
+    expr::E::ClassId(_, class_mod_ref, id) => match request {
       GlobalNameSearchRequest::Toplevel(mod_ref, toplevel_name)
-        if mod_ref.eq(&e.module_reference) && toplevel_name.eq(&e.class_name.name) =>
+        if mod_ref.eq(class_mod_ref) && id.name.eq(toplevel_name) =>
       {
-        collector.push(e.class_name.loc);
-      }
-      GlobalNameSearchRequest::InterfaceMember(mod_ref, toplevel_name, fn_name, false)
-        if mod_ref.eq(&e.module_reference)
-          && toplevel_name.eq(&e.class_name.name)
-          && fn_name.eq(&e.fn_name.name) =>
-      {
-        collector.push(e.fn_name.loc);
+        collector.push(id.loc);
       }
       _ => {}
     },
@@ -89,11 +82,12 @@ fn search_expression(
     expr::E::MethodAccess(e) => {
       match (request, e.object.type_().as_nominal()) {
         (
-          GlobalNameSearchRequest::InterfaceMember(mod_ref, toplevel_name, method_name, true),
+          GlobalNameSearchRequest::InterfaceMember(mod_ref, toplevel_name, method_name, is_method),
           Some(nominal_type),
         ) if mod_ref.eq(&nominal_type.module_reference)
           && toplevel_name.eq(&nominal_type.id)
-          && method_name.eq(&e.method_name.name) =>
+          && method_name.eq(&e.method_name.name)
+          && is_method.ne(&nominal_type.is_class_statics) =>
         {
           collector.push(e.method_name.loc);
         }

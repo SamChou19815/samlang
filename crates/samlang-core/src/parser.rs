@@ -153,8 +153,6 @@ mod tests {
     expect_bad_expr("{ hello / }");
     expect_bad_expr("{: bar}");
     expect_bad_expr("{foo: }");
-    expect_bad_expr("Variant");
-    expect_bad_expr("foo.Bar");
     expect_bad_expr("foo.");
     expect_bad_expr("if (true) then 3");
     expect_bad_expr("if (true) else 4");

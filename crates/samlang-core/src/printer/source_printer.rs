@@ -404,29 +404,6 @@ impl expr::E<()> {
     potential_chainable_expr: &expr::E<()>,
   ) -> (Document, Vec<(CommentReference, Vec<Document>)>) {
     match potential_chainable_expr {
-      expr::E::ClassFn(e) => {
-        let mut class_name_doc = Document::Text(rc_pstr(heap, e.class_name.name));
-        if let Some(comment_doc) = associated_comments_doc(
-          heap,
-          comment_store,
-          e.common.associated_comments,
-          DocumentGrouping::Grouped,
-          true,
-        ) {
-          class_name_doc =
-            Document::group(Document::Concat(Rc::new(comment_doc), Rc::new(class_name_doc)))
-        }
-        (
-          class_name_doc,
-          vec![(
-            e.fn_name.associated_comments,
-            vec![
-              Document::Text(rc_pstr(heap, e.fn_name.name)),
-              optional_targs(heap, comment_store, &e.explicit_type_arguments),
-            ],
-          )],
-        )
-      }
       expr::E::FieldAccess(e) => {
         let (base, mut chain) =
           potential_chainable_expr.create_chainable_ir_docs(heap, comment_store, &e.object);
@@ -482,15 +459,16 @@ impl expr::E<()> {
   ) -> Document {
     match self {
       expr::E::Literal(_, l) => Document::Text(rc_string(l.pretty_print(heap))),
-      expr::E::Id(_, id) => Document::Text(rc_pstr(heap, id.name)),
-      expr::E::ClassFn(_)
-      | expr::E::FieldAccess(_)
-      | expr::E::MethodAccess(_)
-      | expr::E::Call(_) => Self::create_doc_for_dotted_chain(
-        heap,
-        comment_store,
-        Self::create_chainable_ir_docs(self, heap, comment_store, self),
-      ),
+      expr::E::LocalId(_, id) | expr::E::ClassId(_, _, id) => {
+        Document::Text(rc_pstr(heap, id.name))
+      }
+      expr::E::FieldAccess(_) | expr::E::MethodAccess(_) | expr::E::Call(_) => {
+        Self::create_doc_for_dotted_chain(
+          heap,
+          comment_store,
+          Self::create_chainable_ir_docs(self, heap, comment_store, self),
+        )
+      }
       expr::E::Unary(e) => Document::Concat(
         Rc::new(Document::Text(rc_string(e.operator.to_string()))),
         Rc::new(self.create_doc_for_subexpression_considering_precedence_level(
@@ -649,9 +627,6 @@ impl expr::E<()> {
 
   fn create_doc(&self, heap: &Heap, comment_store: &CommentStore) -> Document {
     let main_doc = self.create_doc_without_preceding_comment(heap, comment_store);
-    if matches!(self, expr::E::ClassFn(_)) {
-      return main_doc;
-    }
     create_opt_preceding_comment_doc(
       heap,
       comment_store,
@@ -1117,7 +1092,7 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
           common: expr::ExpressionCommon::dummy(()),
           explicit_type_arguments: vec![],
           inferred_type_arguments: vec![],
-          object: Box::new(expr::E::Id(
+          object: Box::new(expr::E::LocalId(
             expr::ExpressionCommon::dummy(()),
             Id::from(heap.alloc_str_for_test("foo"))
           )),
@@ -1135,7 +1110,7 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
           common: expr::ExpressionCommon::dummy(()),
           explicit_type_arguments: vec![test_builder::create().int_annot()],
           inferred_type_arguments: vec![],
-          object: Box::new(expr::E::Id(
+          object: Box::new(expr::E::LocalId(
             expr::ExpressionCommon::dummy(()),
             Id::from(heap.alloc_str_for_test("foo"))
           )),

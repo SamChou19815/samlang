@@ -482,7 +482,7 @@ mod tests {
     );
 
     let expression =
-      expr::E::Id(expr::ExpressionCommon::dummy(()), Id::from(heap.alloc_str_for_test("s")));
+      expr::E::LocalId(expr::ExpressionCommon::dummy(()), Id::from(heap.alloc_str_for_test("s")));
     assert_eq!(
       "s",
       Change::Replace(DiffNode::Expression(&expression), DiffNode::Expression(&expression))
@@ -495,7 +495,7 @@ mod tests {
       associated_comments: NO_COMMENT_REFERENCE,
       pattern: expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("v")),
       annotation: Some(builder.bool_annot()),
-      assigned_expression: Box::new(expr::E::Id(
+      assigned_expression: Box::new(expr::E::LocalId(
         expr::ExpressionCommon::dummy(()),
         Id::from(heap.alloc_str_for_test("s")),
       )),

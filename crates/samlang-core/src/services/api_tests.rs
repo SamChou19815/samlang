@@ -169,7 +169,15 @@ class Test2(val a: int) {
     // At b in this.b
     assert!(query::hover(&state, &test2_mod_ref, Position(3, 28)).is_none());
     // At the () of call
-    assert!(query::hover(&state, &test2_mod_ref, Position(4, 42)).is_none());
+    assert_eq!(
+      "any [lang=samlang]",
+      query::hover(&state, &test2_mod_ref, Position(4, 42))
+        .unwrap()
+        .contents
+        .iter()
+        .map(query::TypeQueryContent::to_string)
+        .join("\n")
+    );
     // Non-existent
     assert!(query::all_references(&state, &ModuleReference::dummy(), Position(4, 100)).is_empty());
     assert!(query::all_references(&state, &test2_mod_ref, Position(4, 100)).is_empty());

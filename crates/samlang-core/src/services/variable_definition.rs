@@ -82,8 +82,8 @@ fn apply_expr_renaming(
     return expr.clone();
   }
   match expr {
-    expr::E::Literal(_, _) | expr::E::ClassFn(_) => panic!(),
-    expr::E::Id(common, old_id) => expr::E::Id(common.clone(), mod_id(old_id, new_name)),
+    expr::E::Literal(_, _) | expr::E::ClassId(_, _, _) => panic!(),
+    expr::E::LocalId(common, old_id) => expr::E::LocalId(common.clone(), mod_id(old_id, new_name)),
     expr::E::FieldAccess(e) => expr::E::FieldAccess(expr::FieldAccess {
       common: e.common.clone(),
       explicit_type_arguments: e.explicit_type_arguments.clone(),

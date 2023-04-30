@@ -245,39 +245,36 @@ impl<'a> TypingContext<'a> {
       .unwrap_or(false)
   }
 
-  pub(super) fn get_function_type(
-    &self,
-    module_reference: ModuleReference,
-    class_name: PStr,
-    function_name: PStr,
-    use_loc: Location,
-  ) -> Option<MemberSignature> {
-    let resolved = global_signature::resolve_function_signature(
-      self.global_signature,
-      (module_reference, class_name),
-      function_name,
-    );
-    let type_info = resolved.first()?.deref();
-    if type_info.is_public || self.in_same_class(module_reference, class_name) {
-      Some(type_info.reposition(use_loc))
-    } else {
-      None
-    }
-  }
-
   pub(super) fn get_method_type(
     &self,
     nominal_type: &NominalType,
     method_name: PStr,
     use_loc: Location,
   ) -> Option<MemberSignature> {
-    let resolved =
-      global_signature::resolve_method_signature(self.global_signature, nominal_type, method_name);
-    let type_info = resolved.first()?;
-    if type_info.is_public || self.in_same_class(nominal_type.module_reference, nominal_type.id) {
-      Some(type_info.reposition(use_loc))
+    if nominal_type.is_class_statics {
+      let resolved = global_signature::resolve_function_signature(
+        self.global_signature,
+        (nominal_type.module_reference, nominal_type.id),
+        method_name,
+      );
+      let type_info = resolved.first()?.deref();
+      if type_info.is_public || self.in_same_class(nominal_type.module_reference, nominal_type.id) {
+        Some(type_info.reposition(use_loc))
+      } else {
+        None
+      }
     } else {
-      None
+      let resolved = global_signature::resolve_method_signature(
+        self.global_signature,
+        nominal_type,
+        method_name,
+      );
+      let type_info = resolved.first()?;
+      if type_info.is_public || self.in_same_class(nominal_type.module_reference, nominal_type.id) {
+        Some(type_info.reposition(use_loc))
+      } else {
+        None
+      }
     }
   }
 

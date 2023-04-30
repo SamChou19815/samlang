@@ -23,22 +23,10 @@ fn search_expression(
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult> {
   let found_from_children = match expr {
-    expr::E::Literal(_, _) | expr::E::Id(_, _) => None,
-    expr::E::ClassFn(e) => {
-      if e.class_name.loc.contains_position(position) {
-        Some(LocationCoverSearchResult::ToplevelName(
-          e.class_name.loc,
-          e.module_reference,
-          e.class_name.name,
-        ))
-      } else if e.fn_name.loc.contains_position(position) {
-        Some(LocationCoverSearchResult::InterfaceMemberName(
-          e.fn_name.loc,
-          e.module_reference,
-          e.class_name.name,
-          e.fn_name.name,
-          false,
-        ))
+    expr::E::Literal(_, _) | expr::E::LocalId(_, _) => None,
+    expr::E::ClassId(common, mod_ref, id) => {
+      if common.loc.contains_position(position) {
+        Some(LocationCoverSearchResult::ToplevelName(id.loc, *mod_ref, id.name))
       } else {
         None
       }
@@ -64,7 +52,7 @@ fn search_expression(
             nominal_type.module_reference,
             nominal_type.id,
             e.method_name.name,
-            true,
+            !nominal_type.is_class_statics,
           ));
         }
       }
@@ -213,7 +201,7 @@ mod tests {
         },
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
-        object: Box::new(expr::E::Id(
+        object: Box::new(expr::E::LocalId(
           expr::ExpressionCommon {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
