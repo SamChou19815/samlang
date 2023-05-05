@@ -939,10 +939,10 @@ mod tests {
       &format!(
         r#"type Str = [number, string];
 const {} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const {} = ([, line]: Str): number => {{ console.log(line); return 0; }};
-const {} = ([, v]: Str): number => parseInt(v, 10);
-const {} = (v: number): Str => [1, String(v)];
-const {} = ([, v]: Str): number => {{ throw Error(v); }};
+const {} = (_: number, [, line]: Str): number => {{ console.log(line); return 0; }};
+const {} = (_: number, [, v]: Str): number => parseInt(v, 10);
+const {} = (_: number, v: number): Str => [1, String(v)];
+const {} = (_: number, [, v]: Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
 "#,
         common_names::encoded_fn_name_string_concat(),
@@ -1219,10 +1219,10 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
     let expected = format!(
       r#"type Str = [number, string];
 const {} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const {} = ([, line]: Str): number => {{ console.log(line); return 0; }};
-const {} = ([, v]: Str): number => parseInt(v, 10);
-const {} = (v: number): Str => [1, String(v)];
-const {} = ([, v]: Str): number => {{ throw Error(v); }};
+const {} = (_: number, [, line]: Str): number => {{ console.log(line); return 0; }};
+const {} = (_: number, [, v]: Str): number => parseInt(v, 10);
+const {} = (_: number, v: number): Str => [1, String(v)];
+const {} = (_: number, [, v]: Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
 type CC = [number, (t0: any) => number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];

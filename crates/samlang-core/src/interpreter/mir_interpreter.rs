@@ -237,12 +237,12 @@ fn eval_fun_call(
       return 0;
     } else if name.eq(&common_names::encoded_fn_name_string_to_int()) {
       let argument_vs = eval_arguments(mem, arguments);
-      assert!(argument_vs.len() == 1);
-      return mem.get_string(argument_vs[0]).parse::<i32>().unwrap();
+      assert!(argument_vs.len() == 2);
+      return mem.get_string(argument_vs[1]).parse::<i32>().unwrap();
     } else if name.eq(&common_names::encoded_fn_name_int_to_string()) {
       let argument_vs = eval_arguments(mem, arguments);
-      assert!(argument_vs.len() == 1);
-      return mem.add_string(argument_vs[0].to_string());
+      assert!(argument_vs.len() == 2);
+      return mem.add_string(argument_vs[1].to_string());
     } else if name.eq(&common_names::encoded_fn_name_string_concat()) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 2);
@@ -250,14 +250,14 @@ fn eval_fun_call(
       return mem.add_string(s);
     } else if name.eq(&common_names::encoded_fn_name_println()) {
       let argument_vs = eval_arguments(mem, arguments);
-      assert!(argument_vs.len() == 1);
-      let s = mem.get_string(argument_vs[0]).clone();
+      assert!(argument_vs.len() == 2);
+      let s = mem.get_string(argument_vs[1]).clone();
       mem.println_collector.push(s);
       return 0;
     } else if name.eq(&common_names::encoded_fn_name_panic()) {
       let argument_vs = eval_arguments(mem, arguments);
-      assert!(argument_vs.len() == 1);
-      panic!("{}", mem.get_string(argument_vs[0]));
+      assert!(argument_vs.len() == 2);
+      panic!("{}", mem.get_string(argument_vs[1]));
     }
   }
   let callee_v = eval_expr(mem, callee);
@@ -348,7 +348,7 @@ mod tests {
             heap.alloc_string(common_names::encoded_fn_name_panic()),
             INT_TYPE,
           ),
-          arguments: vec![Expression::Variable(heap.alloc_str_for_test("A"), INT_TYPE)],
+          arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("A"), INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         }],
@@ -506,7 +506,7 @@ mod tests {
                 heap.alloc_string(common_names::encoded_fn_name_int_to_string()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(heap.alloc_str_for_test("n"), INT_TYPE)],
+              arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("n"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("s")),
             },
@@ -515,7 +515,7 @@ mod tests {
                 heap.alloc_string(common_names::encoded_fn_name_string_to_int()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
+              arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("s")),
             },
@@ -524,7 +524,7 @@ mod tests {
                 heap.alloc_string(common_names::encoded_fn_name_int_to_string()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
+              arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("s")),
             },
@@ -533,7 +533,7 @@ mod tests {
                 heap.alloc_string(common_names::encoded_fn_name_println()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
+              arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("r")),
             },
@@ -660,7 +660,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -673,7 +673,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -685,7 +685,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -694,7 +694,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -707,7 +707,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -716,7 +716,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -806,7 +806,10 @@ mod tests {
                 heap.alloc_string(common_names::encoded_fn_name_println()),
                 INT_TYPE,
               ),
-              arguments: vec![Expression::Variable(heap.alloc_str_for_test("hw_string"), INT_TYPE)],
+              arguments: vec![
+                ZERO,
+                Expression::Variable(heap.alloc_str_for_test("hw_string"), INT_TYPE),
+              ],
               return_type: INT_TYPE,
               return_collector: None,
             },

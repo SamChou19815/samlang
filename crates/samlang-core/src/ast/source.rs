@@ -242,16 +242,6 @@ pub(crate) mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct ClassFunction<T: Clone> {
-    pub(crate) common: ExpressionCommon<T>,
-    pub(crate) explicit_type_arguments: Vec<annotation::T>,
-    pub(crate) inferred_type_arguments: Vec<T>,
-    pub(crate) module_reference: ModuleReference,
-    pub(crate) class_name: Id,
-    pub(crate) fn_name: Id,
-  }
-
-  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct FieldAccess<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
     pub(crate) explicit_type_arguments: Vec<annotation::T>,
@@ -435,8 +425,8 @@ pub(crate) mod expr {
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) enum E<T: Clone> {
     Literal(ExpressionCommon<T>, Literal),
-    Id(ExpressionCommon<T>, Id),
-    ClassFn(ClassFunction<T>),
+    LocalId(ExpressionCommon<T>, Id),
+    ClassId(ExpressionCommon<T>, ModuleReference, Id),
     FieldAccess(FieldAccess<T>),
     MethodAccess(MethodAccess<T>),
     Unary(Unary<T>),
@@ -452,8 +442,8 @@ pub(crate) mod expr {
     pub(crate) fn common(&self) -> &ExpressionCommon<T> {
       match self {
         E::Literal(common, _)
-        | E::Id(common, _)
-        | E::ClassFn(ClassFunction { common, .. })
+        | E::LocalId(common, _)
+        | E::ClassId(common, _, _)
         | E::FieldAccess(FieldAccess { common, .. })
         | E::MethodAccess(MethodAccess { common, .. })
         | E::Unary(Unary { common, .. })
@@ -469,8 +459,8 @@ pub(crate) mod expr {
     pub(crate) fn common_mut(&mut self) -> &mut ExpressionCommon<T> {
       match self {
         E::Literal(common, _)
-        | E::Id(common, _)
-        | E::ClassFn(ClassFunction { common, .. })
+        | E::LocalId(common, _)
+        | E::ClassId(common, _, _)
         | E::FieldAccess(FieldAccess { common, .. })
         | E::MethodAccess(MethodAccess { common, .. })
         | E::Unary(Unary { common, .. })
@@ -493,14 +483,13 @@ pub(crate) mod expr {
 
     pub(crate) fn precedence(&self) -> i32 {
       match self {
-        E::Literal(_, _) | E::Id(_, _) => 0,
-        E::ClassFn(_) => 1,
-        E::FieldAccess(_) | E::MethodAccess(_) | E::Call(_) | E::Block(_) => 2,
-        E::Unary(_) => 3,
-        E::Binary(b) => 5 + b.operator.precedence(),
-        E::IfElse(_) => 11,
-        E::Match(_) => 12,
-        E::Lambda(_) => 13,
+        E::Literal(_, _) | E::LocalId(_, _) | E::ClassId(_, _, _) => 0,
+        E::FieldAccess(_) | E::MethodAccess(_) | E::Call(_) | E::Block(_) => 1,
+        E::Unary(_) => 2,
+        E::Binary(b) => 4 + b.operator.precedence(),
+        E::IfElse(_) => 10,
+        E::Match(_) => 11,
+        E::Lambda(_) => 12,
       }
     }
   }

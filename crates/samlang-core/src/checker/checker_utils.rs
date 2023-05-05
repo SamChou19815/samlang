@@ -14,7 +14,8 @@ fn contextual_nominal_type_meet_opt(
   general: &NominalType,
   specific: &NominalType,
 ) -> Option<NominalType> {
-  if general.module_reference == specific.module_reference
+  if general.is_class_statics == specific.is_class_statics
+    && general.module_reference == specific.module_reference
     && general.id == specific.id
     && general.type_arguments.len() == specific.type_arguments.len()
   {
@@ -25,6 +26,7 @@ fn contextual_nominal_type_meet_opt(
     }
     return Some(NominalType {
       reason: specific.reason,
+      is_class_statics: specific.is_class_statics,
       module_reference: specific.module_reference,
       id: specific.id,
       type_arguments,
@@ -140,6 +142,7 @@ pub(super) fn perform_nominal_type_substitution(
 ) -> NominalType {
   NominalType {
     reason: type_.reason,
+    is_class_statics: type_.is_class_statics,
     module_reference: type_.module_reference,
     id: type_.id,
     type_arguments: type_

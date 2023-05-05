@@ -489,7 +489,7 @@ class Main {
     ];
 
     let expected_errors = vec![
-      "access-private-member.sam:12:13-12:16: [member-missing]: Cannot find member `b` on `A`.",
+      "access-private-member.sam:12:15-12:16: [member-missing]: Cannot find member `b` on `A`.",
       "add-panic-to-class.sam:7:50-7:60: [incompatible-type]: Expected: `int`, actual: `A`.",
       "add-panic-to-class.sam:8:27-8:37: [incompatible-type]: Expected: `int`, actual: `A`.",
       "add-with-class.sam:7:30-7:40: [incompatible-type]: Expected: `int`, actual: `A`.",
@@ -1796,7 +1796,7 @@ class Main {
     let memory =
       Memory::new(store.as_context_mut(), MemoryType::new(2, Some(65536)).unwrap()).unwrap();
     let mut linker = <Linker<HostState>>::new();
-    let builtin_println = move |mut caller: Caller<'_, HostState>, param: i32| -> i32 {
+    let builtin_println = move |mut caller: Caller<'_, HostState>, _: i32, param: i32| -> i32 {
       let string = pointer_to_string(&caller, &memory, param);
       caller.host_data_mut().push(string);
       0
@@ -1847,10 +1847,10 @@ class Main {
   fn wasm_builtin_panic_test() {
     let engine = Engine::default();
     let mut store = Store::new(&engine, vec![]);
-    wasm_builtin_panic(Caller::from(&mut store), 0);
+    wasm_builtin_panic(Caller::from(&mut store), 0, 0);
   }
 
-  fn wasm_builtin_panic(_: Caller<'_, HostState>, _: i32) -> i32 {
+  fn wasm_builtin_panic(_: Caller<'_, HostState>, _: i32, _: i32) -> i32 {
     panic!("Ouch");
   }
 

@@ -638,7 +638,7 @@ mod tests {
       heap,
       "Test.helloWorld2",
       &builder.fun_type(vec![builder.string_type()], builder.unit_type()),
-      vec!["__DUMMY__.sam:1:1-1:17: [member-missing]: Cannot find member `helloWorld2` on `Test`."],
+      vec!["__DUMMY__.sam:1:6-1:17: [member-missing]: Cannot find member `helloWorld2` on `Test`."],
     );
   }
 
@@ -690,13 +690,13 @@ mod tests {
       heap,
       "Test.Foo(true)",
       &builder.simple_nominal_type(test2_str),
-      vec!["__DUMMY__.sam:1:1-1:9: [member-missing]: Cannot find member `Foo` on `Test`."],
+      vec!["__DUMMY__.sam:1:6-1:9: [member-missing]: Cannot find member `Foo` on `Test`."],
     );
     assert_errors(
       heap,
       "Test.Bar(42)",
       &builder.simple_nominal_type(test2_str),
-      vec!["__DUMMY__.sam:1:1-1:9: [member-missing]: Cannot find member `Bar` on `Test`."],
+      vec!["__DUMMY__.sam:1:6-1:9: [member-missing]: Cannot find member `Bar` on `Test`."],
     );
     assert_errors(heap,
       "Test4.Foo<int, bool>(true)",
@@ -730,7 +730,7 @@ mod tests {
       heap,
       "Test2.Tars(42)",
       &builder.simple_nominal_type(test2_str),
-      vec!["__DUMMY__.sam:1:1-1:11: [member-missing]: Cannot find member `Tars` on `Test2`."],
+      vec!["__DUMMY__.sam:1:7-1:11: [member-missing]: Cannot find member `Tars` on `Test2`."],
       "Test2",
     );
   }

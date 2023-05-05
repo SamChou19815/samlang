@@ -187,7 +187,8 @@ pub mod query {
           &fetched_function_module_reference,
           &class_name,
           &fn_name,
-        )?;
+        )
+        .unwrap();
         let type_content = TypeQueryContent {
           language: "samlang",
           value: FunctionType::from_annotation(&relevant_fn.type_).pretty_print(&state.heap),
@@ -304,7 +305,7 @@ pub mod query {
     )? {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
-        | expr::E::ClassFn(_)
+        | expr::E::ClassId(_, _, _)
         | expr::E::FieldAccess(_)
         | expr::E::MethodAccess(_)
         | expr::E::Unary(_)
@@ -350,7 +351,10 @@ pub mod query {
           .find_all_definition_and_uses(&loc)
           .map(|it| it.all_locations())
       }
-      LocationCoverSearchResult::Expression(expr::E::Id(expr::ExpressionCommon { loc, .. }, _)) => {
+      LocationCoverSearchResult::Expression(expr::E::LocalId(
+        expr::ExpressionCommon { loc, .. },
+        _,
+      )) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
         VariableDefinitionLookup::new(&state.heap, module)
           .find_all_definition_and_uses(loc)
@@ -367,7 +371,7 @@ pub mod query {
     match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
-        | expr::E::ClassFn(_)
+        | expr::E::ClassId(_, _, _)
         | expr::E::FieldAccess(_)
         | expr::E::MethodAccess(_)
         | expr::E::Unary(_)
@@ -395,7 +399,10 @@ pub mod query {
           .find_all_definition_and_uses(&loc)
           .map(|it| it.definition_location)
       }
-      LocationCoverSearchResult::Expression(expr::E::Id(expr::ExpressionCommon { loc, .. }, _)) => {
+      LocationCoverSearchResult::Expression(expr::E::LocalId(
+        expr::ExpressionCommon { loc, .. },
+        _,
+      )) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
         VariableDefinitionLookup::new(&state.heap, module)
           .find_all_definition_and_uses(loc)
@@ -520,22 +527,6 @@ pub mod rewrite {
             }
           }
         }
-        ErrorDetail::CannotResolveName { name }
-          if error.location.contains(&location)
-            && name.as_str(&state.heap).starts_with(|c: char| c.is_uppercase()) =>
-        {
-          for (mod_ref, mod_cx) in state.global_cx.iter() {
-            if mod_cx.interfaces.contains_key(name) {
-              actions.push(generate_auto_import_code_action(
-                state,
-                error.location.module_reference,
-                location,
-                *mod_ref,
-                *name,
-              ))
-            }
-          }
-        }
         _ => {}
       }
     }
@@ -650,81 +641,76 @@ pub mod completion {
             },
           );
         }
-        LocationCoverSearchResult::Expression(expr::E::Id(_, Id { name, .. })) => {
-          if name.as_str(&state.heap).starts_with(|c: char| c.is_uppercase()) {
-            let ast = state.checked_modules.get(module_reference).unwrap();
-            let available_names = ast
-              .imports
-              .iter()
-              .flat_map(|it| it.imported_members.iter())
-              .chain(ast.toplevels.iter().map(|t| t.name()))
-              .map(|id| id.name)
-              .collect::<HashSet<_>>();
-            let mut items = vec![];
-            for (import_mod_ref, mod_cx) in &state.global_cx {
-              for (n, interface_sig) in &mod_cx.interfaces {
+        LocationCoverSearchResult::Expression(expr::E::LocalId(_, Id { .. })) => {
+          let parsed = state.parsed_modules.get(module_reference).unwrap();
+          let (_, local_cx) = type_check_module(
+            *module_reference,
+            parsed,
+            &state.global_cx,
+            &state.heap,
+            &mut ErrorSet::new(),
+          );
+          return Some(
+            local_cx
+              .possibly_in_scope_local_variables(position)
+              .into_iter()
+              .map(|(n, t)| {
                 let name = n.as_str(&state.heap);
-                let (kind, detail) = if interface_sig.type_definition.is_some() {
-                  (CompletionItemKind::Class, format!("class {}", name))
-                } else {
-                  (CompletionItemKind::Interface, format!("interface {}", name))
-                };
-                let additional_edits = if available_names.contains(n) {
-                  vec![]
-                } else {
-                  rewrite::generate_auto_import_edits(
-                    state,
-                    *module_reference,
-                    Location {
-                      module_reference: *module_reference,
-                      start: position,
-                      end: position,
-                    },
-                    *import_mod_ref,
-                    *n,
-                  )
-                };
-                items.push((
-                  n,
-                  AutoCompletionItem {
-                    label: name.to_string(),
-                    insert_text: name.to_string(),
-                    kind,
-                    detail,
-                    additional_edits,
-                  },
-                ));
-              }
+                AutoCompletionItem {
+                  label: name.to_string(),
+                  insert_text: name.to_string(),
+                  kind: CompletionItemKind::Variable,
+                  detail: t.pretty_print(&state.heap),
+                  additional_edits: vec![],
+                }
+              })
+              .collect(),
+          );
+        }
+        LocationCoverSearchResult::ToplevelName(_, _, _) => {
+          let ast = state.checked_modules.get(module_reference).unwrap();
+          let available_names = ast
+            .imports
+            .iter()
+            .flat_map(|it| it.imported_members.iter())
+            .chain(ast.toplevels.iter().map(|t| t.name()))
+            .map(|id| id.name)
+            .collect::<HashSet<_>>();
+          let mut items = vec![];
+          for (import_mod_ref, mod_cx) in &state.global_cx {
+            for (n, interface_sig) in &mod_cx.interfaces {
+              let name = n.as_str(&state.heap);
+              let (kind, detail) = if interface_sig.type_definition.is_some() {
+                (CompletionItemKind::Class, format!("class {}", name))
+              } else {
+                (CompletionItemKind::Interface, format!("interface {}", name))
+              };
+              let additional_edits = if available_names.contains(n) {
+                vec![]
+              } else {
+                rewrite::generate_auto_import_edits(
+                  state,
+                  *module_reference,
+                  Location { module_reference: *module_reference, start: position, end: position },
+                  *import_mod_ref,
+                  *n,
+                )
+              };
+              items.push((
+                n,
+                AutoCompletionItem {
+                  label: name.to_string(),
+                  insert_text: name.to_string(),
+                  kind,
+                  detail,
+                  additional_edits,
+                },
+              ));
             }
-            return Some(
-              items.into_iter().sorted_by_key(|(n, _)| *n).map(|(_, item)| item).collect(),
-            );
-          } else {
-            let parsed = state.parsed_modules.get(module_reference).unwrap();
-            let (_, local_cx) = type_check_module(
-              *module_reference,
-              parsed,
-              &state.global_cx,
-              &state.heap,
-              &mut ErrorSet::new(),
-            );
-            return Some(
-              local_cx
-                .possibly_in_scope_local_variables(position)
-                .into_iter()
-                .map(|(n, t)| {
-                  let name = n.as_str(&state.heap);
-                  AutoCompletionItem {
-                    label: name.to_string(),
-                    insert_text: name.to_string(),
-                    kind: CompletionItemKind::Variable,
-                    detail: t.pretty_print(&state.heap),
-                    additional_edits: vec![],
-                  }
-                })
-                .collect(),
-            );
           }
+          return Some(
+            items.into_iter().sorted_by_key(|(n, _)| *n).map(|(_, item)| item).collect(),
+          );
         }
         LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, true) => {
           (module_ref, class_name)

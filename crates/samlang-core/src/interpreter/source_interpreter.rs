@@ -139,47 +139,51 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
       Literal::Int(i) => Value::Int(*i),
       Literal::String(s) => new_str(cx, s.as_str(heap).to_string()),
     },
-    expr::E::Id(_, id) => {
+    expr::E::LocalId(_, id) => {
       *cx.local_values.get(&id.name).expect(&format!("Missing variable {}", id.name.as_str(heap)))
     }
-    expr::E::ClassFn(e) => new_fn(
-      cx,
-      cx.classes
-        .get(&e.class_name.name)
-        .expect(&format!("Missing class: {}", e.class_name.name.as_str(heap)))
-        .functions
-        .get(&e.fn_name.name)
-        .expect(&format!("Missing function: {}", e.fn_name.name.as_str(heap)))
-        .clone(),
-    ),
+    expr::E::ClassId(_, _, _) => Value::Int(0),
     expr::E::FieldAccess(e) => *eval_expr(cx, heap, &e.object)
       .object_value(cx)
       .get(&e.field_name.name)
       .expect(&format!("Missing field: {}", e.field_name.name.as_str(heap)))
       .deref(),
     expr::E::MethodAccess(e) => {
-      let obj_type = e.object.type_();
-      let class_name = obj_type.as_nominal().unwrap().id;
-      let this_value = eval_expr(cx, heap, &e.object);
-      let method_value = cx
-        .classes
-        .get(&class_name)
-        .expect(&format!("Missing class: {}", class_name.as_str(heap)))
-        .methods
-        .get(&e.method_name.name)
-        .expect(&format!(
-          "Missing method: {} from class {}",
-          e.method_name.name.as_str(heap),
-          class_name.as_str(heap)
-        ));
-      new_fn(
-        cx,
-        FunctionValue {
-          parameters: method_value.parameters.clone(),
-          body: method_value.body.clone(),
-          captured: HashMap::from([(heap.alloc_str_permanent("this"), this_value)]),
-        },
-      )
+      let obj_type = e.object.type_().as_nominal().unwrap();
+      if obj_type.is_class_statics {
+        new_fn(
+          cx,
+          cx.classes
+            .get(&obj_type.id)
+            .expect(&format!("Missing class: {}", obj_type.id.as_str(heap)))
+            .functions
+            .get(&e.method_name.name)
+            .expect(&format!("Missing function: {}", e.method_name.name.as_str(heap)))
+            .clone(),
+        )
+      } else {
+        let class_name = obj_type.id;
+        let this_value = eval_expr(cx, heap, &e.object);
+        let method_value = cx
+          .classes
+          .get(&class_name)
+          .expect(&format!("Missing class: {}", class_name.as_str(heap)))
+          .methods
+          .get(&e.method_name.name)
+          .expect(&format!(
+            "Missing method: {} from class {}",
+            e.method_name.name.as_str(heap),
+            class_name.as_str(heap)
+          ));
+        new_fn(
+          cx,
+          FunctionValue {
+            parameters: method_value.parameters.clone(),
+            body: method_value.body.clone(),
+            captured: HashMap::from([(heap.alloc_str_permanent("this"), this_value)]),
+          },
+        )
+      }
     }
     expr::E::Unary(e) => {
       let v = eval_expr(cx, heap, &e.argument);
@@ -497,6 +501,7 @@ mod tests {
     common::Heap,
     errors::ErrorSet,
     parser::parse_source_module_from_text,
+    ModuleReference,
   };
   use pretty_assertions::assert_eq;
   use std::rc::Rc;
@@ -582,7 +587,7 @@ mod tests {
   #[test]
   fn this_panic_tests() {
     let heap = &mut Heap::new();
-    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str_for_test("a")));
+    let expr = expr::E::LocalId(dummy_expr_common(), Id::from(heap.alloc_str_for_test("a")));
     eval_expr_simple(heap, &expr);
   }
 
@@ -592,20 +597,26 @@ mod tests {
     let heap = &mut Heap::new();
     eval_expr_simple(
       heap,
-      &expr::E::Id(dummy_expr_common(), Id::from(Heap::new().alloc_str_for_test("a"))),
+      &expr::E::LocalId(dummy_expr_common(), Id::from(Heap::new().alloc_str_for_test("a"))),
     );
   }
 
   #[test]
-  fn this_variable_passing_tests() {
+  fn this_variable_class_id_passing_tests() {
     let mut cx = empty_cx();
     let mut heap = Heap::new();
     cx.local_values.insert(heap.alloc_str_for_test("a"), Value::Int(1));
     cx.local_values.insert(heap.alloc_str_for_test("this"), Value::Int(1));
-    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str_for_test("this")));
+    let expr = expr::E::LocalId(dummy_expr_common(), Id::from(heap.alloc_str_for_test("this")));
     assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
-    let expr = expr::E::Id(dummy_expr_common(), Id::from(heap.alloc_str_for_test("a")));
+    let expr = expr::E::LocalId(dummy_expr_common(), Id::from(heap.alloc_str_for_test("a")));
     assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
+    let expr = expr::E::ClassId(
+      dummy_expr_common(),
+      ModuleReference::dummy(),
+      Id::from(heap.alloc_str_for_test("a")),
+    );
+    assert_eq!(Value::Int(0), eval_expr(&mut cx, &mut heap, &expr));
   }
 
   #[should_panic]

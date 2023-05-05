@@ -36,22 +36,8 @@ fn mod_type(expression: expr::E<Rc<Type>>, new_type: Rc<Type>) -> expr::E<Rc<Typ
   };
   match expression {
     expr::E::Literal(common, l) => expr::E::Literal(f(common), l),
-    expr::E::Id(common, id) => expr::E::Id(f(common), id),
-    expr::E::ClassFn(expr::ClassFunction {
-      common,
-      explicit_type_arguments,
-      inferred_type_arguments,
-      module_reference,
-      class_name,
-      fn_name,
-    }) => expr::E::ClassFn(expr::ClassFunction {
-      common: f(common),
-      explicit_type_arguments,
-      inferred_type_arguments,
-      module_reference,
-      class_name,
-      fn_name,
-    }),
+    expr::E::LocalId(common, id) => expr::E::LocalId(f(common), id),
+    expr::E::ClassId(common, mod_ref, id) => expr::E::ClassId(f(common), mod_ref, id),
     expr::E::FieldAccess(expr::FieldAccess {
       common,
       explicit_type_arguments,
@@ -137,16 +123,9 @@ mod mod_type_tests {
     let builder = test_type_builder::create();
 
     mod_type(zero_expr(), builder.bool_type());
-    mod_type(E::Id(common(), Id::from(heap.alloc_str_for_test("d"))), builder.bool_type());
+    mod_type(E::LocalId(common(), Id::from(heap.alloc_str_for_test("d"))), builder.bool_type());
     mod_type(
-      E::ClassFn(ClassFunction {
-        common: common(),
-        explicit_type_arguments: vec![],
-        inferred_type_arguments: vec![],
-        module_reference: ModuleReference::dummy(),
-        class_name: Id::from(heap.alloc_str_for_test("name")),
-        fn_name: Id::from(heap.alloc_str_for_test("name")),
-      }),
+      E::ClassId(common(), ModuleReference::dummy(), Id::from(heap.alloc_str_for_test("d"))),
       builder.bool_type(),
     );
     mod_type(
@@ -257,8 +236,8 @@ mod mod_type_tests {
 fn arguments_should_be_checked_without_hint(e: &expr::E<()>) -> bool {
   match e {
     expr::E::Literal(_, _)
-    | expr::E::Id(_, _)
-    | expr::E::ClassFn(_)
+    | expr::E::LocalId(_, _)
+    | expr::E::ClassId(_, _, _)
     | expr::E::FieldAccess(_)
     | expr::E::MethodAccess(_)
     | expr::E::Unary(_)
@@ -380,8 +359,8 @@ pub(super) fn type_check_expression(
 ) -> expr::E<Rc<Type>> {
   match expression {
     expr::E::Literal(common, literal) => check_literal(cx, heap, common, literal, hint),
-    expr::E::Id(common, id) => check_variable(cx, heap, common, id, hint),
-    expr::E::ClassFn(e) => check_class_function(cx, heap, e, hint),
+    expr::E::LocalId(common, id) => check_local_variable(cx, heap, common, id, hint),
+    expr::E::ClassId(common, mod_ref, id) => check_class_id(cx, heap, common, *mod_ref, id, hint),
     expr::E::FieldAccess(e) => check_field_access(cx, heap, e, hint),
     expr::E::MethodAccess(_) => panic!("Raw parsed expression does not contain MethodAccess!"),
     expr::E::Unary(e) => check_unary(cx, heap, e, hint),
@@ -412,7 +391,7 @@ fn check_literal(
   expr::E::Literal(common.with_new_type(type_), *literal)
 }
 
-fn check_variable(
+fn check_local_variable(
   cx: &mut TypingContext,
   heap: &Heap,
   common: &expr::ExpressionCommon<()>,
@@ -420,201 +399,35 @@ fn check_variable(
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
   let type_ = Rc::new(type_meet(cx, heap, hint, &cx.local_typing_context.read(&common.loc)));
-  expr::E::Id(common.with_new_type(type_), *id)
+  expr::E::LocalId(common.with_new_type(type_), *id)
 }
 
-fn check_class_fn_with_unresolved_tparams(
+fn check_class_id(
   cx: &mut TypingContext,
   heap: &Heap,
-  expression: &expr::ClassFunction<()>,
+  common: &expr::ExpressionCommon<()>,
+  module_reference: ModuleReference,
+  id: &Id,
   hint: Option<&Type>,
-) -> (expr::ClassFunction<Rc<Type>>, Vec<TypeParameterSignature>) {
-  if !cx.class_exists(expression.module_reference, expression.class_name.name) {
-    cx.error_set.report_cannot_unresolve_class_error(
-      expression.class_name.loc,
-      expression.module_reference,
-      expression.class_name.name,
-    );
-    let partially_checked_expr = expr::ClassFunction {
-      common: expression.common.with_new_type(Rc::new(Type::Any(
-        Reason::new(expression.common.loc, Some(expression.common.loc)),
-        false,
-      ))),
-      explicit_type_arguments: expression.explicit_type_arguments.clone(),
-      inferred_type_arguments: vec![],
-      module_reference: expression.module_reference,
-      class_name: expression.class_name,
-      fn_name: expression.fn_name,
-    };
-    return (partially_checked_expr, vec![]);
-  }
-  if let Some(class_function_type_information) = cx.get_function_type(
-    expression.module_reference,
-    expression.class_name.name,
-    expression.fn_name.name,
-    expression.common.loc,
-  ) {
-    if !expression.explicit_type_arguments.is_empty() {
-      if expression.explicit_type_arguments.len()
-        == class_function_type_information.type_parameters.len()
-      {
-        let mut subst_map = HashMap::new();
-        for (tparam, targ) in class_function_type_information
-          .type_parameters
-          .iter()
-          .zip(&expression.explicit_type_arguments)
-        {
-          subst_map.insert(tparam.name, Rc::new(Type::from_annotation(targ)));
-        }
-        validate_type_arguments(
-          cx,
-          heap,
-          &class_function_type_information.type_parameters,
-          &subst_map,
-        );
-        let type_ = type_meet(
-          cx,
-          heap,
-          hint,
-          &Type::Fn(perform_fn_type_substitution(
-            &class_function_type_information.type_,
-            &subst_map,
-          )),
-        );
-        let inferred_type_arguments = expression
-          .explicit_type_arguments
-          .iter()
-          .map(|a| Rc::new(Type::from_annotation(a)))
-          .collect_vec();
-        let partially_checked_expr = expr::ClassFunction {
-          common: expression.common.with_new_type(Rc::new(type_)),
-          explicit_type_arguments: expression.explicit_type_arguments.clone(),
-          inferred_type_arguments,
-          module_reference: expression.module_reference,
-          class_name: expression.class_name,
-          fn_name: expression.fn_name,
-        };
-        return (partially_checked_expr, vec![]);
-      }
-      cx.error_set.report_invalid_arity_error(
-        expression.common.loc,
-        "type arguments",
-        class_function_type_information.type_parameters.len(),
-        expression.explicit_type_arguments.len(),
-      );
-    } else if class_function_type_information.type_parameters.is_empty() {
-      // No type parameter to solve
-      let partially_checked_expr = expr::ClassFunction {
-        common: expression.common.with_new_type(Rc::new(type_meet(
-          cx,
-          heap,
-          hint,
-          &Type::Fn(class_function_type_information.type_),
-        ))),
-        explicit_type_arguments: expression.explicit_type_arguments.clone(),
-        inferred_type_arguments: vec![],
-        module_reference: expression.module_reference,
-        class_name: expression.class_name,
-        fn_name: expression.fn_name,
-      };
-      return (partially_checked_expr, vec![]);
-    }
-    // Now we know we have some type parameters that cannot be locally resolved.
-    if let Some(hint) = hint {
-      if let Type::Fn(fun_hint) = hint {
-        if fun_hint.argument_types.len()
-          == class_function_type_information.type_.argument_types.len()
-        {
-          // Hint matches the shape and can be useful.
-          let TypeConstraintSolution {
-            solved_generic_type,
-            solved_substitution,
-            solved_contextually_typed_concrete_type: _,
-          } = solve_type_constraints(
-            hint,
-            &Type::Fn(class_function_type_information.type_.clone()),
-            &class_function_type_information.type_parameters,
-            heap,
-            cx.error_set,
-          );
-          let common = expression.common.with_new_type(solved_generic_type);
-          let inferred_type_arguments = class_function_type_information
-            .type_parameters
-            .iter()
-            .map(|it| {
-              perform_type_substitution(
-                &Type::Generic(Reason::dummy(), it.name),
-                &solved_substitution,
-              )
-            })
-            .collect_vec();
-          let partially_checked_expr = expr::ClassFunction {
-            common,
-            explicit_type_arguments: expression.explicit_type_arguments.clone(),
-            inferred_type_arguments,
-            module_reference: expression.module_reference,
-            class_name: expression.class_name,
-            fn_name: expression.fn_name,
-          };
-          return (partially_checked_expr, vec![]);
-        }
-        cx.error_set.report_invalid_arity_error(
-          expression.common.loc,
-          "parameter",
-          fun_hint.argument_types.len(),
-          class_function_type_information.type_.argument_types.len(),
-        );
-      } else {
-        cx.error_set.report_incompatible_type_error(
-          expression.common.loc,
-          hint.pretty_print(heap),
-          "function".to_string(),
-        );
-      }
-    }
-    let inferred_type_arguments = class_function_type_information
-      .type_parameters
-      .iter()
-      .map(|it| Rc::new(Type::Generic(Reason::dummy(), it.name)))
-      .collect_vec();
-    for targ in &expression.explicit_type_arguments {
-      cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(targ));
-    }
-    // When hint is bad or there is no hint, we need to give up and let context help us more.
-    let partially_checked_expr = expr::ClassFunction {
-      common: expression
-        .common
-        .with_new_type(Rc::new(Type::Fn(class_function_type_information.type_.clone()))),
-      explicit_type_arguments: expression.explicit_type_arguments.clone(),
-      inferred_type_arguments,
-      module_reference: expression.module_reference,
-      class_name: expression.class_name,
-      fn_name: expression.fn_name,
-    };
-    (partially_checked_expr, class_function_type_information.type_parameters.clone())
-  } else {
-    cx.error_set.report_member_missing_error(
-      expression.common.loc,
-      expression.class_name.name.as_str(heap).to_string(),
-      expression.fn_name.name.as_str(heap).to_string(),
-    );
+) -> expr::E<Rc<Type>> {
+  let reason = Reason::new(common.loc, Some(common.loc));
+  if cx.class_exists(module_reference, id.name) {
     let type_ = Rc::new(type_meet(
       cx,
       heap,
       hint,
-      &Type::Any(Reason::new(expression.common.loc, None), false),
+      &Type::Nominal(NominalType {
+        reason,
+        is_class_statics: true,
+        module_reference,
+        id: id.name,
+        type_arguments: vec![],
+      }),
     ));
-    (
-      expr::ClassFunction {
-        common: expression.common.with_new_type(type_),
-        explicit_type_arguments: expression.explicit_type_arguments.clone(),
-        inferred_type_arguments: vec![],
-        module_reference: expression.module_reference,
-        class_name: expression.class_name,
-        fn_name: expression.fn_name,
-      },
-      vec![],
-    )
+    expr::E::ClassId(common.with_new_type(type_), module_reference, *id)
+  } else {
+    cx.error_set.report_cannot_unresolve_class_error(common.loc, module_reference, id.name);
+    expr::E::ClassId(common.with_new_type(Rc::new(Type::Any(reason, false))), module_reference, *id)
   }
 }
 
@@ -635,18 +448,6 @@ fn replace_undecided_tparam_with_unknown_and_update_type(
   let type_ =
     Rc::new(type_meet(cx, heap, hint, &perform_type_substitution(expression.type_(), &subst_map)));
   match expression {
-    expr::E::ClassFn(e) => expr::E::ClassFn(expr::ClassFunction {
-      common: e.common.with_new_type(type_),
-      explicit_type_arguments: e.explicit_type_arguments,
-      inferred_type_arguments: e
-        .inferred_type_arguments
-        .iter()
-        .map(|it| perform_type_substitution(it, &subst_map))
-        .collect_vec(),
-      module_reference: e.module_reference,
-      class_name: e.class_name,
-      fn_name: e.fn_name,
-    }),
     expr::E::FieldAccess(e) => {
       debug_assert!(e.inferred_type_arguments.is_empty());
       expr::E::FieldAccess(expr::FieldAccess {
@@ -671,23 +472,6 @@ fn replace_undecided_tparam_with_unknown_and_update_type(
     }),
     _ => mod_type(expression, type_),
   }
-}
-
-fn check_class_function(
-  cx: &mut TypingContext,
-  heap: &Heap,
-  expression: &expr::ClassFunction<()>,
-  hint: Option<&Type>,
-) -> expr::E<Rc<Type>> {
-  let (partially_checked_expr, unsolved_type_parameters) =
-    check_class_fn_with_unresolved_tparams(cx, heap, expression, hint);
-  replace_undecided_tparam_with_unknown_and_update_type(
-    cx,
-    heap,
-    expr::E::ClassFn(partially_checked_expr),
-    unsolved_type_parameters,
-    hint,
-  )
 }
 
 fn check_member_with_unresolved_tparams(
@@ -1075,11 +859,6 @@ fn check_function_call(
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
   let (partially_checked_callee, unresolved_tparams) = match expression.callee.deref() {
-    expr::E::ClassFn(class_fn) => {
-      let (partially_checked_class_fn, unresolved_tparams) =
-        check_class_fn_with_unresolved_tparams(cx, heap, class_fn, None);
-      (expr::E::ClassFn(partially_checked_class_fn), unresolved_tparams)
-    }
     expr::E::FieldAccess(field_access) => {
       let (partially_checked_field_or_method_access, unresolved_tparams) =
         check_member_with_unresolved_tparams(cx, heap, field_access, None);
@@ -1138,18 +917,6 @@ fn check_function_call(
   let fully_resolved_checked_callee =
     mod_type(partially_checked_callee, Rc::new(Type::Fn(solved_generic_type)));
   let callee_with_patched_targs = match fully_resolved_checked_callee {
-    expr::E::ClassFn(class_fn) => expr::E::ClassFn(expr::ClassFunction {
-      common: class_fn.common,
-      explicit_type_arguments: class_fn.explicit_type_arguments,
-      inferred_type_arguments: class_fn
-        .inferred_type_arguments
-        .iter()
-        .map(|it| perform_type_substitution(it, &solved_substitution))
-        .collect_vec(),
-      module_reference: class_fn.module_reference,
-      class_name: class_fn.class_name,
-      fn_name: class_fn.fn_name,
-    }),
     expr::E::FieldAccess(f) => expr::E::FieldAccess(expr::FieldAccess {
       common: f.common,
       explicit_type_arguments: f.explicit_type_arguments,
@@ -1627,6 +1394,7 @@ pub(crate) fn type_check_module(
   for toplevel in &module.toplevels {
     let nominal_type = NominalType {
       reason: Reason::new(toplevel.name().loc, None),
+      is_class_statics: false,
       module_reference,
       id: toplevel.name().name,
       type_arguments: toplevel

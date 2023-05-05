@@ -45,6 +45,7 @@ pub(crate) fn build_module_signature(
     let type_definition = if let Toplevel::Class(class) = toplevel {
       let class_type = Rc::new(Type::Nominal(NominalType {
         reason: Reason::new(class.name.loc, Some(class.name.loc)),
+        is_class_statics: false,
         module_reference,
         id: class.name.name,
         type_arguments: class
@@ -507,6 +508,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &global_cx,
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("C"),
           type_arguments: vec![]
@@ -520,6 +522,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &global_cx,
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("IUseNonExistent"),
           type_arguments: vec![]
@@ -533,6 +536,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &global_cx,
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()]
@@ -546,6 +550,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &global_cx,
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ICyclic1"),
           type_arguments: vec![]
@@ -559,6 +564,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &global_cx,
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ICyclic2"),
           type_arguments: vec![]
@@ -572,6 +578,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &global_cx,
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
@@ -586,6 +593,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &global_cx,
         &[NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()],
@@ -655,6 +663,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       &global_cx,
       &NominalType {
         reason: Reason::dummy(),
+        is_class_statics: false,
         module_reference: ModuleReference::dummy(),
         id: heap.alloc_str_for_test("C"),
         type_arguments: vec![]
@@ -666,6 +675,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       &global_cx,
       &NominalType {
         reason: Reason::dummy(),
+        is_class_statics: false,
         module_reference: ModuleReference::dummy(),
         id: heap.alloc_str_for_test("IUseNonExistent"),
         type_arguments: vec![]
@@ -683,6 +693,7 @@ public <C : A>(int, int) -> C
         &global_cx,
         &[NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![]
@@ -699,6 +710,7 @@ public <C : A>(int, int) -> C
         &global_cx,
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()]
@@ -713,6 +725,7 @@ public <C : A>(int, int) -> C
       &global_cx,
       &NominalType {
         reason: Reason::dummy(),
+        is_class_statics: false,
         module_reference: ModuleReference::dummy(),
         id: heap.alloc_str_for_test("ICyclic1"),
         type_arguments: vec![]
@@ -724,6 +737,7 @@ public <C : A>(int, int) -> C
       &global_cx,
       &NominalType {
         reason: Reason::dummy(),
+        is_class_statics: false,
         module_reference: ModuleReference::dummy(),
         id: heap.alloc_str_for_test("ICyclic2"),
         type_arguments: vec![]
@@ -740,6 +754,7 @@ public () -> bool"#
         &global_cx,
         &[NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
@@ -756,6 +771,7 @@ public () -> bool"#
         &global_cx,
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]

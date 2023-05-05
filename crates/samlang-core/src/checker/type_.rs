@@ -37,6 +37,7 @@ pub(crate) trait ISourceType {
 #[derive(Clone)]
 pub(crate) struct NominalType {
   pub(crate) reason: Reason,
+  pub(crate) is_class_statics: bool,
   pub(crate) module_reference: ModuleReference,
   pub(crate) id: PStr,
   pub(crate) type_arguments: Vec<Rc<Type>>,
@@ -44,12 +45,14 @@ pub(crate) struct NominalType {
 
 impl ISourceType for NominalType {
   fn pretty_print(&self, heap: &Heap) -> String {
-    let NominalType { reason: _, module_reference: _, id, type_arguments } = self;
+    let NominalType { reason: _, is_class_statics, module_reference: _, id, type_arguments } = self;
+    let prefix = if *is_class_statics { "class " } else { "" };
     if type_arguments.is_empty() {
-      id.as_str(heap).to_string()
+      format!("{}{}", prefix, id.as_str(heap))
     } else {
       format!(
-        "{}<{}>",
+        "{}{}<{}>",
+        prefix,
         id.as_str(heap),
         type_arguments.iter().map(|t| t.pretty_print(heap)).join(", ")
       )
@@ -70,6 +73,7 @@ impl NominalType {
   pub(crate) fn reposition(self, use_loc: Location) -> NominalType {
     NominalType {
       reason: self.reason.to_use_reason(use_loc),
+      is_class_statics: self.is_class_statics,
       module_reference: self.module_reference,
       id: self.id,
       type_arguments: self.type_arguments,
@@ -79,6 +83,7 @@ impl NominalType {
   pub(crate) fn from_annotation(annotation: &annotation::Id) -> NominalType {
     NominalType {
       reason: Reason::new(annotation.location, Some(annotation.location)),
+      is_class_statics: false,
       module_reference: annotation.module_reference,
       id: annotation.id.name,
       type_arguments: annotation
@@ -202,14 +207,19 @@ impl Type {
         Type::Any(reason.to_use_reason(use_loc), *is_placeholder)
       }
       Self::Primitive(reason, p) => Type::Primitive(reason.to_use_reason(use_loc), *p),
-      Self::Nominal(NominalType { reason, module_reference, id, type_arguments }) => {
-        Type::Nominal(NominalType {
-          reason: reason.to_use_reason(use_loc),
-          module_reference: *module_reference,
-          id: *id,
-          type_arguments: type_arguments.clone(),
-        })
-      }
+      Self::Nominal(NominalType {
+        reason,
+        is_class_statics,
+        module_reference,
+        id,
+        type_arguments,
+      }) => Type::Nominal(NominalType {
+        reason: reason.to_use_reason(use_loc),
+        is_class_statics: *is_class_statics,
+        module_reference: *module_reference,
+        id: *id,
+        type_arguments: type_arguments.clone(),
+      }),
       Self::Generic(reason, s) => Type::Generic(reason.to_use_reason(use_loc), *s),
       Self::Fn(FunctionType { reason, argument_types, return_type }) => Type::Fn(FunctionType {
         reason: reason.to_use_reason(use_loc),
@@ -305,6 +315,7 @@ pub(crate) mod test_type_builder {
     pub(crate) fn simple_nominal_type_unwrapped(&self, id: PStr) -> NominalType {
       NominalType {
         reason: self.reason,
+        is_class_statics: false,
         module_reference: self.module_reference,
         id,
         type_arguments: vec![],
@@ -318,6 +329,7 @@ pub(crate) mod test_type_builder {
     ) -> NominalType {
       NominalType {
         reason: self.reason,
+        is_class_statics: false,
         module_reference: self.module_reference,
         id,
         type_arguments,
@@ -552,16 +564,6 @@ pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignatur
             Rc::new(Type::Generic(Reason::builtin(), str_t)),
             vec!["T"],
           ),
-          MemberSignature::create_builtin_function(
-            heap,
-            "stringConcat",
-            vec![
-              Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
-              Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
-            ],
-            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
-            vec![],
-          ),
         ]),
       },
     )]),
@@ -602,6 +604,17 @@ mod type_tests {
     assert_eq!(
       "I",
       builder.simple_nominal_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap)
+    );
+    assert_eq!(
+      "class I",
+      NominalType {
+        reason: Reason::dummy(),
+        is_class_statics: true,
+        module_reference: ModuleReference::dummy(),
+        id: heap.alloc_str_for_test("I"),
+        type_arguments: vec![]
+      }
+      .pretty_print(&heap)
     );
     assert_eq!("I", builder.generic_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap));
     assert_eq!(
@@ -695,7 +708,6 @@ stringToInt: public (string) -> int
 intToString: public (int) -> string
 println: public (string) -> unit
 panic: public <T>(string) -> T
-stringConcat: public (string, string) -> string
 methods:
 
 "#

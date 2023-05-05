@@ -70,13 +70,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
   match expr {
     expr::E::Literal(_, Literal::String(s)) => heap.mark(*s),
     expr::E::Literal(_, _) => {}
-    expr::E::Id(_, id) => mark_id(heap, id),
-    expr::E::ClassFn(e) => {
-      mark_id(heap, &e.class_name);
-      mark_id(heap, &e.fn_name);
-      mark_annotations(heap, &e.explicit_type_arguments);
-      mark_types(heap, &e.inferred_type_arguments);
-    }
+    expr::E::LocalId(_, id) | expr::E::ClassId(_, _, id) => mark_id(heap, id),
     expr::E::FieldAccess(e) => {
       mark_expression(heap, &e.object);
       mark_id(heap, &e.field_name);

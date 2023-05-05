@@ -414,105 +414,92 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       heap.alloc_str_for_test("A")
     ));
     assert!(cx
-      .get_function_type(
-        heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-        heap.alloc_str_for_test("A"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("A"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .is_some());
     assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("A"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("f2"),
         Location::dummy()
       )
       .is_some());
     assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("A"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("f3"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("A"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("m1"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("A"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("m2"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("A"),
-        heap.alloc_str_for_test("m3"),
-        Location::dummy()
-      )
-      .is_none());
-    assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("B"),
-        heap.alloc_str_for_test("f1"),
-        Location::dummy()
-      )
-      .is_some());
-    assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("B"),
-        heap.alloc_str_for_test("f2"),
-        Location::dummy()
-      )
-      .is_none());
-    assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("B"),
-        heap.alloc_str_for_test("f3"),
-        Location::dummy()
-      )
-      .is_none());
-    assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("B"),
-        heap.alloc_str_for_test("m1"),
-        Location::dummy()
-      )
-      .is_none());
-    assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("B"),
-        heap.alloc_str_for_test("m2"),
-        Location::dummy()
-      )
-      .is_none());
-    assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("B"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("m3"),
         Location::dummy()
       )
@@ -521,6 +508,85 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       .get_method_type(
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("B"),
+          type_arguments: vec![]
+        },
+        heap.alloc_str_for_test("f1"),
+        Location::dummy()
+      )
+      .is_some());
+    assert!(cx
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("B"),
+          type_arguments: vec![]
+        },
+        heap.alloc_str_for_test("f2"),
+        Location::dummy()
+      )
+      .is_none());
+    assert!(cx
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("B"),
+          type_arguments: vec![]
+        },
+        heap.alloc_str_for_test("f3"),
+        Location::dummy()
+      )
+      .is_none());
+    assert!(cx
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("B"),
+          type_arguments: vec![]
+        },
+        heap.alloc_str_for_test("m1"),
+        Location::dummy()
+      )
+      .is_none());
+    assert!(cx
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("B"),
+          type_arguments: vec![]
+        },
+        heap.alloc_str_for_test("m2"),
+        Location::dummy()
+      )
+      .is_none());
+    assert!(cx
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("B"),
+          type_arguments: vec![]
+        },
+        heap.alloc_str_for_test("m3"),
+        Location::dummy()
+      )
+      .is_none());
+    assert!(cx
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("B"),
           type_arguments: vec![]
@@ -533,6 +599,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       .get_method_type(
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("B"),
           type_arguments: vec![]
@@ -545,6 +612,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       .get_method_type(
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("C"),
           type_arguments: vec![]
@@ -559,6 +627,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       cx.get_method_type(
         &NominalType {
           reason: Reason::dummy(),
+          is_class_statics: false,
           module_reference: ModuleReference::dummy(),
           id: heap.alloc_str_for_test("A"),
           type_arguments: vec![builder.int_type(), builder.int_type()]
@@ -571,9 +640,14 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     );
     assert_eq!(
       "private <C>() -> int",
-      cx.get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("A"),
+      cx.get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("A"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("f2"),
         Location::dummy(),
       )
@@ -582,17 +656,27 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     );
 
     assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("TT2"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("TT2"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )
       .is_none());
     assert!(cx
-      .get_function_type(
-        ModuleReference::dummy(),
-        heap.alloc_str_for_test("TT3"),
+      .get_method_type(
+        &NominalType {
+          reason: Reason::dummy(),
+          is_class_statics: true,
+          module_reference: ModuleReference::dummy(),
+          id: heap.alloc_str_for_test("TT3"),
+          type_arguments: vec![]
+        },
         heap.alloc_str_for_test("f1"),
         Location::dummy()
       )

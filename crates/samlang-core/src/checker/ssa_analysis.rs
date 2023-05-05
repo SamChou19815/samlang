@@ -238,13 +238,8 @@ impl<'a> SsaAnalysisState<'a> {
 
   fn visit_expression(&mut self, expression: &expr::E<()>) {
     match expression {
-      expr::E::Literal(_, _) => {}
-      expr::E::Id(_, id) => self.use_id(&id.name, id.loc),
-      expr::E::ClassFn(e) => {
-        for targ in &e.explicit_type_arguments {
-          self.visit_annot(targ);
-        }
-      }
+      expr::E::Literal(_, _) | expr::E::ClassId(_, _, _) => {}
+      expr::E::LocalId(_, id) => self.use_id(&id.name, id.loc),
       expr::E::FieldAccess(e) => {
         self.visit_expression(&e.object);
         for targ in &e.explicit_type_arguments {

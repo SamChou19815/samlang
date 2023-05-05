@@ -915,12 +915,23 @@ impl<'a> SourceParser<'a> {
     // Then use Kleene star trick to parse.
     let mut function_expression = self.parse_base_expression();
     loop {
-      match self.peek().1 {
-        TokenContent::Operator(TokenOp::DOT) => {
+      match self.peek() {
+        Token(_, TokenContent::Operator(TokenOp::DOT)) => {
           let mut field_preceding_comments = self.collect_preceding_comments();
           self.consume();
           field_preceding_comments.append(&mut self.collect_preceding_comments());
-          let (field_loc, field_name) = self.assert_and_peek_lower_id();
+          let (field_loc, field_name) = match self.peek() {
+            Token(_, TokenContent::LowerId(_) | TokenContent::UpperId(_)) => {
+              self.assert_and_consume_identifier()
+            }
+            Token(l, t) => {
+              self.report(l, format!("Expected identifier, but get {}", t.pretty_print(self.heap)));
+              (
+                Location { module_reference: self.module_reference, start: l.start, end: l.start },
+                self.heap.alloc_str_permanent("MISSING"),
+              )
+            }
+          };
           let mut loc = function_expression.loc().union(&field_loc);
           let explicit_type_arguments =
             if let Token(_, TokenContent::Operator(TokenOp::LT)) = self.peek() {
@@ -954,7 +965,7 @@ impl<'a> SourceParser<'a> {
             field_order: -1,
           });
         }
-        TokenContent::Operator(TokenOp::LPAREN) => {
+        Token(_, TokenContent::Operator(TokenOp::LPAREN)) => {
           self.consume();
           let function_arguments =
             if let Token(_, TokenContent::Operator(TokenOp::RPAREN)) = self.peek() {
@@ -985,149 +996,100 @@ impl<'a> SourceParser<'a> {
     let associated_comments = self.collect_preceding_comments();
     let peeked = self.peek();
 
-    if let Token(peeked_loc, TokenContent::Keyword(Keyword::TRUE)) = peeked {
-      self.consume();
-      return expr::E::Literal(
-        expr::ExpressionCommon {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        Literal::Bool(true),
-      );
-    }
-    if let Token(peeked_loc, TokenContent::Keyword(Keyword::FALSE)) = peeked {
-      self.consume();
-      return expr::E::Literal(
-        expr::ExpressionCommon {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        Literal::Bool(false),
-      );
-    }
-    if let Token(peeked_loc, TokenContent::IntLiteral(i)) = peeked {
-      self.consume();
-      return expr::E::Literal(
-        expr::ExpressionCommon {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        Literal::Int(i.as_str(self.heap).parse::<i32>().unwrap_or(0)),
-      );
-    }
-    if let Token(peeked_loc, TokenContent::StringLiteral(s)) = peeked {
-      self.consume();
-      let chars = s.as_str(self.heap).chars().collect_vec();
-      let str_lit = unescape_quotes(&chars[1..(chars.len() - 1)].iter().collect::<String>());
-      return expr::E::Literal(
-        expr::ExpressionCommon {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        Literal::String(self.heap.alloc_string(str_lit)),
-      );
-    }
-    if let Token(peeked_loc, TokenContent::LowerId(name)) = peeked {
-      self.consume();
-      return expr::E::Id(
-        expr::ExpressionCommon {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        Id {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(vec![]),
-          name,
-        },
-      );
-    }
-    if let Token(peeked_loc, TokenContent::Keyword(Keyword::THIS)) = peeked {
-      self.consume();
-      return expr::E::Id(
-        expr::ExpressionCommon {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        Id {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(vec![]),
-          name: self.heap.alloc_str_permanent("this"),
-        },
-      );
-    }
-
-    // Class function
-    if let Token(peeked_loc, TokenContent::UpperId(class_name)) = peeked {
-      self.consume();
-      let next_peeked = self.peek();
-      if let Token(dot_loc, TokenContent::Operator(TokenOp::DOT)) = next_peeked {
-        let mut member_preceding_comments = self.collect_preceding_comments();
+    match peeked {
+      Token(peeked_loc, TokenContent::Keyword(Keyword::TRUE)) => {
         self.consume();
-        member_preceding_comments.append(&mut self.collect_preceding_comments());
-        let (member_name_loc, function_name) = match self.peek() {
-          Token(_, TokenContent::LowerId(_) | TokenContent::UpperId(_)) => {
-            self.assert_and_consume_identifier()
-          }
-          Token(l, t) => {
-            self.report(l, format!("Expected identifier, but get {}", t.pretty_print(self.heap)));
-            (dot_loc, self.heap.alloc_str_permanent("MISSING"))
-          }
-        };
-        let mut loc = peeked_loc.union(&member_name_loc);
-        let explicit_type_arguments = if let TokenContent::Operator(TokenOp::LT) = self.peek().1 {
-          member_preceding_comments.append(&mut self.collect_preceding_comments());
-          self.assert_and_consume_operator(TokenOp::LT);
-          let type_args = self
-            .parse_comma_separated_list(Some(TokenOp::GT), &mut |s: &mut Self| {
-              s.parse_annotation()
-            });
-          loc = loc.union(&self.assert_and_consume_operator(TokenOp::GT));
-          type_args
-        } else {
-          vec![]
-        };
-        return expr::E::ClassFn(expr::ClassFunction {
-          common: expr::ExpressionCommon {
-            loc,
+        return expr::E::Literal(
+          expr::ExpressionCommon {
+            loc: peeked_loc,
             associated_comments: self.comments_store.create_comment_reference(associated_comments),
             type_: (),
           },
-          explicit_type_arguments,
-          inferred_type_arguments: vec![],
-          module_reference: self.resolve_class(class_name),
-          class_name: Id {
+          Literal::Bool(true),
+        );
+      }
+      Token(peeked_loc, TokenContent::Keyword(Keyword::FALSE)) => {
+        self.consume();
+        return expr::E::Literal(
+          expr::ExpressionCommon {
+            loc: peeked_loc,
+            associated_comments: self.comments_store.create_comment_reference(associated_comments),
+            type_: (),
+          },
+          Literal::Bool(false),
+        );
+      }
+      Token(peeked_loc, TokenContent::IntLiteral(i)) => {
+        self.consume();
+        return expr::E::Literal(
+          expr::ExpressionCommon {
+            loc: peeked_loc,
+            associated_comments: self.comments_store.create_comment_reference(associated_comments),
+            type_: (),
+          },
+          Literal::Int(i.as_str(self.heap).parse::<i32>().unwrap_or(0)),
+        );
+      }
+      Token(peeked_loc, TokenContent::StringLiteral(s)) => {
+        self.consume();
+        let chars = s.as_str(self.heap).chars().collect_vec();
+        let str_lit = unescape_quotes(&chars[1..(chars.len() - 1)].iter().collect::<String>());
+        return expr::E::Literal(
+          expr::ExpressionCommon {
+            loc: peeked_loc,
+            associated_comments: self.comments_store.create_comment_reference(associated_comments),
+            type_: (),
+          },
+          Literal::String(self.heap.alloc_string(str_lit)),
+        );
+      }
+      Token(peeked_loc, TokenContent::Keyword(Keyword::THIS)) => {
+        self.consume();
+        return expr::E::LocalId(
+          expr::ExpressionCommon {
+            loc: peeked_loc,
+            associated_comments: self.comments_store.create_comment_reference(associated_comments),
+            type_: (),
+          },
+          Id {
             loc: peeked_loc,
             associated_comments: self.comments_store.create_comment_reference(vec![]),
-            name: class_name,
+            name: self.heap.alloc_str_permanent("this"),
           },
-          fn_name: Id {
-            loc: member_name_loc,
-            associated_comments: self
-              .comments_store
-              .create_comment_reference(member_preceding_comments),
-            name: function_name,
-          },
-        });
+        );
       }
-      self.report(peeked_loc, "Variable name must start with a lower case letter".to_string());
-      return expr::E::Id(
-        expr::ExpressionCommon {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(associated_comments),
-          type_: (),
-        },
-        Id {
-          loc: peeked_loc,
-          associated_comments: self.comments_store.create_comment_reference(vec![]),
-          name: class_name,
-        },
-      );
+      Token(peeked_loc, TokenContent::LowerId(name)) => {
+        self.consume();
+        return expr::E::LocalId(
+          expr::ExpressionCommon {
+            loc: peeked_loc,
+            associated_comments: self.comments_store.create_comment_reference(associated_comments),
+            type_: (),
+          },
+          Id {
+            loc: peeked_loc,
+            associated_comments: self.comments_store.create_comment_reference(vec![]),
+            name,
+          },
+        );
+      }
+      Token(peeked_loc, TokenContent::UpperId(name)) => {
+        self.consume();
+        return expr::E::ClassId(
+          expr::ExpressionCommon {
+            loc: peeked_loc,
+            associated_comments: self.comments_store.create_comment_reference(associated_comments),
+            type_: (),
+          },
+          self.resolve_class(name),
+          Id {
+            loc: peeked_loc,
+            associated_comments: self.comments_store.create_comment_reference(vec![]),
+            name,
+          },
+        );
+      }
+      _ => {}
     }
 
     // Lambda or nested expression

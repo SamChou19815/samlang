@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod tests {
-  use itertools::Itertools;
-
   use super::super::source::expr::*;
   use super::super::source::*;
   use crate::{ast::loc::Location, common::Heap, common::ModuleReference};
+  use itertools::Itertools;
   use std::collections::HashMap;
   use std::rc::Rc;
 
@@ -121,14 +120,12 @@ mod tests {
     let zero_expr = E::Literal(ExpressionCommon::dummy(()), Literal::Int(0));
 
     coverage_hack_for_expr(zero_expr.clone());
-    coverage_hack_for_expr(E::ClassFn(ClassFunction {
-      common: common.clone(),
-      explicit_type_arguments: vec![],
-      inferred_type_arguments: vec![],
-      module_reference: ModuleReference::dummy(),
-      class_name: Id::from(heap.alloc_str_for_test("name")),
-      fn_name: Id::from(heap.alloc_str_for_test("name")),
-    }));
+    coverage_hack_for_expr(E::LocalId(common.clone(), Id::from(heap.alloc_str_for_test("s"))));
+    coverage_hack_for_expr(E::ClassId(
+      common.clone(),
+      ModuleReference::dummy(),
+      Id::from(heap.alloc_str_for_test("s")),
+    ));
     coverage_hack_for_expr(E::FieldAccess(FieldAccess {
       common: common.clone(),
       explicit_type_arguments: vec![],
