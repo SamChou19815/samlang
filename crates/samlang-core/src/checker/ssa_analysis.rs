@@ -129,7 +129,9 @@ impl<'a> SsaAnalysisState<'a> {
               TypeDefinition::Enum { loc: _, variants } => {
                 for variant in variants {
                   names.push(&variant.name);
-                  annots.push(&variant.associated_data_type);
+                  for annot in &variant.associated_data_types {
+                    annots.push(annot);
+                  }
                 }
               }
             }
@@ -272,7 +274,7 @@ impl<'a> SsaAnalysisState<'a> {
         self.visit_expression(&e.matched);
         for case in &e.cases {
           self.context.push_scope();
-          if let Some((id, _)) = &case.data_variable {
+          for (id, _) in case.data_variables.iter().filter_map(|it| it.as_ref()) {
             self.define_id(id.name, id.loc);
           }
           self.visit_expression(&case.body);

@@ -549,15 +549,17 @@ impl expr::E<()> {
       expr::E::Match(e) => {
         let mut list = vec![];
         for case in &e.cases {
-          list.push(Document::Text(rc_string(format!(
-            "{}({}) -> ",
-            case.tag.name.as_str(heap),
-            if let Some((data_var, _)) = &case.data_variable {
-              data_var.name.as_str(heap)
-            } else {
-              "_"
-            }
-          ))));
+          list.push(Document::Text(rc_pstr(heap, case.tag.name)));
+          if !case.data_variables.is_empty() {
+            list.push(parenthesis_surrounded_doc(comma_sep_list(&case.data_variables, |v| {
+              Document::Text(if let Some((data_var, _)) = v {
+                rc_pstr(heap, data_var.name)
+              } else {
+                rcs("_")
+              })
+            })));
+          }
+          list.push(Document::Text(rcs(" -> ")));
           list.push(case.body.create_doc(heap, comment_store));
           if !matches!(case.body.deref(), expr::E::Block(_) | expr::E::Match(_)) {
             list.push(Document::Text(rcs(",")))
@@ -870,11 +872,16 @@ fn class_to_doc(
       }
       TypeDefinition::Enum { loc: _, variants } => {
         parenthesis_surrounded_doc(comma_sep_list(variants, |variant| {
-          Document::concat(vec![
-            Document::Text(rc_string(format!("{}(", variant.name.name.as_str(heap)))),
-            annotation_to_doc(heap, comment_store, &variant.associated_data_type),
-            Document::Text(rcs(")")),
-          ])
+          if variant.associated_data_types.is_empty() {
+            Document::Text(rc_pstr(heap, variant.name.name))
+          } else {
+            Document::concat(vec![
+              Document::Text(rc_pstr(heap, variant.name.name)),
+              parenthesis_surrounded_doc(comma_sep_list(&variant.associated_data_types, |annot| {
+                annotation_to_doc(heap, comment_store, annot)
+              })),
+            ])
+          }
         }))
       }
     },
@@ -1309,9 +1316,9 @@ import {Foo} from Foo.Baz
 import {F1,F2,F3,F4,F5,F6,F7,F8} from Bar.Baz
 import {F9,F10} from Bar.Baz
 
-class Option<T>(None(unit), Some(T)): F1,F2,F3,F4,F5,F6,/** fff */ F7, F8, F9,F10 {
+class Option<T>(None, Some(T)): F1,F2,F3,F4,F5,F6,/** fff */ F7, F8, F9,F10 {
   private method <T> matchExample(opt: Option<int>): int =
-    match (opt) { None(_) -> 42, Some(a) -> a }
+    match (opt) { None -> 42, Some(a, _) -> a }
 
   /* not ignored */ /** foo bar a */
   function a(): int = 3
@@ -1354,7 +1361,7 @@ import {
 } from Bar.Baz;
 import { Foo } from Foo.Baz;
 
-class Option<T>(None(unit), Some(T)) :
+class Option<T>(None, Some(T)) :
   F1,
   F2,
   F3,
@@ -1369,8 +1376,8 @@ class Option<T>(None(unit), Some(T)) :
     opt: Option<int>
   ): int =
     match opt {
-      None(_) -> 42,
-      Some(a) -> a,
+      None -> 42,
+      Some(a, _) -> a,
     }
 
   /* not ignored */ /** foo bar a */

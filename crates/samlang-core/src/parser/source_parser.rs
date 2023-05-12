@@ -475,10 +475,17 @@ impl<'a> SourceParser<'a> {
     if let Token(_, TokenContent::UpperId(_)) = self.peek() {
       let variants = self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
         let name = s.parse_upper_id();
-        s.assert_and_consume_operator(TokenOp::LPAREN);
-        let associated_data_type = s.parse_annotation();
-        s.assert_and_consume_operator(TokenOp::RPAREN);
-        VariantDefinition { name, associated_data_type }
+        if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = s.peek() {
+          s.consume();
+          let associated_data_types = s
+            .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+              s.parse_annotation()
+            });
+          s.assert_and_consume_operator(TokenOp::RPAREN);
+          VariantDefinition { name, associated_data_types }
+        } else {
+          VariantDefinition { name, associated_data_types: vec![] }
+        }
       });
       // Location is later patched by the caller
       TypeDefinition::Enum { loc: Location::dummy(), variants }
@@ -656,15 +663,22 @@ impl<'a> SourceParser<'a> {
 
   fn parse_pattern_to_expression(&mut self) -> expr::VariantPatternToExpression<()> {
     let tag = self.parse_upper_id();
-    self.assert_and_consume_operator(TokenOp::LPAREN);
-    let data_variable = if let TokenContent::Operator(TokenOp::UNDERSCORE) = self.peek().1 {
+    let data_variables = if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = self.peek() {
       self.consume();
-      None
+      let results = self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+        if let TokenContent::Operator(TokenOp::UNDERSCORE) = s.peek().1 {
+          s.consume();
+          None
+        } else {
+          let name = s.parse_lower_id();
+          Some((name, ()))
+        }
+      });
+      self.assert_and_consume_operator(TokenOp::RPAREN);
+      results
     } else {
-      let name = self.parse_lower_id();
-      Some((name, ()))
+      vec![]
     };
-    self.assert_and_consume_operator(TokenOp::RPAREN);
     self.assert_and_consume_operator(TokenOp::ARROW);
     let expression = self.parse_expression();
     let mut loc = tag.loc.union(&expression.loc());
@@ -681,7 +695,7 @@ impl<'a> SourceParser<'a> {
       loc,
       tag,
       tag_order: 0,
-      data_variable,
+      data_variables,
       body: Box::new(expression),
     }
   }

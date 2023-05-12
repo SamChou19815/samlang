@@ -104,7 +104,7 @@ pub(crate) const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
 pub(crate) const STRING_TYPE: Type = Type::Primitive(PrimitiveType::String);
 pub(crate) const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Expression {
   IntLiteral(i32, Type),
   Name(PStr, Type),

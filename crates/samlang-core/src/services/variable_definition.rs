@@ -132,14 +132,17 @@ fn apply_expr_renaming(
       cases: e
         .cases
         .iter()
-        .map(|expr::VariantPatternToExpression { loc, tag, tag_order, data_variable, body }| {
+        .map(|expr::VariantPatternToExpression { loc, tag, tag_order, data_variables, body }| {
           expr::VariantPatternToExpression {
             loc: *loc,
             tag: *tag,
             tag_order: *tag_order,
-            data_variable: data_variable
-              .as_ref()
-              .map(|(id, t)| (mod_def_id(id, definition_and_uses, new_name), *t)),
+            data_variables: data_variables
+              .iter()
+              .map(|dv| {
+                dv.as_ref().map(|(id, t)| (mod_def_id(id, definition_and_uses, new_name), *t))
+              })
+              .collect(),
             body: Box::new(apply_expr_renaming(body, definition_and_uses, new_name)),
           }
         })

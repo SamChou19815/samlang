@@ -215,12 +215,12 @@ mod tests {
     /**
      * docs
      */
-    class Option<T>(None(unit), Some(T)) {
+    class Option<T>(None, Some(T)) {
       function <T> getNone(): Option<T> = Option.None({})
       function <T> getSome(d: T): Option<T> = Option.Some(d)
       method <R> map(f: (T) -> R): Option<R> =
         match (this) {
-          None(_) -> Option.None({}),
+          None -> Option.None({}),
           Some(d) -> Option.Some(f(d)),
         }
     }

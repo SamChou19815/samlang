@@ -9,9 +9,9 @@ mod tests {
       main_checker::type_check_expression,
       ssa_analysis::{perform_ssa_analysis_on_expression, SsaAnalysisResult},
       type_::{
-        create_builtin_module_signature, test_type_builder, FunctionType, GlobalSignature,
-        InterfaceSignature, MemberSignature, ModuleSignature, Type, TypeDefinitionSignature,
-        TypeParameterSignature,
+        create_builtin_module_signature, test_type_builder, EnumVariantDefinitionSignature,
+        FunctionType, GlobalSignature, InterfaceSignature, MemberSignature, ModuleSignature,
+        StructItemDefinitionSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
       },
       type_check_sources,
       typing_context::{LocalTypingContext, TypingContext},
@@ -82,22 +82,23 @@ mod tests {
             (
               heap.alloc_str_for_test("Test"),
               InterfaceSignature {
-                type_definition: Some(TypeDefinitionSignature {
-                  is_object: true,
-                  names: vec![
-                    heap.alloc_str_for_test("foo"),
-                    heap.alloc_str_for_test("bar"),
-                    heap.alloc_str_for_test("fff"),
-                  ],
-                  mappings: HashMap::from([
-                    (heap.alloc_str_for_test("foo"), (builder.bool_type(), true)),
-                    (heap.alloc_str_for_test("bar"), (builder.int_type(), false)),
-                    (
-                      heap.alloc_str_for_test("fff"),
-                      (builder.fun_type(vec![], builder.string_type()), false),
-                    ),
-                  ]),
-                }),
+                type_definition: Some(TypeDefinitionSignature::Struct(vec![
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("foo"),
+                    type_: builder.bool_type(),
+                    is_public: true,
+                  },
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("bar"),
+                    type_: builder.int_type(),
+                    is_public: false,
+                  },
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("fff"),
+                    type_: builder.fun_type(vec![], builder.string_type()),
+                    is_public: false,
+                  },
+                ])),
                 functions: HashMap::from([
                   (
                     heap.alloc_str_for_test("init"),
@@ -262,14 +263,16 @@ mod tests {
             (
               heap.alloc_str_for_test("Test2"),
               InterfaceSignature {
-                type_definition: Some(TypeDefinitionSignature {
-                  is_object: false,
-                  names: vec![heap.alloc_str_for_test("Foo"), heap.alloc_str_for_test("Bar")],
-                  mappings: HashMap::from([
-                    (heap.alloc_str_for_test("Foo"), (builder.bool_type(), true)),
-                    (heap.alloc_str_for_test("Bar"), (builder.int_type(), true)),
-                  ]),
-                }),
+                type_definition: Some(TypeDefinitionSignature::Enum(vec![
+                  EnumVariantDefinitionSignature {
+                    name: heap.alloc_str_for_test("Foo"),
+                    types: vec![builder.bool_type()],
+                  },
+                  EnumVariantDefinitionSignature {
+                    name: heap.alloc_str_for_test("Bar"),
+                    types: vec![builder.int_type()],
+                  },
+                ])),
                 functions: HashMap::from([
                   (
                     heap.alloc_str_for_test("Foo"),
@@ -308,17 +311,18 @@ mod tests {
                   name: heap.alloc_str_for_test("E"),
                   bound: None,
                 }],
-                type_definition: Some(TypeDefinitionSignature {
-                  is_object: true,
-                  names: vec![heap.alloc_str_for_test("foo"), heap.alloc_str_for_test("bar")],
-                  mappings: HashMap::from([
-                    (
-                      heap.alloc_str_for_test("foo"),
-                      (builder.generic_type(heap.alloc_str_for_test("E")), true),
-                    ),
-                    (heap.alloc_str_for_test("bar"), (builder.int_type(), false)),
-                  ]),
-                }),
+                type_definition: Some(TypeDefinitionSignature::Struct(vec![
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("foo"),
+                    type_: builder.generic_type(heap.alloc_str_for_test("E")),
+                    is_public: true,
+                  },
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("bar"),
+                    type_: builder.int_type(),
+                    is_public: false,
+                  },
+                ])),
                 functions: HashMap::new(),
                 methods: HashMap::new(),
                 super_types: vec![],
@@ -331,17 +335,16 @@ mod tests {
                   name: heap.alloc_str_for_test("E"),
                   bound: None,
                 }],
-                type_definition: Some(TypeDefinitionSignature {
-                  is_object: false,
-                  names: vec![heap.alloc_str_for_test("Foo"), heap.alloc_str_for_test("Bar")],
-                  mappings: HashMap::from([
-                    (
-                      heap.alloc_str_for_test("Foo"),
-                      (builder.generic_type(heap.alloc_str_for_test("E")), true),
-                    ),
-                    (heap.alloc_str_for_test("Bar"), (builder.int_type(), true)),
-                  ]),
-                }),
+                type_definition: Some(TypeDefinitionSignature::Enum(vec![
+                  EnumVariantDefinitionSignature {
+                    name: heap.alloc_str_for_test("Foo"),
+                    types: vec![builder.generic_type(heap.alloc_str_for_test("E"))],
+                  },
+                  EnumVariantDefinitionSignature {
+                    name: heap.alloc_str_for_test("Bar"),
+                    types: vec![builder.int_type()],
+                  },
+                ])),
                 functions: HashMap::from([
                   (
                     heap.alloc_str_for_test("Foo"),
@@ -387,14 +390,18 @@ mod tests {
             (
               heap.alloc_str_for_test("A"),
               InterfaceSignature {
-                type_definition: Some(TypeDefinitionSignature {
-                  is_object: true,
-                  names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
-                  mappings: HashMap::from([
-                    (heap.alloc_str_for_test("a"), (builder.int_type(), true)),
-                    (heap.alloc_str_for_test("b"), (builder.bool_type(), false)),
-                  ]),
-                }),
+                type_definition: Some(TypeDefinitionSignature::Struct(vec![
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("a"),
+                    type_: builder.int_type(),
+                    is_public: true,
+                  },
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("b"),
+                    type_: builder.bool_type(),
+                    is_public: false,
+                  },
+                ])),
                 functions: HashMap::from([(
                   heap.alloc_str_for_test("init"),
                   MemberSignature {
@@ -415,14 +422,18 @@ mod tests {
             (
               heap.alloc_str_for_test("B"),
               InterfaceSignature {
-                type_definition: Some(TypeDefinitionSignature {
-                  is_object: true,
-                  names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
-                  mappings: HashMap::from([
-                    (heap.alloc_str_for_test("a"), (builder.int_type(), true)),
-                    (heap.alloc_str_for_test("b"), (builder.bool_type(), false)),
-                  ]),
-                }),
+                type_definition: Some(TypeDefinitionSignature::Struct(vec![
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("a"),
+                    type_: builder.int_type(),
+                    is_public: true,
+                  },
+                  StructItemDefinitionSignature {
+                    name: heap.alloc_str_for_test("b"),
+                    type_: builder.bool_type(),
+                    is_public: false,
+                  },
+                ])),
                 functions: HashMap::from([(
                   heap.alloc_str_for_test("init"),
                   MemberSignature {
@@ -443,14 +454,16 @@ mod tests {
             (
               heap.alloc_str_for_test("C"),
               InterfaceSignature {
-                type_definition: Some(TypeDefinitionSignature {
-                  is_object: false,
-                  names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
-                  mappings: HashMap::from([
-                    (heap.alloc_str_for_test("a"), (builder.int_type(), true)),
-                    (heap.alloc_str_for_test("b"), (builder.bool_type(), true)),
-                  ]),
-                }),
+                type_definition: Some(TypeDefinitionSignature::Enum(vec![
+                  EnumVariantDefinitionSignature {
+                    name: heap.alloc_str_for_test("a"),
+                    types: vec![builder.int_type()],
+                  },
+                  EnumVariantDefinitionSignature {
+                    name: heap.alloc_str_for_test("b"),
+                    types: vec![builder.bool_type()],
+                  },
+                ])),
                 functions: HashMap::from([(
                   heap.alloc_str_for_test("init"),
                   MemberSignature {
@@ -1376,7 +1389,7 @@ mod tests {
   val _: string = Test.generic1(
     (() -> 0)(),
     {true},
-    match (Test2.Foo(false)) { Foo(_) -> false, Bar(_) -> false, }
+    match (Test2.Foo(false)) { Foo(_, _) -> false, Bar(_) -> false, }
   );
   val _ = Test.generic1(0, if true then true else false, false);
   val _ = Test.generic2((a: int) -> 1, 1);
@@ -1389,6 +1402,7 @@ mod tests {
       &builder.unit_type(),
       vec![
         "__DUMMY__.sam:2:12-2:26: [invalid-arity]: Incorrect arguments size. Expected: 0, actual: 1.",
+        "__DUMMY__.sam:6:32-6:51: [invalid-arity]: Incorrect data variables size. Expected: 1, actual: 2.",
         "__DUMMY__.sam:8:11-8:64: [underconstrained]: There is not enough context information to decide the type of this expression.",
         "__DUMMY__.sam:12:63-12:64: [underconstrained]: There is not enough context information to decide the type of this expression.",
         "__DUMMY__.sam:12:83-12:84: [underconstrained]: There is not enough context information to decide the type of this expression."

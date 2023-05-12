@@ -103,7 +103,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
       mark_expression(heap, &e.matched);
       for case in &e.cases {
         mark_id(heap, &case.tag);
-        if let Some((v, t)) = &case.data_variable {
+        for (v, t) in case.data_variables.iter().filter_map(|it| it.as_ref()) {
           mark_id(heap, v);
           mark_type(heap, t);
         }
@@ -184,7 +184,9 @@ fn mark_module(heap: &mut Heap, module: &Module<Rc<Type>>) {
         TypeDefinition::Enum { loc: _, variants } => {
           for variant in variants {
             mark_id(heap, &variant.name);
-            mark_annot(heap, &variant.associated_data_type);
+            for annot in &variant.associated_data_types {
+              mark_annot(heap, annot);
+            }
           }
         }
       }

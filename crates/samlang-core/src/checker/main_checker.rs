@@ -8,7 +8,7 @@ use super::{
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{
     FunctionType, GlobalSignature, ISourceType, MemberSignature, NominalType, PrimitiveTypeKind,
-    Type, TypeDefinitionSignature, TypeParameterSignature,
+    Type, TypeParameterSignature,
   },
   typing_context::{LocalTypingContext, TypingContext},
 };
@@ -188,7 +188,7 @@ mod mod_type_tests {
           loc: Location::dummy(),
           tag: Id::from(heap.alloc_str_for_test("name")),
           tag_order: 1,
-          data_variable: None,
+          data_variables: vec![],
           body: Box::new(zero_expr()),
         }],
       }),
@@ -636,12 +636,18 @@ fn check_member_with_unresolved_tparams(
         expression.explicit_type_arguments.len(),
       );
     }
-    let TypeDefinitionSignature { is_object: _, names: field_names, mappings: field_mappings } =
-      cx.resolve_type_definition(checked_expression.type_(), true);
-    if let Some((field_type, _)) = field_mappings.get(&expression.field_name.name) {
+    let fields = cx.resolve_struct_definitions(checked_expression.type_());
+    let mut field_order_mapping = HashMap::new();
+    let mut field_mappings = HashMap::new();
+    for (i, field) in fields.into_iter().enumerate() {
+      field_order_mapping.insert(field.name, i);
+      field_mappings.insert(field.name, (field.type_, field.is_public));
+    }
+    if let Some((field_type, _)) =
+      field_mappings.get(&expression.field_name.name).filter(|(_, is_public)| *is_public)
+    {
       let type_ = Rc::new(type_meet(cx, heap, hint, &field_type.reposition(expression.common.loc)));
-      let (order, _) =
-        field_names.iter().find_position(|it| *it.deref() == expression.field_name.name).unwrap();
+      let order = *field_order_mapping.get(&expression.field_name.name).unwrap();
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
         common: expression.common.with_new_type(type_),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
@@ -1052,16 +1058,20 @@ fn check_match(
 ) -> expr::E<Rc<Type>> {
   let checked_matched = type_check_expression(cx, heap, &expression.matched, None);
   let checked_matched_type = checked_matched.type_().deref();
-  let TypeDefinitionSignature { is_object: _, names: variant_names, mappings: variant_mappings } =
-    cx.resolve_type_definition(checked_matched_type, false);
-  let mut unused_mappings = variant_mappings;
+  let variants = cx.resolve_enum_definitions(checked_matched_type);
+  let mut orders = HashMap::new();
+  let mut unused_mappings = HashMap::new();
+  for (i, variant) in variants.into_iter().enumerate() {
+    orders.insert(variant.name, i);
+    unused_mappings.insert(variant.name, variant.types);
+  }
   let mut checked_cases = vec![];
   let mut matching_list_types = vec![];
-  for expr::VariantPatternToExpression { loc, tag, tag_order: _, data_variable, body } in
+  for expr::VariantPatternToExpression { loc, tag, tag_order: _, data_variables, body } in
     &expression.cases
   {
-    let mapping_data_type = match unused_mappings.remove(&tag.name) {
-      Some((field_type, _)) => field_type,
+    let mapping_data_types = match unused_mappings.remove(&tag.name) {
+      Some(types) => types,
       None => {
         cx.error_set.report_member_missing_error(
           tag.loc,
@@ -1071,19 +1081,34 @@ fn check_match(
         continue;
       }
     };
-    let (checked_body, checked_data_variable) = if let Some((data_variable, _)) = data_variable {
-      cx.local_typing_context.write(data_variable.loc, mapping_data_type.clone());
-      (type_check_expression(cx, heap, body, hint), Some((*data_variable, mapping_data_type)))
-    } else {
-      (type_check_expression(cx, heap, body, hint), None)
-    };
-    let (tag_order, _) = variant_names.iter().find_position(|n| tag.name.eq(n)).unwrap();
+    if data_variables.len() != mapping_data_types.len() {
+      cx.error_set.report_invalid_arity_error(
+        *loc,
+        "data variables",
+        mapping_data_types.len(),
+        data_variables.len(),
+      );
+    }
+    let checked_data_variables = data_variables
+      .iter()
+      .zip(mapping_data_types)
+      .map(|(dv, t)| {
+        if let Some((data_variable, _)) = dv {
+          cx.local_typing_context.write(data_variable.loc, t.clone());
+          Some((*data_variable, t))
+        } else {
+          None
+        }
+      })
+      .collect_vec();
+    let checked_body = type_check_expression(cx, heap, body, hint);
+    let tag_order = *orders.get(&tag.name).unwrap();
     matching_list_types.push(checked_body.type_().clone());
     checked_cases.push(expr::VariantPatternToExpression {
       loc: *loc,
       tag: *tag,
       tag_order,
-      data_variable: checked_data_variable,
+      data_variables: checked_data_variables,
       body: Box::new(checked_body),
     });
   }
@@ -1226,17 +1251,20 @@ fn check_statement(
   let checked_assigned_expr_type = checked_assigned_expr.type_();
   let checked_pattern = match pattern {
     expr::Pattern::Object(pattern_loc, destructed_names) => {
-      let TypeDefinitionSignature { is_object: _, names: field_names, mappings: field_mappings } =
-        cx.resolve_type_definition(checked_assigned_expr_type, true);
+      let fields = cx.resolve_struct_definitions(checked_assigned_expr_type);
       let mut field_order_mapping = HashMap::new();
-      for (i, name) in field_names.into_iter().enumerate() {
-        field_order_mapping.insert(name, i);
+      let mut field_mappings = HashMap::new();
+      for (i, field) in fields.into_iter().enumerate() {
+        field_order_mapping.insert(field.name, i);
+        field_mappings.insert(field.name, (field.type_, field.is_public));
       }
       let mut checked_destructured_names = vec![];
       for ObjectPatternDestucturedName { loc, field_order, field_name, alias, type_: _ } in
         destructed_names
       {
-        if let Some((field_type, _)) = field_mappings.get(&field_name.name) {
+        if let Some((field_type, _)) =
+          field_mappings.get(&field_name.name).filter(|(_, is_public)| *is_public)
+        {
           let write_loc = if let Some(alias) = &alias { alias.loc } else { field_name.loc };
           cx.local_typing_context.write(write_loc, field_type.clone());
           let field_order = field_order_mapping.get(&field_name.name).unwrap();
@@ -1449,11 +1477,8 @@ pub(crate) fn type_check_module(
           }
         }
         TypeDefinition::Enum { loc: _, variants } => {
-          for variant in variants {
-            cx.validate_type_instantiation_strictly(
-              heap,
-              &Type::from_annotation(&variant.associated_data_type),
-            )
+          for t in variants.iter().flat_map(|it| it.associated_data_types.iter()) {
+            cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(t))
           }
         }
       }

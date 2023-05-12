@@ -1,7 +1,7 @@
 use crate::{
   ast::hir::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
-    IdType, Sources, Statement, Type, TypeDefinition, VariableName,
+    IdType, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
   },
   common::{Heap, PStr},
 };
@@ -175,11 +175,20 @@ pub(super) fn deduplicate(
   }
   for type_def in type_definitions {
     debug_assert!(type_def.type_parameters.is_empty());
-    let key = format!(
-      "{}_{}",
-      type_def.is_object,
-      type_def.mappings.iter().map(|t| t.pretty_print(heap)).join("_")
-    );
+    let key = match &type_def.mappings {
+      TypeDefinitionMappings::Struct(types) => {
+        format!("object_{}", types.iter().map(|t| t.pretty_print(heap)).join("_"))
+      }
+      TypeDefinitionMappings::Enum(all_types) => {
+        format!(
+          "enum_{}",
+          all_types
+            .iter()
+            .map(|(types, _)| types.iter().map(|t| t.pretty_print(heap)).join("_"))
+            .join("___")
+        )
+      }
+    };
     let original_name = type_def.identifier;
     let canonical_name = if let Some(c) = type_def_mapping.get(&key) {
       c.identifier
@@ -204,14 +213,23 @@ pub(super) fn deduplicate(
       .collect_vec(),
     type_definitions: type_def_mapping
       .into_values()
-      .map(|TypeDefinition { identifier, is_object, type_parameters, names, mappings }| {
-        TypeDefinition {
-          identifier,
-          is_object,
-          type_parameters,
-          names,
-          mappings: mappings.into_iter().map(|t| rewrite_type(&state, t)).collect_vec(),
-        }
+      .map(|TypeDefinition { identifier, type_parameters, names, mappings }| TypeDefinition {
+        identifier,
+        type_parameters,
+        names,
+        mappings: match mappings {
+          TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
+            types.into_iter().map(|t| rewrite_type(&state, t)).collect_vec(),
+          ),
+          TypeDefinitionMappings::Enum(all_types) => TypeDefinitionMappings::Enum(
+            all_types
+              .into_iter()
+              .map(|(types, l)| {
+                (types.into_iter().map(|t| rewrite_type(&state, t)).collect_vec(), l)
+              })
+              .collect_vec(),
+          ),
+        },
       })
       .collect_vec(),
     main_function_names,
@@ -283,17 +301,15 @@ mod tests {
       type_definitions: vec![
         TypeDefinition {
           identifier: heap.alloc_str_for_test("C"),
-          is_object: true,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![INT_TYPE, STRING_TYPE],
+          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("D"),
-          is_object: true,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![INT_TYPE, STRING_TYPE],
+          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
       ],
       main_function_names: vec![],

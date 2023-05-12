@@ -385,8 +385,8 @@ class Main {
       CheckerTestSource {
         test_name: "polymorphic-option",
         source_code: r#"
-class Option<T>(Some(T), None(bool)) {
-  function <T> none(): Option<T> = Option.None(true)
+class Option<T>(Some(T), None) {
+  function <T> none(): Option<T> = Option.None()
   method toSome(t: T): Option<T> = Option.Some(t)
 }
 
@@ -945,17 +945,17 @@ class Box<T>(val content: T) {
   }
 }
 
-class Option<T>(None(unit), Some(T)) {
-  function <T> getNone(): Option<T> = Option.None({})
+class Option<T>(None, Some(T)) {
+  function <T> getNone(): Option<T> = Option.None()
   function <T> getSome(d: T): Option<T> = Option.Some(d)
   method forceValue(): T =
     match (this) {
-      None(_) -> Builtins.panic("Ah"),
+      None -> Builtins.panic("Ah"),
       Some(v) -> v,
     }
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
-      None(_) -> Option.None({}),
+      None -> Option.None(),
       Some(d) -> Option.Some(f(d)),
     }
 }

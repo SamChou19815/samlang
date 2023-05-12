@@ -582,6 +582,8 @@ pub mod rewrite {
 pub mod completion {
   use std::collections::HashSet;
 
+  use crate::checker::type_::TypeDefinitionSignature;
+
   use super::*;
 
   #[derive(Debug)]
@@ -726,14 +728,13 @@ pub mod completion {
     let mut completion_results = vec![];
     let is_inside_class = class_of_expr.eq(&instance_class_name);
     match &relevant_interface_type.type_definition {
-      Some(def) if is_inside_class && def.is_object => {
-        for name in &def.names {
-          let field_type = def.mappings.get(name).unwrap();
+      Some(TypeDefinitionSignature::Struct(fields)) if is_inside_class => {
+        for field in fields {
           completion_results.push(AutoCompletionItem {
-            label: name.as_str(&state.heap).to_string(),
-            insert_text: name.as_str(&state.heap).to_string(),
+            label: field.name.as_str(&state.heap).to_string(),
+            insert_text: field.name.as_str(&state.heap).to_string(),
             kind: CompletionItemKind::Field,
-            detail: field_type.0.pretty_print(&state.heap),
+            detail: field.type_.pretty_print(&state.heap),
             additional_edits: vec![],
           });
         }

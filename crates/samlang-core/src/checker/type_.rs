@@ -480,24 +480,51 @@ impl InterfaceSignature {
   }
 }
 
-pub(crate) struct TypeDefinitionSignature {
-  pub(crate) is_object: bool,
-  pub(crate) names: Vec<PStr>,
-  pub(crate) mappings: HashMap<PStr, (Rc<Type>, bool)>,
+pub(crate) struct StructItemDefinitionSignature {
+  pub(crate) name: PStr,
+  pub(crate) type_: Rc<Type>,
+  pub(crate) is_public: bool,
+}
+
+pub(crate) struct EnumVariantDefinitionSignature {
+  pub(crate) name: PStr,
+  pub(crate) types: Vec<Rc<Type>>,
+}
+
+pub(crate) enum TypeDefinitionSignature {
+  Struct(Vec<StructItemDefinitionSignature>),
+  Enum(Vec<EnumVariantDefinitionSignature>),
 }
 
 impl TypeDefinitionSignature {
   pub(crate) fn to_string(&self, heap: &Heap) -> String {
-    let is_object = self.is_object;
     let mut collector = vec![];
-    for name in &self.names {
-      let (t, is_public) = self.mappings.get(name).unwrap();
-      let type_str =
-        format!("{}{}", if *is_public { "" } else { "(private) " }, t.pretty_print(heap));
-      if is_object {
-        collector.push(format!("{}:{}", name.as_str(heap), type_str));
-      } else {
-        collector.push(format!("{}({})", name.as_str(heap), type_str));
+    match self {
+      TypeDefinitionSignature::Struct(items) => {
+        for StructItemDefinitionSignature { name, type_, is_public } in items {
+          collector.push(format!(
+            "{}:{}{}",
+            name.as_str(heap),
+            if *is_public { "" } else { "(private) " },
+            type_.pretty_print(heap)
+          ));
+        }
+      }
+      TypeDefinitionSignature::Enum(variants) => {
+        for EnumVariantDefinitionSignature { name, types } in variants {
+          let mut line = name.as_str(heap).to_string();
+          let mut iterator = types.iter();
+          if let Some(first) = iterator.next() {
+            line.push('(');
+            line.push_str(&first.pretty_print(heap));
+            for t in iterator {
+              line.push_str(", ");
+              line.push_str(&t.pretty_print(heap));
+            }
+            line.push(')');
+          }
+          collector.push(line);
+        }
       }
     }
     collector.join(", ")
@@ -527,11 +554,7 @@ pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignatur
     interfaces: HashMap::from([(
       heap.alloc_str_permanent("Builtins"),
       InterfaceSignature {
-        type_definition: Some(TypeDefinitionSignature {
-          is_object: false,
-          names: vec![],
-          mappings: HashMap::new(),
-        }),
+        type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
         type_parameters: vec![],
         super_types: vec![],
         methods: HashMap::new(),
@@ -728,14 +751,18 @@ m2: public () -> any
 "#
       .trim(),
       InterfaceSignature {
-        type_definition: Some(TypeDefinitionSignature {
-          is_object: true,
-          names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
-          mappings: HashMap::from([
-            (heap.alloc_str_for_test("a"), (builder.bool_type(), true)),
-            (heap.alloc_str_for_test("b"), (builder.bool_type(), false)),
-          ])
-        }),
+        type_definition: Some(TypeDefinitionSignature::Struct(vec![
+          StructItemDefinitionSignature {
+            name: heap.alloc_str_for_test("a"),
+            type_: builder.bool_type(),
+            is_public: true
+          },
+          StructItemDefinitionSignature {
+            name: heap.alloc_str_for_test("b"),
+            type_: builder.bool_type(),
+            is_public: false
+          },
+        ])),
         type_parameters: vec![],
         super_types: vec![],
         functions: HashMap::new(),
@@ -772,11 +799,26 @@ m2: public () -> any
     let builder = test_type_builder::create();
     assert_eq!(
       "A(bool)",
-      TypeDefinitionSignature {
-        is_object: false,
-        names: vec![heap.alloc_str_for_test("A")],
-        mappings: HashMap::from([(heap.alloc_str_for_test("A"), (builder.bool_type(), true))])
-      }
+      TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
+        name: heap.alloc_str_for_test("A"),
+        types: vec![builder.bool_type()]
+      }])
+      .to_string(&heap)
+    );
+    assert_eq!(
+      "B(bool, bool)",
+      TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
+        name: heap.alloc_str_for_test("B"),
+        types: vec![builder.bool_type(), builder.bool_type()]
+      }])
+      .to_string(&heap)
+    );
+    assert_eq!(
+      "C",
+      TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
+        name: heap.alloc_str_for_test("C"),
+        types: vec![]
+      }])
       .to_string(&heap)
     );
 

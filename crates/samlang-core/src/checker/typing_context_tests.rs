@@ -5,8 +5,9 @@ mod tests {
     checker::{
       ssa_analysis::SsaAnalysisResult,
       type_::{
-        test_type_builder, ISourceType, InterfaceSignature, MemberSignature, ModuleSignature,
-        NominalType, Type, TypeDefinitionSignature, TypeParameterSignature,
+        test_type_builder, EnumVariantDefinitionSignature, ISourceType, InterfaceSignature,
+        MemberSignature, ModuleSignature, NominalType, Type, TypeDefinitionSignature,
+        TypeParameterSignature,
       },
       typing_context::{LocalTypingContext, TypingContext},
     },
@@ -118,11 +119,7 @@ mod tests {
         interfaces: HashMap::from([(
           heap.alloc_str_for_test("A"),
           InterfaceSignature {
-            type_definition: Some(TypeDefinitionSignature {
-              is_object: false,
-              names: vec![],
-              mappings: HashMap::new(),
-            }),
+            type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
             type_parameters: vec![TypeParameterSignature {
               name: heap.alloc_str_for_test("T"),
               bound: None,
@@ -197,11 +194,7 @@ mod tests {
           (
             heap.alloc_str_for_test("A"),
             InterfaceSignature {
-              type_definition: Some(TypeDefinitionSignature {
-                is_object: false,
-                names: vec![],
-                mappings: HashMap::new(),
-              }),
+              type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str_for_test("T1"), bound: None },
                 TypeParameterSignature {
@@ -297,11 +290,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
           (
             heap.alloc_str_for_test("A"),
             InterfaceSignature {
-              type_definition: Some(TypeDefinitionSignature {
-                is_object: false,
-                names: vec![],
-                mappings: HashMap::new(),
-              }),
+              type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
               type_parameters: vec![
                 TypeParameterSignature { name: str_a, bound: None },
                 TypeParameterSignature { name: str_b, bound: None },
@@ -696,20 +685,16 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
           (
             heap.alloc_str_for_test("A"),
             InterfaceSignature {
-              type_definition: Some(TypeDefinitionSignature {
-                is_object: false,
-                names: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
-                mappings: HashMap::from([
-                  (
-                    heap.alloc_str_for_test("a"),
-                    (builder.generic_type(heap.alloc_str_for_test("A")), true),
-                  ),
-                  (
-                    heap.alloc_str_for_test("b"),
-                    (builder.generic_type(heap.alloc_str_for_test("B")), false),
-                  ),
-                ]),
-              }),
+              type_definition: Some(TypeDefinitionSignature::Enum(vec![
+                EnumVariantDefinitionSignature {
+                  name: heap.alloc_str_for_test("a"),
+                  types: vec![builder.generic_type(heap.alloc_str_for_test("A"))],
+                },
+                EnumVariantDefinitionSignature {
+                  name: heap.alloc_str_for_test("b"),
+                  types: vec![builder.generic_type(heap.alloc_str_for_test("B"))],
+                },
+              ])),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
                 TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
@@ -722,11 +707,7 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
           (
             heap.alloc_str_for_test("B"),
             InterfaceSignature {
-              type_definition: Some(TypeDefinitionSignature {
-                is_object: true,
-                names: vec![],
-                mappings: HashMap::new(),
-              }),
+              type_definition: Some(TypeDefinitionSignature::Struct(vec![])),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str_for_test("E"), bound: None },
                 TypeParameterSignature { name: heap.alloc_str_for_test("F"), bound: None },
@@ -748,53 +729,34 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
       vec![],
     );
 
-    assert!(cx.resolve_type_definition(&builder.bool_type(), true).names.is_empty());
+    assert!(cx.resolve_struct_definitions(&builder.bool_type()).is_empty());
     assert!(cx
-      .resolve_type_definition(
-        &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
-          vec![builder.int_type(), builder.int_type()]
-        ),
-        true,
-      )
-      .names
+      .resolve_struct_definitions(&builder.general_nominal_type(
+        heap.alloc_str_for_test("A"),
+        vec![builder.int_type(), builder.int_type()]
+      ))
       .is_empty());
     assert!(cx
-      .resolve_type_definition(
-        &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
-          vec![builder.int_type(), builder.int_type()]
-        ),
-        true,
-      )
-      .names
+      .resolve_struct_definitions(&builder.general_nominal_type(
+        heap.alloc_str_for_test("A"),
+        vec![builder.int_type(), builder.int_type()]
+      ))
       .is_empty());
     assert!(cx
-      .resolve_type_definition(
-        &builder.general_nominal_type(
-          heap.alloc_str_for_test("C"),
-          vec![builder.int_type(), builder.int_type()]
-        ),
-        true,
-      )
-      .names
+      .resolve_struct_definitions(&builder.general_nominal_type(
+        heap.alloc_str_for_test("C"),
+        vec![builder.int_type(), builder.int_type()]
+      ))
       .is_empty());
 
-    let resolved = cx
-      .resolve_type_definition(
-        &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
-          vec![builder.int_type(), builder.int_type()],
-        ),
-        false,
-      )
-      .mappings;
+    let resolved = cx.resolve_enum_definitions(&builder.general_nominal_type(
+      heap.alloc_str_for_test("A"),
+      vec![builder.int_type(), builder.int_type()],
+    ));
     assert_eq!(2, resolved.len());
-    let resolved_a = resolved.get(&heap.alloc_str_for_test("a")).unwrap();
-    let resolved_b = resolved.get(&heap.alloc_str_for_test("b")).unwrap();
-    assert_eq!(true, resolved_a.1);
-    assert_eq!(false, resolved_b.1);
-    assert_eq!("int", resolved_a.0.pretty_print(&heap));
-    assert_eq!("int", resolved_b.0.pretty_print(&heap));
+    let resolved_a = &resolved[0];
+    let resolved_b = &resolved[1];
+    assert_eq!("int", resolved_a.types[0].pretty_print(&heap));
+    assert_eq!("int", resolved_b.types[0].pretty_print(&heap));
   }
 }
