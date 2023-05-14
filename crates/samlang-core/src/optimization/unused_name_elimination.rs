@@ -1,7 +1,7 @@
 use crate::{
   ast::hir::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, GenenalLoopVariable, Sources,
-    Statement, Type, TypeDefinition,
+    Statement, Type, TypeDefinition, TypeDefinitionMappings,
   },
   common::PStr,
 };
@@ -143,8 +143,17 @@ fn analyze_used_function_names_and_type_names(
   }
   for d in type_definitions {
     let mut type_set = HashSet::new();
-    for t in &d.mappings {
-      collect_for_type_set(t, &mut type_set);
+    match &d.mappings {
+      TypeDefinitionMappings::Struct(ts) => {
+        for t in ts {
+          collect_for_type_set(t, &mut type_set);
+        }
+      }
+      TypeDefinitionMappings::Enum(all_ts) => {
+        for t in all_ts.iter().flat_map(|(ts, _)| ts.iter()) {
+          collect_for_type_set(t, &mut type_set);
+        }
+      }
     }
     type_def_map.insert(d.identifier, type_set);
   }
@@ -164,22 +173,22 @@ fn analyze_used_function_names_and_type_names(
   }
 
   let mut used_types = HashSet::new();
-  let mut used_types_todo_stack = vec![];
+  let mut used_types_worklist_stack = vec![];
   for used_name in &used_names {
     if let Some((_, types)) = used_functions_map.get(used_name) {
       for t in types {
         if let Some(more_used_types) = type_def_map.get(t) {
-          used_types_todo_stack.append(&mut more_used_types.iter().cloned().collect())
+          used_types_worklist_stack.append(&mut more_used_types.iter().cloned().collect())
         }
         used_types.insert(*t);
       }
     }
   }
-  while let Some(additional_used_type) = used_types_todo_stack.pop() {
+  while let Some(additional_used_type) = used_types_worklist_stack.pop() {
     if !used_types.contains(&additional_used_type) {
       used_types.insert(additional_used_type);
       for t in type_def_map.get(&additional_used_type).into_iter().flatten() {
-        used_types_todo_stack.push(*t);
+        used_types_worklist_stack.push(*t);
       }
     }
   }
@@ -219,7 +228,8 @@ mod tests {
   use crate::{
     ast::hir::{
       Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
-      GlobalVariable, Sources, Statement, Type, TypeDefinition, VariableName, INT_TYPE, ZERO,
+      GlobalVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
+      VariableName, INT_TYPE, ZERO,
     },
     Heap,
   };
@@ -255,29 +265,34 @@ mod tests {
       ],
       type_definitions: vec![
         TypeDefinition {
-          is_object: true,
           identifier: heap.alloc_str_for_test("Foo"),
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![
+          mappings: TypeDefinitionMappings::Struct(vec![
             INT_TYPE,
             Type::new_id_no_targs(heap.alloc_str_for_test("Foo")),
             Type::new_id_no_targs(heap.alloc_str_for_test("Bar")),
-          ],
+          ]),
         },
         TypeDefinition {
-          is_object: true,
           identifier: heap.alloc_str_for_test("Bar"),
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![Type::new_id_no_targs(heap.alloc_str_for_test("Bar"))],
+          mappings: TypeDefinitionMappings::Struct(vec![Type::new_id_no_targs(
+            heap.alloc_str_for_test("Bar"),
+          )]),
         },
         TypeDefinition {
-          is_object: true,
           identifier: heap.alloc_str_for_test("Baz"),
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![INT_TYPE],
+          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE]),
+        },
+        TypeDefinition {
+          identifier: heap.alloc_str_for_test("Baz"),
+          type_parameters: vec![],
+          names: vec![],
+          mappings: TypeDefinitionMappings::Enum(vec![]),
         },
       ],
       main_function_names: vec![heap.alloc_str_for_test("main")],

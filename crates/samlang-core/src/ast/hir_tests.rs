@@ -172,21 +172,22 @@ mod tests {
       "object type A = [int, bool]",
       TypeDefinition {
         identifier: heap.alloc_str_for_test("A"),
-        is_object: true,
         type_parameters: vec![],
         names: vec![],
-        mappings: vec![INT_TYPE, BOOL_TYPE],
+        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, BOOL_TYPE]),
       }
       .pretty_print(heap)
     );
     assert_eq!(
-      "variant type B<C> = [int, C]",
+      "variant type B<C> = [[int], [C]]",
       TypeDefinition {
         identifier: heap.alloc_str_for_test("B"),
-        is_object: false,
         type_parameters: vec![heap.alloc_str_for_test("C")],
         names: vec![],
-        mappings: vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("C"))],
+        mappings: TypeDefinitionMappings::Enum(vec![
+          (vec![INT_TYPE], 1),
+          (vec![Type::new_id_no_targs(heap.alloc_str_for_test("C"))], 0)
+        ]),
       }
       .pretty_print(heap)
     );
@@ -370,10 +371,9 @@ if 0 {
       .clone()],
       type_definitions: vec![TypeDefinition {
         identifier: heap.alloc_str_for_test("Foo"),
-        is_object: true,
         type_parameters: vec![],
         names: vec![],
-        mappings: vec![INT_TYPE, BOOL_TYPE],
+        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, BOOL_TYPE]),
       }
       .clone()],
       main_function_names: vec![heap.alloc_str_for_test("ddd")],

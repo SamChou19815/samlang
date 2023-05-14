@@ -16,6 +16,7 @@ mod tests {
 
     assert!(PrimitiveType::Int.eq(&PrimitiveType::Int));
     assert!(STRING_TYPE.as_fn().is_none());
+    assert!(ZERO.as_name().is_none());
 
     assert!(!format!(
       "{:?}",

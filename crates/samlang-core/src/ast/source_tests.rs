@@ -171,7 +171,7 @@ mod tests {
         loc: Location::dummy(),
         tag: Id::from(heap.alloc_str_for_test("name")),
         tag_order: 1,
-        data_variable: None,
+        data_variables: vec![],
         body: Box::new(zero_expr.clone()),
       }],
     }));
@@ -326,7 +326,7 @@ mod tests {
       loc: Location::dummy(),
       variants: vec![VariantDefinition {
         name: Id::from(heap.alloc_str_for_test("str")),
-        associated_data_type: builder.bool_annot(),
+        associated_data_types: vec![builder.bool_annot()],
       }],
     };
     assert!(enum_type_def.clone().eq(&enum_type_def));

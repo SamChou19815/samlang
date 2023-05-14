@@ -5,7 +5,7 @@ use super::hir_type_conversion::{
 use crate::{
   ast::hir::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
-    IdType, Sources, Statement, Type, TypeDefinition, VariableName,
+    IdType, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
   },
   common::{Heap, PStr},
 };
@@ -293,22 +293,44 @@ impl Rewriter {
           ))
           .collect();
         self.specialized_type_definitions.insert(encoded_name, type_def.clone());
-        let rewritten_mappings = type_def
-          .mappings
-          .iter()
-          .map(|it| {
-            self.rewrite_type(
-              heap,
-              &type_application(it, &solved_targs_replacement_map),
-              &HashMap::new(),
-            )
-          })
-          .collect_vec();
+        let rewritten_mappings = match &type_def.mappings {
+          TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
+            types
+              .iter()
+              .map(|it| {
+                self.rewrite_type(
+                  heap,
+                  &type_application(it, &solved_targs_replacement_map),
+                  &HashMap::new(),
+                )
+              })
+              .collect_vec(),
+          ),
+          TypeDefinitionMappings::Enum(all_types) => TypeDefinitionMappings::Enum(
+            all_types
+              .iter()
+              .map(|(types, l)| {
+                (
+                  types
+                    .iter()
+                    .map(|it| {
+                      self.rewrite_type(
+                        heap,
+                        &type_application(it, &solved_targs_replacement_map),
+                        &HashMap::new(),
+                      )
+                    })
+                    .collect_vec(),
+                  *l,
+                )
+              })
+              .collect_vec(),
+          ),
+        };
         self.specialized_type_definitions.insert(
           encoded_name,
           Rc::new(TypeDefinition {
             identifier: encoded_name,
-            is_object: type_def.is_object,
             type_parameters: vec![],
             names: type_def.names.clone(),
             mappings: rewritten_mappings,
@@ -428,7 +450,9 @@ pub(super) fn perform_generics_specialization(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::hir::{GlobalVariable, Operator, INT_TYPE, STRING_TYPE, TRUE, ZERO};
+  use crate::ast::hir::{
+    GlobalVariable, Operator, TypeDefinitionMappings, INT_TYPE, STRING_TYPE, TRUE, ZERO,
+  };
   use pretty_assertions::assert_eq;
 
   fn assert_specialized(sources: Sources, heap: &mut Heap, expected: &str) {
@@ -638,20 +662,18 @@ sources.mains = [main]
         type_definitions: vec![
           TypeDefinition {
             identifier: heap.alloc_str_for_test("I"),
-            is_object: false,
             type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
             names: vec![],
-            mappings: vec![
-              Type::new_id_no_targs(heap.alloc_str_for_test("A")),
-              Type::new_id_no_targs(heap.alloc_str_for_test("B")),
-            ],
+            mappings: TypeDefinitionMappings::Enum(vec![
+              (vec![Type::new_id_no_targs(heap.alloc_str_for_test("A"))], 1),
+              (vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))], 1),
+            ]),
           },
           TypeDefinition {
             identifier: heap.alloc_str_for_test("J"),
-            is_object: true,
             type_parameters: vec![],
             names: vec![],
-            mappings: vec![INT_TYPE],
+            mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE]),
           },
         ],
         main_function_names: vec![heap.alloc_str_for_test("main")],
@@ -859,8 +881,8 @@ const G1 = '';
 closure type CC_string_string = (string) -> string
 closure type CC_int_string = (int) -> string
 object type J = [int]
-variant type I_int_string = [int, string]
-variant type I_string_string = [string, string]
+variant type I_int_string = [[int], [string]]
+variant type I_string_string = [[string], [string]]
 function main(): int {
   let finalV: int;
   if 1 {
@@ -931,20 +953,21 @@ sources.mains = [main]"#,
         type_definitions: vec![
           TypeDefinition {
             identifier: heap.alloc_str_for_test("I"),
-            is_object: false,
             type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
             names: vec![],
-            mappings: vec![
-              Type::new_id_no_targs(heap.alloc_str_for_test("A")),
-              Type::new_id_no_targs(heap.alloc_str_for_test("B")),
-            ],
+            mappings: TypeDefinitionMappings::Enum(vec![
+              (vec![Type::new_id_no_targs(heap.alloc_str_for_test("A"))], 1),
+              (vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))], 1),
+            ]),
           },
           TypeDefinition {
             identifier: heap.alloc_str_for_test("J"),
-            is_object: true,
             type_parameters: vec![],
             names: vec![],
-            mappings: vec![Type::new_id(heap.alloc_str_for_test("I"), vec![INT_TYPE, INT_TYPE])],
+            mappings: TypeDefinitionMappings::Struct(vec![Type::new_id(
+              heap.alloc_str_for_test("I"),
+              vec![INT_TYPE, INT_TYPE],
+            )]),
           },
         ],
         main_function_names: vec![heap.alloc_str_for_test("main")],
@@ -1012,7 +1035,7 @@ sources.mains = [main]"#,
       heap,
       r#"
 object type J = [I_int_int]
-variant type I_int_int = [int, int]
+variant type I_int_int = [[int], [int]]
 function main(): int {
   creatorJ();
   (v: int)();

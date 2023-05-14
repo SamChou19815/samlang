@@ -371,7 +371,7 @@ pub(crate) mod expr {
     pub(crate) loc: Location,
     pub(crate) tag: Id,
     pub(crate) tag_order: usize,
-    pub(crate) data_variable: Option<(Id, T)>,
+    pub(crate) data_variables: Vec<Option<(Id, T)>>,
     pub(crate) body: Box<E<T>>,
   }
 
@@ -544,7 +544,7 @@ pub(crate) struct FieldDefinition {
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct VariantDefinition {
   pub(crate) name: Id,
-  pub(crate) associated_data_type: annotation::T,
+  pub(crate) associated_data_types: Vec<annotation::T>,
 }
 
 #[derive(Clone, EnumAsInner, PartialEq, Eq)]

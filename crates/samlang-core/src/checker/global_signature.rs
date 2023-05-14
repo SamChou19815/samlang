@@ -1,8 +1,9 @@
 use super::{
   checker_utils::{perform_fn_type_substitution, perform_nominal_type_substitution},
   type_::{
-    FunctionType, GlobalSignature, ISourceType, InterfaceSignature, MemberSignature,
-    ModuleSignature, NominalType, Type, TypeDefinitionSignature, TypeParameterSignature,
+    EnumVariantDefinitionSignature, FunctionType, GlobalSignature, ISourceType, InterfaceSignature,
+    MemberSignature, ModuleSignature, NominalType, StructItemDefinitionSignature, Type,
+    TypeDefinitionSignature, TypeParameterSignature,
   },
 };
 use crate::{
@@ -74,16 +75,16 @@ pub(crate) fn build_module_signature(
             heap.get_allocated_str_opt("init").unwrap(),
             ctor_fn,
           );
-          Some(TypeDefinitionSignature {
-            is_object: true,
-            names: fields.iter().map(|it| it.name.name).collect_vec(),
-            mappings: fields
+          Some(TypeDefinitionSignature::Struct(
+            fields
               .iter()
-              .map(|it| {
-                (it.name.name, (Rc::new(Type::from_annotation(&it.annotation)), it.is_public))
+              .map(|field| StructItemDefinitionSignature {
+                name: field.name.name,
+                type_: Rc::new(Type::from_annotation(&field.annotation)),
+                is_public: field.is_public,
               })
               .collect(),
-          })
+          ))
         }
         TypeDefinition::Enum { loc, variants } => {
           let type_def_reason = Reason::new(*loc, Some(*loc));
@@ -93,22 +94,29 @@ pub(crate) fn build_module_signature(
               type_parameters: toplevel_tparams_sig.clone(),
               type_: FunctionType {
                 reason: type_def_reason,
-                argument_types: vec![Rc::new(Type::from_annotation(&variant.associated_data_type))],
+                argument_types: variant
+                  .associated_data_types
+                  .iter()
+                  .map(|annot| Rc::new(Type::from_annotation(annot)))
+                  .collect(),
                 return_type: class_type.clone(),
               },
             };
             functions.insert(variant.name.name, ctor_fn);
           }
-          Some(TypeDefinitionSignature {
-            is_object: false,
-            names: variants.iter().map(|it| it.name.name).collect_vec(),
-            mappings: variants
+          Some(TypeDefinitionSignature::Enum(
+            variants
               .iter()
-              .map(|it| {
-                (it.name.name, (Rc::new(Type::from_annotation(&it.associated_data_type)), true))
+              .map(|variant| EnumVariantDefinitionSignature {
+                name: variant.name.name,
+                types: variant
+                  .associated_data_types
+                  .iter()
+                  .map(|it| Rc::new(Type::from_annotation(it)))
+                  .collect(),
               })
               .collect(),
-          })
+          ))
         }
       }
     } else {

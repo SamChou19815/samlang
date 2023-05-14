@@ -123,25 +123,38 @@ impl ClosureTypeDefinition {
   }
 }
 
+#[derive(Debug, Clone, EnumAsInner)]
+pub(crate) enum TypeDefinitionMappings {
+  Struct(Vec<Type>),
+  Enum(Vec<(Vec<Type>, /* real size */ usize)>),
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct TypeDefinition {
   pub(crate) identifier: PStr,
-  pub(crate) is_object: bool,
   pub(crate) type_parameters: Vec<PStr>,
   pub(crate) names: Vec<PStr>,
-  pub(crate) mappings: Vec<Type>,
+  pub(crate) mappings: TypeDefinitionMappings,
 }
 
 impl TypeDefinition {
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
-    let type_ = if self.is_object { "object" } else { "variant" };
+    let (kind, mapping_str) = match &self.mappings {
+      TypeDefinitionMappings::Struct(types) => {
+        ("object", types.iter().map(|it| it.pretty_print(heap)).join(", "))
+      }
+      TypeDefinitionMappings::Enum(all_types) => (
+        "variant",
+        all_types
+          .iter()
+          .map(|(types, _)| {
+            format!("[{}]", types.iter().map(|it| it.pretty_print(heap)).join(", "))
+          })
+          .join(", "),
+      ),
+    };
     let id_part = name_with_tparams(heap, self.identifier, &self.type_parameters);
-    format!(
-      "{} type {} = [{}]",
-      type_,
-      id_part,
-      self.mappings.iter().map(|it| it.pretty_print(heap)).join(", ")
-    )
+    format!("{} type {} = [{}]", kind, id_part, mapping_str)
   }
 }
 

@@ -189,11 +189,17 @@ impl<'a> ExpressionLoweringManager<'a> {
       .clone()
   }
 
-  fn resolve_type_mapping_of_id_type(&mut self, hir_id_type: &hir::IdType) -> Vec<hir::Type> {
+  fn resolve_struct_mapping_of_id_type(&mut self, hir_id_type: &hir::IdType) -> Vec<hir::Type> {
     let type_def = self.type_definition_mapping.get(&hir_id_type.name).unwrap().clone();
     let replacement_map: HashMap<_, _> =
       type_def.type_parameters.iter().cloned().zip(hir_id_type.type_arguments.clone()).collect();
-    type_def.mappings.iter().map(|t| type_application(t, &replacement_map)).collect_vec()
+    type_def
+      .mappings
+      .as_struct()
+      .unwrap()
+      .iter()
+      .map(|t| type_application(t, &replacement_map))
+      .collect()
   }
 
   fn get_function_type_without_context(&mut self, t: &type_::Type) -> hir::FunctionType {
@@ -275,7 +281,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let LoweringResult { mut statements, expression: result_expr } =
       self.lower(&expression.object, None);
     let mappings_for_id_type =
-      self.resolve_type_mapping_of_id_type(result_expr.type_().as_id().unwrap());
+      self.resolve_struct_mapping_of_id_type(result_expr.type_().as_id().unwrap());
     let index = usize::try_from(expression.field_order).unwrap();
     let extracted_field_type = &mappings_for_id_type[index];
     let value_name = self.allocate_temp_variable(favored_temp_variable);
@@ -625,8 +631,6 @@ impl<'a> ExpressionLoweringManager<'a> {
     let mut lowered_stmts = vec![];
     let matched_expr =
       self.lowered_and_add_statements(&expression.matched, None, &mut lowered_stmts);
-    let matched_expr_type_mapping =
-      self.resolve_type_mapping_of_id_type(matched_expr.type_().as_id().unwrap());
     let variable_for_tag = self.allocate_temp_variable(None);
     lowered_stmts.push(hir::Statement::IndexedAccess {
       name: variable_for_tag,
@@ -639,19 +643,21 @@ impl<'a> ExpressionLoweringManager<'a> {
       .bind(variable_for_tag, hir::Expression::var_name(variable_for_tag, hir::INT_TYPE));
 
     let mut lowered_matching_list = vec![];
-    for source::expr::VariantPatternToExpression { tag_order, data_variable, body, .. } in
+    for source::expr::VariantPatternToExpression { tag_order, data_variables, body, .. } in
       &expression.cases
     {
       let mut local_stmts = vec![];
       self.variable_cx.push_scope();
-      if let Some((data_var_name, _)) = data_variable {
-        let data_var_type = &matched_expr_type_mapping[*tag_order];
+      for (i, data_var_name, data_var_type) in
+        data_variables.iter().enumerate().filter_map(|(i, dv)| dv.as_ref().map(|(n, t)| (i, n, t)))
+      {
         let name = data_var_name.name;
+        let data_var_type = self.type_lowering_manager.lower_source_type(self.heap, data_var_type);
         local_stmts.push(hir::Statement::IndexedAccess {
           name,
           type_: data_var_type.clone(),
           pointer_expression: matched_expr.clone(),
-          index: 1,
+          index: i + 1,
         });
         self.variable_cx.bind(name, hir::Expression::var_name(name, data_var_type.clone()));
       }
@@ -851,7 +857,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           let id_type = assigned_expr.type_().as_id().unwrap();
           for destructured_name in destructured_names {
             let field_type =
-              &self.resolve_type_mapping_of_id_type(id_type)[destructured_name.field_order];
+              &self.resolve_struct_mapping_of_id_type(id_type)[destructured_name.field_order];
             let mangled_name = self.get_renamed_variable_for_nesting(
               if let Some(n) = &destructured_name.alias {
                 n.name
@@ -927,72 +933,79 @@ fn lower_constructors(
       .collect_vec(),
   };
   let mut functions = vec![];
-  if type_def.is_object {
-    let f = hir::Function {
-      name: heap.alloc_string(common_names::encode_function_name_globally(
-        heap,
-        module_reference,
-        class_name.as_str(heap),
-        "init",
-      )),
-      parameters: vec![heap.alloc_str_permanent("_this")]
-        .into_iter()
-        .chain(
-          type_def.mappings.iter().enumerate().map(|(i, _)| heap.alloc_string(format!("_f{i}"))),
-        )
-        .collect_vec(),
-      type_parameters: type_def.type_parameters.clone(),
-      type_: hir::Type::new_fn_unwrapped(
-        vec![hir::INT_TYPE].into_iter().chain(type_def.mappings.iter().cloned()).collect_vec(),
-        hir::Type::Id(struct_type.clone()),
-      ),
-      body: vec![hir::Statement::StructInit {
-        struct_variable_name: heap.alloc_str_permanent(struct_var_name),
-        type_: struct_type.clone(),
-        expression_list: type_def
-          .mappings
-          .iter()
-          .enumerate()
-          .map(|(order, t)| {
-            hir::Expression::var_name(heap.alloc_string(format!("_f{order}")), t.clone())
-          })
-          .collect_vec(),
-      }],
-      return_value: hir::Expression::var_name(
-        heap.alloc_str_permanent(struct_var_name),
-        hir::Type::Id(struct_type),
-      ),
-    };
-    functions.push(f);
-  } else {
-    for (tag_order, data_type) in type_def.mappings.iter().enumerate() {
+  match &type_def.mappings {
+    hir::TypeDefinitionMappings::Struct(types) => {
       let f = hir::Function {
         name: heap.alloc_string(common_names::encode_function_name_globally(
           heap,
           module_reference,
           class_name.as_str(heap),
-          type_def.names[tag_order].as_str(heap),
+          "init",
         )),
-        parameters: vec![heap.alloc_str_permanent("_this"), heap.alloc_str_permanent("_data")],
+        parameters: vec![heap.alloc_str_permanent("_this")]
+          .into_iter()
+          .chain(types.iter().enumerate().map(|(i, _)| heap.alloc_string(format!("_f{i}"))))
+          .collect_vec(),
         type_parameters: type_def.type_parameters.clone(),
         type_: hir::Type::new_fn_unwrapped(
-          vec![hir::INT_TYPE, data_type.clone()],
+          vec![hir::INT_TYPE].into_iter().chain(types.iter().cloned()).collect_vec(),
           hir::Type::Id(struct_type.clone()),
         ),
         body: vec![hir::Statement::StructInit {
           struct_variable_name: heap.alloc_str_permanent(struct_var_name),
           type_: struct_type.clone(),
-          expression_list: vec![
-            hir::Expression::int(i32::try_from(tag_order).unwrap()),
-            hir::Expression::var_name(heap.alloc_str_permanent("_data"), data_type.clone()),
-          ],
+          expression_list: types
+            .iter()
+            .enumerate()
+            .map(|(order, t)| {
+              hir::Expression::var_name(heap.alloc_string(format!("_f{order}")), t.clone())
+            })
+            .collect_vec(),
         }],
         return_value: hir::Expression::var_name(
           heap.alloc_str_permanent(struct_var_name),
-          hir::Type::Id(struct_type.clone()),
+          hir::Type::Id(struct_type),
         ),
       };
       functions.push(f);
+    }
+    hir::TypeDefinitionMappings::Enum(all_types) => {
+      let padded_len = all_types.get(0).map(|(ts, _)| ts.len()).unwrap_or(0);
+      for (tag_order, (data_types, real_len)) in all_types.iter().enumerate() {
+        let f = hir::Function {
+          name: heap.alloc_string(common_names::encode_function_name_globally(
+            heap,
+            module_reference,
+            class_name.as_str(heap),
+            type_def.names[tag_order].as_str(heap),
+          )),
+          parameters: vec![heap.alloc_str_permanent("_this")]
+            .into_iter()
+            .chain((0..*real_len).map(|i| heap.alloc_string(format!("_data{i}"))))
+            .collect(),
+          type_parameters: type_def.type_parameters.clone(),
+          type_: hir::Type::new_fn_unwrapped(
+            vec![hir::INT_TYPE].into_iter().chain(data_types.iter().cloned()).collect(),
+            hir::Type::Id(struct_type.clone()),
+          ),
+          body: vec![hir::Statement::StructInit {
+            struct_variable_name: heap.alloc_str_permanent(struct_var_name),
+            type_: struct_type.clone(),
+            expression_list: vec![hir::Expression::int(i32::try_from(tag_order).unwrap())]
+              .into_iter()
+              .chain(data_types.iter().enumerate().map(|(i, data_type)| {
+                hir::Expression::var_name(heap.alloc_string(format!("_data{i}")), data_type.clone())
+              }))
+              .chain((0..(padded_len - real_len)).map(|_| hir::ZERO))
+              .collect(),
+          }],
+          return_value: hir::Expression::var_name(
+            heap.alloc_str_permanent(struct_var_name),
+            hir::Type::Id(struct_type.clone()),
+          ),
+        };
+        functions.push(f);
+      }
     }
   }
   functions
@@ -1254,20 +1267,18 @@ mod tests {
         heap.alloc_str_for_test("__DUMMY___Foo"),
         hir::TypeDefinition {
           identifier: heap.alloc_str_for_test("__DUMMY___Foo"),
-          is_object: true,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![hir::INT_TYPE, hir::INT_TYPE],
+          mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
         },
       ),
       (
         heap.alloc_str_for_test("__DUMMY___Dummy"),
         hir::TypeDefinition {
           identifier: heap.alloc_str_for_test("__DUMMY___Dummy"),
-          is_object: true,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![hir::INT_TYPE, hir::INT_TYPE],
+          mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
         },
       ),
     ]);
@@ -1933,17 +1944,17 @@ return (_t14: __DUMMY___Dummy);"#,
             loc: Location::dummy(),
             tag: source::Id::from(heap.alloc_str_for_test("Foo")),
             tag_order: 0,
-            data_variable: Some((
+            data_variables: vec![Some((
               source::Id::from(heap.alloc_str_for_test("bar")),
               builder.int_type(),
-            )),
+            ))],
             body: Box::new(dummy_source_this(heap)),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
             tag: source::Id::from(heap.alloc_str_for_test("Bar")),
             tag_order: 1,
-            data_variable: None,
+            data_variables: vec![None],
             body: Box::new(dummy_source_this(heap)),
           },
         ],
@@ -1971,17 +1982,17 @@ return (_t18: __DUMMY___Dummy);"#,
             loc: Location::dummy(),
             tag: source::Id::from(heap.alloc_str_for_test("Foo")),
             tag_order: 0,
-            data_variable: None,
+            data_variables: vec![None],
             body: Box::new(dummy_source_this(heap)),
           },
           source::expr::VariantPatternToExpression {
             loc: Location::dummy(),
             tag: source::Id::from(heap.alloc_str_for_test("Bar")),
             tag_order: 1,
-            data_variable: Some((
+            data_variables: vec![Some((
               source::Id::from(heap.alloc_str_for_test("bar")),
               Rc::new(dummy_source_id_type(heap)),
-            )),
+            ))],
             body: Box::new(id_expr(
               heap.alloc_str_for_test("bar"),
               Rc::new(dummy_source_id_type(heap)),
@@ -1991,7 +2002,7 @@ return (_t18: __DUMMY___Dummy);"#,
             loc: Location::dummy(),
             tag: source::Id::from(heap.alloc_str_for_test("Baz")),
             tag_order: 2,
-            data_variable: None,
+            data_variables: vec![None],
             body: Box::new(dummy_source_this(heap)),
           },
         ],
@@ -2006,8 +2017,8 @@ if (_t20: bool) {
   let _t18: bool = (_t17: int) == 1;
   let _t19: __DUMMY___Dummy;
   if (_t18: bool) {
-    let bar: int = (_this: __DUMMY___Dummy)[1];
-    _t19 = (bar: int);
+    let bar: __DUMMY___Dummy = (_this: __DUMMY___Dummy)[1];
+    _t19 = (bar: __DUMMY___Dummy);
   } else {
     _t19 = (_this: __DUMMY___Dummy);
   }
@@ -2512,7 +2523,7 @@ return 0;"#,
             loc: Location::dummy(),
             variants: vec![source::VariantDefinition {
               name: source::Id::from(heap.alloc_str_for_test("Tag")),
-              associated_data_type: annot_builder.int_annot(),
+              associated_data_types: vec![annot_builder.int_annot()],
             }],
           },
           members: vec![],
@@ -2565,7 +2576,7 @@ return 0;"#,
     let generics_preserved_expected = r#"closure type $SyntheticIDType0<T> = (__DUMMY___A<int>, T) -> int
 object type __DUMMY___Main = []
 object type __DUMMY___Class1 = [int]
-variant type __DUMMY___Class2 = [int]
+variant type __DUMMY___Class2 = [[int]]
 object type __DUMMY___Class3<T> = [$SyntheticIDType0<T>]
 function ___DUMMY___Main$init(_this: int): __DUMMY___Main {
   let _struct: __DUMMY___Main = [];
@@ -2610,8 +2621,8 @@ function ___DUMMY___Class1$factorial(_this: int, n: int, acc: int): int {
   return (_t41: int);
 }
 
-function ___DUMMY___Class2$Tag(_this: int, _data: int): __DUMMY___Class2 {
-  let _struct: __DUMMY___Class2 = [0, (_data: int)];
+function ___DUMMY___Class2$Tag(_this: int, _data0: int): __DUMMY___Class2 {
+  let _struct: __DUMMY___Class2 = [0, (_data0: int)];
   return (_struct: __DUMMY___Class2);
 }
 

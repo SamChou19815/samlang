@@ -1,8 +1,9 @@
 use super::{
-  checker_utils, global_signature, ssa_analysis,
+  checker_utils::perform_type_substitution,
+  global_signature, ssa_analysis,
   type_::{
-    GlobalSignature, ISourceType, MemberSignature, NominalType, Type, TypeDefinitionSignature,
-    TypeParameterSignature,
+    EnumVariantDefinitionSignature, GlobalSignature, ISourceType, MemberSignature, NominalType,
+    StructItemDefinitionSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
   },
 };
 use crate::{
@@ -282,63 +283,71 @@ impl<'a> TypingContext<'a> {
     self.current_module_reference == module_reference && class_name == self.current_class
   }
 
-  pub(super) fn resolve_type_definition(
+  pub(super) fn resolve_struct_definitions(
     &self,
     type_: &Type,
-    expect_object: bool,
-  ) -> TypeDefinitionSignature {
-    let nominal_type = match self.nominal_type_upper_bound(type_) {
-      Some(t) => t,
-      None => {
-        return TypeDefinitionSignature {
-          is_object: expect_object,
-          names: vec![],
-          mappings: HashMap::new(),
-        }
-      }
-    };
-    if let Some(TypeDefinitionSignature { is_object, names, mappings }) =
-      global_signature::resolve_interface_cx(
-        self.global_signature,
-        nominal_type.module_reference,
-        nominal_type.id,
-      )
-      .and_then(|toplevel_cx| toplevel_cx.type_definition.as_ref())
+  ) -> Vec<StructItemDefinitionSignature> {
+    match self.resolve_type_definition(type_) {
+      None | Some(TypeDefinitionSignature::Enum(_)) => vec![],
+      Some(TypeDefinitionSignature::Struct(items)) => items,
+    }
+  }
+
+  pub(super) fn resolve_enum_definitions(
+    &self,
+    type_: &Type,
+  ) -> Vec<EnumVariantDefinitionSignature> {
+    match self.resolve_type_definition(type_) {
+      None | Some(TypeDefinitionSignature::Struct(_)) => vec![],
+      Some(TypeDefinitionSignature::Enum(variants)) => variants,
+    }
+  }
+
+  fn resolve_type_definition(&self, type_: &Type) -> Option<TypeDefinitionSignature> {
+    let nominal_type = self.nominal_type_upper_bound(type_)?;
+    let resolved_type_def = global_signature::resolve_interface_cx(
+      self.global_signature,
+      nominal_type.module_reference,
+      nominal_type.id,
+    )
+    .and_then(|toplevel_cx| toplevel_cx.type_definition.as_ref())?;
+    let mut subst_map = HashMap::new();
+    for (tparam, targ) in global_signature::resolve_interface_cx(
+      self.global_signature,
+      nominal_type.module_reference,
+      nominal_type.id,
+    )
+    .unwrap()
+    .type_parameters
+    .iter()
+    .zip(&nominal_type.type_arguments)
     {
-      if *is_object != expect_object {
-        return TypeDefinitionSignature {
-          is_object: *is_object,
-          names: vec![],
-          mappings: HashMap::new(),
-        };
-      }
-      let mut subst_map = HashMap::new();
-      for (tparam, targ) in global_signature::resolve_interface_cx(
-        self.global_signature,
-        nominal_type.module_reference,
-        nominal_type.id,
-      )
-      .unwrap()
-      .type_parameters
-      .iter()
-      .zip(&nominal_type.type_arguments)
-      {
-        subst_map.insert(tparam.name, targ.clone());
-      }
-      let mut new_mappings = HashMap::new();
-      for (name, (t, is_public)) in mappings {
-        if !expect_object || nominal_type.id.eq(&self.current_class) || *is_public {
-          new_mappings
-            .insert(*name, (checker_utils::perform_type_substitution(t, &subst_map), *is_public));
-        }
-      }
-      TypeDefinitionSignature {
-        is_object: expect_object,
-        names: names.clone(),
-        mappings: new_mappings,
-      }
-    } else {
-      TypeDefinitionSignature { is_object: expect_object, names: vec![], mappings: HashMap::new() }
+      subst_map.insert(tparam.name, targ.clone());
+    }
+    match resolved_type_def {
+      TypeDefinitionSignature::Struct(items) => Some(TypeDefinitionSignature::Struct(
+        items
+          .iter()
+          .map(|item| StructItemDefinitionSignature {
+            name: item.name,
+            type_: perform_type_substitution(&item.type_, &subst_map),
+            is_public: item.is_public || nominal_type.id.eq(&self.current_class),
+          })
+          .collect(),
+      )),
+      TypeDefinitionSignature::Enum(variants) => Some(TypeDefinitionSignature::Enum(
+        variants
+          .iter()
+          .map(|variant| EnumVariantDefinitionSignature {
+            name: variant.name,
+            types: variant
+              .types
+              .iter()
+              .map(|it| perform_type_substitution(it, &subst_map))
+              .collect(),
+          })
+          .collect(),
+      )),
     }
   }
 }

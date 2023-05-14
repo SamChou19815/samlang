@@ -1,7 +1,10 @@
 use crate::{
   ast::{
     common_names::encode_samlang_type,
-    hir::{ClosureTypeDefinition, FunctionType, IdType, PrimitiveType, Type, TypeDefinition},
+    hir::{
+      ClosureTypeDefinition, FunctionType, IdType, PrimitiveType, Type, TypeDefinition,
+      TypeDefinitionMappings, INT_TYPE,
+    },
     source,
   },
   checker::type_,
@@ -94,14 +97,13 @@ impl TypeSynthesizer {
     self.reverse_tuple_map.insert(key, identifier);
     let definition = TypeDefinition {
       identifier,
-      is_object: true,
       type_parameters,
       names: mappings
         .iter()
         .enumerate()
         .map(|(i, _)| heap.alloc_string(format!("_n{i}")))
         .collect_vec(),
-      mappings,
+      mappings: TypeDefinitionMappings::Struct(mappings),
     };
     self.synthesized_tuple_types.insert(identifier, definition.clone());
     definition
@@ -333,31 +335,37 @@ impl TypeLoweringManager {
     let type_parameters =
       Vec::from_iter(self.generic_types.iter().cloned().sorted_by_key(|ps| ps.as_str(heap)));
     let mut names = vec![];
-    let mut mappings = vec![];
-    let is_object =
-      match source_type_def {
-        source::TypeDefinition::Struct { loc: _, fields } => {
-          for field in fields {
-            names.push(field.name.name);
-            mappings
-              .push(self.lower_source_type(heap, &type_::Type::from_annotation(&field.annotation)));
-          }
-          true
+    let mappings = match source_type_def {
+      source::TypeDefinition::Struct { loc: _, fields } => {
+        let mut mappings = vec![];
+        for field in fields {
+          names.push(field.name.name);
+          mappings
+            .push(self.lower_source_type(heap, &type_::Type::from_annotation(&field.annotation)));
         }
-        source::TypeDefinition::Enum { loc: _, variants } => {
-          for variant in variants {
-            names.push(variant.name.name);
-            mappings.push(self.lower_source_type(
-              heap,
-              &type_::Type::from_annotation(&variant.associated_data_type),
-            ));
-          }
-          false
+        TypeDefinitionMappings::Struct(mappings)
+      }
+      source::TypeDefinition::Enum { loc: _, variants } => {
+        let mut mappings = vec![];
+        let max_len = variants.iter().map(|v| v.associated_data_types.len()).max().unwrap_or(0);
+        for variant in variants {
+          names.push(variant.name.name);
+          let real_len = variant.associated_data_types.len();
+          mappings.push((
+            variant
+              .associated_data_types
+              .iter()
+              .map(|t| self.lower_source_type(heap, &type_::Type::from_annotation(t)))
+              .chain((0..(max_len - real_len)).map(|_| INT_TYPE))
+              .collect(),
+            real_len,
+          ));
         }
-      };
+        TypeDefinitionMappings::Enum(mappings)
+      }
+    };
     TypeDefinition {
       identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
-      is_object,
       type_parameters,
       names,
       mappings,

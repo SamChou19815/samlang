@@ -266,94 +266,104 @@ impl<'a> LoweringManager<'a> {
         self.heap,
         |heap, var_name, var_type, destruct_member_stmts| {
           let pointer_expression = mir::Expression::Variable(var_name, var_type);
-          if type_def.is_object {
-            for (index, type_) in type_def.mappings.iter().enumerate() {
-              let lowered_type = lower_type(type_.clone());
-              if let Some(type_name) = reference_type_name(heap, &lowered_type) {
-                destruct_member_stmts.push(mir::Statement::IndexedAccess {
-                  name: heap.alloc_string(format!("v{index}")),
-                  type_: lowered_type.clone(),
-                  pointer_expression: pointer_expression.clone(),
-                  index: index + 1,
-                });
-                destruct_member_stmts.push(mir::Statement::Call {
-                  callee: mir::Expression::Name(
-                    heap.alloc_string(dec_ref_fn_name(type_name.as_str(heap))),
-                    mir::Type::new_fn(vec![dec_ref_fn_arg_type(heap, type_name)], mir::INT_TYPE),
-                  ),
-                  arguments: vec![mir::Expression::Variable(
-                    heap.alloc_string(format!("v{index}")),
-                    lowered_type,
-                  )],
-                  return_type: mir::INT_TYPE,
-                  return_collector: None,
-                });
-              }
-            }
-          } else {
-            if type_def
-              .mappings
-              .iter()
-              .any(|t| reference_type_name(heap, &lower_type(t.clone())).is_some())
-            {
-              destruct_member_stmts.push(mir::Statement::IndexedAccess {
-                name: heap.alloc_str_permanent("tag"),
-                type_: mir::INT_TYPE,
-                pointer_expression: pointer_expression.clone(),
-                index: 1,
-              });
-            }
-            for (index, type_) in type_def.mappings.iter().enumerate() {
-              let lowered_type = lower_type(type_.clone());
-              if let Some(type_name) = reference_type_name(heap, &lowered_type) {
-                let mut statements = vec![];
-                if lowered_type.is_the_same_type(&mir::ANY_TYPE) {
-                  statements.push(mir::Statement::IndexedAccess {
+          match &type_def.mappings {
+            hir::TypeDefinitionMappings::Struct(types) => {
+              for (index, type_) in types.iter().enumerate() {
+                let lowered_type = lower_type(type_.clone());
+                if let Some(type_name) = reference_type_name(heap, &lowered_type) {
+                  destruct_member_stmts.push(mir::Statement::IndexedAccess {
                     name: heap.alloc_string(format!("v{index}")),
                     type_: lowered_type.clone(),
                     pointer_expression: pointer_expression.clone(),
-                    index: 2,
+                    index: index + 1,
                   });
-                } else {
-                  let temp = heap.alloc_string(format!("vTemp{index}"));
-                  statements.push(mir::Statement::IndexedAccess {
-                    name: temp,
-                    type_: mir::ANY_TYPE,
-                    pointer_expression: pointer_expression.clone(),
-                    index: 2,
-                  });
-                  statements.push(mir::Statement::Cast {
-                    name: heap.alloc_string(format!("v{index}")),
-                    type_: lowered_type.clone(),
-                    assigned_expression: mir::Expression::Variable(temp, mir::ANY_TYPE),
+                  destruct_member_stmts.push(mir::Statement::Call {
+                    callee: mir::Expression::Name(
+                      heap.alloc_string(dec_ref_fn_name(type_name.as_str(heap))),
+                      mir::Type::new_fn(vec![dec_ref_fn_arg_type(heap, type_name)], mir::INT_TYPE),
+                    ),
+                    arguments: vec![mir::Expression::Variable(
+                      heap.alloc_string(format!("v{index}")),
+                      lowered_type,
+                    )],
+                    return_type: mir::INT_TYPE,
+                    return_collector: None,
                   });
                 }
-                statements.push(mir::Statement::Call {
-                  callee: mir::Expression::Name(
-                    heap.alloc_string(dec_ref_fn_name(type_name.as_str(heap))),
-                    mir::Type::new_fn(vec![dec_ref_fn_arg_type(heap, type_name)], mir::INT_TYPE),
-                  ),
-                  arguments: vec![mir::Expression::Variable(
-                    heap.alloc_string(format!("v{index}")),
-                    lowered_type,
-                  )],
-                  return_type: mir::INT_TYPE,
-                  return_collector: None,
+              }
+            }
+            hir::TypeDefinitionMappings::Enum(all_types) => {
+              if all_types
+                .iter()
+                .flat_map(|(ts, _)| ts.iter())
+                .any(|t| reference_type_name(heap, &lower_type(t.clone())).is_some())
+              {
+                destruct_member_stmts.push(mir::Statement::IndexedAccess {
+                  name: heap.alloc_str_permanent("tag"),
+                  type_: mir::INT_TYPE,
+                  pointer_expression: pointer_expression.clone(),
+                  index: 1,
                 });
-                destruct_member_stmts.push(mir::Statement::binary(
-                  heap.alloc_string(format!("tagComparison{index}")),
-                  hir::Operator::EQ,
-                  mir::Expression::Variable(heap.alloc_str_permanent("tag"), mir::INT_TYPE),
-                  mir::Expression::int(i32::try_from(index).unwrap() + 1),
-                ));
-                destruct_member_stmts.push(mir::Statement::SingleIf {
-                  condition: mir::Expression::Variable(
-                    heap.alloc_string(format!("tagComparison{index}")),
-                    mir::BOOL_TYPE,
-                  ),
-                  invert_condition: false,
-                  statements,
-                });
+              }
+              for (tag, (types, _)) in all_types.iter().enumerate() {
+                let mut statements = vec![];
+                for (data_index, lowered_type) in types.iter().cloned().map(lower_type).enumerate()
+                {
+                  if let Some(type_name) = reference_type_name(heap, &lowered_type) {
+                    if lowered_type.is_the_same_type(&mir::ANY_TYPE) {
+                      statements.push(mir::Statement::IndexedAccess {
+                        name: heap.alloc_string(format!("v{tag}_{data_index}")),
+                        type_: lowered_type.clone(),
+                        pointer_expression: pointer_expression.clone(),
+                        index: 2,
+                      });
+                    } else {
+                      let temp = heap.alloc_string(format!("vTemp{tag}_{data_index}"));
+                      statements.push(mir::Statement::IndexedAccess {
+                        name: temp,
+                        type_: mir::ANY_TYPE,
+                        pointer_expression: pointer_expression.clone(),
+                        index: 2,
+                      });
+                      statements.push(mir::Statement::Cast {
+                        name: heap.alloc_string(format!("v{tag}_{data_index}")),
+                        type_: lowered_type.clone(),
+                        assigned_expression: mir::Expression::Variable(temp, mir::ANY_TYPE),
+                      });
+                    }
+                    statements.push(mir::Statement::Call {
+                      callee: mir::Expression::Name(
+                        heap.alloc_string(dec_ref_fn_name(type_name.as_str(heap))),
+                        mir::Type::new_fn(
+                          vec![dec_ref_fn_arg_type(heap, type_name)],
+                          mir::INT_TYPE,
+                        ),
+                      ),
+                      arguments: vec![mir::Expression::Variable(
+                        heap.alloc_string(format!("v{tag}_{data_index}")),
+                        lowered_type,
+                      )],
+                      return_type: mir::INT_TYPE,
+                      return_collector: None,
+                    });
+                  }
+                }
+                if !statements.is_empty() {
+                  destruct_member_stmts.push(mir::Statement::binary(
+                    heap.alloc_string(format!("tagComparison{tag}")),
+                    hir::Operator::EQ,
+                    mir::Expression::Variable(heap.alloc_str_permanent("tag"), mir::INT_TYPE),
+                    mir::Expression::int(i32::try_from(tag).unwrap() + 1),
+                  ));
+                  destruct_member_stmts.push(mir::Statement::SingleIf {
+                    condition: mir::Expression::Variable(
+                      heap.alloc_string(format!("tagComparison{tag}")),
+                      mir::BOOL_TYPE,
+                    ),
+                    invert_condition: false,
+                    statements,
+                  });
+                }
               }
             }
           }
@@ -497,7 +507,7 @@ impl<'a> LoweringManager<'a> {
         let pointer_expr = lower_expression(pointer_expression);
         let variable_type = lower_type(type_);
         let type_def = self.type_defs.get(pointer_expr.type_().as_id().unwrap()).unwrap();
-        if type_def.is_object {
+        if type_def.mappings.as_struct().is_some() {
           vec![mir::Statement::IndexedAccess {
             name,
             type_: variable_type,
@@ -515,13 +525,12 @@ impl<'a> LoweringManager<'a> {
           }]
         } else {
           // Access the data, might need cast
-          assert!(index == 1);
           if variable_type.is_the_same_type(&mir::ANY_TYPE) {
             vec![mir::Statement::IndexedAccess {
               name,
               type_: variable_type,
               pointer_expression: pointer_expr,
-              index: 2,
+              index: index + 1,
             }]
           } else {
             let temp = self.alloc_temp();
@@ -530,7 +539,7 @@ impl<'a> LoweringManager<'a> {
                 name: temp,
                 type_: mir::ANY_TYPE,
                 pointer_expression: pointer_expr,
-                index: 2,
+                index: index + 1,
               },
               mir::Statement::Cast {
                 name,
@@ -655,7 +664,7 @@ impl<'a> LoweringManager<'a> {
         let type_def = self.type_defs.get(&type_.name).unwrap();
         let type_ = lower_type(hir::Type::Id(type_));
         let mut statements = vec![];
-        let mut expression_list = if type_def.is_object {
+        let mut expression_list = if type_def.mappings.as_struct().is_some() {
           expression_list
             .into_iter()
             .map(|e| {
@@ -671,21 +680,16 @@ impl<'a> LoweringManager<'a> {
             .map(|(index, e)| {
               let lowered = lower_expression(e);
               self.add_ref_counting_if_type_allowed(&mut statements, &lowered);
-              if index == 0 {
+              if index == 0 || lowered.type_().is_the_same_type(&mir::ANY_TYPE) {
                 lowered
               } else {
-                assert!(index == 1);
-                if lowered.type_().is_the_same_type(&mir::ANY_TYPE) {
-                  lowered
-                } else {
-                  let temp = self.alloc_temp();
-                  statements.push(mir::Statement::Cast {
-                    name: temp,
-                    type_: mir::ANY_TYPE,
-                    assigned_expression: lowered,
-                  });
-                  mir::Expression::Variable(temp, mir::ANY_TYPE)
-                }
+                let temp = self.alloc_temp();
+                statements.push(mir::Statement::Cast {
+                  name: temp,
+                  type_: mir::ANY_TYPE,
+                  assigned_expression: lowered,
+                });
+                mir::Expression::Variable(temp, mir::ANY_TYPE)
               }
             })
             .collect_vec()
@@ -868,14 +872,27 @@ pub(crate) fn compile_hir_to_mir(heap: &mut Heap, sources: hir::Sources) -> mir:
     closure_def_map.insert(identifier, fn_type);
   }
   for type_def in type_definitions {
-    let mut mir_mappings = if type_def.is_object {
-      type_def.mappings.iter().cloned().map(lower_type).collect_vec()
-    } else {
-      vec![mir::INT_TYPE, mir::ANY_TYPE]
-    };
-    mir_mappings.insert(0, mir::INT_TYPE);
-    type_defs.push(mir::TypeDefinition { name: type_def.identifier, mappings: mir_mappings });
-    type_def_map.insert(type_def.identifier, type_def);
+    match &type_def.mappings {
+      hir::TypeDefinitionMappings::Struct(types) => {
+        let mir_mappings = vec![mir::INT_TYPE]
+          .into_iter()
+          .chain(types.iter().cloned().map(lower_type))
+          .collect_vec();
+        type_defs.push(mir::TypeDefinition { name: type_def.identifier, mappings: mir_mappings });
+        type_def_map.insert(type_def.identifier, type_def);
+      }
+      hir::TypeDefinitionMappings::Enum(all_types) => {
+        let max_len = all_types.get(0).map(|(ts, _)| ts.len()).unwrap_or(0);
+        type_defs.push(mir::TypeDefinition {
+          name: type_def.identifier,
+          mappings: vec![mir::INT_TYPE, mir::INT_TYPE]
+            .into_iter()
+            .chain((0..max_len).map(|_| mir::ANY_TYPE))
+            .collect(),
+        });
+        type_def_map.insert(type_def.identifier, type_def);
+      }
+    }
   }
   let mut functions = functions
     .into_iter()
@@ -900,8 +917,8 @@ mod tests {
       common_names,
       hir::{
         Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
-        Operator, Sources, Statement, Type, TypeDefinition, VariableName, INT_TYPE, STRING_TYPE,
-        TRUE, ZERO,
+        Operator, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
+        INT_TYPE, STRING_TYPE, TRUE, ZERO,
       },
     },
     common::Heap,
@@ -972,38 +989,39 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
       type_definitions: vec![
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Object"),
-          is_object: true,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![INT_TYPE, INT_TYPE],
+          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant"),
-          is_object: false,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![INT_TYPE, INT_TYPE],
+          mappings: TypeDefinitionMappings::Enum(vec![(vec![INT_TYPE], 1), (vec![INT_TYPE], 1)]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Object2"),
-          is_object: true,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![STRING_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("Foo"))],
+          mappings: TypeDefinitionMappings::Struct(vec![
+            STRING_TYPE,
+            Type::new_id_no_targs(heap.alloc_str_for_test("Foo")),
+          ]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant2"),
-          is_object: false,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![STRING_TYPE],
+          mappings: TypeDefinitionMappings::Enum(vec![(vec![STRING_TYPE], 1)]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant3"),
-          is_object: false,
           type_parameters: vec![],
           names: vec![],
-          mappings: vec![STRING_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("Foo"))],
+          mappings: TypeDefinitionMappings::Enum(vec![
+            (vec![STRING_TYPE], 1),
+            (vec![Type::new_id_no_targs(heap.alloc_str_for_test("Foo"))], 1),
+          ]),
         },
       ],
       main_function_names: vec![

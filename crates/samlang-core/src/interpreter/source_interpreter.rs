@@ -53,7 +53,7 @@ impl Value {
     }
   }
 
-  fn variant_value<'a>(&self, cx: &'a InterpretationContext) -> &'a (PStr, Value) {
+  fn variant_value<'a>(&self, cx: &'a InterpretationContext) -> &'a (PStr, Vec<Value>) {
     if let Value::VariantPointer(s) = self {
       cx.variant_heap.get(s).unwrap()
     } else {
@@ -74,7 +74,7 @@ impl Value {
 enum FunctionImpl {
   Expr(expr::E<Rc<Type>>),
   InitObject(Vec<PStr>),
-  InitVariant(PStr),
+  InitVariant(PStr, usize),
   StringToInt,
   IntToString,
   Println,
@@ -99,7 +99,7 @@ struct InterpretationContext {
   heap_counter: i32,
   string_heap: HashMap<i32, String>,
   object_heap: HashMap<i32, HashMap<PStr, Value>>,
-  variant_heap: HashMap<i32, (PStr, Value)>,
+  variant_heap: HashMap<i32, (PStr, Vec<Value>)>,
   function_heap: HashMap<i32, FunctionValue>,
   printed: Vec<String>,
 }
@@ -118,7 +118,7 @@ fn new_obj(cx: &mut InterpretationContext, map: HashMap<PStr, Value>) -> Value {
   Value::ObjectPointer(id)
 }
 
-fn new_variant(cx: &mut InterpretationContext, tag: PStr, data: Value) -> Value {
+fn new_variant(cx: &mut InterpretationContext, tag: PStr, data: Vec<Value>) -> Value {
   let id = cx.heap_counter;
   cx.heap_counter += 1;
   cx.variant_heap.insert(id, (tag, data));
@@ -212,9 +212,13 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
           }
           new_obj(cx, map)
         }
-        FunctionImpl::InitVariant(tag) => {
-          let data = cx.local_values.get(&heap.alloc_str_permanent("data")).cloned().unwrap();
-          new_variant(cx, tag, data)
+        FunctionImpl::InitVariant(tag, l) => {
+          let mut values = vec![];
+          for i in 0..l {
+            values
+              .push(cx.local_values.get(&heap.alloc_string(format!("arg{i}"))).cloned().unwrap());
+          }
+          new_variant(cx, tag, values)
         }
         FunctionImpl::StringToInt => {
           let v = cx.local_values.get(&heap.alloc_str_permanent("v")).cloned().unwrap();
@@ -296,21 +300,26 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
       }
     }
     expr::E::Match(e) => {
-      let (tag, data) = *eval_expr(cx, heap, &e.matched).variant_value(cx);
+      let (tag, data) = eval_expr(cx, heap, &e.matched).variant_value(cx);
+      let data = data.clone();
       let matched_pattern = e
         .cases
         .iter()
-        .find(|el| el.tag.name.eq(&tag))
+        .find(|el| el.tag.name.eq(tag))
         .expect(&format!("Missing tag {}", tag.as_str(heap)));
-      if let Some(data_variable) = &matched_pattern.data_variable {
-        cx.local_values.push_scope();
-        cx.local_values.insert(data_variable.0.name, data);
-        let v = eval_expr(cx, heap, &matched_pattern.body);
-        cx.local_values.pop_scope();
-        v
-      } else {
-        eval_expr(cx, heap, &matched_pattern.body)
+      cx.local_values.push_scope();
+      for (name, data) in matched_pattern
+        .data_variables
+        .iter()
+        .filter_map(|it| it.as_ref())
+        .map(|(name, _)| name.name)
+        .zip(data)
+      {
+        cx.local_values.insert(name, data);
       }
+      let v = eval_expr(cx, heap, &matched_pattern.body);
+      cx.local_values.pop_scope();
+      v
     }
     expr::E::Lambda(e) => {
       let mut captured = HashMap::new();
@@ -394,11 +403,12 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
         }
         crate::ast::source::TypeDefinition::Enum { loc: _, variants } => {
           for variant in variants {
-            let body = FunctionImpl::InitVariant(variant.name.name);
+            let l = variant.associated_data_types.len();
+            let body = FunctionImpl::InitVariant(variant.name.name, l);
             functions.insert(
               variant.name.name,
               FunctionValue {
-                parameters: vec![heap.alloc_str_permanent("data")],
+                parameters: (0..l).map(|i| heap.alloc_string(format!("arg{i}"))).collect(),
                 body,
                 captured: HashMap::new(),
               },
