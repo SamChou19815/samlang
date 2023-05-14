@@ -118,6 +118,11 @@ fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
     Statement::While { .. } => {
       panic!("While should not appear before tailrec optimization.")
     }
+    Statement::Cast { name, type_, assigned_expression } => Statement::Cast {
+      name,
+      type_: rewrite_type(state, type_),
+      assigned_expression: rewrite_expr(state, assigned_expression),
+    },
     Statement::StructInit { struct_variable_name, type_, expression_list } => {
       Statement::StructInit {
         struct_variable_name,
@@ -354,6 +359,11 @@ mod tests {
             },
           ],
           s2: vec![
+            Statement::Cast {
+              name: heap.alloc_str_for_test("_"),
+              type_: INT_TYPE,
+              assigned_expression: ZERO,
+            },
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("_"),
               type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("D")),
@@ -391,6 +401,7 @@ function main(): int {
     let _: A = 0[0];
     _ = 0;
   } else {
+    let _ = 0 as int;
     let _: C = [0];
     let _: C = Closure { fun: (f: (E) -> int), context: (v: int) };
     _ = 0;

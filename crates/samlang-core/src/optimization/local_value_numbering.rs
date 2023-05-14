@@ -148,6 +148,11 @@ fn optimize_stmt(
         .collect_vec();
       Some(Statement::While { loop_variables, statements, break_collector })
     }
+    Statement::Cast { name, type_, assigned_expression } => Some(Statement::Cast {
+      name,
+      type_,
+      assigned_expression: optimize_expr(assigned_expression, variable_cx),
+    }),
     Statement::StructInit { struct_variable_name, type_, expression_list } => {
       Some(Statement::StructInit {
         struct_variable_name,

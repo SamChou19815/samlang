@@ -50,6 +50,14 @@ pub(super) fn optimize(
           inner_stmts.push(Statement::IndexedAccess { name, type_, pointer_expression, index });
         }
       }
+      Statement::Cast { name, type_, assigned_expression } => {
+        if expression_is_loop_invariant(&assigned_expression, &non_loop_invariant_variables) {
+          hoisted_stmts.push(Statement::Cast { name, type_, assigned_expression });
+        } else {
+          non_loop_invariant_variables.insert(name);
+          inner_stmts.push(Statement::Cast { name, type_, assigned_expression });
+        }
+      }
       Statement::StructInit { struct_variable_name, type_, expression_list } => {
         if expression_list
           .iter()
@@ -279,6 +287,16 @@ mod tests {
           type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
           expression_list: vec![Expression::var_name(heap.alloc_str_for_test("g"), INT_TYPE)],
         },
+        Statement::Cast {
+          name: heap.alloc_str_for_test("l1"),
+          type_: INT_TYPE,
+          assigned_expression: ZERO,
+        },
+        Statement::Cast {
+          name: heap.alloc_str_for_test("l2"),
+          type_: INT_TYPE,
+          assigned_expression: Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+        },
         Statement::IfElse {
           condition: ZERO,
           s1: vec![],
@@ -305,6 +323,7 @@ mod tests {
 let d: int = (c: int)[0];
 let h: I = Closure { fun: (f: () -> int), context: (d: int) };
 let kk: I = [0];
+let l1 = 0 as int;
 let i: int = 0;
 let j: int = 0;
 let x: int = 0;
@@ -328,6 +347,7 @@ while (true) {
   let f: int = (b: int) + (x: int);
   let g: I = Closure { fun: (f: () -> int), context: (x: int) };
   let kk2: I = [(g: int)];
+  let l2 = (i: int) as int;
   let bad: int;
   if 0 {
     bad = 0;
@@ -349,8 +369,8 @@ while (true) {
     );
     assert_eq!(
       vec![
-        "bad", "cc", "e", "f", "fc", "g", "i", "j", "kk2", "tmp_i", "tmp_j", "tmp_x", "tmp_y",
-        "tmp_z", "x", "y", "z", "zzzz",
+        "bad", "cc", "e", "f", "fc", "g", "i", "j", "kk2", "l2", "tmp_i", "tmp_j", "tmp_x",
+        "tmp_y", "tmp_z", "x", "y", "z", "zzzz",
       ],
       non_loop_invariant_variables.iter().map(|it| it.as_str(heap)).sorted().collect_vec()
     );

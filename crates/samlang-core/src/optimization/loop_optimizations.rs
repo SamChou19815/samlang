@@ -313,6 +313,11 @@ mod tests {
           Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
           Expression::int(10),
         ),
+        Statement::Cast {
+          name: heap.alloc_str_for_test("cast"),
+          type_: INT_TYPE,
+          assigned_expression: ZERO,
+        },
         Statement::SingleIf {
           condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
           invert_condition: false,
@@ -467,7 +472,7 @@ mod tests {
     assert_loop_optimized(
       optimizable_loop_1(heap),
       heap,
-      "let _t7: int = 10 * 10;\nlet bc: int = (_t7: int) + 0;",
+      "let cast = 0 as int;\nlet _t8: int = 10 * 10;\nlet bc: int = (_t8: int) + 0;",
     );
 
     let heap = &mut Heap::new();
@@ -682,7 +687,7 @@ while (true) {
       vec![Statement::While { loop_variables, statements, break_collector }],
       Expression::var_name(heap.alloc_str_for_test("bc"), INT_TYPE),
       heap,
-      "\nreturn 100;",
+      "let cast = 0 as int;\nreturn 100;",
     );
 
     let heap = &mut Heap::new();

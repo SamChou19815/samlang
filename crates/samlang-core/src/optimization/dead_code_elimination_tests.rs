@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+  use std::collections::HashSet;
+
   use crate::{
     ast::hir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
@@ -37,33 +39,48 @@ mod tests {
   fn simple_test_1() {
     let heap = &mut Heap::new();
 
+    let stmts = vec![
+      Statement::binary(heap.alloc_str_for_test("u1"), Operator::DIV, ZERO, ONE),
+      Statement::binary(heap.alloc_str_for_test("u2"), Operator::MOD, ZERO, ONE),
+      Statement::binary(heap.alloc_str_for_test("u3"), Operator::PLUS, ZERO, ONE),
+      Statement::binary(heap.alloc_str_for_test("p"), Operator::PLUS, ZERO, ONE),
+      Statement::IndexedAccess {
+        name: heap.alloc_str_for_test("i"),
+        type_: INT_TYPE,
+        pointer_expression: Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE),
+        index: 3,
+      },
+      Statement::StructInit {
+        struct_variable_name: heap.alloc_str_for_test("s"),
+        type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("S")),
+        expression_list: vec![Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE)],
+      },
+      Statement::Cast {
+        name: heap.alloc_str_for_test("i_am_definitely_unused"),
+        type_: INT_TYPE,
+        assigned_expression: Expression::var_name(heap.alloc_str_for_test("s"), INT_TYPE),
+      },
+      Statement::Call {
+        callee: Callee::FunctionName(FunctionName::new(
+          heap.alloc_str_for_test("ff"),
+          Type::new_fn_unwrapped(vec![], INT_TYPE),
+        )),
+        arguments: vec![Expression::var_name(heap.alloc_str_for_test("s"), INT_TYPE)],
+        return_type: INT_TYPE,
+        return_collector: None,
+      },
+    ];
+
+    let mut used_set = HashSet::new();
+    used_set.insert(heap.alloc_str_for_test("ii"));
+    dead_code_elimination::collect_use_from_stmts(&stmts, &mut used_set);
+    assert_eq!(
+      vec!["p", "s", "ii"],
+      used_set.into_iter().sorted().map(|p| p.as_str(heap)).collect_vec()
+    );
+
     assert_correctly_optimized(
-      vec![
-        Statement::binary(heap.alloc_str_for_test("u1"), Operator::DIV, ZERO, ONE),
-        Statement::binary(heap.alloc_str_for_test("u2"), Operator::MOD, ZERO, ONE),
-        Statement::binary(heap.alloc_str_for_test("u3"), Operator::PLUS, ZERO, ONE),
-        Statement::binary(heap.alloc_str_for_test("p"), Operator::PLUS, ZERO, ONE),
-        Statement::IndexedAccess {
-          name: heap.alloc_str_for_test("i"),
-          type_: INT_TYPE,
-          pointer_expression: Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE),
-          index: 3,
-        },
-        Statement::StructInit {
-          struct_variable_name: heap.alloc_str_for_test("s"),
-          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("S")),
-          expression_list: vec![Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE)],
-        },
-        Statement::Call {
-          callee: Callee::FunctionName(FunctionName::new(
-            heap.alloc_str_for_test("ff"),
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          )),
-          arguments: vec![Expression::var_name(heap.alloc_str_for_test("s"), INT_TYPE)],
-          return_type: INT_TYPE,
-          return_collector: None,
-        },
-      ],
+      stmts,
       Expression::var_name(heap.alloc_str_for_test("ii"), INT_TYPE),
       heap,
       r#"let u1: int = 0 / 1;
@@ -120,6 +137,11 @@ return (ii: int);"#,
           ),
           context: Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
         },
+        Statement::Cast {
+          name: heap.alloc_str_for_test("s2"),
+          type_: INT_TYPE,
+          assigned_expression: Expression::var_name(heap.alloc_str_for_test("s1"), INT_TYPE),
+        },
         Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
             heap.alloc_str_for_test("ff"),
@@ -128,6 +150,7 @@ return (ii: int);"#,
           arguments: vec![
             Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("s1"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("s2"), INT_TYPE),
           ],
           return_type: INT_TYPE,
           return_collector: None,
@@ -140,7 +163,8 @@ let u2: int = 0 % 1;
 let p: int = 0 + 1;
 let i1: int = (p: int)[3];
 let s1: Id = Closure { fun: (closure: () -> int), context: (b2: int) };
-ff((i1: int), (s1: int));
+let s2 = (s1: int) as int;
+ff((i1: int), (s1: int), (s2: int));
 return 0;"#,
     );
   }

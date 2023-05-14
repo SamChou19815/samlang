@@ -293,12 +293,19 @@ mod tests {
           parameters: vec![heap.alloc_str_for_test("a")],
           type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
-          body: vec![Statement::IndexedAccess {
-            name: heap.alloc_str_for_test("c"),
-            type_: INT_TYPE,
-            pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
-            index: 0,
-          }],
+          body: vec![
+            Statement::Cast {
+              name: heap.alloc_str_for_test("_"),
+              type_: INT_TYPE,
+              assigned_expression: ZERO,
+            },
+            Statement::IndexedAccess {
+              name: heap.alloc_str_for_test("c"),
+              type_: INT_TYPE,
+              pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+              index: 0,
+            },
+          ],
           return_value: ZERO,
         },
         Function {
@@ -359,9 +366,10 @@ function loop(): int {
 }
 
 function insanelyBigFunction(a: int): int {
-  let _t16c: int = (a: int)[0];
+  let _t17c: int = (a: int)[0];
   (a: int)();
-  let _t19c: int = (a: int)[0];
+  let _t20_ = 0 as int;
+  let _t20c: int = (a: int)[0];
   (a: int)();
   non-existing-function();
   non-existing-function();
@@ -387,6 +395,7 @@ function cc(): int {
 }
 
 function moveMove(a: int): int {
+  let _ = 0 as int;
   let c: int = (a: int)[0];
   return 0;
 }

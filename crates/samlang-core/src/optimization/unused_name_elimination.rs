@@ -83,6 +83,10 @@ fn collect_used_names_from_statement(
         collect_for_type_set(&v.type_, type_set);
       }
     }
+    Statement::Cast { name: _, type_, assigned_expression } => {
+      collect_for_type_set(type_, type_set);
+      collect_used_names_from_expression(name_set, type_set, assigned_expression);
+    }
     Statement::StructInit { struct_variable_name: _, type_, expression_list } => {
       type_set.insert(type_.name);
       for e in expression_list {
@@ -338,6 +342,11 @@ mod tests {
               type_: INT_TYPE,
               pointer_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
               index: 0,
+            },
+            Statement::Cast {
+              name: heap.alloc_str_for_test(""),
+              type_: INT_TYPE,
+              assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
             },
             Statement::Call {
               callee: Callee::FunctionName(FunctionName::new(

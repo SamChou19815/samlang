@@ -18,7 +18,7 @@ mod estimator {
 
   fn estimate_stmt_inline_cost(stmt: &Statement) -> usize {
     match stmt {
-      Statement::Binary(_) => 1,
+      Statement::Binary(_) | Statement::Cast { .. } => 1,
       Statement::IndexedAccess { .. } => 2,
       Statement::Call { .. } => 10,
       Statement::IfElse { condition: _, s1, s2, final_assignments } => {
@@ -285,6 +285,11 @@ fn inline_rewrite_stmt(
       };
       Statement::While { loop_variables, statements, break_collector }
     }
+    Statement::Cast { name, type_, assigned_expression } => Statement::Cast {
+      name: bind_with_mangled_name(cx, heap, prefix, name, type_),
+      type_: type_.clone(),
+      assigned_expression: inline_rewrite_expr(assigned_expression, cx),
+    },
     Statement::StructInit { struct_variable_name, type_, expression_list } => {
       Statement::StructInit {
         struct_variable_name: bind_with_mangled_name(

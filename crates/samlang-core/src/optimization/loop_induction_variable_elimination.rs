@@ -53,6 +53,9 @@ fn stmt_uses_basic_induction_var(
           || expr_uses_basic_induction_var(&loop_var.loop_value, v)
       }) || stmts_uses_basic_induction_var(statements, v)
     }
+    Statement::Cast { name: _, type_: _, assigned_expression } => {
+      expr_uses_basic_induction_var(assigned_expression, v)
+    }
     Statement::StructInit { struct_variable_name: _, type_: _, expression_list } => {
       expression_list.iter().any(|e| expr_uses_basic_induction_var(e, v))
     }
@@ -297,11 +300,18 @@ mod tests {
               initial_value: ZERO,
               loop_value: ZERO
             }],
-            statements: vec![Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test(""),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
-              expression_list: vec![ZERO]
-            }],
+            statements: vec![
+              Statement::Cast {
+                name: heap.alloc_str_for_test(""),
+                type_: INT_TYPE,
+                assigned_expression: ZERO,
+              },
+              Statement::StructInit {
+                struct_variable_name: heap.alloc_str_for_test(""),
+                type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+                expression_list: vec![ZERO]
+              }
+            ],
             break_collector: None
           },
           Statement::Call {

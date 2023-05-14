@@ -221,6 +221,11 @@ mod tests {
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::EQ, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::NE, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::XOR.clone(), ZERO, ZERO),
+        Statement::Cast {
+          name: heap.alloc_str_for_test("cast"),
+          type_: INT_TYPE,
+          assigned_expression: ZERO,
+        },
         Statement::While {
           loop_variables: vec![],
           statements: vec![Statement::SingleIf {
@@ -321,6 +326,7 @@ if 0 {
   let dd: bool = 0 == 0;
   let dd: bool = 0 != 0;
   let dd: bool = 0 ^ 0;
+  let cast = 0 as int;
   while (true) {
     if 0 {
     }
