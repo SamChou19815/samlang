@@ -126,6 +126,9 @@ fn collect_def_function_usages_stmt(
       }
       collect_def_function_usages_stmts(state, f, statements);
     }
+    Statement::Cast { name: _, type_: _, assigned_expression } => {
+      collect_def_function_usages_expr(state, assigned_expression)
+    }
     Statement::StructInit { struct_variable_name: _, type_: _, expression_list } => {
       for e in expression_list {
         collect_def_function_usages_expr(state, e);
@@ -154,6 +157,7 @@ fn collect_global_usages_stmt(state: &mut HashMap<PStr, FunctionAnalysisState>, 
     Statement::Binary(_)
     | Statement::IndexedAccess { .. }
     | Statement::Break(_)
+    | Statement::Cast { .. }
     | Statement::StructInit { .. }
     | Statement::Call {
       callee: Callee::Variable(_),
@@ -326,6 +330,9 @@ fn rewrite_stmt(state: &RewriteState, stmt: Statement) -> Statement {
       break_collector,
     },
     Statement::Break(e) => Statement::Break(rewrite_expr(state, e)),
+    Statement::Cast { name, type_, assigned_expression } => {
+      Statement::Cast { name, type_, assigned_expression: rewrite_expr(state, assigned_expression) }
+    }
     Statement::StructInit { struct_variable_name, type_, expression_list } => {
       Statement::StructInit {
         struct_variable_name,
@@ -609,6 +616,7 @@ mod tests {
               statements: vec![Statement::Break(ZERO)],
               break_collector: None,
             },
+            Statement::Cast { name: dummy_name, type_: INT_TYPE, assigned_expression: ZERO },
             Statement::StructInit {
               struct_variable_name: dummy_name,
               type_: IdType { name: dummy_name, type_arguments: vec![] },
@@ -660,6 +668,7 @@ function func_with_consts(b: B, e: E): int {
     break;
     _ = 0;
   }
+  let _ = 0 as int;
   let _: _ = [0, 0];
   return 0;
 }

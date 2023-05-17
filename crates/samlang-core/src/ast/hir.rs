@@ -412,6 +412,11 @@ pub(crate) enum Statement {
     statements: Vec<Statement>,
     break_collector: Option<VariableName>,
   },
+  Cast {
+    name: PStr,
+    type_: Type,
+    assigned_expression: Expression,
+  },
   StructInit {
     struct_variable_name: PStr,
     type_: IdType,
@@ -647,6 +652,15 @@ impl Statement {
           ));
         }
         collector.push(format!("{}}}\n", "  ".repeat(level)));
+      }
+      Statement::Cast { name, type_, assigned_expression } => {
+        collector.push(format!(
+          "{}let {} = {} as {};\n",
+          "  ".repeat(level),
+          name.as_str(heap),
+          assigned_expression.debug_print(heap),
+          type_.pretty_print(heap),
+        ));
       }
       Statement::StructInit { struct_variable_name, type_, expression_list } => {
         let expression_str = expression_list.iter().map(|it| it.debug_print(heap)).join(", ");

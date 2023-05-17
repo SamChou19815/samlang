@@ -660,6 +660,11 @@ impl<'a> LoweringManager<'a> {
         };
         vec![mir::Statement::While { loop_variables, statements, break_collector }]
       }
+      hir::Statement::Cast { name, type_, assigned_expression } => vec![mir::Statement::Cast {
+        name,
+        type_: lower_type(type_),
+        assigned_expression: lower_expression(assigned_expression),
+      }],
       hir::Statement::StructInit { struct_variable_name, type_, expression_list } => {
         let type_def = self.type_defs.get(&type_.name).unwrap();
         let type_ = lower_type(hir::Type::Id(type_));
@@ -1217,7 +1222,11 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
             },
             Statement::IfElse {
               condition: TRUE,
-              s1: vec![],
+              s1: vec![Statement::Cast {
+                name: heap.alloc_str_for_test("cast"),
+                type_: INT_TYPE,
+                assigned_expression: ZERO,
+              }],
               s2: vec![],
               final_assignments: vec![(heap.alloc_str_for_test("finalV2"), INT_TYPE, ZERO, ZERO)],
             },
@@ -1246,13 +1255,13 @@ type CC = [number, (t0: any) => number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
 type Variant = [number, number, any];
 function cc(): number {{
-  let _t30: (t0: any, t1: number) => number = cc[2];
-  let _t31: any = cc[3];
-  _t30(_t31, 0);
+  let _t31: (t0: any, t1: number) => number = cc[2];
+  let _t32: any = cc[3];
+  _t31(_t32, 0);
   let v1: number = a[1];
   let v2: number = b[1];
-  let _t32: any = b[2];
-  let v3 = _t32 as number;
+  let _t33: any = b[2];
+  let v3 = _t33 as number;
   let v4: Str = b[2];
   while (true) {{
     if (0) {{
@@ -1272,29 +1281,29 @@ function cc(): number {{
 }}
 function main(): number {{
   let v1: number = 0 + 0;
-  let _t34: number = obj[0];
-  let _t35: number = _t34 + 1;
-  obj[0] = _t35;
+  let _t35: number = obj[0];
+  let _t36: number = _t35 + 1;
+  obj[0] = _t36;
   let O: Object = [1, 0, obj];
-  let _t36 = 0 as any;
-  let v1: Variant = [1, 0, _t36];
-  let _t38: number = G1[0];
-  let _t40: boolean = _t38 > 0;
-  if (_t40) {{
-    let _t39: number = _t38 + 1;
-    G1[0] = _t39;
+  let _t37 = 0 as any;
+  let v1: Variant = [1, 0, _t37];
+  let _t39: number = G1[0];
+  let _t41: boolean = _t39 > 0;
+  if (_t41) {{
+    let _t40: number = _t39 + 1;
+    G1[0] = _t40;
   }}
   let v2: Variant = [1, 0, G1];
-  let _t41: number = G1[0];
-  let _t43: boolean = _t41 > 0;
-  if (_t43) {{
-    let _t42: number = _t41 + 1;
-    G1[0] = _t42;
+  let _t42: number = G1[0];
+  let _t44: boolean = _t42 > 0;
+  if (_t44) {{
+    let _t43: number = _t42 + 1;
+    G1[0] = _t43;
   }}
   let c1: CC = [1, __decRef_string, aaa, G1];
-  let _t45 = bbb as (t0: any) => number;
-  let _t46 = 0 as any;
-  let c2: CC = [1, __decRef_nothing, _t45, _t46];
+  let _t46 = bbb as (t0: any) => number;
+  let _t47 = 0 as any;
+  let c2: CC = [1, __decRef_nothing, _t46, _t47];
   __decRef_Object(O);
   __decRef_Variant(v1);
   __decRef_Variant(v2);
@@ -1309,23 +1318,24 @@ function _compiled_program_main(): number {{
     let ccc: number = cc(0);
     finalV = v1;
   }} else {{
-    let _t52: (t0: any, t1: number) => number = cc[2];
-    let _t53: any = cc[3];
-    let _t51: CC = _t52(_t53, 0);
-    let _t54: number = _t51[0];
-    let _t55: number = _t54 + 1;
-    _t51[0] = _t55;
-    let _t56: number = G1[0];
-    let _t57: number = _t56 + 1;
-    G1[0] = _t57;
-    let _t58 = G1 as any;
-    let _t59 = __decRef_CC as (t0: any) => number;
-    let v2: CC = [1, _t59, aaa, _t58];
-    __decRef_CC(_t51);
+    let _t53: (t0: any, t1: number) => number = cc[2];
+    let _t54: any = cc[3];
+    let _t52: CC = _t53(_t54, 0);
+    let _t55: number = _t52[0];
+    let _t56: number = _t55 + 1;
+    _t52[0] = _t56;
+    let _t57: number = G1[0];
+    let _t58: number = _t57 + 1;
+    G1[0] = _t58;
+    let _t59 = G1 as any;
+    let _t60 = __decRef_CC as (t0: any) => number;
+    let v2: CC = [1, _t60, aaa, _t59];
+    __decRef_CC(_t52);
     finalV = v2;
   }}
   let finalV2: number;
   if (true) {{
+    let cast = 0 as number;
     finalV2 = 0;
   }} else {{
     finalV2 = 0;

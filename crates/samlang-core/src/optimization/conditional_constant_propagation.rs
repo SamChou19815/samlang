@@ -374,6 +374,12 @@ fn optimize_stmt(
       }
     }
 
+    Statement::Cast { name, type_, assigned_expression } => vec![Statement::Cast {
+      name: *name,
+      type_: type_.clone(),
+      assigned_expression: optimize_expr(value_cx, assigned_expression),
+    }],
+
     Statement::StructInit { struct_variable_name, type_, expression_list } => {
       let mut optimized_expression_list = vec![];
       for (i, e) in expression_list.iter().enumerate() {

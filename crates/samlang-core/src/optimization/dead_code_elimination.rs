@@ -56,7 +56,10 @@ fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
     }
     Statement::Break(e) => collect_use_from_expression(e, set),
     Statement::While { loop_variables, statements, break_collector: _ } => {
-      collect_use_from_while_parts(loop_variables, statements, set)
+      collect_use_from_while_parts(loop_variables, statements, set);
+    }
+    Statement::Cast { name: _, type_: _, assigned_expression } => {
+      collect_use_from_expression(assigned_expression, set);
     }
     Statement::StructInit { struct_variable_name: _, type_: _, expression_list } => {
       for e in expression_list {
@@ -175,6 +178,14 @@ fn optimize_stmt(stmt: Statement, set: &mut HashSet<PStr>) -> Option<Statement> 
         })
         .collect_vec();
       Some(Statement::While { loop_variables, statements, break_collector })
+    }
+    Statement::Cast { name, type_, assigned_expression } => {
+      if !set.contains(&name) {
+        None
+      } else {
+        collect_use_from_expression(&assigned_expression, set);
+        Some(Statement::Cast { name, type_, assigned_expression })
+      }
     }
     Statement::StructInit { struct_variable_name, type_, expression_list } => {
       if !set.contains(&struct_variable_name) {

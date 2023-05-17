@@ -245,6 +245,11 @@ mod tests {
           Expression::var_name(heap.alloc_str_for_test("a15"), INT_TYPE),
           Expression::int(5),
         ),
+        Statement::Cast {
+          name: heap.alloc_str_for_test("a19"),
+          type_: INT_TYPE,
+          assigned_expression: Expression::var_name(heap.alloc_str_for_test("a18"), INT_TYPE),
+        },
       ],
       Expression::var_name(heap.alloc_str_for_test("a17"), INT_TYPE),
       heap,
@@ -260,6 +265,7 @@ let a15: int = (i0: int) * 5;
 let a16: int = (a15: int) + 5;
 let a17: int = (a15: int) + 47;
 let a18: int = (a15: int) / 5;
+let a19 = (a18: int) as int;
 return (a17: int);"#,
     );
   }

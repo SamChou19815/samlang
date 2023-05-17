@@ -69,6 +69,11 @@ mod tests {
           Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
         ),
+        Statement::Cast {
+          name: heap.alloc_str_for_test("c1"),
+          type_: INT_TYPE,
+          assigned_expression: ZERO,
+        },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("s"),
           type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("S")),
@@ -112,6 +117,7 @@ mod tests {
       r#"let i0: int = (a: int)[2];
 let b0: int = (i0: int) + 3;
 let b3: int = (i0: int) + (b0: int);
+let c1 = 0 as int;
 let s: S = [(i0: int), (b0: int), (b3: int)];
 let s: S = Closure { fun: (a: () -> int), context: 0 };
 fff((i0: int), (b0: int), (b3: int));

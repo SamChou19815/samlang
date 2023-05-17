@@ -116,6 +116,11 @@ impl Rewriter {
       Statement::While { .. } => {
         panic!("While should not appear before tailrec optimization.")
       }
+      Statement::Cast { name, type_, assigned_expression } => Statement::Cast {
+        name: *name,
+        type_: self.rewrite_type(heap, type_, generics_replacement_map),
+        assigned_expression: self.rewrite_expr(heap, assigned_expression, generics_replacement_map),
+      },
       Statement::StructInit { struct_variable_name, type_, expression_list } => {
         let type_ = self.rewrite_id_type(heap, type_, generics_replacement_map).into_id().unwrap();
         Statement::StructInit {
@@ -807,6 +812,11 @@ sources.mains = [main]
                   pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), type_i),
                   index: 0,
                 },
+                Statement::Cast {
+                  name: heap.alloc_str_for_test("cast"),
+                  type_: INT_TYPE,
+                  assigned_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+                },
               ],
               s2: vec![
                 Statement::Call {
@@ -892,6 +902,7 @@ function main(): int {
     functor_fun_I_int_string(G1);
     functor_fun_J(G1);
     let v1: int = (a: I_int_string)[0];
+    let cast = (a: int) as int;
     finalV = (v1: int);
   } else {
     main();

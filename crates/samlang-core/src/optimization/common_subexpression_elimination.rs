@@ -34,6 +34,7 @@ fn optimize_stmt(
     | Statement::Break(_)
     | Statement::SingleIf { .. }
     | Statement::While { .. }
+    | Statement::Cast { .. }
     | Statement::StructInit { .. }
     | Statement::ClosureInit { .. } => vec![stmt],
 
