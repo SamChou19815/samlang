@@ -341,6 +341,66 @@ mod tests {
         val _ = (a, b, c) -> if a(b + 1) then b else c;
       }
     }
+
+    class StructTooLarge(
+      val a00: int,
+      val a01: int,
+      val a02: int,
+      val a03: int,
+      val a04: int,
+      val a05: int,
+      val a06: int,
+      val a07: int,
+      val a08: int,
+      val a09: int,
+      val a10: int,
+      val a11: int,
+      val a12: int,
+      val a13: int,
+      val a14: int,
+      val a15: int,
+      val a16: int,
+      val a17: int,
+      val a18: int,
+      val a19: int,
+      val a20: int,
+      val a21: int,
+      val a22: int,
+      val a23: int,
+      val a24: int,
+      val a25: int,
+      val a26: int,
+      val a27: int,
+      val a28: int,
+      val a29: int,
+      val a30: int,
+      val a31: int,
+      val a32: int,
+      val a33: int,
+      val a34: int,
+      val a35: int,
+      val a36: int,
+      val a37: int,
+      val a38: int,
+      val a39: int
+    ) {}
+
+    class VariantTooLarge(
+      None,
+      Some(int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int,
+        int,int,int,int,int)
+    ) {}
 "#;
     parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
     assert!(!error_set.errors().is_empty())

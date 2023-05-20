@@ -12,6 +12,9 @@ use std::{
   vec,
 };
 
+const MAX_STRUCT_SIZE: usize = 16;
+const MAX_VARIANT_SIZE: usize = 15;
+
 fn unescape_quotes(source: &str) -> String {
   source.replace("\\\"", "\"")
 }
@@ -481,6 +484,13 @@ impl<'a> SourceParser<'a> {
             .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
               s.parse_annotation()
             });
+
+          if let Some(node) = associated_data_types.get(MAX_STRUCT_SIZE) {
+            s.error_set.report_invalid_syntax_error(
+              node.location(),
+              format!("Maximum allowed field size is {MAX_STRUCT_SIZE}"),
+            );
+          }
           s.assert_and_consume_operator(TokenOp::RPAREN);
           VariantDefinition { name, associated_data_types }
         } else {
@@ -502,6 +512,12 @@ impl<'a> SourceParser<'a> {
         let annotation = s.parse_annotation();
         FieldDefinition { name, annotation, is_public }
       });
+      if let Some(node) = fields.get(MAX_VARIANT_SIZE) {
+        self.error_set.report_invalid_syntax_error(
+          node.name.loc,
+          format!("Maximum allowed field size is {MAX_VARIANT_SIZE}"),
+        );
+      }
       // Location is later patched by the caller
       TypeDefinition::Struct { loc: Location::dummy(), fields }
     }
