@@ -59,6 +59,26 @@ mod tests {
               )),
               Instruction::Inline(InlineInstruction::Binary(
                 Box::new(InlineInstruction::Const(0)),
+                Operator::LAND,
+                Box::new(InlineInstruction::Const(0)),
+              )),
+              Instruction::Inline(InlineInstruction::Binary(
+                Box::new(InlineInstruction::Const(0)),
+                Operator::LOR,
+                Box::new(InlineInstruction::Const(0)),
+              )),
+              Instruction::Inline(InlineInstruction::Binary(
+                Box::new(InlineInstruction::Const(0)),
+                Operator::SHL,
+                Box::new(InlineInstruction::Const(0)),
+              )),
+              Instruction::Inline(InlineInstruction::Binary(
+                Box::new(InlineInstruction::Const(0)),
+                Operator::SHR,
+                Box::new(InlineInstruction::Const(0)),
+              )),
+              Instruction::Inline(InlineInstruction::Binary(
+                Box::new(InlineInstruction::Const(0)),
                 Operator::XOR,
                 Box::new(InlineInstruction::Const(0)),
               )),
@@ -158,6 +178,10 @@ mod tests {
     (i32.mul (i32.const 0) (i32.const 0))
     (i32.div_s (i32.const 0) (i32.const 0))
     (i32.rem_s (i32.const 0) (i32.const 0))
+    (i32.and (i32.const 0) (i32.const 0))
+    (i32.or (i32.const 0) (i32.const 0))
+    (i32.shl (i32.const 0) (i32.const 0))
+    (i32.shr_u (i32.const 0) (i32.const 0))
     (i32.xor (i32.const 0) (i32.const 0))
     (i32.lt_s (i32.const 0) (i32.const 0))
     (i32.le_s (i32.const 0) (i32.const 0))

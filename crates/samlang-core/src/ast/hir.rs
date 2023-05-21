@@ -165,6 +165,10 @@ pub(crate) enum Operator {
   MOD,
   PLUS,
   MINUS,
+  LAND,
+  LOR,
+  SHL,
+  SHR,
   XOR,
   LT,
   LE,
@@ -177,7 +181,15 @@ pub(crate) enum Operator {
 impl Operator {
   pub(super) fn result_is_int(&self) -> bool {
     match self {
-      Operator::MUL | Operator::DIV | Operator::MOD | Operator::PLUS | Operator::MINUS => true,
+      Operator::MUL
+      | Operator::DIV
+      | Operator::MOD
+      | Operator::PLUS
+      | Operator::MINUS
+      | Operator::LAND
+      | Operator::LOR
+      | Operator::SHL
+      | Operator::SHR => true,
       Operator::XOR
       | Operator::LT
       | Operator::LE
@@ -197,6 +209,10 @@ impl ToString for Operator {
       Operator::MOD => "%".to_string(),
       Operator::PLUS => "+".to_string(),
       Operator::MINUS => "-".to_string(),
+      Operator::LAND => "&".to_string(),
+      Operator::LOR => "|".to_string(),
+      Operator::SHL => "<<".to_string(),
+      Operator::SHR => ">>>".to_string(),
       Operator::XOR => "^".to_string(),
       Operator::LT => "<".to_string(),
       Operator::LE => "<=".to_string(),
@@ -473,8 +489,16 @@ impl Statement {
     let Binary { name: _, type_: _, operator: op, e1: normalized_e1, e2: normalized_e2 } =
       Self::binary_unwrapped(INVALID_PSTR, operator, e1, e2);
     match op {
-      Operator::DIV | Operator::MOD | Operator::MINUS => (op, normalized_e1, normalized_e2),
-      Operator::MUL | Operator::PLUS | Operator::XOR | Operator::EQ | Operator::NE => {
+      Operator::DIV | Operator::MOD | Operator::MINUS | Operator::SHL | Operator::SHR => {
+        (op, normalized_e1, normalized_e2)
+      }
+      Operator::MUL
+      | Operator::PLUS
+      | Operator::LAND
+      | Operator::LOR
+      | Operator::XOR
+      | Operator::EQ
+      | Operator::NE => {
         if normalized_e1 > normalized_e2 {
           (op, normalized_e1, normalized_e2)
         } else {
