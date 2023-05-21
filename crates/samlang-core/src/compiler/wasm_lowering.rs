@@ -184,7 +184,7 @@ impl<'a> LoweringManager<'a> {
         vec![wasm::Instruction::Inline(self.set(name, assigned))]
       }
       mir::Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
-        let fn_name = self.heap.alloc_string(common_names::encoded_fn_name_malloc());
+        let fn_name = self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_MALLOC);
         let mut instructions = vec![wasm::Instruction::Inline(self.set(
           struct_variable_name,
           wasm::InlineInstruction::DirectCall(

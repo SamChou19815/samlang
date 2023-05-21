@@ -283,7 +283,7 @@ function Bar(f: number): number {{
       common_names::encoded_fn_name_string_to_int(),
       common_names::encoded_fn_name_int_to_string(),
       common_names::encoded_fn_name_panic(),
-      common_names::encoded_fn_name_free()
+      common_names::ENCODED_FN_NAME_FREE
     );
     assert_eq!(expected, sources.pretty_print(heap));
   }

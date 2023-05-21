@@ -22,9 +22,6 @@ pub(crate) fn encode_generic_function_name_globally(
   format!("$GENERICS$_{class_name}${function_name}")
 }
 
-pub(crate) fn encode_builtin_name(name: &str) -> String {
-  format!("_builtin_{name}")
-}
 fn encode_builtin_function_name_globally(class_name: &str, function_name: &str) -> String {
   format!("__{class_name}${function_name}")
 }
@@ -32,12 +29,11 @@ pub(crate) fn encode_main_function_name(heap: &Heap, module_reference: &ModuleRe
   encode_function_name_globally(heap, module_reference, "Main", "main")
 }
 
-pub(crate) fn encoded_fn_name_malloc() -> String {
-  encode_builtin_name("malloc")
-}
-pub(crate) fn encoded_fn_name_free() -> String {
-  encode_builtin_name("free")
-}
+pub(crate) const ENCODED_FN_NAME_MALLOC: &str = "_builtin_malloc";
+pub(crate) const ENCODED_FN_NAME_FREE: &str = "_builtin_free";
+pub(crate) const ENCODED_FN_NAME_INC_REF: &str = "_builtin_inc_ref";
+pub(crate) const ENCODED_FN_NAME_DEC_REF: &str = "_builtin_dec_ref";
+
 pub(crate) fn encoded_fn_name_string_concat() -> String {
   encode_builtin_function_name_globally("Builtins", "stringConcat")
 }
@@ -79,8 +75,6 @@ mod tests {
       .alloc_module_reference_from_string_vec(vec!["Foo-Bar-Derp".to_string(), "Baz".to_string()]);
     assert_eq!("_Foo_Bar_Derp$Baz_Main$main", encode_main_function_name(heap, &mod_ref));
 
-    assert_eq!("_builtin_malloc", encoded_fn_name_malloc());
-    assert_eq!("_builtin_free", encoded_fn_name_free());
     assert_eq!("__Builtins$stringConcat", encoded_fn_name_string_concat());
     assert_eq!("__Builtins$panic", encoded_fn_name_panic());
     assert_eq!("__Builtins$intToString", encoded_fn_name_int_to_string());

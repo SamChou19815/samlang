@@ -446,7 +446,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
       common_names::encoded_fn_name_string_to_int(),
       common_names::encoded_fn_name_int_to_string(),
       common_names::encoded_fn_name_panic(),
-      common_names::encoded_fn_name_free()
+      common_names::ENCODED_FN_NAME_FREE
     )); // empty the array to mess up program code that uses after free.
 
     for v in &self.global_variables {
