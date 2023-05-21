@@ -27,6 +27,12 @@ fn evaluate_bin_op(operator: Operator, v1: i32, v2: i32) -> Option<i32> {
     }
     Operator::PLUS => Some(v1 + v2),
     Operator::MINUS => Some(v1 - v2),
+    Operator::LAND => Some(v1 & v2),
+    Operator::LOR => Some(v1 | v2),
+    Operator::SHL => Some(v1 << v2),
+    Operator::SHR => {
+      Some(i32::from_be_bytes(((u32::from_be_bytes(v1.to_be_bytes())) >> v2).to_be_bytes()))
+    }
     Operator::XOR => Some(v1 ^ v2),
     Operator::LT => Some((v1 < v2) as i32),
     Operator::LE => Some((v1 <= v2) as i32),

@@ -43,6 +43,47 @@ mod tests {
     assert_correctly_optimized(
       vec![
         Statement::binary(
+          heap.alloc_str_for_test("c0"),
+          Operator::SHL,
+          Expression::int(3),
+          Expression::int(1),
+        ),
+        Statement::binary(
+          heap.alloc_str_for_test("c1"),
+          Operator::SHR,
+          Expression::int(3),
+          Expression::int(1),
+        ),
+        Statement::binary(
+          heap.alloc_str_for_test("c2"),
+          Operator::SHR,
+          Expression::int(-3),
+          Expression::int(1),
+        ),
+        Statement::binary(
+          heap.alloc_str_for_test("c3"),
+          Operator::LAND,
+          Expression::int(2),
+          Expression::int(1),
+        ),
+        Statement::binary(
+          heap.alloc_str_for_test("c4"),
+          Operator::LOR,
+          Expression::int(2),
+          Expression::int(1),
+        ),
+        Statement::StructInit {
+          struct_variable_name: heap.alloc_str_for_test("c_o"),
+          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Id")),
+          expression_list: vec![
+            Expression::var_name(heap.alloc_str_for_test("c0"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("c1"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("c2"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("c3"), INT_TYPE),
+            Expression::var_name(heap.alloc_str_for_test("c4"), INT_TYPE),
+          ],
+        },
+        Statement::binary(
           heap.alloc_str_for_test("a0"),
           Operator::PLUS,
           Expression::int(3),
@@ -253,7 +294,8 @@ mod tests {
       ],
       Expression::var_name(heap.alloc_str_for_test("a17"), INT_TYPE),
       heap,
-      r#"let i0: int = 6[2];
+      r#"let c_o: Id = [6, 1, 2147483646, 0, 3];
+let i0: int = 6[2];
 let b8: int = (i0: int) * (i0: int);
 let a6: int = (i1: int) / 30;
 let s: Id = [0, (a6: int), 30];

@@ -118,6 +118,12 @@ fn eval_stmt(
         Operator::PLUS => v1 + v2,
         Operator::MINUS => v1 - v2,
         Operator::XOR => v1 ^ v2,
+        Operator::LAND => v1 & v2,
+        Operator::LOR => v1 | v2,
+        Operator::SHL => v1 << v2,
+        Operator::SHR => {
+          i32::from_be_bytes(((u32::from_be_bytes(v1.to_be_bytes())) >> v2).to_be_bytes())
+        }
         Operator::LT => (v1 < v2) as i32,
         Operator::LE => (v1 <= v2) as i32,
         Operator::GT => (v1 > v2) as i32,
@@ -590,6 +596,34 @@ mod tests {
               operator: Operator::MOD,
               e1: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               e2: ONE,
+            },
+            Statement::Binary {
+              name: heap.alloc_str_for_test("v"),
+              type_: INT_TYPE,
+              operator: Operator::LAND,
+              e1: ZERO,
+              e2: ZERO,
+            },
+            Statement::Binary {
+              name: heap.alloc_str_for_test("v"),
+              type_: INT_TYPE,
+              operator: Operator::LOR,
+              e1: ZERO,
+              e2: ZERO,
+            },
+            Statement::Binary {
+              name: heap.alloc_str_for_test("v"),
+              type_: INT_TYPE,
+              operator: Operator::SHL,
+              e1: ZERO,
+              e2: ZERO,
+            },
+            Statement::Binary {
+              name: heap.alloc_str_for_test("v"),
+              type_: INT_TYPE,
+              operator: Operator::SHR,
+              e1: ZERO,
+              e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),

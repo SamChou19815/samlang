@@ -220,6 +220,10 @@ mod tests {
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::GE, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::EQ, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::NE, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::LAND, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::LOR, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::SHL, ZERO, ZERO),
+        Statement::binary(heap.alloc_str_for_test("dd"), Operator::SHR, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::XOR.clone(), ZERO, ZERO),
         Statement::Cast {
           name: heap.alloc_str_for_test("cast"),
@@ -325,6 +329,10 @@ if 0 {
   let dd: bool = 0 >= 0;
   let dd: bool = 0 == 0;
   let dd: bool = 0 != 0;
+  let dd: int = 0 & 0;
+  let dd: int = 0 | 0;
+  let dd: int = 0 << 0;
+  let dd: int = 0 >>> 0;
   let dd: bool = 0 ^ 0;
   let cast = 0 as int;
   while (true) {
