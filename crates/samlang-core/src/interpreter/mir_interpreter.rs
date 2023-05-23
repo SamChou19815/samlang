@@ -236,7 +236,7 @@ fn eval_fun_call(
 ) -> i32 {
   if let Expression::Name(s, _) = callee {
     let name = s.as_str(mem.heap);
-    if name.eq(&common_names::encoded_fn_name_free()) {
+    if name.eq(common_names::ENCODED_FN_NAME_FREE) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 1);
       mem.free(argument_vs[0]);
@@ -431,7 +431,7 @@ mod tests {
             },
             Statement::Call {
               callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_free()),
+                heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_FREE),
                 INT_TYPE,
               ),
               arguments: vec![Expression::Variable(heap.alloc_str_for_test("o"), INT_TYPE)],
