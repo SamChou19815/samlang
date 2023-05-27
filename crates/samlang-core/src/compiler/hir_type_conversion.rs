@@ -1,6 +1,6 @@
 use crate::{
   ast::{
-    common_names::encode_samlang_type,
+    common_names::{encode_samlang_type, encode_samlang_variant_subtype},
     hir::{
       ClosureTypeDefinition, FunctionType, IdType, PrimitiveType, Type, TypeDefinition,
       TypeDefinitionMappings, INT_TYPE,
@@ -331,44 +331,60 @@ impl TypeLoweringManager {
     module_reference: &ModuleReference,
     identifier: PStr,
     source_type_def: &source::TypeDefinition,
-  ) -> TypeDefinition {
+  ) -> Vec<TypeDefinition> {
     let type_parameters =
       Vec::from_iter(self.generic_types.iter().cloned().sorted_by_key(|ps| ps.as_str(heap)));
-    let mut names = vec![];
-    let mappings = match source_type_def {
+    match source_type_def {
       source::TypeDefinition::Struct { loc: _, fields } => {
+        let mut names = vec![];
         let mut mappings = vec![];
         for field in fields {
           names.push(field.name.name);
           mappings
             .push(self.lower_source_type(heap, &type_::Type::from_annotation(&field.annotation)));
         }
-        TypeDefinitionMappings::Struct(mappings)
+        vec![TypeDefinition {
+          identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
+          type_parameters,
+          names,
+          mappings: TypeDefinitionMappings::Struct(mappings),
+        }]
       }
       source::TypeDefinition::Enum { loc: _, variants } => {
-        let mut mappings = vec![];
-        let max_len = variants.iter().map(|v| v.associated_data_types.len()).max().unwrap_or(0);
+        let mut names = vec![];
+        let mut type_defs = vec![];
         for variant in variants {
           names.push(variant.name.name);
-          let real_len = variant.associated_data_types.len();
-          mappings.push((
-            variant
-              .associated_data_types
-              .iter()
-              .map(|t| self.lower_source_type(heap, &type_::Type::from_annotation(t)))
-              .chain((0..(max_len - real_len)).map(|_| INT_TYPE))
-              .collect(),
-            real_len,
-          ));
+          type_defs.push(TypeDefinition {
+            identifier: heap.alloc_string(encode_samlang_variant_subtype(
+              heap,
+              module_reference,
+              identifier,
+              variant.name.name,
+            )),
+            type_parameters: type_parameters.clone(),
+            names: vec![],
+            mappings: TypeDefinitionMappings::Struct(
+              vec![INT_TYPE]
+                .into_iter()
+                .chain(
+                  variant
+                    .associated_data_types
+                    .iter()
+                    .map(|t| self.lower_source_type(heap, &type_::Type::from_annotation(t))),
+                )
+                .collect(),
+            ),
+          });
         }
-        TypeDefinitionMappings::Enum(mappings)
+        type_defs.push(TypeDefinition {
+          identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
+          type_parameters,
+          names,
+          mappings: TypeDefinitionMappings::Enum,
+        });
+        type_defs
       }
-    };
-    TypeDefinition {
-      identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
-      type_parameters,
-      names,
-      mappings,
     }
   }
 
@@ -777,7 +793,7 @@ mod tests {
       ],
     };
     let foo_str = heap.alloc_str_for_test("Foo");
-    let type_def =
+    let mut type_defs =
       manager.lower_source_type_definition(heap, &ModuleReference::root(), foo_str, &type_def);
     let SynthesizedTypes { closure_types, mut tuple_types } =
       manager.type_synthesizer.synthesized_types();
@@ -789,7 +805,7 @@ mod tests {
       closure_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
 
-    tuple_types.push(type_def);
+    tuple_types.append(&mut type_defs);
     assert_eq!(
       vec!["object type _Foo<A> = [$SyntheticIDType1<A>, $SyntheticIDType1<A>]"],
       tuple_types.iter().map(|it| it.pretty_print(heap)).collect_vec()

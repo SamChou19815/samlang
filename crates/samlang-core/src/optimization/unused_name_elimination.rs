@@ -153,11 +153,7 @@ fn analyze_used_function_names_and_type_names(
           collect_for_type_set(t, &mut type_set);
         }
       }
-      TypeDefinitionMappings::Enum(all_ts) => {
-        for t in all_ts.iter().flat_map(|(ts, _)| ts.iter()) {
-          collect_for_type_set(t, &mut type_set);
-        }
-      }
+      TypeDefinitionMappings::Enum => {}
     }
     type_def_map.insert(d.identifier, type_set);
   }
@@ -296,7 +292,7 @@ mod tests {
           identifier: heap.alloc_str_for_test("Baz"),
           type_parameters: vec![],
           names: vec![],
-          mappings: TypeDefinitionMappings::Enum(vec![]),
+          mappings: TypeDefinitionMappings::Enum,
         },
       ],
       main_function_names: vec![heap.alloc_str_for_test("main")],

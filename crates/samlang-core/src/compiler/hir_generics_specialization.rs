@@ -311,26 +311,7 @@ impl Rewriter {
               })
               .collect_vec(),
           ),
-          TypeDefinitionMappings::Enum(all_types) => TypeDefinitionMappings::Enum(
-            all_types
-              .iter()
-              .map(|(types, l)| {
-                (
-                  types
-                    .iter()
-                    .map(|it| {
-                      self.rewrite_type(
-                        heap,
-                        &type_application(it, &solved_targs_replacement_map),
-                        &HashMap::new(),
-                      )
-                    })
-                    .collect_vec(),
-                  *l,
-                )
-              })
-              .collect_vec(),
-          ),
+          TypeDefinitionMappings::Enum => TypeDefinitionMappings::Enum,
         };
         self.specialized_type_definitions.insert(
           encoded_name,
@@ -669,10 +650,7 @@ sources.mains = [main]
             identifier: heap.alloc_str_for_test("I"),
             type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
             names: vec![],
-            mappings: TypeDefinitionMappings::Enum(vec![
-              (vec![Type::new_id_no_targs(heap.alloc_str_for_test("A"))], 1),
-              (vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))], 1),
-            ]),
+            mappings: TypeDefinitionMappings::Enum,
           },
           TypeDefinition {
             identifier: heap.alloc_str_for_test("J"),
@@ -891,8 +869,8 @@ const G1 = '';
 closure type CC_string_string = (string) -> string
 closure type CC_int_string = (int) -> string
 object type J = [int]
-variant type I_int_string = [[int], [string]]
-variant type I_string_string = [[string], [string]]
+variant type I_int_string
+variant type I_string_string
 function main(): int {
   let finalV: int;
   if 1 {
@@ -966,10 +944,7 @@ sources.mains = [main]"#,
             identifier: heap.alloc_str_for_test("I"),
             type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
             names: vec![],
-            mappings: TypeDefinitionMappings::Enum(vec![
-              (vec![Type::new_id_no_targs(heap.alloc_str_for_test("A"))], 1),
-              (vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))], 1),
-            ]),
+            mappings: TypeDefinitionMappings::Enum,
           },
           TypeDefinition {
             identifier: heap.alloc_str_for_test("J"),
@@ -1046,7 +1021,7 @@ sources.mains = [main]"#,
       heap,
       r#"
 object type J = [I_int_int]
-variant type I_int_int = [[int], [int]]
+variant type I_int_int
 function main(): int {
   creatorJ();
   (v: int)();

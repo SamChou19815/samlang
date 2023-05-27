@@ -175,49 +175,12 @@ impl<'a> LoweringManager<'a> {
       hir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         let pointer_expr = lower_expression(pointer_expression);
         let variable_type = lower_type(type_);
-        let type_def = self.type_defs.get(pointer_expr.type_().as_id().unwrap()).unwrap();
-        if type_def.mappings.as_struct().is_some() {
-          vec![mir::Statement::IndexedAccess {
-            name,
-            type_: variable_type,
-            pointer_expression: pointer_expr,
-            index: index + 1,
-          }]
-        } else if index == 0 {
-          // Access the tag
-          assert!(variable_type.as_primitive().unwrap().eq(&mir::PrimitiveType::Int));
-          vec![mir::Statement::IndexedAccess {
-            name,
-            type_: variable_type,
-            pointer_expression: pointer_expr,
-            index: 1,
-          }]
-        } else {
-          // Access the data, might need cast
-          if variable_type.is_the_same_type(&mir::ANY_TYPE) {
-            vec![mir::Statement::IndexedAccess {
-              name,
-              type_: variable_type,
-              pointer_expression: pointer_expr,
-              index: index + 1,
-            }]
-          } else {
-            let temp = self.alloc_temp();
-            vec![
-              mir::Statement::IndexedAccess {
-                name: temp,
-                type_: mir::ANY_TYPE,
-                pointer_expression: pointer_expr,
-                index: index + 1,
-              },
-              mir::Statement::Cast {
-                name,
-                type_: variable_type,
-                assigned_expression: mir::Expression::Variable(temp, mir::ANY_TYPE),
-              },
-            ]
-          }
-        }
+        vec![mir::Statement::IndexedAccess {
+          name,
+          type_: variable_type,
+          pointer_expression: pointer_expr,
+          index: index + 1,
+        }]
       }
       hir::Statement::Call { callee, arguments, return_type, return_collector } => {
         let lowered_return_type = lower_type(return_type);
@@ -329,11 +292,17 @@ impl<'a> LoweringManager<'a> {
         };
         vec![mir::Statement::While { loop_variables, statements, break_collector }]
       }
-      hir::Statement::Cast { name, type_, assigned_expression } => vec![mir::Statement::Cast {
-        name,
-        type_: lower_type(type_),
-        assigned_expression: lower_expression(assigned_expression),
-      }],
+      hir::Statement::Cast { name, type_, assigned_expression } => {
+        let lowered = lower_expression(assigned_expression);
+        let mut statements = vec![];
+        self.add_ref_counting_if_type_allowed(&mut statements, &lowered);
+        statements.push(mir::Statement::Cast {
+          name,
+          type_: lower_type(type_),
+          assigned_expression: lowered,
+        });
+        statements
+      }
       hir::Statement::StructInit { struct_variable_name, type_, expression_list } => {
         let type_def = self.type_defs.get(&type_.name).unwrap();
         let type_ = lower_type(hir::Type::Id(type_));
@@ -354,17 +323,7 @@ impl<'a> LoweringManager<'a> {
             if self.add_ref_counting_if_type_allowed(&mut statements, &lowered) {
               header |= 1 << (index + 16);
             }
-            if index == 0 || lowered.type_().is_the_same_type(&mir::ANY_TYPE) {
-              mir_expression_list.push(lowered);
-            } else {
-              let temp = self.alloc_temp();
-              statements.push(mir::Statement::Cast {
-                name: temp,
-                type_: mir::ANY_TYPE,
-                assigned_expression: lowered,
-              });
-              mir_expression_list.push(mir::Expression::Variable(temp, mir::ANY_TYPE));
-            }
+            mir_expression_list.push(lowered);
           }
         };
         mir_expression_list.insert(0, mir::Expression::int(header));
@@ -821,14 +780,10 @@ pub(crate) fn compile_hir_to_mir(heap: &mut Heap, sources: hir::Sources) -> mir:
         type_defs.push(mir::TypeDefinition { name: type_def.identifier, mappings: mir_mappings });
         type_def_map.insert(type_def.identifier, type_def);
       }
-      hir::TypeDefinitionMappings::Enum(all_types) => {
-        let max_len = all_types.get(0).map(|(ts, _)| ts.len()).unwrap_or(0);
+      hir::TypeDefinitionMappings::Enum => {
         type_defs.push(mir::TypeDefinition {
           name: type_def.identifier,
-          mappings: vec![mir::INT_TYPE, mir::INT_TYPE]
-            .into_iter()
-            .chain((0..max_len).map(|_| mir::ANY_TYPE))
-            .collect(),
+          mappings: vec![mir::INT_TYPE, mir::INT_TYPE],
         });
         type_def_map.insert(type_def.identifier, type_def);
       }
@@ -935,7 +890,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
           identifier: heap.alloc_str_for_test("Variant"),
           type_parameters: vec![],
           names: vec![],
-          mappings: TypeDefinitionMappings::Enum(vec![(vec![INT_TYPE], 1), (vec![INT_TYPE], 1)]),
+          mappings: TypeDefinitionMappings::Enum,
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Object2"),
@@ -950,16 +905,13 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
           identifier: heap.alloc_str_for_test("Variant2"),
           type_parameters: vec![],
           names: vec![],
-          mappings: TypeDefinitionMappings::Enum(vec![(vec![STRING_TYPE], 1)]),
+          mappings: TypeDefinitionMappings::Enum,
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant3"),
           type_parameters: vec![],
           names: vec![],
-          mappings: TypeDefinitionMappings::Enum(vec![
-            (vec![STRING_TYPE], 1),
-            (vec![Type::new_id_no_targs(heap.alloc_str_for_test("Foo"))], 1),
-          ]),
+          mappings: TypeDefinitionMappings::Enum,
         },
       ],
       main_function_names: vec![
@@ -1186,15 +1138,14 @@ const {} = (_: number, [, v]: Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
 type CC = [number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
-type Variant = [number, number, any];
+type Variant = [number, number];
 function cc(): number {{
   let _t31: (t0: any, t1: number) => number = cc[1];
   let _t32: any = cc[2];
   _t31(_t32, 0);
   let v1: number = a[1];
   let v2: number = b[1];
-  let _t33: any = b[2];
-  let v3 = _t33 as number;
+  let v3: number = b[2];
   let v4: Str = b[2];
   while (true) {{
     if (0) {{
@@ -1216,17 +1167,16 @@ function main(): number {{
   let v1: number = 0 + 0;
   _builtin_inc_ref(obj);
   let O: Object = [0, 0, obj];
-  let _t36 = 0 as any;
-  let v1: Variant = [1, 0, _t36];
-  let _t38 = G1 as any;
-  _builtin_inc_ref(_t38);
+  let v1: Variant = [1, 0, 0];
+  let _t36 = G1 as any;
+  _builtin_inc_ref(_t36);
   let v2: Variant = [131073, 0, G1];
-  let _t39 = G1 as any;
-  _builtin_inc_ref(_t39);
+  let _t37 = G1 as any;
+  _builtin_inc_ref(_t37);
   let c1: CC = [131073, aaa, G1];
-  let _t40 = bbb as (t0: any) => number;
-  let _t41 = 0 as any;
-  let c2: CC = [1, _t40, _t41];
+  let _t38 = bbb as (t0: any) => number;
+  let _t39 = 0 as any;
+  let c2: CC = [1, _t38, _t39];
   _builtin_dec_ref(O);
   _builtin_dec_ref(v1);
   _builtin_dec_ref(v2);
@@ -1241,14 +1191,14 @@ function _compiled_program_main(): number {{
     let ccc: number = cc(0);
     finalV = v1;
   }} else {{
-    let _t43: (t0: any, t1: number) => number = cc[1];
-    let _t44: any = cc[2];
-    let _t42: CC = _t43(_t44, 0);
-    _builtin_inc_ref(_t42);
+    let _t41: (t0: any, t1: number) => number = cc[1];
+    let _t42: any = cc[2];
+    let _t40: CC = _t41(_t42, 0);
+    _builtin_inc_ref(_t40);
     _builtin_inc_ref(G1);
-    let _t45 = G1 as any;
-    let v2: CC = [131073, aaa, _t45];
-    _builtin_dec_ref(_t42);
+    let _t43 = G1 as any;
+    let v2: CC = [131073, aaa, _t43];
+    _builtin_dec_ref(_t40);
     finalV = v2;
   }}
   let finalV2: number;

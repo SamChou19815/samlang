@@ -15,6 +15,14 @@ pub(crate) fn encode_samlang_type(
 ) -> String {
   format!("{}_{}", module_reference.encoded(heap), identifier.as_str(heap))
 }
+pub(crate) fn encode_samlang_variant_subtype(
+  heap: &Heap,
+  module_reference: &ModuleReference,
+  identifier: PStr,
+  variant: PStr,
+) -> String {
+  format!("{}_{}_{}", module_reference.encoded(heap), identifier.as_str(heap), variant.as_str(heap))
+}
 pub(crate) fn encode_generic_function_name_globally(
   class_name: &str,
   function_name: &str,
@@ -64,6 +72,10 @@ mod tests {
 
     let t = heap.alloc_str_for_test("T");
     assert_eq!("__DUMMY___T", encode_samlang_type(heap, &ModuleReference::dummy(), t));
+    assert_eq!(
+      "__DUMMY___T_T",
+      encode_samlang_variant_subtype(heap, &ModuleReference::dummy(), t, t)
+    );
 
     assert_eq!("___DUMMY___Main$main", encode_main_function_name(heap, &ModuleReference::dummy()));
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()]);
