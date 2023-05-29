@@ -631,6 +631,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let mut lowered_stmts = vec![];
     let matched_expr =
       self.lowered_and_add_statements(&expression.matched, None, &mut lowered_stmts);
+    let general_id_type = matched_expr.type_().as_id().unwrap();
     let variable_for_tag = self.allocate_temp_variable(None);
     lowered_stmts.push(hir::Statement::IndexedAccess {
       name: variable_for_tag,
@@ -643,10 +644,29 @@ impl<'a> ExpressionLoweringManager<'a> {
       .bind(variable_for_tag, hir::Expression::var_name(variable_for_tag, hir::INT_TYPE));
 
     let mut lowered_matching_list = vec![];
-    for source::expr::VariantPatternToExpression { tag_order, data_variables, body, .. } in
-      &expression.cases
+    for source::expr::VariantPatternToExpression {
+      tag_order,
+      tag: source::Id { name: tag, .. },
+      data_variables,
+      body,
+      ..
+    } in &expression.cases
     {
       let mut local_stmts = vec![];
+      let casted_collector = self.allocate_temp_variable(None);
+      let subtype = hir::Type::Id(hir::IdType {
+        name: self.heap.alloc_string(format!(
+          "{}_{}",
+          general_id_type.name.as_str(self.heap),
+          tag.as_str(self.heap)
+        )),
+        type_arguments: general_id_type.type_arguments.clone(),
+      });
+      local_stmts.push(hir::Statement::Cast {
+        name: casted_collector,
+        type_: subtype.clone(),
+        assigned_expression: matched_expr.clone(),
+      });
       self.variable_cx.push_scope();
       for (i, data_var_name, data_var_type) in
         data_variables.iter().enumerate().filter_map(|(i, dv)| dv.as_ref().map(|(n, t)| (i, n, t)))
@@ -656,7 +676,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         local_stmts.push(hir::Statement::IndexedAccess {
           name,
           type_: data_var_type.clone(),
-          pointer_expression: matched_expr.clone(),
+          pointer_expression: hir::Expression::var_name(casted_collector, subtype.clone()),
           index: i + 1,
         });
         self.variable_cx.bind(name, hir::Expression::var_name(name, data_var_type.clone()));
@@ -923,7 +943,8 @@ fn lower_constructors(
   let type_name =
     heap.alloc_string(common_names::encode_samlang_type(heap, module_reference, class_name));
   let type_def = type_definition_mapping.get(&type_name).unwrap();
-  let struct_var_name = "_struct";
+  let struct_var_name = heap.alloc_str_permanent("_struct");
+  let struct_var_name_casted = heap.alloc_str_permanent("_struct_casted");
   let struct_type = hir::IdType {
     name: type_name,
     type_arguments: type_def
@@ -952,7 +973,7 @@ fn lower_constructors(
           hir::Type::Id(struct_type.clone()),
         ),
         body: vec![hir::Statement::StructInit {
-          struct_variable_name: heap.alloc_str_permanent(struct_var_name),
+          struct_variable_name: struct_var_name,
           type_: struct_type.clone(),
           expression_list: types
             .iter()
@@ -962,16 +983,25 @@ fn lower_constructors(
             })
             .collect_vec(),
         }],
-        return_value: hir::Expression::var_name(
-          heap.alloc_str_permanent(struct_var_name),
-          hir::Type::Id(struct_type),
-        ),
+        return_value: hir::Expression::var_name(struct_var_name, hir::Type::Id(struct_type)),
       };
       functions.push(f);
     }
-    hir::TypeDefinitionMappings::Enum(all_types) => {
-      let padded_len = all_types.get(0).map(|(ts, _)| ts.len()).unwrap_or(0);
-      for (tag_order, (data_types, real_len)) in all_types.iter().enumerate() {
+    hir::TypeDefinitionMappings::Enum => {
+      for (tag_order, tag_name) in type_def.names.iter().enumerate() {
+        let enum_subtype_name = heap.alloc_string(common_names::encode_samlang_variant_subtype(
+          heap,
+          module_reference,
+          class_name,
+          *tag_name,
+        ));
+        let data_types =
+          &type_definition_mapping.get(&enum_subtype_name).unwrap().mappings.as_struct().unwrap()
+            [1..];
+        let enum_subtype = hir::IdType {
+          name: enum_subtype_name,
+          type_arguments: struct_type.type_arguments.clone(),
+        };
         let f = hir::Function {
           name: heap.alloc_string(common_names::encode_function_name_globally(
             heap,
@@ -981,26 +1011,38 @@ fn lower_constructors(
           )),
           parameters: vec![heap.alloc_str_permanent("_this")]
             .into_iter()
-            .chain((0..*real_len).map(|i| heap.alloc_string(format!("_data{i}"))))
+            .chain((0..(data_types.len())).map(|i| heap.alloc_string(format!("_data{i}"))))
             .collect(),
           type_parameters: type_def.type_parameters.clone(),
           type_: hir::Type::new_fn_unwrapped(
             vec![hir::INT_TYPE].into_iter().chain(data_types.iter().cloned()).collect(),
             hir::Type::Id(struct_type.clone()),
           ),
-          body: vec![hir::Statement::StructInit {
-            struct_variable_name: heap.alloc_str_permanent(struct_var_name),
-            type_: struct_type.clone(),
-            expression_list: vec![hir::Expression::int(i32::try_from(tag_order).unwrap())]
-              .into_iter()
-              .chain(data_types.iter().enumerate().map(|(i, data_type)| {
-                hir::Expression::var_name(heap.alloc_string(format!("_data{i}")), data_type.clone())
-              }))
-              .chain((0..(padded_len - real_len)).map(|_| hir::ZERO))
-              .collect(),
-          }],
+          body: vec![
+            hir::Statement::StructInit {
+              struct_variable_name: struct_var_name,
+              type_: enum_subtype.clone(),
+              expression_list: vec![hir::Expression::int(i32::try_from(tag_order).unwrap())]
+                .into_iter()
+                .chain(data_types.iter().enumerate().map(|(i, data_type)| {
+                  hir::Expression::var_name(
+                    heap.alloc_string(format!("_data{i}")),
+                    data_type.clone(),
+                  )
+                }))
+                .collect(),
+            },
+            hir::Statement::Cast {
+              name: struct_var_name_casted,
+              type_: hir::Type::Id(struct_type.clone()),
+              assigned_expression: hir::Expression::var_name(
+                struct_var_name,
+                hir::Type::Id(enum_subtype),
+              ),
+            },
+          ],
           return_value: hir::Expression::var_name(
-            heap.alloc_str_permanent(struct_var_name),
+            struct_var_name_casted,
             hir::Type::Id(struct_type.clone()),
           ),
         };
@@ -1028,7 +1070,7 @@ fn compile_sources_with_generics_preserved(
       if let source::Toplevel::Class(c) = &toplevel {
         type_lowering_manager.generic_types =
           c.type_parameters.iter().map(|it| it.name.name).collect();
-        compiled_type_defs.push(type_lowering_manager.lower_source_type_definition(
+        compiled_type_defs.append(&mut type_lowering_manager.lower_source_type_definition(
           heap,
           mod_ref,
           c.name.name,
@@ -1961,15 +2003,17 @@ return (_t14: __DUMMY___Dummy);"#,
       }),
       heap,
       r#"let _t16: int = (_this: __DUMMY___Dummy)[0];
-let _t17: bool = (_t16: int) == 0;
-let _t18: __DUMMY___Dummy;
-if (_t17: bool) {
-  let bar: int = (_this: __DUMMY___Dummy)[1];
-  _t18 = (_this: __DUMMY___Dummy);
+let _t21: bool = (_t16: int) == 0;
+let _t22: __DUMMY___Dummy;
+if (_t21: bool) {
+  let _t17 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Foo;
+  let bar: int = (_t17: __DUMMY___Dummy_Foo)[1];
+  _t22 = (_this: __DUMMY___Dummy);
 } else {
-  _t18 = (_this: __DUMMY___Dummy);
+  let _t19 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Bar;
+  _t22 = (_this: __DUMMY___Dummy);
 }
-return (_t18: __DUMMY___Dummy);"#,
+return (_t22: __DUMMY___Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2009,22 +2053,25 @@ return (_t18: __DUMMY___Dummy);"#,
       }),
       heap,
       r#"let _t17: int = (_this: __DUMMY___Dummy)[0];
-let _t20: bool = (_t17: int) == 0;
-let _t21: __DUMMY___Dummy;
-if (_t20: bool) {
-  _t21 = (_this: __DUMMY___Dummy);
+let _t26: bool = (_t17: int) == 0;
+let _t27: __DUMMY___Dummy;
+if (_t26: bool) {
+  let _t18 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Foo;
+  _t27 = (_this: __DUMMY___Dummy);
 } else {
-  let _t18: bool = (_t17: int) == 1;
-  let _t19: __DUMMY___Dummy;
-  if (_t18: bool) {
-    let bar: __DUMMY___Dummy = (_this: __DUMMY___Dummy)[1];
-    _t19 = (bar: __DUMMY___Dummy);
+  let _t24: bool = (_t17: int) == 1;
+  let _t25: __DUMMY___Dummy;
+  if (_t24: bool) {
+    let _t20 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Bar;
+    let bar: __DUMMY___Dummy = (_t20: __DUMMY___Dummy_Bar)[1];
+    _t25 = (bar: __DUMMY___Dummy);
   } else {
-    _t19 = (_this: __DUMMY___Dummy);
+    let _t22 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Baz;
+    _t25 = (_this: __DUMMY___Dummy);
   }
-  _t21 = (_t19: __DUMMY___Dummy);
+  _t27 = (_t25: __DUMMY___Dummy);
 }
-return (_t21: __DUMMY___Dummy);"#,
+return (_t27: __DUMMY___Dummy);"#,
     );
   }
 
@@ -2576,7 +2623,8 @@ return 0;"#,
     let generics_preserved_expected = r#"closure type $SyntheticIDType0<T> = (__DUMMY___A<int>, T) -> int
 object type __DUMMY___Main = []
 object type __DUMMY___Class1 = [int]
-variant type __DUMMY___Class2 = [[int]]
+object type __DUMMY___Class2_Tag = [int, int]
+variant type __DUMMY___Class2
 object type __DUMMY___Class3<T> = [$SyntheticIDType0<T>]
 function ___DUMMY___Main$init(_this: int): __DUMMY___Main {
   let _struct: __DUMMY___Main = [];
@@ -2608,22 +2656,23 @@ function ___DUMMY___Class1$infiniteLoop(_this: int): int {
 }
 
 function ___DUMMY___Class1$factorial(_this: int, n: int, acc: int): int {
-  let _t40: bool = (n: int) == 0;
-  let _t41: int;
-  if (_t40: bool) {
-    _t41 = 1;
+  let _t42: bool = (n: int) == 0;
+  let _t43: int;
+  if (_t42: bool) {
+    _t43 = 1;
   } else {
-    let _t43: int = (n: int) + -1;
-    let _t44: int = (n: int) * (acc: int);
-    let _t42: int = ___DUMMY___Class1$factorial(0, (_t43: int), (_t44: int));
-    _t41 = (_t42: int);
+    let _t45: int = (n: int) + -1;
+    let _t46: int = (n: int) * (acc: int);
+    let _t44: int = ___DUMMY___Class1$factorial(0, (_t45: int), (_t46: int));
+    _t43 = (_t44: int);
   }
-  return (_t41: int);
+  return (_t43: int);
 }
 
 function ___DUMMY___Class2$Tag(_this: int, _data0: int): __DUMMY___Class2 {
-  let _struct: __DUMMY___Class2 = [0, (_data0: int)];
-  return (_struct: __DUMMY___Class2);
+  let _struct: __DUMMY___Class2_Tag = [0, (_data0: int)];
+  let _struct_casted = (_struct: __DUMMY___Class2_Tag) as __DUMMY___Class2;
+  return (_struct_casted: __DUMMY___Class2);
 }
 
 function ___DUMMY___Class3$init<T>(_this: int, _f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {

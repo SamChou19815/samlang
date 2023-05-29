@@ -126,7 +126,7 @@ impl ClosureTypeDefinition {
 #[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum TypeDefinitionMappings {
   Struct(Vec<Type>),
-  Enum(Vec<(Vec<Type>, /* real size */ usize)>),
+  Enum,
 }
 
 #[derive(Debug, Clone)]
@@ -139,22 +139,17 @@ pub(crate) struct TypeDefinition {
 
 impl TypeDefinition {
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
-    let (kind, mapping_str) = match &self.mappings {
-      TypeDefinitionMappings::Struct(types) => {
-        ("object", types.iter().map(|it| it.pretty_print(heap)).join(", "))
-      }
-      TypeDefinitionMappings::Enum(all_types) => (
-        "variant",
-        all_types
-          .iter()
-          .map(|(types, _)| {
-            format!("[{}]", types.iter().map(|it| it.pretty_print(heap)).join(", "))
-          })
-          .join(", "),
-      ),
-    };
     let id_part = name_with_tparams(heap, self.identifier, &self.type_parameters);
-    format!("{} type {} = [{}]", kind, id_part, mapping_str)
+    match &self.mappings {
+      TypeDefinitionMappings::Struct(types) => {
+        format!(
+          "object type {} = [{}]",
+          id_part,
+          types.iter().map(|it| it.pretty_print(heap)).join(", ")
+        )
+      }
+      TypeDefinitionMappings::Enum => format!("variant type {}", id_part),
+    }
   }
 }
 

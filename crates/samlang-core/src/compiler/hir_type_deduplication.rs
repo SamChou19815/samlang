@@ -184,15 +184,7 @@ pub(super) fn deduplicate(
       TypeDefinitionMappings::Struct(types) => {
         format!("object_{}", types.iter().map(|t| t.pretty_print(heap)).join("_"))
       }
-      TypeDefinitionMappings::Enum(all_types) => {
-        format!(
-          "enum_{}",
-          all_types
-            .iter()
-            .map(|(types, _)| types.iter().map(|t| t.pretty_print(heap)).join("_"))
-            .join("___")
-        )
-      }
+      TypeDefinitionMappings::Enum => "enum".to_string(),
     };
     let original_name = type_def.identifier;
     let canonical_name = if let Some(c) = type_def_mapping.get(&key) {
@@ -226,14 +218,7 @@ pub(super) fn deduplicate(
           TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
             types.into_iter().map(|t| rewrite_type(&state, t)).collect_vec(),
           ),
-          TypeDefinitionMappings::Enum(all_types) => TypeDefinitionMappings::Enum(
-            all_types
-              .into_iter()
-              .map(|(types, l)| {
-                (types.into_iter().map(|t| rewrite_type(&state, t)).collect_vec(), l)
-              })
-              .collect_vec(),
-          ),
+          TypeDefinitionMappings::Enum => TypeDefinitionMappings::Enum,
         },
       })
       .collect_vec(),
