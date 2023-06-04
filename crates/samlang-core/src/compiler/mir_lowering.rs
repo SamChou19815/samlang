@@ -1,7 +1,7 @@
 use super::mir_unused_name_elimination;
 use crate::{
   ast::{common_names, hir, mir},
-  common::PStr,
+  common::{well_known_pstrs, PStr},
   Heap,
 };
 use itertools::Itertools;
@@ -611,7 +611,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
                         ),
                       },
                       mir::GenenalLoopVariable {
-                        name: heap.alloc_str_permanent("i"),
+                        name: well_known_pstrs::LOWER_I,
                         type_: mir::INT_TYPE,
                         initial_value: mir::ONE,
                         loop_value: mir::Expression::Variable(
@@ -624,7 +624,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
                       mir::Statement::binary(
                         heap.alloc_str_permanent("shouldStop"),
                         hir::Operator::GT,
-                        mir::Expression::Variable(heap.alloc_str_permanent("i"), mir::INT_TYPE),
+                        mir::Expression::Variable(well_known_pstrs::LOWER_I, mir::INT_TYPE),
                         mir::Expression::int(16),
                       ),
                       mir::Statement::SingleIf {
@@ -642,7 +642,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
                           heap.alloc_str_permanent("isRefBitSet"),
                           mir::INT_TYPE,
                         ),
-                        mir::Expression::int(1),
+                        mir::ONE,
                       ),
                       mir::Statement::SingleIf {
                         condition: mir::Expression::Variable(
@@ -654,7 +654,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
                           mir::Statement::binary(
                             heap.alloc_str_permanent("offsetToHeader"),
                             hir::Operator::PLUS,
-                            mir::Expression::Variable(heap.alloc_str_permanent("i"), mir::INT_TYPE),
+                            mir::Expression::Variable(well_known_pstrs::LOWER_I, mir::INT_TYPE),
                             mir::ONE,
                           ),
                           mir::Statement::binary(
@@ -704,7 +704,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
                       mir::Statement::binary(
                         heap.alloc_str_permanent("newI"),
                         hir::Operator::PLUS,
-                        mir::Expression::Variable(heap.alloc_str_permanent("i"), mir::INT_TYPE),
+                        mir::Expression::Variable(well_known_pstrs::LOWER_I, mir::INT_TYPE),
                         mir::ONE,
                       ),
                     ],
@@ -1128,9 +1128,9 @@ type CC = [number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
 type Variant = [number, number];
 function cc(): number {{
-  let _t31: (t0: any, t1: number) => number = cc[1];
-  let _t32: any = cc[2];
-  _t31(_t32, 0);
+  let _t7: (t0: any, t1: number) => number = cc[1];
+  let _t8: any = cc[2];
+  _t7(_t8, 0);
   let v1: number = a[1];
   let v2: number = b[1];
   let v3: number = b[2];
@@ -1156,15 +1156,15 @@ function main(): number {{
   _builtin_inc_ref(obj);
   let O: Object = [0, 0, obj];
   let v1: Variant = [1, 0, 0];
-  let _t36 = G1 as any;
-  _builtin_inc_ref(_t36);
+  let _t11 = G1 as any;
+  _builtin_inc_ref(_t11);
   let v2: Variant = [131073, 0, G1];
-  let _t37 = G1 as any;
-  _builtin_inc_ref(_t37);
+  let _t12 = G1 as any;
+  _builtin_inc_ref(_t12);
   let c1: CC = [131073, aaa, G1];
-  let _t38 = bbb as (t0: any) => number;
-  let _t39 = 0 as any;
-  let c2: CC = [1, _t38, _t39];
+  let _t13 = bbb as (t0: any) => number;
+  let _t14 = 0 as any;
+  let c2: CC = [1, _t13, _t14];
   _builtin_dec_ref(O);
   _builtin_dec_ref(v1);
   _builtin_dec_ref(v2);
@@ -1179,14 +1179,14 @@ function _compiled_program_main(): number {{
     let ccc: number = cc(0);
     finalV = v1;
   }} else {{
-    let _t41: (t0: any, t1: number) => number = cc[1];
-    let _t42: any = cc[2];
-    let _t40: CC = _t41(_t42, 0);
-    _builtin_inc_ref(_t40);
+    let _t16: (t0: any, t1: number) => number = cc[1];
+    let _t17: any = cc[2];
+    let _t15: CC = _t16(_t17, 0);
+    _builtin_inc_ref(_t15);
     _builtin_inc_ref(G1);
-    let _t43 = G1 as any;
-    let v2: CC = [131073, aaa, _t43];
-    _builtin_dec_ref(_t40);
+    let _t18 = G1 as any;
+    let v2: CC = [131073, aaa, _t18];
+    _builtin_dec_ref(_t15);
     finalV = v2;
   }}
   let finalV2: number;

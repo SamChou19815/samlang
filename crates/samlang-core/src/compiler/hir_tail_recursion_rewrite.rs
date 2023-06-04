@@ -490,15 +490,15 @@ mod tests {
   let r: int;
   while (true) {
     let a = (n: int) + 0;
-    let _t7: int;
+    let _t0: int;
     if 0 {
       let r1 = 0 + 0;
-      _t7 = (a: int);
+      _t0 = (a: int);
     } else {
       let r2 = 0 + 0;
-      _t7 = (a: int);
+      _t0 = (a: int);
     }
-    n = (_t7: int);
+    n = (_t0: int);
   }
   return (r: int);
 }

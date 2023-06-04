@@ -1,7 +1,7 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
 use crate::{
   ast::{source::*, Location, Position},
-  common::{Heap, ModuleReference, PStr},
+  common::{well_known_pstrs, Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -1084,7 +1084,7 @@ impl<'a> SourceParser<'a> {
           Id {
             loc: peeked_loc,
             associated_comments: self.comments_store.create_comment_reference(vec![]),
-            name: self.heap.alloc_str_permanent("this"),
+            name: well_known_pstrs::THIS,
           },
         );
       }

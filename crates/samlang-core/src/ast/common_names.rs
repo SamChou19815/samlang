@@ -71,13 +71,10 @@ mod tests {
     assert_eq!("$GENERICS$_T$bar", encode_generic_function_name_globally("T", "bar"));
 
     let t = heap.alloc_str_for_test("T");
-    assert_eq!("__DUMMY___T", encode_samlang_type(heap, &ModuleReference::dummy(), t));
-    assert_eq!(
-      "__DUMMY___T_T",
-      encode_samlang_variant_subtype(heap, &ModuleReference::dummy(), t, t)
-    );
+    assert_eq!("DUMMY_T", encode_samlang_type(heap, &ModuleReference::dummy(), t));
+    assert_eq!("DUMMY_T_T", encode_samlang_variant_subtype(heap, &ModuleReference::dummy(), t, t));
 
-    assert_eq!("___DUMMY___Main$main", encode_main_function_name(heap, &ModuleReference::dummy()));
+    assert_eq!("_DUMMY_Main$main", encode_main_function_name(heap, &ModuleReference::dummy()));
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()]);
     assert_eq!("_Demo_Main$main", encode_main_function_name(heap, &mod_ref));
     let mod_ref =

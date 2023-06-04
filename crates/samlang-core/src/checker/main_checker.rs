@@ -22,7 +22,7 @@ use crate::{
     Reason,
   },
   checker::checker_utils::solve_type_constraints,
-  common::{Heap, ModuleReference, PStr},
+  common::{well_known_pstrs, Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -1403,8 +1403,7 @@ pub(crate) fn type_check_module(
   heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> (Module<Rc<Type>>, LocalTypingContext) {
-  let mut local_cx =
-    LocalTypingContext::new(perform_ssa_analysis_on_module(module, heap, error_set));
+  let mut local_cx = LocalTypingContext::new(perform_ssa_analysis_on_module(module, error_set));
 
   for one_import in module.imports.iter() {
     if let Some(module_cx) = global_cx.get(&one_import.imported_module) {
@@ -1557,7 +1556,7 @@ pub(crate) fn type_check_module(
         }
         match &c.type_definition {
           TypeDefinition::Struct { .. } => {
-            missing_function_members.remove(&heap.get_allocated_str_opt("init").unwrap());
+            missing_function_members.remove(&well_known_pstrs::INIT);
           }
           TypeDefinition::Enum { loc: _, variants } => {
             for variant in variants {

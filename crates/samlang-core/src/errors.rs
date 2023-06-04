@@ -337,12 +337,12 @@ mod tests {
       .error_messages(&heap)
       .into_iter()
       .map(|s| {
-        s.chars().collect::<Vec<_>>()["__DUMMY__.sam:0:0-0:0: ".len()..].iter().collect::<String>()
+        s.chars().collect::<Vec<_>>()["DUMMY.sam:0:0-0:0: ".len()..].iter().collect::<String>()
       })
       .collect::<Vec<_>>();
     let expected_errors = vec![
       "[cannot-resolve-class]: Class `global` is not resolved.",
-      "[cannot-resolve-module]: Module `__DUMMY__` is not resolved.",
+      "[cannot-resolve-module]: Module `DUMMY` is not resolved.",
       "[cannot-resolve-name]: Name `global` is not resolved.",
       "[cyclic-type-definition]: Type `int` has a cyclic definition.",
       "[incompatible-type]: Expected: `int`, actual: `bool`.",
@@ -351,8 +351,8 @@ mod tests {
       "[invalid-syntax]: bad code",
       "[member-missing]: Cannot find member `bar` on `Foo`.",
       "[missing-definitions]: Missing definitions for [foo, bar].",
-      "[missing-export]: There is no `bar` export in `__DUMMY__`.",
-      "[name-already-bound]: Name `a` collides with a previously defined name at __DUMMY__.sam:0:0-0:0.",
+      "[missing-export]: There is no `bar` export in `DUMMY`.",
+      "[name-already-bound]: Name `a` collides with a previously defined name at DUMMY.sam:0:0-0:0.",
       "[non-exhaustive-match]: The following tags are not considered in the match: [A, B].",
       "[type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of ``.",
       "[underconstrained]: There is not enough context information to decide the type of this expression.",

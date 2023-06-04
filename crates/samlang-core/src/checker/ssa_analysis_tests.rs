@@ -192,8 +192,7 @@ def_to_use_map:
 7:18-7:23 -> [7:18-7:23]
 "#
     .trim();
-    let analysis_result =
-      ssa_analysis::perform_ssa_analysis_on_module(&module, &heap, &mut error_set);
+    let analysis_result = ssa_analysis::perform_ssa_analysis_on_module(&module, &mut error_set);
     assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
     let builder = test_type_builder::create();

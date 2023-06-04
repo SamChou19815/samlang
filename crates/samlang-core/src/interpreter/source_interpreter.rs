@@ -4,7 +4,7 @@
 use crate::{
   ast::source::{expr, Literal, Module, Toplevel},
   checker::type_::Type,
-  common::{Heap, LocalStackedContext, PStr},
+  common::{well_known_pstrs, Heap, LocalStackedContext, PStr},
 };
 use itertools::Itertools;
 use std::{collections::HashMap, ops::Deref, rc::Rc};
@@ -180,7 +180,7 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
           FunctionValue {
             parameters: method_value.parameters.clone(),
             body: method_value.body.clone(),
-            captured: HashMap::from([(heap.alloc_str_permanent("this"), this_value)]),
+            captured: HashMap::from([(well_known_pstrs::THIS, this_value)]),
           },
         )
       }
@@ -221,23 +221,22 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
           new_variant(cx, tag, values)
         }
         FunctionImpl::StringToInt => {
-          let v = cx.local_values.get(&heap.alloc_str_permanent("v")).cloned().unwrap();
+          let v = cx.local_values.get(&well_known_pstrs::LOWER_V).cloned().unwrap();
           let s = v.string_value(cx);
           Value::Int(s.parse::<i32>().unwrap())
         }
         FunctionImpl::IntToString => {
-          let v =
-            cx.local_values.get(&heap.alloc_str_permanent("v")).unwrap().int_value().to_string();
+          let v = cx.local_values.get(&well_known_pstrs::LOWER_V).unwrap().int_value().to_string();
           new_str(cx, v)
         }
         FunctionImpl::Println => {
-          let v = cx.local_values.get(&heap.alloc_str_permanent("v")).cloned().unwrap();
+          let v = cx.local_values.get(&well_known_pstrs::LOWER_V).cloned().unwrap();
           let s = v.string_value(cx);
           cx.printed.push(s.to_string());
           Value::Unit
         }
         FunctionImpl::Panic => {
-          let v = cx.local_values.get(&heap.alloc_str_permanent("v")).cloned().unwrap();
+          let v = cx.local_values.get(&well_known_pstrs::LOWER_V).cloned().unwrap();
           panic!("{}", v.string_value(cx))
         }
       };
@@ -397,7 +396,7 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
           let parameters = fields.iter().map(|it| it.name.name).collect_vec();
           let body = FunctionImpl::InitObject(parameters.clone());
           functions.insert(
-            heap.alloc_str_permanent("init"),
+            well_known_pstrs::INIT,
             FunctionValue { parameters, body, captured: HashMap::new() },
           );
         }
@@ -426,7 +425,7 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
         (
           heap.alloc_str_permanent("stringToInt"),
           FunctionValue {
-            parameters: vec![heap.alloc_str_permanent("v")],
+            parameters: vec![well_known_pstrs::LOWER_V],
             body: FunctionImpl::StringToInt,
             captured: HashMap::new(),
           },
@@ -434,7 +433,7 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
         (
           heap.alloc_str_permanent("intToString"),
           FunctionValue {
-            parameters: vec![heap.alloc_str_permanent("v")],
+            parameters: vec![well_known_pstrs::LOWER_V],
             body: FunctionImpl::IntToString,
             captured: HashMap::new(),
           },
@@ -442,7 +441,7 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
         (
           heap.alloc_str_permanent("println"),
           FunctionValue {
-            parameters: vec![heap.alloc_str_permanent("v")],
+            parameters: vec![well_known_pstrs::LOWER_V],
             body: FunctionImpl::Println,
             captured: HashMap::new(),
           },
@@ -450,7 +449,7 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
         (
           heap.alloc_str_permanent("panic"),
           FunctionValue {
-            parameters: vec![heap.alloc_str_permanent("v")],
+            parameters: vec![well_known_pstrs::LOWER_V],
             body: FunctionImpl::Panic,
             captured: HashMap::new(),
           },

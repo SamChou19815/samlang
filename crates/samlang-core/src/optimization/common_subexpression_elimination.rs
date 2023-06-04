@@ -181,13 +181,13 @@ mod tests {
         final_assignments: vec![],
       }],
       heap,
-      r#"let _t10 = 1 + 0;
-let _t11: int = 0[3];
+      r#"let _t0 = 1 + 0;
+let _t1: int = 0[3];
 if (b: int) {
   let ddddd = 1 + 1;
-  fff((_t10: int), (_t11: int));
+  fff((_t0: int), (_t1: int));
 } else {
-  (eeee: int)((_t10: int), (_t11: int));
+  (eeee: int)((_t0: int), (_t1: int));
 }"#,
     );
   }

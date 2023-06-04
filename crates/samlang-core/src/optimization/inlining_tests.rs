@@ -346,18 +346,14 @@ mod tests {
         },
       ],
       heap,
-      r#"function factorial(n: int, acc: int): int {
-  let c = (n: int) == 0;
-  let fa: int;
-  if (c: int) {
-    fa = (acc: int);
-  } else {
-    let n1 = (n: int) + -1;
-    let acc1 = (acc: int) * (n: int);
-    let v: int = factorial((n1: int), (acc1: int));
-    fa = (v: int);
-  }
-  return (fa: int);
+      r#"function bb(): int {
+  let c: int = (a: int)[0];
+  return 0;
+}
+
+function cc(): int {
+  (a: int)();
+  return 0;
 }
 
 function loop(): int {
@@ -365,11 +361,25 @@ function loop(): int {
   return 0;
 }
 
+function factorial(n: int, acc: int): int {
+  let c = (n: int) == 0;
+  let fa: int;
+  if (c: int) {
+    fa = (acc: int);
+  } else {
+    let n1 = (n: int) + -1;
+    let acc1 = (n: int) * (acc: int);
+    let v: int = factorial((n1: int), (acc1: int));
+    fa = (v: int);
+  }
+  return (fa: int);
+}
+
 function insanelyBigFunction(a: int): int {
-  let _t17c: int = (a: int)[0];
+  let _t4c: int = (a: int)[0];
   (a: int)();
-  let _t20_ = 0 as int;
-  let _t20c: int = (a: int)[0];
+  let _t6_ = 0 as int;
+  let _t6c: int = (a: int)[0];
   (a: int)();
   non-existing-function();
   non-existing-function();
@@ -381,16 +391,6 @@ function insanelyBigFunction(a: int): int {
   non-existing-function();
   non-existing-function();
   non-existing-function();
-  return 0;
-}
-
-function bb(): int {
-  let c: int = (a: int)[0];
-  return 0;
-}
-
-function cc(): int {
-  (a: int)();
   return 0;
 }
 
@@ -616,36 +616,36 @@ function main(): int {
 }
 
 function main(): int {
-  let _t7b: int;
+  let _t0b: int;
   if (bar: int) {
-    let _t9b: int;
+    let _t1b: int;
     if (bar: int) {
-      let _t11b: int;
+      let _t2b: int;
       if (bar: int) {
-        let _t13b: int;
+        let _t3b: int;
         if (bar: int) {
-          let _t15b: int;
+          let _t4b: int;
           if (bar: int) {
             fooBar();
-            _t15b = 0;
+            _t4b = 0;
           } else {
-            _t15b = (a: int);
+            _t4b = (a: int);
           }
-          _t13b = 0;
+          _t3b = 0;
         } else {
-          _t13b = (a: int);
+          _t3b = (a: int);
         }
-        _t11b = 0;
+        _t2b = 0;
       } else {
-        _t11b = (a: int);
+        _t2b = (a: int);
       }
-      _t9b = 0;
+      _t1b = 0;
     } else {
-      _t9b = (a: int);
+      _t1b = (a: int);
     }
-    _t7b = 0;
+    _t0b = 0;
   } else {
-    _t7b = (a: int);
+    _t0b = (a: int);
   }
   return 0;
 }
@@ -713,8 +713,8 @@ function main(): int {
 }
 
 function main(): int {
-  let _t11ff: FF = [1, 0];
-  let _t11s: SS = Closure { fun: (aaa: () -> int), context: 0 };
+  let _t0ff: FF = [1, 0];
+  let _t0s: SS = Closure { fun: (aaa: () -> int), context: 0 };
   undefined = 0;
   break;
   return 0;
@@ -819,26 +819,26 @@ function main(): int {
 }
 
 function main(): int {
-  let _t6n: int = 10;
+  let _t0n: int = 10;
   while (true) {
-    let _t9n: int = 10;
+    let _t2n: int = 10;
     while (true) {
-      let _t12n: int = 10;
+      let _t4n: int = 10;
       while (true) {
-        let _t15n: int = 10;
+        let _t6n: int = 10;
         while (true) {
-          let _t18n: int = 10;
+          let _t8n: int = 10;
           while (true) {
-            let _t18_tmp_n: int = fooBar();
-            _t18n = (_t18_tmp_n: int);
+            let _t8_tmp_n: int = fooBar();
+            _t8n = (_t8_tmp_n: int);
           }
-          _t15n = (v: int);
+          _t6n = (v: int);
         }
-        _t12n = (v: int);
+        _t4n = (v: int);
       }
-      _t9n = (v: int);
+      _t2n = (v: int);
     }
-    _t6n = (v: int);
+    _t0n = (v: int);
   }
   return (v: int);
 }

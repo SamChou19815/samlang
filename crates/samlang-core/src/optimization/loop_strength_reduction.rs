@@ -155,13 +155,13 @@ mod tests {
     );
 
     assert_eq!(
-      "let _t8 = (a: int) * 1;\nlet _t9 = (_t8: int) + (b: int);",
+      "let _t0 = (a: int) * 1;\nlet _t1 = (b: int) + (_t0: int);",
       prefix_statements.iter().map(|s| s.debug_print(heap)).join("\n")
     );
     assert_eq!(
       vec![
         "{name: j, initial_value: 1, increment_amount: (c: int)}",
-        "{name: x, initial_value: (_t9: int), increment_amount: (a: int)}",
+        "{name: x, initial_value: (_t1: int), increment_amount: (a: int)}",
       ],
       optimizable_while_loop
         .general_induction_variables

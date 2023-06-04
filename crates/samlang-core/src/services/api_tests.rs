@@ -810,11 +810,11 @@ interface Interface {}
     assert!(completion::auto_complete(&state, &test_mod_ref, Position(4, 3)).is_empty());
     assert!(completion::auto_complete(&state, &test_mod_ref, Position(14, 22)).is_empty());
     assert_eq!(
-      r#"Builtins [kind=Class, detail=class Builtins]
-Pair [kind=Class, detail=class Pair]
-List [kind=Class, detail=class List]
-Developer [kind=Class, detail=class Developer]
+      r#"List [kind=Class, detail=class List]
 Main [kind=Class, detail=class Main]
+Pair [kind=Class, detail=class Pair]
+Builtins [kind=Class, detail=class Builtins]
+Developer [kind=Class, detail=class Developer]
 Interface [kind=Interface, detail=interface Interface]"#,
       completion::auto_complete(&state, &test_mod_ref, Position(4, 5))
         .iter()
@@ -1017,18 +1017,18 @@ class Main {
       )],
     );
     assert_eq!(
-      r#"foo [kind=Variable, detail=string]
-bar [kind=Variable, detail=int]
-baz [kind=Variable, detail=bool]"#,
+      r#"bar [kind=Variable, detail=int]
+baz [kind=Variable, detail=bool]
+foo [kind=Variable, detail=string]"#,
       completion::auto_complete(&state, &mod_ref, Position(6, 4))
         .iter()
         .map(completion::AutoCompletionItem::to_string)
         .join("\n")
     );
     assert_eq!(
-      r#"foo [kind=Variable, detail=string]
-bar [kind=Variable, detail=int]
-baz [kind=Variable, detail=bool]"#,
+      r#"bar [kind=Variable, detail=int]
+baz [kind=Variable, detail=bool]
+foo [kind=Variable, detail=string]"#,
       completion::auto_complete(&state, &mod_ref, Position(6, 5))
         .iter()
         .map(completion::AutoCompletionItem::to_string)

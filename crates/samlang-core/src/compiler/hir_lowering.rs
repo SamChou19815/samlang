@@ -14,7 +14,7 @@ use crate::{
     hir, source,
   },
   checker::type_,
-  common::{Heap, LocalStackedContext, ModuleReference, PStr},
+  common::{well_known_pstrs, Heap, LocalStackedContext, ModuleReference, PStr},
 };
 use itertools::Itertools;
 use std::{
@@ -231,9 +231,8 @@ impl<'a> ExpressionLoweringManager<'a> {
       },
       source::expr::E::LocalId(_, id) => LoweringResult {
         statements: vec![],
-        expression: if id.name.as_str(self.heap) == "this" {
-          let this_str = self.heap.alloc_str_permanent("_this");
-          self.resolve_variable(&this_str)
+        expression: if id.name == well_known_pstrs::THIS {
+          self.resolve_variable(&well_known_pstrs::UNDERSCORE_THIS)
         } else {
           self.resolve_variable(&id.name)
         },
@@ -723,12 +722,14 @@ impl<'a> ExpressionLoweringManager<'a> {
     context_type: &hir::Type,
   ) -> hir::Function {
     let mut lambda_stmts = vec![];
-    let underscore_context_str = self.heap.alloc_str_permanent("_context");
     for (index, (name, e)) in captured.iter().enumerate() {
       lambda_stmts.push(hir::Statement::IndexedAccess {
         name: *name,
         type_: e.type_().clone(),
-        pointer_expression: hir::Expression::var_name(underscore_context_str, context_type.clone()),
+        pointer_expression: hir::Expression::var_name(
+          well_known_pstrs::UNDERSCORE_THIS,
+          context_type.clone(),
+        ),
         index,
       });
     }
@@ -767,7 +768,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
     hir::Function {
       name: fn_name,
-      parameters: vec![underscore_context_str]
+      parameters: vec![well_known_pstrs::UNDERSCORE_THIS]
         .into_iter()
         .chain(expression.parameters.iter().map(|it| it.name.name))
         .collect_vec(),
@@ -939,8 +940,8 @@ fn lower_constructors(
   let type_name =
     heap.alloc_string(common_names::encode_samlang_type(heap, module_reference, class_name));
   let type_def = type_definition_mapping.get(&type_name).unwrap();
-  let struct_var_name = heap.alloc_str_permanent("_struct");
-  let struct_var_name_casted = heap.alloc_str_permanent("_struct_casted");
+  let struct_var_name = well_known_pstrs::LOWER_O;
+  let struct_var_name_casted = well_known_pstrs::UNDERSCORE_TMP;
   let struct_type = hir::IdType {
     name: type_name,
     type_arguments: type_def
@@ -959,7 +960,7 @@ fn lower_constructors(
           class_name.as_str(heap),
           "init",
         )),
-        parameters: vec![heap.alloc_str_permanent("_this")]
+        parameters: vec![well_known_pstrs::UNDERSCORE_THIS]
           .into_iter()
           .chain(types.iter().enumerate().map(|(i, _)| heap.alloc_string(format!("_f{i}"))))
           .collect_vec(),
@@ -1005,7 +1006,7 @@ fn lower_constructors(
             class_name.as_str(heap),
             type_def.names[tag_order].as_str(heap),
           )),
-          parameters: vec![heap.alloc_str_permanent("_this")]
+          parameters: vec![well_known_pstrs::UNDERSCORE_THIS]
             .into_iter()
             .chain((0..(data_types.len())).map(|i| heap.alloc_string(format!("_data{i}"))))
             .collect(),
@@ -1117,7 +1118,7 @@ fn compile_sources_with_generics_preserved(
             let tparams_set: HashSet<_> = tparams.iter().cloned().collect();
             type_lowering_manager.generic_types = tparams_set;
             let main_function_parameter_with_types = vec![(
-              heap.alloc_str_permanent("_this"),
+              well_known_pstrs::UNDERSCORE_THIS,
               hir::Type::new_id(
                 heap.alloc_string(encode_samlang_type(heap, module_reference, c.name.name)),
                 class_tparams.into_iter().map(hir::Type::new_id_no_targs).collect_vec(),
@@ -1171,7 +1172,7 @@ fn compile_sources_with_generics_preserved(
             let tparams = tparams_set.iter().sorted().cloned().collect_vec();
             type_lowering_manager.generic_types = tparams_set;
             let main_function_parameter_with_types =
-              vec![(heap.alloc_str_permanent("_this"), hir::INT_TYPE)]
+              vec![(well_known_pstrs::UNDERSCORE_THIS, hir::INT_TYPE)]
                 .into_iter()
                 .chain(member.decl.parameters.iter().map(|id| {
                   (
@@ -1302,18 +1303,18 @@ mod tests {
     let mod_ref = ModuleReference::dummy();
     let type_def_mapping = HashMap::from([
       (
-        heap.alloc_str_for_test("__DUMMY___Foo"),
+        heap.alloc_str_for_test("DUMMY_Foo"),
         hir::TypeDefinition {
-          identifier: heap.alloc_str_for_test("__DUMMY___Foo"),
+          identifier: heap.alloc_str_for_test("DUMMY_Foo"),
           type_parameters: vec![],
           names: vec![],
           mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
         },
       ),
       (
-        heap.alloc_str_for_test("__DUMMY___Dummy"),
+        heap.alloc_str_for_test("DUMMY_Dummy"),
         hir::TypeDefinition {
-          identifier: heap.alloc_str_for_test("__DUMMY___Dummy"),
+          identifier: heap.alloc_str_for_test("DUMMY_Dummy"),
           type_parameters: vec![],
           names: vec![],
           mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
@@ -1326,7 +1327,7 @@ mod tests {
       vec![
         (
           heap.alloc_str_for_test("_this"),
-          hir::Type::new_id_no_targs(heap.alloc_str_for_test("__DUMMY___Dummy")),
+          hir::Type::new_id_no_targs(heap.alloc_str_for_test("DUMMY_Dummy")),
         ),
         (heap.alloc_str_for_test("foo"), hir::INT_TYPE),
         (heap.alloc_str_for_test("bar"), hir::INT_TYPE),
@@ -1425,15 +1426,11 @@ mod tests {
         source::Literal::String(heap.alloc_str_for_test("foo")),
       ),
       heap,
-      "const GLOBAL_STRING_6 = 'foo';\n\n\nreturn GLOBAL_STRING_6;",
+      "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
     );
 
     // This & variable lowering works.
-    assert_expr_correctly_lowered(
-      &dummy_source_this(heap),
-      heap,
-      "return (_this: __DUMMY___Dummy);",
-    );
+    assert_expr_correctly_lowered(&dummy_source_this(heap), heap, "return (_this: DUMMY_Dummy);");
     assert_expr_correctly_lowered(
       &id_expr(heap.alloc_str_for_test("foo"), builder.unit_type()),
       heap,
@@ -1457,7 +1454,7 @@ mod tests {
         field_order: 0,
       }),
       heap,
-      "let _t14: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t14: int);",
+      "let _t8: int = (_this: DUMMY_Dummy)[0];\nreturn (_t8: int);",
     );
 
     // MethodAccess lowering works.
@@ -1474,8 +1471,8 @@ mod tests {
       }),
       heap,
       r#"closure type $SyntheticIDType0 = (int) -> int
-let _t15: $SyntheticIDType0 = Closure { fun: (___DUMMY___Dummy$foo: (__DUMMY___Dummy, int) -> int), context: (_this: __DUMMY___Dummy) };
-return (_t15: $SyntheticIDType0);"#,
+let _t9: $SyntheticIDType0 = Closure { fun: (_DUMMY_Dummy$foo: (DUMMY_Dummy, int) -> int), context: (_this: DUMMY_Dummy) };
+return (_t9: $SyntheticIDType0);"#,
     );
   }
 
@@ -1501,8 +1498,8 @@ return (_t15: $SyntheticIDType0);"#,
         arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
       }),
       heap,
-      r#"let _t15: int = ___DUMMY___Dummy$fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t15: int);"#,
+      r#"let _t8: int = _DUMMY_Dummy$fooBar((_this: DUMMY_Dummy), (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
+return (_t8: int);"#,
     );
     // Function call 2/n: closure call with return
     let heap = &mut Heap::new();
@@ -1519,8 +1516,8 @@ return (_t15: int);"#,
         )],
       }),
       heap,
-      r#"let _t12: int = (closure: Closure)(1);
-return (_t12: int);"#,
+      r#"let _t8: int = (closure: Closure)(1);
+return (_t8: int);"#,
     );
     // Function call 3/n: closure call without return
     let heap = &mut Heap::new();
@@ -1555,7 +1552,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) ^ 1;\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1565,7 +1562,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = 0 - (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = 0 - (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
 
     // Binary Lowering: normal
@@ -1579,7 +1576,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) + (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1591,7 +1588,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) - (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) - (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1603,7 +1600,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) * (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1615,7 +1612,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) / (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) / (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1627,7 +1624,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) % (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) % (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1639,7 +1636,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) < (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) < (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1651,7 +1648,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) <= (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) <= (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1663,7 +1660,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) > (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) > (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1675,7 +1672,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) >= (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) >= (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1687,7 +1684,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) == (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) == (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1699,7 +1696,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14 = (_this: __DUMMY___Dummy) != (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t8 = (_this: DUMMY_Dummy) != (_this: DUMMY_Dummy);\nreturn (_t8: int);",
     );
     // Binary Lowering: Short circuiting &&
     let heap = &mut Heap::new();
@@ -1712,13 +1709,13 @@ return 0;"#,
         e2: Box::new(id_expr(heap.alloc_str_for_test("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t12: int;
+      r#"let _t8: int;
 if (foo: int) {
-  _t12 = (bar: int);
+  _t8 = (bar: int);
 } else {
-  _t12 = 0;
+  _t8 = 0;
 }
-return (_t12: int);"#,
+return (_t8: int);"#,
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1797,13 +1794,13 @@ return (_t12: int);"#,
         e2: Box::new(id_expr(heap.alloc_str_for_test("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t12: int;
+      r#"let _t8: int;
 if (foo: int) {
-  _t12 = 1;
+  _t8 = 1;
 } else {
-  _t12 = (bar: int);
+  _t8 = (bar: int);
 }
-return (_t12: int);"#,
+return (_t8: int);"#,
     );
     // Binary Lowering: string concat
     let heap = &mut Heap::new();
@@ -1816,8 +1813,8 @@ return (_t12: int);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t14: string = __Builtins$stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t14: string);"#,
+      r#"let _t8: string = __Builtins$stringConcat((_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
+return (_t8: string);"#,
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1835,7 +1832,7 @@ return (_t14: string);"#,
         )),
       }),
       heap,
-      "const GLOBAL_STRING_14 = 'hello world';\n\n\nreturn GLOBAL_STRING_14;",
+      "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;",
     );
   }
 
@@ -1861,14 +1858,14 @@ return (_t14: string);"#,
       heap,
       r#"closure type $SyntheticIDType1 = (int) -> int
 object type $SyntheticIDType0 = [int]
-function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDType0, a: int): int {
-  let captured_a: int = (_context: $SyntheticIDType0)[0];
-  return (_this: __DUMMY___Dummy);
+function _DUMMY_ENCODED_FUNCTION_NAME$_Synthetic_0(_this: $SyntheticIDType0, a: int): int {
+  let captured_a: int = (_this: $SyntheticIDType0)[0];
+  return (_this: DUMMY_Dummy);
 }
 
-let _t16: $SyntheticIDType0 = [(captured_a: int)];
-let _t15: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t16: $SyntheticIDType0) };
-return (_t15: $SyntheticIDType1);"#,
+let _t9: $SyntheticIDType0 = [(captured_a: int)];
+let _t8: $SyntheticIDType1 = Closure { fun: (_DUMMY_ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t9: $SyntheticIDType0) };
+return (_t8: $SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -1888,14 +1885,14 @@ return (_t15: $SyntheticIDType1);"#,
       heap,
       r#"closure type $SyntheticIDType1 = (int) -> int
 object type $SyntheticIDType0 = [int]
-function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDType0, a: int): int {
-  let captured_a: int = (_context: $SyntheticIDType0)[0];
-  return (_this: __DUMMY___Dummy);
+function _DUMMY_ENCODED_FUNCTION_NAME$_Synthetic_0(_this: $SyntheticIDType0, a: int): int {
+  let captured_a: int = (_this: $SyntheticIDType0)[0];
+  return (_this: DUMMY_Dummy);
 }
 
-let _t16: $SyntheticIDType0 = [(captured_a: int)];
-let _t15: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t16: $SyntheticIDType0) };
-return (_t15: $SyntheticIDType1);"#,
+let _t9: $SyntheticIDType0 = [(captured_a: int)];
+let _t8: $SyntheticIDType1 = Closure { fun: (_DUMMY_ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> int), context: (_t9: $SyntheticIDType0) };
+return (_t8: $SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -1913,16 +1910,16 @@ return (_t15: $SyntheticIDType1);"#,
         body: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"closure type $SyntheticIDType1 = (int) -> __DUMMY___Dummy
+      r#"closure type $SyntheticIDType1 = (int) -> DUMMY_Dummy
 object type $SyntheticIDType0 = [int]
-function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: $SyntheticIDType0, a: int): __DUMMY___Dummy {
-  let captured_a: int = (_context: $SyntheticIDType0)[0];
-  return (_this: __DUMMY___Dummy);
+function _DUMMY_ENCODED_FUNCTION_NAME$_Synthetic_0(_this: $SyntheticIDType0, a: int): DUMMY_Dummy {
+  let captured_a: int = (_this: $SyntheticIDType0)[0];
+  return (_this: DUMMY_Dummy);
 }
 
-let _t16: $SyntheticIDType0 = [(captured_a: int)];
-let _t15: $SyntheticIDType1 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy), context: (_t16: $SyntheticIDType0) };
-return (_t15: $SyntheticIDType1);"#,
+let _t9: $SyntheticIDType0 = [(captured_a: int)];
+let _t8: $SyntheticIDType1 = Closure { fun: (_DUMMY_ENCODED_FUNCTION_NAME$_Synthetic_0: ($SyntheticIDType0, int) -> DUMMY_Dummy), context: (_t9: $SyntheticIDType0) };
+return (_t8: $SyntheticIDType1);"#,
     );
 
     let heap = &mut Heap::new();
@@ -1940,13 +1937,13 @@ return (_t15: $SyntheticIDType1);"#,
         body: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"closure type $SyntheticIDType0 = (int) -> __DUMMY___Dummy
-function ___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0(_context: int, a: int): __DUMMY___Dummy {
-  return (_this: __DUMMY___Dummy);
+      r#"closure type $SyntheticIDType0 = (int) -> DUMMY_Dummy
+function _DUMMY_ENCODED_FUNCTION_NAME$_Synthetic_0(_this: int, a: int): DUMMY_Dummy {
+  return (_this: DUMMY_Dummy);
 }
 
-let _t15: $SyntheticIDType0 = Closure { fun: (___DUMMY___ENCODED_FUNCTION_NAME$_Synthetic_0: (int, int) -> __DUMMY___Dummy), context: 0 };
-return (_t15: $SyntheticIDType0);"#,
+let _t8: $SyntheticIDType0 = Closure { fun: (_DUMMY_ENCODED_FUNCTION_NAME$_Synthetic_0: (int, int) -> DUMMY_Dummy), context: 0 };
+return (_t8: $SyntheticIDType0);"#,
     );
   }
 
@@ -1963,13 +1960,13 @@ return (_t15: $SyntheticIDType0);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t14: __DUMMY___Dummy;
-if (_this: __DUMMY___Dummy) {
-  _t14 = (_this: __DUMMY___Dummy);
+      r#"let _t8: DUMMY_Dummy;
+if (_this: DUMMY_Dummy) {
+  _t8 = (_this: DUMMY_Dummy);
 } else {
-  _t14 = (_this: __DUMMY___Dummy);
+  _t8 = (_this: DUMMY_Dummy);
 }
-return (_t14: __DUMMY___Dummy);"#,
+return (_t8: DUMMY_Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -1998,18 +1995,18 @@ return (_t14: __DUMMY___Dummy);"#,
         ],
       }),
       heap,
-      r#"let _t16: int = (_this: __DUMMY___Dummy)[0];
-let _t21 = (_t16: int) == 0;
-let _t22: __DUMMY___Dummy;
-if (_t21: int) {
-  let _t17 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Foo;
-  let bar: int = (_t17: __DUMMY___Dummy_Foo)[1];
-  _t22 = (_this: __DUMMY___Dummy);
+      r#"let _t8: int = (_this: DUMMY_Dummy)[0];
+let _t13 = (_t8: int) == 0;
+let _t14: DUMMY_Dummy;
+if (_t13: int) {
+  let _t9 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Foo;
+  let bar: int = (_t9: DUMMY_Dummy_Foo)[1];
+  _t14 = (_this: DUMMY_Dummy);
 } else {
-  let _t19 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Bar;
-  _t22 = (_this: __DUMMY___Dummy);
+  let _t11 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Bar;
+  _t14 = (_this: DUMMY_Dummy);
 }
-return (_t22: __DUMMY___Dummy);"#,
+return (_t14: DUMMY_Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2048,26 +2045,26 @@ return (_t22: __DUMMY___Dummy);"#,
         ],
       }),
       heap,
-      r#"let _t17: int = (_this: __DUMMY___Dummy)[0];
-let _t26 = (_t17: int) == 0;
-let _t27: __DUMMY___Dummy;
-if (_t26: int) {
-  let _t18 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Foo;
-  _t27 = (_this: __DUMMY___Dummy);
+      r#"let _t8: int = (_this: DUMMY_Dummy)[0];
+let _t17 = (_t8: int) == 0;
+let _t18: DUMMY_Dummy;
+if (_t17: int) {
+  let _t9 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Foo;
+  _t18 = (_this: DUMMY_Dummy);
 } else {
-  let _t24 = (_t17: int) == 1;
-  let _t25: __DUMMY___Dummy;
-  if (_t24: int) {
-    let _t20 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Bar;
-    let bar: __DUMMY___Dummy = (_t20: __DUMMY___Dummy_Bar)[1];
-    _t25 = (bar: __DUMMY___Dummy);
+  let _t15 = (_t8: int) == 1;
+  let _t16: DUMMY_Dummy;
+  if (_t15: int) {
+    let _t11 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Bar;
+    let bar: DUMMY_Dummy = (_t11: DUMMY_Dummy_Bar)[1];
+    _t16 = (bar: DUMMY_Dummy);
   } else {
-    let _t22 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Baz;
-    _t25 = (_this: __DUMMY___Dummy);
+    let _t13 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Baz;
+    _t16 = (_this: DUMMY_Dummy);
   }
-  _t27 = (_t25: __DUMMY___Dummy);
+  _t18 = (_t16: DUMMY_Dummy);
 }
-return (_t27: __DUMMY___Dummy);"#,
+return (_t18: DUMMY_Dummy);"#,
     );
   }
 
@@ -2127,8 +2124,8 @@ return (_t27: __DUMMY___Dummy);"#,
         expression: None,
       }),
       heap,
-      r#"let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
-let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];
+      r#"let a__depth_1__block_0: int = (_this: DUMMY_Dummy)[0];
+let c__depth_1__block_0: int = (_this: DUMMY_Dummy)[1];
 return 0;"#,
     );
 
@@ -2173,8 +2170,8 @@ return 0;"#,
         expression: None,
       }),
       heap,
-      r#"let a: int = (_this: __DUMMY___Dummy)[0];
-let c: int = (_this: __DUMMY___Dummy)[1];
+      r#"let a: int = (_this: DUMMY_Dummy)[0];
+let c: int = (_this: DUMMY_Dummy)[1];
 return 0;"#,
     );
 
@@ -2214,7 +2211,7 @@ return 0;"#,
         expression: Some(Box::new( id_expr(heap.alloc_str_for_test("a"), builder.string_type()))),
       }),
       heap,
-      "let a: int = _ModuleModule_ImportedClass$bar(0, (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));\nreturn (a: int);",
+      "let a: int = _ModuleModule_ImportedClass$bar(0, (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));\nreturn (a: int);",
     );
 
     let heap = &mut Heap::new();
@@ -2246,7 +2243,7 @@ return 0;"#,
         expression: Some(Box::new(id_expr(heap.alloc_str_for_test("b"), builder.string_type()))),
       }),
       heap,
-      "const GLOBAL_STRING_2 = 'foo';\n\n\nreturn GLOBAL_STRING_2;",
+      "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
     );
 
     let heap = &mut Heap::new();
@@ -2276,7 +2273,7 @@ return 0;"#,
         expression: Some(Box::new(id_expr(heap.alloc_str_for_test("a"), builder.string_type()))),
       }),
       heap,
-      "return (_this: __DUMMY___Dummy);",
+      "return (_this: DUMMY_Dummy);",
     );
   }
 
@@ -2616,80 +2613,80 @@ return 0;"#,
       ),
     ]);
 
-    let generics_preserved_expected = r#"closure type $SyntheticIDType0<T> = (__DUMMY___A<int>, T) -> int
-object type __DUMMY___Main = []
-object type __DUMMY___Class1 = [int]
-object type __DUMMY___Class2_Tag = [int, int]
-variant type __DUMMY___Class2
-object type __DUMMY___Class3<T> = [$SyntheticIDType0<T>]
-function ___DUMMY___Main$init(_this: int): __DUMMY___Main {
-  let _struct: __DUMMY___Main = [];
-  return (_struct: __DUMMY___Main);
+    let generics_preserved_expected = r#"closure type $SyntheticIDType0<T> = (DUMMY_A<int>, T) -> int
+object type DUMMY_Main = []
+object type DUMMY_Class1 = [int]
+object type DUMMY_Class2_Tag = [int, int]
+variant type DUMMY_Class2
+object type DUMMY_Class3<T> = [$SyntheticIDType0<T>]
+function _DUMMY_Main$init(_this: int): DUMMY_Main {
+  let o: DUMMY_Main = [];
+  return (o: DUMMY_Main);
 }
 
-function ___DUMMY___Main$main(_this: int): int {
-  ___DUMMY___Class1$infiniteLoop(0);
+function _DUMMY_Main$main(_this: int): int {
+  _DUMMY_Class1$infiniteLoop(0);
   return 0;
 }
 
-function ___DUMMY___Main$loopy<T>(_this: int): int {
-  ___DUMMY___T$loopy(0);
+function _DUMMY_Main$loopy<T>(_this: int): int {
+  _DUMMY_T$loopy(0);
   return 0;
 }
 
-function ___DUMMY___Class1$init(_this: int, _f0: int): __DUMMY___Class1 {
-  let _struct: __DUMMY___Class1 = [(_f0: int)];
-  return (_struct: __DUMMY___Class1);
+function _DUMMY_Class1$init(_this: int, _f0: int): DUMMY_Class1 {
+  let o: DUMMY_Class1 = [(_f0: int)];
+  return (o: DUMMY_Class1);
 }
 
-function ___DUMMY___Class1$foo(_this: __DUMMY___Class1, a: int): int {
-  return (_this: __DUMMY___Class1);
+function _DUMMY_Class1$foo(_this: DUMMY_Class1, a: int): int {
+  return (_this: DUMMY_Class1);
 }
 
-function ___DUMMY___Class1$infiniteLoop(_this: int): int {
-  ___DUMMY___Class1$infiniteLoop(0);
+function _DUMMY_Class1$infiniteLoop(_this: int): int {
+  _DUMMY_Class1$infiniteLoop(0);
   return 0;
 }
 
-function ___DUMMY___Class1$factorial(_this: int, n: int, acc: int): int {
-  let _t42 = (n: int) == 0;
-  let _t43: int;
-  if (_t42: int) {
-    _t43 = 1;
+function _DUMMY_Class1$factorial(_this: int, n: int, acc: int): int {
+  let _t20 = (n: int) == 0;
+  let _t21: int;
+  if (_t20: int) {
+    _t21 = 1;
   } else {
-    let _t45 = (n: int) + -1;
-    let _t46 = (n: int) * (acc: int);
-    let _t44: int = ___DUMMY___Class1$factorial(0, (_t45: int), (_t46: int));
-    _t43 = (_t44: int);
+    let _t23 = (n: int) + -1;
+    let _t24 = (n: int) * (acc: int);
+    let _t22: int = _DUMMY_Class1$factorial(0, (_t23: int), (_t24: int));
+    _t21 = (_t22: int);
   }
-  return (_t43: int);
+  return (_t21: int);
 }
 
-function ___DUMMY___Class2$Tag(_this: int, _data0: int): __DUMMY___Class2 {
-  let _struct: __DUMMY___Class2_Tag = [0, (_data0: int)];
-  let _struct_casted = (_struct: __DUMMY___Class2_Tag) as __DUMMY___Class2;
-  return (_struct_casted: __DUMMY___Class2);
+function _DUMMY_Class2$Tag(_this: int, _data0: int): DUMMY_Class2 {
+  let o: DUMMY_Class2_Tag = [0, (_data0: int)];
+  let _tmp = (o: DUMMY_Class2_Tag) as DUMMY_Class2;
+  return (_tmp: DUMMY_Class2);
 }
 
-function ___DUMMY___Class3$init<T>(_this: int, _f0: $SyntheticIDType0<T>): __DUMMY___Class3<T> {
-  let _struct: __DUMMY___Class3<T> = [(_f0: $SyntheticIDType0<T>)];
-  return (_struct: __DUMMY___Class3<T>);
+function _DUMMY_Class3$init<T>(_this: int, _f0: $SyntheticIDType0<T>): DUMMY_Class3<T> {
+  let o: DUMMY_Class3<T> = [(_f0: $SyntheticIDType0<T>)];
+  return (o: DUMMY_Class3<T>);
 }
 
-sources.mains = [___DUMMY___Main$main]"#;
+sources.mains = [_DUMMY_Main$main]"#;
 
-    let optimized_expected = r#"function ___DUMMY___Main$main(): int {
-  ___DUMMY___Class1$infiniteLoop();
+    let optimized_expected = r#"function _DUMMY_Main$main(): int {
+  _DUMMY_Class1$infiniteLoop();
   return 0;
 }
 
-function ___DUMMY___Class1$infiniteLoop(): int {
+function _DUMMY_Class1$infiniteLoop(): int {
   while (true) {
   }
   return 0;
 }
 
-sources.mains = [___DUMMY___Main$main]"#;
+sources.mains = [_DUMMY_Main$main]"#;
 
     assert_eq!(
       generics_preserved_expected,

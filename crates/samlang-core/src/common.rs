@@ -1,26 +1,173 @@
 use itertools::Itertools;
 use std::{
   collections::{HashMap, HashSet},
+  convert::TryInto,
   hash::Hash,
+  mem,
   ops::Deref,
   rc::Rc,
   time::Instant,
 };
 
-/// A string pointer free to be copied. However, we have to do GC manually.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct PStr(usize);
+#[derive(Debug, Clone, Eq, Copy)]
+enum PStrPrivateRepr {
+  Inline { size: u8, storage: [u8; 6] },
+  Heap { id: u32, padding: [u8; 3] },
+}
 
-pub(crate) const INVALID_PSTR: PStr = PStr(usize::MAX);
+const ALL_ZERO_SLICE: [u8; 6] = [0; 6];
+
+impl PStrPrivateRepr {
+  fn as_inline_str(&self) -> Result<&str, u32> {
+    match self {
+      Self::Heap { id, .. } => Err(*id),
+      Self::Inline { size, storage } => {
+        Ok(unsafe { std::str::from_utf8_unchecked(&storage[..(*size as usize)]) })
+      }
+    }
+  }
+
+  fn from_str_opt(s: &str) -> Option<PStrPrivateRepr> {
+    let bytes = s.as_bytes();
+    let size = bytes.len();
+    if size <= 6 {
+      let mut storage = [0; 6];
+      storage[..size].copy_from_slice(bytes);
+      Some(Self::Inline { size: size as u8, storage })
+    } else {
+      None
+    }
+  }
+
+  fn from_string(s: String) -> Result<PStrPrivateRepr, String> {
+    let size = s.len();
+    if size <= 6 {
+      let mut bytes = s.into_bytes();
+      bytes.extend_from_slice(&ALL_ZERO_SLICE[size..6]);
+      Ok(Self::Inline { size: size as u8, storage: bytes.try_into().unwrap() })
+    } else {
+      Err(s)
+    }
+  }
+}
+
+impl PartialEq for PStrPrivateRepr {
+  fn eq(&self, other: &Self) -> bool {
+    unsafe { mem::transmute::<_, &u64>(self).eq(mem::transmute::<_, &u64>(other)) }
+  }
+}
+
+impl Hash for PStrPrivateRepr {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    unsafe { mem::transmute::<_, &u64>(self).hash(state) }
+  }
+}
+
+impl Ord for PStrPrivateRepr {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    match (self.as_inline_str(), other.as_inline_str()) {
+      (Ok(s1), Ok(s2)) => s1.cmp(s2),
+      (Err(id1), Err(id2)) => id1.cmp(&id2),
+      (Ok(_), Err(_)) => std::cmp::Ordering::Less,
+      (Err(_), Ok(_)) => std::cmp::Ordering::Greater,
+    }
+  }
+}
+
+impl PartialOrd for PStrPrivateRepr {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    Some(self.cmp(other))
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// A string pointer free to be copied. However, we have to do GC manually.
+pub(crate) struct PStr(PStrPrivateRepr);
+
+pub(crate) const INVALID_PSTR: PStr = PStr(PStrPrivateRepr::Heap { id: u32::MAX, padding: [0; 3] });
 
 impl PStr {
-  pub(crate) fn opaque_id(&self) -> usize {
-    self.0
+  pub(crate) fn as_str<'a>(&'a self, heap: &'a Heap) -> &'a str {
+    self.0.as_inline_str().unwrap_or_else(|id| &heap.str_pointer_table[id as usize])
   }
 
-  pub(crate) fn as_str<'a>(&self, heap: &'a Heap) -> &'a str {
-    &heap.str_pointer_table[self.0]
+  pub(crate) fn debug_string(&self) -> String {
+    self.0.as_inline_str().map(|s| s.to_string()).unwrap_or_else(|id| id.to_string())
   }
+
+  fn create_inline_opt(s: &str) -> Option<PStr> {
+    PStrPrivateRepr::from_str_opt(s).map(PStr)
+  }
+}
+
+pub(crate) mod well_known_pstrs {
+  use super::{PStr, PStrPrivateRepr};
+
+  macro_rules! concat_arrays {
+    ($( $array:expr ),*) => ({
+        const __ARRAY_SIZE__: usize = 0 $(+ $array.len())*;
+
+        #[repr(C)]
+        struct ArrayConcatDecomposed<T>($([T; $array.len()]),*);
+
+        #[repr(C)]
+        union ArrayConcatComposed<T, const N: usize> {
+            full: core::mem::ManuallyDrop<[T; N]>,
+            decomposed: core::mem::ManuallyDrop<ArrayConcatDecomposed<T>>,
+        }
+
+        let composed = ArrayConcatComposed { decomposed: core::mem::ManuallyDrop::new(ArrayConcatDecomposed ( $($array),* ))};
+
+        // SAFETY: Sizes of both fields in composed are the same so this assignment should be sound
+        core::mem::ManuallyDrop::into_inner(unsafe { composed.full })
+    });
+  }
+
+  macro_rules! const_inline_pstr {
+    ($array:expr, $pad: expr) => {{
+      const __PAD_ARRAY_SIZE__: usize = 6 - $array.len();
+      PStr(PStrPrivateRepr::Inline {
+        size: $array.len() as u8,
+        storage: concat_arrays!($array, $pad),
+      })
+    }};
+  }
+
+  pub(crate) const DUMMY_MODULE: PStr = const_inline_pstr!(*b"DUMMY", [0; 1]);
+
+  pub(crate) const INIT: PStr = const_inline_pstr!(*b"init", [0; 2]);
+  pub(crate) const THIS: PStr = const_inline_pstr!(*b"this", [0; 2]);
+
+  pub(crate) const UNDERSCORE_THIS: PStr = const_inline_pstr!(*b"_this", [0; 1]);
+  pub(crate) const UNDERSCORE_TMP: PStr = const_inline_pstr!(*b"_tmp", [0; 2]);
+
+  pub(crate) const UPPER_A: PStr = const_inline_pstr!(*b"A", [0; 5]);
+  pub(crate) const UPPER_B: PStr = const_inline_pstr!(*b"B", [0; 5]);
+  pub(crate) const UPPER_C: PStr = const_inline_pstr!(*b"C", [0; 5]);
+  pub(crate) const UPPER_D: PStr = const_inline_pstr!(*b"D", [0; 5]);
+  pub(crate) const UPPER_E: PStr = const_inline_pstr!(*b"E", [0; 5]);
+  pub(crate) const UPPER_F: PStr = const_inline_pstr!(*b"F", [0; 5]);
+  pub(crate) const UPPER_G: PStr = const_inline_pstr!(*b"G", [0; 5]);
+  pub(crate) const UPPER_T: PStr = const_inline_pstr!(*b"T", [0; 5]);
+
+  pub(crate) const LOWER_A: PStr = const_inline_pstr!(*b"a", [0; 5]);
+  pub(crate) const LOWER_B: PStr = const_inline_pstr!(*b"b", [0; 5]);
+  pub(crate) const LOWER_C: PStr = const_inline_pstr!(*b"c", [0; 5]);
+  pub(crate) const LOWER_D: PStr = const_inline_pstr!(*b"d", [0; 5]);
+  pub(crate) const LOWER_E: PStr = const_inline_pstr!(*b"e", [0; 5]);
+  pub(crate) const LOWER_F: PStr = const_inline_pstr!(*b"f", [0; 5]);
+  pub(crate) const LOWER_G: PStr = const_inline_pstr!(*b"g", [0; 5]);
+  pub(crate) const LOWER_H: PStr = const_inline_pstr!(*b"h", [0; 5]);
+  pub(crate) const LOWER_I: PStr = const_inline_pstr!(*b"i", [0; 5]);
+  pub(crate) const LOWER_J: PStr = const_inline_pstr!(*b"j", [0; 5]);
+  pub(crate) const LOWER_K: PStr = const_inline_pstr!(*b"k", [0; 5]);
+  pub(crate) const LOWER_L: PStr = const_inline_pstr!(*b"l", [0; 5]);
+  pub(crate) const LOWER_M: PStr = const_inline_pstr!(*b"m", [0; 5]);
+  pub(crate) const LOWER_N: PStr = const_inline_pstr!(*b"n", [0; 5]);
+  pub(crate) const LOWER_O: PStr = const_inline_pstr!(*b"o", [0; 5]);
+  pub(crate) const LOWER_P: PStr = const_inline_pstr!(*b"p", [0; 5]);
+  pub(crate) const LOWER_Q: PStr = const_inline_pstr!(*b"q", [0; 5]);
+  pub(crate) const LOWER_V: PStr = const_inline_pstr!(*b"v", [0; 5]);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -91,8 +238,8 @@ impl StringStoredInHeap {
 pub struct Heap {
   str_pointer_table: Vec<StringStoredInHeap>,
   module_reference_pointer_table: Vec<&'static [PStr]>,
-  interned_string: HashMap<&'static str, PStr>,
-  interned_static_str: HashMap<&'static str, PStr>,
+  interned_string: HashMap<&'static str, u32>,
+  interned_static_str: HashMap<&'static str, u32>,
   interned_module_reference: HashMap<&'static [PStr], ModuleReference>,
   unmarked_module_references: HashSet<ModuleReference>,
   // invariant: 0 <= sweep_index < str_pointer_table.len()
@@ -111,14 +258,24 @@ impl Heap {
       sweep_index: 0,
     };
     heap.alloc_module_reference(vec![]); // Root
-    let dummy_parts = vec![heap.alloc_str_permanent("__DUMMY__")];
+    let dummy_parts = vec![well_known_pstrs::DUMMY_MODULE];
     let allocated_dummy = heap.alloc_module_reference(dummy_parts);
     debug_assert!(ModuleReference::dummy() == allocated_dummy); // Dummy
     heap
   }
 
   pub(crate) fn get_allocated_str_opt(&self, str: &str) -> Option<PStr> {
-    self.interned_static_str.get(&str).or_else(|| self.interned_string.get(&str)).copied()
+    let inlined = PStr::create_inline_opt(str);
+    if inlined.is_some() {
+      inlined
+    } else {
+      self
+        .interned_static_str
+        .get(&str)
+        .or_else(|| self.interned_string.get(&str))
+        .copied()
+        .map(|id| PStr(PStrPrivateRepr::Heap { id, padding: [0; 3] }))
+    }
   }
 
   pub(crate) fn alloc_str_permanent(&mut self, s: &'static str) -> PStr {
@@ -131,19 +288,21 @@ impl Heap {
   }
 
   fn alloc_str_internal(&mut self, str: &'static str) -> PStr {
-    if let Some(id) = self.interned_static_str.get(&str) {
-      *id
-    } else if let Some(p_str) = self.interned_string.remove(&str) {
+    if let Some(p) = PStr::create_inline_opt(str) {
+      p
+    } else if let Some(id) = self.interned_static_str.get(&str) {
+      PStr(PStrPrivateRepr::Heap { id: *id, padding: [0; 3] })
+    } else if let Some(id) = self.interned_string.remove(&str) {
       // If for some reasons, the string is already allocated by regular strings,
       // we will promote this to the permanent generation.
-      self.str_pointer_table[p_str.0] = StringStoredInHeap::Permanent(str);
-      self.interned_static_str.insert(str, p_str);
-      p_str
+      self.str_pointer_table[id as usize] = StringStoredInHeap::Permanent(str);
+      self.interned_static_str.insert(str, id);
+      PStr(PStrPrivateRepr::Heap { id, padding: [0; 3] })
     } else {
-      let p_str = PStr(self.str_pointer_table.len());
-      self.interned_static_str.insert(str, p_str);
+      let id = self.str_pointer_table.len() as u32;
+      self.interned_static_str.insert(str, id);
       self.str_pointer_table.push(StringStoredInHeap::Permanent(str));
-      p_str
+      PStr(PStrPrivateRepr::Heap { id, padding: [0; 3] })
     }
   }
 
@@ -151,26 +310,35 @@ impl Heap {
   pub(crate) fn alloc_temp_str(&mut self) -> PStr {
     // We use a more specialized implementation here,
     // since the generated strings are guaranteed to be globally unique.
-    let id = self.str_pointer_table.len();
+    let id = self.str_pointer_table.len() as u32;
     let string = format!("_t{id}");
-    let p_str = PStr(id);
-    self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
-    p_str
+    if let Some(p) = PStr::create_inline_opt(&string) {
+      self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
+      p
+    } else {
+      self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
+      PStr(PStrPrivateRepr::Heap { id, padding: [0; 3] })
+    }
   }
 
   pub(crate) fn alloc_string(&mut self, string: String) -> PStr {
-    let key = string.as_str();
-    if let Some(id) = self.interned_static_str.get(&key) {
-      *id
-    } else if let Some(id) = self.interned_string.get(&key) {
-      *id
-    } else {
-      let p_str = PStr(self.str_pointer_table.len());
-      // The string pointer is managed by the the string pointer table.
-      let unmanaged_str_ptr: &'static str = unsafe { (key as *const str).as_ref().unwrap() };
-      self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
-      self.interned_string.insert(unmanaged_str_ptr, p_str);
-      p_str
+    match PStrPrivateRepr::from_string(string) {
+      Ok(repr) => PStr(repr),
+      Err(string) => {
+        let key = string.as_str();
+        if let Some(id) = self.interned_static_str.get(&key) {
+          PStr(PStrPrivateRepr::Heap { id: *id, padding: [0; 3] })
+        } else if let Some(id) = self.interned_string.get(&key) {
+          PStr(PStrPrivateRepr::Heap { id: *id, padding: [0; 3] })
+        } else {
+          let id = self.str_pointer_table.len() as u32;
+          // The string pointer is managed by the the string pointer table.
+          let unmanaged_str_ptr: &'static str = unsafe { (key as *const str).as_ref().unwrap() };
+          self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
+          self.interned_string.insert(unmanaged_str_ptr, id);
+          PStr(PStrPrivateRepr::Heap { id, padding: [0; 3] })
+        }
+      }
     }
   }
 
@@ -179,15 +347,17 @@ impl Heap {
   }
 
   fn make_string_permanent(&mut self, p_str: PStr) {
-    let stored_string = &mut self.str_pointer_table[p_str.0];
-    match stored_string {
-      StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
-      StringStoredInHeap::Temporary(s, _) => {
-        let removed = self.interned_string.remove(s.as_str()).expect(s);
-        let static_str: &'static str = Self::make_string_static(s.to_string());
-        *stored_string = StringStoredInHeap::Permanent(static_str);
-        debug_assert_eq!(removed, p_str);
-        self.interned_static_str.insert(static_str, p_str);
+    if let PStrPrivateRepr::Heap { id, padding: _ } = p_str.0 {
+      let stored_string = &mut self.str_pointer_table[id as usize];
+      match stored_string {
+        StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
+        StringStoredInHeap::Temporary(s, _) => {
+          let removed = self.interned_string.remove(s.as_str()).expect(s);
+          let static_str: &'static str = Self::make_string_static(s.to_string());
+          *stored_string = StringStoredInHeap::Permanent(static_str);
+          debug_assert_eq!(removed, id);
+          self.interned_static_str.insert(static_str, id);
+        }
       }
     }
   }
@@ -225,7 +395,7 @@ impl Heap {
   }
 
   pub(crate) fn alloc_dummy_module_reference(&mut self) -> ModuleReference {
-    let parts = vec![self.alloc_str_permanent("__DUMMY__")];
+    let parts = vec![well_known_pstrs::DUMMY_MODULE];
     self.alloc_module_reference(parts)
   }
 
@@ -284,9 +454,11 @@ impl Heap {
   ///
   /// It should be called during incremental marking.
   pub(crate) fn mark(&mut self, p_str: PStr) {
-    match &mut self.str_pointer_table[p_str.0] {
-      StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
-      StringStoredInHeap::Temporary(_, marked) => *marked = true,
+    if let PStrPrivateRepr::Heap { id, padding: _ } = p_str.0 {
+      match &mut self.str_pointer_table[id as usize] {
+        StringStoredInHeap::Permanent(_) | StringStoredInHeap::Deallocated(_) => {}
+        StringStoredInHeap::Temporary(_, marked) => *marked = true,
+      }
     }
   }
 
@@ -420,7 +592,7 @@ impl<K: Clone + Eq + Hash, V: Clone> LocalStackedContext<K, V> {
 mod tests {
   use super::{
     byte_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr,
-    StringStoredInHeap,
+    PStrPrivateRepr, StringStoredInHeap,
   };
   use pretty_assertions::assert_eq;
   use std::{cmp::Ordering, collections::HashSet, ops::Deref};
@@ -451,13 +623,15 @@ mod tests {
   fn heap_tests() {
     let mut heap = Heap::default();
     assert_eq!(1, heap.alloc_dummy_module_reference().0);
-    let a1 = heap.alloc_str_for_test("a");
+    let a1 = heap.alloc_str_for_test("aaaaaaaaaaaaaaaaaaaaaaaaaaa");
     let b = heap.alloc_str_for_test("b");
-    let a2 = heap.alloc_str_for_test("a");
-    a1.opaque_id();
-    heap.alloc_temp_str();
-    assert!(heap.get_allocated_str_opt("a").is_some());
-    assert!(heap.get_allocated_str_opt("d").is_none());
+    let a2 = heap.alloc_str_for_test("aaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    a1.debug_string();
+    assert!(PStrPrivateRepr::Heap { id: 0, padding: [0; 3] }
+      .clone()
+      .eq(&PStrPrivateRepr::Heap { id: 0, padding: [0; 3] }));
+    assert!(heap.get_allocated_str_opt("aaaaaaaaaaaaaaaaaaaaaaaaaaa").is_some());
+    assert!(heap.get_allocated_str_opt("dddddddddddddddddddddddddddddddddddddddd").is_none());
     assert!(!format!("{b:?}").is_empty());
     assert_eq!(a1.clone(), a2.clone());
     assert_ne!(a1, b);
@@ -474,7 +648,9 @@ mod tests {
     let m_dummy = heap.alloc_dummy_module_reference();
     assert!(heap.get_allocated_module_reference_opt(vec!["a".to_string()]).is_some());
     assert!(heap.get_allocated_module_reference_opt(vec!["d-c".to_string()]).is_none());
-    assert!(heap.get_allocated_module_reference_opt(vec!["ddasdasdas".to_string()]).is_none());
+    assert!(heap
+      .get_allocated_module_reference_opt(vec!["ddasdasdassdfasdfasdfasdfasdf".to_string()])
+      .is_none());
     assert!(!format!("{mb:?}").is_empty());
     assert_eq!(ma1.clone(), ma2.clone());
     assert_ne!(ma1, mb);
@@ -484,81 +660,96 @@ mod tests {
     assert_eq!("a", ma1.pretty_print(&heap));
     assert_eq!("b/d-c.sam", mb.to_filename(&heap));
     assert_eq!("b$d_c", mb.encoded(&heap));
-    assert_eq!("__DUMMY__", m_dummy.pretty_print(&heap));
+    assert_eq!("DUMMY", m_dummy.pretty_print(&heap));
     mb.clone().pretty_print(&heap);
+
+    for _ in 0..11111 {
+      heap.alloc_temp_str();
+    }
   }
 
   #[test]
   fn gc_successful_sweep_test() {
     let heap = &mut Heap::new();
-    heap.alloc_string("string".to_string());
-    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
-    assert_eq!("string", heap.debug_unmarked_strings());
+    heap.alloc_string("a_string_that_is_intentionally_very_long".to_string());
+    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
+    assert_eq!("a_string_that_is_intentionally_very_long", heap.debug_unmarked_strings());
     heap.sweep(1000);
-    assert_eq!("Total slots: 2. Total used: 1. Total unused: 1", heap.stat());
+    assert_eq!("Total slots: 1. Total used: 0. Total unused: 1", heap.stat());
+    assert_eq!("", heap.debug_unmarked_strings());
+  }
+
+  #[test]
+  fn gc_do_not_collect_permanent_sweep_test() {
+    let heap = &mut Heap::new();
+    let p = heap.alloc_string("a_string_that_is_intentionally_very_long".to_string());
+    heap.make_string_permanent(p);
+    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
+    heap.sweep(1000);
+    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
     assert_eq!("", heap.debug_unmarked_strings());
   }
 
   #[test]
   fn gc_partial_sweep_test() {
     let heap = &mut Heap::new();
-    heap.alloc_string("string1".to_string());
-    heap.alloc_string("string2".to_string());
-    assert_eq!("Total slots: 3. Total used: 3. Total unused: 0", heap.stat());
+    heap.alloc_string("a_string_that_is_intentionally_very_long_1".to_string());
+    heap.alloc_string("a_string_that_is_intentionally_very_long_2".to_string());
+    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
     heap.sweep(0);
-    assert_eq!("Total slots: 3. Total used: 3. Total unused: 0", heap.stat());
+    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
     heap.sweep(1);
-    assert_eq!("Total slots: 3. Total used: 3. Total unused: 0", heap.stat());
+    assert_eq!("Total slots: 2. Total used: 1. Total unused: 1", heap.stat());
     heap.sweep(1);
-    assert_eq!("Total slots: 3. Total used: 2. Total unused: 1", heap.stat());
+    assert_eq!("Total slots: 2. Total used: 0. Total unused: 2", heap.stat());
     heap.sweep(1);
-    assert_eq!("Total slots: 3. Total used: 1. Total unused: 2", heap.stat());
-    assert_eq!(0, heap.sweep_index);
+    assert_eq!("Total slots: 2. Total used: 0. Total unused: 2", heap.stat());
+    assert_eq!(1, heap.sweep_index);
   }
 
   #[test]
   fn gc_marked_full_sweep_test() {
     let heap = &mut Heap::new();
-    let p1 = heap.alloc_str_for_test("static1");
-    heap.alloc_str_for_test("static2");
-    let p2 = heap.alloc_string("string1".to_string());
-    heap.alloc_string("string2".to_string());
+    let p1 = heap.alloc_str_for_test("a_string_that_is_intentionally_very_long_static1");
+    heap.alloc_str_for_test("a_string_that_is_intentionally_very_long_static2");
+    let p2 = heap.alloc_string("a_string_that_is_intentionally_very_long_string1".to_string());
+    heap.alloc_string("a_string_that_is_intentionally_very_long_string2".to_string());
     heap.mark(p1);
     heap.mark(p2);
-    assert_eq!("Total slots: 5. Total used: 5. Total unused: 0", heap.stat());
+    assert_eq!("Total slots: 4. Total used: 4. Total unused: 0", heap.stat());
     heap.sweep(1000);
-    assert_eq!("Total slots: 5. Total used: 4. Total unused: 1", heap.stat());
+    assert_eq!("Total slots: 4. Total used: 3. Total unused: 1", heap.stat());
   }
 
   #[test]
   fn gc_has_unmarked_no_op_sweep_test() {
     let heap = &mut Heap::new();
-    heap.alloc_string("string".to_string());
-    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    heap.alloc_string("a_string_that_is_intentionally_very_long_1".to_string());
+    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
     heap.add_unmarked_module_reference(ModuleReference::dummy());
     heap.sweep(1000);
-    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
   }
 
   #[test]
   fn gc_mark_unmark_module_reference_sweep_test() {
     let heap = &mut Heap::new();
-    heap.alloc_string("string".to_string());
-    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    heap.alloc_string("a_string_that_is_intentionally_very_long_1".to_string());
+    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
     heap.add_unmarked_module_reference(ModuleReference::dummy());
     heap.sweep(1000);
-    assert_eq!("Total slots: 2. Total used: 2. Total unused: 0", heap.stat());
+    assert_eq!("Total slots: 1. Total used: 1. Total unused: 0", heap.stat());
     assert!(heap.pop_unmarked_module_reference().is_some());
     assert!(heap.pop_unmarked_module_reference().is_none());
     heap.sweep(1000);
-    assert_eq!("Total slots: 2. Total used: 1. Total unused: 1", heap.stat());
+    assert_eq!("Total slots: 1. Total used: 0. Total unused: 1", heap.stat());
   }
 
   #[should_panic]
   #[test]
   fn heap_str_crash() {
     let heap = Heap::new();
-    PStr(100).as_str(&heap);
+    PStr(PStrPrivateRepr::Heap { id: 1000, padding: [0; 3] }).as_str(&heap);
   }
 
   #[should_panic]

@@ -11,7 +11,7 @@ mod tests {
       },
       typing_context::{LocalTypingContext, TypingContext},
     },
-    common::{Heap, ModuleReference},
+    common::{well_known_pstrs, Heap, ModuleReference},
     errors::ErrorSet,
   };
   use itertools::Itertools;
@@ -267,9 +267,9 @@ mod tests {
     cx.validate_type_instantiation_strictly(&heap, &builder.simple_nominal_type(str_b));
 
     let expected_errors = r#"
-__DUMMY__.sam:0:0-0:0: [incompatible-type]: Expected: subtype of `B`, actual: `int`.
-__DUMMY__.sam:0:0-0:0: [incompatible-type]: Expected: `non-abstract type`, actual: `B`.
-__DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0."#
+DUMMY.sam:0:0-0:0: [incompatible-type]: Expected: subtype of `B`, actual: `int`.
+DUMMY.sam:0:0-0:0: [incompatible-type]: Expected: `non-abstract type`, actual: `B`.
+DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0."#
       .trim();
     let actual_errors = cx.error_set.error_messages(&heap).join("\n");
     assert_eq!(expected_errors, actual_errors);
@@ -281,51 +281,48 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
     let mut local_cx = empty_local_typing_context();
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let str_a = heap.alloc_str_for_test("A");
-    let str_b = heap.alloc_str_for_test("B");
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            heap.alloc_str_for_test("A"),
+            well_known_pstrs::UPPER_A,
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
               type_parameters: vec![
-                TypeParameterSignature { name: str_a, bound: None },
-                TypeParameterSignature { name: str_b, bound: None },
+                TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
+                TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
               ],
               super_types: vec![],
               functions: HashMap::from([
                 MemberSignature::create_builtin_function(
-                  &mut heap,
-                  "f1",
+                  heap.alloc_str_for_test("f1"),
                   vec![],
                   builder.int_type(),
-                  vec!["C"],
+                  vec![well_known_pstrs::UPPER_C],
                 ),
                 MemberSignature::create_private_builtin_function(
-                  &mut heap,
-                  "f2",
+                  heap.alloc_str_for_test("f2"),
                   vec![],
                   builder.int_type(),
-                  vec!["C"],
+                  vec![well_known_pstrs::UPPER_C],
                 ),
               ]),
               methods: HashMap::from([
                 MemberSignature::create_builtin_function(
-                  &mut heap,
-                  "m1",
-                  vec![builder.generic_type(str_a), builder.generic_type(str_b)],
+                  heap.alloc_str_for_test("m1"),
+                  vec![
+                    builder.generic_type(well_known_pstrs::UPPER_A),
+                    builder.generic_type(well_known_pstrs::UPPER_B),
+                  ],
                   builder.int_type(),
-                  vec!["C"],
+                  vec![well_known_pstrs::UPPER_C],
                 ),
                 MemberSignature::create_builtin_function(
-                  &mut heap,
-                  "m2",
+                  heap.alloc_str_for_test("m2"),
                   vec![],
                   builder.int_type(),
-                  vec!["C"],
+                  vec![well_known_pstrs::UPPER_C],
                 ),
               ]),
             },
@@ -335,40 +332,36 @@ __DUMMY__.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected:
             InterfaceSignature {
               type_definition: None,
               type_parameters: vec![
-                TypeParameterSignature { name: heap.alloc_str_for_test("E"), bound: None },
-                TypeParameterSignature { name: heap.alloc_str_for_test("F"), bound: None },
+                TypeParameterSignature { name: well_known_pstrs::UPPER_E, bound: None },
+                TypeParameterSignature { name: well_known_pstrs::UPPER_F, bound: None },
               ],
               super_types: vec![],
               functions: HashMap::from([
                 MemberSignature::create_builtin_function(
-                  &mut heap,
-                  "f1",
+                  heap.alloc_str_for_test("f1"),
                   vec![],
                   builder.int_type(),
-                  vec!["C"],
+                  vec![well_known_pstrs::UPPER_C],
                 ),
                 MemberSignature::create_private_builtin_function(
-                  &mut heap,
-                  "f2",
+                  heap.alloc_str_for_test("f2"),
                   vec![],
                   builder.int_type(),
-                  vec!["C"],
+                  vec![well_known_pstrs::UPPER_C],
                 ),
               ]),
               methods: HashMap::from([
                 MemberSignature::create_builtin_function(
-                  &mut heap,
-                  "m1",
+                  heap.alloc_str_for_test("m1"),
                   vec![],
                   builder.int_type(),
-                  vec!["C"],
+                  vec![well_known_pstrs::UPPER_C],
                 ),
                 MemberSignature::create_private_builtin_function(
-                  &mut heap,
-                  "m2",
+                  heap.alloc_str_for_test("m2"),
                   vec![],
                   builder.int_type(),
-                  vec!["C"],
+                  vec![well_known_pstrs::UPPER_C],
                 ),
               ]),
             },

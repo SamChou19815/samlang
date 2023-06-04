@@ -958,7 +958,13 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Doc
     .into_iter()
     .sorted_by_key(|(mod_ref, _)| mod_ref.pretty_print(heap))
     .map(|(mod_ref, members)| {
-      (mod_ref, members.into_iter().sorted_by_key(|m| m.name.as_str(heap)).collect_vec())
+      (
+        mod_ref,
+        members
+          .into_iter()
+          .sorted_by(|x, y| x.name.as_str(heap).cmp(y.name.as_str(heap)))
+          .collect_vec(),
+      )
     })
   {
     documents.push(import_to_document(heap, imported_module, &imported_members))

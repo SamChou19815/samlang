@@ -75,8 +75,8 @@ mod tests {
     used_set.insert(heap.alloc_str_for_test("ii"));
     dead_code_elimination::collect_use_from_stmts(&stmts, &mut used_set);
     assert_eq!(
-      vec!["p", "s", "ii"],
-      used_set.into_iter().sorted().map(|p| p.as_str(heap)).collect_vec()
+      vec!["ii", "p", "s",],
+      used_set.into_iter().sorted().map(|p| p.as_str(heap).to_string()).collect_vec()
     );
 
     assert_correctly_optimized(
