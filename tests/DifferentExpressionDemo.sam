@@ -55,7 +55,7 @@ class DifferentExpressionDemo {
 
   function <V, T> toSome(option: Option<V>, t: T): Option<T> = Option.Some(t)
 
-  function lambdaTest(a: int): string = {
+  function lambdaTest(a: int): Str = {
     val c = DifferentExpressionDemo.toSome(Option.None<int>({  }), 3).map((x: int) -> "empty");
     "hello world"
   }

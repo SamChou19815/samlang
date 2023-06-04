@@ -1225,6 +1225,12 @@ fn compile_sources_with_generics_preserved(
   let SynthesizedTypes { closure_types, mut tuple_types } =
     type_lowering_manager.type_synthesizer.synthesized_types();
   compiled_type_defs.append(&mut tuple_types);
+  compiled_type_defs.push(hir::TypeDefinition {
+    identifier: well_known_pstrs::UNDERSCORE_STR,
+    type_parameters: vec![],
+    names: vec![],
+    mappings: hir::TypeDefinitionMappings::Enum,
+  });
 
   hir::Sources {
     global_variables: string_manager.all_global_variables(),
@@ -1813,8 +1819,8 @@ return (_t8: int);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t8: string = __Builtins$stringConcat((_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
-return (_t8: string);"#,
+      r#"let _t8: _Str = __Builtins$stringConcat((_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
+return (_t8: _Str);"#,
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -2619,6 +2625,7 @@ object type DUMMY_Class1 = [int]
 object type DUMMY_Class2_Tag = [int, int]
 variant type DUMMY_Class2
 object type DUMMY_Class3<T> = [$SyntheticIDType0<T>]
+variant type _Str
 function _DUMMY_Main$init(_this: int): DUMMY_Main {
   let o: DUMMY_Main = [];
   return (o: DUMMY_Main);

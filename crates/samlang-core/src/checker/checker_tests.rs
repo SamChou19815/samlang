@@ -501,8 +501,11 @@ mod tests {
 
     let mut temp_ssa_error_set = ErrorSet::new();
     let global_cx = sandbox_global_cx(heap);
-    let mut local_cx =
-      LocalTypingContext::new(perform_ssa_analysis_on_expression(&parsed, &mut temp_ssa_error_set));
+    let mut local_cx = LocalTypingContext::new(perform_ssa_analysis_on_expression(
+      ModuleReference::dummy(),
+      &parsed,
+      &mut temp_ssa_error_set,
+    ));
     let current_class = heap.alloc_str_for_test(current_class);
     let mut cx = TypingContext::new(
       &global_cx,
@@ -574,7 +577,7 @@ mod tests {
       heap,
       "\"a\"",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `unit`, actual: `string`."],
+      vec!["DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `unit`, actual: `Str`."],
     );
 
     assert_checks(heap, "this", &builder.int_type());
@@ -616,7 +619,7 @@ mod tests {
       "Test.helloWorldWithTypeParameters",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       vec![
-        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `(string, string) -> unit`, actual: `(any) -> unit`.",
+        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `(Str, Str) -> unit`, actual: `(any) -> unit`.",
         "DUMMY.sam:1:1-1:34: [invalid-arity]: Incorrect parameter size. Expected: 2, actual: 1.",
         "DUMMY.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ],
@@ -626,25 +629,25 @@ mod tests {
       "Test.helloWorldWithTypeParameters",
       &builder.string_type(),
       vec![
-        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `(any) -> unit`.",
-        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `string`, actual: `function`.",
+        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `Str`, actual: `(any) -> unit`.",
+        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `Str`, actual: `function`.",
         "DUMMY.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
       ]
     );
     assert_errors(
       heap,
-      "Test.helloWorldWithTypeParameters<int, string>",
+      "Test.helloWorldWithTypeParameters<int, Str>",
       &builder.fun_type(vec![builder.int_type()], builder.unit_type()),
       vec![
-        "DUMMY.sam:1:1-1:47: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
+        "DUMMY.sam:1:1-1:44: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
       ],
     );
     assert_errors(
       heap,
-      "Test.helloWorldWithTypeParameters<string>",
+      "Test.helloWorldWithTypeParameters<Str>",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       vec![
-        "DUMMY.sam:1:1-1:42: [incompatible-type]: Expected: `(string, string) -> unit`, actual: `(string) -> unit`.",
+        "DUMMY.sam:1:1-1:39: [incompatible-type]: Expected: `(Str, Str) -> unit`, actual: `(Str) -> unit`.",
       ],
     );
     assert_errors(
@@ -912,7 +915,7 @@ mod tests {
       heap,
       "Builtins.panic(3)",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:16-1:17: [incompatible-type]: Expected: `string`, actual: `int`."],
+      vec!["DUMMY.sam:1:16-1:17: [incompatible-type]: Expected: `Str`, actual: `int`."],
     );
     assert_errors(
       heap,
@@ -924,13 +927,13 @@ mod tests {
       heap,
       "Test.helloWorld(3)",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:17-1:18: [incompatible-type]: Expected: `string`, actual: `int`."],
+      vec!["DUMMY.sam:1:17-1:18: [incompatible-type]: Expected: `Str`, actual: `int`."],
     );
     assert_errors(
       heap,
       "Test.init(true, 3).fff()",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:25: [incompatible-type]: Expected: `int`, actual: `string`."],
+      vec!["DUMMY.sam:1:1-1:25: [incompatible-type]: Expected: `int`, actual: `Str`."],
     );
     assert_errors(
       heap,
@@ -985,7 +988,7 @@ mod tests {
     assert_checks(heap, "true == false", &builder.bool_type());
     assert_checks(heap, "false != true", &builder.bool_type());
     assert_checks(heap, "\"\" != \"3\"", &builder.bool_type());
-    assert_checks(heap, "{ val _ = (t: string, f: string) -> t == f; }", &builder.unit_type());
+    assert_checks(heap, "{ val _ = (t: Str, f: Str) -> t == f; }", &builder.unit_type());
 
     assert_errors(
       heap,
@@ -1022,21 +1025,21 @@ mod tests {
       "\"1\" * \"1\"",
       &builder.int_type(),
       vec![
-        "DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `int`, actual: `string`.",
-        "DUMMY.sam:1:7-1:10: [incompatible-type]: Expected: `int`, actual: `string`.",
+        "DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `int`, actual: `Str`.",
+        "DUMMY.sam:1:7-1:10: [incompatible-type]: Expected: `int`, actual: `Str`.",
       ],
     );
     assert_errors(
       heap,
       "\"1\" - 1",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `int`, actual: `string`."],
+      vec!["DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `int`, actual: `Str`."],
     );
     assert_errors(
       heap,
       "1 % \"1\"",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:5-1:8: [incompatible-type]: Expected: `int`, actual: `string`."],
+      vec!["DUMMY.sam:1:5-1:8: [incompatible-type]: Expected: `int`, actual: `Str`."],
     );
     assert_errors(
       heap,
@@ -1055,7 +1058,7 @@ mod tests {
       "\"\" < false",
       &builder.bool_type(),
       vec![
-        "DUMMY.sam:1:1-1:3: [incompatible-type]: Expected: `int`, actual: `string`.",
+        "DUMMY.sam:1:1-1:3: [incompatible-type]: Expected: `int`, actual: `Str`.",
         "DUMMY.sam:1:6-1:11: [incompatible-type]: Expected: `int`, actual: `bool`.",
       ],
     );
@@ -1069,7 +1072,7 @@ mod tests {
       heap,
       "1 > \"\"",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:5-1:7: [incompatible-type]: Expected: `int`, actual: `string`."],
+      vec!["DUMMY.sam:1:5-1:7: [incompatible-type]: Expected: `int`, actual: `Str`."],
     );
     assert_errors(
       heap,
@@ -1114,7 +1117,7 @@ mod tests {
       heap,
       "\"\" != 3",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:7-1:8: [incompatible-type]: Expected: `string`, actual: `int`."],
+      vec!["DUMMY.sam:1:7-1:8: [incompatible-type]: Expected: `Str`, actual: `int`."],
     );
     assert_errors(
       heap,
@@ -1263,7 +1266,7 @@ mod tests {
       heap,
       "if false then \"\" else 3",
       &builder.string_type(),
-      vec!["DUMMY.sam:1:23-1:24: [incompatible-type]: Expected: `string`, actual: `int`."],
+      vec!["DUMMY.sam:1:23-1:24: [incompatible-type]: Expected: `Str`, actual: `int`."],
     );
     assert_errors(
       heap,
@@ -1389,7 +1392,7 @@ mod tests {
       &mut Heap::new(),
       r#"{
   val _ = (() -> true)(1);
-  val _: string = Test.generic1(
+  val _: Str = Test.generic1(
     (() -> 0)(),
     {true},
     match (Test2.Foo(false)) { Foo(_, _) -> false, Bar(_) -> false, }
@@ -1532,15 +1535,15 @@ interface Foo {}
 class A : Foo {} // OK
 interface Bar {
   function a(): unit
-  method b(): string
+  method b(): Str
 }
 class B : Bar {} // Error
 class C : Bar {
-  function a(): string = ""
+  function a(): Str = ""
   method b(): unit = {} // error
 }
 class D : Bar {
-  function b(): string = "" // error
+  function b(): Str = "" // error
   method a(): unit = {} // error
 }
 interface Base<TA, TB> {
@@ -1552,17 +1555,17 @@ interface Baz1<TA, TB> : Base<int, TB> {
 interface Baz2<TA, TB> : Baz1<TA, int> {
   method <TC> m2(a: TA, b: TB): TC
 }
-class E : Baz2<string, bool> { // all good
+class E : Baz2<Str, bool> { // all good
   method <TC> m1(a: int, b: int): TC = Builtins.panic("")
   method <TA1, TB1, TC> f1(a: TA1, b: TB1): TC = Builtins.panic("")
-  method <TC> m2(a: string, b: bool): TC = Builtins.panic("")
+  method <TC> m2(a: Str, b: bool): TC = Builtins.panic("")
 }
-class F : Baz2<string, bool> {
-  private method <TC> m1(a: string, b: string): TC = Builtins.panic("") // error
-  method <TA1, TB1, TC> f1(a: string, b: string): TC = Builtins.panic("") // error
-  method <TC> m2(a: string, b: string): TC = Builtins.panic("") // error
+class F : Baz2<Str, bool> {
+  private method <TC> m1(a: Str, b: Str): TC = Builtins.panic("") // error
+  method <TA1, TB1, TC> f1(a: Str, b: Str): TC = Builtins.panic("") // error
+  method <TC> m2(a: Str, b: Str): TC = Builtins.panic("") // error
 }
-interface G : Baz2<string, bool> {
+interface G : Baz2<Str, bool> {
   method <TD> m1(a: int, b: int): TD // tparam name mismatch
   method <TA1: TA, TB1, TC> f1(a: TA1, b: TB1): TC // has bound mismatch
   method <TE: Foo> unrelated(): unit
@@ -1588,12 +1591,12 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
     let expected_errors = vec![
       "A.sam:5:3-5:21: [illegal-function-in-interface]: Function declarations are not allowed in interfaces.",
       "A.sam:8:1-8:17: [missing-definitions]: Missing definitions for [b].",
-      "A.sam:11:11-11:19: [incompatible-type]: Expected: `() -> string`, actual: `() -> unit`.",
+      "A.sam:11:11-11:19: [incompatible-type]: Expected: `() -> Str`, actual: `() -> unit`.",
       "A.sam:13:1-16:2: [missing-definitions]: Missing definitions for [b].",
-      "A.sam:32:11-32:72: [incompatible-type]: Expected: `public class member`, actual: `private class member`.",
-      "A.sam:32:25-32:51: [incompatible-type]: Expected: `(int, int) -> TC`, actual: `(string, string) -> TC`.",
-      "A.sam:33:27-33:53: [incompatible-type]: Expected: `(TA1, TB1) -> TC`, actual: `(string, string) -> TC`.",
-      "A.sam:34:17-34:43: [incompatible-type]: Expected: `(string, bool) -> TC`, actual: `(string, string) -> TC`.",
+      "A.sam:32:11-32:66: [incompatible-type]: Expected: `public class member`, actual: `private class member`.",
+      "A.sam:32:25-32:45: [incompatible-type]: Expected: `(int, int) -> TC`, actual: `(Str, Str) -> TC`.",
+      "A.sam:33:27-33:47: [incompatible-type]: Expected: `(TA1, TB1) -> TC`, actual: `(Str, Str) -> TC`.",
+      "A.sam:34:17-34:37: [incompatible-type]: Expected: `(Str, bool) -> TC`, actual: `(Str, Str) -> TC`.",
       "A.sam:37:17-37:37: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TC>`.",
       "A.sam:38:16-38:18: [cannot-resolve-name]: Name `TA` is not resolved.",
       "A.sam:38:31-38:51: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TA1, TB1, TC>`.",

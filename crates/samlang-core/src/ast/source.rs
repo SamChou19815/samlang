@@ -125,7 +125,6 @@ pub(crate) mod annotation {
     Unit,
     Bool,
     Int,
-    String,
     Any,
   }
 
@@ -135,7 +134,6 @@ pub(crate) mod annotation {
         Self::Unit => "unit".to_string(),
         Self::Bool => "bool".to_string(),
         Self::Int => "int".to_string(),
-        Self::String => "string".to_string(),
         Self::Any => "any".to_string(),
       }
     }
@@ -654,6 +652,8 @@ pub(crate) struct Module<T: Clone> {
 
 #[cfg(test)]
 pub(crate) mod test_builder {
+  use crate::common::well_known_pstrs;
+
   use super::super::loc::Location;
   use super::*;
 
@@ -693,11 +693,12 @@ pub(crate) mod test_builder {
     }
 
     pub(crate) fn string_annot(&self) -> annotation::T {
-      annotation::T::Primitive(
-        Location::dummy(),
-        NO_COMMENT_REFERENCE,
-        annotation::PrimitiveTypeKind::String,
-      )
+      annotation::T::Id(annotation::Id {
+        location: Location::dummy(),
+        module_reference: ModuleReference::root(),
+        id: Id::from(well_known_pstrs::STR_TYPE),
+        type_arguments: vec![],
+      })
     }
 
     pub(crate) fn general_id_annot_unwrapped(

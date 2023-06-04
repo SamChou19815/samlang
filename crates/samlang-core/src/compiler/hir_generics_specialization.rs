@@ -435,8 +435,11 @@ pub(super) fn perform_generics_specialization(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::hir::{
-    GlobalVariable, Operator, TypeDefinitionMappings, INT_TYPE, ONE, STRING_TYPE, ZERO,
+  use crate::{
+    ast::hir::{
+      GlobalVariable, Operator, TypeDefinitionMappings, INT_TYPE, ONE, STRING_TYPE, ZERO,
+    },
+    common::well_known_pstrs,
   };
   use pretty_assertions::assert_eq;
 
@@ -510,7 +513,12 @@ sources.mains = [main]
           content: heap.alloc_str_for_test(""),
         }],
         closure_types: vec![],
-        type_definitions: vec![],
+        type_definitions: vec![TypeDefinition {
+          identifier: well_known_pstrs::UNDERSCORE_STR,
+          type_parameters: vec![],
+          names: vec![],
+          mappings: TypeDefinitionMappings::Enum,
+        }],
         main_function_names: vec![heap.alloc_str_for_test("main")],
         functions: vec![Function {
           name: heap.alloc_str_for_test("main"),
@@ -532,6 +540,7 @@ sources.mains = [main]
       heap,
       r#"const G1 = '';
 
+variant type _Str
 function main(): int {
   __builtins_println(G1);
   return 0;
@@ -550,7 +559,12 @@ sources.mains = [main]
     let sources = Sources {
       global_variables: vec![],
       closure_types: vec![],
-      type_definitions: vec![],
+      type_definitions: vec![TypeDefinition {
+        identifier: well_known_pstrs::UNDERSCORE_STR,
+        type_parameters: vec![],
+        names: vec![],
+        mappings: TypeDefinitionMappings::Enum,
+      }],
       main_function_names: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
         name: heap.alloc_str_for_test("main"),
@@ -572,7 +586,12 @@ sources.mains = [main]
     let sources = Sources {
       global_variables: vec![],
       closure_types: vec![],
-      type_definitions: vec![],
+      type_definitions: vec![TypeDefinition {
+        identifier: well_known_pstrs::UNDERSCORE_STR,
+        type_parameters: vec![],
+        names: vec![],
+        mappings: TypeDefinitionMappings::Enum,
+      }],
       main_function_names: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
         name: heap.alloc_str_for_test("main"),
@@ -598,7 +617,12 @@ sources.mains = [main]
     let sources = Sources {
       global_variables: vec![],
       closure_types: vec![],
-      type_definitions: vec![],
+      type_definitions: vec![TypeDefinition {
+        identifier: well_known_pstrs::UNDERSCORE_STR,
+        type_parameters: vec![],
+        names: vec![],
+        mappings: TypeDefinitionMappings::Enum,
+      }],
       main_function_names: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
         name: heap.alloc_str_for_test("main"),
@@ -656,6 +680,12 @@ sources.mains = [main]
             type_parameters: vec![],
             names: vec![],
             mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE]),
+          },
+          TypeDefinition {
+            identifier: well_known_pstrs::UNDERSCORE_STR,
+            type_parameters: vec![],
+            names: vec![],
+            mappings: TypeDefinitionMappings::Enum,
           },
         ],
         main_function_names: vec![heap.alloc_str_for_test("main")],
@@ -865,12 +895,13 @@ sources.mains = [main]
       r#"
 const G1 = '';
 
-closure type CC_string_string = (string) -> string
-closure type CC_int_string = (int) -> string
+closure type CC__Str__Str = (_Str) -> _Str
+closure type CC_int__Str = (int) -> _Str
 object type J = [int]
-variant type I_int_string
-variant type I_string_string
-function _I$bar(a: I_int_string): int {
+variant type _Str
+variant type I_int__Str
+variant type I__Str__Str
+function _I$bar(a: I_int__Str): int {
   return 0;
 }
 
@@ -881,12 +912,12 @@ function _J$bar(a: J): int {
 function main(): int {
   let finalV: int;
   if 1 {
-    let a: I_int_string = creatorIA_int(0);
-    let a2: I_int_string = creatorIA_string(G1);
-    let b: I_int_string = creatorIB_string(G1);
-    functor_fun_I_int_string(G1);
+    let a: I_int__Str = creatorIA_int(0);
+    let a2: I_int__Str = creatorIA__Str(G1);
+    let b: I_int__Str = creatorIB__Str(G1);
+    functor_fun_I_int__Str(G1);
     functor_fun_J(G1);
-    let v1: int = (a: I_int_string)[0];
+    let v1: int = (a: I_int__Str)[0];
     let cast = (a: int) as int;
     finalV = (v1: int);
   } else {
@@ -894,29 +925,29 @@ function main(): int {
     let v1 = 0 + 0;
     let j: J = [0];
     let v2: int = (j: J)[0];
-    let c1: CC_string_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
-    let c2: CC_int_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
+    let c1: CC__Str__Str = Closure { fun: (creatorIA__Str: (_Str) -> I__Str__Str), context: G1 };
+    let c2: CC_int__Str = Closure { fun: (creatorIA__Str: (_Str) -> I__Str__Str), context: G1 };
     finalV = (v2: int);
   }
   return 0;
 }
 
-function creatorIA_int(a: int): I_int_string {
-  let v: I_int_string = [0, (a: int)];
-  return (v: I_int_string);
+function creatorIA_int(a: int): I_int__Str {
+  let v: I_int__Str = [0, (a: int)];
+  return (v: I_int__Str);
 }
 
-function creatorIA_string(a: string): I_string_string {
-  let v: I_string_string = [0, (a: string)];
-  return (v: I_string_string);
+function creatorIA__Str(a: _Str): I__Str__Str {
+  let v: I__Str__Str = [0, (a: _Str)];
+  return (v: I__Str__Str);
 }
 
-function creatorIB_string(b: string): I_int_string {
-  let v: I_int_string = [1, (b: string)];
-  return (v: I_int_string);
+function creatorIB__Str(b: _Str): I_int__Str {
+  let v: I_int__Str = [1, (b: _Str)];
+  return (v: I_int__Str);
 }
 
-function functor_fun_I_int_string(a: I_int_string): int {
+function functor_fun_I_int__Str(a: I_int__Str): int {
   _I$bar(0);
   return 0;
 }

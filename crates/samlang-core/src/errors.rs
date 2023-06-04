@@ -136,7 +136,7 @@ impl ErrorSet {
     self.errors.insert(CompileTimeError { location, detail });
   }
 
-  pub(crate) fn report_cannot_unresolve_module_error(
+  pub(crate) fn report_cannot_resolve_module_error(
     &mut self,
     loc: Location,
     module_reference: ModuleReference,
@@ -144,7 +144,7 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::CannotResolveModule { module_reference })
   }
 
-  pub(crate) fn report_cannot_unresolve_class_error(
+  pub(crate) fn report_cannot_resolve_class_error(
     &mut self,
     loc: Location,
     module_reference: ModuleReference,
@@ -153,7 +153,7 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::CannotResolveClass { module_reference, name })
   }
 
-  pub(crate) fn report_cannot_unresolve_name_error(&mut self, loc: Location, name: PStr) {
+  pub(crate) fn report_cannot_resolve_name_error(&mut self, loc: Location, name: PStr) {
     self.report_error(loc, ErrorDetail::CannotResolveName { name })
   }
 
@@ -287,10 +287,10 @@ mod tests {
     let mut error_set = ErrorSet::new();
     let builder = test_type_builder::create();
 
-    error_set.report_cannot_unresolve_module_error(Location::dummy(), ModuleReference::dummy());
+    error_set.report_cannot_resolve_module_error(Location::dummy(), ModuleReference::dummy());
     error_set
-      .report_cannot_unresolve_name_error(Location::dummy(), heap.alloc_str_for_test("global"));
-    error_set.report_cannot_unresolve_class_error(
+      .report_cannot_resolve_name_error(Location::dummy(), heap.alloc_str_for_test("global"));
+    error_set.report_cannot_resolve_class_error(
       Location::dummy(),
       ModuleReference::dummy(),
       heap.alloc_str_for_test("global"),

@@ -415,7 +415,7 @@ class Foo1<R>(val a: int, val b: R): Bar {
   method <T> foo2(c: int): int = 3
 }
 
-class Foo2(A(string), B(int)): Bar {
+class Foo2(A(Str), B(int)): Bar {
   function foo1(c: int): int = 3
   method <T> foo2(c: int): int = 3
 }
@@ -441,9 +441,9 @@ foo1: public (int) -> int
 init: public <R>(int, R) -> Foo1<R>
 methods:
 foo2: public <T>(int) -> int
-Foo2: class(A(string), B(int))  : [Bar]
+Foo2: class(A(Str), B(int))  : [Bar]
 functions:
-A: public (string) -> Foo2
+A: public (Str) -> Foo2
 B: public (int) -> Foo2
 foo1: public (int) -> int
 methods:

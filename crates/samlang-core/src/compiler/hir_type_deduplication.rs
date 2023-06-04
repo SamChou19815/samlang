@@ -375,7 +375,7 @@ mod tests {
     let actual = deduplicate(heap, sources).debug_print(heap);
     assert_eq!(
       r#"closure type A = () -> int
-object type C = [int, string]
+object type C = [int, _Str]
 function main(): int {
   let _: int;
   if 1 {

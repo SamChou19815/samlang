@@ -10,9 +10,6 @@ use std::collections::{BTreeMap, HashSet};
 fn lower_type(type_: hir::Type) -> mir::Type {
   match type_ {
     hir::Type::Primitive(hir::PrimitiveType::Int) => mir::Type::Primitive(mir::PrimitiveType::Int),
-    hir::Type::Primitive(hir::PrimitiveType::String) => {
-      mir::Type::Primitive(mir::PrimitiveType::String)
-    }
     hir::Type::Id(hir::IdType { name, type_arguments }) => {
       assert!(type_arguments.is_empty());
       mir::Type::Id(name)
@@ -40,22 +37,6 @@ fn lower_expression(expr: hir::Expression) -> mir::Expression {
     hir::Expression::Variable(hir::VariableName { name, type_ }) => {
       mir::Expression::Variable(name, lower_type(type_))
     }
-  }
-}
-
-fn reference_type_name(heap: &mut Heap, type_: &mir::Type) -> Option<PStr> {
-  match type_ {
-    mir::Type::Primitive(mir::PrimitiveType::String) => Some(heap.alloc_str_permanent("string")),
-    mir::Type::Id(n) => Some(*n),
-    _ => None,
-  }
-}
-
-fn dec_ref_fn_arg_type(heap: &Heap, type_name: PStr) -> mir::Type {
-  if type_name.as_str(heap).eq("string") {
-    mir::STRING_TYPE
-  } else {
-    mir::Type::Id(type_name)
   }
 }
 
@@ -111,14 +92,14 @@ impl<'a> LoweringManager<'a> {
     for s in &lowered_statements {
       match s {
         mir::Statement::Call { callee: _, arguments: _, return_type, return_collector } => {
-          if let Some(type_name) = reference_type_name(self.heap, return_type) {
-            variable_to_decrease_reference_count.push(((*return_collector).unwrap(), type_name));
+          if let Some(type_name) = return_type.as_id() {
+            variable_to_decrease_reference_count.push(((*return_collector).unwrap(), *type_name));
           }
         }
         mir::Statement::IfElse { condition: _, s1: _, s2: _, final_assignments } => {
           for (n, t, _, _) in final_assignments {
-            if let Some(type_name) = reference_type_name(self.heap, t) {
-              variable_to_decrease_reference_count.push((*n, type_name));
+            if let Some(type_name) = t.as_id() {
+              variable_to_decrease_reference_count.push((*n, *type_name));
             }
           }
         }
@@ -127,13 +108,13 @@ impl<'a> LoweringManager<'a> {
           statements: _,
           break_collector: Some((n, t)),
         } => {
-          if let Some(type_name) = reference_type_name(self.heap, t) {
-            variable_to_decrease_reference_count.push((*n, type_name));
+          if let Some(type_name) = t.as_id() {
+            variable_to_decrease_reference_count.push((*n, *type_name));
           }
         }
         mir::Statement::StructInit { struct_variable_name, type_, expression_list: _ } => {
           variable_to_decrease_reference_count
-            .push((*struct_variable_name, reference_type_name(self.heap, type_).unwrap()));
+            .push((*struct_variable_name, *type_.as_id().unwrap()));
         }
         _ => {}
       }
@@ -142,7 +123,7 @@ impl<'a> LoweringManager<'a> {
       if variables_not_to_deref.contains(&variable_name) {
         continue;
       }
-      let var_type = dec_ref_fn_arg_type(self.heap, type_name);
+      let var_type = mir::Type::Id(type_name);
       lowered_statements.push(mir::Statement::Call {
         callee: mir::Expression::Name(
           self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_DEC_REF),
@@ -180,7 +161,7 @@ impl<'a> LoweringManager<'a> {
         let lowered_return_type = lower_type(return_type);
         let return_collector = if let Some(c) = return_collector {
           Some(c)
-        } else if reference_type_name(self.heap, &lowered_return_type).is_some() {
+        } else if lowered_return_type.as_id().is_some() {
           Some(self.alloc_temp())
         } else {
           None
@@ -349,11 +330,7 @@ impl<'a> LoweringManager<'a> {
         if self.add_ref_counting_if_type_allowed(&mut statements, &context) {
           header |= 1 << (1 + 16);
         }
-        let fn_name_slot = if mir::Type::Fn(original_fn_type.clone())
-          .is_the_same_type(&mir::Type::Fn(type_erased_closure_type.clone()))
-        {
-          mir::Expression::Name(fn_name, mir::Type::Fn(original_fn_type))
-        } else {
+        let fn_name_slot = {
           let temp = self.alloc_temp();
           statements.push(mir::Statement::Cast {
             name: temp,
@@ -362,9 +339,7 @@ impl<'a> LoweringManager<'a> {
           });
           mir::Expression::Variable(temp, mir::Type::Fn(type_erased_closure_type))
         };
-        let cx_slot = if context.type_().is_the_same_type(&mir::ANY_TYPE) {
-          context.clone()
-        } else {
+        let cx_slot = {
           let temp = self.alloc_temp();
           statements.push(mir::Statement::Cast {
             name: temp,
@@ -388,38 +363,24 @@ impl<'a> LoweringManager<'a> {
     collector: &mut Vec<mir::Statement>,
     expression: &mir::Expression,
   ) -> bool {
-    let type_name = if let Some(n) = reference_type_name(self.heap, expression.type_()) {
-      n
-    } else {
+    if expression.type_().as_id().is_none() {
       return false;
     };
-    if type_name.as_str(self.heap).ne("string") {
-      collector.push(mir::Statement::Call {
-        callee: mir::Expression::Name(
-          self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_INC_REF),
-          mir::Type::Fn(unknown_member_destructor_type()),
-        ),
-        arguments: vec![expression.clone()],
-        return_type: mir::INT_TYPE,
-        return_collector: None,
-      });
-    } else {
-      let casted = self.alloc_temp();
-      collector.push(mir::Statement::Cast {
-        name: casted,
-        type_: mir::ANY_TYPE,
-        assigned_expression: expression.clone(),
-      });
-      collector.push(mir::Statement::Call {
-        callee: mir::Expression::Name(
-          self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_INC_REF),
-          mir::Type::Fn(unknown_member_destructor_type()),
-        ),
-        arguments: vec![mir::Expression::Variable(casted, mir::ANY_TYPE)],
-        return_type: mir::INT_TYPE,
-        return_collector: None,
-      });
-    }
+    let casted = self.alloc_temp();
+    collector.push(mir::Statement::Cast {
+      name: casted,
+      type_: mir::ANY_TYPE,
+      assigned_expression: expression.clone(),
+    });
+    collector.push(mir::Statement::Call {
+      callee: mir::Expression::Name(
+        self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_INC_REF),
+        mir::Type::Fn(unknown_member_destructor_type()),
+      ),
+      arguments: vec![mir::Expression::Variable(casted, mir::ANY_TYPE)],
+      return_type: mir::INT_TYPE,
+      return_collector: None,
+    });
     true
   }
 }
@@ -835,12 +796,11 @@ mod tests {
       },
       heap,
       &format!(
-        r#"type Str = [number, string];
-const {} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const {} = (_: number, [, line]: Str): number => {{ console.log(line); return 0; }};
-const {} = (_: number, [, v]: Str): number => parseInt(v, 10);
-const {} = (_: number, v: number): Str => [1, String(v)];
-const {} = (_: number, [, v]: Str): number => {{ throw Error(v); }};
+        r#"const {} = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
+const {} = (_: number, [, line]: _Str): number => {{ console.log(line); return 0; }};
+const {} = (_: number, [, v]: _Str): number => parseInt(v, 10);
+const {} = (_: number, v: number): _Str => [1, String(v)];
+const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
 "#,
         common_names::encoded_fn_name_string_concat(),
@@ -1117,12 +1077,11 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
       ],
     };
     let expected = format!(
-      r#"type Str = [number, string];
-const {} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const {} = (_: number, [, line]: Str): number => {{ console.log(line); return 0; }};
-const {} = (_: number, [, v]: Str): number => parseInt(v, 10);
-const {} = (_: number, v: number): Str => [1, String(v)];
-const {} = (_: number, [, v]: Str): number => {{ throw Error(v); }};
+      r#"const {} = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
+const {} = (_: number, [, line]: _Str): number => {{ console.log(line); return 0; }};
+const {} = (_: number, [, v]: _Str): number => parseInt(v, 10);
+const {} = (_: number, v: number): _Str => [1, String(v)];
+const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
 type CC = [number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
@@ -1134,7 +1093,7 @@ function cc(): number {{
   let v1: number = a[1];
   let v2: number = b[1];
   let v3: number = b[2];
-  let v4: Str = b[2];
+  let v4: _Str = b[2];
   while (true) {{
     if (0) {{
     }}
@@ -1153,18 +1112,21 @@ function cc(): number {{
 }}
 function main(): number {{
   let v1 = 0 + 0;
-  _builtin_inc_ref(obj);
+  let _t10 = obj as any;
+  _builtin_inc_ref(_t10);
   let O: Object = [0, 0, obj];
   let v1: Variant = [1, 0, 0];
-  let _t11 = G1 as any;
-  _builtin_inc_ref(_t11);
-  let v2: Variant = [131073, 0, G1];
   let _t12 = G1 as any;
   _builtin_inc_ref(_t12);
-  let c1: CC = [131073, aaa, G1];
-  let _t13 = bbb as (t0: any) => number;
-  let _t14 = 0 as any;
-  let c2: CC = [1, _t13, _t14];
+  let v2: Variant = [131073, 0, G1];
+  let _t13 = G1 as any;
+  _builtin_inc_ref(_t13);
+  let _t14 = aaa as (t0: any) => number;
+  let _t15 = G1 as any;
+  let c1: CC = [131073, _t14, _t15];
+  let _t16 = bbb as (t0: any) => number;
+  let _t17 = 0 as any;
+  let c2: CC = [1, _t16, _t17];
   _builtin_dec_ref(O);
   _builtin_dec_ref(v1);
   _builtin_dec_ref(v2);
@@ -1179,14 +1141,17 @@ function _compiled_program_main(): number {{
     let ccc: number = cc(0);
     finalV = v1;
   }} else {{
-    let _t16: (t0: any, t1: number) => number = cc[1];
-    let _t17: any = cc[2];
-    let _t15: CC = _t16(_t17, 0);
-    _builtin_inc_ref(_t15);
-    _builtin_inc_ref(G1);
-    let _t18 = G1 as any;
-    let v2: CC = [131073, aaa, _t18];
-    _builtin_dec_ref(_t15);
+    let _t19: (t0: any, t1: number) => number = cc[1];
+    let _t20: any = cc[2];
+    let _t18: CC = _t19(_t20, 0);
+    let _t21 = _t18 as any;
+    _builtin_inc_ref(_t21);
+    let _t22 = G1 as any;
+    _builtin_inc_ref(_t22);
+    let _t23 = aaa as (t0: any) => number;
+    let _t24 = G1 as any;
+    let v2: CC = [131073, _t23, _t24];
+    _builtin_dec_ref(_t18);
     finalV = v2;
   }}
   let finalV2: number;

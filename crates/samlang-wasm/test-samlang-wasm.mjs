@@ -13,14 +13,13 @@ const { tsCode, interpreterResult } = await samlang.compile(
 assertEqual(interpreterResult, 'Hi\n');
 assertEqual(
   tsCode,
-  `type Str = [number, string];
-const __Builtins$stringConcat = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const __Builtins$println = (_: number, [, line]: Str): number => { console.log(line); return 0; };
-const __Builtins$stringToInt = (_: number, [, v]: Str): number => parseInt(v, 10);
-const __Builtins$intToString = (_: number, v: number): Str => [1, String(v)];
-const __Builtins$panic = (_: number, [, v]: Str): number => { throw Error(v); };
+  `const __Builtins$stringConcat = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
+const __Builtins$println = (_: number, [, line]: _Str): number => { console.log(line); return 0; };
+const __Builtins$stringToInt = (_: number, [, v]: _Str): number => parseInt(v, 10);
+const __Builtins$intToString = (_: number, v: number): _Str => [1, String(v)];
+const __Builtins$panic = (_: number, [, v]: _Str): number => { throw Error(v); };
 const _builtin_free = (v: any): number => { v.length = 0; return 0 };
-const GLOBAL_STRING_0: Str = [0, \`Hi\`];
+const GLOBAL_STRING_0: _Str = [0, \`Hi\`];
 function _Demo_Main$main(): number {
   __Builtins$println(0, GLOBAL_STRING_0);
   return 0;

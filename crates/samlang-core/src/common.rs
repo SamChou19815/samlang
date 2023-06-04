@@ -134,12 +134,13 @@ pub(crate) mod well_known_pstrs {
   }
 
   pub(crate) const DUMMY_MODULE: PStr = const_inline_pstr!(*b"DUMMY", [0; 1]);
-
+  pub(crate) const STR_TYPE: PStr = const_inline_pstr!(*b"Str", [0; 3]);
   pub(crate) const INIT: PStr = const_inline_pstr!(*b"init", [0; 2]);
   pub(crate) const THIS: PStr = const_inline_pstr!(*b"this", [0; 2]);
 
   pub(crate) const UNDERSCORE_THIS: PStr = const_inline_pstr!(*b"_this", [0; 1]);
   pub(crate) const UNDERSCORE_TMP: PStr = const_inline_pstr!(*b"_tmp", [0; 2]);
+  pub(crate) const UNDERSCORE_STR: PStr = const_inline_pstr!(*b"_Str", [0; 2]);
 
   pub(crate) const UPPER_A: PStr = const_inline_pstr!(*b"A", [0; 5]);
   pub(crate) const UPPER_B: PStr = const_inline_pstr!(*b"B", [0; 5]);

@@ -1,5 +1,5 @@
-class Dev(Sam(unit), Megan(string)) {
-  private method getName(): string =
+class Dev(Sam(unit), Megan(Str)) {
+  private method getName(): Str =
     match this {
       Sam(_) -> "sam",
       Megan(n) -> n,

@@ -1,6 +1,6 @@
 use crate::{
   ast::source,
-  common::{Heap, ModuleReference, PStr},
+  common::{well_known_pstrs, Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use std::collections::HashSet;
@@ -10,7 +10,7 @@ mod lexer_test;
 mod source_parser;
 
 fn builtin_classes(heap: &mut Heap) -> HashSet<PStr> {
-  HashSet::from([heap.alloc_str_permanent("Builtins")])
+  HashSet::from([heap.alloc_str_permanent("Builtins"), well_known_pstrs::STR_TYPE])
 }
 
 pub(crate) fn parse_source_module_from_text(
@@ -122,7 +122,7 @@ mod tests {
     expect_good_expr("{ val {foo, bar as baz}: Type = 3; }");
     expect_good_expr("{ val _: Int<bool> = 3; }");
     expect_good_expr("{ val _: HAHAHA = 3; }");
-    expect_good_expr("{ val _: (int, bool) -> string = 3; }");
+    expect_good_expr("{ val _: (int, bool) -> Str = 3; }");
     expect_good_expr("{ }");
   }
 
@@ -187,12 +187,12 @@ mod tests {
     interface Bar<T> {}
 
     interface Baz : Bar<int> {
-      function foo(): () -> string
+      function foo(): () -> Str
       method bar(baz: bool): int
     }
 
     class Main : Baz {
-      function main(): (int) -> string = "Hello World"
+      function main(): (int) -> Str = "Hello World"
     }
 
     class Main {
@@ -206,7 +206,7 @@ mod tests {
     class Util<T>
 
     class A(val a: () -> int) : Baz
-    class A(val a: (string) -> int) : Baz
+    class A(val a: (Str) -> int) : Baz
 
     class TParamFixParserTest {
       function <T: Foo<T>, R: Bar<(A) -> int>> f(): unit = {}
@@ -239,8 +239,8 @@ mod tests {
     }
 
     class Developer(
-      val name: string, val github: string,
-      private val projects: List<string>
+      val name: Str, val github: Str,
+      private val projects: List<Str>
     ) {
       function sam(): Developer = {
         val l = List.of("SAMLANG").cons("...");
@@ -290,11 +290,11 @@ mod tests {
     import { Foo, Bar } from path.To;
 
     interface A {
-      private function main: string =
+      private function main: Str =
     }
 
     class Main(Boo(), ()) {
-      function main(): string = (id) 3
+      function main(): Str = (id) 3
     }
 
     class {
@@ -302,10 +302,10 @@ mod tests {
     }
 
     interface {
-      function main: string =
+      function main: Str =
     }
 
-    class TypeInference(val : string, val foo: ) {
+    class TypeInference(val : Str, val foo: ) {
       function notAnnotated(bad: ):  = {
         val _ = (a, b, c) -> if a(b + 1) then b else c;
       }
@@ -336,7 +336,7 @@ mod tests {
       method notAnnotated(bad: , : int):
     }
 
-    class TypeInference(vafl : string, val foo: ) {
+    class TypeInference(vafl : Str, val foo: ) {
       function notAnnotated(bad: , : int):  = {
         val _ = (a, b, c) -> if a(b + 1) then b else c;
       }

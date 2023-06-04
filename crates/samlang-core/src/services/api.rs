@@ -347,7 +347,7 @@ pub mod query {
       }
       LocationCoverSearchResult::TypedName(loc, _, _) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(module)
+        VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(&loc)
           .map(|it| it.all_locations())
       }
@@ -356,7 +356,7 @@ pub mod query {
         _,
       )) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(module)
+        VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(loc)
           .map(|it| it.all_locations())
       }
@@ -395,7 +395,7 @@ pub mod query {
       }
       LocationCoverSearchResult::TypedName(loc, _, _) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(module)
+        VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(&loc)
           .map(|it| it.definition_location)
       }
@@ -404,7 +404,7 @@ pub mod query {
         _,
       )) => {
         let module = state.parsed_modules.get(module_reference).unwrap();
-        VariableDefinitionLookup::new(module)
+        VariableDefinitionLookup::new(*module_reference, module)
           .find_all_definition_and_uses(loc)
           .map(|it| it.definition_location)
       }
@@ -500,8 +500,8 @@ pub mod rewrite {
       };
 
     let module = state.parsed_modules.get(module_reference).unwrap();
-    let def_and_uses =
-      VariableDefinitionLookup::new(module).find_all_definition_and_uses(&def_or_use_loc)?;
+    let def_and_uses = VariableDefinitionLookup::new(*module_reference, module)
+      .find_all_definition_and_uses(&def_or_use_loc)?;
     let renamed =
       apply_renaming(module, &def_and_uses, state.heap.alloc_string(new_name.to_string()));
     Some(printer::pretty_print_source_module(&state.heap, 100, &renamed))

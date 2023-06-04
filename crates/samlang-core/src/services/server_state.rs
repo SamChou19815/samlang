@@ -181,7 +181,7 @@ interface I { method test(): int }
     assert_eq!(1, service.all_modules().len());
     assert!(service.get_errors(&ModuleReference::root()).is_empty());
     assert_eq!(
-      vec!["test.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `string`."],
+      vec!["test.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `Str`."],
       service.get_error_strings(&test_mod_ref)
     );
 
@@ -213,7 +213,7 @@ class Test1 {
 import { Test1, Test2 } from Test1
 
 class Test2 {
-  function test(): string = 3
+  function test(): Str = 3
 }
 "#
           .to_string(),
@@ -222,14 +222,14 @@ class Test2 {
     );
 
     assert_eq!(
-      vec!["Test1.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `string`."],
+      vec!["Test1.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `Str`."],
       service.get_error_strings(&test1_mod_ref)
     );
     assert_eq!(
       vec![
         "Test2.sam:2:17-2:22: [missing-export]: There is no `Test2` export in `Test1`.",
         "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:29-5:30: [incompatible-type]: Expected: `string`, actual: `int`.",
+        "Test2.sam:5:26-5:27: [incompatible-type]: Expected: `Str`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
     );
@@ -246,13 +246,13 @@ class Test2 {}
       .to_string(),
     )]);
     assert_eq!(
-      vec!["Test1.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `string`."],
+      vec!["Test1.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `Str`."],
       service.get_error_strings(&test1_mod_ref)
     );
     assert_eq!(
       vec![
         "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:29-5:30: [incompatible-type]: Expected: `string`, actual: `int`.",
+        "Test2.sam:5:26-5:27: [incompatible-type]: Expected: `Str`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
     );
@@ -272,7 +272,7 @@ class Test1 {
       vec![
         "Test2.sam:2:17-2:22: [missing-export]: There is no `Test2` export in `Test1`.",
         "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:29-5:30: [incompatible-type]: Expected: `string`, actual: `int`.",
+        "Test2.sam:5:26-5:27: [incompatible-type]: Expected: `Str`, actual: `int`.",
       ],
       service.get_error_strings(&test2_mod_ref)
     );
@@ -284,7 +284,7 @@ class Test1 {
 import { Test1, Test2 } from Test1
 
 class Test2 {
-  function test(): string = "haha"
+  function test(): Str = "haha"
 }
 "#
       .to_string(),
@@ -305,7 +305,7 @@ class Test2 {
 import { Test1 } from Test1
 
 class Test2 {
-  function test(): string = "haha"
+  function test(): Str = "haha"
 }
 "#
       .to_string(),

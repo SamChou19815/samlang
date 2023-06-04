@@ -1,5 +1,5 @@
 use crate::{
-  common::{PStr, INVALID_PSTR},
+  common::{well_known_pstrs, PStr, INVALID_PSTR},
   Heap,
 };
 use enum_as_inner::EnumAsInner;
@@ -9,14 +9,12 @@ use std::{cmp::Ordering, hash::Hash};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PrimitiveType {
   Int,
-  String,
 }
 
 impl ToString for PrimitiveType {
   fn to_string(&self) -> String {
     match self {
       PrimitiveType::Int => "int".to_string(),
-      PrimitiveType::String => "string".to_string(),
     }
   }
 }
@@ -80,7 +78,7 @@ impl Type {
     Type::Id(IdType { name, type_arguments })
   }
 
-  pub(crate) fn new_id_no_targs(name: PStr) -> Type {
+  pub(crate) const fn new_id_no_targs(name: PStr) -> Type {
     Type::Id(IdType { name, type_arguments: vec![] })
   }
 
@@ -93,7 +91,8 @@ impl Type {
 }
 
 pub(crate) const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
-pub(crate) const STRING_TYPE: Type = Type::Primitive(PrimitiveType::String);
+pub(crate) const STRING_TYPE: Type = Type::new_id_no_targs(well_known_pstrs::UNDERSCORE_STR);
+pub(crate) const STRING_TYPE_REF: &Type = &Type::new_id_no_targs(well_known_pstrs::UNDERSCORE_STR);
 
 #[derive(Debug, Clone)]
 pub(crate) struct ClosureTypeDefinition {
@@ -287,7 +286,7 @@ impl Expression {
   pub(crate) fn type_(&self) -> &Type {
     match self {
       Expression::IntLiteral(_) => &INT_TYPE,
-      Expression::StringName(_) => &STRING_TYPE,
+      Expression::StringName(_) => STRING_TYPE_REF,
       Expression::Variable(v) => &v.type_,
     }
   }

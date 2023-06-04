@@ -2,31 +2,20 @@ use super::{
   common_names,
   hir::{GlobalVariable, Operator},
 };
-use crate::common::{Heap, PStr};
+use crate::common::{well_known_pstrs, Heap, PStr};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PrimitiveType {
   Int,
-  String,
   Any,
-}
-
-impl PrimitiveType {
-  fn normalize_for_comparison(&self) -> PrimitiveType {
-    match self {
-      PrimitiveType::String => PrimitiveType::Any,
-      t => *t,
-    }
-  }
 }
 
 impl ToString for PrimitiveType {
   fn to_string(&self) -> String {
     match self {
       PrimitiveType::Int => "number".to_string(),
-      PrimitiveType::String => "Str".to_string(),
       PrimitiveType::Any => "any".to_string(),
     }
   }
@@ -79,9 +68,7 @@ impl Type {
 
   pub(crate) fn is_the_same_type(&self, other: &Type) -> bool {
     match (self, other) {
-      (Type::Primitive(k1), Type::Primitive(k2)) => {
-        k1.normalize_for_comparison() == k2.normalize_for_comparison()
-      }
+      (Type::Primitive(k1), Type::Primitive(k2)) => k1 == k2,
       (Type::Id(n1), Type::Id(n2)) => n1 == n2,
       (Type::Fn(f1), Type::Fn(f2)) => {
         f1.return_type.is_the_same_type(&f2.return_type)
@@ -98,7 +85,7 @@ impl Type {
 }
 
 pub(crate) const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
-pub(crate) const STRING_TYPE: Type = Type::Primitive(PrimitiveType::String);
+pub(crate) const STRING_TYPE: Type = Type::Id(well_known_pstrs::UNDERSCORE_STR);
 pub(crate) const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
 
 #[derive(Debug, Clone, EnumAsInner)]
@@ -435,12 +422,11 @@ impl Sources {
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     let mut collector = vec![];
     collector.push(format!(
-      r#"type Str = [number, string];
-const {} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const {} = (_: number, [, line]: Str): number => {{ console.log(line); return 0; }};
-const {} = (_: number, [, v]: Str): number => parseInt(v, 10);
-const {} = (_: number, v: number): Str => [1, String(v)];
-const {} = (_: number, [, v]: Str): number => {{ throw Error(v); }};
+      r#"const {} = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
+const {} = (_: number, [, line]: _Str): number => {{ console.log(line); return 0; }};
+const {} = (_: number, [, v]: _Str): number => parseInt(v, 10);
+const {} = (_: number, v: number): _Str => [1, String(v)];
+const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
 "#,
       common_names::encoded_fn_name_string_concat(),
@@ -453,7 +439,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
 
     for v in &self.global_variables {
       collector.push(format!(
-        "const {}: Str = [0, `{}`];\n",
+        "const {}: _Str = [0, `{}`];\n",
         v.name.as_str(heap),
         v.content.as_str(heap)
       ));

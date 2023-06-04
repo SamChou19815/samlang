@@ -8,6 +8,7 @@ use crate::{
   },
   common::{well_known_pstrs, Heap, PStr},
   errors::ErrorSet,
+  ModuleReference,
 };
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
@@ -61,6 +62,7 @@ impl SsaLocalStackedContext {
 }
 
 struct SsaAnalysisState<'a> {
+  module_reference: ModuleReference,
   unbound_names: HashSet<PStr>,
   invalid_defines: HashSet<Location>,
   use_define_map: HashMap<Location, Location>,
@@ -72,8 +74,9 @@ struct SsaAnalysisState<'a> {
 }
 
 impl<'a> SsaAnalysisState<'a> {
-  fn new(error_set: &'a mut ErrorSet) -> SsaAnalysisState<'a> {
+  fn new(module_reference: ModuleReference, error_set: &'a mut ErrorSet) -> SsaAnalysisState<'a> {
     SsaAnalysisState {
+      module_reference,
       unbound_names: HashSet::new(),
       invalid_defines: HashSet::new(),
       use_define_map: HashMap::new(),
@@ -328,9 +331,11 @@ impl<'a> SsaAnalysisState<'a> {
 
   fn visit_id_annot(
     &mut self,
-    annotation::Id { location, module_reference: _, id, type_arguments }: &annotation::Id,
+    annotation::Id { location, module_reference, id, type_arguments }: &annotation::Id,
   ) {
-    self.use_id(&id.name, *location);
+    if self.module_reference.eq(module_reference) {
+      self.use_id(&id.name, *location);
+    }
     for targ in type_arguments {
       self.visit_annot(targ);
     }
@@ -371,7 +376,7 @@ impl<'a> SsaAnalysisState<'a> {
       self.use_define_map.insert(loc, *definition);
     } else {
       self.unbound_names.insert(*name);
-      self.error_set.report_cannot_unresolve_name_error(loc, *name);
+      self.error_set.report_cannot_resolve_name_error(loc, *name);
     }
   }
 }
@@ -438,19 +443,21 @@ impl SsaAnalysisResult {
 }
 
 pub(super) fn perform_ssa_analysis_on_expression(
+  module_reference: ModuleReference,
   expression: &expr::E<()>,
   error_set: &mut ErrorSet,
 ) -> SsaAnalysisResult {
-  let mut state = SsaAnalysisState::new(error_set);
+  let mut state = SsaAnalysisState::new(module_reference, error_set);
   state.visit_expression(expression);
   SsaAnalysisResult::from(state)
 }
 
 pub(crate) fn perform_ssa_analysis_on_module(
+  module_reference: ModuleReference,
   module: &Module<()>,
   error_set: &mut ErrorSet,
 ) -> SsaAnalysisResult {
-  let mut state = SsaAnalysisState::new(error_set);
+  let mut state = SsaAnalysisState::new(module_reference, error_set);
   state.visit_module(module);
   SsaAnalysisResult::from(state)
 }

@@ -130,7 +130,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     assert_eq!("int", INT_TYPE.pretty_print(heap));
-    assert_eq!("string", STRING_TYPE.pretty_print(heap));
+    assert_eq!("_Str", STRING_TYPE.pretty_print(heap));
     assert_eq!("0", ZERO.clone().debug_print(heap));
     ZERO.dump_to_string();
     Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE).dump_to_string();

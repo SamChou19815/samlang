@@ -35,7 +35,7 @@ mod tests {
 class Main {
   function main(): unit = {
     val a: int = Builtins.stringToInt("3");
-    val b: string = Builtins.intToString(3);
+    val b: Str = Builtins.intToString(3);
     val c: unit = Builtins.println("3");
     val d: Main = Builtins.panic("3");
   }
@@ -156,7 +156,7 @@ class Main {
         test_name: "hello-world",
         source_code: r#"
 class Main {
-  function main(): string = "Hello World!"
+  function main(): Str = "Hello World!"
 }
 "#,
       },
@@ -330,20 +330,20 @@ class Main {
       CheckerTestSource {
         test_name: "overengineered-helloworld",
         source_code: r#"
-class HelloWorld(val message: string) {
-  private method getMessage(): string = {
+class HelloWorld(val message: Str) {
+  private method getMessage(): Str = {
     val { message } = this;
     message
   }
 
-  function getGlobalMessage(): string = {
+  function getGlobalMessage(): Str = {
     val hw = HelloWorld.init("Hello World!");
     hw.getMessage()
   }
 }
 
 class Main {
-  function main(): string = HelloWorld.getGlobalMessage()
+  function main(): Str = HelloWorld.getGlobalMessage()
 }
 "#,
       },
@@ -351,14 +351,14 @@ class Main {
         test_name: "overengineered-helloworld-2",
         source_code: r#"
 class NewYear2019<T>(val message: T) {
-  function create(): NewYear2019<string> = NewYear2019.init("Hello World!")
+  function create(): NewYear2019<Str> = NewYear2019.init("Hello World!")
   method getMessage(): T = {
     val { message as msg } = this; msg
   }
 }
 
 class Main {
-  function main(): string = NewYear2019.create().getMessage()
+  function main(): Str = NewYear2019.create().getMessage()
 }
 "#,
       },
@@ -391,14 +391,14 @@ class Option<T>(Some(T), None) {
 }
 
 class Main {
-  function main(): Option<string> = Option.none<string>().toSome("hi")
-  function main2(): Option<string> = {
-    val a = Option.none<string>();
+  function main(): Option<Str> = Option.none<Str>().toSome("hi")
+  function main2(): Option<Str> = {
+    val a = Option.none<Str>();
     a.toSome("hi")
   }
 
-  function main3(): Option<string> = {
-    val a: Option<string> = Option.none();
+  function main3(): Option<Str> = {
+    val a: Option<Str> = Option.none();
     a.toSome("hi")
   }
 }
@@ -415,8 +415,8 @@ class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
     List.Cons(Pair.init(t, this,))
 }
 class Developer(
-  val name: string, val github: string,
-  val projects: List<string>,
+  val name: Str, val github: Str,
+  val projects: List<Str>,
 ) {
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...");
@@ -482,7 +482,7 @@ class Main {
         test_name: "undefined-variable",
         source_code: r#"
 class Main {
-  function main(): string = helloWorld
+  function main(): Str = helloWorld
 }
 "#,
       },
@@ -533,13 +533,13 @@ class Main {
       "insufficient-type-info.sam:5:13-5:47: [underconstrained]: There is not enough context information to decide the type of this expression.",
       "insufficient-type-info-none.sam:8:13-8:26: [underconstrained]: There is not enough context information to decide the type of this expression.",
       "invalid-property-declaration-syntax.sam:2:12-2:13: [invalid-syntax]: Expected: val, actual: a.",
-      "multiple-type-errors.sam:3:35-3:40: [incompatible-type]: Expected: `int`, actual: `string`.",
-      "multiple-type-errors.sam:3:43-3:48: [incompatible-type]: Expected: `int`, actual: `string`.",
+      "multiple-type-errors.sam:3:35-3:40: [incompatible-type]: Expected: `int`, actual: `Str`.",
+      "multiple-type-errors.sam:3:43-3:48: [incompatible-type]: Expected: `int`, actual: `Str`.",
       "overflow-int.sam:3:26-3:56: [invalid-syntax]: Not a 32-bit integer.",
       "simple-mismatch.sam:4:30-4:34: [incompatible-type]: Expected: `int`, actual: `bool`.",
       "undefined-type.sam:3:20-3:30: [cannot-resolve-name]: Name `HelloWorld` is not resolved.",
       "undefined-type.sam:3:33-3:34: [incompatible-type]: Expected: `HelloWorld`, actual: `int`.",
-      "undefined-variable.sam:3:29-3:39: [cannot-resolve-name]: Name `helloWorld` is not resolved.",
+      "undefined-variable.sam:3:26-3:36: [cannot-resolve-name]: Name `helloWorld` is not resolved.",
     ];
 
     let heap = &mut Heap::new();
@@ -677,7 +677,7 @@ class Main {
         expected_std: "OK\n",
         source_code: r#"
 class Main {
-  function crash(a: string, b: string): unit = {
+  function crash(a: Str, b: Str): unit = {
     val _ = Builtins.println("different:");
     val _ = Builtins.println("a:");
     val _ = Builtins.println(a);
@@ -689,7 +689,7 @@ class Main {
   function checkInt(a: int, b: int): unit =
     if (a == b) then {} else Main.crash(Builtins.intToString(a), Builtins.intToString(b))
 
-  function boolToString(b: bool): string =
+  function boolToString(b: bool): Str =
     if (b) then "true" else "false"
 
   function checkBool(a: bool, b: bool): unit =
@@ -906,8 +906,8 @@ class Math {
   function cosine(angleInDegree: int): int = Builtins.panic("Not supported!")
 }
 
-class Student(val name: string, val age: int) {
-  method getName(): string = this.name
+class Student(val name: Str, val age: int) {
+  method getName(): Str = this.name
   method getAge(): int = this.age
   function dummyStudent(): Student = Student.init("RANDOM_BABY", 0)
 }
@@ -915,7 +915,7 @@ class Student(val name: string, val age: int) {
 class PrimitiveType(
   U(bool),
   I(int),
-  S(string),
+  S(Str),
   B(bool)
 ) {
   // some random functions
@@ -962,13 +962,13 @@ class Option<T>(None, Some(T)) {
 
 class Main {
 
-  private function assertTrue(condition: bool, message: string): unit =
+  private function assertTrue(condition: bool, message: Str): unit =
     if (condition) then {} else Builtins.panic(message)
 
-  private function assertFalse(condition: bool, message: string): unit =
+  private function assertFalse(condition: bool, message: Str): unit =
     if (!condition) then {} else Builtins.panic(message)
 
-  private function assertEquals(e1: int, e2: int, message: string): unit =
+  private function assertEquals(e1: int, e2: int, message: Str): unit =
     if (e1 == e2) then {} else Builtins.panic(Builtins.intToString(e1)::" "::Builtins.intToString(e2)::" "::message)
 
   private function consistencyTest(): unit = {
@@ -1108,7 +1108,7 @@ class Main {
   }
 
   // return the string back, print str
-  function stringIdentity(str: string): string = {
+  function stringIdentity(str: Str): Str = {
     val _ = Builtins.println("surprise!");
     str
   }
@@ -1630,7 +1630,7 @@ class Option<T>(Some(T), None(bool)) {
       Some(t) -> Option.Some(f(t)),
     }
   function test(): unit = {
-    val _ = match (Option.None<(string) -> int>(false)) {
+    val _ = match (Option.None<(Str) -> int>(false)) {
       None(_) -> "",
       Some(f) -> Builtins.intToString(f("")),
     };
@@ -1658,7 +1658,7 @@ class Main {
     val _ = {};
   }
 
-  function variables(a: int, b: string): unit = {
+  function variables(a: int, b: Str): unit = {
     val c = 3 + a;
     val d = b == b;
     val e = c % c;
@@ -1667,7 +1667,7 @@ class Main {
   function methodAndFunctionReference(): int =
     Clazz.of().thisTest()
 
-  function panicTest(reason: string): Clazz = Builtins.panic(reason)
+  function panicTest(reason: Str): Clazz = Builtins.panic(reason)
 
   function functionsTest(): unit = {
     val _ = Main.literalsAndSimpleExpressions();
@@ -1687,7 +1687,7 @@ class Main {
     val e: bool = List.of(3) == List.of(a * 3);
   }
 
-  function lambdaTest(a: int): string = {
+  function lambdaTest(a: int): Str = {
     val b = Option.none<int>().toSome(3).map(Main.lambdaTest);
     val c = Option.none<int>().toSome(3).map((x) -> "empty");
     "hello world"
