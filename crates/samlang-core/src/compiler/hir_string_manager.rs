@@ -24,7 +24,8 @@ impl StringManager {
       *existing
     } else {
       let v = GlobalVariable {
-        name: heap.alloc_string(format!("GLOBAL_STRING_{}", str.opaque_id())),
+        name: heap
+          .alloc_string(format!("GLOBAL_STRING_{}", self.global_variable_reference_map.len())),
         content: str,
       };
       self.global_variable_reference_map.insert(str, v);

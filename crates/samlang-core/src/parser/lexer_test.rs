@@ -15,7 +15,7 @@ mod tests {
     assert!(Keyword::MATCH == Keyword::MATCH.clone());
     assert!(TokenOp::EQ == TokenOp::EQ.clone());
     assert_eq!(
-      "__DUMMY__.sam:0:0-0:0: as",
+      "DUMMY.sam:0:0-0:0: as",
       Token(Location::dummy(), TokenContent::Keyword(Keyword::AS).clone())
         .clone()
         .pretty_print(&heap)

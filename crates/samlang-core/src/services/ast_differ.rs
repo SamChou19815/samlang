@@ -514,7 +514,7 @@ mod tests {
       imported_module_loc: Location::dummy(),
     };
     assert_eq!(
-      "import { A } from __DUMMY__;",
+      "import { A } from DUMMY;",
       Change::Replace(DiffNode::Import(&import), DiffNode::Import(&import))
         .to_edit(heap, &CommentStore::new())
         .1

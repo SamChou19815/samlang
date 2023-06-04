@@ -191,7 +191,7 @@ pub(super) fn solve_type_arguments(
   );
   generic_type_parameters
     .iter()
-    .map(|it| solved.remove(it).expect(&format!("Unsolved parameter <{}>", it.opaque_id())))
+    .map(|it| solved.remove(it).expect(&format!("Unsolved parameter <{}>", it.debug_string())))
     .collect_vec()
 }
 
@@ -332,8 +332,9 @@ impl TypeLoweringManager {
     identifier: PStr,
     source_type_def: &source::TypeDefinition,
   ) -> Vec<TypeDefinition> {
-    let type_parameters =
-      Vec::from_iter(self.generic_types.iter().cloned().sorted_by_key(|ps| ps.as_str(heap)));
+    let type_parameters = Vec::from_iter(
+      self.generic_types.iter().cloned().sorted_by(|x, y| x.as_str(heap).cmp(y.as_str(heap))),
+    );
     match source_type_def {
       source::TypeDefinition::Struct { loc: _, fields } => {
         let mut names = vec![];
@@ -712,7 +713,7 @@ mod tests {
         .join("")
     );
 
-    assert_eq!("__DUMMY___A<int>", {
+    assert_eq!("DUMMY_A<int>", {
       let t = builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]);
       manager.lower_source_type(heap, &t).pretty_print(heap)
     });

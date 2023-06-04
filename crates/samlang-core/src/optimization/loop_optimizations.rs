@@ -471,29 +471,29 @@ mod tests {
     assert_loop_optimized(
       optimizable_loop_1(heap),
       heap,
-      "let cast = 0 as int;\nlet _t8 = 10 * 10;\nlet bc = (_t8: int) + 0;",
+      "let cast = 0 as int;\nlet _t0 = 10 * 10;\nlet bc = (_t0: int) + 0;",
     );
 
     let heap = &mut Heap::new();
     assert_loop_optimized(
       optimizable_loop_2(heap),
       heap,
-      r#"let _t7 = 1 * 0;
-let _t8 = (_t7: int) + 11;
-let _t9 = 10 * 1;
-let _t10 = (_t9: int) + 11;
+      r#"let _t0 = 1 * 0;
+let _t1 = (_t0: int) + 11;
+let _t2 = 10 * 1;
+let _t3 = (_t2: int) + 11;
 let j: int = 0;
-let tmp_j: int = (_t8: int);
+let tmp_j: int = (_t1: int);
 let bc: int;
 while (true) {
-  let _t12 = (tmp_j: int) >= (_t10: int);
-  if (_t12: int) {
+  let _t5 = (tmp_j: int) >= (_t3: int);
+  if (_t5: int) {
     bc = (j: int);
     break;
   }
-  let _t11 = (tmp_j: int) + 1;
+  let _t4 = (tmp_j: int) + 1;
   j = (tmp_j: int);
-  tmp_j = (_t11: int);
+  tmp_j = (_t4: int);
 }"#,
     );
 
@@ -501,28 +501,28 @@ while (true) {
     assert_loop_optimized(
       optimizable_loop_3(heap),
       heap,
-      r#"let _t9 = 1 * 0;
-let _t10 = (_t9: int) + 10;
-let _t11 = 1 * 0;
-let _t12 = (_t11: int) + 10;
+      r#"let _t0 = 1 * 0;
+let _t1 = (_t0: int) + 10;
+let _t2 = 1 * 0;
+let _t3 = (_t2: int) + 10;
 let j: int = 0;
 let i: int = 0;
-let tmp_j: int = (_t10: int);
-let tmp_k: int = (_t12: int);
+let tmp_j: int = (_t1: int);
+let tmp_k: int = (_t3: int);
 let bc: int;
 while (true) {
-  let _t16 = (i: int) >= 10;
-  if (_t16: int) {
+  let _t7 = (i: int) >= 10;
+  if (_t7: int) {
     bc = (j: int);
     break;
   }
-  let _t13 = (i: int) + 1;
-  let _t14 = (tmp_j: int) + 1;
-  let _t15 = (tmp_k: int) + 1;
+  let _t4 = (i: int) + 1;
+  let _t5 = (tmp_j: int) + 1;
+  let _t6 = (tmp_k: int) + 1;
   j = (tmp_j: int);
-  i = (_t13: int);
-  tmp_j = (_t14: int);
-  tmp_k = (_t15: int);
+  i = (_t4: int);
+  tmp_j = (_t5: int);
+  tmp_k = (_t6: int);
 }"#,
     );
 
@@ -578,16 +578,16 @@ while (true) {
 let i: int = 0;
 let bc: int;
 while (true) {
-  let _t9 = (i: int) < 10;
-  if (_t9: int) {
+  let _t1 = (i: int) < 10;
+  if (_t1: int) {
     bc = (j: int);
     break;
   }
-  let _t8 = (i: int) + (a: int);
-  let _t10 = (i: int) * 2;
-  let tmp_j = (_t10: int) + 0;
+  let _t0 = (i: int) + (a: int);
+  let _t2 = (i: int) * 2;
+  let tmp_j = (_t2: int) + 0;
   j = (tmp_j: int);
-  i = (_t8: int);
+  i = (_t0: int);
 }"#,
     );
 
@@ -639,19 +639,19 @@ while (true) {
         None,
       ),
       heap,
-      r#"let _t6 = 1 * 0;
-let _t7 = (_t6: int) + 11;
-let _t8 = 10 * 1;
-let _t9 = (_t8: int) + 11;
-let tmp_j: int = (_t7: int);
+      r#"let _t0 = 1 * 0;
+let _t1 = (_t0: int) + 11;
+let _t2 = 10 * 1;
+let _t3 = (_t2: int) + 11;
+let tmp_j: int = (_t1: int);
 while (true) {
-  let _t11 = (tmp_j: int) >= (_t9: int);
-  if (_t11: int) {
+  let _t5 = (tmp_j: int) >= (_t3: int);
+  if (_t5: int) {
     undefined = 0;
     break;
   }
-  let _t10 = (tmp_j: int) + 1;
-  tmp_j = (_t10: int);
+  let _t4 = (tmp_j: int) + 1;
+  tmp_j = (_t4: int);
 }"#,
     );
   }
@@ -699,14 +699,14 @@ while (true) {
 let tmp_j: int = 17;
 let bc: int;
 while (true) {
-  let _t12 = (tmp_j: int) >= 21;
-  if (_t12: int) {
+  let _t5 = (tmp_j: int) >= 21;
+  if (_t5: int) {
     bc = (j: int);
     break;
   }
-  let _t11 = (tmp_j: int) + 1;
+  let _t4 = (tmp_j: int) + 1;
   j = (tmp_j: int);
-  tmp_j = (_t11: int);
+  tmp_j = (_t4: int);
 }
 return (bc: int);"#,
     );
@@ -723,18 +723,18 @@ let tmp_j: int = 16;
 let tmp_k: int = 16;
 let bc: int;
 while (true) {
-  let _t16 = (i: int) >= 10;
-  if (_t16: int) {
+  let _t7 = (i: int) >= 10;
+  if (_t7: int) {
     bc = (j: int);
     break;
   }
-  let _t13 = (i: int) + 1;
-  let _t14 = (tmp_j: int) + 1;
-  let _t15 = (tmp_k: int) + 1;
+  let _t4 = (i: int) + 1;
+  let _t5 = (tmp_j: int) + 1;
+  let _t6 = (tmp_k: int) + 1;
   j = (tmp_j: int);
-  i = (_t13: int);
-  tmp_j = (_t14: int);
-  tmp_k = (_t15: int);
+  i = (_t4: int);
+  tmp_j = (_t5: int);
+  tmp_k = (_t6: int);
 }
 return (bc: int);"#,
     );
@@ -848,22 +848,22 @@ return (bc: int);"#,
       }],
       ZERO,
       heap,
-      r#"let _t10 = (init_i: int) * 3;
-let _t12 = (init_i: int) * 3;
-let _t13 = (_t12: int) + (a: int);
+      r#"let _t0 = (init_i: int) * 3;
+let _t2 = (init_i: int) * 3;
+let _t3 = (a: int) + (_t2: int);
 let i: int = (init_i: int);
-let j: int = (_t13: int);
+let j: int = (_t3: int);
 while (true) {
-  let _t16 = (L: int) <= (i: int);
-  if (_t16: int) {
+  let _t6 = (i: int) >= (L: int);
+  if (_t6: int) {
     undefined = 0;
     break;
   }
   f((j: int));
-  let _t14 = (i: int) + 2;
-  let _t15 = (j: int) + 6;
-  i = (_t14: int);
-  j = (_t15: int);
+  let _t4 = (i: int) + 2;
+  let _t5 = (j: int) + 6;
+  i = (_t4: int);
+  j = (_t5: int);
 }
 return 0;"#,
     );

@@ -303,8 +303,8 @@ impl Expression {
   pub(crate) fn dump_to_string(&self) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
-      Expression::StringName(n) => n.opaque_id().to_string(),
-      Expression::Variable(v) => v.name.opaque_id().to_string(),
+      Expression::StringName(n) => n.debug_string(),
+      Expression::Variable(v) => v.name.debug_string(),
     }
   }
 

@@ -120,7 +120,7 @@ impl ServerState {
     for (mod_ref, source_code) in updates {
       let parsed =
         parse_source_module_from_text(&source_code, mod_ref, &mut self.heap, &mut error_set);
-      self.global_cx.insert(mod_ref, build_module_signature(mod_ref, &parsed, &self.heap));
+      self.global_cx.insert(mod_ref, build_module_signature(mod_ref, &parsed));
       self.parsed_modules.insert(mod_ref, parsed);
     }
     self.dep_graph = DependencyGraph::new(&self.parsed_modules);

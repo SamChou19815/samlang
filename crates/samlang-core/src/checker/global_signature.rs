@@ -11,7 +11,7 @@ use crate::{
     source::{Module, Toplevel, TypeDefinition},
     Reason,
   },
-  common::{Heap, ModuleReference, PStr},
+  common::{well_known_pstrs, Heap, ModuleReference, PStr},
 };
 use itertools::Itertools;
 use std::{
@@ -22,7 +22,6 @@ use std::{
 pub(crate) fn build_module_signature(
   module_reference: ModuleReference,
   module: &Module<()>,
-  heap: &Heap,
 ) -> ModuleSignature {
   let mut interfaces = HashMap::new();
   for toplevel in &module.toplevels {
@@ -72,7 +71,7 @@ pub(crate) fn build_module_signature(
           };
           functions.insert(
             // init string should be pre-allocated during builtin_cx init
-            heap.get_allocated_str_opt("init").unwrap(),
+            well_known_pstrs::INIT,
             ctor_fn,
           );
           Some(TypeDefinitionSignature::Struct(
@@ -142,13 +141,12 @@ pub(crate) fn build_module_signature(
 
 pub(crate) fn build_global_signature(
   sources: &HashMap<ModuleReference, Module<()>>,
-  heap: &Heap,
   builtin_module_types: ModuleSignature,
 ) -> GlobalSignature {
   let mut global_cx = HashMap::new();
   global_cx.insert(ModuleReference::root(), builtin_module_types);
   for (module_reference, module) in sources {
-    global_cx.insert(*module_reference, build_module_signature(*module_reference, module, heap));
+    global_cx.insert(*module_reference, build_module_signature(*module_reference, module));
   }
   global_cx
 }
@@ -430,7 +428,6 @@ interface Hiya {}
     let builtin_cx = create_builtin_module_signature(heap);
     let global_cx = super::build_global_signature(
       &HashMap::from([(ModuleReference::dummy(), module)]),
-      heap,
       builtin_cx,
     );
     assert_eq!(2, global_cx.len());
@@ -446,9 +443,9 @@ methods:
 foo2: public <T>(int) -> int
 Foo2: class(A(string), B(int))  : [Bar]
 functions:
-foo1: public (int) -> int
 A: public (string) -> Foo2
 B: public (int) -> Foo2
+foo1: public (int) -> int
 methods:
 foo2: public <T>(int) -> int
 Hiya: interface  : []
@@ -497,11 +494,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       parse_source_module_from_text(source_code, ModuleReference::dummy(), heap, &mut error_set);
     assert_eq!("", error_set.error_messages(heap).join("\n"));
     let builtin_cx = create_builtin_module_signature(heap);
-    super::build_global_signature(
-      &HashMap::from([(ModuleReference::dummy(), module)]),
-      heap,
-      builtin_cx,
-    )
+    super::build_global_signature(&HashMap::from([(ModuleReference::dummy(), module)]), builtin_cx)
   }
 
   #[test]
@@ -609,7 +602,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         true,
       )
       .into_iter()
-      .map(|p| p.as_str(heap))
+      .map(|p| p.as_str(heap).to_string())
       .sorted()
       .collect_vec()
     );

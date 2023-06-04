@@ -32,7 +32,7 @@ pub(crate) fn type_check_sources(
   error_set: &mut ErrorSet,
 ) -> (HashMap<ModuleReference, Module<std::rc::Rc<type_::Type>>>, type_::GlobalSignature) {
   let builtin_cx = type_::create_builtin_module_signature(heap);
-  let global_cx = global_signature::build_global_signature(sources, heap, builtin_cx);
+  let global_cx = global_signature::build_global_signature(sources, builtin_cx);
   let mut checked_sources = HashMap::new();
   for (module_reference, module) in sources {
     let (checked, _) = type_check_module(*module_reference, module, &global_cx, heap, error_set);

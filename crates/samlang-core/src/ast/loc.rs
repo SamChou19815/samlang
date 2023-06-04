@@ -92,8 +92,8 @@ mod tests {
   #[test]
   fn location_to_string_tests() {
     let heap = Heap::new();
-    assert_eq!("__DUMMY__.sam:0:0-0:0", Location::dummy().pretty_print(&heap));
-    assert_eq!("__DUMMY__.sam:2:2-3:5", Location::from_pos(1, 1, 2, 4).pretty_print(&heap));
+    assert_eq!("DUMMY.sam:0:0-0:0", Location::dummy().pretty_print(&heap));
+    assert_eq!("DUMMY.sam:2:2-3:5", Location::from_pos(1, 1, 2, 4).pretty_print(&heap));
   }
 
   #[test]

@@ -6,7 +6,7 @@ use crate::{
     },
     Location,
   },
-  common::{Heap, PStr},
+  common::{well_known_pstrs, Heap, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -85,7 +85,7 @@ impl<'a> SsaAnalysisState<'a> {
     }
   }
 
-  fn visit_module(&mut self, heap: &Heap, module: &Module<()>) {
+  fn visit_module(&mut self, module: &Module<()>) {
     for import in &module.imports {
       for member in &import.imported_members {
         self.define_id(member.name, member.loc);
@@ -156,10 +156,7 @@ impl<'a> SsaAnalysisState<'a> {
         // Visit instance methods
         self.context.push_scope();
         if type_definition.is_some() {
-          // If this is not allocated, then this is never used, so omitting its define is safe.
-          if let Some(this_string) = heap.get_allocated_str_opt("this") {
-            self.define_id(this_string, toplevel.loc());
-          }
+          self.define_id(well_known_pstrs::THIS, toplevel.loc());
         }
         for tparam in type_parameters {
           let id = &tparam.name;
@@ -451,10 +448,9 @@ pub(super) fn perform_ssa_analysis_on_expression(
 
 pub(crate) fn perform_ssa_analysis_on_module(
   module: &Module<()>,
-  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> SsaAnalysisResult {
   let mut state = SsaAnalysisState::new(error_set);
-  state.visit_module(heap, module);
+  state.visit_module(module);
   SsaAnalysisResult::from(state)
 }

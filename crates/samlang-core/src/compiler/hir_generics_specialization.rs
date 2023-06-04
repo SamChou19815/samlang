@@ -870,6 +870,14 @@ closure type CC_int_string = (int) -> string
 object type J = [int]
 variant type I_int_string
 variant type I_string_string
+function _I$bar(a: I_int_string): int {
+  return 0;
+}
+
+function _J$bar(a: J): int {
+  return 0;
+}
+
 function main(): int {
   let finalV: int;
   if 1 {
@@ -890,14 +898,6 @@ function main(): int {
     let c2: CC_int_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };
     finalV = (v2: int);
   }
-  return 0;
-}
-
-function _I$bar(a: I_int_string): int {
-  return 0;
-}
-
-function _J$bar(a: J): int {
   return 0;
 }
 

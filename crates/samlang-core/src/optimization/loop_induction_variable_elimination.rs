@@ -445,11 +445,11 @@ mod tests {
 
     assert_eq!(
       vec![
-        "let _t4 = 3 * 1;",
-        "let _t5 = (_t4: int) + 5;",
-        "let _t6 = 10 * 3;",
-        "let _t7 = (_t6: int) + 5;",
-        "{name: tmp_j, initial_value: (_t5: int), increment_amount: 6, guard_operator: LT, guard_expression: (_t7: int)}",
+        "let _t0 = 3 * 1;",
+        "let _t1 = (_t0: int) + 5;",
+        "let _t2 = 10 * 3;",
+        "let _t3 = (_t2: int) + 5;",
+        "{name: tmp_j, initial_value: (_t1: int), increment_amount: 6, guard_operator: LT, guard_expression: (_t3: int)}",
       ],
       optimized
         .prefix_statements
@@ -503,11 +503,11 @@ mod tests {
 
     assert_eq!(
       vec![
-        "let _t5 = (a: int) * 1;",
-        "let _t6 = (_t5: int) + 5;",
-        "let _t7 = (a: int) * 10;",
-        "let _t8 = (_t7: int) + 5;",
-        "{name: tmp_j, initial_value: (_t6: int), increment_amount: (a: int), guard_operator: LT, guard_expression: (_t8: int)}",
+        "let _t0 = (a: int) * 1;",
+        "let _t1 = (_t0: int) + 5;",
+        "let _t2 = (a: int) * 10;",
+        "let _t3 = (_t2: int) + 5;",
+        "{name: tmp_j, initial_value: (_t1: int), increment_amount: (a: int), guard_operator: LT, guard_expression: (_t3: int)}",
       ],
       optimized.prefix_statements
         .iter()
@@ -559,11 +559,11 @@ mod tests {
 
     assert_eq!(
       vec![
-        "let _t5 = 1 * 1;",
-        "let _t6 = (_t5: int) + 5;",
-        "let _t7 = 10 * 1;",
-        "let _t8 = (_t7: int) + 5;",
-        "{name: tmp_j, initial_value: (_t6: int), increment_amount: (a: int), guard_operator: LT, guard_expression: (_t8: int)}",
+        "let _t0 = 1 * 1;",
+        "let _t1 = (_t0: int) + 5;",
+        "let _t2 = 10 * 1;",
+        "let _t3 = (_t2: int) + 5;",
+        "{name: tmp_j, initial_value: (_t1: int), increment_amount: (a: int), guard_operator: LT, guard_expression: (_t3: int)}",
       ],
       optimized.prefix_statements
         .iter()

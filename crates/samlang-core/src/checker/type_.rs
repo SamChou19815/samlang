@@ -3,7 +3,7 @@ use crate::{
     source::{annotation, TypeParameter},
     Location, Reason,
   },
-  common::PStr,
+  common::{well_known_pstrs, PStr},
   Heap, ModuleReference,
 };
 use enum_as_inner::EnumAsInner;
@@ -378,20 +378,19 @@ impl MemberSignature {
 
 impl MemberSignature {
   fn create_custom_builtin_function(
-    heap: &mut Heap,
-    name: &'static str,
+    name: PStr,
     is_public: bool,
     argument_types: Vec<Rc<Type>>,
     return_type: Rc<Type>,
-    type_parameters: Vec<&'static str>,
+    type_parameters: Vec<PStr>,
   ) -> (PStr, MemberSignature) {
     (
-      heap.alloc_str_permanent(name),
+      name,
       MemberSignature {
         is_public,
         type_parameters: type_parameters
           .into_iter()
-          .map(|name| TypeParameterSignature { name: heap.alloc_str_permanent(name), bound: None })
+          .map(|name| TypeParameterSignature { name, bound: None })
           .collect_vec(),
         type_: FunctionType { reason: Reason::builtin(), argument_types, return_type },
       },
@@ -399,14 +398,12 @@ impl MemberSignature {
   }
 
   pub(super) fn create_builtin_function(
-    heap: &mut Heap,
-    name: &'static str,
+    name: PStr,
     argument_types: Vec<Rc<Type>>,
     return_type: Rc<Type>,
-    type_parameters: Vec<&'static str>,
+    type_parameters: Vec<PStr>,
   ) -> (PStr, MemberSignature) {
     MemberSignature::create_custom_builtin_function(
-      heap,
       name,
       true,
       argument_types,
@@ -416,14 +413,12 @@ impl MemberSignature {
   }
 
   pub(super) fn create_private_builtin_function(
-    heap: &mut Heap,
-    name: &'static str,
+    name: PStr,
     argument_types: Vec<Rc<Type>>,
     return_type: Rc<Type>,
-    type_parameters: Vec<&'static str>,
+    type_parameters: Vec<PStr>,
   ) -> (PStr, MemberSignature) {
     MemberSignature::create_custom_builtin_function(
-      heap,
       name,
       false,
       argument_types,
@@ -547,9 +542,6 @@ impl ModuleSignature {
 }
 
 pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignature {
-  heap.alloc_str_permanent("init");
-  heap.alloc_str_permanent("this");
-  let str_t = heap.alloc_str_permanent("T");
   ModuleSignature {
     interfaces: HashMap::from([(
       heap.alloc_str_permanent("Builtins"),
@@ -560,32 +552,28 @@ pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignatur
         methods: HashMap::new(),
         functions: HashMap::from([
           MemberSignature::create_builtin_function(
-            heap,
-            "stringToInt",
+            heap.alloc_str_permanent("stringToInt"),
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
             Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
             vec![],
           ),
           MemberSignature::create_builtin_function(
-            heap,
-            "intToString",
+            heap.alloc_str_permanent("intToString"),
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
             Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
             vec![],
           ),
           MemberSignature::create_builtin_function(
-            heap,
-            "println",
+            heap.alloc_str_permanent("println"),
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
             Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
             vec![],
           ),
           MemberSignature::create_builtin_function(
-            heap,
-            "panic",
+            heap.alloc_str_permanent("panic"),
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
-            Rc::new(Type::Generic(Reason::builtin(), str_t)),
-            vec!["T"],
+            Rc::new(Type::Generic(Reason::builtin(), well_known_pstrs::UPPER_T)),
+            vec![well_known_pstrs::UPPER_T],
           ),
         ]),
       },
@@ -727,10 +715,10 @@ mod type_tests {
       r#"
 class()  : []
 functions:
+panic: public <T>(string) -> T
 stringToInt: public (string) -> int
 intToString: public (int) -> string
 println: public (string) -> unit
-panic: public <T>(string) -> T
 methods:
 
 "#
@@ -825,8 +813,7 @@ m2: public () -> any
     assert_eq!(
       "private a() -> bool",
       MemberSignature::create_private_builtin_function(
-        &mut heap,
-        "a",
+        well_known_pstrs::LOWER_A,
         vec![],
         builder.bool_type(),
         vec![]
@@ -836,9 +823,14 @@ m2: public () -> any
     );
     assert_eq!(
       "public a() -> bool",
-      MemberSignature::create_builtin_function(&mut heap, "a", vec![], builder.bool_type(), vec![])
-        .1
-        .pretty_print("a", &heap)
+      MemberSignature::create_builtin_function(
+        well_known_pstrs::LOWER_A,
+        vec![],
+        builder.bool_type(),
+        vec![]
+      )
+      .1
+      .pretty_print("a", &heap)
     );
   }
 
@@ -848,7 +840,7 @@ m2: public () -> any
     let builder = test_type_builder::create();
 
     assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
+      "DUMMY.sam:2:3-4:5",
       builder
         .int_type()
         .reposition(Location::from_pos(1, 2, 3, 4))
@@ -857,7 +849,7 @@ m2: public () -> any
         .pretty_print(&Heap::new())
     );
     assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
+      "DUMMY.sam:2:3-4:5",
       builder
         .simple_nominal_type(heap.alloc_str_for_test("I"))
         .reposition(Location::from_pos(1, 2, 3, 4))
@@ -866,7 +858,7 @@ m2: public () -> any
         .pretty_print(&Heap::new())
     );
     assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
+      "DUMMY.sam:2:3-4:5",
       builder
         .general_nominal_type(heap.alloc_str_for_test("I"), vec![builder.unit_type()])
         .reposition(Location::from_pos(1, 2, 3, 4))
@@ -875,7 +867,7 @@ m2: public () -> any
         .pretty_print(&Heap::new())
     );
     assert_eq!(
-      "__DUMMY__.sam:2:3-4:5",
+      "DUMMY.sam:2:3-4:5",
       builder
         .fun_type(vec![], builder.unit_type())
         .reposition(Location::from_pos(1, 2, 3, 4))
