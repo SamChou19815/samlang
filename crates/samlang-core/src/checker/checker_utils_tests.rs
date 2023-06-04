@@ -24,7 +24,7 @@ mod tests {
 
     assert_eq!(meet(&builder.unit_type(), &builder.unit_type(), heap), "unit");
     assert_eq!(meet(&builder.unit_type(), &builder.int_type(), heap), "FAILED_MEET");
-    assert_eq!(meet(&Type::Any(Reason::dummy(), false), &builder.string_type(), heap), "string");
+    assert_eq!(meet(&Type::Any(Reason::dummy(), false), &builder.string_type(), heap), "Str");
     assert_eq!(
       meet(&builder.unit_type(), &builder.simple_nominal_type(heap.alloc_str_for_test("A")), heap),
       "FAILED_MEET"

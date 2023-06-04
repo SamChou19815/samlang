@@ -15,7 +15,7 @@ import { MathFunctions } from tests.MathFunctions;
 import { PrintHelloWorld } from tests.PrintHelloWorld;
 import { SortableListTest } from tests.SortableList;
 
-class TestCase(val name: string, val runner: () -> unit) {
+class TestCase(val name: Str, val runner: () -> unit) {
   method run(): unit = {
     val { name, runner } = this;
     val _ = Builtins.println("========================================");

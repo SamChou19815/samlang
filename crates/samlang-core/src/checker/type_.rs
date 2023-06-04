@@ -15,7 +15,6 @@ pub(crate) enum PrimitiveTypeKind {
   Unit,
   Bool,
   Int,
-  String,
 }
 
 impl ToString for PrimitiveTypeKind {
@@ -24,7 +23,6 @@ impl ToString for PrimitiveTypeKind {
       Self::Unit => "unit".to_string(),
       Self::Bool => "bool".to_string(),
       Self::Int => "int".to_string(),
-      Self::String => "string".to_string(),
     }
   }
 }
@@ -187,9 +185,6 @@ impl Type {
   pub(crate) fn int_type(reason: Reason) -> Type {
     Type::Primitive(reason, PrimitiveTypeKind::Int)
   }
-  pub(crate) fn string_type(reason: Reason) -> Type {
-    Type::Primitive(reason, PrimitiveTypeKind::String)
-  }
 
   pub(crate) fn get_reason(&self) -> &Reason {
     match self {
@@ -239,9 +234,6 @@ impl Type {
       }
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Int) => {
         Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::Int)
-      }
-      annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::String) => {
-        Type::Primitive(Reason::new(*loc, Some(*loc)), PrimitiveTypeKind::String)
       }
       annotation::T::Primitive(loc, _, annotation::PrimitiveTypeKind::Any) => {
         Type::Any(Reason::new(*loc, Some(*loc)), false)
@@ -308,8 +300,15 @@ pub(crate) mod test_type_builder {
     pub(crate) fn int_type(&self) -> Rc<Type> {
       Rc::new(Type::int_type(self.reason))
     }
+
     pub(crate) fn string_type(&self) -> Rc<Type> {
-      Rc::new(Type::string_type(self.reason))
+      Rc::new(Type::Nominal(NominalType {
+        reason: self.reason,
+        is_class_statics: false,
+        module_reference: ModuleReference::root(),
+        id: well_known_pstrs::STR_TYPE,
+        type_arguments: vec![],
+      }))
     }
 
     pub(crate) fn simple_nominal_type_unwrapped(&self, id: PStr) -> NominalType {
@@ -543,41 +542,77 @@ impl ModuleSignature {
 
 pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignature {
   ModuleSignature {
-    interfaces: HashMap::from([(
-      heap.alloc_str_permanent("Builtins"),
-      InterfaceSignature {
-        type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
-        type_parameters: vec![],
-        super_types: vec![],
-        methods: HashMap::new(),
-        functions: HashMap::from([
-          MemberSignature::create_builtin_function(
-            heap.alloc_str_permanent("stringToInt"),
-            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
-            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
-            vec![],
-          ),
-          MemberSignature::create_builtin_function(
-            heap.alloc_str_permanent("intToString"),
-            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
-            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String)),
-            vec![],
-          ),
-          MemberSignature::create_builtin_function(
-            heap.alloc_str_permanent("println"),
-            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
-            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
-            vec![],
-          ),
-          MemberSignature::create_builtin_function(
-            heap.alloc_str_permanent("panic"),
-            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::String))],
-            Rc::new(Type::Generic(Reason::builtin(), well_known_pstrs::UPPER_T)),
-            vec![well_known_pstrs::UPPER_T],
-          ),
-        ]),
-      },
-    )]),
+    interfaces: HashMap::from([
+      (
+        heap.alloc_str_permanent("Builtins"),
+        InterfaceSignature {
+          type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
+          type_parameters: vec![],
+          super_types: vec![],
+          methods: HashMap::new(),
+          functions: HashMap::from([
+            MemberSignature::create_builtin_function(
+              heap.alloc_str_permanent("stringToInt"),
+              vec![Rc::new(Type::Nominal(NominalType {
+                reason: Reason::builtin(),
+                is_class_statics: false,
+                module_reference: ModuleReference::root(),
+                id: well_known_pstrs::STR_TYPE,
+                type_arguments: vec![],
+              }))],
+              Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
+              vec![],
+            ),
+            MemberSignature::create_builtin_function(
+              heap.alloc_str_permanent("intToString"),
+              vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
+              Rc::new(Type::Nominal(NominalType {
+                reason: Reason::builtin(),
+                is_class_statics: false,
+                module_reference: ModuleReference::root(),
+                id: well_known_pstrs::STR_TYPE,
+                type_arguments: vec![],
+              })),
+              vec![],
+            ),
+            MemberSignature::create_builtin_function(
+              heap.alloc_str_permanent("println"),
+              vec![Rc::new(Type::Nominal(NominalType {
+                reason: Reason::builtin(),
+                is_class_statics: false,
+                module_reference: ModuleReference::root(),
+                id: well_known_pstrs::STR_TYPE,
+                type_arguments: vec![],
+              }))],
+              Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
+              vec![],
+            ),
+            MemberSignature::create_builtin_function(
+              heap.alloc_str_permanent("panic"),
+              vec![Rc::new(Type::Nominal(NominalType {
+                reason: Reason::builtin(),
+                is_class_statics: false,
+                module_reference: ModuleReference::root(),
+                id: well_known_pstrs::STR_TYPE,
+                type_arguments: vec![],
+              }))],
+              Rc::new(Type::Generic(Reason::builtin(), well_known_pstrs::UPPER_T)),
+              vec![well_known_pstrs::UPPER_T],
+            ),
+          ]),
+        },
+      ),
+      (
+        well_known_pstrs::STR_TYPE,
+        InterfaceSignature {
+          type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
+          functions: HashMap::new(),
+          methods: HashMap::new(),
+          type_parameters: vec![],
+          super_types: vec![],
+        },
+      ),
+    ]),
   }
 }
 
@@ -611,7 +646,7 @@ mod type_tests {
     assert_eq!("unit", builder.unit_type().clone().pretty_print(&heap));
     assert_eq!("int", builder.int_type().pretty_print(&heap));
     assert_eq!("bool", builder.bool_type().pretty_print(&heap));
-    assert_eq!("string", builder.string_type().pretty_print(&heap));
+    assert_eq!("Str", builder.string_type().pretty_print(&heap));
     assert_eq!(
       "I",
       builder.simple_nominal_type(heap.alloc_str_for_test("I")).clone().pretty_print(&heap)
@@ -715,10 +750,10 @@ mod type_tests {
       r#"
 class()  : []
 functions:
-panic: public <T>(string) -> T
-stringToInt: public (string) -> int
-intToString: public (int) -> string
-println: public (string) -> unit
+panic: public <T>(Str) -> T
+stringToInt: public (Str) -> int
+intToString: public (int) -> Str
+println: public (Str) -> unit
 methods:
 
 "#
@@ -886,7 +921,7 @@ m2: public () -> any
     assert_eq!("unit", Type::from_annotation(&builder.unit_annot()).pretty_print(heap));
     assert_eq!("bool", Type::from_annotation(&builder.bool_annot()).pretty_print(heap));
     assert_eq!("int", Type::from_annotation(&builder.int_annot()).pretty_print(heap));
-    assert_eq!("string", Type::from_annotation(&builder.string_annot()).pretty_print(heap));
+    assert_eq!("Str", Type::from_annotation(&builder.string_annot()).pretty_print(heap));
     assert_eq!(
       "(bool) -> I<int, A>",
       Type::from_annotation(&builder.fn_annot(

@@ -22,6 +22,7 @@ mod tests {
     // method access can never be produced by the parser, but we need coverage anyways...
     let mut error_set = ErrorSet::new();
     ssa_analysis::perform_ssa_analysis_on_expression(
+      ModuleReference::dummy(),
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon::dummy(()),
         explicit_type_arguments: vec![test_builder::create().bool_annot()],
@@ -85,7 +86,11 @@ def_to_use_map:
 7:11-7:12 -> [7:11-7:12, 7:17-7:18]
 "#
     .trim();
-    let analysis_result = ssa_analysis::perform_ssa_analysis_on_expression(&expr, &mut error_set);
+    let analysis_result = ssa_analysis::perform_ssa_analysis_on_expression(
+      ModuleReference::dummy(),
+      &expr,
+      &mut error_set,
+    );
     assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
     let builder = test_type_builder::create();
@@ -184,7 +189,7 @@ def_to_use_map:
 23:23-23:24 -> [23:23-23:24]
 23:26-23:27 -> [23:26-23:27]
 23:7-23:22 -> [23:7-23:22]
-2:10-2:14 -> [14:46-14:62, 2:10-2:14]
+2:10-2:14 -> [2:10-2:14]
 4:11-4:18 -> [10:52-10:59, 4:11-4:18, 6:27-6:34]
 6:11-6:21 -> [10:30-10:40, 14:15-14:25, 15:16-15:26, 16:16-16:26, 6:11-6:21]
 6:22-6:23 -> [6:22-6:23, 7:25-7:26]
@@ -192,7 +197,11 @@ def_to_use_map:
 7:18-7:23 -> [7:18-7:23]
 "#
     .trim();
-    let analysis_result = ssa_analysis::perform_ssa_analysis_on_module(&module, &mut error_set);
+    let analysis_result = ssa_analysis::perform_ssa_analysis_on_module(
+      ModuleReference::dummy(),
+      &module,
+      &mut error_set,
+    );
     assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
     let builder = test_type_builder::create();

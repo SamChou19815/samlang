@@ -36,7 +36,6 @@ mod tests {
     assert!(INT_TYPE
       .is_the_same_type(Expression::Variable(heap.alloc_str_for_test("a"), INT_TYPE).type_()));
     assert!(STRING_TYPE.is_the_same_type(Expression::IntLiteral(1, STRING_TYPE).type_()));
-    assert!(STRING_TYPE.is_the_same_type(&ANY_TYPE));
     assert!(!Type::Id(heap.alloc_str_for_test("a"))
       .is_the_same_type(&Type::Id(heap.alloc_str_for_test("b"))));
     assert!(!Type::Id(heap.alloc_str_for_test("a")).is_the_same_type(&INT_TYPE));
@@ -49,7 +48,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     assert_eq!("number", INT_TYPE.pretty_print(heap));
-    assert_eq!("Str", STRING_TYPE.pretty_print(heap));
+    assert_eq!("_Str", STRING_TYPE.pretty_print(heap));
     assert_eq!("any", ANY_TYPE.pretty_print(heap));
     assert_eq!("0", ZERO.clone().pretty_print(heap));
     assert_eq!(
@@ -257,15 +256,14 @@ mod tests {
       }],
     };
     let expected = format!(
-      r#"type Str = [number, string];
-const {} = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const {} = (_: number, [, line]: Str): number => {{ console.log(line); return 0; }};
-const {} = (_: number, [, v]: Str): number => parseInt(v, 10);
-const {} = (_: number, v: number): Str => [1, String(v)];
-const {} = (_: number, [, v]: Str): number => {{ throw Error(v); }};
+      r#"const {} = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
+const {} = (_: number, [, line]: _Str): number => {{ console.log(line); return 0; }};
+const {} = (_: number, [, v]: _Str): number => parseInt(v, 10);
+const {} = (_: number, v: number): _Str => [1, String(v)];
+const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
-const dev_meggo: Str = [0, `vibez`];
-const esc: Str = [0, `f"\"`];
+const dev_meggo: _Str = [0, `vibez`];
+const esc: _Str = [0, `f"\"`];
 type Foo = [number, number];
 function Bar(f: number): number {{
   let f: number = big[0];

@@ -269,7 +269,6 @@ pub(super) enum Keyword {
   RETURN,
   // Type Keywords
   INT,
-  STRING,
   BOOL,
   UNIT,
   // Some Important Literals
@@ -279,6 +278,7 @@ pub(super) enum Keyword {
   // Forbidden Names
   SELF,
   CONST,
+  STRING,
   LET,
   VAR,
   TYPE,

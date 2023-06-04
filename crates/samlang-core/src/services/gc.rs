@@ -252,7 +252,7 @@ mod tests {
 
       class Foo(val a: int) {
         function bar(): int = 3
-        function baz(): string = "3"
+        function baz(): Str = "3"
       }
 
       class Option<T>(None(unit), Some(T)) {

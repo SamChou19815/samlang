@@ -381,12 +381,17 @@ fn check_literal(
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
   let reason = Reason::new(common.loc, Some(common.loc));
-  let kind = match &literal {
-    Literal::Bool(_) => PrimitiveTypeKind::Bool,
-    Literal::Int(_) => PrimitiveTypeKind::Int,
-    Literal::String(_) => PrimitiveTypeKind::String,
+  let type_ = match &literal {
+    Literal::Bool(_) => Rc::new(Type::Primitive(reason, PrimitiveTypeKind::Bool)),
+    Literal::Int(_) => Rc::new(Type::Primitive(reason, PrimitiveTypeKind::Int)),
+    Literal::String(_) => Rc::new(Type::Nominal(NominalType {
+      reason,
+      is_class_statics: false,
+      module_reference: ModuleReference::root(),
+      id: well_known_pstrs::STR_TYPE,
+      type_arguments: vec![],
+    })),
   };
-  let type_ = Rc::new(Type::Primitive(reason, kind));
   type_meet(cx, heap, hint, &type_);
   expr::E::Literal(common.with_new_type(type_), *literal)
 }
@@ -426,7 +431,7 @@ fn check_class_id(
     ));
     expr::E::ClassId(common.with_new_type(type_), module_reference, *id)
   } else {
-    cx.error_set.report_cannot_unresolve_class_error(common.loc, module_reference, id.name);
+    cx.error_set.report_cannot_resolve_class_error(common.loc, module_reference, id.name);
     expr::E::ClassId(common.with_new_type(Rc::new(Type::Any(reason, false))), module_reference, *id)
   }
 }
@@ -977,10 +982,13 @@ fn check_binary(
       Reason::new(expression.common.loc, Some(expression.common.loc)),
       PrimitiveTypeKind::Bool,
     ),
-    expr::BinaryOperator::CONCAT => Type::Primitive(
-      Reason::new(expression.common.loc, Some(expression.common.loc)),
-      PrimitiveTypeKind::String,
-    ),
+    expr::BinaryOperator::CONCAT => Type::Nominal(NominalType {
+      reason: Reason::new(expression.common.loc, Some(expression.common.loc)),
+      is_class_statics: false,
+      module_reference: ModuleReference::root(),
+      id: well_known_pstrs::STR_TYPE,
+      type_arguments: vec![],
+    }),
   });
   type_meet(cx, heap, hint, &expected_type);
   match expression.operator {
@@ -1403,7 +1411,8 @@ pub(crate) fn type_check_module(
   heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> (Module<Rc<Type>>, LocalTypingContext) {
-  let mut local_cx = LocalTypingContext::new(perform_ssa_analysis_on_module(module, error_set));
+  let mut local_cx =
+    LocalTypingContext::new(perform_ssa_analysis_on_module(module_reference, module, error_set));
 
   for one_import in module.imports.iter() {
     if let Some(module_cx) = global_cx.get(&one_import.imported_module) {
@@ -1413,7 +1422,7 @@ pub(crate) fn type_check_module(
         }
       }
     } else {
-      error_set.report_cannot_unresolve_module_error(one_import.loc, one_import.imported_module);
+      error_set.report_cannot_resolve_module_error(one_import.loc, one_import.imported_module);
     }
   }
 

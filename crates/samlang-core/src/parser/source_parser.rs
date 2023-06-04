@@ -1393,14 +1393,6 @@ impl<'a> SourceParser<'a> {
           annotation::PrimitiveTypeKind::Int,
         )
       }
-      TokenContent::Keyword(Keyword::STRING) => {
-        self.consume();
-        annotation::T::Primitive(
-          peeked.0,
-          self.comments_store.create_comment_reference(associated_comments),
-          annotation::PrimitiveTypeKind::String,
-        )
-      }
       TokenContent::UpperId(name) => {
         self.consume();
         let associated_comments = self.comments_store.create_comment_reference(vec![]);

@@ -4,15 +4,15 @@ class Math {
   function plus(a: int, b: int): int = a + b
 }
 
-class Student(val name: string, val age: int) {
-  method getName(): string = this.name
+class Student(val name: Str, val age: int) {
+  method getName(): Str = this.name
 
   method getAge(): int = this.age
 
   function dummyStudent(): Student = Student.init("RANDOM_BABY", 0)
 }
 
-class PrimitiveType(U(bool), I(int), S(string), B(bool)) {
+class PrimitiveType(U(bool), I(int), S(Str), B(bool)) {
   function getUnit(): PrimitiveType = PrimitiveType.U(false)
 
   function getInteger(): PrimitiveType = PrimitiveType.I(42)
@@ -60,10 +60,10 @@ class Option<T>(None(unit), Some(T)) {
 }
 
 class DifferentModulesDemo {
-  private function assertTrue(condition: bool, message: string): unit =
+  private function assertTrue(condition: bool, message: Str): unit =
     if condition then {  } else Builtins.panic(message)
 
-  private function assertFalse(condition: bool, message: string): unit =
+  private function assertFalse(condition: bool, message: Str): unit =
     if !condition then {  } else Builtins.panic(message)
 
   function run(): unit = {

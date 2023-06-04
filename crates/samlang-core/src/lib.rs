@@ -136,12 +136,12 @@ mod tests {
 
     assert_eq!(
       vec![
-        "Demo.sam:1:40-1:47: [incompatible-type]: Expected: `string`, actual: `int`.".to_string(),
-        "Demo.sam:1:45-1:47: [incompatible-type]: Expected: `int`, actual: `string`.".to_string()
+        "Demo.sam:1:37-1:44: [incompatible-type]: Expected: `Str`, actual: `int`.".to_string(),
+        "Demo.sam:1:42-1:44: [incompatible-type]: Expected: `int`, actual: `Str`.".to_string()
       ],
       super::compile_sources(
         heap,
-        vec![(mod_ref_demo, "class Main { function main(): string = 42 + \"\" }".to_string())],
+        vec![(mod_ref_demo, "class Main { function main(): Str = 42 + \"\" }".to_string())],
         vec![mod_ref_demo],
         false,
       )

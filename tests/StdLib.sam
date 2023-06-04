@@ -1,7 +1,7 @@
 class ForTests {
   function printlnInt(n: int): unit = Builtins.println(Builtins.intToString(n))
 
-  function boolToString(b: bool): string = if b then "true" else "false"
+  function boolToString(b: bool): Str = if b then "true" else "false"
 
   function assertIntEquals(expected: int, actual: int): unit =
     if actual == expected then {  } else {

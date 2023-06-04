@@ -57,7 +57,7 @@ class Test1(val a: int) {
 
     assert!(query::hover(&state, &test_mod_ref, Position(100, 100)).is_none());
     assert_eq!(
-      "string [lang=samlang]",
+      "Str [lang=samlang]",
       query::hover(&state, &test_mod_ref, Position(3, 27))
         .unwrap()
         .contents
@@ -454,8 +454,8 @@ class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
     Cons(Pair.init(t, this))
 }
 class Developer(
-  val name: string, val github: string,
-  val projects: List<string>
+  val name: Str, val github: Str,
+  val projects: List<Str>
 ) {
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
@@ -501,7 +501,7 @@ class Main {
       vec![(
         mod_ref,
         r#"
-class Func { function a(x: int, y: bool, z: string): int = 1 }
+class Func { function a(x: int, y: bool, z: Str): int = 1 }
 class Main {
   function test1(): int = Func.a()
   function test2(): int = Func.a(0,)
@@ -524,32 +524,32 @@ class Main {
 
     // Mid of () in test1
     assert_eq!(
-      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=0]",
+      "(a0: int, a1: bool, a2: Str) -> int [params=a0: int,a1: bool,a2: Str, active=0]",
       query::signature_help(&state, &mod_ref, Position(3, 33)).unwrap().to_string()
     );
     // After , in test2
     assert_eq!(
-      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=1]",
+      "(a0: int, a1: bool, a2: Str) -> int [params=a0: int,a1: bool,a2: Str, active=1]",
       query::signature_help(&state, &mod_ref, Position(4, 35)).unwrap().to_string()
     );
     // At true in test2
     assert_eq!(
-      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=1]",
+      "(a0: int, a1: bool, a2: Str) -> int [params=a0: int,a1: bool,a2: Str, active=1]",
       query::signature_help(&state, &mod_ref, Position(5, 35)).unwrap().to_string()
     );
     // At final , in test2
     assert_eq!(
-      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=2]",
+      "(a0: int, a1: bool, a2: Str) -> int [params=a0: int,a1: bool,a2: Str, active=2]",
       query::signature_help(&state, &mod_ref, Position(5, 40)).unwrap().to_string()
     );
     // At true in test3
     assert_eq!(
-      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=1]",
+      "(a0: int, a1: bool, a2: Str) -> int [params=a0: int,a1: bool,a2: Str, active=1]",
       query::signature_help(&state, &mod_ref, Position(6, 35)).unwrap().to_string()
     );
     // At "" in test3
     assert_eq!(
-      "(a0: int, a1: bool, a2: string) -> int [params=a0: int,a1: bool,a2: string, active=2]",
+      "(a0: int, a1: bool, a2: Str) -> int [params=a0: int,a1: bool,a2: Str, active=2]",
       query::signature_help(&state, &mod_ref, Position(6, 40)).unwrap().to_string()
     );
   }
@@ -593,8 +593,8 @@ class Main {
         mod_ref,
         r#"
 class Developer(
-  val name: string, val github: string,
-  val projects: List<string>
+  val name: Str, val github: Str,
+  val projects: List<Str>
 ) {
   function sam(): Developer = {
     { name: projects:  }.
@@ -789,8 +789,8 @@ class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
     Cons
 }
 class Developer(
-  val name: string, val github: string,
-  val projects: List<string>
+  val name: Str, val github: Str,
+  val projects: List<Str>
 ) {
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...");
@@ -813,6 +813,7 @@ interface Interface {}
       r#"List [kind=Class, detail=class List]
 Main [kind=Class, detail=class Main]
 Pair [kind=Class, detail=class Pair]
+Str [kind=Class, detail=class Str]
 Builtins [kind=Class, detail=class Builtins]
 Developer [kind=Class, detail=class Developer]
 Interface [kind=Interface, detail=interface Interface]"#,
@@ -838,16 +839,16 @@ of [kind=Function, detail=of(a0: T): List<T>]"#,
         .join("\n")
     );
     assert_eq!(
-      r#"github [kind=Field, detail=string]
-name [kind=Field, detail=string]
-projects [kind=Field, detail=List<string>]"#,
+      r#"github [kind=Field, detail=Str]
+name [kind=Field, detail=Str]
+projects [kind=Field, detail=List<Str>]"#,
       completion::auto_complete(&state, &test_mod_ref, Position(15, 46))
         .iter()
         .map(completion::AutoCompletionItem::to_string)
         .join("\n")
     );
     assert_eq!(
-      r#"init [kind=Function, detail=init(a0: string, a1: string, a2: List<string>): Developer]
+      r#"init [kind=Function, detail=init(a0: Str, a1: Str, a2: List<Str>): Developer]
 sam [kind=Function, detail=sam(): Developer]"#,
       completion::auto_complete(&state, &test_mod_ref, Position(19, 41))
         .iter()
@@ -874,8 +875,8 @@ class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
     Cons(Pair.init(t, this))
 }
 class Developer(
-  val name: string, val github: string,
-  val projects: List<string>
+  val name: Str, val github: Str,
+  val projects: List<Str>
 ) {
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
@@ -892,9 +893,9 @@ class Main {
     );
 
     assert_eq!(
-      r#"github [kind=Field, detail=string]
-name [kind=Field, detail=string]
-projects [kind=Field, detail=List<string>]"#,
+      r#"github [kind=Field, detail=Str]
+name [kind=Field, detail=Str]
+projects [kind=Field, detail=List<Str>]"#,
       completion::auto_complete(&state, &test_mod_ref, Position(15, 43))
         .iter()
         .map(completion::AutoCompletionItem::to_string)
@@ -1019,7 +1020,7 @@ class Main {
     assert_eq!(
       r#"bar [kind=Variable, detail=int]
 baz [kind=Variable, detail=bool]
-foo [kind=Variable, detail=string]"#,
+foo [kind=Variable, detail=Str]"#,
       completion::auto_complete(&state, &mod_ref, Position(6, 4))
         .iter()
         .map(completion::AutoCompletionItem::to_string)
@@ -1028,7 +1029,7 @@ foo [kind=Variable, detail=string]"#,
     assert_eq!(
       r#"bar [kind=Variable, detail=int]
 baz [kind=Variable, detail=bool]
-foo [kind=Variable, detail=string]"#,
+foo [kind=Variable, detail=Str]"#,
       completion::auto_complete(&state, &mod_ref, Position(6, 5))
         .iter()
         .map(completion::AutoCompletionItem::to_string)

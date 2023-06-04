@@ -275,7 +275,6 @@ impl TypeLoweringManager {
         type_::PrimitiveTypeKind::Bool
         | type_::PrimitiveTypeKind::Unit
         | type_::PrimitiveTypeKind::Int => PrimitiveType::Int,
-        type_::PrimitiveTypeKind::String => PrimitiveType::String,
       }),
       type_::Type::Nominal(id) => {
         let id_string = id.id;
@@ -410,11 +409,7 @@ impl TypeLoweringManager {
 mod tests {
   use super::*;
   use crate::{
-    ast::{
-      hir::{INT_TYPE, STRING_TYPE},
-      source::test_builder,
-      Location, Reason,
-    },
+    ast::{hir::STRING_TYPE, source::test_builder, Location, Reason},
     checker::type_::test_type_builder,
   };
   use pretty_assertions::assert_eq;
@@ -569,7 +564,7 @@ mod tests {
 
     solve_type_arguments(
       &vec![],
-      &Type::new_id_unwrapped(heap.alloc_str_for_test("A"), vec![STRING_TYPE]),
+      &Type::new_id_unwrapped(heap.alloc_str_for_test("A"), vec![INT_TYPE]),
       &Type::new_id_unwrapped(
         heap.alloc_str_for_test("A"),
         vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))],
@@ -614,7 +609,6 @@ mod tests {
     let heap = &mut Heap::new();
 
     assert_eq!("int", type_application(&INT_TYPE, &HashMap::new()).pretty_print(heap));
-    assert_eq!("string", type_application(&STRING_TYPE, &HashMap::new()).pretty_print(heap));
 
     assert_eq!(
       "A<int>",
@@ -700,12 +694,9 @@ mod tests {
     assert_eq!("int", manager.lower_source_type(heap, &builder.bool_type()).pretty_print(heap));
     assert_eq!("int", manager.lower_source_type(heap, &builder.unit_type()).pretty_print(heap));
     assert_eq!("int", manager.lower_source_type(heap, &builder.int_type()).pretty_print(heap));
+    assert_eq!("_Str", manager.lower_source_type(heap, &builder.string_type()).pretty_print(heap));
     assert_eq!(
-      "string",
-      manager.lower_source_type(heap, &builder.string_type()).pretty_print(heap)
-    );
-    assert_eq!(
-      "string",
+      "_Str",
       manager
         .lower_source_types(heap, &vec![builder.string_type()])
         .iter()

@@ -9,6 +9,7 @@ use crate::{
   checker::{perform_ssa_analysis_on_module, SsaAnalysisResult},
   common::PStr,
   errors::ErrorSet,
+  ModuleReference,
 };
 use std::rc::Rc;
 
@@ -28,9 +29,16 @@ impl DefinitionAndUses {
 pub(super) struct VariableDefinitionLookup(SsaAnalysisResult);
 
 impl VariableDefinitionLookup {
-  pub(super) fn new(module: &Module<()>) -> VariableDefinitionLookup {
+  pub(super) fn new(
+    module_reference: ModuleReference,
+    module: &Module<()>,
+  ) -> VariableDefinitionLookup {
     let mut error_set = ErrorSet::new();
-    VariableDefinitionLookup(perform_ssa_analysis_on_module(module, &mut error_set))
+    VariableDefinitionLookup(perform_ssa_analysis_on_module(
+      module_reference,
+      module,
+      &mut error_set,
+    ))
   }
 
   pub(super) fn find_all_definition_and_uses(
@@ -353,7 +361,7 @@ mod tests {
   }
 
   fn new_lookup(module: Module<()>) -> VariableDefinitionLookup {
-    VariableDefinitionLookup::new(&module)
+    VariableDefinitionLookup::new(ModuleReference::dummy(), &module)
   }
 
   fn prepare_lookup(source: &str) -> (Heap, VariableDefinitionLookup) {

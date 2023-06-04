@@ -83,7 +83,6 @@ mod tests {
     assert_eq!("unit", annotation::PrimitiveTypeKind::Unit.to_string());
     assert_eq!("bool", annotation::PrimitiveTypeKind::Bool.to_string());
     assert_eq!("int", annotation::PrimitiveTypeKind::Int.to_string());
-    assert_eq!("string", annotation::PrimitiveTypeKind::String.to_string());
   }
 
   #[test]
