@@ -62,9 +62,8 @@ impl Rewriter {
     generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Statement {
     match stmt {
-      Statement::Binary(Binary { name, type_, operator, e1, e2 }) => Statement::Binary(Binary {
+      Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
         name: *name,
-        type_: self.rewrite_type(heap, type_, generics_replacement_map),
         operator: *operator,
         e1: self.rewrite_expr(heap, e1, generics_replacement_map),
         e2: self.rewrite_expr(heap, e2, generics_replacement_map),
@@ -162,7 +161,7 @@ impl Rewriter {
     generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Expression {
     match expression {
-      Expression::IntLiteral(i, b) => Expression::IntLiteral(*i, *b),
+      Expression::IntLiteral(i) => Expression::IntLiteral(*i),
       Expression::StringName(s) => {
         self.used_string_names.insert(*s);
         Expression::StringName(*s)
@@ -437,7 +436,7 @@ pub(super) fn perform_generics_specialization(
 mod tests {
   use super::*;
   use crate::ast::hir::{
-    GlobalVariable, Operator, TypeDefinitionMappings, INT_TYPE, STRING_TYPE, TRUE, ZERO,
+    GlobalVariable, Operator, TypeDefinitionMappings, INT_TYPE, ONE, STRING_TYPE, ZERO,
   };
   use pretty_assertions::assert_eq;
 
@@ -729,7 +728,7 @@ sources.mains = [main]
             type_parameters: vec![],
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
             body: vec![Statement::IfElse {
-              condition: TRUE,
+              condition: ONE,
               s1: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName {
@@ -884,7 +883,7 @@ function main(): int {
     finalV = (v1: int);
   } else {
     main();
-    let v1: int = 0 + 0;
+    let v1 = 0 + 0;
     let j: J = [0];
     let v2: int = (j: J)[0];
     let c1: CC_string_string = Closure { fun: (creatorIA_string: (string) -> I_string_string), context: G1 };

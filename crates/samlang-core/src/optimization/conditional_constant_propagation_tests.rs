@@ -3,7 +3,7 @@ mod tests {
   use crate::{
     ast::hir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
-      VariableName, BOOL_TYPE, FALSE, INT_TYPE, ONE, TRUE, ZERO,
+      VariableName, INT_TYPE, ONE, ZERO,
     },
     common::Heap,
   };
@@ -296,17 +296,17 @@ mod tests {
       heap,
       r#"let c_o: Id = [6, 1, 2147483646, 0, 3];
 let i0: int = 6[2];
-let b8: int = (i0: int) * (i0: int);
-let a6: int = (i1: int) / 30;
+let b8 = (i0: int) * (i0: int);
+let a6 = (i1: int) / 30;
 let s: Id = [0, (a6: int), 30];
 let s: Id = Closure { fun: (closure: () -> int), context: 0 };
 fff(1, 0, 0, 0, 0, 0, 1);
-let a9: int = 6 / 0;
-let a10: int = 6 % 0;
-let a15: int = (i0: int) * 5;
-let a16: int = (a15: int) + 5;
-let a17: int = (a15: int) + 47;
-let a18: int = (a15: int) / 5;
+let a9 = 6 / 0;
+let a10 = 6 % 0;
+let a15 = (i0: int) * 5;
+let a16 = (a15: int) + 5;
+let a17 = (a15: int) + 47;
+let a18 = (a15: int) / 5;
 let a19 = (a18: int) as int;
 return (a17: int);"#,
     );
@@ -376,8 +376,8 @@ return 1;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + 2;
-let a2: int = (a0: int) + 4;
+      r#"let a1 = (a0: int) + 2;
+let a2 = (a0: int) + 4;
 return 0;"#,
     );
 
@@ -398,8 +398,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + 2;
-let a2: int = (a0: int) + -1;
+      r#"let a1 = (a0: int) + 2;
+let a2 = (a0: int) + -1;
 return 0;"#,
     );
 
@@ -420,8 +420,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + -2;
-let a2: int = (a0: int) + 1;
+      r#"let a1 = (a0: int) + -2;
+let a2 = (a0: int) + 1;
 return 0;"#,
     );
 
@@ -442,8 +442,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + -2;
-let a2: int = (a0: int) + -5;
+      r#"let a1 = (a0: int) + -2;
+let a2 = (a0: int) + -5;
 return 0;"#,
     );
 
@@ -476,10 +476,10 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) * 2;
-let a2: int = (a0: int) * 6;
-let a3: int = (a0: int) + 2;
-let a4: int = (a3: int) * 3;
+      r#"let a1 = (a0: int) * 2;
+let a2 = (a0: int) * 6;
+let a3 = (a0: int) + 2;
+let a4 = (a3: int) * 3;
 return 0;"#,
     );
 
@@ -500,8 +500,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + 2;
-let a2: bool = (a0: int) < 1;
+      r#"let a1 = (a0: int) + 2;
+let a2 = (a0: int) < 1;
 return 0;"#,
     );
 
@@ -522,8 +522,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + 2;
-let a2: bool = (a0: int) <= 1;
+      r#"let a1 = (a0: int) + 2;
+let a2 = (a0: int) <= 1;
 return 0;"#,
     );
 
@@ -544,8 +544,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + 2;
-let a2: bool = (a0: int) > 1;
+      r#"let a1 = (a0: int) + 2;
+let a2 = (a0: int) > 1;
 return 0;"#,
     );
 
@@ -566,8 +566,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + 2;
-let a2: bool = (a0: int) >= 1;
+      r#"let a1 = (a0: int) + 2;
+let a2 = (a0: int) >= 1;
 return 0;"#,
     );
 
@@ -588,8 +588,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + 2;
-let a2: bool = (a0: int) == 1;
+      r#"let a1 = (a0: int) + 2;
+let a2 = (a0: int) == 1;
 return 0;"#,
     );
 
@@ -610,8 +610,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) + 2;
-let a2: bool = (a0: int) != 1;
+      r#"let a1 = (a0: int) + 2;
+let a2 = (a0: int) != 1;
 return 0;"#,
     );
 
@@ -632,8 +632,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let a1: int = (a0: int) * 2;
-let a2: bool = (a1: int) == 3;
+      r#"let a1 = (a0: int) * 2;
+let a2 = (a1: int) == 3;
 return 0;"#,
     );
   }
@@ -646,7 +646,7 @@ return 0;"#,
       vec![
         Statement::binary(heap.alloc_str_for_test("b1"), Operator::LT, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b1"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("foo"),
@@ -669,7 +669,7 @@ return 0;"#,
         },
         Statement::binary(heap.alloc_str_for_test("b2"), Operator::GT, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b2"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("foo"),
@@ -692,7 +692,7 @@ return 0;"#,
         },
         Statement::binary(heap.alloc_str_for_test("b3"), Operator::LE, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b3"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b3"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("foo"),
@@ -720,7 +720,7 @@ return 0;"#,
         },
         Statement::binary(heap.alloc_str_for_test("b4"), Operator::GE, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b4"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b4"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("foo"),
@@ -753,22 +753,22 @@ return 0;"#,
           Expression::var_name(heap.alloc_str_for_test("ma2"), INT_TYPE),
         ),
         Statement::binary(heap.alloc_str_for_test("r2"), Operator::NE, ONE, ZERO),
-        Statement::binary(heap.alloc_str_for_test("r3"), Operator::XOR, TRUE, FALSE),
+        Statement::binary(heap.alloc_str_for_test("r3"), Operator::XOR, ONE, ZERO),
         Statement::binary(heap.alloc_str_for_test("r4"), Operator::NE, ONE, ZERO),
         Statement::binary(
           heap.alloc_str_for_test("r5"),
           Operator::EQ,
-          Expression::var_name(heap.alloc_str_for_test("r4"), BOOL_TYPE),
-          Expression::var_name(heap.alloc_str_for_test("r2"), BOOL_TYPE),
+          Expression::var_name(heap.alloc_str_for_test("r4"), INT_TYPE),
+          Expression::var_name(heap.alloc_str_for_test("r2"), INT_TYPE),
         ),
       ],
-      Expression::var_name(heap.alloc_str_for_test("r5"), BOOL_TYPE),
+      Expression::var_name(heap.alloc_str_for_test("r5"), INT_TYPE),
       heap,
       r#"foo();
 bar();
 let a1: int = foo();
 let a22: int = bar();
-let r1: bool = (a22: int) == (a1: int);
+let r1 = (a22: int) == (a1: int);
 return 1;"#,
     );
 
@@ -787,7 +787,7 @@ return 1;"#,
           Expression::int(3),
         ),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("foo"),
@@ -809,7 +809,7 @@ return 1;"#,
           final_assignments: vec![],
         },
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("foo"),
@@ -836,7 +836,7 @@ return 1;"#,
           )],
         },
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
           s1: vec![],
           s2: vec![],
           final_assignments: vec![(
@@ -849,13 +849,13 @@ return 1;"#,
       ],
       Expression::var_name(heap.alloc_str_for_test("ma2"), INT_TYPE),
       heap,
-      r#"if (b: bool) {
+      r#"if (b: int) {
   foo(6);
 } else {
   bar(9);
 }
 let ma1: int;
-if (b: bool) {
+if (b: int) {
   let a1: int = foo(6);
   ma1 = 9;
 } else {
@@ -923,7 +923,7 @@ return 6;"#,
             ZERO,
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
               heap.alloc_str_for_test("n"),
@@ -960,7 +960,7 @@ return 6;"#,
             ZERO,
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
               heap.alloc_str_for_test("n"),
@@ -997,7 +997,7 @@ return 6;"#,
             ZERO,
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
               heap.alloc_str_for_test("n"),
@@ -1017,12 +1017,12 @@ return 6;"#,
       heap,
       r#"let n: int = 4;
 while (true) {
-  let is_zero: bool = (n: int) == 0;
-  if (is_zero: bool) {
+  let is_zero = (n: int) == 0;
+  if (is_zero: int) {
     undefined = (n: int);
     break;
   }
-  let _tmp_n: int = (n: int) + -1;
+  let _tmp_n = (n: int) + -1;
   n = (_tmp_n: int);
 }
 return 0;"#,
@@ -1044,7 +1044,7 @@ return 0;"#,
             ZERO,
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
             invert_condition: true,
             statements: vec![Statement::Break(Expression::var_name(
               heap.alloc_str_for_test("n"),
@@ -1138,7 +1138,7 @@ return (v: int);"#,
       ZERO,
       heap,
       r#"while (true) {
-  let a: int = (v2: int) + (v1: int);
+  let a = (v2: int) + (v1: int);
 }
 return 0;"#,
     );

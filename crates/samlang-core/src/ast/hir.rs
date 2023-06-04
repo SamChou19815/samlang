@@ -8,7 +8,6 @@ use std::{cmp::Ordering, hash::Hash};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PrimitiveType {
-  Bool,
   Int,
   String,
 }
@@ -16,7 +15,6 @@ pub(crate) enum PrimitiveType {
 impl ToString for PrimitiveType {
   fn to_string(&self) -> String {
     match self {
-      PrimitiveType::Bool => "bool".to_string(),
       PrimitiveType::Int => "int".to_string(),
       PrimitiveType::String => "string".to_string(),
     }
@@ -94,7 +92,6 @@ impl Type {
   }
 }
 
-pub(crate) const BOOL_TYPE: Type = Type::Primitive(PrimitiveType::Bool);
 pub(crate) const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
 pub(crate) const STRING_TYPE: Type = Type::Primitive(PrimitiveType::String);
 
@@ -173,29 +170,6 @@ pub(crate) enum Operator {
   NE,
 }
 
-impl Operator {
-  pub(super) fn result_is_int(&self) -> bool {
-    match self {
-      Operator::MUL
-      | Operator::DIV
-      | Operator::MOD
-      | Operator::PLUS
-      | Operator::MINUS
-      | Operator::LAND
-      | Operator::LOR
-      | Operator::SHL
-      | Operator::SHR => true,
-      Operator::XOR
-      | Operator::LT
-      | Operator::LE
-      | Operator::GT
-      | Operator::GE
-      | Operator::EQ
-      | Operator::NE => false,
-    }
-  }
-}
-
 impl ToString for Operator {
   fn to_string(&self) -> String {
     match self {
@@ -262,7 +236,7 @@ impl FunctionName {
 
 #[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Expression {
-  IntLiteral(i32, /* is_int */ bool),
+  IntLiteral(i32),
   StringName(PStr),
   Variable(VariableName),
 }
@@ -270,12 +244,12 @@ pub(crate) enum Expression {
 impl Ord for Expression {
   fn cmp(&self, other: &Self) -> Ordering {
     match self {
-      Expression::IntLiteral(i1, _) => match other {
-        Expression::IntLiteral(i2, _) => i1.cmp(i2),
+      Expression::IntLiteral(i1) => match other {
+        Expression::IntLiteral(i2) => i1.cmp(i2),
         _ => Ordering::Less,
       },
       Expression::StringName(n1) => match other {
-        Expression::IntLiteral(_, _) => Ordering::Greater,
+        Expression::IntLiteral(_) => Ordering::Greater,
         Expression::StringName(n2) => n1.cmp(n2),
         Expression::Variable(_) => Ordering::Less,
       },
@@ -303,7 +277,7 @@ impl PartialEq for Expression {
 
 impl Expression {
   pub(crate) fn int(value: i32) -> Expression {
-    Expression::IntLiteral(value, true)
+    Expression::IntLiteral(value)
   }
 
   pub(crate) fn var_name(name: PStr, type_: Type) -> Expression {
@@ -312,8 +286,7 @@ impl Expression {
 
   pub(crate) fn type_(&self) -> &Type {
     match self {
-      Expression::IntLiteral(_, false) => &BOOL_TYPE,
-      Expression::IntLiteral(_, true) => &INT_TYPE,
+      Expression::IntLiteral(_) => &INT_TYPE,
       Expression::StringName(_) => &STRING_TYPE,
       Expression::Variable(v) => &v.type_,
     }
@@ -321,7 +294,7 @@ impl Expression {
 
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     match self {
-      Expression::IntLiteral(i, _) => i.to_string(),
+      Expression::IntLiteral(i) => i.to_string(),
       Expression::StringName(n) => n.as_str(heap).to_string(),
       Expression::Variable(v) => v.debug_print(heap),
     }
@@ -329,7 +302,7 @@ impl Expression {
 
   pub(crate) fn dump_to_string(&self) -> String {
     match self {
-      Expression::IntLiteral(i, _) => i.to_string(),
+      Expression::IntLiteral(i) => i.to_string(),
       Expression::StringName(n) => n.opaque_id().to_string(),
       Expression::Variable(v) => v.name.opaque_id().to_string(),
     }
@@ -337,21 +310,18 @@ impl Expression {
 
   pub(crate) fn convert_to_callee(self) -> Option<Callee> {
     match self {
-      Expression::IntLiteral(_, _) | Expression::StringName(_) => None,
+      Expression::IntLiteral(_) | Expression::StringName(_) => None,
       Expression::Variable(v) => Some(Callee::Variable(v)),
     }
   }
 }
 
-pub(crate) const FALSE: Expression = Expression::IntLiteral(0, false);
-pub(crate) const TRUE: Expression = Expression::IntLiteral(1, false);
-pub(crate) const ZERO: Expression = Expression::IntLiteral(0, true);
-pub(crate) const ONE: Expression = Expression::IntLiteral(1, true);
+pub(crate) const ZERO: Expression = Expression::IntLiteral(0);
+pub(crate) const ONE: Expression = Expression::IntLiteral(1);
 
 #[derive(Debug, Clone)]
 pub(crate) struct Binary {
   pub(crate) name: PStr,
-  pub(crate) type_: Type,
   pub(crate) operator: Operator,
   pub(crate) e1: Expression,
   pub(crate) e2: Expression,
@@ -448,12 +418,11 @@ impl Statement {
     e1: Expression,
     e2: Expression,
   ) -> Binary {
-    let type_ = if operator.result_is_int() { INT_TYPE } else { BOOL_TYPE };
     match (operator, &e2) {
-      (Operator::MINUS, Expression::IntLiteral(n, _)) if *n != -2147483648 => {
-        Binary { name, type_, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
+      (Operator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
+        Binary { name, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
       }
-      _ => Binary { name, type_, operator, e1, e2 },
+      _ => Binary { name, operator, e1, e2 },
     }
   }
 
@@ -481,7 +450,7 @@ impl Statement {
     e1: Expression,
     e2: Expression,
   ) -> (Operator, Expression, Expression) {
-    let Binary { name: _, type_: _, operator: op, e1: normalized_e1, e2: normalized_e2 } =
+    let Binary { name: _, operator: op, e1: normalized_e1, e2: normalized_e2 } =
       Self::binary_unwrapped(INVALID_PSTR, operator, e1, e2);
     match op {
       Operator::DIV | Operator::MOD | Operator::MINUS | Operator::SHL | Operator::SHR => {
@@ -540,14 +509,12 @@ impl Statement {
   ) {
     match self {
       Statement::Binary(s) => {
-        let type_ = s.type_.pretty_print(heap);
         let e1 = s.e1.debug_print(heap);
         let e2 = s.e2.debug_print(heap);
         collector.push(format!(
-          "{}let {}: {} = {} {} {};\n",
+          "{}let {} = {} {} {};\n",
           "  ".repeat(level),
           s.name.as_str(heap),
-          type_,
           e1,
           s.operator.to_string(),
           e2

@@ -8,7 +8,6 @@ use itertools::Itertools;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PrimitiveType {
-  Bool,
   Int,
   String,
   Any,
@@ -26,7 +25,6 @@ impl PrimitiveType {
 impl ToString for PrimitiveType {
   fn to_string(&self) -> String {
     match self {
-      PrimitiveType::Bool => "boolean".to_string(),
       PrimitiveType::Int => "number".to_string(),
       PrimitiveType::String => "Str".to_string(),
       PrimitiveType::Any => "any".to_string(),
@@ -99,7 +97,6 @@ impl Type {
   }
 }
 
-pub(crate) const BOOL_TYPE: Type = Type::Primitive(PrimitiveType::Bool);
 pub(crate) const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
 pub(crate) const STRING_TYPE: Type = Type::Primitive(PrimitiveType::String);
 pub(crate) const ANY_TYPE: Type = Type::Primitive(PrimitiveType::Any);
@@ -124,20 +121,12 @@ impl Expression {
 
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
-      Expression::IntLiteral(0, t) if t.as_primitive().unwrap().eq(&PrimitiveType::Bool) => {
-        "false".to_string()
-      }
-      Expression::IntLiteral(_, t) if t.as_primitive().unwrap().eq(&PrimitiveType::Bool) => {
-        "true".to_string()
-      }
       Expression::IntLiteral(i, _) => i.to_string(),
       Expression::Name(n, _) | Expression::Variable(n, _) => n.as_str(heap).to_string(),
     }
   }
 }
 
-pub(crate) const FALSE: Expression = Expression::IntLiteral(0, BOOL_TYPE);
-pub(crate) const TRUE: Expression = Expression::IntLiteral(1, BOOL_TYPE);
 pub(crate) const ZERO: Expression = Expression::IntLiteral(0, INT_TYPE);
 pub(crate) const ONE: Expression = Expression::IntLiteral(1, INT_TYPE);
 
@@ -151,7 +140,6 @@ pub(crate) struct GenenalLoopVariable {
 pub(crate) enum Statement {
   Binary {
     name: PStr,
-    type_: Type,
     operator: Operator,
     e1: Expression,
     e2: Expression,
@@ -209,12 +197,11 @@ impl Statement {
     e1: Expression,
     e2: Expression,
   ) -> Statement {
-    let type_ = if operator.result_is_int() { INT_TYPE } else { BOOL_TYPE };
     match (operator, &e2) {
       (Operator::MINUS, Expression::IntLiteral(n, _)) if *n != -2147483648 => {
-        Statement::Binary { name, type_, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
+        Statement::Binary { name, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
       }
-      _ => Statement::Binary { name, type_, operator, e1, e2 },
+      _ => Statement::Binary { name, operator, e1, e2 },
     }
   }
 
@@ -226,20 +213,35 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
-      Statement::Binary { name, type_, operator, e1, e2 } => {
-        let type_ = type_.pretty_print(heap);
+      Statement::Binary { name, operator, e1, e2 } => {
         let e1 = e1.pretty_print(heap);
         let e2 = e2.pretty_print(heap);
         let expr_str = format!("{} {} {}", e1, operator.to_string(), e2);
-        let wrapped =
-          if *operator == Operator::DIV { format!("Math.floor({expr_str})") } else { expr_str };
-        collector.push(format!(
-          "{}let {}: {} = { };\n",
-          "  ".repeat(level),
-          name.as_str(heap),
-          type_,
-          wrapped
-        ));
+        let wrapped = match *operator {
+          Operator::DIV => {
+            // Necessary to preserve semantics
+            format!("Math.floor({expr_str})")
+          }
+          Operator::LT
+          | Operator::LE
+          | Operator::GT
+          | Operator::GE
+          | Operator::EQ
+          | Operator::NE => {
+            // Necessary to make TS happy
+            format!("Number({expr_str})")
+          }
+          Operator::MUL
+          | Operator::MOD
+          | Operator::PLUS
+          | Operator::MINUS
+          | Operator::LAND
+          | Operator::LOR
+          | Operator::SHL
+          | Operator::SHR
+          | Operator::XOR => expr_str,
+        };
+        collector.push(format!("{}let {} = {};\n", "  ".repeat(level), name.as_str(heap), wrapped));
       }
       Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         collector.push(format!(

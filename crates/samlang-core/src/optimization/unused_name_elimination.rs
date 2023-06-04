@@ -20,7 +20,7 @@ fn collect_used_names_from_expression(
   expression: &Expression,
 ) {
   match expression {
-    Expression::IntLiteral(_, _) => {}
+    Expression::IntLiteral(_) => {}
     Expression::Variable(v) => {
       collect_for_type_set(&v.type_, type_set);
     }
@@ -36,10 +36,9 @@ fn collect_used_names_from_statement(
   statement: &Statement,
 ) {
   match statement {
-    Statement::Binary(Binary { name: _, type_, operator: _, e1, e2 }) => {
+    Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
       collect_used_names_from_expression(name_set, type_set, e1);
       collect_used_names_from_expression(name_set, type_set, e2);
-      collect_for_type_set(type_, type_set);
     }
     Statement::IndexedAccess { name: _, type_, pointer_expression, index: _ } => {
       collect_used_names_from_expression(name_set, type_set, pointer_expression);

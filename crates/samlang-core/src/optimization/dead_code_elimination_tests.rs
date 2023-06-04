@@ -5,7 +5,7 @@ mod tests {
   use crate::{
     ast::hir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
-      VariableName, BOOL_TYPE, INT_TYPE, ONE, ZERO,
+      VariableName, INT_TYPE, ONE, ZERO,
     },
     common::Heap,
     optimization::dead_code_elimination,
@@ -83,9 +83,9 @@ mod tests {
       stmts,
       Expression::var_name(heap.alloc_str_for_test("ii"), INT_TYPE),
       heap,
-      r#"let u1: int = 0 / 1;
-let u2: int = 0 % 1;
-let p: int = 0 + 1;
+      r#"let u1 = 0 / 1;
+let u2 = 0 % 1;
+let p = 0 + 1;
 let s: S = [(p: int)];
 ff((s: int));
 return (ii: int);"#,
@@ -158,9 +158,9 @@ return (ii: int);"#,
       ],
       ZERO,
       heap,
-      r#"let u1: int = 0 / 1;
-let u2: int = 0 % 1;
-let p: int = 0 + 1;
+      r#"let u1 = 0 / 1;
+let u2 = 0 % 1;
+let p = 0 + 1;
 let i1: int = (p: int)[3];
 let s1: Id = Closure { fun: (closure: () -> int), context: (b2: int) };
 let s2 = (s1: int) as int;
@@ -177,7 +177,7 @@ return 0;"#,
       vec![
         Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("s1"),
@@ -201,8 +201,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let b: bool = 0 == 1;
-if (b: bool) {
+      r#"let b = 0 == 1;
+if (b: int) {
   s1();
 } else {
   s1();
@@ -219,7 +219,7 @@ return 0;"#,
       vec![
         Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("s1"),
@@ -248,9 +248,9 @@ return 0;"#,
       ],
       Expression::var_name(heap.alloc_str_for_test("ma"), INT_TYPE),
       heap,
-      r#"let b: bool = 0 == 1;
+      r#"let b = 0 == 1;
 let ma: int;
-if (b: bool) {
+if (b: int) {
   let a1: int = s1();
   ma = (a1: int);
 } else {
@@ -269,7 +269,7 @@ return (ma: int);"#,
       vec![
         Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("s1"),
@@ -295,8 +295,8 @@ return (ma: int);"#,
       ],
       ZERO,
       heap,
-      r#"let b: bool = 0 == 1;
-if (b: bool) {
+      r#"let b = 0 == 1;
+if (b: int) {
   s1();
 } else {
   (s1: int)();
@@ -313,7 +313,7 @@ return 0;"#,
       vec![
         Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("s1"),
@@ -342,8 +342,8 @@ return 0;"#,
       ],
       ZERO,
       heap,
-      r#"let b: bool = 0 == 1;
-if (b: bool) {
+      r#"let b = 0 == 1;
+if (b: int) {
   s1();
 } else {
   s1();
@@ -360,7 +360,7 @@ return 0;"#,
       vec![
         Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
           s1: vec![],
           s2: vec![],
           final_assignments: vec![],
@@ -380,7 +380,7 @@ return 0;"#,
       vec![
         Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
         Statement::SingleIf {
-          condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
           invert_condition: false,
           statements: vec![],
         },
@@ -435,7 +435,7 @@ return 0;"#,
             ZERO,
           ),
           Statement::IfElse {
-            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
             s1: vec![
               Statement::IndexedAccess {
                 name: heap.alloc_str_for_test("s"),
@@ -482,12 +482,12 @@ while (true) {
   (s1: int)();
   while (true) {
   }
-  let is_zero: bool = (n: int) == 0;
+  let is_zero = (n: int) == 0;
   let _tmp_n: int;
-  if (is_zero: bool) {
+  if (is_zero: int) {
     _tmp_n = (n: int);
   } else {
-    let s2_n: int = (n: int) + -1;
+    let s2_n = (n: int) + -1;
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
@@ -524,7 +524,7 @@ return 0;"#,
             ZERO,
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(ZERO)],
           },
@@ -535,8 +535,8 @@ return 0;"#,
       heap,
       r#"let n: int = 10;
 while (true) {
-  let is_zero: bool = (n: int) == 0;
-  if (is_zero: bool) {
+  let is_zero = (n: int) == 0;
+  if (is_zero: int) {
     undefined = 0;
     break;
   }
@@ -571,7 +571,7 @@ return 0;"#,
       r#"let n: int = 10;
 let v: int;
 while (true) {
-  let n1: int = (n: int) + 0;
+  let n1 = (n: int) + 0;
   n = (n1: int);
 }
 return (v: int);"#,

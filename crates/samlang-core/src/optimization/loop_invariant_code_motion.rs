@@ -127,7 +127,7 @@ mod tests {
   use crate::{
     ast::hir::{
       Callee, Expression, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
-      VariableName, BOOL_TYPE, INT_TYPE, ONE, ZERO,
+      VariableName, INT_TYPE, ONE, ZERO,
     },
     Heap,
   };
@@ -183,7 +183,7 @@ mod tests {
           ZERO,
         ),
         Statement::SingleIf {
-          condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
           invert_condition: false,
           statements: vec![Statement::Break(ZERO)],
         },
@@ -319,7 +319,7 @@ mod tests {
       .map(|s| s.debug_print(heap))
       .join("\n");
     assert_eq!(
-      r#"let c: int = (a: int) - (b: int);
+      r#"let c = (a: int) - (b: int);
 let d: int = (c: int)[0];
 let h: I = Closure { fun: (f: () -> int), context: (d: int) };
 let kk: I = [0];
@@ -331,20 +331,20 @@ let y: int = 0;
 let z: int = 0;
 let bc: int;
 while (true) {
-  let cc: bool = (i: int) < 0;
-  if (cc: bool) {
+  let cc = (i: int) < 0;
+  if (cc: int) {
     bc = 0;
     break;
   }
-  let tmp_i: int = (i: int) + 1;
-  let tmp_j: int = (j: int) + 3;
-  let tmp_x: int = (i: int) * 5;
-  let tmp_y: int = (tmp_x: int) + 6;
+  let tmp_i = (i: int) + 1;
+  let tmp_j = (j: int) + 3;
+  let tmp_x = (i: int) * 5;
+  let tmp_y = (tmp_x: int) + 6;
   f((tmp_x: int));
   let fc: int = f((tmp_x: int));
-  let tmp_z: int = (tmp_x: int) + (tmp_y: int);
+  let tmp_z = (tmp_x: int) + (tmp_y: int);
   let e: int = (x: int)[0];
-  let f: int = (b: int) + (x: int);
+  let f = (b: int) + (x: int);
   let g: I = Closure { fun: (f: () -> int), context: (x: int) };
   let kk2: I = [(g: int)];
   let l2 = (i: int) as int;

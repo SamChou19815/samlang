@@ -50,7 +50,7 @@ fn rewrite_fn_name(
 
 fn rewrite_expr(state: &State, expr: Expression) -> Expression {
   match expr {
-    Expression::IntLiteral(_, _) | Expression::StringName(_) => expr,
+    Expression::IntLiteral(_) | Expression::StringName(_) => expr,
     Expression::Variable(n) => Expression::Variable(rewrite_var_name(state, n)),
   }
 }
@@ -61,9 +61,8 @@ fn rewrite_expressions(state: &State, expressions: Vec<Expression>) -> Vec<Expre
 
 fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
   match stmt {
-    Statement::Binary(Binary { name, type_, operator, e1, e2 }) => Statement::Binary(Binary {
+    Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
       name,
-      type_: rewrite_type(state, type_),
       operator,
       e1: rewrite_expr(state, e1),
       e2: rewrite_expr(state, e2),
@@ -231,7 +230,7 @@ pub(super) fn deduplicate(
 mod tests {
   use super::*;
   use crate::{
-    ast::hir::{INT_TYPE, STRING_TYPE, TRUE, ZERO},
+    ast::hir::{INT_TYPE, ONE, STRING_TYPE, ZERO},
     Heap,
   };
   use pretty_assertions::assert_eq;
@@ -309,7 +308,7 @@ mod tests {
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IfElse {
-          condition: TRUE,
+          condition: ONE,
           s1: vec![
             Statement::binary(
               heap.alloc_str_for_test("_"),
@@ -380,7 +379,7 @@ object type C = [int, string]
 function main(): int {
   let _: int;
   if 1 {
-    let _: int = 0 + 0;
+    let _ = 0 + 0;
     f<int>(0);
     (f: int)();
     let _: A = 0[0];

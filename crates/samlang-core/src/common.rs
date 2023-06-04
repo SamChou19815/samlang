@@ -58,9 +58,8 @@ impl ModuleReference {
 }
 
 enum StringStoredInHeap {
-  // (string, marked)
   Permanent(&'static str),
-  Temporary(String, bool),
+  Temporary(String, /** marked */ bool),
   Deallocated(Option<String>),
 }
 

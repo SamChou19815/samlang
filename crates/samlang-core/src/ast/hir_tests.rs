@@ -34,7 +34,6 @@ mod tests {
     assert!(!format!("{:?}", Expression::StringName(heap.alloc_str_for_test("a"))).is_empty());
     assert!(!format!("{:?}", Operator::GE).is_empty());
     assert!(!format!("{:?}", ZERO.type_()).is_empty());
-    assert!(!format!("{:?}", FALSE.type_()).is_empty());
     assert!(!format!(
       "{:?}",
       Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE).type_().as_primitive()
@@ -130,7 +129,6 @@ mod tests {
   fn print_types_and_expressions_tests() {
     let heap = &mut Heap::new();
 
-    assert_eq!("bool", BOOL_TYPE.clone().pretty_print(heap));
     assert_eq!("int", INT_TYPE.pretty_print(heap));
     assert_eq!("string", STRING_TYPE.pretty_print(heap));
     assert_eq!("0", ZERO.clone().debug_print(heap));
@@ -169,12 +167,12 @@ mod tests {
     let heap = &mut Heap::new();
 
     assert_eq!(
-      "object type A = [int, bool]",
+      "object type A = [int, int]",
       TypeDefinition {
         identifier: heap.alloc_str_for_test("A"),
         type_parameters: vec![],
         names: vec![],
-        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, BOOL_TYPE]),
+        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .pretty_print(heap)
     );
@@ -320,17 +318,17 @@ mod tests {
 if 0 {
   let baz: FooBar = [meggo];
   let closure: CCC = Closure { fun: (foo: (int) -> int), context: 0 };
-  let dd: bool = 0 < 0;
-  let dd: bool = 0 <= 0;
-  let dd: bool = 0 > 0;
-  let dd: bool = 0 >= 0;
-  let dd: bool = 0 == 0;
-  let dd: bool = 0 != 0;
-  let dd: int = 0 & 0;
-  let dd: int = 0 | 0;
-  let dd: int = 0 << 0;
-  let dd: int = 0 >>> 0;
-  let dd: bool = 0 ^ 0;
+  let dd = 0 < 0;
+  let dd = 0 <= 0;
+  let dd = 0 > 0;
+  let dd = 0 >= 0;
+  let dd = 0 == 0;
+  let dd = 0 != 0;
+  let dd = 0 & 0;
+  let dd = 0 | 0;
+  let dd = 0 << 0;
+  let dd = 0 >>> 0;
+  let dd = 0 ^ 0;
   let cast = 0 as int;
   while (true) {
     if 0 {
@@ -347,12 +345,12 @@ if 0 {
   }
   bar = (b1: int);
 } else {
-  let dd: int = 0 + 0;
-  let dd: int = 0 + 0;
-  let dd: int = 0 - -2147483648;
-  let dd: int = 0 * 0;
-  let dd: int = 0 / 0;
-  let dd: int = 0 % 0;
+  let dd = 0 + 0;
+  let dd = 0 + 0;
+  let dd = 0 - -2147483648;
+  let dd = 0 * 0;
+  let dd = 0 / 0;
+  let dd = 0 % 0;
   let vibez: int = h((big: FooBar));
   stresso<int>((d: int));
   (d: int)((d: int));
@@ -384,7 +382,7 @@ if 0 {
         identifier: heap.alloc_str_for_test("Foo"),
         type_parameters: vec![],
         names: vec![],
-        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, BOOL_TYPE]),
+        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .clone()],
       main_function_names: vec![heap.alloc_str_for_test("ddd")],
@@ -410,7 +408,7 @@ if 0 {
     let expected1 = r#"const dev_meggo = 'vibez';
 
 closure type c = () -> int
-object type Foo = [int, bool]
+object type Foo = [int, int]
 function Bar(f: int): int {
   let f: int = (big: FooBar)[0];
   return 0;

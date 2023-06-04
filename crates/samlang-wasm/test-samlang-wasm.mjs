@@ -15,14 +15,14 @@ assertEqual(
   tsCode,
   `type Str = [number, string];
 const __Builtins$stringConcat = ([, a]: Str, [, b]: Str): Str => [1, a + b];
-const __Builtins$println = ([, line]: Str): number => { console.log(line); return 0; };
-const __Builtins$stringToInt = ([, v]: Str): number => parseInt(v, 10);
-const __Builtins$intToString = (v: number): Str => [1, String(v)];
-const __Builtins$panic = ([, v]: Str): number => { throw Error(v); };
+const __Builtins$println = (_: number, [, line]: Str): number => { console.log(line); return 0; };
+const __Builtins$stringToInt = (_: number, [, v]: Str): number => parseInt(v, 10);
+const __Builtins$intToString = (_: number, v: number): Str => [1, String(v)];
+const __Builtins$panic = (_: number, [, v]: Str): number => { throw Error(v); };
 const _builtin_free = (v: any): number => { v.length = 0; return 0 };
 const GLOBAL_STRING_7: Str = [0, \`Hi\`];
 function _Demo_Main$main(): number {
-  __Builtins$println(GLOBAL_STRING_7);
+  __Builtins$println(0, GLOBAL_STRING_7);
   return 0;
 }
 
