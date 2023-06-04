@@ -26,7 +26,7 @@ fn collect_use_from_while_parts(
 
 fn collect_use_from_stmt(stmt: &Statement, set: &mut HashSet<PStr>) {
   match stmt {
-    Statement::Binary(Binary { name: _, type_: _, operator: _, e1, e2 }) => {
+    Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
       collect_use_from_expression(e1, set);
       collect_use_from_expression(e2, set);
     }

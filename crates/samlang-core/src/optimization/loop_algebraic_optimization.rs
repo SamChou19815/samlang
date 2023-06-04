@@ -63,7 +63,7 @@ pub(super) fn optimize(
 ) -> Option<Vec<Statement>> {
   let BasicInductionVariableWithLoopGuard {
     name: basic_induction_variable_with_loop_guard_name,
-    initial_value: Expression::IntLiteral(initial_guard_value, true),
+    initial_value: Expression::IntLiteral(initial_guard_value),
     increment_amount: PotentialLoopInvariantExpression::Int(guard_increment_amount),
     guard_operator,
     guard_expression: PotentialLoopInvariantExpression::Int(guarded_value),
@@ -90,7 +90,6 @@ pub(super) fn optimize(
           *initial_guard_value + *guard_increment_amount * num_of_loop_iterations;
         return Some(vec![Statement::Binary(Binary {
           name: *n,
-          type_: t.clone(),
           operator: Operator::PLUS,
           e1: Expression::int(basic_induction_variable_with_loop_guard_final_value),
           e2: ZERO,
@@ -102,7 +101,6 @@ pub(super) fn optimize(
       // without looping around.
       return Some(vec![Statement::Binary(Binary {
         name: *n,
-        type_: t.clone(),
         operator: Operator::PLUS,
         e1: e.clone(),
         e2: ZERO,
@@ -138,7 +136,6 @@ pub(super) fn optimize(
     // without looping around.
     Some(vec![Statement::Binary(Binary {
       name: *break_collector.0,
-      type_: break_collector.1.clone(),
       operator: Operator::PLUS,
       e1: Expression::Variable(break_collector.2.clone()),
       e2: ZERO,
@@ -350,7 +347,7 @@ mod tests {
         break_collector: Some((heap.alloc_str_for_test("bc"), INT_TYPE, Expression::int(3))),
       },
       heap,
-      "let bc: int = 3 + 0;",
+      "let bc = 3 + 0;",
     );
 
     assert_optimized(
@@ -373,7 +370,7 @@ mod tests {
         )),
       },
       heap,
-      "let bc: int = 20 + 0;",
+      "let bc = 20 + 0;",
     );
 
     assert_optimized(
@@ -403,7 +400,7 @@ mod tests {
         )),
       },
       heap,
-      "let _t6: int = (outside: int) * 15;\nlet bc: int = (_t6: int) + (j_init: int);",
+      "let _t6 = (outside: int) * 15;\nlet bc = (_t6: int) + (j_init: int);",
     );
 
     assert_optimized(
@@ -433,7 +430,7 @@ mod tests {
         )),
       },
       heap,
-      "let bc: int = (aa: int) + 0;",
+      "let bc = (aa: int) + 0;",
     );
   }
 }

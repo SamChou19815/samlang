@@ -108,7 +108,7 @@ fn optimize_variable_name(
 
 fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression) -> Expression {
   match e {
-    Expression::IntLiteral(_, _) | Expression::StringName(_) => e.clone(),
+    Expression::IntLiteral(_) | Expression::StringName(_) => e.clone(),
     Expression::Variable(v) => optimize_variable_name(value_cx, v),
   }
 }
@@ -158,11 +158,11 @@ fn optimize_stmt(
   binary_expr_cx: &mut BinaryExpressionContext,
 ) -> Vec<Statement> {
   match stmt {
-    Statement::Binary(Binary { name, type_: _, operator, e1, e2 }) => {
+    Statement::Binary(Binary { name, operator, e1, e2 }) => {
       let e1 = optimize_expr(value_cx, e1);
       let e2 = optimize_expr(value_cx, e2);
       let operator = *operator;
-      if let Expression::IntLiteral(v2, _) = &e2 {
+      if let Expression::IntLiteral(v2) = &e2 {
         if *v2 == 0 {
           if operator == Operator::PLUS {
             value_cx.checked_bind(*name, e1);
@@ -183,9 +183,9 @@ fn optimize_stmt(
             return vec![];
           }
         }
-        if let Expression::IntLiteral(v1, b) = &e1 {
+        if let Expression::IntLiteral(v1) = &e1 {
           if let Some(value) = evaluate_bin_op(operator, *v1, *v2) {
-            value_cx.checked_bind(*name, Expression::IntLiteral(value, *b));
+            value_cx.checked_bind(*name, Expression::IntLiteral(value));
             return vec![];
           }
         }
@@ -207,10 +207,9 @@ fn optimize_stmt(
         Statement::binary_flexible_unwrapped(*name, operator, e1, e2);
       if let Binary {
         name,
-        type_,
         operator,
         e1: Expression::Variable(v1),
-        e2: Expression::IntLiteral(v2, b2),
+        e2: Expression::IntLiteral(v2),
       } = &partially_optimized_binary
       {
         if let Some(existing_b1) = binary_expr_cx.get(&v1.name) {
@@ -219,10 +218,9 @@ fn optimize_stmt(
           {
             return vec![Statement::Binary(Binary {
               name: *name,
-              type_: type_.clone(),
               operator,
               e1: Expression::Variable(e1),
-              e2: Expression::IntLiteral(e2, *b2),
+              e2: Expression::IntLiteral(e2),
             })];
           }
         }
@@ -264,7 +262,7 @@ fn optimize_stmt(
 
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       let condition = optimize_expr(value_cx, condition);
-      if let Expression::IntLiteral(v, _) = &condition {
+      if let Expression::IntLiteral(v) = &condition {
         let is_true = (*v) != 0;
         let stmts = optimize_stmts(
           if is_true { s1 } else { s2 },
@@ -305,7 +303,7 @@ fn optimize_stmt(
 
     Statement::SingleIf { condition, invert_condition, statements } => {
       let condition = optimize_expr(value_cx, condition);
-      if let Expression::IntLiteral(v, _) = &condition {
+      if let Expression::IntLiteral(v) = &condition {
         let is_true = (*v ^ (*invert_condition as i32)) != 0;
         if is_true {
           optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx)

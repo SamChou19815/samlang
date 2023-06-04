@@ -16,7 +16,7 @@ pub(super) enum PotentialLoopInvariantExpression {
 impl PotentialLoopInvariantExpression {
   pub(super) fn to_expression(&self) -> Expression {
     match self {
-      PotentialLoopInvariantExpression::Int(i) => Expression::IntLiteral(*i, true),
+      PotentialLoopInvariantExpression::Int(i) => Expression::IntLiteral(*i),
       PotentialLoopInvariantExpression::Var(n) => Expression::Variable(n.clone()),
     }
   }
@@ -293,8 +293,7 @@ fn get_loop_invariant_expression_opt(
   non_loop_invariant_variables: &HashSet<PStr>,
 ) -> Option<PotentialLoopInvariantExpression> {
   match expression {
-    Expression::IntLiteral(i, true) => Some(PotentialLoopInvariantExpression::Int(*i)),
-    Expression::IntLiteral(_, false) => None,
+    Expression::IntLiteral(i) => Some(PotentialLoopInvariantExpression::Int(*i)),
     // We are doing algebraic operations here. Name is hopeless.
     Expression::StringName(_) => None,
     Expression::Variable(v) => {
@@ -371,8 +370,8 @@ fn try_merge_into_derived_induction_variable(
     Operator::PLUS | Operator::MUL => {}
     _ => return,
   }
-  let Binary { name, type_, operator, e1, e2 } = binary_statement.clone();
-  let swapped = Binary { name, type_, operator, e1: e2, e2: e1 };
+  let Binary { name, operator, e1, e2 } = binary_statement.clone();
+  let swapped = Binary { name, operator, e1: e2, e2: e1 };
   try_merge_into_derived_induction_variable_without_swap(
     existing_set,
     non_loop_invariant_variables,
@@ -406,7 +405,7 @@ fn extract_loop_guard_structure(
     (stmts.get(0).and_then(Statement::as_binary), stmts.get(1).and_then(Statement::as_single_if));
   match (first_binary_stmt, second_single_if_stmt) {
     (
-      Some(Binary { name, type_: _, operator, e1: Expression::Variable(e1_var), e2 }),
+      Some(Binary { name, operator, e1: Expression::Variable(e1_var), e2 }),
       Some((Expression::Variable(condition_var), invert_condition, single_if_stmts)),
     ) if name.eq(&condition_var.name)
       && single_if_stmts.len() == 1
@@ -458,7 +457,6 @@ fn extract_basic_induction_variables(
         match stmt {
           Statement::Binary(Binary {
             name,
-            type_: _,
             operator: Operator::PLUS,
             e1: Expression::Variable(e1_var),
             e2,
@@ -648,7 +646,7 @@ pub(super) fn extract_optimizable_while_loop(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::hir::{Callee, FunctionName, BOOL_TYPE, INT_TYPE, ONE, TRUE, ZERO};
+  use crate::ast::hir::{Callee, FunctionName, INT_TYPE, ONE, ZERO};
   use pretty_assertions::assert_eq;
 
   #[test]
@@ -791,7 +789,6 @@ mod tests {
       &HashSet::from([heap.alloc_str_for_test("a")])
     ));
     assert!(expression_is_loop_invariant(&ZERO, &HashSet::from([heap.alloc_str_for_test("a")])));
-    assert!(!expression_is_loop_invariant(&TRUE, &HashSet::from([heap.alloc_str_for_test("a")])));
     assert!(expression_is_loop_invariant(
       &Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
       &HashSet::from([heap.alloc_str_for_test("a")])
@@ -1610,7 +1607,7 @@ mod tests {
             ZERO
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(ZERO)]
           },
@@ -1677,7 +1674,7 @@ mod tests {
             ZERO
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(ZERO)]
           },
@@ -1698,7 +1695,7 @@ mod tests {
             ZERO
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test(""),
@@ -1832,7 +1829,7 @@ mod tests {
             ZERO
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(ZERO)],
           },
@@ -1891,7 +1888,7 @@ mod tests {
             ZERO,
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(ZERO)],
           },

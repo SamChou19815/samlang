@@ -35,9 +35,6 @@ mod tests {
 
     assert!(INT_TYPE
       .is_the_same_type(Expression::Variable(heap.alloc_str_for_test("a"), INT_TYPE).type_()));
-    assert!(
-      BOOL_TYPE.is_the_same_type(Expression::Name(heap.alloc_str_for_test("a"), BOOL_TYPE).type_())
-    );
     assert!(STRING_TYPE.is_the_same_type(Expression::IntLiteral(1, STRING_TYPE).type_()));
     assert!(STRING_TYPE.is_the_same_type(&ANY_TYPE));
     assert!(!Type::Id(heap.alloc_str_for_test("a"))
@@ -51,13 +48,10 @@ mod tests {
   fn print_types_and_expressions_tests() {
     let heap = &mut Heap::new();
 
-    assert_eq!("boolean", BOOL_TYPE.clone().pretty_print(heap));
     assert_eq!("number", INT_TYPE.pretty_print(heap));
     assert_eq!("Str", STRING_TYPE.pretty_print(heap));
     assert_eq!("any", ANY_TYPE.pretty_print(heap));
     assert_eq!("0", ZERO.clone().pretty_print(heap));
-    assert_eq!("true", TRUE.clone().pretty_print(heap));
-    assert_eq!("false", FALSE.clone().pretty_print(heap));
     assert_eq!(
       "a",
       Expression::Variable(heap.alloc_str_for_test("a"), STRING_TYPE).pretty_print(heap)
@@ -160,7 +154,7 @@ mod tests {
         Statement::IndexedAssign { assigned_expression: ZERO, pointer_expression: ZERO, index: 0 },
         Statement::Cast {
           name: heap.alloc_str_for_test("c"),
-          type_: BOOL_TYPE,
+          type_: INT_TYPE,
           assigned_expression: ZERO,
         },
         Statement::Break(ZERO),
@@ -183,13 +177,13 @@ mod tests {
   let bar: number;
   if (0) {
     let baz: FooBar = [meggo];
-    let dd: boolean = 0 < 0;
-    let dd: boolean = 0 <= 0;
-    let dd: boolean = 0 > 0;
-    let dd: boolean = 0 >= 0;
-    let dd: boolean = 0 == 0;
-    let dd: boolean = 0 != 0;
-    let dd: boolean = 0 ^ 0;
+    let dd = Number(0 < 0);
+    let dd = Number(0 <= 0);
+    let dd = Number(0 > 0);
+    let dd = Number(0 >= 0);
+    let dd = Number(0 == 0);
+    let dd = Number(0 != 0);
+    let dd = 0 ^ 0;
     while (true) {
       if (0) {
       }
@@ -205,18 +199,18 @@ mod tests {
     }
     bar = b1;
   } else {
-    let dd: number = 0 + 0;
-    let dd: number = 0 + 0;
-    let dd: number = 0 - -2147483648;
-    let dd: number = 0 * 0;
-    let dd: number = Math.floor(0 / 0);
-    let dd: number = 0 % 0;
+    let dd = 0 + 0;
+    let dd = 0 + 0;
+    let dd = 0 - -2147483648;
+    let dd = 0 * 0;
+    let dd = Math.floor(0 / 0);
+    let dd = 0 % 0;
     let vibez: number = h(big);
     stresso(d);
     d(d);
     let f: number = big[0];
     0[0] = 0;
-    let c = 0 as boolean;
+    let c = 0 as number;
     break;
     bar = b2;
   }
@@ -243,7 +237,7 @@ mod tests {
       ],
       type_definitions: vec![TypeDefinition {
         name: heap.alloc_str_for_test("Foo"),
-        mappings: vec![INT_TYPE, BOOL_TYPE],
+        mappings: vec![INT_TYPE, INT_TYPE],
       }],
       main_function_names: vec![],
       functions: vec![Function {
@@ -272,7 +266,7 @@ const {} = (_: number, [, v]: Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
 const dev_meggo: Str = [0, `vibez`];
 const esc: Str = [0, `f"\"`];
-type Foo = [number, boolean];
+type Foo = [number, number];
 function Bar(f: number): number {{
   let f: number = big[0];
   return 0;

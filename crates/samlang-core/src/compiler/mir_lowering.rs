@@ -9,9 +9,6 @@ use std::collections::{BTreeMap, HashSet};
 
 fn lower_type(type_: hir::Type) -> mir::Type {
   match type_ {
-    hir::Type::Primitive(hir::PrimitiveType::Bool) => {
-      mir::Type::Primitive(mir::PrimitiveType::Bool)
-    }
     hir::Type::Primitive(hir::PrimitiveType::Int) => mir::Type::Primitive(mir::PrimitiveType::Int),
     hir::Type::Primitive(hir::PrimitiveType::String) => {
       mir::Type::Primitive(mir::PrimitiveType::String)
@@ -38,9 +35,7 @@ fn unknown_member_destructor_type() -> mir::FunctionType {
 
 fn lower_expression(expr: hir::Expression) -> mir::Expression {
   match expr {
-    hir::Expression::IntLiteral(i, is_int) => {
-      mir::Expression::IntLiteral(i, if is_int { mir::INT_TYPE } else { mir::BOOL_TYPE })
-    }
+    hir::Expression::IntLiteral(i) => mir::Expression::IntLiteral(i, mir::INT_TYPE),
     hir::Expression::StringName(n) => mir::Expression::Name(n, mir::STRING_TYPE),
     hir::Expression::Variable(hir::VariableName { name, type_ }) => {
       mir::Expression::Variable(name, lower_type(type_))
@@ -163,10 +158,9 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_stmt(&mut self, stmt: hir::Statement) -> Vec<mir::Statement> {
     match stmt {
-      hir::Statement::Binary(hir::Binary { name, type_, operator, e1, e2 }) => {
+      hir::Statement::Binary(hir::Binary { name, operator, e1, e2 }) => {
         vec![mir::Statement::Binary {
           name,
-          type_: lower_type(type_),
           operator,
           e1: lower_expression(e1),
           e2: lower_expression(e2),
@@ -445,7 +439,7 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> mir::Function {
       mir::Statement::SingleIf {
         condition: mir::Expression::Variable(
           heap.alloc_str_permanent("isPrimitive"),
-          mir::BOOL_TYPE,
+          mir::INT_TYPE,
         ),
         invert_condition: true,
         statements: vec![
@@ -471,10 +465,7 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> mir::Function {
             mir::ZERO,
           ),
           mir::Statement::SingleIf {
-            condition: mir::Expression::Variable(
-              heap.alloc_str_permanent("isZero"),
-              mir::BOOL_TYPE,
-            ),
+            condition: mir::Expression::Variable(heap.alloc_str_permanent("isZero"), mir::INT_TYPE),
             invert_condition: true,
             statements: vec![
               mir::Statement::binary(
@@ -539,7 +530,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
       mir::Statement::SingleIf {
         condition: mir::Expression::Variable(
           heap.alloc_str_permanent("isPrimitive"),
-          mir::BOOL_TYPE,
+          mir::INT_TYPE,
         ),
         invert_condition: true,
         statements: vec![
@@ -565,10 +556,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
             mir::ZERO,
           ),
           mir::Statement::SingleIf {
-            condition: mir::Expression::Variable(
-              heap.alloc_str_permanent("isZero"),
-              mir::BOOL_TYPE,
-            ),
+            condition: mir::Expression::Variable(heap.alloc_str_permanent("isZero"), mir::INT_TYPE),
             invert_condition: true,
             statements: vec![
               mir::Statement::binary(
@@ -580,7 +568,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
               mir::Statement::IfElse {
                 condition: mir::Expression::Variable(
                   heap.alloc_str_permanent("gtOne"),
-                  mir::BOOL_TYPE,
+                  mir::INT_TYPE,
                 ),
                 s1: vec![
                   mir::Statement::binary(
@@ -642,7 +630,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> mir::Function {
                       mir::Statement::SingleIf {
                         condition: mir::Expression::Variable(
                           heap.alloc_str_permanent("shouldStop"),
-                          mir::BOOL_TYPE,
+                          mir::INT_TYPE,
                         ),
                         invert_condition: false,
                         statements: vec![mir::Statement::Break(mir::ZERO)],
@@ -811,7 +799,7 @@ mod tests {
       hir::{
         Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
         Operator, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
-        INT_TYPE, STRING_TYPE, TRUE, ZERO,
+        INT_TYPE, ONE, STRING_TYPE, ZERO,
       },
     },
     common::Heap,
@@ -1054,7 +1042,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::IfElse {
-              condition: TRUE,
+              condition: ONE,
               s1: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionName::new(
@@ -1106,7 +1094,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               )],
             },
             Statement::IfElse {
-              condition: TRUE,
+              condition: ONE,
               s1: vec![Statement::Cast {
                 name: heap.alloc_str_for_test("cast"),
                 type_: INT_TYPE,
@@ -1164,7 +1152,7 @@ function cc(): number {{
   return 0;
 }}
 function main(): number {{
-  let v1: number = 0 + 0;
+  let v1 = 0 + 0;
   _builtin_inc_ref(obj);
   let O: Object = [0, 0, obj];
   let v1: Variant = [1, 0, 0];
@@ -1186,7 +1174,7 @@ function main(): number {{
 }}
 function _compiled_program_main(): number {{
   let finalV: CC;
-  if (true) {{
+  if (1) {{
     main(0);
     let ccc: number = cc(0);
     finalV = v1;
@@ -1202,7 +1190,7 @@ function _compiled_program_main(): number {{
     finalV = v2;
   }}
   let finalV2: number;
-  if (true) {{
+  if (1) {{
     let cast = 0 as number;
     finalV2 = 0;
   }} else {{
@@ -1215,50 +1203,50 @@ function _compiled_program_main(): number {{
   return 0;
 }}
 function _builtin_inc_ref(ptr: any): number {{
-  let isPrimitive: boolean = ptr < 1024;
+  let isPrimitive = Number(ptr < 1024);
   if (!isPrimitive) {{
     let header: number = ptr[0];
-    let originalRefCount: number = header & 65535;
-    let isZero: boolean = originalRefCount == 0;
+    let originalRefCount = header & 65535;
+    let isZero = Number(originalRefCount == 0);
     if (!isZero) {{
-      let refCount: number = originalRefCount + 1;
-      let lower: number = refCount & 65535;
-      let upper: number = header & -65536;
-      let newHeader: number = upper | lower;
+      let refCount = originalRefCount + 1;
+      let lower = refCount & 65535;
+      let upper = header & -65536;
+      let newHeader = upper | lower;
       ptr[0] = newHeader;
     }}
   }}
   return 0;
 }}
 function _builtin_dec_ref(ptr: any): number {{
-  let isPrimitive: boolean = ptr < 1024;
+  let isPrimitive = Number(ptr < 1024);
   if (!isPrimitive) {{
     let header: number = ptr[0];
-    let refCount: number = header & 65535;
-    let isZero: boolean = refCount == 0;
+    let refCount = header & 65535;
+    let isZero = Number(refCount == 0);
     if (!isZero) {{
-      let gtOne: boolean = refCount > 1;
+      let gtOne = Number(refCount > 1);
       if (gtOne) {{
-        let newHeader: number = header + -1;
+        let newHeader = header + -1;
         ptr[0] = newHeader;
       }} else {{
-        let isRefBitSet: number = header >>> 16;
+        let isRefBitSet = header >>> 16;
         let bitSet: number = isRefBitSet;
         let i: number = 1;
         while (true) {{
-          let shouldStop: boolean = i > 16;
+          let shouldStop = Number(i > 16);
           if (shouldStop) {{
             break;
           }}
-          let isRef: number = isRefBitSet & 1;
+          let isRef = isRefBitSet & 1;
           if (isRef) {{
-            let offsetToHeader: number = i + 1;
-            let byteOffset: number = offsetToHeader << 2;
-            let fieldPtr: number = ptr + byteOffset;
+            let offsetToHeader = i + 1;
+            let byteOffset = offsetToHeader << 2;
+            let fieldPtr = ptr + byteOffset;
             _builtin_dec_ref(fieldPtr);
           }}
-          let newIsRefBitSet: number = bitSet >>> 1;
-          let newI: number = i + 1;
+          let newIsRefBitSet = bitSet >>> 1;
+          let newI = i + 1;
           bitSet = newIsRefBitSet;
           i = newI;
         }}

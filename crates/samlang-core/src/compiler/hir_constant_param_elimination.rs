@@ -12,7 +12,7 @@ use std::collections::HashMap;
 enum ParamUsageAnalysisState {
   Unused,
   Referenced,
-  IntConstant(i32, bool),
+  IntConstant(i32),
   StrConstant(PStr),
   Unoptimizable,
 }
@@ -192,7 +192,7 @@ fn collect_global_usages_stmt(state: &mut HashMap<PStr, FunctionAnalysisState>, 
           param_states[i] = meet_param_state(
             param_states[i],
             match arg {
-              Expression::IntLiteral(n, b) => ParamUsageAnalysisState::IntConstant(*n, *b),
+              Expression::IntLiteral(n) => ParamUsageAnalysisState::IntConstant(*n),
               Expression::StringName(p) => ParamUsageAnalysisState::StrConstant(*p),
               Expression::Variable(_) => ParamUsageAnalysisState::Unoptimizable,
             },
@@ -227,7 +227,7 @@ fn collect_all_usages(sources: &Sources) -> HashMap<PStr, FunctionAnalysisState>
 }
 
 enum VariableRewriteInstruction {
-  IntConstant(i32, bool),
+  IntConstant(i32),
   StrConstant(PStr),
 }
 
@@ -238,10 +238,10 @@ struct RewriteState<'a> {
 
 fn rewrite_expr(state: &RewriteState, expr: Expression) -> Expression {
   match &expr {
-    Expression::IntLiteral(_, _) | Expression::StringName(_) => expr,
+    Expression::IntLiteral(_) | Expression::StringName(_) => expr,
     Expression::Variable(v) => match state.local_rewrite.get(&v.name) {
       None => expr,
-      Some(VariableRewriteInstruction::IntConstant(n, b)) => Expression::IntLiteral(*n, *b),
+      Some(VariableRewriteInstruction::IntConstant(n)) => Expression::IntLiteral(*n),
       Some(VariableRewriteInstruction::StrConstant(s)) => Expression::StringName(*s),
     },
   }
@@ -249,9 +249,8 @@ fn rewrite_expr(state: &RewriteState, expr: Expression) -> Expression {
 
 fn rewrite_stmt(state: &RewriteState, stmt: Statement) -> Statement {
   match stmt {
-    Statement::Binary(Binary { name, type_, operator, e1, e2 }) => Statement::Binary(Binary {
+    Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
       name,
-      type_,
       operator,
       e1: rewrite_expr(state, e1),
       e2: rewrite_expr(state, e2),
@@ -392,8 +391,8 @@ pub(super) fn rewrite_sources(sources: Sources) -> Sources {
           parameters.into_iter().zip(param_states).zip(argument_types)
         {
           match state {
-            ParamUsageAnalysisState::IntConstant(i, b) => {
-              local_rewrite.insert(name, VariableRewriteInstruction::IntConstant(*i, *b));
+            ParamUsageAnalysisState::IntConstant(i) => {
+              local_rewrite.insert(name, VariableRewriteInstruction::IntConstant(*i));
             }
             ParamUsageAnalysisState::StrConstant(s) => {
               local_rewrite.insert(name, VariableRewriteInstruction::StrConstant(*s));
@@ -443,9 +442,9 @@ mod tests {
   fn boilerplate() {
     assert!(!format!("{:?}", super::ParamUsageAnalysisState::Unoptimizable.clone()).is_empty());
     assert_eq!(
-      super::ParamUsageAnalysisState::IntConstant(1, false),
+      super::ParamUsageAnalysisState::IntConstant(1),
       super::meet_param_state(
-        super::ParamUsageAnalysisState::IntConstant(1, false),
+        super::ParamUsageAnalysisState::IntConstant(1),
         super::ParamUsageAnalysisState::Referenced,
       ),
     );
@@ -640,7 +639,7 @@ function str_const(): int {
 }
 
 function func_with_consts(b: B, e: E): int {
-  let _: int = 0 + (b: int);
+  let _ = 0 + (b: int);
   let _: int = 0[0];
   let _: _ = Closure { fun: (otherwise_optimizable: () -> int), context: 0 };
   (_: int)(0);

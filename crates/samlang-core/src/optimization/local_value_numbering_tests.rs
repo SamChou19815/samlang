@@ -3,7 +3,7 @@ mod tests {
   use crate::{
     ast::hir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
-      VariableName, BOOL_TYPE, FALSE, INT_TYPE, ONE, TRUE, ZERO,
+      VariableName, INT_TYPE, ONE, ZERO,
     },
     common::Heap,
     optimization::local_value_numbering,
@@ -115,8 +115,8 @@ mod tests {
       Expression::var_name(heap.alloc_str_for_test("ss"), INT_TYPE),
       heap,
       r#"let i0: int = (a: int)[2];
-let b0: int = (i0: int) + 3;
-let b3: int = (i0: int) + (b0: int);
+let b0 = (i0: int) + 3;
+let b3 = (i0: int) + (b0: int);
 let c1 = 0 as int;
 let s: S = [(i0: int), (b0: int), (b3: int)];
 let s: S = Closure { fun: (a: () -> int), context: 0 };
@@ -270,7 +270,7 @@ return 0;"#,
             ZERO,
           ),
           Statement::IfElse {
-            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
             s1: vec![],
             s2: vec![Statement::binary(
               heap.alloc_str_for_test("s2_n"),
@@ -279,7 +279,7 @@ return 0;"#,
               ONE,
             )],
             final_assignments: vec![
-              (heap.alloc_str_for_test("c"), INT_TYPE, FALSE, TRUE),
+              (heap.alloc_str_for_test("c"), INT_TYPE, ZERO, ONE),
               (
                 heap.alloc_str_for_test("_tmp_n"),
                 INT_TYPE,
@@ -300,14 +300,14 @@ return 0;"#,
       heap,
       r#"let n: int = 10;
 while (true) {
-  let is_zero: bool = (n: int) == 0;
+  let is_zero = (n: int) == 0;
   let c: int;
   let _tmp_n: int;
-  if (is_zero: bool) {
+  if (is_zero: int) {
     c = 0;
     _tmp_n = (n: int);
   } else {
-    let s2_n: int = (n: int) + -1;
+    let s2_n = (n: int) + -1;
     c = 1;
     _tmp_n = (s2_n: int);
   }
@@ -336,7 +336,7 @@ return 0;"#,
             ZERO,
           ),
           Statement::IfElse {
-            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
             s1: vec![],
             s2: vec![Statement::binary(
               heap.alloc_str_for_test("s2_n"),
@@ -345,7 +345,7 @@ return 0;"#,
               ONE,
             )],
             final_assignments: vec![
-              (heap.alloc_str_for_test("c"), INT_TYPE, FALSE, TRUE),
+              (heap.alloc_str_for_test("c"), INT_TYPE, ZERO, ONE),
               (
                 heap.alloc_str_for_test("_tmp_n"),
                 INT_TYPE,
@@ -362,14 +362,14 @@ return 0;"#,
       r#"let n: int = 10;
 let v: int;
 while (true) {
-  let is_zero: bool = (n: int) == 0;
+  let is_zero = (n: int) == 0;
   let c: int;
   let _tmp_n: int;
-  if (is_zero: bool) {
+  if (is_zero: int) {
     c = 0;
     _tmp_n = (n: int);
   } else {
-    let s2_n: int = (n: int) + -1;
+    let s2_n = (n: int) + -1;
     c = 1;
     _tmp_n = (s2_n: int);
   }

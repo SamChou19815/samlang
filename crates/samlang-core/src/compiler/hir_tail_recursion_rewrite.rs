@@ -158,7 +158,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
   function: Function,
 ) -> Result<Function, Function> {
   let expected_return_collector = match &function.return_value {
-    Expression::IntLiteral(_, _) => None,
+    Expression::IntLiteral(_) => None,
     Expression::Variable(v) => Some(v.name),
     Expression::StringName(_) => return Err(function),
   };
@@ -390,8 +390,8 @@ mod tests {
   let n: int = (_tailrec_param_n: int);
   let r: int;
   while (true) {
-    let a: int = (n: int) + 0;
-    let r: int = 0 + 0;
+    let a = (n: int) + 0;
+    let r = 0 + 0;
     n = (a: int);
   }
   return (r: int);
@@ -429,7 +429,7 @@ mod tests {
       r#"function loopy(_tailrec_param_n: int): int {
   let n: int = (_tailrec_param_n: int);
   while (true) {
-    let a: int = (n: int) + 0;
+    let a = (n: int) + 0;
     n = (a: int);
   }
   return 0;
@@ -489,13 +489,13 @@ mod tests {
   let n: int = (_tailrec_param_n: int);
   let r: int;
   while (true) {
-    let a: int = (n: int) + 0;
+    let a = (n: int) + 0;
     let _t7: int;
     if 0 {
-      let r1: int = 0 + 0;
+      let r1 = 0 + 0;
       _t7 = (a: int);
     } else {
-      let r2: int = 0 + 0;
+      let r2 = 0 + 0;
       _t7 = (a: int);
     }
     n = (_t7: int);
@@ -546,12 +546,12 @@ mod tests {
   let n: int = (_tailrec_param_n: int);
   let r: int;
   while (true) {
-    let a: int = (n: int) + 0;
+    let a = (n: int) + 0;
     if !0 {
       r = 0;
       break;
     }
-    let r1: int = 0 + 0;
+    let r1 = 0 + 0;
     n = (a: int);
   }
   return (r: int);
@@ -594,7 +594,7 @@ mod tests {
       r#"function loopy(_tailrec_param_n: int): int {
   let n: int = (_tailrec_param_n: int);
   while (true) {
-    let a: int = (n: int) + 0;
+    let a = (n: int) + 0;
     if !0 {
       undefined = 0;
       break;
@@ -668,8 +668,8 @@ mod tests {
       v = 1;
       break;
     }
-    let nn: int = (n: int) + -1;
-    let r: int = 0 + 0;
+    let nn = (n: int) + -1;
+    let r = 0 + 0;
     n = (nn: int);
   }
   return (v: int);

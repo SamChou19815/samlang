@@ -5,8 +5,7 @@ use super::{
 };
 use crate::{
   ast::hir::{
-    Expression, Function, GenenalLoopVariable, Operator, Statement, VariableName, BOOL_TYPE,
-    INT_TYPE, ZERO,
+    Expression, Function, GenenalLoopVariable, Operator, Statement, VariableName, INT_TYPE, ZERO,
   },
   Heap,
 };
@@ -70,7 +69,7 @@ fn expand_optimizable_while_loop(
         basic_induction_variable_with_loop_guard.guard_expression.to_expression(),
       )),
       Statement::SingleIf {
-        condition: Expression::var_name(loop_condition_variable, BOOL_TYPE),
+        condition: Expression::var_name(loop_condition_variable, INT_TYPE),
         invert_condition: false,
         statements: vec![Statement::Break(break_value.clone())],
       },
@@ -239,7 +238,7 @@ mod tests {
   use crate::{
     ast::hir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
-      VariableName, BOOL_TYPE, INT_TYPE, ONE, ZERO,
+      VariableName, INT_TYPE, ONE, ZERO,
     },
     common::INVALID_PSTR,
     Heap,
@@ -319,7 +318,7 @@ mod tests {
           assigned_expression: ZERO,
         },
         Statement::SingleIf {
-          condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
           invert_condition: false,
           statements: vec![Statement::Break(Expression::var_name(
             heap.alloc_str_for_test("j"),
@@ -369,7 +368,7 @@ mod tests {
           Expression::int(10),
         ),
         Statement::SingleIf {
-          condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
           invert_condition: false,
           statements: vec![Statement::Break(Expression::var_name(
             heap.alloc_str_for_test("j"),
@@ -425,7 +424,7 @@ mod tests {
           Expression::int(10),
         ),
         Statement::SingleIf {
-          condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+          condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
           invert_condition: false,
           statements: vec![Statement::Break(Expression::var_name(
             heap.alloc_str_for_test("j"),
@@ -465,34 +464,34 @@ mod tests {
         None,
       ),
       heap,
-      "let a: int = 0 + 0;\nwhile (true) {\n}",
+      "let a = 0 + 0;\nwhile (true) {\n}",
     );
 
     let heap = &mut Heap::new();
     assert_loop_optimized(
       optimizable_loop_1(heap),
       heap,
-      "let cast = 0 as int;\nlet _t8: int = 10 * 10;\nlet bc: int = (_t8: int) + 0;",
+      "let cast = 0 as int;\nlet _t8 = 10 * 10;\nlet bc = (_t8: int) + 0;",
     );
 
     let heap = &mut Heap::new();
     assert_loop_optimized(
       optimizable_loop_2(heap),
       heap,
-      r#"let _t7: int = 1 * 0;
-let _t8: int = (_t7: int) + 11;
-let _t9: int = 10 * 1;
-let _t10: int = (_t9: int) + 11;
+      r#"let _t7 = 1 * 0;
+let _t8 = (_t7: int) + 11;
+let _t9 = 10 * 1;
+let _t10 = (_t9: int) + 11;
 let j: int = 0;
 let tmp_j: int = (_t8: int);
 let bc: int;
 while (true) {
-  let _t12: bool = (tmp_j: int) >= (_t10: int);
-  if (_t12: bool) {
+  let _t12 = (tmp_j: int) >= (_t10: int);
+  if (_t12: int) {
     bc = (j: int);
     break;
   }
-  let _t11: int = (tmp_j: int) + 1;
+  let _t11 = (tmp_j: int) + 1;
   j = (tmp_j: int);
   tmp_j = (_t11: int);
 }"#,
@@ -502,24 +501,24 @@ while (true) {
     assert_loop_optimized(
       optimizable_loop_3(heap),
       heap,
-      r#"let _t9: int = 1 * 0;
-let _t10: int = (_t9: int) + 10;
-let _t11: int = 1 * 0;
-let _t12: int = (_t11: int) + 10;
+      r#"let _t9 = 1 * 0;
+let _t10 = (_t9: int) + 10;
+let _t11 = 1 * 0;
+let _t12 = (_t11: int) + 10;
 let j: int = 0;
 let i: int = 0;
 let tmp_j: int = (_t10: int);
 let tmp_k: int = (_t12: int);
 let bc: int;
 while (true) {
-  let _t16: bool = (i: int) >= 10;
-  if (_t16: bool) {
+  let _t16 = (i: int) >= 10;
+  if (_t16: int) {
     bc = (j: int);
     break;
   }
-  let _t13: int = (i: int) + 1;
-  let _t14: int = (tmp_j: int) + 1;
-  let _t15: int = (tmp_k: int) + 1;
+  let _t13 = (i: int) + 1;
+  let _t14 = (tmp_j: int) + 1;
+  let _t15 = (tmp_k: int) + 1;
   j = (tmp_j: int);
   i = (_t13: int);
   tmp_j = (_t14: int);
@@ -552,7 +551,7 @@ while (true) {
             Expression::int(10),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
               heap.alloc_str_for_test("j"),
@@ -579,14 +578,14 @@ while (true) {
 let i: int = 0;
 let bc: int;
 while (true) {
-  let _t9: bool = (i: int) < 10;
-  if (_t9: bool) {
+  let _t9 = (i: int) < 10;
+  if (_t9: int) {
     bc = (j: int);
     break;
   }
-  let _t8: int = (i: int) + (a: int);
-  let _t10: int = (i: int) * 2;
-  let tmp_j: int = (_t10: int) + 0;
+  let _t8 = (i: int) + (a: int);
+  let _t10 = (i: int) * 2;
+  let tmp_j = (_t10: int) + 0;
   j = (tmp_j: int);
   i = (_t8: int);
 }"#,
@@ -617,7 +616,7 @@ while (true) {
             Expression::int(10),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
               heap.alloc_str_for_test("j"),
@@ -640,18 +639,18 @@ while (true) {
         None,
       ),
       heap,
-      r#"let _t6: int = 1 * 0;
-let _t7: int = (_t6: int) + 11;
-let _t8: int = 10 * 1;
-let _t9: int = (_t8: int) + 11;
+      r#"let _t6 = 1 * 0;
+let _t7 = (_t6: int) + 11;
+let _t8 = 10 * 1;
+let _t9 = (_t8: int) + 11;
 let tmp_j: int = (_t7: int);
 while (true) {
-  let _t11: bool = (tmp_j: int) >= (_t9: int);
-  if (_t11: bool) {
+  let _t11 = (tmp_j: int) >= (_t9: int);
+  if (_t11: int) {
     undefined = 0;
     break;
   }
-  let _t10: int = (tmp_j: int) + 1;
+  let _t10 = (tmp_j: int) + 1;
   tmp_j = (_t10: int);
 }"#,
     );
@@ -678,7 +677,7 @@ while (true) {
       }],
       ZERO,
       heap,
-      "let tmp_j: int = (i: int) * 2;\nreturn 0;",
+      "let tmp_j = (i: int) * 2;\nreturn 0;",
     );
 
     let heap = &mut Heap::new();
@@ -700,12 +699,12 @@ while (true) {
 let tmp_j: int = 17;
 let bc: int;
 while (true) {
-  let _t12: bool = (tmp_j: int) >= 21;
-  if (_t12: bool) {
+  let _t12 = (tmp_j: int) >= 21;
+  if (_t12: int) {
     bc = (j: int);
     break;
   }
-  let _t11: int = (tmp_j: int) + 1;
+  let _t11 = (tmp_j: int) + 1;
   j = (tmp_j: int);
   tmp_j = (_t11: int);
 }
@@ -724,14 +723,14 @@ let tmp_j: int = 16;
 let tmp_k: int = 16;
 let bc: int;
 while (true) {
-  let _t16: bool = (i: int) >= 10;
-  if (_t16: bool) {
+  let _t16 = (i: int) >= 10;
+  if (_t16: int) {
     bc = (j: int);
     break;
   }
-  let _t13: int = (i: int) + 1;
-  let _t14: int = (tmp_j: int) + 1;
-  let _t15: int = (tmp_k: int) + 1;
+  let _t13 = (i: int) + 1;
+  let _t14 = (tmp_j: int) + 1;
+  let _t15 = (tmp_k: int) + 1;
   j = (tmp_j: int);
   i = (_t13: int);
   tmp_j = (_t14: int);
@@ -765,7 +764,7 @@ return (bc: int);"#,
             ONE,
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
               heap.alloc_str_for_test("acc"),
@@ -813,7 +812,7 @@ return (bc: int);"#,
             Expression::var_name(heap.alloc_str_for_test("L"), INT_TYPE),
           ),
           Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("cc"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: true,
             statements: vec![Statement::Break(ZERO)],
           },
@@ -849,20 +848,20 @@ return (bc: int);"#,
       }],
       ZERO,
       heap,
-      r#"let _t10: int = (init_i: int) * 3;
-let _t12: int = (init_i: int) * 3;
-let _t13: int = (_t12: int) + (a: int);
+      r#"let _t10 = (init_i: int) * 3;
+let _t12 = (init_i: int) * 3;
+let _t13 = (_t12: int) + (a: int);
 let i: int = (init_i: int);
 let j: int = (_t13: int);
 while (true) {
-  let _t16: bool = (L: int) <= (i: int);
-  if (_t16: bool) {
+  let _t16 = (L: int) <= (i: int);
+  if (_t16: int) {
     undefined = 0;
     break;
   }
   f((j: int));
-  let _t14: int = (i: int) + 2;
-  let _t15: int = (j: int) + 6;
+  let _t14 = (i: int) + 2;
+  let _t15 = (j: int) + 6;
   i = (_t14: int);
   j = (_t15: int);
 }

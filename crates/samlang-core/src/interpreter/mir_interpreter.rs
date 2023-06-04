@@ -108,7 +108,7 @@ fn eval_stmt(
   stmt: &Statement,
 ) -> Result<(), i32> {
   match stmt {
-    Statement::Binary { name, type_: _, operator, e1, e2 } => {
+    Statement::Binary { name, operator, e1, e2 } => {
       let v1 = eval_expr(mem, e1);
       let v2 = eval_expr(mem, e2);
       let v = match operator {
@@ -564,119 +564,102 @@ mod tests {
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::PLUS,
               e1: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::MINUS,
               e1: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::MUL,
               e1: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::DIV,
               e1: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               e2: ONE,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::MOD,
               e1: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               e2: ONE,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::LAND,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::LOR,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::SHL,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::SHR,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::XOR,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::LT,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::LE,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::GT,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::GE,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::EQ,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::NE,
               e1: ZERO,
               e2: ZERO,
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("v"),
-              type_: INT_TYPE,
               operator: Operator::PLUS,
               e1: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               e2: ONE,
@@ -758,7 +741,6 @@ mod tests {
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("if_sum"),
-              type_: INT_TYPE,
               operator: Operator::PLUS,
               e1: Expression::Variable(heap.alloc_str_for_test("if1"), INT_TYPE),
               e2: Expression::Variable(heap.alloc_str_for_test("if2"), INT_TYPE),
@@ -804,7 +786,6 @@ mod tests {
             },
             Statement::Binary {
               name: heap.alloc_str_for_test("product"),
-              type_: INT_TYPE,
               operator: Operator::MUL,
               e1: Expression::Variable(heap.alloc_str_for_test("if_sum"), INT_TYPE),
               e2: Expression::Variable(heap.alloc_str_for_test("bc"), INT_TYPE),

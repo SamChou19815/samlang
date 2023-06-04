@@ -51,7 +51,7 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_stmt(&mut self, s: &mir::Statement) -> Vec<wasm::Instruction> {
     match s {
-      mir::Statement::Binary { name, type_: _, operator, e1, e2 } => {
+      mir::Statement::Binary { name, operator, e1, e2 } => {
         let i1 = Box::new(self.lower_expr(e1));
         let i2 = Box::new(self.lower_expr(e2));
         vec![wasm::Instruction::Inline(
@@ -286,9 +286,7 @@ mod tests {
   use crate::{
     ast::{
       hir::{GlobalVariable, Operator},
-      mir::{
-        Expression, Function, GenenalLoopVariable, Sources, Statement, Type, FALSE, INT_TYPE, ZERO,
-      },
+      mir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
     },
     common::Heap,
   };
@@ -326,9 +324,9 @@ mod tests {
         parameters: vec![heap.alloc_str_for_test("bar")],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
-          Statement::IfElse { condition: FALSE, s1: vec![], s2: vec![], final_assignments: vec![] },
+          Statement::IfElse { condition: ZERO, s1: vec![], s2: vec![], final_assignments: vec![] },
           Statement::IfElse {
-            condition: FALSE,
+            condition: ZERO,
             s1: vec![],
             s2: vec![Statement::Cast {
               name: heap.alloc_str_for_test("c"),
@@ -338,7 +336,7 @@ mod tests {
             final_assignments: vec![],
           },
           Statement::IfElse {
-            condition: FALSE,
+            condition: ZERO,
             s1: vec![Statement::While {
               loop_variables: vec![GenenalLoopVariable {
                 name: heap.alloc_str_for_test("i"),
@@ -357,7 +355,7 @@ mod tests {
               Statement::While {
                 loop_variables: vec![],
                 statements: vec![Statement::SingleIf {
-                  condition: FALSE,
+                  condition: ZERO,
                   invert_condition: false,
                   statements: vec![Statement::Break(ZERO)],
                 }],
@@ -366,7 +364,7 @@ mod tests {
               Statement::While {
                 loop_variables: vec![],
                 statements: vec![Statement::SingleIf {
-                  condition: FALSE,
+                  condition: ZERO,
                   invert_condition: true,
                   statements: vec![Statement::Break(ZERO)],
                 }],

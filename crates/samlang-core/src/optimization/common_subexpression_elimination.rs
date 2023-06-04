@@ -38,13 +38,13 @@ fn optimize_stmt(
     | Statement::StructInit { .. }
     | Statement::ClosureInit { .. } => vec![stmt],
 
-    Statement::Binary(Binary { name, type_, operator, e1, e2 }) => {
+    Statement::Binary(Binary { name, operator, e1, e2 }) => {
       set.insert(BindedValue::Binary(BinaryBindedValue {
         operator,
         e1: e1.clone(),
         e2: e2.clone(),
       }));
-      vec![Statement::Binary(Binary { name, type_, operator, e1, e2 })]
+      vec![Statement::Binary(Binary { name, operator, e1, e2 })]
     }
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {
       set.insert(BindedValue::IndexedAccess(IndexAccessBindedValue {
@@ -104,7 +104,7 @@ mod tests {
   use crate::{
     ast::hir::{
       Callee, Expression, Function, FunctionName, Operator, Statement, Type, VariableName,
-      BOOL_TYPE, INT_TYPE, ONE, ZERO,
+      INT_TYPE, ONE, ZERO,
     },
     Heap,
   };
@@ -137,7 +137,7 @@ mod tests {
 
     assert_correctly_optimized(
       vec![Statement::IfElse {
-        condition: Expression::var_name(heap.alloc_str_for_test("b"), BOOL_TYPE),
+        condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
         s1: vec![
           Statement::binary(heap.alloc_str_for_test("ddddd"), Operator::PLUS, ONE, ONE),
           Statement::binary(heap.alloc_str_for_test("a"), Operator::PLUS, ONE, ZERO),
@@ -181,10 +181,10 @@ mod tests {
         final_assignments: vec![],
       }],
       heap,
-      r#"let _t10: int = 1 + 0;
+      r#"let _t10 = 1 + 0;
 let _t11: int = 0[3];
-if (b: bool) {
-  let ddddd: int = 1 + 1;
+if (b: int) {
+  let ddddd = 1 + 1;
   fff((_t10: int), (_t11: int));
 } else {
   (eeee: int)((_t10: int), (_t11: int));

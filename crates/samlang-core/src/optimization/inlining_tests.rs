@@ -3,7 +3,7 @@ mod tests {
   use crate::{
     ast::hir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
-      VariableName, BOOL_TYPE, INT_TYPE, ONE, ZERO,
+      VariableName, INT_TYPE, ONE, ZERO,
     },
     common::Heap,
   };
@@ -181,7 +181,7 @@ mod tests {
               ZERO,
             ),
             Statement::IfElse {
-              condition: Expression::var_name(heap.alloc_str_for_test("c"), BOOL_TYPE),
+              condition: Expression::var_name(heap.alloc_str_for_test("c"), INT_TYPE),
               s1: vec![],
               s2: vec![
                 Statement::binary(
@@ -347,13 +347,13 @@ mod tests {
       ],
       heap,
       r#"function factorial(n: int, acc: int): int {
-  let c: bool = (n: int) == 0;
+  let c = (n: int) == 0;
   let fa: int;
-  if (c: bool) {
+  if (c: int) {
     fa = (acc: int);
   } else {
-    let n1: int = (n: int) + -1;
-    let acc1: int = (acc: int) * (n: int);
+    let n1 = (n: int) + -1;
+    let acc1 = (acc: int) * (n: int);
     let v: int = factorial((n1: int), (acc1: int));
     fa = (v: int);
   }
@@ -741,7 +741,7 @@ function main(): int {
             loop_value: Expression::var_name(heap.alloc_str_for_test("_tmp_n"), INT_TYPE),
           }],
           statements: vec![Statement::SingleIf {
-            condition: Expression::var_name(heap.alloc_str_for_test("n"), BOOL_TYPE),
+            condition: Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(ZERO)],
           }],

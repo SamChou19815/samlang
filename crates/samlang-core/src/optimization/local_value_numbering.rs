@@ -45,7 +45,7 @@ fn optimize_stmt(
   binded_value_cx: &mut LocalBindedValueContext,
 ) -> Option<Statement> {
   match stmt {
-    Statement::Binary(Binary { name, type_, operator, e1, e2 }) => {
+    Statement::Binary(Binary { name, operator, e1, e2 }) => {
       let e1 = optimize_expr(e1, variable_cx);
       let e2 = optimize_expr(e2, variable_cx);
       let value =
@@ -55,7 +55,7 @@ fn optimize_stmt(
         None
       } else {
         binded_value_cx.lvn_bind_value(&value, name);
-        Some(Statement::Binary(Binary { name, type_, operator, e1, e2 }))
+        Some(Statement::Binary(Binary { name, operator, e1, e2 }))
       }
     }
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {

@@ -272,9 +272,9 @@ impl TypeLoweringManager {
     match type_ {
       type_::Type::Any(_, _) => panic!(),
       type_::Type::Primitive(_, kind) => Type::Primitive(match kind {
-        type_::PrimitiveTypeKind::Bool => PrimitiveType::Bool,
-        type_::PrimitiveTypeKind::Unit => PrimitiveType::Int,
-        type_::PrimitiveTypeKind::Int => PrimitiveType::Int,
+        type_::PrimitiveTypeKind::Bool
+        | type_::PrimitiveTypeKind::Unit
+        | type_::PrimitiveTypeKind::Int => PrimitiveType::Int,
         type_::PrimitiveTypeKind::String => PrimitiveType::String,
       }),
       type_::Type::Nominal(id) => {
@@ -410,7 +410,7 @@ mod tests {
   use super::*;
   use crate::{
     ast::{
-      hir::{BOOL_TYPE, INT_TYPE, STRING_TYPE},
+      hir::{INT_TYPE, STRING_TYPE},
       source::test_builder,
       Location, Reason,
     },
@@ -429,14 +429,14 @@ mod tests {
     assert_eq!(
       "$SyntheticIDType0",
       synthesizer
-        .synthesize_tuple_type(heap, vec![BOOL_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
         .identifier
         .as_str(heap),
     );
     assert_eq!(
       "$SyntheticIDType1",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![BOOL_TYPE])], vec![])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], vec![])
         .identifier
         .as_str(heap),
     );
@@ -444,14 +444,14 @@ mod tests {
     assert_eq!(
       "$SyntheticIDType0",
       synthesizer
-        .synthesize_tuple_type(heap, vec![BOOL_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
         .identifier
         .as_str(heap),
     );
     assert_eq!(
       "$SyntheticIDType1",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![BOOL_TYPE])], vec![])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], vec![])
         .identifier
         .as_str(heap),
     );
@@ -470,25 +470,11 @@ mod tests {
         .identifier
         .as_str(heap),
     );
-    assert_eq!(
-      "$SyntheticIDType3",
-      synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], BOOL_TYPE), vec![])
-        .identifier
-        .as_str(heap),
-    );
-    assert_eq!(
-      "$SyntheticIDType3",
-      synthesizer
-        .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], BOOL_TYPE), vec![])
-        .identifier
-        .as_str(heap),
-    );
 
     assert_eq!(
-      "$SyntheticIDType4",
+      "$SyntheticIDType3",
       synthesizer
-        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(c, vec![BOOL_TYPE])], vec![a])
+        .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(c, vec![INT_TYPE])], vec![a])
         .identifier
         .as_str(heap),
     );
@@ -497,17 +483,14 @@ mod tests {
 
     assert_eq!(
       vec![
-        "object type $SyntheticIDType0 = [bool, A<int>]",
-        "object type $SyntheticIDType1 = [int, B<bool>]",
-        "object type $SyntheticIDType4<A> = [int, C<bool>]"
+        "object type $SyntheticIDType0 = [int, A<int>]",
+        "object type $SyntheticIDType1 = [int, B<int>]",
+        "object type $SyntheticIDType3<A> = [int, C<int>]"
       ],
       tuple_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
     assert_eq!(
-      vec![
-        "closure type $SyntheticIDType2 = () -> int",
-        "closure type $SyntheticIDType3 = () -> bool",
-      ],
+      vec!["closure type $SyntheticIDType2 = () -> int"],
       closure_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
   }
@@ -520,7 +503,7 @@ mod tests {
 
     assert!(collect_used_generic_types(
       &Type::new_fn_unwrapped(
-        vec![BOOL_TYPE, Type::new_id(heap.alloc_str_for_test("C"), vec![BOOL_TYPE])],
+        vec![INT_TYPE, Type::new_id(heap.alloc_str_for_test("C"), vec![INT_TYPE])],
         Type::new_id_no_targs(heap.alloc_str_for_test("C")),
       ),
       &generic_types,
@@ -603,7 +586,7 @@ mod tests {
         heap.alloc_str_for_test("FF"),
         vec![
           INT_TYPE,
-          BOOL_TYPE,
+          INT_TYPE,
           Type::new_id(heap.alloc_str_for_test("Foo"), vec![STRING_TYPE]),
           INT_TYPE,
           Type::new_id_no_targs(heap.alloc_str_for_test("B")),
@@ -614,7 +597,7 @@ mod tests {
         heap.alloc_str_for_test("FF"),
         vec![
           INT_TYPE,
-          BOOL_TYPE,
+          INT_TYPE,
           Type::new_id(heap.alloc_str_for_test("Foo"), vec![STRING_TYPE]),
           Type::new_id_no_targs(heap.alloc_str_for_test("A")),
           Type::new_id_no_targs(heap.alloc_str_for_test("B")),
@@ -629,7 +612,6 @@ mod tests {
   fn type_application_tests() {
     let heap = &mut Heap::new();
 
-    assert_eq!("bool", type_application(&BOOL_TYPE, &HashMap::new()).pretty_print(heap));
     assert_eq!("int", type_application(&INT_TYPE, &HashMap::new()).pretty_print(heap));
     assert_eq!("string", type_application(&STRING_TYPE, &HashMap::new()).pretty_print(heap));
 
@@ -659,7 +641,7 @@ mod tests {
     );
 
     assert_eq!(
-      "(int) -> bool",
+      "(int) -> int",
       fn_type_application(
         &Type::new_fn_unwrapped(
           vec![Type::new_id_no_targs(heap.alloc_str_for_test("A"))],
@@ -667,7 +649,7 @@ mod tests {
         ),
         &HashMap::from([
           (heap.alloc_str_for_test("A"), INT_TYPE),
-          (heap.alloc_str_for_test("B"), BOOL_TYPE)
+          (heap.alloc_str_for_test("B"), INT_TYPE)
         ])
       )
       .pretty_print(heap)
@@ -714,7 +696,7 @@ mod tests {
     };
     let builder = test_type_builder::create();
 
-    assert_eq!("bool", manager.lower_source_type(heap, &builder.bool_type()).pretty_print(heap));
+    assert_eq!("int", manager.lower_source_type(heap, &builder.bool_type()).pretty_print(heap));
     assert_eq!("int", manager.lower_source_type(heap, &builder.unit_type()).pretty_print(heap));
     assert_eq!("int", manager.lower_source_type(heap, &builder.int_type()).pretty_print(heap));
     assert_eq!(
@@ -751,7 +733,7 @@ mod tests {
       manager2.type_synthesizer.synthesized_types();
     assert!(tuple_types.is_empty());
     assert_eq!(
-      vec!["closure type $SyntheticIDType0<T> = (T, bool) -> int"],
+      vec!["closure type $SyntheticIDType0<T> = (T, int) -> int"],
       closure_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
   }
@@ -799,8 +781,8 @@ mod tests {
       manager.type_synthesizer.synthesized_types();
     assert_eq!(
       vec![
-        "closure type $SyntheticIDType0<A> = (A) -> bool",
-        "closure type $SyntheticIDType1<A> = ($SyntheticIDType0<A>) -> bool",
+        "closure type $SyntheticIDType0<A> = (A) -> int",
+        "closure type $SyntheticIDType1<A> = ($SyntheticIDType0<A>) -> int",
       ],
       closure_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
@@ -828,7 +810,7 @@ mod tests {
       &builder.bool_type(),
     );
     assert!(tparams1.is_empty());
-    assert_eq!("(int) -> bool", f1.pretty_print(heap));
+    assert_eq!("(int) -> int", f1.pretty_print(heap));
 
     let (tparams2, f2) = manager.lower_source_function_type_for_toplevel(
       heap,
@@ -836,6 +818,6 @@ mod tests {
       &builder.bool_type(),
     );
     assert!(tparams2.is_empty());
-    assert_eq!("($SyntheticIDType0) -> bool", f2.pretty_print(heap));
+    assert_eq!("($SyntheticIDType0) -> int", f2.pretty_print(heap));
   }
 }

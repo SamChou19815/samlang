@@ -1,7 +1,7 @@
 use super::optimization_common::LocalValueContextForOptimization;
 use crate::ast::hir::{
   Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement,
-  Type, VariableName, ZERO,
+  Type, VariableName, INT_TYPE, ZERO,
 };
 use crate::common::PStr;
 use crate::Heap;
@@ -203,9 +203,8 @@ fn inline_rewrite_stmt(
   stmt: &Statement,
 ) -> Statement {
   match stmt {
-    Statement::Binary(Binary { name, type_, operator, e1, e2 }) => Statement::Binary(Binary {
-      name: bind_with_mangled_name(cx, heap, prefix, name, type_),
-      type_: type_.clone(),
+    Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
+      name: bind_with_mangled_name(cx, heap, prefix, name, &INT_TYPE),
       operator: *operator,
       e1: inline_rewrite_expr(e1, cx),
       e2: inline_rewrite_expr(e2, cx),
@@ -339,7 +338,7 @@ fn perform_inline_rewrite_on_function_stmt(
     Statement::Call {
       callee: Callee::FunctionName(FunctionName { name, type_: _, type_arguments: _ }),
       arguments,
-      return_type,
+      return_type: _,
       return_collector,
     } if functions_that_can_be_inlined.contains_key(&name) && name.ne(current_fn_name) => {
       let Function {
@@ -365,7 +364,6 @@ fn perform_inline_rewrite_on_function_stmt(
         // Using this to move the value around, will be optimized away eventually.
         rewritten_body.push(Statement::Binary(Binary {
           name: c,
-          type_: return_type,
           operator: Operator::PLUS,
           e1: inline_rewrite_expr(return_value_of_function_to_be_inlined, &mut cx),
           e2: ZERO,

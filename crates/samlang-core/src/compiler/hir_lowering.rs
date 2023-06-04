@@ -14,7 +14,7 @@ use crate::{
     hir, source,
   },
   checker::type_,
-  common::{self, Heap, ModuleReference, PStr},
+  common::{Heap, LocalStackedContext, ModuleReference, PStr},
 };
 use itertools::Itertools;
 use std::{
@@ -33,12 +33,12 @@ struct LoweringResultWithSyntheticFunctions {
   expression: hir::Expression,
 }
 
-type LoweringContext = common::LocalStackedContext<PStr, hir::Expression>;
+type LoweringContext = LocalStackedContext<PStr, hir::Expression>;
 
 impl LoweringContext {
   fn bind(&mut self, name: PStr, value: hir::Expression) {
     match &value {
-      hir::Expression::IntLiteral(_, _) | hir::Expression::Variable(_) => {
+      hir::Expression::IntLiteral(_) | hir::Expression::Variable(_) => {
         self.insert(name, value);
       }
       hir::Expression::StringName(n) => {
@@ -59,7 +59,7 @@ mod lowering_cx_boilterplate_tests {
 
     LoweringContext::new().bind(
       heap.alloc_str_for_test("a"),
-      hir::Expression::var_name(heap.alloc_str_for_test("a"), hir::BOOL_TYPE),
+      hir::Expression::var_name(heap.alloc_str_for_test("a"), hir::INT_TYPE),
     );
   }
 }
@@ -146,7 +146,7 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn get_synthetic_identifier_type_from_tuple(&mut self, mappings: Vec<hir::Type>) -> hir::IdType {
     let type_parameters = collect_used_generic_types(
-      &hir::Type::new_fn_unwrapped(mappings.clone(), hir::BOOL_TYPE),
+      &hir::Type::new_fn_unwrapped(mappings.clone(), hir::INT_TYPE),
       &self.type_lowering_manager.generic_types,
     )
     .into_iter()
@@ -220,7 +220,7 @@ impl<'a> ExpressionLoweringManager<'a> {
   ) -> LoweringResult {
     match expression {
       source::expr::E::Literal(_, source::Literal::Bool(b)) => {
-        LoweringResult { statements: vec![], expression: if *b { hir::TRUE } else { hir::FALSE } }
+        LoweringResult { statements: vec![], expression: if *b { hir::ONE } else { hir::ZERO } }
       }
       source::expr::E::Literal(_, source::Literal::Int(i)) => {
         LoweringResult { statements: vec![], expression: hir::Expression::int(*i) }
@@ -355,20 +355,18 @@ impl<'a> ExpressionLoweringManager<'a> {
     let new_binary = match expression.operator {
       source::expr::UnaryOperator::NOT => hir::Binary {
         name: value_name,
-        type_: hir::BOOL_TYPE,
         operator: hir::Operator::XOR,
         e1: result_expr,
-        e2: hir::TRUE,
+        e2: hir::ONE,
       },
       source::expr::UnaryOperator::NEG => hir::Binary {
         name: value_name,
-        type_: hir::INT_TYPE,
         operator: hir::Operator::MINUS,
         e1: hir::ZERO,
         e2: result_expr,
       },
     };
-    let final_expr = hir::Expression::var_name(new_binary.name, new_binary.type_.clone());
+    let final_expr = hir::Expression::var_name(new_binary.name, hir::INT_TYPE);
     statements.push(hir::Statement::Binary(new_binary));
     LoweringResult { statements, expression: final_expr }
   }
@@ -488,14 +486,14 @@ impl<'a> ExpressionLoweringManager<'a> {
           self.lower_binary(&expression.e1, None);
         let LoweringResult { statements: s2, expression: e2 } =
           self.lower_binary(&expression.e2, None);
-        if let hir::Expression::IntLiteral(v, _) = &e1 {
+        if let hir::Expression::IntLiteral(v) = &e1 {
           return if *v != 0 {
             LoweringResult {
               statements: s1.into_iter().chain(s2.into_iter()).collect_vec(),
               expression: e2,
             }
           } else {
-            LoweringResult { statements: s1, expression: hir::FALSE }
+            LoweringResult { statements: s1, expression: hir::ZERO }
           };
         }
         let mut statements = s1;
@@ -503,11 +501,11 @@ impl<'a> ExpressionLoweringManager<'a> {
           condition: e1,
           s1: s2,
           s2: vec![],
-          final_assignments: vec![(temp, hir::BOOL_TYPE, e2, hir::FALSE)],
+          final_assignments: vec![(temp, hir::INT_TYPE, e2, hir::ZERO)],
         });
         return LoweringResult {
           statements,
-          expression: hir::Expression::var_name(temp, hir::BOOL_TYPE),
+          expression: hir::Expression::var_name(temp, hir::INT_TYPE),
         };
       }
       source::expr::BinaryOperator::OR => {
@@ -516,9 +514,9 @@ impl<'a> ExpressionLoweringManager<'a> {
           self.lower_binary(&expression.e1, None);
         let LoweringResult { statements: s2, expression: e2 } =
           self.lower_binary(&expression.e2, None);
-        if let hir::Expression::IntLiteral(v, _) = &e1 {
+        if let hir::Expression::IntLiteral(v) = &e1 {
           return if *v != 0 {
-            LoweringResult { statements: s1, expression: hir::TRUE }
+            LoweringResult { statements: s1, expression: hir::ONE }
           } else {
             LoweringResult {
               statements: s1.into_iter().chain(s2.into_iter()).collect_vec(),
@@ -531,11 +529,11 @@ impl<'a> ExpressionLoweringManager<'a> {
           condition: e1,
           s1: vec![],
           s2,
-          final_assignments: vec![(temp, hir::BOOL_TYPE, hir::TRUE, e2)],
+          final_assignments: vec![(temp, hir::INT_TYPE, hir::ONE, e2)],
         });
         return LoweringResult {
           statements,
-          expression: hir::Expression::var_name(temp, hir::BOOL_TYPE),
+          expression: hir::Expression::var_name(temp, hir::INT_TYPE),
         };
       }
       source::expr::BinaryOperator::CONCAT => {
@@ -591,12 +589,10 @@ impl<'a> ExpressionLoweringManager<'a> {
     let e1 = self.lowered_and_add_statements(&expression.e1, None, &mut lowered_stmts);
     let e2 = self.lowered_and_add_statements(&expression.e2, None, &mut lowered_stmts);
     let value_temp = self.allocate_temp_variable(favored_temp_variable);
-    let binary = hir::Statement::binary_unwrapped(value_temp, operator, e1, e2);
-    let final_type = binary.type_.clone();
-    lowered_stmts.push(hir::Statement::Binary(binary));
+    lowered_stmts.push(hir::Statement::binary(value_temp, operator, e1, e2));
     LoweringResult {
       statements: lowered_stmts,
-      expression: hir::Expression::var_name(value_temp, final_type),
+      expression: hir::Expression::var_name(value_temp, hir::INT_TYPE),
     }
   }
 
@@ -702,7 +698,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           hir::Expression::int(i32::try_from(tag_order).unwrap()),
         )),
         hir::Statement::IfElse {
-          condition: hir::Expression::var_name(comparison_temp, hir::BOOL_TYPE),
+          condition: hir::Expression::var_name(comparison_temp, hir::INT_TYPE),
           s1: case_stmts,
           s2: acc_stmts,
           final_assignments: vec![(
@@ -1333,7 +1329,7 @@ mod tests {
           hir::Type::new_id_no_targs(heap.alloc_str_for_test("__DUMMY___Dummy")),
         ),
         (heap.alloc_str_for_test("foo"), hir::INT_TYPE),
-        (heap.alloc_str_for_test("bar"), hir::BOOL_TYPE),
+        (heap.alloc_str_for_test("bar"), hir::INT_TYPE),
         (
           heap.alloc_str_for_test("closure"),
           hir::Type::new_id_no_targs(heap.alloc_str_for_test("Closure")),
@@ -1559,7 +1555,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t14: bool);",
+      "let _t14 = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1569,7 +1565,7 @@ return 0;"#,
         argument: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t14 = 0 - (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
 
     // Binary Lowering: normal
@@ -1583,7 +1579,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t14 = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1595,7 +1591,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: int = (_this: __DUMMY___Dummy) - (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t14 = (_this: __DUMMY___Dummy) - (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1607,7 +1603,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: int = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t14 = (_this: __DUMMY___Dummy) * (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1619,7 +1615,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: int = (_this: __DUMMY___Dummy) / (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t14 = (_this: __DUMMY___Dummy) / (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1631,7 +1627,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: int = (_this: __DUMMY___Dummy) % (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
+      "let _t14 = (_this: __DUMMY___Dummy) % (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1643,7 +1639,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: bool = (_this: __DUMMY___Dummy) < (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
+      "let _t14 = (_this: __DUMMY___Dummy) < (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1655,7 +1651,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: bool = (_this: __DUMMY___Dummy) <= (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
+      "let _t14 = (_this: __DUMMY___Dummy) <= (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1667,19 +1663,19 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: bool = (_this: __DUMMY___Dummy) > (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
+      "let _t14 = (_this: __DUMMY___Dummy) > (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
       &source::expr::E::Binary(source::expr::Binary {
         common: source::expr::ExpressionCommon::dummy(builder.bool_type()),
-        operator_preceding_comments:NO_COMMENT_REFERENCE,
+        operator_preceding_comments: NO_COMMENT_REFERENCE,
         operator: source::expr::BinaryOperator::GE,
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: bool = (_this: __DUMMY___Dummy) >= (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
+      "let _t14 = (_this: __DUMMY___Dummy) >= (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1691,7 +1687,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: bool = (_this: __DUMMY___Dummy) == (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
+      "let _t14 = (_this: __DUMMY___Dummy) == (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1703,7 +1699,7 @@ return 0;"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      "let _t14: bool = (_this: __DUMMY___Dummy) != (_this: __DUMMY___Dummy);\nreturn (_t14: bool);",
+      "let _t14 = (_this: __DUMMY___Dummy) != (_this: __DUMMY___Dummy);\nreturn (_t14: int);",
     );
     // Binary Lowering: Short circuiting &&
     let heap = &mut Heap::new();
@@ -1716,13 +1712,13 @@ return 0;"#,
         e2: Box::new(id_expr(heap.alloc_str_for_test("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t12: bool;
+      r#"let _t12: int;
 if (foo: int) {
-  _t12 = (bar: bool);
+  _t12 = (bar: int);
 } else {
   _t12 = 0;
 }
-return (_t12: bool);"#,
+return (_t12: int);"#,
     );
     let heap = &mut Heap::new();
     assert_expr_correctly_lowered(
@@ -1801,13 +1797,13 @@ return (_t12: bool);"#,
         e2: Box::new(id_expr(heap.alloc_str_for_test("bar"), builder.bool_type())),
       }),
       heap,
-      r#"let _t12: bool;
+      r#"let _t12: int;
 if (foo: int) {
   _t12 = 1;
 } else {
-  _t12 = (bar: bool);
+  _t12 = (bar: int);
 }
-return (_t12: bool);"#,
+return (_t12: int);"#,
     );
     // Binary Lowering: string concat
     let heap = &mut Heap::new();
@@ -2003,9 +1999,9 @@ return (_t14: __DUMMY___Dummy);"#,
       }),
       heap,
       r#"let _t16: int = (_this: __DUMMY___Dummy)[0];
-let _t21: bool = (_t16: int) == 0;
+let _t21 = (_t16: int) == 0;
 let _t22: __DUMMY___Dummy;
-if (_t21: bool) {
+if (_t21: int) {
   let _t17 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Foo;
   let bar: int = (_t17: __DUMMY___Dummy_Foo)[1];
   _t22 = (_this: __DUMMY___Dummy);
@@ -2053,15 +2049,15 @@ return (_t22: __DUMMY___Dummy);"#,
       }),
       heap,
       r#"let _t17: int = (_this: __DUMMY___Dummy)[0];
-let _t26: bool = (_t17: int) == 0;
+let _t26 = (_t17: int) == 0;
 let _t27: __DUMMY___Dummy;
-if (_t26: bool) {
+if (_t26: int) {
   let _t18 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Foo;
   _t27 = (_this: __DUMMY___Dummy);
 } else {
-  let _t24: bool = (_t17: int) == 1;
+  let _t24 = (_t17: int) == 1;
   let _t25: __DUMMY___Dummy;
-  if (_t24: bool) {
+  if (_t24: int) {
     let _t20 = (_this: __DUMMY___Dummy) as __DUMMY___Dummy_Bar;
     let bar: __DUMMY___Dummy = (_t20: __DUMMY___Dummy_Bar)[1];
     _t25 = (bar: __DUMMY___Dummy);
@@ -2656,13 +2652,13 @@ function ___DUMMY___Class1$infiniteLoop(_this: int): int {
 }
 
 function ___DUMMY___Class1$factorial(_this: int, n: int, acc: int): int {
-  let _t42: bool = (n: int) == 0;
+  let _t42 = (n: int) == 0;
   let _t43: int;
-  if (_t42: bool) {
+  if (_t42: int) {
     _t43 = 1;
   } else {
-    let _t45: int = (n: int) + -1;
-    let _t46: int = (n: int) * (acc: int);
+    let _t45 = (n: int) + -1;
+    let _t46 = (n: int) * (acc: int);
     let _t44: int = ___DUMMY___Class1$factorial(0, (_t45: int), (_t46: int));
     _t43 = (_t44: int);
   }

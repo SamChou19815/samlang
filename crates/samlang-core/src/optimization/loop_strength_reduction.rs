@@ -155,7 +155,7 @@ mod tests {
     );
 
     assert_eq!(
-      "let _t8: int = (a: int) * 1;\nlet _t9: int = (_t8: int) + (b: int);",
+      "let _t8 = (a: int) * 1;\nlet _t9 = (_t8: int) + (b: int);",
       prefix_statements.iter().map(|s| s.debug_print(heap)).join("\n")
     );
     assert_eq!(
