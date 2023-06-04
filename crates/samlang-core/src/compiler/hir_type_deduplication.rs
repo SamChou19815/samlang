@@ -18,7 +18,7 @@ fn rewrite_id_type(state: &State, id: IdType) -> IdType {
 
 fn rewrite_type(state: &State, type_: Type) -> Type {
   match type_ {
-    Type::Primitive(k) => Type::Primitive(k),
+    Type::Int => Type::Int,
     Type::Id(id) => Type::Id(rewrite_id_type(state, id)),
   }
 }

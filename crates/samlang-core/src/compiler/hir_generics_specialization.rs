@@ -251,7 +251,7 @@ impl Rewriter {
     generics_replacement_map: &HashMap<PStr, Type>,
   ) -> Type {
     match type_ {
-      Type::Primitive(kind) => Type::Primitive(*kind),
+      Type::Int => Type::Int,
       Type::Id(id) => self.rewrite_id_type(heap, id, generics_replacement_map),
     }
   }

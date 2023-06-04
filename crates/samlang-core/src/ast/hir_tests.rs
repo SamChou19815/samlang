@@ -34,11 +34,6 @@ mod tests {
     assert!(!format!("{:?}", Expression::StringName(heap.alloc_str_for_test("a"))).is_empty());
     assert!(!format!("{:?}", Operator::GE).is_empty());
     assert!(!format!("{:?}", ZERO.type_()).is_empty());
-    assert!(!format!(
-      "{:?}",
-      Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE).type_().as_primitive()
-    )
-    .is_empty());
     assert!(!format!("{:?}", Expression::StringName(heap.alloc_str_for_test("a")).type_().as_id())
       .is_empty());
     assert!(!GenenalLoopVariable {
@@ -50,8 +45,6 @@ mod tests {
     .pretty_print(heap)
     .is_empty());
     assert!(!format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).is_empty());
-    assert!(PrimitiveType::Int.eq(&PrimitiveType::Int));
-    assert_eq!(PrimitiveType::Int, PrimitiveType::Int);
     Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE).convert_to_callee();
     Expression::StringName(heap.alloc_str_for_test("")).convert_to_callee();
     ZERO.convert_to_callee();
