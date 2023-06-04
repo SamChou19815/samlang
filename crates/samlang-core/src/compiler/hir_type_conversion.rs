@@ -2,8 +2,8 @@ use crate::{
   ast::{
     common_names::{encode_samlang_type, encode_samlang_variant_subtype},
     hir::{
-      ClosureTypeDefinition, FunctionType, IdType, PrimitiveType, Type, TypeDefinition,
-      TypeDefinitionMappings, INT_TYPE,
+      ClosureTypeDefinition, FunctionType, IdType, Type, TypeDefinition, TypeDefinitionMappings,
+      INT_TYPE,
     },
     source,
   },
@@ -116,7 +116,7 @@ fn collect_used_generic_types_visitor(
   collector: &mut HashSet<PStr>,
 ) {
   match type_ {
-    Type::Primitive(_) => {}
+    Type::Int => {}
     Type::Id(id) => {
       if generic_types.contains(&id.name) && id.type_arguments.is_empty() {
         collector.insert(id.name);
@@ -147,7 +147,7 @@ fn solve_type_arguments_visit(
   t2: &Type,
 ) {
   match (t1, t2) {
-    (Type::Primitive(k1), Type::Primitive(k2)) => assert_eq!(k1, k2),
+    (Type::Int, Type::Int) => {}
     (Type::Id(id1), _)
       if id1.type_arguments.is_empty() && generic_type_parameter_set.contains(&id1.name) =>
     {
@@ -197,7 +197,7 @@ pub(super) fn solve_type_arguments(
 
 pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Type>) -> Type {
   match type_ {
-    Type::Primitive(kind) => Type::Primitive(*kind),
+    Type::Int => Type::Int,
     Type::Id(id) => {
       if id.type_arguments.is_empty() {
         if let Some(t) = replacement_map.get(&id.name) {
@@ -233,15 +233,15 @@ pub(super) fn fn_type_application(
   }
 }
 
-fn encode_type_for_generics_specialization(heap: &Heap, type_: &Type) -> String {
+fn encode_type_for_generics_specialization<'a>(heap: &'a Heap, type_: &'a Type) -> &'a str {
   match type_ {
-    Type::Primitive(kind) => kind.to_string(),
+    Type::Int => "int",
     Type::Id(id) => {
       assert!(
         id.type_arguments.is_empty(),
         "The identifier type argument should already be specialized."
       );
-      id.name.as_str(heap).to_string()
+      id.name.as_str(heap)
     }
   }
 }
@@ -271,11 +271,7 @@ impl TypeLoweringManager {
   pub(super) fn lower_source_type(&mut self, heap: &mut Heap, type_: &type_::Type) -> Type {
     match type_ {
       type_::Type::Any(_, _) => panic!(),
-      type_::Type::Primitive(_, kind) => Type::Primitive(match kind {
-        type_::PrimitiveTypeKind::Bool
-        | type_::PrimitiveTypeKind::Unit
-        | type_::PrimitiveTypeKind::Int => PrimitiveType::Int,
-      }),
+      type_::Type::Primitive(_, _) => Type::Int,
       type_::Type::Nominal(id) => {
         let id_string = id.id;
         if self.generic_types.contains(&id_string) {

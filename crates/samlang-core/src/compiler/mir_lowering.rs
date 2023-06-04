@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, HashSet};
 
 fn lower_type(type_: hir::Type) -> mir::Type {
   match type_ {
-    hir::Type::Primitive(hir::PrimitiveType::Int) => mir::Type::Primitive(mir::PrimitiveType::Int),
+    hir::Type::Int => mir::Type::Primitive(mir::PrimitiveType::Int),
     hir::Type::Id(hir::IdType { name, type_arguments }) => {
       assert!(type_arguments.is_empty());
       mir::Type::Id(name)

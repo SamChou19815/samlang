@@ -6,19 +6,6 @@ use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use std::{cmp::Ordering, hash::Hash};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PrimitiveType {
-  Int,
-}
-
-impl ToString for PrimitiveType {
-  fn to_string(&self) -> String {
-    match self {
-      PrimitiveType::Int => "int".to_string(),
-    }
-  }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct IdType {
   pub(crate) name: PStr,
@@ -57,7 +44,7 @@ impl FunctionType {
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
 pub(crate) enum Type {
-  Primitive(PrimitiveType),
+  Int,
   Id(IdType),
 }
 
@@ -84,13 +71,13 @@ impl Type {
 
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
-      Type::Primitive(t) => t.to_string(),
+      Type::Int => "int".to_string(),
       Type::Id(id) => id.pretty_print(heap),
     }
   }
 }
 
-pub(crate) const INT_TYPE: Type = Type::Primitive(PrimitiveType::Int);
+pub(crate) const INT_TYPE: Type = Type::Int;
 pub(crate) const STRING_TYPE: Type = Type::new_id_no_targs(well_known_pstrs::UNDERSCORE_STR);
 pub(crate) const STRING_TYPE_REF: &Type = &Type::new_id_no_targs(well_known_pstrs::UNDERSCORE_STR);
 
