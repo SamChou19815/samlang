@@ -3,7 +3,7 @@ mod tests {
   use std::collections::HashSet;
 
   use crate::{
-    ast::hir::{
+    ast::mir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },

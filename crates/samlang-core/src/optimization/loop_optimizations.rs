@@ -4,7 +4,7 @@ use super::{
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
 };
 use crate::{
-  ast::hir::{
+  ast::mir::{
     Expression, Function, GenenalLoopVariable, Operator, Statement, VariableName, INT_TYPE, ZERO,
   },
   Heap,
@@ -236,7 +236,7 @@ pub(super) fn optimize_function(function: Function, heap: &mut Heap) -> Function
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{
+    ast::mir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },

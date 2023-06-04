@@ -1,4 +1,4 @@
-use super::hir;
+use super::mir;
 use crate::common::{byte_vec_to_data_string, Heap, PStr};
 use itertools::Itertools;
 
@@ -7,7 +7,7 @@ pub(crate) enum InlineInstruction {
   Drop(Box<InlineInstruction>),
   LocalGet(PStr),
   LocalSet(PStr, Box<InlineInstruction>),
-  Binary(Box<InlineInstruction>, hir::Operator, Box<InlineInstruction>),
+  Binary(Box<InlineInstruction>, mir::Operator, Box<InlineInstruction>),
   Load {
     index: usize,
     pointer: Box<InlineInstruction>,
@@ -52,22 +52,22 @@ impl InlineInstruction {
       }
       InlineInstruction::Binary(v1, op, v2) => {
         let op_s = match op {
-          hir::Operator::MUL => "mul",
-          hir::Operator::DIV => "div_s",
-          hir::Operator::MOD => "rem_s",
-          hir::Operator::PLUS => "add",
-          hir::Operator::MINUS => "sub",
-          hir::Operator::LAND => "and",
-          hir::Operator::LOR => "or",
-          hir::Operator::SHL => "shl",
-          hir::Operator::SHR => "shr_u",
-          hir::Operator::XOR => "xor",
-          hir::Operator::LT => "lt_s",
-          hir::Operator::LE => "le_s",
-          hir::Operator::GT => "gt_s",
-          hir::Operator::GE => "ge_s",
-          hir::Operator::EQ => "eq",
-          hir::Operator::NE => "ne",
+          mir::Operator::MUL => "mul",
+          mir::Operator::DIV => "div_s",
+          mir::Operator::MOD => "rem_s",
+          mir::Operator::PLUS => "add",
+          mir::Operator::MINUS => "sub",
+          mir::Operator::LAND => "and",
+          mir::Operator::LOR => "or",
+          mir::Operator::SHL => "shl",
+          mir::Operator::SHR => "shr_u",
+          mir::Operator::XOR => "xor",
+          mir::Operator::LT => "lt_s",
+          mir::Operator::LE => "le_s",
+          mir::Operator::GT => "gt_s",
+          mir::Operator::GE => "ge_s",
+          mir::Operator::EQ => "eq",
+          mir::Operator::NE => "ne",
         };
         string_builder.push_str("(i32.");
         string_builder.push_str(op_s);

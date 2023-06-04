@@ -1,5 +1,5 @@
 use crate::{
-  ast::hir::{Function, Sources},
+  ast::mir::{Function, Sources},
   Heap,
 };
 
@@ -128,7 +128,7 @@ pub(super) fn optimize_sources(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{Function, Sources, Type, INT_TYPE, ZERO},
+    ast::mir::{Function, Sources, Type, INT_TYPE, ZERO},
     Heap,
   };
   use pretty_assertions::assert_eq;

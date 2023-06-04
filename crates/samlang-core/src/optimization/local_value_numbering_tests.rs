@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{
+    ast::mir::{
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },

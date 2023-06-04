@@ -1,5 +1,5 @@
 use crate::{
-  ast::{common_names, hir, mir, wasm},
+  ast::{common_names, lir, mir, wasm},
   common::{Heap, PStr},
 };
 use itertools::Itertools;
@@ -25,7 +25,7 @@ impl<'a> LoweringManager<'a> {
     heap: &'a mut Heap,
     global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
     function_index_mapping: &'a HashMap<PStr, usize>,
-    function: &mir::Function,
+    function: &lir::Function,
   ) -> wasm::Function {
     let mut instance = LoweringManager {
       heap,
@@ -49,22 +49,22 @@ impl<'a> LoweringManager<'a> {
     }
   }
 
-  fn lower_stmt(&mut self, s: &mir::Statement) -> Vec<wasm::Instruction> {
+  fn lower_stmt(&mut self, s: &lir::Statement) -> Vec<wasm::Instruction> {
     match s {
-      mir::Statement::Binary { name, operator, e1, e2 } => {
+      lir::Statement::Binary { name, operator, e1, e2 } => {
         let i1 = Box::new(self.lower_expr(e1));
         let i2 = Box::new(self.lower_expr(e2));
         vec![wasm::Instruction::Inline(
           self.set(name, wasm::InlineInstruction::Binary(i1, *operator, i2)),
         )]
       }
-      mir::Statement::IndexedAccess { name, type_: _, pointer_expression, index } => {
+      lir::Statement::IndexedAccess { name, type_: _, pointer_expression, index } => {
         let pointer = Box::new(self.lower_expr(pointer_expression));
         vec![wasm::Instruction::Inline(
           self.set(name, wasm::InlineInstruction::Load { index: *index, pointer }),
         )]
       }
-      mir::Statement::IndexedAssign { assigned_expression, pointer_expression, index } => {
+      lir::Statement::IndexedAssign { assigned_expression, pointer_expression, index } => {
         let pointer = Box::new(self.lower_expr(pointer_expression));
         let assigned = Box::new(self.lower_expr(assigned_expression));
         vec![wasm::Instruction::Inline(wasm::InlineInstruction::Store {
@@ -73,9 +73,9 @@ impl<'a> LoweringManager<'a> {
           assigned,
         })]
       }
-      mir::Statement::Call { callee, arguments, return_type: _, return_collector } => {
+      lir::Statement::Call { callee, arguments, return_type: _, return_collector } => {
         let argument_instructions = arguments.iter().map(|it| self.lower_expr(it)).collect_vec();
-        let call = if let mir::Expression::Name(name, _) = callee {
+        let call = if let lir::Expression::Name(name, _) = callee {
           wasm::InlineInstruction::DirectCall(*name, argument_instructions)
         } else {
           wasm::InlineInstruction::IndirectCall {
@@ -93,7 +93,7 @@ impl<'a> LoweringManager<'a> {
         };
         vec![wasm::Instruction::Inline(stmt)]
       }
-      mir::Statement::IfElse { condition, s1, s2, final_assignments } => {
+      lir::Statement::IfElse { condition, s1, s2, final_assignments } => {
         let condition = self.lower_expr(condition);
         let mut s1 = s1.iter().flat_map(|it| self.lower_stmt(it)).collect_vec();
         let mut s2 = s2.iter().flat_map(|it| self.lower_stmt(it)).collect_vec();
@@ -110,7 +110,7 @@ impl<'a> LoweringManager<'a> {
             vec![wasm::Instruction::IfElse {
               condition: wasm::InlineInstruction::Binary(
                 Box::new(condition),
-                hir::Operator::XOR,
+                mir::Operator::XOR,
                 Box::new(wasm::InlineInstruction::Const(1)),
               ),
               s1: s2,
@@ -121,12 +121,12 @@ impl<'a> LoweringManager<'a> {
           vec![wasm::Instruction::IfElse { condition, s1, s2 }]
         }
       }
-      mir::Statement::SingleIf { condition, invert_condition, statements } => {
+      lir::Statement::SingleIf { condition, invert_condition, statements } => {
         let mut condition = self.lower_expr(condition);
         if *invert_condition {
           condition = wasm::InlineInstruction::Binary(
             Box::new(condition),
-            hir::Operator::XOR,
+            mir::Operator::XOR,
             Box::new(wasm::InlineInstruction::Const(1)),
           );
         }
@@ -136,7 +136,7 @@ impl<'a> LoweringManager<'a> {
           s2: vec![],
         }]
       }
-      mir::Statement::Break(e) => {
+      lir::Statement::Break(e) => {
         let LoopContext { break_collector, exit_label } = self.loop_cx.as_ref().unwrap();
         let exit_label = *exit_label;
         if let Some(c) = *break_collector {
@@ -149,7 +149,7 @@ impl<'a> LoweringManager<'a> {
           vec![wasm::Instruction::UnconditionalJump(exit_label)]
         }
       }
-      mir::Statement::While { loop_variables, statements, break_collector } => {
+      lir::Statement::While { loop_variables, statements, break_collector } => {
         let saved_current_loop_cx = self.loop_cx.clone();
         let continue_label = self.alloc_label_with_annot("loop_continue");
         let exit_label = self.alloc_label_with_annot("loop_exit");
@@ -179,11 +179,11 @@ impl<'a> LoweringManager<'a> {
         self.loop_cx = saved_current_loop_cx;
         instructions
       }
-      mir::Statement::Cast { name, type_: _, assigned_expression } => {
+      lir::Statement::Cast { name, type_: _, assigned_expression } => {
         let assigned = self.lower_expr(assigned_expression);
         vec![wasm::Instruction::Inline(self.set(name, assigned))]
       }
-      mir::Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
+      lir::Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
         let fn_name = self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_MALLOC);
         let mut instructions = vec![wasm::Instruction::Inline(self.set(
           struct_variable_name,
@@ -206,12 +206,12 @@ impl<'a> LoweringManager<'a> {
     }
   }
 
-  fn lower_expr(&mut self, e: &mir::Expression) -> wasm::InlineInstruction {
+  fn lower_expr(&mut self, e: &lir::Expression) -> wasm::InlineInstruction {
     match e {
-      mir::Expression::IntLiteral(v, _) => wasm::InlineInstruction::Const(*v),
-      mir::Expression::Variable(n, _) => self.get(n),
-      mir::Expression::Name(n, t) => {
-        let index = if let mir::Type::Fn(_) = t {
+      lir::Expression::IntLiteral(v, _) => wasm::InlineInstruction::Const(*v),
+      lir::Expression::Variable(n, _) => self.get(n),
+      lir::Expression::Name(n, t) => {
+        let index = if let lir::Type::Fn(_) = t {
           self.function_index_mapping.get(n)
         } else {
           self.global_variables_to_pointer_mapping.get(n)
@@ -238,12 +238,12 @@ impl<'a> LoweringManager<'a> {
   }
 }
 
-pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &mir::Sources) -> wasm::Module {
+pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &lir::Sources) -> wasm::Module {
   let mut data_start: usize = 4096;
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
   let mut global_variables = vec![];
-  for hir::GlobalVariable { name, content } in &sources.global_variables {
+  for mir::GlobalVariable { name, content } in &sources.global_variables {
     let content_str = content.as_str(heap);
     let mut bytes = vec![0, 0, 0, 0];
     bytes.extend_from_slice(&(content_str.len() as u32).to_le_bytes());
@@ -285,8 +285,8 @@ pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &mir::Sources) -> wa
 mod tests {
   use crate::{
     ast::{
-      hir::{GlobalVariable, Operator},
-      mir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
+      lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
+      mir::{GlobalVariable, Operator},
     },
     common::Heap,
   };

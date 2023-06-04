@@ -1,7 +1,7 @@
 use crate::{
   ast::{
     common_names::{encode_samlang_type, encode_samlang_variant_subtype},
-    hir::{
+    mir::{
       ClosureTypeDefinition, FunctionType, IdType, Type, TypeDefinition, TypeDefinitionMappings,
       INT_TYPE,
     },
@@ -405,7 +405,7 @@ impl TypeLoweringManager {
 mod tests {
   use super::*;
   use crate::{
-    ast::{hir::STRING_TYPE, source::test_builder, Location, Reason},
+    ast::{mir::STRING_TYPE, source::test_builder, Location, Reason},
     checker::type_::test_type_builder,
   };
   use pretty_assertions::assert_eq;

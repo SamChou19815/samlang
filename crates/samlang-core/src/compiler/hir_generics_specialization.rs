@@ -1,9 +1,9 @@
-use super::hir_type_conversion::{
+use super::mir_type_conversion::{
   encode_name_after_generics_specialization, fn_type_application, solve_type_arguments,
   type_application,
 };
 use crate::{
-  ast::hir::{
+  ast::mir::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
     IdType, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
   },
@@ -436,7 +436,7 @@ pub(super) fn perform_generics_specialization(
 mod tests {
   use super::*;
   use crate::{
-    ast::hir::{
+    ast::mir::{
       GlobalVariable, Operator, TypeDefinitionMappings, INT_TYPE, ONE, STRING_TYPE, ZERO,
     },
     common::well_known_pstrs,

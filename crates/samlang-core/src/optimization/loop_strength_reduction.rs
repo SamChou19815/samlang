@@ -3,7 +3,7 @@ use super::loop_induction_analysis::{
   OptimizableWhileLoop,
 };
 use crate::{
-  ast::hir::{Expression, Operator, Statement, INT_TYPE},
+  ast::mir::{Expression, Operator, Statement, INT_TYPE},
   Heap,
 };
 use std::collections::HashMap;
@@ -86,7 +86,7 @@ pub(super) fn optimize(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{VariableName, INT_TYPE, ONE},
+    ast::mir::{VariableName, INT_TYPE, ONE},
     optimization::loop_induction_analysis::{
       BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName,
       GeneralBasicInductionVariable, GuardOperator, OptimizableWhileLoop,

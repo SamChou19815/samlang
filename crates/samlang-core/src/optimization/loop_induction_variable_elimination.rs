@@ -3,7 +3,7 @@ use super::loop_induction_analysis::{
   GuardOperator, OptimizableWhileLoop, PotentialLoopInvariantExpression,
 };
 use crate::{
-  ast::hir::{Callee, Expression, Operator, Statement, VariableName, INT_TYPE},
+  ast::mir::{Callee, Expression, Operator, Statement, VariableName, INT_TYPE},
   Heap,
 };
 use itertools::Itertools;
@@ -191,7 +191,7 @@ pub(super) fn optimize(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{
+    ast::mir::{
       Callee, Expression, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },

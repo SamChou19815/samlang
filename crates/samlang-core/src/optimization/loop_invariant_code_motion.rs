@@ -1,5 +1,5 @@
 use crate::{
-  ast::hir::{Expression, GenenalLoopVariable, Statement, VariableName},
+  ast::mir::{Expression, GenenalLoopVariable, Statement, VariableName},
   common::PStr,
 };
 use std::collections::HashSet;
@@ -125,7 +125,7 @@ pub(super) fn optimize(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{
+    ast::mir::{
       Callee, Expression, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },

@@ -3,7 +3,7 @@ use super::loop_induction_analysis::{
   PotentialLoopInvariantExpression,
 };
 use crate::{
-  ast::hir::{Binary, Expression, Operator, Statement, INT_TYPE, ZERO},
+  ast::mir::{Binary, Expression, Operator, Statement, INT_TYPE, ZERO},
   Heap,
 };
 
@@ -146,7 +146,7 @@ pub(super) fn optimize(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{Expression, Statement, VariableName, INT_TYPE, ZERO},
+    ast::mir::{Expression, Statement, VariableName, INT_TYPE, ZERO},
     common::Heap,
     optimization::loop_induction_analysis::{
       BasicInductionVariableWithLoopGuard, GeneralBasicInductionVariable, GuardOperator,

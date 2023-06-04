@@ -14,7 +14,7 @@ pub(super) fn run_source_module(
 
 pub(super) fn run_mir_sources(
   heap: &mut common::Heap,
-  sources: &ast::mir::Sources,
+  sources: &ast::lir::Sources,
   main_function: common::PStr,
 ) -> String {
   mir_interpreter::run(heap, sources, main_function)

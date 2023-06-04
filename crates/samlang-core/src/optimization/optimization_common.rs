@@ -1,5 +1,5 @@
 use crate::{
-  ast::hir::*,
+  ast::mir::*,
   common::{LocalStackedContext, PStr},
 };
 

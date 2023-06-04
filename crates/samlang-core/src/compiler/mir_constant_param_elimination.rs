@@ -1,5 +1,5 @@
 use crate::{
-  ast::hir::{
+  ast::mir::{
     Binary, Callee, Expression, Function, FunctionName, FunctionType, GenenalLoopVariable, Sources,
     Statement, VariableName,
   },
@@ -430,7 +430,7 @@ pub(super) fn rewrite_sources(sources: Sources) -> Sources {
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{
+    ast::mir::{
       Callee, Expression, Function, FunctionName, FunctionType, GenenalLoopVariable, IdType,
       Operator, Sources, Statement, Type, VariableName, INT_TYPE, ZERO,
     },
