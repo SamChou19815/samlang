@@ -2,7 +2,7 @@ use super::optimization_common::{
   if_else_or_null, single_if_or_null, LocalValueContextForOptimization,
 };
 use crate::{
-  ast::hir::*,
+  ast::mir::*,
   common::{LocalStackedContext, PStr},
   Heap,
 };
@@ -517,7 +517,7 @@ pub(super) fn optimize_function(function: Function, heap: &mut Heap) -> Function
 mod boilterplate_tests {
   use super::{optimize_callee, BinaryExpression};
   use crate::{
-    ast::hir::*, common::INVALID_PSTR,
+    ast::mir::*, common::INVALID_PSTR,
     optimization::optimization_common::LocalValueContextForOptimization, Heap,
   };
 

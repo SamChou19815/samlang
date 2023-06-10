@@ -1,5 +1,5 @@
 use crate::{
-  ast::hir::{
+  ast::mir::{
     Callee, Expression, Function, GenenalLoopVariable, Operator, Statement, Type, VariableName,
     ZERO,
   },
@@ -214,7 +214,7 @@ pub(super) fn optimize_function_by_tailrec_rewrite(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::hir::{FunctionName, INT_TYPE};
+  use crate::ast::mir::{FunctionName, INT_TYPE};
   use pretty_assertions::assert_eq;
 
   fn assert_optimization_failed(f: Function, heap: &mut Heap) {

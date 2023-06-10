@@ -1,6 +1,6 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use crate::{
-  ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement, VariableName},
+  ast::mir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement, VariableName},
   common::{LocalStackedContext, PStr},
 };
 use itertools::Itertools;

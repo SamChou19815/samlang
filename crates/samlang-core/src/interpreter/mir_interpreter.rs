@@ -1,8 +1,8 @@
 use crate::{
   ast::{
     common_names,
-    hir::Operator,
-    mir::{Expression, Function, Sources, Statement, INT_TYPE},
+    lir::{Expression, Function, Sources, Statement, INT_TYPE},
+    mir::Operator,
   },
   common::{Heap, PStr},
 };
@@ -324,10 +324,10 @@ mod tests {
   use crate::{
     ast::{
       common_names,
-      hir::{GlobalVariable, Operator},
-      mir::{
+      lir::{
         Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ONE, ZERO,
       },
+      mir::{GlobalVariable, Operator},
     },
     common::Heap,
   };

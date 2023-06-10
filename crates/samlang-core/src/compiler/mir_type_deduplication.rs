@@ -1,5 +1,5 @@
 use crate::{
-  ast::hir::{
+  ast::mir::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
     IdType, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
   },
@@ -230,7 +230,7 @@ pub(super) fn deduplicate(
 mod tests {
   use super::*;
   use crate::{
-    ast::hir::{INT_TYPE, ONE, STRING_TYPE, ZERO},
+    ast::mir::{INT_TYPE, ONE, STRING_TYPE, ZERO},
     Heap,
   };
   use pretty_assertions::assert_eq;
@@ -312,7 +312,7 @@ mod tests {
           s1: vec![
             Statement::binary(
               heap.alloc_str_for_test("_"),
-              crate::ast::hir::Operator::PLUS,
+              crate::ast::mir::Operator::PLUS,
               ZERO,
               ZERO,
             ),

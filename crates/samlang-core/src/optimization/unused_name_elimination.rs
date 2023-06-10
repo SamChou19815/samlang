@@ -1,5 +1,5 @@
 use crate::{
-  ast::hir::{
+  ast::mir::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, GenenalLoopVariable, Sources,
     Statement, Type, TypeDefinition, TypeDefinitionMappings,
   },
@@ -225,7 +225,7 @@ pub(super) fn optimize_sources(sources: Sources) -> Sources {
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{
+    ast::mir::{
       Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
       GlobalVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
       VariableName, INT_TYPE, ZERO,
@@ -362,13 +362,13 @@ mod tests {
               condition: ZERO,
               s1: vec![Statement::binary(
                 heap.alloc_str_for_test(""),
-                crate::ast::hir::Operator::GE,
+                crate::ast::mir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
               s2: vec![Statement::binary(
                 heap.alloc_str_for_test(""),
-                crate::ast::hir::Operator::GE,
+                crate::ast::mir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],

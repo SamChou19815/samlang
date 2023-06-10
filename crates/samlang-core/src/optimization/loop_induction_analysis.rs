@@ -1,6 +1,6 @@
 use super::dead_code_elimination;
 use crate::{
-  ast::hir::{Binary, Expression, GenenalLoopVariable, Operator, Statement, Type, VariableName},
+  ast::mir::{Binary, Expression, GenenalLoopVariable, Operator, Statement, Type, VariableName},
   common::{Heap, PStr},
 };
 use enum_as_inner::EnumAsInner;
@@ -646,7 +646,7 @@ pub(super) fn extract_optimizable_while_loop(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::hir::{Callee, FunctionName, INT_TYPE, ONE, ZERO};
+  use crate::ast::mir::{Callee, FunctionName, INT_TYPE, ONE, ZERO};
   use pretty_assertions::assert_eq;
 
   #[test]

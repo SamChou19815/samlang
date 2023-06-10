@@ -1,6 +1,6 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use crate::{
-  ast::hir::{Binary, Function, Statement},
+  ast::mir::{Binary, Function, Statement},
   Heap,
 };
 use std::collections::BTreeSet;
@@ -102,7 +102,7 @@ pub(super) fn optimize_function(function: Function, heap: &mut Heap) -> Function
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::hir::{
+    ast::mir::{
       Callee, Expression, Function, FunctionName, Operator, Statement, Type, VariableName,
       INT_TYPE, ONE, ZERO,
     },

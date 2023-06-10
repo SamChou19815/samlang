@@ -1,5 +1,5 @@
 use super::optimization_common::LocalValueContextForOptimization;
-use crate::ast::hir::{
+use crate::ast::mir::{
   Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement,
   Type, VariableName, INT_TYPE, ZERO,
 };
@@ -77,7 +77,7 @@ mod estimator {
   #[cfg(test)]
   mod tests {
     use crate::{
-      ast::hir::{
+      ast::mir::{
         Callee, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type, INT_TYPE,
         ZERO,
       },

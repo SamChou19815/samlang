@@ -1,6 +1,6 @@
 use super::optimization_common;
 use crate::{
-  ast::hir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Operator, Statement},
+  ast::mir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Operator, Statement},
   common::PStr,
 };
 use itertools::Itertools;
