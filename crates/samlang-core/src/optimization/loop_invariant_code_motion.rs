@@ -58,26 +58,35 @@ pub(super) fn optimize(
           inner_stmts.push(Statement::Cast { name, type_, assigned_expression });
         }
       }
-      Statement::StructInit { struct_variable_name, type_, expression_list } => {
+      Statement::StructInit { struct_variable_name, type_name, expression_list } => {
         if expression_list
           .iter()
           .all(|e| expression_is_loop_invariant(e, &non_loop_invariant_variables))
         {
           hoisted_stmts.push(Statement::StructInit {
             struct_variable_name,
-            type_,
+            type_name,
             expression_list,
           });
         } else {
           non_loop_invariant_variables.insert(struct_variable_name);
-          inner_stmts.push(Statement::StructInit { struct_variable_name, type_, expression_list });
+          inner_stmts.push(Statement::StructInit {
+            struct_variable_name,
+            type_name,
+            expression_list,
+          });
         }
       }
-      Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
+      Statement::ClosureInit {
+        closure_variable_name,
+        closure_type_name,
+        function_name,
+        context,
+      } => {
         if expression_is_loop_invariant(&context, &non_loop_invariant_variables) {
           hoisted_stmts.push(Statement::ClosureInit {
             closure_variable_name,
-            closure_type,
+            closure_type_name,
             function_name,
             context,
           });
@@ -85,7 +94,7 @@ pub(super) fn optimize(
           non_loop_invariant_variables.insert(closure_variable_name);
           inner_stmts.push(Statement::ClosureInit {
             closure_variable_name,
-            closure_type,
+            closure_type_name,
             function_name,
             context,
           });
@@ -125,9 +134,10 @@ pub(super) fn optimize(
 #[cfg(test)]
 mod tests {
   use crate::{
+    ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
-      VariableName, INT_TYPE, ONE, ZERO,
+      Callee, Expression, FunctionName, GenenalLoopVariable, Statement, Type, VariableName,
+      INT_TYPE, ONE, ZERO,
     },
     Heap,
   };
@@ -261,7 +271,7 @@ mod tests {
         ),
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("g"),
-          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+          closure_type_name: heap.alloc_str_for_test("I"),
           function_name: FunctionName::new(
             heap.alloc_str_for_test("f"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -270,7 +280,7 @@ mod tests {
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("h"),
-          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+          closure_type_name: heap.alloc_str_for_test("I"),
           function_name: FunctionName::new(
             heap.alloc_str_for_test("f"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -279,12 +289,12 @@ mod tests {
         },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("kk"),
-          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+          type_name: heap.alloc_str_for_test("I"),
           expression_list: vec![ZERO],
         },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("kk2"),
-          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+          type_name: heap.alloc_str_for_test("I"),
           expression_list: vec![Expression::var_name(heap.alloc_str_for_test("g"), INT_TYPE)],
         },
         Statement::Cast {

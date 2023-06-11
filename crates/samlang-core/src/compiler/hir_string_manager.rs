@@ -1,4 +1,4 @@
-use crate::{ast::mir::GlobalVariable, common::PStr, Heap};
+use crate::{ast::hir::GlobalVariable, common::PStr, Heap};
 use std::collections::HashMap;
 
 // TODO: move this to global variable since heap allows us to provide a better API

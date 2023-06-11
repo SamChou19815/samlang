@@ -1,6 +1,6 @@
 use super::{
   common_names,
-  mir::{GlobalVariable, Operator},
+  hir::{GlobalVariable, Operator},
 };
 use crate::common::{well_known_pstrs, Heap, PStr};
 use enum_as_inner::EnumAsInner;

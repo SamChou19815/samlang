@@ -1,7 +1,7 @@
 use crate::{
+  ast::hir::Operator,
   ast::mir::{
-    Callee, Expression, Function, GenenalLoopVariable, Operator, Statement, Type, VariableName,
-    ZERO,
+    Callee, Expression, Function, GenenalLoopVariable, Statement, Type, VariableName, ZERO,
   },
   common::PStr,
   Heap,
@@ -128,8 +128,8 @@ fn try_rewrite_stmts_for_tailrec_without_using_return_value(
           let mut args = vec![];
           for ((e1, e2), t) in a1.into_iter().zip(a2).zip(function_parameter_types) {
             let name = heap.alloc_temp_str();
-            args.push(Expression::var_name(name, t.clone()));
-            new_final_assignments.push((name, t.clone(), e1, e2));
+            args.push(Expression::var_name(name, *t));
+            new_final_assignments.push((name, *t, e1, e2));
           }
           Ok(RewriteResult {
             stmts: rest_stmts_iterator
@@ -162,7 +162,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
     Expression::Variable(v) => Some(v.name),
     Expression::StringName(_) => return Err(function),
   };
-  let Function { name, parameters, type_parameters, type_, body, return_value } = function;
+  let Function { name, parameters, type_, body, return_value } = function;
   let RewriteResult { stmts, args } = match try_rewrite_stmts_for_tailrec_without_using_return_value(
     body,
     &name,
@@ -171,9 +171,7 @@ fn optimize_function_by_tailrec_rewrite_aux(
     heap,
   ) {
     Ok(result) => result,
-    Err(body) => {
-      return Err(Function { name, parameters, type_parameters, type_, body, return_value })
-    }
+    Err(body) => return Err(Function { name, parameters, type_, body, return_value }),
   };
   let while_loop = Statement::While {
     loop_variables: parameters
@@ -182,24 +180,24 @@ fn optimize_function_by_tailrec_rewrite_aux(
       .zip(args)
       .map(|((n, t), loop_value)| GenenalLoopVariable {
         name: *n,
-        type_: t.clone(),
+        type_: *t,
         initial_value: Expression::var_name(
           heap.alloc_string(tail_rec_param_name(n.as_str(heap))),
-          t.clone(),
+          *t,
         ),
         loop_value,
       })
       .collect_vec(),
     statements: stmts,
     break_collector: if let Some(name) = expected_return_collector {
-      Some(VariableName { name, type_: type_.return_type.as_ref().clone() })
+      Some(VariableName { name, type_: *type_.return_type })
     } else {
       None
     },
   };
   let parameters =
     parameters.iter().map(|n| heap.alloc_string(tail_rec_param_name(n.as_str(heap)))).collect_vec();
-  Ok(Function { name, parameters, type_parameters, type_, body: vec![while_loop], return_value })
+  Ok(Function { name, parameters, type_, body: vec![while_loop], return_value })
 }
 
 pub(super) fn optimize_function_by_tailrec_rewrite(
@@ -233,7 +231,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],
         return_value: Expression::StringName(heap.alloc_str_for_test("")),
@@ -245,7 +242,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],
         return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
@@ -257,7 +253,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::binary(heap.alloc_str_for_test(""), Operator::PLUS, ZERO, ZERO)],
         return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
@@ -269,7 +264,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
           callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test(""), INT_TYPE)),
@@ -286,7 +280,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
@@ -306,7 +299,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::IfElse {
           condition: ZERO,
@@ -323,7 +315,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::IfElse {
           condition: ZERO,
@@ -340,7 +331,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
@@ -364,7 +354,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("loopy"),
         parameters: vec![heap.alloc_str_for_test("n")],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
@@ -404,7 +393,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("loopy"),
         parameters: vec![heap.alloc_str_for_test("n")],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
@@ -445,7 +433,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("loopy"),
         parameters: vec![heap.alloc_str_for_test("n")],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
@@ -510,7 +497,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("loopy"),
         parameters: vec![heap.alloc_str_for_test("n")],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
@@ -564,7 +550,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("loopy"),
         parameters: vec![heap.alloc_str_for_test("n")],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
@@ -614,7 +599,6 @@ mod tests {
       Function {
         name: heap.alloc_str_for_test("loopy"),
         parameters: vec![heap.alloc_str_for_test("n")],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IfElse {
           condition: ZERO,

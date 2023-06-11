@@ -1,7 +1,7 @@
 use crate::{
   ast::mir::{
     Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
-    IdType, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
+    Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
   },
   common::{Heap, PStr},
 };
@@ -10,16 +10,18 @@ use std::collections::{BTreeMap, HashMap};
 
 type State = HashMap<PStr, PStr>;
 
-fn rewrite_id_type(state: &State, id: IdType) -> IdType {
-  assert!(id.type_arguments.is_empty());
-  let name = if let Some(n) = state.get(&id.name) { *n } else { id.name };
-  IdType { name, type_arguments: vec![] }
+fn rewrite_id_type_name(state: &State, id: PStr) -> PStr {
+  if let Some(n) = state.get(&id) {
+    *n
+  } else {
+    id
+  }
 }
 
 fn rewrite_type(state: &State, type_: Type) -> Type {
   match type_ {
     Type::Int => Type::Int,
-    Type::Id(id) => Type::Id(rewrite_id_type(state, id)),
+    Type::Id(id) => Type::Id(rewrite_id_type_name(state, id)),
   }
 }
 
@@ -37,15 +39,8 @@ fn rewrite_var_name(state: &State, VariableName { name, type_ }: VariableName) -
   VariableName { name, type_: rewrite_type(state, type_) }
 }
 
-fn rewrite_fn_name(
-  state: &State,
-  FunctionName { name, type_, type_arguments }: FunctionName,
-) -> FunctionName {
-  FunctionName {
-    name,
-    type_: rewrite_fn_type(state, type_),
-    type_arguments: type_arguments.into_iter().map(|t| rewrite_type(state, t)).collect_vec(),
-  }
+fn rewrite_fn_name(state: &State, FunctionName { name, type_ }: FunctionName) -> FunctionName {
+  FunctionName { name, type_: rewrite_fn_type(state, type_) }
 }
 
 fn rewrite_expr(state: &State, expr: Expression) -> Expression {
@@ -122,17 +117,17 @@ fn rewrite_stmt(state: &State, stmt: Statement) -> Statement {
       type_: rewrite_type(state, type_),
       assigned_expression: rewrite_expr(state, assigned_expression),
     },
-    Statement::StructInit { struct_variable_name, type_, expression_list } => {
+    Statement::StructInit { struct_variable_name, type_name, expression_list } => {
       Statement::StructInit {
         struct_variable_name,
-        type_: rewrite_id_type(state, type_),
+        type_name: rewrite_id_type_name(state, type_name),
         expression_list: rewrite_expressions(state, expression_list),
       }
     }
-    Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
+    Statement::ClosureInit { closure_variable_name, closure_type_name, function_name, context } => {
       Statement::ClosureInit {
         closure_variable_name,
-        closure_type: rewrite_id_type(state, closure_type),
+        closure_type_name: rewrite_id_type_name(state, closure_type_name),
         function_name: rewrite_fn_name(state, function_name),
         context: rewrite_expr(state, context),
       }
@@ -146,12 +141,11 @@ fn rewrite_stmts(state: &State, stmts: Vec<Statement>) -> Vec<Statement> {
 
 fn rewrite_function(
   state: &State,
-  Function { name, parameters, type_parameters, type_, body, return_value }: Function,
+  Function { name, parameters, type_, body, return_value }: Function,
 ) -> Function {
   Function {
     name,
     parameters,
-    type_parameters,
     type_: rewrite_fn_type(state, type_),
     body: rewrite_stmts(state, body),
     return_value: rewrite_expr(state, return_value),
@@ -166,7 +160,6 @@ pub(super) fn deduplicate(
   let mut closure_type_def_mapping = BTreeMap::<String, ClosureTypeDefinition>::new();
   let mut type_def_mapping = BTreeMap::<String, TypeDefinition>::new();
   for closure_type in closure_types {
-    debug_assert!(closure_type.type_parameters.is_empty());
     let key = closure_type.function_type.pretty_print(heap);
     let original_name = closure_type.identifier;
     let canonical_name = if let Some(c) = closure_type_def_mapping.get(&key) {
@@ -178,7 +171,6 @@ pub(super) fn deduplicate(
     state.insert(original_name, canonical_name);
   }
   for type_def in type_definitions {
-    debug_assert!(type_def.type_parameters.is_empty());
     let key = match &type_def.mappings {
       TypeDefinitionMappings::Struct(types) => {
         format!("object_{}", types.iter().map(|t| t.pretty_print(heap)).join("_"))
@@ -199,19 +191,15 @@ pub(super) fn deduplicate(
     global_variables,
     closure_types: closure_type_def_mapping
       .into_values()
-      .map(|ClosureTypeDefinition { identifier, type_parameters, function_type }| {
-        ClosureTypeDefinition {
-          identifier,
-          type_parameters,
-          function_type: rewrite_fn_type(&state, function_type),
-        }
+      .map(|ClosureTypeDefinition { identifier, function_type }| ClosureTypeDefinition {
+        identifier,
+        function_type: rewrite_fn_type(&state, function_type),
       })
       .collect_vec(),
     type_definitions: type_def_mapping
       .into_values()
-      .map(|TypeDefinition { identifier, type_parameters, names, mappings }| TypeDefinition {
+      .map(|TypeDefinition { identifier, names, mappings }| TypeDefinition {
         identifier,
-        type_parameters,
         names,
         mappings: match mappings {
           TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
@@ -278,25 +266,21 @@ mod tests {
       closure_types: vec![
         ClosureTypeDefinition {
           identifier: heap.alloc_str_for_test("A"),
-          type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
         ClosureTypeDefinition {
           identifier: heap.alloc_str_for_test("B"),
-          type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
       ],
       type_definitions: vec![
         TypeDefinition {
           identifier: heap.alloc_str_for_test("C"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("D"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
@@ -305,14 +289,13 @@ mod tests {
       functions: vec![Function {
         name: heap.alloc_str_for_test("main"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IfElse {
           condition: ONE,
           s1: vec![
             Statement::binary(
               heap.alloc_str_for_test("_"),
-              crate::ast::mir::Operator::PLUS,
+              crate::ast::hir::Operator::PLUS,
               ZERO,
               ZERO,
             ),
@@ -320,7 +303,6 @@ mod tests {
               callee: Callee::FunctionName(FunctionName {
                 name: heap.alloc_str_for_test("f"),
                 type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
-                type_arguments: vec![INT_TYPE],
               }),
               arguments: vec![ZERO],
               return_type: INT_TYPE,
@@ -337,7 +319,7 @@ mod tests {
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("_"),
-              type_: Type::new_id_no_targs(heap.alloc_str_for_test("B")),
+              type_: Type::Id(heap.alloc_str_for_test("B")),
               pointer_expression: ZERO,
               index: 0,
             },
@@ -350,19 +332,18 @@ mod tests {
             },
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("_"),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("D")),
+              type_name: heap.alloc_str_for_test("D"),
               expression_list: vec![ZERO],
             },
             Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test("_"),
-              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("C")),
+              closure_type_name: heap.alloc_str_for_test("C"),
               function_name: FunctionName {
                 name: heap.alloc_str_for_test("f"),
                 type_: Type::new_fn_unwrapped(
-                  vec![Type::new_id_no_targs(heap.alloc_str_for_test("E"))],
+                  vec![Type::Id(heap.alloc_str_for_test("E"))],
                   INT_TYPE,
                 ),
-                type_arguments: vec![],
               },
               context: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
             },
@@ -380,7 +361,7 @@ function main(): int {
   let _: int;
   if 1 {
     let _ = 0 + 0;
-    f<int>(0);
+    f(0);
     (f: int)();
     let _: A = 0[0];
     _ = 0;

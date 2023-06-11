@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod tests {
-  use std::collections::HashSet;
-
   use crate::{
+    ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
+      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },
     common::Heap,
@@ -12,6 +11,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use std::collections::HashSet;
 
   fn assert_correctly_optimized(
     stmts: Vec<Statement>,
@@ -19,18 +19,18 @@ mod tests {
     heap: &mut Heap,
     expected: &str,
   ) {
-    let Function { body, return_value, .. } = dead_code_elimination::optimize_function(Function {
+    let mut f = Function {
       name: heap.alloc_str_for_test(""),
       parameters: vec![],
-      type_parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
       return_value,
-    });
+    };
+    dead_code_elimination::optimize_function(&mut f);
     let actual = format!(
       "{}\nreturn {};",
-      body.iter().map(|s| s.debug_print(heap)).join("\n"),
-      return_value.debug_print(heap)
+      f.body.iter().map(|s| s.debug_print(heap)).join("\n"),
+      f.return_value.debug_print(heap)
     );
     assert_eq!(expected, actual);
   }
@@ -52,7 +52,7 @@ mod tests {
       },
       Statement::StructInit {
         struct_variable_name: heap.alloc_str_for_test("s"),
-        type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("S")),
+        type_name: heap.alloc_str_for_test("S"),
         expression_list: vec![Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE)],
       },
       Statement::Cast {
@@ -116,12 +116,12 @@ return (ii: int);"#,
         },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("s"),
-          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("S")),
+          type_name: heap.alloc_str_for_test("S"),
           expression_list: vec![Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE)],
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("s"),
-          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Id")),
+          closure_type_name: heap.alloc_str_for_test("Id"),
           function_name: FunctionName::new(
             heap.alloc_str_for_test("closure"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -130,7 +130,7 @@ return (ii: int);"#,
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("s1"),
-          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Id")),
+          closure_type_name: heap.alloc_str_for_test("Id"),
           function_name: FunctionName::new(
             heap.alloc_str_for_test("closure"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -445,12 +445,12 @@ return 0;"#,
               },
               Statement::StructInit {
                 struct_variable_name: heap.alloc_str_for_test("s"),
-                type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("S")),
+                type_name: heap.alloc_str_for_test("S"),
                 expression_list: vec![Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE)],
               },
               Statement::ClosureInit {
                 closure_variable_name: heap.alloc_str_for_test("s"),
-                closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Id")),
+                closure_type_name: heap.alloc_str_for_test("Id"),
                 function_name: FunctionName::new(
                   heap.alloc_str_for_test("closure"),
                   Type::new_fn_unwrapped(vec![], INT_TYPE),

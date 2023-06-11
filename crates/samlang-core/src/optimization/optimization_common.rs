@@ -1,64 +1,27 @@
 use crate::{
+  ast::hir::Operator,
   ast::mir::*,
   common::{LocalStackedContext, PStr},
 };
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct IndexAccessBindedValue {
   pub(super) type_: Type,
   pub(super) pointer_expression: Expression,
   pub(super) index: usize,
 }
 
-impl IndexAccessBindedValue {
-  pub(super) fn dump_to_string(&self) -> String {
-    format!("{}[{}]", self.pointer_expression.dump_to_string(), self.index)
-  }
-}
-
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct BinaryBindedValue {
   pub(super) operator: Operator,
   pub(super) e1: Expression,
   pub(super) e2: Expression,
 }
 
-impl BinaryBindedValue {
-  pub(super) fn dump_to_string(&self) -> String {
-    format!(
-      "({}{}{})",
-      self.e1.dump_to_string(),
-      self.operator.to_string(),
-      self.e2.dump_to_string()
-    )
-  }
-}
-
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum BindedValue {
   IndexedAccess(IndexAccessBindedValue),
   Binary(BinaryBindedValue),
-}
-
-impl BindedValue {
-  pub(super) fn dump_to_string(&self) -> String {
-    match self {
-      BindedValue::IndexedAccess(e) => e.dump_to_string(),
-      BindedValue::Binary(e) => e.dump_to_string(),
-    }
-  }
-}
-
-impl PartialOrd for BindedValue {
-  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    Some(self.cmp(other))
-  }
-}
-
-impl Ord for BindedValue {
-  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    self.dump_to_string().cmp(&other.dump_to_string())
-  }
 }
 
 pub(super) type LocalValueContextForOptimization = LocalStackedContext<PStr, Expression>;
@@ -99,6 +62,7 @@ pub(super) fn single_if_or_null(
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
   #[test]
   fn boilterplate() {
@@ -107,21 +71,21 @@ mod tests {
     assert!(single_if_or_null(ZERO, false, vec![]).is_empty());
     assert!(!single_if_or_null(ZERO, false, vec![Statement::Break(ZERO)]).is_empty());
 
-    let bv1 = BindedValue::IndexedAccess(IndexAccessBindedValue {
-      type_: INT_TYPE,
-      pointer_expression: ZERO,
-      index: 0,
-    });
-    let bv2 =
-      BindedValue::Binary(BinaryBindedValue { operator: Operator::PLUS, e1: ZERO, e2: ZERO });
-    bv1.dump_to_string();
-    bv2.dump_to_string();
+    let bv1 = BindedValue::IndexedAccess(
+      IndexAccessBindedValue { type_: INT_TYPE, pointer_expression: ZERO, index: 0 }.clone(),
+    );
+    let bv2 = BindedValue::Binary(
+      BinaryBindedValue { operator: Operator::PLUS, e1: ZERO, e2: ZERO }.clone(),
+    );
     let _ = bv1.clone();
     let _ = bv2.clone();
     assert_eq!(Some(std::cmp::Ordering::Equal), bv1.partial_cmp(&bv1));
     assert_eq!(Some(std::cmp::Ordering::Equal), bv2.partial_cmp(&bv2));
     assert!(bv1.eq(&bv1));
     assert!(bv2.eq(&bv2));
+    let mut hasher = DefaultHasher::new();
+    bv1.hash(&mut hasher);
+    bv2.hash(&mut hasher);
   }
 
   #[should_panic]

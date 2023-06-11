@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
   use super::super::wasm::*;
-  use crate::{ast::mir::Operator, common::Heap};
+  use crate::{ast::hir::Operator, common::Heap};
   use pretty_assertions::assert_eq;
 
   #[test]

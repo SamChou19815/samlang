@@ -4,7 +4,7 @@ mod tests {
   use crate::{
     ast::{
       common_names,
-      mir::{GlobalVariable, Operator},
+      hir::{GlobalVariable, Operator},
     },
     Heap,
   };

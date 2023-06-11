@@ -1,20 +1,20 @@
 mod hir_generics_specialization;
 mod hir_lowering;
 mod hir_string_manager;
+mod hir_type_conversion;
 mod lir_lowering;
 mod lir_unused_name_elimination;
 mod mir_constant_param_elimination;
 mod mir_tail_recursion_rewrite;
-mod mir_type_conversion;
 mod mir_type_deduplication;
 mod wasm_lowering;
 
 #[allow(unused_imports)]
-pub(crate) use hir_lowering::compile_sources_to_hir;
+pub(crate) use hir_lowering::compile_sources_to_mir;
 #[allow(unused_imports)]
-pub(crate) use lir_lowering::compile_hir_to_mir;
+pub(crate) use lir_lowering::compile_mir_to_lir;
 
-pub(crate) fn compile_mir_to_wasm(
+pub(crate) fn compile_lir_to_wasm(
   heap: &mut crate::common::Heap,
   sources: &crate::ast::lir::Sources,
 ) -> (String, Vec<u8>) {

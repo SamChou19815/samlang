@@ -1,12 +1,11 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
 use crate::{
-  ast::mir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement, VariableName},
+  ast::mir::{Binary, Callee, Expression, Function, Statement, VariableName},
   common::{LocalStackedContext, PStr},
 };
-use itertools::Itertools;
 
 type LocalContext = LocalStackedContext<PStr, PStr>;
-type LocalBindedValueContext = LocalStackedContext<String, PStr>;
+type LocalBindedValueContext = LocalStackedContext<BindedValue, PStr>;
 
 impl LocalContext {
   fn lvn_bind_var(&mut self, name: PStr, value: PStr) {
@@ -18,180 +17,142 @@ impl LocalContext {
 
 impl LocalBindedValueContext {
   fn lvn_bind_value(&mut self, value: &BindedValue, name: PStr) {
-    let inserted = self.insert(value.dump_to_string(), name);
+    let inserted = self.insert(*value, name);
     debug_assert!(inserted.is_none());
   }
 }
 
 fn optimize_variable(
-  VariableName { name, type_ }: VariableName,
+  VariableName { name, type_: _ }: &mut VariableName,
   variable_cx: &mut LocalContext,
-) -> VariableName {
-  let binded = variable_cx.get(&name).cloned().unwrap_or(name);
-  VariableName { name: binded, type_ }
+) {
+  *name = variable_cx.get(name).cloned().unwrap_or(*name);
 }
 
-fn optimize_expr(expression: Expression, variable_cx: &mut LocalContext) -> Expression {
+fn optimize_expr(expression: &mut Expression, variable_cx: &mut LocalContext) {
   if let Expression::Variable(v) = expression {
-    Expression::Variable(optimize_variable(v, variable_cx))
-  } else {
-    expression
+    optimize_variable(v, variable_cx);
   }
 }
 
 fn optimize_stmt(
-  stmt: Statement,
+  stmt: &mut Statement,
   variable_cx: &mut LocalContext,
   binded_value_cx: &mut LocalBindedValueContext,
-) -> Option<Statement> {
+) -> bool {
   match stmt {
     Statement::Binary(Binary { name, operator, e1, e2 }) => {
-      let e1 = optimize_expr(e1, variable_cx);
-      let e2 = optimize_expr(e2, variable_cx);
-      let value =
-        BindedValue::Binary(BinaryBindedValue { operator, e1: e1.clone(), e2: e2.clone() });
-      if let Some(binded) = binded_value_cx.get(&value.dump_to_string()) {
-        variable_cx.lvn_bind_var(name, *binded);
-        None
+      optimize_expr(e1, variable_cx);
+      optimize_expr(e2, variable_cx);
+      let value = BindedValue::Binary(BinaryBindedValue { operator: *operator, e1: *e1, e2: *e2 });
+      if let Some(binded) = binded_value_cx.get(&value) {
+        variable_cx.lvn_bind_var(*name, *binded);
+        false
       } else {
-        binded_value_cx.lvn_bind_value(&value, name);
-        Some(Statement::Binary(Binary { name, operator, e1, e2 }))
+        binded_value_cx.lvn_bind_value(&value, *name);
+        true
       }
     }
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {
-      let pointer_expression = optimize_expr(pointer_expression, variable_cx);
+      optimize_expr(pointer_expression, variable_cx);
       let value = BindedValue::IndexedAccess(IndexAccessBindedValue {
-        type_: type_.clone(),
-        pointer_expression: pointer_expression.clone(),
-        index,
+        type_: *type_,
+        pointer_expression: *pointer_expression,
+        index: *index,
       });
-      if let Some(binded) = binded_value_cx.get(&value.dump_to_string()) {
-        variable_cx.lvn_bind_var(name, *binded);
-        None
+      if let Some(binded) = binded_value_cx.get(&value) {
+        variable_cx.lvn_bind_var(*name, *binded);
+        false
       } else {
-        binded_value_cx.lvn_bind_value(&value, name);
-        Some(Statement::IndexedAccess { name, type_, pointer_expression, index })
+        binded_value_cx.lvn_bind_value(&value, *name);
+        true
       }
     }
-    Statement::Call { callee, arguments, return_type, return_collector } => Some(Statement::Call {
-      callee: match callee {
-        Callee::FunctionName(n) => Callee::FunctionName(n),
-        Callee::Variable(v) => Callee::Variable(optimize_variable(v, variable_cx)),
-      },
-      arguments: arguments.into_iter().map(|e| optimize_expr(e, variable_cx)).collect(),
-      return_type,
-      return_collector,
-    }),
+    Statement::Call { callee, arguments, return_type: _, return_collector: _ } => {
+      match callee {
+        Callee::FunctionName(_) => {}
+        Callee::Variable(v) => optimize_variable(v, variable_cx),
+      }
+      for e in arguments {
+        optimize_expr(e, variable_cx);
+      }
+      true
+    }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
-      let condition = optimize_expr(condition, variable_cx);
+      optimize_expr(condition, variable_cx);
 
       variable_cx.push_scope();
       binded_value_cx.push_scope();
-      let s1 = optimize_stmts(s1, variable_cx, binded_value_cx);
-      let branch1_values = final_assignments
-        .iter()
-        .map(|(_, _, e, _)| optimize_expr(e.clone(), variable_cx))
-        .collect_vec();
+      optimize_stmts(s1, variable_cx, binded_value_cx);
+      final_assignments.iter_mut().for_each(|(_, _, e, _)| optimize_expr(e, variable_cx));
       binded_value_cx.pop_scope();
       variable_cx.pop_scope();
 
       variable_cx.push_scope();
       binded_value_cx.push_scope();
-      let s2 = optimize_stmts(s2, variable_cx, binded_value_cx);
-      let branch2_values = final_assignments
-        .iter()
-        .map(|(_, _, _, e)| optimize_expr(e.clone(), variable_cx))
-        .collect_vec();
+      optimize_stmts(s2, variable_cx, binded_value_cx);
+      final_assignments.iter_mut().for_each(|(_, _, _, e)| optimize_expr(e, variable_cx));
       binded_value_cx.pop_scope();
       variable_cx.pop_scope();
 
-      let final_assignments = branch1_values
-        .into_iter()
-        .zip(branch2_values)
-        .zip(final_assignments)
-        .map(|((e1, e2), (n, t, _, _))| (n, t, e1, e2))
-        .collect_vec();
-
-      Some(Statement::IfElse { condition, s1, s2, final_assignments })
+      true
     }
-    Statement::SingleIf { condition, invert_condition, statements } => {
-      let condition = optimize_expr(condition, variable_cx);
+    Statement::SingleIf { condition, invert_condition: _, statements } => {
+      optimize_expr(condition, variable_cx);
       variable_cx.push_scope();
       binded_value_cx.push_scope();
-      let statements = optimize_stmts(statements, variable_cx, binded_value_cx);
+      optimize_stmts(statements, variable_cx, binded_value_cx);
       binded_value_cx.pop_scope();
       variable_cx.pop_scope();
-      Some(Statement::SingleIf { condition, invert_condition, statements })
+      true
     }
-    Statement::Break(e) => Some(Statement::Break(optimize_expr(e, variable_cx))),
-    Statement::While { loop_variables, statements, break_collector } => {
-      let loop_variables_without_loop_values = loop_variables
-        .iter()
-        .map(|v| (v.name, v.type_.clone(), optimize_expr(v.initial_value.clone(), variable_cx)))
-        .collect_vec();
+    Statement::Break(e) => {
+      optimize_expr(e, variable_cx);
+      true
+    }
+    Statement::While { loop_variables, statements, break_collector: _ } => {
+      loop_variables.iter_mut().for_each(|v| optimize_expr(&mut v.initial_value, variable_cx));
       variable_cx.push_scope();
       binded_value_cx.push_scope();
-      let statements = optimize_stmts(statements, variable_cx, binded_value_cx);
-      let loop_variables_loop_values =
-        loop_variables.into_iter().map(|v| optimize_expr(v.loop_value, variable_cx)).collect_vec();
+      optimize_stmts(statements, variable_cx, binded_value_cx);
+      loop_variables.iter_mut().for_each(|v| optimize_expr(&mut v.loop_value, variable_cx));
       binded_value_cx.pop_scope();
       variable_cx.pop_scope();
-      let loop_variables = loop_variables_without_loop_values
-        .into_iter()
-        .zip(loop_variables_loop_values)
-        .map(|((name, type_, initial_value), loop_value)| GenenalLoopVariable {
-          name,
-          type_,
-          initial_value,
-          loop_value,
-        })
-        .collect_vec();
-      Some(Statement::While { loop_variables, statements, break_collector })
+      true
     }
-    Statement::Cast { name, type_, assigned_expression } => Some(Statement::Cast {
-      name,
-      type_,
-      assigned_expression: optimize_expr(assigned_expression, variable_cx),
-    }),
-    Statement::StructInit { struct_variable_name, type_, expression_list } => {
-      Some(Statement::StructInit {
-        struct_variable_name,
-        type_,
-        expression_list: expression_list
-          .into_iter()
-          .map(|e| optimize_expr(e, variable_cx))
-          .collect(),
-      })
+    Statement::Cast { name: _, type_: _, assigned_expression } => {
+      optimize_expr(assigned_expression, variable_cx);
+      true
     }
-    Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
-      Some(Statement::ClosureInit {
-        closure_variable_name,
-        closure_type,
-        function_name,
-        context: optimize_expr(context, variable_cx),
-      })
+    Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
+      for e in expression_list {
+        optimize_expr(e, variable_cx);
+      }
+      true
+    }
+    Statement::ClosureInit {
+      closure_variable_name: _,
+      closure_type_name: _,
+      function_name: _,
+      context,
+    } => {
+      optimize_expr(context, variable_cx);
+      true
     }
   }
 }
 
 fn optimize_stmts(
-  stmts: Vec<Statement>,
+  stmts: &mut Vec<Statement>,
   variable_cx: &mut LocalContext,
   binded_value_cx: &mut LocalBindedValueContext,
-) -> Vec<Statement> {
-  stmts.into_iter().filter_map(|s| optimize_stmt(s, variable_cx, binded_value_cx)).collect()
+) {
+  stmts.retain_mut(|s| optimize_stmt(s, variable_cx, binded_value_cx))
 }
 
-pub(super) fn optimize_function(function: Function) -> Function {
+pub(super) fn optimize_function(function: &mut Function) {
   let mut variable_cx = LocalContext::new();
   let mut binded_value_cx = LocalBindedValueContext::new();
-  let Function { name, parameters, type_parameters, type_, body, return_value } = function;
-  Function {
-    name,
-    parameters,
-    type_parameters,
-    type_,
-    body: optimize_stmts(body, &mut variable_cx, &mut binded_value_cx),
-    return_value: optimize_expr(return_value, &mut variable_cx),
-  }
+  optimize_stmts(&mut function.body, &mut variable_cx, &mut binded_value_cx);
+  optimize_expr(&mut function.return_value, &mut variable_cx);
 }

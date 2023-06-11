@@ -1,6 +1,6 @@
 use super::lir_unused_name_elimination;
 use crate::{
-  ast::{common_names, lir, mir},
+  ast::{common_names, hir, lir, mir},
   common::{well_known_pstrs, PStr},
   Heap,
 };
@@ -10,10 +10,7 @@ use std::collections::{BTreeMap, HashSet};
 fn lower_type(type_: mir::Type) -> lir::Type {
   match type_ {
     mir::Type::Int => lir::Type::Primitive(lir::PrimitiveType::Int),
-    mir::Type::Id(mir::IdType { name, type_arguments }) => {
-      assert!(type_arguments.is_empty());
-      lir::Type::Id(name)
-    }
+    mir::Type::Id(name) => lir::Type::Id(name),
   }
 }
 
@@ -69,9 +66,8 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_function(
     &mut self,
-    mir::Function { name, parameters, type_parameters, type_, body, return_value }: mir::Function,
+    mir::Function { name, parameters, type_, body, return_value }: mir::Function,
   ) -> lir::Function {
-    assert!(type_parameters.is_empty());
     let return_value = lower_expression(return_value);
     lir::Function {
       name,
@@ -169,7 +165,6 @@ impl<'a> LoweringManager<'a> {
         let mut statements = vec![];
         match callee {
           mir::Callee::FunctionName(fn_name) => {
-            assert!(fn_name.type_arguments.is_empty());
             statements.push(lir::Statement::Call {
               callee: lir::Expression::Name(
                 fn_name.name,
@@ -186,7 +181,7 @@ impl<'a> LoweringManager<'a> {
           }) => {
             let temp_fn = self.alloc_temp();
             let temp_cx = self.alloc_temp();
-            let closure_type_name = &closure_hir_type.as_id().unwrap().name;
+            let closure_type_name = &closure_hir_type.as_id().unwrap();
             let fn_type = self.closure_defs.get(closure_type_name).unwrap();
             let pointer_expr =
               lir::Expression::Variable(closure_var_name, lower_type(closure_hir_type));
@@ -278,9 +273,9 @@ impl<'a> LoweringManager<'a> {
         });
         statements
       }
-      mir::Statement::StructInit { struct_variable_name, type_, expression_list } => {
-        let type_def = self.type_defs.get(&type_.name).unwrap();
-        let type_ = lower_type(mir::Type::Id(type_));
+      mir::Statement::StructInit { struct_variable_name, type_name, expression_list } => {
+        let type_def = self.type_defs.get(&type_name).unwrap();
+        let type_ = lower_type(mir::Type::Id(type_name));
         let mut statements = vec![];
         let mut mir_expression_list = vec![];
         let mut header = 1;
@@ -311,11 +306,11 @@ impl<'a> LoweringManager<'a> {
       }
       mir::Statement::ClosureInit {
         closure_variable_name,
-        closure_type,
-        function_name: mir::FunctionName { name: fn_name, type_: fn_type, type_arguments: _ },
+        closure_type_name,
+        function_name: mir::FunctionName { name: fn_name, type_: fn_type },
         context,
       } => {
-        let closure_type = lower_type(mir::Type::Id(closure_type));
+        let closure_type = lower_type(mir::Type::Id(closure_type_name));
         let original_fn_type = lower_fn_type(fn_type);
         let type_erased_closure_type = lir::FunctionType {
           argument_types: vec![lir::ANY_TYPE]
@@ -393,7 +388,7 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
     body: vec![
       lir::Statement::binary(
         heap.alloc_str_permanent("isPrimitive"),
-        mir::Operator::LT,
+        hir::Operator::LT,
         lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
         lir::Expression::int(1024),
       ),
@@ -415,13 +410,13 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
           },
           lir::Statement::binary(
             heap.alloc_str_permanent("originalRefCount"),
-            mir::Operator::LAND,
+            hir::Operator::LAND,
             lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
             lir::Expression::int(65535),
           ),
           lir::Statement::binary(
             heap.alloc_str_permanent("isZero"),
-            mir::Operator::EQ,
+            hir::Operator::EQ,
             lir::Expression::Variable(heap.alloc_str_permanent("originalRefCount"), lir::INT_TYPE),
             lir::ZERO,
           ),
@@ -431,7 +426,7 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
             statements: vec![
               lir::Statement::binary(
                 heap.alloc_str_permanent("refCount"),
-                mir::Operator::PLUS,
+                hir::Operator::PLUS,
                 lir::Expression::Variable(
                   heap.alloc_str_permanent("originalRefCount"),
                   lir::INT_TYPE,
@@ -440,19 +435,19 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
               ),
               lir::Statement::binary(
                 heap.alloc_str_permanent("lower"),
-                mir::Operator::LAND,
+                hir::Operator::LAND,
                 lir::Expression::Variable(heap.alloc_str_permanent("refCount"), lir::INT_TYPE),
                 lir::Expression::int(65535),
               ),
               lir::Statement::binary(
                 heap.alloc_str_permanent("upper"),
-                mir::Operator::LAND,
+                hir::Operator::LAND,
                 lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
                 lir::Expression::int(!65535),
               ),
               lir::Statement::binary(
                 heap.alloc_str_permanent("newHeader"),
-                mir::Operator::LOR,
+                hir::Operator::LOR,
                 lir::Expression::Variable(heap.alloc_str_permanent("upper"), lir::INT_TYPE),
                 lir::Expression::Variable(heap.alloc_str_permanent("lower"), lir::INT_TYPE),
               ),
@@ -484,7 +479,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
     body: vec![
       lir::Statement::binary(
         heap.alloc_str_permanent("isPrimitive"),
-        mir::Operator::LT,
+        hir::Operator::LT,
         lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
         lir::Expression::int(1024),
       ),
@@ -506,13 +501,13 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
           },
           lir::Statement::binary(
             heap.alloc_str_permanent("refCount"),
-            mir::Operator::LAND,
+            hir::Operator::LAND,
             lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
             lir::Expression::int(65535),
           ),
           lir::Statement::binary(
             heap.alloc_str_permanent("isZero"),
-            mir::Operator::EQ,
+            hir::Operator::EQ,
             lir::Expression::Variable(heap.alloc_str_permanent("refCount"), lir::INT_TYPE),
             lir::ZERO,
           ),
@@ -522,7 +517,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
             statements: vec![
               lir::Statement::binary(
                 heap.alloc_str_permanent("gtOne"),
-                mir::Operator::GT,
+                hir::Operator::GT,
                 lir::Expression::Variable(heap.alloc_str_permanent("refCount"), lir::INT_TYPE),
                 lir::ONE,
               ),
@@ -534,7 +529,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                 s1: vec![
                   lir::Statement::binary(
                     heap.alloc_str_permanent("newHeader"),
-                    mir::Operator::MINUS,
+                    hir::Operator::MINUS,
                     lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
                     lir::Expression::int(1),
                   ),
@@ -553,7 +548,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                 s2: vec![
                   lir::Statement::binary(
                     heap.alloc_str_permanent("isRefBitSet"),
-                    mir::Operator::SHR,
+                    hir::Operator::SHR,
                     lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
                     lir::Expression::int(16),
                   ),
@@ -584,7 +579,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                     statements: vec![
                       lir::Statement::binary(
                         heap.alloc_str_permanent("shouldStop"),
-                        mir::Operator::GT,
+                        hir::Operator::GT,
                         lir::Expression::Variable(well_known_pstrs::LOWER_I, lir::INT_TYPE),
                         lir::Expression::int(16),
                       ),
@@ -598,7 +593,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                       },
                       lir::Statement::binary(
                         heap.alloc_str_permanent("isRef"),
-                        mir::Operator::LAND,
+                        hir::Operator::LAND,
                         lir::Expression::Variable(
                           heap.alloc_str_permanent("isRefBitSet"),
                           lir::INT_TYPE,
@@ -614,13 +609,13 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                         statements: vec![
                           lir::Statement::binary(
                             heap.alloc_str_permanent("offsetToHeader"),
-                            mir::Operator::PLUS,
+                            hir::Operator::PLUS,
                             lir::Expression::Variable(well_known_pstrs::LOWER_I, lir::INT_TYPE),
                             lir::ONE,
                           ),
                           lir::Statement::binary(
                             heap.alloc_str_permanent("byteOffset"),
-                            mir::Operator::SHL,
+                            hir::Operator::SHL,
                             lir::Expression::Variable(
                               heap.alloc_str_permanent("offsetToHeader"),
                               lir::INT_TYPE,
@@ -629,7 +624,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                           ),
                           lir::Statement::binary(
                             heap.alloc_str_permanent("fieldPtr"),
-                            mir::Operator::PLUS,
+                            hir::Operator::PLUS,
                             lir::Expression::Variable(
                               heap.alloc_str_permanent("ptr"),
                               lir::INT_TYPE,
@@ -655,7 +650,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                       },
                       lir::Statement::binary(
                         heap.alloc_str_permanent("newIsRefBitSet"),
-                        mir::Operator::SHR,
+                        hir::Operator::SHR,
                         lir::Expression::Variable(
                           heap.alloc_str_permanent("bitSet"),
                           lir::INT_TYPE,
@@ -664,7 +659,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                       ),
                       lir::Statement::binary(
                         heap.alloc_str_permanent("newI"),
-                        mir::Operator::PLUS,
+                        hir::Operator::PLUS,
                         lir::Expression::Variable(well_known_pstrs::LOWER_I, lir::INT_TYPE),
                         lir::ONE,
                       ),
@@ -695,7 +690,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
   }
 }
 
-pub(crate) fn compile_hir_to_mir(heap: &mut Heap, sources: mir::Sources) -> lir::Sources {
+pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir::Sources {
   let mut type_defs = vec![];
   let mut closure_def_map = BTreeMap::new();
   let mut type_def_map = BTreeMap::new();
@@ -706,8 +701,7 @@ pub(crate) fn compile_hir_to_mir(heap: &mut Heap, sources: mir::Sources) -> lir:
     main_function_names,
     functions,
   } = sources;
-  for mir::ClosureTypeDefinition { identifier, type_parameters, function_type } in closure_types {
-    assert!(type_parameters.is_empty());
+  for mir::ClosureTypeDefinition { identifier, function_type } in closure_types {
     let lir::FunctionType { argument_types, return_type } = lower_fn_type(function_type);
     let fn_type = lir::FunctionType {
       argument_types: vec![lir::ANY_TYPE].into_iter().chain(argument_types).collect_vec(),
@@ -757,10 +751,11 @@ mod tests {
   use crate::{
     ast::{
       common_names,
+      hir::Operator,
       mir::{
         Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
-        Operator, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
-        INT_TYPE, ONE, STRING_TYPE, ZERO,
+        Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName, INT_TYPE,
+        ONE, STRING_TYPE, ZERO,
       },
     },
     common::Heap,
@@ -770,14 +765,11 @@ mod tests {
   #[test]
   fn boilterplate() {
     let heap = &mut Heap::new();
-    assert_eq!(
-      "A",
-      super::lower_type(Type::new_id(heap.alloc_str_for_test("A"), vec![])).pretty_print(heap)
-    );
+    assert_eq!("A", super::lower_type(Type::Id(heap.alloc_str_for_test("A"))).pretty_print(heap));
   }
 
   fn assert_lowered(sources: Sources, heap: &mut Heap, expected: &str) {
-    assert_eq!(expected, super::compile_hir_to_mir(heap, sources).pretty_print(heap));
+    assert_eq!(expected, super::compile_mir_to_lir(heap, sources).pretty_print(heap));
   }
 
   #[test]
@@ -817,47 +809,41 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
   fn comprehensive_test() {
     let heap = &mut Heap::new();
 
-    let closure_type = &Type::new_id_no_targs(heap.alloc_str_for_test("CC"));
-    let obj_type = &Type::new_id_no_targs(heap.alloc_str_for_test("Object"));
-    let variant_type = &Type::new_id_no_targs(heap.alloc_str_for_test("Variant"));
+    let closure_type = &Type::Id(heap.alloc_str_for_test("CC"));
+    let obj_type = &Type::Id(heap.alloc_str_for_test("Object"));
+    let variant_type = &Type::Id(heap.alloc_str_for_test("Variant"));
     let sources = Sources {
       global_variables: vec![],
       closure_types: vec![ClosureTypeDefinition {
         identifier: heap.alloc_str_for_test("CC"),
-        type_parameters: vec![],
         function_type: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
       }],
       type_definitions: vec![
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Object"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Enum,
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Object2"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![
             STRING_TYPE,
-            Type::new_id_no_targs(heap.alloc_str_for_test("Foo")),
+            Type::Id(heap.alloc_str_for_test("Foo")),
           ]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant2"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Enum,
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant3"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Enum,
         },
@@ -869,7 +855,6 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
         Function {
           name: heap.alloc_str_for_test("cc"),
           parameters: vec![],
-          type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::Call {
@@ -940,7 +925,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               }],
               break_collector: Some(VariableName::new(
                 heap.alloc_str_for_test("_"),
-                Type::new_id_no_targs(heap.alloc_str_for_test("_")),
+                Type::Id(heap.alloc_str_for_test("_")),
               )),
             },
           ],
@@ -949,34 +934,33 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
         Function {
           name: heap.alloc_str_for_test("main"),
           parameters: vec![],
-          type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::binary(heap.alloc_str_for_test("v1"), Operator::PLUS, ZERO, ZERO),
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("O"),
-              type_: obj_type.as_id().unwrap().clone(),
+              type_name: obj_type.as_id().unwrap().clone(),
               expression_list: vec![
                 ZERO,
                 Expression::var_name(
                   heap.alloc_str_for_test("obj"),
-                  Type::new_id_no_targs(heap.alloc_str_for_test("Obj")),
+                  Type::Id(heap.alloc_str_for_test("Obj")),
                 ),
               ],
             },
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("v1"),
-              type_: variant_type.as_id().unwrap().clone(),
+              type_name: variant_type.as_id().unwrap().clone(),
               expression_list: vec![ZERO, ZERO],
             },
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("v2"),
-              type_: variant_type.as_id().unwrap().clone(),
+              type_name: variant_type.as_id().unwrap().clone(),
               expression_list: vec![ZERO, Expression::StringName(heap.alloc_str_for_test("G1"))],
             },
             Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test("c1"),
-              closure_type: closure_type.as_id().unwrap().clone(),
+              closure_type_name: closure_type.as_id().unwrap().clone(),
               function_name: FunctionName::new(
                 heap.alloc_str_for_test("aaa"),
                 Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
@@ -985,7 +969,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
             },
             Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test("c2"),
-              closure_type: closure_type.as_id().unwrap().clone(),
+              closure_type_name: *closure_type.as_id().unwrap(),
               function_name: FunctionName::new(
                 heap.alloc_str_for_test("bbb"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -998,7 +982,6 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
         Function {
           name: heap.alloc_str_for_test(common_names::ENCODED_COMPILED_PROGRAM_MAIN),
           parameters: vec![],
-          type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::IfElse {
@@ -1030,19 +1013,19 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
                     closure_type.clone(),
                   )),
                   arguments: vec![ZERO],
-                  return_type: Type::new_id_no_targs(heap.alloc_str_for_test("CC")),
+                  return_type: Type::Id(heap.alloc_str_for_test("CC")),
                   return_collector: None,
                 },
                 Statement::ClosureInit {
                   closure_variable_name: heap.alloc_str_for_test("v2"),
-                  closure_type: closure_type.as_id().unwrap().clone(),
+                  closure_type_name: closure_type.as_id().unwrap().clone(),
                   function_name: FunctionName::new(
                     heap.alloc_str_for_test("aaa"),
                     Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
                   ),
                   context: Expression::var_name(
                     heap.alloc_str_for_test("G1"),
-                    Type::new_id_no_targs(heap.alloc_str_for_test("CC")),
+                    Type::Id(heap.alloc_str_for_test("CC")),
                   ),
                 },
               ],

@@ -4,9 +4,9 @@ use super::{
   loop_induction_variable_elimination, loop_invariant_code_motion, loop_strength_reduction,
 };
 use crate::{
-  ast::mir::{
-    Expression, Function, GenenalLoopVariable, Operator, Statement, VariableName, INT_TYPE, ZERO,
-  },
+  ast::hir::Operator,
+  ast::mir::{Expression, Function, GenenalLoopVariable, Statement, VariableName, INT_TYPE, ZERO},
+  common::take_mut,
   Heap,
 };
 use itertools::Itertools;
@@ -43,7 +43,7 @@ fn expand_optimizable_while_loop(
     .chain(vec![GenenalLoopVariable {
       name: basic_induction_variable_with_loop_guard.name,
       type_: INT_TYPE,
-      initial_value: basic_induction_variable_with_loop_guard.initial_value.clone(),
+      initial_value: basic_induction_variable_with_loop_guard.initial_value,
       loop_value: Expression::var_name(
         basic_induction_variable_with_loop_guard_value_collector,
         INT_TYPE,
@@ -53,7 +53,7 @@ fn expand_optimizable_while_loop(
       GenenalLoopVariable {
         name: v.name,
         type_: INT_TYPE,
-        initial_value: v.initial_value.clone(),
+        initial_value: v.initial_value,
         loop_value: Expression::var_name(*n, INT_TYPE),
       }
     }))
@@ -71,7 +71,7 @@ fn expand_optimizable_while_loop(
       Statement::SingleIf {
         condition: Expression::var_name(loop_condition_variable, INT_TYPE),
         invert_condition: false,
-        statements: vec![Statement::Break(break_value.clone())],
+        statements: vec![Statement::Break(*break_value)],
       },
     ]
     .into_iter()
@@ -221,23 +221,16 @@ fn optimize_stmts(stmts: Vec<Statement>, heap: &mut Heap) -> Vec<Statement> {
   stmts.into_iter().flat_map(|s| optimize_stmt(s, heap)).collect()
 }
 
-pub(super) fn optimize_function(function: Function, heap: &mut Heap) -> Function {
-  let Function { name, parameters, type_parameters, type_, body, return_value } = function;
-  Function {
-    name,
-    parameters,
-    type_parameters,
-    type_,
-    body: optimize_stmts(body, heap),
-    return_value,
-  }
+pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
+  take_mut(&mut function.body, |body| optimize_stmts(body, heap));
 }
 
 #[cfg(test)]
 mod tests {
   use crate::{
+    ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
+      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },
     common::INVALID_PSTR,
@@ -264,25 +257,19 @@ mod tests {
     heap: &mut Heap,
     expected: &str,
   ) {
-    let Function { body, return_value, .. } =
-      super::super::conditional_constant_propagation::optimize_function(
-        super::optimize_function(
-          Function {
-            name: INVALID_PSTR,
-            parameters: vec![],
-            type_parameters: vec![],
-            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-            body: stmts,
-            return_value,
-          },
-          heap,
-        ),
-        heap,
-      );
+    let mut f = Function {
+      name: INVALID_PSTR,
+      parameters: vec![],
+      type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+      body: stmts,
+      return_value,
+    };
+    super::optimize_function(&mut f, heap);
+    super::super::conditional_constant_propagation::optimize_function(&mut f, heap);
     let actual = format!(
       "{}\nreturn {};",
-      body.iter().map(|s| s.debug_print(heap)).join("\n"),
-      return_value.debug_print(heap)
+      f.body.iter().map(|s| s.debug_print(heap)).join("\n"),
+      f.return_value.debug_print(heap)
     );
     assert_eq!(expected, actual);
   }

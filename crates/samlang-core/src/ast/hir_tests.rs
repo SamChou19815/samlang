@@ -1,10 +1,7 @@
 #[cfg(test)]
 mod tests {
-  use super::super::mir::*;
-  use crate::{
-    ast::hir::{GlobalVariable, Operator},
-    Heap,
-  };
+  use super::super::hir::*;
+  use crate::Heap;
   use pretty_assertions::assert_eq;
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
@@ -12,20 +9,34 @@ mod tests {
   fn boilterplate() {
     let heap = &mut Heap::new();
 
-    assert!(INT_TYPE <= INT_TYPE);
-    assert!(!format!("{:?}", INT_TYPE.cmp(&INT_TYPE)).is_empty());
     assert!(ZERO.as_int_literal().is_some());
     assert!(!format!(
       "{:?}",
-      Expression::var_name(heap.alloc_str_for_test("a"), Type::Id(heap.alloc_str_for_test("A"),))
+      Expression::var_name(
+        heap.alloc_str_for_test("a"),
+        Type::new_id(
+          heap.alloc_str_for_test("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+        )
+      )
     )
     .is_empty());
     assert!(!format!(
       "{:?}",
-      Expression::var_name(heap.alloc_str_for_test("a"), Type::Id(heap.alloc_str_for_test("A"),))
+      Expression::var_name(
+        heap.alloc_str_for_test("a"),
+        Type::new_id(
+          heap.alloc_str_for_test("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+        )
+      )
     )
     .is_empty());
     assert!(!format!("{:?}", Expression::StringName(heap.alloc_str_for_test("a"))).is_empty());
+    assert!(!format!("{:?}", Operator::GE).is_empty());
+    assert!(Operator::MINUS <= Operator::GE);
+    assert!(!format!("{:?}", Operator::MINUS.partial_cmp(&Operator::GE)).is_empty());
+    assert!(!format!("{:?}", Operator::MINUS.cmp(&Operator::GE)).is_empty());
     assert!(!format!("{:?}", ZERO.type_()).is_empty());
     assert!(!format!("{:?}", Expression::StringName(heap.alloc_str_for_test("a")).type_().as_id())
       .is_empty());
@@ -56,6 +67,7 @@ mod tests {
       callee: Callee::FunctionName(FunctionName {
         name: heap.alloc_str_for_test(""),
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        type_arguments: vec![INT_TYPE],
       }),
       arguments: vec![],
       return_type: INT_TYPE,
@@ -66,21 +78,50 @@ mod tests {
     assert!(call.into_break().is_err());
 
     assert!(
-      Expression::var_name(heap.alloc_str_for_test("a"), Type::Id(heap.alloc_str_for_test("A"),))
-        == Expression::var_name(
-          heap.alloc_str_for_test("a"),
-          Type::Id(heap.alloc_str_for_test("A"),)
+      Expression::var_name(
+        heap.alloc_str_for_test("a"),
+        Type::new_id(
+          heap.alloc_str_for_test("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
         )
+      ) == Expression::var_name(
+        heap.alloc_str_for_test("a"),
+        Type::new_id(
+          heap.alloc_str_for_test("A"),
+          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+        )
+      )
     );
     assert!(
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
         == FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
     );
+    assert!(Expression::var_name(
+      heap.alloc_str_for_test("a"),
+      Type::new_id(
+        heap.alloc_str_for_test("A"),
+        vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+      )
+    )
+    .eq(&Expression::var_name(
+      heap.alloc_str_for_test("a"),
+      Type::new_id(
+        heap.alloc_str_for_test("A"),
+        vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+      )
+    )));
+    assert!(Type::new_id(
+      heap.alloc_str_for_test("A"),
+      vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+    )
+    .eq(
+      &(Type::new_id(
+        heap.alloc_str_for_test("A"),
+        vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+      ))
+    ));
     let mut hasher = DefaultHasher::new();
-    ZERO.hash(&mut hasher);
-    Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE).hash(&mut hasher);
-    Expression::var_name(heap.alloc_str_for_test(""), Type::Id(heap.alloc_str_for_test("")))
-      .hash(&mut hasher);
+    Operator::DIV.hash(&mut hasher);
     Statement::binary_flexible_unwrapped(heap.alloc_str_for_test(""), Operator::DIV, ZERO, ZERO);
     Callee::FunctionName(FunctionName::new(
       heap.alloc_str_for_test("s"),
@@ -105,9 +146,24 @@ mod tests {
       Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE).debug_print(heap)
     );
     assert_eq!(
-      "(a: A)",
-      Expression::var_name(heap.alloc_str_for_test("a"), Type::Id(heap.alloc_str_for_test("A")))
-        .debug_print(heap)
+      "(a: A<int, B>)",
+      Expression::var_name(
+        heap.alloc_str_for_test("a"),
+        Type::new_id(
+          heap.alloc_str_for_test("A"),
+          vec![INT_TYPE, (Type::new_id_no_targs(heap.alloc_str_for_test("B")))]
+        )
+      )
+      .clone()
+      .debug_print(heap)
+    );
+    assert_eq!(
+      "(a: A<int>)",
+      Expression::var_name(
+        heap.alloc_str_for_test("a"),
+        Type::new_id(heap.alloc_str_for_test("A"), vec![(INT_TYPE)])
+      )
+      .debug_print(heap)
     );
     assert_eq!("a", Expression::StringName(heap.alloc_str_for_test("a")).clone().debug_print(heap));
   }
@@ -120,15 +176,17 @@ mod tests {
       "object type A = [int, int]",
       TypeDefinition {
         identifier: heap.alloc_str_for_test("A"),
+        type_parameters: vec![],
         names: vec![],
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .pretty_print(heap)
     );
     assert_eq!(
-      "variant type B",
+      "variant type B<C>",
       TypeDefinition {
         identifier: heap.alloc_str_for_test("B"),
+        type_parameters: vec![heap.alloc_str_for_test("C")],
         names: vec![],
         mappings: TypeDefinitionMappings::Enum,
       }
@@ -145,12 +203,12 @@ mod tests {
       s1: vec![
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("baz"),
-          type_name: heap.alloc_str_for_test("FooBar"),
+          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("FooBar")),
           expression_list: vec![Expression::StringName(heap.alloc_str_for_test("meggo"))],
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("closure"),
-          closure_type_name: heap.alloc_str_for_test("CCC"),
+          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("CCC")),
           function_name: FunctionName::new(
             heap.alloc_str_for_test("foo"),
             Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -219,7 +277,7 @@ mod tests {
           )),
           arguments: vec![Expression::var_name(
             heap.alloc_str_for_test("big"),
-            Type::Id(heap.alloc_str_for_test("FooBar")),
+            Type::new_id_no_targs(heap.alloc_str_for_test("FooBar")),
           )],
           return_type: INT_TYPE,
           return_collector: Some(heap.alloc_str_for_test("vibez")),
@@ -228,6 +286,7 @@ mod tests {
           callee: Callee::FunctionName(FunctionName {
             name: heap.alloc_str_for_test("stresso"),
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            type_arguments: vec![INT_TYPE],
           }),
           arguments: vec![Expression::var_name(heap.alloc_str_for_test("d"), INT_TYPE)],
           return_type: INT_TYPE,
@@ -247,7 +306,7 @@ mod tests {
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("big"),
-            Type::Id(heap.alloc_str_for_test("FooBar")),
+            Type::new_id_no_targs(heap.alloc_str_for_test("FooBar")),
           ),
           index: 0,
         },
@@ -299,7 +358,7 @@ if 0 {
   let dd = 0 / 0;
   let dd = 0 % 0;
   let vibez: int = h((big: FooBar));
-  stresso((d: int));
+  stresso<int>((d: int));
   (d: int)((d: int));
   let f: int = (big: FooBar)[0];
   undefined = 0;
@@ -321,11 +380,13 @@ if 0 {
       .clone()],
       closure_types: vec![ClosureTypeDefinition {
         identifier: heap.alloc_str_for_test("c"),
+        type_parameters: vec![],
         function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
       }
       .clone()],
       type_definitions: vec![TypeDefinition {
         identifier: heap.alloc_str_for_test("Foo"),
+        type_parameters: vec![],
         names: vec![],
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
@@ -334,13 +395,14 @@ if 0 {
       functions: vec![Function {
         name: heap.alloc_str_for_test("Bar"),
         parameters: vec![heap.alloc_str_for_test("f")],
+        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IndexedAccess {
           name: heap.alloc_str_for_test("f"),
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("big"),
-            Type::Id(heap.alloc_str_for_test("FooBar")),
+            Type::new_id_no_targs(heap.alloc_str_for_test("FooBar")),
           ),
           index: 0,
         }],
@@ -369,12 +431,13 @@ sources.mains = [ddd]"#;
       functions: vec![Function {
         name: heap.alloc_str_for_test("Bar"),
         parameters: vec![heap.alloc_str_for_test("f")],
+        type_parameters: vec![heap.alloc_str_for_test("A")],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![],
         return_value: ZERO,
       }],
     };
-    let expected2 = r#"function Bar(f: int): int {
+    let expected2 = r#"function Bar<A>(f: int): int {
   return 0;
 }
 "#;

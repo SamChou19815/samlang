@@ -1,7 +1,7 @@
 use crate::{
   ast::mir::{
-    Binary, Callee, Expression, Function, FunctionName, FunctionType, GenenalLoopVariable, Sources,
-    Statement, VariableName,
+    Binary, Callee, Expression, Function, FunctionName, FunctionType, Sources, Statement,
+    VariableName,
   },
   common::PStr,
 };
@@ -129,14 +129,14 @@ fn collect_def_function_usages_stmt(
     Statement::Cast { name: _, type_: _, assigned_expression } => {
       collect_def_function_usages_expr(state, assigned_expression)
     }
-    Statement::StructInit { struct_variable_name: _, type_: _, expression_list } => {
+    Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
       for e in expression_list {
         collect_def_function_usages_expr(state, e);
       }
     }
     Statement::ClosureInit {
       closure_variable_name: _,
-      closure_type: _,
+      closure_type_name: _,
       function_name: _,
       context,
     } => collect_def_function_usages_expr(state, context),
@@ -175,14 +175,14 @@ fn collect_global_usages_stmt(state: &mut HashMap<PStr, FunctionAnalysisState>, 
     }
     Statement::ClosureInit {
       closure_variable_name: _,
-      closure_type: _,
+      closure_type_name: _,
       function_name,
       context: _,
     } => {
       state.insert(function_name.name, FunctionAnalysisState::Unoptimizable);
     }
     Statement::Call {
-      callee: Callee::FunctionName(FunctionName { name: fn_name, type_: _, type_arguments: _ }),
+      callee: Callee::FunctionName(FunctionName { name: fn_name, type_: _ }),
       arguments,
       return_type: _,
       return_collector: _,
@@ -236,125 +236,102 @@ struct RewriteState<'a> {
   local_rewrite: HashMap<PStr, VariableRewriteInstruction>,
 }
 
-fn rewrite_expr(state: &RewriteState, expr: Expression) -> Expression {
+fn rewrite_expr(state: &RewriteState, expr: &mut Expression) {
   match &expr {
-    Expression::IntLiteral(_) | Expression::StringName(_) => expr,
+    Expression::IntLiteral(_) | Expression::StringName(_) => {}
     Expression::Variable(v) => match state.local_rewrite.get(&v.name) {
-      None => expr,
-      Some(VariableRewriteInstruction::IntConstant(n)) => Expression::IntLiteral(*n),
-      Some(VariableRewriteInstruction::StrConstant(s)) => Expression::StringName(*s),
+      None => {}
+      Some(VariableRewriteInstruction::IntConstant(n)) => *expr = Expression::IntLiteral(*n),
+      Some(VariableRewriteInstruction::StrConstant(s)) => *expr = Expression::StringName(*s),
     },
   }
 }
 
-fn rewrite_stmt(state: &RewriteState, stmt: Statement) -> Statement {
+fn rewrite_stmt(state: &RewriteState, stmt: &mut Statement) {
   match stmt {
-    Statement::Binary(Binary { name, operator, e1, e2 }) => Statement::Binary(Binary {
-      name,
-      operator,
-      e1: rewrite_expr(state, e1),
-      e2: rewrite_expr(state, e2),
-    }),
-    Statement::IndexedAccess { name, type_, pointer_expression, index } => {
-      Statement::IndexedAccess {
-        name,
-        type_,
-        pointer_expression: rewrite_expr(state, pointer_expression),
-        index,
-      }
+    Statement::Binary(Binary { name: _, operator: _, e1, e2 }) => {
+      rewrite_expr(state, e1);
+      rewrite_expr(state, e2);
     }
-    Statement::Call { callee, arguments, return_type, return_collector } => {
+    Statement::IndexedAccess { name: _, type_: _, pointer_expression, index: _ } => {
+      rewrite_expr(state, pointer_expression);
+    }
+    Statement::Call { callee, arguments, return_type: _, return_collector: _ } => {
       if let Some(keep_states) =
         callee.as_function_name().and_then(|n| state.all_functions.get(&n.name))
       {
-        let FunctionName {
-          name,
-          type_: FunctionType { argument_types, return_type: fn_ret_type },
-          type_arguments,
-        } = callee.into_function_name().unwrap();
-        let mut kept_args = vec![];
-        let mut kept_arg_ts = vec![];
+        let FunctionName { name: _, type_: FunctionType { argument_types, return_type: _ } } =
+          callee.as_function_name_mut().unwrap();
         debug_assert_eq!(arguments.len(), argument_types.len());
         debug_assert_eq!(arguments.len(), keep_states.len());
-        for ((arg, arg_t), keep) in arguments.into_iter().zip(argument_types).zip(keep_states) {
-          if *keep {
-            kept_args.push(rewrite_expr(state, arg));
-            kept_arg_ts.push(arg_t);
+        let mut current_index = 0;
+        argument_types.retain(|_| {
+          let keep = keep_states[current_index];
+          current_index += 1;
+          keep
+        });
+        current_index = 0;
+        arguments.retain_mut(|e| {
+          let keep = keep_states[current_index];
+          if keep {
+            rewrite_expr(state, e);
           }
-        }
-        Statement::Call {
-          callee: Callee::FunctionName(FunctionName {
-            name,
-            type_: FunctionType { argument_types: kept_arg_ts, return_type: fn_ret_type },
-            type_arguments,
-          }),
-          arguments: kept_args,
-          return_type,
-          return_collector,
-        }
+          current_index += 1;
+          keep
+        });
       } else {
-        Statement::Call {
-          callee,
-          arguments: arguments.into_iter().map(|e| rewrite_expr(state, e)).collect(),
-          return_type,
-          return_collector,
+        for e in arguments {
+          rewrite_expr(state, e);
         }
       }
     }
-    Statement::IfElse { condition, s1, s2, final_assignments } => Statement::IfElse {
-      condition: rewrite_expr(state, condition),
-      s1: rewrite_stmts(state, s1),
-      s2: rewrite_stmts(state, s2),
-      final_assignments: final_assignments
-        .into_iter()
-        .map(|(n, t, e1, e2)| (n, t, rewrite_expr(state, e1), rewrite_expr(state, e2)))
-        .collect(),
-    },
-    Statement::SingleIf { condition, invert_condition, statements } => Statement::SingleIf {
-      condition: rewrite_expr(state, condition),
-      invert_condition,
-      statements: rewrite_stmts(state, statements),
-    },
-    Statement::While { loop_variables, statements, break_collector } => Statement::While {
-      loop_variables: loop_variables
-        .into_iter()
-        .map(|GenenalLoopVariable { name, type_, initial_value, loop_value }| GenenalLoopVariable {
-          name,
-          type_,
-          initial_value: rewrite_expr(state, initial_value),
-          loop_value: rewrite_expr(state, loop_value),
-        })
-        .collect(),
-      statements: rewrite_stmts(state, statements),
-      break_collector,
-    },
-    Statement::Break(e) => Statement::Break(rewrite_expr(state, e)),
-    Statement::Cast { name, type_, assigned_expression } => {
-      Statement::Cast { name, type_, assigned_expression: rewrite_expr(state, assigned_expression) }
-    }
-    Statement::StructInit { struct_variable_name, type_, expression_list } => {
-      Statement::StructInit {
-        struct_variable_name,
-        type_,
-        expression_list: expression_list.into_iter().map(|e| rewrite_expr(state, e)).collect(),
+    Statement::IfElse { condition, s1, s2, final_assignments } => {
+      rewrite_expr(state, condition);
+      rewrite_stmts(state, s1);
+      rewrite_stmts(state, s2);
+      for (_, _, e1, e2) in final_assignments {
+        rewrite_expr(state, e1);
+        rewrite_expr(state, e2);
       }
     }
-    Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
-      Statement::ClosureInit {
-        closure_variable_name,
-        closure_type,
-        function_name,
-        context: rewrite_expr(state, context),
+    Statement::SingleIf { condition, invert_condition: _, statements } => {
+      rewrite_expr(state, condition);
+      rewrite_stmts(state, statements);
+    }
+    Statement::While { loop_variables, statements, break_collector: _ } => {
+      for v in loop_variables {
+        rewrite_expr(state, &mut v.initial_value);
+        rewrite_expr(state, &mut v.loop_value);
       }
+      rewrite_stmts(state, statements);
+    }
+    Statement::Break(e) => rewrite_expr(state, e),
+    Statement::Cast { name: _, type_: _, assigned_expression } => {
+      rewrite_expr(state, assigned_expression)
+    }
+    Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
+      for e in expression_list {
+        rewrite_expr(state, e);
+      }
+    }
+    Statement::ClosureInit {
+      closure_variable_name: _,
+      closure_type_name: _,
+      function_name: _,
+      context,
+    } => {
+      rewrite_expr(state, context);
     }
   }
 }
 
-fn rewrite_stmts(state: &RewriteState, stmts: Vec<Statement>) -> Vec<Statement> {
-  stmts.into_iter().map(|stmt| rewrite_stmt(state, stmt)).collect()
+fn rewrite_stmts(state: &RewriteState, stmts: &mut Vec<Statement>) {
+  for stmt in stmts {
+    rewrite_stmt(state, stmt);
+  }
 }
 
-pub(super) fn rewrite_sources(sources: Sources) -> Sources {
+pub(super) fn rewrite_sources(mut sources: Sources) -> Sources {
   let global_state = collect_all_usages(&sources);
   let mut all_functions = HashMap::new();
   for (n, fn_state) in &global_state {
@@ -368,71 +345,50 @@ pub(super) fn rewrite_sources(sources: Sources) -> Sources {
       }
     }
   }
-  let Sources { global_variables, closure_types, type_definitions, main_function_names, functions } =
-    sources;
-  let mut new_functions = vec![];
-  for Function {
-    name,
-    parameters,
-    type_parameters,
-    type_: FunctionType { argument_types, return_type },
-    body,
-    return_value,
-  } in functions
-  {
+  for f in &mut sources.functions {
     let mut local_rewrite = HashMap::new();
-    let (kept_params, kept_arg_types) =
-      if let Some(FunctionAnalysisState::Optimizable(param_states)) = global_state.get(&name) {
-        let mut kept_params = vec![];
-        let mut kept_arg_types = vec![];
-        debug_assert_eq!(parameters.len(), param_states.len());
-        debug_assert_eq!(parameters.len(), argument_types.len());
-        for ((name, state), arg_type) in
-          parameters.into_iter().zip(param_states).zip(argument_types)
-        {
-          match state {
-            ParamUsageAnalysisState::IntConstant(i) => {
-              local_rewrite.insert(name, VariableRewriteInstruction::IntConstant(*i));
-            }
-            ParamUsageAnalysisState::StrConstant(s) => {
-              local_rewrite.insert(name, VariableRewriteInstruction::StrConstant(*s));
-            }
-            ParamUsageAnalysisState::Unoptimizable => {
-              kept_params.push(name);
-              kept_arg_types.push(arg_type);
-            }
-            _ => {}
+    if let Some(FunctionAnalysisState::Optimizable(param_states)) = global_state.get(&f.name) {
+      debug_assert_eq!(f.parameters.len(), param_states.len());
+      debug_assert_eq!(f.parameters.len(), f.type_.argument_types.len());
+
+      let mut current_index = 0;
+      f.parameters.retain(|name| {
+        let state = param_states[current_index];
+        current_index += 1;
+        match state {
+          ParamUsageAnalysisState::IntConstant(i) => {
+            local_rewrite.insert(*name, VariableRewriteInstruction::IntConstant(i));
+            false
           }
+          ParamUsageAnalysisState::StrConstant(s) => {
+            local_rewrite.insert(*name, VariableRewriteInstruction::StrConstant(s));
+            false
+          }
+          ParamUsageAnalysisState::Unoptimizable => true,
+          _ => false,
         }
-        (kept_params, kept_arg_types)
-      } else {
-        (parameters, argument_types)
-      };
+      });
+      current_index = 0;
+      f.type_.argument_types.retain(|_| {
+        let keep = param_states[current_index] == ParamUsageAnalysisState::Unoptimizable;
+        current_index += 1;
+        keep
+      });
+    }
     let state = RewriteState { all_functions: &all_functions, local_rewrite };
-    new_functions.push(Function {
-      name,
-      parameters: kept_params,
-      type_parameters,
-      type_: FunctionType { argument_types: kept_arg_types, return_type },
-      body: rewrite_stmts(&state, body),
-      return_value: rewrite_expr(&state, return_value),
-    })
+    rewrite_stmts(&state, &mut f.body);
+    rewrite_expr(&state, &mut f.return_value);
   }
-  Sources {
-    global_variables,
-    closure_types,
-    type_definitions,
-    main_function_names,
-    functions: new_functions,
-  }
+  sources
 }
 
 #[cfg(test)]
 mod tests {
   use crate::{
+    ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, FunctionType, GenenalLoopVariable, IdType,
-      Operator, Sources, Statement, Type, VariableName, INT_TYPE, ZERO,
+      Callee, Expression, Function, FunctionName, FunctionType, GenenalLoopVariable, Sources,
+      Statement, Type, VariableName, INT_TYPE, ZERO,
     },
     Heap,
   };
@@ -464,7 +420,6 @@ mod tests {
         Function {
           name: heap.alloc_str_for_test("otherwise_optimizable"),
           parameters: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
-          type_parameters: vec![],
           type_: FunctionType {
             argument_types: vec![INT_TYPE, INT_TYPE],
             return_type: Box::new(INT_TYPE),
@@ -475,7 +430,6 @@ mod tests {
         Function {
           name: heap.alloc_str_for_test("str_const"),
           parameters: vec![heap.alloc_str_for_test("a")],
-          type_parameters: vec![],
           type_: FunctionType { argument_types: vec![INT_TYPE], return_type: Box::new(INT_TYPE) },
           body: vec![Statement::Break(Expression::var_name(
             heap.alloc_str_for_test("a"),
@@ -492,14 +446,13 @@ mod tests {
             heap.alloc_str_for_test("d"),
             heap.alloc_str_for_test("e"),
           ],
-          type_parameters: vec![],
           type_: FunctionType {
             argument_types: vec![
-              Type::new_id_no_targs(heap.alloc_str_for_test("A")),
-              Type::new_id_no_targs(heap.alloc_str_for_test("B")),
-              Type::new_id_no_targs(heap.alloc_str_for_test("C")),
-              Type::new_id_no_targs(heap.alloc_str_for_test("D")),
-              Type::new_id_no_targs(heap.alloc_str_for_test("E")),
+              Type::Id(heap.alloc_str_for_test("A")),
+              Type::Id(heap.alloc_str_for_test("B")),
+              Type::Id(heap.alloc_str_for_test("C")),
+              Type::Id(heap.alloc_str_for_test("D")),
+              Type::Id(heap.alloc_str_for_test("E")),
             ],
             return_type: Box::new(INT_TYPE),
           },
@@ -518,11 +471,10 @@ mod tests {
             },
             Statement::ClosureInit {
               closure_variable_name: dummy_name,
-              closure_type: IdType { name: dummy_name, type_arguments: vec![] },
+              closure_type_name: dummy_name,
               function_name: FunctionName {
                 name: heap.alloc_str_for_test("otherwise_optimizable"),
                 type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
-                type_arguments: vec![],
               },
               context: ZERO,
             },
@@ -618,7 +570,7 @@ mod tests {
             Statement::Cast { name: dummy_name, type_: INT_TYPE, assigned_expression: ZERO },
             Statement::StructInit {
               struct_variable_name: dummy_name,
-              type_: IdType { name: dummy_name, type_arguments: vec![] },
+              type_name: dummy_name,
               expression_list: vec![ZERO, ZERO],
             },
           ],
