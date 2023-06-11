@@ -9,6 +9,7 @@ mod tests {
   fn boilterplate() {
     let heap = &mut Heap::new();
 
+    assert!(ZERO.as_int_literal().is_some());
     assert!(!format!(
       "{:?}",
       Expression::var_name(
@@ -36,6 +37,11 @@ mod tests {
     assert!(!format!("{:?}", ZERO.type_()).is_empty());
     assert!(!format!("{:?}", Expression::StringName(heap.alloc_str_for_test("a")).type_().as_id())
       .is_empty());
+    assert!(Expression::StringName(heap.alloc_str_for_test("a")).type_().as_id().is_some());
+    assert_eq!(
+      "(s: int)",
+      VariableName::new(heap.alloc_str_for_test("s"), INT_TYPE).debug_print(heap)
+    );
     assert!(!GenenalLoopVariable {
       name: heap.alloc_str_for_test(""),
       type_: INT_TYPE,
@@ -45,14 +51,16 @@ mod tests {
     .pretty_print(heap)
     .is_empty());
     assert!(!format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).is_empty());
+    Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE).type_();
     Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE).convert_to_callee();
     Expression::StringName(heap.alloc_str_for_test("")).convert_to_callee();
     ZERO.convert_to_callee();
     Statement::Break(ZERO).as_binary();
+    assert!(Statement::Break(ZERO).into_break().is_ok());
     Statement::binary(heap.alloc_str_for_test("name"), Operator::DIV, ZERO, ZERO)
       .clone()
       .as_binary();
-    Statement::Call {
+    let call = Statement::Call {
       callee: Callee::FunctionName(FunctionName {
         name: heap.alloc_str_for_test(""),
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -61,9 +69,10 @@ mod tests {
       arguments: vec![],
       return_type: INT_TYPE,
       return_collector: None,
-    }
-    .clone()
-    .as_binary();
+    };
+    assert!(!format!("{:?}", call).is_empty());
+    assert!(call.as_call().is_some());
+    assert!(call.into_break().is_err());
 
     assert!(
       Expression::var_name(
@@ -116,6 +125,7 @@ mod tests {
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
     ))
     .as_function_name();
+    assert!(TypeDefinitionMappings::Struct(vec![]).as_struct().is_some());
   }
 
   #[test]
