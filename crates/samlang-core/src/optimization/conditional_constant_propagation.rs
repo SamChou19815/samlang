@@ -1,7 +1,8 @@
 use super::optimization_common::{
-  if_else_or_null, single_if_or_null, LocalValueContextForOptimization,
+  if_else_or_null, single_if_or_null, IndexAccessBindedValue, LocalValueContextForOptimization,
 };
 use crate::{
+  ast::hir::Operator,
   ast::mir::*,
   common::{LocalStackedContext, PStr},
   Heap,
@@ -60,7 +61,7 @@ fn merge_binary_expression(
       if inner.operator == Operator::PLUS {
         Some(BinaryExpression {
           operator: Operator::PLUS,
-          e1: inner.e1.clone(),
+          e1: inner.e1,
           e2: inner.e2 + outer_const,
         })
       } else {
@@ -69,11 +70,7 @@ fn merge_binary_expression(
     }
     Operator::MUL => {
       if inner.operator == Operator::MUL {
-        Some(BinaryExpression {
-          operator: Operator::MUL,
-          e1: inner.e1.clone(),
-          e2: inner.e2 * outer_const,
-        })
+        Some(BinaryExpression { operator: Operator::MUL, e1: inner.e1, e2: inner.e2 * outer_const })
       } else {
         None
       }
@@ -82,7 +79,7 @@ fn merge_binary_expression(
       if inner.operator == Operator::PLUS {
         Some(BinaryExpression {
           operator: outer_operator,
-          e1: inner.e1.clone(),
+          e1: inner.e1,
           e2: outer_const - inner.e2,
         })
       } else {
@@ -99,16 +96,16 @@ fn optimize_variable_name(
   value_cx: &mut LocalValueContextForOptimization,
   VariableName { name, type_ }: &VariableName,
 ) -> Expression {
-  if let Some(binded) = value_cx.get(name) {
-    binded.clone()
+  if let Some(binded) = value_cx.get(name).copied() {
+    binded
   } else {
-    Expression::Variable(VariableName { name: *name, type_: type_.clone() })
+    Expression::Variable(VariableName { name: *name, type_: *type_ })
   }
 }
 
 fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression) -> Expression {
   match e {
-    Expression::IntLiteral(_) | Expression::StringName(_) => e.clone(),
+    Expression::IntLiteral(_) | Expression::StringName(_) => *e,
     Expression::Variable(v) => optimize_variable_name(value_cx, v),
   }
 }
@@ -132,7 +129,7 @@ fn optimize_expressions(
 
 fn push_scope(
   value_cx: &mut LocalValueContextForOptimization,
-  index_access_cx: &mut LocalValueContextForOptimization,
+  index_access_cx: &mut LocalStackedContext<IndexAccessBindedValue, Expression>,
   binary_expr_cx: &mut BinaryExpressionContext,
 ) {
   value_cx.push_scope();
@@ -142,7 +139,7 @@ fn push_scope(
 
 fn pop_scope(
   value_cx: &mut LocalValueContextForOptimization,
-  index_access_cx: &mut LocalValueContextForOptimization,
+  index_access_cx: &mut LocalStackedContext<IndexAccessBindedValue, Expression>,
   binary_expr_cx: &mut BinaryExpressionContext,
 ) {
   value_cx.pop_scope();
@@ -154,9 +151,10 @@ fn optimize_stmt(
   stmt: &Statement,
   heap: &mut Heap,
   value_cx: &mut LocalValueContextForOptimization,
-  index_access_cx: &mut LocalValueContextForOptimization,
+  index_access_cx: &mut LocalStackedContext<IndexAccessBindedValue, Expression>,
   binary_expr_cx: &mut BinaryExpressionContext,
-) -> Vec<Statement> {
+  collector: &mut Vec<Statement>,
+) -> bool {
   match stmt {
     Statement::Binary(Binary { name, operator, e1, e2 }) => {
       let e1 = optimize_expr(value_cx, e1);
@@ -166,27 +164,27 @@ fn optimize_stmt(
         if *v2 == 0 {
           if operator == Operator::PLUS {
             value_cx.checked_bind(*name, e1);
-            return vec![];
+            return false;
           }
           if operator == Operator::MUL {
             value_cx.checked_bind(*name, ZERO);
-            return vec![];
+            return false;
           }
         }
         if *v2 == 1 {
           if operator == Operator::MOD {
             value_cx.checked_bind(*name, ZERO);
-            return vec![];
+            return false;
           }
           if operator == Operator::MUL || operator == Operator::DIV {
             value_cx.checked_bind(*name, e1);
-            return vec![];
+            return false;
           }
         }
         if let Expression::IntLiteral(v1) = &e1 {
           if let Some(value) = evaluate_bin_op(operator, *v1, *v2) {
             value_cx.checked_bind(*name, Expression::IntLiteral(value));
-            return vec![];
+            return false;
           }
         }
       }
@@ -194,11 +192,11 @@ fn optimize_stmt(
         (Expression::Variable(v1), Expression::Variable(v2)) if v1.name.eq(&v2.name) => {
           if operator == Operator::MINUS || operator == Operator::MOD {
             value_cx.checked_bind(*name, ZERO);
-            return vec![];
+            return false;
           }
           if operator == Operator::DIV {
             value_cx.checked_bind(*name, ONE);
-            return vec![];
+            return false;
           }
         }
         _ => {}
@@ -216,75 +214,83 @@ fn optimize_stmt(
           if let Some(BinaryExpression { operator, e1, e2 }) =
             merge_binary_expression(*operator, existing_b1, *v2)
           {
-            return vec![Statement::Binary(Binary {
+            collector.push(Statement::Binary(Binary {
               name: *name,
               operator,
               e1: Expression::Variable(e1),
               e2: Expression::IntLiteral(e2),
-            })];
+            }));
+            return false;
           }
         }
-        binary_expr_cx
-          .insert(*name, BinaryExpression { operator: *operator, e1: v1.clone(), e2: *v2 });
+        binary_expr_cx.insert(*name, BinaryExpression { operator: *operator, e1: *v1, e2: *v2 });
       }
-      vec![Statement::Binary(partially_optimized_binary)]
+      collector.push(Statement::Binary(partially_optimized_binary));
+      false
     }
 
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {
       let pointer_expression = optimize_expr(value_cx, pointer_expression);
-      if let Some(computed) = index_access_cx.get(&heap.alloc_string(format!(
-        "{}[{}]",
-        pointer_expression.debug_print(heap),
-        index
-      ))) {
-        value_cx.checked_bind(*name, computed.clone());
-        vec![]
+      if let Some(computed) = index_access_cx.get(&IndexAccessBindedValue {
+        type_: INT_TYPE,
+        pointer_expression,
+        index: *index,
+      }) {
+        value_cx.checked_bind(*name, *computed);
       } else {
-        vec![Statement::IndexedAccess {
+        collector.push(Statement::IndexedAccess {
           name: *name,
-          type_: type_.clone(),
+          type_: *type_,
           pointer_expression,
           index: *index,
-        }]
+        });
       }
+      false
     }
 
     Statement::Call { callee, arguments, return_type, return_collector } => {
       let callee = optimize_callee(value_cx, callee);
       let arguments = optimize_expressions(value_cx, arguments);
-      vec![Statement::Call {
+      collector.push(Statement::Call {
         callee,
         arguments,
-        return_type: return_type.clone(),
+        return_type: *return_type,
         return_collector: *return_collector,
-      }]
+      });
+      false
     }
 
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       let condition = optimize_expr(value_cx, condition);
       if let Expression::IntLiteral(v) = &condition {
         let is_true = (*v) != 0;
-        let stmts = optimize_stmts(
+        let ends_with_break = optimize_stmts(
           if is_true { s1 } else { s2 },
           heap,
           value_cx,
           index_access_cx,
           binary_expr_cx,
+          collector,
         );
+        if ends_with_break {
+          return true;
+        }
         for (n, _, e1, e2) in final_assignments {
           let optimized =
             if is_true { optimize_expr(value_cx, e1) } else { optimize_expr(value_cx, e2) };
           value_cx.checked_bind(*n, optimized);
         }
-        return stmts;
+        return false;
       }
       push_scope(value_cx, index_access_cx, binary_expr_cx);
-      let s1 = optimize_stmts(s1, heap, value_cx, index_access_cx, binary_expr_cx);
+      let mut s1_collector = vec![];
+      optimize_stmts(s1, heap, value_cx, index_access_cx, binary_expr_cx, &mut s1_collector);
       let branch1_values =
         final_assignments.iter().map(|(_, _, e, _)| optimize_expr(value_cx, e)).collect_vec();
       pop_scope(value_cx, index_access_cx, binary_expr_cx);
       push_scope(value_cx, index_access_cx, binary_expr_cx);
-      let s2 = optimize_stmts(s2, heap, value_cx, index_access_cx, binary_expr_cx);
+      let mut s2_collector = vec![];
+      optimize_stmts(s2, heap, value_cx, index_access_cx, binary_expr_cx, &mut s2_collector);
       let branch2_values =
         final_assignments.iter().map(|(_, _, _, e)| optimize_expr(value_cx, e)).collect_vec();
       pop_scope(value_cx, index_access_cx, binary_expr_cx);
@@ -292,13 +298,18 @@ fn optimize_stmt(
       for ((e1, e2), (n, t, _, _)) in
         branch1_values.into_iter().zip(branch2_values).zip(final_assignments)
       {
-        if e1.debug_print(heap) == e2.debug_print(heap) {
+        if e1 == e2 {
           value_cx.checked_bind(*n, e1);
         } else {
-          optimized_final_assignments.push((*n, t.clone(), e1, e2));
+          optimized_final_assignments.push((*n, *t, e1, e2));
         }
       }
-      if_else_or_null(condition, s1, s2, optimized_final_assignments).into_iter().collect()
+      if let Some(stmt) =
+        if_else_or_null(condition, s1_collector, s2_collector, optimized_final_assignments)
+      {
+        collector.push(stmt)
+      }
+      false
     }
 
     Statement::SingleIf { condition, invert_condition, statements } => {
@@ -306,26 +317,35 @@ fn optimize_stmt(
       if let Expression::IntLiteral(v) = &condition {
         let is_true = (*v ^ (*invert_condition as i32)) != 0;
         if is_true {
-          optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx)
+          optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx, collector)
         } else {
-          vec![]
+          false
         }
       } else {
-        single_if_or_null(
-          condition,
-          *invert_condition,
-          optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx),
-        )
+        let mut stmt_collector = vec![];
+        optimize_stmts(
+          statements,
+          heap,
+          value_cx,
+          index_access_cx,
+          binary_expr_cx,
+          &mut stmt_collector,
+        );
+        collector.append(&mut single_if_or_null(condition, *invert_condition, stmt_collector));
+        false
       }
     }
 
-    Statement::Break(e) => vec![Statement::Break(optimize_expr(value_cx, e))],
+    Statement::Break(e) => {
+      collector.push(Statement::Break(optimize_expr(value_cx, e)));
+      true
+    }
 
     Statement::While { loop_variables, statements, break_collector } => {
       let mut filtered_loop_variables = vec![];
       for v in loop_variables.iter() {
-        if v.initial_value.debug_print(heap) == v.loop_value.debug_print(heap) {
-          value_cx.checked_bind(v.name, v.initial_value.clone());
+        if v.initial_value == v.loop_value {
+          value_cx.checked_bind(v.name, v.initial_value);
         } else {
           filtered_loop_variables.push(v);
         }
@@ -335,7 +355,8 @@ fn optimize_stmt(
         .map(|v| optimize_expr(value_cx, &v.initial_value))
         .collect_vec();
       push_scope(value_cx, index_access_cx, binary_expr_cx);
-      let stmts = optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx);
+      let mut stmts = vec![];
+      optimize_stmts(statements, heap, value_cx, index_access_cx, binary_expr_cx, &mut stmts);
       let loop_variable_loop_values = filtered_loop_variables
         .iter()
         .map(|v| optimize_expr(value_cx, &v.loop_value))
@@ -347,7 +368,7 @@ fn optimize_stmt(
         .zip(filtered_loop_variables)
         .map(|((initial_value, loop_value), variable)| GenenalLoopVariable {
           name: variable.name,
-          type_: variable.type_.clone(),
+          type_: variable.type_,
           initial_value,
           loop_value,
         })
@@ -357,60 +378,67 @@ fn optimize_stmt(
         for v in loop_variables {
           value_cx.checked_bind(v.name, v.initial_value);
         }
-        let moved_stmts = optimize_stmts(rest, heap, value_cx, index_access_cx, binary_expr_cx);
+        optimize_stmts(rest, heap, value_cx, index_access_cx, binary_expr_cx, collector);
         if let Some(v) = break_collector {
           let break_value = optimize_expr(value_cx, e);
           value_cx.checked_bind(v.name, break_value);
         }
-        moved_stmts
+        false
       } else {
-        match try_optimize_loop_for_some_iterations(
+        let mut stmts = try_optimize_loop_for_some_iterations(
           loop_variables,
           stmts,
-          break_collector.clone(),
+          *break_collector,
           heap,
           value_cx,
           index_access_cx,
           binary_expr_cx,
-        ) {
-          Ok(stmts) | Err(stmts) => stmts,
-        }
+        );
+        collector.append(&mut stmts);
+        false
       }
     }
 
-    Statement::Cast { name, type_, assigned_expression } => vec![Statement::Cast {
-      name: *name,
-      type_: type_.clone(),
-      assigned_expression: optimize_expr(value_cx, assigned_expression),
-    }],
+    Statement::Cast { name, type_, assigned_expression } => {
+      collector.push(Statement::Cast {
+        name: *name,
+        type_: *type_,
+        assigned_expression: optimize_expr(value_cx, assigned_expression),
+      });
+      false
+    }
 
-    Statement::StructInit { struct_variable_name, type_, expression_list } => {
+    Statement::StructInit { struct_variable_name, type_name, expression_list } => {
       let mut optimized_expression_list = vec![];
       for (i, e) in expression_list.iter().enumerate() {
         let optimized = optimize_expr(value_cx, e);
-        let key = heap.alloc_string(format!(
-          "({}: {})[{}]",
-          struct_variable_name.as_str(heap),
-          type_.pretty_print(heap),
-          i
-        ));
-        index_access_cx.insert(key, optimized.clone());
+        let key = IndexAccessBindedValue {
+          type_: INT_TYPE,
+          pointer_expression: Expression::Variable(VariableName {
+            name: *struct_variable_name,
+            type_: Type::Id(*type_name),
+          }),
+          index: i,
+        };
+        index_access_cx.insert(key, optimized);
         optimized_expression_list.push(optimized);
       }
-      vec![Statement::StructInit {
+      collector.push(Statement::StructInit {
         struct_variable_name: *struct_variable_name,
-        type_: type_.clone(),
+        type_name: *type_name,
         expression_list: optimized_expression_list,
-      }]
+      });
+      false
     }
 
-    Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
-      vec![Statement::ClosureInit {
+    Statement::ClosureInit { closure_variable_name, closure_type_name, function_name, context } => {
+      collector.push(Statement::ClosureInit {
         closure_variable_name: *closure_variable_name,
-        closure_type: closure_type.clone(),
+        closure_type_name: *closure_type_name,
         function_name: function_name.clone(),
         context: optimize_expr(value_cx, context),
-      }]
+      });
+      false
     }
   }
 }
@@ -419,21 +447,18 @@ fn optimize_stmts(
   stmts: &[Statement],
   heap: &mut Heap,
   value_cx: &mut LocalValueContextForOptimization,
-  index_access_cx: &mut LocalValueContextForOptimization,
+  index_access_cx: &mut LocalStackedContext<IndexAccessBindedValue, Expression>,
   binary_expr_cx: &mut BinaryExpressionContext,
-) -> Vec<Statement> {
-  let mut collector = vec![];
-  'outer: for stmt in stmts {
-    let optimized = optimize_stmt(stmt, heap, value_cx, index_access_cx, binary_expr_cx);
-    for s in optimized {
-      let is_break = matches!(&s, Statement::Break(_));
-      collector.push(s);
-      if is_break {
-        break 'outer;
-      }
+  collector: &mut Vec<Statement>,
+) -> bool {
+  for stmt in stmts {
+    let ends_with_break =
+      optimize_stmt(stmt, heap, value_cx, index_access_cx, binary_expr_cx, collector);
+    if ends_with_break {
+      return true;
     }
   }
-  collector
+  false
 }
 
 fn try_optimize_loop_for_some_iterations(
@@ -442,26 +467,28 @@ fn try_optimize_loop_for_some_iterations(
   mut break_collector: Option<VariableName>,
   heap: &mut Heap,
   value_cx: &mut LocalValueContextForOptimization,
-  index_access_cx: &mut LocalValueContextForOptimization,
+  index_access_cx: &mut LocalStackedContext<IndexAccessBindedValue, Expression>,
   binary_expr_cx: &mut BinaryExpressionContext,
-) -> Result<Vec<Statement>, Vec<Statement>> {
+) -> Vec<Statement> {
   let mut max_depth = 5;
   loop {
     push_scope(value_cx, index_access_cx, binary_expr_cx);
     for v in &loop_variables {
-      value_cx.checked_bind(v.name, v.initial_value.clone());
+      value_cx.checked_bind(v.name, v.initial_value);
     }
-    let mut first_run_optimized_stmts =
-      optimize_stmts(&stmts, heap, value_cx, index_access_cx, binary_expr_cx);
+    let mut first_run_optimized_stmts = vec![];
+    optimize_stmts(
+      &stmts,
+      heap,
+      value_cx,
+      index_access_cx,
+      binary_expr_cx,
+      &mut first_run_optimized_stmts,
+    );
     if let Some(last_stmt) = first_run_optimized_stmts.last() {
-      if let Statement::Break(_) = last_stmt {
-      } else {
+      if !matches!(last_stmt, Statement::Break(_)) {
         pop_scope(value_cx, index_access_cx, binary_expr_cx);
-        return Result::Err(vec![Statement::While {
-          loop_variables,
-          statements: stmts,
-          break_collector,
-        }]);
+        return vec![Statement::While { loop_variables, statements: stmts, break_collector }];
       }
     } else {
       // Empty loop in first run except new loop values, so we can change the initial values!
@@ -479,7 +506,7 @@ fn try_optimize_loop_for_some_iterations(
       first_run_optimized_stmts = vec![Statement::While {
         loop_variables: advanced_loop_variables,
         statements: stmts,
-        break_collector: break_collector.clone(),
+        break_collector,
       }];
     }
     pop_scope(value_cx, index_access_cx, binary_expr_cx);
@@ -489,10 +516,10 @@ fn try_optimize_loop_for_some_iterations(
         let optimized_break_v = optimize_expr(value_cx, break_v);
         value_cx.checked_bind(v.name, optimized_break_v);
       }
-      first_run_optimized_stmts.remove(first_run_optimized_stmts.len() - 1);
-      return Result::Ok(first_run_optimized_stmts);
+      first_run_optimized_stmts.pop();
+      return first_run_optimized_stmts;
     } else if max_depth == 0 {
-      return Result::Ok(first_run_optimized_stmts);
+      return first_run_optimized_stmts;
     } else {
       debug_assert!(first_run_optimized_stmts.len() == 1);
       (loop_variables, stmts, break_collector) =
@@ -502,22 +529,28 @@ fn try_optimize_loop_for_some_iterations(
   }
 }
 
-pub(super) fn optimize_function(function: Function, heap: &mut Heap) -> Function {
+pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
   let mut value_cx = LocalValueContextForOptimization::new();
-  let mut index_access_cx = LocalValueContextForOptimization::new();
+  let mut index_access_cx = LocalStackedContext::new();
   let mut binary_expr_cx = BinaryExpressionContext::new();
-  let body =
-    optimize_stmts(&function.body, heap, &mut value_cx, &mut index_access_cx, &mut binary_expr_cx);
-  let return_value = optimize_expr(&mut value_cx, &function.return_value);
-  let Function { name, parameters, type_parameters, type_, body: _, return_value: _ } = function;
-  Function { name, parameters, type_parameters, type_, body, return_value }
+  let mut collector = vec![];
+  optimize_stmts(
+    &function.body,
+    heap,
+    &mut value_cx,
+    &mut index_access_cx,
+    &mut binary_expr_cx,
+    &mut collector,
+  );
+  function.body = collector;
+  function.return_value = optimize_expr(&mut value_cx, &function.return_value);
 }
 
 #[cfg(test)]
 mod boilterplate_tests {
   use super::{optimize_callee, BinaryExpression};
   use crate::{
-    ast::mir::*, common::INVALID_PSTR,
+    ast::hir::Operator, ast::mir::*, common::INVALID_PSTR,
     optimization::optimization_common::LocalValueContextForOptimization, Heap,
   };
 

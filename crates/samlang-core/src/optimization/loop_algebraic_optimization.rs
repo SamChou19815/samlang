@@ -3,7 +3,8 @@ use super::loop_induction_analysis::{
   PotentialLoopInvariantExpression,
 };
 use crate::{
-  ast::mir::{Binary, Expression, Operator, Statement, INT_TYPE, ZERO},
+  ast::hir::Operator,
+  ast::mir::{Binary, Expression, Statement, INT_TYPE, ZERO},
   Heap,
 };
 
@@ -102,7 +103,7 @@ pub(super) fn optimize(
       return Some(vec![Statement::Binary(Binary {
         name: *n,
         operator: Operator::PLUS,
-        e1: e.clone(),
+        e1: *e,
         e2: ZERO,
       })]);
     }
@@ -127,7 +128,7 @@ pub(super) fn optimize(
       Statement::Binary(Statement::binary_flexible_unwrapped(
         *break_collector.0,
         Operator::PLUS,
-        relevant_general_induction_variable.initial_value.clone(),
+        relevant_general_induction_variable.initial_value,
         Expression::var_name(increment_temporary, INT_TYPE),
       )),
     ])
@@ -137,7 +138,7 @@ pub(super) fn optimize(
     Some(vec![Statement::Binary(Binary {
       name: *break_collector.0,
       operator: Operator::PLUS,
-      e1: Expression::Variable(break_collector.2.clone()),
+      e1: Expression::Variable(*break_collector.2),
       e2: ZERO,
     })])
   }

@@ -3,7 +3,8 @@ use super::loop_induction_analysis::{
   OptimizableWhileLoop,
 };
 use crate::{
-  ast::mir::{Expression, Operator, Statement, INT_TYPE},
+  ast::hir::Operator,
+  ast::mir::{Expression, Statement, INT_TYPE},
   Heap,
 };
 use std::collections::HashMap;
@@ -49,7 +50,7 @@ pub(super) fn optimize(
         new_initial_value_temp_temporary,
         Operator::MUL,
         derived_induction_variable.multiplier.to_expression(),
-        associated_basic_induction_variable.initial_value.clone(),
+        associated_basic_induction_variable.initial_value,
       )));
       prefix_statements.push(Statement::Binary(Statement::binary_flexible_unwrapped(
         new_initial_value_name,

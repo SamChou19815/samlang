@@ -1,7 +1,8 @@
 use super::dead_code_elimination;
 use crate::{
-  ast::mir::{Binary, Expression, GenenalLoopVariable, Operator, Statement, Type, VariableName},
-  common::{Heap, PStr},
+  ast::hir::Operator,
+  ast::mir::{Binary, Expression, GenenalLoopVariable, Statement, Type, VariableName},
+  common::PStr,
 };
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
@@ -17,13 +18,14 @@ impl PotentialLoopInvariantExpression {
   pub(super) fn to_expression(&self) -> Expression {
     match self {
       PotentialLoopInvariantExpression::Int(i) => Expression::IntLiteral(*i),
-      PotentialLoopInvariantExpression::Var(n) => Expression::Variable(n.clone()),
+      PotentialLoopInvariantExpression::Var(n) => Expression::Variable(*n),
     }
   }
 }
 
 impl PotentialLoopInvariantExpression {
-  fn debug_print(&self, heap: &Heap) -> String {
+  #[cfg(test)]
+  fn debug_print(&self, heap: &crate::Heap) -> String {
     self.to_expression().debug_print(heap)
   }
 }
@@ -68,14 +70,15 @@ impl BasicInductionVariableWithLoopGuard {
   pub(super) fn as_general_basic_induction_variable(&self) -> GeneralBasicInductionVariable {
     GeneralBasicInductionVariable {
       name: self.name,
-      initial_value: self.initial_value.clone(),
+      initial_value: self.initial_value,
       increment_amount: self.increment_amount.clone(),
     }
   }
 }
 
 impl BasicInductionVariableWithLoopGuard {
-  pub(super) fn debug_print(&self, heap: &Heap) -> String {
+  #[cfg(test)]
+  pub(super) fn debug_print(&self, heap: &crate::Heap) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}, guard_operator: {:?}, guard_expression: {}}}",
       self.name.as_str(heap),
@@ -95,7 +98,8 @@ pub(super) struct GeneralBasicInductionVariable {
 }
 
 impl GeneralBasicInductionVariable {
-  pub(super) fn debug_print(&self, heap: &Heap) -> String {
+  #[cfg(test)]
+  pub(super) fn debug_print(&self, heap: &crate::Heap) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}}}",
       self.name.as_str(heap),
@@ -114,7 +118,8 @@ pub(super) struct GeneralBasicInductionVariableWithLoopValueCollector {
 }
 
 impl GeneralBasicInductionVariableWithLoopValueCollector {
-  fn debug_print(&self, heap: &Heap) -> String {
+  #[cfg(test)]
+  fn debug_print(&self, heap: &crate::Heap) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}, loop_value_collector: {}}}",
       self.name.as_str(heap),
@@ -141,7 +146,8 @@ pub(super) struct DerivedInductionVariableWithName {
 }
 
 impl DerivedInductionVariableWithName {
-  pub(super) fn debug_print(&self, heap: &Heap) -> String {
+  #[cfg(test)]
+  pub(super) fn debug_print(&self, heap: &crate::Heap) -> String {
     format!(
       "{{name: {}, base_name: {}, multiplier: {}, immediate: {}}}",
       self.name.as_str(heap),
@@ -298,7 +304,7 @@ fn get_loop_invariant_expression_opt(
     Expression::StringName(_) => None,
     Expression::Variable(v) => {
       if !non_loop_invariant_variables.contains(&v.name) {
-        Some(PotentialLoopInvariantExpression::Var(v.clone()))
+        Some(PotentialLoopInvariantExpression::Var(*v))
       } else {
         None
       }
@@ -419,7 +425,7 @@ fn extract_loop_guard_structure(
         let potential_basic_induction_variable_with_loop_guard = e1_var.name;
         let break_collector = original_break_collector
           .as_ref()
-          .map(|v| (v.name, v.type_.clone(), single_if_stmts[0].as_break().unwrap().clone()));
+          .map(|v| (v.name, v.type_, *single_if_stmts[0].as_break().unwrap()));
         Some(LoopGuardStructure {
           potential_basic_induction_variable_with_loop_guard,
           guard_operator,
@@ -469,7 +475,7 @@ fn extract_basic_induction_variables(
               all_basic_induction_variables.push(
                 GeneralBasicInductionVariableWithLoopValueCollector {
                   name: loop_variable.name,
-                  initial_value: loop_variable.initial_value.clone(),
+                  initial_value: loop_variable.initial_value,
                   increment_amount,
                   loop_value_collector: basic_induction_loop_increment_collector.name,
                 },
@@ -495,7 +501,7 @@ fn extract_basic_induction_variables(
 }
 
 fn extract_derived_induction_variables(
-  all_basic_induction_variables: &Vec<GeneralBasicInductionVariableWithLoopValueCollector>,
+  all_basic_induction_variables: &[GeneralBasicInductionVariableWithLoopValueCollector],
   rest_stmts: &[Statement],
   non_loop_invariant_variables: &HashSet<PStr>,
 ) -> Vec<DerivedInductionVariableWithName> {
@@ -544,8 +550,8 @@ fn extract_derived_induction_variables(
 
 fn remove_dead_code_inside_loop(
   other_loop_variables: &Vec<GenenalLoopVariable>,
-  rest_stmts: Vec<Statement>,
-) -> Vec<Statement> {
+  rest_stmts: &mut Vec<Statement>,
+) {
   let mut live_variable_set = HashSet::new();
   for v in other_loop_variables {
     if let Some(var_name) = &v.loop_value.as_variable() {
@@ -604,7 +610,7 @@ pub(super) fn extract_optimizable_while_loop(
     .filter(|it| it.name.ne(&potential_basic_induction_variable_with_loop_guard))
     .map(|it| GeneralBasicInductionVariable {
       name: it.name,
-      initial_value: it.initial_value.clone(),
+      initial_value: it.initial_value,
       increment_amount: it.increment_amount.clone(),
     })
     .collect_vec();
@@ -619,7 +625,8 @@ pub(super) fn extract_optimizable_while_loop(
     derived_induction_variables.iter().map(|it| it.name).collect::<HashSet<_>>();
 
   // Phase 4: Remove undundant statements after getting all the induction variables.
-  let optimized_statements = remove_dead_code_inside_loop(
+  let mut statements = stmts.into_iter().skip(2).collect_vec();
+  remove_dead_code_inside_loop(
     &loop_variables_that_are_not_basic_induction_variables
       .iter()
       .filter(|it| {
@@ -630,7 +637,7 @@ pub(super) fn extract_optimizable_while_loop(
       })
       .cloned()
       .collect(),
-    stmts.into_iter().skip(2).collect(),
+    &mut statements,
   );
 
   Ok(OptimizableWhileLoop {
@@ -638,7 +645,7 @@ pub(super) fn extract_optimizable_while_loop(
     general_induction_variables,
     loop_variables_that_are_not_basic_induction_variables,
     derived_induction_variables,
-    statements: optimized_statements,
+    statements,
     break_collector,
   })
 }
@@ -651,7 +658,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     get_guard_operator(Operator::LT, false).unwrap().invert().clone().invert().to_op();
     get_guard_operator(Operator::LE, false).unwrap().invert().clone().invert().to_op();
@@ -686,7 +693,7 @@ mod tests {
 
   #[test]
   fn merge_invariant_multiplication_for_loop_optimization_tests() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     assert_eq!(
       6,
@@ -740,7 +747,7 @@ mod tests {
 
   #[test]
   fn merge_variable_addition_into_derived_induction_variable_test() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     assert!(merge_variable_addition_into_derived_induction_variable(
       &DerivedInductionVariable {
@@ -778,7 +785,7 @@ mod tests {
 
   #[test]
   fn loop_invariant_tests() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     assert!(!expression_is_loop_invariant(
       &Expression::StringName(heap.alloc_str_for_test("")),
@@ -801,7 +808,7 @@ mod tests {
 
   #[test]
   fn extract_basic_induction_variables_tests() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     assert!(extract_basic_induction_variables(
       &heap.alloc_str_for_test("i"),
@@ -840,7 +847,7 @@ mod tests {
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
         },
       ],
-      &vec![
+      &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
@@ -852,7 +859,7 @@ mod tests {
           Operator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
           Expression::StringName(heap.alloc_str_for_test("")),
-        ),
+        )
       ],
       &HashSet::from([
         heap.alloc_str_for_test(""),
@@ -884,7 +891,7 @@ mod tests {
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
         },
       ],
-      &vec![
+      &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
@@ -923,7 +930,7 @@ mod tests {
 
   #[test]
   fn extract_derived_induction_variables_tests() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     assert_eq!(
       vec![
@@ -932,7 +939,7 @@ mod tests {
         "{name: tmp_z, base_name: i, multiplier: 10, immediate: 16}"
       ],
       extract_derived_induction_variables(
-        &vec![
+        &[
           GeneralBasicInductionVariableWithLoopValueCollector {
             name: heap.alloc_str_for_test("i"),
             initial_value: ZERO,
@@ -944,7 +951,7 @@ mod tests {
             initial_value: ZERO,
             increment_amount: PotentialLoopInvariantExpression::Int(3),
             loop_value_collector: heap.alloc_str_for_test("tmp_j"),
-          },
+          }
         ],
         &vec![
           Statement::binary(
@@ -1043,13 +1050,13 @@ mod tests {
     );
 
     assert!(extract_derived_induction_variables(
-      &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+      &[GeneralBasicInductionVariableWithLoopValueCollector {
         name: heap.alloc_str_for_test("i"),
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Int(1),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
       }],
-      &vec![
+      &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
@@ -1061,7 +1068,7 @@ mod tests {
           Operator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE),
-        ),
+        )
       ],
       &HashSet::from([
         heap.alloc_str_for_test(""),
@@ -1074,13 +1081,13 @@ mod tests {
     .is_empty());
 
     assert!(extract_derived_induction_variables(
-      &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+      &[GeneralBasicInductionVariableWithLoopValueCollector {
         name: heap.alloc_str_for_test("i"),
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Int(1),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
       }],
-      &vec![
+      &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
@@ -1092,7 +1099,7 @@ mod tests {
           Operator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
           Expression::StringName(heap.alloc_str_for_test("outside")),
-        ),
+        )
       ],
       &HashSet::from([
         heap.alloc_str_for_test(""),
@@ -1107,13 +1114,13 @@ mod tests {
     assert_eq!(
       vec!["{name: tmp_j, base_name: i, multiplier: 1, immediate: (outside: int)}"],
       extract_derived_induction_variables(
-        &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
           name: heap.alloc_str_for_test("i"),
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           loop_value_collector: heap.alloc_str_for_test("tmp_i"),
         }],
-        &vec![
+        &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
@@ -1125,7 +1132,7 @@ mod tests {
             Operator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             ZERO,
-          ),
+          )
         ],
         &HashSet::from([
           heap.alloc_str_for_test(""),
@@ -1143,13 +1150,13 @@ mod tests {
     assert_eq!(
       vec!["{name: tmp_j, base_name: i, multiplier: 1, immediate: (outside: int)}"],
       extract_derived_induction_variables(
-        &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
           name: heap.alloc_str_for_test("i"),
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           loop_value_collector: heap.alloc_str_for_test("tmp_i"),
         }],
-        &vec![
+        &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
@@ -1161,7 +1168,7 @@ mod tests {
             Operator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
-          ),
+          )
         ],
         &HashSet::from([
           heap.alloc_str_for_test(""),
@@ -1179,7 +1186,7 @@ mod tests {
     assert_eq!(
       vec!["{name: tmp_j, base_name: i, multiplier: 1, immediate: (outside: int)}"],
       extract_derived_induction_variables(
-        &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
           name: heap.alloc_str_for_test("i"),
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
@@ -1188,7 +1195,7 @@ mod tests {
           )),
           loop_value_collector: heap.alloc_str_for_test("tmp_i"),
         }],
-        &vec![
+        &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
@@ -1200,7 +1207,7 @@ mod tests {
             Operator::MUL,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             ONE
-          ),
+          )
         ],
         &HashSet::from([
           heap.alloc_str_for_test(""),
@@ -1216,7 +1223,7 @@ mod tests {
     );
 
     assert!(extract_derived_induction_variables(
-      &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+      &[GeneralBasicInductionVariableWithLoopValueCollector {
         name: heap.alloc_str_for_test("i"),
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
@@ -1225,7 +1232,7 @@ mod tests {
         )),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
       }],
-      &vec![
+      &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
@@ -1237,7 +1244,7 @@ mod tests {
           Operator::MUL,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           Expression::int(2)
-        ),
+        )
       ],
       &HashSet::from([
         heap.alloc_str_for_test(""),
@@ -1252,7 +1259,7 @@ mod tests {
     assert_eq!(
       vec!["{name: tmp_j, base_name: i, multiplier: (outside: int), immediate: (outside: int)}"],
       extract_derived_induction_variables(
-        &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
           name: heap.alloc_str_for_test("i"),
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
@@ -1261,7 +1268,7 @@ mod tests {
           )),
           loop_value_collector: heap.alloc_str_for_test("tmp_i"),
         }],
-        &vec![
+        &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
@@ -1273,7 +1280,7 @@ mod tests {
             Operator::MUL,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
-          ),
+          )
         ],
         &HashSet::from([
           heap.alloc_str_for_test(""),
@@ -1289,13 +1296,13 @@ mod tests {
     );
 
     assert!(extract_derived_induction_variables(
-      &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+      &[GeneralBasicInductionVariableWithLoopValueCollector {
         name: heap.alloc_str_for_test("i"),
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Int(2),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
       }],
-      &vec![
+      &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
@@ -1307,7 +1314,7 @@ mod tests {
           Operator::MUL,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
-        ),
+        )
       ],
       &HashSet::from([
         heap.alloc_str_for_test(""),
@@ -1322,13 +1329,13 @@ mod tests {
     assert_eq!(
       vec!["{name: t1, base_name: i, multiplier: 1, immediate: 2}"],
       extract_derived_induction_variables(
-        &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+        &[GeneralBasicInductionVariableWithLoopValueCollector {
           name: heap.alloc_str_for_test("i"),
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           loop_value_collector: heap.alloc_str_for_test("tmp_i"),
         }],
-        &vec![
+        &[
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
@@ -1340,7 +1347,7 @@ mod tests {
             Operator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
             ONE
-          ),
+          )
         ],
         &HashSet::from([
           heap.alloc_str_for_test(""),
@@ -1357,13 +1364,13 @@ mod tests {
     );
 
     assert!(extract_derived_induction_variables(
-      &vec![GeneralBasicInductionVariableWithLoopValueCollector {
+      &[GeneralBasicInductionVariableWithLoopValueCollector {
         name: heap.alloc_str_for_test("i"),
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Int(1),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
       }],
-      &vec![
+      &[
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
@@ -1375,7 +1382,7 @@ mod tests {
           Operator::DIV,
           Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           ONE
-        ),
+        )
       ],
       &HashSet::from([
         heap.alloc_str_for_test(""),
@@ -1391,7 +1398,7 @@ mod tests {
 
   #[test]
   fn remove_dead_code_inside_loop_coverage_test() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     remove_dead_code_inside_loop(
       &vec![
@@ -1408,13 +1415,13 @@ mod tests {
           loop_value: Expression::var_name(heap.alloc_str_for_test("name"), INT_TYPE),
         },
       ],
-      vec![],
+      &mut vec![],
     );
   }
 
   #[test]
   fn extract_loop_guard_structure_rejection_rests() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     let non_loop_invariant_variables = HashSet::from([
       heap.alloc_str_for_test(""),
@@ -1430,12 +1437,12 @@ mod tests {
         &vec![
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test(""),
-            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("T")),
+            type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           },
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test(""),
-            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("T")),
+            type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           }
         ],
@@ -1464,12 +1471,12 @@ mod tests {
         &vec![
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test(""),
-            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("T")),
+            type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           },
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test(""),
-            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("T")),
+            type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           }
         ],
@@ -1485,7 +1492,7 @@ mod tests {
           Statement::binary(heap.alloc_str_for_test(""), Operator::PLUS, ZERO, ZERO),
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test(""),
-            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("T")),
+            type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           }
         ],
@@ -1506,7 +1513,7 @@ mod tests {
           ),
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test(""),
-            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("T")),
+            type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           }
         ],
@@ -1527,7 +1534,7 @@ mod tests {
           ),
           Statement::StructInit {
             struct_variable_name: heap.alloc_str_for_test(""),
-            type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("T")),
+            type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           },
           Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
@@ -1617,7 +1624,7 @@ mod tests {
             invert_condition: false,
             statements: vec![Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test(""),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+              type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }]
           },
@@ -1625,12 +1632,12 @@ mod tests {
             condition: ZERO,
             s1: vec![Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test(""),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+              type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }],
             s2: vec![Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test(""),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+              type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }],
             final_assignments: vec![]
@@ -1699,7 +1706,7 @@ mod tests {
             invert_condition: false,
             statements: vec![Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test(""),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+              type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }]
           },
@@ -1724,7 +1731,7 @@ mod tests {
             invert_condition: false,
             statements: vec![Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test(""),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+              type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }]
           },
@@ -1738,7 +1745,7 @@ mod tests {
 
   #[test]
   fn extract_optimizable_while_loop_rejection_tests() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     assert!(extract_optimizable_while_loop(
       (
@@ -1849,7 +1856,7 @@ mod tests {
 
   #[test]
   fn extract_optimizable_while_loop_acceptance_test() {
-    let heap = &mut Heap::new();
+    let heap = &mut crate::Heap::new();
 
     let OptimizableWhileLoop {
       basic_induction_variable_with_loop_guard,

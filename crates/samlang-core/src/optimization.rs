@@ -44,85 +44,69 @@ pub(super) const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration =
   };
 
 fn optimize_function_for_one_round(
-  function: Function,
+  function: &mut Function,
   heap: &mut Heap,
   configuration: &OptimizationConfiguration,
-) -> Function {
-  let mut optimized_fn = conditional_constant_propagation::optimize_function(function, heap);
+) {
+  conditional_constant_propagation::optimize_function(function, heap);
   if configuration.does_perform_loop_optimization {
-    optimized_fn = loop_optimizations::optimize_function(optimized_fn, heap);
+    loop_optimizations::optimize_function(function, heap);
   }
   if configuration.does_perform_common_sub_expression_elimination {
-    optimized_fn = common_subexpression_elimination::optimize_function(optimized_fn, heap);
+    common_subexpression_elimination::optimize_function(function, heap);
   }
   if configuration.does_perform_local_value_numbering {
-    optimized_fn = local_value_numbering::optimize_function(optimized_fn);
+    local_value_numbering::optimize_function(function);
   }
-  dead_code_elimination::optimize_function(optimized_fn)
+  dead_code_elimination::optimize_function(function);
 }
 
 fn optimize_function_for_rounds(
-  function: Function,
+  function: &mut Function,
   heap: &mut Heap,
   configuration: &OptimizationConfiguration,
-) -> Function {
-  let mut optimized_fn = function;
+) {
   for _ in 0..2 {
-    optimized_fn = optimize_function_for_one_round(optimized_fn, heap, configuration);
+    optimize_function_for_one_round(function, heap, configuration);
   }
-  conditional_constant_propagation::optimize_function(
-    dead_code_elimination::optimize_function(conditional_constant_propagation::optimize_function(
-      optimized_fn,
-      heap,
-    )),
-    heap,
-  )
+  conditional_constant_propagation::optimize_function(function, heap);
+  dead_code_elimination::optimize_function(function);
+  conditional_constant_propagation::optimize_function(function, heap);
 }
 
 fn optimize_functions_for_rounds(
-  functions: Vec<Function>,
+  functions: &mut [Function],
   heap: &mut Heap,
   configuration: &OptimizationConfiguration,
-) -> Vec<Function> {
-  functions.into_iter().map(|f| optimize_function_for_rounds(f, heap, configuration)).collect()
+) {
+  for f in functions {
+    optimize_function_for_rounds(f, heap, configuration);
+  }
 }
 
 pub(super) fn optimize_sources(
   heap: &mut Heap,
-  sources: Sources,
+  mut sources: Sources,
   configuration: &OptimizationConfiguration,
 ) -> Sources {
-  let mut intermediate = sources;
   for _ in 0..4 {
     let Sources {
       global_variables,
       closure_types,
       type_definitions,
       main_function_names,
-      functions,
-    } = intermediate;
-    let mut optimized_functions = optimize_functions_for_rounds(functions, heap, configuration);
+      mut functions,
+    } = sources;
+    optimize_functions_for_rounds(&mut functions, heap, configuration);
     if configuration.does_perform_inlining {
-      optimized_functions = inlining::optimize_functions(optimized_functions, heap);
+      functions = inlining::optimize_functions(functions, heap);
     }
-    intermediate = unused_name_elimination::optimize_sources(Sources {
-      global_variables,
-      closure_types,
-      type_definitions,
-      main_function_names,
-      functions: optimized_functions,
-    });
+    sources =
+      Sources { global_variables, closure_types, type_definitions, main_function_names, functions };
+    unused_name_elimination::optimize_sources(&mut sources);
   }
-
-  let Sources { global_variables, closure_types, type_definitions, main_function_names, functions } =
-    intermediate;
-  Sources {
-    global_variables,
-    closure_types,
-    type_definitions,
-    main_function_names,
-    functions: optimize_functions_for_rounds(functions, heap, configuration),
-  }
+  optimize_functions_for_rounds(&mut sources.functions, heap, configuration);
+  sources
 }
 
 #[cfg(test)]
@@ -142,7 +126,6 @@ mod tests {
       functions: vec![Function {
         name: heap.alloc_str_for_test("main"),
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],
         return_value: ZERO,

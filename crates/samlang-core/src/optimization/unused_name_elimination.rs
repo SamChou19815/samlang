@@ -10,7 +10,7 @@ use std::collections::{HashMap, HashSet};
 
 fn collect_for_type_set(type_: &Type, type_set: &mut HashSet<PStr>) {
   if let Type::Id(n) = type_ {
-    type_set.insert(n.name);
+    type_set.insert(*n);
   }
 }
 
@@ -86,16 +86,21 @@ fn collect_used_names_from_statement(
       collect_for_type_set(type_, type_set);
       collect_used_names_from_expression(name_set, type_set, assigned_expression);
     }
-    Statement::StructInit { struct_variable_name: _, type_, expression_list } => {
-      type_set.insert(type_.name);
+    Statement::StructInit { struct_variable_name: _, type_name, expression_list } => {
+      type_set.insert(*type_name);
       for e in expression_list {
         collect_used_names_from_expression(name_set, type_set, e);
       }
     }
-    Statement::ClosureInit { closure_variable_name: _, closure_type, function_name, context } => {
+    Statement::ClosureInit {
+      closure_variable_name: _,
+      closure_type_name,
+      function_name,
+      context,
+    } => {
       name_set.insert(function_name.name);
       collect_used_names_from_expression(name_set, type_set, context);
-      type_set.insert(closure_type.name);
+      type_set.insert(*closure_type_name);
     }
   }
 }
@@ -195,40 +200,27 @@ fn analyze_used_function_names_and_type_names(
   (used_names, used_types)
 }
 
-pub(super) fn optimize_sources(sources: Sources) -> Sources {
-  let Sources { global_variables, closure_types, type_definitions, main_function_names, functions } =
-    sources;
+pub(super) fn optimize_sources(sources: &mut Sources) {
   let (used_names, used_types) = analyze_used_function_names_and_type_names(
-    &functions,
-    &closure_types,
-    &type_definitions,
-    &main_function_names,
+    &sources.functions,
+    &sources.closure_types,
+    &sources.type_definitions,
+    &sources.main_function_names,
   );
-  Sources {
-    global_variables: global_variables
-      .into_iter()
-      .filter(|it| used_names.contains(&it.name))
-      .collect_vec(),
-    closure_types: closure_types
-      .into_iter()
-      .filter(|it| used_types.contains(&it.identifier))
-      .collect_vec(),
-    type_definitions: type_definitions
-      .into_iter()
-      .filter(|it| used_types.contains(&it.identifier))
-      .collect_vec(),
-    main_function_names,
-    functions: functions.into_iter().filter(|it| used_names.contains(&it.name)).collect_vec(),
-  }
+  sources.global_variables.retain(|it| used_names.contains(&it.name));
+  sources.closure_types.retain(|it| used_types.contains(&it.identifier));
+  sources.type_definitions.retain(|it| used_types.contains(&it.identifier));
+  sources.functions.retain(|it| used_names.contains(&it.name));
 }
 
 #[cfg(test)]
 mod tests {
   use crate::{
+    ast::hir::GlobalVariable,
     ast::mir::{
       Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
-      GlobalVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
-      VariableName, INT_TYPE, ZERO,
+      Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName, INT_TYPE,
+      ZERO,
     },
     Heap,
   };
@@ -238,8 +230,7 @@ mod tests {
   #[test]
   fn integration_test() {
     let heap = &mut Heap::new();
-
-    let optimized = super::optimize_sources(Sources {
+    let mut sources = Sources {
       global_variables: vec![
         GlobalVariable {
           name: heap.alloc_str_for_test("bar"),
@@ -253,43 +244,35 @@ mod tests {
       closure_types: vec![
         ClosureTypeDefinition {
           identifier: heap.alloc_str_for_test("Foo"),
-          type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
         ClosureTypeDefinition {
           identifier: heap.alloc_str_for_test("Baz"),
-          type_parameters: vec![],
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
       ],
       type_definitions: vec![
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Foo"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![
             INT_TYPE,
-            Type::new_id_no_targs(heap.alloc_str_for_test("Foo")),
-            Type::new_id_no_targs(heap.alloc_str_for_test("Bar")),
+            Type::Id(heap.alloc_str_for_test("Foo")),
+            Type::Id(heap.alloc_str_for_test("Bar")),
           ]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Bar"),
-          type_parameters: vec![],
           names: vec![],
-          mappings: TypeDefinitionMappings::Struct(vec![Type::new_id_no_targs(
-            heap.alloc_str_for_test("Bar"),
-          )]),
+          mappings: TypeDefinitionMappings::Struct(vec![Type::Id(heap.alloc_str_for_test("Bar"))]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Baz"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Baz"),
-          type_parameters: vec![],
           names: vec![],
           mappings: TypeDefinitionMappings::Enum,
         },
@@ -299,7 +282,6 @@ mod tests {
         Function {
           name: heap.alloc_str_for_test("main"),
           parameters: vec![],
-          type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
@@ -315,17 +297,16 @@ mod tests {
         Function {
           name: heap.alloc_str_for_test("foo"),
           parameters: vec![],
-          type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test(""),
-              type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Foo")),
+              type_name: heap.alloc_str_for_test("Foo"),
               expression_list: vec![Expression::StringName(heap.alloc_str_for_test("bar"))],
             },
             Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test(""),
-              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Foo")),
+              closure_type_name: heap.alloc_str_for_test("Foo"),
               function_name: (FunctionName::new(
                 heap.alloc_str_for_test("foo"),
                 Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -362,13 +343,13 @@ mod tests {
               condition: ZERO,
               s1: vec![Statement::binary(
                 heap.alloc_str_for_test(""),
-                crate::ast::mir::Operator::GE,
+                crate::ast::hir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
               s2: vec![Statement::binary(
                 heap.alloc_str_for_test(""),
-                crate::ast::mir::Operator::GE,
+                crate::ast::hir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
@@ -389,7 +370,7 @@ mod tests {
               statements: vec![],
               break_collector: Some(VariableName {
                 name: heap.alloc_str_for_test("d"),
-                type_: Type::new_id_no_targs(heap.alloc_str_for_test("A")),
+                type_: Type::Id(heap.alloc_str_for_test("A")),
               }),
             },
             Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
@@ -399,7 +380,6 @@ mod tests {
         Function {
           name: heap.alloc_str_for_test("bar"),
           parameters: vec![],
-          type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
             callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test("baz"), INT_TYPE)),
@@ -412,25 +392,25 @@ mod tests {
         Function {
           name: heap.alloc_str_for_test("baz"),
           parameters: vec![],
-          type_parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![],
           return_value: ZERO,
         },
       ],
-    });
+    };
+    super::optimize_sources(&mut sources);
 
     assert_eq!(
       vec!["bar"],
-      optimized.global_variables.iter().map(|it| it.name.as_str(heap)).collect_vec()
+      sources.global_variables.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
     assert_eq!(
       vec!["Foo", "Bar"],
-      optimized.type_definitions.iter().map(|it| it.identifier.as_str(heap)).collect_vec()
+      sources.type_definitions.iter().map(|it| it.identifier.as_str(heap)).collect_vec()
     );
     assert_eq!(
       vec!["main", "foo", "bar", "baz"],
-      optimized.functions.iter().map(|it| it.name.as_str(heap)).collect_vec()
+      sources.functions.iter().map(|it| it.name.as_str(heap)).collect_vec()
     );
   }
 }

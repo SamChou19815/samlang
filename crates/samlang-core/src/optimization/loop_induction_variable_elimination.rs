@@ -3,7 +3,8 @@ use super::loop_induction_analysis::{
   GuardOperator, OptimizableWhileLoop, PotentialLoopInvariantExpression,
 };
 use crate::{
-  ast::mir::{Callee, Expression, Operator, Statement, VariableName, INT_TYPE},
+  ast::hir::Operator,
+  ast::mir::{Callee, Expression, Statement, VariableName, INT_TYPE},
   Heap,
 };
 use itertools::Itertools;
@@ -56,12 +57,12 @@ fn stmt_uses_basic_induction_var(
     Statement::Cast { name: _, type_: _, assigned_expression } => {
       expr_uses_basic_induction_var(assigned_expression, v)
     }
-    Statement::StructInit { struct_variable_name: _, type_: _, expression_list } => {
+    Statement::StructInit { struct_variable_name: _, type_name: _, expression_list } => {
       expression_list.iter().any(|e| expr_uses_basic_induction_var(e, v))
     }
     Statement::ClosureInit {
       closure_variable_name: _,
-      closure_type: _,
+      closure_type_name: _,
       function_name: _,
       context,
     } => expr_uses_basic_induction_var(context, v),
@@ -82,7 +83,6 @@ fn optimizable_while_loop_uses_induction_var(l: &OptimizableWhileLoop) -> bool {
     })
     || l
       .break_collector
-      .clone()
       .map(|v| expr_uses_basic_induction_var(&v.2, &l.basic_induction_variable_with_loop_guard))
       .unwrap_or(false)
 }
@@ -124,7 +124,7 @@ pub(super) fn optimize(
       new_initial_value_temp_temporary,
       Operator::MUL,
       only_relevant_induction_loop_variables.multiplier.to_expression(),
-      optimizable_while_loop.basic_induction_variable_with_loop_guard.initial_value.clone(),
+      optimizable_while_loop.basic_induction_variable_with_loop_guard.initial_value,
     )),
     Statement::Binary(Statement::binary_flexible_unwrapped(
       new_initial_value_name,
@@ -191,9 +191,10 @@ pub(super) fn optimize(
 #[cfg(test)]
 mod tests {
   use crate::{
+    ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
-      VariableName, INT_TYPE, ONE, ZERO,
+      Callee, Expression, FunctionName, GenenalLoopVariable, Statement, Type, VariableName,
+      INT_TYPE, ONE, ZERO,
     },
     common::Heap,
     optimization::loop_induction_analysis::{
@@ -284,7 +285,7 @@ mod tests {
             }],
             s2: vec![Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test(""),
-              closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+              closure_type_name: heap.alloc_str_for_test("I"),
               function_name: FunctionName::new(
                 heap.alloc_str_for_test(""),
                 Type::new_fn_unwrapped(vec![], INT_TYPE)
@@ -308,7 +309,7 @@ mod tests {
               },
               Statement::StructInit {
                 struct_variable_name: heap.alloc_str_for_test(""),
-                type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("I")),
+                type_name: heap.alloc_str_for_test("I"),
                 expression_list: vec![ZERO]
               }
             ],

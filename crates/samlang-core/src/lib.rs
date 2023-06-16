@@ -73,22 +73,22 @@ pub fn compile_sources(
     return Err(errors);
   }
 
-  let unoptimized_hir_sources = measure_time(enable_profiling, "Compile to HIR", || {
-    compiler::compile_sources_to_hir(heap, &checked_sources)
+  let unoptimized_hir_sources = measure_time(enable_profiling, "Compile to MIR", || {
+    compiler::compile_sources_to_mir(heap, &checked_sources)
   });
-  let optimized_hir_sources = measure_time(enable_profiling, "Optimize HIR", || {
+  let optimized_hir_sources = measure_time(enable_profiling, "Optimize MIR", || {
     optimization::optimize_sources(
       heap,
       unoptimized_hir_sources,
       &optimization::ALL_ENABLED_CONFIGURATION,
     )
   });
-  let mid_ir_sources = measure_time(enable_profiling, "Compile to MIR", || {
-    compiler::compile_hir_to_mir(heap, optimized_hir_sources)
+  let mid_ir_sources = measure_time(enable_profiling, "Compile to LIR", || {
+    compiler::compile_mir_to_lir(heap, optimized_hir_sources)
   });
   let common_ts_code = mid_ir_sources.pretty_print(heap);
   let (wat_text, wasm_file) = measure_time(enable_profiling, "Compile to WASM", || {
-    compiler::compile_mir_to_wasm(heap, &mid_ir_sources)
+    compiler::compile_lir_to_wasm(heap, &mid_ir_sources)
   });
 
   let mut text_code_results = BTreeMap::new();

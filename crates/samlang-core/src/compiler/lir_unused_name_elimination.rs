@@ -172,11 +172,11 @@ pub(super) fn optimize_mir_sources_by_eliminating_unused_ones(
 mod tests {
   use crate::{
     ast::{
+      hir,
       lir::{
         Expression, Function, GenenalLoopVariable, Sources, Statement, Type, TypeDefinition,
         INT_TYPE, ZERO,
       },
-      mir::GlobalVariable,
     },
     Heap,
   };
@@ -189,11 +189,11 @@ mod tests {
 
     let optimized = super::optimize_mir_sources_by_eliminating_unused_ones(Sources {
       global_variables: vec![
-        GlobalVariable {
+        hir::GlobalVariable {
           name: heap.alloc_str_for_test("bar"),
           content: heap.alloc_str_for_test("fff"),
         },
-        GlobalVariable {
+        hir::GlobalVariable {
           name: heap.alloc_str_for_test("fsdfsdf"),
           content: heap.alloc_str_for_test("fff"),
         },
@@ -255,7 +255,7 @@ mod tests {
               condition: ZERO,
               s1: vec![Statement::binary(
                 heap.alloc_str_for_test(""),
-                crate::ast::mir::Operator::GE,
+                hir::Operator::GE,
                 Expression::Name(heap.alloc_str_for_test("foo"), INT_TYPE),
                 Expression::Name(heap.alloc_str_for_test("bar"), INT_TYPE),
               )],

@@ -1,12 +1,30 @@
-use super::hir::{GlobalVariable, Operator};
 use crate::{
   common::{well_known_pstrs, PStr, INVALID_PSTR},
   Heap,
 };
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
-use std::cmp::Ordering;
-use std::hash::Hash;
+use std::{cmp::Ordering, hash::Hash};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct IdType {
+  pub(crate) name: PStr,
+  pub(crate) type_arguments: Vec<Type>,
+}
+
+impl IdType {
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+    if self.type_arguments.is_empty() {
+      self.name.as_str(heap).to_string()
+    } else {
+      format!(
+        "{}<{}>",
+        self.name.as_str(heap),
+        self.type_arguments.iter().map(|it| it.pretty_print(heap)).join(", ")
+      )
+    }
+  }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FunctionType {
@@ -24,41 +42,65 @@ impl FunctionType {
   }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
 pub(crate) enum Type {
   Int,
-  Id(PStr),
+  Id(IdType),
 }
 
 impl Type {
+  pub(crate) fn new_id_unwrapped(name: PStr, type_arguments: Vec<Type>) -> IdType {
+    IdType { name, type_arguments }
+  }
+
+  pub(crate) fn new_id_no_targs_unwrapped(name: PStr) -> IdType {
+    Self::new_id_unwrapped(name, vec![])
+  }
+
   pub(crate) fn new_fn_unwrapped(argument_types: Vec<Type>, return_type: Type) -> FunctionType {
     FunctionType { argument_types, return_type: Box::new(return_type) }
   }
 
-  pub(crate) fn pretty_print<'a>(&'a self, heap: &'a Heap) -> &'a str {
+  pub(crate) fn new_id(name: PStr, type_arguments: Vec<Type>) -> Type {
+    Type::Id(IdType { name, type_arguments })
+  }
+
+  pub(crate) const fn new_id_no_targs(name: PStr) -> Type {
+    Type::Id(IdType { name, type_arguments: vec![] })
+  }
+
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
-      Type::Int => "int",
-      Type::Id(id) => id.as_str(heap),
+      Type::Int => "int".to_string(),
+      Type::Id(id) => id.pretty_print(heap),
     }
   }
 }
 
 pub(crate) const INT_TYPE: Type = Type::Int;
-pub(crate) const STRING_TYPE: Type = Type::Id(well_known_pstrs::UNDERSCORE_STR);
-pub(crate) const STRING_TYPE_REF: &Type = &Type::Id(well_known_pstrs::UNDERSCORE_STR);
+pub(crate) const STRING_TYPE: Type = Type::new_id_no_targs(well_known_pstrs::UNDERSCORE_STR);
+pub(crate) const STRING_TYPE_REF: &Type = &Type::new_id_no_targs(well_known_pstrs::UNDERSCORE_STR);
 
 #[derive(Debug, Clone)]
 pub(crate) struct ClosureTypeDefinition {
   pub(crate) identifier: PStr,
+  pub(crate) type_parameters: Vec<PStr>,
   pub(crate) function_type: FunctionType,
 }
 
+fn name_with_tparams(heap: &Heap, identifier: PStr, tparams: &Vec<PStr>) -> String {
+  if tparams.is_empty() {
+    identifier.as_str(heap).to_string()
+  } else {
+    format!("{}<{}>", identifier.as_str(heap), tparams.iter().map(|it| it.as_str(heap)).join(", "))
+  }
+}
+
 impl ClosureTypeDefinition {
-  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     format!(
       "closure type {} = {}",
-      self.identifier.as_str(heap),
+      name_with_tparams(heap, self.identifier, &self.type_parameters),
       self.function_type.pretty_print(heap)
     )
   }
@@ -73,27 +115,71 @@ pub(crate) enum TypeDefinitionMappings {
 #[derive(Debug, Clone)]
 pub(crate) struct TypeDefinition {
   pub(crate) identifier: PStr,
+  pub(crate) type_parameters: Vec<PStr>,
   pub(crate) names: Vec<PStr>,
   pub(crate) mappings: TypeDefinitionMappings,
 }
 
 impl TypeDefinition {
-  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+    let id_part = name_with_tparams(heap, self.identifier, &self.type_parameters);
     match &self.mappings {
       TypeDefinitionMappings::Struct(types) => {
         format!(
           "object type {} = [{}]",
-          self.identifier.as_str(heap),
+          id_part,
           types.iter().map(|it| it.pretty_print(heap)).join(", ")
         )
       }
-      TypeDefinitionMappings::Enum => format!("variant type {}", self.identifier.as_str(heap)),
+      TypeDefinitionMappings::Enum => format!("variant type {}", id_part),
     }
   }
 }
 
-#[derive(Debug, Clone, Copy, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) enum Operator {
+  MUL,
+  DIV,
+  MOD,
+  PLUS,
+  MINUS,
+  LAND,
+  LOR,
+  SHL,
+  SHR,
+  XOR,
+  LT,
+  LE,
+  GT,
+  GE,
+  EQ,
+  NE,
+}
+
+impl ToString for Operator {
+  fn to_string(&self) -> String {
+    match self {
+      Operator::MUL => "*".to_string(),
+      Operator::DIV => "/".to_string(),
+      Operator::MOD => "%".to_string(),
+      Operator::PLUS => "+".to_string(),
+      Operator::MINUS => "-".to_string(),
+      Operator::LAND => "&".to_string(),
+      Operator::LOR => "|".to_string(),
+      Operator::SHL => "<<".to_string(),
+      Operator::SHR => ">>>".to_string(),
+      Operator::XOR => "^".to_string(),
+      Operator::LT => "<".to_string(),
+      Operator::LE => "<=".to_string(),
+      Operator::GT => ">".to_string(),
+      Operator::GE => ">=".to_string(),
+      Operator::EQ => "==".to_string(),
+      Operator::NE => "!=".to_string(),
+    }
+  }
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct VariableName {
   pub(crate) name: PStr,
   pub(crate) type_: Type,
@@ -113,15 +199,28 @@ impl VariableName {
 pub(crate) struct FunctionName {
   pub(crate) name: PStr,
   pub(crate) type_: FunctionType,
+  pub(crate) type_arguments: Vec<Type>,
 }
 
 impl FunctionName {
   pub(crate) fn new(name: PStr, type_: FunctionType) -> FunctionName {
-    FunctionName { name, type_ }
+    FunctionName { name, type_, type_arguments: vec![] }
+  }
+
+  pub(crate) fn debug_print(&self, heap: &Heap) -> String {
+    if self.type_arguments.is_empty() {
+      self.name.as_str(heap).to_string()
+    } else {
+      format!(
+        "{}<{}>",
+        self.name.as_str(heap),
+        self.type_arguments.iter().map(|it| it.pretty_print(heap)).join(", ")
+      )
+    }
   }
 }
 
-#[derive(Debug, Clone, Copy, EnumAsInner)]
+#[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Expression {
   IntLiteral(i32),
   StringName(PStr),
@@ -162,17 +261,6 @@ impl PartialEq for Expression {
   }
 }
 
-impl Hash for Expression {
-  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    core::mem::discriminant(self).hash(state);
-    match self {
-      Expression::IntLiteral(i) => i.hash(state),
-      Expression::StringName(n) => n.hash(state),
-      Expression::Variable(v) => v.hash(state),
-    }
-  }
-}
-
 impl Expression {
   pub(crate) fn int(value: i32) -> Expression {
     Expression::IntLiteral(value)
@@ -190,7 +278,6 @@ impl Expression {
     }
   }
 
-  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
@@ -199,7 +286,6 @@ impl Expression {
     }
   }
 
-  #[cfg(test)]
   pub(crate) fn dump_to_string(&self) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
@@ -234,10 +320,9 @@ pub(crate) enum Callee {
 }
 
 impl Callee {
-  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     match self {
-      Callee::FunctionName(f) => f.name.as_str(heap).to_string(),
+      Callee::FunctionName(f) => f.debug_print(heap),
       Callee::Variable(v) => v.debug_print(heap),
     }
   }
@@ -252,7 +337,6 @@ pub(crate) struct GenenalLoopVariable {
 }
 
 impl GenenalLoopVariable {
-  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     format!(
       "{{name: {}, initial_value: {}, loop_value: {}}}",
@@ -302,12 +386,12 @@ pub(crate) enum Statement {
   },
   StructInit {
     struct_variable_name: PStr,
-    type_name: PStr,
+    type_: IdType,
     expression_list: Vec<Expression>,
   },
   ClosureInit {
     closure_variable_name: PStr,
-    closure_type_name: PStr,
+    closure_type: IdType,
     function_name: FunctionName,
     context: Expression,
   },
@@ -402,7 +486,6 @@ impl Statement {
     }
   }
 
-  #[cfg(test)]
   fn debug_print_internal(
     &self,
     heap: &Heap,
@@ -551,24 +634,19 @@ impl Statement {
           type_.pretty_print(heap),
         ));
       }
-      Statement::StructInit { struct_variable_name, type_name, expression_list } => {
+      Statement::StructInit { struct_variable_name, type_, expression_list } => {
         let expression_str = expression_list.iter().map(|it| it.debug_print(heap)).join(", ");
         collector.push(format!(
           "{}let {}: {} = [{}];\n",
           "  ".repeat(level),
           struct_variable_name.as_str(heap),
-          type_name.as_str(heap),
+          type_.pretty_print(heap),
           expression_str
         ));
       }
-      Statement::ClosureInit {
-        closure_variable_name,
-        closure_type_name,
-        function_name,
-        context,
-      } => {
+      Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
         let closure_name_type =
-          format!("{}: {}", closure_variable_name.as_str(heap), closure_type_name.as_str(heap));
+          format!("{}: {}", closure_variable_name.as_str(heap), closure_type.pretty_print(heap));
         let function_name_type = format!(
           "{}: {}",
           function_name.name.as_str(heap),
@@ -585,14 +663,12 @@ impl Statement {
     }
   }
 
-  #[cfg(test)]
   fn debug_print_leveled(&self, heap: &Heap, level: usize) -> String {
     let mut collector = vec![];
     self.debug_print_internal(heap, level, &None, &mut collector);
     collector.join("").trim_end().to_string()
   }
 
-  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     self.debug_print_leveled(heap, 0)
   }
@@ -602,13 +678,13 @@ impl Statement {
 pub(crate) struct Function {
   pub(crate) name: PStr,
   pub(crate) parameters: Vec<PStr>,
+  pub(crate) type_parameters: Vec<PStr>,
   pub(crate) type_: FunctionType,
   pub(crate) body: Vec<Statement>,
   pub(crate) return_value: Expression,
 }
 
 impl Function {
-  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     let typed_parameters = self
       .parameters
@@ -616,9 +692,15 @@ impl Function {
       .zip(&self.type_.argument_types)
       .map(|(n, t)| format!("{}: {}", n.as_str(heap), t.pretty_print(heap)))
       .join(", ");
+    let type_param_str = if self.type_parameters.is_empty() {
+      "".to_string()
+    } else {
+      format!("<{}>", self.type_parameters.iter().map(|it| it.as_str(heap)).join(", "))
+    };
     let header = format!(
-      "function {}({}): {} {{",
+      "function {}{}({}): {} {{",
       self.name.as_str(heap),
+      type_param_str,
       typed_parameters,
       self.type_.return_type.pretty_print(heap)
     );
@@ -633,6 +715,12 @@ impl Function {
   }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct GlobalVariable {
+  pub(crate) name: PStr,
+  pub(crate) content: PStr,
+}
+
 #[derive(Debug)]
 pub(crate) struct Sources {
   pub(crate) global_variables: Vec<GlobalVariable>,
@@ -643,7 +731,6 @@ pub(crate) struct Sources {
 }
 
 impl Sources {
-  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     for v in &self.global_variables {

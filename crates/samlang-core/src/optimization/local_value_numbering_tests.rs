@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
   use crate::{
+    ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
+      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },
     common::Heap,
@@ -17,18 +18,18 @@ mod tests {
     heap: &mut Heap,
     expected: &str,
   ) {
-    let Function { body, return_value, .. } = local_value_numbering::optimize_function(Function {
+    let mut f = Function {
       name: heap.alloc_str_for_test(""),
       parameters: vec![],
-      type_parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
       return_value,
-    });
+    };
+    local_value_numbering::optimize_function(&mut f);
     let actual = format!(
       "{}\nreturn {};",
-      body.iter().map(|s| s.debug_print(heap)).join("\n"),
-      return_value.debug_print(heap)
+      f.body.iter().map(|s| s.debug_print(heap)).join("\n"),
+      f.return_value.debug_print(heap)
     );
     assert_eq!(expected, actual);
   }
@@ -76,7 +77,7 @@ mod tests {
         },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("s"),
-          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("S")),
+          type_name: heap.alloc_str_for_test("S"),
           expression_list: vec![
             Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
@@ -85,7 +86,7 @@ mod tests {
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("s"),
-          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("S")),
+          closure_type_name: heap.alloc_str_for_test("S"),
           function_name: FunctionName::new(
             heap.alloc_str_for_test("a"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),

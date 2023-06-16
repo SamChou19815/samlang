@@ -1,7 +1,10 @@
 use super::optimization_common::LocalValueContextForOptimization;
-use crate::ast::mir::{
-  Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement,
-  Type, VariableName, INT_TYPE, ZERO,
+use crate::ast::{
+  hir::Operator,
+  mir::{
+    Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
+    VariableName, INT_TYPE, ZERO,
+  },
 };
 use crate::common::PStr;
 use crate::Heap;
@@ -77,9 +80,9 @@ mod estimator {
   #[cfg(test)]
   mod tests {
     use crate::{
+      ast::hir::Operator,
       ast::mir::{
-        Callee, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type, INT_TYPE,
-        ZERO,
+        Callee, Function, FunctionName, GenenalLoopVariable, Statement, Type, INT_TYPE, ZERO,
       },
       common::Heap,
     };
@@ -91,19 +94,18 @@ mod estimator {
       let actual = super::estimate_fn_inline_cost(&Function {
         name: s,
         parameters: vec![],
-        type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
           Statement::IndexedAccess { name: s, type_: INT_TYPE, pointer_expression: ZERO, index: 2 },
           Statement::binary(s, Operator::PLUS, ZERO, ZERO),
           Statement::StructInit {
             struct_variable_name: s,
-            type_: Type::new_id_no_targs_unwrapped(s),
+            type_name: s,
             expression_list: vec![ZERO, ZERO, ZERO],
           },
           Statement::ClosureInit {
             closure_variable_name: s,
-            closure_type: Type::new_id_no_targs_unwrapped(s),
+            closure_type_name: s,
             function_name: FunctionName::new(s, Type::new_fn_unwrapped(vec![], INT_TYPE)),
             context: ZERO,
           },
@@ -156,9 +158,9 @@ fn inline_rewrite_variable(
   cx: &mut LocalValueContextForOptimization,
 ) -> Expression {
   if let Some(binded) = cx.get(name) {
-    binded.clone()
+    *binded
   } else {
-    Expression::Variable(VariableName { name: *name, type_: type_.clone() })
+    Expression::Variable(VariableName { name: *name, type_: *type_ })
   }
 }
 
@@ -166,7 +168,7 @@ fn inline_rewrite_expr(expr: &Expression, cx: &mut LocalValueContextForOptimizat
   if let Expression::Variable(v) = expr {
     inline_rewrite_variable(v, cx)
   } else {
-    expr.clone()
+    *expr
   }
 }
 
@@ -192,7 +194,7 @@ fn bind_with_mangled_name(
   type_: &Type,
 ) -> PStr {
   let mangled_name = heap.alloc_string(format!("{}{}", prefix.as_str(heap), name.as_str(heap)));
-  cx.checked_bind(*name, Expression::var_name(mangled_name, type_.clone()));
+  cx.checked_bind(*name, Expression::var_name(mangled_name, *type_));
   mangled_name
 }
 
@@ -212,7 +214,7 @@ fn inline_rewrite_stmt(
     Statement::IndexedAccess { name, type_, pointer_expression, index } => {
       Statement::IndexedAccess {
         name: bind_with_mangled_name(cx, heap, prefix, name, type_),
-        type_: type_.clone(),
+        type_: *type_,
         pointer_expression: inline_rewrite_expr(pointer_expression, cx),
         index: *index,
       }
@@ -222,7 +224,7 @@ fn inline_rewrite_stmt(
       let arguments = inline_rewrite_expressions(arguments, cx);
       let return_collector =
         return_collector.as_ref().map(|c| bind_with_mangled_name(cx, heap, prefix, c, return_type));
-      Statement::Call { callee, arguments, return_type: return_type.clone(), return_collector }
+      Statement::Call { callee, arguments, return_type: *return_type, return_collector }
     }
     Statement::IfElse { condition, s1, s2, final_assignments } => {
       let condition = inline_rewrite_expr(condition, cx);
@@ -241,7 +243,7 @@ fn inline_rewrite_stmt(
         .zip(branch2_values)
         .zip(final_assignments)
         .map(|((e1, e2), (n, t, _, _))| {
-          (bind_with_mangled_name(cx, heap, prefix, n, t), t.clone(), e1, e2)
+          (bind_with_mangled_name(cx, heap, prefix, n, t), *t, e1, e2)
         })
         .collect_vec();
       Statement::IfElse { condition, s1, s2, final_assignments }
@@ -259,9 +261,9 @@ fn inline_rewrite_stmt(
         .iter()
         .map(|GenenalLoopVariable { name, type_, initial_value, loop_value }| GenenalLoopVariable {
           name: bind_with_mangled_name(cx, heap, prefix, name, type_),
-          type_: type_.clone(),
+          type_: *type_,
           initial_value: inline_rewrite_expr(initial_value, cx),
-          loop_value: loop_value.clone(),
+          loop_value: *loop_value,
         })
         .collect_vec();
       let statements = inline_rewrite_stmts(cx, heap, prefix, statements);
@@ -277,7 +279,7 @@ fn inline_rewrite_stmt(
       let break_collector = if let Some(VariableName { name, type_ }) = break_collector {
         Some(VariableName {
           name: bind_with_mangled_name(cx, heap, prefix, name, type_),
-          type_: type_.clone(),
+          type_: *type_,
         })
       } else {
         None
@@ -286,32 +288,32 @@ fn inline_rewrite_stmt(
     }
     Statement::Cast { name, type_, assigned_expression } => Statement::Cast {
       name: bind_with_mangled_name(cx, heap, prefix, name, type_),
-      type_: type_.clone(),
+      type_: *type_,
       assigned_expression: inline_rewrite_expr(assigned_expression, cx),
     },
-    Statement::StructInit { struct_variable_name, type_, expression_list } => {
+    Statement::StructInit { struct_variable_name, type_name, expression_list } => {
       Statement::StructInit {
         struct_variable_name: bind_with_mangled_name(
           cx,
           heap,
           prefix,
           struct_variable_name,
-          &Type::Id(type_.clone()),
+          &Type::Id(*type_name),
         ),
-        type_: type_.clone(),
+        type_name: *type_name,
         expression_list: inline_rewrite_expressions(expression_list, cx),
       }
     }
-    Statement::ClosureInit { closure_variable_name, closure_type, function_name, context } => {
+    Statement::ClosureInit { closure_variable_name, closure_type_name, function_name, context } => {
       Statement::ClosureInit {
         closure_variable_name: bind_with_mangled_name(
           cx,
           heap,
           prefix,
           closure_variable_name,
-          &Type::Id(closure_type.clone()),
+          &Type::Id(*closure_type_name),
         ),
-        closure_type: closure_type.clone(),
+        closure_type_name: *closure_type_name,
         function_name: function_name.clone(),
         context: inline_rewrite_expr(context, cx),
       }
@@ -336,7 +338,7 @@ fn perform_inline_rewrite_on_function_stmt(
 ) -> Vec<Statement> {
   match stmt {
     Statement::Call {
-      callee: Callee::FunctionName(FunctionName { name, type_: _, type_arguments: _ }),
+      callee: Callee::FunctionName(FunctionName { name, type_: _ }),
       arguments,
       return_type: _,
       return_collector,
@@ -351,7 +353,7 @@ fn perform_inline_rewrite_on_function_stmt(
       let mut cx = LocalValueContextForOptimization::new();
       // Inline step 1: Bind args to args temp
       for (param, arg) in parameters_of_function_to_be_inlined.iter().zip(arguments) {
-        cx.checked_bind(*param, arg.clone());
+        cx.checked_bind(*param, arg);
       }
       // Inline step 2: Add in body code and change return statements
       let mut rewritten_body = inline_rewrite_stmts(
@@ -452,10 +454,9 @@ fn perform_inline_rewrite_on_function(
   Function {
     name: function.name,
     parameters: function.parameters.clone(),
-    type_parameters: function.type_parameters.clone(),
     type_: function.type_.clone(),
     body,
-    return_value: function.return_value.clone(),
+    return_value: function.return_value,
   }
 }
 

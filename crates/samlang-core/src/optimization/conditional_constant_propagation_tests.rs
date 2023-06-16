@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
   use crate::{
+    ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Operator, Statement, Type,
+      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },
     common::Heap,
@@ -16,22 +17,18 @@ mod tests {
     heap: &mut Heap,
     expected: &str,
   ) {
-    let Function { body, return_value, .. } =
-      super::super::conditional_constant_propagation::optimize_function(
-        Function {
-          name: heap.alloc_str_for_test(""),
-          parameters: vec![],
-          type_parameters: vec![],
-          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-          body: stmts,
-          return_value,
-        },
-        heap,
-      );
+    let mut f = Function {
+      name: heap.alloc_str_for_test(""),
+      parameters: vec![],
+      type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+      body: stmts,
+      return_value,
+    };
+    super::super::conditional_constant_propagation::optimize_function(&mut f, heap);
     let actual = format!(
       "{}\nreturn {};",
-      body.iter().map(|it| it.debug_print(heap)).join("\n"),
-      return_value.debug_print(heap)
+      f.body.iter().map(|it| it.debug_print(heap)).join("\n"),
+      f.return_value.debug_print(heap)
     );
     assert_eq!(expected, actual);
   }
@@ -74,7 +71,7 @@ mod tests {
         ),
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("c_o"),
-          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Id")),
+          type_name: heap.alloc_str_for_test("Id"),
           expression_list: vec![
             Expression::var_name(heap.alloc_str_for_test("c0"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("c1"), INT_TYPE),
@@ -181,7 +178,7 @@ mod tests {
         ),
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("s"),
-          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Id")),
+          type_name: heap.alloc_str_for_test("Id"),
           expression_list: vec![
             Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("a6"), INT_TYPE),
@@ -190,7 +187,7 @@ mod tests {
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("s"),
-          closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Id")),
+          closure_type_name: heap.alloc_str_for_test("Id"),
           function_name: FunctionName::new(
             heap.alloc_str_for_test("closure"),
             Type::new_fn_unwrapped(vec![], INT_TYPE),
@@ -320,7 +317,7 @@ return (a17: int);"#,
       vec![
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("a"),
-          type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Id")),
+          type_name: heap.alloc_str_for_test("Id"),
           expression_list: vec![ZERO, ONE],
         },
         Statement::IndexedAccess {
@@ -328,7 +325,7 @@ return (a17: int);"#,
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("a"),
-            Type::new_id_no_targs(heap.alloc_str_for_test("Id")),
+            Type::Id(heap.alloc_str_for_test("Id")),
           ),
           index: 0,
         },
@@ -337,7 +334,7 @@ return (a17: int);"#,
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("a"),
-            Type::new_id_no_targs(heap.alloc_str_for_test("Id")),
+            Type::Id(heap.alloc_str_for_test("Id")),
           ),
           index: 1,
         },
@@ -641,7 +638,6 @@ return 0;"#,
   #[test]
   fn if_else_tests() {
     let heap = &mut Heap::new();
-
     assert_correctly_optimized(
       vec![
         Statement::binary(heap.alloc_str_for_test("b1"), Operator::LT, ZERO, ONE),
@@ -772,6 +768,7 @@ let r1 = (a22: int) == (a1: int);
 return 1;"#,
     );
 
+    let heap = &mut Heap::new();
     assert_correctly_optimized(
       vec![
         Statement::binary(
@@ -865,6 +862,20 @@ if (b: int) {
 return 6;"#,
     );
 
+    let heap = &mut Heap::new();
+    assert_correctly_optimized(
+      vec![Statement::IfElse {
+        condition: ZERO,
+        s1: vec![],
+        s2: vec![Statement::Break(ZERO)],
+        final_assignments: vec![],
+      }],
+      ZERO,
+      heap,
+      "undefined = 0;\nbreak;\nreturn 0;",
+    );
+
+    let heap = &mut Heap::new();
     assert_correctly_optimized(
       vec![Statement::SingleIf {
         condition: ZERO,
@@ -878,6 +889,7 @@ return 6;"#,
       heap,
       "\nreturn 0;",
     );
+    let heap = &mut Heap::new();
     assert_correctly_optimized(
       vec![Statement::SingleIf {
         condition: ZERO,
@@ -891,6 +903,7 @@ return 6;"#,
       heap,
       "undefined = (n: int);\nbreak;\nreturn 0;",
     );
+    let heap = &mut Heap::new();
     assert_correctly_optimized(
       vec![Statement::SingleIf {
         condition: Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),

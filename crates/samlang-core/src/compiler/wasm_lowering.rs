@@ -1,5 +1,5 @@
 use crate::{
-  ast::{common_names, lir, mir, wasm},
+  ast::{common_names, hir, lir, wasm},
   common::{Heap, PStr},
 };
 use itertools::Itertools;
@@ -110,7 +110,7 @@ impl<'a> LoweringManager<'a> {
             vec![wasm::Instruction::IfElse {
               condition: wasm::InlineInstruction::Binary(
                 Box::new(condition),
-                mir::Operator::XOR,
+                hir::Operator::XOR,
                 Box::new(wasm::InlineInstruction::Const(1)),
               ),
               s1: s2,
@@ -126,7 +126,7 @@ impl<'a> LoweringManager<'a> {
         if *invert_condition {
           condition = wasm::InlineInstruction::Binary(
             Box::new(condition),
-            mir::Operator::XOR,
+            hir::Operator::XOR,
             Box::new(wasm::InlineInstruction::Const(1)),
           );
         }
@@ -243,7 +243,7 @@ pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &lir::Sources) -> wa
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
   let mut global_variables = vec![];
-  for mir::GlobalVariable { name, content } in &sources.global_variables {
+  for hir::GlobalVariable { name, content } in &sources.global_variables {
     let content_str = content.as_str(heap);
     let mut bytes = vec![0, 0, 0, 0];
     bytes.extend_from_slice(&(content_str.len() as u32).to_le_bytes());
@@ -285,8 +285,8 @@ pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &lir::Sources) -> wa
 mod tests {
   use crate::{
     ast::{
+      hir::{GlobalVariable, Operator},
       lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
-      mir::{GlobalVariable, Operator},
     },
     common::Heap,
   };

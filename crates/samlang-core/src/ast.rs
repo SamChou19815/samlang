@@ -5,6 +5,8 @@ pub use loc::{Location, Position};
 mod reason;
 pub(crate) use reason::Reason;
 
+pub(crate) mod hir;
+mod hir_tests;
 pub(crate) mod lir;
 mod lir_tests;
 pub(crate) mod mir;

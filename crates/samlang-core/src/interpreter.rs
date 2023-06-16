@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::{ast, checker, common};
 
-mod mir_interpreter;
+mod lir_interpreter;
 mod source_interpreter;
 
 pub(super) fn run_source_module(
@@ -12,10 +12,10 @@ pub(super) fn run_source_module(
   source_interpreter::run(heap, module)
 }
 
-pub(super) fn run_mir_sources(
+pub(super) fn run_lir_sources(
   heap: &mut common::Heap,
   sources: &ast::lir::Sources,
   main_function: common::PStr,
 ) -> String {
-  mir_interpreter::run(heap, sources, main_function)
+  lir_interpreter::run(heap, sources, main_function)
 }
