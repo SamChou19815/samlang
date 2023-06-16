@@ -156,25 +156,25 @@ pub(crate) enum Operator {
   NE,
 }
 
-impl ToString for Operator {
-  fn to_string(&self) -> String {
+impl Operator {
+  pub(crate) fn as_str(&self) -> &'static str {
     match self {
-      Operator::MUL => "*".to_string(),
-      Operator::DIV => "/".to_string(),
-      Operator::MOD => "%".to_string(),
-      Operator::PLUS => "+".to_string(),
-      Operator::MINUS => "-".to_string(),
-      Operator::LAND => "&".to_string(),
-      Operator::LOR => "|".to_string(),
-      Operator::SHL => "<<".to_string(),
-      Operator::SHR => ">>>".to_string(),
-      Operator::XOR => "^".to_string(),
-      Operator::LT => "<".to_string(),
-      Operator::LE => "<=".to_string(),
-      Operator::GT => ">".to_string(),
-      Operator::GE => ">=".to_string(),
-      Operator::EQ => "==".to_string(),
-      Operator::NE => "!=".to_string(),
+      Operator::MUL => "*",
+      Operator::DIV => "/",
+      Operator::MOD => "%",
+      Operator::PLUS => "+",
+      Operator::MINUS => "-",
+      Operator::LAND => "&",
+      Operator::LOR => "|",
+      Operator::SHL => "<<",
+      Operator::SHR => ">>>",
+      Operator::XOR => "^",
+      Operator::LT => "<",
+      Operator::LE => "<=",
+      Operator::GT => ">",
+      Operator::GE => ">=",
+      Operator::EQ => "==",
+      Operator::NE => "!=",
     }
   }
 }
@@ -502,7 +502,7 @@ impl Statement {
           "  ".repeat(level),
           s.name.as_str(heap),
           e1,
-          s.operator.to_string(),
+          s.operator.as_str(),
           e2
         ));
       }
