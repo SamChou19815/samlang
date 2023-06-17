@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
   ast::Location,
   common::{Heap, ModuleReference, PStr},
@@ -14,11 +16,11 @@ pub(crate) enum ErrorDetail {
   IncompatibleType { expected: String, actual: String, subtype: bool },
   InvalidArity { kind: &'static str, expected: usize, actual: usize },
   InvalidSyntax(String),
-  MemberMissing { parent: String, member: String },
-  MissingDefinitions { missing_definitions: Vec<String> },
+  MemberMissing { parent: String, member: PStr },
+  MissingDefinitions { missing_definitions: Vec<PStr> },
   MissingExport { module_reference: ModuleReference, name: PStr },
   NameAlreadyBound { name: PStr, old_loc: Location },
-  NonExhausiveMatch { missing_tags: Vec<String> },
+  NonExhausiveMatch { missing_tags: Vec<PStr> },
   TypeParameterNameMismatch { expected: String },
   Underconstrained,
 }
@@ -64,11 +66,14 @@ impl CompileTimeError {
       }
       ErrorDetail::InvalidSyntax(reason) => ("invalid-syntax", reason.to_string()),
       ErrorDetail::MemberMissing { parent, member } => {
-        ("member-missing", format!("Cannot find member `{member}` on `{parent}`."))
+        ("member-missing", format!("Cannot find member `{}` on `{}`.", member.as_str(heap), parent))
       }
       ErrorDetail::MissingDefinitions { missing_definitions } => (
         "missing-definitions",
-        format!("Missing definitions for [{}].", missing_definitions.join(", ")),
+        format!(
+          "Missing definitions for [{}].",
+          missing_definitions.iter().map(|p| p.as_str(heap).to_string()).sorted().join(", ")
+        ),
       ),
       ErrorDetail::MissingExport { module_reference, name } => (
         "missing-export",
@@ -90,7 +95,7 @@ impl CompileTimeError {
         "non-exhaustive-match",
         format!(
           "The following tags are not considered in the match: [{}].",
-          missing_tags.join(", ")
+          missing_tags.iter().map(|p| p.as_str(heap).to_string()).sorted().join(", ")
         ),
       ),
       ErrorDetail::TypeParameterNameMismatch { expected } => (
@@ -204,7 +209,7 @@ impl ErrorSet {
     &mut self,
     loc: Location,
     parent: String,
-    member: String,
+    member: PStr,
   ) {
     self.report_error(loc, ErrorDetail::MemberMissing { parent, member })
   }
@@ -212,7 +217,7 @@ impl ErrorSet {
   pub(crate) fn report_missing_definition_error(
     &mut self,
     loc: Location,
-    missing_definitions: Vec<String>,
+    missing_definitions: Vec<PStr>,
   ) {
     self.report_error(loc, ErrorDetail::MissingDefinitions { missing_definitions })
   }
@@ -238,7 +243,7 @@ impl ErrorSet {
   pub(crate) fn report_non_exhausive_match_error(
     &mut self,
     loc: Location,
-    missing_tags: Vec<String>,
+    missing_tags: Vec<PStr>,
   ) {
     self.report_error(loc, ErrorDetail::NonExhausiveMatch { missing_tags })
   }
@@ -256,7 +261,7 @@ mod tests {
   use super::*;
   use crate::{
     checker::type_::{test_type_builder, ISourceType},
-    common::Heap,
+    common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
 
@@ -311,10 +316,14 @@ mod tests {
       builder.bool_type().pretty_print(&heap),
     );
     error_set.report_invalid_syntax_error(Location::dummy(), "bad code".to_string());
-    error_set.report_member_missing_error(Location::dummy(), "Foo".to_string(), "bar".to_string());
+    error_set.report_member_missing_error(
+      Location::dummy(),
+      "Foo".to_string(),
+      heap.alloc_str_for_test("bar"),
+    );
     error_set.report_missing_definition_error(
       Location::dummy(),
-      vec!["foo".to_string(), "bar".to_string()],
+      vec![heap.alloc_str_for_test("foo"), heap.alloc_str_for_test("bar")],
     );
     error_set.report_missing_export_error(
       Location::dummy(),
@@ -326,8 +335,10 @@ mod tests {
       heap.alloc_str_for_test("a"),
       Location::dummy(),
     );
-    error_set
-      .report_non_exhausive_match_error(Location::dummy(), vec!["A".to_string(), "B".to_string()]);
+    error_set.report_non_exhausive_match_error(
+      Location::dummy(),
+      vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
+    );
     error_set.report_type_parameter_mismatch_error(Location::dummy(), "".to_string());
     error_set.report_underconstrained_error(Location::dummy());
 
@@ -350,7 +361,7 @@ mod tests {
       "[invalid-arity]: Incorrect pair size. Expected: 1, actual: 2.",
       "[invalid-syntax]: bad code",
       "[member-missing]: Cannot find member `bar` on `Foo`.",
-      "[missing-definitions]: Missing definitions for [foo, bar].",
+      "[missing-definitions]: Missing definitions for [bar, foo].",
       "[missing-export]: There is no `bar` export in `DUMMY`.",
       "[name-already-bound]: Name `a` collides with a previously defined name at DUMMY.sam:0:0-0:0.",
       "[non-exhaustive-match]: The following tags are not considered in the match: [A, B].",
