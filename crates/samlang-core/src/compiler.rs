@@ -1,10 +1,10 @@
-mod hir_generics_specialization;
 mod hir_lowering;
 mod hir_string_manager;
 mod hir_type_conversion;
 mod lir_lowering;
 mod lir_unused_name_elimination;
 mod mir_constant_param_elimination;
+mod mir_generics_specialization;
 mod mir_tail_recursion_rewrite;
 mod mir_type_deduplication;
 mod wasm_lowering;

@@ -1,11 +1,11 @@
 use super::{
-  hir_generics_specialization,
   hir_string_manager::StringManager,
   hir_type_conversion::{
     collect_used_generic_types, type_application, SynthesizedTypes, TypeLoweringManager,
     TypeSynthesizer,
   },
-  mir_constant_param_elimination, mir_tail_recursion_rewrite, mir_type_deduplication,
+  mir_constant_param_elimination, mir_generics_specialization, mir_tail_recursion_rewrite,
+  mir_type_deduplication,
 };
 use crate::{
   ast::{
@@ -1265,7 +1265,7 @@ pub(crate) fn compile_sources_to_mir(
   sources: &HashMap<ModuleReference, source::Module<Rc<type_::Type>>>,
 ) -> mir::Sources {
   let sources = compile_sources_with_generics_preserved(heap, sources);
-  let mut sources = hir_generics_specialization::perform_generics_specialization(heap, sources);
+  let mut sources = mir_generics_specialization::perform_generics_specialization(heap, sources);
   sources = mir_type_deduplication::deduplicate(heap, sources);
   sources = mir_constant_param_elimination::rewrite_sources(sources);
   sources = optimize_by_tail_rec_rewrite(heap, sources);
