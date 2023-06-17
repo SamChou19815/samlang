@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
   use super::super::hir::*;
-  use crate::Heap;
+  use crate::{common::well_known_pstrs, Heap};
   use pretty_assertions::assert_eq;
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
@@ -79,23 +79,42 @@ mod tests {
 
     assert!(
       Expression::var_name(
-        heap.alloc_str_for_test("a"),
+        well_known_pstrs::LOWER_A,
         Type::new_id(
-          heap.alloc_str_for_test("A"),
-          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+          well_known_pstrs::UPPER_A,
+          vec![INT_TYPE, Type::new_id_no_targs(well_known_pstrs::UPPER_B)]
         )
       ) == Expression::var_name(
-        heap.alloc_str_for_test("a"),
+        well_known_pstrs::LOWER_A,
         Type::new_id(
-          heap.alloc_str_for_test("A"),
-          vec![INT_TYPE, Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+          well_known_pstrs::UPPER_A,
+          vec![INT_TYPE, Type::new_id_no_targs(well_known_pstrs::UPPER_B)]
         )
       )
     );
+    assert!(Type::new_id_no_targs_unwrapped(well_known_pstrs::UPPER_B)
+      .cmp(&Type::new_id_no_targs_unwrapped(well_known_pstrs::UPPER_B))
+      .is_eq());
+    assert!(
+      Type::new_id_no_targs_unwrapped(well_known_pstrs::UPPER_B)
+        <= Type::new_id_no_targs_unwrapped(well_known_pstrs::UPPER_B)
+    );
+    assert!(Type::new_id_no_targs(well_known_pstrs::UPPER_B)
+      .cmp(&Type::new_id_no_targs(well_known_pstrs::UPPER_B))
+      .is_eq());
     assert!(
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
         == FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
     );
+    assert!(
+      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+        <= FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+    );
+    assert!(FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
+      .cmp(&FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) })
+      .is_eq());
+    assert!(INT_TYPE <= INT_TYPE);
+    assert!(INT_TYPE.cmp(&INT_TYPE).eq(&std::cmp::Ordering::Equal));
     assert!(Expression::var_name(
       heap.alloc_str_for_test("a"),
       Type::new_id(
@@ -138,9 +157,6 @@ mod tests {
     assert_eq!("int", INT_TYPE.pretty_print(heap));
     assert_eq!("_Str", STRING_TYPE.pretty_print(heap));
     assert_eq!("0", ZERO.clone().debug_print(heap));
-    ZERO.dump_to_string();
-    Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE).dump_to_string();
-    Expression::StringName(heap.alloc_str_for_test("a")).dump_to_string();
     assert_eq!(
       "(a: int)",
       Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE).debug_print(heap)

@@ -6,13 +6,14 @@ use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
 use std::{cmp::Ordering, hash::Hash};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct IdType {
   pub(crate) name: PStr,
   pub(crate) type_arguments: Vec<Type>,
 }
 
 impl IdType {
+  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     if self.type_arguments.is_empty() {
       self.name.as_str(heap).to_string()
@@ -26,13 +27,14 @@ impl IdType {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct FunctionType {
   pub(crate) argument_types: Vec<Type>,
   pub(crate) return_type: Box<Type>,
 }
 
 impl FunctionType {
+  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     format!(
       "({}) -> {}",
@@ -42,7 +44,7 @@ impl FunctionType {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, EnumAsInner)]
 pub(crate) enum Type {
   Int,
   Id(IdType),
@@ -69,6 +71,7 @@ impl Type {
     Type::Id(IdType { name, type_arguments: vec![] })
   }
 
+  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
       Type::Int => "int".to_string(),
@@ -97,6 +100,7 @@ fn name_with_tparams(heap: &Heap, identifier: PStr, tparams: &Vec<PStr>) -> Stri
 }
 
 impl ClosureTypeDefinition {
+  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     format!(
       "closure type {} = {}",
@@ -121,6 +125,7 @@ pub(crate) struct TypeDefinition {
 }
 
 impl TypeDefinition {
+  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     let id_part = name_with_tparams(heap, self.identifier, &self.type_parameters);
     match &self.mappings {
@@ -190,6 +195,7 @@ impl VariableName {
     VariableName { name, type_ }
   }
 
+  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     format!("({}: {})", self.name.as_str(heap), self.type_.pretty_print(heap))
   }
@@ -207,6 +213,7 @@ impl FunctionName {
     FunctionName { name, type_, type_arguments: vec![] }
   }
 
+  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     if self.type_arguments.is_empty() {
       self.name.as_str(heap).to_string()
@@ -278,19 +285,12 @@ impl Expression {
     }
   }
 
+  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
       Expression::StringName(n) => n.as_str(heap).to_string(),
       Expression::Variable(v) => v.debug_print(heap),
-    }
-  }
-
-  pub(crate) fn dump_to_string(&self) -> String {
-    match self {
-      Expression::IntLiteral(i) => i.to_string(),
-      Expression::StringName(n) => n.debug_string(),
-      Expression::Variable(v) => v.name.debug_string(),
     }
   }
 
@@ -320,6 +320,7 @@ pub(crate) enum Callee {
 }
 
 impl Callee {
+  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     match self {
       Callee::FunctionName(f) => f.debug_print(heap),
@@ -337,6 +338,7 @@ pub(crate) struct GenenalLoopVariable {
 }
 
 impl GenenalLoopVariable {
+  #[cfg(test)]
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     format!(
       "{{name: {}, initial_value: {}, loop_value: {}}}",
@@ -486,6 +488,7 @@ impl Statement {
     }
   }
 
+  #[cfg(test)]
   fn debug_print_internal(
     &self,
     heap: &Heap,
@@ -663,12 +666,14 @@ impl Statement {
     }
   }
 
+  #[cfg(test)]
   fn debug_print_leveled(&self, heap: &Heap, level: usize) -> String {
     let mut collector = vec![];
     self.debug_print_internal(heap, level, &None, &mut collector);
     collector.join("").trim_end().to_string()
   }
 
+  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     self.debug_print_leveled(heap, 0)
   }
@@ -685,6 +690,7 @@ pub(crate) struct Function {
 }
 
 impl Function {
+  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     let typed_parameters = self
       .parameters
@@ -731,6 +737,7 @@ pub(crate) struct Sources {
 }
 
 impl Sources {
+  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     for v in &self.global_variables {
