@@ -3,7 +3,7 @@ use crate::{
   common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
-use enum_iterator::{all, Sequence};
+use phf::phf_map;
 
 struct EOF();
 
@@ -244,7 +244,7 @@ mod char_stream {
   }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Sequence)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub(super) enum Keyword {
   // Imports
   IMPORT,
@@ -292,7 +292,7 @@ pub(super) enum Keyword {
 }
 
 impl Keyword {
-  pub(super) fn as_str(&self) -> &'static str {
+  pub(super) const fn as_str(&self) -> &'static str {
     match self {
       Keyword::IMPORT => "import",
       Keyword::FROM => "from",
@@ -334,7 +334,46 @@ impl Keyword {
   }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Sequence)]
+static KEYWORDS: phf::Map<&'static str, Keyword> = phf_map! {
+  "import" => Keyword::IMPORT,
+  "from" => Keyword::FROM,
+  "class" => Keyword::CLASS,
+  "interface" => Keyword::INTERFACE,
+  "val" => Keyword::VAL,
+  "function" => Keyword::FUNCTION,
+  "method" => Keyword::METHOD,
+  "as" => Keyword::AS,
+  "private" => Keyword::PRIVATE,
+  "protected" => Keyword::PROTECTED,
+  "internal" => Keyword::INTERNAL,
+  "public" => Keyword::PUBLIC,
+  "if" => Keyword::IF,
+  "then" => Keyword::THEN,
+  "else" => Keyword::ELSE,
+  "match" => Keyword::MATCH,
+  "return" => Keyword::RETURN,
+  "int" => Keyword::INT,
+  "string" => Keyword::STRING,
+  "bool" => Keyword::BOOL,
+  "unit" => Keyword::UNIT,
+  "true" => Keyword::TRUE,
+  "false" => Keyword::FALSE,
+  "this" => Keyword::THIS,
+  "self" => Keyword::SELF,
+  "const" => Keyword::CONST,
+  "let" => Keyword::LET,
+  "var" => Keyword::VAR,
+  "type" => Keyword::TYPE,
+  "constructor" => Keyword::CONSTRUCTOR,
+  "destructor" => Keyword::DESTRUCTOR,
+  "functor" => Keyword::FUNCTOR,
+  "extends" => Keyword::EXTENDS,
+  "implements" => Keyword::IMPLEMENTS,
+  "exports" => Keyword::EXPORTS,
+  "assert" => Keyword::ASSERT,
+};
+
+#[derive(Copy, Clone, PartialEq, Eq, enum_iterator::Sequence)]
 pub(super) enum TokenOp {
   UNDERSCORE,
   // Parentheses
@@ -510,8 +549,8 @@ fn get_next_token(
       }
 
       if let Option::Some((loc, s)) = stream.consume_opt_id() {
-        if let Option::Some(k) = all::<Keyword>().find(|k| k.as_str().eq(&s)) {
-          return Option::Some(Token(loc, TokenContent::Keyword(k)));
+        if let Option::Some(k) = KEYWORDS.get(s.as_str()) {
+          return Option::Some(Token(loc, TokenContent::Keyword(*k)));
         }
         let content = if s.chars().next().unwrap().is_ascii_uppercase() {
           TokenContent::UpperId(heap.alloc_string(s))
@@ -543,7 +582,7 @@ pub(super) fn lex_source_program(
 ) -> Vec<Token> {
   let mut stream = char_stream::CharacterStream::new(module_reference, source);
   let mut tokens = vec![];
-  let mut known_sorted_operators = all::<TokenOp>().collect::<Vec<_>>();
+  let mut known_sorted_operators = enum_iterator::all::<TokenOp>().collect::<Vec<_>>();
   known_sorted_operators.sort_by_key(|op| -(op.as_str().len() as i64));
 
   loop {
@@ -580,5 +619,15 @@ pub(super) fn lex_source_program(
         tokens.push(t);
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use itertools::Itertools;
+
+  #[test]
+  fn boilterplate() {
+    assert!(!super::KEYWORDS.values().map(|it| it.as_str()).join("\n").is_empty());
   }
 }
