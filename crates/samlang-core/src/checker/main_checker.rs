@@ -666,7 +666,7 @@ fn check_member_with_unresolved_tparams(
       cx.error_set.report_member_missing_error(
         expression.field_name.loc,
         class_id.as_str(heap).to_string(),
-        expression.field_name.name.as_str(heap).to_string(),
+        expression.field_name.name,
       );
       let unknown_type = Rc::new(type_meet(
         cx,
@@ -1084,7 +1084,7 @@ fn check_match(
         cx.error_set.report_member_missing_error(
           tag.loc,
           checked_matched_type.pretty_print(heap),
-          tag.name.as_str(heap).to_string(),
+          tag.name,
         );
         continue;
       }
@@ -1121,9 +1121,10 @@ fn check_match(
     });
   }
   if !unused_mappings.is_empty() {
-    let missing_tags =
-      unused_mappings.keys().map(|k| k.as_str(heap).to_string()).sorted().collect_vec();
-    cx.error_set.report_non_exhausive_match_error(expression.common.loc, missing_tags);
+    cx.error_set.report_non_exhausive_match_error(
+      expression.common.loc,
+      unused_mappings.keys().copied().collect(),
+    );
   }
   let final_type = matching_list_types.iter().fold(
     Rc::new(type_meet(
@@ -1288,7 +1289,7 @@ fn check_statement(
         cx.error_set.report_member_missing_error(
           field_name.loc,
           checked_assigned_expr_type.pretty_print(heap),
-          field_name.name.as_str(heap).to_string(),
+          field_name.name,
         );
         checked_destructured_names.push(ObjectPatternDestucturedName {
           loc: *loc,
@@ -1577,7 +1578,7 @@ pub(crate) fn type_check_module(
         if !missing_function_members.is_empty() {
           error_set.report_missing_definition_error(
             toplevel.loc(),
-            missing_function_members.iter().sorted().map(|p| p.as_str(heap).to_string()).collect(),
+            missing_function_members.iter().copied().collect(),
           );
         }
         local_cx.write(c.loc, Rc::new(Type::Nominal(nominal_type)));
