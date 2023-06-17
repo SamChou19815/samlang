@@ -288,15 +288,13 @@ mod tests {
       hir::{GlobalVariable, Operator},
       lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
     },
-    common::Heap,
+    common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {
-    let heap = &mut Heap::new();
-
-    assert!(super::LoopContext { break_collector: None, exit_label: heap.alloc_str_for_test("") }
+    assert!(super::LoopContext { break_collector: None, exit_label: well_known_pstrs::LOWER_A }
       .clone()
       .break_collector
       .is_none());
@@ -329,7 +327,7 @@ mod tests {
             condition: ZERO,
             s1: vec![],
             s2: vec![Statement::Cast {
-              name: heap.alloc_str_for_test("c"),
+              name: well_known_pstrs::LOWER_C,
               type_: INT_TYPE,
               assigned_expression: ZERO,
             }],
@@ -339,13 +337,13 @@ mod tests {
             condition: ZERO,
             s1: vec![Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: heap.alloc_str_for_test("i"),
+                name: well_known_pstrs::LOWER_I,
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![Statement::Cast {
-                name: heap.alloc_str_for_test("c"),
+                name: well_known_pstrs::LOWER_C,
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               }],
@@ -359,7 +357,7 @@ mod tests {
                   invert_condition: false,
                   statements: vec![Statement::Break(ZERO)],
                 }],
-                break_collector: Some((heap.alloc_str_for_test("b"), INT_TYPE)),
+                break_collector: Some((well_known_pstrs::LOWER_B, INT_TYPE)),
               },
               Statement::While {
                 loop_variables: vec![],
@@ -372,7 +370,7 @@ mod tests {
               },
             ],
             final_assignments: vec![(
-              heap.alloc_str_for_test("f"),
+              well_known_pstrs::LOWER_F,
               INT_TYPE,
               Expression::Name(heap.alloc_str_for_test("FOO"), INT_TYPE),
               Expression::Name(heap.alloc_str_for_test("main"), Type::new_fn(vec![], INT_TYPE)),
@@ -381,7 +379,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("bin"),
             Operator::PLUS,
-            Expression::Variable(heap.alloc_str_for_test("f"), INT_TYPE),
+            Expression::Variable(well_known_pstrs::LOWER_F, INT_TYPE),
             ZERO,
           ),
           Statement::Call {
@@ -394,7 +392,7 @@ mod tests {
             return_collector: None,
           },
           Statement::Call {
-            callee: Expression::Variable(heap.alloc_str_for_test("f"), INT_TYPE),
+            callee: Expression::Variable(well_known_pstrs::LOWER_F, INT_TYPE),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
             return_collector: Some(heap.alloc_str_for_test("rc")),

@@ -6,39 +6,38 @@ mod tests {
       common_names,
       hir::{GlobalVariable, Operator},
     },
+    common::well_known_pstrs,
     Heap,
   };
   use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {
-    let heap = &mut Heap::new();
-
     assert!(PrimitiveType::Int.eq(&PrimitiveType::Int));
     assert!(STRING_TYPE.as_fn().is_none());
     assert!(ZERO.as_name().is_none());
 
     assert!(!format!(
       "{:?}",
-      Expression::Variable(heap.alloc_str_for_test("a"), Type::Id(heap.alloc_str_for_test("A")))
-        .clone()
+      Expression::Variable(well_known_pstrs::LOWER_A, Type::Id(well_known_pstrs::UPPER_A)).clone()
     )
     .is_empty());
-    assert!(!format!("{:?}", Expression::Name(heap.alloc_str_for_test("a"), STRING_TYPE).clone())
-      .is_empty());
+    assert!(
+      !format!("{:?}", Expression::Name(well_known_pstrs::LOWER_A, STRING_TYPE).clone()).is_empty()
+    );
     assert!(!format!("{:?}", Type::new_fn(vec![(INT_TYPE)], INT_TYPE).clone()).is_empty());
   }
 
   #[test]
   fn type_eq_test() {
-    let heap = &mut Heap::new();
-
-    assert!(INT_TYPE
-      .is_the_same_type(Expression::Variable(heap.alloc_str_for_test("a"), INT_TYPE).type_()));
+    assert!(
+      INT_TYPE.is_the_same_type(Expression::Variable(well_known_pstrs::LOWER_A, INT_TYPE).type_())
+    );
     assert!(STRING_TYPE.is_the_same_type(Expression::IntLiteral(1, STRING_TYPE).type_()));
-    assert!(!Type::Id(heap.alloc_str_for_test("a"))
-      .is_the_same_type(&Type::Id(heap.alloc_str_for_test("b"))));
-    assert!(!Type::Id(heap.alloc_str_for_test("a")).is_the_same_type(&INT_TYPE));
+    assert!(
+      !Type::Id(well_known_pstrs::LOWER_A).is_the_same_type(&Type::Id(well_known_pstrs::LOWER_B))
+    );
+    assert!(!Type::Id(well_known_pstrs::LOWER_A).is_the_same_type(&INT_TYPE));
     assert!(Type::new_fn(vec![(INT_TYPE)], INT_TYPE)
       .is_the_same_type(&Type::new_fn(vec![(INT_TYPE)], INT_TYPE)));
   }
@@ -53,9 +52,9 @@ mod tests {
     assert_eq!("0", ZERO.clone().pretty_print(heap));
     assert_eq!(
       "a",
-      Expression::Variable(heap.alloc_str_for_test("a"), STRING_TYPE).pretty_print(heap)
+      Expression::Variable(well_known_pstrs::LOWER_A, STRING_TYPE).pretty_print(heap)
     );
-    assert_eq!("a", Expression::Name(heap.alloc_str_for_test("a"), STRING_TYPE).pretty_print(heap));
+    assert_eq!("a", Expression::Name(well_known_pstrs::LOWER_A, STRING_TYPE).pretty_print(heap));
     assert_eq!(
       "(t0: number) => number",
       Type::new_fn(vec![(INT_TYPE)], INT_TYPE).pretty_print(heap)
@@ -131,18 +130,18 @@ mod tests {
             heap.alloc_str_for_test("stresso"),
             Type::new_fn(vec![], INT_TYPE),
           ),
-          arguments: vec![Expression::Variable(heap.alloc_str_for_test("d"), INT_TYPE)],
+          arguments: vec![Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::Call {
-          callee: Expression::Variable(heap.alloc_str_for_test("d"), INT_TYPE),
-          arguments: vec![Expression::Variable(heap.alloc_str_for_test("d"), INT_TYPE)],
+          callee: Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE),
+          arguments: vec![Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::IndexedAccess {
-          name: heap.alloc_str_for_test("f"),
+          name: well_known_pstrs::LOWER_F,
           type_: INT_TYPE,
           pointer_expression: Expression::Variable(
             heap.alloc_str_for_test("big"),
@@ -152,7 +151,7 @@ mod tests {
         },
         Statement::IndexedAssign { assigned_expression: ZERO, pointer_expression: ZERO, index: 0 },
         Statement::Cast {
-          name: heap.alloc_str_for_test("c"),
+          name: well_known_pstrs::LOWER_C,
           type_: INT_TYPE,
           assigned_expression: ZERO,
         },
@@ -166,7 +165,7 @@ mod tests {
       )],
     };
     let f = Function {
-      name: heap.alloc_str_for_test("f"),
+      name: well_known_pstrs::LOWER_F,
       parameters: vec![heap.alloc_str_for_test("v1")],
       type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
       body: vec![stmt],
@@ -241,10 +240,10 @@ mod tests {
       main_function_names: vec![],
       functions: vec![Function {
         name: heap.alloc_str_for_test("Bar"),
-        parameters: vec![heap.alloc_str_for_test("f")],
+        parameters: vec![well_known_pstrs::LOWER_F],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IndexedAccess {
-          name: heap.alloc_str_for_test("f"),
+          name: well_known_pstrs::LOWER_F,
           type_: INT_TYPE,
           pointer_expression: Expression::Variable(
             heap.alloc_str_for_test("big"),

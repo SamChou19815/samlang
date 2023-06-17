@@ -64,13 +64,13 @@ impl Rewriter {
     generics_replacement_map: &HashMap<PStr, mir::Type>,
   ) -> mir::Statement {
     match stmt {
-      hir::Statement::Binary(hir::Binary { name, operator, e1, e2 }) => {
-        mir::Statement::Binary(mir::Binary {
-          name: *name,
-          operator: *operator,
-          e1: self.rewrite_expr(heap, e1, generics_replacement_map),
-          e2: self.rewrite_expr(heap, e2, generics_replacement_map),
-        })
+      hir::Statement::Binary { name, operator, e1, e2 } => {
+        mir::Statement::Binary(mir::Statement::binary_unwrapped(
+          *name,
+          *operator,
+          self.rewrite_expr(heap, e1, generics_replacement_map),
+          self.rewrite_expr(heap, e2, generics_replacement_map),
+        ))
       }
       hir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
         mir::Statement::IndexedAccess {
@@ -535,7 +535,7 @@ sources.mains = [main]
       hir::Sources {
         global_variables: vec![GlobalVariable {
           name: heap.alloc_str_for_test("G1"),
-          content: heap.alloc_str_for_test(""),
+          content: well_known_pstrs::LOWER_A,
         }],
         closure_types: vec![],
         type_definitions: vec![hir::TypeDefinition {
@@ -563,7 +563,7 @@ sources.mains = [main]
         }],
       },
       heap,
-      r#"const G1 = '';
+      r#"const G1 = 'a';
 
 variant type _Str
 function main(): int {
@@ -669,8 +669,8 @@ sources.mains = [main]
   fn comprehensive_test() {
     let heap = &mut Heap::new();
 
-    let type_a = hir::Type::new_id_no_targs(heap.alloc_str_for_test("A"));
-    let type_b = hir::Type::new_id_no_targs(heap.alloc_str_for_test("B"));
+    let type_a = hir::Type::new_id_no_targs(well_known_pstrs::UPPER_A);
+    let type_b = hir::Type::new_id_no_targs(well_known_pstrs::UPPER_B);
     let type_j = hir::Type::new_id_no_targs(heap.alloc_str_for_test("J"));
     let type_ia =
       hir::Type::new_id(heap.alloc_str_for_test("I"), vec![type_a.clone(), hir::STRING_TYPE]);
@@ -684,22 +684,22 @@ sources.mains = [main]
         global_variables: vec![
           GlobalVariable {
             name: heap.alloc_str_for_test("G1"),
-            content: heap.alloc_str_for_test(""),
+            content: well_known_pstrs::LOWER_A,
           },
           GlobalVariable {
             name: heap.alloc_str_for_test("G2"),
-            content: heap.alloc_str_for_test(""),
+            content: well_known_pstrs::LOWER_A,
           },
         ],
         closure_types: vec![hir::ClosureTypeDefinition {
           identifier: heap.alloc_str_for_test("CC"),
-          type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
+          type_parameters: vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
           function_type: hir::Type::new_fn_unwrapped(vec![type_a.clone()], type_b.clone()),
         }],
         type_definitions: vec![
           hir::TypeDefinition {
             identifier: heap.alloc_str_for_test("I"),
-            type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
+            type_parameters: vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
             names: vec![],
             mappings: hir::TypeDefinitionMappings::Enum,
           },
@@ -720,8 +720,8 @@ sources.mains = [main]
         functions: vec![
           hir::Function {
             name: heap.alloc_str_for_test("functor_fun"),
-            parameters: vec![heap.alloc_str_for_test("a")],
-            type_parameters: vec![heap.alloc_str_for_test("A")],
+            parameters: vec![well_known_pstrs::LOWER_A],
+            type_parameters: vec![well_known_pstrs::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(vec![type_a.clone()], hir::INT_TYPE),
             body: vec![hir::Statement::Call {
               callee: hir::Callee::FunctionName(hir::FunctionName::new(
@@ -736,46 +736,46 @@ sources.mains = [main]
           },
           hir::Function {
             name: heap.alloc_str_for_test("_I$bar"),
-            parameters: vec![heap.alloc_str_for_test("a")],
-            type_parameters: vec![heap.alloc_str_for_test("A")],
+            parameters: vec![well_known_pstrs::LOWER_A],
+            type_parameters: vec![well_known_pstrs::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
             body: vec![],
             return_value: hir::ZERO,
           },
           hir::Function {
             name: heap.alloc_str_for_test("_J$bar"),
-            parameters: vec![heap.alloc_str_for_test("a")],
-            type_parameters: vec![heap.alloc_str_for_test("A")],
+            parameters: vec![well_known_pstrs::LOWER_A],
+            type_parameters: vec![well_known_pstrs::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
             body: vec![],
             return_value: hir::ZERO,
           },
           hir::Function {
             name: heap.alloc_str_for_test("creatorIA"),
-            parameters: vec![heap.alloc_str_for_test("a")],
-            type_parameters: vec![heap.alloc_str_for_test("A")],
+            parameters: vec![well_known_pstrs::LOWER_A],
+            type_parameters: vec![well_known_pstrs::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(vec![type_a.clone()], type_ia.clone()),
             body: vec![hir::Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("v"),
               type_: type_ia.clone().into_id().unwrap(),
               expression_list: vec![
                 hir::Expression::int(0),
-                hir::Expression::var_name(heap.alloc_str_for_test("a"), type_a),
+                hir::Expression::var_name(well_known_pstrs::LOWER_A, type_a),
               ],
             }],
             return_value: hir::Expression::var_name(heap.alloc_str_for_test("v"), type_ia),
           },
           hir::Function {
             name: heap.alloc_str_for_test("creatorIB"),
-            parameters: vec![heap.alloc_str_for_test("b")],
-            type_parameters: vec![heap.alloc_str_for_test("B")],
+            parameters: vec![well_known_pstrs::LOWER_B],
+            type_parameters: vec![well_known_pstrs::UPPER_B],
             type_: hir::Type::new_fn_unwrapped(vec![type_b.clone()], type_ib.clone()),
             body: vec![hir::Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("v"),
               type_: type_ib.clone().into_id().unwrap(),
               expression_list: vec![
                 hir::Expression::int(1),
-                hir::Expression::var_name(heap.alloc_str_for_test("b"), type_b),
+                hir::Expression::var_name(well_known_pstrs::LOWER_B, type_b),
               ],
             }],
             return_value: hir::Expression::var_name(heap.alloc_str_for_test("v"), type_ib),
@@ -796,7 +796,7 @@ sources.mains = [main]
                   }),
                   arguments: vec![hir::ZERO],
                   return_type: type_i.clone(),
-                  return_collector: Some(heap.alloc_str_for_test("a")),
+                  return_collector: Some(well_known_pstrs::LOWER_A),
                 },
                 hir::Statement::Call {
                   callee: hir::Callee::FunctionName(hir::FunctionName {
@@ -822,7 +822,7 @@ sources.mains = [main]
                   }),
                   arguments: vec![g1.clone()],
                   return_type: type_i.clone(),
-                  return_collector: Some(heap.alloc_str_for_test("b")),
+                  return_collector: Some(well_known_pstrs::LOWER_B),
                 },
                 hir::Statement::Call {
                   callee: hir::Callee::FunctionName(hir::FunctionName {
@@ -847,17 +847,14 @@ sources.mains = [main]
                 hir::Statement::IndexedAccess {
                   name: heap.alloc_str_for_test("v1"),
                   type_: hir::INT_TYPE,
-                  pointer_expression: hir::Expression::var_name(
-                    heap.alloc_str_for_test("a"),
-                    type_i,
-                  ),
+                  pointer_expression: hir::Expression::var_name(well_known_pstrs::LOWER_A, type_i),
                   index: 0,
                 },
                 hir::Statement::Cast {
                   name: heap.alloc_str_for_test("cast"),
                   type_: hir::INT_TYPE,
                   assigned_expression: hir::Expression::var_name(
-                    heap.alloc_str_for_test("a"),
+                    well_known_pstrs::LOWER_A,
                     hir::INT_TYPE,
                   ),
                 },
@@ -872,24 +869,21 @@ sources.mains = [main]
                   return_type: hir::INT_TYPE,
                   return_collector: None,
                 },
-                hir::Statement::binary(
-                  heap.alloc_str_for_test("v1"),
-                  Operator::PLUS,
-                  hir::ZERO,
-                  hir::ZERO,
-                ),
+                hir::Statement::Binary {
+                  name: heap.alloc_str_for_test("v1"),
+                  operator: Operator::PLUS,
+                  e1: hir::ZERO,
+                  e2: hir::ZERO,
+                },
                 hir::Statement::StructInit {
-                  struct_variable_name: heap.alloc_str_for_test("j"),
+                  struct_variable_name: well_known_pstrs::LOWER_J,
                   type_: type_j.clone().into_id().unwrap(),
                   expression_list: vec![hir::Expression::int(0)],
                 },
                 hir::Statement::IndexedAccess {
                   name: heap.alloc_str_for_test("v2"),
                   type_: hir::INT_TYPE,
-                  pointer_expression: hir::Expression::var_name(
-                    heap.alloc_str_for_test("j"),
-                    type_j,
-                  ),
+                  pointer_expression: hir::Expression::var_name(well_known_pstrs::LOWER_J, type_j),
                   index: 0,
                 },
                 hir::Statement::ClosureInit {
@@ -944,7 +938,7 @@ sources.mains = [main]
       },
       heap,
       r#"
-const G1 = '';
+const G1 = 'a';
 
 closure type CC__Str__Str = (_Str) -> _Str
 closure type CC_int__Str = (int) -> _Str
@@ -1023,7 +1017,7 @@ sources.mains = [main]"#,
         type_definitions: vec![
           hir::TypeDefinition {
             identifier: heap.alloc_str_for_test("I"),
-            type_parameters: vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
+            type_parameters: vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
             names: vec![],
             mappings: hir::TypeDefinitionMappings::Enum,
           },

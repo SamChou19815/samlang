@@ -636,6 +636,8 @@ pub(crate) fn take_mut<T, F: FnOnce(T) -> T>(mut_ref: &mut T, closure: F) {
 
 #[cfg(test)]
 mod tests {
+  use crate::common::well_known_pstrs;
+
   use super::{
     byte_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr,
     PStrPrivateRepr, PStrPrivateReprInline, StringStoredInHeap,
@@ -671,7 +673,7 @@ mod tests {
     let mut heap = Heap::default();
     assert_eq!(1, heap.alloc_dummy_module_reference().0);
     let a1 = heap.alloc_str_for_test("aaaaaaaaaaaaaaaaaaaaaaaaaaa");
-    let b = heap.alloc_str_for_test("b");
+    let b = well_known_pstrs::LOWER_B;
     let a2 = heap.alloc_str_for_test("aaaaaaaaaaaaaaaaaaaaaaaaaaa");
     a1.debug_string();
     assert!(PStrPrivateRepr { heap_id: 0 }.clone().eq(&PStrPrivateRepr { heap_id: 0 }));

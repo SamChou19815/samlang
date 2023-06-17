@@ -88,6 +88,7 @@ pub(super) fn optimize(
 mod tests {
   use crate::{
     ast::mir::{VariableName, INT_TYPE, ONE},
+    common::well_known_pstrs,
     optimization::loop_induction_analysis::{
       BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName,
       GeneralBasicInductionVariable, GuardOperator, OptimizableWhileLoop,
@@ -108,17 +109,17 @@ mod tests {
     } = super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(10),
         },
         general_induction_variables: vec![GeneralBasicInductionVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
-            heap.alloc_str_for_test("c"),
+            well_known_pstrs::LOWER_C,
             INT_TYPE,
           )),
         }],
@@ -126,25 +127,25 @@ mod tests {
         derived_induction_variables: vec![
           DerivedInductionVariableWithName {
             name: heap.alloc_str_for_test("x"),
-            base_name: heap.alloc_str_for_test("i"),
+            base_name: well_known_pstrs::LOWER_I,
             multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
-              heap.alloc_str_for_test("a"),
+              well_known_pstrs::LOWER_A,
               INT_TYPE,
             )),
             immediate: PotentialLoopInvariantExpression::Var(VariableName::new(
-              heap.alloc_str_for_test("b"),
+              well_known_pstrs::LOWER_B,
               INT_TYPE,
             )),
           },
           DerivedInductionVariableWithName {
             name: heap.alloc_str_for_test("y"),
-            base_name: heap.alloc_str_for_test("j"),
+            base_name: well_known_pstrs::LOWER_J,
             multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
-              heap.alloc_str_for_test("a"),
+              well_known_pstrs::LOWER_A,
               INT_TYPE,
             )),
             immediate: PotentialLoopInvariantExpression::Var(VariableName::new(
-              heap.alloc_str_for_test("b"),
+              well_known_pstrs::LOWER_B,
               INT_TYPE,
             )),
           },

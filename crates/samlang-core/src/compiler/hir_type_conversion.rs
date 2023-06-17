@@ -399,6 +399,7 @@ mod tests {
   use crate::{
     ast::{hir::STRING_TYPE, source::test_builder, Location, Reason},
     checker::type_::test_type_builder,
+    common::well_known_pstrs,
   };
   use pretty_assertions::assert_eq;
 
@@ -406,9 +407,9 @@ mod tests {
   fn synthesizer_tests() {
     let heap = &mut Heap::new();
     let mut synthesizer = TypeSynthesizer::new();
-    let a = heap.alloc_str_for_test("A");
-    let b = heap.alloc_str_for_test("B");
-    let c = heap.alloc_str_for_test("C");
+    let a = well_known_pstrs::UPPER_A;
+    let b = well_known_pstrs::UPPER_B;
+    let c = well_known_pstrs::UPPER_C;
 
     assert_eq!(
       "$SyntheticIDType0",
@@ -481,23 +482,22 @@ mod tests {
 
   #[test]
   fn collect_used_generic_types_works() {
-    let heap = &mut Heap::new();
     let generic_types: HashSet<PStr> =
-      vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")].into_iter().collect();
+      vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B].into_iter().collect();
 
     assert!(collect_used_generic_types(
       &Type::new_fn_unwrapped(
-        vec![INT_TYPE, Type::new_id(heap.alloc_str_for_test("C"), vec![INT_TYPE])],
-        Type::new_id_no_targs(heap.alloc_str_for_test("C")),
+        vec![INT_TYPE, Type::new_id(well_known_pstrs::UPPER_C, vec![INT_TYPE])],
+        Type::new_id_no_targs(well_known_pstrs::UPPER_C),
       ),
       &generic_types,
     )
     .is_empty());
 
     assert_eq!(
-      vec![heap.alloc_str_for_test("A")],
+      vec![well_known_pstrs::UPPER_A],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str_for_test("A"))),
+        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(well_known_pstrs::UPPER_A)),
         &generic_types,
       )
       .into_iter()
@@ -505,9 +505,9 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![heap.alloc_str_for_test("B")],
+      vec![well_known_pstrs::UPPER_B],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(heap.alloc_str_for_test("B"))),
+        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(well_known_pstrs::UPPER_B)),
         &generic_types,
       )
       .into_iter()
@@ -515,11 +515,11 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![heap.alloc_str_for_test("A"), heap.alloc_str_for_test("B")],
+      vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
       collect_used_generic_types(
         &Type::new_fn_unwrapped(
-          vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))],
-          Type::new_id_no_targs(heap.alloc_str_for_test("A"))
+          vec![Type::new_id_no_targs(well_known_pstrs::UPPER_B)],
+          Type::new_id_no_targs(well_known_pstrs::UPPER_A)
         ),
         &generic_types,
       )
@@ -528,13 +528,13 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![heap.alloc_str_for_test("B")],
+      vec![well_known_pstrs::UPPER_B],
       collect_used_generic_types(
         &Type::new_fn_unwrapped(
           vec![],
           Type::new_id(
-            heap.alloc_str_for_test("A"),
-            vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))]
+            well_known_pstrs::UPPER_A,
+            vec![Type::new_id_no_targs(well_known_pstrs::UPPER_B)]
           )
         ),
         &generic_types,
@@ -548,14 +548,12 @@ mod tests {
   #[should_panic]
   #[test]
   fn solve_type_arguments_panic_tests() {
-    let heap = &mut Heap::new();
-
     solve_type_arguments(
       &vec![],
-      &Type::new_id_unwrapped(heap.alloc_str_for_test("A"), vec![INT_TYPE]),
+      &Type::new_id_unwrapped(well_known_pstrs::UPPER_A, vec![INT_TYPE]),
       &Type::new_id_unwrapped(
-        heap.alloc_str_for_test("A"),
-        vec![Type::new_id_no_targs(heap.alloc_str_for_test("B"))],
+        well_known_pstrs::UPPER_A,
+        vec![Type::new_id_no_targs(well_known_pstrs::UPPER_B)],
       ),
     );
   }
@@ -565,7 +563,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     let actual = solve_type_arguments(
-      &vec![heap.alloc_str_for_test("A")],
+      &vec![well_known_pstrs::UPPER_A],
       &Type::new_id_unwrapped(
         heap.alloc_str_for_test("FF"),
         vec![
@@ -573,7 +571,7 @@ mod tests {
           INT_TYPE,
           Type::new_id(heap.alloc_str_for_test("Foo"), vec![STRING_TYPE]),
           INT_TYPE,
-          Type::new_id_no_targs(heap.alloc_str_for_test("B")),
+          Type::new_id_no_targs(well_known_pstrs::UPPER_B),
           STRING_TYPE,
         ],
       ),
@@ -583,8 +581,8 @@ mod tests {
           INT_TYPE,
           INT_TYPE,
           Type::new_id(heap.alloc_str_for_test("Foo"), vec![STRING_TYPE]),
-          Type::new_id_no_targs(heap.alloc_str_for_test("A")),
-          Type::new_id_no_targs(heap.alloc_str_for_test("B")),
+          Type::new_id_no_targs(well_known_pstrs::UPPER_A),
+          Type::new_id_no_targs(well_known_pstrs::UPPER_B),
           STRING_TYPE,
         ],
       ),
@@ -601,24 +599,24 @@ mod tests {
     assert_eq!(
       "A<int>",
       type_application(
-        &Type::new_id(heap.alloc_str_for_test("A"), vec![INT_TYPE]),
-        &HashMap::from([(heap.alloc_str_for_test("A"), INT_TYPE)])
+        &Type::new_id(well_known_pstrs::UPPER_A, vec![INT_TYPE]),
+        &HashMap::from([(well_known_pstrs::UPPER_A, INT_TYPE)])
       )
       .pretty_print(heap)
     );
     assert_eq!(
       "A",
       type_application(
-        &Type::new_id_no_targs(heap.alloc_str_for_test("A")),
-        &HashMap::from([(heap.alloc_str_for_test("B"), INT_TYPE)])
+        &Type::new_id_no_targs(well_known_pstrs::UPPER_A),
+        &HashMap::from([(well_known_pstrs::UPPER_B, INT_TYPE)])
       )
       .pretty_print(heap)
     );
     assert_eq!(
       "int",
       type_application(
-        &Type::new_id_no_targs(heap.alloc_str_for_test("A")),
-        &HashMap::from([(heap.alloc_str_for_test("A"), INT_TYPE)])
+        &Type::new_id_no_targs(well_known_pstrs::UPPER_A),
+        &HashMap::from([(well_known_pstrs::UPPER_A, INT_TYPE)])
       )
       .pretty_print(heap)
     );
@@ -627,12 +625,12 @@ mod tests {
       "(int) -> int",
       fn_type_application(
         &Type::new_fn_unwrapped(
-          vec![Type::new_id_no_targs(heap.alloc_str_for_test("A"))],
-          Type::new_id_no_targs(heap.alloc_str_for_test("B"))
+          vec![Type::new_id_no_targs(well_known_pstrs::UPPER_A)],
+          Type::new_id_no_targs(well_known_pstrs::UPPER_B)
         ),
         &HashMap::from([
-          (heap.alloc_str_for_test("A"), INT_TYPE),
-          (heap.alloc_str_for_test("B"), INT_TYPE)
+          (well_known_pstrs::UPPER_A, INT_TYPE),
+          (well_known_pstrs::UPPER_B, INT_TYPE)
         ])
       )
       .pretty_print(heap)
@@ -643,8 +641,8 @@ mod tests {
   #[test]
   fn encode_name_after_generics_specialization_panic_test() {
     let heap = &mut Heap::new();
-    let s = heap.alloc_str_for_test("");
-    let a = heap.alloc_str_for_test("A");
+    let s = well_known_pstrs::LOWER_A;
+    let a = well_known_pstrs::UPPER_A;
 
     encode_name_after_generics_specialization(heap, s, &vec![Type::new_id(a, vec![INT_TYPE])]);
   }
@@ -652,8 +650,8 @@ mod tests {
   #[test]
   fn encode_name_after_generics_specialization_tests() {
     let heap = &mut Heap::new();
-    let a = heap.alloc_str_for_test("A");
-    let b = heap.alloc_str_for_test("B");
+    let a = well_known_pstrs::UPPER_A;
+    let b = well_known_pstrs::UPPER_B;
 
     assert_eq!("A", encode_name_after_generics_specialization(heap, a, &vec![]));
     assert_eq!(
@@ -693,7 +691,7 @@ mod tests {
     );
 
     assert_eq!("DUMMY_A<int>", {
-      let t = builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]);
+      let t = builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]);
       manager.lower_source_type(heap, &t).pretty_print(heap)
     });
 
@@ -722,7 +720,7 @@ mod tests {
   fn type_lowering_manager_lower_type_definition_tests() {
     let heap = &mut Heap::new();
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::from([heap.alloc_str_for_test("A")]),
+      generic_types: HashSet::from([well_known_pstrs::UPPER_A]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let annot_builder = test_builder::create();
@@ -731,10 +729,10 @@ mod tests {
       loc: Location::dummy(),
       fields: vec![
         source::FieldDefinition {
-          name: source::Id::from(heap.alloc_str_for_test("a")),
+          name: source::Id::from(well_known_pstrs::LOWER_A),
           annotation: annot_builder.fn_annot(
             vec![annot_builder.fn_annot(
-              vec![annot_builder.simple_id_annot(heap.alloc_str_for_test("A"))],
+              vec![annot_builder.simple_id_annot(well_known_pstrs::UPPER_A)],
               annot_builder.bool_annot(),
             )],
             annot_builder.bool_annot(),
@@ -742,10 +740,10 @@ mod tests {
           is_public: true,
         },
         source::FieldDefinition {
-          name: source::Id::from(heap.alloc_str_for_test("b")),
+          name: source::Id::from(well_known_pstrs::LOWER_B),
           annotation: annot_builder.fn_annot(
             vec![annot_builder.fn_annot(
-              vec![annot_builder.simple_id_annot(heap.alloc_str_for_test("A"))],
+              vec![annot_builder.simple_id_annot(well_known_pstrs::UPPER_A)],
               annot_builder.bool_annot(),
             )],
             annot_builder.bool_annot(),
@@ -779,7 +777,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::from([heap.alloc_str_for_test("A")]),
+      generic_types: HashSet::from([well_known_pstrs::UPPER_A]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = test_type_builder::create();

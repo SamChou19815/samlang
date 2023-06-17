@@ -550,8 +550,11 @@ pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
 mod boilterplate_tests {
   use super::{optimize_callee, BinaryExpression};
   use crate::{
-    ast::hir::Operator, ast::mir::*, common::INVALID_PSTR,
-    optimization::optimization_common::LocalValueContextForOptimization, Heap,
+    ast::hir::Operator,
+    ast::mir::*,
+    common::{well_known_pstrs, INVALID_PSTR},
+    optimization::optimization_common::LocalValueContextForOptimization,
+    Heap,
   };
 
   #[test]
@@ -574,28 +577,26 @@ mod boilterplate_tests {
     let mut value_cx = LocalValueContextForOptimization::new();
     let heap = &mut Heap::new();
     value_cx.checked_bind(
-      heap.alloc_str_for_test("a"),
-      Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+      well_known_pstrs::LOWER_A,
+      Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
     );
     value_cx.checked_bind(
-      heap.alloc_str_for_test("b"),
+      well_known_pstrs::LOWER_B,
       Expression::StringName(heap.alloc_str_for_test("1")),
     );
-    value_cx.checked_bind(
-      heap.alloc_str_for_test("c"),
-      Expression::StringName(heap.alloc_str_for_test("")),
+    value_cx
+      .checked_bind(well_known_pstrs::LOWER_C, Expression::StringName(well_known_pstrs::UPPER_A));
+    optimize_callee(
+      &mut value_cx,
+      &Callee::Variable(VariableName { name: well_known_pstrs::LOWER_A, type_: INT_TYPE }),
     );
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: heap.alloc_str_for_test("a"), type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: well_known_pstrs::LOWER_B, type_: INT_TYPE }),
     );
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: heap.alloc_str_for_test("b"), type_: INT_TYPE }),
-    );
-    optimize_callee(
-      &mut value_cx,
-      &Callee::Variable(VariableName { name: heap.alloc_str_for_test("c"), type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: well_known_pstrs::LOWER_C, type_: INT_TYPE }),
     );
   }
 }

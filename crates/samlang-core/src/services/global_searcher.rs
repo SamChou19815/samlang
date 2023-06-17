@@ -230,7 +230,8 @@ mod tests {
   use std::collections::HashMap;
 
   use crate::{
-    checker::type_check_sources, errors::ErrorSet, parser::parse_source_module_from_text, Heap,
+    checker::type_check_sources, common::well_known_pstrs, errors::ErrorSet,
+    parser::parse_source_module_from_text, Heap,
   };
 
   #[test]
@@ -373,7 +374,7 @@ mod tests {
       &super::GlobalNameSearchRequest::Property(
         mod_ref,
         heap.alloc_str_for_test("Foo"),
-        heap.alloc_str_for_test("a"),
+        well_known_pstrs::LOWER_A,
       ),
     );
   }

@@ -427,6 +427,7 @@ mod tests {
   use super::*;
   use crate::{
     ast::source::{test_builder, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE},
+    common::well_known_pstrs,
     errors::ErrorSet,
     parser,
   };
@@ -509,7 +510,7 @@ mod tests {
 
     let import = ModuleMembersImport {
       loc: Location::dummy(),
-      imported_members: vec![Id::from(heap.alloc_str_for_test("A"))],
+      imported_members: vec![Id::from(well_known_pstrs::UPPER_A)],
       imported_module: ModuleReference::dummy(),
       imported_module_loc: Location::dummy(),
     };
@@ -523,7 +524,7 @@ mod tests {
     let toplevel = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      name: Id::from(heap.alloc_str_for_test("A")),
+      name: Id::from(well_known_pstrs::UPPER_A),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),

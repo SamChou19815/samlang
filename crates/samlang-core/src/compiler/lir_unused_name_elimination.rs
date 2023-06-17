@@ -178,6 +178,7 @@ mod tests {
         INT_TYPE, ZERO,
       },
     },
+    common::well_known_pstrs,
     Heap,
   };
   use itertools::Itertools;
@@ -225,17 +226,17 @@ mod tests {
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::Cast {
-              name: heap.alloc_str_for_test(""),
+              name: well_known_pstrs::LOWER_A,
               type_: INT_TYPE,
               assigned_expression: Expression::Name(heap.alloc_str_for_test("bar"), INT_TYPE),
             },
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test(""),
+              struct_variable_name: well_known_pstrs::LOWER_A,
               type_: INT_TYPE,
               expression_list: vec![Expression::Name(heap.alloc_str_for_test("bar"), INT_TYPE)],
             },
             Statement::IndexedAccess {
-              name: heap.alloc_str_for_test(""),
+              name: well_known_pstrs::LOWER_A,
               type_: INT_TYPE,
               pointer_expression: Expression::Name(heap.alloc_str_for_test("bar"), INT_TYPE),
               index: 0,
@@ -254,13 +255,13 @@ mod tests {
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::binary(
-                heap.alloc_str_for_test(""),
+                well_known_pstrs::LOWER_A,
                 hir::Operator::GE,
                 Expression::Name(heap.alloc_str_for_test("foo"), INT_TYPE),
                 Expression::Name(heap.alloc_str_for_test("bar"), INT_TYPE),
               )],
               s2: vec![Statement::Cast {
-                name: heap.alloc_str_for_test(""),
+                name: well_known_pstrs::LOWER_A,
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               }],
@@ -273,13 +274,13 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: heap.alloc_str_for_test("f"),
+                name: well_known_pstrs::LOWER_F,
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![],
-              break_collector: Some((heap.alloc_str_for_test("d"), INT_TYPE)),
+              break_collector: Some((well_known_pstrs::LOWER_D, INT_TYPE)),
             },
           ],
           return_value: Expression::Name(heap.alloc_str_for_test("bar"), INT_TYPE),

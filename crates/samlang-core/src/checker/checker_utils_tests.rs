@@ -3,6 +3,7 @@ mod tests {
   use super::super::checker_utils::*;
   use super::super::type_::{ISourceType, Type, TypeParameterSignature};
   use crate::checker::type_::test_type_builder;
+  use crate::common::well_known_pstrs;
   use crate::{ast::Reason, common::Heap, errors::ErrorSet};
   use pretty_assertions::assert_eq;
   use std::{collections::HashMap, rc::Rc};
@@ -26,7 +27,7 @@ mod tests {
     assert_eq!(meet(&builder.unit_type(), &builder.int_type(), heap), "FAILED_MEET");
     assert_eq!(meet(&Type::Any(Reason::dummy(), false), &builder.string_type(), heap), "Str");
     assert_eq!(
-      meet(&builder.unit_type(), &builder.simple_nominal_type(heap.alloc_str_for_test("A")), heap),
+      meet(&builder.unit_type(), &builder.simple_nominal_type(well_known_pstrs::UPPER_A), heap),
       "FAILED_MEET"
     );
 
@@ -41,45 +42,45 @@ mod tests {
     );
 
     assert_eq!(
-      meet(&builder.simple_nominal_type(heap.alloc_str_for_test("A")), &builder.unit_type(), heap),
+      meet(&builder.simple_nominal_type(well_known_pstrs::UPPER_A), &builder.unit_type(), heap),
       "FAILED_MEET"
     );
     assert_eq!(
       meet(
-        &builder.simple_nominal_type(heap.alloc_str_for_test("A")),
-        &builder.simple_nominal_type(heap.alloc_str_for_test("B")),
+        &builder.simple_nominal_type(well_known_pstrs::UPPER_A),
+        &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
         heap
       ),
       "FAILED_MEET"
     );
     assert_eq!(
       meet(
-        &builder.generic_type(heap.alloc_str_for_test("A")),
-        &builder.simple_nominal_type(heap.alloc_str_for_test("B")),
+        &builder.generic_type(well_known_pstrs::UPPER_A),
+        &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
         heap
       ),
       "FAILED_MEET"
     );
     assert_eq!(
       meet(
-        &builder.generic_type(heap.alloc_str_for_test("A")),
-        &builder.generic_type(heap.alloc_str_for_test("B")),
+        &builder.generic_type(well_known_pstrs::UPPER_A),
+        &builder.generic_type(well_known_pstrs::UPPER_B),
         heap
       ),
       "FAILED_MEET"
     );
     assert_eq!(
       meet(
-        &builder.generic_type(heap.alloc_str_for_test("A")),
-        &builder.generic_type(heap.alloc_str_for_test("A")),
+        &builder.generic_type(well_known_pstrs::UPPER_A),
+        &builder.generic_type(well_known_pstrs::UPPER_A),
         heap
       ),
       "A"
     );
     assert_eq!(
       meet(
-        &builder.simple_nominal_type(heap.alloc_str_for_test("A")),
-        &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
+        &builder.simple_nominal_type(well_known_pstrs::UPPER_A),
+        &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]),
         heap
       ),
       "FAILED_MEET",
@@ -87,12 +88,12 @@ mod tests {
     assert_eq!(
       meet(
         &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
-          vec![builder.simple_nominal_type(heap.alloc_str_for_test("B"))]
+          well_known_pstrs::UPPER_A,
+          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_B)]
         ),
         &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
-          vec![builder.simple_nominal_type(heap.alloc_str_for_test("B"))]
+          well_known_pstrs::UPPER_A,
+          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_B)]
         ),
         heap,
       ),
@@ -101,12 +102,12 @@ mod tests {
     assert_eq!(
       meet(
         &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
-          vec![builder.simple_nominal_type(heap.alloc_str_for_test("A"))]
+          well_known_pstrs::UPPER_A,
+          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_A)]
         ),
         &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
-          vec![builder.simple_nominal_type(heap.alloc_str_for_test("B"))]
+          well_known_pstrs::UPPER_A,
+          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_B)]
         ),
         heap,
       ),
@@ -116,11 +117,11 @@ mod tests {
     assert_eq!(
       meet(
         &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
-          vec![builder.simple_nominal_type(heap.alloc_str_for_test("B"))]
+          well_known_pstrs::UPPER_A,
+          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_B)]
         ),
         &builder.general_nominal_type(
-          heap.alloc_str_for_test("A"),
+          well_known_pstrs::UPPER_A,
           vec![Rc::new(Type::Any(Reason::dummy(), false))]
         ),
         heap,
@@ -129,7 +130,7 @@ mod tests {
     );
     assert_eq!(
       meet(
-        &builder.simple_nominal_type(heap.alloc_str_for_test("B")),
+        &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
         &Type::Any(Reason::dummy(), false),
         heap
       ),
@@ -143,7 +144,7 @@ mod tests {
     assert_eq!(
       meet(
         &builder.fun_type(vec![], builder.int_type()),
-        &builder.simple_nominal_type(heap.alloc_str_for_test("B")),
+        &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
         heap
       ),
       "FAILED_MEET",
@@ -203,7 +204,7 @@ mod tests {
 
   #[test]
   fn type_substitution_tests() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let builder = test_type_builder::create();
 
     assert_eq!(
@@ -212,28 +213,27 @@ mod tests {
         &builder.fun_type(
           vec![
             builder.general_nominal_type(
-              heap.alloc_str_for_test("A"),
+              well_known_pstrs::UPPER_A,
               vec![
-                builder.generic_type(heap.alloc_str_for_test("B")),
-                builder
-                  .general_nominal_type(heap.alloc_str_for_test("C"), vec![builder.int_type()])
+                builder.generic_type(well_known_pstrs::UPPER_B),
+                builder.general_nominal_type(well_known_pstrs::UPPER_C, vec![builder.int_type()])
               ]
             ),
-            builder.generic_type(heap.alloc_str_for_test("D")),
+            builder.generic_type(well_known_pstrs::UPPER_D),
             builder.general_nominal_type(
-              heap.alloc_str_for_test("E"),
-              vec![builder.simple_nominal_type(heap.alloc_str_for_test("F"))]
+              well_known_pstrs::UPPER_E,
+              vec![builder.simple_nominal_type(well_known_pstrs::UPPER_F)]
             ),
             builder.int_type()
           ],
           builder.int_type()
         ),
         &HashMap::from([
-          (heap.alloc_str_for_test("A"), builder.int_type()),
-          (heap.alloc_str_for_test("B"), builder.int_type()),
-          (heap.alloc_str_for_test("C"), builder.int_type()),
-          (heap.alloc_str_for_test("D"), builder.int_type()),
-          (heap.alloc_str_for_test("E"), builder.int_type()),
+          (well_known_pstrs::UPPER_A, builder.int_type()),
+          (well_known_pstrs::UPPER_B, builder.int_type()),
+          (well_known_pstrs::UPPER_C, builder.int_type()),
+          (well_known_pstrs::UPPER_D, builder.int_type()),
+          (well_known_pstrs::UPPER_E, builder.int_type()),
         ])
       )
       .pretty_print(&heap)
@@ -242,7 +242,7 @@ mod tests {
     assert_eq!(
       "A",
       perform_nominal_type_substitution(
-        &builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("A")),
+        &builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_A),
         &HashMap::new()
       )
       .pretty_print(&heap)
@@ -353,16 +353,16 @@ mod tests {
       ),
       &builder.fun_type(
         vec![
-          builder.generic_type(heap.alloc_str_for_test("A")),
-          builder.generic_type(heap.alloc_str_for_test("B")),
-          builder.generic_type(heap.alloc_str_for_test("A")),
+          builder.generic_type(well_known_pstrs::UPPER_A),
+          builder.generic_type(well_known_pstrs::UPPER_B),
+          builder.generic_type(well_known_pstrs::UPPER_A),
         ],
-        builder.generic_type(heap.alloc_str_for_test("C")),
+        builder.generic_type(well_known_pstrs::UPPER_C),
       ),
       vec![
-        TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
-        TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
-        TypeParameterSignature { name: heap.alloc_str_for_test("C"), bound: None },
+        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
+        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
+        TypeParameterSignature { name: well_known_pstrs::UPPER_C, bound: None },
       ],
       &HashMap::from([("has_error", "true"), ("A", "int"), ("B", "bool"), ("C", "unit")]),
       heap,
@@ -371,16 +371,16 @@ mod tests {
       &builder.int_type(),
       &builder.fun_type(
         vec![
-          builder.generic_type(heap.alloc_str_for_test("A")),
-          builder.generic_type(heap.alloc_str_for_test("B")),
-          builder.generic_type(heap.alloc_str_for_test("A")),
+          builder.generic_type(well_known_pstrs::UPPER_A),
+          builder.generic_type(well_known_pstrs::UPPER_B),
+          builder.generic_type(well_known_pstrs::UPPER_A),
         ],
-        builder.generic_type(heap.alloc_str_for_test("C")),
+        builder.generic_type(well_known_pstrs::UPPER_C),
       ),
       vec![
-        TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
-        TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
-        TypeParameterSignature { name: heap.alloc_str_for_test("C"), bound: None },
+        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
+        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
+        TypeParameterSignature { name: well_known_pstrs::UPPER_C, bound: None },
       ],
       &HashMap::from([
         ("has_error", "true"),
@@ -394,7 +394,7 @@ mod tests {
 
   #[test]
   fn type_constrain_solver_integration_test_1() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let builder = test_type_builder::create();
 
@@ -416,16 +416,16 @@ mod tests {
       &builder.fun_type(
         vec![
           builder.fun_type(
-            vec![builder.generic_type(heap.alloc_str_for_test("A"))],
-            builder.generic_type(heap.alloc_str_for_test("A")),
+            vec![builder.generic_type(well_known_pstrs::UPPER_A)],
+            builder.generic_type(well_known_pstrs::UPPER_A),
           ),
-          builder.generic_type(heap.alloc_str_for_test("B")),
+          builder.generic_type(well_known_pstrs::UPPER_B),
         ],
         builder.unit_type(),
       ),
       &vec![
-        TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
-        TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
+        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
+        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
       ],
       &heap,
       &mut error_set,
@@ -441,7 +441,7 @@ mod tests {
 
   #[test]
   fn type_constrain_solver_integration_test_2() {
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let builder = test_type_builder::create();
 
@@ -463,14 +463,14 @@ mod tests {
       &builder.fun_type(
         vec![
           builder.fun_type(
-            vec![builder.simple_nominal_type(heap.alloc_str_for_test("A"))],
-            builder.simple_nominal_type(heap.alloc_str_for_test("A")),
+            vec![builder.simple_nominal_type(well_known_pstrs::UPPER_A)],
+            builder.simple_nominal_type(well_known_pstrs::UPPER_A),
           ),
-          builder.generic_type(heap.alloc_str_for_test("B")),
+          builder.generic_type(well_known_pstrs::UPPER_B),
         ],
         builder.unit_type(),
       ),
-      &vec![TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None }],
+      &vec![TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None }],
       &heap,
       &mut error_set,
     );

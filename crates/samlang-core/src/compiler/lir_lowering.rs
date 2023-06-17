@@ -758,14 +758,14 @@ mod tests {
         ONE, STRING_TYPE, ZERO,
       },
     },
-    common::Heap,
+    common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
 
   #[test]
   fn boilterplate() {
     let heap = &mut Heap::new();
-    assert_eq!("A", super::lower_type(Type::Id(heap.alloc_str_for_test("A"))).pretty_print(heap));
+    assert_eq!("A", super::lower_type(Type::Id(well_known_pstrs::UPPER_A)).pretty_print(heap));
   }
 
   fn assert_lowered(sources: Sources, heap: &mut Heap, expected: &str) {
@@ -869,17 +869,14 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v1"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(
-                heap.alloc_str_for_test("a"),
-                obj_type.clone(),
-              ),
+              pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, obj_type.clone()),
               index: 0,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v2"),
               type_: INT_TYPE,
               pointer_expression: Expression::var_name(
-                heap.alloc_str_for_test("b"),
+                well_known_pstrs::LOWER_B,
                 variant_type.clone(),
               ),
               index: 0,
@@ -888,7 +885,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               name: heap.alloc_str_for_test("v3"),
               type_: INT_TYPE,
               pointer_expression: Expression::var_name(
-                heap.alloc_str_for_test("b"),
+                well_known_pstrs::LOWER_B,
                 variant_type.clone(),
               ),
               index: 1,
@@ -897,7 +894,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               name: heap.alloc_str_for_test("v4"),
               type_: STRING_TYPE,
               pointer_expression: Expression::var_name(
-                heap.alloc_str_for_test("b"),
+                well_known_pstrs::LOWER_B,
                 variant_type.clone(),
               ),
               index: 1,

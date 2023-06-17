@@ -129,12 +129,12 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str_for_test("A"),
+                        name: well_known_pstrs::UPPER_A,
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.generic_type(heap.alloc_str_for_test("A"))],
+                        argument_types: vec![builder.generic_type(well_known_pstrs::UPPER_A)],
                         return_type: builder.unit_type(),
                       },
                     },
@@ -144,19 +144,19 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![
-                        TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
-                        TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
-                        TypeParameterSignature { name: heap.alloc_str_for_test("C"), bound: None },
-                        TypeParameterSignature { name: heap.alloc_str_for_test("D"), bound: None },
+                        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
+                        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
+                        TypeParameterSignature { name: well_known_pstrs::UPPER_C, bound: None },
+                        TypeParameterSignature { name: well_known_pstrs::UPPER_D, bound: None },
                       ],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![
-                          builder.generic_type(heap.alloc_str_for_test("A")),
-                          builder.generic_type(heap.alloc_str_for_test("B")),
-                          builder.generic_type(heap.alloc_str_for_test("C")),
+                          builder.generic_type(well_known_pstrs::UPPER_A),
+                          builder.generic_type(well_known_pstrs::UPPER_B),
+                          builder.generic_type(well_known_pstrs::UPPER_C),
                         ],
-                        return_type: builder.generic_type(heap.alloc_str_for_test("D")),
+                        return_type: builder.generic_type(well_known_pstrs::UPPER_D),
                       },
                     },
                   ),
@@ -183,14 +183,14 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![
-                        TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
-                        TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
+                        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
+                        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
                       ],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.fun_type(
-                          vec![builder.generic_type(heap.alloc_str_for_test("A"))],
-                          builder.generic_type(heap.alloc_str_for_test("B")),
+                          vec![builder.generic_type(well_known_pstrs::UPPER_A)],
+                          builder.generic_type(well_known_pstrs::UPPER_B),
                         )],
                         return_type: builder.bool_type(),
                       },
@@ -230,7 +230,7 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str_for_test("A"),
+                        name: well_known_pstrs::UPPER_A,
                         bound: None,
                       }],
                       type_: FunctionType {
@@ -245,12 +245,12 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str_for_test("A"),
+                        name: well_known_pstrs::UPPER_A,
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.generic_type(heap.alloc_str_for_test("A"))],
+                        argument_types: vec![builder.generic_type(well_known_pstrs::UPPER_A)],
                         return_type: builder.bool_type(),
                       },
                     },
@@ -308,13 +308,13 @@ mod tests {
               heap.alloc_str_for_test("Test3"),
               InterfaceSignature {
                 type_parameters: vec![TypeParameterSignature {
-                  name: heap.alloc_str_for_test("E"),
+                  name: well_known_pstrs::UPPER_E,
                   bound: None,
                 }],
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
                     name: heap.alloc_str_for_test("foo"),
-                    type_: builder.generic_type(heap.alloc_str_for_test("E")),
+                    type_: builder.generic_type(well_known_pstrs::UPPER_E),
                     is_public: true,
                   },
                   StructItemDefinitionSignature {
@@ -332,13 +332,13 @@ mod tests {
               heap.alloc_str_for_test("Test4"),
               InterfaceSignature {
                 type_parameters: vec![TypeParameterSignature {
-                  name: heap.alloc_str_for_test("E"),
+                  name: well_known_pstrs::UPPER_E,
                   bound: None,
                 }],
                 type_definition: Some(TypeDefinitionSignature::Enum(vec![
                   EnumVariantDefinitionSignature {
                     name: heap.alloc_str_for_test("Foo"),
-                    types: vec![builder.generic_type(heap.alloc_str_for_test("E"))],
+                    types: vec![builder.generic_type(well_known_pstrs::UPPER_E)],
                   },
                   EnumVariantDefinitionSignature {
                     name: heap.alloc_str_for_test("Bar"),
@@ -351,15 +351,15 @@ mod tests {
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str_for_test("E"),
+                        name: well_known_pstrs::UPPER_E,
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.generic_type(heap.alloc_str_for_test("E"))],
+                        argument_types: vec![builder.generic_type(well_known_pstrs::UPPER_E)],
                         return_type: builder.general_nominal_type(
                           heap.alloc_str_for_test("Test4"),
-                          vec![builder.generic_type(heap.alloc_str_for_test("E"))],
+                          vec![builder.generic_type(well_known_pstrs::UPPER_E)],
                         ),
                       },
                     },
@@ -369,7 +369,7 @@ mod tests {
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature {
-                        name: heap.alloc_str_for_test("E"),
+                        name: well_known_pstrs::UPPER_E,
                         bound: None,
                       }],
                       type_: FunctionType {
@@ -377,7 +377,7 @@ mod tests {
                         argument_types: vec![builder.int_type()],
                         return_type: builder.general_nominal_type(
                           heap.alloc_str_for_test("Test4"),
-                          vec![builder.generic_type(heap.alloc_str_for_test("E"))],
+                          vec![builder.generic_type(well_known_pstrs::UPPER_E)],
                         ),
                       },
                     },
@@ -388,39 +388,7 @@ mod tests {
               },
             ),
             (
-              heap.alloc_str_for_test("A"),
-              InterfaceSignature {
-                type_definition: Some(TypeDefinitionSignature::Struct(vec![
-                  StructItemDefinitionSignature {
-                    name: heap.alloc_str_for_test("a"),
-                    type_: builder.int_type(),
-                    is_public: true,
-                  },
-                  StructItemDefinitionSignature {
-                    name: heap.alloc_str_for_test("b"),
-                    type_: builder.bool_type(),
-                    is_public: false,
-                  },
-                ])),
-                functions: HashMap::from([(
-                  well_known_pstrs::INIT,
-                  MemberSignature {
-                    is_public: true,
-                    type_parameters: vec![],
-                    type_: FunctionType {
-                      reason: Reason::dummy(),
-                      argument_types: vec![],
-                      return_type: builder.simple_nominal_type(heap.alloc_str_for_test("A")),
-                    },
-                  },
-                )]),
-                methods: HashMap::new(),
-                type_parameters: vec![],
-                super_types: vec![],
-              },
-            ),
-            (
-              heap.alloc_str_for_test("B"),
+              well_known_pstrs::UPPER_A,
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
@@ -442,7 +410,7 @@ mod tests {
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_nominal_type(heap.alloc_str_for_test("B")),
+                      return_type: builder.simple_nominal_type(well_known_pstrs::UPPER_A),
                     },
                   },
                 )]),
@@ -452,15 +420,47 @@ mod tests {
               },
             ),
             (
-              heap.alloc_str_for_test("C"),
+              well_known_pstrs::UPPER_B,
+              InterfaceSignature {
+                type_definition: Some(TypeDefinitionSignature::Struct(vec![
+                  StructItemDefinitionSignature {
+                    name: well_known_pstrs::LOWER_A,
+                    type_: builder.int_type(),
+                    is_public: true,
+                  },
+                  StructItemDefinitionSignature {
+                    name: well_known_pstrs::LOWER_B,
+                    type_: builder.bool_type(),
+                    is_public: false,
+                  },
+                ])),
+                functions: HashMap::from([(
+                  well_known_pstrs::INIT,
+                  MemberSignature {
+                    is_public: true,
+                    type_parameters: vec![],
+                    type_: FunctionType {
+                      reason: Reason::dummy(),
+                      argument_types: vec![],
+                      return_type: builder.simple_nominal_type(well_known_pstrs::UPPER_B),
+                    },
+                  },
+                )]),
+                methods: HashMap::new(),
+                type_parameters: vec![],
+                super_types: vec![],
+              },
+            ),
+            (
+              well_known_pstrs::UPPER_C,
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature::Enum(vec![
                   EnumVariantDefinitionSignature {
-                    name: heap.alloc_str_for_test("a"),
+                    name: well_known_pstrs::LOWER_A,
                     types: vec![builder.int_type()],
                   },
                   EnumVariantDefinitionSignature {
-                    name: heap.alloc_str_for_test("b"),
+                    name: well_known_pstrs::LOWER_B,
                     types: vec![builder.bool_type()],
                   },
                 ])),
@@ -472,7 +472,7 @@ mod tests {
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_nominal_type(heap.alloc_str_for_test("C")),
+                      return_type: builder.simple_nominal_type(well_known_pstrs::UPPER_C),
                     },
                   },
                 )]),

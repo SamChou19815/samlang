@@ -222,6 +222,7 @@ mod tests {
       Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName, INT_TYPE,
       ZERO,
     },
+    common::well_known_pstrs,
     Heap,
   };
   use itertools::Itertools;
@@ -300,12 +301,12 @@ mod tests {
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test(""),
+              struct_variable_name: well_known_pstrs::LOWER_A,
               type_name: heap.alloc_str_for_test("Foo"),
               expression_list: vec![Expression::StringName(heap.alloc_str_for_test("bar"))],
             },
             Statement::ClosureInit {
-              closure_variable_name: heap.alloc_str_for_test(""),
+              closure_variable_name: well_known_pstrs::LOWER_A,
               closure_type_name: heap.alloc_str_for_test("Foo"),
               function_name: (FunctionName::new(
                 heap.alloc_str_for_test("foo"),
@@ -314,13 +315,13 @@ mod tests {
               context: ZERO,
             },
             Statement::IndexedAccess {
-              name: heap.alloc_str_for_test(""),
+              name: well_known_pstrs::LOWER_A,
               type_: INT_TYPE,
               pointer_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
               index: 0,
             },
             Statement::Cast {
-              name: heap.alloc_str_for_test(""),
+              name: well_known_pstrs::LOWER_A,
               type_: INT_TYPE,
               assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
             },
@@ -342,13 +343,13 @@ mod tests {
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::binary(
-                heap.alloc_str_for_test(""),
+                well_known_pstrs::LOWER_A,
                 crate::ast::hir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
               s2: vec![Statement::binary(
-                heap.alloc_str_for_test(""),
+                well_known_pstrs::LOWER_A,
                 crate::ast::hir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
@@ -362,15 +363,15 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: heap.alloc_str_for_test("f"),
+                name: well_known_pstrs::LOWER_F,
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![],
               break_collector: Some(VariableName {
-                name: heap.alloc_str_for_test("d"),
-                type_: Type::Id(heap.alloc_str_for_test("A")),
+                name: well_known_pstrs::LOWER_D,
+                type_: Type::Id(well_known_pstrs::UPPER_A),
               }),
             },
             Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },

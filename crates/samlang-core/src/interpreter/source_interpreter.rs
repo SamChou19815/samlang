@@ -588,7 +588,7 @@ mod tests {
       Value::Boolean(true),
       eval_expr_simple(heap, &expr::E::Literal(dummy_expr_common(), Literal::Bool(true)))
     );
-    let expr = expr::E::Literal(dummy_expr_common(), Literal::String(heap.alloc_str_for_test("a")));
+    let expr = expr::E::Literal(dummy_expr_common(), Literal::String(well_known_pstrs::LOWER_A));
     eval_expr_simple(heap, &expr);
   }
 
@@ -596,7 +596,7 @@ mod tests {
   #[test]
   fn this_panic_tests() {
     let heap = &mut Heap::new();
-    let expr = expr::E::LocalId(dummy_expr_common(), Id::from(heap.alloc_str_for_test("a")));
+    let expr = expr::E::LocalId(dummy_expr_common(), Id::from(well_known_pstrs::LOWER_A));
     eval_expr_simple(heap, &expr);
   }
 
@@ -614,16 +614,16 @@ mod tests {
   fn this_variable_class_id_passing_tests() {
     let mut cx = empty_cx();
     let mut heap = Heap::new();
-    cx.local_values.insert(heap.alloc_str_for_test("a"), Value::Int(1));
+    cx.local_values.insert(well_known_pstrs::LOWER_A, Value::Int(1));
     cx.local_values.insert(heap.alloc_str_for_test("this"), Value::Int(1));
     let expr = expr::E::LocalId(dummy_expr_common(), Id::from(heap.alloc_str_for_test("this")));
     assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
-    let expr = expr::E::LocalId(dummy_expr_common(), Id::from(heap.alloc_str_for_test("a")));
+    let expr = expr::E::LocalId(dummy_expr_common(), Id::from(well_known_pstrs::LOWER_A));
     assert_eq!(Value::Int(1), eval_expr(&mut cx, &mut heap, &expr));
     let expr = expr::E::ClassId(
       dummy_expr_common(),
       ModuleReference::dummy(),
-      Id::from(heap.alloc_str_for_test("a")),
+      Id::from(well_known_pstrs::LOWER_A),
     );
     assert_eq!(Value::Int(0), eval_expr(&mut cx, &mut heap, &expr));
   }
@@ -638,7 +638,7 @@ mod tests {
       toplevels: vec![Toplevel::Interface(InterfaceDeclarationCommon {
         loc: Location::dummy(),
         associated_comments: NO_COMMENT_REFERENCE,
-        name: Id::from(heap.alloc_str_for_test("")),
+        name: Id::from(well_known_pstrs::LOWER_A),
         type_parameters: vec![],
         extends_or_implements_nodes: vec![],
         type_definition: (),

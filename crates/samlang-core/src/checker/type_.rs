@@ -709,7 +709,7 @@ mod type_tests {
       "A",
       TypeParameterSignature::from_list(&[TypeParameter {
         loc: Location::dummy(),
-        name: Id::from(heap.alloc_str_for_test("A")),
+        name: Id::from(well_known_pstrs::UPPER_A),
         bound: None
       }])[0]
         .pretty_print(&heap)
@@ -718,11 +718,11 @@ mod type_tests {
       "A : B",
       TypeParameterSignature::from_list(&[TypeParameter {
         loc: Location::dummy(),
-        name: Id::from(heap.alloc_str_for_test("A")),
+        name: Id::from(well_known_pstrs::UPPER_A),
         bound: Some(annotation::Id {
           location: Location::dummy(),
           module_reference: ModuleReference::dummy(),
-          id: Id::from(heap.alloc_str_for_test("B")),
+          id: Id::from(well_known_pstrs::UPPER_B),
           type_arguments: vec![]
         })
       }])[0]
@@ -735,12 +735,10 @@ mod type_tests {
       TypeParameterSignature::pretty_print_list(
         &vec![
           TypeParameterSignature {
-            name: heap.alloc_str_for_test("A"),
-            bound: Option::Some(
-              builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("B"))
-            )
+            name: well_known_pstrs::UPPER_A,
+            bound: Option::Some(builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_B))
           },
-          TypeParameterSignature { name: heap.alloc_str_for_test("C"), bound: Option::None }
+          TypeParameterSignature { name: well_known_pstrs::UPPER_C, bound: Option::None }
         ],
         &heap
       )
@@ -776,12 +774,12 @@ m2: public () -> any
       InterfaceSignature {
         type_definition: Some(TypeDefinitionSignature::Struct(vec![
           StructItemDefinitionSignature {
-            name: heap.alloc_str_for_test("a"),
+            name: well_known_pstrs::LOWER_A,
             type_: builder.bool_type(),
             is_public: true
           },
           StructItemDefinitionSignature {
-            name: heap.alloc_str_for_test("b"),
+            name: well_known_pstrs::LOWER_B,
             type_: builder.bool_type(),
             is_public: false
           },
@@ -823,7 +821,7 @@ m2: public () -> any
     assert_eq!(
       "A(bool)",
       TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
-        name: heap.alloc_str_for_test("A"),
+        name: well_known_pstrs::UPPER_A,
         types: vec![builder.bool_type()]
       }])
       .to_string(&heap)
@@ -831,7 +829,7 @@ m2: public () -> any
     assert_eq!(
       "B(bool, bool)",
       TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
-        name: heap.alloc_str_for_test("B"),
+        name: well_known_pstrs::UPPER_B,
         types: vec![builder.bool_type(), builder.bool_type()]
       }])
       .to_string(&heap)
@@ -839,7 +837,7 @@ m2: public () -> any
     assert_eq!(
       "C",
       TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
-        name: heap.alloc_str_for_test("C"),
+        name: well_known_pstrs::UPPER_C,
         types: vec![]
       }])
       .to_string(&heap)
@@ -928,7 +926,7 @@ m2: public () -> any
         vec![builder.bool_annot()],
         builder.general_id_annot(
           heap.alloc_str_for_test("I"),
-          vec![builder.int_annot(), builder.generic_annot(heap.alloc_str_for_test("A"))]
+          vec![builder.int_annot(), builder.generic_annot(well_known_pstrs::UPPER_A)]
         )
       ))
       .pretty_print(heap)
@@ -937,35 +935,34 @@ m2: public () -> any
 
   #[test]
   fn test_equality_test() {
-    let mut heap = Heap::new();
     let builder = test_type_builder::create();
 
     assert!(!builder
       .unit_type()
-      .is_the_same_type(&builder.simple_nominal_type(heap.alloc_str_for_test("A"))));
+      .is_the_same_type(&builder.simple_nominal_type(well_known_pstrs::UPPER_A)));
 
     assert!(Type::Any(Reason::dummy(), true).is_the_same_type(&Type::Any(Reason::dummy(), false)));
     assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
     assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
 
     assert!(builder
-      .simple_nominal_type(heap.alloc_str_for_test("A"))
-      .is_the_same_type(&builder.simple_nominal_type(heap.alloc_str_for_test("A"))));
+      .simple_nominal_type(well_known_pstrs::UPPER_A)
+      .is_the_same_type(&builder.simple_nominal_type(well_known_pstrs::UPPER_A)));
     assert!(!builder
-      .simple_nominal_type(heap.alloc_str_for_test("A"))
-      .is_the_same_type(&builder.simple_nominal_type(heap.alloc_str_for_test("B"))));
+      .simple_nominal_type(well_known_pstrs::UPPER_A)
+      .is_the_same_type(&builder.simple_nominal_type(well_known_pstrs::UPPER_B)));
     assert!(builder
-      .general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+      .general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])
       .is_the_same_type(
-        &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+        &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])
       ));
     assert!(!builder
-      .general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+      .general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])
       .is_the_same_type(
-        &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()])
+        &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()])
       ));
-    assert!(!builder.simple_nominal_type(heap.alloc_str_for_test("A")).is_the_same_type(
-      &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.bool_type()])
+    assert!(!builder.simple_nominal_type(well_known_pstrs::UPPER_A).is_the_same_type(
+      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])
     ));
 
     assert!(builder

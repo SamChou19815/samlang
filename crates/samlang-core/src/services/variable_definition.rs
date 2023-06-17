@@ -324,7 +324,7 @@ mod tests {
       source::{expr, Id, Literal, Module},
       Location, Position,
     },
-    common::{Heap, ModuleReference},
+    common::{well_known_pstrs, Heap, ModuleReference},
     errors::ErrorSet,
     parser::parse_source_module_from_text,
     printer,
@@ -334,20 +334,19 @@ mod tests {
   #[should_panic]
   #[test]
   fn coverage_booster_tests() {
-    let mut heap = Heap::new();
     apply_expr_renaming(
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon::dummy(()),
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0))),
-        method_name: Id::from(heap.alloc_str_for_test("")),
+        method_name: Id::from(well_known_pstrs::LOWER_A),
       }),
       &DefinitionAndUses {
         definition_location: Location::dummy(),
         use_locations: vec![Location::dummy()],
       },
-      heap.alloc_str_for_test(""),
+      well_known_pstrs::LOWER_A,
     );
   }
 

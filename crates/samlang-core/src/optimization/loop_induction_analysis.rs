@@ -653,7 +653,10 @@ pub(super) fn extract_optimizable_while_loop(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::mir::{Callee, FunctionName, INT_TYPE, ONE, ZERO};
+  use crate::{
+    ast::mir::{Callee, FunctionName, INT_TYPE, ONE, ZERO},
+    common::well_known_pstrs,
+  };
   use pretty_assertions::assert_eq;
 
   #[test]
@@ -671,7 +674,7 @@ mod tests {
     assert!(get_guard_operator(Operator::EQ, true).is_none());
 
     assert!(!BasicInductionVariableWithLoopGuard {
-      name: heap.alloc_str_for_test(""),
+      name: well_known_pstrs::LOWER_A,
       initial_value: ZERO,
       increment_amount: PotentialLoopInvariantExpression::Int(0),
       guard_operator: GuardOperator::GE,
@@ -682,8 +685,8 @@ mod tests {
     .debug_print(heap)
     .is_empty());
     DerivedInductionVariableWithName {
-      name: heap.alloc_str_for_test(""),
-      base_name: heap.alloc_str_for_test(""),
+      name: well_known_pstrs::LOWER_A,
+      base_name: well_known_pstrs::LOWER_A,
       multiplier: PotentialLoopInvariantExpression::Int(0),
       immediate: PotentialLoopInvariantExpression::Int(0),
     }
@@ -751,12 +754,12 @@ mod tests {
 
     assert!(merge_variable_addition_into_derived_induction_variable(
       &DerivedInductionVariable {
-        base_name: heap.alloc_str_for_test("a"),
+        base_name: well_known_pstrs::LOWER_A,
         multiplier: PotentialLoopInvariantExpression::Int(1),
         immediate: PotentialLoopInvariantExpression::Int(1),
       },
       &DerivedInductionVariable {
-        base_name: heap.alloc_str_for_test("a"),
+        base_name: well_known_pstrs::LOWER_A,
         multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
           heap.alloc_str_for_test("vv"),
           INT_TYPE
@@ -768,12 +771,12 @@ mod tests {
 
     let successful = merge_variable_addition_into_derived_induction_variable(
       &DerivedInductionVariable {
-        base_name: heap.alloc_str_for_test("a"),
+        base_name: well_known_pstrs::LOWER_A,
         multiplier: PotentialLoopInvariantExpression::Int(1),
         immediate: PotentialLoopInvariantExpression::Int(1),
       },
       &DerivedInductionVariable {
-        base_name: heap.alloc_str_for_test("a"),
+        base_name: well_known_pstrs::LOWER_A,
         multiplier: PotentialLoopInvariantExpression::Int(2),
         immediate: PotentialLoopInvariantExpression::Int(1),
       },
@@ -785,24 +788,22 @@ mod tests {
 
   #[test]
   fn loop_invariant_tests() {
-    let heap = &mut crate::Heap::new();
-
     assert!(!expression_is_loop_invariant(
-      &Expression::StringName(heap.alloc_str_for_test("")),
-      &HashSet::from([heap.alloc_str_for_test("a")])
+      &Expression::StringName(well_known_pstrs::LOWER_B),
+      &HashSet::from([well_known_pstrs::LOWER_A])
     ));
     assert!(!expression_is_loop_invariant(
-      &Expression::StringName(heap.alloc_str_for_test(""),),
-      &HashSet::from([heap.alloc_str_for_test("a")])
+      &Expression::StringName(well_known_pstrs::LOWER_B),
+      &HashSet::from([well_known_pstrs::LOWER_A])
     ));
-    assert!(expression_is_loop_invariant(&ZERO, &HashSet::from([heap.alloc_str_for_test("a")])));
+    assert!(expression_is_loop_invariant(&ZERO, &HashSet::from([well_known_pstrs::LOWER_A])));
     assert!(expression_is_loop_invariant(
-      &Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
-      &HashSet::from([heap.alloc_str_for_test("a")])
+      &Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
+      &HashSet::from([well_known_pstrs::LOWER_A])
     ));
     assert!(!expression_is_loop_invariant(
-      &Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
-      &HashSet::from([heap.alloc_str_for_test("a")])
+      &Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
+      &HashSet::from([well_known_pstrs::LOWER_A])
     ));
   }
 
@@ -811,16 +812,16 @@ mod tests {
     let heap = &mut crate::Heap::new();
 
     assert!(extract_basic_induction_variables(
-      &heap.alloc_str_for_test("i"),
+      &well_known_pstrs::LOWER_I,
       &vec![
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: ZERO
         },
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: ZERO
@@ -832,16 +833,16 @@ mod tests {
     .is_none());
 
     assert!(extract_basic_induction_variables(
-      &heap.alloc_str_for_test("i"),
+      &well_known_pstrs::LOWER_I,
       &vec![
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
@@ -851,20 +852,20 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
-          Expression::StringName(heap.alloc_str_for_test(""))
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
+          Expression::StringName(well_known_pstrs::LOWER_A)
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
-          Expression::StringName(heap.alloc_str_for_test("")),
+          Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
+          Expression::StringName(well_known_pstrs::LOWER_A),
         )
       ],
       &HashSet::from([
-        heap.alloc_str_for_test(""),
-        heap.alloc_str_for_test("i"),
-        heap.alloc_str_for_test("j"),
+        well_known_pstrs::LOWER_A,
+        well_known_pstrs::LOWER_I,
+        well_known_pstrs::LOWER_J,
         heap.alloc_str_for_test("tmp_i"),
         heap.alloc_str_for_test("tmp_j")
       ]),
@@ -876,16 +877,16 @@ mod tests {
       all_basic_induction_variables,
       basic_induction_variable_with_associated_loop_guard,
     } = extract_basic_induction_variables(
-      &heap.alloc_str_for_test("i"),
+      &well_known_pstrs::LOWER_I,
       &vec![
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
@@ -895,20 +896,20 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
           Expression::int(3),
         ),
       ],
       &HashSet::from([
-        heap.alloc_str_for_test(""),
-        heap.alloc_str_for_test("i"),
-        heap.alloc_str_for_test("j"),
+        well_known_pstrs::LOWER_A,
+        well_known_pstrs::LOWER_I,
+        well_known_pstrs::LOWER_J,
         heap.alloc_str_for_test("tmp_i"),
         heap.alloc_str_for_test("tmp_j"),
       ]),
@@ -941,13 +942,13 @@ mod tests {
       extract_derived_induction_variables(
         &[
           GeneralBasicInductionVariableWithLoopValueCollector {
-            name: heap.alloc_str_for_test("i"),
+            name: well_known_pstrs::LOWER_I,
             initial_value: ZERO,
             increment_amount: PotentialLoopInvariantExpression::Int(1),
             loop_value_collector: heap.alloc_str_for_test("tmp_i"),
           },
           GeneralBasicInductionVariableWithLoopValueCollector {
-            name: heap.alloc_str_for_test("j"),
+            name: well_known_pstrs::LOWER_J,
             initial_value: ZERO,
             increment_amount: PotentialLoopInvariantExpression::Int(3),
             loop_value_collector: heap.alloc_str_for_test("tmp_j"),
@@ -957,13 +958,13 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ONE
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
             Expression::int(3),
           ),
           Statement::binary(
@@ -980,7 +981,7 @@ mod tests {
           ),
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test(""),
+              well_known_pstrs::LOWER_A,
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE)],
@@ -989,7 +990,7 @@ mod tests {
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test(""),
+              well_known_pstrs::LOWER_A,
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
             arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE)],
@@ -1029,14 +1030,14 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_useless_6"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
-            Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
           ),
         ],
         &HashSet::from([
-          heap.alloc_str_for_test(""),
-          heap.alloc_str_for_test("i"),
-          heap.alloc_str_for_test("j"),
+          well_known_pstrs::LOWER_A,
+          well_known_pstrs::LOWER_I,
+          well_known_pstrs::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
           heap.alloc_str_for_test("tmp_j"),
           heap.alloc_str_for_test("tmp_x"),
@@ -1051,7 +1052,7 @@ mod tests {
 
     assert!(extract_derived_induction_variables(
       &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: heap.alloc_str_for_test("i"),
+        name: well_known_pstrs::LOWER_I,
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Int(1),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
@@ -1060,20 +1061,20 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           ONE
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE),
         )
       ],
       &HashSet::from([
-        heap.alloc_str_for_test(""),
-        heap.alloc_str_for_test("i"),
-        heap.alloc_str_for_test("j"),
+        well_known_pstrs::LOWER_A,
+        well_known_pstrs::LOWER_I,
+        well_known_pstrs::LOWER_J,
         heap.alloc_str_for_test("tmp_i"),
         heap.alloc_str_for_test("tmp_j")
       ]),
@@ -1082,7 +1083,7 @@ mod tests {
 
     assert!(extract_derived_induction_variables(
       &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: heap.alloc_str_for_test("i"),
+        name: well_known_pstrs::LOWER_I,
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Int(1),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
@@ -1091,20 +1092,20 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           ONE
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
           Expression::StringName(heap.alloc_str_for_test("outside")),
         )
       ],
       &HashSet::from([
-        heap.alloc_str_for_test(""),
-        heap.alloc_str_for_test("i"),
-        heap.alloc_str_for_test("j"),
+        well_known_pstrs::LOWER_A,
+        well_known_pstrs::LOWER_I,
+        well_known_pstrs::LOWER_J,
         heap.alloc_str_for_test("tmp_i"),
         heap.alloc_str_for_test("tmp_j")
       ]),
@@ -1115,7 +1116,7 @@ mod tests {
       vec!["{name: tmp_j, base_name: i, multiplier: 1, immediate: (outside: int)}"],
       extract_derived_induction_variables(
         &[GeneralBasicInductionVariableWithLoopValueCollector {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           loop_value_collector: heap.alloc_str_for_test("tmp_i"),
@@ -1124,7 +1125,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
           ),
           Statement::binary(
@@ -1135,9 +1136,9 @@ mod tests {
           )
         ],
         &HashSet::from([
-          heap.alloc_str_for_test(""),
-          heap.alloc_str_for_test("i"),
-          heap.alloc_str_for_test("j"),
+          well_known_pstrs::LOWER_A,
+          well_known_pstrs::LOWER_I,
+          well_known_pstrs::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
           heap.alloc_str_for_test("tmp_j")
         ]),
@@ -1151,7 +1152,7 @@ mod tests {
       vec!["{name: tmp_j, base_name: i, multiplier: 1, immediate: (outside: int)}"],
       extract_derived_induction_variables(
         &[GeneralBasicInductionVariableWithLoopValueCollector {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           loop_value_collector: heap.alloc_str_for_test("tmp_i"),
@@ -1160,20 +1161,20 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO,
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
           )
         ],
         &HashSet::from([
-          heap.alloc_str_for_test(""),
-          heap.alloc_str_for_test("i"),
-          heap.alloc_str_for_test("j"),
+          well_known_pstrs::LOWER_A,
+          well_known_pstrs::LOWER_I,
+          well_known_pstrs::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
           heap.alloc_str_for_test("tmp_j")
         ]),
@@ -1187,7 +1188,7 @@ mod tests {
       vec!["{name: tmp_j, base_name: i, multiplier: 1, immediate: (outside: int)}"],
       extract_derived_induction_variables(
         &[GeneralBasicInductionVariableWithLoopValueCollector {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             heap.alloc_str_for_test("outside"),
@@ -1199,7 +1200,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
           ),
           Statement::binary(
@@ -1210,9 +1211,9 @@ mod tests {
           )
         ],
         &HashSet::from([
-          heap.alloc_str_for_test(""),
-          heap.alloc_str_for_test("i"),
-          heap.alloc_str_for_test("j"),
+          well_known_pstrs::LOWER_A,
+          well_known_pstrs::LOWER_I,
+          well_known_pstrs::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
           heap.alloc_str_for_test("tmp_j")
         ]),
@@ -1224,7 +1225,7 @@ mod tests {
 
     assert!(extract_derived_induction_variables(
       &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: heap.alloc_str_for_test("i"),
+        name: well_known_pstrs::LOWER_I,
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
           heap.alloc_str_for_test("outside"),
@@ -1236,7 +1237,7 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("outside"), INT_TYPE)
         ),
         Statement::binary(
@@ -1247,9 +1248,9 @@ mod tests {
         )
       ],
       &HashSet::from([
-        heap.alloc_str_for_test(""),
-        heap.alloc_str_for_test("i"),
-        heap.alloc_str_for_test("j"),
+        well_known_pstrs::LOWER_A,
+        well_known_pstrs::LOWER_I,
+        well_known_pstrs::LOWER_J,
         heap.alloc_str_for_test("tmp_i"),
         heap.alloc_str_for_test("tmp_j")
       ]),
@@ -1260,7 +1261,7 @@ mod tests {
       vec!["{name: tmp_j, base_name: i, multiplier: (outside: int), immediate: (outside: int)}"],
       extract_derived_induction_variables(
         &[GeneralBasicInductionVariableWithLoopValueCollector {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             heap.alloc_str_for_test("outside"),
@@ -1272,7 +1273,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ONE
           ),
           Statement::binary(
@@ -1283,9 +1284,9 @@ mod tests {
           )
         ],
         &HashSet::from([
-          heap.alloc_str_for_test(""),
-          heap.alloc_str_for_test("i"),
-          heap.alloc_str_for_test("j"),
+          well_known_pstrs::LOWER_A,
+          well_known_pstrs::LOWER_I,
+          well_known_pstrs::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
           heap.alloc_str_for_test("tmp_j")
         ]),
@@ -1297,7 +1298,7 @@ mod tests {
 
     assert!(extract_derived_induction_variables(
       &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: heap.alloc_str_for_test("i"),
+        name: well_known_pstrs::LOWER_I,
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Int(2),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
@@ -1306,7 +1307,7 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           Expression::int(2)
         ),
         Statement::binary(
@@ -1317,9 +1318,9 @@ mod tests {
         )
       ],
       &HashSet::from([
-        heap.alloc_str_for_test(""),
-        heap.alloc_str_for_test("i"),
-        heap.alloc_str_for_test("j"),
+        well_known_pstrs::LOWER_A,
+        well_known_pstrs::LOWER_I,
+        well_known_pstrs::LOWER_J,
         heap.alloc_str_for_test("tmp_i"),
         heap.alloc_str_for_test("tmp_j")
       ]),
@@ -1330,7 +1331,7 @@ mod tests {
       vec!["{name: t1, base_name: i, multiplier: 1, immediate: 2}"],
       extract_derived_induction_variables(
         &[GeneralBasicInductionVariableWithLoopValueCollector {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           loop_value_collector: heap.alloc_str_for_test("tmp_i"),
@@ -1339,7 +1340,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ONE
           ),
           Statement::binary(
@@ -1350,9 +1351,9 @@ mod tests {
           )
         ],
         &HashSet::from([
-          heap.alloc_str_for_test(""),
-          heap.alloc_str_for_test("i"),
-          heap.alloc_str_for_test("j"),
+          well_known_pstrs::LOWER_A,
+          well_known_pstrs::LOWER_I,
+          well_known_pstrs::LOWER_J,
           heap.alloc_str_for_test("tmp_i"),
           heap.alloc_str_for_test("tmp_j"),
           heap.alloc_str_for_test("t1")
@@ -1365,7 +1366,7 @@ mod tests {
 
     assert!(extract_derived_induction_variables(
       &[GeneralBasicInductionVariableWithLoopValueCollector {
-        name: heap.alloc_str_for_test("i"),
+        name: well_known_pstrs::LOWER_I,
         initial_value: ZERO,
         increment_amount: PotentialLoopInvariantExpression::Int(1),
         loop_value_collector: heap.alloc_str_for_test("tmp_i"),
@@ -1374,7 +1375,7 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           ONE
         ),
         Statement::binary(
@@ -1385,9 +1386,9 @@ mod tests {
         )
       ],
       &HashSet::from([
-        heap.alloc_str_for_test(""),
-        heap.alloc_str_for_test("i"),
-        heap.alloc_str_for_test("j"),
+        well_known_pstrs::LOWER_A,
+        well_known_pstrs::LOWER_I,
+        well_known_pstrs::LOWER_J,
         heap.alloc_str_for_test("tmp_i"),
         heap.alloc_str_for_test("tmp_j"),
         heap.alloc_str_for_test("t1")
@@ -1403,13 +1404,13 @@ mod tests {
     remove_dead_code_inside_loop(
       &vec![
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test(""),
+          name: well_known_pstrs::LOWER_A,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: ZERO,
         },
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test(""),
+          name: well_known_pstrs::LOWER_A,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("name"), INT_TYPE),
@@ -1424,9 +1425,9 @@ mod tests {
     let heap = &mut crate::Heap::new();
 
     let non_loop_invariant_variables = HashSet::from([
-      heap.alloc_str_for_test(""),
-      heap.alloc_str_for_test("a"),
-      heap.alloc_str_for_test("b"),
+      well_known_pstrs::LOWER_A,
+      well_known_pstrs::LOWER_A,
+      well_known_pstrs::LOWER_B,
       heap.alloc_str_for_test("cc"),
     ]);
 
@@ -1436,12 +1437,12 @@ mod tests {
       (
         &vec![
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test(""),
+            struct_variable_name: well_known_pstrs::LOWER_A,
             type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           },
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test(""),
+            struct_variable_name: well_known_pstrs::LOWER_A,
             type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           }
@@ -1457,7 +1458,7 @@ mod tests {
         &vec![Statement::binary(
           heap.alloc_str_for_test("cc"),
           Operator::LT,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           ZERO
         ),],
         &None
@@ -1470,12 +1471,12 @@ mod tests {
       (
         &vec![
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test(""),
+            struct_variable_name: well_known_pstrs::LOWER_A,
             type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           },
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test(""),
+            struct_variable_name: well_known_pstrs::LOWER_A,
             type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           }
@@ -1489,9 +1490,9 @@ mod tests {
     assert!(extract_loop_guard_structure(
       (
         &vec![
-          Statement::binary(heap.alloc_str_for_test(""), Operator::PLUS, ZERO, ZERO),
+          Statement::binary(well_known_pstrs::LOWER_A, Operator::PLUS, ZERO, ZERO),
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test(""),
+            struct_variable_name: well_known_pstrs::LOWER_A,
             type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           }
@@ -1508,11 +1509,11 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test(""),
+            struct_variable_name: well_known_pstrs::LOWER_A,
             type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           }
@@ -1529,11 +1530,11 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::StructInit {
-            struct_variable_name: heap.alloc_str_for_test(""),
+            struct_variable_name: well_known_pstrs::LOWER_A,
             type_name: heap.alloc_str_for_test("T"),
             expression_list: vec![],
           },
@@ -1551,7 +1552,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
@@ -1568,7 +1569,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
@@ -1589,7 +1590,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
@@ -1610,7 +1611,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
@@ -1623,7 +1624,7 @@ mod tests {
             condition: ZERO,
             invert_condition: false,
             statements: vec![Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test(""),
+              struct_variable_name: well_known_pstrs::LOWER_A,
               type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }]
@@ -1631,19 +1632,19 @@ mod tests {
           Statement::IfElse {
             condition: ZERO,
             s1: vec![Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test(""),
+              struct_variable_name: well_known_pstrs::LOWER_A,
               type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }],
             s2: vec![Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test(""),
+              struct_variable_name: well_known_pstrs::LOWER_A,
               type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }],
             final_assignments: vec![]
           },
           Statement::IndexedAccess {
-            name: heap.alloc_str_for_test(""),
+            name: well_known_pstrs::LOWER_A,
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 0
@@ -1651,12 +1652,12 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test(""),
+              well_known_pstrs::LOWER_A,
               Type::new_fn_unwrapped(vec![], INT_TYPE)
             )),
             arguments: vec![],
@@ -1677,7 +1678,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::EQ,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
@@ -1698,14 +1699,14 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
             condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test(""),
+              struct_variable_name: well_known_pstrs::LOWER_A,
               type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }]
@@ -1723,14 +1724,14 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
             condition: Expression::StringName(heap.alloc_str_for_test("cc")),
             invert_condition: false,
             statements: vec![Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test(""),
+              struct_variable_name: well_known_pstrs::LOWER_A,
               type_name: heap.alloc_str_for_test("I"),
               expression_list: vec![]
             }]
@@ -1754,7 +1755,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
@@ -1776,7 +1777,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::EQ,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
@@ -1787,7 +1788,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           )
         ],
@@ -1804,7 +1805,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
@@ -1815,7 +1816,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           )
         ],
@@ -1832,7 +1833,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::GE,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO
           ),
           Statement::SingleIf {
@@ -1843,7 +1844,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ONE
           ),
         ],
@@ -1869,13 +1870,13 @@ mod tests {
       (
         vec![
           GenenalLoopVariable {
-            name: heap.alloc_str_for_test("i"),
+            name: well_known_pstrs::LOWER_I,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           },
           GenenalLoopVariable {
-            name: heap.alloc_str_for_test("j"),
+            name: well_known_pstrs::LOWER_J,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
@@ -1891,7 +1892,7 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::GE,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ZERO,
           ),
           Statement::SingleIf {
@@ -1902,13 +1903,13 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ONE,
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
             Expression::int(3),
           ),
           Statement::binary(

@@ -54,11 +54,9 @@ mod lowering_cx_boilterplate_tests {
 
   #[test]
   fn tests() {
-    let heap = &mut Heap::new();
-
     LoweringContext::new().bind(
-      heap.alloc_str_for_test("a"),
-      hir::Expression::var_name(heap.alloc_str_for_test("a"), hir::INT_TYPE),
+      well_known_pstrs::LOWER_A,
+      hir::Expression::var_name(well_known_pstrs::LOWER_A, hir::INT_TYPE),
     );
   }
 }
@@ -350,23 +348,21 @@ impl<'a> ExpressionLoweringManager<'a> {
     let LoweringResult { mut statements, expression: result_expr } =
       self.lower(&expression.argument, None);
     let value_name = self.allocate_temp_variable(favored_temp_variable);
-    let new_binary = match expression.operator {
-      source::expr::UnaryOperator::NOT => hir::Binary {
+    statements.push(match expression.operator {
+      source::expr::UnaryOperator::NOT => hir::Statement::Binary {
         name: value_name,
         operator: hir::Operator::XOR,
         e1: result_expr,
         e2: hir::ONE,
       },
-      source::expr::UnaryOperator::NEG => hir::Binary {
+      source::expr::UnaryOperator::NEG => hir::Statement::Binary {
         name: value_name,
         operator: hir::Operator::MINUS,
         e1: hir::ZERO,
         e2: result_expr,
       },
-    };
-    let final_expr = hir::Expression::var_name(new_binary.name, hir::INT_TYPE);
-    statements.push(hir::Statement::Binary(new_binary));
-    LoweringResult { statements, expression: final_expr }
+    });
+    LoweringResult { statements, expression: hir::Expression::var_name(value_name, hir::INT_TYPE) }
   }
 
   fn lower_fn_call(
@@ -587,7 +583,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     let e1 = self.lowered_and_add_statements(&expression.e1, None, &mut lowered_stmts);
     let e2 = self.lowered_and_add_statements(&expression.e2, None, &mut lowered_stmts);
     let value_temp = self.allocate_temp_variable(favored_temp_variable);
-    lowered_stmts.push(hir::Statement::binary(value_temp, operator, e1, e2));
+    lowered_stmts.push(hir::Statement::Binary { name: value_temp, operator, e1, e2 });
     LoweringResult {
       statements: lowered_stmts,
       expression: hir::Expression::var_name(value_temp, hir::INT_TYPE),
@@ -689,12 +685,12 @@ impl<'a> ExpressionLoweringManager<'a> {
       let lowered_return_type = acc.1.type_().clone();
       let (acc_stmts, acc_e) = acc;
       let new_stmts = vec![
-        hir::Statement::Binary(hir::Statement::binary_unwrapped(
-          comparison_temp,
-          hir::Operator::EQ,
-          hir::Expression::var_name(variable_for_tag, hir::INT_TYPE),
-          hir::Expression::int(i32::try_from(tag_order).unwrap()),
-        )),
+        hir::Statement::Binary {
+          name: comparison_temp,
+          operator: hir::Operator::EQ,
+          e1: hir::Expression::var_name(variable_for_tag, hir::INT_TYPE),
+          e2: hir::Expression::int(i32::try_from(tag_order).unwrap()),
+        },
         hir::Statement::IfElse {
           condition: hir::Expression::var_name(comparison_temp, hir::INT_TYPE),
           s1: case_stmts,
@@ -1281,7 +1277,7 @@ mod tests {
       Location, Reason,
     },
     checker::type_::{self, test_type_builder},
-    common::{Heap, ModuleReference},
+    common::{well_known_pstrs, Heap, ModuleReference},
     compiler::{
       hir_lowering::ExpressionLoweringManager,
       hir_string_manager::StringManager,
@@ -1853,7 +1849,7 @@ return (_t6: _Str);"#,
           builder.fun_type(vec![builder.unit_type()], builder.unit_type()),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from(heap.alloc_str_for_test("a")),
+          name: source::Id::from(well_known_pstrs::LOWER_A),
           type_: builder.unit_type(),
           annotation: Some(annot_builder.unit_annot()),
         }],
@@ -1880,7 +1876,7 @@ return (_t6: $SyntheticIDType1);"#,
           builder.fun_type(vec![builder.unit_type()], builder.int_type()),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from(heap.alloc_str_for_test("a")),
+          name: source::Id::from(well_known_pstrs::LOWER_A),
           type_: builder.unit_type(),
           annotation: Some(annot_builder.unit_annot()),
         }],
@@ -1907,7 +1903,7 @@ return (_t6: $SyntheticIDType1);"#,
           builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type(heap))),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from(heap.alloc_str_for_test("a")),
+          name: source::Id::from(well_known_pstrs::LOWER_A),
           type_: builder.unit_type(),
           annotation: Some(annot_builder.unit_annot()),
         }],
@@ -1934,7 +1930,7 @@ return (_t6: $SyntheticIDType1);"#,
           builder.fun_type(vec![builder.unit_type()], Rc::new(dummy_source_id_type(heap))),
         ),
         parameters: vec![source::OptionallyAnnotatedId {
-          name: source::Id::from(heap.alloc_str_for_test("a")),
+          name: source::Id::from(well_known_pstrs::LOWER_A),
           type_: builder.unit_type(),
           annotation: Some(annot_builder.unit_annot()),
         }],
@@ -2085,7 +2081,7 @@ return (_t16: DUMMY_Dummy);"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
           annotation: Some(annot_builder.unit_annot()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
@@ -2099,15 +2095,15 @@ return (_t16: DUMMY_Dummy);"#,
                     source::expr::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 0,
-                      field_name: source::Id::from(heap.alloc_str_for_test("a")),
+                      field_name: source::Id::from(well_known_pstrs::LOWER_A),
                       alias: None,
                       type_: builder.int_type(),
                     },
                     source::expr::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 1,
-                      field_name: source::Id::from(heap.alloc_str_for_test("b")),
-                      alias: Some(source::Id::from(heap.alloc_str_for_test("c"))),
+                      field_name: source::Id::from(well_known_pstrs::LOWER_B),
+                      alias: Some(source::Id::from(well_known_pstrs::LOWER_C)),
                       type_: builder.int_type(),
                     },
                   ],
@@ -2148,15 +2144,15 @@ return 0;"#,
                 source::expr::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 0,
-                  field_name: source::Id::from(heap.alloc_str_for_test("a")),
+                  field_name: source::Id::from(well_known_pstrs::LOWER_A),
                   alias: None,
                   type_: builder.int_type(),
                 },
                 source::expr::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 1,
-                  field_name: source::Id::from(heap.alloc_str_for_test("b")),
-                  alias: Some(source::Id::from(heap.alloc_str_for_test("c"))),
+                  field_name: source::Id::from(well_known_pstrs::LOWER_B),
+                  alias: Some(source::Id::from(well_known_pstrs::LOWER_C)),
                   type_: builder.int_type(),
                 },
               ],
@@ -2187,7 +2183,7 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
           annotation: Some(annot_builder.int_annot()),
           assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
             common: source::expr::ExpressionCommon::dummy(builder.int_type()),
@@ -2213,7 +2209,7 @@ return 0;"#,
             arguments: vec![dummy_source_this(heap), dummy_source_this(heap)],
           })),
         }],
-        expression: Some(Box::new( id_expr(heap.alloc_str_for_test("a"), builder.string_type()))),
+        expression: Some(Box::new( id_expr(well_known_pstrs::LOWER_A, builder.string_type()))),
       }),
       heap,
       "let a: int = _ModuleModule_ImportedClass$bar(0, (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));\nreturn (a: int);",
@@ -2227,7 +2223,7 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("a")),
+            pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(source::expr::E::Literal(
               source::expr::ExpressionCommon::dummy(builder.string_type()),
@@ -2237,15 +2233,15 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("b")),
+            pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_B),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(id_expr(
-              heap.alloc_str_for_test("a"),
+              well_known_pstrs::LOWER_A,
               builder.string_type(),
             )),
           },
         ],
-        expression: Some(Box::new(id_expr(heap.alloc_str_for_test("b"), builder.string_type()))),
+        expression: Some(Box::new(id_expr(well_known_pstrs::LOWER_B, builder.string_type()))),
       }),
       heap,
       "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;",
@@ -2258,24 +2254,21 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("a")),
+          pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
           annotation: Some(annot_builder.unit_annot()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
             statements: vec![source::expr::DeclarationStatement {
               loc: Location::dummy(),
               associated_comments: NO_COMMENT_REFERENCE,
-              pattern: source::expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("a")),
+              pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
               annotation: Some(annot_builder.int_annot()),
               assigned_expression: Box::new(dummy_source_this(heap)),
             }],
-            expression: Some(Box::new(id_expr(
-              heap.alloc_str_for_test("a"),
-              builder.string_type(),
-            ))),
+            expression: Some(Box::new(id_expr(well_known_pstrs::LOWER_A, builder.string_type()))),
           })),
         }],
-        expression: Some(Box::new(id_expr(heap.alloc_str_for_test("a"), builder.string_type()))),
+        expression: Some(Box::new(id_expr(well_known_pstrs::LOWER_A, builder.string_type()))),
       }),
       heap,
       "return (_this: DUMMY_Dummy);",
@@ -2408,7 +2401,7 @@ return 0;"#,
           type_definition: source::TypeDefinition::Struct {
             loc: Location::dummy(),
             fields: vec![source::FieldDefinition {
-              name: source::Id::from(heap.alloc_str_for_test("a")),
+              name: source::Id::from(well_known_pstrs::LOWER_A),
               annotation: annot_builder.int_annot(),
               is_public: true,
             }],
@@ -2425,7 +2418,7 @@ return 0;"#,
                 type_: annot_builder
                   .fn_annot_unwrapped(vec![annot_builder.int_annot()], annot_builder.int_annot()),
                 parameters: Rc::new(vec![source::AnnotatedId {
-                  name: source::Id::from(heap.alloc_str_for_test("a")),
+                  name: source::Id::from(well_known_pstrs::LOWER_A),
                   type_: (), // builder.int_type(),
                   annotation: annot_builder.int_annot(),
                 }]),
@@ -2586,13 +2579,11 @@ return 0;"#,
           type_definition: source::TypeDefinition::Struct {
             loc: Location::dummy(),
             fields: vec![source::FieldDefinition {
-              name: source::Id::from(heap.alloc_str_for_test("a")),
+              name: source::Id::from(well_known_pstrs::LOWER_A),
               annotation: annot_builder.fn_annot(
                 vec![
-                  annot_builder.general_id_annot(
-                    heap.alloc_str_for_test("A"),
-                    vec![annot_builder.int_annot()],
-                  ),
+                  annot_builder
+                    .general_id_annot(well_known_pstrs::UPPER_A, vec![annot_builder.int_annot()]),
                   annot_builder.simple_id_annot(heap.alloc_str_for_test("T")),
                 ],
                 annot_builder.int_annot(),
@@ -2660,7 +2651,7 @@ function _DUMMY_Class1$factorial(_this: int, n: int, acc: int): int {
   if (_t19: int) {
     _t20 = 1;
   } else {
-    let _t22 = (n: int) + -1;
+    let _t22 = (n: int) - 1;
     let _t23 = (n: int) * (acc: int);
     let _t21: int = _DUMMY_Class1$factorial(0, (_t22: int), (_t23: int));
     _t20 = (_t21: int);

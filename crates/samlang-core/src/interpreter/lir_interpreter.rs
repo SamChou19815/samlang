@@ -329,7 +329,7 @@ mod tests {
         Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ONE, ZERO,
       },
     },
-    common::Heap,
+    common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
 
@@ -340,7 +340,7 @@ mod tests {
 
     let sources = Sources {
       global_variables: vec![GlobalVariable {
-        name: heap.alloc_str_for_test("A"),
+        name: well_known_pstrs::UPPER_A,
         content: heap.alloc_str_for_test("Ouch"),
       }],
       type_definitions: vec![],
@@ -354,7 +354,7 @@ mod tests {
             heap.alloc_string(common_names::encoded_fn_name_panic()),
             INT_TYPE,
           ),
-          arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("A"), INT_TYPE)],
+          arguments: vec![ZERO, Expression::Variable(well_known_pstrs::UPPER_A, INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         }],
@@ -486,11 +486,11 @@ mod tests {
     assert_run_output(
       vec![
         GlobalVariable {
-          name: heap.alloc_str_for_test("A"),
+          name: well_known_pstrs::UPPER_A,
           content: heap.alloc_str_for_test("Hello "),
         },
         GlobalVariable {
-          name: heap.alloc_str_for_test("B"),
+          name: well_known_pstrs::UPPER_B,
           content: heap.alloc_str_for_test("World!"),
         },
       ],
@@ -552,14 +552,14 @@ mod tests {
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test("a"),
+              struct_variable_name: well_known_pstrs::LOWER_A,
               type_: INT_TYPE,
               expression_list: vec![ZERO, ZERO],
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v"),
               type_: INT_TYPE,
-              pointer_expression: Expression::Variable(heap.alloc_str_for_test("a"), INT_TYPE),
+              pointer_expression: Expression::Variable(well_known_pstrs::LOWER_A, INT_TYPE),
               index: 0,
             },
             Statement::Binary {
@@ -666,7 +666,7 @@ mod tests {
             },
             Statement::IndexedAssign {
               assigned_expression: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
-              pointer_expression: Expression::Variable(heap.alloc_str_for_test("a"), INT_TYPE),
+              pointer_expression: Expression::Variable(well_known_pstrs::LOWER_A, INT_TYPE),
               index: 1,
             },
             Statement::SingleIf {
@@ -677,7 +677,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_B, INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -690,7 +690,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_A, INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -702,7 +702,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_A, INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -711,7 +711,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_B, INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -724,7 +724,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_B, INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -733,7 +733,7 @@ mod tests {
                   heap.alloc_string(common_names::encoded_fn_name_println()),
                   INT_TYPE,
                 ),
-                arguments: vec![ZERO, Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE)],
+                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_A, INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -810,8 +810,8 @@ mod tests {
                 INT_TYPE,
               ),
               arguments: vec![
-                Expression::Name(heap.alloc_str_for_test("A"), INT_TYPE),
-                Expression::Name(heap.alloc_str_for_test("B"), INT_TYPE),
+                Expression::Name(well_known_pstrs::UPPER_A, INT_TYPE),
+                Expression::Name(well_known_pstrs::UPPER_B, INT_TYPE),
               ],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("hw_string")),

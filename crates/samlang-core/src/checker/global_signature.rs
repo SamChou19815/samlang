@@ -394,6 +394,7 @@ mod tests {
     checker::type_::{
       create_builtin_module_signature, test_type_builder, GlobalSignature, NominalType,
     },
+    common::well_known_pstrs,
     errors::ErrorSet,
     parser::parse_source_module_from_text,
     Heap, ModuleReference,
@@ -511,7 +512,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
           reason: Reason::dummy(),
           is_class_statics: false,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("C"),
+          id: well_known_pstrs::UPPER_C,
           type_arguments: vec![]
         },
       )
@@ -617,39 +618,39 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       &global_cx,
       (
         heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-        heap.alloc_str_for_test("C")
+        well_known_pstrs::UPPER_C
       ),
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::root(), heap.alloc_str_for_test("C")),
-      heap.alloc_str_for_test("a"),
+      (ModuleReference::root(), well_known_pstrs::UPPER_C),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), heap.alloc_str_for_test("C")),
-      heap.alloc_str_for_test("a"),
+      (ModuleReference::dummy(), well_known_pstrs::UPPER_C),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
       (ModuleReference::dummy(), heap.alloc_str_for_test("IUseNonExistent")),
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
       (ModuleReference::dummy(), heap.alloc_str_for_test("ICyclic1")),
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
       (ModuleReference::dummy(), heap.alloc_str_for_test("ICyclic2")),
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
   }
@@ -666,10 +667,10 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         reason: Reason::dummy(),
         is_class_statics: false,
         module_reference: ModuleReference::dummy(),
-        id: heap.alloc_str_for_test("C"),
+        id: well_known_pstrs::UPPER_C,
         type_arguments: vec![]
       },
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert!(resolve_method_signature(
@@ -681,7 +682,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         id: heap.alloc_str_for_test("IUseNonExistent"),
         type_arguments: vec![]
       },
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert_eq!(
@@ -731,7 +732,7 @@ public <C : A>(int, int) -> C
         id: heap.alloc_str_for_test("ICyclic1"),
         type_arguments: vec![]
       },
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert!(resolve_method_signature(
@@ -743,7 +744,7 @@ public <C : A>(int, int) -> C
         id: heap.alloc_str_for_test("ICyclic2"),
         type_arguments: vec![]
       },
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
     )
     .is_empty());
     assert_eq!(

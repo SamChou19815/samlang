@@ -50,7 +50,7 @@ mod tests {
       .possibly_in_scope_local_variables(Position(0, 0))
       .is_empty());
 
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let builder = test_type_builder::create();
     let mut cx = LocalTypingContext::new(SsaAnalysisResult {
       unbound_names: HashSet::new(),
@@ -60,14 +60,14 @@ mod tests {
       local_scoped_def_locs: HashMap::from([
         (
           Location::from_pos(1, 1, 100, 100),
-          HashMap::from([(heap.alloc_str_for_test("a"), Location::from_pos(1, 2, 3, 4))]),
+          HashMap::from([(well_known_pstrs::LOWER_A, Location::from_pos(1, 2, 3, 4))]),
         ),
         (Location::from_pos(300, 1, 1000, 1000), HashMap::new()),
         (
           Location::from_pos(10, 10, 50, 50),
           HashMap::from([
-            (heap.alloc_str_for_test("b"), Location::from_pos(5, 6, 7, 8)),
-            (heap.alloc_str_for_test("c"), Location::from_pos(9, 10, 11, 12)),
+            (well_known_pstrs::LOWER_B, Location::from_pos(5, 6, 7, 8)),
+            (well_known_pstrs::LOWER_C, Location::from_pos(9, 10, 11, 12)),
           ]),
         ),
       ]),
@@ -86,7 +86,6 @@ mod tests {
 
   #[test]
   fn run_in_synthesis_mode_tests() {
-    let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::new();
     let mut local_cx = empty_local_typing_context();
@@ -95,7 +94,7 @@ mod tests {
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str_for_test("A"),
+      well_known_pstrs::UPPER_A,
       vec![],
     );
 
@@ -117,7 +116,7 @@ mod tests {
       ModuleReference::dummy(),
       ModuleSignature {
         interfaces: HashMap::from([(
-          heap.alloc_str_for_test("A"),
+          well_known_pstrs::UPPER_A,
           InterfaceSignature {
             type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
             type_parameters: vec![TypeParameterSignature {
@@ -125,7 +124,7 @@ mod tests {
               bound: None,
             }],
             super_types: vec![builder.general_nominal_type_unwrapped(
-              heap.alloc_str_for_test("B"),
+              well_known_pstrs::UPPER_B,
               vec![builder.generic_type(heap.alloc_str_for_test("T")), builder.int_type()],
             )],
             functions: HashMap::new(),
@@ -139,43 +138,44 @@ mod tests {
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str_for_test("A"),
+      well_known_pstrs::UPPER_A,
       vec![],
     );
 
     // Non-id lower type
-    assert!(!cx
-      .is_subtype(&builder.int_type(), &builder.simple_nominal_type(heap.alloc_str_for_test("B"))));
+    assert!(
+      !cx.is_subtype(&builder.int_type(), &builder.simple_nominal_type(well_known_pstrs::UPPER_B))
+    );
     // Non-existent type
     assert!(!cx.is_subtype(
-      &builder.simple_nominal_type(heap.alloc_str_for_test("B")),
-      &builder.simple_nominal_type(heap.alloc_str_for_test("C"))
+      &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
+      &builder.simple_nominal_type(well_known_pstrs::UPPER_C)
     ));
     // Type-args length mismatch
     assert!(!cx.is_subtype(
-      &builder.simple_nominal_type(heap.alloc_str_for_test("A")),
-      &builder.simple_nominal_type(heap.alloc_str_for_test("B"))
+      &builder.simple_nominal_type(well_known_pstrs::UPPER_A),
+      &builder.simple_nominal_type(well_known_pstrs::UPPER_B)
     ));
     // Type-args mismatch
     assert!(!cx.is_subtype(
-      &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
+      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]),
       &builder.general_nominal_type(
-        heap.alloc_str_for_test("B"),
+        well_known_pstrs::UPPER_B,
         vec![builder.string_type(), builder.int_type()]
       )
     ));
     assert!(!cx.is_subtype(
-      &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.int_type()]),
+      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]),
       &builder.general_nominal_type(
-        heap.alloc_str_for_test("B"),
+        well_known_pstrs::UPPER_B,
         vec![builder.string_type(), builder.string_type()]
       )
     ));
     // Good
     assert!(cx.is_subtype(
-      &builder.general_nominal_type(heap.alloc_str_for_test("A"), vec![builder.string_type()]),
+      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.string_type()]),
       &builder.general_nominal_type(
-        heap.alloc_str_for_test("B"),
+        well_known_pstrs::UPPER_B,
         vec![builder.string_type(), builder.int_type()]
       )
     ));
@@ -192,14 +192,14 @@ mod tests {
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            heap.alloc_str_for_test("A"),
+            well_known_pstrs::UPPER_A,
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str_for_test("T1"), bound: None },
                 TypeParameterSignature {
                   name: heap.alloc_str_for_test("T2"),
-                  bound: Some(builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("B"))),
+                  bound: Some(builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_B)),
                 },
               ],
               super_types: vec![],
@@ -208,11 +208,11 @@ mod tests {
             },
           ),
           (
-            heap.alloc_str_for_test("B"),
+            well_known_pstrs::UPPER_B,
             InterfaceSignature {
               type_definition: None,
               type_parameters: vec![],
-              super_types: vec![builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("B"))],
+              super_types: vec![builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_B)],
               functions: HashMap::new(),
               methods: HashMap::new(),
             },
@@ -225,20 +225,20 @@ mod tests {
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str_for_test("A"),
+      well_known_pstrs::UPPER_A,
       vec![
         TypeParameterSignature { name: heap.alloc_str_for_test("TPARAM"), bound: None },
         TypeParameterSignature {
           name: heap.alloc_str_for_test("T2"),
-          bound: Some(builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("A"))),
+          bound: Some(builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_A)),
         },
       ],
     );
 
     let str_tparam = heap.alloc_str_for_test("TPARAM");
     let str_t = heap.alloc_str_for_test("T");
-    let str_a = heap.alloc_str_for_test("A");
-    let str_b = heap.alloc_str_for_test("B");
+    let str_a = well_known_pstrs::UPPER_A;
+    let str_b = well_known_pstrs::UPPER_B;
     cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.int_type());
     cx.validate_type_instantiation_allow_abstract_types(
       &heap,
@@ -328,7 +328,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
             },
           ),
           (
-            heap.alloc_str_for_test("B"),
+            well_known_pstrs::UPPER_B,
             InterfaceSignature {
               type_definition: None,
               type_parameters: vec![
@@ -374,11 +374,11 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str_for_test("A"),
+      well_known_pstrs::UPPER_A,
       vec![
         TypeParameterSignature {
           name: heap.alloc_str_for_test("TT1"),
-          bound: Some(builder.simple_nominal_type_unwrapped(heap.alloc_str_for_test("A"))),
+          bound: Some(builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_A)),
         },
         TypeParameterSignature { name: heap.alloc_str_for_test("TT2"), bound: None },
         TypeParameterSignature {
@@ -393,7 +393,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
     assert!(!cx.class_exists(ModuleReference::dummy(), heap.alloc_str_for_test("s")));
     assert!(!cx.class_exists(
       heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-      heap.alloc_str_for_test("A")
+      well_known_pstrs::UPPER_A
     ));
     assert!(cx
       .get_method_type(
@@ -401,7 +401,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f1"),
@@ -414,7 +414,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f1"),
@@ -427,7 +427,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f2"),
@@ -440,7 +440,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f3"),
@@ -453,7 +453,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m1"),
@@ -466,7 +466,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m2"),
@@ -479,7 +479,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m3"),
@@ -492,7 +492,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("B"),
+          id: well_known_pstrs::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f1"),
@@ -505,7 +505,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("B"),
+          id: well_known_pstrs::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f2"),
@@ -518,7 +518,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("B"),
+          id: well_known_pstrs::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f3"),
@@ -531,7 +531,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("B"),
+          id: well_known_pstrs::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m1"),
@@ -544,7 +544,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("B"),
+          id: well_known_pstrs::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m2"),
@@ -557,7 +557,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("B"),
+          id: well_known_pstrs::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m3"),
@@ -570,7 +570,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: false,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("B"),
+          id: well_known_pstrs::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m2"),
@@ -583,7 +583,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: false,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("B"),
+          id: well_known_pstrs::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m3"),
@@ -596,7 +596,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: false,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("C"),
+          id: well_known_pstrs::UPPER_C,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m3"),
@@ -611,7 +611,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: false,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![builder.int_type(), builder.int_type()]
         },
         heap.alloc_str_for_test("m1"),
@@ -627,7 +627,7 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: ModuleReference::dummy(),
-          id: heap.alloc_str_for_test("A"),
+          id: well_known_pstrs::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f2"),
@@ -669,28 +669,28 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
   fn resolve_type_definitions_test() {
     let builder = test_type_builder::create();
     let mut local_cx = empty_local_typing_context();
-    let mut heap = Heap::new();
+    let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
       ModuleReference::dummy(),
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            heap.alloc_str_for_test("A"),
+            well_known_pstrs::UPPER_A,
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature::Enum(vec![
                 EnumVariantDefinitionSignature {
-                  name: heap.alloc_str_for_test("a"),
-                  types: vec![builder.generic_type(heap.alloc_str_for_test("A"))],
+                  name: well_known_pstrs::LOWER_A,
+                  types: vec![builder.generic_type(well_known_pstrs::UPPER_A)],
                 },
                 EnumVariantDefinitionSignature {
-                  name: heap.alloc_str_for_test("b"),
-                  types: vec![builder.generic_type(heap.alloc_str_for_test("B"))],
+                  name: well_known_pstrs::LOWER_B,
+                  types: vec![builder.generic_type(well_known_pstrs::UPPER_B)],
                 },
               ])),
               type_parameters: vec![
-                TypeParameterSignature { name: heap.alloc_str_for_test("A"), bound: None },
-                TypeParameterSignature { name: heap.alloc_str_for_test("B"), bound: None },
+                TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
+                TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
               ],
               super_types: vec![],
               functions: HashMap::new(),
@@ -698,12 +698,12 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
             },
           ),
           (
-            heap.alloc_str_for_test("B"),
+            well_known_pstrs::UPPER_B,
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature::Struct(vec![])),
               type_parameters: vec![
-                TypeParameterSignature { name: heap.alloc_str_for_test("E"), bound: None },
-                TypeParameterSignature { name: heap.alloc_str_for_test("F"), bound: None },
+                TypeParameterSignature { name: well_known_pstrs::UPPER_E, bound: None },
+                TypeParameterSignature { name: well_known_pstrs::UPPER_F, bound: None },
               ],
               super_types: vec![],
               functions: HashMap::new(),
@@ -718,32 +718,32 @@ DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, 
       &mut local_cx,
       &mut error_set,
       ModuleReference::dummy(),
-      heap.alloc_str_for_test("A"),
+      well_known_pstrs::UPPER_A,
       vec![],
     );
 
     assert!(cx.resolve_struct_definitions(&builder.bool_type()).is_empty());
     assert!(cx
       .resolve_struct_definitions(&builder.general_nominal_type(
-        heap.alloc_str_for_test("A"),
+        well_known_pstrs::UPPER_A,
         vec![builder.int_type(), builder.int_type()]
       ))
       .is_empty());
     assert!(cx
       .resolve_struct_definitions(&builder.general_nominal_type(
-        heap.alloc_str_for_test("A"),
+        well_known_pstrs::UPPER_A,
         vec![builder.int_type(), builder.int_type()]
       ))
       .is_empty());
     assert!(cx
       .resolve_struct_definitions(&builder.general_nominal_type(
-        heap.alloc_str_for_test("C"),
+        well_known_pstrs::UPPER_C,
         vec![builder.int_type(), builder.int_type()]
       ))
       .is_empty());
 
     let resolved = cx.resolve_enum_definitions(&builder.general_nominal_type(
-      heap.alloc_str_for_test("A"),
+      well_known_pstrs::UPPER_A,
       vec![builder.int_type(), builder.int_type()],
     ));
     assert_eq!(2, resolved.len());

@@ -61,6 +61,8 @@ pub(super) fn single_if_or_null(
 
 #[cfg(test)]
 mod tests {
+  use crate::common::well_known_pstrs;
+
   use super::*;
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
@@ -92,8 +94,7 @@ mod tests {
   #[test]
   fn local_value_context_for_optimization_panic() {
     let mut cx = LocalValueContextForOptimization::new();
-    let heap = &mut crate::common::Heap::new();
-    cx.checked_bind(heap.alloc_str_for_test("a"), ZERO);
-    cx.checked_bind(heap.alloc_str_for_test("a"), ZERO);
+    cx.checked_bind(well_known_pstrs::LOWER_A, ZERO);
+    cx.checked_bind(well_known_pstrs::LOWER_A, ZERO);
   }
 }

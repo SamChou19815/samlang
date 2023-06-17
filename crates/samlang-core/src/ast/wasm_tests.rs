@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod tests {
   use super::super::wasm::*;
-  use crate::{ast::hir::Operator, common::Heap};
+  use crate::{
+    ast::hir::Operator,
+    common::{well_known_pstrs, Heap},
+  };
   use pretty_assertions::assert_eq;
 
   #[test]
@@ -17,17 +20,17 @@ mod tests {
       exported_functions: vec![heap.alloc_str_for_test("main")],
       functions: vec![Function {
         name: heap.alloc_str_for_test("main"),
-        parameters: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
-        local_variables: vec![heap.alloc_str_for_test("c"), heap.alloc_str_for_test("d")],
+        parameters: vec![well_known_pstrs::LOWER_A, well_known_pstrs::LOWER_B],
+        local_variables: vec![well_known_pstrs::LOWER_C, well_known_pstrs::LOWER_D],
         instructions: vec![
           Instruction::IfElse {
             condition: InlineInstruction::Const(1),
             s1: vec![
               Instruction::Inline(InlineInstruction::Const(1)),
               Instruction::Inline(InlineInstruction::Drop(Box::new(InlineInstruction::Const(0)))),
-              Instruction::Inline(InlineInstruction::LocalGet(heap.alloc_str_for_test("a"))),
+              Instruction::Inline(InlineInstruction::LocalGet(well_known_pstrs::LOWER_A)),
               Instruction::Inline(InlineInstruction::LocalSet(
-                heap.alloc_str_for_test("b"),
+                well_known_pstrs::LOWER_B,
                 Box::new(InlineInstruction::Const(0)),
               )),
             ],
