@@ -1070,9 +1070,9 @@ type CC = [number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
 type Variant = [number, number];
 function cc(): number {{
-  let _t7: (t0: any, t1: number) => number = cc[1];
-  let _t8: any = cc[2];
-  _t7(_t8, 0);
+  let _t3: (t0: any, t1: number) => number = cc[1];
+  let _t4: any = cc[2];
+  _t3(_t4, 0);
   let v1: number = a[1];
   let v2: number = b[1];
   let v3: number = b[2];
@@ -1095,21 +1095,21 @@ function cc(): number {{
 }}
 function main(): number {{
   let v1 = 0 + 0;
-  let _t10 = obj as any;
-  _builtin_inc_ref(_t10);
+  let _t6 = obj as any;
+  _builtin_inc_ref(_t6);
   let O: Object = [0, 0, obj];
   let v1: Variant = [1, 0, 0];
-  let _t12 = G1 as any;
-  _builtin_inc_ref(_t12);
+  let _t8 = G1 as any;
+  _builtin_inc_ref(_t8);
   let v2: Variant = [131073, 0, G1];
-  let _t13 = G1 as any;
-  _builtin_inc_ref(_t13);
-  let _t14 = aaa as (t0: any) => number;
-  let _t15 = G1 as any;
-  let c1: CC = [131073, _t14, _t15];
-  let _t16 = bbb as (t0: any) => number;
-  let _t17 = 0 as any;
-  let c2: CC = [1, _t16, _t17];
+  let _t9 = G1 as any;
+  _builtin_inc_ref(_t9);
+  let _t10 = aaa as (t0: any) => number;
+  let _t11 = G1 as any;
+  let c1: CC = [131073, _t10, _t11];
+  let _t12 = bbb as (t0: any) => number;
+  let _t13 = 0 as any;
+  let c2: CC = [1, _t12, _t13];
   _builtin_dec_ref(O);
   _builtin_dec_ref(v1);
   _builtin_dec_ref(v2);
@@ -1124,17 +1124,17 @@ function _compiled_program_main(): number {{
     let ccc: number = cc(0);
     finalV = v1;
   }} else {{
-    let _t19: (t0: any, t1: number) => number = cc[1];
-    let _t20: any = cc[2];
-    let _t18: CC = _t19(_t20, 0);
-    let _t21 = _t18 as any;
-    _builtin_inc_ref(_t21);
-    let _t22 = G1 as any;
-    _builtin_inc_ref(_t22);
-    let _t23 = aaa as (t0: any) => number;
-    let _t24 = G1 as any;
-    let v2: CC = [131073, _t23, _t24];
-    _builtin_dec_ref(_t18);
+    let _t15: (t0: any, t1: number) => number = cc[1];
+    let _t16: any = cc[2];
+    let _t14: CC = _t15(_t16, 0);
+    let _t17 = _t14 as any;
+    _builtin_inc_ref(_t17);
+    let _t18 = G1 as any;
+    _builtin_inc_ref(_t18);
+    let _t19 = aaa as (t0: any) => number;
+    let _t20 = G1 as any;
+    let v2: CC = [131073, _t19, _t20];
+    _builtin_dec_ref(_t14);
     finalV = v2;
   }}
   let finalV2: number;
