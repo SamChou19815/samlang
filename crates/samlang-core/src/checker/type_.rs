@@ -751,9 +751,9 @@ mod type_tests {
 class()  : []
 functions:
 panic: public <T>(Str) -> T
+println: public (Str) -> unit
 stringToInt: public (Str) -> int
 intToString: public (int) -> Str
-println: public (Str) -> unit
 methods:
 
 "#
