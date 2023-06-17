@@ -24,8 +24,8 @@ pub(crate) struct SynthesizedTypes {
 pub(super) struct TypeSynthesizer {
   pub(super) synthesized_closure_types: BTreeMap<PStr, ClosureTypeDefinition>,
   pub(super) synthesized_tuple_types: BTreeMap<PStr, TypeDefinition>,
-  reverse_function_map: BTreeMap<String, PStr>,
-  reverse_tuple_map: BTreeMap<String, PStr>,
+  reverse_function_map: BTreeMap<(FunctionType, Vec<PStr>), PStr>,
+  reverse_tuple_map: BTreeMap<(Vec<Type>, Vec<PStr>), PStr>,
   next_id: i32,
 }
 
@@ -54,11 +54,7 @@ impl TypeSynthesizer {
     function_type: FunctionType,
     type_parameters: Vec<PStr>,
   ) -> ClosureTypeDefinition {
-    let key = format!(
-      "{}_{}",
-      function_type.pretty_print(heap),
-      type_parameters.iter().map(|it| it.as_str(heap)).join(",")
-    );
+    let key = (function_type.clone(), type_parameters.clone());
     if let Some(existing_identifier) = self.reverse_function_map.get(&key) {
       return self
         .synthesized_closure_types
@@ -80,11 +76,7 @@ impl TypeSynthesizer {
     mappings: Vec<Type>,
     type_parameters: Vec<PStr>,
   ) -> TypeDefinition {
-    let key = format!(
-      "{}_{}",
-      mappings.iter().map(|it| it.pretty_print(heap)).join(","),
-      type_parameters.iter().map(|it| it.as_str(heap)).join(",")
-    );
+    let key = (mappings.clone(), type_parameters.clone());
     if let Some(existing_identifier) = self.reverse_tuple_map.get(&key) {
       return self
         .synthesized_tuple_types

@@ -12,11 +12,11 @@ pub(crate) enum PrimitiveType {
   Any,
 }
 
-impl ToString for PrimitiveType {
-  fn to_string(&self) -> String {
+impl PrimitiveType {
+  fn as_str(&self) -> &'static str {
     match self {
-      PrimitiveType::Int => "number".to_string(),
-      PrimitiveType::Any => "any".to_string(),
+      PrimitiveType::Int => "number",
+      PrimitiveType::Any => "any",
     }
   }
 }
@@ -60,7 +60,7 @@ impl Type {
 
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
-      Type::Primitive(t) => t.to_string(),
+      Type::Primitive(t) => t.as_str().to_string(),
       Type::Id(id) => id.as_str(heap).to_string(),
       Type::Fn(function) => function.pretty_print(heap),
     }
