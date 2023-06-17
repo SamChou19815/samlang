@@ -419,7 +419,7 @@ impl Statement {
           "  ".repeat(level),
           s.name.as_str(heap),
           e1,
-          s.operator.to_string(),
+          s.operator.as_str(),
           e2
         ));
       }

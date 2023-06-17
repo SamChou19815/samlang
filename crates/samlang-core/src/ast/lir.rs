@@ -203,7 +203,7 @@ impl Statement {
       Statement::Binary { name, operator, e1, e2 } => {
         let e1 = e1.pretty_print(heap);
         let e2 = e2.pretty_print(heap);
-        let expr_str = format!("{} {} {}", e1, operator.to_string(), e2);
+        let expr_str = format!("{} {} {}", e1, operator.as_str(), e2);
         let wrapped = match *operator {
           Operator::DIV => {
             // Necessary to preserve semantics
