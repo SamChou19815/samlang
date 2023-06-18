@@ -105,6 +105,7 @@ mod mod_type_tests {
       Location, Reason,
     },
     checker::type_::{test_type_builder, Type},
+    common::well_known_pstrs,
     Heap, ModuleReference,
   };
   use std::{collections::HashMap, rc::Rc};
@@ -123,9 +124,9 @@ mod mod_type_tests {
     let builder = test_type_builder::create();
 
     mod_type(zero_expr(), builder.bool_type());
-    mod_type(E::LocalId(common(), Id::from(heap.alloc_str_for_test("d"))), builder.bool_type());
+    mod_type(E::LocalId(common(), Id::from(well_known_pstrs::LOWER_D)), builder.bool_type());
     mod_type(
-      E::ClassId(common(), ModuleReference::dummy(), Id::from(heap.alloc_str_for_test("d"))),
+      E::ClassId(common(), ModuleReference::dummy(), Id::from(well_known_pstrs::LOWER_D)),
       builder.bool_type(),
     );
     mod_type(

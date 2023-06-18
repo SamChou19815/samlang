@@ -6,7 +6,7 @@ mod tests {
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },
-    common::Heap,
+    common::{well_known_pstrs, Heap},
     optimization::local_value_numbering,
   };
   use itertools::Itertools;
@@ -19,7 +19,7 @@ mod tests {
     expected: &str,
   ) {
     let mut f = Function {
-      name: heap.alloc_str_for_test(""),
+      name: well_known_pstrs::LOWER_A,
       parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
@@ -43,13 +43,13 @@ mod tests {
         Statement::IndexedAccess {
           name: heap.alloc_str_for_test("i0"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+          pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
           index: 2,
         },
         Statement::IndexedAccess {
           name: heap.alloc_str_for_test("i1"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+          pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
           index: 2,
         },
         Statement::binary(
@@ -88,7 +88,7 @@ mod tests {
           closure_variable_name: heap.alloc_str_for_test("s"),
           closure_type_name: heap.alloc_str_for_test("S"),
           function_name: FunctionName::new(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           ),
           context: ZERO,
@@ -136,7 +136,7 @@ return (ss: int);"#,
         Statement::IndexedAccess {
           name: heap.alloc_str_for_test("i0"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+          pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
           index: 2,
         },
         Statement::IfElse {
@@ -145,7 +145,7 @@ return (ss: int);"#,
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("i1"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+              pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
               index: 2,
             },
             Statement::IndexedAccess {
@@ -159,7 +159,7 @@ return (ss: int);"#,
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("i2"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+              pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
               index: 2,
             },
             Statement::IndexedAccess {
@@ -195,7 +195,7 @@ return 0;"#,
         Statement::IndexedAccess {
           name: heap.alloc_str_for_test("i0"),
           type_: INT_TYPE,
-          pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+          pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
           index: 2,
         },
         Statement::IfElse {
@@ -204,7 +204,7 @@ return 0;"#,
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("i1"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+              pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
               index: 2,
             },
             Statement::IndexedAccess {
@@ -218,7 +218,7 @@ return 0;"#,
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("i2"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+              pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
               index: 2,
             },
             Statement::IndexedAccess {
@@ -280,7 +280,7 @@ return 0;"#,
               ONE,
             )],
             final_assignments: vec![
-              (heap.alloc_str_for_test("c"), INT_TYPE, ZERO, ONE),
+              (well_known_pstrs::LOWER_C, INT_TYPE, ZERO, ONE),
               (
                 heap.alloc_str_for_test("_tmp_n"),
                 INT_TYPE,
@@ -346,7 +346,7 @@ return 0;"#,
               ONE,
             )],
             final_assignments: vec![
-              (heap.alloc_str_for_test("c"), INT_TYPE, ZERO, ONE),
+              (well_known_pstrs::LOWER_C, INT_TYPE, ZERO, ONE),
               (
                 heap.alloc_str_for_test("_tmp_n"),
                 INT_TYPE,

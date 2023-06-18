@@ -390,6 +390,7 @@ mod tests {
       Callee, Expression, Function, FunctionName, FunctionType, GenenalLoopVariable, Sources,
       Statement, Type, VariableName, INT_TYPE, ZERO,
     },
+    common::well_known_pstrs,
     Heap,
   };
   use pretty_assertions::assert_eq;
@@ -419,7 +420,7 @@ mod tests {
       functions: vec![
         Function {
           name: heap.alloc_str_for_test("otherwise_optimizable"),
-          parameters: vec![heap.alloc_str_for_test("a"), heap.alloc_str_for_test("b")],
+          parameters: vec![well_known_pstrs::LOWER_A, well_known_pstrs::LOWER_B],
           type_: FunctionType {
             argument_types: vec![INT_TYPE, INT_TYPE],
             return_type: Box::new(INT_TYPE),
@@ -429,30 +430,27 @@ mod tests {
         },
         Function {
           name: heap.alloc_str_for_test("str_const"),
-          parameters: vec![heap.alloc_str_for_test("a")],
+          parameters: vec![well_known_pstrs::LOWER_A],
           type_: FunctionType { argument_types: vec![INT_TYPE], return_type: Box::new(INT_TYPE) },
-          body: vec![Statement::Break(Expression::var_name(
-            heap.alloc_str_for_test("a"),
-            INT_TYPE,
-          ))],
+          body: vec![Statement::Break(Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE))],
           return_value: ZERO,
         },
         Function {
           name: heap.alloc_str_for_test("func_with_consts"),
           parameters: vec![
-            heap.alloc_str_for_test("a"),
-            heap.alloc_str_for_test("b"),
-            heap.alloc_str_for_test("c"),
-            heap.alloc_str_for_test("d"),
-            heap.alloc_str_for_test("e"),
+            well_known_pstrs::LOWER_A,
+            well_known_pstrs::LOWER_B,
+            well_known_pstrs::LOWER_C,
+            well_known_pstrs::LOWER_D,
+            well_known_pstrs::LOWER_E,
           ],
           type_: FunctionType {
             argument_types: vec![
-              Type::Id(heap.alloc_str_for_test("A")),
-              Type::Id(heap.alloc_str_for_test("B")),
-              Type::Id(heap.alloc_str_for_test("C")),
-              Type::Id(heap.alloc_str_for_test("D")),
-              Type::Id(heap.alloc_str_for_test("E")),
+              Type::Id(well_known_pstrs::UPPER_A),
+              Type::Id(well_known_pstrs::UPPER_B),
+              Type::Id(well_known_pstrs::UPPER_C),
+              Type::Id(well_known_pstrs::UPPER_D),
+              Type::Id(well_known_pstrs::UPPER_E),
             ],
             return_type: Box::new(INT_TYPE),
           },
@@ -460,13 +458,13 @@ mod tests {
             Statement::binary(
               dummy_name,
               Operator::PLUS,
-              Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
-              Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+              Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
+              Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
             ),
             Statement::IndexedAccess {
               name: dummy_name,
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+              pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
               index: 0,
             },
             Statement::ClosureInit {
@@ -501,8 +499,8 @@ mod tests {
                 ZERO,
                 Expression::int(1),
                 Expression::int(2),
-                Expression::var_name(heap.alloc_str_for_test("d"), INT_TYPE),
-                Expression::var_name(heap.alloc_str_for_test("e"), INT_TYPE),
+                Expression::var_name(well_known_pstrs::LOWER_D, INT_TYPE),
+                Expression::var_name(well_known_pstrs::LOWER_E, INT_TYPE),
               ],
               return_type: INT_TYPE,
               return_collector: None,
@@ -519,8 +517,8 @@ mod tests {
                 ZERO,
                 Expression::int(3),
                 Expression::int(3),
-                Expression::var_name(heap.alloc_str_for_test("d"), INT_TYPE),
-                Expression::var_name(heap.alloc_str_for_test("e"), INT_TYPE),
+                Expression::var_name(well_known_pstrs::LOWER_D, INT_TYPE),
+                Expression::var_name(well_known_pstrs::LOWER_E, INT_TYPE),
               ],
               return_type: INT_TYPE,
               return_collector: None,
@@ -547,7 +545,7 @@ mod tests {
               return_collector: None,
             },
             Statement::IfElse {
-              condition: Expression::var_name(heap.alloc_str_for_test("e"), INT_TYPE),
+              condition: Expression::var_name(well_known_pstrs::LOWER_E, INT_TYPE),
               s1: vec![Statement::Break(ZERO)],
               s2: vec![Statement::Break(ZERO)],
               final_assignments: vec![(dummy_name, INT_TYPE, ZERO, ZERO)],

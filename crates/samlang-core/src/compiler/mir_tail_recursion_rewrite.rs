@@ -212,7 +212,10 @@ pub(super) fn optimize_function_by_tailrec_rewrite(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::mir::{FunctionName, INT_TYPE};
+  use crate::{
+    ast::mir::{FunctionName, INT_TYPE},
+    common::well_known_pstrs,
+  };
   use pretty_assertions::assert_eq;
 
   fn assert_optimization_failed(f: Function, heap: &mut Heap) {
@@ -233,7 +236,7 @@ mod tests {
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],
-        return_value: Expression::StringName(heap.alloc_str_for_test("")),
+        return_value: Expression::StringName(well_known_pstrs::LOWER_A),
       },
       heap,
     );
@@ -244,7 +247,7 @@ mod tests {
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],
-        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
+        return_value: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
       },
       heap,
     );
@@ -254,8 +257,8 @@ mod tests {
         name: heap.alloc_str_for_test("ff"),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
-        body: vec![Statement::binary(heap.alloc_str_for_test(""), Operator::PLUS, ZERO, ZERO)],
-        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
+        body: vec![Statement::binary(well_known_pstrs::LOWER_A, Operator::PLUS, ZERO, ZERO)],
+        return_value: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
       },
       heap,
     );
@@ -266,12 +269,12 @@ mod tests {
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
-          callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test(""), INT_TYPE)),
+          callee: Callee::Variable(VariableName::new(well_known_pstrs::LOWER_A, INT_TYPE)),
           arguments: vec![],
           return_type: INT_TYPE,
           return_collector: None,
         }],
-        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
+        return_value: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
       },
       heap,
     );
@@ -283,14 +286,14 @@ mod tests {
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
           callee: Callee::FunctionName(FunctionName::new(
-            heap.alloc_str_for_test(""),
+            well_known_pstrs::LOWER_A,
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           )),
           arguments: vec![],
           return_type: INT_TYPE,
           return_collector: None,
         }],
-        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
+        return_value: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
       },
       heap,
     );
@@ -306,7 +309,7 @@ mod tests {
           s2: vec![],
           final_assignments: vec![],
         }],
-        return_value: Expression::var_name(heap.alloc_str_for_test(""), INT_TYPE),
+        return_value: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
       },
       heap,
     );
@@ -357,7 +360,7 @@ mod tests {
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             Operator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
@@ -367,7 +370,7 @@ mod tests {
               heap.alloc_str_for_test("loopy"),
               Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
             )),
-            arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
+            arguments: vec![Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: Some(heap.alloc_str_for_test("r")),
           },
@@ -396,7 +399,7 @@ mod tests {
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             Operator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
@@ -406,7 +409,7 @@ mod tests {
               heap.alloc_str_for_test("loopy"),
               Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
             )),
-            arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
+            arguments: vec![Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: None,
           },
@@ -436,7 +439,7 @@ mod tests {
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             Operator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
@@ -448,7 +451,7 @@ mod tests {
                 heap.alloc_str_for_test("loopy"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               )),
-              arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
+              arguments: vec![Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("r1")),
             }],
@@ -457,7 +460,7 @@ mod tests {
                 heap.alloc_str_for_test("loopy"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               )),
-              arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
+              arguments: vec![Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("r2")),
             }],
@@ -500,7 +503,7 @@ mod tests {
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             Operator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
@@ -512,7 +515,7 @@ mod tests {
                 heap.alloc_str_for_test("loopy"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               )),
-              arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
+              arguments: vec![Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("r1")),
             }],
@@ -553,7 +556,7 @@ mod tests {
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![
           Statement::binary(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             Operator::PLUS,
             Expression::var_name(heap.alloc_str_for_test("n"), INT_TYPE),
             ZERO,
@@ -565,7 +568,7 @@ mod tests {
                 heap.alloc_str_for_test("loopy"),
                 Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               )),
-              arguments: vec![Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE)],
+              arguments: vec![Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             }],

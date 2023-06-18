@@ -2,6 +2,7 @@
 mod tests {
   use super::super::source::expr::*;
   use super::super::source::*;
+  use crate::common::well_known_pstrs;
   use crate::{ast::loc::Location, common::Heap, common::ModuleReference};
   use itertools::Itertools;
   use std::collections::HashMap;
@@ -281,7 +282,7 @@ mod tests {
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      name: Id::from(heap.alloc_str_for_test("")),
+      name: Id::from(well_known_pstrs::LOWER_A),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -290,11 +291,11 @@ mod tests {
         associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
-        name: Id::from(heap.alloc_str_for_test("")),
+        name: Id::from(well_known_pstrs::LOWER_A),
         type_parameters: Rc::new(vec![]),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![AnnotatedId {
-          name: Id::from(heap.alloc_str_for_test("")),
+          name: Id::from(well_known_pstrs::LOWER_A),
           type_: (),
           annotation: builder.int_annot()
         }])
@@ -331,23 +332,23 @@ mod tests {
     assert!(enum_type_def.clone().eq(&enum_type_def));
 
     assert!(AnnotatedId {
-      name: Id::from(heap.alloc_str_for_test("")),
+      name: Id::from(well_known_pstrs::LOWER_A),
       type_: (),
       annotation: builder.int_annot(),
     }
     .eq(&AnnotatedId {
-      name: Id::from(heap.alloc_str_for_test("")),
+      name: Id::from(well_known_pstrs::LOWER_A),
       type_: (),
       annotation: builder.int_annot(),
     }));
     assert!(TypeParameter {
       loc: Location::dummy(),
-      name: Id::from(heap.alloc_str_for_test("")),
+      name: Id::from(well_known_pstrs::LOWER_A),
       bound: None,
     }
     .eq(&TypeParameter {
       loc: Location::dummy(),
-      name: Id::from(heap.alloc_str_for_test("")),
+      name: Id::from(well_known_pstrs::LOWER_A),
       bound: None,
     }));
 
@@ -371,7 +372,7 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           is_public: true,
           is_method: true,
-          name: Id::from(heap.alloc_str_for_test("")),
+          name: Id::from(well_known_pstrs::LOWER_A),
           type_parameters: Rc::new(vec![]),
           type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
           parameters: Rc::new(vec![]),
@@ -396,7 +397,7 @@ mod tests {
         associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
-        name: Id::from(heap.alloc_str_for_test("")),
+        name: Id::from(well_known_pstrs::LOWER_A),
         type_parameters: Rc::new(vec![]),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![]),

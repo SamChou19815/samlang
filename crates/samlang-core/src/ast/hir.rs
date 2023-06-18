@@ -1,10 +1,10 @@
 use crate::{
-  common::{well_known_pstrs, PStr, INVALID_PSTR},
+  common::{well_known_pstrs, PStr},
   Heap,
 };
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
-use std::{cmp::Ordering, hash::Hash};
+use std::hash::Hash;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct IdType {
@@ -190,6 +190,14 @@ pub(crate) struct VariableName {
   pub(crate) type_: Type,
 }
 
+impl PartialEq for VariableName {
+  fn eq(&self, other: &Self) -> bool {
+    self.name == other.name
+  }
+}
+
+impl Eq for VariableName {}
+
 impl VariableName {
   pub(crate) fn new(name: PStr, type_: Type) -> VariableName {
     VariableName { name, type_ }
@@ -227,45 +235,11 @@ impl FunctionName {
   }
 }
 
-#[derive(Debug, Clone, EnumAsInner)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumAsInner)]
 pub(crate) enum Expression {
   IntLiteral(i32),
   StringName(PStr),
   Variable(VariableName),
-}
-
-impl Ord for Expression {
-  fn cmp(&self, other: &Self) -> Ordering {
-    match self {
-      Expression::IntLiteral(i1) => match other {
-        Expression::IntLiteral(i2) => i1.cmp(i2),
-        _ => Ordering::Less,
-      },
-      Expression::StringName(n1) => match other {
-        Expression::IntLiteral(_) => Ordering::Greater,
-        Expression::StringName(n2) => n1.cmp(n2),
-        Expression::Variable(_) => Ordering::Less,
-      },
-      Expression::Variable(v1) => match other {
-        Expression::Variable(v2) => v1.name.cmp(&v2.name),
-        _ => Ordering::Greater,
-      },
-    }
-  }
-}
-
-impl Eq for Expression {}
-
-impl PartialOrd for Expression {
-  fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-    Some(self.cmp(other))
-  }
-}
-
-impl PartialEq for Expression {
-  fn eq(&self, other: &Self) -> bool {
-    self.cmp(other).is_eq()
-  }
 }
 
 impl Expression {
@@ -305,14 +279,6 @@ impl Expression {
 pub(crate) const ZERO: Expression = Expression::IntLiteral(0);
 pub(crate) const ONE: Expression = Expression::IntLiteral(1);
 
-#[derive(Debug, Clone)]
-pub(crate) struct Binary {
-  pub(crate) name: PStr,
-  pub(crate) operator: Operator,
-  pub(crate) e1: Expression,
-  pub(crate) e2: Expression,
-}
-
 #[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum Callee {
   FunctionName(FunctionName),
@@ -337,21 +303,14 @@ pub(crate) struct GenenalLoopVariable {
   pub(crate) loop_value: Expression,
 }
 
-impl GenenalLoopVariable {
-  #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
-    format!(
-      "{{name: {}, initial_value: {}, loop_value: {}}}",
-      self.name.as_str(heap),
-      self.initial_value.debug_print(heap),
-      self.loop_value.debug_print(heap)
-    )
-  }
-}
-
-#[derive(Debug, Clone, EnumAsInner)]
+#[derive(Debug, Clone)]
 pub(crate) enum Statement {
-  Binary(Binary),
+  Binary {
+    name: PStr,
+    operator: Operator,
+    e1: Expression,
+    e2: Expression,
+  },
   IndexedAccess {
     name: PStr,
     type_: Type,
@@ -400,94 +359,6 @@ pub(crate) enum Statement {
 }
 
 impl Statement {
-  pub(crate) fn binary_unwrapped(
-    name: PStr,
-    operator: Operator,
-    e1: Expression,
-    e2: Expression,
-  ) -> Binary {
-    match (operator, &e2) {
-      (Operator::MINUS, Expression::IntLiteral(n)) if *n != -2147483648 => {
-        Binary { name, operator: Operator::PLUS, e1, e2: Expression::int(-n) }
-      }
-      _ => Binary { name, operator, e1, e2 },
-    }
-  }
-
-  pub(crate) fn binary_flexible_unwrapped(
-    name: PStr,
-    operator: Operator,
-    e1: Expression,
-    e2: Expression,
-  ) -> Binary {
-    let (operator, e1, e2) = Self::flexible_order_binary(operator, e1, e2);
-    Self::binary_unwrapped(name, operator, e1, e2)
-  }
-
-  pub(crate) fn binary(
-    name: PStr,
-    operator: Operator,
-    e1: Expression,
-    e2: Expression,
-  ) -> Statement {
-    Statement::Binary(Self::binary_unwrapped(name, operator, e1, e2))
-  }
-
-  pub(crate) fn flexible_order_binary(
-    operator: Operator,
-    e1: Expression,
-    e2: Expression,
-  ) -> (Operator, Expression, Expression) {
-    let Binary { name: _, operator: op, e1: normalized_e1, e2: normalized_e2 } =
-      Self::binary_unwrapped(INVALID_PSTR, operator, e1, e2);
-    match op {
-      Operator::DIV | Operator::MOD | Operator::MINUS | Operator::SHL | Operator::SHR => {
-        (op, normalized_e1, normalized_e2)
-      }
-      Operator::MUL
-      | Operator::PLUS
-      | Operator::LAND
-      | Operator::LOR
-      | Operator::XOR
-      | Operator::EQ
-      | Operator::NE => {
-        if normalized_e1 > normalized_e2 {
-          (op, normalized_e1, normalized_e2)
-        } else {
-          (op, normalized_e2, normalized_e1)
-        }
-      }
-      Operator::LT => {
-        if normalized_e1 < normalized_e2 {
-          (Operator::GT, normalized_e2, normalized_e1)
-        } else {
-          (op, normalized_e1, normalized_e2)
-        }
-      }
-      Operator::LE => {
-        if normalized_e1 < normalized_e2 {
-          (Operator::GE, normalized_e2, normalized_e1)
-        } else {
-          (op, normalized_e1, normalized_e2)
-        }
-      }
-      Operator::GT => {
-        if normalized_e1 < normalized_e2 {
-          (Operator::LT, normalized_e2, normalized_e1)
-        } else {
-          (op, normalized_e1, normalized_e2)
-        }
-      }
-      Operator::GE => {
-        if normalized_e1 < normalized_e2 {
-          (Operator::LE, normalized_e2, normalized_e1)
-        } else {
-          (op, normalized_e1, normalized_e2)
-        }
-      }
-    }
-  }
-
   #[cfg(test)]
   fn debug_print_internal(
     &self,
@@ -497,27 +368,23 @@ impl Statement {
     collector: &mut Vec<String>,
   ) {
     match self {
-      Statement::Binary(s) => {
-        let e1 = s.e1.debug_print(heap);
-        let e2 = s.e2.debug_print(heap);
+      Statement::Binary { name, operator, e1, e2 } => {
         collector.push(format!(
           "{}let {} = {} {} {};\n",
           "  ".repeat(level),
-          s.name.as_str(heap),
-          e1,
-          s.operator.as_str(),
-          e2
+          name.as_str(heap),
+          e1.debug_print(heap),
+          operator.as_str(),
+          e2.debug_print(heap)
         ));
       }
       Statement::IndexedAccess { name, type_, pointer_expression, index } => {
-        let type_ = type_.pretty_print(heap);
-        let pointer_expr = pointer_expression.debug_print(heap);
         collector.push(format!(
           "{}let {}: {} = {}[{}];\n",
           "  ".repeat(level),
           name.as_str(heap),
-          type_,
-          pointer_expr,
+          type_.pretty_print(heap),
+          pointer_expression.debug_print(heap),
           index
         ));
       }

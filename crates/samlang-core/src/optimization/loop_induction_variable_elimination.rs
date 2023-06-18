@@ -196,7 +196,7 @@ mod tests {
       Callee, Expression, FunctionName, GenenalLoopVariable, Statement, Type, VariableName,
       INT_TYPE, ONE, ZERO,
     },
-    common::Heap,
+    common::{well_known_pstrs, Heap},
     optimization::loop_induction_analysis::{
       BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName, GuardOperator,
       OptimizableWhileLoop, PotentialLoopInvariantExpression,
@@ -212,7 +212,7 @@ mod tests {
     assert!(super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Int(2),
           guard_operator: GuardOperator::LT,
@@ -220,10 +220,10 @@ mod tests {
         },
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: heap.alloc_str_for_test(""),
+          name: well_known_pstrs::LOWER_A,
           type_: INT_TYPE,
           initial_value: ZERO,
-          loop_value: Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE)
+          loop_value: Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE)
         }],
         derived_induction_variables: vec![],
         statements: vec![],
@@ -236,7 +236,7 @@ mod tests {
     assert!(super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Int(2),
           guard_operator: GuardOperator::LT,
@@ -247,9 +247,9 @@ mod tests {
         derived_induction_variables: vec![],
         statements: vec![],
         break_collector: Some((
-          heap.alloc_str_for_test(""),
+          well_known_pstrs::LOWER_A,
           INT_TYPE,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE)
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE)
         ))
       },
       heap,
@@ -259,7 +259,7 @@ mod tests {
     assert!(super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Int(2),
           guard_operator: GuardOperator::LT,
@@ -270,12 +270,12 @@ mod tests {
         derived_induction_variables: vec![],
         statements: vec![
           Statement::IndexedAccess {
-            name: heap.alloc_str_for_test(""),
+            name: well_known_pstrs::LOWER_A,
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 3
           },
-          Statement::binary(heap.alloc_str_for_test(""), Operator::NE, ZERO, ZERO),
+          Statement::binary(well_known_pstrs::LOWER_A, Operator::NE, ZERO, ZERO),
           Statement::IfElse {
             condition: ZERO,
             s1: vec![Statement::SingleIf {
@@ -284,31 +284,31 @@ mod tests {
               statements: vec![Statement::Break(ZERO)]
             }],
             s2: vec![Statement::ClosureInit {
-              closure_variable_name: heap.alloc_str_for_test(""),
+              closure_variable_name: well_known_pstrs::LOWER_A,
               closure_type_name: heap.alloc_str_for_test("I"),
               function_name: FunctionName::new(
-                heap.alloc_str_for_test(""),
+                well_known_pstrs::LOWER_A,
                 Type::new_fn_unwrapped(vec![], INT_TYPE)
               ),
               context: ZERO
             }],
-            final_assignments: vec![(heap.alloc_str_for_test(""), INT_TYPE, ZERO, ZERO)]
+            final_assignments: vec![(well_known_pstrs::LOWER_A, INT_TYPE, ZERO, ZERO)]
           },
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
-              name: heap.alloc_str_for_test(""),
+              name: well_known_pstrs::LOWER_A,
               type_: INT_TYPE,
               initial_value: ZERO,
               loop_value: ZERO
             }],
             statements: vec![
               Statement::Cast {
-                name: heap.alloc_str_for_test(""),
+                name: well_known_pstrs::LOWER_A,
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               },
               Statement::StructInit {
-                struct_variable_name: heap.alloc_str_for_test(""),
+                struct_variable_name: well_known_pstrs::LOWER_A,
                 type_name: heap.alloc_str_for_test("I"),
                 expression_list: vec![ZERO]
               }
@@ -317,7 +317,7 @@ mod tests {
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test(""),
+              well_known_pstrs::LOWER_A,
               Type::new_fn_unwrapped(vec![], INT_TYPE)
             )),
             arguments: vec![ZERO],
@@ -325,7 +325,7 @@ mod tests {
             return_collector: None
           },
           Statement::Call {
-            callee: Callee::Variable(VariableName::new(heap.alloc_str_for_test(""), INT_TYPE)),
+            callee: Callee::Variable(VariableName::new(well_known_pstrs::LOWER_A, INT_TYPE)),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
             return_collector: None
@@ -340,7 +340,7 @@ mod tests {
     assert!(super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Int(2),
           guard_operator: GuardOperator::LT,
@@ -348,7 +348,7 @@ mod tests {
         },
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE)
@@ -356,13 +356,13 @@ mod tests {
         derived_induction_variables: vec![
           DerivedInductionVariableWithName {
             name: heap.alloc_str_for_test("tmp_j"),
-            base_name: heap.alloc_str_for_test("i"),
+            base_name: well_known_pstrs::LOWER_I,
             multiplier: PotentialLoopInvariantExpression::Int(3),
             immediate: PotentialLoopInvariantExpression::Int(5)
           },
           DerivedInductionVariableWithName {
             name: heap.alloc_str_for_test("tmp_k"),
-            base_name: heap.alloc_str_for_test("i"),
+            base_name: well_known_pstrs::LOWER_I,
             multiplier: PotentialLoopInvariantExpression::Int(3),
             immediate: PotentialLoopInvariantExpression::Int(5)
           }
@@ -377,10 +377,10 @@ mod tests {
     assert!(super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
-            heap.alloc_str_for_test(""),
+            well_known_pstrs::LOWER_A,
             INT_TYPE
           )),
           guard_operator: GuardOperator::LT,
@@ -388,16 +388,16 @@ mod tests {
         },
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
         }],
         derived_induction_variables: vec![DerivedInductionVariableWithName {
           name: heap.alloc_str_for_test("tmp_j"),
-          base_name: heap.alloc_str_for_test("i"),
+          base_name: well_known_pstrs::LOWER_I,
           multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             INT_TYPE
           )),
           immediate: PotentialLoopInvariantExpression::Int(5),
@@ -417,7 +417,7 @@ mod tests {
     let optimized = super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Int(2),
           guard_operator: GuardOperator::LT,
@@ -425,14 +425,14 @@ mod tests {
         },
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
         }],
         derived_induction_variables: vec![DerivedInductionVariableWithName {
           name: heap.alloc_str_for_test("tmp_j"),
-          base_name: heap.alloc_str_for_test("i"),
+          base_name: well_known_pstrs::LOWER_I,
           multiplier: PotentialLoopInvariantExpression::Int(3),
           immediate: PotentialLoopInvariantExpression::Int(5),
         }],
@@ -472,7 +472,7 @@ mod tests {
     let optimized = super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
@@ -480,16 +480,16 @@ mod tests {
         },
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
         }],
         derived_induction_variables: vec![DerivedInductionVariableWithName {
           name: heap.alloc_str_for_test("tmp_j"),
-          base_name: heap.alloc_str_for_test("i"),
+          base_name: well_known_pstrs::LOWER_I,
           multiplier: PotentialLoopInvariantExpression::Var(VariableName::new(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             INT_TYPE,
           )),
           immediate: PotentialLoopInvariantExpression::Int(5),
@@ -528,10 +528,10 @@ mod tests {
     let optimized = super::optimize(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           initial_value: ONE,
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             INT_TYPE,
           )),
           guard_operator: GuardOperator::LT,
@@ -539,14 +539,14 @@ mod tests {
         },
         general_induction_variables: vec![],
         loop_variables_that_are_not_basic_induction_variables: vec![GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
         }],
         derived_induction_variables: vec![DerivedInductionVariableWithName {
           name: heap.alloc_str_for_test("tmp_j"),
-          base_name: heap.alloc_str_for_test("i"),
+          base_name: well_known_pstrs::LOWER_I,
           multiplier: PotentialLoopInvariantExpression::Int(1),
           immediate: PotentialLoopInvariantExpression::Int(5),
         }],

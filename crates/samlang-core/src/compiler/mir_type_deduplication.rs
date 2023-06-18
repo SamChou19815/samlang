@@ -219,6 +219,7 @@ mod tests {
   use super::*;
   use crate::{
     ast::mir::{INT_TYPE, ONE, STRING_TYPE, ZERO},
+    common::well_known_pstrs,
     Heap,
   };
   use pretty_assertions::assert_eq;
@@ -265,22 +266,22 @@ mod tests {
       global_variables: vec![],
       closure_types: vec![
         ClosureTypeDefinition {
-          identifier: heap.alloc_str_for_test("A"),
+          identifier: well_known_pstrs::UPPER_A,
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
         ClosureTypeDefinition {
-          identifier: heap.alloc_str_for_test("B"),
+          identifier: well_known_pstrs::UPPER_B,
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
       ],
       type_definitions: vec![
         TypeDefinition {
-          identifier: heap.alloc_str_for_test("C"),
+          identifier: well_known_pstrs::UPPER_C,
           names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
         TypeDefinition {
-          identifier: heap.alloc_str_for_test("D"),
+          identifier: well_known_pstrs::UPPER_D,
           names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
@@ -301,7 +302,7 @@ mod tests {
             ),
             Statement::Call {
               callee: Callee::FunctionName(FunctionName {
-                name: heap.alloc_str_for_test("f"),
+                name: well_known_pstrs::LOWER_F,
                 type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               }),
               arguments: vec![ZERO],
@@ -310,7 +311,7 @@ mod tests {
             },
             Statement::Call {
               callee: Callee::Variable(VariableName {
-                name: heap.alloc_str_for_test("f"),
+                name: well_known_pstrs::LOWER_F,
                 type_: INT_TYPE,
               }),
               arguments: vec![],
@@ -319,7 +320,7 @@ mod tests {
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("_"),
-              type_: Type::Id(heap.alloc_str_for_test("B")),
+              type_: Type::Id(well_known_pstrs::UPPER_B),
               pointer_expression: ZERO,
               index: 0,
             },
@@ -332,18 +333,15 @@ mod tests {
             },
             Statement::StructInit {
               struct_variable_name: heap.alloc_str_for_test("_"),
-              type_name: heap.alloc_str_for_test("D"),
+              type_name: well_known_pstrs::UPPER_D,
               expression_list: vec![ZERO],
             },
             Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test("_"),
-              closure_type_name: heap.alloc_str_for_test("C"),
+              closure_type_name: well_known_pstrs::UPPER_C,
               function_name: FunctionName {
-                name: heap.alloc_str_for_test("f"),
-                type_: Type::new_fn_unwrapped(
-                  vec![Type::Id(heap.alloc_str_for_test("E"))],
-                  INT_TYPE,
-                ),
+                name: well_known_pstrs::LOWER_F,
+                type_: Type::new_fn_unwrapped(vec![Type::Id(well_known_pstrs::UPPER_E)], INT_TYPE),
               },
               context: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
             },

@@ -6,7 +6,7 @@ mod tests {
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },
-    common::Heap,
+    common::{well_known_pstrs, Heap},
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
@@ -18,7 +18,7 @@ mod tests {
     expected: &str,
   ) {
     let mut f = Function {
-      name: heap.alloc_str_for_test(""),
+      name: well_known_pstrs::LOWER_A,
       parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
@@ -316,7 +316,7 @@ return (a17: int);"#,
     assert_correctly_optimized(
       vec![
         Statement::StructInit {
-          struct_variable_name: heap.alloc_str_for_test("a"),
+          struct_variable_name: well_known_pstrs::LOWER_A,
           type_name: heap.alloc_str_for_test("Id"),
           expression_list: vec![ZERO, ONE],
         },
@@ -324,7 +324,7 @@ return (a17: int);"#,
           name: heap.alloc_str_for_test("v1"),
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             Type::Id(heap.alloc_str_for_test("Id")),
           ),
           index: 0,
@@ -333,7 +333,7 @@ return (a17: int);"#,
           name: heap.alloc_str_for_test("v2"),
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
-            heap.alloc_str_for_test("a"),
+            well_known_pstrs::LOWER_A,
             Type::Id(heap.alloc_str_for_test("Id")),
           ),
           index: 1,
@@ -784,7 +784,7 @@ return 1;"#,
           Expression::int(3),
         ),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+          condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("foo"),
@@ -806,7 +806,7 @@ return 1;"#,
           final_assignments: vec![],
         },
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+          condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("foo"),
@@ -833,7 +833,7 @@ return 1;"#,
           )],
         },
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+          condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![],
           s2: vec![],
           final_assignments: vec![(
@@ -987,9 +987,9 @@ return 6;"#,
             ONE,
           ),
         ],
-        break_collector: Some(VariableName { name: heap.alloc_str_for_test("b"), type_: INT_TYPE }),
+        break_collector: Some(VariableName { name: well_known_pstrs::LOWER_B, type_: INT_TYPE }),
       }],
-      Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+      Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
       heap,
       "\nreturn 0;",
     );
@@ -1141,7 +1141,7 @@ return (v: int);"#,
       vec![Statement::While {
         loop_variables: vec![],
         statements: vec![Statement::binary(
-          heap.alloc_str_for_test("a"),
+          well_known_pstrs::LOWER_A,
           Operator::PLUS,
           Expression::var_name(heap.alloc_str_for_test("v1"), INT_TYPE),
           Expression::var_name(heap.alloc_str_for_test("v2"), INT_TYPE),

@@ -6,7 +6,7 @@ mod tests {
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },
-    common::Heap,
+    common::{well_known_pstrs, Heap},
     optimization::dead_code_elimination,
   };
   use itertools::Itertools;
@@ -20,7 +20,7 @@ mod tests {
     expected: &str,
   ) {
     let mut f = Function {
-      name: heap.alloc_str_for_test(""),
+      name: well_known_pstrs::LOWER_A,
       parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
@@ -45,7 +45,7 @@ mod tests {
       Statement::binary(heap.alloc_str_for_test("u3"), Operator::PLUS, ZERO, ONE),
       Statement::binary(heap.alloc_str_for_test("p"), Operator::PLUS, ZERO, ONE),
       Statement::IndexedAccess {
-        name: heap.alloc_str_for_test("i"),
+        name: well_known_pstrs::LOWER_I,
         type_: INT_TYPE,
         pointer_expression: Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE),
         index: 3,
@@ -103,7 +103,7 @@ return (ii: int);"#,
         Statement::binary(heap.alloc_str_for_test("u3"), Operator::PLUS, ZERO, ONE),
         Statement::binary(heap.alloc_str_for_test("p"), Operator::PLUS, ZERO, ONE),
         Statement::IndexedAccess {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE),
           index: 3,
@@ -175,9 +175,9 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
+        Statement::binary(well_known_pstrs::LOWER_B, Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+          condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("s1"),
@@ -217,9 +217,9 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
+        Statement::binary(well_known_pstrs::LOWER_B, Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+          condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("s1"),
@@ -267,9 +267,9 @@ return (ma: int);"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
+        Statement::binary(well_known_pstrs::LOWER_B, Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+          condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("s1"),
@@ -311,9 +311,9 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
+        Statement::binary(well_known_pstrs::LOWER_B, Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+          condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
               heap.alloc_str_for_test("s1"),
@@ -358,9 +358,9 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
+        Statement::binary(well_known_pstrs::LOWER_B, Operator::EQ, ZERO, ONE),
         Statement::IfElse {
-          condition: Expression::var_name(heap.alloc_str_for_test("b"), INT_TYPE),
+          condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![],
           s2: vec![],
           final_assignments: vec![],
@@ -378,7 +378,7 @@ return 0;"#,
 
     assert_correctly_optimized(
       vec![
-        Statement::binary(heap.alloc_str_for_test("b"), Operator::EQ, ZERO, ONE),
+        Statement::binary(well_known_pstrs::LOWER_B, Operator::EQ, ZERO, ONE),
         Statement::SingleIf {
           condition: Expression::var_name(heap.alloc_str_for_test("is_zero"), INT_TYPE),
           invert_condition: false,

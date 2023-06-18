@@ -332,7 +332,7 @@ mod tests {
     );
     error_set.report_name_already_bound_error(
       Location::dummy(),
-      heap.alloc_str_for_test("a"),
+      well_known_pstrs::LOWER_A,
       Location::dummy(),
     );
     error_set.report_non_exhausive_match_error(

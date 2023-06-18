@@ -37,18 +37,16 @@ impl StringManager {
 #[cfg(test)]
 mod tests {
   use super::StringManager;
-  use crate::Heap;
+  use crate::{common::well_known_pstrs, Heap};
   use pretty_assertions::assert_eq;
 
   #[test]
   fn tests() {
     let heap = &mut Heap::new();
     let mut s = StringManager::new();
-    let a = heap.alloc_str_for_test("a");
-    let b = heap.alloc_str_for_test("b");
-    assert_eq!(a, s.allocate(heap, a).content);
-    assert_eq!(b, s.allocate(heap, b).content);
-    assert_eq!(a, s.allocate(heap, a).content);
+    assert_eq!(well_known_pstrs::LOWER_A, s.allocate(heap, well_known_pstrs::LOWER_A).content);
+    assert_eq!(well_known_pstrs::LOWER_B, s.allocate(heap, well_known_pstrs::LOWER_B).content);
+    assert_eq!(well_known_pstrs::LOWER_A, s.allocate(heap, well_known_pstrs::LOWER_A).content);
     assert_eq!(2, s.all_global_variables().len());
   }
 }

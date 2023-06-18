@@ -233,7 +233,7 @@ mod tests {
       Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
       VariableName, INT_TYPE, ONE, ZERO,
     },
-    common::INVALID_PSTR,
+    common::{well_known_pstrs, INVALID_PSTR},
     Heap,
   };
   use itertools::Itertools;
@@ -280,13 +280,13 @@ mod tests {
     (
       vec![
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
@@ -296,7 +296,7 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("cc"),
           Operator::GE,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           Expression::int(10),
         ),
         Statement::Cast {
@@ -308,20 +308,20 @@ mod tests {
           condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
           invert_condition: false,
           statements: vec![Statement::Break(Expression::var_name(
-            heap.alloc_str_for_test("j"),
+            well_known_pstrs::LOWER_J,
             INT_TYPE,
           ))],
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
           Expression::int(10),
         ),
       ],
@@ -335,13 +335,13 @@ mod tests {
     (
       vec![
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
@@ -351,21 +351,21 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("cc"),
           Operator::GE,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           Expression::int(10),
         ),
         Statement::SingleIf {
           condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
           invert_condition: false,
           statements: vec![Statement::Break(Expression::var_name(
-            heap.alloc_str_for_test("j"),
+            well_known_pstrs::LOWER_J,
             INT_TYPE,
           ))],
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
@@ -385,19 +385,19 @@ mod tests {
     (
       vec![
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("j"),
+          name: well_known_pstrs::LOWER_J,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
         },
         GenenalLoopVariable {
-          name: heap.alloc_str_for_test("k"),
+          name: well_known_pstrs::LOWER_K,
           type_: INT_TYPE,
           initial_value: ZERO,
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_k"), INT_TYPE),
@@ -407,21 +407,21 @@ mod tests {
         Statement::binary(
           heap.alloc_str_for_test("cc"),
           Operator::GE,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           Expression::int(10),
         ),
         Statement::SingleIf {
           condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
           invert_condition: false,
           statements: vec![Statement::Break(Expression::var_name(
-            heap.alloc_str_for_test("j"),
+            well_known_pstrs::LOWER_J,
             INT_TYPE,
           ))],
         },
         Statement::binary(
           heap.alloc_str_for_test("tmp_i"),
           Operator::PLUS,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           ONE,
         ),
         Statement::binary(
@@ -447,7 +447,7 @@ mod tests {
     assert_loop_optimized(
       (
         vec![],
-        vec![Statement::binary(heap.alloc_str_for_test("a"), Operator::PLUS, ZERO, ZERO)],
+        vec![Statement::binary(well_known_pstrs::LOWER_A, Operator::PLUS, ZERO, ZERO)],
         None,
       ),
       heap,
@@ -518,13 +518,13 @@ while (true) {
       (
         vec![
           GenenalLoopVariable {
-            name: heap.alloc_str_for_test("i"),
+            name: well_known_pstrs::LOWER_I,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           },
           GenenalLoopVariable {
-            name: heap.alloc_str_for_test("j"),
+            name: well_known_pstrs::LOWER_J,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
@@ -534,27 +534,27 @@ while (true) {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::int(10),
           ),
           Statement::SingleIf {
             condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
-              heap.alloc_str_for_test("j"),
+              well_known_pstrs::LOWER_J,
               INT_TYPE,
             ))],
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
-            Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
             Operator::MUL,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::int(2),
           ),
         ],
@@ -583,13 +583,13 @@ while (true) {
       (
         vec![
           GenenalLoopVariable {
-            name: heap.alloc_str_for_test("i"),
+            name: well_known_pstrs::LOWER_I,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
           },
           GenenalLoopVariable {
-            name: heap.alloc_str_for_test("j"),
+            name: well_known_pstrs::LOWER_J,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_j"), INT_TYPE),
@@ -599,21 +599,21 @@ while (true) {
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::int(10),
           ),
           Statement::SingleIf {
             condition: Expression::var_name(heap.alloc_str_for_test("cc"), INT_TYPE),
             invert_condition: false,
             statements: vec![Statement::Break(Expression::var_name(
-              heap.alloc_str_for_test("j"),
+              well_known_pstrs::LOWER_J,
               INT_TYPE,
             ))],
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ONE,
           ),
           Statement::binary(
@@ -657,7 +657,7 @@ while (true) {
         s2: vec![Statement::binary(
           heap.alloc_str_for_test("tmp_j"),
           Operator::MUL,
-          Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
           Expression::int(2),
         )],
         final_assignments: vec![],
@@ -731,7 +731,7 @@ return (bc: int);"#,
       vec![Statement::While {
         loop_variables: vec![
           GenenalLoopVariable {
-            name: heap.alloc_str_for_test("i"),
+            name: well_known_pstrs::LOWER_I,
             type_: INT_TYPE,
             initial_value: Expression::int(4),
             loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
@@ -747,7 +747,7 @@ return (bc: int);"#,
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             ONE,
           ),
           Statement::SingleIf {
@@ -761,13 +761,13 @@ return (bc: int);"#,
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::int(-1),
           ),
           Statement::binary(
             heap.alloc_str_for_test("tmp_j"),
             Operator::MUL,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("acc"), INT_TYPE),
           ),
         ],
@@ -786,7 +786,7 @@ return (bc: int);"#,
     assert_stmts_optimized(
       vec![Statement::While {
         loop_variables: vec![GenenalLoopVariable {
-          name: heap.alloc_str_for_test("i"),
+          name: well_known_pstrs::LOWER_I,
           type_: INT_TYPE,
           initial_value: Expression::var_name(heap.alloc_str_for_test("init_i"), INT_TYPE),
           loop_value: Expression::var_name(heap.alloc_str_for_test("tmp_i"), INT_TYPE),
@@ -795,7 +795,7 @@ return (bc: int);"#,
           Statement::binary(
             heap.alloc_str_for_test("cc"),
             Operator::LT,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("L"), INT_TYPE),
           ),
           Statement::SingleIf {
@@ -806,28 +806,28 @@ return (bc: int);"#,
           Statement::binary(
             heap.alloc_str_for_test("t"),
             Operator::MUL,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::int(3),
           ),
           Statement::binary(
-            heap.alloc_str_for_test("j"),
+            well_known_pstrs::LOWER_J,
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("a"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("t"), INT_TYPE),
           ),
           Statement::Call {
             callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("f"),
+              well_known_pstrs::LOWER_F,
               Type::new_fn_unwrapped(vec![], INT_TYPE),
             )),
-            arguments: vec![Expression::var_name(heap.alloc_str_for_test("j"), INT_TYPE)],
+            arguments: vec![Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: None,
           },
           Statement::binary(
             heap.alloc_str_for_test("tmp_i"),
             Operator::PLUS,
-            Expression::var_name(heap.alloc_str_for_test("i"), INT_TYPE),
+            Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
             Expression::int(2),
           ),
         ],
