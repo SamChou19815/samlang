@@ -54,7 +54,11 @@ impl Rewriter {
     stmts: &[hir::Statement],
     generics_replacement_map: &HashMap<PStr, mir::Type>,
   ) -> Vec<mir::Statement> {
-    stmts.iter().map(|stmt| self.rewrite_stmt(heap, stmt, generics_replacement_map)).collect_vec()
+    let mut collector = Vec::with_capacity(stmts.len().next_power_of_two());
+    for stmt in stmts {
+      self.rewrite_stmt(heap, stmt, generics_replacement_map, &mut collector);
+    }
+    collector
   }
 
   fn rewrite_stmt(
@@ -62,26 +66,27 @@ impl Rewriter {
     heap: &mut Heap,
     stmt: &hir::Statement,
     generics_replacement_map: &HashMap<PStr, mir::Type>,
-  ) -> mir::Statement {
+    collector: &mut Vec<mir::Statement>,
+  ) {
     match stmt {
       hir::Statement::Binary { name, operator, e1, e2 } => {
-        mir::Statement::Binary(mir::Statement::binary_unwrapped(
+        collector.push(mir::Statement::Binary(mir::Statement::binary_unwrapped(
           *name,
           *operator,
           self.rewrite_expr(heap, e1, generics_replacement_map),
           self.rewrite_expr(heap, e2, generics_replacement_map),
-        ))
+        )));
       }
       hir::Statement::IndexedAccess { name, type_, pointer_expression, index } => {
-        mir::Statement::IndexedAccess {
+        collector.push(mir::Statement::IndexedAccess {
           name: *name,
           type_: self.rewrite_type(heap, type_, generics_replacement_map),
           pointer_expression: self.rewrite_expr(heap, pointer_expression, generics_replacement_map),
           index: *index,
-        }
+        });
       }
       hir::Statement::Call { callee, arguments, return_type, return_collector } => {
-        mir::Statement::Call {
+        collector.push(mir::Statement::Call {
           callee: match callee {
             hir::Callee::FunctionName(fn_name) => mir::Callee::FunctionName(
               self.rewrite_fn_name_expr(heap, fn_name, generics_replacement_map),
@@ -96,24 +101,74 @@ impl Rewriter {
           arguments: self.rewrite_expressions(heap, arguments, generics_replacement_map),
           return_type: self.rewrite_type(heap, return_type, generics_replacement_map),
           return_collector: *return_collector,
-        }
+        });
       }
-      hir::Statement::IfElse { condition, s1, s2, final_assignments } => mir::Statement::IfElse {
-        condition: self.rewrite_expr(heap, condition, generics_replacement_map),
-        s1: self.rewrite_stmts(heap, s1, generics_replacement_map),
-        s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
-        final_assignments: final_assignments
-          .iter()
-          .map(|(n, t, e1, e2)| {
-            (
-              *n,
-              self.rewrite_type(heap, t, generics_replacement_map),
-              self.rewrite_expr(heap, e1, generics_replacement_map),
-              self.rewrite_expr(heap, e2, generics_replacement_map),
-            )
-          })
-          .collect_vec(),
-      },
+      hir::Statement::ConditionalDestructure {
+        test_expr,
+        tag,
+        subtype,
+        bindings,
+        s1,
+        s2,
+        final_assignments,
+      } => {
+        let test_expr = self.rewrite_expr(heap, test_expr, generics_replacement_map);
+        let variable_for_tag = heap.alloc_temp_str();
+        let comparison_temp = heap.alloc_temp_str();
+        let casted_collector = heap.alloc_temp_str();
+        collector.push(mir::Statement::IndexedAccess {
+          name: variable_for_tag,
+          type_: mir::INT_TYPE,
+          pointer_expression: test_expr,
+          index: 0,
+        });
+        collector.push(mir::Statement::binary(
+          comparison_temp,
+          hir::Operator::EQ,
+          mir::Expression::var_name(variable_for_tag, mir::INT_TYPE),
+          mir::Expression::int(i32::try_from(*tag).unwrap()),
+        ));
+        let subtype = self.rewrite_id_type(heap, subtype, generics_replacement_map);
+        let mut nested_stmts = vec![];
+        nested_stmts.push(mir::Statement::Cast {
+          name: casted_collector,
+          type_: subtype,
+          assigned_expression: test_expr,
+        });
+        for (i, binding) in bindings.iter().enumerate() {
+          if let Some((name, type_)) = binding {
+            nested_stmts.push(mir::Statement::IndexedAccess {
+              name: *name,
+              type_: self.rewrite_type(heap, type_, generics_replacement_map),
+              pointer_expression: mir::Expression::var_name(casted_collector, subtype),
+              index: i + 1,
+            });
+          }
+        }
+        nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
+        collector.push(mir::Statement::IfElse {
+          condition: mir::Expression::var_name(comparison_temp, mir::INT_TYPE),
+          s1: nested_stmts,
+          s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
+          final_assignments: self.rewrite_final_assignments(
+            final_assignments,
+            heap,
+            generics_replacement_map,
+          ),
+        });
+      }
+      hir::Statement::IfElse { condition, s1, s2, final_assignments } => {
+        collector.push(mir::Statement::IfElse {
+          condition: self.rewrite_expr(heap, condition, generics_replacement_map),
+          s1: self.rewrite_stmts(heap, s1, generics_replacement_map),
+          s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
+          final_assignments: self.rewrite_final_assignments(
+            final_assignments,
+            heap,
+            generics_replacement_map,
+          ),
+        });
+      }
       hir::Statement::SingleIf { .. } => {
         panic!("SingleIf should not appear before tailrec optimization.")
       }
@@ -123,15 +178,21 @@ impl Rewriter {
       hir::Statement::While { .. } => {
         panic!("While should not appear before tailrec optimization.")
       }
-      hir::Statement::Cast { name, type_, assigned_expression } => mir::Statement::Cast {
-        name: *name,
-        type_: self.rewrite_type(heap, type_, generics_replacement_map),
-        assigned_expression: self.rewrite_expr(heap, assigned_expression, generics_replacement_map),
-      },
+      hir::Statement::Cast { name, type_, assigned_expression } => {
+        collector.push(mir::Statement::Cast {
+          name: *name,
+          type_: self.rewrite_type(heap, type_, generics_replacement_map),
+          assigned_expression: self.rewrite_expr(
+            heap,
+            assigned_expression,
+            generics_replacement_map,
+          ),
+        });
+      }
       hir::Statement::StructInit { struct_variable_name, type_, expression_list } => {
         let type_name =
           self.rewrite_id_type(heap, type_, generics_replacement_map).into_id().unwrap();
-        mir::Statement::StructInit {
+        collector.push(mir::Statement::StructInit {
           struct_variable_name: *struct_variable_name,
           type_name,
           expression_list: self.rewrite_expressions(
@@ -139,7 +200,36 @@ impl Rewriter {
             expression_list,
             generics_replacement_map,
           ),
-        }
+        });
+      }
+      hir::Statement::EnumInit {
+        enum_variable_name,
+        enum_type,
+        sub_type,
+        tag,
+        associated_data_list,
+      } => {
+        let temp = heap.alloc_temp_str();
+        let enum_type =
+          self.rewrite_id_type(heap, enum_type, generics_replacement_map).into_id().unwrap();
+        let sub_type = self.rewrite_id_type(heap, sub_type, generics_replacement_map);
+        collector.push(mir::Statement::StructInit {
+          struct_variable_name: temp,
+          type_name: sub_type.into_id().unwrap(),
+          expression_list: vec![mir::Expression::int(i32::try_from(*tag).unwrap())]
+            .into_iter()
+            .chain(
+              associated_data_list
+                .iter()
+                .map(|e| self.rewrite_expr(heap, e, generics_replacement_map)),
+            )
+            .collect(),
+        });
+        collector.push(mir::Statement::Cast {
+          name: *enum_variable_name,
+          type_: mir::Type::Id(enum_type),
+          assigned_expression: mir::Expression::var_name(temp, sub_type),
+        });
       }
       hir::Statement::ClosureInit {
         closure_variable_name,
@@ -149,14 +239,33 @@ impl Rewriter {
       } => {
         let closure_type_name =
           self.rewrite_id_type(heap, closure_type, generics_replacement_map).into_id().unwrap();
-        mir::Statement::ClosureInit {
+        collector.push(mir::Statement::ClosureInit {
           closure_variable_name: *closure_variable_name,
           closure_type_name,
           function_name: self.rewrite_fn_name_expr(heap, function_name, generics_replacement_map),
           context: self.rewrite_expr(heap, context, generics_replacement_map),
-        }
+        });
       }
     }
+  }
+
+  fn rewrite_final_assignments(
+    &mut self,
+    final_assignments: &[(PStr, hir::Type, hir::Expression, hir::Expression)],
+    heap: &mut Heap,
+    generics_replacement_map: &HashMap<PStr, mir::Type>,
+  ) -> Vec<(PStr, mir::Type, mir::Expression, mir::Expression)> {
+    final_assignments
+      .iter()
+      .map(|(n, t, e1, e2)| {
+        (
+          *n,
+          self.rewrite_type(heap, t, generics_replacement_map),
+          self.rewrite_expr(heap, e1, generics_replacement_map),
+          self.rewrite_expr(heap, e2, generics_replacement_map),
+        )
+      })
+      .collect_vec()
   }
 
   fn rewrite_expressions(
@@ -715,6 +824,24 @@ sources.mains = [main]
             names: vec![],
             mappings: hir::TypeDefinitionMappings::Enum,
           },
+          hir::TypeDefinition {
+            identifier: heap.alloc_str_for_test("Enum"),
+            type_parameters: vec![],
+            names: vec![heap.alloc_str_for_test("EnumA"), heap.alloc_str_for_test("EnumB")],
+            mappings: hir::TypeDefinitionMappings::Enum,
+          },
+          hir::TypeDefinition {
+            identifier: heap.alloc_str_for_test("EnumA"),
+            type_parameters: vec![],
+            names: vec![well_known_pstrs::LOWER_A, well_known_pstrs::LOWER_B],
+            mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
+          },
+          hir::TypeDefinition {
+            identifier: heap.alloc_str_for_test("EnumB"),
+            type_parameters: vec![],
+            names: vec![well_known_pstrs::LOWER_A],
+            mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
+          },
         ],
         main_function_names: vec![heap.alloc_str_for_test("main")],
         functions: vec![
@@ -785,153 +912,183 @@ sources.mains = [main]
             parameters: vec![],
             type_parameters: vec![],
             type_: hir::Type::new_fn_unwrapped(vec![], hir::INT_TYPE),
-            body: vec![hir::Statement::IfElse {
-              condition: hir::ONE,
-              s1: vec![
-                hir::Statement::Call {
-                  callee: hir::Callee::FunctionName(hir::FunctionName {
-                    name: heap.alloc_str_for_test("creatorIA"),
-                    type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], type_i.clone()),
-                    type_arguments: vec![hir::INT_TYPE],
-                  }),
-                  arguments: vec![hir::ZERO],
-                  return_type: type_i.clone(),
-                  return_collector: Some(well_known_pstrs::LOWER_A),
-                },
-                hir::Statement::Call {
-                  callee: hir::Callee::FunctionName(hir::FunctionName {
-                    name: heap.alloc_str_for_test("creatorIA"),
-                    type_: hir::Type::new_fn_unwrapped(
-                      vec![hir::STRING_TYPE],
-                      hir::Type::new_id(
-                        heap.alloc_str_for_test("I"),
-                        vec![hir::STRING_TYPE, hir::STRING_TYPE],
-                      ),
-                    ),
-                    type_arguments: vec![hir::STRING_TYPE],
-                  }),
-                  arguments: vec![g1.clone()],
-                  return_type: type_i.clone(),
-                  return_collector: Some(heap.alloc_str_for_test("a2")),
-                },
-                hir::Statement::Call {
-                  callee: hir::Callee::FunctionName(hir::FunctionName {
-                    name: heap.alloc_str_for_test("creatorIB"),
-                    type_: hir::Type::new_fn_unwrapped(vec![hir::STRING_TYPE], type_i.clone()),
-                    type_arguments: vec![hir::STRING_TYPE],
-                  }),
-                  arguments: vec![g1.clone()],
-                  return_type: type_i.clone(),
-                  return_collector: Some(well_known_pstrs::LOWER_B),
-                },
-                hir::Statement::Call {
-                  callee: hir::Callee::FunctionName(hir::FunctionName {
-                    name: heap.alloc_str_for_test("functor_fun"),
-                    type_: hir::Type::new_fn_unwrapped(vec![type_i.clone()], hir::INT_TYPE),
-                    type_arguments: vec![type_i.clone()],
-                  }),
-                  arguments: vec![g1.clone()],
-                  return_type: type_i.clone(),
-                  return_collector: None,
-                },
-                hir::Statement::Call {
-                  callee: hir::Callee::FunctionName(hir::FunctionName {
-                    name: heap.alloc_str_for_test("functor_fun"),
-                    type_: hir::Type::new_fn_unwrapped(vec![type_j.clone()], hir::INT_TYPE),
-                    type_arguments: vec![type_j.clone()],
-                  }),
-                  arguments: vec![g1.clone()],
-                  return_type: type_j.clone(),
-                  return_collector: None,
-                },
-                hir::Statement::IndexedAccess {
-                  name: heap.alloc_str_for_test("v1"),
-                  type_: hir::INT_TYPE,
-                  pointer_expression: hir::Expression::var_name(well_known_pstrs::LOWER_A, type_i),
-                  index: 0,
-                },
-                hir::Statement::Cast {
-                  name: heap.alloc_str_for_test("cast"),
-                  type_: hir::INT_TYPE,
-                  assigned_expression: hir::Expression::var_name(
-                    well_known_pstrs::LOWER_A,
-                    hir::INT_TYPE,
-                  ),
-                },
-              ],
-              s2: vec![
-                hir::Statement::Call {
-                  callee: hir::Callee::FunctionName(hir::FunctionName::new(
-                    heap.alloc_str_for_test("main"),
-                    hir::Type::new_fn_unwrapped(vec![], hir::INT_TYPE),
-                  )),
-                  arguments: vec![],
-                  return_type: hir::INT_TYPE,
-                  return_collector: None,
-                },
-                hir::Statement::Binary {
-                  name: heap.alloc_str_for_test("v1"),
-                  operator: Operator::PLUS,
-                  e1: hir::ZERO,
-                  e2: hir::ZERO,
-                },
-                hir::Statement::StructInit {
-                  struct_variable_name: well_known_pstrs::LOWER_J,
-                  type_: type_j.clone().into_id().unwrap(),
-                  expression_list: vec![hir::Expression::int(0)],
-                },
-                hir::Statement::IndexedAccess {
-                  name: heap.alloc_str_for_test("v2"),
-                  type_: hir::INT_TYPE,
-                  pointer_expression: hir::Expression::var_name(well_known_pstrs::LOWER_J, type_j),
-                  index: 0,
-                },
-                hir::Statement::ClosureInit {
-                  closure_variable_name: heap.alloc_str_for_test("c1"),
-                  closure_type: hir::Type::new_id_unwrapped(
-                    heap.alloc_str_for_test("CC"),
-                    vec![hir::STRING_TYPE, hir::STRING_TYPE],
-                  ),
-                  function_name: hir::FunctionName {
-                    name: heap.alloc_str_for_test("creatorIA"),
-                    type_: hir::Type::new_fn_unwrapped(
-                      vec![hir::STRING_TYPE],
-                      hir::Type::new_id(
-                        heap.alloc_str_for_test("I"),
-                        vec![hir::STRING_TYPE, hir::STRING_TYPE],
-                      ),
-                    ),
-                    type_arguments: vec![hir::STRING_TYPE],
+            body: vec![
+              hir::Statement::IfElse {
+                condition: hir::ONE,
+                s1: vec![
+                  hir::Statement::Call {
+                    callee: hir::Callee::FunctionName(hir::FunctionName {
+                      name: heap.alloc_str_for_test("creatorIA"),
+                      type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], type_i.clone()),
+                      type_arguments: vec![hir::INT_TYPE],
+                    }),
+                    arguments: vec![hir::ZERO],
+                    return_type: type_i.clone(),
+                    return_collector: Some(well_known_pstrs::LOWER_A),
                   },
-                  context: g1.clone(),
-                },
-                hir::Statement::ClosureInit {
-                  closure_variable_name: heap.alloc_str_for_test("c2"),
-                  closure_type: hir::Type::new_id_unwrapped(
-                    heap.alloc_str_for_test("CC"),
-                    vec![hir::INT_TYPE, hir::STRING_TYPE],
-                  ),
-                  function_name: hir::FunctionName {
-                    name: heap.alloc_str_for_test("creatorIA"),
-                    type_: hir::Type::new_fn_unwrapped(
-                      vec![hir::STRING_TYPE],
-                      hir::Type::new_id(
-                        heap.alloc_str_for_test("I"),
-                        vec![hir::STRING_TYPE, hir::STRING_TYPE],
+                  hir::Statement::Call {
+                    callee: hir::Callee::FunctionName(hir::FunctionName {
+                      name: heap.alloc_str_for_test("creatorIA"),
+                      type_: hir::Type::new_fn_unwrapped(
+                        vec![hir::STRING_TYPE],
+                        hir::Type::new_id(
+                          heap.alloc_str_for_test("I"),
+                          vec![hir::STRING_TYPE, hir::STRING_TYPE],
+                        ),
                       ),
-                    ),
-                    type_arguments: vec![hir::STRING_TYPE],
+                      type_arguments: vec![hir::STRING_TYPE],
+                    }),
+                    arguments: vec![g1.clone()],
+                    return_type: type_i.clone(),
+                    return_collector: Some(heap.alloc_str_for_test("a2")),
                   },
-                  context: g1,
+                  hir::Statement::Call {
+                    callee: hir::Callee::FunctionName(hir::FunctionName {
+                      name: heap.alloc_str_for_test("creatorIB"),
+                      type_: hir::Type::new_fn_unwrapped(vec![hir::STRING_TYPE], type_i.clone()),
+                      type_arguments: vec![hir::STRING_TYPE],
+                    }),
+                    arguments: vec![g1.clone()],
+                    return_type: type_i.clone(),
+                    return_collector: Some(well_known_pstrs::LOWER_B),
+                  },
+                  hir::Statement::Call {
+                    callee: hir::Callee::FunctionName(hir::FunctionName {
+                      name: heap.alloc_str_for_test("functor_fun"),
+                      type_: hir::Type::new_fn_unwrapped(vec![type_i.clone()], hir::INT_TYPE),
+                      type_arguments: vec![type_i.clone()],
+                    }),
+                    arguments: vec![g1.clone()],
+                    return_type: type_i.clone(),
+                    return_collector: None,
+                  },
+                  hir::Statement::Call {
+                    callee: hir::Callee::FunctionName(hir::FunctionName {
+                      name: heap.alloc_str_for_test("functor_fun"),
+                      type_: hir::Type::new_fn_unwrapped(vec![type_j.clone()], hir::INT_TYPE),
+                      type_arguments: vec![type_j.clone()],
+                    }),
+                    arguments: vec![g1.clone()],
+                    return_type: type_j.clone(),
+                    return_collector: None,
+                  },
+                  hir::Statement::IndexedAccess {
+                    name: heap.alloc_str_for_test("v1"),
+                    type_: hir::INT_TYPE,
+                    pointer_expression: hir::Expression::var_name(
+                      well_known_pstrs::LOWER_A,
+                      type_i,
+                    ),
+                    index: 0,
+                  },
+                  hir::Statement::Cast {
+                    name: heap.alloc_str_for_test("cast"),
+                    type_: hir::INT_TYPE,
+                    assigned_expression: hir::Expression::var_name(
+                      well_known_pstrs::LOWER_A,
+                      hir::INT_TYPE,
+                    ),
+                  },
+                ],
+                s2: vec![
+                  hir::Statement::Call {
+                    callee: hir::Callee::FunctionName(hir::FunctionName::new(
+                      heap.alloc_str_for_test("main"),
+                      hir::Type::new_fn_unwrapped(vec![], hir::INT_TYPE),
+                    )),
+                    arguments: vec![],
+                    return_type: hir::INT_TYPE,
+                    return_collector: None,
+                  },
+                  hir::Statement::Binary {
+                    name: heap.alloc_str_for_test("v1"),
+                    operator: Operator::PLUS,
+                    e1: hir::ZERO,
+                    e2: hir::ZERO,
+                  },
+                  hir::Statement::StructInit {
+                    struct_variable_name: well_known_pstrs::LOWER_J,
+                    type_: type_j.clone().into_id().unwrap(),
+                    expression_list: vec![hir::Expression::int(0)],
+                  },
+                  hir::Statement::IndexedAccess {
+                    name: heap.alloc_str_for_test("v2"),
+                    type_: hir::INT_TYPE,
+                    pointer_expression: hir::Expression::var_name(
+                      well_known_pstrs::LOWER_J,
+                      type_j,
+                    ),
+                    index: 0,
+                  },
+                  hir::Statement::ClosureInit {
+                    closure_variable_name: heap.alloc_str_for_test("c1"),
+                    closure_type: hir::Type::new_id_unwrapped(
+                      heap.alloc_str_for_test("CC"),
+                      vec![hir::STRING_TYPE, hir::STRING_TYPE],
+                    ),
+                    function_name: hir::FunctionName {
+                      name: heap.alloc_str_for_test("creatorIA"),
+                      type_: hir::Type::new_fn_unwrapped(
+                        vec![hir::STRING_TYPE],
+                        hir::Type::new_id(
+                          heap.alloc_str_for_test("I"),
+                          vec![hir::STRING_TYPE, hir::STRING_TYPE],
+                        ),
+                      ),
+                      type_arguments: vec![hir::STRING_TYPE],
+                    },
+                    context: g1.clone(),
+                  },
+                  hir::Statement::ClosureInit {
+                    closure_variable_name: heap.alloc_str_for_test("c2"),
+                    closure_type: hir::Type::new_id_unwrapped(
+                      heap.alloc_str_for_test("CC"),
+                      vec![hir::INT_TYPE, hir::STRING_TYPE],
+                    ),
+                    function_name: hir::FunctionName {
+                      name: heap.alloc_str_for_test("creatorIA"),
+                      type_: hir::Type::new_fn_unwrapped(
+                        vec![hir::STRING_TYPE],
+                        hir::Type::new_id(
+                          heap.alloc_str_for_test("I"),
+                          vec![hir::STRING_TYPE, hir::STRING_TYPE],
+                        ),
+                      ),
+                      type_arguments: vec![hir::STRING_TYPE],
+                    },
+                    context: g1,
+                  },
+                ],
+                final_assignments: vec![(
+                  heap.alloc_str_for_test("finalV"),
+                  hir::INT_TYPE,
+                  hir::Expression::var_name(heap.alloc_str_for_test("v1"), hir::INT_TYPE),
+                  hir::Expression::var_name(heap.alloc_str_for_test("v2"), hir::INT_TYPE),
+                )],
+              },
+              hir::Statement::EnumInit {
+                enum_variable_name: well_known_pstrs::LOWER_B,
+                enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum")),
+                sub_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("EnumA")),
+                tag: 0,
+                associated_data_list: vec![hir::ZERO, hir::ZERO],
+              },
+              hir::Statement::ConditionalDestructure {
+                test_expr: hir::Expression::var_name(
+                  well_known_pstrs::LOWER_B,
+                  hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum")),
+                ),
+                tag: 0,
+                subtype: hir::IdType {
+                  name: heap.alloc_str_for_test("EnumA"),
+                  type_arguments: vec![],
                 },
-              ],
-              final_assignments: vec![(
-                heap.alloc_str_for_test("finalV"),
-                hir::INT_TYPE,
-                hir::Expression::var_name(heap.alloc_str_for_test("v1"), hir::INT_TYPE),
-                hir::Expression::var_name(heap.alloc_str_for_test("v2"), hir::INT_TYPE),
-              )],
-            }],
+                bindings: vec![None, Some((well_known_pstrs::LOWER_A, hir::INT_TYPE))],
+                s1: vec![],
+                s2: vec![],
+                final_assignments: vec![],
+              },
+            ],
             return_value: hir::ZERO,
           },
         ],
@@ -942,6 +1099,8 @@ const G1 = 'a';
 
 closure type CC__Str__Str = (_Str) -> _Str
 closure type CC_int__Str = (int) -> _Str
+variant type Enum
+object type EnumA = [int, int]
 object type J = [int]
 variant type _Str
 variant type I_int__Str
@@ -973,6 +1132,15 @@ function main(): int {
     let c1: CC__Str__Str = Closure { fun: (creatorIA__Str: (_Str) -> I__Str__Str), context: G1 };
     let c2: CC_int__Str = Closure { fun: (creatorIA__Str: (_Str) -> I__Str__Str), context: G1 };
     finalV = (v2: int);
+  }
+  let _t17: EnumA = [0, 0, 0];
+  let b = (_t17: EnumA) as Enum;
+  let _t18: int = (b: Enum)[0];
+  let _t19 = (_t18: int) == 0;
+  if (_t19: int) {
+    let _t20 = (b: Enum) as EnumA;
+    let a: int = (_t20: EnumA)[2];
+  } else {
   }
   return 0;
 }

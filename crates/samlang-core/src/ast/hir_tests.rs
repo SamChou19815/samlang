@@ -206,6 +206,13 @@ mod tests {
           type_: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("FooBar")),
           expression_list: vec![Expression::StringName(heap.alloc_str_for_test("meggo"))],
         },
+        Statement::EnumInit {
+          enum_variable_name: heap.alloc_str_for_test("baz"),
+          enum_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum")),
+          sub_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("FooBar")),
+          tag: 0,
+          associated_data_list: vec![Expression::StringName(heap.alloc_str_for_test("meggo"))],
+        },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("closure"),
           closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("CCC")),
@@ -286,6 +293,15 @@ mod tests {
           type_: INT_TYPE,
           assigned_expression: ZERO,
         },
+        Statement::ConditionalDestructure {
+          test_expr: ZERO,
+          tag: 0,
+          subtype: IdType { name: well_known_pstrs::UPPER_A, type_arguments: vec![] },
+          bindings: vec![None, Some((well_known_pstrs::UNDERSCORE, INT_TYPE))],
+          s1: vec![Statement::Break(ZERO)],
+          s2: vec![Statement::Break(ZERO)],
+          final_assignments: vec![(well_known_pstrs::LOWER_A, INT_TYPE, ZERO, ZERO)],
+        },
         Statement::While {
           loop_variables: vec![],
           statements: vec![Statement::SingleIf {
@@ -297,7 +313,7 @@ mod tests {
         },
         Statement::While {
           loop_variables: vec![GenenalLoopVariable {
-            name: heap.alloc_str_for_test("_"),
+            name: well_known_pstrs::UNDERSCORE,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: ZERO,
@@ -308,7 +324,7 @@ mod tests {
             statements: vec![Statement::Break(ZERO)],
           }],
           break_collector: Some(VariableName {
-            name: heap.alloc_str_for_test("_"),
+            name: well_known_pstrs::UNDERSCORE,
             type_: INT_TYPE,
           }),
         },
@@ -403,6 +419,7 @@ mod tests {
     let expected = r#"let bar: int;
 if 0 {
   let baz: FooBar = [meggo];
+  let baz: Enum = FooBar[0, meggo];
   let closure: CCC = Closure { fun: (foo: (int) -> int), context: 0 };
   let dd = 0 < 0;
   let dd = 0 <= 0;
@@ -416,6 +433,15 @@ if 0 {
   let dd = 0 >>> 0;
   let dd = 0 ^ 0;
   let cast = 0 as int;
+  let [_, _: int]: A if tagof(0)==0 {
+    undefined = 0;
+    break;
+    a = 0;
+  } else {
+    undefined = 0;
+    break;
+    a = 0;
+  }
   while (true) {
     if 0 {
     }
