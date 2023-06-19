@@ -1,9 +1,8 @@
 use crate::{
   ast::{
-    common_names::{encode_samlang_type, encode_samlang_variant_subtype},
+    common_names::encode_samlang_type,
     hir::{
       ClosureTypeDefinition, FunctionType, IdType, Type, TypeDefinition, TypeDefinitionMappings,
-      INT_TYPE,
     },
     source,
   },
@@ -90,11 +89,6 @@ impl TypeSynthesizer {
     let definition = TypeDefinition {
       identifier,
       type_parameters,
-      names: mappings
-        .iter()
-        .enumerate()
-        .map(|(i, _)| heap.alloc_string(format!("_n{i}")))
-        .collect_vec(),
       mappings: TypeDefinitionMappings::Struct(mappings),
     };
     self.synthesized_tuple_types.insert(identifier, definition.clone());
@@ -318,61 +312,42 @@ impl TypeLoweringManager {
     module_reference: &ModuleReference,
     identifier: PStr,
     source_type_def: &source::TypeDefinition,
-  ) -> Vec<TypeDefinition> {
+  ) -> TypeDefinition {
     let type_parameters = Vec::from_iter(
       self.generic_types.iter().cloned().sorted_by(|x, y| x.as_str(heap).cmp(y.as_str(heap))),
     );
     match source_type_def {
-      source::TypeDefinition::Struct { loc: _, fields } => {
-        let mut names = vec![];
-        let mut mappings = vec![];
-        for field in fields {
-          names.push(field.name.name);
-          mappings
-            .push(self.lower_source_type(heap, &type_::Type::from_annotation(&field.annotation)));
-        }
-        vec![TypeDefinition {
-          identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
-          type_parameters,
-          names,
-          mappings: TypeDefinitionMappings::Struct(mappings),
-        }]
-      }
-      source::TypeDefinition::Enum { loc: _, variants } => {
-        let mut names = vec![];
-        let mut type_defs = vec![];
-        for variant in variants {
-          names.push(variant.name.name);
-          type_defs.push(TypeDefinition {
-            identifier: heap.alloc_string(encode_samlang_variant_subtype(
-              heap,
-              module_reference,
-              identifier,
-              variant.name.name,
-            )),
-            type_parameters: type_parameters.clone(),
-            names: vec![],
-            mappings: TypeDefinitionMappings::Struct(
-              vec![INT_TYPE]
-                .into_iter()
-                .chain(
-                  variant
-                    .associated_data_types
-                    .iter()
-                    .map(|t| self.lower_source_type(heap, &type_::Type::from_annotation(t))),
-                )
-                .collect(),
-            ),
-          });
-        }
-        type_defs.push(TypeDefinition {
-          identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
-          type_parameters,
-          names,
-          mappings: TypeDefinitionMappings::Enum,
-        });
-        type_defs
-      }
+      source::TypeDefinition::Struct { loc: _, fields } => TypeDefinition {
+        identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
+        type_parameters,
+        mappings: TypeDefinitionMappings::Struct(
+          fields
+            .iter()
+            .map(|field| {
+              self.lower_source_type(heap, &type_::Type::from_annotation(&field.annotation))
+            })
+            .collect(),
+        ),
+      },
+      source::TypeDefinition::Enum { loc: _, variants } => TypeDefinition {
+        identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
+        type_parameters,
+        mappings: TypeDefinitionMappings::Enum(
+          variants
+            .iter()
+            .map(|variant| {
+              (
+                variant.name.name,
+                variant
+                  .associated_data_types
+                  .iter()
+                  .map(|t| self.lower_source_type(heap, &type_::Type::from_annotation(t)))
+                  .collect_vec(),
+              )
+            })
+            .collect(),
+        ),
+      },
     }
   }
 
@@ -397,7 +372,11 @@ impl TypeLoweringManager {
 mod tests {
   use super::*;
   use crate::{
-    ast::{hir::STRING_TYPE, source::test_builder, Location, Reason},
+    ast::{
+      hir::{INT_TYPE, STRING_TYPE},
+      source::test_builder,
+      Location, Reason,
+    },
     checker::type_::test_type_builder,
     common::well_known_pstrs,
   };
@@ -753,7 +732,7 @@ mod tests {
       ],
     };
     let foo_str = heap.alloc_str_for_test("Foo");
-    let mut type_defs =
+    let type_def =
       manager.lower_source_type_definition(heap, &ModuleReference::root(), foo_str, &type_def);
     let SynthesizedTypes { closure_types, mut tuple_types } =
       manager.type_synthesizer.synthesized_types();
@@ -765,7 +744,7 @@ mod tests {
       closure_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
 
-    tuple_types.append(&mut type_defs);
+    tuple_types.push(type_def);
     assert_eq!(
       vec!["object type _Foo<A> = [$SyntheticIDType1<A>, $SyntheticIDType1<A>]"],
       tuple_types.iter().map(|it| it.pretty_print(heap)).collect_vec()

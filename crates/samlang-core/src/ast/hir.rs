@@ -113,14 +113,13 @@ impl ClosureTypeDefinition {
 #[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum TypeDefinitionMappings {
   Struct(Vec<Type>),
-  Enum,
+  Enum(Vec<(PStr, Vec<Type>)>),
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct TypeDefinition {
   pub(crate) identifier: PStr,
   pub(crate) type_parameters: Vec<PStr>,
-  pub(crate) names: Vec<PStr>,
   pub(crate) mappings: TypeDefinitionMappings,
 }
 
@@ -136,7 +135,18 @@ impl TypeDefinition {
           types.iter().map(|it| it.pretty_print(heap)).join(", ")
         )
       }
-      TypeDefinitionMappings::Enum => format!("variant type {}", id_part),
+      TypeDefinitionMappings::Enum(variants) => format!(
+        "variant type {} = [{}]",
+        id_part,
+        variants
+          .iter()
+          .map(|(n, types)| format!(
+            "({}: [{}])",
+            n.as_str(heap),
+            types.iter().map(|it| it.pretty_print(heap)).join(", ")
+          ))
+          .join(", ")
+      ),
     }
   }
 }
@@ -326,7 +336,6 @@ pub(crate) enum Statement {
   ConditionalDestructure {
     test_expr: Expression,
     tag: usize,
-    subtype: IdType,
     bindings: Vec<Option<(PStr, Type)>>,
     s1: Vec<Statement>,
     s2: Vec<Statement>,
@@ -362,7 +371,6 @@ pub(crate) enum Statement {
   EnumInit {
     enum_variable_name: PStr,
     enum_type: IdType,
-    sub_type: IdType,
     tag: usize,
     associated_data_list: Vec<Expression>,
   },
@@ -420,15 +428,7 @@ impl Statement {
           args_str
         ));
       }
-      Statement::ConditionalDestructure {
-        test_expr,
-        tag,
-        subtype,
-        bindings,
-        s1,
-        s2,
-        final_assignments,
-      } => {
+      Statement::ConditionalDestructure { test_expr, tag, bindings, s1, s2, final_assignments } => {
         let bindings_string = bindings
           .iter()
           .map(|b| {
@@ -440,10 +440,9 @@ impl Statement {
           })
           .join(", ");
         collector.push(format!(
-          "{}let [{}]: {} if tagof({})=={} {{\n",
+          "{}let [{}] if tagof({})=={} {{\n",
           "  ".repeat(level),
           bindings_string,
-          subtype.pretty_print(heap),
           test_expr.debug_print(heap),
           tag,
         ));
@@ -582,20 +581,13 @@ impl Statement {
           expression_str
         ));
       }
-      Statement::EnumInit {
-        enum_variable_name,
-        enum_type,
-        sub_type,
-        tag,
-        associated_data_list,
-      } => {
+      Statement::EnumInit { enum_variable_name, enum_type, tag, associated_data_list } => {
         let expression_str = associated_data_list.iter().map(|it| it.debug_print(heap)).join(", ");
         collector.push(format!(
-          "{}let {}: {} = {}[{}, {}];\n",
+          "{}let {}: {} = [{}, {}];\n",
           "  ".repeat(level),
           enum_variable_name.as_str(heap),
           enum_type.pretty_print(heap),
-          sub_type.pretty_print(heap),
           tag,
           expression_str
         ));

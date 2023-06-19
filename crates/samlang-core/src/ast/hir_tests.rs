@@ -177,18 +177,19 @@ mod tests {
       TypeDefinition {
         identifier: well_known_pstrs::UPPER_A,
         type_parameters: vec![],
-        names: vec![],
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .pretty_print(heap)
     );
     assert_eq!(
-      "variant type B<C>",
+      "variant type B<C> = [(D: [int]), (E: [int])]",
       TypeDefinition {
         identifier: well_known_pstrs::UPPER_B,
         type_parameters: vec![well_known_pstrs::UPPER_C],
-        names: vec![],
-        mappings: TypeDefinitionMappings::Enum,
+        mappings: TypeDefinitionMappings::Enum(vec![
+          (well_known_pstrs::UPPER_D, vec![INT_TYPE]),
+          (well_known_pstrs::UPPER_E, vec![INT_TYPE])
+        ]),
       }
       .pretty_print(heap)
     );
@@ -209,7 +210,6 @@ mod tests {
         Statement::EnumInit {
           enum_variable_name: heap.alloc_str_for_test("baz"),
           enum_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum")),
-          sub_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("FooBar")),
           tag: 0,
           associated_data_list: vec![Expression::StringName(heap.alloc_str_for_test("meggo"))],
         },
@@ -296,7 +296,6 @@ mod tests {
         Statement::ConditionalDestructure {
           test_expr: ZERO,
           tag: 0,
-          subtype: IdType { name: well_known_pstrs::UPPER_A, type_arguments: vec![] },
           bindings: vec![None, Some((well_known_pstrs::UNDERSCORE, INT_TYPE))],
           s1: vec![Statement::Break(ZERO)],
           s2: vec![Statement::Break(ZERO)],
@@ -419,7 +418,7 @@ mod tests {
     let expected = r#"let bar: int;
 if 0 {
   let baz: FooBar = [meggo];
-  let baz: Enum = FooBar[0, meggo];
+  let baz: Enum = [0, meggo];
   let closure: CCC = Closure { fun: (foo: (int) -> int), context: 0 };
   let dd = 0 < 0;
   let dd = 0 <= 0;
@@ -433,7 +432,7 @@ if 0 {
   let dd = 0 >>> 0;
   let dd = 0 ^ 0;
   let cast = 0 as int;
-  let [_, _: int]: A if tagof(0)==0 {
+  let [_, _: int] if tagof(0)==0 {
     undefined = 0;
     break;
     a = 0;
@@ -493,7 +492,6 @@ if 0 {
       type_definitions: vec![TypeDefinition {
         identifier: heap.alloc_str_for_test("Foo"),
         type_parameters: vec![],
-        names: vec![],
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .clone()],
