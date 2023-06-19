@@ -387,16 +387,25 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
     type_: unknown_member_destructor_type(),
     body: vec![
       lir::Statement::binary(
-        heap.alloc_str_permanent("isPrimitive"),
+        heap.alloc_str_permanent("tinyInt"),
         hir::Operator::LT,
         lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
         lir::Expression::int(1024),
       ),
+      lir::Statement::binary(
+        heap.alloc_str_permanent("isOdd"),
+        hir::Operator::LAND,
+        lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
+        lir::ONE,
+      ),
+      lir::Statement::binary(
+        heap.alloc_str_permanent("notPtr"),
+        hir::Operator::LOR,
+        lir::Expression::Variable(heap.alloc_str_permanent("tinyInt"), lir::INT_TYPE),
+        lir::Expression::Variable(heap.alloc_str_permanent("isOdd"), lir::INT_TYPE),
+      ),
       lir::Statement::SingleIf {
-        condition: lir::Expression::Variable(
-          heap.alloc_str_permanent("isPrimitive"),
-          lir::INT_TYPE,
-        ),
+        condition: lir::Expression::Variable(heap.alloc_str_permanent("notPtr"), lir::INT_TYPE),
         invert_condition: true,
         statements: vec![
           lir::Statement::IndexedAccess {
@@ -478,16 +487,25 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
     type_: unknown_member_destructor_type(),
     body: vec![
       lir::Statement::binary(
-        heap.alloc_str_permanent("isPrimitive"),
+        heap.alloc_str_permanent("tinyInt"),
         hir::Operator::LT,
         lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
         lir::Expression::int(1024),
       ),
+      lir::Statement::binary(
+        heap.alloc_str_permanent("isOdd"),
+        hir::Operator::LAND,
+        lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
+        lir::ONE,
+      ),
+      lir::Statement::binary(
+        heap.alloc_str_permanent("notPtr"),
+        hir::Operator::LOR,
+        lir::Expression::Variable(heap.alloc_str_permanent("tinyInt"), lir::INT_TYPE),
+        lir::Expression::Variable(heap.alloc_str_permanent("isOdd"), lir::INT_TYPE),
+      ),
       lir::Statement::SingleIf {
-        condition: lir::Expression::Variable(
-          heap.alloc_str_permanent("isPrimitive"),
-          lir::INT_TYPE,
-        ),
+        condition: lir::Expression::Variable(heap.alloc_str_permanent("notPtr"), lir::INT_TYPE),
         invert_condition: true,
         statements: vec![
           lir::Statement::IndexedAccess {
@@ -1148,8 +1166,10 @@ function _compiled_program_main(): number {{
   return 0;
 }}
 function _builtin_inc_ref(ptr: any): number {{
-  let isPrimitive = Number(ptr < 1024);
-  if (!isPrimitive) {{
+  let tinyInt = Number(ptr < 1024);
+  let isOdd = ptr & 1;
+  let notPtr = tinyInt | isOdd;
+  if (!notPtr) {{
     let header: number = ptr[0];
     let originalRefCount = header & 65535;
     let isZero = Number(originalRefCount == 0);
@@ -1164,8 +1184,10 @@ function _builtin_inc_ref(ptr: any): number {{
   return 0;
 }}
 function _builtin_dec_ref(ptr: any): number {{
-  let isPrimitive = Number(ptr < 1024);
-  if (!isPrimitive) {{
+  let tinyInt = Number(ptr < 1024);
+  let isOdd = ptr & 1;
+  let notPtr = tinyInt | isOdd;
+  if (!notPtr) {{
     let header: number = ptr[0];
     let refCount = header & 65535;
     let isZero = Number(refCount == 0);
