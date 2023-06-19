@@ -622,87 +622,79 @@ impl<'a> ExpressionLoweringManager<'a> {
     let matched_expr =
       self.lowered_and_add_statements(&expression.matched, None, &mut lowered_stmts);
     let general_id_type = matched_expr.type_().as_id().unwrap();
-    let variable_for_tag = self.allocate_temp_variable(None);
-    lowered_stmts.push(hir::Statement::IndexedAccess {
-      name: variable_for_tag,
-      type_: hir::INT_TYPE,
-      pointer_expression: matched_expr.clone(),
-      index: 0,
-    });
-    self
-      .variable_cx
-      .bind(variable_for_tag, hir::Expression::var_name(variable_for_tag, hir::INT_TYPE));
 
-    let mut lowered_matching_list = vec![];
+    let unreachable_branch_collector = self.allocate_temp_variable(None);
+    let final_return_type =
+      self.type_lowering_manager.lower_source_type(self.heap, &expression.common.type_);
+    let mut acc = (
+      vec![hir::Statement::Call {
+        callee: hir::Callee::FunctionName(hir::FunctionName {
+          name: self.heap.alloc_string(common_names::encoded_fn_name_panic()),
+          type_: hir::FunctionType {
+            argument_types: vec![hir::INT_TYPE, hir::STRING_TYPE],
+            return_type: Box::new(final_return_type.clone()),
+          },
+          type_arguments: vec![final_return_type.clone()],
+        }),
+        arguments: vec![
+          hir::ZERO,
+          hir::Expression::StringName(
+            self.string_manager.allocate(self.heap, well_known_pstrs::EMPTY).name,
+          ),
+        ],
+        return_type: final_return_type.clone(),
+        return_collector: Some(unreachable_branch_collector),
+      }],
+      hir::Expression::var_name(unreachable_branch_collector, final_return_type),
+    );
     for source::expr::VariantPatternToExpression {
       tag_order,
       tag: source::Id { name: tag, .. },
       data_variables,
       body,
       ..
-    } in &expression.cases
+    } in expression.cases.iter().rev()
     {
+      let final_assignment_temp = self.allocate_temp_variable(None);
+      let lowered_return_type = acc.1.type_().clone();
+      let (acc_stmts, acc_e) = acc;
       let mut local_stmts = vec![];
-      let casted_collector = self.allocate_temp_variable(None);
-      let subtype = hir::Type::Id(hir::IdType {
+      let subtype = hir::IdType {
         name: self.heap.alloc_string(format!(
           "{}_{}",
           general_id_type.name.as_str(self.heap),
           tag.as_str(self.heap)
         )),
         type_arguments: general_id_type.type_arguments.clone(),
-      });
-      local_stmts.push(hir::Statement::Cast {
-        name: casted_collector,
-        type_: subtype.clone(),
-        assigned_expression: matched_expr.clone(),
-      });
+      };
       self.variable_cx.push_scope();
-      for (i, data_var_name, data_var_type) in
-        data_variables.iter().enumerate().filter_map(|(i, dv)| dv.as_ref().map(|(n, t)| (i, n, t)))
-      {
-        let name = data_var_name.name;
-        let data_var_type = self.type_lowering_manager.lower_source_type(self.heap, data_var_type);
-        local_stmts.push(hir::Statement::IndexedAccess {
-          name,
-          type_: data_var_type.clone(),
-          pointer_expression: hir::Expression::var_name(casted_collector, subtype.clone()),
-          index: i + 1,
-        });
-        self.variable_cx.bind(name, hir::Expression::var_name(name, data_var_type.clone()));
+      let mut bindings = vec![];
+      for dv in data_variables {
+        if let Some((source::Id { loc: _, associated_comments: _, name }, data_var_type)) = dv {
+          let data_var_type =
+            self.type_lowering_manager.lower_source_type(self.heap, data_var_type);
+          self.variable_cx.bind(*name, hir::Expression::var_name(*name, data_var_type.clone()));
+          bindings.push(Some((*name, data_var_type)));
+        } else {
+          bindings.push(None);
+        }
       }
       let final_expr = self.lowered_and_add_statements(body, None, &mut local_stmts);
       self.variable_cx.pop_scope();
-      lowered_matching_list.push((*tag_order, local_stmts, final_expr));
-    }
-
-    let mut cases_rev_iter = lowered_matching_list.into_iter().rev();
-    let (_, last_case_stmts, last_case_e) = cases_rev_iter.next().unwrap();
-    let mut acc = (last_case_stmts, last_case_e);
-    for (tag_order, case_stmts, case_e) in cases_rev_iter {
-      let comparison_temp = self.allocate_temp_variable(None);
-      let final_assignment_temp = self.allocate_temp_variable(None);
-      let lowered_return_type = acc.1.type_().clone();
-      let (acc_stmts, acc_e) = acc;
-      let new_stmts = vec![
-        hir::Statement::Binary {
-          name: comparison_temp,
-          operator: hir::Operator::EQ,
-          e1: hir::Expression::var_name(variable_for_tag, hir::INT_TYPE),
-          e2: hir::Expression::int(i32::try_from(tag_order).unwrap()),
-        },
-        hir::Statement::IfElse {
-          condition: hir::Expression::var_name(comparison_temp, hir::INT_TYPE),
-          s1: case_stmts,
-          s2: acc_stmts,
-          final_assignments: vec![(
-            final_assignment_temp,
-            lowered_return_type.clone(),
-            case_e,
-            acc_e,
-          )],
-        },
-      ];
+      let new_stmts = vec![hir::Statement::ConditionalDestructure {
+        test_expr: matched_expr.clone(),
+        tag: *tag_order,
+        subtype,
+        bindings,
+        s1: local_stmts,
+        s2: acc_stmts,
+        final_assignments: vec![(
+          final_assignment_temp,
+          lowered_return_type.clone(),
+          final_expr,
+          acc_e,
+        )],
+      }];
       acc = (new_stmts, hir::Expression::var_name(final_assignment_temp, lowered_return_type))
     }
 
@@ -936,7 +928,6 @@ fn lower_constructors(
     heap.alloc_string(common_names::encode_samlang_type(heap, module_reference, class_name));
   let type_def = type_definition_mapping.get(&type_name).unwrap();
   let struct_var_name = well_known_pstrs::LOWER_O;
-  let struct_var_name_casted = well_known_pstrs::UNDERSCORE_TMP;
   let struct_type = hir::IdType {
     name: type_name,
     type_arguments: type_def
@@ -1010,31 +1001,21 @@ fn lower_constructors(
             vec![hir::INT_TYPE].into_iter().chain(data_types.iter().cloned()).collect(),
             hir::Type::Id(struct_type.clone()),
           ),
-          body: vec![
-            hir::Statement::StructInit {
-              struct_variable_name: struct_var_name,
-              type_: enum_subtype.clone(),
-              expression_list: vec![hir::Expression::int(i32::try_from(tag_order).unwrap())]
-                .into_iter()
-                .chain(data_types.iter().enumerate().map(|(i, data_type)| {
-                  hir::Expression::var_name(
-                    heap.alloc_string(format!("_data{i}")),
-                    data_type.clone(),
-                  )
-                }))
-                .collect(),
-            },
-            hir::Statement::Cast {
-              name: struct_var_name_casted,
-              type_: hir::Type::Id(struct_type.clone()),
-              assigned_expression: hir::Expression::var_name(
-                struct_var_name,
-                hir::Type::Id(enum_subtype),
-              ),
-            },
-          ],
+          body: vec![hir::Statement::EnumInit {
+            enum_variable_name: struct_var_name,
+            enum_type: struct_type.clone(),
+            sub_type: enum_subtype.clone(),
+            tag: tag_order,
+            associated_data_list: data_types
+              .iter()
+              .enumerate()
+              .map(|(i, data_type)| {
+                hir::Expression::var_name(heap.alloc_string(format!("_data{i}")), data_type.clone())
+              })
+              .collect(),
+          }],
           return_value: hir::Expression::var_name(
-            struct_var_name_casted,
+            struct_var_name,
             hir::Type::Id(struct_type.clone()),
           ),
         };
@@ -1996,18 +1977,20 @@ return (_t6: DUMMY_Dummy);"#,
         ],
       }),
       heap,
-      r#"let _t6: int = (_this: DUMMY_Dummy)[0];
-let _t11 = (_t6: int) == 0;
-let _t12: DUMMY_Dummy;
-if (_t11: int) {
-  let _t7 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Foo;
-  let bar: int = (_t7: DUMMY_Dummy_Foo)[1];
-  _t12 = (_this: DUMMY_Dummy);
+      r#"const GLOBAL_STRING_0 = '';
+
+let [bar: int]: DUMMY_Dummy_Foo if tagof((_this: DUMMY_Dummy))==0 {
+  _t11 = (_this: DUMMY_Dummy);
 } else {
-  let _t9 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Bar;
-  _t12 = (_this: DUMMY_Dummy);
+  let [_]: DUMMY_Dummy_Bar if tagof((_this: DUMMY_Dummy))==1 {
+    _t9 = (_this: DUMMY_Dummy);
+  } else {
+    let _t6: DUMMY_Dummy = __Builtins$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
+    _t9 = (_t6: DUMMY_Dummy);
+  }
+  _t11 = (_t9: DUMMY_Dummy);
 }
-return (_t12: DUMMY_Dummy);"#,
+return (_t11: DUMMY_Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2046,26 +2029,25 @@ return (_t12: DUMMY_Dummy);"#,
         ],
       }),
       heap,
-      r#"let _t6: int = (_this: DUMMY_Dummy)[0];
-let _t15 = (_t6: int) == 0;
-let _t16: DUMMY_Dummy;
-if (_t15: int) {
-  let _t7 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Foo;
-  _t16 = (_this: DUMMY_Dummy);
+      r#"const GLOBAL_STRING_0 = '';
+
+let [_]: DUMMY_Dummy_Foo if tagof((_this: DUMMY_Dummy))==0 {
+  _t13 = (_this: DUMMY_Dummy);
 } else {
-  let _t13 = (_t6: int) == 1;
-  let _t14: DUMMY_Dummy;
-  if (_t13: int) {
-    let _t9 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Bar;
-    let bar: DUMMY_Dummy = (_t9: DUMMY_Dummy_Bar)[1];
-    _t14 = (bar: DUMMY_Dummy);
+  let [bar: DUMMY_Dummy]: DUMMY_Dummy_Bar if tagof((_this: DUMMY_Dummy))==1 {
+    _t11 = (bar: DUMMY_Dummy);
   } else {
-    let _t11 = (_this: DUMMY_Dummy) as DUMMY_Dummy_Baz;
-    _t14 = (_this: DUMMY_Dummy);
+    let [_]: DUMMY_Dummy_Baz if tagof((_this: DUMMY_Dummy))==2 {
+      _t9 = (_this: DUMMY_Dummy);
+    } else {
+      let _t6: DUMMY_Dummy = __Builtins$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
+      _t9 = (_t6: DUMMY_Dummy);
+    }
+    _t11 = (_t9: DUMMY_Dummy);
   }
-  _t16 = (_t14: DUMMY_Dummy);
+  _t13 = (_t11: DUMMY_Dummy);
 }
-return (_t16: DUMMY_Dummy);"#,
+return (_t13: DUMMY_Dummy);"#,
     );
   }
 
@@ -2660,9 +2642,8 @@ function _DUMMY_Class1$factorial(_this: int, n: int, acc: int): int {
 }
 
 function _DUMMY_Class2$Tag(_this: int, _data0: int): DUMMY_Class2 {
-  let o: DUMMY_Class2_Tag = [0, (_data0: int)];
-  let _tmp = (o: DUMMY_Class2_Tag) as DUMMY_Class2;
-  return (_tmp: DUMMY_Class2);
+  let o: DUMMY_Class2 = DUMMY_Class2_Tag[0, (_data0: int)];
+  return (o: DUMMY_Class2);
 }
 
 function _DUMMY_Class3$init<T>(_this: int, _f0: $SyntheticIDType0<T>): DUMMY_Class3<T> {

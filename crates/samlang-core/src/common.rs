@@ -168,11 +168,14 @@ pub(crate) mod well_known_pstrs {
     }};
   }
 
+  pub(crate) const EMPTY: PStr = const_inline_pstr!(*b"", 7);
+
   pub(crate) const DUMMY_MODULE: PStr = const_inline_pstr!(*b"DUMMY", 2);
   pub(crate) const STR_TYPE: PStr = const_inline_pstr!(*b"Str", 4);
   pub(crate) const INIT: PStr = const_inline_pstr!(*b"init", 3);
   pub(crate) const THIS: PStr = const_inline_pstr!(*b"this", 3);
 
+  pub(crate) const UNDERSCORE: PStr = const_inline_pstr!(*b"_", 6);
   pub(crate) const UNDERSCORE_THIS: PStr = const_inline_pstr!(*b"_this", 2);
   pub(crate) const UNDERSCORE_TMP: PStr = const_inline_pstr!(*b"_tmp", 3);
   pub(crate) const UNDERSCORE_STR: PStr = const_inline_pstr!(*b"_Str", 3);

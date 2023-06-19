@@ -323,6 +323,15 @@ pub(crate) enum Statement {
     return_type: Type,
     return_collector: Option<PStr>,
   },
+  ConditionalDestructure {
+    test_expr: Expression,
+    tag: usize,
+    subtype: IdType,
+    bindings: Vec<Option<(PStr, Type)>>,
+    s1: Vec<Statement>,
+    s2: Vec<Statement>,
+    final_assignments: Vec<(PStr, Type, Expression, Expression)>,
+  },
   IfElse {
     condition: Expression,
     s1: Vec<Statement>,
@@ -349,6 +358,13 @@ pub(crate) enum Statement {
     struct_variable_name: PStr,
     type_: IdType,
     expression_list: Vec<Expression>,
+  },
+  EnumInit {
+    enum_variable_name: PStr,
+    enum_type: IdType,
+    sub_type: IdType,
+    tag: usize,
+    associated_data_list: Vec<Expression>,
   },
   ClosureInit {
     closure_variable_name: PStr,
@@ -403,6 +419,58 @@ impl Statement {
           fun_str,
           args_str
         ));
+      }
+      Statement::ConditionalDestructure {
+        test_expr,
+        tag,
+        subtype,
+        bindings,
+        s1,
+        s2,
+        final_assignments,
+      } => {
+        let bindings_string = bindings
+          .iter()
+          .map(|b| {
+            if let Some((n, t)) = b {
+              format!("{}: {}", n.as_str(heap), t.pretty_print(heap))
+            } else {
+              "_".to_string()
+            }
+          })
+          .join(", ");
+        collector.push(format!(
+          "{}let [{}]: {} if tagof({})=={} {{\n",
+          "  ".repeat(level),
+          bindings_string,
+          subtype.pretty_print(heap),
+          test_expr.debug_print(heap),
+          tag,
+        ));
+        for s in s1 {
+          s.debug_print_internal(heap, level + 1, break_collector, collector);
+        }
+        for (n, _, v1, _) in final_assignments {
+          collector.push(format!(
+            "{}{} = {};\n",
+            "  ".repeat(level + 1),
+            n.as_str(heap),
+            v1.debug_print(heap)
+          ));
+        }
+        collector.push(format!("{}}} else {{\n", "  ".repeat(level)));
+        for s in s2 {
+          s.debug_print_internal(heap, level + 1, break_collector, collector);
+        }
+        for (n, _, _, v2) in final_assignments {
+          collector.push(format!(
+            "{}{} = {};\n",
+            "  ".repeat(level + 1),
+            n.as_str(heap),
+            v2.debug_print(heap)
+          ));
+        }
+        collector.push(format!("{}}}\n", "  ".repeat(level)));
       }
       Statement::IfElse { condition, s1, s2, final_assignments } => {
         for (n, t, _, _) in final_assignments {
@@ -511,6 +579,24 @@ impl Statement {
           "  ".repeat(level),
           struct_variable_name.as_str(heap),
           type_.pretty_print(heap),
+          expression_str
+        ));
+      }
+      Statement::EnumInit {
+        enum_variable_name,
+        enum_type,
+        sub_type,
+        tag,
+        associated_data_list,
+      } => {
+        let expression_str = associated_data_list.iter().map(|it| it.debug_print(heap)).join(", ");
+        collector.push(format!(
+          "{}let {}: {} = {}[{}, {}];\n",
+          "  ".repeat(level),
+          enum_variable_name.as_str(heap),
+          enum_type.pretty_print(heap),
+          sub_type.pretty_print(heap),
+          tag,
           expression_str
         ));
       }
