@@ -26,7 +26,9 @@ struct Rewriter {
 fn mir_to_hir_type(t: &mir::Type) -> hir::Type {
   match t {
     mir::Type::Int => hir::Type::Int,
-    mir::Type::Id(name) => hir::Type::Id(hir::IdType { name: *name, type_arguments: vec![] }),
+    mir::Type::Id(name) => {
+      hir::Type::Id(hir::IdType { name: *name, type_arguments: Vec::with_capacity(0) })
+    }
   }
 }
 
@@ -34,17 +36,17 @@ impl Rewriter {
   fn rewrite_function(
     &mut self,
     heap: &mut Heap,
-    hir::Function { name: _, parameters, type_parameters: _, type_: _, body, return_value }: &hir::Function,
+    f: &hir::Function,
     new_name: PStr,
     new_type: mir::FunctionType,
     generics_replacement_map: &HashMap<PStr, mir::Type>,
   ) -> mir::Function {
     mir::Function {
       name: new_name,
-      parameters: parameters.clone(),
+      parameters: f.parameters.clone(),
       type_: new_type,
-      body: self.rewrite_stmts(heap, body, generics_replacement_map),
-      return_value: self.rewrite_expr(heap, return_value, generics_replacement_map),
+      body: self.rewrite_stmts(heap, &f.body, generics_replacement_map),
+      return_value: self.rewrite_expr(heap, &f.return_value, generics_replacement_map),
     }
   }
 
@@ -126,7 +128,7 @@ impl Rewriter {
           comparison_temp,
           hir::Operator::EQ,
           mir::Expression::var_name(variable_for_tag, mir::INT_TYPE),
-          mir::Expression::int(i32::try_from(*tag).unwrap()),
+          mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
         ));
         let subtype = self.rewrite_id_type(heap, subtype, generics_replacement_map);
         let mut nested_stmts = vec![];
@@ -216,7 +218,7 @@ impl Rewriter {
         collector.push(mir::Statement::StructInit {
           struct_variable_name: temp,
           type_name: sub_type.into_id().unwrap(),
-          expression_list: vec![mir::Expression::int(i32::try_from(*tag).unwrap())]
+          expression_list: vec![mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap())]
             .into_iter()
             .chain(
               associated_data_list
@@ -827,17 +829,17 @@ sources.mains = [main]
           hir::TypeDefinition {
             identifier: heap.alloc_str_for_test("Enum"),
             type_parameters: vec![],
-            names: vec![heap.alloc_str_for_test("EnumA"), heap.alloc_str_for_test("EnumB")],
+            names: vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
             mappings: hir::TypeDefinitionMappings::Enum,
           },
           hir::TypeDefinition {
-            identifier: heap.alloc_str_for_test("EnumA"),
+            identifier: heap.alloc_str_for_test("Enum_A"),
             type_parameters: vec![],
             names: vec![well_known_pstrs::LOWER_A, well_known_pstrs::LOWER_B],
             mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
           },
           hir::TypeDefinition {
-            identifier: heap.alloc_str_for_test("EnumB"),
+            identifier: heap.alloc_str_for_test("Enum_B"),
             type_parameters: vec![],
             names: vec![well_known_pstrs::LOWER_A],
             mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
@@ -1069,7 +1071,7 @@ sources.mains = [main]
               hir::Statement::EnumInit {
                 enum_variable_name: well_known_pstrs::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum")),
-                sub_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("EnumA")),
+                sub_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum_A")),
                 tag: 0,
                 associated_data_list: vec![hir::ZERO, hir::ZERO],
               },
@@ -1080,7 +1082,7 @@ sources.mains = [main]
                 ),
                 tag: 0,
                 subtype: hir::IdType {
-                  name: heap.alloc_str_for_test("EnumA"),
+                  name: heap.alloc_str_for_test("Enum_A"),
                   type_arguments: vec![],
                 },
                 bindings: vec![None, Some((well_known_pstrs::LOWER_A, hir::INT_TYPE))],
@@ -1100,7 +1102,7 @@ const G1 = 'a';
 closure type CC__Str__Str = (_Str) -> _Str
 closure type CC_int__Str = (int) -> _Str
 variant type Enum
-object type EnumA = [int, int]
+object type Enum_A = [int, int]
 object type J = [int]
 variant type _Str
 variant type I_int__Str
@@ -1133,13 +1135,13 @@ function main(): int {
     let c2: CC_int__Str = Closure { fun: (creatorIA__Str: (_Str) -> I__Str__Str), context: G1 };
     finalV = (v2: int);
   }
-  let _t17: EnumA = [0, 0, 0];
-  let b = (_t17: EnumA) as Enum;
+  let _t17: Enum_A = [1, 0, 0];
+  let b = (_t17: Enum_A) as Enum;
   let _t18: int = (b: Enum)[0];
-  let _t19 = (_t18: int) == 0;
+  let _t19 = (_t18: int) == 1;
   if (_t19: int) {
-    let _t20 = (b: Enum) as EnumA;
-    let a: int = (_t20: EnumA)[2];
+    let _t20 = (b: Enum) as Enum_A;
+    let a: int = (_t20: Enum_A)[2];
   } else {
   }
   return 0;
