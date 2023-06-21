@@ -198,9 +198,8 @@ pub(super) fn deduplicate(
       .collect_vec(),
     type_definitions: type_def_mapping
       .into_values()
-      .map(|TypeDefinition { identifier, names, mappings }| TypeDefinition {
+      .map(|TypeDefinition { identifier, mappings }| TypeDefinition {
         identifier,
-        names,
         mappings: match mappings {
           TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
             types.into_iter().map(|t| rewrite_type(&state, t)).collect_vec(),
@@ -277,12 +276,10 @@ mod tests {
       type_definitions: vec![
         TypeDefinition {
           identifier: well_known_pstrs::UPPER_C,
-          names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
         TypeDefinition {
           identifier: well_known_pstrs::UPPER_D,
-          names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
       ],

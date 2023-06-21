@@ -73,7 +73,6 @@ pub(crate) enum TypeDefinitionMappings {
 #[derive(Debug, Clone)]
 pub(crate) struct TypeDefinition {
   pub(crate) identifier: PStr,
-  pub(crate) names: Vec<PStr>,
   pub(crate) mappings: TypeDefinitionMappings,
 }
 
@@ -104,6 +103,7 @@ impl VariableName {
     VariableName { name, type_ }
   }
 
+  #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap) -> String {
     format!("({}: {})", self.name.as_str(heap), self.type_.pretty_print(heap))
   }

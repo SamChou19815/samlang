@@ -118,7 +118,6 @@ mod tests {
       "object type A = [int, int]",
       TypeDefinition {
         identifier: well_known_pstrs::UPPER_A,
-        names: vec![],
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .pretty_print(heap)
@@ -127,7 +126,6 @@ mod tests {
       "variant type B",
       TypeDefinition {
         identifier: well_known_pstrs::UPPER_B,
-        names: vec![],
         mappings: TypeDefinitionMappings::Enum,
       }
       .pretty_print(heap)
@@ -324,7 +322,6 @@ if 0 {
       .clone()],
       type_definitions: vec![TypeDefinition {
         identifier: heap.alloc_str_for_test("Foo"),
-        names: vec![],
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .clone()],

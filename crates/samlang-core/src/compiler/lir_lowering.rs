@@ -839,17 +839,14 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
       type_definitions: vec![
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Object"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Enum,
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Object2"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![
             STRING_TYPE,
             Type::Id(heap.alloc_str_for_test("Foo")),
@@ -857,12 +854,10 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant2"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Enum,
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant3"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Enum,
         },
       ],

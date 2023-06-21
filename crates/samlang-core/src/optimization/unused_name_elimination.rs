@@ -255,7 +255,6 @@ mod tests {
       type_definitions: vec![
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Foo"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![
             INT_TYPE,
             Type::Id(heap.alloc_str_for_test("Foo")),
@@ -264,17 +263,14 @@ mod tests {
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Bar"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![Type::Id(heap.alloc_str_for_test("Bar"))]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Baz"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Baz"),
-          names: vec![],
           mappings: TypeDefinitionMappings::Enum,
         },
       ],

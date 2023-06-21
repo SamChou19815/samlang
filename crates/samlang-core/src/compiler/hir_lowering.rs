@@ -621,7 +621,6 @@ impl<'a> ExpressionLoweringManager<'a> {
     let mut lowered_stmts = vec![];
     let matched_expr =
       self.lowered_and_add_statements(&expression.matched, None, &mut lowered_stmts);
-    let general_id_type = matched_expr.type_().as_id().unwrap();
 
     let unreachable_branch_collector = self.allocate_temp_variable(None);
     let final_return_type =
@@ -647,26 +646,13 @@ impl<'a> ExpressionLoweringManager<'a> {
       }],
       hir::Expression::var_name(unreachable_branch_collector, final_return_type),
     );
-    for source::expr::VariantPatternToExpression {
-      tag_order,
-      tag: source::Id { name: tag, .. },
-      data_variables,
-      body,
-      ..
-    } in expression.cases.iter().rev()
+    for source::expr::VariantPatternToExpression { tag_order, data_variables, body, .. } in
+      expression.cases.iter().rev()
     {
       let final_assignment_temp = self.allocate_temp_variable(None);
       let lowered_return_type = acc.1.type_().clone();
       let (acc_stmts, acc_e) = acc;
       let mut local_stmts = vec![];
-      let subtype = hir::IdType {
-        name: self.heap.alloc_string(format!(
-          "{}_{}",
-          general_id_type.name.as_str(self.heap),
-          tag.as_str(self.heap)
-        )),
-        type_arguments: general_id_type.type_arguments.clone(),
-      };
       self.variable_cx.push_scope();
       let mut bindings = vec![];
       for dv in data_variables {
@@ -684,7 +670,6 @@ impl<'a> ExpressionLoweringManager<'a> {
       let new_stmts = vec![hir::Statement::ConditionalDestructure {
         test_expr: matched_expr.clone(),
         tag: *tag_order,
-        subtype,
         bindings,
         s1: local_stmts,
         s2: acc_stmts,
@@ -970,27 +955,14 @@ fn lower_constructors(
       };
       functions.push(f);
     }
-    hir::TypeDefinitionMappings::Enum => {
-      for (tag_order, tag_name) in type_def.names.iter().enumerate() {
-        let enum_subtype_name = heap.alloc_string(common_names::encode_samlang_variant_subtype(
-          heap,
-          module_reference,
-          class_name,
-          *tag_name,
-        ));
-        let data_types =
-          &type_definition_mapping.get(&enum_subtype_name).unwrap().mappings.as_struct().unwrap()
-            [1..];
-        let enum_subtype = hir::IdType {
-          name: enum_subtype_name,
-          type_arguments: struct_type.type_arguments.clone(),
-        };
+    hir::TypeDefinitionMappings::Enum(variants) => {
+      for (tag_order, (tag_name, data_types)) in variants.iter().enumerate() {
         let f = hir::Function {
           name: heap.alloc_string(common_names::encode_function_name_globally(
             heap,
             module_reference,
             class_name.as_str(heap),
-            type_def.names[tag_order].as_str(heap),
+            tag_name.as_str(heap),
           )),
           parameters: vec![well_known_pstrs::UNDERSCORE_THIS]
             .into_iter()
@@ -1004,7 +976,6 @@ fn lower_constructors(
           body: vec![hir::Statement::EnumInit {
             enum_variable_name: struct_var_name,
             enum_type: struct_type.clone(),
-            sub_type: enum_subtype.clone(),
             tag: tag_order,
             associated_data_list: data_types
               .iter()
@@ -1043,7 +1014,7 @@ fn compile_sources_with_generics_preserved(
       if let source::Toplevel::Class(c) = &toplevel {
         type_lowering_manager.generic_types =
           c.type_parameters.iter().map(|it| it.name.name).collect();
-        compiled_type_defs.append(&mut type_lowering_manager.lower_source_type_definition(
+        compiled_type_defs.push(type_lowering_manager.lower_source_type_definition(
           heap,
           mod_ref,
           c.name.name,
@@ -1204,8 +1175,7 @@ fn compile_sources_with_generics_preserved(
   compiled_type_defs.push(hir::TypeDefinition {
     identifier: well_known_pstrs::UNDERSCORE_STR,
     type_parameters: vec![],
-    names: vec![],
-    mappings: hir::TypeDefinitionMappings::Enum,
+    mappings: hir::TypeDefinitionMappings::Enum(vec![]),
   });
 
   hir::Sources {
@@ -1289,7 +1259,6 @@ mod tests {
         hir::TypeDefinition {
           identifier: heap.alloc_str_for_test("DUMMY_Foo"),
           type_parameters: vec![],
-          names: vec![],
           mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
         },
       ),
@@ -1298,7 +1267,6 @@ mod tests {
         hir::TypeDefinition {
           identifier: heap.alloc_str_for_test("DUMMY_Dummy"),
           type_parameters: vec![],
-          names: vec![],
           mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE, hir::INT_TYPE]),
         },
       ),
@@ -1979,18 +1947,18 @@ return (_t6: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let [bar: int]: DUMMY_Dummy_Foo if tagof((_this: DUMMY_Dummy))==0 {
-  _t11 = (_this: DUMMY_Dummy);
+let [bar: int] if tagof((_this: DUMMY_Dummy))==0 {
+  _t10 = (_this: DUMMY_Dummy);
 } else {
-  let [_]: DUMMY_Dummy_Bar if tagof((_this: DUMMY_Dummy))==1 {
+  let [_] if tagof((_this: DUMMY_Dummy))==1 {
     _t9 = (_this: DUMMY_Dummy);
   } else {
     let _t6: DUMMY_Dummy = __Builtins$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
     _t9 = (_t6: DUMMY_Dummy);
   }
-  _t11 = (_t9: DUMMY_Dummy);
+  _t10 = (_t9: DUMMY_Dummy);
 }
-return (_t11: DUMMY_Dummy);"#,
+return (_t10: DUMMY_Dummy);"#,
     );
 
     let heap = &mut Heap::new();
@@ -2031,23 +1999,23 @@ return (_t11: DUMMY_Dummy);"#,
       heap,
       r#"const GLOBAL_STRING_0 = '';
 
-let [_]: DUMMY_Dummy_Foo if tagof((_this: DUMMY_Dummy))==0 {
-  _t13 = (_this: DUMMY_Dummy);
+let [_] if tagof((_this: DUMMY_Dummy))==0 {
+  _t11 = (_this: DUMMY_Dummy);
 } else {
-  let [bar: DUMMY_Dummy]: DUMMY_Dummy_Bar if tagof((_this: DUMMY_Dummy))==1 {
-    _t11 = (bar: DUMMY_Dummy);
+  let [bar: DUMMY_Dummy] if tagof((_this: DUMMY_Dummy))==1 {
+    _t10 = (bar: DUMMY_Dummy);
   } else {
-    let [_]: DUMMY_Dummy_Baz if tagof((_this: DUMMY_Dummy))==2 {
+    let [_] if tagof((_this: DUMMY_Dummy))==2 {
       _t9 = (_this: DUMMY_Dummy);
     } else {
       let _t6: DUMMY_Dummy = __Builtins$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
       _t9 = (_t6: DUMMY_Dummy);
     }
-    _t11 = (_t9: DUMMY_Dummy);
+    _t10 = (_t9: DUMMY_Dummy);
   }
-  _t13 = (_t11: DUMMY_Dummy);
+  _t11 = (_t10: DUMMY_Dummy);
 }
-return (_t13: DUMMY_Dummy);"#,
+return (_t11: DUMMY_Dummy);"#,
     );
   }
 
@@ -2594,10 +2562,9 @@ return 0;"#,
     let generics_preserved_expected = r#"closure type $SyntheticIDType0<T> = (DUMMY_A<int>, T) -> int
 object type DUMMY_Main = []
 object type DUMMY_Class1 = [int]
-object type DUMMY_Class2_Tag = [int, int]
-variant type DUMMY_Class2
+variant type DUMMY_Class2 = [(Tag: [int])]
 object type DUMMY_Class3<T> = [$SyntheticIDType0<T>]
-variant type _Str
+variant type _Str = []
 function _DUMMY_Main$init(_this: int): DUMMY_Main {
   let o: DUMMY_Main = [];
   return (o: DUMMY_Main);
@@ -2628,21 +2595,21 @@ function _DUMMY_Class1$infiniteLoop(_this: int): int {
 }
 
 function _DUMMY_Class1$factorial(_this: int, n: int, acc: int): int {
-  let _t19 = (n: int) == 0;
-  let _t20: int;
-  if (_t19: int) {
-    _t20 = 1;
+  let _t18 = (n: int) == 0;
+  let _t19: int;
+  if (_t18: int) {
+    _t19 = 1;
   } else {
-    let _t22 = (n: int) - 1;
-    let _t23 = (n: int) * (acc: int);
-    let _t21: int = _DUMMY_Class1$factorial(0, (_t22: int), (_t23: int));
-    _t20 = (_t21: int);
+    let _t21 = (n: int) - 1;
+    let _t22 = (n: int) * (acc: int);
+    let _t20: int = _DUMMY_Class1$factorial(0, (_t21: int), (_t22: int));
+    _t19 = (_t20: int);
   }
-  return (_t20: int);
+  return (_t19: int);
 }
 
 function _DUMMY_Class2$Tag(_this: int, _data0: int): DUMMY_Class2 {
-  let o: DUMMY_Class2 = DUMMY_Class2_Tag[0, (_data0: int)];
+  let o: DUMMY_Class2 = [0, (_data0: int)];
   return (o: DUMMY_Class2);
 }
 
