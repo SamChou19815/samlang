@@ -274,28 +274,17 @@ impl<'a> LoweringManager<'a> {
         statements
       }
       mir::Statement::StructInit { struct_variable_name, type_name, expression_list } => {
-        let type_def = self.type_defs.get(&type_name).unwrap();
         let type_ = lower_type(mir::Type::Id(type_name));
         let mut statements = vec![];
         let mut mir_expression_list = vec![];
         let mut header = 1;
-        if type_def.mappings.as_struct().is_some() {
-          for (index, e) in expression_list.into_iter().enumerate() {
-            let lowered = lower_expression(e);
-            if self.add_ref_counting_if_type_allowed(&mut statements, &lowered) {
-              header &= 1 << (index + 16);
-            }
-            mir_expression_list.push(lowered);
+        for (index, e) in expression_list.into_iter().enumerate() {
+          let lowered = lower_expression(e);
+          if self.add_ref_counting_if_type_allowed(&mut statements, &lowered) {
+            header |= 1 << (index + 16);
           }
-        } else {
-          for (index, e) in expression_list.into_iter().enumerate() {
-            let lowered = lower_expression(e);
-            if self.add_ref_counting_if_type_allowed(&mut statements, &lowered) {
-              header |= 1 << (index + 16);
-            }
-            mir_expression_list.push(lowered);
-          }
-        };
+          mir_expression_list.push(lowered);
+        }
         mir_expression_list.insert(0, lir::Expression::int(header));
         statements.push(lir::Statement::StructInit {
           struct_variable_name,
@@ -741,7 +730,16 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
         type_defs.push(lir::TypeDefinition { name: type_def.identifier, mappings: mir_mappings });
         type_def_map.insert(type_def.identifier, type_def);
       }
-      mir::TypeDefinitionMappings::Enum => {
+      mir::TypeDefinitionMappings::Enum(variants) => {
+        for variant in variants {
+          match variant {
+            mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int => {}
+            mir::EnumTypeDefinition::Boxed(n, types) => type_defs.push(lir::TypeDefinition {
+              name: *n,
+              mappings: types.iter().cloned().map(lower_type).collect(),
+            }),
+          }
+        }
         type_defs.push(lir::TypeDefinition {
           name: type_def.identifier,
           mappings: vec![lir::INT_TYPE, lir::INT_TYPE],
@@ -771,9 +769,9 @@ mod tests {
       common_names,
       hir::Operator,
       mir::{
-        Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
-        Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName, INT_TYPE,
-        ONE, STRING_TYPE, ZERO,
+        Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
+        GenenalLoopVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
+        VariableName, INT_TYPE, ONE, STRING_TYPE, ZERO,
       },
     },
     common::{well_known_pstrs, Heap},
@@ -843,7 +841,14 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant"),
-          mappings: TypeDefinitionMappings::Enum,
+          mappings: TypeDefinitionMappings::Enum(vec![
+            EnumTypeDefinition::Int,
+            EnumTypeDefinition::Unboxed(INT_TYPE),
+            EnumTypeDefinition::Boxed(
+              heap.alloc_str_for_test("Variant_0"),
+              vec![INT_TYPE, INT_TYPE],
+            ),
+          ]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Object2"),
@@ -854,11 +859,11 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant2"),
-          mappings: TypeDefinitionMappings::Enum,
+          mappings: TypeDefinitionMappings::Enum(vec![]),
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Variant3"),
-          mappings: TypeDefinitionMappings::Enum,
+          mappings: TypeDefinitionMappings::Enum(vec![]),
         },
       ],
       main_function_names: vec![
@@ -1080,9 +1085,9 @@ type CC = [number, (t0: any, t1: number) => number, any];
 type Object = [number, number, number];
 type Variant = [number, number];
 function cc(): number {{
-  let _t3: (t0: any, t1: number) => number = cc[1];
-  let _t4: any = cc[2];
-  _t3(_t4, 0);
+  let _t4: (t0: any, t1: number) => number = cc[1];
+  let _t5: any = cc[2];
+  _t4(_t5, 0);
   let v1: number = a[1];
   let v2: number = b[1];
   let v3: number = b[2];
@@ -1105,21 +1110,21 @@ function cc(): number {{
 }}
 function main(): number {{
   let v1 = 0 + 0;
-  let _t6 = obj as any;
-  _builtin_inc_ref(_t6);
-  let O: Object = [0, 0, obj];
+  let _t7 = obj as any;
+  _builtin_inc_ref(_t7);
+  let O: Object = [131073, 0, obj];
   let v1: Variant = [1, 0, 0];
-  let _t8 = G1 as any;
-  _builtin_inc_ref(_t8);
-  let v2: Variant = [131073, 0, G1];
   let _t9 = G1 as any;
   _builtin_inc_ref(_t9);
-  let _t10 = aaa as (t0: any) => number;
-  let _t11 = G1 as any;
-  let c1: CC = [131073, _t10, _t11];
-  let _t12 = bbb as (t0: any) => number;
-  let _t13 = 0 as any;
-  let c2: CC = [1, _t12, _t13];
+  let v2: Variant = [131073, 0, G1];
+  let _t10 = G1 as any;
+  _builtin_inc_ref(_t10);
+  let _t11 = aaa as (t0: any) => number;
+  let _t12 = G1 as any;
+  let c1: CC = [131073, _t11, _t12];
+  let _t13 = bbb as (t0: any) => number;
+  let _t14 = 0 as any;
+  let c2: CC = [1, _t13, _t14];
   _builtin_dec_ref(O);
   _builtin_dec_ref(v1);
   _builtin_dec_ref(v2);
@@ -1134,17 +1139,17 @@ function _compiled_program_main(): number {{
     let ccc: number = cc(0);
     finalV = v1;
   }} else {{
-    let _t15: (t0: any, t1: number) => number = cc[1];
-    let _t16: any = cc[2];
-    let _t14: CC = _t15(_t16, 0);
-    let _t17 = _t14 as any;
-    _builtin_inc_ref(_t17);
-    let _t18 = G1 as any;
+    let _t16: (t0: any, t1: number) => number = cc[1];
+    let _t17: any = cc[2];
+    let _t15: CC = _t16(_t17, 0);
+    let _t18 = _t15 as any;
     _builtin_inc_ref(_t18);
-    let _t19 = aaa as (t0: any) => number;
-    let _t20 = G1 as any;
-    let v2: CC = [131073, _t19, _t20];
-    _builtin_dec_ref(_t14);
+    let _t19 = G1 as any;
+    _builtin_inc_ref(_t19);
+    let _t20 = aaa as (t0: any) => number;
+    let _t21 = G1 as any;
+    let v2: CC = [131073, _t20, _t21];
+    _builtin_dec_ref(_t15);
     finalV = v2;
   }}
   let finalV2: number;
