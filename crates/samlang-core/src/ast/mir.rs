@@ -1,21 +1,20 @@
 use super::hir::{GlobalVariable, Operator};
-use crate::{
-  common::{well_known_pstrs, PStr, INVALID_PSTR},
-  Heap,
-};
+use crate::common::{well_known_pstrs, PStr, INVALID_PSTR};
 use enum_as_inner::EnumAsInner;
-use itertools::Itertools;
 use std::cmp::Ordering;
 use std::hash::Hash;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct FunctionType {
   pub(crate) argument_types: Vec<Type>,
   pub(crate) return_type: Box<Type>,
 }
 
 impl FunctionType {
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  #[cfg(test)]
+  pub(crate) fn pretty_print(&self, heap: &crate::common::Heap) -> String {
+    use itertools::Itertools;
+
     format!(
       "({}) -> {}",
       self.argument_types.iter().map(|it| it.pretty_print(heap)).join(", "),
@@ -35,7 +34,8 @@ impl Type {
     FunctionType { argument_types, return_type: Box::new(return_type) }
   }
 
-  pub(crate) fn pretty_print<'a>(&'a self, heap: &'a Heap) -> &'a str {
+  #[cfg(test)]
+  pub(crate) fn pretty_print<'a>(&'a self, heap: &'a crate::common::Heap) -> &'a str {
     match self {
       Type::Int => "int",
       Type::Id(id) => id.as_str(heap),
@@ -55,7 +55,7 @@ pub(crate) struct ClosureTypeDefinition {
 
 impl ClosureTypeDefinition {
   #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub(crate) fn pretty_print(&self, heap: &crate::common::Heap) -> String {
     format!(
       "closure type {} = {}",
       self.identifier.as_str(heap),
@@ -64,7 +64,7 @@ impl ClosureTypeDefinition {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum EnumTypeDefinition {
   Boxed(PStr, Vec<Type>),
   Unboxed(Type),
@@ -73,7 +73,9 @@ pub(crate) enum EnumTypeDefinition {
 
 impl EnumTypeDefinition {
   #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub(crate) fn pretty_print(&self, heap: &crate::common::Heap) -> String {
+    use itertools::Itertools;
+
     match &self {
       EnumTypeDefinition::Boxed(name, types) => format!(
         "{}({})",
@@ -86,7 +88,7 @@ impl EnumTypeDefinition {
   }
 }
 
-#[derive(Debug, Clone, EnumAsInner)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, EnumAsInner)]
 pub(crate) enum TypeDefinitionMappings {
   Struct(Vec<Type>),
   Enum(Vec<EnumTypeDefinition>),
@@ -100,7 +102,9 @@ pub(crate) struct TypeDefinition {
 
 impl TypeDefinition {
   #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub(crate) fn pretty_print(&self, heap: &crate::common::Heap) -> String {
+    use itertools::Itertools;
+
     match &self.mappings {
       TypeDefinitionMappings::Struct(types) => {
         format!(
@@ -130,7 +134,7 @@ impl VariableName {
   }
 
   #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap) -> String {
+  pub(crate) fn debug_print(&self, heap: &crate::common::Heap) -> String {
     format!("({}: {})", self.name.as_str(heap), self.type_.pretty_print(heap))
   }
 }
@@ -217,7 +221,7 @@ impl Expression {
   }
 
   #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap) -> String {
+  pub(crate) fn debug_print(&self, heap: &crate::common::Heap) -> String {
     match self {
       Expression::IntLiteral(i) => i.to_string(),
       Expression::StringName(n) => n.as_str(heap).to_string(),
@@ -261,7 +265,7 @@ pub(crate) enum Callee {
 
 impl Callee {
   #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap) -> String {
+  pub(crate) fn debug_print(&self, heap: &crate::common::Heap) -> String {
     match self {
       Callee::FunctionName(f) => f.name.as_str(heap).to_string(),
       Callee::Variable(v) => v.debug_print(heap),
@@ -279,7 +283,7 @@ pub(crate) struct GenenalLoopVariable {
 
 impl GenenalLoopVariable {
   #[cfg(test)]
-  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+  pub(crate) fn pretty_print(&self, heap: &crate::common::Heap) -> String {
     format!(
       "{{name: {}, initial_value: {}, loop_value: {}}}",
       self.name.as_str(heap),
@@ -431,11 +435,13 @@ impl Statement {
   #[cfg(test)]
   fn debug_print_internal(
     &self,
-    heap: &Heap,
+    heap: &crate::common::Heap,
     level: usize,
     break_collector: &Option<VariableName>,
     collector: &mut Vec<String>,
   ) {
+    use itertools::Itertools;
+
     match self {
       Statement::Binary(s) => {
         let e1 = s.e1.debug_print(heap);
@@ -612,14 +618,14 @@ impl Statement {
   }
 
   #[cfg(test)]
-  fn debug_print_leveled(&self, heap: &Heap, level: usize) -> String {
+  fn debug_print_leveled(&self, heap: &crate::common::Heap, level: usize) -> String {
     let mut collector = vec![];
     self.debug_print_internal(heap, level, &None, &mut collector);
     collector.join("").trim_end().to_string()
   }
 
   #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap) -> String {
+  pub(crate) fn debug_print(&self, heap: &crate::common::Heap) -> String {
     self.debug_print_leveled(heap, 0)
   }
 }
@@ -635,7 +641,9 @@ pub(crate) struct Function {
 
 impl Function {
   #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap) -> String {
+  pub(crate) fn debug_print(&self, heap: &crate::common::Heap) -> String {
+    use itertools::Itertools;
+
     let typed_parameters = self
       .parameters
       .iter()
@@ -670,7 +678,9 @@ pub(crate) struct Sources {
 
 impl Sources {
   #[cfg(test)]
-  pub(crate) fn debug_print(&self, heap: &Heap) -> String {
+  pub(crate) fn debug_print(&self, heap: &crate::common::Heap) -> String {
+    use itertools::Itertools;
+
     let mut lines = vec![];
     for v in &self.global_variables {
       lines.push(format!("const {} = '{}';\n", v.name.as_str(heap), v.content.as_str(heap)));
