@@ -3,10 +3,10 @@ use crate::{
     Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
     FunctionType, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
   },
-  common::{Heap, PStr},
+  common::PStr,
 };
 use itertools::Itertools;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 type State = HashMap<PStr, PStr>;
 
@@ -153,56 +153,30 @@ fn rewrite_function(
 }
 
 pub(super) fn deduplicate(
-  heap: &Heap,
   Sources { global_variables, closure_types, type_definitions, main_function_names, functions }: Sources,
 ) -> Sources {
   let mut state = HashMap::new();
-  let mut closure_type_def_mapping = BTreeMap::<String, ClosureTypeDefinition>::new();
-  let mut type_def_mapping = BTreeMap::<String, TypeDefinition>::new();
+  let mut closure_type_def_mapping = HashMap::<FunctionType, PStr>::new();
+  let mut type_def_mapping = HashMap::<TypeDefinitionMappings, PStr>::new();
   for closure_type in closure_types {
-    let key = closure_type.function_type.pretty_print(heap);
     let original_name = closure_type.identifier;
-    let canonical_name = if let Some(c) = closure_type_def_mapping.get(&key) {
-      c.identifier
+    let canonical_name = if let Some(id) = closure_type_def_mapping.get(&closure_type.function_type)
+    {
+      *id
     } else {
-      closure_type_def_mapping.insert(key, closure_type);
+      let id = closure_type.identifier;
+      closure_type_def_mapping.insert(closure_type.function_type, id);
       original_name
     };
     state.insert(original_name, canonical_name);
   }
   for type_def in type_definitions {
-    let key = match &type_def.mappings {
-      TypeDefinitionMappings::Struct(types) => {
-        format!("object_{}", types.iter().map(|t| t.pretty_print(heap)).join("_"))
-      }
-      TypeDefinitionMappings::Enum(variants) => {
-        let mut collector = "enum".to_string();
-        for variant in variants {
-          collector.push('\n');
-          match variant {
-            EnumTypeDefinition::Boxed(n, types) => {
-              collector.push('0');
-              collector.push_str(n.as_str(heap));
-              for t in types {
-                collector.push('_');
-                collector.push_str(t.pretty_print(heap));
-              }
-            }
-            EnumTypeDefinition::Unboxed(t) => {
-              collector.push('1');
-              collector.push_str(t.pretty_print(heap));
-            }
-            EnumTypeDefinition::Int => collector.push('2'),
-          }
-        }
-        collector
-      }
-    };
     let original_name = type_def.identifier;
-    let canonical_name = if let Some(c) = type_def_mapping.get(&key) {
-      c.identifier
+    let canonical_name = if let Some(id) = type_def_mapping.get(&type_def.mappings) {
+      *id
     } else {
-      type_def_mapping.insert(key, type_def);
+      let id = type_def.identifier;
+      type_def_mapping.insert(type_def.mappings, id);
       original_name
     };
     state.insert(original_name, canonical_name);
@@ -211,15 +185,16 @@ pub(super) fn deduplicate(
   Sources {
     global_variables,
     closure_types: closure_type_def_mapping
-      .into_values()
-      .map(|ClosureTypeDefinition { identifier, function_type }| ClosureTypeDefinition {
+      .into_iter()
+      .map(|(t, identifier)| ClosureTypeDefinition {
         identifier,
-        function_type: rewrite_fn_type(&state, function_type),
+        function_type: rewrite_fn_type(&state, t),
       })
+      .sorted_by_key(|d| d.identifier)
       .collect_vec(),
     type_definitions: type_def_mapping
-      .into_values()
-      .map(|TypeDefinition { identifier, mappings }| TypeDefinition {
+      .into_iter()
+      .map(|(mappings, identifier)| TypeDefinition {
         identifier,
         mappings: match mappings {
           TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
@@ -242,6 +217,7 @@ pub(super) fn deduplicate(
           ),
         },
       })
+      .sorted_by_key(|d| d.identifier)
       .collect_vec(),
     main_function_names,
     functions: functions.into_iter().map(|f| rewrite_function(&state, f)).collect_vec(),
@@ -391,11 +367,11 @@ mod tests {
         return_value: ZERO,
       }],
     };
-    let actual = deduplicate(heap, sources).debug_print(heap);
+    let actual = deduplicate(sources).debug_print(heap);
     assert_eq!(
       r#"closure type A = () -> int
-variant type E = [F(int), Unboxed(int), int]
 object type C = [int, _Str]
+variant type E = [F(int), Unboxed(int), int]
 function main(): int {
   let _: int;
   if 1 {

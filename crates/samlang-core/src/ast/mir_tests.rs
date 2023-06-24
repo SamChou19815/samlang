@@ -118,13 +118,15 @@ mod tests {
       identifier: well_known_pstrs::UPPER_A,
       mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
     };
+    let ed1 = EnumTypeDefinition::Unboxed(Type::Id(well_known_pstrs::UPPER_D));
+    let ed2 = EnumTypeDefinition::Boxed(well_known_pstrs::UPPER_C, vec![INT_TYPE, INT_TYPE]);
+    let ed3 = EnumTypeDefinition::Int;
+    assert!(ed1.eq(&ed1));
+    assert!(ed2.eq(&ed2));
+    assert!(ed3.eq(&ed3));
     let d2 = TypeDefinition {
       identifier: well_known_pstrs::UPPER_B,
-      mappings: TypeDefinitionMappings::Enum(vec![
-        EnumTypeDefinition::Unboxed(Type::Id(well_known_pstrs::UPPER_D)),
-        EnumTypeDefinition::Boxed(well_known_pstrs::UPPER_C, vec![INT_TYPE, INT_TYPE]),
-        EnumTypeDefinition::Int.clone(),
-      ]),
+      mappings: TypeDefinitionMappings::Enum(vec![ed1, ed2, ed3.clone()]),
     };
     assert_eq!("object type A = [int, int]", d1.pretty_print(heap));
     assert_eq!("variant type B = [Unboxed(D), C(int, int), int]", d2.pretty_print(heap));

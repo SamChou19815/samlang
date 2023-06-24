@@ -1213,7 +1213,7 @@ pub(crate) fn compile_sources_to_mir(
 ) -> mir::Sources {
   let sources = compile_sources_with_generics_preserved(heap, sources);
   let mut sources = mir_generics_specialization::perform_generics_specialization(heap, sources);
-  sources = mir_type_deduplication::deduplicate(heap, sources);
+  sources = mir_type_deduplication::deduplicate(sources);
   sources = mir_constant_param_elimination::rewrite_sources(sources);
   sources = optimize_by_tail_rec_rewrite(heap, sources);
   sources
