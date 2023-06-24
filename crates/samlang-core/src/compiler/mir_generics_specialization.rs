@@ -324,7 +324,7 @@ impl Rewriter {
             });
           }
           mir::EnumTypeDefinition::Unboxed(_) => {
-            debug_assert!(associated_data_list.len() == 2);
+            debug_assert_eq!(associated_data_list.len(), 1);
             collector.push(mir::Statement::Cast {
               name: *enum_variable_name,
               type_: mir::Type::Id(enum_type),
@@ -1242,7 +1242,7 @@ sources.mains = [main]
                 enum_variable_name: well_known_pstrs::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum")),
                 tag: 0,
-                associated_data_list: vec![hir::ZERO, hir::ZERO],
+                associated_data_list: vec![hir::ZERO],
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
@@ -1270,13 +1270,13 @@ sources.mains = [main]
                 enum_variable_name: well_known_pstrs::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum2")),
                 tag: 0,
-                associated_data_list: vec![hir::ZERO, hir::ZERO],
+                associated_data_list: vec![hir::ZERO],
               },
               hir::Statement::EnumInit {
                 enum_variable_name: well_known_pstrs::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum3")),
                 tag: 0,
-                associated_data_list: vec![hir::ZERO, hir::ZERO],
+                associated_data_list: vec![hir::ZERO],
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
@@ -1361,9 +1361,9 @@ function main(): int {
   if (_t20: int) {
   } else {
   }
-  let _t21: Enum2_0 = [1, 0, 0];
+  let _t21: Enum2_0 = [1, 0];
   let b = (_t21: Enum2_0) as Enum2;
-  let _t22: Enum3_0 = [1, 0, 0];
+  let _t22: Enum3_0 = [1, 0];
   let b = (_t22: Enum3_0) as Enum3;
   let _t23: int = (b: Enum2)[0];
   let _t24 = (_t23: int) == 1;

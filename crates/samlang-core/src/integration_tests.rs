@@ -1617,21 +1617,21 @@ class Clazz(val t: int) {
     }
 }
 
-class Option<T>(Some(T), None(bool)) {
-  function <T> none(): Option<T> = Option.None(true)
+class Option<T>(Some(T), None) {
+  function <T> none(): Option<T> = Option.None()
   method toSome(t: T): Option<T> = Option.Some(t)
   method isNone(): bool = match (this) {
-    None(_) -> true,
+    None -> true,
     Some(_) -> false,
   }
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
-      None(_) -> Option.None(true),
+      None -> Option.None(),
       Some(t) -> Option.Some(f(t)),
     }
   function test(): unit = {
-    val _ = match (Option.None<(Str) -> int>(false)) {
-      None(_) -> "",
+    val _ = match (Option.None<(Str) -> int>()) {
+      None -> "",
       Some(f) -> Builtins.intToString(f("")),
     };
   }
@@ -1639,11 +1639,11 @@ class Option<T>(Some(T), None(bool)) {
 
 class Pair<A, B>(val a: A, val b: B) {}
 
-class List<T>(Nil(bool), Cons(Pair<T, List<T>>)) {
+class List<T>(Nil, Cons(T, List<T>)) {
   function <T> of(t: T): List<T> =
-    List.Cons(Pair.init(t, List.Nil<T>(true)))
+    List.Cons(t, List.Nil<T>())
   method cons(t: T): List<T> =
-    List.Cons(Pair.init(t, this))
+    List.Cons(t, this)
 }
 
 class Main {
@@ -1751,7 +1751,7 @@ class Main {
         heap,
         &mut error_set,
       );
-      assert!(error_set.into_errors().is_empty());
+      assert_eq!("", error_set.error_messages(heap).join("\n"));
       assert!(checked_sources.len() == 1);
     }
   }
