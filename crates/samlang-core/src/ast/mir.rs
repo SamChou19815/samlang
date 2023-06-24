@@ -64,10 +64,32 @@ impl ClosureTypeDefinition {
   }
 }
 
+#[derive(Debug, Clone)]
+pub(crate) enum EnumTypeDefinition {
+  Boxed(PStr, Vec<Type>),
+  Unboxed(Type),
+  Int,
+}
+
+impl EnumTypeDefinition {
+  #[cfg(test)]
+  pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
+    match &self {
+      EnumTypeDefinition::Boxed(name, types) => format!(
+        "{}({})",
+        name.as_str(heap),
+        types.iter().map(|it| it.pretty_print(heap)).join(", ")
+      ),
+      EnumTypeDefinition::Unboxed(t) => format!("Unboxed({})", t.pretty_print(heap)),
+      EnumTypeDefinition::Int => "int".to_string(),
+    }
+  }
+}
+
 #[derive(Debug, Clone, EnumAsInner)]
 pub(crate) enum TypeDefinitionMappings {
   Struct(Vec<Type>),
-  Enum,
+  Enum(Vec<EnumTypeDefinition>),
 }
 
 #[derive(Debug, Clone)]
@@ -87,7 +109,11 @@ impl TypeDefinition {
           types.iter().map(|it| it.pretty_print(heap)).join(", ")
         )
       }
-      TypeDefinitionMappings::Enum => format!("variant type {}", self.identifier.as_str(heap)),
+      TypeDefinitionMappings::Enum(variants) => format!(
+        "variant type {} = [{}]",
+        self.identifier.as_str(heap),
+        variants.iter().map(|it| it.pretty_print(heap)).join(", ")
+      ),
     }
   }
 }

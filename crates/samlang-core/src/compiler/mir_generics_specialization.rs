@@ -119,49 +119,134 @@ impl Rewriter {
         final_assignments,
       } => {
         let test_expr = self.rewrite_expr(heap, hir_test_expr, generics_replacement_map);
-        let variable_for_tag = heap.alloc_temp_str();
-        let comparison_temp = heap.alloc_temp_str();
-        let casted_collector = heap.alloc_temp_str();
-        collector.push(mir::Statement::IndexedAccess {
-          name: variable_for_tag,
-          type_: mir::INT_TYPE,
-          pointer_expression: test_expr,
-          index: 0,
-        });
-        collector.push(mir::Statement::binary(
-          comparison_temp,
-          hir::Operator::EQ,
-          mir::Expression::var_name(variable_for_tag, mir::INT_TYPE),
-          mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
-        ));
-        let subtype = self.rewrite_subtype(heap, *test_expr.type_().as_id().unwrap(), *tag);
-        let mut nested_stmts = vec![];
-        nested_stmts.push(mir::Statement::Cast {
-          name: casted_collector,
-          type_: subtype,
-          assigned_expression: test_expr,
-        });
-        for (i, binding) in bindings.iter().enumerate() {
-          if let Some((name, type_)) = binding {
-            nested_stmts.push(mir::Statement::IndexedAccess {
-              name: *name,
-              type_: self.rewrite_type(heap, type_, generics_replacement_map),
-              pointer_expression: mir::Expression::var_name(casted_collector, subtype),
-              index: i + 1,
+        match self.get_subtype(*test_expr.type_().as_id().unwrap(), *tag) {
+          mir::EnumTypeDefinition::Boxed(subtype_name, _) => {
+            let subtype = mir::Type::Id(*subtype_name);
+            let variable_for_tag = heap.alloc_temp_str();
+            let comparison_temp = heap.alloc_temp_str();
+            let casted_collector = heap.alloc_temp_str();
+            collector.push(mir::Statement::IndexedAccess {
+              name: variable_for_tag,
+              type_: mir::INT_TYPE,
+              pointer_expression: test_expr,
+              index: 0,
+            });
+            collector.push(mir::Statement::binary(
+              comparison_temp,
+              hir::Operator::EQ,
+              mir::Expression::var_name(variable_for_tag, mir::INT_TYPE),
+              mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
+            ));
+            let mut nested_stmts = vec![];
+            nested_stmts.push(mir::Statement::Cast {
+              name: casted_collector,
+              type_: subtype,
+              assigned_expression: test_expr,
+            });
+            for (i, binding) in bindings.iter().enumerate() {
+              if let Some((name, type_)) = binding {
+                nested_stmts.push(mir::Statement::IndexedAccess {
+                  name: *name,
+                  type_: self.rewrite_type(heap, type_, generics_replacement_map),
+                  pointer_expression: mir::Expression::var_name(casted_collector, subtype),
+                  index: i + 1,
+                });
+              }
+            }
+            nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
+            collector.push(mir::Statement::IfElse {
+              condition: mir::Expression::var_name(comparison_temp, mir::INT_TYPE),
+              s1: nested_stmts,
+              s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
+              final_assignments: self.rewrite_final_assignments(
+                final_assignments,
+                heap,
+                generics_replacement_map,
+              ),
+            });
+          }
+          mir::EnumTypeDefinition::Unboxed(unboxed_t) => {
+            debug_assert!(bindings.len() == 1);
+            let binded_name = bindings[0].as_ref().unwrap().0;
+            let casted_int_collector = heap.alloc_temp_str();
+            let comparison_temp_1 = heap.alloc_temp_str();
+            let comparison_temp_2 = heap.alloc_temp_str();
+            let comparison_temp_3 = heap.alloc_temp_str();
+            let comparison_temp_4 = heap.alloc_temp_str();
+            collector.push(mir::Statement::Cast {
+              name: casted_int_collector,
+              type_: mir::INT_TYPE,
+              assigned_expression: test_expr,
+            });
+            // Here we test whether this is a pointer
+            collector.push(mir::Statement::binary(
+              comparison_temp_1,
+              hir::Operator::LT,
+              mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
+              mir::Expression::int(1024),
+            ));
+            collector.push(mir::Statement::binary(
+              comparison_temp_2,
+              hir::Operator::LAND,
+              mir::Expression::var_name(casted_int_collector, mir::INT_TYPE),
+              mir::ONE,
+            ));
+            collector.push(mir::Statement::binary(
+              comparison_temp_3,
+              hir::Operator::LOR,
+              mir::Expression::var_name(comparison_temp_1, mir::INT_TYPE),
+              mir::Expression::var_name(comparison_temp_2, mir::INT_TYPE),
+            ));
+            collector.push(mir::Statement::binary(
+              comparison_temp_4,
+              hir::Operator::XOR,
+              mir::Expression::var_name(comparison_temp_3, mir::INT_TYPE),
+              mir::ONE,
+            ));
+            let mut nested_stmts = vec![];
+            nested_stmts.push(mir::Statement::Cast {
+              name: binded_name,
+              type_: *unboxed_t,
+              assigned_expression: test_expr,
+            });
+            nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
+            collector.push(mir::Statement::IfElse {
+              condition: mir::Expression::var_name(comparison_temp_4, mir::INT_TYPE),
+              s1: nested_stmts,
+              s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
+              final_assignments: self.rewrite_final_assignments(
+                final_assignments,
+                heap,
+                generics_replacement_map,
+              ),
+            });
+          }
+          mir::EnumTypeDefinition::Int => {
+            let casted_collector = heap.alloc_temp_str();
+            let comparison_temp = heap.alloc_temp_str();
+            collector.push(mir::Statement::Cast {
+              name: casted_collector,
+              type_: mir::INT_TYPE,
+              assigned_expression: test_expr,
+            });
+            collector.push(mir::Statement::binary(
+              comparison_temp,
+              hir::Operator::EQ,
+              mir::Expression::var_name(casted_collector, mir::INT_TYPE),
+              mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
+            ));
+            collector.push(mir::Statement::IfElse {
+              condition: mir::Expression::var_name(comparison_temp, mir::INT_TYPE),
+              s1: self.rewrite_stmts(heap, s1, generics_replacement_map),
+              s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
+              final_assignments: self.rewrite_final_assignments(
+                final_assignments,
+                heap,
+                generics_replacement_map,
+              ),
             });
           }
         }
-        nested_stmts.append(&mut self.rewrite_stmts(heap, s1, generics_replacement_map));
-        collector.push(mir::Statement::IfElse {
-          condition: mir::Expression::var_name(comparison_temp, mir::INT_TYPE),
-          s1: nested_stmts,
-          s2: self.rewrite_stmts(heap, s2, generics_replacement_map),
-          final_assignments: self.rewrite_final_assignments(
-            final_assignments,
-            heap,
-            generics_replacement_map,
-          ),
-        });
       }
       hir::Statement::IfElse { condition, s1, s2, final_assignments } => {
         collector.push(mir::Statement::IfElse {
@@ -217,24 +302,48 @@ impl Rewriter {
         let temp = heap.alloc_temp_str();
         let enum_type =
           self.rewrite_id_type(heap, hir_enum_type, generics_replacement_map).into_id().unwrap();
-        let sub_type = self.rewrite_subtype(heap, enum_type, *tag);
-        collector.push(mir::Statement::StructInit {
-          struct_variable_name: temp,
-          type_name: sub_type.into_id().unwrap(),
-          expression_list: vec![mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap())]
-            .into_iter()
-            .chain(
-              associated_data_list
-                .iter()
-                .map(|e| self.rewrite_expr(heap, e, generics_replacement_map)),
-            )
-            .collect(),
-        });
-        collector.push(mir::Statement::Cast {
-          name: *enum_variable_name,
-          type_: mir::Type::Id(enum_type),
-          assigned_expression: mir::Expression::var_name(temp, sub_type),
-        });
+        match self.get_subtype(enum_type, *tag) {
+          mir::EnumTypeDefinition::Boxed(subtype_name, _) => {
+            let subtype_name = *subtype_name;
+            collector.push(mir::Statement::StructInit {
+              struct_variable_name: temp,
+              type_name: subtype_name,
+              expression_list: vec![mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap())]
+                .into_iter()
+                .chain(
+                  associated_data_list
+                    .iter()
+                    .map(|e| self.rewrite_expr(heap, e, generics_replacement_map)),
+                )
+                .collect(),
+            });
+            collector.push(mir::Statement::Cast {
+              name: *enum_variable_name,
+              type_: mir::Type::Id(enum_type),
+              assigned_expression: mir::Expression::var_name(temp, mir::Type::Id(subtype_name)),
+            });
+          }
+          mir::EnumTypeDefinition::Unboxed(_) => {
+            debug_assert!(associated_data_list.len() == 2);
+            collector.push(mir::Statement::Cast {
+              name: *enum_variable_name,
+              type_: mir::Type::Id(enum_type),
+              assigned_expression: self.rewrite_expr(
+                heap,
+                &associated_data_list[0],
+                generics_replacement_map,
+              ),
+            });
+          }
+          mir::EnumTypeDefinition::Int => {
+            debug_assert!(associated_data_list.is_empty());
+            collector.push(mir::Statement::Cast {
+              name: *enum_variable_name,
+              type_: mir::Type::Id(enum_type),
+              assigned_expression: mir::Expression::int(i32::try_from(*tag * 2 + 1).unwrap()),
+            });
+          }
+        }
       }
       hir::Statement::ClosureInit {
         closure_variable_name,
@@ -369,11 +478,9 @@ impl Rewriter {
   }
 
   /// Invariant: enum type has already been specialized.
-  fn rewrite_subtype(&mut self, heap: &mut Heap, mir_enum_type: PStr, tag: usize) -> mir::Type {
-    let encoded_subtype_name = heap.alloc_string(format!("{}_{}", mir_enum_type.as_str(heap), tag));
-    let specialized_type_def =
-      self.specialized_type_definitions.get(&encoded_subtype_name).unwrap().identifier;
-    mir::Type::Id(specialized_type_def)
+  /// Returns: rewritten type, whether the result is optimized
+  fn get_subtype(&mut self, mir_enum_type: PStr, tag: usize) -> &mir::EnumTypeDefinition {
+    &self.specialized_type_definitions.get(&mir_enum_type).unwrap().mappings.as_enum().unwrap()[tag]
   }
 
   fn rewrite_types(
@@ -453,25 +560,48 @@ impl Rewriter {
               })
               .collect_vec(),
           ),
-          hir::TypeDefinitionMappings::Enum(variants) => {
-            for (tag, (_, types)) in variants.iter().enumerate() {
-              let encoded_subtype_name =
-                heap.alloc_string(format!("{}_{}", encoded_name.as_str(heap), tag));
-              let mut mapping_types = Vec::with_capacity(types.len() + 1);
-              for t in types {
-                mapping_types.push(self.rewrite_type(
-                  heap,
-                  &type_application(t, &solved_targs_replacement_map),
-                  &HashMap::new(),
-                ));
+          hir::TypeDefinitionMappings::Enum(hir_variants) => {
+            let mut mir_variants = Vec::with_capacity(hir_variants.len());
+            let mut permit_unboxed_optimization = true;
+            let mut already_unused_boxed_optimization = None;
+            for (tag, (_, types)) in hir_variants.iter().enumerate() {
+              if types.is_empty() {
+                mir_variants.push(mir::EnumTypeDefinition::Int);
+              } else {
+                if let Some((i, t)) = already_unused_boxed_optimization {
+                  let encoded_subtype_name =
+                    heap.alloc_string(format!("{}_{}", encoded_name.as_str(heap), i));
+                  mir_variants[i] =
+                    mir::EnumTypeDefinition::Boxed(encoded_subtype_name, vec![mir::INT_TYPE, t]);
+                  already_unused_boxed_optimization = None;
+                }
+                let mut mapping_types = Vec::with_capacity(types.len());
+                mapping_types.push(mir::INT_TYPE);
+                for t in types {
+                  mapping_types.push(self.rewrite_type(
+                    heap,
+                    &type_application(t, &solved_targs_replacement_map),
+                    &HashMap::new(),
+                  ));
+                }
+                if mapping_types.len() == 2
+                  && !mapping_types[1].is_int()
+                  && permit_unboxed_optimization
+                  && already_unused_boxed_optimization.is_none()
+                {
+                  let t = mapping_types[1];
+                  mir_variants.push(mir::EnumTypeDefinition::Unboxed(t));
+                  already_unused_boxed_optimization = Some((tag, t));
+                } else {
+                  let encoded_subtype_name =
+                    heap.alloc_string(format!("{}_{}", encoded_name.as_str(heap), tag));
+                  mir_variants
+                    .push(mir::EnumTypeDefinition::Boxed(encoded_subtype_name, mapping_types));
+                }
+                permit_unboxed_optimization = false;
               }
-              let mappings = mir::TypeDefinitionMappings::Struct(mapping_types);
-              self.specialized_type_definitions.insert(
-                encoded_subtype_name,
-                mir::TypeDefinition { identifier: encoded_subtype_name, mappings },
-              );
             }
-            mir::TypeDefinitionMappings::Enum
+            mir::TypeDefinitionMappings::Enum(mir_variants)
           }
         };
         self.specialized_type_definitions.insert(
@@ -703,7 +833,7 @@ sources.mains = [main]
       heap,
       r#"const G1 = 'a';
 
-variant type _Str
+variant type _Str = []
 function main(): int {
   __builtins_println(G1);
   return 0;
@@ -854,8 +984,34 @@ sources.mains = [main]
             identifier: heap.alloc_str_for_test("Enum"),
             type_parameters: vec![],
             mappings: hir::TypeDefinitionMappings::Enum(vec![
-              (well_known_pstrs::UPPER_A, vec![hir::INT_TYPE, hir::INT_TYPE]),
-              (well_known_pstrs::UPPER_B, vec![hir::INT_TYPE, hir::INT_TYPE]),
+              (
+                well_known_pstrs::UPPER_A,
+                vec![hir::Type::new_id_no_targs(heap.alloc_str_for_test("J"))],
+              ),
+              (well_known_pstrs::UPPER_B, vec![]),
+            ]),
+          },
+          hir::TypeDefinition {
+            identifier: heap.alloc_str_for_test("Enum2"),
+            type_parameters: vec![],
+            mappings: hir::TypeDefinitionMappings::Enum(vec![
+              (well_known_pstrs::UPPER_A, vec![hir::INT_TYPE]),
+              (well_known_pstrs::UPPER_B, vec![]),
+            ]),
+          },
+          hir::TypeDefinition {
+            identifier: heap.alloc_str_for_test("Enum3"),
+            type_parameters: vec![],
+            mappings: hir::TypeDefinitionMappings::Enum(vec![
+              (
+                well_known_pstrs::UPPER_A,
+                vec![hir::Type::new_id_no_targs(heap.alloc_str_for_test("J"))],
+              ),
+              (
+                well_known_pstrs::UPPER_B,
+                vec![hir::Type::new_id_no_targs(heap.alloc_str_for_test("J"))],
+              ),
+              (well_known_pstrs::UPPER_C, vec![]),
             ]),
           },
         ],
@@ -1094,7 +1250,52 @@ sources.mains = [main]
                   hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum")),
                 ),
                 tag: 0,
-                bindings: vec![None, Some((well_known_pstrs::LOWER_A, hir::INT_TYPE))],
+                bindings: vec![Some((well_known_pstrs::LOWER_A, hir::INT_TYPE))],
+                s1: vec![],
+                s2: vec![],
+                final_assignments: vec![],
+              },
+              hir::Statement::ConditionalDestructure {
+                test_expr: hir::Expression::var_name(
+                  well_known_pstrs::LOWER_B,
+                  hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum")),
+                ),
+                tag: 1,
+                bindings: vec![],
+                s1: vec![],
+                s2: vec![],
+                final_assignments: vec![],
+              },
+              hir::Statement::EnumInit {
+                enum_variable_name: well_known_pstrs::LOWER_B,
+                enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum2")),
+                tag: 0,
+                associated_data_list: vec![hir::ZERO, hir::ZERO],
+              },
+              hir::Statement::EnumInit {
+                enum_variable_name: well_known_pstrs::LOWER_B,
+                enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum3")),
+                tag: 0,
+                associated_data_list: vec![hir::ZERO, hir::ZERO],
+              },
+              hir::Statement::ConditionalDestructure {
+                test_expr: hir::Expression::var_name(
+                  well_known_pstrs::LOWER_B,
+                  hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum2")),
+                ),
+                tag: 0,
+                bindings: vec![None],
+                s1: vec![],
+                s2: vec![],
+                final_assignments: vec![],
+              },
+              hir::Statement::ConditionalDestructure {
+                test_expr: hir::Expression::var_name(
+                  well_known_pstrs::LOWER_B,
+                  hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum2")),
+                ),
+                tag: 1,
+                bindings: vec![],
                 s1: vec![],
                 s2: vec![],
                 final_assignments: vec![],
@@ -1110,17 +1311,13 @@ const G1 = 'a';
 
 closure type CC__Str__Str = (_Str) -> _Str
 closure type CC_int__Str = (int) -> _Str
-variant type Enum
-object type Enum_0 = [int, int]
-object type Enum_1 = [int, int]
+variant type Enum = [Unboxed(J), int]
+variant type Enum2 = [Enum2_0(int, int), int]
+variant type Enum3 = [Enum3_0(int, J), Enum3_1(int, J), int]
 object type J = [int]
-variant type _Str
-variant type I_int__Str
-object type I_int__Str_0 = []
-object type I_int__Str_1 = []
-variant type I__Str__Str
-object type I__Str__Str_0 = []
-object type I__Str__Str_1 = []
+variant type _Str = []
+variant type I_int__Str = [int, int]
+variant type I__Str__Str = [int, int]
 function _I$bar(a: I_int__Str): int {
   return 0;
 }
@@ -1149,13 +1346,34 @@ function main(): int {
     let c2: CC_int__Str = Closure { fun: (creatorIA__Str: (_Str) -> I__Str__Str), context: G1 };
     finalV = (v2: int);
   }
-  let _t17: Enum_0 = [1, 0, 0];
-  let b = (_t17: Enum_0) as Enum;
-  let _t18: int = (b: Enum)[0];
-  let _t19 = (_t18: int) == 1;
-  if (_t19: int) {
-    let _t20 = (b: Enum) as Enum_0;
-    let a: int = (_t20: Enum_0)[2];
+  let b = 0 as Enum;
+  let _t14 = (b: Enum) as int;
+  let _t15 = (_t14: int) < 1024;
+  let _t16 = (_t14: int) & 1;
+  let _t17 = (_t15: int) | (_t16: int);
+  let _t18 = (_t17: int) ^ 1;
+  if (_t18: int) {
+    let a = (b: Enum) as J;
+  } else {
+  }
+  let _t19 = (b: Enum) as int;
+  let _t20 = (_t19: int) == 3;
+  if (_t20: int) {
+  } else {
+  }
+  let _t21: Enum2_0 = [1, 0, 0];
+  let b = (_t21: Enum2_0) as Enum2;
+  let _t22: Enum3_0 = [1, 0, 0];
+  let b = (_t22: Enum3_0) as Enum3;
+  let _t23: int = (b: Enum2)[0];
+  let _t24 = (_t23: int) == 1;
+  if (_t24: int) {
+    let _t25 = (b: Enum2) as Enum2_0;
+  } else {
+  }
+  let _t26 = (b: Enum2) as int;
+  let _t27 = (_t26: int) == 3;
+  if (_t27: int) {
   } else {
   }
   return 0;
@@ -1281,9 +1499,7 @@ sources.mains = [main]"#,
       heap,
       r#"
 object type J = [I_int_int]
-variant type I_int_int
-object type I_int_int_0 = []
-object type I_int_int_1 = []
+variant type I_int_int = [int, int]
 function main(): int {
   creatorJ();
   (v: int)();

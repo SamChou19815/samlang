@@ -1,7 +1,7 @@
 use crate::{
   ast::mir::{
-    Binary, Callee, ClosureTypeDefinition, Expression, Function, GenenalLoopVariable, Sources,
-    Statement, Type, TypeDefinition, TypeDefinitionMappings,
+    Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function,
+    GenenalLoopVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
   },
   common::PStr,
 };
@@ -157,7 +157,19 @@ fn analyze_used_function_names_and_type_names(
           collect_for_type_set(t, &mut type_set);
         }
       }
-      TypeDefinitionMappings::Enum => {}
+      TypeDefinitionMappings::Enum(variants) => {
+        for variant in variants {
+          match variant {
+            EnumTypeDefinition::Boxed(_, ts) => {
+              for t in ts {
+                collect_for_type_set(t, &mut type_set);
+              }
+            }
+            EnumTypeDefinition::Unboxed(t) => collect_for_type_set(t, &mut type_set),
+            EnumTypeDefinition::Int => {}
+          }
+        }
+      }
     }
     type_def_map.insert(d.identifier, type_set);
   }
@@ -218,9 +230,9 @@ mod tests {
   use crate::{
     ast::hir::GlobalVariable,
     ast::mir::{
-      Callee, ClosureTypeDefinition, Expression, Function, FunctionName, GenenalLoopVariable,
-      Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName, INT_TYPE,
-      ZERO,
+      Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
+      GenenalLoopVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
+      VariableName, INT_TYPE, ZERO,
     },
     common::well_known_pstrs,
     Heap,
@@ -271,7 +283,11 @@ mod tests {
         },
         TypeDefinition {
           identifier: heap.alloc_str_for_test("Baz"),
-          mappings: TypeDefinitionMappings::Enum,
+          mappings: TypeDefinitionMappings::Enum(vec![
+            EnumTypeDefinition::Int,
+            EnumTypeDefinition::Unboxed(INT_TYPE),
+            EnumTypeDefinition::Boxed(well_known_pstrs::UPPER_A, vec![INT_TYPE]),
+          ]),
         },
       ],
       main_function_names: vec![heap.alloc_str_for_test("main")],

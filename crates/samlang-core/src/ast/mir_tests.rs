@@ -114,22 +114,22 @@ mod tests {
   fn print_type_definition_tests() {
     let heap = &mut Heap::new();
 
-    assert_eq!(
-      "object type A = [int, int]",
-      TypeDefinition {
-        identifier: well_known_pstrs::UPPER_A,
-        mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
-      }
-      .pretty_print(heap)
-    );
-    assert_eq!(
-      "variant type B",
-      TypeDefinition {
-        identifier: well_known_pstrs::UPPER_B,
-        mappings: TypeDefinitionMappings::Enum,
-      }
-      .pretty_print(heap)
-    );
+    let d1 = TypeDefinition {
+      identifier: well_known_pstrs::UPPER_A,
+      mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
+    };
+    let d2 = TypeDefinition {
+      identifier: well_known_pstrs::UPPER_B,
+      mappings: TypeDefinitionMappings::Enum(vec![
+        EnumTypeDefinition::Unboxed(Type::Id(well_known_pstrs::UPPER_D)),
+        EnumTypeDefinition::Boxed(well_known_pstrs::UPPER_C, vec![INT_TYPE, INT_TYPE]),
+        EnumTypeDefinition::Int.clone(),
+      ]),
+    };
+    assert_eq!("object type A = [int, int]", d1.pretty_print(heap));
+    assert_eq!("variant type B = [Unboxed(D), C(int, int), int]", d2.pretty_print(heap));
+    assert!(!format!("{:?}", d1).is_empty());
+    assert!(!format!("{:?}", d2).is_empty());
   }
 
   #[test]

@@ -1,7 +1,7 @@
 use crate::{
   ast::mir::{
-    Binary, Callee, ClosureTypeDefinition, Expression, Function, FunctionName, FunctionType,
-    Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
+    Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
+    FunctionType, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
   },
   common::{Heap, PStr},
 };
@@ -175,7 +175,28 @@ pub(super) fn deduplicate(
       TypeDefinitionMappings::Struct(types) => {
         format!("object_{}", types.iter().map(|t| t.pretty_print(heap)).join("_"))
       }
-      TypeDefinitionMappings::Enum => "enum".to_string(),
+      TypeDefinitionMappings::Enum(variants) => {
+        let mut collector = "enum".to_string();
+        for variant in variants {
+          collector.push('\n');
+          match variant {
+            EnumTypeDefinition::Boxed(n, types) => {
+              collector.push('0');
+              collector.push_str(n.as_str(heap));
+              for t in types {
+                collector.push('_');
+                collector.push_str(t.pretty_print(heap));
+              }
+            }
+            EnumTypeDefinition::Unboxed(t) => {
+              collector.push('1');
+              collector.push_str(t.pretty_print(heap));
+            }
+            EnumTypeDefinition::Int => collector.push('2'),
+          }
+        }
+        collector
+      }
     };
     let original_name = type_def.identifier;
     let canonical_name = if let Some(c) = type_def_mapping.get(&key) {
@@ -202,9 +223,23 @@ pub(super) fn deduplicate(
         identifier,
         mappings: match mappings {
           TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
-            types.into_iter().map(|t| rewrite_type(&state, t)).collect_vec(),
+            types.into_iter().map(|t| rewrite_type(&state, t)).collect(),
           ),
-          TypeDefinitionMappings::Enum => TypeDefinitionMappings::Enum,
+          TypeDefinitionMappings::Enum(variants) => TypeDefinitionMappings::Enum(
+            variants
+              .into_iter()
+              .map(|v| match v {
+                EnumTypeDefinition::Boxed(n, types) => EnumTypeDefinition::Boxed(
+                  n,
+                  types.into_iter().map(|t| rewrite_type(&state, t)).collect(),
+                ),
+                EnumTypeDefinition::Unboxed(t) => {
+                  EnumTypeDefinition::Unboxed(rewrite_type(&state, t))
+                }
+                EnumTypeDefinition::Int => EnumTypeDefinition::Int,
+              })
+              .collect(),
+          ),
         },
       })
       .collect_vec(),
@@ -282,6 +317,14 @@ mod tests {
           identifier: well_known_pstrs::UPPER_D,
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
         },
+        TypeDefinition {
+          identifier: well_known_pstrs::UPPER_E,
+          mappings: TypeDefinitionMappings::Enum(vec![
+            EnumTypeDefinition::Boxed(well_known_pstrs::UPPER_F, vec![INT_TYPE]),
+            EnumTypeDefinition::Unboxed(INT_TYPE),
+            EnumTypeDefinition::Int,
+          ]),
+        },
       ],
       main_function_names: vec![],
       functions: vec![Function {
@@ -351,6 +394,7 @@ mod tests {
     let actual = deduplicate(heap, sources).debug_print(heap);
     assert_eq!(
       r#"closure type A = () -> int
+variant type E = [F(int), Unboxed(int), int]
 object type C = [int, _Str]
 function main(): int {
   let _: int;
