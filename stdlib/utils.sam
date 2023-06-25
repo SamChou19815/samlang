@@ -58,6 +58,14 @@ class List<T>(Nil, Cons(T, List<T>)) {
 
   method cons(t: T): List<T> = List.Cons(t, this)
 
+  method length(): int = this.fold((acc, elem) -> acc + 1, 0)
+
+  method isEmpty(): bool =
+    match this {
+      Nil -> true,
+      Cons(_, _) -> false,
+    }
+
   method filter(f: (T) -> bool): List<T> =
     match this {
       Nil -> this,
@@ -94,6 +102,39 @@ class List<T>(Nil, Cons(T, List<T>)) {
       }
     }
 
+  method contains(element: T, equal: (T, T) -> bool): bool =
+    match this {
+      Nil -> false,
+      Cons(v, rest) -> if equal(element, v) then true else rest.contains(element, equal),
+    }
+
+  method exists(f: (T) -> bool): bool =
+    match this {
+      Nil -> false,
+      Cons(v, rest) -> if f(v) then true else rest.exists(f),
+    }
+
+  method find(f: (T) -> bool): Option<T> =
+    match this {
+      Nil -> Option.None(),
+      Cons(v, rest) -> if f(v) then Option.Some(v) else rest.find(f),
+    }
+
+  method <R> findMap(f: (T) -> Option<R>): Option<R> =
+    match this {
+      Nil -> Option.None(),
+      Cons(v, rest) -> match f(v) {
+        Some(r) -> Option.Some(r),
+        None -> rest.findMap(f),
+      }
+    }
+
+  method append(other: List<T>): List<T> =
+    this.foldRight((elem, acc) -> List.Cons(elem, acc), other)
+
+  method reverseAndAppend(other: List<T>): List<T> =
+    this.fold((acc, elem) -> List.Cons(elem, acc), other)
+
   method <A> fold(f: (A, T) -> A, acc: A): A =
     match this {
       Nil -> acc,
@@ -105,6 +146,13 @@ class List<T>(Nil, Cons(T, List<T>)) {
       Nil -> init,
       Cons(v, rest) -> { rest.foldRight(f, f(v, init)) }
     }
+
+  method <R> bind(f: (T) -> List<R>): List<R> =
+    this.foldRight((elem, acc) -> f(elem).append(acc), List.Nil())
+
+  function <T> flatten(l: List<List<T>>): List<T> =
+    // TODO: removing the targ annotation, and it will panic
+    l.foldRight<List<T>>((innerList, acc) -> innerList.append(acc), List.Nil())
 
   private method reverseWithAccumulator(acc: List<T>): List<T> =
     match this {
