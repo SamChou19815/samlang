@@ -1,3 +1,14 @@
-#!/bin/bash
+#!/bin/bash -e
 
-./target/debug/samlang-cli "$@"
+DIR="$(dirname "$(readlink -f "$0")")"
+DEBUG_BUILD="$DIR/target/debug/samlang-cli"
+RELEASE_BUILD="$DIR/target/release/samlang-cli"
+
+if [ -x "$RELEASE_BUILD" ] && [ ! -x "$DEBUG_BUILD" ] || [ "$DEBUG_BUILD" -ot "$RELEASE_BUILD" ]; then
+  BINARY="$(realpath "$RELEASE_BUILD")"
+else
+  BINARY="$(realpath "$DEBUG_BUILD")"
+fi
+
+echo -e "Running $BINARY..."
+"$BINARY" "$@"

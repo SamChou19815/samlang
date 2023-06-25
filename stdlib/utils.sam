@@ -4,97 +4,91 @@ class Pair<A, B>(val a: A, val b: B) {
   method second(): B = this.b
 }
 
-class Option<T>(None(unit), Some(T)) {
+class Option<T>(None, Some(T)) {
   function <A, B> both(optionA: Option<A>, optionB: Option<B>): Option<Pair<A, B>> =
     match optionA {
-      None(_) -> Option.None({  }),
+      None -> Option.None(),
       Some(a) -> match optionB {
-        None(_) -> Option.None({  }),
+        None -> Option.None(),
         Some(b) -> Option.Some(Pair.init(a, b)),
       }
     }
 
   method isSome(): bool =
     match this {
-      None(_) -> false,
+      None -> false,
       Some(_) -> true,
     }
 
   method isNone(): bool =
     match this {
-      None(_) -> true,
+      None -> true,
       Some(_) -> false,
     }
 
   method <R> map(f: (T) -> R): Option<R> =
     match this {
-      None(_) -> Option.None({  }),
+      None -> Option.None(),
       Some(v) -> Option.Some(f(v)),
     }
 
   method iter(f: (T) -> unit): unit =
     match this {
-      None(_) -> {  }
+      None -> {  }
       Some(v) -> f(v),
     }
 
   method <R> bind(f: (T) -> Option<R>): Option<R> =
     match this {
-      None(_) -> Option.None({  }),
+      None -> Option.None(),
       Some(v) -> f(v),
     }
 
   method unwrap(): T =
     match this {
       Some(v) -> v,
-      None(_) -> Builtins.panic("Unwrapping Option.None"),
+      None -> Builtins.panic("Unwrapping Option.None"),
     }
 }
 
-class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
-  function <T> nil(): List<T> = List.Nil({  })
+class List<T>(Nil, Cons(T, List<T>)) {
+  function <T> nil(): List<T> = List.Nil()
 
-  function <T> of(t: T): List<T> = List.Cons(Pair.init(t, List.Nil<T>({  })))
+  function <T> of(t: T): List<T> = List.Cons(t, List.Nil<T>())
 
-  method cons(t: T): List<T> = List.Cons(Pair.init(t, this))
+  method cons(t: T): List<T> = List.Cons(t, this)
 
   method filter(f: (T) -> bool): List<T> =
     match this {
-      Nil(_) -> this,
-      Cons(pair) -> {
-        val { a as v, b as rest } = pair;
+      Nil -> this,
+      Cons(v, rest) -> {
         val filteredRest = rest.filter(f);
-        if f(v) then List.Cons(Pair.init(v, filteredRest)) else filteredRest
+        if f(v) then List.Cons(v, filteredRest) else filteredRest
       }
     }
 
   method <R> map(f: (T) -> R): List<R> =
     match this {
-      Nil(_) -> List.Nil({  }),
-      Cons(pair) -> {
-        val { a as v, b as rest } = pair;
-        List.Cons(Pair.init(f(v), rest.map(f)))
-      }
+      Nil -> List.Nil(),
+      Cons(v, rest) -> { List.Cons(f(v), rest.map(f)) }
     }
 
   method <R> filterMap(f: (T) -> Option<R>): List<R> =
     match this {
-      Nil(_) -> List.Nil({  }),
-      Cons(pair) -> {
-        val { a as v, b as rest } = pair;
+      Nil -> List.Nil(),
+      Cons(v, rest) -> {
         val mappedRest = rest.filterMap(f);
         match f(v) {
-          None(_) -> mappedRest,
-          Some(mapped) -> List.Cons(Pair.init(mapped, mappedRest)),
+          None -> mappedRest,
+          Some(mapped) -> List.Cons(mapped, mappedRest),
         }
       }
     }
 
   method iter(f: (T) -> unit): unit =
     match this {
-      Nil(_) -> {  }
-      Cons(pair) -> {
-        val { a as v, b as rest } = pair;
+      Nil -> {  }
+      Cons(v, rest) -> {
         val _ = f(v);
         rest.iter(f)
       }
@@ -102,21 +96,21 @@ class List<T>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
   method <A> fold(f: (A, T) -> A, acc: A): A =
     match this {
-      Nil(_) -> acc,
-      Cons(pair) -> {
-        val { a as v, b as rest } = pair;
-        rest.fold(f, f(acc, v))
-      }
+      Nil -> acc,
+      Cons(v, rest) -> { rest.fold(f, f(acc, v)) }
+    }
+
+  method <A> foldRight(f: (T, A) -> A, init: A): A =
+    match this {
+      Nil -> init,
+      Cons(v, rest) -> { rest.foldRight(f, f(v, init)) }
     }
 
   private method reverseWithAccumulator(acc: List<T>): List<T> =
     match this {
-      Nil(_) -> acc,
-      Cons(pair) -> {
-        val { a as v, b as rest } = pair;
-        rest.reverseWithAccumulator(List.Cons(Pair.init(v, acc)))
-      }
+      Nil -> acc,
+      Cons(v, rest) -> { rest.reverseWithAccumulator(List.Cons(v, acc)) }
     }
 
-  method reverse(): List<T> = this.reverseWithAccumulator(List.Nil<T>({  }))
+  method reverse(): List<T> = this.reverseWithAccumulator(List.Nil<T>())
 }
