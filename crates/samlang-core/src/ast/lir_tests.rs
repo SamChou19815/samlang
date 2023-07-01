@@ -257,7 +257,7 @@ mod tests {
     let expected = format!(
       r#"const {} = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
 const {} = (_: number, [, line]: _Str): number => {{ console.log(line); return 0; }};
-const {} = (_: number, [, v]: _Str): number => parseInt(v, 10);
+const {} = ([, v]: _Str): number => parseInt(v, 10);
 const {} = (_: number, v: number): _Str => [1, String(v)];
 const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};

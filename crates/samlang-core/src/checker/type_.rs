@@ -143,7 +143,7 @@ impl FunctionType {
 
 #[derive(Clone, EnumAsInner)]
 pub(crate) enum Type {
-  Any(Reason, /** is_placeholder */ bool),
+  Any(Reason, bool), // bool: is_placeholder
   Primitive(Reason, PrimitiveTypeKind),
   Nominal(NominalType),
   Generic(Reason, PStr),
@@ -540,11 +540,11 @@ impl ModuleSignature {
   }
 }
 
-pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignature {
+pub(crate) fn create_builtin_module_signature() -> ModuleSignature {
   ModuleSignature {
     interfaces: HashMap::from([
       (
-        heap.alloc_str_permanent("Builtins"),
+        well_known_pstrs::PROCESS_TYPE,
         InterfaceSignature {
           type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
           type_parameters: vec![],
@@ -552,31 +552,7 @@ pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignatur
           methods: HashMap::new(),
           functions: HashMap::from([
             MemberSignature::create_builtin_function(
-              heap.alloc_str_permanent("stringToInt"),
-              vec![Rc::new(Type::Nominal(NominalType {
-                reason: Reason::builtin(),
-                is_class_statics: false,
-                module_reference: ModuleReference::root(),
-                id: well_known_pstrs::STR_TYPE,
-                type_arguments: vec![],
-              }))],
-              Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
-              vec![],
-            ),
-            MemberSignature::create_builtin_function(
-              heap.alloc_str_permanent("intToString"),
-              vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
-              Rc::new(Type::Nominal(NominalType {
-                reason: Reason::builtin(),
-                is_class_statics: false,
-                module_reference: ModuleReference::root(),
-                id: well_known_pstrs::STR_TYPE,
-                type_arguments: vec![],
-              })),
-              vec![],
-            ),
-            MemberSignature::create_builtin_function(
-              heap.alloc_str_permanent("println"),
+              well_known_pstrs::PRINTLN,
               vec![Rc::new(Type::Nominal(NominalType {
                 reason: Reason::builtin(),
                 is_class_statics: false,
@@ -588,7 +564,7 @@ pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignatur
               vec![],
             ),
             MemberSignature::create_builtin_function(
-              heap.alloc_str_permanent("panic"),
+              well_known_pstrs::PANIC,
               vec![Rc::new(Type::Nominal(NominalType {
                 reason: Reason::builtin(),
                 is_class_statics: false,
@@ -606,8 +582,24 @@ pub(crate) fn create_builtin_module_signature(heap: &mut Heap) -> ModuleSignatur
         well_known_pstrs::STR_TYPE,
         InterfaceSignature {
           type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
-          functions: HashMap::new(),
-          methods: HashMap::new(),
+          functions: HashMap::from([MemberSignature::create_builtin_function(
+            well_known_pstrs::FROM_INT,
+            vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
+            Rc::new(Type::Nominal(NominalType {
+              reason: Reason::builtin(),
+              is_class_statics: false,
+              module_reference: ModuleReference::root(),
+              id: well_known_pstrs::STR_TYPE,
+              type_arguments: vec![],
+            })),
+            vec![],
+          )]),
+          methods: HashMap::from([MemberSignature::create_builtin_function(
+            well_known_pstrs::TO_INT,
+            vec![],
+            Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
+            vec![],
+          )]),
           type_parameters: vec![],
           super_types: vec![],
         },
@@ -750,15 +742,13 @@ class()  : []
 functions:
 panic: public <T>(Str) -> T
 println: public (Str) -> unit
-stringToInt: public (Str) -> int
-intToString: public (int) -> Str
 methods:
 
 "#
       .trim(),
-      create_builtin_module_signature(&mut heap)
+      create_builtin_module_signature()
         .interfaces
-        .get(&heap.alloc_str_for_test("Builtins"))
+        .get(&well_known_pstrs::PROCESS_TYPE)
         .unwrap()
         .to_string(&heap)
     );

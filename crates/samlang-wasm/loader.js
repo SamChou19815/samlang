@@ -14,12 +14,12 @@ export default async function interpretWebAssemblyModule(
   let printed = '';
 
   const builtins = {
-    __Builtins$println(_, p) {
+    __Process$println(_, p) {
       printed += pointerToString(p);
       printed += '\n';
       return 0;
     },
-    __Builtins$panic(_, p) {
+    __Process$panic(_, p) {
       throw new Error(pointerToString(p));
     },
   };

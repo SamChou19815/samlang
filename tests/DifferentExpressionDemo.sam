@@ -37,7 +37,7 @@ class DifferentExpressionDemo {
   function oof(): int = 14
 
   function div(a: int, b: int): int =
-    if b == 0 then Builtins.panic("Division by zero is illegal!") else a / b
+    if b == 0 then Process.panic("Division by zero is illegal!") else a / b
 
   function nestedVal(): int = {
     val a: int = {

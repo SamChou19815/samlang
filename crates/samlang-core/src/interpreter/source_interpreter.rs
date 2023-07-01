@@ -221,7 +221,7 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
           new_variant(cx, tag, values)
         }
         FunctionImpl::StringToInt => {
-          let v = cx.local_values.get(&well_known_pstrs::LOWER_V).cloned().unwrap();
+          let v = cx.local_values.get(&well_known_pstrs::THIS).cloned().unwrap();
           let s = v.string_value(cx);
           Value::Int(s.parse::<i32>().unwrap())
         }
@@ -419,27 +419,11 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
     }
   }
   classes.insert(
-    heap.alloc_str_permanent("Builtins"),
+    well_known_pstrs::PROCESS_TYPE,
     ClassValue {
       functions: HashMap::from([
         (
-          heap.alloc_str_permanent("stringToInt"),
-          FunctionValue {
-            parameters: vec![well_known_pstrs::LOWER_V],
-            body: FunctionImpl::StringToInt,
-            captured: HashMap::new(),
-          },
-        ),
-        (
-          heap.alloc_str_permanent("intToString"),
-          FunctionValue {
-            parameters: vec![well_known_pstrs::LOWER_V],
-            body: FunctionImpl::IntToString,
-            captured: HashMap::new(),
-          },
-        ),
-        (
-          heap.alloc_str_permanent("println"),
+          well_known_pstrs::PRINTLN,
           FunctionValue {
             parameters: vec![well_known_pstrs::LOWER_V],
             body: FunctionImpl::Println,
@@ -447,7 +431,7 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
           },
         ),
         (
-          heap.alloc_str_permanent("panic"),
+          well_known_pstrs::PANIC,
           FunctionValue {
             parameters: vec![well_known_pstrs::LOWER_V],
             body: FunctionImpl::Panic,
@@ -456,6 +440,27 @@ fn new_cx(heap: &mut Heap, module: &Module<Rc<Type>>) -> InterpretationContext {
         ),
       ]),
       methods: HashMap::new(),
+    },
+  );
+  classes.insert(
+    well_known_pstrs::STR_TYPE,
+    ClassValue {
+      methods: HashMap::from([(
+        well_known_pstrs::TO_INT,
+        FunctionValue {
+          parameters: vec![],
+          body: FunctionImpl::StringToInt,
+          captured: HashMap::new(),
+        },
+      )]),
+      functions: HashMap::from([(
+        well_known_pstrs::FROM_INT,
+        FunctionValue {
+          parameters: vec![well_known_pstrs::LOWER_V],
+          body: FunctionImpl::IntToString,
+          captured: HashMap::new(),
+        },
+      )]),
     },
   );
   InterpretationContext {
@@ -666,7 +671,7 @@ mod tests {
         function main(): unit = {
           val a = 3;
           val _ = () -> a;
-          Builtins.panic(\"\")
+          Process.panic(\"\")
         }
       }"#,
       mod_ref,

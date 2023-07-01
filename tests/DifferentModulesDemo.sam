@@ -48,7 +48,7 @@ class Option<T>(None(unit), Some(T)) {
 
   method forceValue(): T =
     match this {
-      None(_) -> Builtins.panic("Trying to get value from Option.None"),
+      None(_) -> Process.panic("Trying to get value from Option.None"),
       Some(v) -> v,
     }
 
@@ -61,10 +61,10 @@ class Option<T>(None(unit), Some(T)) {
 
 class DifferentModulesDemo {
   private function assertTrue(condition: bool, message: Str): unit =
-    if condition then {  } else Builtins.panic(message)
+    if condition then {  } else Process.panic(message)
 
   private function assertFalse(condition: bool, message: Str): unit =
-    if !condition then {  } else Builtins.panic(message)
+    if !condition then {  } else Process.panic(message)
 
   function run(): unit = {
     val _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);

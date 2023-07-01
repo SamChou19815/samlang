@@ -13,12 +13,12 @@ function samlangGeneratedWebAssemblyLoader(
   }
 
   const builtins = {
-    __Builtins$println(_, p) {
+    __Process$println(_, p) {
       // eslint-disable-next-line no-console
       console.log(pointerToString(p));
       return 0;
     },
-    __Builtins$panic(_, p) {
+    __Process$panic(_, p) {
       throw new Error(pointerToString(p));
     },
     ...builtinsPatch(pointerToString),

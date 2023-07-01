@@ -47,7 +47,7 @@ class Option<T>(None, Some(T)) {
   method unwrap(): T =
     match this {
       Some(v) -> v,
-      None -> Builtins.panic("Unwrapping Option.None"),
+      None -> Process.panic("Unwrapping Option.None"),
     }
 }
 

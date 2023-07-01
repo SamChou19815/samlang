@@ -243,8 +243,8 @@ fn eval_fun_call(
       return 0;
     } else if name.eq(&common_names::encoded_fn_name_string_to_int()) {
       let argument_vs = eval_arguments(mem, arguments);
-      assert!(argument_vs.len() == 2);
-      return mem.get_string(argument_vs[1]).parse::<i32>().unwrap();
+      assert!(argument_vs.len() == 1);
+      return mem.get_string(argument_vs[0]).parse::<i32>().unwrap();
     } else if name.eq(&common_names::encoded_fn_name_int_to_string()) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 2);
@@ -521,7 +521,7 @@ mod tests {
                 heap.alloc_string(common_names::encoded_fn_name_string_to_int()),
                 INT_TYPE,
               ),
-              arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
+              arguments: vec![Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("s")),
             },

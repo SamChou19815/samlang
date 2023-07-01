@@ -68,6 +68,6 @@ class SortableListTest {
       .cons(BoxedInt.init(2))
       .cons(BoxedInt.init(1))
       .cons(BoxedInt.init(3));
-    list.sort().iter((n) -> Builtins.println(Builtins.intToString(n.i)))
+    list.sort().iter((n) -> Process.println(Str.fromInt(n.i)))
   }
 }
