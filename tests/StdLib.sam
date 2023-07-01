@@ -1,14 +1,10 @@
 class ForTests {
-  function printlnInt(n: int): unit = Builtins.println(Builtins.intToString(n))
+  function printlnInt(n: int): unit = Process.println(Str.fromInt(n))
 
   function boolToString(b: bool): Str = if b then "true" else "false"
 
   function assertIntEquals(expected: int, actual: int): unit =
     if actual == expected then {  } else {
-      Builtins.panic(
-        "Actual: " :: Builtins.intToString(actual) :: ", expected: " :: Builtins.intToString(
-          expected
-        )
-      )
+      Process.panic("Actual: " :: Str.fromInt(actual) :: ", expected: " :: Str.fromInt(expected))
     }
 }

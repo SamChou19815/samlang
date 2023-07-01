@@ -9,8 +9,8 @@ mod lexer;
 mod lexer_test;
 mod source_parser;
 
-fn builtin_classes(heap: &mut Heap) -> HashSet<PStr> {
-  HashSet::from([heap.alloc_str_permanent("Builtins"), well_known_pstrs::STR_TYPE])
+fn builtin_classes() -> HashSet<PStr> {
+  HashSet::from([well_known_pstrs::PROCESS_TYPE, well_known_pstrs::STR_TYPE])
 }
 
 pub(crate) fn parse_source_module_from_text(
@@ -19,7 +19,7 @@ pub(crate) fn parse_source_module_from_text(
   heap: &mut Heap,
   error_set: &mut ErrorSet,
 ) -> source::Module<()> {
-  let builtins = builtin_classes(heap);
+  let builtins = builtin_classes();
   let parser = source_parser::SourceParser::new(
     lexer::lex_source_program(text, module_reference, heap, error_set),
     heap,
@@ -36,7 +36,7 @@ pub(crate) fn parse_source_expression_from_text(
   heap: &mut Heap,
   error_set: &mut ErrorSet,
 ) -> (source::CommentStore, source::expr::E<()>) {
-  let builtins = builtin_classes(heap);
+  let builtins = builtin_classes();
   let parser = source_parser::SourceParser::new(
     lexer::lex_source_program(text, module_reference, heap, error_set),
     heap,

@@ -43,19 +43,19 @@ pub(crate) const ENCODED_FN_NAME_INC_REF: &str = "_builtin_inc_ref";
 pub(crate) const ENCODED_FN_NAME_DEC_REF: &str = "_builtin_dec_ref";
 
 pub(crate) fn encoded_fn_name_string_concat() -> String {
-  encode_builtin_function_name_globally("Builtins", "stringConcat")
+  encode_builtin_function_name_globally("Str", "concat")
 }
 pub(crate) fn encoded_fn_name_panic() -> String {
-  encode_builtin_function_name_globally("Builtins", "panic")
+  encode_builtin_function_name_globally("Process", "panic")
 }
 pub(crate) fn encoded_fn_name_string_to_int() -> String {
-  encode_builtin_function_name_globally("Builtins", "stringToInt")
+  encode_builtin_function_name_globally("Str", "toInt")
 }
 pub(crate) fn encoded_fn_name_int_to_string() -> String {
-  encode_builtin_function_name_globally("Builtins", "intToString")
+  encode_builtin_function_name_globally("Str", "fromInt")
 }
 pub(crate) fn encoded_fn_name_println() -> String {
-  encode_builtin_function_name_globally("Builtins", "println")
+  encode_builtin_function_name_globally("Process", "println")
 }
 
 pub(crate) const ENCODED_COMPILED_PROGRAM_MAIN: &str = "_compiled_program_main";
@@ -84,10 +84,10 @@ mod tests {
       .alloc_module_reference_from_string_vec(vec!["Foo-Bar-Derp".to_string(), "Baz".to_string()]);
     assert_eq!("_Foo_Bar_Derp$Baz_Main$main", encode_main_function_name(heap, &mod_ref));
 
-    assert_eq!("__Builtins$stringConcat", encoded_fn_name_string_concat());
-    assert_eq!("__Builtins$panic", encoded_fn_name_panic());
-    assert_eq!("__Builtins$intToString", encoded_fn_name_int_to_string());
-    assert_eq!("__Builtins$stringToInt", encoded_fn_name_string_to_int());
-    assert_eq!("__Builtins$println", encoded_fn_name_println());
+    assert_eq!("__Str$concat", encoded_fn_name_string_concat());
+    assert_eq!("__Str$fromInt", encoded_fn_name_int_to_string());
+    assert_eq!("__Str$toInt", encoded_fn_name_string_to_int());
+    assert_eq!("__Process$panic", encoded_fn_name_panic());
+    assert_eq!("__Process$println", encoded_fn_name_println());
   }
 }

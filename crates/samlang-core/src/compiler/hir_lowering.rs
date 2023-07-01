@@ -1763,7 +1763,7 @@ return (_t6: int);"#,
         e2: Box::new(dummy_source_this(heap)),
       }),
       heap,
-      r#"let _t6: _Str = __Builtins$stringConcat((_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
+      r#"let _t6: _Str = __Str$concat((_this: DUMMY_Dummy), (_this: DUMMY_Dummy));
 return (_t6: _Str);"#,
     );
     let heap = &mut Heap::new();
@@ -1953,7 +1953,7 @@ let [bar: int] if tagof((_this: DUMMY_Dummy))==0 {
   let [_] if tagof((_this: DUMMY_Dummy))==1 {
     _t9 = (_this: DUMMY_Dummy);
   } else {
-    let _t6: DUMMY_Dummy = __Builtins$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
+    let _t6: DUMMY_Dummy = __Process$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
     _t9 = (_t6: DUMMY_Dummy);
   }
   _t10 = (_t9: DUMMY_Dummy);
@@ -2008,7 +2008,7 @@ let [_] if tagof((_this: DUMMY_Dummy))==0 {
     let [_] if tagof((_this: DUMMY_Dummy))==2 {
       _t9 = (_this: DUMMY_Dummy);
     } else {
-      let _t6: DUMMY_Dummy = __Builtins$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
+      let _t6: DUMMY_Dummy = __Process$panic<DUMMY_Dummy>(0, GLOBAL_STRING_0);
       _t9 = (_t6: DUMMY_Dummy);
     }
     _t10 = (_t9: DUMMY_Dummy);

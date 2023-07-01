@@ -210,7 +210,7 @@ class Test1 {
 class Test2(val a: int) {
   method test(): int = -1
 
-  function test2(): int = Builtins.panic("")
+  function test2(): int = Process.panic("")
 }
 "#
           .to_string(),
@@ -813,8 +813,8 @@ interface Interface {}
       r#"List [kind=Class, detail=class List]
 Main [kind=Class, detail=class Main]
 Pair [kind=Class, detail=class Pair]
+Process [kind=Class, detail=class Process]
 Str [kind=Class, detail=class Str]
-Builtins [kind=Class, detail=class Builtins]
 Developer [kind=Class, detail=class Developer]
 Interface [kind=Interface, detail=interface Interface]"#,
       completion::auto_complete(&state, &test_mod_ref, Position(4, 5))

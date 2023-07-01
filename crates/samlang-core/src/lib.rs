@@ -153,7 +153,7 @@ mod tests {
       heap,
       vec![(
         mod_ref_demo,
-        "class Main { function main(): unit = Builtins.println(\"hello world\") }".to_string()
+        "class Main { function main(): unit = Process.println(\"hello world\") }".to_string()
       )],
       vec![mod_ref_demo],
       false,

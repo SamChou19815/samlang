@@ -74,7 +74,7 @@ mod tests {
     let builder = test_type_builder::create();
 
     HashMap::from([
-      (ModuleReference::root(), create_builtin_module_signature(heap)),
+      (ModuleReference::root(), create_builtin_module_signature()),
       (
         ModuleReference::dummy(),
         ModuleSignature {
@@ -898,13 +898,13 @@ mod tests {
     let heap = &mut Heap::new();
     let builder = test_type_builder::create();
 
-    assert_checks(heap, "Builtins.panic(\"\")", &builder.unit_type());
-    assert_checks(heap, "Builtins.panic(\"\")", &builder.bool_type());
-    assert_checks(heap, "Builtins.panic(\"\")", &builder.int_type());
-    assert_checks(heap, "Builtins.panic(\"\")", &builder.string_type());
+    assert_checks(heap, "Process.panic(\"\")", &builder.unit_type());
+    assert_checks(heap, "Process.panic(\"\")", &builder.bool_type());
+    assert_checks(heap, "Process.panic(\"\")", &builder.int_type());
+    assert_checks(heap, "Process.panic(\"\")", &builder.string_type());
     assert_checks(
       heap,
-      "Builtins.panic(\"\")",
+      "Process.panic(\"\")",
       &builder.fun_type(vec![builder.int_type(), builder.bool_type()], builder.string_type()),
     );
     assert_checks(heap, "Test.helloWorld(\"\")", &builder.unit_type());
@@ -913,9 +913,9 @@ mod tests {
 
     assert_errors(
       heap,
-      "Builtins.panic(3)",
+      "Process.panic(3)",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:16-1:17: [incompatible-type]: Expected: `Str`, actual: `int`."],
+      vec!["DUMMY.sam:1:15-1:16: [incompatible-type]: Expected: `Str`, actual: `int`."],
     );
     assert_errors(
       heap,
@@ -1556,14 +1556,14 @@ interface Baz2<TA, TB> : Baz1<TA, int> {
   method <TC> m2(a: TA, b: TB): TC
 }
 class E : Baz2<Str, bool> { // all good
-  method <TC> m1(a: int, b: int): TC = Builtins.panic("")
-  method <TA1, TB1, TC> f1(a: TA1, b: TB1): TC = Builtins.panic("")
-  method <TC> m2(a: Str, b: bool): TC = Builtins.panic("")
+  method <TC> m1(a: int, b: int): TC = Process.panic("")
+  method <TA1, TB1, TC> f1(a: TA1, b: TB1): TC = Process.panic("")
+  method <TC> m2(a: Str, b: bool): TC = Process.panic("")
 }
 class F : Baz2<Str, bool> {
-  private method <TC> m1(a: Str, b: Str): TC = Builtins.panic("") // error
-  method <TA1, TB1, TC> f1(a: Str, b: Str): TC = Builtins.panic("") // error
-  method <TC> m2(a: Str, b: Str): TC = Builtins.panic("") // error
+  private method <TC> m1(a: Str, b: Str): TC = Process.panic("") // error
+  method <TA1, TB1, TC> f1(a: Str, b: Str): TC = Process.panic("") // error
+  method <TC> m2(a: Str, b: Str): TC = Process.panic("") // error
 }
 interface G : Baz2<Str, bool> {
   method <TD> m1(a: int, b: int): TD // tparam name mismatch
@@ -1593,7 +1593,7 @@ interface Cyclic4 : Cyclic4 {} // error: cyclic
       "A.sam:8:1-8:17: [missing-definitions]: Missing definitions for [b].",
       "A.sam:11:11-11:19: [incompatible-type]: Expected: `() -> Str`, actual: `() -> unit`.",
       "A.sam:13:1-16:2: [missing-definitions]: Missing definitions for [b].",
-      "A.sam:32:11-32:66: [incompatible-type]: Expected: `public class member`, actual: `private class member`.",
+      "A.sam:32:11-32:65: [incompatible-type]: Expected: `public class member`, actual: `private class member`.",
       "A.sam:32:25-32:45: [incompatible-type]: Expected: `(int, int) -> TC`, actual: `(Str, Str) -> TC`.",
       "A.sam:33:27-33:47: [incompatible-type]: Expected: `(TA1, TB1) -> TC`, actual: `(Str, Str) -> TC`.",
       "A.sam:34:17-34:37: [incompatible-type]: Expected: `(Str, bool) -> TC`, actual: `(Str, Str) -> TC`.",

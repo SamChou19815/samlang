@@ -7,7 +7,7 @@ class Dev(Sam(unit), Megan(Str)) {
 
   function meggo(): Dev = Dev.Megan("meggo")
 
-  method vibez(): unit = Builtins.println("dev" :: this.getName() :: "vibez")
+  method vibez(): unit = Process.println("dev" :: this.getName() :: "vibez")
 }
 
 class DevMeggo {

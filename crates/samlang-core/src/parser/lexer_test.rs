@@ -61,11 +61,11 @@ class Main {
     if ((i < j && i > 0) && j > 0) then {
       val a: int = 3;
       val b: int = 4;
-      if (a > b || a + b > 0 && true) then Builtins.println("one") else Builtins.println("two")
+      if (a > b || a + b > 0 && true) then Process.println("one") else Process.println("two")
     } else {
       val a: int = 3;
       val b: int = 4;
-      if (a == 2 || b == 4) then { Builtins.println("three") } else { Builtins.println("four") }
+      if (a == 2 || b == 4) then { Process.println("three") } else { Process.println("four") }
     }
   }
 
@@ -144,19 +144,19 @@ class Main {
       ".sam:9:33-9:37: true",
       ".sam:9:37-9:38: )",
       ".sam:9:39-9:43: then",
-      ".sam:9:44-9:52: Builtins",
-      ".sam:9:52-9:53: .",
-      ".sam:9:53-9:60: println",
-      ".sam:9:60-9:61: (",
-      ".sam:9:61-9:66: \"one\"",
-      ".sam:9:66-9:67: )",
-      ".sam:9:68-9:72: else",
-      ".sam:9:73-9:81: Builtins",
-      ".sam:9:81-9:82: .",
-      ".sam:9:82-9:89: println",
-      ".sam:9:89-9:90: (",
-      ".sam:9:90-9:95: \"two\"",
-      ".sam:9:95-9:96: )",
+      ".sam:9:44-9:51: Process",
+      ".sam:9:51-9:52: .",
+      ".sam:9:52-9:59: println",
+      ".sam:9:59-9:60: (",
+      ".sam:9:60-9:65: \"one\"",
+      ".sam:9:65-9:66: )",
+      ".sam:9:67-9:71: else",
+      ".sam:9:72-9:79: Process",
+      ".sam:9:79-9:80: .",
+      ".sam:9:80-9:87: println",
+      ".sam:9:87-9:88: (",
+      ".sam:9:88-9:93: \"two\"",
+      ".sam:9:93-9:94: )",
       ".sam:10:5-10:6: }",
       ".sam:10:7-10:11: else",
       ".sam:10:12-10:13: {",
@@ -186,22 +186,22 @@ class Main {
       ".sam:13:27-13:28: )",
       ".sam:13:29-13:33: then",
       ".sam:13:34-13:35: {",
-      ".sam:13:36-13:44: Builtins",
-      ".sam:13:44-13:45: .",
-      ".sam:13:45-13:52: println",
-      ".sam:13:52-13:53: (",
-      ".sam:13:53-13:60: \"three\"",
-      ".sam:13:60-13:61: )",
-      ".sam:13:62-13:63: }",
-      ".sam:13:64-13:68: else",
-      ".sam:13:69-13:70: {",
-      ".sam:13:71-13:79: Builtins",
-      ".sam:13:79-13:80: .",
-      ".sam:13:80-13:87: println",
-      ".sam:13:87-13:88: (",
-      ".sam:13:88-13:94: \"four\"",
-      ".sam:13:94-13:95: )",
-      ".sam:13:96-13:97: }",
+      ".sam:13:36-13:43: Process",
+      ".sam:13:43-13:44: .",
+      ".sam:13:44-13:51: println",
+      ".sam:13:51-13:52: (",
+      ".sam:13:52-13:59: \"three\"",
+      ".sam:13:59-13:60: )",
+      ".sam:13:61-13:62: }",
+      ".sam:13:63-13:67: else",
+      ".sam:13:68-13:69: {",
+      ".sam:13:70-13:77: Process",
+      ".sam:13:77-13:78: .",
+      ".sam:13:78-13:85: println",
+      ".sam:13:85-13:86: (",
+      ".sam:13:86-13:92: \"four\"",
+      ".sam:13:92-13:93: )",
+      ".sam:13:94-13:95: }",
       ".sam:14:5-14:6: }",
       ".sam:15:3-15:4: }",
       ".sam:17:1-17:2: }",
@@ -242,7 +242,7 @@ class Main {
   function oof(): int = 14
 
   function div(a: int, b: int): int =
-    if (b == 0) then Builtins.panic("Division by zero is illegal!") else a / b
+    if (b == 0) then Process.panic("Division by zero is illegal!") else a / b
 
   function nestedVal(): int = {
     val a: int = {
@@ -486,16 +486,16 @@ class Main {
       ".sam:32:14-32:15: 0",
       ".sam:32:15-32:16: )",
       ".sam:32:17-32:21: then",
-      ".sam:32:22-32:30: Builtins",
-      ".sam:32:30-32:31: .",
-      ".sam:32:31-32:36: panic",
-      ".sam:32:36-32:37: (",
-      ".sam:32:37-32:67: \"Division by zero is illegal!\"",
-      ".sam:32:67-32:68: )",
-      ".sam:32:69-32:73: else",
-      ".sam:32:74-32:75: a",
-      ".sam:32:76-32:77: /",
-      ".sam:32:78-32:79: b",
+      ".sam:32:22-32:29: Process",
+      ".sam:32:29-32:30: .",
+      ".sam:32:30-32:35: panic",
+      ".sam:32:35-32:36: (",
+      ".sam:32:36-32:66: \"Division by zero is illegal!\"",
+      ".sam:32:66-32:67: )",
+      ".sam:32:68-32:72: else",
+      ".sam:32:73-32:74: a",
+      ".sam:32:75-32:76: /",
+      ".sam:32:77-32:78: b",
       ".sam:34:3-34:11: function",
       ".sam:34:12-34:21: nestedVal",
       ".sam:34:21-34:22: (",

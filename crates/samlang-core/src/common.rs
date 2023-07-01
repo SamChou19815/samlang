@@ -172,6 +172,14 @@ pub(crate) mod well_known_pstrs {
 
   pub(crate) const DUMMY_MODULE: PStr = const_inline_pstr!(*b"DUMMY", 2);
   pub(crate) const STR_TYPE: PStr = const_inline_pstr!(*b"Str", 4);
+  pub(crate) const MAIN_TYPE: PStr = const_inline_pstr!(*b"Main", 3);
+  pub(crate) const MAIN_FN: PStr = const_inline_pstr!(*b"main", 3);
+  pub(crate) const PROCESS_TYPE: PStr = const_inline_pstr!(*b"Process", 0);
+  pub(crate) const CONCAT: PStr = const_inline_pstr!(*b"concat", 1);
+  pub(crate) const TO_INT: PStr = const_inline_pstr!(*b"toInt", 2);
+  pub(crate) const FROM_INT: PStr = const_inline_pstr!(*b"fromInt", 0);
+  pub(crate) const PRINTLN: PStr = const_inline_pstr!(*b"println", 0);
+  pub(crate) const PANIC: PStr = const_inline_pstr!(*b"panic", 2);
   pub(crate) const INIT: PStr = const_inline_pstr!(*b"init", 3);
   pub(crate) const THIS: PStr = const_inline_pstr!(*b"this", 3);
 
@@ -179,6 +187,8 @@ pub(crate) mod well_known_pstrs {
   pub(crate) const UNDERSCORE_THIS: PStr = const_inline_pstr!(*b"_this", 2);
   pub(crate) const UNDERSCORE_TMP: PStr = const_inline_pstr!(*b"_tmp", 3);
   pub(crate) const UNDERSCORE_STR: PStr = const_inline_pstr!(*b"_Str", 3);
+  pub(crate) const UNDERSCORE_GENERATED_FN: PStr = const_inline_pstr!(*b"_GenFn", 1);
+  pub(crate) const UNDERSCORE_GENERATED_TYPE: PStr = const_inline_pstr!(*b"_GenT", 2);
 
   pub(crate) const UPPER_A: PStr = const_inline_pstr!(*b"A", 6);
   pub(crate) const UPPER_B: PStr = const_inline_pstr!(*b"B", 6);
@@ -245,7 +255,7 @@ impl ModuleReference {
 
 enum StringStoredInHeap {
   Permanent(&'static str),
-  Temporary(String, /** marked */ bool),
+  Temporary(String, bool), // bool: marked
   Deallocated(Option<String>),
 }
 

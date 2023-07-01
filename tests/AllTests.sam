@@ -18,8 +18,8 @@ import { SortableListTest } from tests.SortableList;
 class TestCase(val name: Str, val runner: () -> unit) {
   method run(): unit = {
     val { name, runner } = this;
-    val _ = Builtins.println("========================================");
-    val _ = Builtins.println("Test Name: " :: name);
+    val _ = Process.println("========================================");
+    val _ = Process.println("Test Name: " :: name);
     val _ = runner();
   }
 }
@@ -46,6 +46,6 @@ class Main {
 
   function main(): unit = {
     val _ = Main.getTests().iter((test) -> test.run());
-    Builtins.println("========================================")
+    Process.println("========================================")
   }
 }

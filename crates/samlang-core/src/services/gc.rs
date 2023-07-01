@@ -300,7 +300,7 @@ mod tests {
 
         function div(a: int, b: int): int =
           if b == 0 then (
-            Builtins.panic("Division by zero is illegal!")
+            Process.panic("Division by zero is illegal!")
           ) else (
             a / b
           )
@@ -317,7 +317,7 @@ mod tests {
           a + -1
         }
 
-        function main(): unit = Builtins.println(Builtins.intToString(Main.identity(
+        function main(): unit = Process.println(Str.fromInt(Main.identity(
           Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
         )))
       }"#,

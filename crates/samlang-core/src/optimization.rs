@@ -1,8 +1,3 @@
-use crate::{
-  ast::mir::{Function, Sources},
-  Heap,
-};
-
 mod common_subexpression_elimination;
 mod conditional_constant_propagation;
 mod conditional_constant_propagation_tests;
@@ -44,8 +39,8 @@ pub(super) const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration =
   };
 
 fn optimize_function_for_one_round(
-  function: &mut Function,
-  heap: &mut Heap,
+  function: &mut crate::ast::mir::Function,
+  heap: &mut crate::common::Heap,
   configuration: &OptimizationConfiguration,
 ) {
   conditional_constant_propagation::optimize_function(function, heap);
@@ -62,8 +57,8 @@ fn optimize_function_for_one_round(
 }
 
 fn optimize_function_for_rounds(
-  function: &mut Function,
-  heap: &mut Heap,
+  function: &mut crate::ast::mir::Function,
+  heap: &mut crate::common::Heap,
   configuration: &OptimizationConfiguration,
 ) {
   for _ in 0..2 {
@@ -75,8 +70,8 @@ fn optimize_function_for_rounds(
 }
 
 fn optimize_functions_for_rounds(
-  functions: &mut [Function],
-  heap: &mut Heap,
+  functions: &mut [crate::ast::mir::Function],
+  heap: &mut crate::common::Heap,
   configuration: &OptimizationConfiguration,
 ) {
   for f in functions {
@@ -85,12 +80,12 @@ fn optimize_functions_for_rounds(
 }
 
 pub(super) fn optimize_sources(
-  heap: &mut Heap,
-  mut sources: Sources,
+  heap: &mut crate::common::Heap,
+  mut sources: crate::ast::mir::Sources,
   configuration: &OptimizationConfiguration,
-) -> Sources {
+) -> crate::ast::mir::Sources {
   for _ in 0..4 {
-    let Sources {
+    let crate::ast::mir::Sources {
       global_variables,
       closure_types,
       type_definitions,
@@ -101,8 +96,13 @@ pub(super) fn optimize_sources(
     if configuration.does_perform_inlining {
       functions = inlining::optimize_functions(functions, heap);
     }
-    sources =
-      Sources { global_variables, closure_types, type_definitions, main_function_names, functions };
+    sources = crate::ast::mir::Sources {
+      global_variables,
+      closure_types,
+      type_definitions,
+      main_function_names,
+      functions,
+    };
     unused_name_elimination::optimize_sources(&mut sources);
   }
   optimize_functions_for_rounds(&mut sources.functions, heap, configuration);
