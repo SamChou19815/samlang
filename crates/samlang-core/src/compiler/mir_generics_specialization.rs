@@ -1,6 +1,5 @@
 use super::hir_type_conversion::{
-  encode_name_after_generics_specialization, fn_type_application, solve_type_arguments,
-  type_application,
+  encode_name_after_generics_specialization, fn_type_application, type_application,
 };
 use crate::{
   ast::{hir, mir},
@@ -520,33 +519,16 @@ impl Rewriter {
       .iter()
       .map(|t| mir_to_hir_type(&self.rewrite_type(heap, t, generics_replacement_map)))
       .collect_vec();
-    let concrete_type = hir::IdType { name: id_type.name, type_arguments: concrete_type_hir_targs };
     let encoded_name = heap.alloc_string(encode_name_after_generics_specialization(
       heap,
       id_type.name,
-      &concrete_type.type_arguments,
+      &concrete_type_hir_targs,
     ));
     if !self.specialized_type_definition_names.contains(&encoded_name) {
       self.specialized_type_definition_names.insert(encoded_name);
-      if let Some(type_def) = self.original_type_defs.get(&concrete_type.name).cloned() {
-        let solved_targs_replacement_map: HashMap<PStr, hir::Type> = type_def
-          .type_parameters
-          .iter()
-          .cloned()
-          .zip(solve_type_arguments(
-            &type_def.type_parameters,
-            &concrete_type,
-            &hir::IdType {
-              name: concrete_type.name,
-              type_arguments: type_def
-                .type_parameters
-                .iter()
-                .cloned()
-                .map(hir::Type::new_id_no_targs)
-                .collect_vec(),
-            },
-          ))
-          .collect();
+      if let Some(type_def) = self.original_type_defs.get(&id_type.name).cloned() {
+        let solved_targs_replacement_map: HashMap<PStr, hir::Type> =
+          type_def.type_parameters.iter().cloned().zip(concrete_type_hir_targs).collect();
         let rewritten_mappings = match &type_def.mappings {
           hir::TypeDefinitionMappings::Struct(types) => mir::TypeDefinitionMappings::Struct(
             types
@@ -611,27 +593,11 @@ impl Rewriter {
       } else {
         let closure_def = self
           .original_closure_defs
-          .get(&concrete_type.name)
+          .get(&id_type.name)
           .cloned()
-          .expect(&format!("Missing {}", concrete_type.name.as_str(heap)));
-        let solved_targs_replacement_map: HashMap<PStr, hir::Type> = closure_def
-          .type_parameters
-          .iter()
-          .cloned()
-          .zip(solve_type_arguments(
-            &closure_def.type_parameters,
-            &concrete_type,
-            &hir::IdType {
-              name: concrete_type.name,
-              type_arguments: closure_def
-                .type_parameters
-                .iter()
-                .cloned()
-                .map(hir::Type::new_id_no_targs)
-                .collect_vec(),
-            },
-          ))
-          .collect();
+          .expect(&format!("Missing {}", id_type.name.as_str(heap)));
+        let solved_targs_replacement_map: HashMap<PStr, hir::Type> =
+          closure_def.type_parameters.iter().cloned().zip(concrete_type_hir_targs).collect();
         let rewritten_fn_type = self.rewrite_fn_type(
           heap,
           &fn_type_application(&closure_def.function_type, &solved_targs_replacement_map),
@@ -643,7 +609,7 @@ impl Rewriter {
         });
       }
     }
-    self.specialized_id_type_mappings.insert(encoded_name, concrete_type.name);
+    self.specialized_id_type_mappings.insert(encoded_name, id_type.name);
     mir::Type::Id(encoded_name)
   }
 
