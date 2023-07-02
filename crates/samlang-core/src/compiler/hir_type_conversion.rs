@@ -126,61 +126,6 @@ pub(super) fn collect_used_generic_types(
   collector
 }
 
-fn solve_type_arguments_visit(
-  generic_type_parameter_set: &HashSet<PStr>,
-  solved: &mut HashMap<PStr, Type>,
-  t1: &Type,
-  t2: &Type,
-) {
-  match (t1, t2) {
-    (Type::Int, Type::Int) => {}
-    (Type::Id(id1), _)
-      if id1.type_arguments.is_empty() && generic_type_parameter_set.contains(&id1.name) =>
-    {
-      solved.insert(id1.name, t2.clone());
-    }
-    (Type::Id(id1), Type::Id(id2)) => {
-      solve_type_arguments_visit_id(generic_type_parameter_set, solved, id1, id2)
-    }
-    _ => panic!(),
-  }
-}
-
-fn solve_type_arguments_visit_id(
-  generic_type_parameter_set: &HashSet<PStr>,
-  solved: &mut HashMap<PStr, Type>,
-  id1: &IdType,
-  id2: &IdType,
-) {
-  assert_eq!(id1.name, id2.name);
-  assert_eq!(id1.type_arguments.len(), id2.type_arguments.len());
-  for (a1, a2) in id1.type_arguments.iter().zip(&id2.type_arguments) {
-    solve_type_arguments_visit(generic_type_parameter_set, solved, a1, a2);
-  }
-}
-
-pub(super) fn solve_type_arguments(
-  generic_type_parameters: &Vec<PStr>,
-  specialized_type: &IdType,
-  parameterized_type_definition: &IdType,
-) -> Vec<Type> {
-  let mut generic_type_parameter_set = HashSet::new();
-  for tparam in generic_type_parameters {
-    generic_type_parameter_set.insert(*tparam);
-  }
-  let mut solved = HashMap::new();
-  solve_type_arguments_visit_id(
-    &generic_type_parameter_set,
-    &mut solved,
-    parameterized_type_definition,
-    specialized_type,
-  );
-  generic_type_parameters
-    .iter()
-    .map(|it| solved.remove(it).expect(&format!("Unsolved parameter <{}>", it.debug_string())))
-    .collect_vec()
-}
-
 pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Type>) -> Type {
   match type_ {
     Type::Int => Type::Int,
@@ -372,11 +317,7 @@ impl TypeLoweringManager {
 mod tests {
   use super::*;
   use crate::{
-    ast::{
-      hir::{INT_TYPE, STRING_TYPE},
-      source::test_builder,
-      Location, Reason,
-    },
+    ast::{hir::INT_TYPE, source::test_builder, Location, Reason},
     checker::type_::test_type_builder,
     common::well_known_pstrs,
   };
@@ -522,51 +463,6 @@ mod tests {
       .sorted()
       .collect_vec()
     );
-  }
-
-  #[should_panic]
-  #[test]
-  fn solve_type_arguments_panic_tests() {
-    solve_type_arguments(
-      &vec![],
-      &Type::new_id_unwrapped(well_known_pstrs::UPPER_A, vec![INT_TYPE]),
-      &Type::new_id_unwrapped(
-        well_known_pstrs::UPPER_A,
-        vec![Type::new_id_no_targs(well_known_pstrs::UPPER_B)],
-      ),
-    );
-  }
-
-  #[test]
-  fn solve_type_arguments_tests() {
-    let heap = &mut Heap::new();
-
-    let actual = solve_type_arguments(
-      &vec![well_known_pstrs::UPPER_A],
-      &Type::new_id_unwrapped(
-        heap.alloc_str_for_test("FF"),
-        vec![
-          INT_TYPE,
-          INT_TYPE,
-          Type::new_id(heap.alloc_str_for_test("Foo"), vec![STRING_TYPE]),
-          INT_TYPE,
-          Type::new_id_no_targs(well_known_pstrs::UPPER_B),
-          STRING_TYPE,
-        ],
-      ),
-      &Type::new_id_unwrapped(
-        heap.alloc_str_for_test("FF"),
-        vec![
-          INT_TYPE,
-          INT_TYPE,
-          Type::new_id(heap.alloc_str_for_test("Foo"), vec![STRING_TYPE]),
-          Type::new_id_no_targs(well_known_pstrs::UPPER_A),
-          Type::new_id_no_targs(well_known_pstrs::UPPER_B),
-          STRING_TYPE,
-        ],
-      ),
-    );
-    assert_eq!("int", actual.iter().map(|it| it.pretty_print(heap)).join(", "));
   }
 
   #[test]
