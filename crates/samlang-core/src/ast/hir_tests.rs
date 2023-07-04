@@ -32,6 +32,50 @@ mod tests {
       )
     )
     .is_empty());
+    assert!(!format!("{:?}", TypeName::new_for_test(well_known_pstrs::UPPER_A)).is_empty());
+    assert!(
+      TypeName::new_for_test(well_known_pstrs::UPPER_A)
+        <= TypeName::new_for_test(well_known_pstrs::UPPER_A)
+    );
+    assert_eq!(
+      TypeName::new_for_test(well_known_pstrs::UPPER_A)
+        .cmp(&TypeName::new_for_test(well_known_pstrs::UPPER_A)),
+      std::cmp::Ordering::Equal
+    );
+    assert_eq!(
+      TypeName::new_for_test(well_known_pstrs::UPPER_A).clone(),
+      TypeName::new_for_test(well_known_pstrs::UPPER_A)
+    );
+    assert!(
+      FunctionName {
+        type_name: TypeName::new_for_test(well_known_pstrs::UPPER_A),
+        fn_name: well_known_pstrs::LOWER_A
+      } <= FunctionName {
+        type_name: TypeName::new_for_test(well_known_pstrs::UPPER_A),
+        fn_name: well_known_pstrs::LOWER_A
+      }
+    );
+    assert_eq!(
+      FunctionName {
+        type_name: TypeName::new_for_test(well_known_pstrs::UPPER_A),
+        fn_name: well_known_pstrs::LOWER_A
+      },
+      FunctionName {
+        type_name: TypeName::new_for_test(well_known_pstrs::UPPER_A),
+        fn_name: well_known_pstrs::LOWER_A
+      }
+    );
+    assert_eq!(
+      FunctionName {
+        type_name: TypeName::new_for_test(well_known_pstrs::UPPER_A),
+        fn_name: well_known_pstrs::LOWER_A
+      }
+      .cmp(&FunctionName {
+        type_name: TypeName::new_for_test(well_known_pstrs::UPPER_A),
+        fn_name: well_known_pstrs::LOWER_A
+      }),
+      std::cmp::Ordering::Equal
+    );
     assert!(!format!("{:?}", Expression::StringName(well_known_pstrs::LOWER_A)).is_empty());
     assert!(!format!("{:?}", Operator::GE).is_empty());
     assert!(Operator::MINUS <= Operator::GE);
@@ -51,8 +95,11 @@ mod tests {
     Expression::StringName(well_known_pstrs::LOWER_A).convert_to_callee();
     ZERO.convert_to_callee();
     let call = Statement::Call {
-      callee: Callee::FunctionName(FunctionName {
-        name: well_known_pstrs::LOWER_A,
+      callee: Callee::FunctionName(FunctionNameExpression {
+        name: FunctionName {
+          type_name: TypeName::new_for_test(well_known_pstrs::UPPER_A),
+          fn_name: well_known_pstrs::LOWER_A,
+        },
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         type_arguments: vec![INT_TYPE],
       }),
@@ -126,8 +173,11 @@ mod tests {
     ));
     let mut hasher = DefaultHasher::new();
     Operator::DIV.hash(&mut hasher);
-    Callee::FunctionName(FunctionName::new(
-      heap.alloc_str_for_test("s"),
+    Callee::FunctionName(FunctionNameExpression::new(
+      FunctionName {
+        type_name: TypeName::new_for_test(well_known_pstrs::UPPER_A),
+        fn_name: well_known_pstrs::LOWER_A,
+      },
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
     ))
     .as_function_name();
@@ -146,7 +196,7 @@ mod tests {
       Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).debug_print(heap)
     );
     assert_eq!(
-      "(a: A<int, B>)",
+      "(a: DUMMY_A<int, DUMMY_B>)",
       Expression::var_name(
         well_known_pstrs::LOWER_A,
         Type::new_id(
@@ -158,7 +208,7 @@ mod tests {
       .debug_print(heap)
     );
     assert_eq!(
-      "(a: A<int>)",
+      "(a: DUMMY_A<int>)",
       Expression::var_name(
         well_known_pstrs::LOWER_A,
         Type::new_id(well_known_pstrs::UPPER_A, vec![(INT_TYPE)])
@@ -175,7 +225,7 @@ mod tests {
     assert_eq!(
       "object type A = [int, int]",
       TypeDefinition {
-        identifier: well_known_pstrs::UPPER_A,
+        name: TypeName { module_reference: None, type_name: well_known_pstrs::UPPER_A },
         type_parameters: vec![],
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
@@ -184,7 +234,7 @@ mod tests {
     assert_eq!(
       "variant type B<C> = [(D: [int]), (E: [int])]",
       TypeDefinition {
-        identifier: well_known_pstrs::UPPER_B,
+        name: TypeName { module_reference: None, type_name: well_known_pstrs::UPPER_B },
         type_parameters: vec![well_known_pstrs::UPPER_C],
         mappings: TypeDefinitionMappings::Enum(vec![
           (well_known_pstrs::UPPER_D, vec![INT_TYPE]),
@@ -216,8 +266,11 @@ mod tests {
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("closure"),
           closure_type: Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("CCC")),
-          function_name: FunctionName::new(
-            heap.alloc_str_for_test("foo"),
+          function_name: FunctionNameExpression::new(
+            FunctionName {
+              type_name: TypeName { module_reference: None, type_name: well_known_pstrs::UPPER_A },
+              fn_name: heap.alloc_str_for_test("foo"),
+            },
             Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           ),
           context: ZERO,
@@ -366,8 +419,11 @@ mod tests {
           e2: ZERO,
         },
         Statement::Call {
-          callee: Callee::FunctionName(FunctionName::new(
-            heap.alloc_str_for_test("h"),
+          callee: Callee::FunctionName(FunctionNameExpression::new(
+            FunctionName {
+              type_name: TypeName { module_reference: None, type_name: well_known_pstrs::UPPER_A },
+              fn_name: well_known_pstrs::LOWER_H,
+            },
             Type::new_fn_unwrapped(vec![], INT_TYPE),
           )),
           arguments: vec![Expression::var_name(
@@ -378,8 +434,11 @@ mod tests {
           return_collector: Some(heap.alloc_str_for_test("vibez")),
         },
         Statement::Call {
-          callee: Callee::FunctionName(FunctionName {
-            name: heap.alloc_str_for_test("stresso"),
+          callee: Callee::FunctionName(FunctionNameExpression {
+            name: FunctionName {
+              type_name: TypeName { module_reference: None, type_name: well_known_pstrs::EMPTY },
+              fn_name: heap.alloc_str_for_test("stresso"),
+            },
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
             type_arguments: vec![INT_TYPE],
           }),
@@ -417,9 +476,9 @@ mod tests {
     assert!(!format!("{:?}", stmt.clone()).is_empty());
     let expected = r#"let bar: int;
 if 0 {
-  let baz: FooBar = [meggo];
-  let baz: Enum = [0, meggo];
-  let closure: CCC = Closure { fun: (foo: (int) -> int), context: 0 };
+  let baz: DUMMY_FooBar = [meggo];
+  let baz: DUMMY_Enum = [0, meggo];
+  let closure: DUMMY_CCC = Closure { fun: (A$foo: (int) -> int), context: 0 };
   let dd = 0 < 0;
   let dd = 0 <= 0;
   let dd = 0 > 0;
@@ -462,10 +521,10 @@ if 0 {
   let dd = 0 * 0;
   let dd = 0 / 0;
   let dd = 0 % 0;
-  let vibez: int = h((big: FooBar));
-  stresso<int>((d: int));
+  let vibez: int = A$h((big: DUMMY_FooBar));
+  $stresso<int>((d: int));
   (d: int)((d: int));
-  let f: int = (big: FooBar)[0];
+  let f: int = (big: DUMMY_FooBar)[0];
   undefined = 0;
   break;
   bar = (b2: int);
@@ -484,20 +543,26 @@ if 0 {
       }
       .clone()],
       closure_types: vec![ClosureTypeDefinition {
-        identifier: well_known_pstrs::LOWER_C,
+        name: TypeName { module_reference: None, type_name: well_known_pstrs::UPPER_C },
         type_parameters: vec![],
         function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
       }
       .clone()],
       type_definitions: vec![TypeDefinition {
-        identifier: heap.alloc_str_for_test("Foo"),
+        name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
         type_parameters: vec![],
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .clone()],
-      main_function_names: vec![heap.alloc_str_for_test("ddd")],
+      main_function_names: vec![FunctionName {
+        type_name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
+        fn_name: heap.alloc_str_for_test("ddd"),
+      }],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("Bar"),
+        name: FunctionName {
+          type_name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
+          fn_name: heap.alloc_str_for_test("Bar"),
+        },
         parameters: vec![well_known_pstrs::LOWER_F],
         type_parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -517,14 +582,14 @@ if 0 {
     assert!(!format!("{sources1:?}").is_empty());
     let expected1 = r#"const dev_meggo = 'vibez';
 
-closure type c = () -> int
+closure type C = () -> int
 object type Foo = [int, int]
-function Bar(f: int): int {
-  let f: int = (big: FooBar)[0];
+function Foo$Bar(f: int): int {
+  let f: int = (big: DUMMY_FooBar)[0];
   return 0;
 }
 
-sources.mains = [ddd]"#;
+sources.mains = [Foo$ddd]"#;
     assert_eq!(expected1, sources1.debug_print(heap));
 
     let sources2 = Sources {
@@ -533,7 +598,10 @@ sources.mains = [ddd]"#;
       type_definitions: vec![],
       main_function_names: vec![],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("Bar"),
+        name: FunctionName {
+          type_name: TypeName { module_reference: None, type_name: heap.alloc_str_for_test("Foo") },
+          fn_name: heap.alloc_str_for_test("Bar"),
+        },
         parameters: vec![well_known_pstrs::LOWER_F],
         type_parameters: vec![well_known_pstrs::UPPER_A],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
@@ -541,7 +609,7 @@ sources.mains = [ddd]"#;
         return_value: ZERO,
       }],
     };
-    let expected2 = r#"function Bar<A>(f: int): int {
+    let expected2 = r#"function Foo$Bar<A>(f: int): int {
   return 0;
 }
 "#;

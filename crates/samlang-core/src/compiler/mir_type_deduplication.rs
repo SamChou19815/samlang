@@ -1,16 +1,14 @@
-use crate::{
-  ast::mir::{
-    Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-    FunctionType, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings, VariableName,
-  },
-  common::PStr,
+use crate::ast::mir::{
+  Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function,
+  FunctionNameExpression, FunctionType, Sources, Statement, Type, TypeDefinition,
+  TypeDefinitionMappings, TypeNameId, VariableName,
 };
 use itertools::Itertools;
 use std::collections::HashMap;
 
-type State = HashMap<PStr, PStr>;
+type State = HashMap<TypeNameId, TypeNameId>;
 
-fn rewrite_id_type_name(state: &State, id: PStr) -> PStr {
+fn rewrite_id_type_name(state: &State, id: TypeNameId) -> TypeNameId {
   if let Some(n) = state.get(&id) {
     *n
   } else {
@@ -39,8 +37,11 @@ fn rewrite_var_name(state: &State, VariableName { name, type_ }: VariableName) -
   VariableName { name, type_: rewrite_type(state, type_) }
 }
 
-fn rewrite_fn_name(state: &State, FunctionName { name, type_ }: FunctionName) -> FunctionName {
-  FunctionName { name, type_: rewrite_fn_type(state, type_) }
+fn rewrite_fn_name(
+  state: &State,
+  FunctionNameExpression { name, type_ }: FunctionNameExpression,
+) -> FunctionNameExpression {
+  FunctionNameExpression { name, type_: rewrite_fn_type(state, type_) }
 }
 
 fn rewrite_expr(state: &State, expr: Expression) -> Expression {
@@ -153,49 +154,52 @@ fn rewrite_function(
 }
 
 pub(super) fn deduplicate(
-  Sources { global_variables, closure_types, type_definitions, main_function_names, functions }: Sources,
+  Sources {
+    symbol_table,
+    global_variables,
+    closure_types,
+    type_definitions,
+    main_function_names,
+    functions,
+  }: Sources,
 ) -> Sources {
   let mut state = HashMap::new();
-  let mut closure_type_def_mapping = HashMap::<FunctionType, PStr>::new();
-  let mut type_def_mapping = HashMap::<TypeDefinitionMappings, PStr>::new();
+  let mut closure_type_def_mapping = HashMap::<FunctionType, TypeNameId>::new();
+  let mut type_def_mapping = HashMap::<TypeDefinitionMappings, TypeNameId>::new();
   for closure_type in closure_types {
-    let original_name = closure_type.identifier;
+    let original_name = closure_type.name;
     let canonical_name = if let Some(id) = closure_type_def_mapping.get(&closure_type.function_type)
     {
       *id
     } else {
-      let id = closure_type.identifier;
-      closure_type_def_mapping.insert(closure_type.function_type, id);
+      closure_type_def_mapping.insert(closure_type.function_type, original_name);
       original_name
     };
     state.insert(original_name, canonical_name);
   }
   for type_def in type_definitions {
-    let original_name = type_def.identifier;
+    let original_name = type_def.name;
     let canonical_name = if let Some(id) = type_def_mapping.get(&type_def.mappings) {
       *id
     } else {
-      let id = type_def.identifier;
-      type_def_mapping.insert(type_def.mappings, id);
+      type_def_mapping.insert(type_def.mappings, original_name);
       original_name
     };
     state.insert(original_name, canonical_name);
   }
 
   Sources {
+    symbol_table,
     global_variables,
     closure_types: closure_type_def_mapping
       .into_iter()
-      .map(|(t, identifier)| ClosureTypeDefinition {
-        identifier,
-        function_type: rewrite_fn_type(&state, t),
-      })
-      .sorted_by_key(|d| d.identifier)
+      .map(|(t, name)| ClosureTypeDefinition { name, function_type: rewrite_fn_type(&state, t) })
+      .sorted_by_key(|d| d.name)
       .collect_vec(),
     type_definitions: type_def_mapping
       .into_iter()
-      .map(|(mappings, identifier)| TypeDefinition {
-        identifier,
+      .map(|(mappings, name)| TypeDefinition {
+        name,
         mappings: match mappings {
           TypeDefinitionMappings::Struct(types) => TypeDefinitionMappings::Struct(
             types.into_iter().map(|t| rewrite_type(&state, t)).collect(),
@@ -204,8 +208,7 @@ pub(super) fn deduplicate(
             variants
               .into_iter()
               .map(|v| match v {
-                EnumTypeDefinition::Boxed(n, types) => EnumTypeDefinition::Boxed(
-                  n,
+                EnumTypeDefinition::Boxed(types) => EnumTypeDefinition::Boxed(
                   types.into_iter().map(|t| rewrite_type(&state, t)).collect(),
                 ),
                 EnumTypeDefinition::Unboxed(t) => {
@@ -217,7 +220,7 @@ pub(super) fn deduplicate(
           ),
         },
       })
-      .sorted_by_key(|d| d.identifier)
+      .sorted_by_key(|d| d.name)
       .collect_vec(),
     main_function_names,
     functions: functions.into_iter().map(|f| rewrite_function(&state, f)).collect_vec(),
@@ -228,7 +231,7 @@ pub(super) fn deduplicate(
 mod tests {
   use super::*;
   use crate::{
-    ast::mir::{INT_TYPE, ONE, STRING_TYPE, ZERO},
+    ast::mir::{FunctionName, SymbolTable, INT_TYPE, ONE, ZERO},
     common::well_known_pstrs,
     Heap,
   };
@@ -261,42 +264,51 @@ mod tests {
   #[test]
   fn boilterplate() {
     let heap = &mut Heap::new();
+    let table = &SymbolTable::new();
 
     assert_eq!(
       "() -> int",
-      rewrite_fn_type(&HashMap::new(), Type::new_fn_unwrapped(vec![], INT_TYPE)).pretty_print(heap)
+      rewrite_fn_type(&HashMap::new(), Type::new_fn_unwrapped(vec![], INT_TYPE))
+        .pretty_print(heap, table)
     );
   }
 
   #[test]
   fn working_test() {
     let heap = &mut Heap::new();
+    let mut table = SymbolTable::new();
 
     let sources = Sources {
       global_variables: vec![],
       closure_types: vec![
         ClosureTypeDefinition {
-          identifier: well_known_pstrs::UPPER_A,
+          name: table.create_type_name_for_test(well_known_pstrs::UPPER_A),
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
         ClosureTypeDefinition {
-          identifier: well_known_pstrs::UPPER_B,
+          name: table.create_type_name_for_test(well_known_pstrs::UPPER_B),
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
       ],
       type_definitions: vec![
         TypeDefinition {
-          identifier: well_known_pstrs::UPPER_C,
-          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
+          name: table.create_type_name_for_test(well_known_pstrs::UPPER_C),
+          mappings: TypeDefinitionMappings::Struct(vec![
+            INT_TYPE,
+            Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE)),
+          ]),
         },
         TypeDefinition {
-          identifier: well_known_pstrs::UPPER_D,
-          mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, STRING_TYPE]),
+          name: table.create_type_name_for_test(well_known_pstrs::UPPER_D),
+          mappings: TypeDefinitionMappings::Struct(vec![
+            INT_TYPE,
+            Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE)),
+          ]),
         },
         TypeDefinition {
-          identifier: well_known_pstrs::UPPER_E,
+          name: table.create_type_name_for_test(well_known_pstrs::UPPER_E),
           mappings: TypeDefinitionMappings::Enum(vec![
-            EnumTypeDefinition::Boxed(well_known_pstrs::UPPER_F, vec![INT_TYPE]),
+            EnumTypeDefinition::Boxed(vec![INT_TYPE]),
             EnumTypeDefinition::Unboxed(INT_TYPE),
             EnumTypeDefinition::Int,
           ]),
@@ -304,21 +316,21 @@ mod tests {
       ],
       main_function_names: vec![],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("main"),
+        name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IfElse {
           condition: ONE,
           s1: vec![
             Statement::binary(
-              heap.alloc_str_for_test("_"),
+              well_known_pstrs::UNDERSCORE,
               crate::ast::hir::Operator::PLUS,
               ZERO,
               ZERO,
             ),
             Statement::Call {
-              callee: Callee::FunctionName(FunctionName {
-                name: well_known_pstrs::LOWER_F,
+              callee: Callee::FunctionName(FunctionNameExpression {
+                name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
                 type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               }),
               arguments: vec![ZERO],
@@ -335,55 +347,59 @@ mod tests {
               return_collector: None,
             },
             Statement::IndexedAccess {
-              name: heap.alloc_str_for_test("_"),
-              type_: Type::Id(well_known_pstrs::UPPER_B),
+              name: well_known_pstrs::UNDERSCORE,
+              type_: Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_B)),
               pointer_expression: ZERO,
               index: 0,
             },
           ],
           s2: vec![
             Statement::Cast {
-              name: heap.alloc_str_for_test("_"),
+              name: well_known_pstrs::UNDERSCORE,
               type_: INT_TYPE,
               assigned_expression: ZERO,
             },
             Statement::StructInit {
-              struct_variable_name: heap.alloc_str_for_test("_"),
-              type_name: well_known_pstrs::UPPER_D,
+              struct_variable_name: well_known_pstrs::UNDERSCORE,
+              type_name: table.create_type_name_for_test(well_known_pstrs::UPPER_D),
               expression_list: vec![ZERO],
             },
             Statement::ClosureInit {
-              closure_variable_name: heap.alloc_str_for_test("_"),
-              closure_type_name: well_known_pstrs::UPPER_C,
-              function_name: FunctionName {
-                name: well_known_pstrs::LOWER_F,
-                type_: Type::new_fn_unwrapped(vec![Type::Id(well_known_pstrs::UPPER_E)], INT_TYPE),
+              closure_variable_name: well_known_pstrs::UNDERSCORE,
+              closure_type_name: table.create_type_name_for_test(well_known_pstrs::UPPER_C),
+              function_name: FunctionNameExpression {
+                name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+                type_: Type::new_fn_unwrapped(
+                  vec![Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_E))],
+                  INT_TYPE,
+                ),
               },
               context: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
             },
           ],
-          final_assignments: vec![(heap.alloc_str_for_test("_"), INT_TYPE, ZERO, ZERO)],
+          final_assignments: vec![(well_known_pstrs::UNDERSCORE, INT_TYPE, ZERO, ZERO)],
         }],
         return_value: ZERO,
       }],
+      symbol_table: table,
     };
     let actual = deduplicate(sources).debug_print(heap);
     assert_eq!(
-      r#"closure type A = () -> int
-object type C = [int, _Str]
-variant type E = [F(int), Unboxed(int), int]
-function main(): int {
+      r#"closure type _A = () -> int
+object type _C = [int, _Str]
+variant type _E = [Boxed(int), Unboxed(int), int]
+function __$main(): int {
   let _: int;
   if 1 {
     let _ = 0 + 0;
-    f(0);
+    __$f(0);
     (f: int)();
-    let _: A = 0[0];
+    let _: _A = 0[0];
     _ = 0;
   } else {
     let _ = 0 as int;
-    let _: C = [0];
-    let _: C = Closure { fun: (f: (E) -> int), context: (v: int) };
+    let _: _C = [0];
+    let _: _C = Closure { fun: (__$f: (_E) -> int), context: (v: int) };
     _ = 0;
   }
   return 0;

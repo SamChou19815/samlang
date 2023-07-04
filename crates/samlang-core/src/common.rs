@@ -180,6 +180,10 @@ pub(crate) mod well_known_pstrs {
   pub(crate) const FROM_INT: PStr = const_inline_pstr!(*b"fromInt", 0);
   pub(crate) const PRINTLN: PStr = const_inline_pstr!(*b"println", 0);
   pub(crate) const PANIC: PStr = const_inline_pstr!(*b"panic", 2);
+  pub(crate) const MALLOC_FN: PStr = const_inline_pstr!(*b"malloc", 1);
+  pub(crate) const FREE_FN: PStr = const_inline_pstr!(*b"free", 3);
+  pub(crate) const INC_REF_FN: PStr = const_inline_pstr!(*b"inc_ref", 0);
+  pub(crate) const DEC_REF_FN: PStr = const_inline_pstr!(*b"dec_ref", 0);
   pub(crate) const INIT: PStr = const_inline_pstr!(*b"init", 3);
   pub(crate) const THIS: PStr = const_inline_pstr!(*b"this", 3);
 
@@ -197,6 +201,9 @@ pub(crate) mod well_known_pstrs {
   pub(crate) const UPPER_E: PStr = const_inline_pstr!(*b"E", 6);
   pub(crate) const UPPER_F: PStr = const_inline_pstr!(*b"F", 6);
   pub(crate) const UPPER_G: PStr = const_inline_pstr!(*b"G", 6);
+  pub(crate) const UPPER_H: PStr = const_inline_pstr!(*b"H", 6);
+  pub(crate) const UPPER_I: PStr = const_inline_pstr!(*b"I", 6);
+  pub(crate) const UPPER_J: PStr = const_inline_pstr!(*b"J", 6);
   pub(crate) const UPPER_T: PStr = const_inline_pstr!(*b"T", 6);
 
   pub(crate) const LOWER_A: PStr = const_inline_pstr!(*b"a", 6);

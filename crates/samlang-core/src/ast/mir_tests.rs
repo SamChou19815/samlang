@@ -3,8 +3,8 @@ mod tests {
   use super::super::mir::*;
   use crate::{
     ast::hir::{GlobalVariable, Operator},
-    common::well_known_pstrs,
-    Heap,
+    common::{well_known_pstrs, Heap},
+    ModuleReference,
   };
   use pretty_assertions::assert_eq;
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
@@ -12,28 +12,32 @@ mod tests {
   #[test]
   fn boilterplate() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert!(INT_TYPE <= INT_TYPE);
     assert!(!format!("{:?}", INT_TYPE.cmp(&INT_TYPE)).is_empty());
     assert!(ZERO.as_int_literal().is_some());
     assert!(!format!(
       "{:?}",
-      Expression::var_name(well_known_pstrs::LOWER_A, Type::Id(well_known_pstrs::UPPER_A,))
+      Expression::var_name(
+        well_known_pstrs::LOWER_A,
+        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
+      )
     )
     .is_empty());
     assert!(!format!(
       "{:?}",
-      Expression::var_name(well_known_pstrs::LOWER_A, Type::Id(well_known_pstrs::UPPER_A,))
+      Expression::var_name(
+        well_known_pstrs::LOWER_A,
+        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
+      )
     )
     .is_empty());
     assert!(!format!("{:?}", Expression::StringName(well_known_pstrs::LOWER_A)).is_empty());
-    assert!(!format!("{:?}", ZERO.type_()).is_empty());
-    assert!(!format!("{:?}", Expression::StringName(well_known_pstrs::LOWER_A).type_().as_id())
-      .is_empty());
-    assert!(Expression::StringName(well_known_pstrs::LOWER_A).type_().as_id().is_some());
+    assert!(!format!("{:?}", INT_TYPE).is_empty());
     assert_eq!(
       "(s: int)",
-      VariableName::new(heap.alloc_str_for_test("s"), INT_TYPE).debug_print(heap)
+      VariableName::new(heap.alloc_str_for_test("s"), INT_TYPE).debug_print(heap, table)
     );
     assert!(!GenenalLoopVariable {
       name: well_known_pstrs::LOWER_A,
@@ -41,10 +45,9 @@ mod tests {
       initial_value: ZERO,
       loop_value: ZERO
     }
-    .pretty_print(heap)
+    .pretty_print(heap, table)
     .is_empty());
     assert!(!format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).is_empty());
-    Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).type_();
     Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).convert_to_callee();
     Expression::StringName(well_known_pstrs::LOWER_A).convert_to_callee();
     ZERO.convert_to_callee();
@@ -54,8 +57,8 @@ mod tests {
       .clone()
       .as_binary();
     let call = Statement::Call {
-      callee: Callee::FunctionName(FunctionName {
-        name: well_known_pstrs::LOWER_A,
+      callee: Callee::FunctionName(FunctionNameExpression {
+        name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       }),
       arguments: vec![],
@@ -67,8 +70,13 @@ mod tests {
     assert!(call.into_break().is_err());
 
     assert!(
-      Expression::var_name(well_known_pstrs::LOWER_A, Type::Id(well_known_pstrs::UPPER_A,))
-        == Expression::var_name(well_known_pstrs::LOWER_A, Type::Id(well_known_pstrs::UPPER_A,))
+      Expression::var_name(
+        well_known_pstrs::LOWER_A,
+        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
+      ) == Expression::var_name(
+        well_known_pstrs::LOWER_A,
+        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
+      )
     );
     assert!(
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
@@ -77,59 +85,84 @@ mod tests {
     let mut hasher = DefaultHasher::new();
     ZERO.hash(&mut hasher);
     Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).hash(&mut hasher);
-    Expression::var_name(well_known_pstrs::LOWER_A, Type::Id(well_known_pstrs::LOWER_A))
-      .hash(&mut hasher);
+    Expression::var_name(
+      well_known_pstrs::LOWER_A,
+      Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A)),
+    )
+    .hash(&mut hasher);
     Statement::binary_flexible_unwrapped(well_known_pstrs::LOWER_A, Operator::DIV, ZERO, ZERO);
-    Callee::FunctionName(FunctionName::new(
-      heap.alloc_str_for_test("s"),
-      FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
-    ))
+    Callee::FunctionName(FunctionNameExpression {
+      name: FunctionName::new_for_test(heap.alloc_str_for_test("s")),
+      type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
+    })
     .as_function_name();
     assert!(TypeDefinitionMappings::Struct(vec![]).as_struct().is_some());
+
+    let mut table = SymbolTable::new();
+    let mut type_name_id = table.create_type_name_for_test(well_known_pstrs::UPPER_A);
+    assert!(!format!("{:?}", type_name_id).is_empty());
+    assert!(!type_name_id.encoded(heap, &table).is_empty());
+    type_name_id =
+      table.create_simple_type_name(ModuleReference::root(), well_known_pstrs::UPPER_A);
+    type_name_id = table.derived_type_name_with_subtype_tag(type_name_id, 1);
+    assert!(type_name_id <= type_name_id);
+    assert_eq!(type_name_id.cmp(&type_name_id), std::cmp::Ordering::Equal);
   }
 
   #[test]
   fn print_types_and_expressions_tests() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
-    assert_eq!("int", INT_TYPE.pretty_print(heap));
-    assert_eq!("_Str", STRING_TYPE.pretty_print(heap));
-    assert_eq!("0", ZERO.clone().debug_print(heap));
+    assert_eq!("int", INT_TYPE.pretty_print(heap, table));
+    assert_eq!("0", ZERO.clone().debug_print(heap, table));
     ZERO.dump_to_string();
     Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).dump_to_string();
     Expression::StringName(well_known_pstrs::LOWER_A).dump_to_string();
     assert_eq!(
       "(a: int)",
-      Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).debug_print(heap)
+      Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).debug_print(heap, table)
     );
     assert_eq!(
-      "(a: A)",
-      Expression::var_name(well_known_pstrs::LOWER_A, Type::Id(well_known_pstrs::UPPER_A))
-        .debug_print(heap)
+      "(a: _A)",
+      Expression::var_name(
+        well_known_pstrs::LOWER_A,
+        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
+      )
+      .debug_print(heap, table)
     );
-    assert_eq!("a", Expression::StringName(well_known_pstrs::LOWER_A).clone().debug_print(heap));
+    assert_eq!(
+      "a",
+      Expression::StringName(well_known_pstrs::LOWER_A).clone().debug_print(heap, table)
+    );
   }
 
   #[test]
   fn print_type_definition_tests() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     let d1 = TypeDefinition {
-      identifier: well_known_pstrs::UPPER_A,
+      name: table.create_type_name_for_test(well_known_pstrs::UPPER_A),
       mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
     };
-    let ed1 = EnumTypeDefinition::Unboxed(Type::Id(well_known_pstrs::UPPER_D));
-    let ed2 = EnumTypeDefinition::Boxed(well_known_pstrs::UPPER_C, vec![INT_TYPE, INT_TYPE]);
+    let ed1 = EnumTypeDefinition::Unboxed(Type::Id(
+      table.create_type_name_for_test(well_known_pstrs::UPPER_D),
+    ));
+    let ed2 = EnumTypeDefinition::Boxed(vec![INT_TYPE, INT_TYPE]);
     let ed3 = EnumTypeDefinition::Int;
     assert!(ed1.eq(&ed1));
     assert!(ed2.eq(&ed2));
     assert!(ed3.eq(&ed3));
     let d2 = TypeDefinition {
-      identifier: well_known_pstrs::UPPER_B,
+      name: table.create_type_name_for_test(well_known_pstrs::UPPER_B),
       mappings: TypeDefinitionMappings::Enum(vec![ed1, ed2, ed3.clone()]),
     };
-    assert_eq!("object type A = [int, int]", d1.pretty_print(heap));
-    assert_eq!("variant type B = [Unboxed(D), C(int, int), int]", d2.pretty_print(heap));
+    assert_eq!("object type _A = [int, int]", d1.pretty_print(heap, table));
+    assert_eq!(
+      "variant type _B = [Unboxed(_D), Boxed(int, int), int]",
+      d2.pretty_print(heap, table)
+    );
     assert!(!format!("{:?}", d1).is_empty());
     assert!(!format!("{:?}", d2).is_empty());
   }
@@ -137,22 +170,23 @@ mod tests {
   #[test]
   fn print_statement_tests() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     let stmt = Statement::IfElse {
       condition: ZERO,
       s1: vec![
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("baz"),
-          type_name: heap.alloc_str_for_test("FooBar"),
+          type_name: table.create_type_name_for_test(heap.alloc_str_for_test("FooBar")),
           expression_list: vec![Expression::StringName(heap.alloc_str_for_test("meggo"))],
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("closure"),
-          closure_type_name: heap.alloc_str_for_test("CCC"),
-          function_name: FunctionName::new(
-            heap.alloc_str_for_test("foo"),
-            Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
-          ),
+          closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("CCC")),
+          function_name: FunctionNameExpression {
+            name: FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
+            type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+          },
           context: ZERO,
         },
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::LT, ZERO, ZERO),
@@ -182,7 +216,7 @@ mod tests {
         },
         Statement::While {
           loop_variables: vec![GenenalLoopVariable {
-            name: heap.alloc_str_for_test("_"),
+            name: well_known_pstrs::UNDERSCORE,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: ZERO,
@@ -193,7 +227,7 @@ mod tests {
             statements: vec![Statement::Break(ZERO)],
           }],
           break_collector: Some(VariableName {
-            name: heap.alloc_str_for_test("_"),
+            name: well_known_pstrs::UNDERSCORE,
             type_: INT_TYPE,
           }),
         },
@@ -211,20 +245,20 @@ mod tests {
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::DIV, ZERO, ZERO),
         Statement::binary(heap.alloc_str_for_test("dd"), Operator::MOD, ZERO, ZERO),
         Statement::Call {
-          callee: Callee::FunctionName(FunctionName::new(
-            heap.alloc_str_for_test("h"),
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          )),
+          callee: Callee::FunctionName(FunctionNameExpression {
+            name: FunctionName::new_for_test(heap.alloc_str_for_test("h")),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          }),
           arguments: vec![Expression::var_name(
             heap.alloc_str_for_test("big"),
-            Type::Id(heap.alloc_str_for_test("FooBar")),
+            Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
           )],
           return_type: INT_TYPE,
           return_collector: Some(heap.alloc_str_for_test("vibez")),
         },
         Statement::Call {
-          callee: Callee::FunctionName(FunctionName {
-            name: heap.alloc_str_for_test("stresso"),
+          callee: Callee::FunctionName(FunctionNameExpression {
+            name: FunctionName::new_for_test(heap.alloc_str_for_test("stresso")),
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           }),
           arguments: vec![Expression::var_name(well_known_pstrs::LOWER_D, INT_TYPE)],
@@ -245,7 +279,7 @@ mod tests {
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("big"),
-            Type::Id(heap.alloc_str_for_test("FooBar")),
+            Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
           ),
           index: 0,
         },
@@ -261,8 +295,8 @@ mod tests {
     assert!(!format!("{:?}", stmt.clone()).is_empty());
     let expected = r#"let bar: int;
 if 0 {
-  let baz: FooBar = [meggo];
-  let closure: CCC = Closure { fun: (foo: (int) -> int), context: 0 };
+  let baz: _FooBar = [meggo];
+  let closure: _CCC = Closure { fun: (__$foo: (int) -> int), context: 0 };
   let dd = 0 < 0;
   let dd = 0 <= 0;
   let dd = 0 > 0;
@@ -296,20 +330,21 @@ if 0 {
   let dd = 0 * 0;
   let dd = 0 / 0;
   let dd = 0 % 0;
-  let vibez: int = h((big: FooBar));
-  stresso((d: int));
+  let vibez: int = __$h((big: _FooBar));
+  __$stresso((d: int));
   (d: int)((d: int));
-  let f: int = (big: FooBar)[0];
+  let f: int = (big: _FooBar)[0];
   undefined = 0;
   break;
   bar = (b2: int);
 }"#;
-    assert_eq!(expected, stmt.debug_print(heap));
+    assert_eq!(expected, stmt.debug_print(heap, table));
   }
 
   #[test]
   fn print_sources_tests() {
     let heap = &mut Heap::new();
+    let mut table = SymbolTable::new();
 
     let sources1 = Sources {
       global_variables: vec![GlobalVariable {
@@ -318,18 +353,18 @@ if 0 {
       }
       .clone()],
       closure_types: vec![ClosureTypeDefinition {
-        identifier: well_known_pstrs::LOWER_C,
+        name: table.create_type_name_for_test(well_known_pstrs::UPPER_A),
         function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
       }
       .clone()],
       type_definitions: vec![TypeDefinition {
-        identifier: heap.alloc_str_for_test("Foo"),
+        name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
         mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
       }
       .clone()],
-      main_function_names: vec![heap.alloc_str_for_test("ddd")],
+      main_function_names: vec![FunctionName::new_for_test(heap.alloc_str_for_test("ddd"))],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("Bar"),
+        name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
         parameters: vec![well_known_pstrs::LOWER_F],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IndexedAccess {
@@ -337,41 +372,44 @@ if 0 {
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("big"),
-            Type::Id(heap.alloc_str_for_test("FooBar")),
+            Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("FooBar"))),
           ),
           index: 0,
         }],
         return_value: ZERO,
       }
       .clone()],
+      symbol_table: table,
     };
     assert!(!format!("{sources1:?}").is_empty());
     let expected1 = r#"const dev_meggo = 'vibez';
 
-closure type c = () -> int
-object type Foo = [int, int]
-function Bar(f: int): int {
-  let f: int = (big: FooBar)[0];
+closure type _A = () -> int
+object type _Foo = [int, int]
+function __$Bar(f: int): int {
+  let f: int = (big: _FooBar)[0];
   return 0;
 }
 
-sources.mains = [ddd]"#;
-    assert_eq!(expected1, sources1.debug_print(heap));
+sources.mains = [__$ddd]"#;
+    assert_eq!(expected1, sources1.debug_print(heap,));
 
+    let table = SymbolTable::new();
     let sources2 = Sources {
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
       main_function_names: vec![],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("Bar"),
+        name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
         parameters: vec![well_known_pstrs::LOWER_F],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![],
         return_value: ZERO,
       }],
+      symbol_table: table,
     };
-    let expected2 = r#"function Bar(f: int): int {
+    let expected2 = r#"function __$Bar(f: int): int {
   return 0;
 }
 "#;

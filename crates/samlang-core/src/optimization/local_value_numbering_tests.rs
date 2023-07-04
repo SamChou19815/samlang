@@ -3,8 +3,8 @@ mod tests {
   use crate::{
     ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
-      VariableName, INT_TYPE, ONE, ZERO,
+      Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
+      Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
     },
     common::{well_known_pstrs, Heap},
     optimization::local_value_numbering,
@@ -16,10 +16,11 @@ mod tests {
     stmts: Vec<Statement>,
     return_value: Expression,
     heap: &mut Heap,
+    table: &SymbolTable,
     expected: &str,
   ) {
     let mut f = Function {
-      name: well_known_pstrs::LOWER_A,
+      name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
       parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
@@ -28,8 +29,8 @@ mod tests {
     local_value_numbering::optimize_function(&mut f);
     let actual = format!(
       "{}\nreturn {};",
-      f.body.iter().map(|s| s.debug_print(heap)).join("\n"),
-      f.return_value.debug_print(heap)
+      f.body.iter().map(|s| s.debug_print(heap, table)).join("\n"),
+      f.return_value.debug_print(heap, table)
     );
     assert_eq!(expected, actual);
   }
@@ -37,6 +38,7 @@ mod tests {
   #[test]
   fn simple_statements_tests() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -77,7 +79,7 @@ mod tests {
         },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("s"),
-          type_name: heap.alloc_str_for_test("S"),
+          type_name: table.create_type_name_for_test(heap.alloc_str_for_test("S")),
           expression_list: vec![
             Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
@@ -86,18 +88,18 @@ mod tests {
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("s"),
-          closure_type_name: heap.alloc_str_for_test("S"),
-          function_name: FunctionName::new(
-            well_known_pstrs::LOWER_A,
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          ),
+          closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("S")),
+          function_name: FunctionNameExpression {
+            name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          },
           context: ZERO,
         },
         Statement::Call {
-          callee: Callee::FunctionName(FunctionName::new(
-            heap.alloc_str_for_test("fff"),
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          )),
+          callee: Callee::FunctionName(FunctionNameExpression {
+            name: FunctionName::new_for_test(heap.alloc_str_for_test("fff")),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          }),
           arguments: vec![
             Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("b1"), INT_TYPE),
@@ -115,13 +117,14 @@ mod tests {
       ],
       Expression::var_name(heap.alloc_str_for_test("ss"), INT_TYPE),
       heap,
+      table,
       r#"let i0: int = (a: int)[2];
 let b0 = (i0: int) + 3;
 let b3 = (i0: int) + (b0: int);
 let c1 = 0 as int;
-let s: S = [(i0: int), (b0: int), (b3: int)];
-let s: S = Closure { fun: (a: () -> int), context: 0 };
-fff((i0: int), (b0: int), (b3: int));
+let s: _S = [(i0: int), (b0: int), (b3: int)];
+let s: _S = Closure { fun: (__$a: () -> int), context: 0 };
+__$fff((i0: int), (b0: int), (b3: int));
 (fff: int)();
 return (ss: int);"#,
     );
@@ -130,6 +133,7 @@ return (ss: int);"#,
   #[test]
   fn if_else_tests() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -180,6 +184,7 @@ return (ss: int);"#,
       ],
       ZERO,
       heap,
+      table,
       r#"let i0: int = (a: int)[2];
 if 0 {
   let i3: int = (i0: int)[1];
@@ -238,6 +243,7 @@ return 0;"#,
       ],
       ZERO,
       heap,
+      table,
       r#"let i0: int = (a: int)[2];
 let bar: int;
 if 0 {
@@ -254,6 +260,7 @@ return 0;"#,
   #[test]
   fn while_tests() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![Statement::While {
@@ -299,6 +306,7 @@ return 0;"#,
       }],
       ZERO,
       heap,
+      table,
       r#"let n: int = 10;
 while (true) {
   let is_zero = (n: int) == 0;
@@ -360,6 +368,7 @@ return 0;"#,
       }],
       Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
       heap,
+      table,
       r#"let n: int = 10;
 let v: int;
 while (true) {

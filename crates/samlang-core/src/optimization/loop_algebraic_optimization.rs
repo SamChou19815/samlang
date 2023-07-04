@@ -147,7 +147,7 @@ pub(super) fn optimize(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::mir::{Expression, Statement, VariableName, INT_TYPE, ZERO},
+    ast::mir::{Expression, Statement, SymbolTable, VariableName, INT_TYPE, ZERO},
     common::{well_known_pstrs, Heap},
     optimization::loop_induction_analysis::{
       BasicInductionVariableWithLoopGuard, GeneralBasicInductionVariable, GuardOperator,
@@ -304,7 +304,7 @@ mod tests {
       super::optimize(&optimizable_while_loop, heap)
         .unwrap()
         .iter()
-        .map(|s| s.debug_print(heap))
+        .map(|s| s.debug_print(heap, &SymbolTable::new()))
         .join("\n")
     );
   }

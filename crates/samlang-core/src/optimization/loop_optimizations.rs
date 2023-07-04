@@ -230,11 +230,10 @@ mod tests {
   use crate::{
     ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
-      VariableName, INT_TYPE, ONE, ZERO,
+      Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
+      Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
     },
-    common::{well_known_pstrs, INVALID_PSTR},
-    Heap,
+    common::{well_known_pstrs, Heap, INVALID_PSTR},
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
@@ -246,7 +245,7 @@ mod tests {
   ) {
     let actual = super::optimize_while_statement_with_all_loop_optimizations(stmt, heap)
       .iter()
-      .map(|s| s.debug_print(heap))
+      .map(|s| s.debug_print(heap, &SymbolTable::new()))
       .join("\n");
     assert_eq!(expected, actual);
   }
@@ -258,7 +257,7 @@ mod tests {
     expected: &str,
   ) {
     let mut f = Function {
-      name: INVALID_PSTR,
+      name: FunctionName::new_for_test(INVALID_PSTR),
       parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
@@ -268,8 +267,8 @@ mod tests {
     super::super::conditional_constant_propagation::optimize_function(&mut f, heap);
     let actual = format!(
       "{}\nreturn {};",
-      f.body.iter().map(|s| s.debug_print(heap)).join("\n"),
-      f.return_value.debug_print(heap)
+      f.body.iter().map(|s| s.debug_print(heap, &SymbolTable::new())).join("\n"),
+      f.return_value.debug_print(heap, &SymbolTable::new())
     );
     assert_eq!(expected, actual);
   }
@@ -816,10 +815,10 @@ return (bc: int);"#,
             Expression::var_name(heap.alloc_str_for_test("t"), INT_TYPE),
           ),
           Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              well_known_pstrs::LOWER_F,
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: None,
@@ -846,7 +845,7 @@ while (true) {
     undefined = 0;
     break;
   }
-  f((j: int));
+  __$f((j: int));
   let _t4 = (i: int) + 2;
   let _t5 = (j: int) + 6;
   i = (_t4: int);

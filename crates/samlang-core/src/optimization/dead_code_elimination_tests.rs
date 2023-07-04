@@ -3,8 +3,8 @@ mod tests {
   use crate::{
     ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
-      VariableName, INT_TYPE, ONE, ZERO,
+      Callee, Expression, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable,
+      Statement, SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
     },
     common::{well_known_pstrs, Heap},
     optimization::dead_code_elimination,
@@ -17,10 +17,11 @@ mod tests {
     stmts: Vec<Statement>,
     return_value: Expression,
     heap: &mut Heap,
+    table: &SymbolTable,
     expected: &str,
   ) {
     let mut f = Function {
-      name: well_known_pstrs::LOWER_A,
+      name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
       parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
@@ -29,8 +30,8 @@ mod tests {
     dead_code_elimination::optimize_function(&mut f);
     let actual = format!(
       "{}\nreturn {};",
-      f.body.iter().map(|s| s.debug_print(heap)).join("\n"),
-      f.return_value.debug_print(heap)
+      f.body.iter().map(|s| s.debug_print(heap, table)).join("\n"),
+      f.return_value.debug_print(heap, table)
     );
     assert_eq!(expected, actual);
   }
@@ -38,6 +39,7 @@ mod tests {
   #[test]
   fn simple_test_1() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     let stmts = vec![
       Statement::binary(heap.alloc_str_for_test("u1"), Operator::DIV, ZERO, ONE),
@@ -52,7 +54,7 @@ mod tests {
       },
       Statement::StructInit {
         struct_variable_name: heap.alloc_str_for_test("s"),
-        type_name: heap.alloc_str_for_test("S"),
+        type_name: table.create_type_name_for_test(heap.alloc_str_for_test("S")),
         expression_list: vec![Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE)],
       },
       Statement::Cast {
@@ -61,10 +63,10 @@ mod tests {
         assigned_expression: Expression::var_name(heap.alloc_str_for_test("s"), INT_TYPE),
       },
       Statement::Call {
-        callee: Callee::FunctionName(FunctionName::new(
-          heap.alloc_str_for_test("ff"),
-          Type::new_fn_unwrapped(vec![], INT_TYPE),
-        )),
+        callee: Callee::FunctionName(FunctionNameExpression {
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
+          type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+        }),
         arguments: vec![Expression::var_name(heap.alloc_str_for_test("s"), INT_TYPE)],
         return_type: INT_TYPE,
         return_collector: None,
@@ -83,11 +85,12 @@ mod tests {
       stmts,
       Expression::var_name(heap.alloc_str_for_test("ii"), INT_TYPE),
       heap,
+      table,
       r#"let u1 = 0 / 1;
 let u2 = 0 % 1;
 let p = 0 + 1;
-let s: S = [(p: int)];
-ff((s: int));
+let s: _S = [(p: int)];
+__$ff((s: int));
 return (ii: int);"#,
     );
   }
@@ -95,6 +98,7 @@ return (ii: int);"#,
   #[test]
   fn simple_test_2() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -116,25 +120,25 @@ return (ii: int);"#,
         },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("s"),
-          type_name: heap.alloc_str_for_test("S"),
+          type_name: table.create_type_name_for_test(heap.alloc_str_for_test("S")),
           expression_list: vec![Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE)],
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("s"),
-          closure_type_name: heap.alloc_str_for_test("Id"),
-          function_name: FunctionName::new(
-            heap.alloc_str_for_test("closure"),
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          ),
+          closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("Id")),
+          function_name: FunctionNameExpression {
+            name: FunctionName::new_for_test(heap.alloc_str_for_test("closure")),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          },
           context: Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("s1"),
-          closure_type_name: heap.alloc_str_for_test("Id"),
-          function_name: FunctionName::new(
-            heap.alloc_str_for_test("closure"),
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          ),
+          closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("Id")),
+          function_name: FunctionNameExpression {
+            name: FunctionName::new_for_test(heap.alloc_str_for_test("closure")),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          },
           context: Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
         },
         Statement::Cast {
@@ -143,10 +147,10 @@ return (ii: int);"#,
           assigned_expression: Expression::var_name(heap.alloc_str_for_test("s1"), INT_TYPE),
         },
         Statement::Call {
-          callee: Callee::FunctionName(FunctionName::new(
-            heap.alloc_str_for_test("ff"),
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          )),
+          callee: Callee::FunctionName(FunctionNameExpression {
+            name: FunctionName::new_for_test(heap.alloc_str_for_test("ff")),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          }),
           arguments: vec![
             Expression::var_name(heap.alloc_str_for_test("i1"), INT_TYPE),
             Expression::var_name(heap.alloc_str_for_test("s1"), INT_TYPE),
@@ -158,13 +162,14 @@ return (ii: int);"#,
       ],
       ZERO,
       heap,
+      table,
       r#"let u1 = 0 / 1;
 let u2 = 0 % 1;
 let p = 0 + 1;
 let i1: int = (p: int)[3];
-let s1: Id = Closure { fun: (closure: () -> int), context: (b2: int) };
+let s1: _Id = Closure { fun: (__$closure: () -> int), context: (b2: int) };
 let s2 = (s1: int) as int;
-ff((i1: int), (s1: int), (s2: int));
+__$ff((i1: int), (s1: int), (s2: int));
 return 0;"#,
     );
   }
@@ -172,6 +177,7 @@ return 0;"#,
   #[test]
   fn if_else_test_1() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -179,19 +185,19 @@ return 0;"#,
         Statement::IfElse {
           condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("s1"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("s1")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: None,
           }],
           s2: vec![Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("s1"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("s1")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: None,
@@ -201,11 +207,12 @@ return 0;"#,
       ],
       ZERO,
       heap,
+      table,
       r#"let b = 0 == 1;
 if (b: int) {
-  s1();
+  __$s1();
 } else {
-  s1();
+  __$s1();
 }
 return 0;"#,
     );
@@ -214,6 +221,7 @@ return 0;"#,
   #[test]
   fn if_else_test_2() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -221,19 +229,19 @@ return 0;"#,
         Statement::IfElse {
           condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("s1"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("s1")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: Some(heap.alloc_str_for_test("a1")),
           }],
           s2: vec![Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("s1"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("s1")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: Some(heap.alloc_str_for_test("a2")),
@@ -248,13 +256,14 @@ return 0;"#,
       ],
       Expression::var_name(heap.alloc_str_for_test("ma"), INT_TYPE),
       heap,
+      table,
       r#"let b = 0 == 1;
 let ma: int;
 if (b: int) {
-  let a1: int = s1();
+  let a1: int = __$s1();
   ma = (a1: int);
 } else {
-  let a2: int = s1();
+  let a2: int = __$s1();
   ma = (a2: int);
 }
 return (ma: int);"#,
@@ -264,6 +273,7 @@ return (ma: int);"#,
   #[test]
   fn if_else_test_3() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -271,10 +281,10 @@ return (ma: int);"#,
         Statement::IfElse {
           condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("s1"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("s1")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: None,
@@ -295,9 +305,10 @@ return (ma: int);"#,
       ],
       ZERO,
       heap,
+      table,
       r#"let b = 0 == 1;
 if (b: int) {
-  s1();
+  __$s1();
 } else {
   (s1: int)();
 }
@@ -308,6 +319,7 @@ return 0;"#,
   #[test]
   fn if_else_test_4() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -315,19 +327,19 @@ return 0;"#,
         Statement::IfElse {
           condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
           s1: vec![Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("s1"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("s1")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: Some(heap.alloc_str_for_test("a1")),
           }],
           s2: vec![Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("s1"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("s1")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: Some(heap.alloc_str_for_test("a2")),
@@ -342,11 +354,12 @@ return 0;"#,
       ],
       ZERO,
       heap,
+      table,
       r#"let b = 0 == 1;
 if (b: int) {
-  s1();
+  __$s1();
 } else {
-  s1();
+  __$s1();
 }
 return 0;"#,
     );
@@ -355,6 +368,7 @@ return 0;"#,
   #[test]
   fn if_else_test_5() {
     let heap = &mut Heap::new();
+    let table = &SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -368,6 +382,7 @@ return 0;"#,
       ],
       ZERO,
       heap,
+      table,
       "\nreturn 0;",
     );
   }
@@ -375,6 +390,7 @@ return 0;"#,
   #[test]
   fn single_if_test() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![
@@ -387,6 +403,7 @@ return 0;"#,
       ],
       ZERO,
       heap,
+      table,
       "\nreturn 0;",
     );
   }
@@ -394,6 +411,7 @@ return 0;"#,
   #[test]
   fn while_test_1() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![Statement::While {
@@ -413,10 +431,10 @@ return 0;"#,
         ],
         statements: vec![
           Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("s1"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("s1")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
             return_collector: Some(heap.alloc_str_for_test("a2")),
@@ -445,16 +463,16 @@ return 0;"#,
               },
               Statement::StructInit {
                 struct_variable_name: heap.alloc_str_for_test("s"),
-                type_name: heap.alloc_str_for_test("S"),
+                type_name: table.create_type_name_for_test(heap.alloc_str_for_test("S")),
                 expression_list: vec![Expression::var_name(heap.alloc_str_for_test("p"), INT_TYPE)],
               },
               Statement::ClosureInit {
                 closure_variable_name: heap.alloc_str_for_test("s"),
-                closure_type_name: heap.alloc_str_for_test("Id"),
-                function_name: FunctionName::new(
-                  heap.alloc_str_for_test("closure"),
-                  Type::new_fn_unwrapped(vec![], INT_TYPE),
-                ),
+                closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("Id")),
+                function_name: FunctionNameExpression {
+                  name: FunctionName::new_for_test(heap.alloc_str_for_test("closure")),
+                  type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+                },
                 context: Expression::var_name(heap.alloc_str_for_test("b2"), INT_TYPE),
               },
             ],
@@ -476,9 +494,10 @@ return 0;"#,
       }],
       ZERO,
       heap,
+      table,
       r#"let n: int = 10;
 while (true) {
-  s1(0);
+  __$s1(0);
   (s1: int)();
   while (true) {
   }
@@ -499,6 +518,7 @@ return 0;"#,
   #[test]
   fn while_test_2() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![Statement::While {
@@ -533,6 +553,7 @@ return 0;"#,
       }],
       ZERO,
       heap,
+      table,
       r#"let n: int = 10;
 while (true) {
   let is_zero = (n: int) == 0;
@@ -549,6 +570,7 @@ return 0;"#,
   #[test]
   fn while_test_3() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![Statement::While {
@@ -568,6 +590,7 @@ return 0;"#,
       }],
       Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
       heap,
+      table,
       r#"let n: int = 10;
 let v: int;
 while (true) {
@@ -581,6 +604,7 @@ return (v: int);"#,
   #[test]
   fn while_test_4() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert_correctly_optimized(
       vec![Statement::While {
@@ -600,6 +624,7 @@ return (v: int);"#,
       }],
       Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
       heap,
+      table,
       r#"while (true) {
 }
 return (v: int);"#,

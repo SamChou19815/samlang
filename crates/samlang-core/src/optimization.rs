@@ -86,6 +86,7 @@ pub(super) fn optimize_sources(
 ) -> crate::ast::mir::Sources {
   for _ in 0..4 {
     let crate::ast::mir::Sources {
+      symbol_table,
       global_variables,
       closure_types,
       type_definitions,
@@ -97,6 +98,7 @@ pub(super) fn optimize_sources(
       functions = inlining::optimize_functions(functions, heap);
     }
     sources = crate::ast::mir::Sources {
+      symbol_table,
       global_variables,
       closure_types,
       type_definitions,
@@ -112,19 +114,20 @@ pub(super) fn optimize_sources(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::mir::{Function, Sources, Type, INT_TYPE, ZERO},
-    Heap,
+    ast::mir::{Function, FunctionName, Sources, SymbolTable, Type, INT_TYPE, ZERO},
+    common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
 
-  fn sources(heap: &mut Heap) -> Sources {
+  fn sources() -> Sources {
     Sources {
+      symbol_table: SymbolTable::new(),
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![heap.alloc_str_for_test("main")],
+      main_function_names: vec![FunctionName::new_for_test(well_known_pstrs::MAIN_FN)],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("main"),
+        name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],
@@ -136,18 +139,18 @@ mod tests {
   #[test]
   fn coverage_tests() {
     let heap = &mut Heap::new();
-    let common_expected = r#"function main(): int {
+    let common_expected = r#"function __$main(): int {
   return 0;
 }
 
-sources.mains = [main]"#;
+sources.mains = [__$main]"#;
 
-    let s = sources(heap);
+    let s = sources();
     assert_eq!(
       common_expected,
       super::optimize_sources(heap, s, &super::ALL_ENABLED_CONFIGURATION).debug_print(heap)
     );
-    let s = sources(heap);
+    let s = sources();
     assert_eq!(
       common_expected,
       super::optimize_sources(heap, s, &super::ALL_DISABLED_CONFIGURATION).debug_print(heap)

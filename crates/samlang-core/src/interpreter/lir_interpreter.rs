@@ -1,8 +1,8 @@
 use crate::{
   ast::{
-    common_names,
     hir::Operator,
     lir::{Expression, Function, Sources, Statement, INT_TYPE},
+    mir::FunctionName,
   },
   common::{Heap, PStr},
 };
@@ -14,7 +14,8 @@ struct Memory<'a> {
   malloc_end: usize,
   stacks: &'a mut Vec<HashMap<PStr, i32>>,
   string_id_to_string: HashMap<i32, String>,
-  global_names_to_address: HashMap<PStr, i32>,
+  global_str_names_to_address: HashMap<PStr, i32>,
+  global_fn_names_to_address: HashMap<FunctionName, i32>,
   println_collector: Vec<String>,
 }
 
@@ -92,9 +93,10 @@ impl<'a> Memory<'a> {
 
 fn eval_expr(mem: &mut Memory, expr: &Expression) -> i32 {
   match expr {
-    Expression::IntLiteral(i, _) => *i,
+    Expression::IntLiteral(i) => *i,
     Expression::Variable(n, _) => mem.read_from_stack(n),
-    Expression::Name(n, _) => *mem.global_names_to_address.get(n).expect(n.as_str(mem.heap)),
+    Expression::StringName(n) => *mem.global_str_names_to_address.get(n).expect(n.as_str(mem.heap)),
+    Expression::FnName(n, _) => *mem.global_fn_names_to_address.get(n).unwrap(),
   }
 }
 
@@ -234,33 +236,32 @@ fn eval_fun_call(
   callee: &Expression,
   arguments: &[Expression],
 ) -> i32 {
-  if let Expression::Name(s, _) = callee {
-    let name = s.as_str(mem.heap);
-    if name.eq(common_names::ENCODED_FN_NAME_FREE) {
+  if let Expression::FnName(name, _) = callee {
+    if name.eq(&FunctionName::BUILTIN_FREE) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 1);
       mem.free(argument_vs[0]);
       return 0;
-    } else if name.eq(&common_names::encoded_fn_name_string_to_int()) {
+    } else if name.eq(&FunctionName::STR_TO_INT) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 1);
       return mem.get_string(argument_vs[0]).parse::<i32>().unwrap();
-    } else if name.eq(&common_names::encoded_fn_name_int_to_string()) {
+    } else if name.eq(&FunctionName::STR_FROM_INT) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 2);
       return mem.add_string(argument_vs[1].to_string());
-    } else if name.eq(&common_names::encoded_fn_name_string_concat()) {
+    } else if name.eq(&FunctionName::STR_CONCAT) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 2);
       let s = format!("{}{}", mem.get_string(argument_vs[0]), mem.get_string(argument_vs[1]));
       return mem.add_string(s);
-    } else if name.eq(&common_names::encoded_fn_name_println()) {
+    } else if name.eq(&FunctionName::PROCESS_PRINTLN) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 2);
       let s = mem.get_string(argument_vs[1]).clone();
       mem.println_collector.push(s);
       return 0;
-    } else if name.eq(&common_names::encoded_fn_name_panic()) {
+    } else if name.eq(&FunctionName::PROCESS_PANIC) {
       let argument_vs = eval_arguments(mem, arguments);
       assert!(argument_vs.len() == 2);
       panic!("{}", mem.get_string(argument_vs[1]));
@@ -279,23 +280,24 @@ fn eval_fun_call(
   v
 }
 
-pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: PStr) -> String {
+pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: FunctionName) -> String {
   let program_heap = (&mut vec![1u8; 20000]) as &mut [u8];
   let mut stack = vec![];
   let mut string_id_to_string = HashMap::new();
   let mut id_to_functions = HashMap::new();
-  let mut global_names_to_address = HashMap::new();
+  let mut global_str_names_to_address = HashMap::new();
+  let mut global_fn_names_to_address = HashMap::new();
   let mut global_name_id = 0;
 
   for (string_id, v) in sources.global_variables.iter().enumerate() {
     let string_id = i32::try_from(string_id).unwrap();
     string_id_to_string.insert(string_id, v.content.as_str(heap).to_string());
     Memory::write_int(program_heap, global_name_id + 4, string_id);
-    global_names_to_address.insert(v.name, global_name_id);
+    global_str_names_to_address.insert(v.name, global_name_id);
     global_name_id += 8;
   }
   for f in &sources.functions {
-    global_names_to_address.insert(f.name, global_name_id);
+    assert!(global_fn_names_to_address.insert(f.name, global_name_id).is_none());
     id_to_functions.insert(global_name_id, f);
     global_name_id += 4;
   }
@@ -305,11 +307,12 @@ pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: PStr) -> St
     malloc_end: usize::try_from(global_name_id).unwrap(),
     stacks: &mut stack,
     string_id_to_string,
-    global_names_to_address,
+    global_str_names_to_address,
+    global_fn_names_to_address,
     println_collector: vec![],
   };
 
-  eval_fun_call(&mut mem, &id_to_functions, &Expression::Name(main_function, INT_TYPE), &[]);
+  eval_fun_call(&mut mem, &id_to_functions, &Expression::FnName(main_function, INT_TYPE), &[]);
 
   let mut sb = String::new();
   for line in mem.println_collector {
@@ -323,11 +326,11 @@ pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: PStr) -> St
 mod tests {
   use crate::{
     ast::{
-      common_names,
       hir::{GlobalVariable, Operator},
       lir::{
         Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ONE, ZERO,
       },
+      mir::{FunctionName, SymbolTable},
     },
     common::{well_known_pstrs, Heap},
   };
@@ -339,6 +342,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     let sources = Sources {
+      symbol_table: SymbolTable::new(),
       global_variables: vec![GlobalVariable {
         name: well_known_pstrs::UPPER_A,
         content: heap.alloc_str_for_test("Ouch"),
@@ -346,14 +350,11 @@ mod tests {
       type_definitions: vec![],
       main_function_names: vec![],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("main"),
+        name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
-          callee: Expression::Name(
-            heap.alloc_string(common_names::encoded_fn_name_panic()),
-            INT_TYPE,
-          ),
+          callee: Expression::FnName(FunctionName::PROCESS_PANIC, INT_TYPE),
           arguments: vec![ZERO, Expression::Variable(well_known_pstrs::UPPER_A, INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
@@ -361,9 +362,8 @@ mod tests {
         return_value: ZERO,
       }],
     };
-    let main_fn = heap.alloc_str_for_test("main");
 
-    super::run(heap, &sources, main_fn);
+    super::run(heap, &sources, FunctionName::new_for_test(well_known_pstrs::MAIN_FN));
   }
 
   fn assert_run_output(
@@ -372,16 +372,16 @@ mod tests {
     heap: &mut Heap,
     expected: &str,
   ) {
-    let fn_name = heap.alloc_str_for_test("main");
     let actual = super::run(
       heap,
       &Sources {
+        symbol_table: SymbolTable::new(),
         global_variables,
         type_definitions: vec![],
         main_function_names: vec![],
         functions,
       },
-      fn_name,
+      FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
     );
     assert_eq!(expected, actual);
   }
@@ -394,24 +394,18 @@ mod tests {
       vec![],
       vec![
         Function {
-          name: heap.alloc_str_for_test("pp"),
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("pp")),
           parameters: vec![heap.alloc_str_for_test("n")],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_int_to_string()),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::STR_FROM_INT, INT_TYPE),
               arguments: vec![Expression::Variable(heap.alloc_str_for_test("n"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("s")),
             },
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_panic()),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::PROCESS_PANIC, INT_TYPE),
               arguments: vec![Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
@@ -420,7 +414,7 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str_for_test("main"),
+          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
@@ -430,10 +424,7 @@ mod tests {
               expression_list: vec![ONE, ONE],
             },
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_FREE),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::BUILTIN_FREE, INT_TYPE),
               arguments: vec![Expression::Variable(heap.alloc_str_for_test("o"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
@@ -448,7 +439,10 @@ mod tests {
               condition: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               invert_condition: false,
               statements: vec![Statement::Call {
-                callee: Expression::Name(heap.alloc_str_for_test("pp"), INT_TYPE),
+                callee: Expression::FnName(
+                  FunctionName::new_for_test(heap.alloc_str_for_test("pp")),
+                  INT_TYPE,
+                ),
                 arguments: vec![Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
@@ -464,7 +458,10 @@ mod tests {
               condition: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
               invert_condition: false,
               statements: vec![Statement::Call {
-                callee: Expression::Name(heap.alloc_str_for_test("pp"), INT_TYPE),
+                callee: Expression::FnName(
+                  FunctionName::new_for_test(heap.alloc_str_for_test("pp")),
+                  INT_TYPE,
+                ),
                 arguments: vec![Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
@@ -496,49 +493,37 @@ mod tests {
       ],
       vec![
         Function {
-          name: heap.alloc_str_for_test("_"),
+          name: FunctionName::new_for_test(well_known_pstrs::UNDERSCORE),
           parameters: vec![heap.alloc_str_for_test("n")],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![],
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str_for_test("printlnInt"),
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("printlnInt")),
           parameters: vec![heap.alloc_str_for_test("n")],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_int_to_string()),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::STR_FROM_INT, INT_TYPE),
               arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("n"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("s")),
             },
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_string_to_int()),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::STR_TO_INT, INT_TYPE),
               arguments: vec![Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("s")),
             },
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_int_to_string()),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::STR_FROM_INT, INT_TYPE),
               arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("s")),
             },
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_println()),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
               arguments: vec![ZERO, Expression::Variable(heap.alloc_str_for_test("s"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("r")),
@@ -547,7 +532,7 @@ mod tests {
           return_value: Expression::Variable(heap.alloc_str_for_test("r"), INT_TYPE),
         },
         Function {
-          name: heap.alloc_str_for_test("main"),
+          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
@@ -673,11 +658,8 @@ mod tests {
               condition: ZERO,
               invert_condition: true,
               statements: vec![Statement::Call {
-                callee: Expression::Name(
-                  heap.alloc_string(common_names::encoded_fn_name_println()),
-                  INT_TYPE,
-                ),
-                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_B, INT_TYPE)],
+                callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
+                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_B)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -686,11 +668,8 @@ mod tests {
               condition: ZERO,
               invert_condition: false,
               statements: vec![Statement::Call {
-                callee: Expression::Name(
-                  heap.alloc_string(common_names::encoded_fn_name_println()),
-                  INT_TYPE,
-                ),
-                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_A, INT_TYPE)],
+                callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
+                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_A)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -698,20 +677,14 @@ mod tests {
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::Call {
-                callee: Expression::Name(
-                  heap.alloc_string(common_names::encoded_fn_name_println()),
-                  INT_TYPE,
-                ),
-                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_A, INT_TYPE)],
+                callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
+                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_A)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
               s2: vec![Statement::Call {
-                callee: Expression::Name(
-                  heap.alloc_string(common_names::encoded_fn_name_println()),
-                  INT_TYPE,
-                ),
-                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_B, INT_TYPE)],
+                callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
+                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_B)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -720,20 +693,14 @@ mod tests {
             Statement::IfElse {
               condition: ONE,
               s1: vec![Statement::Call {
-                callee: Expression::Name(
-                  heap.alloc_string(common_names::encoded_fn_name_println()),
-                  INT_TYPE,
-                ),
-                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_B, INT_TYPE)],
+                callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
+                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_B)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
               s2: vec![Statement::Call {
-                callee: Expression::Name(
-                  heap.alloc_string(common_names::encoded_fn_name_println()),
-                  INT_TYPE,
-                ),
-                arguments: vec![ZERO, Expression::Name(well_known_pstrs::UPPER_A, INT_TYPE)],
+                callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
+                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_A)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -799,28 +766,25 @@ mod tests {
               ),
             },
             Statement::Call {
-              callee: Expression::Name(heap.alloc_str_for_test("printlnInt"), INT_TYPE),
+              callee: Expression::FnName(
+                FunctionName::new_for_test(heap.alloc_str_for_test("printlnInt")),
+                INT_TYPE,
+              ),
               arguments: vec![Expression::Variable(heap.alloc_str_for_test("cast"), INT_TYPE)],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_string_concat()),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::STR_CONCAT, INT_TYPE),
               arguments: vec![
-                Expression::Name(well_known_pstrs::UPPER_A, INT_TYPE),
-                Expression::Name(well_known_pstrs::UPPER_B, INT_TYPE),
+                Expression::StringName(well_known_pstrs::UPPER_A),
+                Expression::StringName(well_known_pstrs::UPPER_B),
               ],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("hw_string")),
             },
             Statement::Call {
-              callee: Expression::Name(
-                heap.alloc_string(common_names::encoded_fn_name_println()),
-                INT_TYPE,
-              ),
+              callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
               arguments: vec![
                 ZERO,
                 Expression::Variable(heap.alloc_str_for_test("hw_string"), INT_TYPE),

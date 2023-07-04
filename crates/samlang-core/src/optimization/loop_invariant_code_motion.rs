@@ -136,8 +136,8 @@ mod tests {
   use crate::{
     ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, FunctionName, GenenalLoopVariable, Statement, Type, VariableName,
-      INT_TYPE, ONE, ZERO,
+      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
+      SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
     },
     common::well_known_pstrs,
     Heap,
@@ -148,6 +148,7 @@ mod tests {
   #[test]
   fn integration_test() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     let super::LoopInvariantCodeMotionOptimizationResult {
       hoisted_statements_before_while,
@@ -223,19 +224,19 @@ mod tests {
           Expression::int(6),
         ),
         Statement::Call {
-          callee: Callee::FunctionName(FunctionName::new(
-            well_known_pstrs::LOWER_F,
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          )),
+          callee: Callee::FunctionName(FunctionNameExpression {
+            name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          }),
           arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::Call {
-          callee: Callee::FunctionName(FunctionName::new(
-            well_known_pstrs::LOWER_F,
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          )),
+          callee: Callee::FunctionName(FunctionNameExpression {
+            name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          }),
           arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: Some(heap.alloc_str_for_test("fc")),
@@ -272,30 +273,30 @@ mod tests {
         ),
         Statement::ClosureInit {
           closure_variable_name: well_known_pstrs::LOWER_G,
-          closure_type_name: heap.alloc_str_for_test("I"),
-          function_name: FunctionName::new(
-            well_known_pstrs::LOWER_F,
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          ),
+          closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+          function_name: FunctionNameExpression {
+            name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          },
           context: Expression::var_name(heap.alloc_str_for_test("x"), INT_TYPE),
         },
         Statement::ClosureInit {
           closure_variable_name: heap.alloc_str_for_test("h"),
-          closure_type_name: heap.alloc_str_for_test("I"),
-          function_name: FunctionName::new(
-            well_known_pstrs::LOWER_F,
-            Type::new_fn_unwrapped(vec![], INT_TYPE),
-          ),
+          closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+          function_name: FunctionNameExpression {
+            name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+            type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+          },
           context: Expression::var_name(well_known_pstrs::LOWER_D, INT_TYPE),
         },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("kk"),
-          type_name: heap.alloc_str_for_test("I"),
+          type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
           expression_list: vec![ZERO],
         },
         Statement::StructInit {
           struct_variable_name: heap.alloc_str_for_test("kk2"),
-          type_name: heap.alloc_str_for_test("I"),
+          type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
           expression_list: vec![Expression::var_name(well_known_pstrs::LOWER_G, INT_TYPE)],
         },
         Statement::Cast {
@@ -327,13 +328,13 @@ mod tests {
     let optimized_stmts = hoisted_statements_before_while
       .into_iter()
       .chain(vec![Statement::While { loop_variables, statements: inner_stmts, break_collector }])
-      .map(|s| s.debug_print(heap))
+      .map(|s| s.debug_print(heap, table))
       .join("\n");
     assert_eq!(
       r#"let c = (a: int) - (b: int);
 let d: int = (c: int)[0];
-let h: I = Closure { fun: (f: () -> int), context: (d: int) };
-let kk: I = [0];
+let h: _I = Closure { fun: (__$f: () -> int), context: (d: int) };
+let kk: _I = [0];
 let l1 = 0 as int;
 let i: int = 0;
 let j: int = 0;
@@ -351,13 +352,13 @@ while (true) {
   let tmp_j = (j: int) + 3;
   let tmp_x = (i: int) * 5;
   let tmp_y = (tmp_x: int) + 6;
-  f((tmp_x: int));
-  let fc: int = f((tmp_x: int));
+  __$f((tmp_x: int));
+  let fc: int = __$f((tmp_x: int));
   let tmp_z = (tmp_x: int) + (tmp_y: int);
   let e: int = (x: int)[0];
   let f = (b: int) + (x: int);
-  let g: I = Closure { fun: (f: () -> int), context: (x: int) };
-  let kk2: I = [(g: int)];
+  let g: _I = Closure { fun: (__$f: () -> int), context: (x: int) };
+  let kk2: _I = [(g: int)];
   let l2 = (i: int) as int;
   let bad: int;
   if 0 {

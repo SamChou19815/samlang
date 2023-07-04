@@ -3,6 +3,7 @@ mod tests {
   use super::super::wasm::*;
   use crate::{
     ast::hir::Operator,
+    ast::mir::{FunctionName, SymbolTable},
     common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
@@ -17,9 +18,9 @@ mod tests {
         GlobalData { constant_pointer: 1024, bytes: vec![0, 0] },
         GlobalData { constant_pointer: 323, bytes: vec![3, 2] },
       ],
-      exported_functions: vec![heap.alloc_str_for_test("main")],
+      exported_functions: vec![FunctionName::new_for_test(well_known_pstrs::MAIN_FN)],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("main"),
+        name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
         parameters: vec![well_known_pstrs::LOWER_A, well_known_pstrs::LOWER_B],
         local_variables: vec![well_known_pstrs::LOWER_C, well_known_pstrs::LOWER_D],
         instructions: vec![
@@ -141,12 +142,12 @@ mod tests {
                 assigned: Box::new(InlineInstruction::Const(0)),
               }),
               Instruction::Inline(InlineInstruction::DirectCall(
-                heap.alloc_str_for_test("main"),
+                FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
                 vec![InlineInstruction::Const(0)],
               )),
               Instruction::Inline(InlineInstruction::IndirectCall {
                 function_index: Box::new(InlineInstruction::Const(0)),
-                type_string: heap.alloc_str_for_test("dff"),
+                type_string: Box::from("dff"),
                 arguments: vec![InlineInstruction::Const(0)],
               }),
             ],
@@ -166,8 +167,8 @@ mod tests {
 (data (i32.const 1024) "\00\00")
 (data (i32.const 323) "\03\02")
 (table $0 1 funcref)
-(elem $0 (i32.const 0) $main)
-(func $main (param $a i32) (param $b i32) (result i32)
+(elem $0 (i32.const 0) $__$main)
+(func $__$main (param $a i32) (param $b i32) (result i32)
   (local $c i32)
   (local $d i32)
   (if (i32.const 1) (then
@@ -200,7 +201,7 @@ mod tests {
       (i32.load offset=12 (i32.const 0))
       (i32.store (i32.const 0) (i32.const 0))
       (i32.store offset=12 (i32.const 0) (i32.const 0))
-      (call $main (i32.const 0))
+      (call $__$main (i32.const 0))
       (call_indirect $0 (type $dff) (i32.const 0) (i32.const 0))
     )
   )
@@ -208,8 +209,8 @@ mod tests {
     (i32.const 1)
   ))
 )
-(export "main" (func $main))
+(export "__$main" (func $__$main))
 "#;
-    assert_eq!(expected, module.pretty_print(heap));
+    assert_eq!(expected, module.pretty_print(heap, &SymbolTable::new()));
   }
 }

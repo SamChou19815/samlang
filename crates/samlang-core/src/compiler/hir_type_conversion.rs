@@ -1,8 +1,8 @@
 use crate::{
   ast::{
-    common_names::encode_samlang_type,
     hir::{
       ClosureTypeDefinition, FunctionType, IdType, Type, TypeDefinition, TypeDefinitionMappings,
+      TypeName,
     },
     source,
   },
@@ -55,16 +55,13 @@ impl TypeSynthesizer {
   ) -> ClosureTypeDefinition {
     let key = (function_type.clone(), type_parameters.clone());
     if let Some(existing_identifier) = self.reverse_function_map.get(&key) {
-      return self
-        .synthesized_closure_types
-        .get(existing_identifier)
-        .expect(&format!("Missing {}", existing_identifier.as_str(heap)))
-        .clone();
+      return self.synthesized_closure_types.get(existing_identifier).unwrap().clone();
     }
     let identifier = heap.alloc_string(format!("$SyntheticIDType{}", self.next_id));
+    let name = TypeName { module_reference: Some(ModuleReference::root()), type_name: identifier };
     self.next_id += 1;
     self.reverse_function_map.insert(key, identifier);
-    let definition = ClosureTypeDefinition { identifier, type_parameters, function_type };
+    let definition = ClosureTypeDefinition { name, type_parameters, function_type };
     self.synthesized_closure_types.insert(identifier, definition.clone());
     definition
   }
@@ -77,20 +74,14 @@ impl TypeSynthesizer {
   ) -> TypeDefinition {
     let key = (mappings.clone(), type_parameters.clone());
     if let Some(existing_identifier) = self.reverse_tuple_map.get(&key) {
-      return self
-        .synthesized_tuple_types
-        .get(existing_identifier)
-        .expect(&format!("Missing {}", existing_identifier.as_str(heap)))
-        .clone();
+      return self.synthesized_tuple_types.get(existing_identifier).unwrap().clone();
     }
     let identifier = heap.alloc_string(format!("$SyntheticIDType{}", self.next_id));
+    let name = TypeName { module_reference: Some(ModuleReference::root()), type_name: identifier };
     self.next_id += 1;
     self.reverse_tuple_map.insert(key, identifier);
-    let definition = TypeDefinition {
-      identifier,
-      type_parameters,
-      mappings: TypeDefinitionMappings::Struct(mappings),
-    };
+    let definition =
+      TypeDefinition { name, type_parameters, mappings: TypeDefinitionMappings::Struct(mappings) };
     self.synthesized_tuple_types.insert(identifier, definition.clone());
     definition
   }
@@ -103,11 +94,11 @@ fn collect_used_generic_types_visitor(
 ) {
   match type_ {
     Type::Int => {}
-    Type::Id(id) => {
-      if generic_types.contains(&id.name) && id.type_arguments.is_empty() {
-        collector.insert(id.name);
+    Type::Id(IdType { name, type_arguments }) => {
+      if name.module_reference.is_none() && generic_types.contains(&name.type_name) {
+        collector.insert(name.type_name);
       }
-      for t in &id.type_arguments {
+      for t in type_arguments {
         collect_used_generic_types_visitor(t, generic_types, collector);
       }
     }
@@ -130,12 +121,8 @@ pub(super) fn type_application(type_: &Type, replacement_map: &HashMap<PStr, Typ
   match type_ {
     Type::Int => Type::Int,
     Type::Id(id) => {
-      if id.type_arguments.is_empty() {
-        if let Some(t) = replacement_map.get(&id.name) {
-          t.clone()
-        } else {
-          Type::Id(id.clone())
-        }
+      if id.name.module_reference.is_none() {
+        replacement_map.get(&id.name.type_name).cloned().unwrap()
       } else {
         Type::Id(IdType {
           name: id.name,
@@ -164,35 +151,6 @@ pub(super) fn fn_type_application(
   }
 }
 
-fn encode_type_for_generics_specialization<'a>(heap: &'a Heap, type_: &'a Type) -> &'a str {
-  match type_ {
-    Type::Int => "int",
-    Type::Id(id) => {
-      assert!(
-        id.type_arguments.is_empty(),
-        "The identifier type argument should already be specialized."
-      );
-      id.name.as_str(heap)
-    }
-  }
-}
-
-pub(super) fn encode_name_after_generics_specialization(
-  heap: &Heap,
-  name: PStr,
-  type_arguments: &Vec<Type>,
-) -> String {
-  if type_arguments.is_empty() {
-    name.as_str(heap).to_string()
-  } else {
-    format!(
-      "{}_{}",
-      name.as_str(heap),
-      type_arguments.iter().map(|n| encode_type_for_generics_specialization(heap, n)).join("_")
-    )
-  }
-}
-
 pub(super) struct TypeLoweringManager {
   pub(super) generic_types: HashSet<PStr>,
   pub(super) type_synthesizer: TypeSynthesizer,
@@ -205,18 +163,18 @@ impl TypeLoweringManager {
       type_::Type::Primitive(_, _) => Type::Int,
       type_::Type::Nominal(id) => {
         let id_string = id.id;
-        if self.generic_types.contains(&id_string) {
-          Type::new_id_no_targs(id_string)
-        } else {
-          Type::new_id(
-            heap.alloc_string(encode_samlang_type(heap, &id.module_reference, id_string)),
-            id.type_arguments.iter().map(|it| self.lower_source_type(heap, it)).collect_vec(),
-          )
-        }
+        Type::Id(IdType {
+          name: TypeName { module_reference: Some(id.module_reference), type_name: id_string },
+          type_arguments: id
+            .type_arguments
+            .iter()
+            .map(|it| self.lower_source_type(heap, it))
+            .collect(),
+        })
       }
       type_::Type::Generic(_, id) => {
         debug_assert!(self.generic_types.contains(id));
-        Type::new_id_no_targs(*id)
+        Type::new_generic_type(*id)
       }
       type_::Type::Fn(f) => {
         let rewritten_function_type = Type::new_fn_unwrapped(
@@ -228,13 +186,13 @@ impl TypeLoweringManager {
             .into_iter()
             .sorted(),
         );
-        let type_args = type_parameters.iter().map(|it| Type::new_id_no_targs(*it)).collect_vec();
+        let type_args = type_parameters.iter().map(|it| Type::new_generic_type(*it)).collect_vec();
         let closure_type_definition = self.type_synthesizer.synthesize_closure_type(
           heap,
           rewritten_function_type,
           type_parameters,
         );
-        Type::new_id(closure_type_definition.identifier, type_args)
+        Type::Id(IdType { name: closure_type_definition.name, type_arguments: type_args })
       }
     }
   }
@@ -263,7 +221,7 @@ impl TypeLoweringManager {
     );
     match source_type_def {
       source::TypeDefinition::Struct { loc: _, fields } => TypeDefinition {
-        identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
+        name: TypeName { module_reference: Some(*module_reference), type_name: identifier },
         type_parameters,
         mappings: TypeDefinitionMappings::Struct(
           fields
@@ -275,7 +233,7 @@ impl TypeLoweringManager {
         ),
       },
       source::TypeDefinition::Enum { loc: _, variants } => TypeDefinition {
-        identifier: heap.alloc_string(encode_samlang_type(heap, module_reference, identifier)),
+        name: TypeName { module_reference: Some(*module_reference), type_name: identifier },
         type_parameters,
         mappings: TypeDefinitionMappings::Enum(
           variants
@@ -332,70 +290,70 @@ mod tests {
     let c = well_known_pstrs::UPPER_C;
 
     assert_eq!(
-      "$SyntheticIDType0",
+      "_$SyntheticIDType0",
       synthesizer
         .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
-        .identifier
-        .as_str(heap),
+        .name
+        .pretty_print(heap),
     );
     assert_eq!(
-      "$SyntheticIDType1",
+      "_$SyntheticIDType1",
       synthesizer
         .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], vec![])
-        .identifier
-        .as_str(heap),
+        .name
+        .pretty_print(heap),
     );
 
     assert_eq!(
-      "$SyntheticIDType0",
+      "_$SyntheticIDType0",
       synthesizer
         .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(a, vec![INT_TYPE])], vec![])
-        .identifier
-        .as_str(heap),
+        .name
+        .pretty_print(heap),
     );
     assert_eq!(
-      "$SyntheticIDType1",
+      "_$SyntheticIDType1",
       synthesizer
         .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(b, vec![INT_TYPE])], vec![])
-        .identifier
-        .as_str(heap),
+        .name
+        .pretty_print(heap),
     );
 
     assert_eq!(
-      "$SyntheticIDType2",
+      "_$SyntheticIDType2",
       synthesizer
         .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], INT_TYPE), vec![])
-        .identifier
-        .as_str(heap),
+        .name
+        .pretty_print(heap),
     );
     assert_eq!(
-      "$SyntheticIDType2",
+      "_$SyntheticIDType2",
       synthesizer
         .synthesize_closure_type(heap, Type::new_fn_unwrapped(vec![], INT_TYPE), vec![])
-        .identifier
-        .as_str(heap),
+        .name
+        .pretty_print(heap),
     );
 
     assert_eq!(
-      "$SyntheticIDType3",
+      "_$SyntheticIDType3",
       synthesizer
         .synthesize_tuple_type(heap, vec![INT_TYPE, Type::new_id(c, vec![INT_TYPE])], vec![a])
-        .identifier
-        .as_str(heap),
+        .name
+        .pretty_print(heap),
     );
 
     let SynthesizedTypes { closure_types, tuple_types } = synthesizer.synthesized_types();
 
     assert_eq!(
       vec![
-        "object type $SyntheticIDType0 = [int, A<int>]",
-        "object type $SyntheticIDType1 = [int, B<int>]",
-        "object type $SyntheticIDType3<A> = [int, C<int>]"
+        "object type _$SyntheticIDType0 = [int, DUMMY_A<int>]",
+        "object type _$SyntheticIDType1 = [int, DUMMY_B<int>]",
+        "object type _$SyntheticIDType3<A> = [int, DUMMY_C<int>]"
       ],
       tuple_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
     assert_eq!(
-      vec!["closure type $SyntheticIDType2 = () -> int"],
+      vec!["closure type _$SyntheticIDType2 = () -> int"],
       closure_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
   }
@@ -417,7 +375,7 @@ mod tests {
     assert_eq!(
       vec![well_known_pstrs::UPPER_A],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(well_known_pstrs::UPPER_A)),
+        &Type::new_fn_unwrapped(vec![], Type::new_generic_type(well_known_pstrs::UPPER_A)),
         &generic_types,
       )
       .into_iter()
@@ -427,7 +385,7 @@ mod tests {
     assert_eq!(
       vec![well_known_pstrs::UPPER_B],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_id_no_targs(well_known_pstrs::UPPER_B)),
+        &Type::new_fn_unwrapped(vec![], Type::new_generic_type(well_known_pstrs::UPPER_B)),
         &generic_types,
       )
       .into_iter()
@@ -438,8 +396,8 @@ mod tests {
       vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
       collect_used_generic_types(
         &Type::new_fn_unwrapped(
-          vec![Type::new_id_no_targs(well_known_pstrs::UPPER_B)],
-          Type::new_id_no_targs(well_known_pstrs::UPPER_A)
+          vec![Type::new_generic_type(well_known_pstrs::UPPER_B)],
+          Type::new_generic_type(well_known_pstrs::UPPER_A)
         ),
         &generic_types,
       )
@@ -454,7 +412,7 @@ mod tests {
           vec![],
           Type::new_id(
             well_known_pstrs::UPPER_A,
-            vec![Type::new_id_no_targs(well_known_pstrs::UPPER_B)]
+            vec![Type::new_generic_type(well_known_pstrs::UPPER_B)]
           )
         ),
         &generic_types,
@@ -472,7 +430,7 @@ mod tests {
     assert_eq!("int", type_application(&INT_TYPE, &HashMap::new()).pretty_print(heap));
 
     assert_eq!(
-      "A<int>",
+      "DUMMY_A<int>",
       type_application(
         &Type::new_id(well_known_pstrs::UPPER_A, vec![INT_TYPE]),
         &HashMap::from([(well_known_pstrs::UPPER_A, INT_TYPE)])
@@ -480,7 +438,7 @@ mod tests {
       .pretty_print(heap)
     );
     assert_eq!(
-      "A",
+      "DUMMY_A",
       type_application(
         &Type::new_id_no_targs(well_known_pstrs::UPPER_A),
         &HashMap::from([(well_known_pstrs::UPPER_B, INT_TYPE)])
@@ -490,7 +448,7 @@ mod tests {
     assert_eq!(
       "int",
       type_application(
-        &Type::new_id_no_targs(well_known_pstrs::UPPER_A),
+        &Type::new_generic_type(well_known_pstrs::UPPER_A),
         &HashMap::from([(well_known_pstrs::UPPER_A, INT_TYPE)])
       )
       .pretty_print(heap)
@@ -500,8 +458,8 @@ mod tests {
       "(int) -> int",
       fn_type_application(
         &Type::new_fn_unwrapped(
-          vec![Type::new_id_no_targs(well_known_pstrs::UPPER_A)],
-          Type::new_id_no_targs(well_known_pstrs::UPPER_B)
+          vec![Type::new_generic_type(well_known_pstrs::UPPER_A)],
+          Type::new_generic_type(well_known_pstrs::UPPER_B)
         ),
         &HashMap::from([
           (well_known_pstrs::UPPER_A, INT_TYPE),
@@ -509,29 +467,6 @@ mod tests {
         ])
       )
       .pretty_print(heap)
-    );
-  }
-
-  #[should_panic]
-  #[test]
-  fn encode_name_after_generics_specialization_panic_test() {
-    let heap = &mut Heap::new();
-    let s = well_known_pstrs::LOWER_A;
-    let a = well_known_pstrs::UPPER_A;
-
-    encode_name_after_generics_specialization(heap, s, &vec![Type::new_id(a, vec![INT_TYPE])]);
-  }
-
-  #[test]
-  fn encode_name_after_generics_specialization_tests() {
-    let heap = &mut Heap::new();
-    let a = well_known_pstrs::UPPER_A;
-    let b = well_known_pstrs::UPPER_B;
-
-    assert_eq!("A", encode_name_after_generics_specialization(heap, a, &vec![]));
-    assert_eq!(
-      "A_int_B",
-      encode_name_after_generics_specialization(heap, a, &vec![INT_TYPE, Type::new_id_no_targs(b)])
     );
   }
 
@@ -574,9 +509,9 @@ mod tests {
       generic_types: HashSet::from([heap.alloc_str_for_test("T")]),
       type_synthesizer: manager.type_synthesizer,
     };
-    assert_eq!("$SyntheticIDType0<T>", {
+    assert_eq!("_$SyntheticIDType0<T>", {
       let t = builder.fun_type(
-        vec![builder.simple_nominal_type(heap.alloc_str_for_test("T")), builder.bool_type()],
+        vec![builder.generic_type(heap.alloc_str_for_test("T")), builder.bool_type()],
         builder.int_type(),
       );
       manager2.lower_source_type(heap, &t).pretty_print(heap)
@@ -586,7 +521,7 @@ mod tests {
       manager2.type_synthesizer.synthesized_types();
     assert!(tuple_types.is_empty());
     assert_eq!(
-      vec!["closure type $SyntheticIDType0<T> = (T, int) -> int"],
+      vec!["closure type _$SyntheticIDType0<T> = (T, int) -> int"],
       closure_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
   }
@@ -607,7 +542,7 @@ mod tests {
           name: source::Id::from(well_known_pstrs::LOWER_A),
           annotation: annot_builder.fn_annot(
             vec![annot_builder.fn_annot(
-              vec![annot_builder.simple_id_annot(well_known_pstrs::UPPER_A)],
+              vec![annot_builder.generic_annot(well_known_pstrs::UPPER_A)],
               annot_builder.bool_annot(),
             )],
             annot_builder.bool_annot(),
@@ -618,7 +553,7 @@ mod tests {
           name: source::Id::from(well_known_pstrs::LOWER_B),
           annotation: annot_builder.fn_annot(
             vec![annot_builder.fn_annot(
-              vec![annot_builder.simple_id_annot(well_known_pstrs::UPPER_A)],
+              vec![annot_builder.generic_annot(well_known_pstrs::UPPER_A)],
               annot_builder.bool_annot(),
             )],
             annot_builder.bool_annot(),
@@ -634,15 +569,15 @@ mod tests {
       manager.type_synthesizer.synthesized_types();
     assert_eq!(
       vec![
-        "closure type $SyntheticIDType0<A> = (A) -> int",
-        "closure type $SyntheticIDType1<A> = ($SyntheticIDType0<A>) -> int",
+        "closure type _$SyntheticIDType0<A> = (A) -> int",
+        "closure type _$SyntheticIDType1<A> = (_$SyntheticIDType0<A>) -> int",
       ],
       closure_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
 
     tuple_types.push(type_def);
     assert_eq!(
-      vec!["object type _Foo<A> = [$SyntheticIDType1<A>, $SyntheticIDType1<A>]"],
+      vec!["object type _Foo<A> = [_$SyntheticIDType1<A>, _$SyntheticIDType1<A>]"],
       tuple_types.iter().map(|it| it.pretty_print(heap)).collect_vec()
     );
   }
@@ -671,6 +606,6 @@ mod tests {
       &builder.bool_type(),
     );
     assert!(tparams2.is_empty());
-    assert_eq!("($SyntheticIDType0) -> int", f2.pretty_print(heap));
+    assert_eq!("(_$SyntheticIDType0) -> int", f2.pretty_print(heap));
   }
 }
