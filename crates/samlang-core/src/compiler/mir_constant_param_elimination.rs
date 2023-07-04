@@ -1,7 +1,7 @@
 use crate::{
   ast::mir::{
-    Binary, Callee, Expression, Function, FunctionName, FunctionType, Sources, Statement,
-    VariableName,
+    Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
+    Sources, Statement, VariableName,
   },
   common::PStr,
 };
@@ -144,7 +144,7 @@ fn collect_def_function_usages_stmt(
 }
 
 fn collect_global_usages_stmts(
-  state: &mut HashMap<PStr, FunctionAnalysisState>,
+  state: &mut HashMap<FunctionName, FunctionAnalysisState>,
   stmts: &[Statement],
 ) {
   for stmt in stmts {
@@ -152,7 +152,10 @@ fn collect_global_usages_stmts(
   }
 }
 
-fn collect_global_usages_stmt(state: &mut HashMap<PStr, FunctionAnalysisState>, stmt: &Statement) {
+fn collect_global_usages_stmt(
+  state: &mut HashMap<FunctionName, FunctionAnalysisState>,
+  stmt: &Statement,
+) {
   match stmt {
     Statement::Binary(_)
     | Statement::IndexedAccess { .. }
@@ -182,7 +185,7 @@ fn collect_global_usages_stmt(state: &mut HashMap<PStr, FunctionAnalysisState>, 
       state.insert(function_name.name, FunctionAnalysisState::Unoptimizable);
     }
     Statement::Call {
-      callee: Callee::FunctionName(FunctionName { name: fn_name, type_: _ }),
+      callee: Callee::FunctionName(FunctionNameExpression { name: fn_name, type_: _ }),
       arguments,
       return_type: _,
       return_collector: _,
@@ -203,7 +206,7 @@ fn collect_global_usages_stmt(state: &mut HashMap<PStr, FunctionAnalysisState>, 
   }
 }
 
-fn collect_all_usages(sources: &Sources) -> HashMap<PStr, FunctionAnalysisState> {
+fn collect_all_usages(sources: &Sources) -> HashMap<FunctionName, FunctionAnalysisState> {
   let mut state = HashMap::new();
   for f in &sources.functions {
     let mut local_state = f
@@ -232,7 +235,7 @@ enum VariableRewriteInstruction {
 }
 
 struct RewriteState<'a> {
-  all_functions: &'a HashMap<PStr, Vec<bool>>,
+  all_functions: &'a HashMap<FunctionName, Vec<bool>>,
   local_rewrite: HashMap<PStr, VariableRewriteInstruction>,
 }
 
@@ -260,8 +263,10 @@ fn rewrite_stmt(state: &RewriteState, stmt: &mut Statement) {
       if let Some(keep_states) =
         callee.as_function_name().and_then(|n| state.all_functions.get(&n.name))
       {
-        let FunctionName { name: _, type_: FunctionType { argument_types, return_type: _ } } =
-          callee.as_function_name_mut().unwrap();
+        let FunctionNameExpression {
+          name: _,
+          type_: FunctionType { argument_types, return_type: _ },
+        } = callee.as_function_name_mut().unwrap();
         debug_assert_eq!(arguments.len(), argument_types.len());
         debug_assert_eq!(arguments.len(), keep_states.len());
         let mut current_index = 0;
@@ -387,11 +392,10 @@ mod tests {
   use crate::{
     ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, FunctionType, GenenalLoopVariable, Sources,
-      Statement, Type, VariableName, INT_TYPE, ZERO,
+      Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
+      GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_TYPE, ZERO,
     },
-    common::well_known_pstrs,
-    Heap,
+    common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
 
@@ -410,7 +414,8 @@ mod tests {
   #[test]
   fn integration_test() {
     let heap = &mut Heap::new();
-    let dummy_name = heap.alloc_str_for_test("_");
+    let mut table = SymbolTable::new();
+    let dummy_name = well_known_pstrs::UNDERSCORE;
 
     let input = Sources {
       global_variables: vec![],
@@ -419,7 +424,7 @@ mod tests {
       main_function_names: vec![],
       functions: vec![
         Function {
-          name: heap.alloc_str_for_test("otherwise_optimizable"),
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
           parameters: vec![well_known_pstrs::LOWER_A, well_known_pstrs::LOWER_B],
           type_: FunctionType {
             argument_types: vec![INT_TYPE, INT_TYPE],
@@ -429,14 +434,14 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str_for_test("str_const"),
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("str_const")),
           parameters: vec![well_known_pstrs::LOWER_A],
           type_: FunctionType { argument_types: vec![INT_TYPE], return_type: Box::new(INT_TYPE) },
           body: vec![Statement::Break(Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE))],
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str_for_test("func_with_consts"),
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("func_with_consts")),
           parameters: vec![
             well_known_pstrs::LOWER_A,
             well_known_pstrs::LOWER_B,
@@ -446,11 +451,11 @@ mod tests {
           ],
           type_: FunctionType {
             argument_types: vec![
-              Type::Id(well_known_pstrs::UPPER_A),
-              Type::Id(well_known_pstrs::UPPER_B),
-              Type::Id(well_known_pstrs::UPPER_C),
-              Type::Id(well_known_pstrs::UPPER_D),
-              Type::Id(well_known_pstrs::UPPER_E),
+              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A)),
+              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_B)),
+              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_C)),
+              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_D)),
+              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_E)),
             ],
             return_type: Box::new(INT_TYPE),
           },
@@ -469,9 +474,9 @@ mod tests {
             },
             Statement::ClosureInit {
               closure_variable_name: dummy_name,
-              closure_type_name: dummy_name,
-              function_name: FunctionName {
-                name: heap.alloc_str_for_test("otherwise_optimizable"),
+              closure_type_name: table.create_type_name_for_test(dummy_name),
+              function_name: FunctionNameExpression {
+                name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
                 type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
               },
               context: ZERO,
@@ -483,13 +488,13 @@ mod tests {
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str_for_test("func_with_consts"),
-                FunctionType {
+              callee: Callee::FunctionName(FunctionNameExpression {
+                name: FunctionName::new_for_test(heap.alloc_str_for_test("func_with_consts")),
+                type_: FunctionType {
                   argument_types: vec![INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE],
                   return_type: Box::new(INT_TYPE),
                 },
-              )),
+              }),
               // a: matching constant
               // b: non-matching used constant
               // c: non-matching unused constant
@@ -506,13 +511,13 @@ mod tests {
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str_for_test("func_with_consts"),
-                FunctionType {
+              callee: Callee::FunctionName(FunctionNameExpression {
+                name: FunctionName::new_for_test(heap.alloc_str_for_test("func_with_consts")),
+                type_: FunctionType {
                   argument_types: vec![INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE],
                   return_type: Box::new(INT_TYPE),
                 },
-              )),
+              }),
               arguments: vec![
                 ZERO,
                 Expression::int(3),
@@ -524,22 +529,25 @@ mod tests {
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str_for_test("str_const"),
-                FunctionType { argument_types: vec![INT_TYPE], return_type: Box::new(INT_TYPE) },
-              )),
+              callee: Callee::FunctionName(FunctionNameExpression {
+                name: FunctionName::new_for_test(heap.alloc_str_for_test("str_const")),
+                type_: FunctionType {
+                  argument_types: vec![INT_TYPE],
+                  return_type: Box::new(INT_TYPE),
+                },
+              }),
               arguments: vec![Expression::StringName(heap.alloc_str_for_test("STR"))],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::FunctionName(FunctionName::new(
-                heap.alloc_str_for_test("otherwise_optimizable"),
-                FunctionType {
+              callee: Callee::FunctionName(FunctionNameExpression {
+                name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
+                type_: FunctionType {
                   argument_types: vec![INT_TYPE, INT_TYPE],
                   return_type: Box::new(INT_TYPE),
                 },
-              )),
+              }),
               arguments: vec![ZERO, ZERO],
               return_type: INT_TYPE,
               return_collector: None,
@@ -568,35 +576,36 @@ mod tests {
             Statement::Cast { name: dummy_name, type_: INT_TYPE, assigned_expression: ZERO },
             Statement::StructInit {
               struct_variable_name: dummy_name,
-              type_name: dummy_name,
+              type_name: table.create_type_name_for_test(dummy_name),
               expression_list: vec![ZERO, ZERO],
             },
           ],
           return_value: ZERO,
         },
       ],
+      symbol_table: table,
     };
     let actual = super::rewrite_sources(input).debug_print(heap);
     let expected = r#"
-function otherwise_optimizable(a: int, b: int): int {
+function __$otherwise_optimizable(a: int, b: int): int {
   return 0;
 }
 
-function str_const(): int {
+function __$str_const(): int {
   undefined = STR;
   break;
   return 0;
 }
 
-function func_with_consts(b: B, e: E): int {
+function __$func_with_consts(b: _B, e: _E): int {
   let _ = 0 + (b: int);
   let _: int = 0[0];
-  let _: _ = Closure { fun: (otherwise_optimizable: () -> int), context: 0 };
+  let _: __ = Closure { fun: (__$otherwise_optimizable: () -> int), context: 0 };
   (_: int)(0);
-  func_with_consts(1, (e: int));
-  func_with_consts(3, (e: int));
-  str_const();
-  otherwise_optimizable(0, 0);
+  __$func_with_consts(1, (e: int));
+  __$func_with_consts(3, (e: int));
+  __$str_const();
+  __$otherwise_optimizable(0, 0);
   let _: int;
   if (e: int) {
     undefined = 0;
@@ -618,7 +627,7 @@ function func_with_consts(b: B, e: E): int {
     _ = 0;
   }
   let _ = 0 as int;
-  let _: _ = [0, 0];
+  let _: __ = [0, 0];
   return 0;
 }
     "#

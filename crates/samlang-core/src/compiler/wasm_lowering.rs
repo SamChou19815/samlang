@@ -1,5 +1,5 @@
 use crate::{
-  ast::{common_names, hir, lir, wasm},
+  ast::{hir, lir, mir, wasm},
   common::{Heap, PStr},
 };
 use itertools::Itertools;
@@ -17,14 +17,14 @@ struct LoweringManager<'a> {
   loop_cx: Option<LoopContext>,
   local_variables: BTreeSet<PStr>,
   global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
-  function_index_mapping: &'a HashMap<PStr, usize>,
+  function_index_mapping: &'a HashMap<mir::FunctionName, usize>,
 }
 
 impl<'a> LoweringManager<'a> {
   fn lower_fn(
     heap: &'a mut Heap,
     global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
-    function_index_mapping: &'a HashMap<PStr, usize>,
+    function_index_mapping: &'a HashMap<mir::FunctionName, usize>,
     function: &lir::Function,
   ) -> wasm::Function {
     let mut instance = LoweringManager {
@@ -75,14 +75,12 @@ impl<'a> LoweringManager<'a> {
       }
       lir::Statement::Call { callee, arguments, return_type: _, return_collector } => {
         let argument_instructions = arguments.iter().map(|it| self.lower_expr(it)).collect_vec();
-        let call = if let lir::Expression::Name(name, _) = callee {
+        let call = if let lir::Expression::FnName(name, _) = callee {
           wasm::InlineInstruction::DirectCall(*name, argument_instructions)
         } else {
           wasm::InlineInstruction::IndirectCall {
             function_index: Box::new(self.lower_expr(callee)),
-            type_string: self
-              .heap
-              .alloc_string(wasm::function_type_string(argument_instructions.len())),
+            type_string: wasm::function_type_string(argument_instructions.len()),
             arguments: argument_instructions,
           }
         };
@@ -184,11 +182,10 @@ impl<'a> LoweringManager<'a> {
         vec![wasm::Instruction::Inline(self.set(name, assigned))]
       }
       lir::Statement::StructInit { struct_variable_name, type_: _, expression_list } => {
-        let fn_name = self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_MALLOC);
         let mut instructions = vec![wasm::Instruction::Inline(self.set(
           struct_variable_name,
           wasm::InlineInstruction::DirectCall(
-            fn_name,
+            mir::FunctionName::BUILTIN_MALLOC,
             vec![wasm::InlineInstruction::Const(i32::try_from(expression_list.len() * 4).unwrap())],
           ),
         ))];
@@ -208,14 +205,14 @@ impl<'a> LoweringManager<'a> {
 
   fn lower_expr(&mut self, e: &lir::Expression) -> wasm::InlineInstruction {
     match e {
-      lir::Expression::IntLiteral(v, _) => wasm::InlineInstruction::Const(*v),
+      lir::Expression::IntLiteral(v) => wasm::InlineInstruction::Const(*v),
       lir::Expression::Variable(n, _) => self.get(n),
-      lir::Expression::Name(n, t) => {
-        let index = if let lir::Type::Fn(_) = t {
-          self.function_index_mapping.get(n)
-        } else {
-          self.global_variables_to_pointer_mapping.get(n)
-        };
+      lir::Expression::StringName(n) => {
+        let index = self.global_variables_to_pointer_mapping.get(n);
+        wasm::InlineInstruction::Const(i32::try_from(*(index.unwrap())).unwrap())
+      }
+      lir::Expression::FnName(n, _) => {
+        let index = self.function_index_mapping.get(n);
         wasm::InlineInstruction::Const(i32::try_from(*(index.unwrap())).unwrap())
       }
     }
@@ -287,6 +284,7 @@ mod tests {
     ast::{
       hir::{GlobalVariable, Operator},
       lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
+      mir,
     },
     common::{well_known_pstrs, Heap},
   };
@@ -305,6 +303,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     let sources = Sources {
+      symbol_table: mir::SymbolTable::new(),
       global_variables: vec![
         GlobalVariable {
           name: heap.alloc_str_for_test("FOO"),
@@ -316,9 +315,9 @@ mod tests {
         },
       ],
       type_definitions: vec![],
-      main_function_names: vec![heap.alloc_str_for_test("main")],
+      main_function_names: vec![mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN)],
       functions: vec![Function {
-        name: heap.alloc_str_for_test("main"),
+        name: mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
         parameters: vec![heap.alloc_str_for_test("bar")],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
@@ -372,8 +371,11 @@ mod tests {
             final_assignments: vec![(
               well_known_pstrs::LOWER_F,
               INT_TYPE,
-              Expression::Name(heap.alloc_str_for_test("FOO"), INT_TYPE),
-              Expression::Name(heap.alloc_str_for_test("main"), Type::new_fn(vec![], INT_TYPE)),
+              Expression::StringName(heap.alloc_str_for_test("FOO")),
+              Expression::FnName(
+                mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+                Type::new_fn(vec![], INT_TYPE),
+              ),
             )],
           },
           Statement::binary(
@@ -383,8 +385,8 @@ mod tests {
             ZERO,
           ),
           Statement::Call {
-            callee: Expression::Name(
-              heap.alloc_str_for_test("main"),
+            callee: Expression::FnName(
+              mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
               Type::new_fn(vec![], INT_TYPE),
             ),
             arguments: vec![ZERO],
@@ -420,13 +422,14 @@ mod tests {
         return_value: ZERO,
       }],
     };
-    let actual = super::compile_mir_to_wasm(heap, &sources).pretty_print(heap);
+    let actual =
+      super::compile_mir_to_wasm(heap, &sources).pretty_print(heap, &sources.symbol_table);
     let expected = r#"(type $i32_=>_i32 (func (param i32) (result i32)))
 (data (i32.const 4096) "\00\00\00\00\03\00\00\00\66\6f\6f")
 (data (i32.const 4107) "\00\00\00\00\03\00\00\00\62\61\72")
 (table $0 1 funcref)
-(elem $0 (i32.const 0) $main)
-(func $main (param $bar i32) (result i32)
+(elem $0 (i32.const 0) $__$main)
+(func $__$main (param $bar i32) (result i32)
   (local $b i32)
   (local $bin i32)
   (local $c i32)
@@ -469,16 +472,16 @@ mod tests {
     (local.set $f (i32.const 0))
   ))
   (local.set $bin (i32.add (local.get $f) (i32.const 0)))
-  (drop (call $main (i32.const 0)))
+  (drop (call $__$main (i32.const 0)))
   (local.set $rc (call_indirect $0 (type $i32_=>_i32) (i32.const 0) (local.get $f)))
   (local.set $v (i32.load offset=12 (i32.const 0)))
   (i32.store offset=12 (i32.const 0) (local.get $v))
-  (local.set $s (call $_builtin_malloc (i32.const 8)))
+  (local.set $s (call $__$malloc (i32.const 8)))
   (i32.store (local.get $s) (i32.const 0))
   (i32.store offset=4 (local.get $s) (local.get $v))
   (i32.const 0)
 )
-(export "main" (func $main))
+(export "__$main" (func $__$main))
 "#;
     assert_eq!(expected, actual);
   }

@@ -82,8 +82,8 @@ mod tests {
   use crate::{
     ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, Function, FunctionName, Statement, Type, VariableName, INT_TYPE, ONE,
-      ZERO,
+      Callee, Expression, Function, FunctionName, FunctionNameExpression, Statement, SymbolTable,
+      Type, VariableName, INT_TYPE, ONE, ZERO,
     },
     common::well_known_pstrs,
     Heap,
@@ -93,7 +93,7 @@ mod tests {
 
   fn assert_correctly_optimized(stmts: Vec<Statement>, heap: &mut Heap, expected: &str) {
     let mut f = Function {
-      name: well_known_pstrs::LOWER_A,
+      name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
       parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
@@ -102,7 +102,10 @@ mod tests {
     super::optimize_function(&mut f, heap);
     super::super::local_value_numbering::optimize_function(&mut f);
 
-    assert_eq!(expected, f.body.iter().map(|s| s.debug_print(heap)).join("\n"));
+    assert_eq!(
+      expected,
+      f.body.iter().map(|s| s.debug_print(heap, &SymbolTable::new())).join("\n")
+    );
   }
 
   #[test]
@@ -122,10 +125,10 @@ mod tests {
             index: 3,
           },
           Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              heap.alloc_str_for_test("fff"),
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(heap.alloc_str_for_test("fff")),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![
               Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
               Expression::var_name(heap.alloc_str_for_test("ddd"), INT_TYPE),
@@ -159,7 +162,7 @@ mod tests {
 let _t0 = 1 + 0;
 if (b: int) {
   let ddddd = 1 + 1;
-  fff((_t0: int), (_t1: int));
+  __$fff((_t0: int), (_t1: int));
 } else {
   (eeee: int)((_t0: int), (_t1: int));
 }"#,

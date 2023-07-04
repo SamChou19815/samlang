@@ -1,13 +1,10 @@
-(type $t0 (func (param i32) (result i32)))
-(type $t1 (func (param i32 i32) (result i32)))
-(type $t2 (func))
 (import "env" "memory" (memory $env.memory 2))
 (import "builtins" "__Process$println" (func $__Process$println (param i32) (param i32) (result i32)))
 (import "builtins" "__Process$panic" (func $__Process$panic (param i32) (param i32) (result i32)))
 (global $g0 (mut i32) (i32.const 66688))
 (data $d0 (i32.const 1024) "0\00-2147483648\00\00\00\08\00\00\00\10\00\00\00\18\00\00\00 \00\00\00(\00\00\000\00\00\00@\00\00\00P\00\00\00\80\00\00\00\00\01\00\00")
 (data $d1 (i32.const 1088) "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00")
-(func $_builtin_malloc (type $t0) (param $p0 i32) (result i32)
+(func $__$malloc (param $p0 i32) (result i32)
   (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local $l6 i32)
   (local.set $l1 (i32.const 0))
   (block $B0
@@ -112,7 +109,7 @@
   )
   (local.get $l2)
 )
-(func $allocate_large_object (type $t0) (param $p0 i32) (result i32)
+(func $allocate_large_object (param $p0 i32) (result i32)
   (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local $l6 i32) (local $l7 i32) (local $l8 i32)
   (local.set $l1 (i32.const 0))
   (block $B0
@@ -375,7 +372,7 @@
   )
   (i32.const 0)
 )
-(func $_builtin_free (type $t0) (param $p0 i32) (result i32)
+(func $__$free (param $p0 i32) (result i32)
   (local $l1 i32) (local $l2 i32)
   (block $B0
     (br_if $B0 (i32.eqz (local.get $p0)))
@@ -412,7 +409,7 @@
   )
   (i32.const 0)
 )
-(func $__Str$fromInt (type $t1) (param $this i32) (param $p0 i32) (result i32)
+(func $__Str$fromInt (param $this i32) (param $p0 i32) (result i32)
   (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32)
   (global.set $g0 (local.tee $l1 (i32.sub (global.get $g0) (i32.const 16))))
   (block $B0
@@ -481,7 +478,7 @@
   (global.set $g0 (i32.add (local.get $l1) (i32.const 16)))
   (local.get $l2)
 )
-(func $mkString (type $t0) (param $p0 i32) (result i32)
+(func $mkString (param $p0 i32) (result i32)
   (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32)
   (local.set $l1 (i32.add (local.get $p0) (i32.const -1)))
   (loop $L0
@@ -510,10 +507,10 @@
   )
   (local.get $l3)
 )
-(func $mkArray (type $t1) (param $p0 i32) (param $p1 i32) (result i32)
+(func $mkArray (param $p0 i32) (param $p1 i32) (result i32)
   (i32.store offset=4
     (local.tee $p0
-      (call $_builtin_malloc (i32.add (local.get $p0) (i32.const 8))))
+      (call $__$malloc (i32.add (local.get $p0) (i32.const 8))))
       (local.get $p1)
   )
   (i32.store (local.get $p0) (i32.const 1))
@@ -561,7 +558,7 @@
   )
   (i32.const 0)
 )
-(func $__Str$concat (type $t1) (param $p0 i32) (param $p1 i32) (result i32)
+(func $__Str$concat (param $p0 i32) (param $p1 i32) (result i32)
   (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local $l6 i32)
   (local.set $l2 (i32.add (local.get $p1) (i32.const 8)))
   (local.set $l3 (i32.add (local.get $p0) (i32.const 8)))
@@ -606,7 +603,7 @@
   )
   (local.get $l5)
 )
-(func $maybe_repurpose_single_chunk_large_objects_head (type $t2)
+(func $maybe_repurpose_single_chunk_large_objects_head
   (local $l0 i32) (local $l1 i32)
   (block $B0
     (br_if $B0

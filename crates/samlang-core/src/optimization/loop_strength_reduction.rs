@@ -87,7 +87,7 @@ pub(super) fn optimize(
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::mir::{VariableName, INT_TYPE, ONE},
+    ast::mir::{SymbolTable, VariableName, INT_TYPE, ONE},
     common::well_known_pstrs,
     optimization::loop_induction_analysis::{
       BasicInductionVariableWithLoopGuard, DerivedInductionVariableWithName,
@@ -102,6 +102,7 @@ mod tests {
   #[test]
   fn integration_test() {
     let heap = &mut Heap::new();
+    let table = &SymbolTable::new();
 
     let super::LoopStrengthReductionOptimizationResult {
       prefix_statements,
@@ -158,7 +159,7 @@ mod tests {
 
     assert_eq!(
       "let _t0 = (a: int) * 1;\nlet _t1 = (b: int) + (_t0: int);",
-      prefix_statements.iter().map(|s| s.debug_print(heap)).join("\n")
+      prefix_statements.iter().map(|s| s.debug_print(heap, &SymbolTable::new())).join("\n")
     );
     assert_eq!(
       vec![
@@ -168,7 +169,7 @@ mod tests {
       optimizable_while_loop
         .general_induction_variables
         .iter()
-        .map(|v| v.debug_print(heap))
+        .map(|v| v.debug_print(heap, table))
         .collect_vec()
     );
     assert_eq!(
@@ -176,7 +177,7 @@ mod tests {
       optimizable_while_loop
         .derived_induction_variables
         .iter()
-        .map(|v| v.debug_print(heap))
+        .map(|v| v.debug_print(heap, table))
         .collect_vec()
     );
   }

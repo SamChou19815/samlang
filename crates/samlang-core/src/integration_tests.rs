@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
   use crate::{
-    ast::common_names,
+    ast,
     checker::type_check_sources,
-    common::{rc_string, Heap},
+    common::{well_known_pstrs, Heap},
     compiler,
     errors::ErrorSet,
     interpreter, optimization,
@@ -1778,12 +1778,17 @@ class Main {
       unoptimized_mir_sources,
       &optimization::ALL_ENABLED_CONFIGURATION,
     );
-    let lir_sources = compiler::compile_mir_to_lir(heap, optimized_mir_sources);
+    let mut lir_sources = compiler::compile_mir_to_lir(heap, optimized_mir_sources);
+    // Uncomment the following line to read the source
+    // panic!("{}", lir_sources.pretty_print(heap));
     for test in &tests {
       let mod_ref = heap.alloc_module_reference_from_string_vec(vec![test.name.to_string()]);
-      let main_function =
-        heap.alloc_string(common_names::encode_main_function_name(heap, &mod_ref));
-      let actual = interpreter::run_lir_sources(heap, &lir_sources, main_function);
+      let main_type_name = lir_sources.symbol_table.create_main_type_name(mod_ref);
+      let actual = interpreter::run_lir_sources(
+        heap,
+        &lir_sources,
+        ast::mir::FunctionName { type_name: main_type_name, fn_name: well_known_pstrs::MAIN_FN },
+      );
       assert_eq!(test.expected_std, actual);
       // Replace with the following line for debugging
       // assert_eq!(test.expected_std, actual, "{}", test.name);
@@ -1806,13 +1811,13 @@ class Main {
       .unwrap()
       .define(
         "builtins",
-        &common_names::encoded_fn_name_println(),
+        &ast::mir::FunctionName::PROCESS_PRINTLN.encoded(heap, &lir_sources.symbol_table),
         Func::wrap(&mut store, builtin_println),
       )
       .unwrap()
       .define(
         "builtins",
-        &common_names::encoded_fn_name_panic(),
+        &ast::mir::FunctionName::PROCESS_PANIC.encoded(heap, &lir_sources.symbol_table),
         Func::wrap(&mut store, wasm_builtin_panic),
       )
       .unwrap()
@@ -1823,7 +1828,11 @@ class Main {
     let mut expected_str = String::new();
     for test in &tests {
       let mod_ref = heap.alloc_module_reference_from_string_vec(vec![test.name.to_string()]);
-      let main_function_name = rc_string(common_names::encode_main_function_name(heap, &mod_ref));
+      let main_function_name = ast::mir::FunctionName {
+        type_name: lir_sources.symbol_table.create_main_type_name(mod_ref),
+        fn_name: well_known_pstrs::MAIN_FN,
+      }
+      .encoded(heap, &lir_sources.symbol_table);
       expected_str.push_str(test.name);
       expected_str.push_str(":\n");
       store.state_mut().push(test.name.to_string() + ":");

@@ -193,8 +193,8 @@ mod tests {
   use crate::{
     ast::hir::Operator,
     ast::mir::{
-      Callee, Expression, FunctionName, GenenalLoopVariable, Statement, Type, VariableName,
-      INT_TYPE, ONE, ZERO,
+      Callee, Expression, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
+      SymbolTable, Type, VariableName, INT_TYPE, ONE, ZERO,
     },
     common::{well_known_pstrs, Heap},
     optimization::loop_induction_analysis::{
@@ -208,6 +208,7 @@ mod tests {
   #[test]
   fn rejection_tests() {
     let heap = &mut Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert!(super::optimize(
       OptimizableWhileLoop {
@@ -285,11 +286,11 @@ mod tests {
             }],
             s2: vec![Statement::ClosureInit {
               closure_variable_name: well_known_pstrs::LOWER_A,
-              closure_type_name: heap.alloc_str_for_test("I"),
-              function_name: FunctionName::new(
-                well_known_pstrs::LOWER_A,
-                Type::new_fn_unwrapped(vec![], INT_TYPE)
-              ),
+              closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
+              function_name: FunctionNameExpression {
+                name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
+                type_: Type::new_fn_unwrapped(vec![], INT_TYPE)
+              },
               context: ZERO
             }],
             final_assignments: vec![(well_known_pstrs::LOWER_A, INT_TYPE, ZERO, ZERO)]
@@ -309,17 +310,17 @@ mod tests {
               },
               Statement::StructInit {
                 struct_variable_name: well_known_pstrs::LOWER_A,
-                type_name: heap.alloc_str_for_test("I"),
+                type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
                 expression_list: vec![ZERO]
               }
             ],
             break_collector: None
           },
           Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              well_known_pstrs::LOWER_A,
-              Type::new_fn_unwrapped(vec![], INT_TYPE)
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE)
+            }),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
             return_collector: None
@@ -413,6 +414,7 @@ mod tests {
   #[test]
   fn optimizable_test_1() {
     let heap = &mut Heap::new();
+    let table = &SymbolTable::new();
 
     let optimized = super::optimize(
       OptimizableWhileLoop {
@@ -455,11 +457,11 @@ mod tests {
       optimized
         .prefix_statements
         .iter()
-        .map(|s| s.debug_print(heap))
+        .map(|s| s.debug_print(heap,table))
         .chain(vec![optimized
           .optimizable_while_loop
           .basic_induction_variable_with_loop_guard
-          .debug_print(heap)])
+          .debug_print(heap,table)])
         .collect_vec()
     );
     assert!(optimized.optimizable_while_loop.derived_induction_variables.is_empty());
@@ -468,6 +470,7 @@ mod tests {
   #[test]
   fn optimizable_test_2() {
     let heap = &mut Heap::new();
+    let table = &SymbolTable::new();
 
     let optimized = super::optimize(
       OptimizableWhileLoop {
@@ -512,9 +515,9 @@ mod tests {
       ],
       optimized.prefix_statements
         .iter()
-        .map(|s| s.debug_print(heap))
+        .map(|s| s.debug_print(heap,table))
         .chain(vec![
-          optimized.optimizable_while_loop.basic_induction_variable_with_loop_guard.debug_print(heap)
+          optimized.optimizable_while_loop.basic_induction_variable_with_loop_guard.debug_print(heap, table)
         ])
         .collect_vec()
     );
@@ -524,6 +527,7 @@ mod tests {
   #[test]
   fn optimizable_test_3() {
     let heap = &mut Heap::new();
+    let table = &SymbolTable::new();
 
     let optimized = super::optimize(
       OptimizableWhileLoop {
@@ -568,9 +572,9 @@ mod tests {
       ],
       optimized.prefix_statements
         .iter()
-        .map(|s| s.debug_print(heap))
+        .map(|s| s.debug_print(heap, table))
         .chain(vec![
-          optimized.optimizable_while_loop.basic_induction_variable_with_loop_guard.debug_print(heap)
+          optimized.optimizable_while_loop.basic_induction_variable_with_loop_guard.debug_print(heap, table)
         ])
         .collect_vec()
     );

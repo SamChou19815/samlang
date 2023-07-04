@@ -73,27 +73,31 @@ pub fn compile_sources(
     return Err(errors);
   }
 
-  let unoptimized_hir_sources = measure_time(enable_profiling, "Compile to MIR", || {
+  let unoptimized_mir_sources = measure_time(enable_profiling, "Compile to MIR", || {
     compiler::compile_sources_to_mir(heap, &checked_sources)
   });
-  let optimized_hir_sources = measure_time(enable_profiling, "Optimize MIR", || {
+  let optimized_mir_sources = measure_time(enable_profiling, "Optimize MIR", || {
     optimization::optimize_sources(
       heap,
-      unoptimized_hir_sources,
+      unoptimized_mir_sources,
       &optimization::ALL_ENABLED_CONFIGURATION,
     )
   });
-  let mid_ir_sources = measure_time(enable_profiling, "Compile to LIR", || {
-    compiler::compile_mir_to_lir(heap, optimized_hir_sources)
+  let mut lir_sources = measure_time(enable_profiling, "Compile to LIR", || {
+    compiler::compile_mir_to_lir(heap, optimized_mir_sources)
   });
-  let common_ts_code = mid_ir_sources.pretty_print(heap);
+  let common_ts_code = lir_sources.pretty_print(heap);
   let (wat_text, wasm_file) = measure_time(enable_profiling, "Compile to WASM", || {
-    compiler::compile_lir_to_wasm(heap, &mid_ir_sources)
+    compiler::compile_lir_to_wasm(heap, &lir_sources)
   });
 
   let mut text_code_results = BTreeMap::new();
   for module_reference in &entry_module_references {
-    let main_fn_name = ast::common_names::encode_main_function_name(heap, module_reference);
+    let main_fn_name = ast::mir::FunctionName {
+      type_name: lir_sources.symbol_table.create_main_type_name(*module_reference),
+      fn_name: common::well_known_pstrs::MAIN_FN,
+    }
+    .encoded(heap, &lir_sources.symbol_table);
     let ts_code = format!("{common_ts_code}\n{main_fn_name}();\n");
     let wasm_js_code = format!(
       r#"// @{}

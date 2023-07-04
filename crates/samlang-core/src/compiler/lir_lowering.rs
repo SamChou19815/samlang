@@ -1,8 +1,7 @@
 use super::lir_unused_name_elimination;
 use crate::{
-  ast::{common_names, hir, lir, mir},
-  common::{well_known_pstrs, PStr},
-  Heap,
+  ast::{hir, lir, mir},
+  common::{well_known_pstrs, Heap, PStr},
 };
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashSet};
@@ -29,8 +28,8 @@ fn unknown_member_destructor_type() -> lir::FunctionType {
 
 fn lower_expression(expr: mir::Expression) -> lir::Expression {
   match expr {
-    mir::Expression::IntLiteral(i) => lir::Expression::IntLiteral(i, lir::INT_TYPE),
-    mir::Expression::StringName(n) => lir::Expression::Name(n, lir::STRING_TYPE),
+    mir::Expression::IntLiteral(i) => lir::Expression::IntLiteral(i),
+    mir::Expression::StringName(n) => lir::Expression::StringName(n),
     mir::Expression::Variable(mir::VariableName { name, type_ }) => {
       lir::Expression::Variable(name, lower_type(type_))
     }
@@ -47,21 +46,17 @@ fn variable_of_mir_expr(expression: &lir::Expression) -> Option<PStr> {
 
 struct LoweringManager<'a> {
   heap: &'a mut Heap,
-  closure_defs: &'a BTreeMap<PStr, lir::FunctionType>,
-  type_defs: &'a BTreeMap<PStr, mir::TypeDefinition>,
+  closure_defs: &'a BTreeMap<mir::TypeNameId, lir::FunctionType>,
+  type_defs: &'a BTreeMap<mir::TypeNameId, mir::TypeDefinition>,
 }
 
 impl<'a> LoweringManager<'a> {
   fn new(
     heap: &'a mut Heap,
-    closure_defs: &'a BTreeMap<PStr, lir::FunctionType>,
-    type_defs: &'a BTreeMap<PStr, mir::TypeDefinition>,
+    closure_defs: &'a BTreeMap<mir::TypeNameId, lir::FunctionType>,
+    type_defs: &'a BTreeMap<mir::TypeNameId, mir::TypeDefinition>,
   ) -> LoweringManager<'a> {
     LoweringManager { heap, closure_defs, type_defs }
-  }
-
-  fn alloc_temp(&mut self) -> PStr {
-    self.heap.alloc_temp_str()
   }
 
   fn lower_function(
@@ -121,8 +116,8 @@ impl<'a> LoweringManager<'a> {
       }
       let var_type = lir::Type::Id(type_name);
       lowered_statements.push(lir::Statement::Call {
-        callee: lir::Expression::Name(
-          self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_DEC_REF),
+        callee: lir::Expression::FnName(
+          mir::FunctionName::BUILTIN_DEC_REF,
           lir::Type::Fn(unknown_member_destructor_type()),
         ),
         arguments: vec![lir::Expression::Variable(variable_name, var_type)],
@@ -158,7 +153,7 @@ impl<'a> LoweringManager<'a> {
         let return_collector = if let Some(c) = return_collector {
           Some(c)
         } else if lowered_return_type.as_id().is_some() {
-          Some(self.alloc_temp())
+          Some(self.heap.alloc_temp_str())
         } else {
           None
         };
@@ -166,7 +161,7 @@ impl<'a> LoweringManager<'a> {
         match callee {
           mir::Callee::FunctionName(fn_name) => {
             statements.push(lir::Statement::Call {
-              callee: lir::Expression::Name(
+              callee: lir::Expression::FnName(
                 fn_name.name,
                 lir::Type::Fn(lower_fn_type(fn_name.type_)),
               ),
@@ -179,8 +174,8 @@ impl<'a> LoweringManager<'a> {
             name: closure_var_name,
             type_: closure_hir_type,
           }) => {
-            let temp_fn = self.alloc_temp();
-            let temp_cx = self.alloc_temp();
+            let temp_fn = self.heap.alloc_temp_str();
+            let temp_cx = self.heap.alloc_temp_str();
             let closure_type_name = &closure_hir_type.as_id().unwrap();
             let fn_type = self.closure_defs.get(closure_type_name).unwrap();
             let pointer_expr =
@@ -296,7 +291,7 @@ impl<'a> LoweringManager<'a> {
       mir::Statement::ClosureInit {
         closure_variable_name,
         closure_type_name,
-        function_name: mir::FunctionName { name: fn_name, type_: fn_type },
+        function_name: mir::FunctionNameExpression { name: fn_name, type_: fn_type },
         context,
       } => {
         let closure_type = lower_type(mir::Type::Id(closure_type_name));
@@ -315,16 +310,16 @@ impl<'a> LoweringManager<'a> {
           header |= 1 << (1 + 16);
         }
         let fn_name_slot = {
-          let temp = self.alloc_temp();
+          let temp = self.heap.alloc_temp_str();
           statements.push(lir::Statement::Cast {
             name: temp,
             type_: lir::Type::Fn(type_erased_closure_type.clone()),
-            assigned_expression: lir::Expression::Name(fn_name, lir::Type::Fn(original_fn_type)),
+            assigned_expression: lir::Expression::FnName(fn_name, lir::Type::Fn(original_fn_type)),
           });
           lir::Expression::Variable(temp, lir::Type::Fn(type_erased_closure_type))
         };
         let cx_slot = {
-          let temp = self.alloc_temp();
+          let temp = self.heap.alloc_temp_str();
           statements.push(lir::Statement::Cast {
             name: temp,
             type_: lir::ANY_TYPE,
@@ -347,18 +342,18 @@ impl<'a> LoweringManager<'a> {
     collector: &mut Vec<lir::Statement>,
     expression: &lir::Expression,
   ) -> bool {
-    if expression.type_().as_id().is_none() {
+    if !expression.ref_countable() {
       return false;
     };
-    let casted = self.alloc_temp();
+    let casted = self.heap.alloc_temp_str();
     collector.push(lir::Statement::Cast {
       name: casted,
       type_: lir::ANY_TYPE,
       assigned_expression: expression.clone(),
     });
     collector.push(lir::Statement::Call {
-      callee: lir::Expression::Name(
-        self.heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_INC_REF),
+      callee: lir::Expression::FnName(
+        mir::FunctionName::BUILTIN_INC_REF,
         lir::Type::Fn(unknown_member_destructor_type()),
       ),
       arguments: vec![lir::Expression::Variable(casted, lir::ANY_TYPE)],
@@ -371,7 +366,7 @@ impl<'a> LoweringManager<'a> {
 
 fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
   lir::Function {
-    name: heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_INC_REF),
+    name: mir::FunctionName::BUILTIN_INC_REF,
     parameters: vec![heap.alloc_str_permanent("ptr")],
     type_: unknown_member_destructor_type(),
     body: vec![
@@ -471,7 +466,7 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
 
 fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
   lir::Function {
-    name: heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_DEC_REF),
+    name: mir::FunctionName::BUILTIN_DEC_REF,
     parameters: vec![heap.alloc_str_permanent("ptr")],
     type_: unknown_member_destructor_type(),
     body: vec![
@@ -642,8 +637,8 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                             ),
                           ),
                           lir::Statement::Call {
-                            callee: lir::Expression::Name(
-                              heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_DEC_REF),
+                            callee: lir::Expression::FnName(
+                              mir::FunctionName::BUILTIN_DEC_REF,
                               lir::Type::Fn(unknown_member_destructor_type()),
                             ),
                             arguments: vec![lir::Expression::Variable(
@@ -674,8 +669,8 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                     break_collector: None,
                   },
                   lir::Statement::Call {
-                    callee: lir::Expression::Name(
-                      heap.alloc_str_permanent(common_names::ENCODED_FN_NAME_FREE),
+                    callee: lir::Expression::FnName(
+                      mir::FunctionName::BUILTIN_FREE,
                       lir::Type::Fn(unknown_member_destructor_type()),
                     ),
                     arguments: vec![lir::Expression::Variable(
@@ -702,23 +697,24 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
   let mut closure_def_map = BTreeMap::new();
   let mut type_def_map = BTreeMap::new();
   let mir::Sources {
+    mut symbol_table,
     global_variables,
     type_definitions,
     closure_types,
     main_function_names,
     functions,
   } = sources;
-  for mir::ClosureTypeDefinition { identifier, function_type } in closure_types {
+  for mir::ClosureTypeDefinition { name, function_type } in closure_types {
     let lir::FunctionType { argument_types, return_type } = lower_fn_type(function_type);
     let fn_type = lir::FunctionType {
       argument_types: vec![lir::ANY_TYPE].into_iter().chain(argument_types).collect_vec(),
       return_type,
     };
     type_defs.push(lir::TypeDefinition {
-      name: identifier,
+      name,
       mappings: vec![lir::INT_TYPE, lir::Type::Fn(fn_type.clone()), lir::ANY_TYPE],
     });
-    closure_def_map.insert(identifier, fn_type);
+    closure_def_map.insert(name, fn_type);
   }
   for type_def in type_definitions {
     match &type_def.mappings {
@@ -727,24 +723,24 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
           .into_iter()
           .chain(types.iter().cloned().map(lower_type))
           .collect_vec();
-        type_defs.push(lir::TypeDefinition { name: type_def.identifier, mappings: mir_mappings });
-        type_def_map.insert(type_def.identifier, type_def);
+        type_defs.push(lir::TypeDefinition { name: type_def.name, mappings: mir_mappings });
+        type_def_map.insert(type_def.name, type_def);
       }
       mir::TypeDefinitionMappings::Enum(variants) => {
-        for variant in variants {
+        for (i, variant) in variants.iter().enumerate() {
           match variant {
             mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int => {}
-            mir::EnumTypeDefinition::Boxed(n, types) => type_defs.push(lir::TypeDefinition {
-              name: *n,
+            mir::EnumTypeDefinition::Boxed(types) => type_defs.push(lir::TypeDefinition {
+              name: symbol_table.derived_type_name_with_subtype_tag(type_def.name, i as u32),
               mappings: types.iter().cloned().map(lower_type).collect(),
             }),
           }
         }
         type_defs.push(lir::TypeDefinition {
-          name: type_def.identifier,
+          name: type_def.name,
           mappings: vec![lir::INT_TYPE, lir::INT_TYPE],
         });
-        type_def_map.insert(type_def.identifier, type_def);
+        type_def_map.insert(type_def.name, type_def);
       }
     }
   }
@@ -755,6 +751,7 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
   functions.push(generate_inc_ref_fn(heap));
   functions.push(generate_dec_ref_fn(heap));
   lir_unused_name_elimination::optimize_mir_sources_by_eliminating_unused_ones(lir::Sources {
+    symbol_table,
     global_variables,
     type_definitions: type_defs,
     main_function_names,
@@ -766,12 +763,11 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
 mod tests {
   use crate::{
     ast::{
-      common_names,
       hir::Operator,
       mir::{
         Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-        GenenalLoopVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
-        VariableName, INT_TYPE, ONE, STRING_TYPE, ZERO,
+        FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
+        TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_TYPE, ONE, ZERO,
       },
     },
     common::{well_known_pstrs, Heap},
@@ -781,7 +777,10 @@ mod tests {
   #[test]
   fn boilterplate() {
     let heap = &mut Heap::new();
-    assert_eq!("A", super::lower_type(Type::Id(well_known_pstrs::UPPER_A)).pretty_print(heap));
+    assert_eq!(
+      "_Str",
+      super::lower_type(Type::Id(TypeNameId::STR)).pretty_print(heap, &SymbolTable::new())
+    );
   }
 
   fn assert_lowered(sources: Sources, heap: &mut Heap, expected: &str) {
@@ -791,15 +790,15 @@ mod tests {
   #[test]
   fn smoke_test() {
     let heap = &mut Heap::new();
+    let table = &SymbolTable::new();
 
     assert_lowered(
       Sources {
+        symbol_table: SymbolTable::new(),
         global_variables: vec![],
         closure_types: vec![],
         type_definitions: vec![],
-        main_function_names: vec![
-          heap.alloc_str_for_test(common_names::ENCODED_COMPILED_PROGRAM_MAIN)
-        ],
+        main_function_names: vec![],
         functions: vec![],
       },
       heap,
@@ -811,12 +810,12 @@ const {} = (_: number, v: number): _Str => [1, String(v)];
 const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
 "#,
-        common_names::encoded_fn_name_string_concat(),
-        common_names::encoded_fn_name_println(),
-        common_names::encoded_fn_name_string_to_int(),
-        common_names::encoded_fn_name_int_to_string(),
-        common_names::encoded_fn_name_panic(),
-        common_names::ENCODED_FN_NAME_FREE
+        FunctionName::STR_CONCAT.encoded(heap, table),
+        FunctionName::PROCESS_PRINTLN.encoded(heap, table),
+        FunctionName::STR_TO_INT.encoded(heap, table),
+        FunctionName::STR_FROM_INT.encoded(heap, table),
+        FunctionName::PROCESS_PANIC.encoded(heap, table),
+        FunctionName::BUILTIN_FREE.encoded(heap, table),
       ),
     );
   }
@@ -824,54 +823,53 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
   #[test]
   fn comprehensive_test() {
     let heap = &mut Heap::new();
+    let mut table = SymbolTable::new();
 
-    let closure_type = &Type::Id(heap.alloc_str_for_test("CC"));
-    let obj_type = &Type::Id(heap.alloc_str_for_test("Object"));
-    let variant_type = &Type::Id(heap.alloc_str_for_test("Variant"));
+    let closure_type = &Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("CC")));
+    let obj_type = &Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Object")));
+    let variant_type =
+      &Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Variant")));
     let sources = Sources {
       global_variables: vec![],
       closure_types: vec![ClosureTypeDefinition {
-        identifier: heap.alloc_str_for_test("CC"),
+        name: table.create_type_name_for_test(heap.alloc_str_for_test("CC")),
         function_type: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
       }],
       type_definitions: vec![
         TypeDefinition {
-          identifier: heap.alloc_str_for_test("Object"),
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("Object")),
           mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
         },
         TypeDefinition {
-          identifier: heap.alloc_str_for_test("Variant"),
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("Variant")),
           mappings: TypeDefinitionMappings::Enum(vec![
             EnumTypeDefinition::Int,
             EnumTypeDefinition::Unboxed(INT_TYPE),
-            EnumTypeDefinition::Boxed(
-              heap.alloc_str_for_test("Variant_0"),
-              vec![INT_TYPE, INT_TYPE],
-            ),
+            EnumTypeDefinition::Boxed(vec![INT_TYPE, INT_TYPE]),
           ]),
         },
         TypeDefinition {
-          identifier: heap.alloc_str_for_test("Object2"),
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("Object2")),
           mappings: TypeDefinitionMappings::Struct(vec![
-            STRING_TYPE,
-            Type::Id(heap.alloc_str_for_test("Foo")),
+            Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE)),
+            Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Foo"))),
           ]),
         },
         TypeDefinition {
-          identifier: heap.alloc_str_for_test("Variant2"),
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("Variant2")),
           mappings: TypeDefinitionMappings::Enum(vec![]),
         },
         TypeDefinition {
-          identifier: heap.alloc_str_for_test("Variant3"),
+          name: table.create_type_name_for_test(heap.alloc_str_for_test("Variant3")),
           mappings: TypeDefinitionMappings::Enum(vec![]),
         },
       ],
-      main_function_names: vec![
-        heap.alloc_str_for_test(common_names::ENCODED_COMPILED_PROGRAM_MAIN)
-      ],
+      main_function_names: vec![FunctionName::new_for_test(
+        heap.alloc_str_for_test("compiled_program_main"),
+      )],
       functions: vec![
         Function {
-          name: heap.alloc_str_for_test("cc"),
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("cc")),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
@@ -910,7 +908,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v4"),
-              type_: STRING_TYPE,
+              type_: Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE)),
               pointer_expression: Expression::var_name(
                 well_known_pstrs::LOWER_B,
                 variant_type.clone(),
@@ -928,7 +926,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: heap.alloc_str_for_test("_"),
+                name: well_known_pstrs::UNDERSCORE,
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
@@ -939,15 +937,15 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
                 statements: vec![Statement::Break(ZERO)],
               }],
               break_collector: Some(VariableName::new(
-                heap.alloc_str_for_test("_"),
-                Type::Id(heap.alloc_str_for_test("_")),
+                well_known_pstrs::UNDERSCORE,
+                Type::Id(table.create_type_name_for_test(well_known_pstrs::UNDERSCORE)),
               )),
             },
           ],
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str_for_test("main"),
+          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
@@ -959,7 +957,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
                 ZERO,
                 Expression::var_name(
                   heap.alloc_str_for_test("obj"),
-                  Type::Id(heap.alloc_str_for_test("Obj")),
+                  Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Obj"))),
                 ),
               ],
             },
@@ -976,26 +974,29 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
             Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test("c1"),
               closure_type_name: closure_type.as_id().unwrap().clone(),
-              function_name: FunctionName::new(
-                heap.alloc_str_for_test("aaa"),
-                Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
-              ),
+              function_name: FunctionNameExpression {
+                name: FunctionName::new_for_test(heap.alloc_str_for_test("aaa")),
+                type_: Type::new_fn_unwrapped(
+                  vec![Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE))],
+                  INT_TYPE,
+                ),
+              },
               context: Expression::StringName(heap.alloc_str_for_test("G1")),
             },
             Statement::ClosureInit {
               closure_variable_name: heap.alloc_str_for_test("c2"),
               closure_type_name: *closure_type.as_id().unwrap(),
-              function_name: FunctionName::new(
-                heap.alloc_str_for_test("bbb"),
-                Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
-              ),
+              function_name: FunctionNameExpression {
+                name: FunctionName::new_for_test(heap.alloc_str_for_test("bbb")),
+                type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
+              },
               context: ZERO,
             },
           ],
           return_value: ZERO,
         },
         Function {
-          name: heap.alloc_str_for_test(common_names::ENCODED_COMPILED_PROGRAM_MAIN),
+          name: FunctionName::new_for_test(heap.alloc_str_for_test("compiled_program_main")),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
@@ -1003,19 +1004,19 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
               condition: ONE,
               s1: vec![
                 Statement::Call {
-                  callee: Callee::FunctionName(FunctionName::new(
-                    heap.alloc_str_for_test("main"),
-                    Type::new_fn_unwrapped(vec![], INT_TYPE),
-                  )),
+                  callee: Callee::FunctionName(FunctionNameExpression {
+                    name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+                    type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+                  }),
                   arguments: vec![ZERO],
                   return_type: INT_TYPE,
                   return_collector: None,
                 },
                 Statement::Call {
-                  callee: Callee::FunctionName(FunctionName::new(
-                    heap.alloc_str_for_test("cc"),
-                    Type::new_fn_unwrapped(vec![], INT_TYPE),
-                  )),
+                  callee: Callee::FunctionName(FunctionNameExpression {
+                    name: FunctionName::new_for_test(heap.alloc_str_for_test("cc")),
+                    type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+                  }),
                   arguments: vec![ZERO],
                   return_type: INT_TYPE,
                   return_collector: Some(heap.alloc_str_for_test("ccc")),
@@ -1028,19 +1029,24 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
                     closure_type.clone(),
                   )),
                   arguments: vec![ZERO],
-                  return_type: Type::Id(heap.alloc_str_for_test("CC")),
+                  return_type: Type::Id(
+                    table.create_type_name_for_test(heap.alloc_str_for_test("CC")),
+                  ),
                   return_collector: None,
                 },
                 Statement::ClosureInit {
                   closure_variable_name: heap.alloc_str_for_test("v2"),
                   closure_type_name: closure_type.as_id().unwrap().clone(),
-                  function_name: FunctionName::new(
-                    heap.alloc_str_for_test("aaa"),
-                    Type::new_fn_unwrapped(vec![STRING_TYPE], INT_TYPE),
-                  ),
+                  function_name: FunctionNameExpression {
+                    name: FunctionName::new_for_test(heap.alloc_str_for_test("aaa")),
+                    type_: Type::new_fn_unwrapped(
+                      vec![Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE))],
+                      INT_TYPE,
+                    ),
+                  },
                   context: Expression::var_name(
                     heap.alloc_str_for_test("G1"),
-                    Type::Id(heap.alloc_str_for_test("CC")),
+                    Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("CC"))),
                   ),
                 },
               ],
@@ -1073,6 +1079,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
           return_value: ZERO,
         },
       ],
+      symbol_table: table,
     };
     let expected = format!(
       r#"const {} = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
@@ -1081,13 +1088,13 @@ const {} = ([, v]: _Str): number => parseInt(v, 10);
 const {} = (_: number, v: number): _Str => [1, String(v)];
 const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
 const {} = (v: any): number => {{ v.length = 0; return 0 }};
-type CC = [number, (t0: any, t1: number) => number, any];
-type Object = [number, number, number];
-type Variant = [number, number];
-function cc(): number {{
-  let _t4: (t0: any, t1: number) => number = cc[1];
-  let _t5: any = cc[2];
-  _t4(_t5, 0);
+type _CC = [number, (t0: any, t1: number) => number, any];
+type _Object = [number, number, number];
+type _Variant = [number, number];
+function __$cc(): number {{
+  let _t3: (t0: any, t1: number) => number = cc[1];
+  let _t4: any = cc[2];
+  _t3(_t4, 0);
   let v1: number = a[1];
   let v2: number = b[1];
   let v3: number = b[2];
@@ -1097,7 +1104,7 @@ function cc(): number {{
     }}
   }}
   let _: number = 0;
-  let _: _;
+  let _: __;
   while (true) {{
     if (!0) {{
       _ = 0;
@@ -1105,51 +1112,51 @@ function cc(): number {{
     }}
     _ = 0;
   }}
-  _builtin_dec_ref(_);
+  __$dec_ref(_);
   return 0;
 }}
-function main(): number {{
+function __$main(): number {{
   let v1 = 0 + 0;
-  let _t7 = obj as any;
-  _builtin_inc_ref(_t7);
-  let O: Object = [131073, 0, obj];
-  let v1: Variant = [1, 0, 0];
+  let _t5 = obj as any;
+  __$inc_ref(_t5);
+  let O: _Object = [131073, 0, obj];
+  let v1: _Variant = [1, 0, 0];
+  let _t6 = G1 as any;
+  __$inc_ref(_t6);
+  let v2: _Variant = [131073, 0, G1];
+  let _t7 = G1 as any;
+  __$inc_ref(_t7);
+  let _t8 = __$aaa as (t0: any) => number;
   let _t9 = G1 as any;
-  _builtin_inc_ref(_t9);
-  let v2: Variant = [131073, 0, G1];
-  let _t10 = G1 as any;
-  _builtin_inc_ref(_t10);
-  let _t11 = aaa as (t0: any) => number;
-  let _t12 = G1 as any;
-  let c1: CC = [131073, _t11, _t12];
-  let _t13 = bbb as (t0: any) => number;
-  let _t14 = 0 as any;
-  let c2: CC = [1, _t13, _t14];
-  _builtin_dec_ref(O);
-  _builtin_dec_ref(v1);
-  _builtin_dec_ref(v2);
-  _builtin_dec_ref(c1);
-  _builtin_dec_ref(c2);
+  let c1: _CC = [131073, _t8, _t9];
+  let _t10 = __$bbb as (t0: any) => number;
+  let _t11 = 0 as any;
+  let c2: _CC = [1, _t10, _t11];
+  __$dec_ref(O);
+  __$dec_ref(v1);
+  __$dec_ref(v2);
+  __$dec_ref(c1);
+  __$dec_ref(c2);
   return 0;
 }}
-function _compiled_program_main(): number {{
-  let finalV: CC;
+function __$compiled_program_main(): number {{
+  let finalV: _CC;
   if (1) {{
-    main(0);
-    let ccc: number = cc(0);
+    __$main(0);
+    let ccc: number = __$cc(0);
     finalV = v1;
   }} else {{
-    let _t16: (t0: any, t1: number) => number = cc[1];
-    let _t17: any = cc[2];
-    let _t15: CC = _t16(_t17, 0);
-    let _t18 = _t15 as any;
-    _builtin_inc_ref(_t18);
-    let _t19 = G1 as any;
-    _builtin_inc_ref(_t19);
-    let _t20 = aaa as (t0: any) => number;
-    let _t21 = G1 as any;
-    let v2: CC = [131073, _t20, _t21];
-    _builtin_dec_ref(_t15);
+    let _t13: (t0: any, t1: number) => number = cc[1];
+    let _t14: any = cc[2];
+    let _t12: _CC = _t13(_t14, 0);
+    let _t15 = _t12 as any;
+    __$inc_ref(_t15);
+    let _t16 = G1 as any;
+    __$inc_ref(_t16);
+    let _t17 = __$aaa as (t0: any) => number;
+    let _t18 = G1 as any;
+    let v2: _CC = [131073, _t17, _t18];
+    __$dec_ref(_t12);
     finalV = v2;
   }}
   let finalV2: number;
@@ -1162,10 +1169,10 @@ function _compiled_program_main(): number {{
   let finalV3: number;
   while (true) {{
   }}
-  _builtin_dec_ref(finalV);
+  __$dec_ref(finalV);
   return 0;
 }}
-function _builtin_inc_ref(ptr: any): number {{
+function __$inc_ref(ptr: any): number {{
   let tinyInt = Number(ptr < 1024);
   let isOdd = ptr & 1;
   let notPtr = tinyInt | isOdd;
@@ -1183,7 +1190,7 @@ function _builtin_inc_ref(ptr: any): number {{
   }}
   return 0;
 }}
-function _builtin_dec_ref(ptr: any): number {{
+function __$dec_ref(ptr: any): number {{
   let tinyInt = Number(ptr < 1024);
   let isOdd = ptr & 1;
   let notPtr = tinyInt | isOdd;
@@ -1210,26 +1217,26 @@ function _builtin_dec_ref(ptr: any): number {{
             let offsetToHeader = i + 1;
             let byteOffset = offsetToHeader << 2;
             let fieldPtr = ptr + byteOffset;
-            _builtin_dec_ref(fieldPtr);
+            __$dec_ref(fieldPtr);
           }}
           let newIsRefBitSet = bitSet >>> 1;
           let newI = i + 1;
           bitSet = newIsRefBitSet;
           i = newI;
         }}
-        _builtin_free(ptr);
+        __$free(ptr);
       }}
     }}
   }}
   return 0;
 }}
 "#,
-      common_names::encoded_fn_name_string_concat(),
-      common_names::encoded_fn_name_println(),
-      common_names::encoded_fn_name_string_to_int(),
-      common_names::encoded_fn_name_int_to_string(),
-      common_names::encoded_fn_name_panic(),
-      common_names::ENCODED_FN_NAME_FREE,
+      FunctionName::STR_CONCAT.encoded(heap, &SymbolTable::new()),
+      FunctionName::PROCESS_PRINTLN.encoded(heap, &SymbolTable::new()),
+      FunctionName::STR_TO_INT.encoded(heap, &SymbolTable::new()),
+      FunctionName::STR_FROM_INT.encoded(heap, &SymbolTable::new()),
+      FunctionName::PROCESS_PANIC.encoded(heap, &SymbolTable::new()),
+      FunctionName::BUILTIN_FREE.encoded(heap, &SymbolTable::new()),
     );
     assert_lowered(sources, heap, &expected);
   }

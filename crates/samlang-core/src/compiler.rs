@@ -21,7 +21,7 @@ pub(crate) fn compile_lir_to_wasm(
   let whole_module_string = format!(
     "(module\n{}\n{}\n)\n",
     include_str!("libsam.wat"),
-    wasm_lowering::compile_mir_to_wasm(heap, sources).pretty_print(heap)
+    wasm_lowering::compile_mir_to_wasm(heap, sources).pretty_print(heap, &sources.symbol_table)
   );
   let wat = wat::parse_str(&whole_module_string).unwrap();
   (whole_module_string, wat)

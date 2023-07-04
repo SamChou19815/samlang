@@ -340,14 +340,14 @@ mod tests {
     );
     super::search_modules_globally(
       &checked_sources,
-      &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str_for_test("Main")),
+      &super::GlobalNameSearchRequest::Toplevel(mod_ref, well_known_pstrs::MAIN_FN),
     );
     super::search_modules_globally(
       &checked_sources,
       &super::GlobalNameSearchRequest::InterfaceMember(
         mod_ref,
-        heap.alloc_str_for_test("Main"),
-        heap.alloc_str_for_test("main"),
+        well_known_pstrs::MAIN_FN,
+        well_known_pstrs::MAIN_FN,
         false,
       ),
     );

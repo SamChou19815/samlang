@@ -25,8 +25,8 @@ impl PotentialLoopInvariantExpression {
 
 impl PotentialLoopInvariantExpression {
   #[cfg(test)]
-  fn debug_print(&self, heap: &crate::Heap) -> String {
-    self.to_expression().debug_print(heap)
+  fn debug_print(&self, heap: &crate::Heap, table: &crate::ast::mir::SymbolTable) -> String {
+    self.to_expression().debug_print(heap, table)
   }
 }
 
@@ -78,14 +78,18 @@ impl BasicInductionVariableWithLoopGuard {
 
 impl BasicInductionVariableWithLoopGuard {
   #[cfg(test)]
-  pub(super) fn debug_print(&self, heap: &crate::Heap) -> String {
+  pub(super) fn debug_print(
+    &self,
+    heap: &crate::Heap,
+    table: &crate::ast::mir::SymbolTable,
+  ) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}, guard_operator: {:?}, guard_expression: {}}}",
       self.name.as_str(heap),
-      self.initial_value.debug_print(heap),
-      self.increment_amount.debug_print(heap),
+      self.initial_value.debug_print(heap, table),
+      self.increment_amount.debug_print(heap, table),
       self.guard_operator,
-      self.guard_expression.debug_print(heap)
+      self.guard_expression.debug_print(heap, table)
     )
   }
 }
@@ -99,12 +103,16 @@ pub(super) struct GeneralBasicInductionVariable {
 
 impl GeneralBasicInductionVariable {
   #[cfg(test)]
-  pub(super) fn debug_print(&self, heap: &crate::Heap) -> String {
+  pub(super) fn debug_print(
+    &self,
+    heap: &crate::Heap,
+    table: &crate::ast::mir::SymbolTable,
+  ) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}}}",
       self.name.as_str(heap),
-      self.initial_value.debug_print(heap),
-      self.increment_amount.debug_print(heap),
+      self.initial_value.debug_print(heap, table),
+      self.increment_amount.debug_print(heap, table),
     )
   }
 }
@@ -119,12 +127,12 @@ pub(super) struct GeneralBasicInductionVariableWithLoopValueCollector {
 
 impl GeneralBasicInductionVariableWithLoopValueCollector {
   #[cfg(test)]
-  fn debug_print(&self, heap: &crate::Heap) -> String {
+  fn debug_print(&self, heap: &crate::Heap, table: &crate::ast::mir::SymbolTable) -> String {
     format!(
       "{{name: {}, initial_value: {}, increment_amount: {}, loop_value_collector: {}}}",
       self.name.as_str(heap),
-      self.initial_value.debug_print(heap),
-      self.increment_amount.debug_print(heap),
+      self.initial_value.debug_print(heap, table),
+      self.increment_amount.debug_print(heap, table),
       self.loop_value_collector.as_str(heap)
     )
   }
@@ -147,13 +155,17 @@ pub(super) struct DerivedInductionVariableWithName {
 
 impl DerivedInductionVariableWithName {
   #[cfg(test)]
-  pub(super) fn debug_print(&self, heap: &crate::Heap) -> String {
+  pub(super) fn debug_print(
+    &self,
+    heap: &crate::Heap,
+    table: &crate::ast::mir::SymbolTable,
+  ) -> String {
     format!(
       "{{name: {}, base_name: {}, multiplier: {}, immediate: {}}}",
       self.name.as_str(heap),
       self.base_name.as_str(heap),
-      self.multiplier.debug_print(heap),
-      self.immediate.debug_print(heap),
+      self.multiplier.debug_print(heap, table),
+      self.immediate.debug_print(heap, table),
     )
   }
 }
@@ -654,7 +666,7 @@ pub(super) fn extract_optimizable_while_loop(
 mod tests {
   use super::*;
   use crate::{
-    ast::mir::{Callee, FunctionName, INT_TYPE, ONE, ZERO},
+    ast::mir::{Callee, FunctionName, FunctionNameExpression, SymbolTable, INT_TYPE, ONE, ZERO},
     common::well_known_pstrs,
   };
   use pretty_assertions::assert_eq;
@@ -662,6 +674,7 @@ mod tests {
   #[test]
   fn boilterplate() {
     let heap = &mut crate::Heap::new();
+    let table = &SymbolTable::new();
 
     get_guard_operator(Operator::LT, false).unwrap().invert().clone().invert().to_op();
     get_guard_operator(Operator::LE, false).unwrap().invert().clone().invert().to_op();
@@ -682,7 +695,7 @@ mod tests {
     }
     .as_general_basic_induction_variable()
     .clone()
-    .debug_print(heap)
+    .debug_print(heap, table)
     .is_empty());
     DerivedInductionVariableWithName {
       name: well_known_pstrs::LOWER_A,
@@ -691,12 +704,13 @@ mod tests {
       immediate: PotentialLoopInvariantExpression::Int(0),
     }
     .clone()
-    .debug_print(heap);
+    .debug_print(heap, table);
   }
 
   #[test]
   fn merge_invariant_multiplication_for_loop_optimization_tests() {
     let heap = &mut crate::Heap::new();
+    let table = &SymbolTable::new();
 
     assert_eq!(
       6,
@@ -720,7 +734,7 @@ mod tests {
       )
       .unwrap()
       .to_expression()
-      .debug_print(heap)
+      .debug_print(heap, table)
     );
     assert_eq!(
       "(v: int)",
@@ -733,7 +747,7 @@ mod tests {
       )
       .unwrap()
       .to_expression()
-      .debug_print(heap)
+      .debug_print(heap, table)
     );
     assert!(merge_invariant_multiplication_for_loop_optimization(
       &PotentialLoopInvariantExpression::Var(VariableName::new(
@@ -810,6 +824,7 @@ mod tests {
   #[test]
   fn extract_basic_induction_variables_tests() {
     let heap = &mut crate::Heap::new();
+    let table = &mut SymbolTable::new();
 
     assert!(extract_basic_induction_variables(
       &well_known_pstrs::LOWER_I,
@@ -921,17 +936,18 @@ mod tests {
         "{name: i, initial_value: 0, increment_amount: 1, loop_value_collector: tmp_i}",
         "{name: j, initial_value: 0, increment_amount: 3, loop_value_collector: tmp_j}",
       ],
-      all_basic_induction_variables.iter().map(|it| it.debug_print(heap)).collect_vec()
+      all_basic_induction_variables.iter().map(|it| it.debug_print(heap, table)).collect_vec()
     );
     assert_eq!(
       "{name: i, initial_value: 0, increment_amount: 1, loop_value_collector: tmp_i}",
-      basic_induction_variable_with_associated_loop_guard.debug_print(heap)
+      basic_induction_variable_with_associated_loop_guard.debug_print(heap, table)
     );
   }
 
   #[test]
   fn extract_derived_induction_variables_tests() {
     let heap = &mut crate::Heap::new();
+    let table = &SymbolTable::new();
 
     assert_eq!(
       vec![
@@ -980,19 +996,19 @@ mod tests {
             Expression::int(6),
           ),
           Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              well_known_pstrs::LOWER_A,
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: None,
           },
           Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              well_known_pstrs::LOWER_A,
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![Expression::var_name(heap.alloc_str_for_test("tmp_x"), INT_TYPE)],
             return_type: INT_TYPE,
             return_collector: None,
@@ -1046,7 +1062,7 @@ mod tests {
         ]),
       )
       .iter()
-      .map(|it| it.debug_print(heap))
+      .map(|it| it.debug_print(heap, table))
       .collect_vec()
     );
 
@@ -1144,7 +1160,7 @@ mod tests {
         ]),
       )
       .iter()
-      .map(|it| it.debug_print(heap))
+      .map(|it| it.debug_print(heap, table))
       .collect_vec()
     );
 
@@ -1180,7 +1196,7 @@ mod tests {
         ]),
       )
       .iter()
-      .map(|it| it.debug_print(heap))
+      .map(|it| it.debug_print(heap, table))
       .collect_vec()
     );
 
@@ -1219,7 +1235,7 @@ mod tests {
         ]),
       )
       .iter()
-      .map(|it| it.debug_print(heap))
+      .map(|it| it.debug_print(heap, table))
       .collect_vec()
     );
 
@@ -1292,7 +1308,7 @@ mod tests {
         ]),
       )
       .iter()
-      .map(|it| it.debug_print(heap))
+      .map(|it| it.debug_print(heap, table))
       .collect_vec()
     );
 
@@ -1360,7 +1376,7 @@ mod tests {
         ]),
       )
       .iter()
-      .map(|it| it.debug_print(heap))
+      .map(|it| it.debug_print(heap, table))
       .collect_vec()
     );
 
@@ -1423,6 +1439,7 @@ mod tests {
   #[test]
   fn extract_loop_guard_structure_rejection_rests() {
     let heap = &mut crate::Heap::new();
+    let table = &mut SymbolTable::new();
 
     let non_loop_invariant_variables = HashSet::from([
       well_known_pstrs::LOWER_A,
@@ -1438,12 +1455,12 @@ mod tests {
         &vec![
           Statement::StructInit {
             struct_variable_name: well_known_pstrs::LOWER_A,
-            type_name: heap.alloc_str_for_test("T"),
+            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
             expression_list: vec![],
           },
           Statement::StructInit {
             struct_variable_name: well_known_pstrs::LOWER_A,
-            type_name: heap.alloc_str_for_test("T"),
+            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
             expression_list: vec![],
           }
         ],
@@ -1472,12 +1489,12 @@ mod tests {
         &vec![
           Statement::StructInit {
             struct_variable_name: well_known_pstrs::LOWER_A,
-            type_name: heap.alloc_str_for_test("T"),
+            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
             expression_list: vec![],
           },
           Statement::StructInit {
             struct_variable_name: well_known_pstrs::LOWER_A,
-            type_name: heap.alloc_str_for_test("T"),
+            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
             expression_list: vec![],
           }
         ],
@@ -1493,7 +1510,7 @@ mod tests {
           Statement::binary(well_known_pstrs::LOWER_A, Operator::PLUS, ZERO, ZERO),
           Statement::StructInit {
             struct_variable_name: well_known_pstrs::LOWER_A,
-            type_name: heap.alloc_str_for_test("T"),
+            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
             expression_list: vec![],
           }
         ],
@@ -1514,7 +1531,7 @@ mod tests {
           ),
           Statement::StructInit {
             struct_variable_name: well_known_pstrs::LOWER_A,
-            type_name: heap.alloc_str_for_test("T"),
+            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
             expression_list: vec![],
           }
         ],
@@ -1535,7 +1552,7 @@ mod tests {
           ),
           Statement::StructInit {
             struct_variable_name: well_known_pstrs::LOWER_A,
-            type_name: heap.alloc_str_for_test("T"),
+            type_name: table.create_type_name_for_test(heap.alloc_str_for_test("T")),
             expression_list: vec![],
           },
           Statement::SingleIf { condition: ZERO, invert_condition: false, statements: vec![] }
@@ -1625,7 +1642,7 @@ mod tests {
             invert_condition: false,
             statements: vec![Statement::StructInit {
               struct_variable_name: well_known_pstrs::LOWER_A,
-              type_name: heap.alloc_str_for_test("I"),
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
               expression_list: vec![]
             }]
           },
@@ -1633,12 +1650,12 @@ mod tests {
             condition: ZERO,
             s1: vec![Statement::StructInit {
               struct_variable_name: well_known_pstrs::LOWER_A,
-              type_name: heap.alloc_str_for_test("I"),
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
               expression_list: vec![]
             }],
             s2: vec![Statement::StructInit {
               struct_variable_name: well_known_pstrs::LOWER_A,
-              type_name: heap.alloc_str_for_test("I"),
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
               expression_list: vec![]
             }],
             final_assignments: vec![]
@@ -1656,10 +1673,10 @@ mod tests {
             ZERO
           ),
           Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              well_known_pstrs::LOWER_A,
-              Type::new_fn_unwrapped(vec![], INT_TYPE)
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE)
+            }),
             arguments: vec![],
             return_type: INT_TYPE,
             return_collector: None
@@ -1707,7 +1724,7 @@ mod tests {
             invert_condition: false,
             statements: vec![Statement::StructInit {
               struct_variable_name: well_known_pstrs::LOWER_A,
-              type_name: heap.alloc_str_for_test("I"),
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
               expression_list: vec![]
             }]
           },
@@ -1732,7 +1749,7 @@ mod tests {
             invert_condition: false,
             statements: vec![Statement::StructInit {
               struct_variable_name: well_known_pstrs::LOWER_A,
-              type_name: heap.alloc_str_for_test("I"),
+              type_name: table.create_type_name_for_test(heap.alloc_str_for_test("I")),
               expression_list: vec![]
             }]
           },
@@ -1858,6 +1875,7 @@ mod tests {
   #[test]
   fn extract_optimizable_while_loop_acceptance_test() {
     let heap = &mut crate::Heap::new();
+    let table = &SymbolTable::new();
 
     let OptimizableWhileLoop {
       basic_induction_variable_with_loop_guard,
@@ -1932,17 +1950,17 @@ mod tests {
     .unwrap();
     assert_eq!(
       "{name: i, initial_value: 0, increment_amount: 1, guard_operator: LT, guard_expression: 0}",
-      basic_induction_variable_with_loop_guard.debug_print(heap)
+      basic_induction_variable_with_loop_guard.debug_print(heap, table)
     );
     assert_eq!(
       vec!["{name: j, initial_value: 0, increment_amount: 3}"],
-      general_induction_variables.iter().map(|it| it.debug_print(heap)).collect_vec()
+      general_induction_variables.iter().map(|it| it.debug_print(heap, table)).collect_vec()
     );
     assert_eq!(
       vec!["{name: x, initial_value: 0, loop_value: (tmp_x: int)}"],
       loop_variables_that_are_not_basic_induction_variables
         .iter()
-        .map(|it| it.pretty_print(heap))
+        .map(|it| it.pretty_print(heap, table))
         .collect_vec()
     );
     assert_eq!(
@@ -1950,11 +1968,11 @@ mod tests {
         "{name: tmp_x, base_name: i, multiplier: 5, immediate: 5}",
         "{name: tmp_y, base_name: i, multiplier: 5, immediate: 11}",
       ],
-      derived_induction_variables.iter().map(|it| it.debug_print(heap)).collect_vec()
+      derived_induction_variables.iter().map(|it| it.debug_print(heap, table)).collect_vec()
     );
     assert!(statements.is_empty());
     let (n, _, v) = break_collector.unwrap();
     assert_eq!("bc", n.as_str(heap));
-    assert_eq!("0", v.debug_print(heap));
+    assert_eq!("0", v.debug_print(heap, table));
   }
 }

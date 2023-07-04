@@ -15,7 +15,7 @@ pub(super) fn run_source_module(
 pub(super) fn run_lir_sources(
   heap: &mut common::Heap,
   sources: &ast::lir::Sources,
-  main_function: common::PStr,
+  main_function: ast::mir::FunctionName,
 ) -> String {
   lir_interpreter::run(heap, sources, main_function)
 }

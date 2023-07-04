@@ -2,8 +2,8 @@ use super::optimization_common::LocalValueContextForOptimization;
 use crate::ast::{
   hir::Operator,
   mir::{
-    Binary, Callee, Expression, Function, FunctionName, GenenalLoopVariable, Statement, Type,
-    VariableName, INT_TYPE, ZERO,
+    Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression,
+    GenenalLoopVariable, Statement, Type, VariableName, INT_TYPE, ZERO,
   },
 };
 use crate::common::PStr;
@@ -58,8 +58,8 @@ mod estimator {
   }
 
   pub(super) struct FunctionsToInline {
-    pub(super) functions_that_can_be_inlined: HashSet<PStr>,
-    pub(super) functions_that_can_perform_inlining: HashSet<PStr>,
+    pub(super) functions_that_can_be_inlined: HashSet<FunctionName>,
+    pub(super) functions_that_can_perform_inlining: HashSet<FunctionName>,
   }
 
   pub(super) fn get_functions_to_inline(functions: &Vec<Function>) -> FunctionsToInline {
@@ -82,38 +82,47 @@ mod estimator {
     use crate::{
       ast::hir::Operator,
       ast::mir::{
-        Callee, Function, FunctionName, GenenalLoopVariable, Statement, Type, INT_TYPE, ZERO,
+        Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
+        SymbolTable, Type, INT_TYPE, ZERO,
       },
-      common::Heap,
+      common::well_known_pstrs,
     };
 
     #[test]
     fn cost_estimator_test() {
-      let s = Heap::new().alloc_str_for_test("");
+      let mut table = SymbolTable::new();
 
       let actual = super::estimate_fn_inline_cost(&Function {
-        name: s,
+        name: FunctionName::new_for_test(well_known_pstrs::EMPTY),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
-          Statement::IndexedAccess { name: s, type_: INT_TYPE, pointer_expression: ZERO, index: 2 },
-          Statement::binary(s, Operator::PLUS, ZERO, ZERO),
+          Statement::IndexedAccess {
+            name: well_known_pstrs::EMPTY,
+            type_: INT_TYPE,
+            pointer_expression: ZERO,
+            index: 2,
+          },
+          Statement::binary(well_known_pstrs::EMPTY, Operator::PLUS, ZERO, ZERO),
           Statement::StructInit {
-            struct_variable_name: s,
-            type_name: s,
+            struct_variable_name: well_known_pstrs::EMPTY,
+            type_name: table.create_type_name_for_test(well_known_pstrs::EMPTY),
             expression_list: vec![ZERO, ZERO, ZERO],
           },
           Statement::ClosureInit {
-            closure_variable_name: s,
-            closure_type_name: s,
-            function_name: FunctionName::new(s, Type::new_fn_unwrapped(vec![], INT_TYPE)),
+            closure_variable_name: well_known_pstrs::EMPTY,
+            closure_type_name: table.create_type_name_for_test(well_known_pstrs::EMPTY),
+            function_name: FunctionNameExpression {
+              name: FunctionName::new_for_test(well_known_pstrs::EMPTY),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            },
             context: ZERO,
           },
           Statement::Call {
-            callee: Callee::FunctionName(FunctionName::new(
-              s,
-              Type::new_fn_unwrapped(vec![], INT_TYPE),
-            )),
+            callee: Callee::FunctionName(FunctionNameExpression {
+              name: FunctionName::new_for_test(well_known_pstrs::EMPTY),
+              type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
+            }),
             arguments: vec![ZERO, ZERO],
             return_type: INT_TYPE,
             return_collector: None,
@@ -122,27 +131,37 @@ mod estimator {
             condition: ZERO,
             s1: vec![],
             s2: vec![],
-            final_assignments: vec![(s, INT_TYPE, ZERO, ZERO)],
+            final_assignments: vec![(well_known_pstrs::EMPTY, INT_TYPE, ZERO, ZERO)],
           },
           Statement::IfElse {
             condition: ZERO,
-            s1: vec![Statement::binary(s, Operator::PLUS, ZERO, ZERO)],
-            s2: vec![Statement::binary(s, Operator::PLUS, ZERO, ZERO)],
+            s1: vec![Statement::binary(well_known_pstrs::EMPTY, Operator::PLUS, ZERO, ZERO)],
+            s2: vec![Statement::binary(well_known_pstrs::EMPTY, Operator::PLUS, ZERO, ZERO)],
             final_assignments: vec![],
           },
           Statement::SingleIf {
             condition: ZERO,
             invert_condition: false,
-            statements: vec![Statement::binary(s, Operator::PLUS, ZERO, ZERO)],
+            statements: vec![Statement::binary(
+              well_known_pstrs::EMPTY,
+              Operator::PLUS,
+              ZERO,
+              ZERO,
+            )],
           },
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
-              name: s,
+              name: well_known_pstrs::EMPTY,
               type_: INT_TYPE,
               initial_value: ZERO,
               loop_value: ZERO,
             }],
-            statements: vec![Statement::binary(s, Operator::PLUS, ZERO, ZERO)],
+            statements: vec![Statement::binary(
+              well_known_pstrs::EMPTY,
+              Operator::PLUS,
+              ZERO,
+              ZERO,
+            )],
             break_collector: None,
           },
         ],
@@ -332,13 +351,13 @@ fn inline_rewrite_stmts(
 
 fn perform_inline_rewrite_on_function_stmt(
   stmt: Statement,
-  current_fn_name: &PStr,
-  functions_that_can_be_inlined: &HashMap<PStr, Function>,
+  current_fn_name: &FunctionName,
+  functions_that_can_be_inlined: &HashMap<FunctionName, Function>,
   heap: &mut Heap,
 ) -> Vec<Statement> {
   match stmt {
     Statement::Call {
-      callee: Callee::FunctionName(FunctionName { name, type_: _ }),
+      callee: Callee::FunctionName(FunctionNameExpression { name, type_: _ }),
       arguments,
       return_type: _,
       return_collector,
@@ -423,8 +442,8 @@ fn perform_inline_rewrite_on_function_stmt(
 
 fn perform_inline_rewrite_on_function_stmts(
   statements: Vec<Statement>,
-  current_fn_name: &PStr,
-  functions_that_can_be_inlined: &HashMap<PStr, Function>,
+  current_fn_name: &FunctionName,
+  functions_that_can_be_inlined: &HashMap<FunctionName, Function>,
   heap: &mut Heap,
 ) -> Vec<Statement> {
   statements
@@ -442,7 +461,7 @@ fn perform_inline_rewrite_on_function_stmts(
 
 fn perform_inline_rewrite_on_function(
   function: Function,
-  functions_that_can_be_inlined: &HashMap<PStr, Function>,
+  functions_that_can_be_inlined: &HashMap<FunctionName, Function>,
   heap: &mut Heap,
 ) -> Function {
   let body = perform_inline_rewrite_on_function_stmts(
