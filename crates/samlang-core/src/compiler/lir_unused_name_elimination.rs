@@ -380,7 +380,7 @@ mod tests {
       optimized
         .type_definitions
         .iter()
-        .map(|it| it.name.encoded(heap, &optimized.symbol_table))
+        .map(|it| it.name.encoded_for_test(heap, &optimized.symbol_table))
         .collect_vec()
     );
     assert_eq!(
@@ -388,7 +388,7 @@ mod tests {
       optimized
         .functions
         .iter()
-        .map(|it| it.name.encoded(heap, &optimized.symbol_table))
+        .map(|it| it.name.encoded_for_test(heap, &optimized.symbol_table))
         .collect_vec()
     );
   }

@@ -1811,13 +1811,13 @@ class Main {
       .unwrap()
       .define(
         "builtins",
-        &ast::mir::FunctionName::PROCESS_PRINTLN.encoded(heap, &lir_sources.symbol_table),
+        &ast::mir::FunctionName::PROCESS_PRINTLN.encoded_for_test(heap, &lir_sources.symbol_table),
         Func::wrap(&mut store, builtin_println),
       )
       .unwrap()
       .define(
         "builtins",
-        &ast::mir::FunctionName::PROCESS_PANIC.encoded(heap, &lir_sources.symbol_table),
+        &ast::mir::FunctionName::PROCESS_PANIC.encoded_for_test(heap, &lir_sources.symbol_table),
         Func::wrap(&mut store, wasm_builtin_panic),
       )
       .unwrap()
@@ -1832,7 +1832,7 @@ class Main {
         type_name: lir_sources.symbol_table.create_main_type_name(mod_ref),
         fn_name: well_known_pstrs::MAIN_FN,
       }
-      .encoded(heap, &lir_sources.symbol_table);
+      .encoded_for_test(heap, &lir_sources.symbol_table);
       expected_str.push_str(test.name);
       expected_str.push_str(":\n");
       store.state_mut().push(test.name.to_string() + ":");

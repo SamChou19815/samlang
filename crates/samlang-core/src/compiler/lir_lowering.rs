@@ -764,6 +764,7 @@ mod tests {
   use crate::{
     ast::{
       hir::Operator,
+      lir,
       mir::{
         Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
         FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
@@ -776,11 +777,8 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    let heap = &mut Heap::new();
-    assert_eq!(
-      "_Str",
-      super::lower_type(Type::Id(TypeNameId::STR)).pretty_print(heap, &SymbolTable::new())
-    );
+    assert!(super::lower_type(Type::Id(TypeNameId::STR))
+      .is_the_same_type(&lir::Type::Id(TypeNameId::STR)));
   }
 
   fn assert_lowered(sources: Sources, heap: &mut Heap, expected: &str) {
@@ -790,7 +788,6 @@ mod tests {
   #[test]
   fn smoke_test() {
     let heap = &mut Heap::new();
-    let table = &SymbolTable::new();
 
     assert_lowered(
       Sources {
@@ -802,21 +799,7 @@ mod tests {
         functions: vec![],
       },
       heap,
-      &format!(
-        r#"const {} = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
-const {} = (_: number, [, line]: _Str): number => {{ console.log(line); return 0; }};
-const {} = ([, v]: _Str): number => parseInt(v, 10);
-const {} = (_: number, v: number): _Str => [1, String(v)];
-const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
-const {} = (v: any): number => {{ v.length = 0; return 0 }};
-"#,
-        FunctionName::STR_CONCAT.encoded(heap, table),
-        FunctionName::PROCESS_PRINTLN.encoded(heap, table),
-        FunctionName::STR_TO_INT.encoded(heap, table),
-        FunctionName::STR_FROM_INT.encoded(heap, table),
-        FunctionName::PROCESS_PANIC.encoded(heap, table),
-        FunctionName::BUILTIN_FREE.encoded(heap, table),
-      ),
+      &lir::ts_prolog(),
     );
   }
 
@@ -1082,13 +1065,7 @@ const {} = (v: any): number => {{ v.length = 0; return 0 }};
       symbol_table: table,
     };
     let expected = format!(
-      r#"const {} = ([, a]: _Str, [, b]: _Str): _Str => [1, a + b];
-const {} = (_: number, [, line]: _Str): number => {{ console.log(line); return 0; }};
-const {} = ([, v]: _Str): number => parseInt(v, 10);
-const {} = (_: number, v: number): _Str => [1, String(v)];
-const {} = (_: number, [, v]: _Str): number => {{ throw Error(v); }};
-const {} = (v: any): number => {{ v.length = 0; return 0 }};
-type _CC = [number, (t0: any, t1: number) => number, any];
+      r#"{}type _CC = [number, (t0: any, t1: number) => number, any];
 type _Object = [number, number, number];
 type _Variant = [number, number];
 function __$cc(): number {{
@@ -1231,12 +1208,7 @@ function __$dec_ref(ptr: any): number {{
   return 0;
 }}
 "#,
-      FunctionName::STR_CONCAT.encoded(heap, &SymbolTable::new()),
-      FunctionName::PROCESS_PRINTLN.encoded(heap, &SymbolTable::new()),
-      FunctionName::STR_TO_INT.encoded(heap, &SymbolTable::new()),
-      FunctionName::STR_FROM_INT.encoded(heap, &SymbolTable::new()),
-      FunctionName::PROCESS_PANIC.encoded(heap, &SymbolTable::new()),
-      FunctionName::BUILTIN_FREE.encoded(heap, &SymbolTable::new()),
+      lir::ts_prolog(),
     );
     assert_lowered(sources, heap, &expected);
   }

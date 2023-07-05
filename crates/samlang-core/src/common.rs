@@ -124,10 +124,6 @@ impl PStr {
     self.0.as_inline_str().unwrap_or_else(|id| &heap.str_pointer_table[id as usize])
   }
 
-  pub(crate) fn debug_string(&self) -> String {
-    self.0.as_inline_str().map(|s| s.to_string()).unwrap_or_else(|id| id.to_string())
-  }
-
   fn create_inline_opt(s: &str) -> Option<PStr> {
     PStrPrivateRepr::from_str_opt(s).map(PStr)
   }
@@ -599,21 +595,6 @@ pub(crate) fn rc_pstr(heap: &Heap, s: PStr) -> Str {
   Str(Rc::new(String::from(s.as_str(heap))))
 }
 
-fn byte_digit_to_char(byte: u8) -> char {
-  let u = if byte < 10 { b'0' + byte } else { b'a' + byte - 10 };
-  u as char
-}
-
-pub(crate) fn byte_vec_to_data_string(array: &Vec<u8>) -> String {
-  let mut collector = vec![];
-  for b in array {
-    collector.push('\\');
-    collector.push(byte_digit_to_char(b / 16));
-    collector.push(byte_digit_to_char(b % 16));
-  }
-  String::from_iter(collector.iter())
-}
-
 pub(crate) struct LocalStackedContext<K: Clone + Eq + Hash, V: Clone> {
   local_values_stack: Vec<HashMap<K, V>>,
 }
@@ -659,8 +640,8 @@ mod tests {
   use crate::common::well_known_pstrs;
 
   use super::{
-    byte_vec_to_data_string, measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr,
-    PStrPrivateRepr, PStrPrivateReprInline, StringStoredInHeap,
+    measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr, PStrPrivateRepr,
+    PStrPrivateReprInline, StringStoredInHeap,
   };
   use pretty_assertions::assert_eq;
   use std::{cmp::Ordering, collections::HashSet, ops::Deref};
@@ -695,7 +676,6 @@ mod tests {
     let a1 = heap.alloc_str_for_test("aaaaaaaaaaaaaaaaaaaaaaaaaaa");
     let b = well_known_pstrs::LOWER_B;
     let a2 = heap.alloc_str_for_test("aaaaaaaaaaaaaaaaaaaaaaaaaaa");
-    a1.debug_string();
     assert!(PStrPrivateRepr { heap_id: 0 }.clone().eq(&PStrPrivateRepr { heap_id: 0 }));
     assert!(heap.get_allocated_str_opt("aaaaaaaaaaaaaaaaaaaaaaaaaaa").is_some());
     assert!(heap.get_allocated_str_opt("dddddddddddddddddddddddddddddddddddddddd").is_none());
@@ -829,18 +809,6 @@ mod tests {
   fn heap_mod_ref_crash() {
     let heap = Heap::new();
     ModuleReference(100).pretty_print(&heap);
-  }
-
-  #[test]
-  fn int_vec_to_data_string_tests() {
-    assert_eq!(
-      "\\01\\00\\00\\00\\02\\00\\00\\00\\03\\00\\00\\00\\04\\00\\00\\00",
-      byte_vec_to_data_string(&vec![1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0,])
-    );
-    assert_eq!(
-      "\\01\\00\\00\\00\\7c\\00\\00\\00\\16\\00\\00\\00\\21\\00\\00\\00",
-      byte_vec_to_data_string(&vec![1, 0, 0, 0, 124, 0, 0, 0, 22, 0, 0, 0, 33, 0, 0, 0,])
-    );
   }
 
   fn insert_crash_on_error(
