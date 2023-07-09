@@ -53,7 +53,7 @@ jobs:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           corepack enable
           pnpm install
-          pnpm build:samlang-wasm
+          pnpm build:wasm
   build:
     needs:
       - build-per-os

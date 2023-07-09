@@ -223,8 +223,8 @@ mod tests {
       symbol_table: table,
     };
     let expected = format!(
-      r#"{}const dev_meggo: _Str = [0, `vibez`];
-const esc: _Str = [0, `f"\"`];
+      r#"{}const dev_meggo: _Str = [0, `vibez` as unknown as number];
+const esc: _Str = [0, `f"\"` as unknown as number];
 type _Foo = [number, number];
 type _Foo = [];
 function __$main(): number {{
@@ -273,7 +273,7 @@ function __$f(v1: () => number): number {{
     d();
     let f: number = big[0];
     0[0] = 0;
-    let c = 0 as number;
+    let c = 0 as unknown as number;
     break;
     bar = b2;
   }}

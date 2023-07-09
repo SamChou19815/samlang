@@ -73,7 +73,7 @@ cp test-samlang-wasm.mjs samlang-demo && \
 
 # Pack and sync
 cd samlang-demo && npm pack && cd ../
-if [[ -z "${CI}" ]]
+if [[ ! -z "${RELEASE}" ]]
 then
   mv samlang-demo/samlang-demo-0.0.1.tgz ../../../website/packages/samlang/samlang-demo-0.0.1.tgz
 fi
