@@ -101,7 +101,7 @@ mod tests {
     let mut table = SymbolTable::new();
     let mut type_name_id = table.create_type_name_for_test(well_known_pstrs::UPPER_A);
     assert!(!format!("{:?}", type_name_id).is_empty());
-    assert!(!type_name_id.encoded(heap, &table).is_empty());
+    assert!(!type_name_id.encoded_for_test(heap, &table).is_empty());
     type_name_id =
       table.create_simple_type_name(ModuleReference::root(), well_known_pstrs::UPPER_A);
     type_name_id = table.derived_type_name_with_subtype_tag(type_name_id, 1);
@@ -116,9 +116,6 @@ mod tests {
 
     assert_eq!("int", INT_TYPE.pretty_print(heap, table));
     assert_eq!("0", ZERO.clone().debug_print(heap, table));
-    ZERO.dump_to_string();
-    Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).dump_to_string();
-    Expression::StringName(well_known_pstrs::LOWER_A).dump_to_string();
     assert_eq!(
       "(a: int)",
       Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).debug_print(heap, table)

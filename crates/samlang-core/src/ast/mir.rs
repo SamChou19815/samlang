@@ -52,22 +52,21 @@ impl TypeName {
     sub_type_tag: None,
   };
 
-  pub(crate) fn encoded(&self, heap: &Heap, table: &SymbolTable) -> String {
-    let mut s = self.module_reference.encoded(heap);
-    s.push('_');
-    s.push_str(self.type_name.as_str(heap));
+  fn encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+    collector.push_str(&self.module_reference.encoded(heap));
+    collector.push('_');
+    collector.push_str(self.type_name.as_str(heap));
     for t in &self.suffix {
-      s.push('_');
+      collector.push('_');
       match t {
-        Type::Int => s.push_str("int"),
-        Type::Id(id) => s.push_str(&id.encoded(heap, table)),
+        Type::Int => collector.push_str("int"),
+        Type::Id(id) => id.write_encoded(collector, heap, table),
       }
     }
     if let Some(t) = self.sub_type_tag {
-      s.push_str("$_Sub");
-      s.push_str(&t.to_string());
+      collector.push_str("$_Sub");
+      collector.push_str(&t.to_string());
     }
-    s
   }
 }
 
@@ -87,8 +86,15 @@ impl TypeNameId {
   pub(crate) const STR: TypeNameId = TypeNameId(1);
   pub(crate) const PROCESS: TypeNameId = TypeNameId(2);
 
-  pub(crate) fn encoded(&self, heap: &Heap, table: &SymbolTable) -> String {
-    table.type_name_lookup_table.get(self).unwrap().encoded(heap, table)
+  pub(super) fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+    table.type_name_lookup_table.get(self).unwrap().encoded(collector, heap, table);
+  }
+
+  #[cfg(test)]
+  pub(crate) fn encoded_for_test(&self, heap: &Heap, table: &SymbolTable) -> String {
+    let mut collector = String::new();
+    self.write_encoded(&mut collector, heap, table);
+    collector
   }
 }
 
@@ -203,7 +209,7 @@ impl Type {
   pub(crate) fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
       Type::Int => "int".to_string(),
-      Type::Id(id) => id.encoded(heap, table),
+      Type::Id(id) => id.encoded_for_test(heap, table),
     }
   }
 }
@@ -221,7 +227,7 @@ impl ClosureTypeDefinition {
   pub(crate) fn pretty_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     format!(
       "closure type {} = {}",
-      self.name.encoded(heap, table),
+      self.name.encoded_for_test(heap, table),
       self.function_type.pretty_print(heap, table)
     )
   }
@@ -270,13 +276,13 @@ impl TypeDefinition {
       TypeDefinitionMappings::Struct(types) => {
         format!(
           "object type {} = [{}]",
-          self.name.encoded(heap, table),
+          self.name.encoded_for_test(heap, table),
           types.iter().map(|it| it.pretty_print(heap, table)).join(", ")
         )
       }
       TypeDefinitionMappings::Enum(variants) => format!(
         "variant type {} = [{}]",
-        self.name.encoded(heap, table),
+        self.name.encoded_for_test(heap, table),
         variants.iter().map(|it| it.pretty_print(heap, table)).join(", ")
       ),
     }
@@ -333,8 +339,18 @@ impl FunctionName {
     FunctionName { type_name: TypeNameId::EMPTY, fn_name: name }
   }
 
-  pub(crate) fn encoded(&self, heap: &Heap, table: &SymbolTable) -> String {
-    format!("_{}${}", self.type_name.encoded(heap, table), self.fn_name.as_str(heap))
+  #[cfg(test)]
+  pub(crate) fn encoded_for_test(&self, heap: &Heap, table: &SymbolTable) -> String {
+    let mut builder = String::new();
+    self.write_encoded(&mut builder, heap, table);
+    builder
+  }
+
+  pub(crate) fn write_encoded(&self, collector: &mut String, heap: &Heap, table: &SymbolTable) {
+    collector.push('_');
+    self.type_name.write_encoded(collector, heap, table);
+    collector.push('$');
+    collector.push_str(self.fn_name.as_str(heap));
   }
 }
 
@@ -414,15 +430,6 @@ impl Expression {
     }
   }
 
-  #[cfg(test)]
-  pub(crate) fn dump_to_string(&self) -> String {
-    match self {
-      Expression::IntLiteral(i) => i.to_string(),
-      Expression::StringName(n) => n.debug_string(),
-      Expression::Variable(v) => v.name.debug_string(),
-    }
-  }
-
   pub(crate) fn convert_to_callee(self) -> Option<Callee> {
     match self {
       Expression::IntLiteral(_) | Expression::StringName(_) => None,
@@ -452,7 +459,7 @@ impl Callee {
   #[cfg(test)]
   pub(crate) fn debug_print(&self, heap: &Heap, table: &SymbolTable) -> String {
     match self {
-      Callee::FunctionName(f) => f.name.encoded(heap, table),
+      Callee::FunctionName(f) => f.name.encoded_for_test(heap, table),
       Callee::Variable(v) => v.debug_print(heap, table),
     }
   }
@@ -780,7 +787,7 @@ impl Statement {
           "{}let {}: {} = [{}];\n",
           "  ".repeat(level),
           struct_variable_name.as_str(heap),
-          type_name.encoded(heap, table),
+          type_name.encoded_for_test(heap, table),
           expression_str
         ));
       }
@@ -793,11 +800,11 @@ impl Statement {
         let closure_name_type = format!(
           "{}: {}",
           closure_variable_name.as_str(heap),
-          closure_type_name.encoded(heap, table)
+          closure_type_name.encoded_for_test(heap, table)
         );
         let function_name_type = format!(
           "{}: {}",
-          function_name.name.encoded(heap, table),
+          function_name.name.encoded_for_test(heap, table),
           function_name.type_.pretty_print(heap, table)
         );
         collector.push(format!(
@@ -846,7 +853,7 @@ impl Function {
       .join(", ");
     let header = format!(
       "function {}({}): {} {{",
-      self.name.encoded(heap, table),
+      self.name.encoded_for_test(heap, table),
       typed_parameters,
       self.type_.return_type.pretty_print(heap, table)
     );
@@ -892,7 +899,11 @@ impl Sources {
     if !self.main_function_names.is_empty() {
       lines.push(format!(
         "sources.mains = [{}]",
-        self.main_function_names.iter().map(|it| it.encoded(heap, &self.symbol_table)).join(", ")
+        self
+          .main_function_names
+          .iter()
+          .map(|it| it.encoded_for_test(heap, &self.symbol_table))
+          .join(", ")
       ));
     }
     lines.join("\n")

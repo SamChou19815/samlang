@@ -93,11 +93,12 @@ pub fn compile_sources(
 
   let mut text_code_results = BTreeMap::new();
   for module_reference in &entry_module_references {
-    let main_fn_name = ast::mir::FunctionName {
+    let mut main_fn_name = String::new();
+    ast::mir::FunctionName {
       type_name: lir_sources.symbol_table.create_main_type_name(*module_reference),
       fn_name: common::well_known_pstrs::MAIN_FN,
     }
-    .encoded(heap, &lir_sources.symbol_table);
+    .write_encoded(&mut main_fn_name, heap, &lir_sources.symbol_table);
     let ts_code = format!("{common_ts_code}\n{main_fn_name}();\n");
     let wasm_js_code = format!(
       r#"// @{}

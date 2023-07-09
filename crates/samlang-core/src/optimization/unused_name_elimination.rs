@@ -446,12 +446,16 @@ mod tests {
       sources
         .type_definitions
         .iter()
-        .map(|it| it.name.encoded(heap, &sources.symbol_table))
+        .map(|it| it.name.encoded_for_test(heap, &sources.symbol_table))
         .collect_vec()
     );
     assert_eq!(
       vec!["__$main", "__$foo", "__$baz"],
-      sources.functions.iter().map(|it| it.name.encoded(heap, &sources.symbol_table)).collect_vec()
+      sources
+        .functions
+        .iter()
+        .map(|it| it.name.encoded_for_test(heap, &sources.symbol_table))
+        .collect_vec()
     );
   }
 }

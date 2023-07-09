@@ -8,12 +8,11 @@ use std::collections::{BTreeSet, HashMap};
 #[derive(Clone)]
 struct LoopContext {
   break_collector: Option<PStr>,
-  exit_label: PStr,
+  exit_label: wasm::LabelId,
 }
 
 struct LoweringManager<'a> {
-  heap: &'a mut Heap,
-  label_id: i32,
+  label_id: u32,
   loop_cx: Option<LoopContext>,
   local_variables: BTreeSet<PStr>,
   global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
@@ -22,13 +21,11 @@ struct LoweringManager<'a> {
 
 impl<'a> LoweringManager<'a> {
   fn lower_fn(
-    heap: &'a mut Heap,
     global_variables_to_pointer_mapping: &'a HashMap<PStr, usize>,
     function_index_mapping: &'a HashMap<mir::FunctionName, usize>,
     function: &lir::Function,
   ) -> wasm::Function {
     let mut instance = LoweringManager {
-      heap,
       label_id: 0,
       loop_cx: None,
       local_variables: BTreeSet::new(),
@@ -80,7 +77,7 @@ impl<'a> LoweringManager<'a> {
         } else {
           wasm::InlineInstruction::IndirectCall {
             function_index: Box::new(self.lower_expr(callee)),
-            type_string: wasm::function_type_string(argument_instructions.len()),
+            fn_arg_count: argument_instructions.len(),
             arguments: argument_instructions,
           }
         };
@@ -149,8 +146,8 @@ impl<'a> LoweringManager<'a> {
       }
       lir::Statement::While { loop_variables, statements, break_collector } => {
         let saved_current_loop_cx = self.loop_cx.clone();
-        let continue_label = self.alloc_label_with_annot("loop_continue");
-        let exit_label = self.alloc_label_with_annot("loop_exit");
+        let continue_label = self.alloc_label_with_annot();
+        let exit_label = self.alloc_label_with_annot();
         self.loop_cx = Some(LoopContext {
           break_collector: if let Some((n, _)) = break_collector { Some(*n) } else { None },
           exit_label,
@@ -218,8 +215,8 @@ impl<'a> LoweringManager<'a> {
     }
   }
 
-  fn alloc_label_with_annot(&mut self, annot: &str) -> PStr {
-    let label = self.heap.alloc_string(format!("l{}_{}", self.label_id, annot));
+  fn alloc_label_with_annot(&mut self) -> wasm::LabelId {
+    let label = wasm::LabelId(self.label_id);
     self.label_id += 1;
     label
   }
@@ -235,7 +232,7 @@ impl<'a> LoweringManager<'a> {
   }
 }
 
-pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &lir::Sources) -> wasm::Module {
+pub(super) fn compile_mir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::Module {
   let mut data_start: usize = 4096;
   let mut global_variables_to_pointer_mapping = HashMap::new();
   let mut function_index_mapping = HashMap::new();
@@ -267,12 +264,7 @@ pub(super) fn compile_mir_to_wasm(heap: &mut Heap, sources: &lir::Sources) -> wa
       .functions
       .iter()
       .map(|f| {
-        LoweringManager::lower_fn(
-          heap,
-          &global_variables_to_pointer_mapping,
-          &function_index_mapping,
-          f,
-        )
+        LoweringManager::lower_fn(&global_variables_to_pointer_mapping, &function_index_mapping, f)
       })
       .collect_vec(),
   }
@@ -284,7 +276,7 @@ mod tests {
     ast::{
       hir::{GlobalVariable, Operator},
       lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
-      mir,
+      mir, wasm,
     },
     common::{well_known_pstrs, Heap},
   };
@@ -292,7 +284,7 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(super::LoopContext { break_collector: None, exit_label: well_known_pstrs::LOWER_A }
+    assert!(super::LoopContext { break_collector: None, exit_label: wasm::LabelId(1) }
       .clone()
       .break_collector
       .is_none());
@@ -443,30 +435,30 @@ mod tests {
   ))
   (if (i32.const 0) (then
     (local.set $i (i32.const 0))
-    (loop $l0_loop_continue
-      (block $l1_loop_exit
+    (loop $l0
+      (block $l1
         (local.set $c (i32.const 0))
         (local.set $i (i32.const 0))
-        (br $l0_loop_continue)
+        (br $l0)
       )
     )
     (local.set $f (i32.const 4096))
   ) (else
-    (loop $l2_loop_continue
-      (block $l3_loop_exit
+    (loop $l2
+      (block $l3
         (if (i32.const 0) (then
           (local.set $b (i32.const 0))
-          (br $l3_loop_exit)
+          (br $l3)
         ))
-        (br $l2_loop_continue)
+        (br $l2)
       )
     )
-    (loop $l4_loop_continue
-      (block $l5_loop_exit
+    (loop $l4
+      (block $l5
         (if (i32.xor (i32.const 0) (i32.const 1)) (then
-          (br $l5_loop_exit)
+          (br $l5)
         ))
-        (br $l4_loop_continue)
+        (br $l4)
       )
     )
     (local.set $f (i32.const 0))
