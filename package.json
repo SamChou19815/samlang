@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "test": "rm -f target/llvm-cov-target/*.profraw && cargo th",
-    "build:samlang-wasm": "cd crates/samlang-wasm && ./setup-generated-package.sh"
+    "build:wasm": "cd crates/samlang-wasm && ./setup-generated-package.sh"
   },
   "devDependencies": {
     "@dev-sam/samlang-cli": "workspace:0.8.0",

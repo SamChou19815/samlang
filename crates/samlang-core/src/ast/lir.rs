@@ -416,7 +416,7 @@ impl Statement {
         collector.push_str(name.as_str(heap));
         collector.push_str(" = ");
         assigned_expression.pretty_print(collector, heap, table);
-        collector.push_str(" as ");
+        collector.push_str(" as unknown as ");
         type_.pretty_print(collector, heap, table);
         collector.push_str(";\n");
       }
@@ -499,15 +499,16 @@ pub(crate) fn ts_prolog() -> String {
 
   collector.push_str("const ");
   FunctionName::STR_TO_INT.write_encoded(&mut collector, heap, table);
-  collector.push_str(" = ([, v]: _Str): number => parseInt(v, 10);\n");
+  collector.push_str(" = ([, v]: _Str): number => parseInt(v as unknown as string, 10);\n");
 
   collector.push_str("const ");
   FunctionName::STR_FROM_INT.write_encoded(&mut collector, heap, table);
-  collector.push_str(" = (_: number, v: number): _Str => [1, String(v)];\n");
+  collector.push_str(" = (_: number, v: number): _Str => [1, String(v) as unknown as number];\n");
 
   collector.push_str("const ");
   FunctionName::PROCESS_PANIC.write_encoded(&mut collector, heap, table);
-  collector.push_str(" = (_: number, [, v]: _Str): number => { throw Error(v); };\n");
+  collector
+    .push_str(" = (_: number, [, v]: _Str): never => { throw Error(v as unknown as string); };\n");
 
   collector.push_str("// empty the array to mess up program code that uses after free.\n");
   collector.push_str("const ");
@@ -526,7 +527,7 @@ impl Sources {
       collector.push_str(v.name.as_str(heap));
       collector.push_str(": _Str = [0, `");
       collector.push_str(v.content.as_str(heap));
-      collector.push_str("`];\n");
+      collector.push_str("` as unknown as number];\n");
     }
     for d in &self.type_definitions {
       collector.push_str("type ");

@@ -730,10 +730,15 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
         for (i, variant) in variants.iter().enumerate() {
           match variant {
             mir::EnumTypeDefinition::Unboxed(_) | mir::EnumTypeDefinition::Int => {}
-            mir::EnumTypeDefinition::Boxed(types) => type_defs.push(lir::TypeDefinition {
-              name: symbol_table.derived_type_name_with_subtype_tag(type_def.name, i as u32),
-              mappings: types.iter().cloned().map(lower_type).collect(),
-            }),
+            mir::EnumTypeDefinition::Boxed(types) => {
+              let name = symbol_table.derived_type_name_with_subtype_tag(type_def.name, i as u32);
+              let mut mappings = Vec::with_capacity(types.len() + 1);
+              mappings.push(lir::INT_TYPE);
+              for t in types {
+                mappings.push(lower_type(*t));
+              }
+              type_defs.push(lir::TypeDefinition { name, mappings })
+            }
           }
         }
         type_defs.push(lir::TypeDefinition {
@@ -1094,20 +1099,20 @@ function __$cc(): number {{
 }}
 function __$main(): number {{
   let v1 = 0 + 0;
-  let _t5 = obj as any;
+  let _t5 = obj as unknown as any;
   __$inc_ref(_t5);
   let O: _Object = [131073, 0, obj];
   let v1: _Variant = [1, 0, 0];
-  let _t6 = G1 as any;
+  let _t6 = G1 as unknown as any;
   __$inc_ref(_t6);
   let v2: _Variant = [131073, 0, G1];
-  let _t7 = G1 as any;
+  let _t7 = G1 as unknown as any;
   __$inc_ref(_t7);
-  let _t8 = __$aaa as (t0: any) => number;
-  let _t9 = G1 as any;
+  let _t8 = __$aaa as unknown as (t0: any) => number;
+  let _t9 = G1 as unknown as any;
   let c1: _CC = [131073, _t8, _t9];
-  let _t10 = __$bbb as (t0: any) => number;
-  let _t11 = 0 as any;
+  let _t10 = __$bbb as unknown as (t0: any) => number;
+  let _t11 = 0 as unknown as any;
   let c2: _CC = [1, _t10, _t11];
   __$dec_ref(O);
   __$dec_ref(v1);
@@ -1126,19 +1131,19 @@ function __$compiled_program_main(): number {{
     let _t13: (t0: any, t1: number) => number = cc[1];
     let _t14: any = cc[2];
     let _t12: _CC = _t13(_t14, 0);
-    let _t15 = _t12 as any;
+    let _t15 = _t12 as unknown as any;
     __$inc_ref(_t15);
-    let _t16 = G1 as any;
+    let _t16 = G1 as unknown as any;
     __$inc_ref(_t16);
-    let _t17 = __$aaa as (t0: any) => number;
-    let _t18 = G1 as any;
+    let _t17 = __$aaa as unknown as (t0: any) => number;
+    let _t18 = G1 as unknown as any;
     let v2: _CC = [131073, _t17, _t18];
     __$dec_ref(_t12);
     finalV = v2;
   }}
   let finalV2: number;
   if (1) {{
-    let cast = 0 as number;
+    let cast = 0 as unknown as number;
     finalV2 = 0;
   }} else {{
     finalV2 = 0;
