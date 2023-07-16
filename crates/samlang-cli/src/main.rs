@@ -665,6 +665,8 @@ mod lsp {
 
 mod runners {
   use super::*;
+  #[cfg(not(release))]
+  use std::process::Command;
   use tower_lsp::{LspService, Server};
 
   pub(super) fn format(need_help: bool) {
@@ -742,6 +744,64 @@ mod runners {
     }
   }
 
+  #[cfg(release)]
+  pub(super) fn e2e(_need_help: bool) {
+    eprintln!("samlang e2e: Compile samlang under test mode to make this useful.");
+    std::process::exit(1)
+  }
+
+  #[cfg(not(release))]
+  pub(super) fn e2e(need_help: bool) {
+    if need_help {
+      println!("samlang e2e: Run e2e tests.");
+      return;
+    }
+    let expected = include_str!("../../../tests/snapshot.txt");
+
+    eprintln!("==================== Step 1 ====================");
+    eprintln!("Compiling samlang source code...");
+    compile_single(/* enable_profiling */ false);
+    eprintln!("Compiled samlang source code.");
+
+    eprintln!("==================== Step 2 ====================");
+    eprintln!("Checking generated TS code...");
+    Command::new("corepack").args(["enable"]).output().expect("corepack failure");
+    Command::new("pnpm").args(["install"]).output().expect("pnpm install failure");
+    Command::new("pnpm")
+      .args(["esbuild", "out/tests.AllTests.ts", "--outfile=out/tests.AllTests.js"])
+      .output()
+      .expect("esbuild transpilation failure");
+    pretty_assertions::assert_eq!(
+      expected,
+      String::from_utf8(
+        Command::new("node")
+          .args(["out/tests.AllTests.js"])
+          .output()
+          .expect("JS execution failure")
+          .stdout,
+      )
+      .unwrap()
+    );
+    eprintln!("Generated TS code is good.");
+
+    eprintln!("==================== Step 3 ====================");
+    eprintln!("Checking generated WebAssembly code...");
+    pretty_assertions::assert_eq!(
+      expected,
+      String::from_utf8(
+        Command::new("node")
+          .args(["out/tests.AllTests.wasm.js"])
+          .output()
+          .expect("WASM/JS execution failure")
+          .stdout,
+      )
+      .unwrap()
+    );
+    eprintln!("Generated WebAssembly code is good.");
+
+    eprintln!("==================== PASSED ====================")
+  }
+
   pub(super) async fn lsp(need_help: bool) {
     if need_help {
       println!("samlang lsp: Start a language server according to sconfig.json.")
@@ -792,6 +852,7 @@ async fn main() {
     match arguments[0].as_str() {
       "format" => runners::format(does_need_help),
       "compile" => runners::compile(does_need_help),
+      "e2e" => runners::e2e(does_need_help),
       "lsp" => runners::lsp(does_need_help).await,
       _ => runners::help(),
     }
