@@ -24,7 +24,7 @@ jobs:
       - name: Lint
         run: cargo lint
       - name: Build and Validate
-        run: ./compile-repository.sh
+        run: cargo e2e
   test:
     runs-on: ubuntu-latest
     steps:
