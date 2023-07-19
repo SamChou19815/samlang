@@ -20,6 +20,7 @@ use std::{
 pub struct ServerState {
   pub heap: Heap,
   enable_profiling: bool,
+  pub(super) string_sources: HashMap<ModuleReference, String>,
   pub(super) parsed_modules: HashMap<ModuleReference, Module<()>>,
   dep_graph: DependencyGraph,
   pub(super) checked_modules: HashMap<ModuleReference, Module<Rc<Type>>>,
@@ -31,11 +32,11 @@ impl ServerState {
   pub fn new(
     mut heap: Heap,
     enable_profiling: bool,
-    source_handles: Vec<(ModuleReference, String)>,
+    string_sources: HashMap<ModuleReference, String>,
   ) -> ServerState {
     measure_time(enable_profiling, "LSP Init", || {
       let mut error_set = ErrorSet::new();
-      let parsed_modules = source_handles
+      let parsed_modules = string_sources
         .iter()
         .map(|(mod_ref, text)| {
           (*mod_ref, parse_source_module_from_text(text, *mod_ref, &mut heap, &mut error_set))
@@ -48,6 +49,7 @@ impl ServerState {
       ServerState {
         heap,
         enable_profiling,
+        string_sources,
         parsed_modules,
         dep_graph,
         checked_modules,
@@ -110,8 +112,10 @@ impl ServerState {
     }
   }
 
-  pub fn get_error_strings(&self, module_reference: &ModuleReference) -> Vec<String> {
-    self.get_errors(module_reference).iter().map(|e| e.pretty_print(&self.heap)).collect()
+  #[cfg(test)]
+  pub(super) fn get_error_dump(&self) -> String {
+    ErrorSet::from_grouped(&self.errors)
+      .pretty_print_error_messages(&self.heap, &self.string_sources)
   }
 
   pub fn update(&mut self, updates: Vec<(ModuleReference, String)>) {
@@ -121,6 +125,7 @@ impl ServerState {
       let parsed =
         parse_source_module_from_text(&source_code, mod_ref, &mut self.heap, &mut error_set);
       self.global_cx.insert(mod_ref, build_module_signature(mod_ref, &parsed));
+      self.string_sources.insert(mod_ref, source_code);
       self.parsed_modules.insert(mod_ref, parsed);
     }
     self.dep_graph = DependencyGraph::new(&self.parsed_modules);
@@ -129,11 +134,16 @@ impl ServerState {
   }
 
   pub fn rename_module(&mut self, renames: Vec<(ModuleReference, ModuleReference)>) {
+    let mut error_set = ErrorSet::new();
     let recheck_set = self
       .dep_graph
       .affected_set(renames.iter().flat_map(|(a, b)| vec![*a, *b].into_iter()).collect());
     for (old_mod_ref, new_mod_ref) in renames {
-      if let Some(parsed) = self.parsed_modules.remove(&old_mod_ref) {
+      if let Some(source) = self.string_sources.remove(&old_mod_ref) {
+        self.parsed_modules.remove(&old_mod_ref).unwrap();
+        let parsed =
+          parse_source_module_from_text(&source, new_mod_ref, &mut self.heap, &mut error_set);
+        self.string_sources.insert(new_mod_ref, source);
         self.parsed_modules.insert(new_mod_ref, parsed);
         let mod_cx = self.global_cx.remove(&old_mod_ref).unwrap();
         self.global_cx.insert(new_mod_ref, mod_cx);
@@ -141,12 +151,13 @@ impl ServerState {
       self.checked_modules.remove(&old_mod_ref);
     }
     self.dep_graph = DependencyGraph::new(&self.parsed_modules);
-    self.recheck(ErrorSet::new(), &recheck_set);
+    self.recheck(error_set, &recheck_set);
   }
 
   pub fn remove(&mut self, module_references: &[ModuleReference]) {
     let recheck_set = self.dep_graph.affected_set(module_references.iter().copied().collect());
     for mod_ref in module_references {
+      self.string_sources.remove(mod_ref);
       self.parsed_modules.remove(mod_ref);
       self.checked_modules.remove(mod_ref);
       self.global_cx.remove(mod_ref);
@@ -161,12 +172,13 @@ mod tests {
   use super::ServerState;
   use crate::common::{Heap, ModuleReference};
   use pretty_assertions::assert_eq;
+  use std::collections::HashMap;
 
   #[test]
   fn update_tests() {
     let mut heap = Heap::new();
     let test_mod_ref = heap.alloc_module_reference_from_string_vec(vec!["test".to_string()]);
-    let mut service = ServerState::new(heap, false, vec![]);
+    let mut service = ServerState::new(heap, false, HashMap::new());
     service.update(vec![(
       test_mod_ref,
       r#"
@@ -181,8 +193,19 @@ interface I { method test(): int }
     assert_eq!(1, service.all_modules().len());
     assert!(service.get_errors(&ModuleReference::root()).is_empty());
     assert_eq!(
-      vec!["test.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `Str`."],
-      service.get_error_strings(&test_mod_ref)
+      r#"
+Error ----------------------------------- test.sam:3:26-3:32
+
+Expected: `int`, actual: `Str`.
+
+  3|   function test(): int = "haha"
+                              ^^^^^^
+
+
+Found 1 error.
+"#
+      .trim(),
+      service.get_error_dump()
     );
 
     service.remove(&[test_mod_ref]);
@@ -197,7 +220,7 @@ interface I { method test(): int }
     let mut service = ServerState::new(
       heap,
       false,
-      vec![
+      HashMap::from([
         (
           test1_mod_ref,
           r#"
@@ -218,20 +241,47 @@ class Test2 {
 "#
           .to_string(),
         ),
-      ],
+      ]),
     );
 
     assert_eq!(
-      vec!["Test1.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `Str`."],
-      service.get_error_strings(&test1_mod_ref)
-    );
-    assert_eq!(
-      vec![
-        "Test2.sam:2:17-2:22: [missing-export]: There is no `Test2` export in `Test1`.",
-        "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:26-5:27: [incompatible-type]: Expected: `Str`, actual: `int`.",
-      ],
-      service.get_error_strings(&test2_mod_ref)
+      r#"
+Error ---------------------------------- Test1.sam:3:26-3:32
+
+Expected: `int`, actual: `Str`.
+
+  3|   function test(): int = "haha"
+                              ^^^^^^
+
+
+Error ---------------------------------- Test2.sam:2:17-2:22
+
+There is no `Test2` export in `Test1`.
+
+  2| import { Test1, Test2 } from Test1
+                     ^^^^^
+
+
+Error ----------------------------------- Test2.sam:4:7-4:12
+
+Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.
+
+  4| class Test2 {
+           ^^^^^
+
+
+Error ---------------------------------- Test2.sam:5:26-5:27
+
+Expected: `Str`, actual: `int`.
+
+  5|   function test(): Str = 3
+                              ^
+
+
+Found 4 errors.
+"#
+      .trim(),
+      service.get_error_dump()
     );
 
     // Adding Test2 can clear one error of its reverse dependency.
@@ -246,15 +296,34 @@ class Test2 {}
       .to_string(),
     )]);
     assert_eq!(
-      vec!["Test1.sam:3:26-3:32: [incompatible-type]: Expected: `int`, actual: `Str`."],
-      service.get_error_strings(&test1_mod_ref)
-    );
-    assert_eq!(
-      vec![
-        "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:26-5:27: [incompatible-type]: Expected: `Str`, actual: `int`.",
-      ],
-      service.get_error_strings(&test2_mod_ref)
+      r#"Error ---------------------------------- Test1.sam:3:26-3:32
+
+Expected: `int`, actual: `Str`.
+
+  3|   function test(): int = "haha"
+                              ^^^^^^
+
+
+Error ----------------------------------- Test2.sam:4:7-4:12
+
+Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.
+
+  4| class Test2 {
+           ^^^^^
+
+
+Error ---------------------------------- Test2.sam:5:26-5:27
+
+Expected: `Str`, actual: `int`.
+
+  5|   function test(): Str = 3
+                              ^
+
+
+Found 3 errors.
+    "#
+      .trim(),
+      service.get_error_dump()
     );
 
     // Clearing local error of Test1
@@ -267,14 +336,36 @@ class Test1 {
 "#
       .to_string(),
     )]);
-    assert!(service.get_errors(&test1_mod_ref).is_empty());
     assert_eq!(
-      vec![
-        "Test2.sam:2:17-2:22: [missing-export]: There is no `Test2` export in `Test1`.",
-        "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-        "Test2.sam:5:26-5:27: [incompatible-type]: Expected: `Str`, actual: `int`.",
-      ],
-      service.get_error_strings(&test2_mod_ref)
+      r#"
+Error ---------------------------------- Test2.sam:2:17-2:22
+
+There is no `Test2` export in `Test1`.
+
+  2| import { Test1, Test2 } from Test1
+                     ^^^^^
+
+
+Error ----------------------------------- Test2.sam:4:7-4:12
+
+Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.
+
+  4| class Test2 {
+           ^^^^^
+
+
+Error ---------------------------------- Test2.sam:5:26-5:27
+
+Expected: `Str`, actual: `int`.
+
+  5|   function test(): Str = 3
+                              ^
+
+
+Found 3 errors.
+"#
+      .trim(),
+      service.get_error_dump()
     );
 
     // Clearing local error of Test2
@@ -289,13 +380,28 @@ class Test2 {
 "#
       .to_string(),
     )]);
-    assert!(service.get_errors(&test1_mod_ref).is_empty());
     assert_eq!(
-      vec![
-        "Test2.sam:2:17-2:22: [missing-export]: There is no `Test2` export in `Test1`.",
-        "Test2.sam:4:7-4:12: [name-already-bound]: Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.",
-      ],
-      service.get_error_strings(&test2_mod_ref)
+      r#"
+Error ---------------------------------- Test2.sam:2:17-2:22
+
+There is no `Test2` export in `Test1`.
+
+  2| import { Test1, Test2 } from Test1
+                     ^^^^^
+
+
+Error ----------------------------------- Test2.sam:4:7-4:12
+
+Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.
+
+  4| class Test2 {
+           ^^^^^
+
+
+Found 2 errors.
+"#
+      .trim(),
+      service.get_error_dump()
     );
 
     // Clearing all errors of Test2
@@ -323,36 +429,84 @@ class Test2 {
     let mut service = ServerState::new(
       heap,
       false,
-      vec![
+      HashMap::from([
         (test_mod_ref, "import {A} from A\nimport {A} from B".to_string()),
-        (a_mod_ref, "class A".to_string()),
-      ],
+        (a_mod_ref, "class A {}".to_string()),
+      ]),
     );
 
     assert_eq!(
-      vec![
-        "Test.sam:2:1-2:18: [cannot-resolve-module]: Module `B` is not resolved.",
-        "Test.sam:2:9-2:10: [name-already-bound]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
-      ],
-      service.get_error_strings(&test_mod_ref)
+      r#"
+Error ------------------------------------ Test.sam:2:1-2:18
+
+Module `B` is not resolved.
+
+  2| import {A} from B
+     ^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ Test.sam:2:9-2:10
+
+Name `A` collides with a previously defined name at Test.sam:1:9-1:10.
+
+  2| import {A} from B
+             ^
+
+
+Found 2 errors.
+"#
+      .trim(),
+      service.get_error_dump()
     );
 
     service.rename_module(vec![(a_mod_ref, b_mod_ref)]);
     assert_eq!(
-      vec![
-        "Test.sam:1:1-1:18: [cannot-resolve-module]: Module `A` is not resolved.",
-        "Test.sam:2:9-2:10: [name-already-bound]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
-      ],
-      service.get_error_strings(&test_mod_ref)
+      r#"
+Error ------------------------------------ Test.sam:1:1-1:18
+
+Module `A` is not resolved.
+
+  1| import {A} from A
+     ^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ Test.sam:2:9-2:10
+
+Name `A` collides with a previously defined name at Test.sam:1:9-1:10.
+
+  2| import {A} from B
+             ^
+
+
+Found 2 errors.
+"#
+      .trim(),
+      service.get_error_dump()
     );
 
     service.rename_module(vec![(ModuleReference::dummy(), test_mod_ref)]);
     assert_eq!(
-      vec![
-        "Test.sam:1:1-1:18: [cannot-resolve-module]: Module `A` is not resolved.",
-        "Test.sam:2:9-2:10: [name-already-bound]: Name `A` collides with a previously defined name at Test.sam:1:9-1:10.",
-      ],
-      service.get_error_strings(&test_mod_ref)
+      r#"
+Error ------------------------------------ Test.sam:1:1-1:18
+
+Module `A` is not resolved.
+
+  1| import {A} from A
+     ^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ Test.sam:2:9-2:10
+
+Name `A` collides with a previously defined name at Test.sam:1:9-1:10.
+
+  2| import {A} from B
+             ^
+
+
+Found 2 errors.
+"#
+      .trim(),
+      service.get_error_dump()
     );
   }
 }

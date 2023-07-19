@@ -488,73 +488,435 @@ class Main {
       },
     ];
 
-    let expected_errors = vec![
-      "access-private-member.sam:12:15-12:16: [member-missing]: Cannot find member `b` on `A`.",
-      "add-panic-to-class.sam:7:49-7:59: [incompatible-type]: Expected: `int`, actual: `A`.",
-      "add-panic-to-class.sam:8:27-8:37: [incompatible-type]: Expected: `int`, actual: `A`.",
-      "add-with-class.sam:7:30-7:40: [incompatible-type]: Expected: `int`, actual: `A`.",
-      "bounded-generics.sam:15:52-15:55: [incompatible-type]: Expected: subtype of `Comparable<int>`, actual: `int`.",
-      "bounded-generics.sam:15:57-15:64: [incompatible-type]: Expected: `int`, actual: `T`.",
-      "bounded-generics.sam:15:66-15:73: [incompatible-type]: Expected: `int`, actual: `T`.",
-      "bounded-generics.sam:18:20-18:40: [incompatible-type]: Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.",
-      "bounded-generics.sam:19:53-19:69: [incompatible-type]: Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.",
-      "bounded-generics.sam:28:7-28:17: [cyclic-type-definition]: Type `ImplItself` has a cyclic definition.",
-      "bounded-generics.sam:28:20-28:30: [incompatible-type]: Expected: `interface type`, actual: `class type`.",
-      "bounded-generics.sam:29:21-29:22: [cannot-resolve-name]: Name `T` is not resolved.",
-      "call-interface-function.sam:2:17-2:36: [illegal-function-in-interface]: Function declarations are not allowed in interfaces.",
-      "call-interface-function.sam:3:33-3:36: [incompatible-type]: Expected: `non-abstract type`, actual: `Foo`.",
-      "call-interface-function.sam:3:45-3:48: [cannot-resolve-class]: Class `Foo` is not resolved.",
-      "complete-trash.sam:1:1-1:5: [invalid-syntax]: Unexpected token among the classes and interfaces: This",
-      "complete-trash.sam:1:6-1:8: [invalid-syntax]: Unexpected token among the classes and interfaces: is",
-      "complete-trash.sam:1:9-1:10: [invalid-syntax]: Unexpected token among the classes and interfaces: a",
-      "complete-trash.sam:1:11-1:14: [invalid-syntax]: Unexpected token among the classes and interfaces: bad",
-      "complete-trash.sam:1:15-1:21: [invalid-syntax]: Unexpected token among the classes and interfaces: source",
-      "complete-trash.sam:1:21-1:22: [invalid-syntax]: Unexpected token among the classes and interfaces: .",
-      "illegal-binary-operations.sam:12:33-12:49: [incompatible-type]: Expected: `int`, actual: `Box<int>`.",
-      "illegal-binary-operations.sam:13:28-13:44: [incompatible-type]: Expected: `int`, actual: `Box<int>`.",
-      "illegal-binary-operations.sam:14:35-14:51: [incompatible-type]: Expected: `int`, actual: `Box<int>`.",
-      "illegal-binary-operations.sam:15:49-15:51: [incompatible-type]: Expected: `Box<int>`, actual: `int`.",
-      "illegal-binary-operations.sam:16:29-16:45: [incompatible-type]: Expected: `bool`, actual: `Box<int>`.",
-      "illegal-binary-operations.sam:17:38-17:54: [incompatible-type]: Expected: `bool`, actual: `Box<int>`.",
-      "illegal-binary-operations.sam:18:33-18:38: [incompatible-type]: Expected: `int`, actual: `bool`.",
-      "illegal-binary-operations.sam:19:28-19:33: [incompatible-type]: Expected: `int`, actual: `bool`.",
-      "illegal-binary-operations.sam:19:36-19:41: [incompatible-type]: Expected: `int`, actual: `bool`.",
-      "illegal-binary-operations.sam:21:45-21:55: [incompatible-type]: Expected: `Box<bool>`, actual: `Box<int>`.",
-      "illegal-binary-operations.sam:24:49-24:72: [incompatible-type]: Expected: `Box<int>`, actual: `AnotherBox<int>`.",
-      "illegal-binary-operations.sam:27:35-27:64: [incompatible-type]: Expected: `Box<Box<Box<int>>>`, actual: `Box<Box<Box<bool>>>`.",
-      "illegal-private-field-access.sam:15:13-15:14: [member-missing]: Cannot find member `b` on `Fields`.",
-      "illegal-private-field-access.sam:17:15-17:16: [member-missing]: Cannot find member `b` on `Fields`.",
-      "illegal-shadow.sam:3:7-3:8: [name-already-bound]: Name `A` collides with a previously defined name at illegal-shadow.sam:2:7-2:8.",
-      "illegal-shadow.sam:7:12-7:16: [name-already-bound]: Name `test` collides with a previously defined name at illegal-shadow.sam:6:12-6:16.",
-      "illegal-shadow.sam:12:12-12:16: [name-already-bound]: Name `test` collides with a previously defined name at illegal-shadow.sam:11:10-11:14.",
-      "illegal-shadow.sam:16:28-16:32: [name-already-bound]: Name `test` collides with a previously defined name at illegal-shadow.sam:16:17-16:21.",
-      "illegal-shadow.sam:22:9-22:10: [name-already-bound]: Name `a` collides with a previously defined name at illegal-shadow.sam:21:9-21:10.",
-      "illegal-this.sam:5:13-5:17: [cannot-resolve-name]: Name `this` is not resolved.",
-      "insufficient-type-info.sam:5:13-5:47: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      "insufficient-type-info-none.sam:8:13-8:26: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      "invalid-property-declaration-syntax.sam:2:12-2:13: [invalid-syntax]: Expected: val, actual: a.",
-      "multiple-type-errors.sam:3:35-3:40: [incompatible-type]: Expected: `int`, actual: `Str`.",
-      "multiple-type-errors.sam:3:43-3:48: [incompatible-type]: Expected: `int`, actual: `Str`.",
-      "overflow-int.sam:3:26-3:56: [invalid-syntax]: Not a 32-bit integer.",
-      "simple-mismatch.sam:4:30-4:34: [incompatible-type]: Expected: `int`, actual: `bool`.",
-      "undefined-type.sam:3:20-3:30: [cannot-resolve-name]: Name `HelloWorld` is not resolved.",
-      "undefined-type.sam:3:33-3:34: [incompatible-type]: Expected: `HelloWorld`, actual: `int`.",
-      "undefined-variable.sam:3:26-3:36: [cannot-resolve-name]: Name `helloWorld` is not resolved.",
-    ];
+    let expected_errors = r#"
+Error ---------------- access-private-member.sam:12:15-12:16
+
+Cannot find member `b` on `A`.
+
+  12|     val _ = A.b();
+                    ^
+
+
+Error --------------------- add-panic-to-class.sam:7:49-7:59
+
+Expected: `int`, actual: `A`.
+
+  7|   function main1(): int = Process.panic("Ah") + A.create()
+                                                     ^^^^^^^^^^
+
+
+Error --------------------- add-panic-to-class.sam:8:27-8:37
+
+Expected: `int`, actual: `A`.
+
+  8|   function main2(): int = A.create() + Process.panic("Ah")
+                               ^^^^^^^^^^
+
+
+Error ------------------------- add-with-class.sam:7:30-7:40
+
+Expected: `int`, actual: `A`.
+
+  7|   function main(): int = 3 + A.create()
+                                  ^^^^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:15:52-15:55
+
+Expected: subtype of `Comparable<int>`, actual: `int`.
+
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                         ^^^
+
+
+Error --------------------- bounded-generics.sam:15:57-15:64
+
+Expected: `int`, actual: `T`.
+
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                              ^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:15:66-15:73
+
+Expected: `int`, actual: `T`.
+
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                                       ^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:18:20-18:40
+
+Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.
+
+  18|   function test(v: Comparable<BoxedInt>): unit = {} // error signature validation
+                         ^^^^^^^^^^^^^^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:19:53-19:69
+
+Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.
+
+  19|   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
+                                                          ^^^^^^^^^^^^^^^^
+
+
+Error ---------------------- bounded-generics.sam:28:7-28:17
+
+Type `ImplItself` has a cyclic definition.
+
+  28| class ImplItself : ImplItself {} // error: expect interface type
+            ^^^^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:28:20-28:30
+
+Expected: `interface type`, actual: `class type`.
+
+  28| class ImplItself : ImplItself {} // error: expect interface type
+                         ^^^^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:29:21-29:22
+
+Name `T` is not resolved.
+
+  29| class ImplTArg<T> : T {} // error: T not resolved
+                          ^
+
+
+Error ---------------- call-interface-function.sam:2:17-2:36
+
+Function declarations are not allowed in interfaces.
+
+  2| interface Foo { function bar(): int }
+                     ^^^^^^^^^^^^^^^^^^^
+
+
+Error ---------------- call-interface-function.sam:3:33-3:36
+
+Expected: `non-abstract type`, actual: `Foo`.
+
+  3| class Ouch { function call(foo: Foo): int = Foo.bar() }
+                                     ^^^
+
+
+Error ---------------- call-interface-function.sam:3:45-3:48
+
+Class `Foo` is not resolved.
+
+  3| class Ouch { function call(foo: Foo): int = Foo.bar() }
+                                                 ^^^
+
+
+Error --------------------------- complete-trash.sam:1:1-1:5
+
+Unexpected token among the classes and interfaces: This
+
+  1| This is a bad source.
+     ^^^^
+
+
+Error --------------------------- complete-trash.sam:1:6-1:8
+
+Unexpected token among the classes and interfaces: is
+
+  1| This is a bad source.
+          ^^
+
+
+Error -------------------------- complete-trash.sam:1:9-1:10
+
+Unexpected token among the classes and interfaces: a
+
+  1| This is a bad source.
+             ^
+
+
+Error ------------------------- complete-trash.sam:1:11-1:14
+
+Unexpected token among the classes and interfaces: bad
+
+  1| This is a bad source.
+               ^^^
+
+
+Error ------------------------- complete-trash.sam:1:15-1:21
+
+Unexpected token among the classes and interfaces: source
+
+  1| This is a bad source.
+                   ^^^^^^
+
+
+Error ------------------------- complete-trash.sam:1:21-1:22
+
+Unexpected token among the classes and interfaces: .
+
+  1| This is a bad source.
+                         ^
+
+
+Error ------------ illegal-binary-operations.sam:12:33-12:49
+
+Expected: `int`, actual: `Box<int>`.
+
+  12|   function test01(): int = 42 + Box.empty<int>() // error
+                                      ^^^^^^^^^^^^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:13:28-13:44
+
+Expected: `int`, actual: `Box<int>`.
+
+  13|   function test02(): int = Box.empty<int>() + 42 // error
+                                 ^^^^^^^^^^^^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:14:35-14:51
+
+Expected: `int`, actual: `Box<int>`.
+
+  14|   function test03(): bool = 42 == Box.empty<int>() // error
+                                        ^^^^^^^^^^^^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:15:49-15:51
+
+Expected: `Box<int>`, actual: `int`.
+
+  15|   function test04(): bool = Box.empty<int>() == 42 // error
+                                                      ^^
+
+
+Error ------------ illegal-binary-operations.sam:16:29-16:45
+
+Expected: `bool`, actual: `Box<int>`.
+
+  16|   function test05(): bool = Box.empty<int>() || false // error
+                                  ^^^^^^^^^^^^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:17:38-17:54
+
+Expected: `bool`, actual: `Box<int>`.
+
+  17|   function test06(): bool = false || Box.empty<int>() // error
+                                           ^^^^^^^^^^^^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:18:33-18:38
+
+Expected: `int`, actual: `bool`.
+
+  18|   function test07(): int = 42 * false // error
+                                      ^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:19:28-19:33
+
+Expected: `int`, actual: `bool`.
+
+  19|   function test08(): int = false + false // error
+                                 ^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:19:36-19:41
+
+Expected: `int`, actual: `bool`.
+
+  19|   function test08(): int = false + false // error
+                                         ^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:21:45-21:55
+
+Expected: `Box<bool>`, actual: `Box<int>`.
+
+  21|   function test10(): bool = Box.of(true) == Box.of(42) // error
+                                                  ^^^^^^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:24:49-24:72
+
+Expected: `Box<int>`, actual: `AnotherBox<int>`.
+
+  24|   function test13(): bool = Box.empty<int>() == AnotherBox.empty<int>() // error
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------ illegal-binary-operations.sam:27:35-27:64
+
+Expected: `Box<Box<Box<int>>>`, actual: `Box<Box<Box<bool>>>`.
+
+  27|     Box.of(Box.of(Box.of(42))) == Box.of(Box.of(Box.of(false)))
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error --------- illegal-private-field-access.sam:15:13-15:14
+
+Cannot find member `b` on `Fields`.
+
+  15|     val {a, b} = f;
+                  ^
+
+
+Error --------- illegal-private-field-access.sam:17:15-17:16
+
+Cannot find member `b` on `Fields`.
+
+  17|     val _ = f.b;
+                    ^
+
+
+Error --------------------------- illegal-shadow.sam:3:7-3:8
+
+Name `A` collides with a previously defined name at illegal-shadow.sam:2:7-2:8.
+
+  3| class A {}
+           ^
+
+
+Error ------------------------- illegal-shadow.sam:7:12-7:16
+
+Name `test` collides with a previously defined name at illegal-shadow.sam:6:12-6:16.
+
+  7|   function test(): unit = ConflictingFunctions.test()
+                ^^^^
+
+
+Error ----------------------- illegal-shadow.sam:12:12-12:16
+
+Name `test` collides with a previously defined name at illegal-shadow.sam:11:10-11:14.
+
+  12|   function test(): unit = ConflictingMethodsAndFunctions.test()
+                 ^^^^
+
+
+Error ----------------------- illegal-shadow.sam:16:28-16:32
+
+Name `test` collides with a previously defined name at illegal-shadow.sam:16:17-16:21.
+
+  16|   function test(test: int, test: int): unit = {}
+                                 ^^^^
+
+
+Error ------------------------ illegal-shadow.sam:22:9-22:10
+
+Name `a` collides with a previously defined name at illegal-shadow.sam:21:9-21:10.
+
+  22|     val a = 42;
+              ^
+
+
+Error --------------------------- illegal-this.sam:5:13-5:17
+
+Name `this` is not resolved.
+
+  5|     val _ = this;
+                 ^^^^
+
+
+Error ----------------- insufficient-type-info.sam:5:13-5:47
+
+There is not enough context information to decide the type of this expression.
+
+  5|     val _ = NotEnoughTypeInfo.randomFunction();
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------ insufficient-type-info-none.sam:8:13-8:26
+
+There is not enough context information to decide the type of this expression.
+
+  8|     val a = Option.none();
+                 ^^^^^^^^^^^^^
+
+
+Error ---- invalid-property-declaration-syntax.sam:2:12-2:13
+
+Expected: val, actual: a.
+
+  2| class Main(a: int, val b: int) {
+                ^
+
+
+Error ------------------- multiple-type-errors.sam:3:35-3:40
+
+Expected: `int`, actual: `Str`.
+
+  3|   function main(): int = 233333 + "foo" + "bar" + 42
+                                       ^^^^^
+
+
+Error ------------------- multiple-type-errors.sam:3:43-3:48
+
+Expected: `int`, actual: `Str`.
+
+  3|   function main(): int = 233333 + "foo" + "bar" + 42
+                                               ^^^^^
+
+
+Error --------------------------- overflow-int.sam:3:26-3:56
+
+Not a 32-bit integer.
+
+  3|   function main(): int = 999999999999999999999999999999
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------ simple-mismatch.sam:4:30-4:34
+
+Expected: `int`, actual: `bool`.
+
+  4|       function main(): int = true
+                                  ^^^^
+
+
+Error ------------------------- undefined-type.sam:3:20-3:30
+
+Name `HelloWorld` is not resolved.
+
+  3|   function main(): HelloWorld = 1
+                        ^^^^^^^^^^
+
+
+Error ------------------------- undefined-type.sam:3:33-3:34
+
+Expected: `HelloWorld`, actual: `int`.
+
+  3|   function main(): HelloWorld = 1
+                                     ^
+
+
+Error --------------------- undefined-variable.sam:3:26-3:36
+
+Name `helloWorld` is not resolved.
+
+  3|   function main(): Str = helloWorld
+                              ^^^^^^^^^^
+
+
+Found 51 errors.
+"#;
 
     let heap = &mut Heap::new();
     let mut error_set = ErrorSet::new();
-    let sources = sources
-      .iter()
-      .map(|it| {
-        let mod_ref = heap.alloc_module_reference_from_string_vec(vec![it.test_name.to_string()]);
-        (mod_ref, parse_source_module_from_text(it.source_code, mod_ref, heap, &mut error_set))
-      })
-      .collect::<HashMap<_, _>>();
-    type_check_sources(&sources, heap, &mut error_set);
-    let actual_errors =
-      error_set.into_errors().iter().map(|it| it.pretty_print(heap)).collect_vec();
-    assert_eq!(expected_errors, actual_errors);
+    let mut string_sources = HashMap::new();
+    let mut parsed_sources = HashMap::new();
+    for t in sources {
+      let mod_ref = heap.alloc_module_reference_from_string_vec(vec![t.test_name.to_string()]);
+      string_sources.insert(mod_ref, t.source_code.to_string());
+      parsed_sources.insert(
+        mod_ref,
+        parse_source_module_from_text(t.source_code, mod_ref, heap, &mut error_set),
+      );
+    }
+    type_check_sources(&parsed_sources, heap, &mut error_set);
+    assert_eq!(
+      expected_errors.trim(),
+      error_set.pretty_print_error_messages(heap, &string_sources).trim()
+    );
   }
 
   fn compiler_integration_tests() -> Vec<CompilerTestCase<'static>> {
@@ -1751,7 +2113,7 @@ class Main {
         heap,
         &mut error_set,
       );
-      assert_eq!("", error_set.error_messages(heap).join("\n"));
+      assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
       assert!(checked_sources.len() == 1);
     }
   }
@@ -1771,7 +2133,7 @@ class Main {
       })
       .collect::<HashMap<_, _>>();
     let (checked_sources, _) = type_check_sources(&sources, heap, &mut error_set);
-    assert_eq!("", error_set.error_messages(heap).join("\n"));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     let unoptimized_mir_sources = compiler::compile_sources_to_mir(heap, &checked_sources);
     let optimized_mir_sources = optimization::optimize_sources(
       heap,

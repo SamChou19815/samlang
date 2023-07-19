@@ -267,12 +267,27 @@ mod tests {
     cx.validate_type_instantiation_strictly(&heap, &builder.simple_nominal_type(str_b));
 
     let expected_errors = r#"
-DUMMY.sam:0:0-0:0: [incompatible-type]: Expected: subtype of `B`, actual: `int`.
-DUMMY.sam:0:0-0:0: [incompatible-type]: Expected: `non-abstract type`, actual: `B`.
-DUMMY.sam:0:0-0:0: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0."#
-      .trim();
-    let actual_errors = cx.error_set.error_messages(&heap).join("\n");
-    assert_eq!(expected_errors, actual_errors);
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Expected: subtype of `B`, actual: `int`.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Expected: `non-abstract type`, actual: `B`.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Incorrect type arguments size. Expected: 2, actual: 0.
+
+
+Found 3 errors.
+"#;
+    assert_eq!(
+      expected_errors.trim(),
+      cx.error_set.pretty_print_error_messages_no_frame(&heap).trim()
+    );
   }
 
   #[test]

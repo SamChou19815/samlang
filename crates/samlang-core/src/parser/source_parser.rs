@@ -637,7 +637,7 @@ impl<'a> SourceParser<'a> {
   fn parse_expression_with_ending_comments(&mut self) -> expr::E<()> {
     let mut expr = self.parse_expression();
     let mut new_comments = self.collect_preceding_comments();
-    let mut common = expr.common_mut();
+    let common = expr.common_mut();
     let associated_comments = self.comments_store.get_mut(common.associated_comments);
     match associated_comments {
       CommentsNode::NoComment => {

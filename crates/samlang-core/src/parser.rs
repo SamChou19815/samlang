@@ -57,7 +57,7 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     parse_source_expression_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
-    assert_eq!("", error_set.error_messages(&heap).join("\n"));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
   }
 
   #[test]
@@ -130,7 +130,7 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     parse_source_expression_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
-    assert_ne!("", error_set.error_messages(&heap).join("\n"));
+    assert_ne!("", error_set.pretty_print_error_messages_no_frame(&heap));
   }
 
   #[test]
@@ -251,8 +251,7 @@ mod tests {
 "#;
     let parsed =
       &parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
-    let errors = error_set.error_messages(&heap);
-    assert_eq!("", errors.join("\n"));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
     assert_eq!(1, parsed.imports.len());
     assert_eq!(
       vec![
@@ -315,7 +314,7 @@ mod tests {
       parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
 
     assert_eq!(1, module.imports.len());
-    assert!(!error_set.errors().is_empty())
+    assert!(error_set.has_errors())
   }
 
   #[test]
@@ -403,7 +402,7 @@ mod tests {
     ) {}
 "#;
     parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
-    assert!(!error_set.errors().is_empty())
+    assert!(error_set.has_errors())
   }
 
   #[test]
@@ -416,14 +415,42 @@ mod tests {
       &mut heap,
       &mut error_set,
     );
-    let expected_errors = vec![
-      "DUMMY.sam:1:1-1:5: [invalid-syntax]: Unexpected token among the classes and interfaces: This",
-      "DUMMY.sam:1:6-1:8: [invalid-syntax]: Unexpected token among the classes and interfaces: is",
-      "DUMMY.sam:1:9-1:12: [invalid-syntax]: Unexpected token among the classes and interfaces: not",
-      "DUMMY.sam:1:13-1:14: [invalid-syntax]: Unexpected token among the classes and interfaces: a",
-      "DUMMY.sam:1:15-1:22: [invalid-syntax]: Unexpected token among the classes and interfaces: program",
-      "DUMMY.sam:1:22-1:23: [invalid-syntax]: Unexpected token among the classes and interfaces: .",
-    ];
-    assert_eq!(expected_errors, error_set.error_messages(&heap));
+    let expected_errors = r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:5
+
+Unexpected token among the classes and interfaces: This
+
+
+Error ------------------------------------ DUMMY.sam:1:6-1:8
+
+Unexpected token among the classes and interfaces: is
+
+
+Error ----------------------------------- DUMMY.sam:1:9-1:12
+
+Unexpected token among the classes and interfaces: not
+
+
+Error ---------------------------------- DUMMY.sam:1:13-1:14
+
+Unexpected token among the classes and interfaces: a
+
+
+Error ---------------------------------- DUMMY.sam:1:15-1:22
+
+Unexpected token among the classes and interfaces: program
+
+
+Error ---------------------------------- DUMMY.sam:1:22-1:23
+
+Unexpected token among the classes and interfaces: .
+
+
+Found 6 errors.
+"#;
+    assert_eq!(
+      expected_errors.trim(),
+      error_set.pretty_print_error_messages_no_frame(&heap).trim()
+    );
   }
 }

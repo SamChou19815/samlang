@@ -1,7 +1,7 @@
 use crate::{
   ast::{
     source::{annotation, TypeParameter},
-    Location, Reason,
+    Description, Location, Reason,
   },
   common::{well_known_pstrs, PStr},
   Heap, ModuleReference,
@@ -27,8 +27,19 @@ impl ToString for PrimitiveTypeKind {
   }
 }
 
+impl PrimitiveTypeKind {
+  pub(crate) fn to_description(self) -> Description {
+    match self {
+      PrimitiveTypeKind::Unit => Description::UnitType,
+      PrimitiveTypeKind::Bool => Description::BoolType,
+      PrimitiveTypeKind::Int => Description::IntType,
+    }
+  }
+}
+
 pub(crate) trait ISourceType {
   fn pretty_print(&self, heap: &Heap) -> String;
+  fn to_description(&self) -> Description;
   fn is_the_same_type(&self, other: &Self) -> bool;
 }
 
@@ -54,6 +65,18 @@ impl ISourceType for NominalType {
         id.as_str(heap),
         type_arguments.iter().map(|t| t.pretty_print(heap)).join(", ")
       )
+    }
+  }
+
+  fn to_description(&self) -> Description {
+    if self.is_class_statics {
+      debug_assert!(self.type_arguments.is_empty());
+      Description::Class(self.id)
+    } else {
+      Description::NominalType {
+        name: self.id,
+        has_type_arguments: !self.type_arguments.is_empty(),
+      }
     }
   }
 
@@ -110,6 +133,10 @@ impl ISourceType for FunctionType {
     )
   }
 
+  fn to_description(&self) -> Description {
+    Description::FunctionType
+  }
+
   fn is_the_same_type(&self, other: &Self) -> bool {
     let FunctionType { reason: _, argument_types: arguments1, return_type: return_t1 } = self;
     let FunctionType { reason: _, argument_types: arguments2, return_type: return_t2 } = other;
@@ -160,6 +187,16 @@ impl ISourceType for Type {
       Self::Nominal(t) => t.pretty_print(heap),
       Self::Generic(_, s) => s.as_str(heap).to_string(),
       Self::Fn(t) => t.pretty_print(heap),
+    }
+  }
+
+  fn to_description(&self) -> Description {
+    match self {
+      Self::Any(_, _) => Description::AnyType,
+      Self::Primitive(_, p) => p.to_description(),
+      Self::Nominal(t) => t.to_description(),
+      Self::Generic(_, s) => Description::GenericType(*s),
+      Self::Fn(t) => t.to_description(),
     }
   }
 
@@ -854,6 +891,61 @@ m2: public () -> any
       )
       .1
       .pretty_print("a", &heap)
+    );
+  }
+
+  #[test]
+  fn description_tests() {
+    let builder = test_type_builder::create();
+    let mut heap = Heap::new();
+
+    assert_eq!("any", Type::Any(Reason::dummy(), false).to_description().pretty_print(&heap));
+    assert_eq!("unit", builder.unit_type().to_description().pretty_print(&heap));
+    assert_eq!("int", builder.int_type().to_description().pretty_print(&heap));
+    assert_eq!("bool", builder.bool_type().to_description().pretty_print(&heap));
+    assert_eq!("Str", builder.string_type().to_description().pretty_print(&heap));
+    assert_eq!(
+      "class I",
+      NominalType {
+        reason: Reason::dummy(),
+        is_class_statics: true,
+        module_reference: ModuleReference::dummy(),
+        id: heap.alloc_str_for_test("I"),
+        type_arguments: vec![]
+      }
+      .to_description()
+      .pretty_print(&heap)
+    );
+    assert_eq!(
+      "generic type I",
+      builder.generic_type(heap.alloc_str_for_test("I")).to_description().pretty_print(&heap)
+    );
+    assert_eq!(
+      "Foo<...>",
+      builder
+        .general_nominal_type(
+          heap.alloc_str_for_test("Foo"),
+          vec![builder.unit_type(), builder.simple_nominal_type(heap.alloc_str_for_test("Bar"))]
+        )
+        .to_description()
+        .pretty_print(&heap)
+    );
+    assert_eq!(
+      "function type",
+      FunctionType {
+        reason: Reason::dummy(),
+        argument_types: vec![],
+        return_type: builder.unit_type()
+      }
+      .to_description()
+      .pretty_print(&heap)
+    );
+    assert_eq!(
+      "function type",
+      builder
+        .fun_type(vec![builder.unit_type()], builder.unit_type())
+        .to_description()
+        .pretty_print(&heap)
     );
   }
 

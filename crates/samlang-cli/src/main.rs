@@ -10,6 +10,8 @@ mod configuration;
 mod logo;
 
 mod utils {
+  use std::collections::HashMap;
+
   use super::*;
 
   pub(super) fn get_configuration() -> configuration::ProjectConfiguration {
@@ -65,7 +67,7 @@ mod utils {
     ignores: &Vec<String>,
     absolute_source_path: &Path,
     start_path: &Path,
-    sources: &mut Vec<(samlang_core::ModuleReference, String)>,
+    sources: &mut HashMap<samlang_core::ModuleReference, String>,
   ) {
     for ignore in ignores {
       if start_path
@@ -83,7 +85,7 @@ mod utils {
         file_path_to_module_reference_alloc(heap, absolute_source_path, start_path),
         fs::read_to_string(start_path),
       ) {
-        sources.push((mod_ref, src));
+        sources.insert(mod_ref, src);
       }
     } else if start_path.is_dir() {
       if let Ok(read_dir_result) = fs::read_dir(start_path) {
@@ -97,8 +99,8 @@ mod utils {
   pub(super) fn collect_sources(
     configuration: &configuration::ProjectConfiguration,
     heap: &mut samlang_core::Heap,
-  ) -> Vec<(samlang_core::ModuleReference, String)> {
-    let mut sources = vec![];
+  ) -> HashMap<samlang_core::ModuleReference, String> {
+    let mut sources = HashMap::new();
     if let Ok(absolute_source_path) =
       fs::canonicalize(PathBuf::from(&configuration.source_directory))
     {
@@ -163,7 +165,7 @@ mod lsp {
             .map(|e| Diagnostic {
               range: samlang_loc_to_lsp_range(&e.location),
               severity: Some(DiagnosticSeverity::ERROR),
-              message: e.pretty_print(heap),
+              message: e.format_error_message_for_ide(heap),
               source: Some("samlang".to_string()),
               ..Default::default()
             })
@@ -721,10 +723,7 @@ mod runners {
           }
         }
         Err(errors) => {
-          eprintln!("Found {} error(s).", errors.len());
-          for e in errors {
-            eprintln!("{e}");
-          }
+          eprintln!("{errors}");
           std::process::exit(1)
         }
       }

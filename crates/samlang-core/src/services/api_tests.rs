@@ -8,6 +8,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use std::collections::HashMap;
 
   #[test]
   fn coverage_tests() {
@@ -27,7 +28,7 @@ mod tests {
     let state = ServerState::new(
       heap,
       false,
-      vec![
+      HashMap::from([
         (
           test_mod_ref,
           r#"/** Test */
@@ -52,7 +53,7 @@ class Test1(val a: int) {
           .to_string(),
         ),
         (test3_mod_ref, "class Test1 { function test(): int = NonExisting.test() }".to_string()),
-      ],
+      ]),
     );
 
     assert!(query::hover(&state, &test_mod_ref, Position(100, 100)).is_none());
@@ -129,7 +130,7 @@ class Test1(val a: int) {
     let state = ServerState::new(
       heap,
       false,
-      vec![
+      HashMap::from([
         (
           test_mod_ref,
           r#"/** Test */
@@ -153,7 +154,7 @@ class Test2(val a: int) {
 "#
           .to_string(),
         ),
-      ],
+      ]),
     );
 
     // At v in v: int
@@ -191,7 +192,7 @@ class Test2(val a: int) {
     let state = ServerState::new(
       heap,
       false,
-      vec![
+      HashMap::from([
         (
           test_mod_ref,
           r#"/** Test */
@@ -215,7 +216,7 @@ class Test2(val a: int) {
 "#
           .to_string(),
         ),
-      ],
+      ]),
     );
 
     assert!(query::definition_location(&state, &test_mod_ref, Position(4, 28)).is_none());
@@ -233,7 +234,7 @@ class Test2(val a: int) {
     let state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         test_mod_ref,
         r#"class Test1(val a: int) {
   function test(): int = {
@@ -244,16 +245,39 @@ class Test2(val a: int) {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     assert_eq!(
-      vec![
-        "Test1.sam:3:10-3:11: [member-missing]: Cannot find member `c` on `int`.",
-        "Test1.sam:3:13-3:14: [member-missing]: Cannot find member `b` on `int`.",
-        "Test1.sam:5:5-5:6: [cannot-resolve-name]: Name `a` is not resolved.",
-      ],
-      state.get_error_strings(&test_mod_ref)
+      r#"
+Error ---------------------------------- Test1.sam:3:10-3:11
+
+Cannot find member `c` on `int`.
+
+  3|     val {c, b} = 1 + 2;
+              ^
+
+
+Error ---------------------------------- Test1.sam:3:13-3:14
+
+Cannot find member `b` on `int`.
+
+  3|     val {c, b} = 1 + 2;
+                 ^
+
+
+Error ------------------------------------ Test1.sam:5:5-5:6
+
+Name `a` is not resolved.
+
+  5|     a + b + c
+         ^
+
+
+Found 3 errors.
+"#
+      .trim(),
+      state.get_error_dump()
     );
 
     // At 1 in `[1, 2]`
@@ -276,7 +300,7 @@ class Test2(val a: int) {
     let state = ServerState::new(
       heap,
       false,
-      vec![
+      HashMap::from([
         (test3_mod_ref, "class ABC { function a(): unit = { val _ = 1; } }".to_string()),
         (test2_mod_ref, "class TTT { method test(): int = this.test() }".to_string()),
         (
@@ -299,12 +323,23 @@ class Test1(val a: int) {
 "#
           .to_string(),
         ),
-      ],
+      ]),
     );
 
     assert_eq!(
-      vec!["Test1.sam:12:15-12:16: [cannot-resolve-name]: Name `c` is not resolved."],
-      state.get_error_strings(&test1_mod_ref)
+      r#"
+Error -------------------------------- Test1.sam:12:15-12:16
+
+Name `c` is not resolved.
+
+  12|       val _ = c;
+                    ^
+
+
+Found 1 error.
+"#
+      .trim(),
+      state.get_error_dump()
     );
 
     assert!(
@@ -443,7 +478,7 @@ class Test1(val a: int) {
     let state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         test_mod_ref,
         r#"/** Test */
 class Pair<A, B>(val a: A, val b: B) {}
@@ -468,7 +503,7 @@ class Main {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     assert_eq!(
@@ -498,7 +533,7 @@ class Main {
     let state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Func { function a(x: int, y: bool, z: Str): int = 1 }
@@ -512,7 +547,7 @@ class Main {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     // Bad location
@@ -561,7 +596,7 @@ class Main {
     let state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Main {
@@ -569,7 +604,7 @@ class Main {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     assert_eq!(
@@ -589,7 +624,7 @@ class Main {
     let state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Developer(
@@ -602,7 +637,7 @@ class Developer(
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     assert!(rewrite::format_entire_document(&state, &mod_ref).is_none());
@@ -612,7 +647,7 @@ class Developer(
   fn rename_bad_identifier_tests() {
     let mut heap = Heap::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-    let mut state = ServerState::new(heap, false, vec![]);
+    let mut state = ServerState::new(heap, false, HashMap::new());
     assert!(rewrite::rename(&mut state, &mod_ref, Position(2, 45), "3").is_none());
     assert!(rewrite::rename(&mut state, &mod_ref, Position(2, 45), "A3").is_none());
     assert!(rewrite::rename(&mut state, &mod_ref, Position(2, 45), "a3").is_none());
@@ -625,7 +660,7 @@ class Developer(
     let mut state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"/** Test */
 class Test1 {
@@ -636,7 +671,7 @@ class Test1 {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     assert!(rewrite::rename(&mut state, &mod_ref, Position(100, 100), "a").is_none());
@@ -651,7 +686,7 @@ class Test1 {
     let mut state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Test {
@@ -659,7 +694,7 @@ class Test {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     assert!(rewrite::rename(&mut state, &mod_ref, Position(2, 36), "a").is_none());
@@ -687,7 +722,11 @@ class Test {
   fn error_quickfix_test1() {
     let heap = Heap::new();
     // Intentional syntax error
-    let state = ServerState::new(heap, false, vec![(ModuleReference::dummy(), "dfsf".to_string())]);
+    let state = ServerState::new(
+      heap,
+      false,
+      HashMap::from([(ModuleReference::dummy(), "dfsf".to_string())]),
+    );
     assert!(rewrite::code_actions(&state, Location::from_pos(0, 1, 0, 2)).is_empty());
   }
 
@@ -698,7 +737,7 @@ class Test {
     let state = ServerState::new(
       heap,
       false,
-      vec![
+      HashMap::from([
         (
           ModuleReference::dummy(),
           r#"
@@ -717,7 +756,7 @@ class Foo {
 "#
           .to_string(),
         ),
-      ],
+      ]),
     );
     // At Foo in `Foo.bar`
     assert_eq!(
@@ -739,7 +778,7 @@ class Foo {
     let state = ServerState::new(
       heap,
       false,
-      vec![
+      HashMap::from([
         (
           ModuleReference::dummy(),
           r#"
@@ -756,7 +795,7 @@ class Foo {}
 "#
           .to_string(),
         ),
-      ],
+      ]),
     );
     // At Foo in `function main(): int = Foo`
     assert_eq!(
@@ -778,7 +817,7 @@ class Foo {}
     let state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         test_mod_ref,
         r#"import {A} from B
 class Pair<A, B>(val a: A, val b: B) {}
@@ -804,7 +843,7 @@ class Main {
 interface Interface {}
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     assert!(completion::auto_complete(&state, &test_mod_ref, Position(4, 3)).is_empty());
@@ -864,7 +903,7 @@ sam [kind=Function, detail=sam(): Developer]"#,
     let state = ServerState::new(
       heap,
       false,
-      vec![(
+      HashMap::from([(
         test_mod_ref,
         r#"
 class Pair<A, B>(val a: A, val b: B) {}
@@ -889,7 +928,7 @@ class Main {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
 
     assert_eq!(
@@ -906,7 +945,7 @@ projects [kind=Field, detail=List<Str>]"#,
   #[test]
   fn autocomplete_test_3() {
     let mod_ref = ModuleReference::dummy();
-    let state = ServerState::new(Heap::new(), false, vec![(mod_ref, ".".to_string())]);
+    let state = ServerState::new(Heap::new(), false, HashMap::from([(mod_ref, ".".to_string())]));
     assert!(completion::auto_complete(&state, &mod_ref, Position(0, 1)).is_empty());
   }
 
@@ -916,7 +955,7 @@ projects [kind=Field, detail=List<Str>]"#,
     let state = ServerState::new(
       Heap::new(),
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Main {
@@ -924,7 +963,7 @@ class Main {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
     assert!(completion::auto_complete(&state, &mod_ref, Position(2, 41)).is_empty());
   }
@@ -935,7 +974,7 @@ class Main {
     let state = ServerState::new(
       Heap::new(),
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Main {
@@ -943,7 +982,7 @@ class Main {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
     assert!(completion::auto_complete(&state, &mod_ref, Position(2, 45)).is_empty());
   }
@@ -954,7 +993,7 @@ class Main {
     let state = ServerState::new(
       Heap::new(),
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Main {
@@ -966,7 +1005,7 @@ class Developer {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
     assert_eq!(
       "b [kind=Method, detail=b(): unit]",
@@ -983,7 +1022,7 @@ class Developer {
     let state = ServerState::new(
       Heap::new(),
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Main {
@@ -991,7 +1030,7 @@ class Main {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
     assert!(completion::auto_complete(&state, &mod_ref, Position(2, 32)).is_empty());
   }
@@ -1002,7 +1041,7 @@ class Main {
     let state = ServerState::new(
       Heap::new(),
       false,
-      vec![(
+      HashMap::from([(
         mod_ref,
         r#"
 class Main {
@@ -1015,7 +1054,7 @@ class Main {
 }
 "#
         .to_string(),
-      )],
+      )]),
     );
     assert_eq!(
       r#"bar [kind=Variable, detail=int]

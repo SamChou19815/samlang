@@ -1,7 +1,7 @@
 mod loc;
 pub use loc::{Location, Position};
 mod reason;
-pub(crate) use reason::Reason;
+pub(crate) use reason::{Description, Reason};
 
 pub(crate) mod hir;
 mod hir_tests;

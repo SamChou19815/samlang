@@ -27,11 +27,21 @@ type Range = {
   endColumn: number;
 };
 
+
+type Diagnostic = {
+  severity: 8;
+  message: string;
+  startLineNumber: number;
+  startColumn: number;
+  endLineNumber: number;
+  endColumn: number;
+};
+
 export type CompilationResult = string | { tsCode: string; interpreterResult: string };
 
 export function compile(source: string): Promise<CompilationResult>;
 
-export function typeCheck(source: string): Promise<string>;
+export function typeCheck(source: string): Promise<readonly Diagnostic[]>;
 
 export function queryType(
   source: string,
