@@ -3,14 +3,13 @@
 #![cfg_attr(coverage_nightly, feature(no_coverage))]
 
 pub use common::{measure_time, Heap, ModuleReference};
-use itertools::Itertools;
 use std::collections::{BTreeMap, HashMap};
 
 pub mod ast;
 mod checker;
 mod common;
 mod compiler;
-mod errors;
+pub mod errors;
 mod integration_tests;
 mod interpreter;
 mod optimization;
@@ -44,32 +43,32 @@ const EMITTED_WAT_FILE: &str = "__all__.wat";
 
 pub fn compile_sources(
   heap: &mut Heap,
-  source_handles: Vec<(ModuleReference, String)>,
+  source_handles: HashMap<ModuleReference, String>,
   entry_module_references: Vec<ModuleReference>,
   enable_profiling: bool,
-) -> Result<SourcesCompilationResult, Vec<String>> {
+) -> Result<SourcesCompilationResult, String> {
   let mut error_set = errors::ErrorSet::new();
   let mut parsed_sources = HashMap::new();
   crate::common::measure_time(enable_profiling, "Parsing", || {
-    for (module_reference, source) in source_handles {
+    for (module_reference, source) in &source_handles {
       let parsed =
-        parser::parse_source_module_from_text(&source, module_reference, heap, &mut error_set);
-      parsed_sources.insert(module_reference, parsed);
+        parser::parse_source_module_from_text(source, *module_reference, heap, &mut error_set);
+      parsed_sources.insert(*module_reference, parsed);
     }
   });
+  for module_reference in &entry_module_references {
+    if !parsed_sources.contains_key(module_reference) {
+      return Err(format!(
+        "Invalid entry point: {} does not exist.",
+        module_reference.pretty_print(heap)
+      ));
+    }
+  }
   let checked_sources = measure_time(enable_profiling, "Type checking", || {
     checker::type_check_sources(&parsed_sources, heap, &mut error_set).0
   });
-  let mut errors = error_set.into_errors().iter().map(|it| it.pretty_print(heap)).collect_vec();
-  for module_reference in &entry_module_references {
-    if !checked_sources.contains_key(module_reference) {
-      errors.insert(
-        0,
-        format!("Invalid entry point: {} does not exist.", module_reference.pretty_print(heap)),
-      );
-    }
-  }
-  if !errors.is_empty() {
+  let errors = error_set.pretty_print_error_messages(heap, &source_handles);
+  if error_set.has_errors() {
     return Err(errors);
   }
 
@@ -118,6 +117,8 @@ require('@dev-sam/samlang-cli/loader')(binary).{}();
 
 #[cfg(test)]
 mod tests {
+  use std::collections::HashMap;
+
   use pretty_assertions::assert_eq;
 
   use crate::Heap;
@@ -135,18 +136,37 @@ mod tests {
     let mod_ref_demo = heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()]);
 
     assert_eq!(
-      vec!["Invalid entry point: A does not exist.".to_string()],
-      super::compile_sources(heap, vec![], vec![mod_ref_a], false,).err().unwrap()
+      "Invalid entry point: A does not exist.",
+      super::compile_sources(heap, HashMap::new(), vec![mod_ref_a], false,).err().unwrap()
     );
 
     assert_eq!(
-      vec![
-        "Demo.sam:1:37-1:44: [incompatible-type]: Expected: `Str`, actual: `int`.".to_string(),
-        "Demo.sam:1:42-1:44: [incompatible-type]: Expected: `int`, actual: `Str`.".to_string()
-      ],
+      r#"
+Error ----------------------------------- Demo.sam:1:37-1:44
+
+Expected: `Str`, actual: `int`.
+
+  1| class Main { function main(): Str = 42 + "" }
+                                         ^^^^^^^
+
+
+Error ----------------------------------- Demo.sam:1:42-1:44
+
+Expected: `int`, actual: `Str`.
+
+  1| class Main { function main(): Str = 42 + "" }
+                                              ^^
+
+
+Found 2 errors.
+"#
+      .trim(),
       super::compile_sources(
         heap,
-        vec![(mod_ref_demo, "class Main { function main(): Str = 42 + \"\" }".to_string())],
+        HashMap::from([(
+          mod_ref_demo,
+          "class Main { function main(): Str = 42 + \"\" }".to_string()
+        )]),
         vec![mod_ref_demo],
         false,
       )
@@ -156,10 +176,10 @@ mod tests {
 
     assert!(super::compile_sources(
       heap,
-      vec![(
+      HashMap::from([(
         mod_ref_demo,
         "class Main { function main(): unit = Process.println(\"hello world\") }".to_string()
-      )],
+      )]),
       vec![mod_ref_demo],
       false,
     )

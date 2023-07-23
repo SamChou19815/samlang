@@ -148,8 +148,7 @@ fn analyze_used_function_names_and_type_names(
   let mut used_fn_names: HashSet<_> = entry_points.iter().cloned().collect();
   let mut used_str_names: HashSet<PStr> = HashSet::new();
   let mut stack = entry_points.iter().cloned().collect_vec();
-  while !stack.is_empty() {
-    let fn_name = stack.pop().unwrap();
+  while let Some(fn_name) = stack.pop() {
     if let Some((str_used_by_this_function, fn_used_by_this_function, _)) =
       used_functions_map.get(&fn_name)
     {

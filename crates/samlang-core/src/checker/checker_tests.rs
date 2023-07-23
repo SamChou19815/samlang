@@ -492,12 +492,12 @@ mod tests {
     source: &str,
     expected_type: &Type,
     current_class: &'static str,
-  ) -> Vec<String> {
+  ) -> String {
     let mut error_set = ErrorSet::new();
 
     let (_, parsed) =
       parse_source_expression_from_text(source, ModuleReference::dummy(), heap, &mut error_set);
-    assert_eq!(Vec::<String>::new(), error_set.error_messages(heap));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
 
     let mut temp_ssa_error_set = ErrorSet::new();
     let global_cx = sandbox_global_cx(heap);
@@ -517,33 +517,31 @@ mod tests {
     );
 
     type_check_expression(&mut cx, heap, &parsed, Some(expected_type));
-    error_set.error_messages(heap)
+    error_set.pretty_print_error_messages(
+      heap,
+      &HashMap::from([(ModuleReference::dummy(), source.to_string())]),
+    )
   }
 
   fn assert_errors_with_class(
     heap: &mut Heap,
     source: &str,
     expected_type: &Type,
-    expected_errors: Vec<&str>,
+    expected_errors: &str,
     current_class: &'static str,
   ) {
     assert_eq!(
-      expected_errors,
-      type_check_expr_in_sandbox(heap, source, expected_type, current_class)
+      expected_errors.trim(),
+      type_check_expr_in_sandbox(heap, source, expected_type, current_class).trim()
     );
   }
 
-  fn assert_errors(
-    heap: &mut Heap,
-    source: &str,
-    expected_type: &Type,
-    expected_errors: Vec<&str>,
-  ) {
+  fn assert_errors(heap: &mut Heap, source: &str, expected_type: &Type, expected_errors: &str) {
     assert_errors_with_class(heap, source, expected_type, expected_errors, "Test");
   }
 
   fn assert_checks(heap: &mut Heap, source: &str, expected_type: &Type) {
-    assert_errors_with_class(heap, source, expected_type, vec![], "Test");
+    assert_errors_with_class(heap, source, expected_type, "", "Test");
   }
 
   #[test]
@@ -559,25 +557,65 @@ mod tests {
       heap,
       "true",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:5: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:5
+
+Expected: `unit`, actual: `bool`.
+
+  1| true
+     ^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "false",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `unit`, actual: `bool`.
+
+  1| false
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "42",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:3: [incompatible-type]: Expected: `unit`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:3
+
+Expected: `unit`, actual: `int`.
+
+  1| 42
+     ^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "\"a\"",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `unit`, actual: `Str`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:4
+
+Expected: `unit`, actual: `Str`.
+
+  1| "a"
+     ^^^
+
+
+Found 1 error.
+"#,
     );
 
     assert_checks(heap, "this", &builder.int_type());
@@ -586,7 +624,17 @@ mod tests {
       heap,
       "{ val foo = true; foo }",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:19-1:22: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:19-1:22
+
+Expected: `int`, actual: `bool`.
+
+  1| { val foo = true; foo }
+                       ^^^
+
+
+Found 1 error.
+"#,
     );
   }
 
@@ -610,51 +658,129 @@ mod tests {
       heap,
       "Test.helloWorld<A>",
       &builder.fun_type(vec![builder.string_type()], builder.unit_type()),
-      vec![
-        "DUMMY.sam:1:1-1:19: [invalid-arity]: Incorrect type arguments size. Expected: 0, actual: 1.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:19
+
+Incorrect type arguments size. Expected: 0, actual: 1.
+
+  1| Test.helloWorld<A>
+     ^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.helloWorldWithTypeParameters",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
-      vec![
-        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `(Str, Str) -> unit`, actual: `(any) -> unit`.",
-        "DUMMY.sam:1:1-1:34: [invalid-arity]: Incorrect parameter size. Expected: 2, actual: 1.",
-        "DUMMY.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:34
+
+Expected: `(Str, Str) -> unit`, actual: `(any) -> unit`.
+
+  1| Test.helloWorldWithTypeParameters
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:1-1:34
+
+Incorrect parameter size. Expected: 2, actual: 1.
+
+  1| Test.helloWorldWithTypeParameters
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:1-1:34
+
+There is not enough context information to decide the type of this expression.
+
+  1| Test.helloWorldWithTypeParameters
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 3 errors.
+"#,
     );
     assert_errors(
       heap,
       "Test.helloWorldWithTypeParameters",
       &builder.string_type(),
-      vec![
-        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `Str`, actual: `(any) -> unit`.",
-        "DUMMY.sam:1:1-1:34: [incompatible-type]: Expected: `Str`, actual: `function`.",
-        "DUMMY.sam:1:1-1:34: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      ]
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:34
+
+Expected: `Str`, actual: `(any) -> unit`.
+
+  1| Test.helloWorldWithTypeParameters
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:1-1:34
+
+Expected: `Str`, actual: `function`.
+
+  1| Test.helloWorldWithTypeParameters
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:1-1:34
+
+There is not enough context information to decide the type of this expression.
+
+  1| Test.helloWorldWithTypeParameters
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 3 errors.
+"#,
     );
     assert_errors(
       heap,
       "Test.helloWorldWithTypeParameters<int, Str>",
       &builder.fun_type(vec![builder.int_type()], builder.unit_type()),
-      vec![
-        "DUMMY.sam:1:1-1:44: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:44
+
+Incorrect type arguments size. Expected: 1, actual: 2.
+
+  1| Test.helloWorldWithTypeParameters<int, Str>
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.helloWorldWithTypeParameters<Str>",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
-      vec![
-        "DUMMY.sam:1:1-1:39: [incompatible-type]: Expected: `(Str, Str) -> unit`, actual: `(Str) -> unit`.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:39
+
+Expected: `(Str, Str) -> unit`, actual: `(Str) -> unit`.
+
+  1| Test.helloWorldWithTypeParameters<Str>
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.helloWorld2",
       &builder.fun_type(vec![builder.string_type()], builder.unit_type()),
-      vec!["DUMMY.sam:1:6-1:17: [member-missing]: Cannot find member `helloWorld2` on `Test`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:6-1:17
+
+Cannot find member `helloWorld2` on `Test`.
+
+  1| Test.helloWorld2
+          ^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
   }
 
@@ -677,28 +803,28 @@ mod tests {
       heap,
       "Test2.Foo(true)",
       &builder.simple_nominal_type(test2_str),
-      vec![],
+      "",
       "Test2",
     );
     assert_errors_with_class(
       heap,
       "Test2.Bar(42)",
       &builder.simple_nominal_type(test2_str),
-      vec![],
+      "",
       "Test2",
     );
     assert_errors_with_class(
       heap,
       "Test4.Foo(true)",
       &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
-      vec![],
+      "",
       "Test4",
     );
     assert_errors_with_class(
       heap,
       "Test4.Foo<bool>(true)",
       &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
-      vec![],
+      "",
       "Test4",
     );
 
@@ -706,47 +832,121 @@ mod tests {
       heap,
       "Test.Foo(true)",
       &builder.simple_nominal_type(test2_str),
-      vec!["DUMMY.sam:1:6-1:9: [member-missing]: Cannot find member `Foo` on `Test`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:6-1:9
+
+Cannot find member `Foo` on `Test`.
+
+  1| Test.Foo(true)
+          ^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.Bar(42)",
       &builder.simple_nominal_type(test2_str),
-      vec!["DUMMY.sam:1:6-1:9: [member-missing]: Cannot find member `Bar` on `Test`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:6-1:9
+
+Cannot find member `Bar` on `Test`.
+
+  1| Test.Bar(42)
+          ^^^
+
+
+Found 1 error.
+"#,
     );
-    assert_errors(heap,
+    assert_errors(
+      heap,
       "Test4.Foo<int, bool>(true)",
       &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
-      vec![
-        "DUMMY.sam:1:1-1:21: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:21
+
+Incorrect type arguments size. Expected: 1, actual: 2.
+
+  1| Test4.Foo<int, bool>(true)
+     ^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test4.Foo<int>(true)",
       &builder.general_nominal_type(test4_str, vec![builder.int_type()]),
-      vec!["DUMMY.sam:1:16-1:20: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:16-1:20
+
+Expected: `int`, actual: `bool`.
+
+  1| Test4.Foo<int>(true)
+                    ^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test4.Foo<int>(true)",
       &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
-      vec![
-        "DUMMY.sam:1:1-1:21: [incompatible-type]: Expected: `Test4<bool>`, actual: `Test4<int>`.",
-        "DUMMY.sam:1:16-1:20: [incompatible-type]: Expected: `int`, actual: `bool`.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:21
+
+Expected: `Test4<bool>`, actual: `Test4<int>`.
+
+  1| Test4.Foo<int>(true)
+     ^^^^^^^^^^^^^^^^^^^^
+
+
+Error ---------------------------------- DUMMY.sam:1:16-1:20
+
+Expected: `int`, actual: `bool`.
+
+  1| Test4.Foo<int>(true)
+                    ^^^^
+
+
+Found 2 errors.
+"#,
     );
     assert_errors(
       heap,
       "Test44.Bar(42)",
       &builder.simple_nominal_type(test2_str),
-      vec!["DUMMY.sam:1:1-1:7: [cannot-resolve-class]: Class `Test44` is not resolved."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:7
+
+Class `Test44` is not resolved.
+
+  1| Test44.Bar(42)
+     ^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors_with_class(
       heap,
       "Test2.Tars(42)",
       &builder.simple_nominal_type(test2_str),
-      vec!["DUMMY.sam:1:7-1:11: [member-missing]: Cannot find member `Tars` on `Test2`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:7-1:11
+
+Cannot find member `Tars` on `Test2`.
+
+  1| Test2.Tars(42)
+           ^^^^
+
+
+Found 1 error.
+"#,
       "Test2",
     );
   }
@@ -783,114 +983,308 @@ mod tests {
       heap,
       "3.foo",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:2: [incompatible-type]: Expected: `nominal type`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:2
+
+Expected: `nominal type`, actual: `int`.
+
+  1| 3.foo
+     ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).bazz",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:20-1:24: [member-missing]: Cannot find member `bazz` on `Test`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:20-1:24
+
+Cannot find member `bazz` on `Test`.
+
+  1| Test.init(true, 3).bazz
+                        ^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "{ val _ = (t3: Test3<bool>) -> t3.bar; }",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:35-1:38: [member-missing]: Cannot find member `bar` on `Test3`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:35-1:38
+
+Cannot find member `bar` on `Test3`.
+
+  1| { val _ = (t3: Test3<bool>) -> t3.bar; }
+                                       ^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors_with_class(
       heap,
       "Test2.Foo(true).foo",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:17-1:20: [member-missing]: Cannot find member `foo` on `Test2`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:17-1:20
+
+Cannot find member `foo` on `Test2`.
+
+  1| Test2.Foo(true).foo
+                     ^^^
+
+
+Found 1 error.
+"#,
       "Test2",
     );
     assert_errors(
       heap,
       "Test.init(true, 3).foo<int>",
       &builder.bool_type(),
-      vec![
-      "DUMMY.sam:1:1-1:28: [invalid-arity]: Incorrect type arguments size. Expected: 0, actual: 1.",
-    ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:28
+
+Incorrect type arguments size. Expected: 0, actual: 1.
+
+  1| Test.init(true, 3).foo<int>
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).foo",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:23: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:23
+
+Expected: `int`, actual: `bool`.
+
+  1| Test.init(true, 3).foo
+     ^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).bar",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:1-1:23: [incompatible-type]: Expected: `bool`, actual: `int`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:23
+
+Expected: `bool`, actual: `int`.
+
+  1| Test.init(true, 3).bar
+     ^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).baz",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:23: [incompatible-type]: Expected: `int`, actual: `(int) -> bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:23
+
+Expected: `int`, actual: `(int) -> bool`.
+
+  1| Test.init(true, 3).baz
+     ^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
-    assert_errors(heap,
+    assert_errors(
+      heap,
       "Test.init(true, 3).baz<int>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
-      vec![
-        "DUMMY.sam:1:1-1:28: [invalid-arity]: Incorrect type arguments size. Expected: 0, actual: 1.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:28
+
+Incorrect type arguments size. Expected: 0, actual: 1.
+
+  1| Test.init(true, 3).baz<int>
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).bazWithTypeParam",
       &builder.int_type(),
-      vec![
-        "DUMMY.sam:1:1-1:36: [incompatible-type]: Expected: `int`, actual: `(int) -> bool`.",
-        "DUMMY.sam:1:1-1:36: [incompatible-type]: Expected: `int`, actual: `function`.",
-        "DUMMY.sam:1:1-1:36: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:36
+
+Expected: `int`, actual: `(int) -> bool`.
+
+  1| Test.init(true, 3).bazWithTypeParam
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:1-1:36
+
+Expected: `int`, actual: `function`.
+
+  1| Test.init(true, 3).bazWithTypeParam
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:1-1:36
+
+There is not enough context information to decide the type of this expression.
+
+  1| Test.init(true, 3).bazWithTypeParam
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 3 errors.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).bazWithTypeParam",
       &builder.fun_type(vec![builder.int_type(), builder.int_type()], builder.bool_type()),
-      vec![
-        "DUMMY.sam:1:1-1:36: [incompatible-type]: Expected: `(int, int) -> bool`, actual: `(int) -> bool`.",
-        "DUMMY.sam:1:1-1:36: [invalid-arity]: Incorrect parameter size. Expected: 2, actual: 1.",
-        "DUMMY.sam:1:1-1:36: [underconstrained]: There is not enough context information to decide the type of this expression.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:36
+
+Expected: `(int, int) -> bool`, actual: `(int) -> bool`.
+
+  1| Test.init(true, 3).bazWithTypeParam
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:1-1:36
+
+Incorrect parameter size. Expected: 2, actual: 1.
+
+  1| Test.init(true, 3).bazWithTypeParam
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:1-1:36
+
+There is not enough context information to decide the type of this expression.
+
+  1| Test.init(true, 3).bazWithTypeParam
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 3 errors.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).bazWithTypeParam<int, int>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
-      vec![
-        "DUMMY.sam:1:1-1:46: [invalid-arity]: Incorrect type arguments size. Expected: 1, actual: 2.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:46
+
+Incorrect type arguments size. Expected: 1, actual: 2.
+
+  1| Test.init(true, 3).bazWithTypeParam<int, int>
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).bazWithUsefulTypeParam<bool>",
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
-      vec![
-        "DUMMY.sam:1:1-1:48: [incompatible-type]: Expected: `(int) -> bool`, actual: `(bool) -> bool`.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:48
+
+Expected: `(int) -> bool`, actual: `(bool) -> bool`.
+
+  1| Test.init(true, 3).bazWithUsefulTypeParam<bool>
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).baz",
       &builder.fun_type(vec![builder.bool_type()], builder.int_type()),
-      vec![
-        "DUMMY.sam:1:1-1:23: [incompatible-type]: Expected: `(bool) -> int`, actual: `(int) -> bool`.",
-      ],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:23
+
+Expected: `(bool) -> int`, actual: `(int) -> bool`.
+
+  1| Test.init(true, 3).baz
+     ^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
 
-    assert_errors(heap, "{ val _ = (t) -> t.foo; }", &builder.unit_type(), vec![
-      "DUMMY.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-    ]);
-    assert_errors(heap, "{ val _ = (t) -> t.bar; }", &builder.unit_type(), vec![
-      "DUMMY.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-    ]);
-    assert_errors(heap, "{ val _ = (t) -> t.baz; }", &builder.unit_type(), vec![
-      "DUMMY.sam:1:12-1:13: [underconstrained]: There is not enough context information to decide the type of this expression.",
-    ]);
+    assert_errors(
+      heap,
+      "{ val _ = (t) -> t.foo; }",
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:12-1:13
+
+There is not enough context information to decide the type of this expression.
+
+  1| { val _ = (t) -> t.foo; }
+                ^
+
+
+Found 1 error.
+"#,
+    );
+    assert_errors(
+      heap,
+      "{ val _ = (t) -> t.bar; }",
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:12-1:13
+
+There is not enough context information to decide the type of this expression.
+
+  1| { val _ = (t) -> t.bar; }
+                ^
+
+
+Found 1 error.
+"#,
+    );
+    assert_errors(
+      heap,
+      "{ val _ = (t) -> t.baz; }",
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:12-1:13
+
+There is not enough context information to decide the type of this expression.
+
+  1| { val _ = (t) -> t.baz; }
+                ^
+
+
+Found 1 error.
+"#,
+    );
   }
 
   #[test]
@@ -915,53 +1309,146 @@ mod tests {
       heap,
       "Process.panic(3)",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:15-1:16: [incompatible-type]: Expected: `Str`, actual: `int`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:15-1:16
+
+Expected: `Str`, actual: `int`.
+
+  1| Process.panic(3)
+                   ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "3(3)",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:5: [incompatible-type]: Expected: `function`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:5
+
+Expected: `function`, actual: `int`.
+
+  1| 3(3)
+     ^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.helloWorld(3)",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:17-1:18: [incompatible-type]: Expected: `Str`, actual: `int`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:17-1:18
+
+Expected: `Str`, actual: `int`.
+
+  1| Test.helloWorld(3)
+                     ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).fff()",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:25: [incompatible-type]: Expected: `int`, actual: `Str`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:25
+
+Expected: `int`, actual: `Str`.
+
+  1| Test.init(true, 3).fff()
+     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "((i: int) -> true)({})",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:20-1:22: [incompatible-type]: Expected: `int`, actual: `unit`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:20-1:22
+
+Expected: `int`, actual: `unit`.
+
+  1| ((i: int) -> true)({})
+                        ^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.helloWorld(\"\")",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:1-1:20: [incompatible-type]: Expected: `bool`, actual: `unit`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:20
+
+Expected: `bool`, actual: `unit`.
+
+  1| Test.helloWorld("")
+     ^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "Test.init(true, 3).baz(3)",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:26: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:26
+
+Expected: `int`, actual: `bool`.
+
+  1| Test.init(true, 3).baz(3)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "((i: int) -> true)(3)",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:2-1:22: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:2-1:22
+
+Expected: `int`, actual: `bool`.
+
+  1| ((i: int) -> true)(3)
+      ^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
-    assert_errors(heap, "Test.init(true, 3).bazWithTypeParam(1)", &builder.bool_type(), vec![
-      "DUMMY.sam:1:1-1:39: [underconstrained]: There is not enough context information to decide the type of this expression."
-    ]);
+    assert_errors(
+      heap,
+      "Test.init(true, 3).bazWithTypeParam(1)",
+      &builder.bool_type(),
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:39
+
+There is not enough context information to decide the type of this expression.
+
+  1| Test.init(true, 3).bazWithTypeParam(1)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
+    );
   }
 
   #[test]
@@ -994,226 +1481,601 @@ mod tests {
       heap,
       "-(false)",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:3-1:8: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:3-1:8
+
+Expected: `int`, actual: `bool`.
+
+  1| -(false)
+       ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "!1",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:2-1:3: [incompatible-type]: Expected: `bool`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:2-1:3
+
+Expected: `bool`, actual: `int`.
+
+  1| !1
+      ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "-(1+1)",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `bool`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `bool`, actual: `int`.
+
+  1| -(1+1)
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "!true",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `int`, actual: `bool`.
+
+  1| !true
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "!false",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:7: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:7
+
+Expected: `int`, actual: `bool`.
+
+  1| !false
+     ^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "\"1\" * \"1\"",
       &builder.int_type(),
-      vec![
-        "DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `int`, actual: `Str`.",
-        "DUMMY.sam:1:7-1:10: [incompatible-type]: Expected: `int`, actual: `Str`.",
-      ],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:4
+
+Expected: `int`, actual: `Str`.
+
+  1| "1" * "1"
+     ^^^
+
+
+Error ----------------------------------- DUMMY.sam:1:7-1:10
+
+Expected: `int`, actual: `Str`.
+
+  1| "1" * "1"
+           ^^^
+
+
+Found 2 errors.
+"#,
     );
     assert_errors(
       heap,
       "\"1\" - 1",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:4: [incompatible-type]: Expected: `int`, actual: `Str`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:4
+
+Expected: `int`, actual: `Str`.
+
+  1| "1" - 1
+     ^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 % \"1\"",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:5-1:8: [incompatible-type]: Expected: `int`, actual: `Str`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:5-1:8
+
+Expected: `int`, actual: `Str`.
+
+  1| 1 % "1"
+         ^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 + false",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:5-1:10: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:5-1:10
+
+Expected: `int`, actual: `bool`.
+
+  1| 1 + false
+         ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "false - 1",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `int`, actual: `bool`.
+
+  1| false - 1
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "\"\" < false",
       &builder.bool_type(),
-      vec![
-        "DUMMY.sam:1:1-1:3: [incompatible-type]: Expected: `int`, actual: `Str`.",
-        "DUMMY.sam:1:6-1:11: [incompatible-type]: Expected: `int`, actual: `bool`.",
-      ],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:3
+
+Expected: `int`, actual: `Str`.
+
+  1| "" < false
+     ^^
+
+
+Error ----------------------------------- DUMMY.sam:1:6-1:11
+
+Expected: `int`, actual: `bool`.
+
+  1| "" < false
+          ^^^^^
+
+
+Found 2 errors.
+"#,
     );
     assert_errors(
       heap,
       "1 <= false",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:6-1:11: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:6-1:11
+
+Expected: `int`, actual: `bool`.
+
+  1| 1 <= false
+          ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 > \"\"",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:5-1:7: [incompatible-type]: Expected: `int`, actual: `Str`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:5-1:7
+
+Expected: `int`, actual: `Str`.
+
+  1| 1 > ""
+         ^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "true >= 1",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:1-1:5: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:5
+
+Expected: `int`, actual: `bool`.
+
+  1| true >= 1
+     ^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "false || 4",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:10-1:11: [incompatible-type]: Expected: `bool`, actual: `int`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:10-1:11
+
+Expected: `bool`, actual: `int`.
+
+  1| false || 4
+              ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "2 && 3",
       &builder.bool_type(),
-      vec![
-        "DUMMY.sam:1:1-1:2: [incompatible-type]: Expected: `bool`, actual: `int`.",
-        "DUMMY.sam:1:6-1:7: [incompatible-type]: Expected: `bool`, actual: `int`.",
-      ],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:2
+
+Expected: `bool`, actual: `int`.
+
+  1| 2 && 3
+     ^
+
+
+Error ------------------------------------ DUMMY.sam:1:6-1:7
+
+Expected: `bool`, actual: `int`.
+
+  1| 2 && 3
+          ^
+
+
+Found 2 errors.
+"#,
     );
     assert_errors(
       heap,
       "1 == false",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:6-1:11: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:6-1:11
+
+Expected: `int`, actual: `bool`.
+
+  1| 1 == false
+          ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "true == 3",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:9-1:10: [incompatible-type]: Expected: `bool`, actual: `int`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:9-1:10
+
+Expected: `bool`, actual: `int`.
+
+  1| true == 3
+             ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "true != 3",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:9-1:10: [incompatible-type]: Expected: `bool`, actual: `int`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:9-1:10
+
+Expected: `bool`, actual: `int`.
+
+  1| true != 3
+             ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "\"\" != 3",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:7-1:8: [incompatible-type]: Expected: `Str`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:7-1:8
+
+Expected: `Str`, actual: `int`.
+
+  1| "" != 3
+           ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "{ val _ = (t: int, f: bool) -> t == f; }",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:37-1:38: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:37-1:38
+
+Expected: `int`, actual: `bool`.
+
+  1| { val _ = (t: int, f: bool) -> t == f; }
+                                         ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 * 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `unit`, actual: `int`.
+
+  1| 1 * 1
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 - 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `unit`, actual: `int`.
+
+  1| 1 - 1
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 % 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `unit`, actual: `int`.
+
+  1| 1 % 1
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 + 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `unit`, actual: `int`.
+
+  1| 1 + 1
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 - 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `int`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `unit`, actual: `int`.
+
+  1| 1 - 1
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 < 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `unit`, actual: `bool`.
+
+  1| 1 < 1
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 <= 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:7: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:7
+
+Expected: `unit`, actual: `bool`.
+
+  1| 1 <= 1
+     ^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 > 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:6: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:6
+
+Expected: `unit`, actual: `bool`.
+
+  1| 1 > 1
+     ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 >= 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:7: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:7
+
+Expected: `unit`, actual: `bool`.
+
+  1| 1 >= 1
+     ^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "true || false",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:14: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:14
+
+Expected: `unit`, actual: `bool`.
+
+  1| true || false
+     ^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "false && true",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:14: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:14
+
+Expected: `unit`, actual: `bool`.
+
+  1| false && true
+     ^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "1 == 1",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:7: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:7
+
+Expected: `unit`, actual: `bool`.
+
+  1| 1 == 1
+     ^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "true == false",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:14: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:14
+
+Expected: `unit`, actual: `bool`.
+
+  1| true == false
+     ^^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "true != true",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:13: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:13
+
+Expected: `unit`, actual: `bool`.
+
+  1| true != true
+     ^^^^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
-      "\"\" != \"3\"",
+      r#""" != "3""#,
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:1-1:10: [incompatible-type]: Expected: `unit`, actual: `bool`."],
+      r#"
+Error ----------------------------------- DUMMY.sam:1:1-1:10
+
+Expected: `unit`, actual: `bool`.
+
+  1| "" != "3"
+     ^^^^^^^^^
+
+
+Found 1 error.
+"#,
     );
   }
 
@@ -1239,14 +2101,14 @@ mod tests {
       heap,
       "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
       &builder.unit_type(),
-      vec![],
+      "",
       "Test2",
     );
     assert_errors_with_class(
       heap,
       "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(d) -> 2 }; }",
       &builder.unit_type(),
-      vec![],
+      "",
       "Test2",
     );
 
@@ -1254,19 +2116,49 @@ mod tests {
       heap,
       "if true then false else 1",
       &builder.bool_type(),
-      vec!["DUMMY.sam:1:25-1:26: [incompatible-type]: Expected: `bool`, actual: `int`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:25-1:26
+
+Expected: `bool`, actual: `int`.
+
+  1| if true then false else 1
+                             ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "if false then 1 else false",
       &builder.int_type(),
-      vec!["DUMMY.sam:1:22-1:27: [incompatible-type]: Expected: `int`, actual: `bool`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:22-1:27
+
+Expected: `int`, actual: `bool`.
+
+  1| if false then 1 else false
+                          ^^^^^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "if false then \"\" else 3",
       &builder.string_type(),
-      vec!["DUMMY.sam:1:23-1:24: [incompatible-type]: Expected: `Str`, actual: `int`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:23-1:24
+
+Expected: `Str`, actual: `int`.
+
+  1| if false then "" else 3
+                           ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
@@ -1276,33 +2168,89 @@ mod tests {
   );
 }"#,
       &builder.unit_type(),
-      vec!["DUMMY.sam:3:22-3:23: [incompatible-type]: Expected: `bool`, actual: `int`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:3:22-3:23
+
+Expected: `bool`, actual: `int`.
+
+  3|     if b then t else f
+                          ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "match (3) { Foo(_) -> 1, Bar(s) -> 2 }",
       &builder.unit_type(),
-      vec![
-        "DUMMY.sam:1:13-1:16: [member-missing]: Cannot find member `Foo` on `int`.",
-        "DUMMY.sam:1:26-1:29: [member-missing]: Cannot find member `Bar` on `int`.",
-      ],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:13-1:16
+
+Cannot find member `Foo` on `int`.
+
+  1| match (3) { Foo(_) -> 1, Bar(s) -> 2 }
+                 ^^^
+
+
+Error ---------------------------------- DUMMY.sam:1:26-1:29
+
+Cannot find member `Bar` on `int`.
+
+  1| match (3) { Foo(_) -> 1, Bar(s) -> 2 }
+                              ^^^
+
+
+Found 2 errors.
+"#,
     );
     assert_errors(
       heap,
       "match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }",
       &builder.unit_type(),
-      vec![
-        "DUMMY.sam:1:30-1:33: [member-missing]: Cannot find member `Foo` on `Test`.",
-        "DUMMY.sam:1:43-1:46: [member-missing]: Cannot find member `Bar` on `Test`.",
-      ],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:30-1:33
+
+Cannot find member `Foo` on `Test`.
+
+  1| match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }
+                                  ^^^
+
+
+Error ---------------------------------- DUMMY.sam:1:43-1:46
+
+Cannot find member `Bar` on `Test`.
+
+  1| match (Test.init(true, 3)) { Foo(_) -> 1, Bar(s) -> 2, }
+                                               ^^^
+
+
+Found 2 errors.
+"#,
     );
     assert_errors_with_class(
-      heap,"{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }",
+      heap,
+      "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }",
       &builder.unit_type(),
-      vec![
-        "DUMMY.sam:1:25-1:64: [non-exhaustive-match]: The following tags are not considered in the match: [Bar].",
-        "DUMMY.sam:1:50-1:53: [member-missing]: Cannot find member `Baz` on `Test2`.",
-      ],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:25-1:64
+
+The following tags are not considered in the match: [Bar].
+
+  1| { val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ---------------------------------- DUMMY.sam:1:50-1:53
+
+Cannot find member `Baz` on `Test2`.
+
+  1| { val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
+                                                      ^^^
+
+
+Found 2 errors.
+"#,
       "Test2",
     );
   }
@@ -1323,14 +2271,54 @@ mod tests {
       &builder.fun_type(vec![builder.int_type()], builder.int_type()),
     );
 
-    assert_errors(heap, "(a) -> a", &builder.fun_type(vec![], builder.int_type()), vec![
-      "DUMMY.sam:1:1-1:9: [invalid-arity]: Incorrect function arguments size. Expected: 0, actual: 1.",
-      "DUMMY.sam:1:2-1:3: [underconstrained]: There is not enough context information to decide the type of this expression.",
-    ]);
-    assert_errors(heap, "(a) -> a", &builder.int_type(), vec![
-      "DUMMY.sam:1:1-1:9: [incompatible-type]: Expected: `int`, actual: `function type`.",
-      "DUMMY.sam:1:2-1:3: [underconstrained]: There is not enough context information to decide the type of this expression.",
-    ]);
+    assert_errors(
+      heap,
+      "(a) -> a",
+      &builder.fun_type(vec![], builder.int_type()),
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:9
+
+Incorrect function arguments size. Expected: 0, actual: 1.
+
+  1| (a) -> a
+     ^^^^^^^^
+
+
+Error ------------------------------------ DUMMY.sam:1:2-1:3
+
+There is not enough context information to decide the type of this expression.
+
+  1| (a) -> a
+      ^
+
+
+Found 2 errors.
+"#,
+    );
+    assert_errors(
+      heap,
+      "(a) -> a",
+      &builder.int_type(),
+      r#"
+Error ------------------------------------ DUMMY.sam:1:1-1:9
+
+Expected: `int`, actual: `function type`.
+
+  1| (a) -> a
+     ^^^^^^^^
+
+
+Error ------------------------------------ DUMMY.sam:1:2-1:3
+
+There is not enough context information to decide the type of this expression.
+
+  1| (a) -> a
+      ^
+
+
+Found 2 errors.
+"#,
+    );
   }
 
   #[test]
@@ -1338,13 +2326,7 @@ mod tests {
     let heap = &mut Heap::new();
     let builder = test_type_builder::create();
 
-    assert_errors_with_class(
-      heap,
-      "{val {a, b as c} = A.init();}",
-      &builder.unit_type(),
-      vec![],
-      "A",
-    );
+    assert_errors_with_class(heap, "{val {a, b as c} = A.init();}", &builder.unit_type(), "", "A");
     assert_checks(heap, "{val a = 1;}", &builder.unit_type());
     assert_checks(heap, "{val a = 1; val b = true;}", &builder.unit_type());
     assert_checks(heap, "{val a = 1; a}", &builder.int_type());
@@ -1356,31 +2338,81 @@ mod tests {
       heap,
       "{val {a, b as c} = A.init();}",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:10-1:11: [member-missing]: Cannot find member `b` on `A`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:10-1:11
+
+Cannot find member `b` on `A`.
+
+  1| {val {a, b as c} = A.init();}
+              ^
+
+
+Found 1 error.
+"#,
     );
     assert_errors(
       heap,
       "{val {a, b as c} = C.init();}",
       &builder.unit_type(),
-      vec![
-        "DUMMY.sam:1:7-1:8: [member-missing]: Cannot find member `a` on `C`.",
-        "DUMMY.sam:1:10-1:11: [member-missing]: Cannot find member `b` on `C`.",
-      ],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:7-1:8
+
+Cannot find member `a` on `C`.
+
+  1| {val {a, b as c} = C.init();}
+           ^
+
+
+Error ---------------------------------- DUMMY.sam:1:10-1:11
+
+Cannot find member `b` on `C`.
+
+  1| {val {a, b as c} = C.init();}
+              ^
+
+
+Found 2 errors.
+"#,
     );
     assert_errors(
       heap,
       "{val {a, b as c} = 1;}",
       &builder.unit_type(),
-      vec![
-        "DUMMY.sam:1:7-1:8: [member-missing]: Cannot find member `a` on `int`.",
-        "DUMMY.sam:1:10-1:11: [member-missing]: Cannot find member `b` on `int`.",
-      ],
+      r#"
+Error ------------------------------------ DUMMY.sam:1:7-1:8
+
+Cannot find member `a` on `int`.
+
+  1| {val {a, b as c} = 1;}
+           ^
+
+
+Error ---------------------------------- DUMMY.sam:1:10-1:11
+
+Cannot find member `b` on `int`.
+
+  1| {val {a, b as c} = 1;}
+              ^
+
+
+Found 2 errors.
+"#,
     );
     assert_errors(
       heap,
       "{val {a, d as c} = A.init();}",
       &builder.unit_type(),
-      vec!["DUMMY.sam:1:10-1:11: [member-missing]: Cannot find member `d` on `A`."],
+      r#"
+Error ---------------------------------- DUMMY.sam:1:10-1:11
+
+Cannot find member `d` on `A`.
+
+  1| {val {a, d as c} = A.init();}
+              ^
+
+
+Found 1 error.
+"#,
     );
   }
 
@@ -1406,13 +2438,49 @@ mod tests {
 }
 "#,
       &builder.unit_type(),
-      vec![
-        "DUMMY.sam:2:12-2:26: [invalid-arity]: Incorrect arguments size. Expected: 0, actual: 1.",
-        "DUMMY.sam:6:32-6:51: [invalid-arity]: Incorrect data variables size. Expected: 1, actual: 2.",
-        "DUMMY.sam:8:11-8:64: [underconstrained]: There is not enough context information to decide the type of this expression.",
-        "DUMMY.sam:12:63-12:64: [underconstrained]: There is not enough context information to decide the type of this expression.",
-        "DUMMY.sam:12:83-12:84: [underconstrained]: There is not enough context information to decide the type of this expression."
-      ],
+      r#"
+Error ---------------------------------- DUMMY.sam:2:12-2:26
+
+Incorrect arguments size. Expected: 0, actual: 1.
+
+  2|   val _ = (() -> true)(1);
+                ^^^^^^^^^^^^^^
+
+
+Error ---------------------------------- DUMMY.sam:6:32-6:51
+
+Incorrect data variables size. Expected: 1, actual: 2.
+
+  6|     match (Test2.Foo(false)) { Foo(_, _) -> false, Bar(_) -> false, }
+                                    ^^^^^^^^^^^^^^^^^^^
+
+
+Error ---------------------------------- DUMMY.sam:8:11-8:64
+
+There is not enough context information to decide the type of this expression.
+
+  8|   val _ = Test.generic1(0, if true then true else false, false);
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error -------------------------------- DUMMY.sam:12:63-12:64
+
+There is not enough context information to decide the type of this expression.
+
+  12|   val _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
+                                                                    ^
+
+
+Error -------------------------------- DUMMY.sam:12:83-12:84
+
+There is not enough context information to decide the type of this expression.
+
+  12|   val _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
+                                                                                        ^
+
+
+Found 5 errors.
+  "#,
     );
   }
 
@@ -1435,17 +2503,22 @@ mod tests {
     );
   }
 
-  fn assert_module_errors(sources: Vec<(&'static str, &str)>, expected_errors: Vec<&str>) {
+  fn assert_module_errors(sources: Vec<(&'static str, &str)>, expected_errors: &str) {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
+    let mut string_sources = HashMap::new();
     let mut unchecked_sources = HashMap::new();
     for (mod_ref_str, source) in sources {
       let mod_ref = heap.alloc_module_reference_from_string_vec(vec![mod_ref_str.to_string()]);
       let parsed = parse_source_module_from_text(source, mod_ref, &mut heap, &mut error_set);
+      string_sources.insert(mod_ref, source.to_string());
       unchecked_sources.insert(mod_ref, parsed);
     }
     type_check_sources(&unchecked_sources, &mut heap, &mut error_set);
-    assert_eq!(expected_errors, error_set.error_messages(&heap));
+    assert_eq!(
+      expected_errors.trim(),
+      error_set.pretty_print_error_messages(&heap, &string_sources).trim()
+    );
   }
 
   #[test]
@@ -1471,7 +2544,7 @@ mod tests {
 
     assert_module_errors(
       vec![("A", source_a), ("B", source_b), ("C", source_c), ("D", source_d)],
-      vec![],
+      "",
     );
   }
 
@@ -1509,22 +2582,121 @@ mod tests {
 
     assert_module_errors(
       vec![("A", source_a), ("B", source_b), ("C", source_c), ("D", source_d)],
-      vec![
-        "A.sam:1:1-1:20: [cannot-resolve-module]: Module `K` is not resolved.",
-        "A.sam:2:14-2:15: [missing-export]: There is no `C` export in `B`.",
-        "A.sam:4:39-4:40: [name-already-bound]: Name `a` collides with a previously defined name at A.sam:4:16-4:17.",
-        "B.sam:2:11-2:12: [name-already-bound]: Name `A` collides with a previously defined name at B.sam:1:10-1:11.",
-        "B.sam:2:14-2:15: [name-already-bound]: Name `A` collides with a previously defined name at B.sam:1:10-1:11.",
-        "B.sam:3:35-3:48: [incompatible-type]: Expected: `B<int, bool>`, actual: `B<int, int>`.",
-        "C.sam:2:21-2:24: [name-already-bound]: Name `Int` collides with a previously defined name at C.sam:2:11-2:14.",
-        "C.sam:2:36-2:37: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0.",
-        "C.sam:3:43-3:48: [incompatible-type]: Expected: `bool`, actual: `int`.",
-        "C.sam:4:21-4:22: [name-already-bound]: Name `T` collides with a previously defined name at C.sam:4:15-4:16.",
-        "C.sam:4:30-4:31: [invalid-arity]: Incorrect type arguments size. Expected: 2, actual: 0.",
-        "C.sam:5:55-5:56: [incompatible-type]: Expected: `int`, actual: `bool`.",
-        "C.sam:5:68-5:80: [incompatible-type]: Expected: `bool`, actual: `int`.",
-        "D.sam:5:50-5:52: [name-already-bound]: Name `c1` collides with a previously defined name at D.sam:5:43-5:45.",
-      ],
+      r#"
+Error --------------------------------------- A.sam:1:1-1:20
+
+Module `K` is not resolved.
+
+  1| import { Z } from K
+     ^^^^^^^^^^^^^^^^^^^
+
+
+Error -------------------------------------- A.sam:2:14-2:15
+
+There is no `C` export in `B`.
+
+  2|     import { C } from B
+                  ^
+
+
+Error -------------------------------------- A.sam:4:39-4:40
+
+Name `a` collides with a previously defined name at A.sam:4:16-4:17.
+
+  4|       function a(): int = 42 function a(): int = 42 }
+                                           ^
+
+
+Error -------------------------------------- B.sam:2:11-2:12
+
+Name `A` collides with a previously defined name at B.sam:1:10-1:11.
+
+  2|   class B<A, A>(val value: int) {
+               ^
+
+
+Error -------------------------------------- B.sam:2:14-2:15
+
+Name `A` collides with a previously defined name at B.sam:1:10-1:11.
+
+  2|   class B<A, A>(val value: int) {
+                  ^
+
+
+Error -------------------------------------- B.sam:3:35-3:48
+
+Expected: `B<int, bool>`, actual: `B<int, int>`.
+
+  3|     function of(): B<int, bool> = B.init(A.a())
+                                       ^^^^^^^^^^^^^
+
+
+Error -------------------------------------- C.sam:2:21-2:24
+
+Name `Int` collides with a previously defined name at C.sam:2:11-2:14.
+
+  2|   class C(Int(int), Int(bool), Boo(B)) {
+                         ^^^
+
+
+Error -------------------------------------- C.sam:2:36-2:37
+
+Incorrect type arguments size. Expected: 2, actual: 0.
+
+  2|   class C(Int(int), Int(bool), Boo(B)) {
+                                        ^
+
+
+Error -------------------------------------- C.sam:3:43-3:48
+
+Expected: `bool`, actual: `int`.
+
+  3|     function ofInt(value: int): C = C.Int(value)
+                                               ^^^^^
+
+
+Error -------------------------------------- C.sam:4:21-4:22
+
+Name `T` collides with a previously defined name at C.sam:4:15-4:16.
+
+  4|     function <T, F, T>ofB(b: B): C = C.Boo(b)
+                         ^
+
+
+Error -------------------------------------- C.sam:4:30-4:31
+
+Incorrect type arguments size. Expected: 2, actual: 0.
+
+  4|     function <T, F, T>ofB(b: B): C = C.Boo(b)
+                                  ^
+
+
+Error -------------------------------------- C.sam:5:55-5:56
+
+Expected: `int`, actual: `bool`.
+
+  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
+                                                           ^
+
+
+Error -------------------------------------- C.sam:5:68-5:80
+
+Expected: `bool`, actual: `int`.
+
+  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
+                                                                        ^^^^^^^^^^^^
+
+
+Error -------------------------------------- D.sam:5:50-5:52
+
+Name `c1` collides with a previously defined name at D.sam:5:43-5:45.
+
+  5|   class IdentifyChecker { function equals(c1: C, c1: C): bool = c1.intValue() == c1.intValue() }
+                                                      ^^
+
+
+Found 14 errors.
+"#,
     );
   }
 
@@ -1588,29 +2760,181 @@ interface Cyclic3 : Cyclic1 {} // error: cyclic
 interface Cyclic4 : Cyclic4 {} // error: cyclic
 "#;
 
-    let expected_errors = vec![
-      "A.sam:5:3-5:21: [illegal-function-in-interface]: Function declarations are not allowed in interfaces.",
-      "A.sam:8:1-8:17: [missing-definitions]: Missing definitions for [b].",
-      "A.sam:11:11-11:19: [incompatible-type]: Expected: `() -> Str`, actual: `() -> unit`.",
-      "A.sam:13:1-16:2: [missing-definitions]: Missing definitions for [b].",
-      "A.sam:32:11-32:65: [incompatible-type]: Expected: `public class member`, actual: `private class member`.",
-      "A.sam:32:25-32:45: [incompatible-type]: Expected: `(int, int) -> TC`, actual: `(Str, Str) -> TC`.",
-      "A.sam:33:27-33:47: [incompatible-type]: Expected: `(TA1, TB1) -> TC`, actual: `(Str, Str) -> TC`.",
-      "A.sam:34:17-34:37: [incompatible-type]: Expected: `(Str, bool) -> TC`, actual: `(Str, Str) -> TC`.",
-      "A.sam:37:17-37:37: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TC>`.",
-      "A.sam:38:16-38:18: [cannot-resolve-name]: Name `TA` is not resolved.",
-      "A.sam:38:31-38:51: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TA1, TB1, TC>`.",
-      "A.sam:42:24-42:32: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
-      "A.sam:45:19-45:27: [invalid-arity]: Incorrect type parameters size. Expected: 1, actual: 0.",
-      "A.sam:48:29-48:37: [type-parameter-name-mismatch]: Type parameter name mismatch. Expected exact match of `<TE : Foo>`.",
-      "A.sam:50:34-50:35: [cannot-resolve-name]: Name `T` is not resolved.",
-      "A.sam:51:47-51:48: [cannot-resolve-name]: Name `T` is not resolved.",
-      "A.sam:52:19-52:25: [cannot-resolve-name]: Name `DumDum` is not resolved.",
-      "A.sam:53:11-53:18: [cyclic-type-definition]: Type `Cyclic1` has a cyclic definition.",
-      "A.sam:54:11-54:18: [cyclic-type-definition]: Type `Cyclic2` has a cyclic definition.",
-      "A.sam:55:11-55:18: [cyclic-type-definition]: Type `Cyclic3` has a cyclic definition.",
-      "A.sam:56:11-56:18: [cyclic-type-definition]: Type `Cyclic4` has a cyclic definition.",
-    ];
+    let expected_errors = r#"
+Error --------------------------------------- A.sam:5:3-5:21
+
+Function declarations are not allowed in interfaces.
+
+  5|   function a(): unit
+       ^^^^^^^^^^^^^^^^^^
+
+
+Error --------------------------------------- A.sam:8:1-8:17
+
+Missing definitions for [b].
+
+  8| class B : Bar {} // Error
+     ^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ A.sam:11:11-11:19
+
+Expected: `() -> Str`, actual: `() -> unit`.
+
+  11|   method b(): unit = {} // error
+                ^^^^^^^^
+
+
+Error -------------------------------------- A.sam:13:1-16:2
+
+Missing definitions for [b].
+
+      vvvvvvvvvvvvvvv
+  13| class D : Bar {
+  14|   function b(): Str = "" // error
+  15|   method a(): unit = {} // error
+  16| }
+      ^
+
+
+Error ------------------------------------ A.sam:32:11-32:65
+
+Expected: `public class member`, actual: `private class member`.
+
+  32|   private method <TC> m1(a: Str, b: Str): TC = Process.panic("") // error
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ A.sam:32:25-32:45
+
+Expected: `(int, int) -> TC`, actual: `(Str, Str) -> TC`.
+
+  32|   private method <TC> m1(a: Str, b: Str): TC = Process.panic("") // error
+                              ^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ A.sam:33:27-33:47
+
+Expected: `(TA1, TB1) -> TC`, actual: `(Str, Str) -> TC`.
+
+  33|   method <TA1, TB1, TC> f1(a: Str, b: Str): TC = Process.panic("") // error
+                                ^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ A.sam:34:17-34:37
+
+Expected: `(Str, bool) -> TC`, actual: `(Str, Str) -> TC`.
+
+  34|   method <TC> m2(a: Str, b: Str): TC = Process.panic("") // error
+                      ^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ A.sam:37:17-37:37
+
+Type parameter name mismatch. Expected exact match of `<TC>`.
+
+  37|   method <TD> m1(a: int, b: int): TD // tparam name mismatch
+                      ^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ A.sam:38:16-38:18
+
+Name `TA` is not resolved.
+
+  38|   method <TA1: TA, TB1, TC> f1(a: TA1, b: TB1): TC // has bound mismatch
+                     ^^
+
+
+Error ------------------------------------ A.sam:38:31-38:51
+
+Type parameter name mismatch. Expected exact match of `<TA1, TB1, TC>`.
+
+  38|   method <TA1: TA, TB1, TC> f1(a: TA1, b: TB1): TC // has bound mismatch
+                                    ^^^^^^^^^^^^^^^^^^^^
+
+
+Error ------------------------------------ A.sam:42:24-42:32
+
+Type parameter name mismatch. Expected exact match of `<TE : Foo>`.
+
+  42|   method <TE> unrelated(): unit
+                             ^^^^^^^^
+
+
+Error ------------------------------------ A.sam:45:19-45:27
+
+Incorrect type parameters size. Expected: 1, actual: 0.
+
+  45|   method unrelated(): unit
+                        ^^^^^^^^
+
+
+Error ------------------------------------ A.sam:48:29-48:37
+
+Type parameter name mismatch. Expected exact match of `<TE : Foo>`.
+
+  48|   method <TE: Bar> unrelated(): unit
+                                  ^^^^^^^^
+
+
+Error ------------------------------------ A.sam:50:34-50:35
+
+Name `T` is not resolved.
+
+  50| interface WithBound { method <T: T> f(): int }
+                                       ^
+
+
+Error ------------------------------------ A.sam:51:47-51:48
+
+Name `T` is not resolved.
+
+  51| interface WithBound2 : WithBound { method <T: T> f(): int }
+                                                    ^
+
+
+Error ------------------------------------ A.sam:52:19-52:25
+
+Name `DumDum` is not resolved.
+
+  52| class Z<T: Foo> : DumDum {} // error
+                        ^^^^^^
+
+
+Error ------------------------------------ A.sam:53:11-53:18
+
+Type `Cyclic1` has a cyclic definition.
+
+  53| interface Cyclic1 : Cyclic2 {} // error: cyclic
+                ^^^^^^^
+
+
+Error ------------------------------------ A.sam:54:11-54:18
+
+Type `Cyclic2` has a cyclic definition.
+
+  54| interface Cyclic2 : Cyclic3 {} // error: cyclic
+                ^^^^^^^
+
+
+Error ------------------------------------ A.sam:55:11-55:18
+
+Type `Cyclic3` has a cyclic definition.
+
+  55| interface Cyclic3 : Cyclic1 {} // error: cyclic
+                ^^^^^^^
+
+
+Error ------------------------------------ A.sam:56:11-56:18
+
+Type `Cyclic4` has a cyclic definition.
+
+  56| interface Cyclic4 : Cyclic4 {} // error: cyclic
+                ^^^^^^^
+
+
+Found 21 errors.
+"#;
     assert_module_errors(vec![("A", source)], expected_errors);
   }
 
@@ -1649,18 +2973,81 @@ class NoBoundMethodCall {
   function <T> foo(t: T): unit = t.bar()
 }
     "#;
+    let expected_errors = r#"
+Error --------------------- bounded-generics.sam:15:52-15:55
 
-    let expected_errors = vec![
-      "bounded-generics.sam:15:52-15:55: [incompatible-type]: Expected: subtype of `Comparable<int>`, actual: `int`.",
-      "bounded-generics.sam:15:57-15:64: [incompatible-type]: Expected: `int`, actual: `T`.",
-      "bounded-generics.sam:15:66-15:73: [incompatible-type]: Expected: `int`, actual: `T`.",
-      "bounded-generics.sam:18:20-18:40: [incompatible-type]: Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.",
-      "bounded-generics.sam:19:53-19:69: [incompatible-type]: Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.",
-      "bounded-generics.sam:28:7-28:17: [cyclic-type-definition]: Type `ImplItself` has a cyclic definition.",
-      "bounded-generics.sam:28:20-28:30: [incompatible-type]: Expected: `interface type`, actual: `class type`.",
-      "bounded-generics.sam:29:21-29:22: [cannot-resolve-name]: Name `T` is not resolved.",
-      "bounded-generics.sam:31:34-31:35: [incompatible-type]: Expected: `nominal type`, actual: `T`.",
-    ];
+Expected: subtype of `Comparable<int>`, actual: `int`.
+
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                         ^^^
+
+
+Error --------------------- bounded-generics.sam:15:57-15:64
+
+Expected: `int`, actual: `T`.
+
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                              ^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:15:66-15:73
+
+Expected: `int`, actual: `T`.
+
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                                       ^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:18:20-18:40
+
+Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.
+
+  18|   function test(v: Comparable<BoxedInt>): unit = {} // error signature validation
+                         ^^^^^^^^^^^^^^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:19:53-19:69
+
+Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.
+
+  19|   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
+                                                          ^^^^^^^^^^^^^^^^
+
+
+Error ---------------------- bounded-generics.sam:28:7-28:17
+
+Type `ImplItself` has a cyclic definition.
+
+  28| class ImplItself : ImplItself {} // error: expect interface type
+            ^^^^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:28:20-28:30
+
+Expected: `interface type`, actual: `class type`.
+
+  28| class ImplItself : ImplItself {} // error: expect interface type
+                         ^^^^^^^^^^
+
+
+Error --------------------- bounded-generics.sam:29:21-29:22
+
+Name `T` is not resolved.
+
+  29| class ImplTArg<T> : T {} // error: T not resolved
+                          ^
+
+
+Error --------------------- bounded-generics.sam:31:34-31:35
+
+Expected: `nominal type`, actual: `T`.
+
+  31|   function <T> foo(t: T): unit = t.bar()
+                                       ^
+
+
+Found 9 errors.
+"#;
     assert_module_errors(vec![("bounded-generics", source)], expected_errors);
   }
 
@@ -1680,6 +3067,6 @@ class NoBoundMethodCall {
     function create(): SameName = SameName.init(Producer.produce().a)
   }"#;
 
-    assert_module_errors(vec![("A", source_a), ("B", source_b), ("C", source_c)], vec![]);
+    assert_module_errors(vec![("A", source_a), ("B", source_b), ("C", source_c)], "");
   }
 }

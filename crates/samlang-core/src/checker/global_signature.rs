@@ -425,7 +425,7 @@ interface Hiya {}
 "#;
     let module =
       parse_source_module_from_text(source_code, ModuleReference::dummy(), heap, &mut error_set);
-    assert_eq!("", error_set.error_messages(heap).join("\n"));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     let builtin_cx = create_builtin_module_signature();
     let global_cx = super::build_global_signature(
       &HashMap::from([(ModuleReference::dummy(), module)]),
@@ -493,7 +493,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
 "#;
     let module =
       parse_source_module_from_text(source_code, ModuleReference::dummy(), heap, &mut error_set);
-    assert_eq!("", error_set.error_messages(heap).join("\n"));
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     let builtin_cx = create_builtin_module_signature();
     super::build_global_signature(&HashMap::from([(ModuleReference::dummy(), module)]), builtin_cx)
   }

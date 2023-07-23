@@ -11,7 +11,7 @@ use crate::{
   common::{Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
-use std::{collections::HashMap, ops::Deref, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
 pub(crate) struct LocalTypingContext {
   type_map: HashMap<Location, Rc<Type>>,
@@ -258,7 +258,7 @@ impl<'a> TypingContext<'a> {
         (nominal_type.module_reference, nominal_type.id),
         method_name,
       );
-      let type_info = resolved.first()?.deref();
+      let type_info = resolved.first()?;
       if type_info.is_public || self.in_same_class(nominal_type.module_reference, nominal_type.id) {
         Some(type_info.reposition(use_loc))
       } else {

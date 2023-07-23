@@ -3,6 +3,7 @@
 
 use js_sys::Uint8Array;
 use serde::Serialize;
+use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 fn demo_mod_ref(heap: &mut samlang_core::Heap) -> samlang_core::ModuleReference {
@@ -21,13 +22,18 @@ pub struct SourcesCompilationResult {
 pub fn compile(source: String) -> Result<SourcesCompilationResult, String> {
   let heap = &mut samlang_core::Heap::new();
   let mod_ref = demo_mod_ref(heap);
-  match samlang_core::compile_sources(heap, vec![(mod_ref, source)], vec![mod_ref], false) {
+  match samlang_core::compile_sources(
+    heap,
+    HashMap::from([(mod_ref, source)]),
+    vec![mod_ref],
+    false,
+  ) {
     Ok(samlang_core::SourcesCompilationResult { mut text_code_results, wasm_file }) => {
       let ts_code = text_code_results.remove("Demo.ts").unwrap();
       let wasm_bytes = Uint8Array::from(&wasm_file as &[u8]);
       Ok(SourcesCompilationResult { ts_code, wasm_bytes })
     }
-    Err(errors) => Err(errors.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n")),
+    Err(errors) => Err(errors),
   }
 }
 
@@ -41,6 +47,20 @@ pub struct Range {
   pub end_line: i32,
   #[serde(rename(serialize = "endColumn"))]
   pub end_col: i32,
+}
+
+#[derive(Serialize)]
+pub struct Diagnostic {
+  #[serde(rename(serialize = "startLineNumber"))]
+  pub start_line: i32,
+  #[serde(rename(serialize = "startColumn"))]
+  pub start_col: i32,
+  #[serde(rename(serialize = "endLineNumber"))]
+  pub end_line: i32,
+  #[serde(rename(serialize = "endColumn"))]
+  pub end_col: i32,
+  pub message: String,
+  pub severity: i32,
 }
 
 #[derive(Serialize)]
@@ -79,14 +99,32 @@ impl Range {
 fn new_state(source: String) -> samlang_core::services::server_state::ServerState {
   let mut heap = samlang_core::Heap::new();
   let mod_ref = demo_mod_ref(&mut heap);
-  samlang_core::services::server_state::ServerState::new(heap, false, vec![(mod_ref, source)])
+  samlang_core::services::server_state::ServerState::new(
+    heap,
+    false,
+    HashMap::from([(mod_ref, source)]),
+  )
 }
 
 #[wasm_bindgen(js_name=typeCheck)]
-pub fn type_check(source: String) -> String {
+pub fn type_check(source: String) -> JsValue {
   let state = &mut new_state(source);
   let mod_ref = demo_mod_ref(&mut state.heap);
-  state.get_error_strings(&mod_ref).join("\n")
+  serde_wasm_bindgen::to_value(
+    &state
+      .get_errors(&mod_ref)
+      .iter()
+      .map(|e| Diagnostic {
+        start_line: e.location.start.0 + 1,
+        start_col: e.location.start.1 + 1,
+        end_line: e.location.end.0 + 1,
+        end_col: e.location.end.1 + 1,
+        message: e.format_error_message_for_ide(&state.heap),
+        severity: 8,
+      })
+      .collect::<Vec<_>>(),
+  )
+  .unwrap_or(JsValue::NULL)
 }
 
 #[wasm_bindgen(js_name=queryType)]

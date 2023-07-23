@@ -227,12 +227,11 @@ pub(super) fn search_modules_globally(
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
-
   use crate::{
     checker::type_check_sources, common::well_known_pstrs, errors::ErrorSet,
     parser::parse_source_module_from_text, Heap,
   };
+  use std::collections::HashMap;
 
   #[test]
   fn searcher_coverage_test() {
@@ -321,7 +320,7 @@ mod tests {
     );
     let (checked_sources, _) =
       type_check_sources(&HashMap::from([(mod_ref, parsed)]), heap, &mut error_set);
-    assert!(error_set.into_errors().is_empty());
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     super::search_modules_globally(
       &checked_sources,
       &super::GlobalNameSearchRequest::Toplevel(mod_ref, heap.alloc_str_for_test("Foo")),

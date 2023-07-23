@@ -31,10 +31,10 @@ _Demo_Main$main();
 );
 
 assertEqual(
-  await samlang.typeCheck('class Foo { function main(): int = true }'),
-  'Demo.sam:1:36-1:40: [incompatible-type]: Expected: `int`, actual: `bool`.'
+  JSON.stringify(await samlang.typeCheck('class Foo { function main(): int = true }')),
+  '[{"startLineNumber":1,"startColumn":36,"endLineNumber":1,"endColumn":40,"message":"Expected: `int`, actual: `bool`.","severity":8}]'
 );
-assertEqual(await samlang.typeCheck('class Foo {}'), '');
+assertEqual(JSON.stringify(await samlang.typeCheck('class Foo {}')), '[]');
 
 assertEqual(
   JSON.stringify(await samlang.queryType('class Foo {}', 1, 8)),
