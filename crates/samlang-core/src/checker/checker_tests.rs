@@ -2235,7 +2235,8 @@ Found 2 errors.
       r#"
 Error ---------------------------------- DUMMY.sam:1:25-1:64
 
-The following tags are not considered in the match: [Bar].
+The match is not exhausive. The following variants have not been handled:
+- `Bar`
 
   1| { val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -2601,26 +2602,41 @@ There is no `C` export in `B`.
 
 Error -------------------------------------- A.sam:4:39-4:40
 
-Name `a` collides with a previously defined name at A.sam:4:16-4:17.
+Name `a` collides with a previously defined name at [1].
 
   4|       function a(): int = 42 function a(): int = 42 }
                                            ^
 
+  [1] A.sam:4:16-4:17
+  -------------------
+  4|       function a(): int = 42 function a(): int = 42 }
+                    ^
+
 
 Error -------------------------------------- B.sam:2:11-2:12
 
-Name `A` collides with a previously defined name at B.sam:1:10-1:11.
+Name `A` collides with a previously defined name at [1].
 
   2|   class B<A, A>(val value: int) {
                ^
 
+  [1] B.sam:1:10-1:11
+  -------------------
+  1| import { A } from A
+              ^
+
 
 Error -------------------------------------- B.sam:2:14-2:15
 
-Name `A` collides with a previously defined name at B.sam:1:10-1:11.
+Name `A` collides with a previously defined name at [1].
 
   2|   class B<A, A>(val value: int) {
                   ^
+
+  [1] B.sam:1:10-1:11
+  -------------------
+  1| import { A } from A
+              ^
 
 
 Error -------------------------------------- B.sam:3:35-3:48
@@ -2633,10 +2649,15 @@ Expected: `B<int, bool>`, actual: `B<int, int>`.
 
 Error -------------------------------------- C.sam:2:21-2:24
 
-Name `Int` collides with a previously defined name at C.sam:2:11-2:14.
+Name `Int` collides with a previously defined name at [1].
 
   2|   class C(Int(int), Int(bool), Boo(B)) {
                          ^^^
+
+  [1] C.sam:2:11-2:14
+  -------------------
+  2|   class C(Int(int), Int(bool), Boo(B)) {
+               ^^^
 
 
 Error -------------------------------------- C.sam:2:36-2:37
@@ -2657,10 +2678,15 @@ Expected: `bool`, actual: `int`.
 
 Error -------------------------------------- C.sam:4:21-4:22
 
-Name `T` collides with a previously defined name at C.sam:4:15-4:16.
+Name `T` collides with a previously defined name at [1].
 
   4|     function <T, F, T>ofB(b: B): C = C.Boo(b)
                          ^
+
+  [1] C.sam:4:15-4:16
+  -------------------
+  4|     function <T, F, T>ofB(b: B): C = C.Boo(b)
+                   ^
 
 
 Error -------------------------------------- C.sam:4:30-4:31
@@ -2689,10 +2715,15 @@ Expected: `bool`, actual: `int`.
 
 Error -------------------------------------- D.sam:5:50-5:52
 
-Name `c1` collides with a previously defined name at D.sam:5:43-5:45.
+Name `c1` collides with a previously defined name at [1].
 
   5|   class IdentifyChecker { function equals(c1: C, c1: C): bool = c1.intValue() == c1.intValue() }
                                                       ^^
+
+  [1] D.sam:5:43-5:45
+  -------------------
+  5|   class IdentifyChecker { function equals(c1: C, c1: C): bool = c1.intValue() == c1.intValue() }
+                                               ^^
 
 
 Found 14 errors.
@@ -2769,12 +2800,13 @@ Function declarations are not allowed in interfaces.
        ^^^^^^^^^^^^^^^^^^
 
 
-Error --------------------------------------- A.sam:8:1-8:17
+Error ---------------------------------------- A.sam:8:7-8:8
 
-Missing definitions for [b].
+The following members must be implemented for the class:
+- `b`
 
   8| class B : Bar {} // Error
-     ^^^^^^^^^^^^^^^^
+           ^
 
 
 Error ------------------------------------ A.sam:11:11-11:19
@@ -2785,16 +2817,13 @@ Expected: `() -> Str`, actual: `() -> unit`.
                 ^^^^^^^^
 
 
-Error -------------------------------------- A.sam:13:1-16:2
+Error -------------------------------------- A.sam:13:7-13:8
 
-Missing definitions for [b].
+The following members must be implemented for the class:
+- `b`
 
-      vvvvvvvvvvvvvvv
   13| class D : Bar {
-  14|   function b(): Str = "" // error
-  15|   method a(): unit = {} // error
-  16| }
-      ^
+            ^
 
 
 Error ------------------------------------ A.sam:32:11-32:65

@@ -114,13 +114,16 @@ pub fn type_check(source: String) -> JsValue {
     &state
       .get_errors(&mod_ref)
       .iter()
-      .map(|e| Diagnostic {
-        start_line: e.location.start.0 + 1,
-        start_col: e.location.start.1 + 1,
-        end_line: e.location.end.0 + 1,
-        end_col: e.location.end.1 + 1,
-        message: e.format_error_message_for_ide(&state.heap),
-        severity: 8,
+      .map(|e| {
+        let (loc, message, _related_locs) = e.to_ide_format(&state.heap);
+        Diagnostic {
+          start_line: loc.start.0 + 1,
+          start_col: loc.start.1 + 1,
+          end_line: loc.end.0 + 1,
+          end_col: loc.end.1 + 1,
+          message,
+          severity: 8,
+        }
       })
       .collect::<Vec<_>>(),
   )

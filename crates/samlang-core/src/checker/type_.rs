@@ -75,7 +75,7 @@ impl ISourceType for NominalType {
     } else {
       Description::NominalType {
         name: self.id,
-        has_type_arguments: !self.type_arguments.is_empty(),
+        type_args: self.type_arguments.iter().map(|t| t.to_description()).collect(),
       }
     }
   }
@@ -134,7 +134,10 @@ impl ISourceType for FunctionType {
   }
 
   fn to_description(&self) -> Description {
-    Description::FunctionType
+    Description::FunctionType(
+      self.argument_types.iter().map(|t| t.to_description()).collect(),
+      Box::new(self.return_type.to_description()),
+    )
   }
 
   fn is_the_same_type(&self, other: &Self) -> bool {
@@ -917,11 +920,11 @@ m2: public () -> any
       .pretty_print(&heap)
     );
     assert_eq!(
-      "generic type I",
+      "I",
       builder.generic_type(heap.alloc_str_for_test("I")).to_description().pretty_print(&heap)
     );
     assert_eq!(
-      "Foo<...>",
+      "Foo<unit, Bar>",
       builder
         .general_nominal_type(
           heap.alloc_str_for_test("Foo"),
@@ -931,7 +934,7 @@ m2: public () -> any
         .pretty_print(&heap)
     );
     assert_eq!(
-      "function type",
+      "() -> unit",
       FunctionType {
         reason: Reason::dummy(),
         argument_types: vec![],
@@ -941,7 +944,7 @@ m2: public () -> any
       .pretty_print(&heap)
     );
     assert_eq!(
-      "function type",
+      "(unit) -> unit",
       builder
         .fun_type(vec![builder.unit_type()], builder.unit_type())
         .to_description()

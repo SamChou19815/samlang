@@ -12,6 +12,65 @@ pub enum ErrorPrinterStyle {
   IDE,
 }
 
+/// An intermediate representation of errors that already contain some materialized strings
+enum PrintableError<'a> {
+  Size(usize),
+  PStr(&'a PStr),
+  TextRef(&'a str),
+  LocationReference(&'a Location),
+  ModuleReference(&'a ModuleReference),
+}
+
+impl<'a> PrintableError<'a> {
+  fn get_loc_reference_opt(&self) -> Option<Location> {
+    match self {
+      PrintableError::LocationReference(l) => Some(**l),
+      _ => None,
+    }
+  }
+}
+
+#[cfg(test)]
+mod printable_error_test {
+  #[test]
+  fn boilterplate() {
+    assert!(super::PrintableError::Size(0).get_loc_reference_opt().is_none());
+    assert!(super::PrintableError::LocationReference(&super::Location::dummy())
+      .get_loc_reference_opt()
+      .is_some());
+  }
+}
+
+struct PrintableStream<'a> {
+  collector: Vec<PrintableError<'a>>,
+}
+
+impl<'a> PrintableStream<'a> {
+  fn new() -> PrintableStream<'a> {
+    PrintableStream { collector: vec![] }
+  }
+
+  fn push_size(&mut self, size: usize) {
+    self.collector.push(PrintableError::Size(size))
+  }
+
+  fn push_pstr(&mut self, p_str: &'a PStr) {
+    self.collector.push(PrintableError::PStr(p_str))
+  }
+
+  fn push_text(&mut self, text: &'a str) {
+    self.collector.push(PrintableError::TextRef(text))
+  }
+
+  fn push_location(&mut self, loc: &'a Location) {
+    self.collector.push(PrintableError::LocationReference(loc))
+  }
+
+  fn push_mod_ref(&mut self, module_reference: &'a ModuleReference) {
+    self.collector.push(PrintableError::ModuleReference(module_reference))
+  }
+}
+
 mod printer {
   use crate::{
     ast::Location,
@@ -159,29 +218,51 @@ mod printer {
     }
 
     pub(super) fn print_optional_ref(&mut self, heap: &Heap, location: &Location) {
-      if print_reference_lines(heap, location, self.sources, self.ref_id, &mut self.frame_collector)
-      {
+      // In IDE state, the code frame should be dropped,
+      // since it's right at the location of diagnostics.
+      if self.style == super::ErrorPrinterStyle::IDE {
+        self.main_collector.push('[');
+        self.main_collector.push_str(&self.ref_id.to_string());
+        self.main_collector.push(']');
+        self.ref_id += 1;
+      } else if print_reference_lines(
+        heap,
+        location,
+        self.sources,
+        self.ref_id,
+        &mut self.frame_collector,
+      ) {
         if self.ref_id > 0 {
-          self.main_collector.push_str(" [");
+          self.main_collector.push('[');
           self.main_collector.push_str(&self.ref_id.to_string());
           self.main_collector.push(']');
-        } else if self.style == super::ErrorPrinterStyle::IDE {
-          // In IDE state, the first code frame should be dropped,
-          // since it's right at the location of diagnostics.
-          self.frame_collector.clear();
         }
         self.ref_id += 1;
       }
     }
 
-    pub(super) fn flush_frames(&mut self) {
-      if self.style == super::ErrorPrinterStyle::IDE {
-        self.main_collector.push_str("```\n");
-        self.main_collector += self.frame_collector.trim_end();
-        self.main_collector.push_str("\n```\n");
-      } else {
-        self.main_collector += &self.frame_collector;
+    pub(super) fn print_error_detail<'b>(
+      &mut self,
+      heap: &'b Heap,
+      error_detail: &'b super::ErrorDetail,
+    ) -> Vec<super::PrintableError<'b>> {
+      use super::{PrintableError, PrintableStream};
+      let mut printable_stream = PrintableStream::new();
+      error_detail.push_to_printable_stream(&mut printable_stream);
+      for printable in &printable_stream.collector {
+        match printable {
+          PrintableError::Size(s) => self.push_str(&s.to_string()),
+          PrintableError::PStr(p) => self.push_str(p.as_str(heap)),
+          PrintableError::TextRef(s) => self.push_str(s),
+          PrintableError::LocationReference(loc) => self.print_optional_ref(heap, loc),
+          PrintableError::ModuleReference(mod_ref) => self.push_str(&mod_ref.pretty_print(heap)),
+        }
       }
+      printable_stream.collector
+    }
+
+    pub(super) fn flush_frames(&mut self) {
+      self.main_collector += &self.frame_collector;
       self.frame_collector = String::new();
       self.ref_id = 0;
     }
@@ -320,7 +401,7 @@ Line 13
       state.push_str("hiy");
       state.push('a');
       state.print_optional_ref(heap, &Location::from_pos(0, 6, 0, 9));
-      state.push_str(" ouch");
+      state.push_str(" ouch ");
       state.print_optional_ref(heap, &Location::from_pos(1, 6, 0, 9));
       state.print_optional_ref(heap, &Location::from_pos(0, 10, 0, 12));
       state.push_str(".\n\n");
@@ -351,26 +432,13 @@ hiya ouch [1].
 
       state.push_str("hiya");
       state.print_optional_ref(heap, &Location::from_pos(0, 6, 0, 9));
-      state.push_str(" ouch");
+      state.push_str(" ouch ");
       state.print_optional_ref(heap, &Location::from_pos(1, 6, 0, 9));
       state.print_optional_ref(heap, &Location::from_pos(0, 10, 0, 12));
       state.push_str(".\n\n");
       state.flush_frames();
 
-      assert_eq!(
-        r#"
-hiya ouch [1].
-
-```
-  [1] DUMMY.sam:1:11-1:13
-  -----------------------
-  1| Hello sam hi!
-               ^^
-```
-"#
-        .trim(),
-        state.consume().trim()
-      );
+      assert_eq!("hiya[0] ouch [1][2].".trim(), state.consume().trim());
     }
   }
 }
@@ -469,7 +537,7 @@ pub(crate) enum ErrorDetail {
   InvalidArity { kind: &'static str, expected: usize, actual: usize },
   InvalidSyntax(String),
   MemberMissing { parent: String, member: PStr },
-  MissingDefinitions { missing_definitions: Vec<PStr> },
+  MissingClassMemberDefinitions { missing_definitions: Vec<PStr> },
   MissingExport { module_reference: ModuleReference, name: PStr },
   NameAlreadyBound { name: PStr, old_loc: Location },
   NonExhausiveMatch { missing_tags: Vec<PStr> },
@@ -478,59 +546,104 @@ pub(crate) enum ErrorDetail {
 }
 
 impl ErrorDetail {
-  fn pretty_print(&self, heap: &Heap, _style: ErrorPrinterStyle) -> String {
+  fn push_to_printable_stream<'a>(&'a self, printable_stream: &mut PrintableStream<'a>) {
     match self {
       ErrorDetail::CannotResolveClass { module_reference: _, name } => {
-        format!("Class `{}` is not resolved.", name.as_str(heap))
+        printable_stream.push_text("Class `");
+        printable_stream.push_pstr(name);
+        printable_stream.push_text("` is not resolved.");
       }
       ErrorDetail::CannotResolveModule { module_reference } => {
-        format!("Module `{}` is not resolved.", module_reference.pretty_print(heap))
+        printable_stream.push_text("Module `");
+        printable_stream.push_mod_ref(module_reference);
+        printable_stream.push_text("` is not resolved.");
       }
       ErrorDetail::CannotResolveName { name } => {
-        format!("Name `{}` is not resolved.", name.as_str(heap))
+        printable_stream.push_text("Name `");
+        printable_stream.push_pstr(name);
+        printable_stream.push_text("` is not resolved.");
       }
       ErrorDetail::CyclicTypeDefinition { type_ } => {
-        format!("Type `{type_}` has a cyclic definition.")
+        printable_stream.push_text("Type `");
+        printable_stream.push_text(type_);
+        printable_stream.push_text("` has a cyclic definition.");
       }
       ErrorDetail::IllegalFunctionInInterface => {
-        "Function declarations are not allowed in interfaces.".to_string()
+        printable_stream.push_text("Function declarations are not allowed in interfaces.");
       }
       ErrorDetail::IncompatibleType { expected, actual, subtype: false } => {
-        format!("Expected: `{expected}`, actual: `{actual}`.")
+        printable_stream.push_text("Expected: `");
+        printable_stream.push_text(expected);
+        printable_stream.push_text("`, actual: `");
+        printable_stream.push_text(actual);
+        printable_stream.push_text("`.");
       }
       ErrorDetail::IncompatibleType { expected, actual, subtype: true } => {
-        format!("Expected: subtype of `{expected}`, actual: `{actual}`.")
+        printable_stream.push_text("Expected: subtype of `");
+        printable_stream.push_text(expected);
+        printable_stream.push_text("`, actual: `");
+        printable_stream.push_text(actual);
+        printable_stream.push_text("`.");
       }
       ErrorDetail::InvalidArity { kind, expected, actual } => {
-        format!("Incorrect {kind} size. Expected: {expected}, actual: {actual}.")
+        printable_stream.push_text("Incorrect ");
+        printable_stream.push_text(kind);
+        printable_stream.push_text(" size. Expected: ");
+        printable_stream.push_size(*expected);
+        printable_stream.push_text(", actual: ");
+        printable_stream.push_size(*actual);
+        printable_stream.push_text(".");
       }
-      ErrorDetail::InvalidSyntax(reason) => reason.to_string(),
+      ErrorDetail::InvalidSyntax(reason) => {
+        printable_stream.push_text(reason);
+      }
       ErrorDetail::MemberMissing { parent, member } => {
-        format!("Cannot find member `{}` on `{}`.", member.as_str(heap), parent)
+        printable_stream.push_text("Cannot find member `");
+        printable_stream.push_pstr(member);
+        printable_stream.push_text("` on `");
+        printable_stream.push_text(parent.as_str());
+        printable_stream.push_text("`.");
       }
-      ErrorDetail::MissingDefinitions { missing_definitions } => format!(
-        "Missing definitions for [{}].",
-        missing_definitions.iter().map(|p| p.as_str(heap).to_string()).sorted().join(", ")
-      ),
-      ErrorDetail::MissingExport { module_reference, name } => format!(
-        "There is no `{}` export in `{}`.",
-        name.as_str(heap),
-        module_reference.pretty_print(heap)
-      ),
-      ErrorDetail::NameAlreadyBound { name, old_loc } => format!(
-        "Name `{}` collides with a previously defined name at {}.",
-        name.as_str(heap),
-        old_loc.pretty_print(heap)
-      ),
-      ErrorDetail::NonExhausiveMatch { missing_tags } => format!(
-        "The following tags are not considered in the match: [{}].",
-        missing_tags.iter().map(|p| p.as_str(heap).to_string()).sorted().join(", "),
-      ),
+      ErrorDetail::MissingClassMemberDefinitions { missing_definitions } => {
+        printable_stream.push_text("The following members must be implemented for the class:");
+        for tag in missing_definitions {
+          printable_stream.push_text("\n- `");
+          printable_stream.push_pstr(tag);
+          printable_stream.push_text("`");
+        }
+      }
+      ErrorDetail::MissingExport { module_reference, name } => {
+        printable_stream.push_text("There is no `");
+        printable_stream.push_pstr(name);
+        printable_stream.push_text("` export in `");
+        printable_stream.push_mod_ref(module_reference);
+        printable_stream.push_text("`.");
+      }
+      ErrorDetail::NameAlreadyBound { name, old_loc } => {
+        printable_stream.push_text("Name `");
+        printable_stream.push_pstr(name);
+        printable_stream.push_text("` collides with a previously defined name at ");
+        printable_stream.push_location(old_loc);
+        printable_stream.push_text(".");
+      }
+      ErrorDetail::NonExhausiveMatch { missing_tags } => {
+        printable_stream
+          .push_text("The match is not exhausive. The following variants have not been handled:");
+        for tag in missing_tags {
+          printable_stream.push_text("\n- `");
+          printable_stream.push_pstr(tag);
+          printable_stream.push_text("`");
+        }
+      }
       ErrorDetail::TypeParameterNameMismatch { expected } => {
-        format!("Type parameter name mismatch. Expected exact match of `{expected}`.")
+        printable_stream.push_text("Type parameter name mismatch. Expected exact match of `");
+        printable_stream.push_text(expected);
+        printable_stream.push_text("`.");
       }
       ErrorDetail::Underconstrained => {
-        "There is not enough context information to decide the type of this expression.".to_string()
+        printable_stream.push_text(
+          "There is not enough context information to decide the type of this expression.",
+        );
       }
     }
   }
@@ -566,8 +679,14 @@ impl CompileTimeError {
     printer.push('\n');
   }
 
-  pub fn format_error_message_for_ide(&self, heap: &Heap) -> String {
-    self.detail.pretty_print(heap, ErrorPrinterStyle::IDE)
+  pub fn to_ide_format(&self, heap: &Heap) -> (Location, String, Vec<Location>) {
+    let empty_sources = HashMap::new();
+    let mut printer = printer::ErrorPrinterState::new(ErrorPrinterStyle::IDE, &empty_sources);
+    let printable_error_segments = printer.print_error_detail(heap, &self.detail);
+    let printed_error = printer.consume();
+    let reference_locs =
+      printable_error_segments.into_iter().filter_map(|s| s.get_loc_reference_opt()).collect_vec();
+    (self.location, printed_error, reference_locs)
   }
 }
 
@@ -611,7 +730,7 @@ impl ErrorSet {
     for e in &self.errors {
       e.pretty_print_error_loc_lines(heap, &mut printer);
       printer.print_optional_ref(heap, &e.location);
-      printer.push_str(&e.detail.pretty_print(heap, style));
+      printer.print_error_detail(heap, &e.detail);
       printer.push_str("\n\n");
       printer.flush_frames();
       printer.push('\n');
@@ -716,12 +835,12 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::MemberMissing { parent, member })
   }
 
-  pub(crate) fn report_missing_definition_error(
+  pub(crate) fn report_missing_class_member_definition_error(
     &mut self,
     loc: Location,
     missing_definitions: Vec<PStr>,
   ) {
-    self.report_error(loc, ErrorDetail::MissingDefinitions { missing_definitions })
+    self.report_error(loc, ErrorDetail::MissingClassMemberDefinitions { missing_definitions })
   }
 
   pub(crate) fn report_missing_export_error(
@@ -838,8 +957,8 @@ Found 1 error.
       error_set.pretty_print_error_messages_no_frame(&heap)
     );
     assert_eq!(
-      "Module `DUMMY` is not resolved.",
-      error_set.errors()[0].format_error_message_for_ide(&heap)
+      (Location::dummy(), "Module `DUMMY` is not resolved.".to_string(), vec![]),
+      error_set.errors()[0].to_ide_format(&heap)
     );
 
     error_set.report_cannot_resolve_name_error(
@@ -910,7 +1029,7 @@ Found 2 errors."#
       "Foo".to_string(),
       heap.alloc_str_for_test("bar"),
     );
-    error_set.report_missing_definition_error(
+    error_set.report_missing_class_member_definition_error(
       Location::dummy(),
       vec![heap.alloc_str_for_test("foo"), heap.alloc_str_for_test("bar")],
     );
@@ -974,7 +1093,9 @@ Cannot find member `bar` on `Foo`.
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Missing definitions for [bar, foo].
+The following members must be implemented for the class:
+- `foo`
+- `bar`
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -984,12 +1105,14 @@ There is no `bar` export in `DUMMY`.
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Name `a` collides with a previously defined name at DUMMY.sam:0:0-0:0.
+Name `a` collides with a previously defined name at .
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-The following tags are not considered in the match: [A, B].
+The match is not exhausive. The following variants have not been handled:
+- `A`
+- `B`
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0

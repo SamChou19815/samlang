@@ -771,41 +771,66 @@ Cannot find member `b` on `Fields`.
 
 Error --------------------------- illegal-shadow.sam:3:7-3:8
 
-Name `A` collides with a previously defined name at illegal-shadow.sam:2:7-2:8.
+Name `A` collides with a previously defined name at [1].
 
   3| class A {}
+           ^
+
+  [1] illegal-shadow.sam:2:7-2:8
+  ------------------------------
+  2| class A {}
            ^
 
 
 Error ------------------------- illegal-shadow.sam:7:12-7:16
 
-Name `test` collides with a previously defined name at illegal-shadow.sam:6:12-6:16.
+Name `test` collides with a previously defined name at [1].
 
   7|   function test(): unit = ConflictingFunctions.test()
+                ^^^^
+
+  [1] illegal-shadow.sam:6:12-6:16
+  --------------------------------
+  6|   function test(): unit = ConflictingFunctions.test()
                 ^^^^
 
 
 Error ----------------------- illegal-shadow.sam:12:12-12:16
 
-Name `test` collides with a previously defined name at illegal-shadow.sam:11:10-11:14.
+Name `test` collides with a previously defined name at [1].
 
   12|   function test(): unit = ConflictingMethodsAndFunctions.test()
                  ^^^^
 
+  [1] illegal-shadow.sam:11:10-11:14
+  ----------------------------------
+  11|   method test(): int = 42
+               ^^^^
+
 
 Error ----------------------- illegal-shadow.sam:16:28-16:32
 
-Name `test` collides with a previously defined name at illegal-shadow.sam:16:17-16:21.
+Name `test` collides with a previously defined name at [1].
 
   16|   function test(test: int, test: int): unit = {}
                                  ^^^^
 
+  [1] illegal-shadow.sam:16:17-16:21
+  ----------------------------------
+  16|   function test(test: int, test: int): unit = {}
+                      ^^^^
+
 
 Error ------------------------ illegal-shadow.sam:22:9-22:10
 
-Name `a` collides with a previously defined name at illegal-shadow.sam:21:9-21:10.
+Name `a` collides with a previously defined name at [1].
 
   22|     val a = 42;
+              ^
+
+  [1] illegal-shadow.sam:21:9-21:10
+  ---------------------------------
+  21|     val a = 42;
               ^
 
 

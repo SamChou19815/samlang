@@ -1376,8 +1376,8 @@ pub(crate) fn type_check_module(
         }
         missing_function_members.extend(&missing_method_members);
         if !missing_function_members.is_empty() {
-          error_set.report_missing_definition_error(
-            toplevel.loc(),
+          error_set.report_missing_class_member_definition_error(
+            toplevel.name().loc,
             missing_function_members.iter().copied().collect(),
           );
         }

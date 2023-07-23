@@ -1,7 +1,9 @@
+use itertools::Itertools;
+
 use super::loc::Location;
 use crate::common::{Heap, PStr};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Description {
   UnitType,
   BoolType,
@@ -9,8 +11,8 @@ pub(crate) enum Description {
   AnyType,
   GenericType(PStr),
   Class(PStr),
-  NominalType { name: PStr, has_type_arguments: bool },
-  FunctionType,
+  NominalType { name: PStr, type_args: Vec<Description> },
+  FunctionType(Vec<Description>, Box<Description>),
 }
 
 impl Description {
@@ -20,13 +22,25 @@ impl Description {
       Description::BoolType => "bool".to_string(),
       Description::IntType => "int".to_string(),
       Description::AnyType => "any".to_string(),
-      Description::GenericType(n) => format!("generic type {}", n.as_str(heap)),
+      Description::GenericType(n) => n.as_str(heap).to_string(),
       Description::Class(n) => format!("class {}", n.as_str(heap)),
-      Description::NominalType { name, has_type_arguments: false } => name.as_str(heap).to_string(),
-      Description::NominalType { name, has_type_arguments: true } => {
-        format!("{}<...>", name.as_str(heap))
+      Description::NominalType { name, type_args } if type_args.is_empty() => {
+        name.as_str(heap).to_string()
       }
-      Description::FunctionType => "function type".to_string(),
+      Description::NominalType { name, type_args } => {
+        format!(
+          "{}<{}>",
+          name.as_str(heap),
+          type_args.iter().map(|t| t.pretty_print(heap)).join(", ")
+        )
+      }
+      Description::FunctionType(param_types, return_type) => {
+        format!(
+          "({}) -> {}",
+          param_types.iter().map(|t| t.pretty_print(heap)).join(", "),
+          return_type.pretty_print(heap)
+        )
+      }
     }
   }
 }
@@ -79,23 +93,27 @@ mod tests {
     assert_eq!("bool", Description::BoolType.pretty_print(heap));
     assert_eq!("int", Description::IntType.pretty_print(heap));
     assert_eq!("any", Description::AnyType.pretty_print(heap));
-    assert_eq!(
-      "generic type A",
-      Description::GenericType(well_known_pstrs::UPPER_A).pretty_print(heap)
-    );
+    assert_eq!("A", Description::GenericType(well_known_pstrs::UPPER_A).pretty_print(heap));
     assert_eq!("class A", Description::Class(well_known_pstrs::UPPER_A).pretty_print(heap));
     assert_eq!(
       "A",
-      Description::NominalType { name: well_known_pstrs::UPPER_A, has_type_arguments: false }
+      Description::NominalType { name: well_known_pstrs::UPPER_A, type_args: vec![] }
         .pretty_print(heap)
     );
     assert_eq!(
-      "A<...>",
-      Description::NominalType { name: well_known_pstrs::UPPER_A, has_type_arguments: true }
-        .clone()
+      "A<int>",
+      Description::NominalType {
+        name: well_known_pstrs::UPPER_A,
+        type_args: vec![Description::IntType]
+      }
+      .clone()
+      .pretty_print(heap)
+    );
+    assert_eq!(
+      "(int) -> int",
+      Description::FunctionType(vec![Description::IntType], Box::new(Description::IntType))
         .pretty_print(heap)
     );
-    assert_eq!("function type", Description::FunctionType.pretty_print(heap));
   }
 
   #[test]
