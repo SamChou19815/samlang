@@ -264,10 +264,15 @@ There is no `Test2` export in `Test1`.
 
 Error ----------------------------------- Test2.sam:4:7-4:12
 
-Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.
+Name `Test2` collides with a previously defined name at [1].
 
   4| class Test2 {
            ^^^^^
+
+  [1] Test2.sam:2:17-2:22
+  -----------------------
+  2| import { Test1, Test2 } from Test1
+                     ^^^^^
 
 
 Error ---------------------------------- Test2.sam:5:26-5:27
@@ -306,10 +311,15 @@ Expected: `int`, actual: `Str`.
 
 Error ----------------------------------- Test2.sam:4:7-4:12
 
-Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.
+Name `Test2` collides with a previously defined name at [1].
 
   4| class Test2 {
            ^^^^^
+
+  [1] Test2.sam:2:17-2:22
+  -----------------------
+  2| import { Test1, Test2 } from Test1
+                     ^^^^^
 
 
 Error ---------------------------------- Test2.sam:5:26-5:27
@@ -348,10 +358,15 @@ There is no `Test2` export in `Test1`.
 
 Error ----------------------------------- Test2.sam:4:7-4:12
 
-Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.
+Name `Test2` collides with a previously defined name at [1].
 
   4| class Test2 {
            ^^^^^
+
+  [1] Test2.sam:2:17-2:22
+  -----------------------
+  2| import { Test1, Test2 } from Test1
+                     ^^^^^
 
 
 Error ---------------------------------- Test2.sam:5:26-5:27
@@ -392,10 +407,15 @@ There is no `Test2` export in `Test1`.
 
 Error ----------------------------------- Test2.sam:4:7-4:12
 
-Name `Test2` collides with a previously defined name at Test2.sam:2:17-2:22.
+Name `Test2` collides with a previously defined name at [1].
 
   4| class Test2 {
            ^^^^^
+
+  [1] Test2.sam:2:17-2:22
+  -----------------------
+  2| import { Test1, Test2 } from Test1
+                     ^^^^^
 
 
 Found 2 errors.
@@ -447,9 +467,14 @@ Module `B` is not resolved.
 
 Error ------------------------------------ Test.sam:2:9-2:10
 
-Name `A` collides with a previously defined name at Test.sam:1:9-1:10.
+Name `A` collides with a previously defined name at [1].
 
   2| import {A} from B
+             ^
+
+  [1] Test.sam:1:9-1:10
+  ---------------------
+  1| import {A} from A
              ^
 
 
@@ -472,9 +497,14 @@ Module `A` is not resolved.
 
 Error ------------------------------------ Test.sam:2:9-2:10
 
-Name `A` collides with a previously defined name at Test.sam:1:9-1:10.
+Name `A` collides with a previously defined name at [1].
 
   2| import {A} from B
+             ^
+
+  [1] Test.sam:1:9-1:10
+  ---------------------
+  1| import {A} from A
              ^
 
 
@@ -497,9 +527,14 @@ Module `A` is not resolved.
 
 Error ------------------------------------ Test.sam:2:9-2:10
 
-Name `A` collides with a previously defined name at Test.sam:1:9-1:10.
+Name `A` collides with a previously defined name at [1].
 
   2| import {A} from B
+             ^
+
+  [1] Test.sam:1:9-1:10
+  ---------------------
+  1| import {A} from A
              ^
 
 

@@ -10,9 +10,8 @@ mod configuration;
 mod logo;
 
 mod utils {
-  use std::collections::HashMap;
-
   use super::*;
+  use std::collections::HashMap;
 
   pub(super) fn get_configuration() -> configuration::ProjectConfiguration {
     match configuration::load_project_configuration() {
@@ -162,12 +161,32 @@ mod lsp {
             .0
             .get_errors(module_reference)
             .iter()
-            .map(|e| Diagnostic {
-              range: samlang_loc_to_lsp_range(&e.location),
-              severity: Some(DiagnosticSeverity::ERROR),
-              message: e.format_error_message_for_ide(heap),
-              source: Some("samlang".to_string()),
-              ..Default::default()
+            .map(|e| {
+              let (loc, message, related_locs) = e.to_ide_format(heap);
+              Diagnostic {
+                range: samlang_loc_to_lsp_range(&loc),
+                severity: Some(DiagnosticSeverity::ERROR),
+                message,
+                source: Some("samlang".to_string()),
+                related_information: Some(
+                  related_locs
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, l)| {
+                      convert_module_reference_to_url_helper(
+                        heap,
+                        absolute_source_path,
+                        &l.module_reference,
+                      )
+                      .map(|uri| DiagnosticRelatedInformation {
+                        location: Location { uri, range: samlang_loc_to_lsp_range(l) },
+                        message: format!("[{}]", i),
+                      })
+                    })
+                    .collect(),
+                ),
+                ..Default::default()
+              }
             })
             .collect::<Vec<_>>();
           collected.push((url, diagnostics));
