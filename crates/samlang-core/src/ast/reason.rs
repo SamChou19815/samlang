@@ -3,7 +3,7 @@ use itertools::Itertools;
 use super::loc::Location;
 use crate::common::{Heap, PStr};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Description {
   UnitType,
   BoolType,
@@ -45,7 +45,7 @@ impl Description {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Reason {
   pub(crate) use_loc: Location,
   pub(crate) def_loc: Option<Location>,
@@ -80,6 +80,10 @@ mod tests {
   fn boilterplate() {
     assert!(!format!("{:?}", Description::UnitType).is_empty());
     assert!(!format!("{:?}", Reason::dummy()).is_empty());
+    assert!(Description::UnitType <= Description::UnitType);
+    assert_eq!(Description::UnitType.cmp(&Description::UnitType), std::cmp::Ordering::Equal);
+    assert!(Reason::dummy() <= Reason::dummy());
+    assert_eq!(Reason::dummy().cmp(&Reason::dummy()), std::cmp::Ordering::Equal);
     assert_eq!(Reason::builtin(), Reason::builtin());
   }
 
