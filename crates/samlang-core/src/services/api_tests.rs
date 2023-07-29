@@ -272,12 +272,9 @@ Name `a` is not resolved.
 
   5|     a + b + c
          ^
-
-
-Found 3 errors.
 "#
       .trim(),
-      state.get_error_dump()
+      state.get_error_dump().trim()
     );
 
     // At 1 in `[1, 2]`
@@ -334,12 +331,9 @@ Name `c` is not resolved.
 
   12|       val _ = c;
                     ^
-
-
-Found 1 error.
 "#
       .trim(),
-      state.get_error_dump()
+      state.get_error_dump().trim()
     );
 
     assert!(

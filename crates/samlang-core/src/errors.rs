@@ -17,6 +17,7 @@ enum PrintableError<'a> {
   Size(usize),
   PStr(&'a PStr),
   TextRef(&'a str),
+  Description(&'a Description),
   LocationReference(&'a Location),
   ModuleReference(&'a ModuleReference),
 }
@@ -60,6 +61,10 @@ impl<'a> PrintableStream<'a> {
 
   fn push_text(&mut self, text: &'a str) {
     self.collector.push(PrintableError::TextRef(text))
+  }
+
+  fn push_description(&mut self, description: &'a Description) {
+    self.collector.push(PrintableError::Description(description))
   }
 
   fn push_location(&mut self, loc: &'a Location) {
@@ -254,6 +259,7 @@ mod printer {
           PrintableError::Size(s) => self.push_str(&s.to_string()),
           PrintableError::PStr(p) => self.push_str(p.as_str(heap)),
           PrintableError::TextRef(s) => self.push_str(s),
+          PrintableError::Description(d) => self.push_str(&d.pretty_print(heap)),
           PrintableError::LocationReference(loc) => self.print_optional_ref(heap, loc),
           PrintableError::ModuleReference(mod_ref) => self.push_str(&mod_ref.pretty_print(heap)),
         }
@@ -443,6 +449,7 @@ hiya ouch [1].
   }
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct TypeIncompatibilityNode {
   pub(crate) lower_reason: Reason,
   pub(crate) lower_description: Description,
@@ -450,44 +457,14 @@ pub(crate) struct TypeIncompatibilityNode {
   pub(crate) upper_description: Description,
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum IncompatibilityNode {
   Type(Box<TypeIncompatibilityNode>),
-  FunctionParametersArity(u32, u32),
-  TypeArgumentsArity(u32, u32),
+  FunctionParametersArity(usize, usize),
+  TypeArgumentsArity(usize, usize),
 }
 
-impl IncompatibilityNode {
-  fn pretty_print(&self, heap: &Heap, collector: &mut String) {
-    match self {
-      IncompatibilityNode::Type(t) => {
-        collector.push('`');
-        collector.push_str(&t.lower_description.pretty_print(heap));
-        collector.push_str("` (");
-        collector.push_str(&t.lower_reason.use_loc.pretty_print(heap));
-        collector.push_str(") is incompatible with `");
-        collector.push_str(&t.upper_description.pretty_print(heap));
-        collector.push_str("` (");
-        collector.push_str(&t.upper_reason.use_loc.pretty_print(heap));
-        collector.push_str(").\n");
-      }
-      IncompatibilityNode::FunctionParametersArity(l, u) => {
-        collector.push_str("Function parameter arity of ");
-        collector.push_str(&l.to_string());
-        collector.push_str(" is incompatible with function parameter arity of ");
-        collector.push_str(&u.to_string());
-        collector.push_str(".\n");
-      }
-      IncompatibilityNode::TypeArgumentsArity(l, u) => {
-        collector.push_str("Type argument arity of ");
-        collector.push_str(&l.to_string());
-        collector.push_str(" is incompatible with type argument arity of ");
-        collector.push_str(&u.to_string());
-        collector.push_str(".\n");
-      }
-    }
-  }
-}
-
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct StackableError {
   rev_stack: Vec<IncompatibilityNode>,
 }
@@ -506,27 +483,39 @@ impl StackableError {
   }
 
   pub(crate) fn add_fn_param_arity_error(&mut self, lower: usize, upper: usize) {
-    self.rev_stack.push(IncompatibilityNode::FunctionParametersArity(lower as u32, upper as u32));
+    self.rev_stack.push(IncompatibilityNode::FunctionParametersArity(lower, upper));
   }
 
   pub(crate) fn add_type_args_arity_error(&mut self, lower: usize, upper: usize) {
-    self.rev_stack.push(IncompatibilityNode::TypeArgumentsArity(lower as u32, upper as u32));
-  }
-
-  pub(crate) fn pretty_print(&self, heap: &Heap, collector: &mut String) {
-    for (i, e) in self.rev_stack.iter().rev().enumerate() {
-      if i >= 1 {
-        for _ in 0..(i - 1) {
-          collector.push_str("  ");
-        }
-        collector.push_str("- ");
-      }
-      e.pretty_print(heap, collector);
-    }
+    self.rev_stack.push(IncompatibilityNode::TypeArgumentsArity(lower, upper));
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg(test)]
+mod stackable_error_tests {
+  use super::{Description, Reason};
+  use pretty_assertions::assert_eq;
+
+  #[test]
+  fn boilterplate() {
+    let mut stacked = super::StackableError::new();
+    stacked.add_type_args_arity_error(0, 0);
+    stacked.add_fn_param_arity_error(0, 0);
+    stacked.add_type_error(super::TypeIncompatibilityNode {
+      lower_reason: Reason::dummy(),
+      lower_description: Description::AnyType,
+      upper_reason: Reason::dummy(),
+      upper_description: Description::AnyType,
+    });
+
+    assert!(!format!("{:?}", stacked).is_empty());
+    assert!(stacked <= stacked);
+    assert!(stacked == stacked);
+    assert_eq!(stacked.cmp(&stacked), std::cmp::Ordering::Equal);
+  }
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ErrorDetail {
   CannotResolveClass { module_reference: ModuleReference, name: PStr },
   CannotResolveModule { module_reference: ModuleReference },
@@ -541,6 +530,7 @@ pub(crate) enum ErrorDetail {
   MissingExport { module_reference: ModuleReference, name: PStr },
   NameAlreadyBound { name: PStr, old_loc: Location },
   NonExhausiveMatch { missing_tags: Vec<PStr> },
+  Stacked(StackableError),
   TypeParameterNameMismatch { expected: String },
   Underconstrained,
 }
@@ -635,6 +625,52 @@ impl ErrorDetail {
           printable_stream.push_text("`");
         }
       }
+      ErrorDetail::Stacked(s) => {
+        for (i, e) in s.rev_stack.iter().rev().enumerate() {
+          if i >= 1 {
+            printable_stream.push_text("\n");
+            for _ in 0..(i - 1) {
+              printable_stream.push_text("  ");
+            }
+            printable_stream.push_text("- ");
+          }
+          let print_ref = i + 1 == s.rev_stack.len();
+          match e {
+            IncompatibilityNode::Type(t) => {
+              printable_stream.push_text("`");
+              printable_stream.push_description(&t.lower_description);
+              printable_stream.push_text("` ");
+              if print_ref {
+                printable_stream.push_location(&t.lower_reason.use_loc);
+                printable_stream.push_text(" ");
+              }
+              printable_stream.push_text("is incompatible with `");
+              printable_stream.push_description(&t.upper_description);
+              if print_ref {
+                printable_stream.push_text("` ");
+                printable_stream.push_location(&t.upper_reason.use_loc);
+                printable_stream.push_text(".");
+              } else {
+                printable_stream.push_text("`.");
+              }
+            }
+            IncompatibilityNode::FunctionParametersArity(l, u) => {
+              printable_stream.push_text("Function parameter arity of ");
+              printable_stream.push_size(*l);
+              printable_stream.push_text(" is incompatible with function parameter arity of ");
+              printable_stream.push_size(*u);
+              printable_stream.push_text(".");
+            }
+            IncompatibilityNode::TypeArgumentsArity(l, u) => {
+              printable_stream.push_text("Type argument arity of ");
+              printable_stream.push_size(*l);
+              printable_stream.push_text(" is incompatible with type argument arity of ");
+              printable_stream.push_size(*u);
+              printable_stream.push_text(".");
+            }
+          }
+        }
+      }
       ErrorDetail::TypeParameterNameMismatch { expected } => {
         printable_stream.push_text("Type parameter name mismatch. Expected exact match of `");
         printable_stream.push_text(expected);
@@ -649,9 +685,9 @@ impl ErrorDetail {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CompileTimeError {
-  pub location: Location,
+  pub(crate) location: Location,
   pub(crate) detail: ErrorDetail,
 }
 
@@ -699,14 +735,9 @@ impl ErrorSet {
     ErrorSet { errors: BTreeSet::new() }
   }
 
-  pub(crate) fn from_grouped(
-    grouped_errors: &HashMap<ModuleReference, Vec<CompileTimeError>>,
-  ) -> ErrorSet {
-    let mut errors = BTreeSet::new();
-    for e in grouped_errors.values().flatten() {
-      errors.insert(e.clone());
-    }
-    ErrorSet { errors }
+  pub(crate) fn group_errors(self) -> HashMap<ModuleReference, Vec<CompileTimeError>> {
+    let grouped = self.errors.into_iter().group_by(|e| e.location.module_reference);
+    grouped.into_iter().map(|(k, v)| (k, v.collect_vec())).collect::<HashMap<_, _>>()
   }
 
   pub(crate) fn has_errors(&self) -> bool {
@@ -715,6 +746,19 @@ impl ErrorSet {
 
   pub(crate) fn errors(&self) -> Vec<&CompileTimeError> {
     self.errors.iter().collect()
+  }
+
+  fn print_one_error_message(
+    heap: &Heap,
+    printer: &mut printer::ErrorPrinterState,
+    e: &CompileTimeError,
+  ) {
+    e.pretty_print_error_loc_lines(heap, printer);
+    printer.print_optional_ref(heap, &e.location);
+    printer.print_error_detail(heap, &e.detail);
+    printer.push_str("\n\n");
+    printer.flush_frames();
+    printer.push('\n');
   }
 
   fn error_messages(
@@ -728,12 +772,7 @@ impl ErrorSet {
     }
     let mut printer = printer::ErrorPrinterState::new(style, sources);
     for e in &self.errors {
-      e.pretty_print_error_loc_lines(heap, &mut printer);
-      printer.print_optional_ref(heap, &e.location);
-      printer.print_error_detail(heap, &e.detail);
-      printer.push_str("\n\n");
-      printer.flush_frames();
-      printer.push('\n');
+      Self::print_one_error_message(heap, &mut printer, e);
     }
     if self.errors.len() > 1 {
       printer.push_str("Found ");
@@ -751,6 +790,19 @@ impl ErrorSet {
     sources: &HashMap<ModuleReference, String>,
   ) -> String {
     self.error_messages(heap, ErrorPrinterStyle::Text, sources)
+  }
+
+  #[cfg(test)]
+  pub(crate) fn pretty_print_from_grouped_error_messages(
+    heap: &Heap,
+    sources: &HashMap<ModuleReference, String>,
+    grouped_errors: &HashMap<ModuleReference, Vec<CompileTimeError>>,
+  ) -> String {
+    let mut printer = printer::ErrorPrinterState::new(ErrorPrinterStyle::Text, sources);
+    for e in grouped_errors.values().sorted().flatten() {
+      Self::print_one_error_message(heap, &mut printer, e);
+    }
+    printer.consume()
   }
 
   #[cfg(test)]
@@ -869,6 +921,10 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::NonExhausiveMatch { missing_tags })
   }
 
+  pub(crate) fn report_stackable_error(&mut self, loc: Location, stackable: StackableError) {
+    self.report_error(loc, ErrorDetail::Stacked(stackable))
+  }
+
   pub(crate) fn report_type_parameter_mismatch_error(&mut self, loc: Location, expected: String) {
     self.report_error(loc, ErrorDetail::TypeParameterNameMismatch { expected })
   }
@@ -911,7 +967,6 @@ mod tests {
 
   #[test]
   fn error_stack_tests() {
-    let heap = Heap::new();
     let mut stack = StackableError::new();
 
     stack.add_fn_param_arity_error(1, 2);
@@ -923,17 +978,6 @@ mod tests {
       upper_description: Description::IntType,
     });
     assert!(!stack.is_empty());
-
-    let mut collector = String::new();
-    stack.pretty_print(&heap, &mut collector);
-    assert_eq!(
-      r#"
-`bool` (DUMMY.sam:0:0-0:0) is incompatible with `int` (DUMMY.sam:0:0-0:0).
-- Type argument arity of 1 is incompatible with type argument arity of 2.
-  - Function parameter arity of 1 is incompatible with function parameter arity of 2."#
-        .trim(),
-      collector.trim()
-    );
   }
 
   #[test]
@@ -1047,6 +1091,24 @@ Found 2 errors."#
       Location::dummy(),
       vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
     );
+    error_set.report_stackable_error(Location::dummy(), {
+      let mut stacked = StackableError::new();
+      stacked.add_type_error(super::TypeIncompatibilityNode {
+        lower_reason: Reason::dummy(),
+        lower_description: Description::AnyType,
+        upper_reason: Reason::dummy(),
+        upper_description: Description::AnyType,
+      });
+      stacked.add_type_args_arity_error(0, 0);
+      stacked.add_fn_param_arity_error(0, 0);
+      stacked.add_type_error(super::TypeIncompatibilityNode {
+        lower_reason: Reason::dummy(),
+        lower_description: Description::AnyType,
+        upper_reason: Reason::dummy(),
+        upper_description: Description::AnyType,
+      });
+      stacked
+    });
     error_set.report_type_parameter_mismatch_error(Location::dummy(), "".to_string());
     error_set.report_underconstrained_error(Location::dummy());
 
@@ -1117,6 +1179,14 @@ The match is not exhausive. The following variants have not been handled:
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
+`any` is incompatible with `any`.
+- Function parameter arity of 0 is incompatible with function parameter arity of 0.
+  - Type argument arity of 0 is incompatible with type argument arity of 0.
+    - `any`  is incompatible with `any` .
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
 Type parameter name mismatch. Expected exact match of ``.
 
 
@@ -1131,12 +1201,13 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Name `global` is not resolved.
 
 
-Found 15 errors.
+Found 16 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),
       error_set.pretty_print_error_messages_no_frame(&heap).trim()
     );
     assert!(error_set.has_errors());
+    assert_eq!(2, error_set.group_errors().len());
   }
 }

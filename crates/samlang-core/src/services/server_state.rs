@@ -11,7 +11,6 @@ use crate::{
   measure_time,
   parser::parse_source_module_from_text,
 };
-use itertools::Itertools;
 use std::{
   collections::{HashMap, HashSet},
   rc::Rc,
@@ -45,7 +44,7 @@ impl ServerState {
       let dep_graph = DependencyGraph::new(&parsed_modules);
       let (checked_modules, global_cx) =
         type_check_sources(&parsed_modules, &mut heap, &mut error_set);
-      let errors = Self::group_errors(error_set);
+      let errors = error_set.group_errors();
       ServerState {
         heap,
         enable_profiling,
@@ -57,11 +56,6 @@ impl ServerState {
         errors,
       }
     })
-  }
-
-  fn group_errors(error_set: ErrorSet) -> HashMap<ModuleReference, Vec<CompileTimeError>> {
-    let grouped = error_set.errors().into_iter().group_by(|e| e.location.module_reference);
-    grouped.into_iter().map(|(k, v)| (k, v.cloned().collect_vec())).collect::<HashMap<_, _>>()
   }
 
   /// Preconditions:
@@ -80,7 +74,7 @@ impl ServerState {
     }
 
     // Collating Errors
-    let mut grouped_errors = Self::group_errors(error_set);
+    let mut grouped_errors = error_set.group_errors();
     for rechecked_module in recheck_set {
       if !grouped_errors.contains_key(rechecked_module) {
         grouped_errors.insert(*rechecked_module, vec![]);
@@ -114,8 +108,11 @@ impl ServerState {
 
   #[cfg(test)]
   pub(super) fn get_error_dump(&self) -> String {
-    ErrorSet::from_grouped(&self.errors)
-      .pretty_print_error_messages(&self.heap, &self.string_sources)
+    ErrorSet::pretty_print_from_grouped_error_messages(
+      &self.heap,
+      &self.string_sources,
+      &self.errors,
+    )
   }
 
   pub fn update(&mut self, updates: Vec<(ModuleReference, String)>) {
@@ -200,12 +197,9 @@ Expected: `int`, actual: `Str`.
 
   3|   function test(): int = "haha"
                               ^^^^^^
-
-
-Found 1 error.
 "#
       .trim(),
-      service.get_error_dump()
+      service.get_error_dump().trim()
     );
 
     service.remove(&[test_mod_ref]);
@@ -281,12 +275,9 @@ Expected: `Str`, actual: `int`.
 
   5|   function test(): Str = 3
                               ^
-
-
-Found 4 errors.
 "#
       .trim(),
-      service.get_error_dump()
+      service.get_error_dump().trim()
     );
 
     // Adding Test2 can clear one error of its reverse dependency.
@@ -328,12 +319,9 @@ Expected: `Str`, actual: `int`.
 
   5|   function test(): Str = 3
                               ^
-
-
-Found 3 errors.
     "#
       .trim(),
-      service.get_error_dump()
+      service.get_error_dump().trim()
     );
 
     // Clearing local error of Test1
@@ -375,12 +363,9 @@ Expected: `Str`, actual: `int`.
 
   5|   function test(): Str = 3
                               ^
-
-
-Found 3 errors.
 "#
       .trim(),
-      service.get_error_dump()
+      service.get_error_dump().trim()
     );
 
     // Clearing local error of Test2
@@ -416,12 +401,9 @@ Name `Test2` collides with a previously defined name at [1].
   -----------------------
   2| import { Test1, Test2 } from Test1
                      ^^^^^
-
-
-Found 2 errors.
 "#
       .trim(),
-      service.get_error_dump()
+      service.get_error_dump().trim()
     );
 
     // Clearing all errors of Test2
@@ -476,12 +458,9 @@ Name `A` collides with a previously defined name at [1].
   ---------------------
   1| import {A} from A
              ^
-
-
-Found 2 errors.
 "#
       .trim(),
-      service.get_error_dump()
+      service.get_error_dump().trim()
     );
 
     service.rename_module(vec![(a_mod_ref, b_mod_ref)]);
@@ -506,12 +485,9 @@ Name `A` collides with a previously defined name at [1].
   ---------------------
   1| import {A} from A
              ^
-
-
-Found 2 errors.
 "#
       .trim(),
-      service.get_error_dump()
+      service.get_error_dump().trim()
     );
 
     service.rename_module(vec![(ModuleReference::dummy(), test_mod_ref)]);
@@ -536,12 +512,9 @@ Name `A` collides with a previously defined name at [1].
   ---------------------
   1| import {A} from A
              ^
-
-
-Found 2 errors.
 "#
       .trim(),
-      service.get_error_dump()
+      service.get_error_dump().trim()
     );
   }
 }
