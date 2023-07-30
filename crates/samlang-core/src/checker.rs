@@ -18,6 +18,8 @@ mod ssa_analysis;
 mod ssa_analysis_tests;
 /// Definition of internal type language.
 pub(crate) mod type_;
+/// All the core type checker rules in one place.
+mod type_system;
 /// All the typing context in one place.
 mod typing_context;
 mod typing_context_tests;
