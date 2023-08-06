@@ -560,8 +560,13 @@ mod tests {
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:5
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| true
+     ^^^^
+
+  [1] DUMMY.sam:1:1-1:5
+  ---------------------
   1| true
      ^^^^
 
@@ -576,8 +581,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| false
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| false
      ^^^^^
 
@@ -592,8 +602,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:3
 
-Expected: `unit`, actual: `int`.
+`int` [1] is incompatible with `unit` .
 
+  1| 42
+     ^^
+
+  [1] DUMMY.sam:1:1-1:3
+  ---------------------
   1| 42
      ^^
 
@@ -608,8 +623,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:4
 
-Expected: `unit`, actual: `Str`.
+`Str` [1] is incompatible with `unit` .
 
+  1| "a"
+     ^^^
+
+  [1] DUMMY.sam:1:1-1:4
+  ---------------------
   1| "a"
      ^^^
 
@@ -627,8 +647,13 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:19-1:22
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` .
 
+  1| { val foo = true; foo }
+                       ^^^
+
+  [1] DUMMY.sam:1:19-1:22
+  -----------------------
   1| { val foo = true; foo }
                        ^^^
 
@@ -1484,10 +1509,20 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:3-1:8
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| -(false)
        ^^^^^
+
+  [1] DUMMY.sam:1:3-1:8
+  ---------------------
+  1| -(false)
+       ^^^^^
+
+  [2] DUMMY.sam:1:1-1:8
+  ---------------------
+  1| -(false)
+     ^^^^^^^
 
 
 Found 1 error.
@@ -1500,10 +1535,20 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:2-1:3
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   1| !1
       ^
+
+  [1] DUMMY.sam:1:2-1:3
+  ---------------------
+  1| !1
+      ^
+
+  [2] DUMMY.sam:1:1-1:3
+  ---------------------
+  1| !1
+     ^^
 
 
 Found 1 error.
@@ -1516,8 +1561,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` .
 
+  1| -(1+1)
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| -(1+1)
      ^^^^^
 
@@ -1532,8 +1582,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` .
 
+  1| !true
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| !true
      ^^^^^
 
@@ -1548,8 +1603,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:7
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` .
 
+  1| !false
+     ^^^^^^
+
+  [1] DUMMY.sam:1:1-1:7
+  ---------------------
   1| !false
      ^^^^^^
 
@@ -1564,18 +1624,38 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:4
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   1| "1" * "1"
      ^^^
 
+  [1] DUMMY.sam:1:1-1:4
+  ---------------------
+  1| "1" * "1"
+     ^^^
+
+  [2] DUMMY.sam:1:1-1:10
+  ----------------------
+  1| "1" * "1"
+     ^^^^^^^^^
+
 
 Error ----------------------------------- DUMMY.sam:1:7-1:10
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   1| "1" * "1"
            ^^^
+
+  [1] DUMMY.sam:1:7-1:10
+  ----------------------
+  1| "1" * "1"
+           ^^^
+
+  [2] DUMMY.sam:1:1-1:10
+  ----------------------
+  1| "1" * "1"
+     ^^^^^^^^^
 
 
 Found 2 errors.
@@ -1588,10 +1668,20 @@ Found 2 errors.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:4
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   1| "1" - 1
      ^^^
+
+  [1] DUMMY.sam:1:1-1:4
+  ---------------------
+  1| "1" - 1
+     ^^^
+
+  [2] DUMMY.sam:1:1-1:8
+  ---------------------
+  1| "1" - 1
+     ^^^^^^^
 
 
 Found 1 error.
@@ -1604,10 +1694,20 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:5-1:8
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   1| 1 % "1"
          ^^^
+
+  [1] DUMMY.sam:1:5-1:8
+  ---------------------
+  1| 1 % "1"
+         ^^^
+
+  [2] DUMMY.sam:1:1-1:8
+  ---------------------
+  1| 1 % "1"
+     ^^^^^^^
 
 
 Found 1 error.
@@ -1620,10 +1720,20 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:5-1:10
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| 1 + false
          ^^^^^
+
+  [1] DUMMY.sam:1:5-1:10
+  ----------------------
+  1| 1 + false
+         ^^^^^
+
+  [2] DUMMY.sam:1:1-1:10
+  ----------------------
+  1| 1 + false
+     ^^^^^^^^^
 
 
 Found 1 error.
@@ -1636,10 +1746,20 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| false - 1
      ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
+  1| false - 1
+     ^^^^^
+
+  [2] DUMMY.sam:1:1-1:10
+  ----------------------
+  1| false - 1
+     ^^^^^^^^^
 
 
 Found 1 error.
@@ -1652,18 +1772,38 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:3
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   1| "" < false
      ^^
 
+  [1] DUMMY.sam:1:1-1:3
+  ---------------------
+  1| "" < false
+     ^^
+
+  [2] DUMMY.sam:1:1-1:11
+  ----------------------
+  1| "" < false
+     ^^^^^^^^^^
+
 
 Error ----------------------------------- DUMMY.sam:1:6-1:11
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| "" < false
           ^^^^^
+
+  [1] DUMMY.sam:1:6-1:11
+  ----------------------
+  1| "" < false
+          ^^^^^
+
+  [2] DUMMY.sam:1:1-1:11
+  ----------------------
+  1| "" < false
+     ^^^^^^^^^^
 
 
 Found 2 errors.
@@ -1676,10 +1816,20 @@ Found 2 errors.
       r#"
 Error ----------------------------------- DUMMY.sam:1:6-1:11
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| 1 <= false
           ^^^^^
+
+  [1] DUMMY.sam:1:6-1:11
+  ----------------------
+  1| 1 <= false
+          ^^^^^
+
+  [2] DUMMY.sam:1:1-1:11
+  ----------------------
+  1| 1 <= false
+     ^^^^^^^^^^
 
 
 Found 1 error.
@@ -1692,10 +1842,20 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:5-1:7
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   1| 1 > ""
          ^^
+
+  [1] DUMMY.sam:1:5-1:7
+  ---------------------
+  1| 1 > ""
+         ^^
+
+  [2] DUMMY.sam:1:1-1:7
+  ---------------------
+  1| 1 > ""
+     ^^^^^^
 
 
 Found 1 error.
@@ -1708,10 +1868,20 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:5
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| true >= 1
      ^^^^
+
+  [1] DUMMY.sam:1:1-1:5
+  ---------------------
+  1| true >= 1
+     ^^^^
+
+  [2] DUMMY.sam:1:1-1:10
+  ----------------------
+  1| true >= 1
+     ^^^^^^^^^
 
 
 Found 1 error.
@@ -1724,10 +1894,20 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   1| false || 4
               ^
+
+  [1] DUMMY.sam:1:10-1:11
+  -----------------------
+  1| false || 4
+              ^
+
+  [2] DUMMY.sam:1:1-1:11
+  ----------------------
+  1| false || 4
+     ^^^^^^^^^^
 
 
 Found 1 error.
@@ -1740,18 +1920,38 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:2
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   1| 2 && 3
      ^
 
+  [1] DUMMY.sam:1:1-1:2
+  ---------------------
+  1| 2 && 3
+     ^
+
+  [2] DUMMY.sam:1:1-1:7
+  ---------------------
+  1| 2 && 3
+     ^^^^^^
+
 
 Error ------------------------------------ DUMMY.sam:1:6-1:7
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   1| 2 && 3
           ^
+
+  [1] DUMMY.sam:1:6-1:7
+  ---------------------
+  1| 2 && 3
+          ^
+
+  [2] DUMMY.sam:1:1-1:7
+  ---------------------
+  1| 2 && 3
+     ^^^^^^
 
 
 Found 2 errors.
@@ -1764,10 +1964,20 @@ Found 2 errors.
       r#"
 Error ----------------------------------- DUMMY.sam:1:6-1:11
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| 1 == false
           ^^^^^
+
+  [1] DUMMY.sam:1:6-1:11
+  ----------------------
+  1| 1 == false
+          ^^^^^
+
+  [2] DUMMY.sam:1:1-1:2
+  ---------------------
+  1| 1 == false
+     ^
 
 
 Found 1 error.
@@ -1780,10 +1990,20 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:9-1:10
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   1| true == 3
              ^
+
+  [1] DUMMY.sam:1:9-1:10
+  ----------------------
+  1| true == 3
+             ^
+
+  [2] DUMMY.sam:1:1-1:5
+  ---------------------
+  1| true == 3
+     ^^^^
 
 
 Found 1 error.
@@ -1796,10 +2016,20 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:9-1:10
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   1| true != 3
              ^
+
+  [1] DUMMY.sam:1:9-1:10
+  ----------------------
+  1| true != 3
+             ^
+
+  [2] DUMMY.sam:1:1-1:5
+  ---------------------
+  1| true != 3
+     ^^^^
 
 
 Found 1 error.
@@ -1812,10 +2042,20 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:7-1:8
 
-Expected: `Str`, actual: `int`.
+`int` [1] is incompatible with `Str` [2].
 
   1| "" != 3
            ^
+
+  [1] DUMMY.sam:1:7-1:8
+  ---------------------
+  1| "" != 3
+           ^
+
+  [2] DUMMY.sam:1:1-1:3
+  ---------------------
+  1| "" != 3
+     ^^
 
 
 Found 1 error.
@@ -1828,10 +2068,20 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:37-1:38
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| { val _ = (t: int, f: bool) -> t == f; }
                                          ^
+
+  [1] DUMMY.sam:1:37-1:38
+  -----------------------
+  1| { val _ = (t: int, f: bool) -> t == f; }
+                                         ^
+
+  [2] DUMMY.sam:1:32-1:33
+  -----------------------
+  1| { val _ = (t: int, f: bool) -> t == f; }
+                                    ^
 
 
 Found 1 error.
@@ -1844,8 +2094,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `unit`, actual: `int`.
+`int` [1] is incompatible with `unit` .
 
+  1| 1 * 1
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| 1 * 1
      ^^^^^
 
@@ -1860,8 +2115,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `unit`, actual: `int`.
+`int` [1] is incompatible with `unit` .
 
+  1| 1 - 1
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| 1 - 1
      ^^^^^
 
@@ -1876,8 +2136,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `unit`, actual: `int`.
+`int` [1] is incompatible with `unit` .
 
+  1| 1 % 1
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| 1 % 1
      ^^^^^
 
@@ -1892,8 +2157,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `unit`, actual: `int`.
+`int` [1] is incompatible with `unit` .
 
+  1| 1 + 1
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| 1 + 1
      ^^^^^
 
@@ -1908,8 +2178,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `unit`, actual: `int`.
+`int` [1] is incompatible with `unit` .
 
+  1| 1 - 1
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| 1 - 1
      ^^^^^
 
@@ -1924,8 +2199,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| 1 < 1
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| 1 < 1
      ^^^^^
 
@@ -1940,8 +2220,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:7
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| 1 <= 1
+     ^^^^^^
+
+  [1] DUMMY.sam:1:1-1:7
+  ---------------------
   1| 1 <= 1
      ^^^^^^
 
@@ -1956,8 +2241,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:6
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| 1 > 1
+     ^^^^^
+
+  [1] DUMMY.sam:1:1-1:6
+  ---------------------
   1| 1 > 1
      ^^^^^
 
@@ -1972,8 +2262,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:7
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| 1 >= 1
+     ^^^^^^
+
+  [1] DUMMY.sam:1:1-1:7
+  ---------------------
   1| 1 >= 1
      ^^^^^^
 
@@ -1988,8 +2283,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:14
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| true || false
+     ^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:14
+  ----------------------
   1| true || false
      ^^^^^^^^^^^^^
 
@@ -2004,8 +2304,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:14
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| false && true
+     ^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:14
+  ----------------------
   1| false && true
      ^^^^^^^^^^^^^
 
@@ -2020,8 +2325,13 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:7
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| 1 == 1
+     ^^^^^^
+
+  [1] DUMMY.sam:1:1-1:7
+  ---------------------
   1| 1 == 1
      ^^^^^^
 
@@ -2036,8 +2346,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:14
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| true == false
+     ^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:14
+  ----------------------
   1| true == false
      ^^^^^^^^^^^^^
 
@@ -2052,8 +2367,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:13
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| true != true
+     ^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:13
+  ----------------------
   1| true != true
      ^^^^^^^^^^^^
 
@@ -2068,8 +2388,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:10
 
-Expected: `unit`, actual: `bool`.
+`bool` [1] is incompatible with `unit` .
 
+  1| "" != "3"
+     ^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:10
+  ----------------------
   1| "" != "3"
      ^^^^^^^^^
 
@@ -2119,10 +2444,20 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:25-1:26
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   1| if true then false else 1
                              ^
+
+  [1] DUMMY.sam:1:25-1:26
+  -----------------------
+  1| if true then false else 1
+                             ^
+
+  [2] DUMMY.sam:1:14-1:19
+  -----------------------
+  1| if true then false else 1
+                  ^^^^^
 
 
 Found 1 error.
@@ -2135,10 +2470,20 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:22-1:27
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| if false then 1 else false
                           ^^^^^
+
+  [1] DUMMY.sam:1:22-1:27
+  -----------------------
+  1| if false then 1 else false
+                          ^^^^^
+
+  [2] DUMMY.sam:1:15-1:16
+  -----------------------
+  1| if false then 1 else false
+                   ^
 
 
 Found 1 error.
@@ -2151,10 +2496,20 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:23-1:24
 
-Expected: `Str`, actual: `int`.
+`int` [1] is incompatible with `Str` [2].
 
   1| if false then "" else 3
                            ^
+
+  [1] DUMMY.sam:1:23-1:24
+  -----------------------
+  1| if false then "" else 3
+                           ^
+
+  [2] DUMMY.sam:1:15-1:17
+  -----------------------
+  1| if false then "" else 3
+                   ^^
 
 
 Found 1 error.
@@ -2171,10 +2526,20 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:3:22-3:23
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   3|     if b then t else f
                           ^
+
+  [1] DUMMY.sam:3:22-3:23
+  -----------------------
+  3|     if b then t else f
+                          ^
+
+  [2] DUMMY.sam:3:15-3:16
+  -----------------------
+  3|     if b then t else f
+                   ^
 
 
 Found 1 error.
@@ -2705,6 +3070,24 @@ Expected: `int`, actual: `bool`.
                                                            ^
 
 
+Error -------------------------------------- C.sam:5:55-5:56
+
+`bool` [1] is incompatible with `int` [2].
+
+  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
+                                                           ^
+
+  [1] C.sam:5:55-5:56
+  -------------------
+  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
+                                                           ^
+
+  [2] C.sam:5:24-5:27
+  -------------------
+  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
+                            ^^^
+
+
 Error -------------------------------------- C.sam:5:68-5:80
 
 Expected: `bool`, actual: `int`.
@@ -2726,7 +3109,7 @@ Name `c1` collides with a previously defined name at [1].
                                                ^^
 
 
-Found 14 errors.
+Found 15 errors.
 "#,
     );
   }

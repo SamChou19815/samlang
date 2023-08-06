@@ -683,10 +683,20 @@ Expected: `int`, actual: `Box<int>`.
 
 Error ------------ illegal-binary-operations.sam:15:49-15:51
 
-Expected: `Box<int>`, actual: `int`.
+`int` [1] is incompatible with `Box<int>` [2].
 
   15|   function test04(): bool = Box.empty<int>() == 42 // error
                                                       ^^
+
+  [1] illegal-binary-operations.sam:15:49-15:51
+  ---------------------------------------------
+  15|   function test04(): bool = Box.empty<int>() == 42 // error
+                                                      ^^
+
+  [2] illegal-binary-operations.sam:15:29-15:45
+  ---------------------------------------------
+  15|   function test04(): bool = Box.empty<int>() == 42 // error
+                                  ^^^^^^^^^^^^^^^^
 
 
 Error ------------ illegal-binary-operations.sam:16:29-16:45
@@ -707,26 +717,56 @@ Expected: `bool`, actual: `Box<int>`.
 
 Error ------------ illegal-binary-operations.sam:18:33-18:38
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   18|   function test07(): int = 42 * false // error
                                       ^^^^^
 
+  [1] illegal-binary-operations.sam:18:33-18:38
+  ---------------------------------------------
+  18|   function test07(): int = 42 * false // error
+                                      ^^^^^
+
+  [2] illegal-binary-operations.sam:18:28-18:38
+  ---------------------------------------------
+  18|   function test07(): int = 42 * false // error
+                                 ^^^^^^^^^^
+
 
 Error ------------ illegal-binary-operations.sam:19:28-19:33
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   19|   function test08(): int = false + false // error
                                  ^^^^^
 
+  [1] illegal-binary-operations.sam:19:28-19:33
+  ---------------------------------------------
+  19|   function test08(): int = false + false // error
+                                 ^^^^^
+
+  [2] illegal-binary-operations.sam:19:28-19:41
+  ---------------------------------------------
+  19|   function test08(): int = false + false // error
+                                 ^^^^^^^^^^^^^
+
 
 Error ------------ illegal-binary-operations.sam:19:36-19:41
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   19|   function test08(): int = false + false // error
                                          ^^^^^
+
+  [1] illegal-binary-operations.sam:19:36-19:41
+  ---------------------------------------------
+  19|   function test08(): int = false + false // error
+                                         ^^^^^
+
+  [2] illegal-binary-operations.sam:19:28-19:41
+  ---------------------------------------------
+  19|   function test08(): int = false + false // error
+                                 ^^^^^^^^^^^^^
 
 
 Error ------------ illegal-binary-operations.sam:21:45-21:55
@@ -868,18 +908,38 @@ Expected: val, actual: a.
 
 Error ------------------- multiple-type-errors.sam:3:35-3:40
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   3|   function main(): int = 233333 + "foo" + "bar" + 42
                                        ^^^^^
 
+  [1] multiple-type-errors.sam:3:35-3:40
+  --------------------------------------
+  3|   function main(): int = 233333 + "foo" + "bar" + 42
+                                       ^^^^^
+
+  [2] multiple-type-errors.sam:3:26-3:40
+  --------------------------------------
+  3|   function main(): int = 233333 + "foo" + "bar" + 42
+                              ^^^^^^^^^^^^^^
+
 
 Error ------------------- multiple-type-errors.sam:3:43-3:48
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   3|   function main(): int = 233333 + "foo" + "bar" + 42
                                                ^^^^^
+
+  [1] multiple-type-errors.sam:3:43-3:48
+  --------------------------------------
+  3|   function main(): int = 233333 + "foo" + "bar" + 42
+                                               ^^^^^
+
+  [2] multiple-type-errors.sam:3:26-3:48
+  --------------------------------------
+  3|   function main(): int = 233333 + "foo" + "bar" + 42
+                              ^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error --------------------------- overflow-int.sam:3:26-3:56
@@ -892,10 +952,20 @@ Not a 32-bit integer.
 
 Error ------------------------ simple-mismatch.sam:4:30-4:34
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   4|       function main(): int = true
                                   ^^^^
+
+  [1] simple-mismatch.sam:4:30-4:34
+  ---------------------------------
+  4|       function main(): int = true
+                                  ^^^^
+
+  [2] simple-mismatch.sam:4:24-4:27
+  ---------------------------------
+  4|       function main(): int = true
+                            ^^^
 
 
 Error ------------------------- undefined-type.sam:3:20-3:30
@@ -908,10 +978,20 @@ Name `HelloWorld` is not resolved.
 
 Error ------------------------- undefined-type.sam:3:33-3:34
 
-Expected: `HelloWorld`, actual: `int`.
+`int` [1] is incompatible with `HelloWorld` [2].
 
   3|   function main(): HelloWorld = 1
                                      ^
+
+  [1] undefined-type.sam:3:33-3:34
+  --------------------------------
+  3|   function main(): HelloWorld = 1
+                                     ^
+
+  [2] undefined-type.sam:3:20-3:30
+  --------------------------------
+  3|   function main(): HelloWorld = 1
+                        ^^^^^^^^^^
 
 
 Error --------------------- undefined-variable.sam:3:26-3:36

@@ -10,6 +10,7 @@ use super::{
     FunctionType, GlobalSignature, ISourceType, MemberSignature, NominalType, PrimitiveTypeKind,
     Type, TypeParameterSignature,
   },
+  type_system,
   typing_context::{LocalTypingContext, TypingContext},
 };
 use crate::{
@@ -19,7 +20,7 @@ use crate::{
       ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon, Literal,
       Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
     },
-    Reason,
+    Location, Reason,
   },
   checker::checker_utils::solve_type_constraints,
   common::{well_known_pstrs, Heap, ModuleReference, PStr},
@@ -143,11 +144,29 @@ fn validate_type_arguments(
   }
 }
 
-fn type_meet(cx: &mut TypingContext, heap: &Heap, general: Option<&Type>, specific: &Type) -> Type {
+fn old_type_meet(
+  cx: &mut TypingContext,
+  heap: &Heap,
+  general: Option<&Type>,
+  specific: &Type,
+) -> Type {
   if let Some(g) = general {
     contextual_type_meet(g, specific, heap, cx.error_set)
   } else {
     specific.clone()
+  }
+}
+
+fn assignability_check(
+  cx: &mut TypingContext,
+  use_loc: Location,
+  general: Option<&Type>,
+  specific: &Type,
+) {
+  if let Some(g) = general {
+    if let Some(e) = type_system::assignability_check(specific, g) {
+      cx.error_set.report_stackable_error(use_loc, e);
+    }
   }
 }
 
@@ -158,9 +177,9 @@ pub(super) fn type_check_expression(
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
   match expression {
-    expr::E::Literal(common, literal) => check_literal(cx, heap, common, literal, hint),
-    expr::E::LocalId(common, id) => check_local_variable(cx, heap, common, id, hint),
-    expr::E::ClassId(common, mod_ref, id) => check_class_id(cx, heap, common, *mod_ref, id, hint),
+    expr::E::Literal(common, literal) => check_literal(cx, common, literal, hint),
+    expr::E::LocalId(common, id) => check_local_variable(cx, common, id, hint),
+    expr::E::ClassId(common, mod_ref, id) => check_class_id(cx, common, *mod_ref, id, hint),
     expr::E::FieldAccess(e) => check_field_access(cx, heap, e, hint),
     expr::E::MethodAccess(_) => panic!("Raw parsed expression does not contain MethodAccess!"),
     expr::E::Unary(e) => check_unary(cx, heap, e, hint),
@@ -175,7 +194,6 @@ pub(super) fn type_check_expression(
 
 fn check_literal(
   cx: &mut TypingContext,
-  heap: &Heap,
   common: &expr::ExpressionCommon<()>,
   literal: &Literal,
   hint: Option<&Type>,
@@ -192,24 +210,23 @@ fn check_literal(
       type_arguments: vec![],
     })),
   };
-  type_meet(cx, heap, hint, &type_);
+  assignability_check(cx, common.loc, hint, &type_);
   expr::E::Literal(common.with_new_type(type_), *literal)
 }
 
 fn check_local_variable(
   cx: &mut TypingContext,
-  heap: &Heap,
   common: &expr::ExpressionCommon<()>,
   id: &Id,
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
-  let type_ = Rc::new(type_meet(cx, heap, hint, &cx.local_typing_context.read(&common.loc)));
+  let type_ = Rc::new(cx.local_typing_context.read(&common.loc));
+  assignability_check(cx, common.loc, hint, &type_);
   expr::E::LocalId(common.with_new_type(type_), *id)
 }
 
 fn check_class_id(
   cx: &mut TypingContext,
-  heap: &Heap,
   common: &expr::ExpressionCommon<()>,
   module_reference: ModuleReference,
   id: &Id,
@@ -217,18 +234,14 @@ fn check_class_id(
 ) -> expr::E<Rc<Type>> {
   let reason = Reason::new(common.loc, Some(common.loc));
   if cx.class_exists(module_reference, id.name) {
-    let type_ = Rc::new(type_meet(
-      cx,
-      heap,
-      hint,
-      &Type::Nominal(NominalType {
-        reason,
-        is_class_statics: true,
-        module_reference,
-        id: id.name,
-        type_arguments: vec![],
-      }),
-    ));
+    let type_ = Rc::new(Type::Nominal(NominalType {
+      reason,
+      is_class_statics: true,
+      module_reference,
+      id: id.name,
+      type_arguments: vec![],
+    }));
+    assignability_check(cx, common.loc, hint, &type_);
     expr::E::ClassId(common.with_new_type(type_), module_reference, *id)
   } else {
     cx.error_set.report_cannot_resolve_class_error(common.loc, module_reference, id.name);
@@ -247,11 +260,15 @@ fn replace_undecided_tparam_with_unknown_and_update_type(
   for tparam in unresolved_type_parameters {
     let reason = Reason::new(expression.loc(), None);
     let t = cx.mk_underconstrained_any_type(reason);
-    subst_map.insert(tparam.name, Rc::new(type_meet(cx, heap, None, &t)));
+    subst_map.insert(tparam.name, Rc::new(t));
   }
 
-  let type_ =
-    Rc::new(type_meet(cx, heap, hint, &perform_type_substitution(expression.type_(), &subst_map)));
+  let type_ = Rc::new(old_type_meet(
+    cx,
+    heap,
+    hint,
+    &perform_type_substitution(expression.type_(), &subst_map),
+  ));
   match expression {
     expr::E::FieldAccess(e) => {
       debug_assert!(e.inferred_type_arguments.is_empty());
@@ -296,7 +313,7 @@ fn check_member_with_unresolved_tparams(
           checked_expression.type_().pretty_print(heap),
         );
       }
-      let unknown_type = Rc::new(type_meet(
+      let unknown_type = Rc::new(old_type_meet(
         cx,
         heap,
         hint,
@@ -330,7 +347,7 @@ fn check_member_with_unresolved_tparams(
           subst_map.insert(tparam.name, Rc::new(Type::from_annotation(targ)));
         }
         validate_type_arguments(cx, heap, &method_type_info.type_parameters, &subst_map);
-        let type_ = Rc::new(type_meet(
+        let type_ = Rc::new(old_type_meet(
           cx,
           heap,
           hint,
@@ -359,7 +376,7 @@ fn check_member_with_unresolved_tparams(
     }
     if method_type_info.type_parameters.is_empty() {
       // No type parameter to solve
-      let type_ = Rc::new(type_meet(cx, heap, hint, &Type::Fn(method_type_info.type_)));
+      let type_ = Rc::new(old_type_meet(cx, heap, hint, &Type::Fn(method_type_info.type_)));
       let partially_checked_expr = FieldOrMethodAccesss::Method(expr::MethodAccess {
         common: expression.common.with_new_type(type_),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
@@ -451,7 +468,8 @@ fn check_member_with_unresolved_tparams(
     if let Some((field_type, _)) =
       field_mappings.get(&expression.field_name.name).filter(|(_, is_public)| *is_public)
     {
-      let type_ = Rc::new(type_meet(cx, heap, hint, &field_type.reposition(expression.common.loc)));
+      let type_ =
+        Rc::new(old_type_meet(cx, heap, hint, &field_type.reposition(expression.common.loc)));
       let order = *field_order_mapping.get(&expression.field_name.name).unwrap();
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
         common: expression.common.with_new_type(type_),
@@ -468,14 +486,19 @@ fn check_member_with_unresolved_tparams(
         class_id.as_str(heap).to_string(),
         expression.field_name.name,
       );
-      let unknown_type = Rc::new(type_meet(
+      let unknown_type = Rc::new(old_type_meet(
         cx,
         heap,
         hint,
         &Type::Any(Reason::new(expression.common.loc, None), false),
       ));
       let partially_checked_expr = FieldOrMethodAccesss::Field(expr::FieldAccess {
-        common: expression.common.with_new_type(Rc::new(type_meet(cx, heap, hint, &unknown_type))),
+        common: expression.common.with_new_type(Rc::new(old_type_meet(
+          cx,
+          heap,
+          hint,
+          &unknown_type,
+        ))),
         explicit_type_arguments: expression.explicit_type_arguments.clone(),
         inferred_type_arguments: vec![],
         object: Box::new(checked_expression),
@@ -526,7 +549,7 @@ fn check_unary(
       expr::UnaryOperator::NEG => PrimitiveTypeKind::Int,
     },
   ));
-  type_meet(cx, heap, hint, &expected_type);
+  assignability_check(cx, expression.common.loc, hint, &expected_type);
   let argument =
     Box::new(type_check_expression(cx, heap, &expression.argument, Some(&expected_type)));
   expr::E::Unary(expr::Unary {
@@ -647,7 +670,7 @@ fn check_function_call_aux(
   let fully_solved_generic_type =
     perform_fn_type_substitution(generic_function_type, &fully_solved_substitution);
 
-  let fully_solved_concrete_return_type = type_meet(
+  let fully_solved_concrete_return_type = old_type_meet(
     cx,
     heap,
     return_type_hint,
@@ -693,7 +716,7 @@ fn check_function_call(
         );
       }
       let loc = expression.common.loc;
-      let type_ = Rc::new(type_meet(cx, heap, hint, &Type::Any(Reason::new(loc, None), false)));
+      let type_ = Rc::new(old_type_meet(cx, heap, hint, &Type::Any(Reason::new(loc, None), false)));
       return expr::E::Call(expr::Call {
         common: expression.common.with_new_type(type_),
         callee: Box::new(replace_undecided_tparam_with_unknown_and_update_type(
@@ -790,7 +813,7 @@ fn check_binary(
       type_arguments: vec![],
     }),
   });
-  type_meet(cx, heap, hint, &expected_type);
+  assignability_check(cx, expression.common.loc, hint, &expected_type);
   match expression.operator {
     expr::BinaryOperator::MUL
     | expr::BinaryOperator::DIV
@@ -927,14 +950,14 @@ fn check_match(
     );
   }
   let final_type = matching_list_types.iter().fold(
-    Rc::new(type_meet(
+    Rc::new(old_type_meet(
       cx,
       heap,
       hint,
       // This any type shouldn't compromise soundness, because there must be at least one branch.
       &Type::Any(Reason::new(expression.common.loc, None), false),
     )),
-    |general, specific| Rc::new(type_meet(cx, heap, Some(&general), specific)),
+    |general, specific| Rc::new(old_type_meet(cx, heap, Some(&general), specific)),
   );
   expr::E::Match(expr::Match {
     common: expression.common.with_new_type(final_type),
@@ -959,7 +982,7 @@ fn infer_lambda_parameter_types(
           .zip(&expression.parameters)
           .map(|(parameter_hint, parameter)| {
             let type_ = if let Some(annot) = &parameter.annotation {
-              Rc::new(type_meet(cx, heap, Some(parameter_hint), &Type::from_annotation(annot)))
+              Rc::new(old_type_meet(cx, heap, Some(parameter_hint), &Type::from_annotation(annot)))
             } else if cx.in_synthesis_mode() || !has_placeholder_type(parameter_hint) {
               Rc::new(parameter_hint.reposition(parameter.name.loc))
             } else {
@@ -1123,9 +1146,9 @@ fn check_block(
   hint: Option<&Type>,
 ) -> expr::E<Rc<Type>> {
   if expression.expression.is_none() {
-    type_meet(
+    assignability_check(
       cx,
-      heap,
+      expression.common.loc,
       hint,
       &Type::Primitive(Reason::new(expression.common.loc, None), PrimitiveTypeKind::Unit),
     );

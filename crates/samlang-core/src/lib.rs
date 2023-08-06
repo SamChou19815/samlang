@@ -144,18 +144,38 @@ mod tests {
       r#"
 Error ----------------------------------- Demo.sam:1:37-1:44
 
-Expected: `Str`, actual: `int`.
+`int` [1] is incompatible with `Str` [2].
 
   1| class Main { function main(): Str = 42 + "" }
                                          ^^^^^^^
 
+  [1] Demo.sam:1:37-1:44
+  ----------------------
+  1| class Main { function main(): Str = 42 + "" }
+                                         ^^^^^^^
+
+  [2] Demo.sam:1:31-1:34
+  ----------------------
+  1| class Main { function main(): Str = 42 + "" }
+                                   ^^^
+
 
 Error ----------------------------------- Demo.sam:1:42-1:44
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   1| class Main { function main(): Str = 42 + "" }
                                               ^^
+
+  [1] Demo.sam:1:42-1:44
+  ----------------------
+  1| class Main { function main(): Str = 42 + "" }
+                                              ^^
+
+  [2] Demo.sam:1:37-1:44
+  ----------------------
+  1| class Main { function main(): Str = 42 + "" }
+                                         ^^^^^^^
 
 
 Found 2 errors.

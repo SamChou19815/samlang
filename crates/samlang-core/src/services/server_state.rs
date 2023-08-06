@@ -193,10 +193,21 @@ interface I { method test(): int }
       r#"
 Error ----------------------------------- test.sam:3:26-3:32
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   3|   function test(): int = "haha"
                               ^^^^^^
+
+  [1] test.sam:3:26-3:32
+  ----------------------
+  3|   function test(): int = "haha"
+                              ^^^^^^
+
+  [2] test.sam:3:20-3:23
+  ----------------------
+  3|   function test(): int = "haha"
+                        ^^^
+
 "#
       .trim(),
       service.get_error_dump().trim()
@@ -242,10 +253,20 @@ class Test2 {
       r#"
 Error ---------------------------------- Test1.sam:3:26-3:32
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   3|   function test(): int = "haha"
                               ^^^^^^
+
+  [1] Test1.sam:3:26-3:32
+  -----------------------
+  3|   function test(): int = "haha"
+                              ^^^^^^
+
+  [2] Test1.sam:3:20-3:23
+  -----------------------
+  3|   function test(): int = "haha"
+                        ^^^
 
 
 Error ---------------------------------- Test2.sam:2:17-2:22
@@ -271,10 +292,20 @@ Name `Test2` collides with a previously defined name at [1].
 
 Error ---------------------------------- Test2.sam:5:26-5:27
 
-Expected: `Str`, actual: `int`.
+`int` [1] is incompatible with `Str` [2].
 
   5|   function test(): Str = 3
                               ^
+
+  [1] Test2.sam:5:26-5:27
+  -----------------------
+  5|   function test(): Str = 3
+                              ^
+
+  [2] Test2.sam:5:20-5:23
+  -----------------------
+  5|   function test(): Str = 3
+                        ^^^
 "#
       .trim(),
       service.get_error_dump().trim()
@@ -294,10 +325,20 @@ class Test2 {}
     assert_eq!(
       r#"Error ---------------------------------- Test1.sam:3:26-3:32
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` [2].
 
   3|   function test(): int = "haha"
                               ^^^^^^
+
+  [1] Test1.sam:3:26-3:32
+  -----------------------
+  3|   function test(): int = "haha"
+                              ^^^^^^
+
+  [2] Test1.sam:3:20-3:23
+  -----------------------
+  3|   function test(): int = "haha"
+                        ^^^
 
 
 Error ----------------------------------- Test2.sam:4:7-4:12
@@ -315,10 +356,20 @@ Name `Test2` collides with a previously defined name at [1].
 
 Error ---------------------------------- Test2.sam:5:26-5:27
 
-Expected: `Str`, actual: `int`.
+`int` [1] is incompatible with `Str` [2].
 
   5|   function test(): Str = 3
                               ^
+
+  [1] Test2.sam:5:26-5:27
+  -----------------------
+  5|   function test(): Str = 3
+                              ^
+
+  [2] Test2.sam:5:20-5:23
+  -----------------------
+  5|   function test(): Str = 3
+                        ^^^
     "#
       .trim(),
       service.get_error_dump().trim()
@@ -359,10 +410,20 @@ Name `Test2` collides with a previously defined name at [1].
 
 Error ---------------------------------- Test2.sam:5:26-5:27
 
-Expected: `Str`, actual: `int`.
+`int` [1] is incompatible with `Str` [2].
 
   5|   function test(): Str = 3
                               ^
+
+  [1] Test2.sam:5:26-5:27
+  -----------------------
+  5|   function test(): Str = 3
+                              ^
+
+  [2] Test2.sam:5:20-5:23
+  -----------------------
+  5|   function test(): Str = 3
+                        ^^^
 "#
       .trim(),
       service.get_error_dump().trim()
