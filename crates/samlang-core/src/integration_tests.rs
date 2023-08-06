@@ -2267,10 +2267,10 @@ class Main {
     let mut store = Store::new(&engine, vec![]);
     let memory =
       Memory::new(store.as_context_mut(), MemoryType::new(2, Some(65536)).unwrap()).unwrap();
-    let mut linker = <Linker<HostState>>::new();
+    let mut linker = <Linker<HostState>>::new(&engine);
     let builtin_println = move |mut caller: Caller<'_, HostState>, _: i32, param: i32| -> i32 {
       let string = pointer_to_string(&caller, &memory, param);
-      caller.host_data_mut().push(string);
+      caller.data_mut().push(string);
       0
     };
     let instance = linker
@@ -2302,7 +2302,7 @@ class Main {
       .encoded_for_test(heap, &lir_sources.symbol_table);
       expected_str.push_str(test.name);
       expected_str.push_str(":\n");
-      store.state_mut().push(test.name.to_string() + ":");
+      store.data_mut().push(test.name.to_string() + ":");
 
       let main_function =
         Extern::into_func(instance.get_export(&store, &main_function_name).unwrap())
@@ -2313,9 +2313,9 @@ class Main {
 
       expected_str.push_str(test.expected_std);
       expected_str.push_str("\n\n");
-      store.state_mut().push("\n".to_string());
+      store.data_mut().push("\n".to_string());
     }
-    assert_eq!(expected_str.trim(), store.state().join("\n").trim())
+    assert_eq!(expected_str.trim(), store.data().join("\n").trim())
   }
 
   #[should_panic]
