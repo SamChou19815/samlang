@@ -80,7 +80,7 @@ pub(super) fn assignability_check(lower: &Type, upper: &Type) -> Option<Stackabl
 
 fn type_meet_visit(lower: &Type, upper: &Type, error_stack: &mut StackableError) -> Option<Type> {
   if let Type::Any(reason, lower_is_placeholder) = lower {
-    if let Type::Any(_, upper_is_placeholder) = upper {
+    if let Type::Any(_upper_reason, upper_is_placeholder) = upper {
       return Some(Type::Any(*reason, *lower_is_placeholder && *upper_is_placeholder));
     }
     return Some(upper.reposition(lower.get_reason().use_loc));

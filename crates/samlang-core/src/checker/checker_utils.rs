@@ -1,7 +1,8 @@
 use crate::{
   ast::Reason,
-  checker::type_::{FunctionType, ISourceType, NominalType, Type, TypeParameterSignature},
-  common::{Heap, PStr},
+  checker::type_::{FunctionType, NominalType, Type, TypeParameterSignature},
+  checker::type_system,
+  common::PStr,
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -9,100 +10,6 @@ use std::{
   collections::{HashMap, HashSet},
   rc::Rc,
 };
-
-fn contextual_nominal_type_meet_opt(
-  general: &NominalType,
-  specific: &NominalType,
-) -> Option<NominalType> {
-  if general.is_class_statics == specific.is_class_statics
-    && general.module_reference == specific.module_reference
-    && general.id == specific.id
-    && general.type_arguments.len() == specific.type_arguments.len()
-  {
-    let mut type_arguments = vec![];
-    for (g, s) in general.type_arguments.iter().zip(&specific.type_arguments) {
-      let targ = contextual_type_meet_opt(g, s)?;
-      type_arguments.push(Rc::new(targ));
-    }
-    return Some(NominalType {
-      reason: specific.reason,
-      is_class_statics: specific.is_class_statics,
-      module_reference: specific.module_reference,
-      id: specific.id,
-      type_arguments,
-    });
-  }
-  None
-}
-
-fn contextual_type_meet_opt(general: &Type, specific: &Type) -> Option<Type> {
-  if let Type::Any(reason, specific_is_placeholder) = specific {
-    if let Type::Any(_, general_is_placeholder) = general {
-      return Some(Type::Any(*reason, *specific_is_placeholder && *general_is_placeholder));
-    }
-    return Some(general.reposition(specific.get_reason().use_loc));
-  }
-  match general {
-    Type::Any(_, _) => Some(specific.clone()),
-    Type::Primitive(_, _) => {
-      if general.is_the_same_type(specific) {
-        Some(specific.clone())
-      } else {
-        None
-      }
-    }
-    Type::Nominal(g) => {
-      Some(Type::Nominal(contextual_nominal_type_meet_opt(g, specific.as_nominal()?)?))
-    }
-    Type::Generic(_, id1) => {
-      let (_, id2) = specific.as_generic()?;
-      if id1.eq(id2) {
-        Some(specific.clone())
-      } else {
-        None
-      }
-    }
-    Type::Fn(FunctionType { reason: _, argument_types: args1, return_type: r1 }) => {
-      let FunctionType { reason, argument_types: args2, return_type: r2 } = specific.as_fn()?;
-      if args1.len() == args2.len() {
-        let mut argument_types = vec![];
-        for (g, s) in args1.iter().zip(args2) {
-          if let Some(arg) = contextual_type_meet_opt(g, s) {
-            argument_types.push(Rc::new(arg));
-          } else {
-            return None;
-          }
-        }
-        if let Some(r) = contextual_type_meet_opt(r1, r2) {
-          return Some(Type::Fn(FunctionType {
-            reason: *reason,
-            argument_types,
-            return_type: Rc::new(r),
-          }));
-        }
-      }
-      None
-    }
-  }
-}
-
-pub(super) fn contextual_type_meet(
-  general: &Type,
-  specific: &Type,
-  heap: &Heap,
-  error_set: &mut ErrorSet,
-) -> Type {
-  if let Some(t) = contextual_type_meet_opt(general, specific) {
-    t
-  } else {
-    error_set.report_incompatible_type_error(
-      specific.get_reason().use_loc,
-      general.pretty_print(heap),
-      specific.pretty_print(heap),
-    );
-    specific.clone()
-  }
-}
 
 pub(super) fn perform_fn_type_substitution(
   t: &FunctionType,
@@ -153,22 +60,6 @@ pub(super) fn perform_nominal_type_substitution(
   }
 }
 
-fn nominal_type_has_placeholder_type(type_: &NominalType) -> bool {
-  type_.type_arguments.iter().any(|t| has_placeholder_type(t))
-}
-
-pub(super) fn has_placeholder_type(type_: &Type) -> bool {
-  match type_ {
-    Type::Any(_, is_placeholder) => *is_placeholder,
-    Type::Primitive(_, _) | Type::Generic(_, _) => false,
-    Type::Nominal(nominal_type) => nominal_type_has_placeholder_type(nominal_type),
-    Type::Fn(fn_type) => {
-      fn_type.argument_types.iter().any(|t| has_placeholder_type(t))
-        || has_placeholder_type(&fn_type.return_type)
-    }
-  }
-}
-
 fn solve_type_constraints_internal(
   concrete: &Type,
   generic: &Type,
@@ -193,7 +84,7 @@ fn solve_type_constraints_internal(
       if type_parameters.contains(id) && !partially_solved.contains_key(id) {
         // Placeholder types, which might come from expressions that need to be contextually typed (e.g. lambda),
         // do not participate in constraint solving.
-        if !has_placeholder_type(concrete) {
+        if !type_system::contains_placeholder(concrete) {
           partially_solved.insert(*id, Rc::new(concrete.clone()));
         }
       }
@@ -249,7 +140,6 @@ pub(super) fn solve_type_constraints(
   concrete: &Type,
   generic: &Type,
   type_parameter_signatures: &Vec<TypeParameterSignature>,
-  heap: &Heap,
   error_set: &mut ErrorSet,
 ) -> TypeConstraintSolution {
   let mut solved_substitution = solve_multiple_type_constrains(
@@ -264,7 +154,13 @@ pub(super) fn solve_type_constraints(
   }
   let solved_generic_type = perform_type_substitution(generic, &solved_substitution);
   let solved_contextually_typed_concrete_type =
-    Rc::new(contextual_type_meet(&solved_generic_type, concrete, heap, error_set));
+    match type_system::type_meet(concrete, &solved_generic_type) {
+      Ok(t) => Rc::new(t),
+      Err(stackable) => {
+        error_set.report_stackable_error(concrete.get_reason().use_loc, stackable);
+        Rc::new(concrete.clone())
+      }
+    };
   TypeConstraintSolution {
     solved_substitution,
     solved_generic_type,

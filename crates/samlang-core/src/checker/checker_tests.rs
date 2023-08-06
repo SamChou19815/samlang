@@ -13,7 +13,7 @@ mod tests {
         FunctionType, GlobalSignature, InterfaceSignature, MemberSignature, ModuleSignature,
         StructItemDefinitionSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
       },
-      type_check_sources,
+      type_check_sources, type_system,
       typing_context::{LocalTypingContext, TypingContext},
     },
     common::{well_known_pstrs, Heap, ModuleReference},
@@ -516,7 +516,10 @@ mod tests {
       /* availableTypeParameters */ vec![],
     );
 
-    type_check_expression(&mut cx, heap, &parsed, Some(expected_type));
+    let expr = type_check_expression(&mut cx, heap, &parsed, Some(expected_type));
+    if let Some(err) = type_system::assignability_check(expr.type_(), expected_type) {
+      cx.error_set.report_stackable_error(expr.loc(), err);
+    }
     error_set.pretty_print_error_messages(
       heap,
       &HashMap::from([(ModuleReference::dummy(), source.to_string())]),
@@ -645,17 +648,17 @@ Found 1 error.
       "{ val foo = true; foo }",
       &builder.int_type(),
       r#"
-Error ---------------------------------- DUMMY.sam:1:19-1:22
+Error ----------------------------------- DUMMY.sam:1:1-1:24
 
 `bool` [1] is incompatible with `int` .
 
   1| { val foo = true; foo }
-                       ^^^
+     ^^^^^^^^^^^^^^^^^^^^^^^
 
-  [1] DUMMY.sam:1:19-1:22
-  -----------------------
+  [1] DUMMY.sam:1:1-1:24
+  ----------------------
   1| { val foo = true; foo }
-                       ^^^
+     ^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Found 1 error.
@@ -702,7 +705,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:34
 
-Expected: `(Str, Str) -> unit`, actual: `(any) -> unit`.
+Incorrect parameter size. Expected: 2, actual: 1.
 
   1| Test.helloWorldWithTypeParameters
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -710,7 +713,8 @@ Expected: `(Str, Str) -> unit`, actual: `(any) -> unit`.
 
 Error ----------------------------------- DUMMY.sam:1:1-1:34
 
-Incorrect parameter size. Expected: 2, actual: 1.
+`(any) -> unit` is incompatible with `(Str, Str) -> unit`.
+- Function parameter arity of 1 is incompatible with function parameter arity of 2.
 
   1| Test.helloWorldWithTypeParameters
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -734,7 +738,7 @@ Found 3 errors.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:34
 
-Expected: `Str`, actual: `(any) -> unit`.
+Expected: `Str`, actual: `function`.
 
   1| Test.helloWorldWithTypeParameters
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -742,8 +746,13 @@ Expected: `Str`, actual: `(any) -> unit`.
 
 Error ----------------------------------- DUMMY.sam:1:1-1:34
 
-Expected: `Str`, actual: `function`.
+`(any) -> unit` [1] is incompatible with `Str` .
 
+  1| Test.helloWorldWithTypeParameters
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:34
+  ----------------------
   1| Test.helloWorldWithTypeParameters
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -782,7 +791,8 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:39
 
-Expected: `(Str, Str) -> unit`, actual: `(Str) -> unit`.
+`(Str) -> unit` is incompatible with `(Str, Str) -> unit`.
+- Function parameter arity of 1 is incompatible with function parameter arity of 2.
 
   1| Test.helloWorldWithTypeParameters<Str>
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -908,10 +918,20 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:16-1:20
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| Test4.Foo<int>(true)
                     ^^^^
+
+  [1] DUMMY.sam:1:16-1:20
+  -----------------------
+  1| Test4.Foo<int>(true)
+                    ^^^^
+
+  [2] DUMMY.sam:1:11-1:14
+  -----------------------
+  1| Test4.Foo<int>(true)
+               ^^^
 
 
 Found 1 error.
@@ -924,18 +944,34 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:21
 
-Expected: `Test4<bool>`, actual: `Test4<int>`.
+`Test4<int>` is incompatible with `Test4<bool>`.
+- `int` [1] is incompatible with `bool` .
 
   1| Test4.Foo<int>(true)
      ^^^^^^^^^^^^^^^^^^^^
 
+  [1] DUMMY.sam:1:11-1:14
+  -----------------------
+  1| Test4.Foo<int>(true)
+               ^^^
+
 
 Error ---------------------------------- DUMMY.sam:1:16-1:20
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` [2].
 
   1| Test4.Foo<int>(true)
                     ^^^^
+
+  [1] DUMMY.sam:1:16-1:20
+  -----------------------
+  1| Test4.Foo<int>(true)
+                    ^^^^
+
+  [2] DUMMY.sam:1:11-1:14
+  -----------------------
+  1| Test4.Foo<int>(true)
+               ^^^
 
 
 Found 2 errors.
@@ -1092,8 +1128,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:23
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` .
 
+  1| Test.init(true, 3).foo
+     ^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:23
+  ----------------------
   1| Test.init(true, 3).foo
      ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1108,8 +1149,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:23
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` .
 
+  1| Test.init(true, 3).bar
+     ^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:23
+  ----------------------
   1| Test.init(true, 3).bar
      ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1124,8 +1170,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:23
 
-Expected: `int`, actual: `(int) -> bool`.
+`(int) -> bool` [1] is incompatible with `int` .
 
+  1| Test.init(true, 3).baz
+     ^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:23
+  ----------------------
   1| Test.init(true, 3).baz
      ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1156,7 +1207,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:36
 
-Expected: `int`, actual: `(int) -> bool`.
+Expected: `int`, actual: `function`.
 
   1| Test.init(true, 3).bazWithTypeParam
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1164,8 +1215,13 @@ Expected: `int`, actual: `(int) -> bool`.
 
 Error ----------------------------------- DUMMY.sam:1:1-1:36
 
-Expected: `int`, actual: `function`.
+`(int) -> bool` [1] is incompatible with `int` .
 
+  1| Test.init(true, 3).bazWithTypeParam
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:36
+  ----------------------
   1| Test.init(true, 3).bazWithTypeParam
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1188,7 +1244,7 @@ Found 3 errors.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:36
 
-Expected: `(int, int) -> bool`, actual: `(int) -> bool`.
+Incorrect parameter size. Expected: 2, actual: 1.
 
   1| Test.init(true, 3).bazWithTypeParam
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1196,7 +1252,8 @@ Expected: `(int, int) -> bool`, actual: `(int) -> bool`.
 
 Error ----------------------------------- DUMMY.sam:1:1-1:36
 
-Incorrect parameter size. Expected: 2, actual: 1.
+`(int) -> bool` is incompatible with `(int, int) -> bool`.
+- Function parameter arity of 1 is incompatible with function parameter arity of 2.
 
   1| Test.init(true, 3).bazWithTypeParam
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1236,10 +1293,16 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:48
 
-Expected: `(int) -> bool`, actual: `(bool) -> bool`.
+`(bool) -> bool` is incompatible with `(int) -> bool`.
+- `bool` [1] is incompatible with `int` .
 
   1| Test.init(true, 3).bazWithUsefulTypeParam<bool>
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:43-1:47
+  -----------------------
+  1| Test.init(true, 3).bazWithUsefulTypeParam<bool>
+                                               ^^^^
 
 
 Found 1 error.
@@ -1252,7 +1315,8 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:23
 
-Expected: `(bool) -> int`, actual: `(int) -> bool`.
+`(int) -> bool` is incompatible with `(bool) -> int`.
+- `int`  is incompatible with `bool` .
 
   1| Test.init(true, 3).baz
      ^^^^^^^^^^^^^^^^^^^^^^
@@ -1337,8 +1401,13 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:15-1:16
 
-Expected: `Str`, actual: `int`.
+`int` [1] is incompatible with `Str` .
 
+  1| Process.panic(3)
+                   ^
+
+  [1] DUMMY.sam:1:15-1:16
+  -----------------------
   1| Process.panic(3)
                    ^
 
@@ -1369,8 +1438,13 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:17-1:18
 
-Expected: `Str`, actual: `int`.
+`int` [1] is incompatible with `Str` .
 
+  1| Test.helloWorld(3)
+                     ^
+
+  [1] DUMMY.sam:1:17-1:18
+  -----------------------
   1| Test.helloWorld(3)
                      ^
 
@@ -1385,8 +1459,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:25
 
-Expected: `int`, actual: `Str`.
+`Str` [1] is incompatible with `int` .
 
+  1| Test.init(true, 3).fff()
+     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:25
+  ----------------------
   1| Test.init(true, 3).fff()
      ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1401,10 +1480,20 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:1:20-1:22
 
-Expected: `int`, actual: `unit`.
+`unit` [1] is incompatible with `int` [2].
 
   1| ((i: int) -> true)({})
                         ^^
+
+  [1] DUMMY.sam:1:20-1:22
+  -----------------------
+  1| ((i: int) -> true)({})
+                        ^^
+
+  [2] DUMMY.sam:1:6-1:9
+  ---------------------
+  1| ((i: int) -> true)({})
+          ^^^
 
 
 Found 1 error.
@@ -1417,8 +1506,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:20
 
-Expected: `bool`, actual: `unit`.
+`unit` [1] is incompatible with `bool` .
 
+  1| Test.helloWorld("")
+     ^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:20
+  ----------------------
   1| Test.helloWorld("")
      ^^^^^^^^^^^^^^^^^^^
 
@@ -1433,8 +1527,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:26
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` .
 
+  1| Test.init(true, 3).baz(3)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:26
+  ----------------------
   1| Test.init(true, 3).baz(3)
      ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1449,8 +1548,13 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:2-1:22
 
-Expected: `int`, actual: `bool`.
+`bool` [1] is incompatible with `int` .
 
+  1| ((i: int) -> true)(3)
+      ^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:1:2-1:22
+  ----------------------
   1| ((i: int) -> true)(3)
       ^^^^^^^^^^^^^^^^^^^^
 
@@ -2644,7 +2748,8 @@ Found 2 errors.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:9
 
-Incorrect function arguments size. Expected: 0, actual: 1.
+`(any) -> any` is incompatible with `() -> int`.
+- Function parameter arity of 1 is incompatible with function parameter arity of 0.
 
   1| (a) -> a
      ^^^^^^^^
@@ -2668,8 +2773,13 @@ Found 2 errors.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:9
 
-Expected: `int`, actual: `function type`.
+`(any) -> any` [1] is incompatible with `int` .
 
+  1| (a) -> a
+     ^^^^^^^^
+
+  [1] DUMMY.sam:1:1-1:9
+  ---------------------
   1| (a) -> a
      ^^^^^^^^
 
@@ -2807,7 +2917,7 @@ Found 1 error.
       r#"
 Error ---------------------------------- DUMMY.sam:2:12-2:26
 
-Incorrect arguments size. Expected: 0, actual: 1.
+Function parameter arity of 1 is incompatible with function parameter arity of 0.
 
   2|   val _ = (() -> true)(1);
                 ^^^^^^^^^^^^^^
@@ -3006,10 +3116,21 @@ Name `A` collides with a previously defined name at [1].
 
 Error -------------------------------------- B.sam:3:35-3:48
 
-Expected: `B<int, bool>`, actual: `B<int, int>`.
+`B<int, int>` is incompatible with `B<int, bool>`.
+- `int` [1] is incompatible with `bool` [2].
 
   3|     function of(): B<int, bool> = B.init(A.a())
                                        ^^^^^^^^^^^^^
+
+  [1] B.sam:3:22-3:25
+  -------------------
+  3|     function of(): B<int, bool> = B.init(A.a())
+                          ^^^
+
+  [2] B.sam:3:27-3:31
+  -------------------
+  3|     function of(): B<int, bool> = B.init(A.a())
+                               ^^^^
 
 
 Error -------------------------------------- C.sam:2:21-2:24
@@ -3035,10 +3156,20 @@ Incorrect type arguments size. Expected: 2, actual: 0.
 
 Error -------------------------------------- C.sam:3:43-3:48
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   3|     function ofInt(value: int): C = C.Int(value)
                                                ^^^^^
+
+  [1] C.sam:3:43-3:48
+  -------------------
+  3|     function ofInt(value: int): C = C.Int(value)
+                                               ^^^^^
+
+  [2] C.sam:2:25-2:29
+  -------------------
+  2|   class C(Int(int), Int(bool), Boo(B)) {
+                             ^^^^
 
 
 Error -------------------------------------- C.sam:4:21-4:22
@@ -3062,25 +3193,17 @@ Incorrect type arguments size. Expected: 2, actual: 0.
                                   ^
 
 
-Error -------------------------------------- C.sam:5:55-5:56
-
-Expected: `int`, actual: `bool`.
-
-  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                                                           ^
-
-
-Error -------------------------------------- C.sam:5:55-5:56
+Error -------------------------------------- C.sam:5:30-5:83
 
 `bool` [1] is incompatible with `int` [2].
 
   5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                                                           ^
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  [1] C.sam:5:55-5:56
+  [1] C.sam:5:30-5:83
   -------------------
   5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
-                                                           ^
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   [2] C.sam:5:24-5:27
   -------------------
@@ -3088,12 +3211,22 @@ Error -------------------------------------- C.sam:5:55-5:56
                             ^^^
 
 
-Error -------------------------------------- C.sam:5:68-5:80
+Error -------------------------------------- C.sam:5:58-5:81
 
-Expected: `bool`, actual: `int`.
+`int` [1] is incompatible with `bool` [2].
 
   5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] C.sam:5:68-5:80
+  -------------------
+  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
                                                                         ^^^^^^^^^^^^
+
+  [2] C.sam:5:55-5:56
+  -------------------
+  5|     method intValue(): int = match (this) { Int(v) -> v, Boo(b) -> b.intValue(), }
+                                                           ^
 
 
 Error -------------------------------------- D.sam:5:50-5:52
@@ -3109,7 +3242,7 @@ Name `c1` collides with a previously defined name at [1].
                                                ^^
 
 
-Found 15 errors.
+Found 14 errors.
 "#,
     );
   }
@@ -3396,18 +3529,38 @@ Expected: subtype of `Comparable<int>`, actual: `int`.
 
 Error --------------------- bounded-generics.sam:15:57-15:64
 
-Expected: `int`, actual: `T`.
+`T` [1] is incompatible with `int` [2].
 
   15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
                                                               ^^^^^^^
 
+  [1] bounded-generics.sam:15:57-15:64
+  ------------------------------------
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                              ^^^^^^^
+
+  [2] bounded-generics.sam:15:52-15:55
+  ------------------------------------
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                         ^^^
+
 
 Error --------------------- bounded-generics.sam:15:66-15:73
 
-Expected: `int`, actual: `T`.
+`T` [1] is incompatible with `int` [2].
 
   15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
                                                                        ^^^^^^^
+
+  [1] bounded-generics.sam:15:66-15:73
+  ------------------------------------
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                                       ^^^^^^^
+
+  [2] bounded-generics.sam:15:52-15:55
+  ------------------------------------
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                         ^^^
 
 
 Error --------------------- bounded-generics.sam:18:20-18:40
@@ -3420,10 +3573,20 @@ Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.
 
 Error --------------------- bounded-generics.sam:19:53-19:69
 
-Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.
+`BoxedInt` [1] is incompatible with `Comparable<BoxedInt>` [2].
 
   19|   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
                                                           ^^^^^^^^^^^^^^^^
+
+  [1] bounded-generics.sam:19:53-19:69
+  ------------------------------------
+  19|   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
+                                                          ^^^^^^^^^^^^^^^^
+
+  [2] bounded-generics.sam:18:20-18:40
+  ------------------------------------
+  18|   function test(v: Comparable<BoxedInt>): unit = {} // error signature validation
+                         ^^^^^^^^^^^^^^^^^^^^
 
 
 Error ---------------------- bounded-generics.sam:28:7-28:17

@@ -221,8 +221,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
     this.foldRight((elem, acc) -> f(elem).append(acc), List.Nil())
 
   function <T> flatten(l: List<List<T>>): List<T> =
-    // TODO: removing the targ annotation, and it will panic
-    l.foldRight<List<T>>((innerList, acc) -> innerList.append(acc), List.Nil())
+    l.foldRight((innerList, acc) -> innerList.append(acc), List.Nil())
 
   private method reverseWithAccumulator(acc: List<T>): List<T> =
     match this {
