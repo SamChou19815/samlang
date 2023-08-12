@@ -1,10 +1,10 @@
 use super::{
-  checker_utils::perform_type_substitution,
   global_signature, ssa_analysis,
   type_::{
     EnumVariantDefinitionSignature, GlobalSignature, ISourceType, MemberSignature, NominalType,
     StructItemDefinitionSignature, Type, TypeDefinitionSignature, TypeParameterSignature,
   },
+  type_system,
 };
 use crate::{
   ast::{Location, Position, Reason},
@@ -334,7 +334,7 @@ impl<'a> TypingContext<'a> {
           .iter()
           .map(|item| StructItemDefinitionSignature {
             name: item.name,
-            type_: perform_type_substitution(&item.type_, &subst_map),
+            type_: type_system::subst_type(&item.type_, &subst_map),
             is_public: item.is_public || nominal_type.id.eq(&self.current_class),
           })
           .collect(),
@@ -344,11 +344,7 @@ impl<'a> TypingContext<'a> {
           .iter()
           .map(|variant| EnumVariantDefinitionSignature {
             name: variant.name,
-            types: variant
-              .types
-              .iter()
-              .map(|it| perform_type_substitution(it, &subst_map))
-              .collect(),
+            types: variant.types.iter().map(|it| type_system::subst_type(it, &subst_map)).collect(),
           })
           .collect(),
       )),

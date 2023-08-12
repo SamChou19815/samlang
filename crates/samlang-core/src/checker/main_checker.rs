@@ -1,8 +1,5 @@
 use super::{
-  checker_utils::{
-    perform_fn_type_substitution, perform_nominal_type_substitution, perform_type_substitution,
-    solve_multiple_type_constrains, TypeConstraint, TypeConstraintSolution,
-  },
+  checker_utils::{solve_multiple_type_constrains, TypeConstraint, TypeConstraintSolution},
   global_signature,
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{
@@ -100,7 +97,7 @@ fn solve_type_arguments(
       // Fill in unknown for unsolved types.
       .or_insert_with(|| Rc::new(cx.mk_placeholder_type(*function_call_reason)));
   }
-  perform_fn_type_substitution(generic_function_type, &partially_solved_substitution)
+  type_system::subst_fn_type(generic_function_type, &partially_solved_substitution)
 }
 
 struct FunctionCallTypeCheckingResult {
@@ -130,7 +127,7 @@ fn validate_type_arguments(
     if let (Some(bound), Some(solved_type_argument)) =
       (&type_param.bound, subst_map.get(&type_param.name))
     {
-      let substituted_bound = Type::Nominal(perform_nominal_type_substitution(bound, subst_map));
+      let substituted_bound = Type::Nominal(type_system::subst_nominal_type(bound, subst_map));
       if !solved_type_argument.is_the_same_type(&substituted_bound)
         && !cx.is_subtype(solved_type_argument, &substituted_bound)
       {
@@ -231,7 +228,7 @@ fn replace_undecided_tparam_with_unknown_and_update_type(
     subst_map.insert(tparam.name, Rc::new(t));
   }
 
-  let type_ = perform_type_substitution(expression.type_(), &subst_map);
+  let type_ = type_system::subst_type(expression.type_(), &subst_map);
   match expression {
     expr::E::FieldAccess(e) => {
       debug_assert!(e.inferred_type_arguments.is_empty());
@@ -250,7 +247,7 @@ fn replace_undecided_tparam_with_unknown_and_update_type(
       inferred_type_arguments: e
         .inferred_type_arguments
         .iter()
-        .map(|it| perform_type_substitution(it, &subst_map))
+        .map(|it| type_system::subst_type(it, &subst_map))
         .collect_vec(),
       object: e.object,
       method_name: e.method_name,
@@ -306,7 +303,7 @@ fn check_member_with_unresolved_tparams(
         }
         validate_type_arguments(cx, heap, &method_type_info.type_parameters, &subst_map);
         let type_ =
-          Rc::new(Type::Fn(perform_fn_type_substitution(&method_type_info.type_, &subst_map)));
+          Rc::new(Type::Fn(type_system::subst_fn_type(&method_type_info.type_, &subst_map)));
         let inferred_type_arguments = expression
           .explicit_type_arguments
           .iter()
@@ -359,7 +356,7 @@ fn check_member_with_unresolved_tparams(
             .type_parameters
             .iter()
             .map(|it| {
-              perform_type_substitution(
+              type_system::subst_type(
                 &Type::Generic(Reason::dummy(), it.name),
                 &solved_substitution,
               )
@@ -601,7 +598,7 @@ fn check_function_call_implicit_instantiation(
     fully_solved_substitution.insert(type_parameter.name, Rc::new(t));
   }
   let fully_solved_generic_type =
-    perform_fn_type_substitution(generic_function_type, &fully_solved_substitution);
+    type_system::subst_fn_type(generic_function_type, &fully_solved_substitution);
 
   let fully_solved_concrete_return_type =
     fully_solved_generic_type.return_type.reposition(function_call_reason.use_loc);
@@ -722,7 +719,7 @@ fn check_function_call(
       inferred_type_arguments: m
         .inferred_type_arguments
         .iter()
-        .map(|it| perform_type_substitution(it, &solved_substitution))
+        .map(|it| type_system::subst_type(it, &solved_substitution))
         .collect_vec(),
       object: m.object,
       method_name: m.method_name,
