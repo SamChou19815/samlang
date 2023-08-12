@@ -69,8 +69,8 @@ class A(val a: int) {
 }
 
 class Main {
-  function main1(): int = Process.panic("Ah") + A.create()
-  function main2(): int = A.create() + Process.panic("Ah")
+  function main1(): int = Process.panic<int>("Ah") + A.create()
+  function main2(): int = A.create() + Process.panic<int>("Ah")
   private function main(): int = Main.main1() + Main.main2()
 }
 "#,
@@ -497,28 +497,58 @@ Cannot find member `b` on `A`.
                     ^
 
 
-Error --------------------- add-panic-to-class.sam:7:49-7:59
+Error --------------------- add-panic-to-class.sam:7:54-7:64
 
-Expected: `int`, actual: `A`.
+`A` [1] is incompatible with `int` [2].
 
-  7|   function main1(): int = Process.panic("Ah") + A.create()
-                                                     ^^^^^^^^^^
+  7|   function main1(): int = Process.panic<int>("Ah") + A.create()
+                                                          ^^^^^^^^^^
+
+  [1] add-panic-to-class.sam:7:54-7:64
+  ------------------------------------
+  7|   function main1(): int = Process.panic<int>("Ah") + A.create()
+                                                          ^^^^^^^^^^
+
+  [2] add-panic-to-class.sam:7:27-7:64
+  ------------------------------------
+  7|   function main1(): int = Process.panic<int>("Ah") + A.create()
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error --------------------- add-panic-to-class.sam:8:27-8:37
 
-Expected: `int`, actual: `A`.
+`A` [1] is incompatible with `int` [2].
 
-  8|   function main2(): int = A.create() + Process.panic("Ah")
+  8|   function main2(): int = A.create() + Process.panic<int>("Ah")
                                ^^^^^^^^^^
+
+  [1] add-panic-to-class.sam:8:27-8:37
+  ------------------------------------
+  8|   function main2(): int = A.create() + Process.panic<int>("Ah")
+                               ^^^^^^^^^^
+
+  [2] add-panic-to-class.sam:8:27-8:64
+  ------------------------------------
+  8|   function main2(): int = A.create() + Process.panic<int>("Ah")
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error ------------------------- add-with-class.sam:7:30-7:40
 
-Expected: `int`, actual: `A`.
+`A` [1] is incompatible with `int` [2].
 
   7|   function main(): int = 3 + A.create()
                                   ^^^^^^^^^^
+
+  [1] add-with-class.sam:7:30-7:40
+  --------------------------------
+  7|   function main(): int = 3 + A.create()
+                                  ^^^^^^^^^^
+
+  [2] add-with-class.sam:7:26-7:40
+  --------------------------------
+  7|   function main(): int = 3 + A.create()
+                              ^^^^^^^^^^^^^^
 
 
 Error --------------------- bounded-generics.sam:15:52-15:55
@@ -531,18 +561,38 @@ Expected: subtype of `Comparable<int>`, actual: `int`.
 
 Error --------------------- bounded-generics.sam:15:57-15:64
 
-Expected: `int`, actual: `T`.
+`T` [1] is incompatible with `int` [2].
 
   15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
                                                               ^^^^^^^
 
+  [1] bounded-generics.sam:15:57-15:64
+  ------------------------------------
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                              ^^^^^^^
+
+  [2] bounded-generics.sam:15:52-15:55
+  ------------------------------------
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                         ^^^
+
 
 Error --------------------- bounded-generics.sam:15:66-15:73
 
-Expected: `int`, actual: `T`.
+`T` [1] is incompatible with `int` [2].
 
   15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
                                                                        ^^^^^^^
+
+  [1] bounded-generics.sam:15:66-15:73
+  ------------------------------------
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                                       ^^^^^^^
+
+  [2] bounded-generics.sam:15:52-15:55
+  ------------------------------------
+  15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
+                                                         ^^^
 
 
 Error --------------------- bounded-generics.sam:18:20-18:40
@@ -555,10 +605,20 @@ Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.
 
 Error --------------------- bounded-generics.sam:19:53-19:69
 
-Expected: `Comparable<BoxedInt>`, actual: `BoxedInt`.
+`BoxedInt` [1] is incompatible with `Comparable<BoxedInt>` [2].
 
   19|   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
                                                           ^^^^^^^^^^^^^^^^
+
+  [1] bounded-generics.sam:19:53-19:69
+  ------------------------------------
+  19|   function main(): unit = TestLimitedSubtyping.test(BoxedInt.init(1)) // error subtyping
+                                                          ^^^^^^^^^^^^^^^^
+
+  [2] bounded-generics.sam:18:20-18:40
+  ------------------------------------
+  18|   function test(v: Comparable<BoxedInt>): unit = {} // error signature validation
+                         ^^^^^^^^^^^^^^^^^^^^
 
 
 Error ---------------------- bounded-generics.sam:28:7-28:17
@@ -659,26 +719,56 @@ Unexpected token among the classes and interfaces: .
 
 Error ------------ illegal-binary-operations.sam:12:33-12:49
 
-Expected: `int`, actual: `Box<int>`.
+`Box<int>` [1] is incompatible with `int` [2].
 
   12|   function test01(): int = 42 + Box.empty<int>() // error
                                       ^^^^^^^^^^^^^^^^
 
+  [1] illegal-binary-operations.sam:12:33-12:49
+  ---------------------------------------------
+  12|   function test01(): int = 42 + Box.empty<int>() // error
+                                      ^^^^^^^^^^^^^^^^
+
+  [2] illegal-binary-operations.sam:12:28-12:49
+  ---------------------------------------------
+  12|   function test01(): int = 42 + Box.empty<int>() // error
+                                 ^^^^^^^^^^^^^^^^^^^^^
+
 
 Error ------------ illegal-binary-operations.sam:13:28-13:44
 
-Expected: `int`, actual: `Box<int>`.
+`Box<int>` [1] is incompatible with `int` [2].
 
   13|   function test02(): int = Box.empty<int>() + 42 // error
                                  ^^^^^^^^^^^^^^^^
 
+  [1] illegal-binary-operations.sam:13:28-13:44
+  ---------------------------------------------
+  13|   function test02(): int = Box.empty<int>() + 42 // error
+                                 ^^^^^^^^^^^^^^^^
+
+  [2] illegal-binary-operations.sam:13:28-13:49
+  ---------------------------------------------
+  13|   function test02(): int = Box.empty<int>() + 42 // error
+                                 ^^^^^^^^^^^^^^^^^^^^^
+
 
 Error ------------ illegal-binary-operations.sam:14:35-14:51
 
-Expected: `int`, actual: `Box<int>`.
+`Box<int>` [1] is incompatible with `int` [2].
 
   14|   function test03(): bool = 42 == Box.empty<int>() // error
                                         ^^^^^^^^^^^^^^^^
+
+  [1] illegal-binary-operations.sam:14:35-14:51
+  ---------------------------------------------
+  14|   function test03(): bool = 42 == Box.empty<int>() // error
+                                        ^^^^^^^^^^^^^^^^
+
+  [2] illegal-binary-operations.sam:14:29-14:31
+  ---------------------------------------------
+  14|   function test03(): bool = 42 == Box.empty<int>() // error
+                                  ^^
 
 
 Error ------------ illegal-binary-operations.sam:15:49-15:51
@@ -701,18 +791,38 @@ Error ------------ illegal-binary-operations.sam:15:49-15:51
 
 Error ------------ illegal-binary-operations.sam:16:29-16:45
 
-Expected: `bool`, actual: `Box<int>`.
+`Box<int>` [1] is incompatible with `bool` [2].
 
   16|   function test05(): bool = Box.empty<int>() || false // error
                                   ^^^^^^^^^^^^^^^^
 
+  [1] illegal-binary-operations.sam:16:29-16:45
+  ---------------------------------------------
+  16|   function test05(): bool = Box.empty<int>() || false // error
+                                  ^^^^^^^^^^^^^^^^
+
+  [2] illegal-binary-operations.sam:16:29-16:54
+  ---------------------------------------------
+  16|   function test05(): bool = Box.empty<int>() || false // error
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 Error ------------ illegal-binary-operations.sam:17:38-17:54
 
-Expected: `bool`, actual: `Box<int>`.
+`Box<int>` [1] is incompatible with `bool` [2].
 
   17|   function test06(): bool = false || Box.empty<int>() // error
                                            ^^^^^^^^^^^^^^^^
+
+  [1] illegal-binary-operations.sam:17:38-17:54
+  ---------------------------------------------
+  17|   function test06(): bool = false || Box.empty<int>() // error
+                                           ^^^^^^^^^^^^^^^^
+
+  [2] illegal-binary-operations.sam:17:29-17:54
+  ---------------------------------------------
+  17|   function test06(): bool = false || Box.empty<int>() // error
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 Error ------------ illegal-binary-operations.sam:18:33-18:38
@@ -771,26 +881,60 @@ Error ------------ illegal-binary-operations.sam:19:36-19:41
 
 Error ------------ illegal-binary-operations.sam:21:45-21:55
 
-Expected: `Box<bool>`, actual: `Box<int>`.
+`Box<int>` is incompatible with `Box<bool>`.
+- `int` [1] is incompatible with `bool` [2].
 
   21|   function test10(): bool = Box.of(true) == Box.of(42) // error
                                                   ^^^^^^^^^^
 
+  [1] illegal-binary-operations.sam:21:52-21:54
+  ---------------------------------------------
+  21|   function test10(): bool = Box.of(true) == Box.of(42) // error
+                                                         ^^
+
+  [2] illegal-binary-operations.sam:21:36-21:40
+  ---------------------------------------------
+  21|   function test10(): bool = Box.of(true) == Box.of(42) // error
+                                         ^^^^
+
 
 Error ------------ illegal-binary-operations.sam:24:49-24:72
 
-Expected: `Box<int>`, actual: `AnotherBox<int>`.
+`AnotherBox<int>` [1] is incompatible with `Box<int>` [2].
 
   24|   function test13(): bool = Box.empty<int>() == AnotherBox.empty<int>() // error
                                                       ^^^^^^^^^^^^^^^^^^^^^^^
 
+  [1] illegal-binary-operations.sam:24:49-24:72
+  ---------------------------------------------
+  24|   function test13(): bool = Box.empty<int>() == AnotherBox.empty<int>() // error
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^
+
+  [2] illegal-binary-operations.sam:24:29-24:45
+  ---------------------------------------------
+  24|   function test13(): bool = Box.empty<int>() == AnotherBox.empty<int>() // error
+                                  ^^^^^^^^^^^^^^^^
+
 
 Error ------------ illegal-binary-operations.sam:27:35-27:64
 
-Expected: `Box<Box<Box<int>>>`, actual: `Box<Box<Box<bool>>>`.
+`Box<Box<Box<bool>>>` is incompatible with `Box<Box<Box<int>>>`.
+- `Box<Box<bool>>` is incompatible with `Box<Box<int>>`.
+  - `Box<bool>` is incompatible with `Box<int>`.
+    - `bool` [1] is incompatible with `int` [2].
 
   27|     Box.of(Box.of(Box.of(42))) == Box.of(Box.of(Box.of(false)))
                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] illegal-binary-operations.sam:27:56-27:61
+  ---------------------------------------------
+  27|     Box.of(Box.of(Box.of(42))) == Box.of(Box.of(Box.of(false)))
+                                                             ^^^^^
+
+  [2] illegal-binary-operations.sam:27:26-27:28
+  ---------------------------------------------
+  27|     Box.of(Box.of(Box.of(42))) == Box.of(Box.of(Box.of(false)))
+                               ^^
 
 
 Error --------- illegal-private-field-access.sam:15:13-15:14

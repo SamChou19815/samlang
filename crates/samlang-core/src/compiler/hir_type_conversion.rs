@@ -159,7 +159,9 @@ pub(super) struct TypeLoweringManager {
 impl TypeLoweringManager {
   pub(super) fn lower_source_type(&mut self, heap: &mut Heap, type_: &type_::Type) -> Type {
     match type_ {
-      type_::Type::Any(_, _) => panic!(),
+      type_::Type::Any(reason, placeholder) => {
+        panic!("any(placeholder={}) at {:?}", placeholder, reason)
+      }
       type_::Type::Primitive(_, _) => Type::Int,
       type_::Type::Nominal(id) => {
         let id_string = id.id;

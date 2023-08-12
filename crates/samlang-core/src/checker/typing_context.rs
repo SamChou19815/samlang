@@ -124,12 +124,16 @@ impl<'a> TypingContext<'a> {
 
   pub(super) fn mk_underconstrained_any_type(&mut self, reason: Reason) -> Type {
     if self.in_synthesis_mode {
-      self.produced_placeholders = true;
-      Type::Any(reason, true)
+      self.mk_placeholder_type(reason)
     } else {
       self.error_set.report_underconstrained_error(reason.use_loc);
       Type::Any(reason, false)
     }
+  }
+
+  pub(super) fn mk_placeholder_type(&mut self, reason: Reason) -> Type {
+    self.produced_placeholders = true;
+    Type::Any(reason, true)
   }
 
   fn resolve_to_potentially_in_scope_type_parameter_bound(

@@ -8,200 +8,6 @@ mod tests {
   use pretty_assertions::assert_eq;
   use std::{collections::HashMap, rc::Rc};
 
-  fn meet(t1: &Type, t2: &Type, heap: &mut Heap) -> String {
-    let mut error_set = ErrorSet::new();
-    let t = contextual_type_meet(t1, t2, heap, &mut error_set);
-    if error_set.has_errors() {
-      "FAILED_MEET".to_string()
-    } else {
-      t.pretty_print(heap)
-    }
-  }
-
-  #[test]
-  fn contextual_type_meet_tests() {
-    let heap = &mut Heap::new();
-    let builder = test_type_builder::create();
-
-    assert_eq!(meet(&builder.unit_type(), &builder.unit_type(), heap), "unit");
-    assert_eq!(meet(&builder.unit_type(), &builder.int_type(), heap), "FAILED_MEET");
-    assert_eq!(meet(&Type::Any(Reason::dummy(), false), &builder.string_type(), heap), "Str");
-    assert_eq!(
-      meet(&builder.unit_type(), &builder.simple_nominal_type(well_known_pstrs::UPPER_A), heap),
-      "FAILED_MEET"
-    );
-
-    assert_eq!(meet(&builder.unit_type(), &Type::Any(Reason::dummy(), false), heap), "unit");
-    assert_eq!(
-      meet(&Type::Any(Reason::dummy(), true), &Type::Any(Reason::dummy(), false), heap),
-      "any"
-    );
-    assert_eq!(
-      meet(&Type::Any(Reason::dummy(), true), &Type::Any(Reason::dummy(), true), heap),
-      "placeholder"
-    );
-
-    assert_eq!(
-      meet(&builder.simple_nominal_type(well_known_pstrs::UPPER_A), &builder.unit_type(), heap),
-      "FAILED_MEET"
-    );
-    assert_eq!(
-      meet(
-        &builder.simple_nominal_type(well_known_pstrs::UPPER_A),
-        &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
-        heap
-      ),
-      "FAILED_MEET"
-    );
-    assert_eq!(
-      meet(
-        &builder.generic_type(well_known_pstrs::UPPER_A),
-        &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
-        heap
-      ),
-      "FAILED_MEET"
-    );
-    assert_eq!(
-      meet(
-        &builder.generic_type(well_known_pstrs::UPPER_A),
-        &builder.generic_type(well_known_pstrs::UPPER_B),
-        heap
-      ),
-      "FAILED_MEET"
-    );
-    assert_eq!(
-      meet(
-        &builder.generic_type(well_known_pstrs::UPPER_A),
-        &builder.generic_type(well_known_pstrs::UPPER_A),
-        heap
-      ),
-      "A"
-    );
-    assert_eq!(
-      meet(
-        &builder.simple_nominal_type(well_known_pstrs::UPPER_A),
-        &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]),
-        heap
-      ),
-      "FAILED_MEET",
-    );
-    assert_eq!(
-      meet(
-        &builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_B)]
-        ),
-        &builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_B)]
-        ),
-        heap,
-      ),
-      "A<B>"
-    );
-    assert_eq!(
-      meet(
-        &builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_A)]
-        ),
-        &builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_B)]
-        ),
-        heap,
-      ),
-      "FAILED_MEET"
-    );
-
-    assert_eq!(
-      meet(
-        &builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![builder.simple_nominal_type(well_known_pstrs::UPPER_B)]
-        ),
-        &builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![Rc::new(Type::Any(Reason::dummy(), false))]
-        ),
-        heap,
-      ),
-      "A<B>"
-    );
-    assert_eq!(
-      meet(
-        &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
-        &Type::Any(Reason::dummy(), false),
-        heap
-      ),
-      "B"
-    );
-
-    assert_eq!(
-      meet(&builder.fun_type(vec![], builder.int_type()), &builder.unit_type(), heap),
-      "FAILED_MEET",
-    );
-    assert_eq!(
-      meet(
-        &builder.fun_type(vec![], builder.int_type()),
-        &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
-        heap
-      ),
-      "FAILED_MEET",
-    );
-    assert_eq!(
-      meet(
-        &builder.fun_type(vec![], builder.int_type()),
-        &builder.fun_type(vec![builder.int_type()], builder.int_type()),
-        heap,
-      ),
-      "FAILED_MEET"
-    );
-    assert_eq!(
-      meet(
-        &builder.fun_type(vec![builder.int_type()], builder.int_type()),
-        &builder.fun_type(vec![builder.int_type()], builder.int_type()),
-        heap,
-      ),
-      "(int) -> int"
-    );
-    assert_eq!(
-      meet(
-        &builder.fun_type(vec![builder.int_type()], builder.int_type()),
-        &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
-        heap,
-      ),
-      "FAILED_MEET"
-    );
-    assert_eq!(
-      meet(
-        &builder.fun_type(vec![builder.int_type()], builder.int_type()),
-        &builder.fun_type(vec![builder.bool_type()], builder.int_type()),
-        heap,
-      ),
-      "FAILED_MEET"
-    );
-    assert_eq!(
-      meet(
-        &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
-        &Type::Any(Reason::dummy(), false),
-        heap
-      ),
-      "(int) -> bool"
-    );
-    assert_eq!(
-      meet(
-        &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
-        &builder.fun_type(
-          vec![Rc::new(Type::Any(Reason::dummy(), false))],
-          Rc::new(Type::Any(Reason::dummy(), false))
-        ),
-        heap,
-      ),
-      "(int) -> bool"
-    );
-  }
-
   #[test]
   fn type_substitution_tests() {
     let heap = Heap::new();
@@ -258,7 +64,7 @@ mod tests {
   ) {
     let mut error_set = ErrorSet::new();
     let TypeConstraintSolution { solved_substitution, .. } =
-      solve_type_constraints(concrete, generic, &type_parameter_signatures, heap, &mut error_set);
+      solve_type_constraints(concrete, generic, &type_parameter_signatures, &mut error_set);
     let mut result = HashMap::new();
     for (s, t) in solved_substitution {
       result.insert(s.as_str(heap).to_string(), t.pretty_print(heap));
@@ -427,7 +233,6 @@ mod tests {
         TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
         TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
       ],
-      &heap,
       &mut error_set,
     );
 
@@ -471,7 +276,6 @@ mod tests {
         builder.unit_type(),
       ),
       &vec![TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None }],
-      &heap,
       &mut error_set,
     );
 
