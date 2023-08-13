@@ -1,6 +1,9 @@
 use super::type_::{FunctionType, ISourceType, NominalType, Type};
-use crate::errors::{StackableError, TypeIncompatibilityNode};
-use std::rc::Rc;
+use crate::{
+  common::PStr,
+  errors::{StackableError, TypeIncompatibilityNode},
+};
+use std::{collections::HashMap, rc::Rc};
 
 pub(super) fn contains_placeholder(type_: &Type) -> bool {
   match type_ {
@@ -170,6 +173,44 @@ pub(super) fn type_meet(lower: &Type, upper: &Type) -> Result<Type, StackableErr
   } else {
     debug_assert!(!error_stack.is_empty());
     Err(error_stack)
+  }
+}
+
+pub(super) fn subst_fn_type(t: &FunctionType, mapping: &HashMap<PStr, Rc<Type>>) -> FunctionType {
+  FunctionType {
+    reason: t.reason,
+    argument_types: t.argument_types.iter().map(|it| subst_type(it, mapping)).collect(),
+    return_type: subst_type(&t.return_type, mapping),
+  }
+}
+
+pub(super) fn subst_nominal_type(
+  type_: &NominalType,
+  mapping: &HashMap<PStr, Rc<Type>>,
+) -> NominalType {
+  NominalType {
+    reason: type_.reason,
+    is_class_statics: type_.is_class_statics,
+    module_reference: type_.module_reference,
+    id: type_.id,
+    type_arguments: type_.type_arguments.iter().map(|it| subst_type(it, mapping)).collect(),
+  }
+}
+
+pub(super) fn subst_type(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type> {
+  match t {
+    Type::Any(_, _) | Type::Primitive(_, _) => Rc::new((*t).clone()),
+    Type::Nominal(nominal_type) => {
+      Rc::new(Type::Nominal(subst_nominal_type(nominal_type, mapping)))
+    }
+    Type::Generic(_, id) => {
+      if let Some(replaced) = mapping.get(id) {
+        replaced.clone()
+      } else {
+        Rc::new((*t).clone())
+      }
+    }
+    Type::Fn(f) => Rc::new(Type::Fn(subst_fn_type(f, mapping))),
   }
 }
 
@@ -343,6 +384,53 @@ Error ------------------------------------ DUMMY.sam:0:0-0:0
 
 Found 1 error.
 "#,
+    );
+  }
+
+  #[test]
+  fn type_substitution_tests() {
+    let heap = Heap::new();
+    let builder = test_type_builder::create();
+
+    assert_eq!(
+      "(A<int, C<int>>, int, E<F>, int) -> int",
+      super::subst_type(
+        &builder.fun_type(
+          vec![
+            builder.general_nominal_type(
+              well_known_pstrs::UPPER_A,
+              vec![
+                builder.generic_type(well_known_pstrs::UPPER_B),
+                builder.general_nominal_type(well_known_pstrs::UPPER_C, vec![builder.int_type()])
+              ]
+            ),
+            builder.generic_type(well_known_pstrs::UPPER_D),
+            builder.general_nominal_type(
+              well_known_pstrs::UPPER_E,
+              vec![builder.simple_nominal_type(well_known_pstrs::UPPER_F)]
+            ),
+            builder.int_type()
+          ],
+          builder.int_type()
+        ),
+        &super::HashMap::from([
+          (well_known_pstrs::UPPER_A, builder.int_type()),
+          (well_known_pstrs::UPPER_B, builder.int_type()),
+          (well_known_pstrs::UPPER_C, builder.int_type()),
+          (well_known_pstrs::UPPER_D, builder.int_type()),
+          (well_known_pstrs::UPPER_E, builder.int_type()),
+        ])
+      )
+      .pretty_print(&heap)
+    );
+
+    assert_eq!(
+      "A",
+      super::subst_nominal_type(
+        &builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_A),
+        &super::HashMap::new()
+      )
+      .pretty_print(&heap)
     );
   }
 }

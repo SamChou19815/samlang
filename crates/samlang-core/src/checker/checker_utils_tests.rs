@@ -8,53 +8,6 @@ mod tests {
   use pretty_assertions::assert_eq;
   use std::{collections::HashMap, rc::Rc};
 
-  #[test]
-  fn type_substitution_tests() {
-    let heap = Heap::new();
-    let builder = test_type_builder::create();
-
-    assert_eq!(
-      "(A<int, C<int>>, int, E<F>, int) -> int",
-      perform_type_substitution(
-        &builder.fun_type(
-          vec![
-            builder.general_nominal_type(
-              well_known_pstrs::UPPER_A,
-              vec![
-                builder.generic_type(well_known_pstrs::UPPER_B),
-                builder.general_nominal_type(well_known_pstrs::UPPER_C, vec![builder.int_type()])
-              ]
-            ),
-            builder.generic_type(well_known_pstrs::UPPER_D),
-            builder.general_nominal_type(
-              well_known_pstrs::UPPER_E,
-              vec![builder.simple_nominal_type(well_known_pstrs::UPPER_F)]
-            ),
-            builder.int_type()
-          ],
-          builder.int_type()
-        ),
-        &HashMap::from([
-          (well_known_pstrs::UPPER_A, builder.int_type()),
-          (well_known_pstrs::UPPER_B, builder.int_type()),
-          (well_known_pstrs::UPPER_C, builder.int_type()),
-          (well_known_pstrs::UPPER_D, builder.int_type()),
-          (well_known_pstrs::UPPER_E, builder.int_type()),
-        ])
-      )
-      .pretty_print(&heap)
-    );
-
-    assert_eq!(
-      "A",
-      perform_nominal_type_substitution(
-        &builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_A),
-        &HashMap::new()
-      )
-      .pretty_print(&heap)
-    );
-  }
-
   fn solver_test(
     concrete: &Type,
     generic: &Type,

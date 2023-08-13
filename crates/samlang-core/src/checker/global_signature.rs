@@ -1,10 +1,10 @@
 use super::{
-  checker_utils::{perform_fn_type_substitution, perform_nominal_type_substitution},
   type_::{
     EnumVariantDefinitionSignature, FunctionType, GlobalSignature, ISourceType, InterfaceSignature,
     MemberSignature, ModuleSignature, NominalType, StructItemDefinitionSignature, Type,
     TypeDefinitionSignature, TypeParameterSignature,
   },
+  type_system,
 };
 use crate::{
   ast::{
@@ -222,7 +222,7 @@ fn resolve_all_transitive_super_types_recursive(
       subst_mapping.insert(tparam.name, targ.clone());
     }
     for super_type in &interface_cx.super_types {
-      let instantiated_super_type = perform_nominal_type_substitution(super_type, &subst_mapping);
+      let instantiated_super_type = type_system::subst_nominal_type(super_type, &subst_mapping);
       resolve_all_transitive_super_types_recursive(
         global_cx,
         &instantiated_super_type,
@@ -324,18 +324,18 @@ fn resolve_method_signature_recursive(
           .iter()
           .map(|tparam| {
             let bound =
-              tparam.bound.as_ref().map(|t| perform_nominal_type_substitution(t, &subst_mapping));
+              tparam.bound.as_ref().map(|t| type_system::subst_nominal_type(t, &subst_mapping));
             TypeParameterSignature { name: tparam.name, bound }
           })
           .collect(),
-        type_: perform_fn_type_substitution(&info.type_, &subst_mapping),
+        type_: type_system::subst_fn_type(&info.type_, &subst_mapping),
       });
     }
     for super_type in &interface_cx.super_types {
       if collector.is_empty() || all {
         resolve_method_signature_recursive(
           global_cx,
-          &perform_nominal_type_substitution(super_type, &subst_mapping),
+          &type_system::subst_nominal_type(super_type, &subst_mapping),
           method_name,
           all,
           collector,

@@ -1,64 +1,14 @@
 use crate::{
   ast::Reason,
-  checker::type_::{FunctionType, NominalType, Type, TypeParameterSignature},
+  checker::type_::{Type, TypeParameterSignature},
   checker::type_system,
   common::PStr,
   errors::ErrorSet,
 };
-use itertools::Itertools;
 use std::{
   collections::{HashMap, HashSet},
   rc::Rc,
 };
-
-pub(super) fn perform_fn_type_substitution(
-  t: &FunctionType,
-  mapping: &HashMap<PStr, Rc<Type>>,
-) -> FunctionType {
-  FunctionType {
-    reason: t.reason,
-    argument_types: t
-      .argument_types
-      .iter()
-      .map(|it| perform_type_substitution(it, mapping))
-      .collect_vec(),
-    return_type: perform_type_substitution(&t.return_type, mapping),
-  }
-}
-
-pub(super) fn perform_type_substitution(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type> {
-  match t {
-    Type::Any(_, _) | Type::Primitive(_, _) => Rc::new((*t).clone()),
-    Type::Nominal(nominal_type) => {
-      Rc::new(Type::Nominal(perform_nominal_type_substitution(nominal_type, mapping)))
-    }
-    Type::Generic(_, id) => {
-      if let Some(replaced) = mapping.get(id) {
-        replaced.clone()
-      } else {
-        Rc::new((*t).clone())
-      }
-    }
-    Type::Fn(f) => Rc::new(Type::Fn(perform_fn_type_substitution(f, mapping))),
-  }
-}
-
-pub(super) fn perform_nominal_type_substitution(
-  type_: &NominalType,
-  mapping: &HashMap<PStr, Rc<Type>>,
-) -> NominalType {
-  NominalType {
-    reason: type_.reason,
-    is_class_statics: type_.is_class_statics,
-    module_reference: type_.module_reference,
-    id: type_.id,
-    type_arguments: type_
-      .type_arguments
-      .iter()
-      .map(|it| perform_type_substitution(it, mapping))
-      .collect_vec(),
-  }
-}
 
 fn solve_type_constraints_internal(
   concrete: &Type,
@@ -152,7 +102,7 @@ pub(super) fn solve_type_constraints(
       Rc::new(Type::Any(Reason::new(concrete.get_reason().use_loc, None), true))
     });
   }
-  let solved_generic_type = perform_type_substitution(generic, &solved_substitution);
+  let solved_generic_type = type_system::subst_type(generic, &solved_substitution);
   let solved_contextually_typed_concrete_type =
     match type_system::type_meet(concrete, &solved_generic_type) {
       Ok(t) => Rc::new(t),
