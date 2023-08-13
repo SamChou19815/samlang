@@ -6,7 +6,7 @@ mod tests {
       Location, Reason,
     },
     checker::{
-      main_checker::type_check_expression,
+      main_checker::type_check_expression_for_tests,
       ssa_analysis::{perform_ssa_analysis_on_expression, SsaAnalysisResult},
       type_::{
         create_builtin_module_signature, test_type_builder, EnumVariantDefinitionSignature,
@@ -48,7 +48,7 @@ mod tests {
       /* availableTypeParameters */ vec![],
     );
 
-    type_check_expression(
+    type_check_expression_for_tests(
       &mut cx,
       &heap,
       &expr::E::MethodAccess(expr::MethodAccess {
@@ -516,7 +516,7 @@ mod tests {
       /* availableTypeParameters */ vec![],
     );
 
-    let expr = type_check_expression(&mut cx, heap, &parsed, Some(expected_type));
+    let expr = type_check_expression_for_tests(&mut cx, heap, &parsed, Some(expected_type));
     if let Some(err) = type_system::assignability_check(expr.type_(), expected_type) {
       cx.error_set.report_stackable_error(expr.loc(), err);
     }
@@ -2739,6 +2739,14 @@ Found 2 errors.
       heap,
       "(a) -> a",
       &builder.fun_type(vec![builder.int_type()], builder.int_type()),
+    );
+    assert_checks(
+      heap,
+      "(a) -> (b) -> a + b",
+      &builder.fun_type(
+        vec![builder.int_type()],
+        builder.fun_type(vec![builder.int_type()], builder.int_type()),
+      ),
     );
 
     assert_errors(
