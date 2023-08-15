@@ -47,12 +47,6 @@ mod type_hint {
       self.0.filter(|t| !type_system::contains_placeholder(t))
     }
 
-    pub(super) fn get_hint_with_potential_placeholders_for_constraint_solving(
-      &self,
-    ) -> Option<&Type> {
-      self.0
-    }
-
     pub(super) fn transform_to_nth_param(&'a self, n: usize) -> Hint<'a> {
       match &self.0 {
         Some(Type::Fn(FunctionType { argument_types, .. })) if n < argument_types.len() => {
@@ -401,7 +395,7 @@ fn check_member_with_unresolved_tparams(
       });
       return (partially_checked_expr, vec![]);
     }
-    if let Some(hint) = hint.get_hint_with_potential_placeholders_for_constraint_solving() {
+    if let Some(hint) = hint.get_valid_hint() {
       if let Type::Fn(fun_hint) = hint {
         if fun_hint.argument_types.len() == method_type_info.type_.argument_types.len() {
           // Hint matches the shape and can be useful.
