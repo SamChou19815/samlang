@@ -9,6 +9,13 @@ pub(crate) enum Description {
   BoolType,
   IntType,
   AnyType,
+  PrivateMember,
+  PublicMember,
+  GeneralFunctionType,
+  GeneralNominalType,
+  GeneralInterfaceType,
+  GeneralClassType,
+  GeneralNonAbstractType,
   GenericType(PStr),
   Class(PStr),
   NominalType { name: PStr, type_args: Vec<Description> },
@@ -22,6 +29,13 @@ impl Description {
       Description::BoolType => "bool".to_string(),
       Description::IntType => "int".to_string(),
       Description::AnyType => "any".to_string(),
+      Description::PrivateMember => "private member".to_string(),
+      Description::PublicMember => "public member".to_string(),
+      Description::GeneralFunctionType => "function type".to_string(),
+      Description::GeneralNominalType => "nominal type".to_string(),
+      Description::GeneralInterfaceType => "interface type".to_string(),
+      Description::GeneralClassType => "class type".to_string(),
+      Description::GeneralNonAbstractType => "non-abstract type".to_string(),
       Description::GenericType(n) => n.as_str(heap).to_string(),
       Description::Class(n) => format!("class {}", n.as_str(heap)),
       Description::NominalType { name, type_args } if type_args.is_empty() => {
@@ -97,6 +111,13 @@ mod tests {
     assert_eq!("bool", Description::BoolType.pretty_print(heap));
     assert_eq!("int", Description::IntType.pretty_print(heap));
     assert_eq!("any", Description::AnyType.pretty_print(heap));
+    assert_eq!("private member", Description::PrivateMember.pretty_print(heap));
+    assert_eq!("public member", Description::PublicMember.pretty_print(heap));
+    assert_eq!("function type", Description::GeneralFunctionType.pretty_print(heap));
+    assert_eq!("nominal type", Description::GeneralNominalType.pretty_print(heap));
+    assert_eq!("interface type", Description::GeneralInterfaceType.pretty_print(heap));
+    assert_eq!("class type", Description::GeneralClassType.pretty_print(heap));
+    assert_eq!("non-abstract type", Description::GeneralNonAbstractType.pretty_print(heap));
     assert_eq!("A", Description::GenericType(well_known_pstrs::UPPER_A).pretty_print(heap));
     assert_eq!("class A", Description::Class(well_known_pstrs::UPPER_A).pretty_print(heap));
     assert_eq!(

@@ -16,11 +16,11 @@ use crate::{
       ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon, Literal,
       Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
     },
-    Location, Reason,
+    Description, Location, Reason,
   },
   checker::checker_utils::solve_type_constraints,
   common::{well_known_pstrs, Heap, ModuleReference, PStr},
-  errors::{ErrorSet, StackableError},
+  errors::{ErrorSet, StackableError, TypeIncompatibilityNode},
 };
 use itertools::Itertools;
 use std::{collections::HashMap, ops::Deref, rc::Rc};
@@ -167,7 +167,6 @@ enum MaybeCheckedExpression<'a> {
 
 fn validate_type_arguments(
   cx: &mut TypingContext,
-  heap: &Heap,
   type_params: &Vec<TypeParameterSignature>,
   subst_map: &HashMap<PStr, Rc<Type>>,
 ) {
@@ -181,8 +180,8 @@ fn validate_type_arguments(
       {
         cx.error_set.report_incompatible_subtype_error(
           solved_type_argument.get_reason().use_loc,
-          substituted_bound.pretty_print(heap),
-          solved_type_argument.pretty_print(heap),
+          solved_type_argument.to_description(),
+          substituted_bound.to_description(),
         );
       }
     }
@@ -325,10 +324,10 @@ fn check_member_with_unresolved_tparams(
     Some(t) => t,
     None => {
       if checked_expression.type_().as_any().is_none() {
-        cx.error_set.report_incompatible_type_error(
+        cx.error_set.report_incompatible_type_kind_error(
           checked_expression.loc(),
-          "nominal type".to_string(),
-          checked_expression.type_().pretty_print(heap),
+          checked_expression.type_().to_description(),
+          Description::GeneralNominalType,
         );
       }
       let any_type = Rc::new(Type::Any(Reason::new(expression.common.loc, None), false));
@@ -349,7 +348,7 @@ fn check_member_with_unresolved_tparams(
   {
     // This is a valid method. We will now type check it as a method access
     for targ in &expression.explicit_type_arguments {
-      cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(targ))
+      cx.validate_type_instantiation_strictly(&Type::from_annotation(targ))
     }
     if !expression.explicit_type_arguments.is_empty() {
       if expression.explicit_type_arguments.len() == method_type_info.type_parameters.len() {
@@ -359,7 +358,7 @@ fn check_member_with_unresolved_tparams(
         {
           subst_map.insert(tparam.name, Rc::new(Type::from_annotation(targ)));
         }
-        validate_type_arguments(cx, heap, &method_type_info.type_parameters, &subst_map);
+        validate_type_arguments(cx, &method_type_info.type_parameters, &subst_map);
         let type_ =
           Rc::new(Type::Fn(type_system::subst_fn_type(&method_type_info.type_, &subst_map)));
         let inferred_type_arguments = expression
@@ -376,12 +375,12 @@ fn check_member_with_unresolved_tparams(
         });
         return (partially_checked_expr, vec![]);
       }
-      cx.error_set.report_invalid_arity_error(
-        expression.common.loc,
-        "type arguments",
-        method_type_info.type_parameters.len(),
+      let mut error = StackableError::new();
+      error.add_type_args_arity_error(
         expression.explicit_type_arguments.len(),
+        method_type_info.type_parameters.len(),
       );
+      cx.error_set.report_stackable_error(expression.common.loc, error);
     }
     if method_type_info.type_parameters.is_empty() {
       // No type parameter to solve
@@ -429,18 +428,6 @@ fn check_member_with_unresolved_tparams(
           });
           return (partially_checked_expr, vec![]);
         }
-        cx.error_set.report_invalid_arity_error(
-          expression.common.loc,
-          "parameter",
-          fun_hint.argument_types.len(),
-          method_type_info.type_.argument_types.len(),
-        );
-      } else {
-        cx.error_set.report_incompatible_type_error(
-          expression.common.loc,
-          hint.pretty_print(heap),
-          "function".to_string(),
-        );
       }
     }
     // When hint is bad or there is no hint, we need to give up and let context help us more.
@@ -459,12 +446,9 @@ fn check_member_with_unresolved_tparams(
   } else {
     // Now it should be checked as field access.
     if !expression.explicit_type_arguments.is_empty() {
-      cx.error_set.report_invalid_arity_error(
-        expression.common.loc,
-        "type arguments",
-        0,
-        expression.explicit_type_arguments.len(),
-      );
+      let mut error = StackableError::new();
+      error.add_type_args_arity_error(expression.explicit_type_arguments.len(), 0);
+      cx.error_set.report_stackable_error(expression.common.loc, error);
     }
     let fields = cx.resolve_struct_definitions(checked_expression.type_());
     let mut field_order_mapping = HashMap::new();
@@ -490,7 +474,7 @@ fn check_member_with_unresolved_tparams(
     } else {
       cx.error_set.report_member_missing_error(
         expression.field_name.loc,
-        class_id.as_str(heap).to_string(),
+        Description::NominalType { name: class_id, type_args: vec![] },
         expression.field_name.name,
       );
       let any_type = Rc::new(Type::Any(Reason::new(expression.common.loc, None), false));
@@ -667,7 +651,7 @@ fn check_function_call_implicit_instantiation(
 
   let fully_solved_concrete_return_type =
     fully_solved_generic_type.return_type.reposition(function_call_reason.use_loc);
-  validate_type_arguments(cx, heap, type_parameters, &fully_solved_substitution);
+  validate_type_arguments(cx, type_parameters, &fully_solved_substitution);
   for ((l, arg_t), param_t) in checked_arguments
     .iter()
     .map(|e| (e.loc(), e.type_()))
@@ -707,10 +691,10 @@ fn check_function_call(
     Type::Fn(fn_type) => fn_type,
     t => {
       if !matches!(t, Type::Any(_, _)) {
-        cx.error_set.report_incompatible_type_error(
-          expression.common.loc,
-          "function".to_string(),
-          t.pretty_print(heap),
+        cx.error_set.report_incompatible_type_kind_error(
+          expression.callee.loc(),
+          t.to_description(),
+          Description::GeneralNominalType,
         );
       }
       let loc = expression.common.loc;
@@ -932,19 +916,16 @@ fn check_match(
       None => {
         cx.error_set.report_member_missing_error(
           tag.loc,
-          checked_matched_type.pretty_print(heap),
+          checked_matched_type.to_description(),
           tag.name,
         );
         continue;
       }
     };
     if data_variables.len() != mapping_data_types.len() {
-      cx.error_set.report_invalid_arity_error(
-        *loc,
-        "data variables",
-        mapping_data_types.len(),
-        data_variables.len(),
-      );
+      let mut error = StackableError::new();
+      error.add_data_variables_arity_error(data_variables.len(), mapping_data_types.len());
+      cx.error_set.report_stackable_error(*loc, error);
     }
     let checked_data_variables = data_variables
       .iter()
@@ -992,7 +973,6 @@ fn check_match(
 /// Invariant: returned type list has the same length as the param list
 fn infer_lambda_parameter_types(
   cx: &mut TypingContext,
-  heap: &Heap,
   expression: &expr::Lambda<()>,
   hint: type_hint::Hint,
 ) -> (Vec<Rc<Type>>, bool) {
@@ -1009,7 +989,7 @@ fn infer_lambda_parameter_types(
       underconstrained = true;
       Rc::new(cx.mk_underconstrained_any_type(Reason::new(name.loc, None)))
     };
-    cx.validate_type_instantiation_strictly(heap, &type_);
+    cx.validate_type_instantiation_strictly(&type_);
     cx.local_typing_context.write(name.loc, type_.clone());
     types_.push(type_);
   }
@@ -1022,7 +1002,7 @@ fn check_lambda(
   expression: &expr::Lambda<()>,
   hint: type_hint::Hint,
 ) -> expr::E<Rc<Type>> {
-  let (argument_types, underconstrained) = infer_lambda_parameter_types(cx, heap, expression, hint);
+  let (argument_types, underconstrained) = infer_lambda_parameter_types(cx, expression, hint);
   let checked_parameters = expression
     .parameters
     .iter()
@@ -1071,7 +1051,7 @@ fn check_statement(
   } = statement;
   let hint = if let Some(annot) = &annotation {
     let t = Type::from_annotation(annot);
-    cx.validate_type_instantiation_strictly(heap, &t);
+    cx.validate_type_instantiation_strictly(&t);
     Some(t)
   } else {
     None
@@ -1112,7 +1092,7 @@ fn check_statement(
         }
         cx.error_set.report_member_missing_error(
           field_name.loc,
-          checked_assigned_expr_type.pretty_print(heap),
+          checked_assigned_expr_type.to_description(),
           field_name.name,
         );
         checked_destructured_names.push(ObjectPatternDestucturedName {
@@ -1163,12 +1143,11 @@ fn check_block(
 
 fn validate_tparams_signature_type_instantiation(
   cx: &mut TypingContext,
-  heap: &Heap,
   tparams_sig: &[TypeParameterSignature],
 ) {
   for tparam in tparams_sig {
     if let Some(bound) = &tparam.bound {
-      cx.validate_type_instantiation_allow_abstract_types(heap, &Type::Nominal(bound.clone()));
+      cx.validate_type_instantiation_allow_abstract_types(&Type::Nominal(bound.clone()));
     }
   }
 }
@@ -1180,12 +1159,9 @@ fn check_class_member_conformance_with_signature(
   actual: &ClassMemberDeclaration,
 ) {
   if expected.type_parameters.len() != actual.type_parameters.len() {
-    error_set.report_invalid_arity_error(
-      actual.type_.location,
-      "type parameters",
-      expected.type_parameters.len(),
-      actual.type_parameters.len(),
-    );
+    let mut error = StackableError::new();
+    error.add_type_params_arity_error(actual.type_parameters.len(), expected.type_parameters.len());
+    error_set.report_stackable_error(actual.type_.location, error);
   }
   let mut has_type_parameter_conformance_errors = false;
   for (e, a) in expected.type_parameters.iter().zip(actual.type_parameters.deref()) {
@@ -1212,11 +1188,14 @@ fn check_class_member_conformance_with_signature(
   } else {
     let actual_fn_type = FunctionType::from_annotation(&actual.type_);
     if !expected.type_.is_the_same_type(&actual_fn_type) {
-      error_set.report_incompatible_type_error(
-        actual.type_.location,
-        expected.type_.pretty_print(heap),
-        actual_fn_type.pretty_print(heap),
-      );
+      let mut error = StackableError::new();
+      error.add_type_error(TypeIncompatibilityNode {
+        lower_reason: actual_fn_type.reason,
+        lower_description: actual_fn_type.to_description(),
+        upper_reason: expected.type_.reason,
+        upper_description: expected.type_.to_description(),
+      });
+      error_set.report_stackable_error(actual.type_.location, error);
     }
   }
 }
@@ -1261,7 +1240,7 @@ pub(crate) fn type_check_module(
     if is_cyclic {
       error_set.report_cyclic_type_definition_error(
         nominal_type.reason.use_loc,
-        nominal_type.pretty_print(heap),
+        nominal_type.to_description(),
       );
     }
     for super_type in &resolved_super_types {
@@ -1271,10 +1250,10 @@ pub(crate) fn type_check_module(
         .map(|it| it.type_definition.is_some())
         .unwrap_or(false)
       {
-        error_set.report_incompatible_type_error(
+        error_set.report_incompatible_type_kind_error(
           super_type.reason.use_loc,
-          "interface type".to_string(),
-          "class type".to_string(),
+          Description::GeneralClassType,
+          Description::GeneralInterfaceType,
         );
       }
     }
@@ -1287,23 +1266,22 @@ pub(crate) fn type_check_module(
       toplevel.name().name,
       toplevel_tparams_sig.clone(),
     );
-    validate_tparams_signature_type_instantiation(&mut cx, heap, &toplevel_tparams_sig);
+    validate_tparams_signature_type_instantiation(&mut cx, &toplevel_tparams_sig);
     for bound in toplevel.extends_or_implements_nodes() {
-      cx.validate_type_instantiation_allow_abstract_types(
-        heap,
-        &Type::Nominal(NominalType::from_annotation(bound)),
-      );
+      cx.validate_type_instantiation_allow_abstract_types(&Type::Nominal(
+        NominalType::from_annotation(bound),
+      ));
     }
     if let Some(type_definition) = toplevel.type_definition() {
       match type_definition {
         TypeDefinition::Struct { loc: _, fields } => {
           for field in fields {
-            cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(&field.annotation))
+            cx.validate_type_instantiation_strictly(&Type::from_annotation(&field.annotation))
           }
         }
         TypeDefinition::Enum { loc: _, variants } => {
           for t in variants.iter().flat_map(|it| it.associated_data_types.iter()) {
-            cx.validate_type_instantiation_strictly(heap, &Type::from_annotation(t))
+            cx.validate_type_instantiation_strictly(&Type::from_annotation(t))
           }
         }
       }
@@ -1333,10 +1311,10 @@ pub(crate) fn type_check_module(
         false
       };
       if !member.is_public && has_interface_def {
-        error_set.report_incompatible_type_error(
+        error_set.report_incompatible_type_kind_error(
           member.loc,
-          "public class member".to_string(),
-          "private class member".to_string(),
+          Description::PrivateMember,
+          Description::PublicMember,
         );
       }
 
@@ -1350,16 +1328,14 @@ pub(crate) fn type_check_module(
       );
       for tparam in member.type_parameters.iter() {
         if let Some(bound) = &tparam.bound {
-          member_cx.validate_type_instantiation_allow_abstract_types(
-            heap,
-            &Type::Nominal(NominalType::from_annotation(bound)),
-          );
+          member_cx.validate_type_instantiation_allow_abstract_types(&Type::Nominal(
+            NominalType::from_annotation(bound),
+          ));
         }
       }
-      member_cx.validate_type_instantiation_strictly(
-        heap,
-        &Type::Fn(FunctionType::from_annotation(&member.type_)),
-      );
+      member_cx.validate_type_instantiation_strictly(&Type::Fn(FunctionType::from_annotation(
+        &member.type_,
+      )));
       for param in member.parameters.iter() {
         local_cx.write(param.name.loc, Rc::new(Type::from_annotation(&param.annotation)));
       }

@@ -689,7 +689,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:19
 
-Incorrect type arguments size. Expected: 0, actual: 1.
+Type argument arity of 1 is incompatible with type argument arity of 0.
 
   1| Test.helloWorld<A>
      ^^^^^^^^^^^^^^^^^^
@@ -703,14 +703,6 @@ Found 1 error.
       "Test.helloWorldWithTypeParameters",
       &builder.fun_type(vec![builder.string_type(), builder.string_type()], builder.unit_type()),
       r#"
-Error ----------------------------------- DUMMY.sam:1:1-1:34
-
-Incorrect parameter size. Expected: 2, actual: 1.
-
-  1| Test.helloWorldWithTypeParameters
-     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
 Error ----------------------------------- DUMMY.sam:1:1-1:34
 
 `(any) -> unit` is incompatible with `(Str, Str) -> unit`.
@@ -728,7 +720,7 @@ There is not enough context information to decide the type of this expression.
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Found 3 errors.
+Found 2 errors.
 "#,
     );
     assert_errors(
@@ -736,14 +728,6 @@ Found 3 errors.
       "Test.helloWorldWithTypeParameters",
       &builder.string_type(),
       r#"
-Error ----------------------------------- DUMMY.sam:1:1-1:34
-
-Expected: `Str`, actual: `function`.
-
-  1| Test.helloWorldWithTypeParameters
-     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
 Error ----------------------------------- DUMMY.sam:1:1-1:34
 
 `(any) -> unit` [1] is incompatible with `Str` .
@@ -765,7 +749,7 @@ There is not enough context information to decide the type of this expression.
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Found 3 errors.
+Found 2 errors.
 "#,
     );
     assert_errors(
@@ -775,7 +759,7 @@ Found 3 errors.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:44
 
-Incorrect type arguments size. Expected: 1, actual: 2.
+Type argument arity of 2 is incompatible with type argument arity of 1.
 
   1| Test.helloWorldWithTypeParameters<int, Str>
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -902,7 +886,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:21
 
-Incorrect type arguments size. Expected: 1, actual: 2.
+Type argument arity of 2 is incompatible with type argument arity of 1.
 
   1| Test4.Foo<int, bool>(true)
      ^^^^^^^^^^^^^^^^^^^^
@@ -1047,7 +1031,7 @@ Found 1 error.
       r#"
 Error ------------------------------------ DUMMY.sam:1:1-1:2
 
-Expected: `nominal type`, actual: `int`.
+`int` is incompatible with `nominal type`.
 
   1| 3.foo
      ^
@@ -1112,7 +1096,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:28
 
-Incorrect type arguments size. Expected: 0, actual: 1.
+Type argument arity of 1 is incompatible with type argument arity of 0.
 
   1| Test.init(true, 3).foo<int>
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1191,7 +1175,7 @@ Found 1 error.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:28
 
-Incorrect type arguments size. Expected: 0, actual: 1.
+Type argument arity of 1 is incompatible with type argument arity of 0.
 
   1| Test.init(true, 3).baz<int>
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1205,14 +1189,6 @@ Found 1 error.
       "Test.init(true, 3).bazWithTypeParam",
       &builder.int_type(),
       r#"
-Error ----------------------------------- DUMMY.sam:1:1-1:36
-
-Expected: `int`, actual: `function`.
-
-  1| Test.init(true, 3).bazWithTypeParam
-     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
 Error ----------------------------------- DUMMY.sam:1:1-1:36
 
 `(int) -> bool` [1] is incompatible with `int` .
@@ -1234,7 +1210,7 @@ There is not enough context information to decide the type of this expression.
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Found 3 errors.
+Found 2 errors.
 "#,
     );
     assert_errors(
@@ -1242,14 +1218,6 @@ Found 3 errors.
       "Test.init(true, 3).bazWithTypeParam",
       &builder.fun_type(vec![builder.int_type(), builder.int_type()], builder.bool_type()),
       r#"
-Error ----------------------------------- DUMMY.sam:1:1-1:36
-
-Incorrect parameter size. Expected: 2, actual: 1.
-
-  1| Test.init(true, 3).bazWithTypeParam
-     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
 Error ----------------------------------- DUMMY.sam:1:1-1:36
 
 `(int) -> bool` is incompatible with `(int, int) -> bool`.
@@ -1267,7 +1235,7 @@ There is not enough context information to decide the type of this expression.
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Found 3 errors.
+Found 2 errors.
 "#,
     );
     assert_errors(
@@ -1277,7 +1245,7 @@ Found 3 errors.
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:46
 
-Incorrect type arguments size. Expected: 1, actual: 2.
+Type argument arity of 2 is incompatible with type argument arity of 1.
 
   1| Test.init(true, 3).bazWithTypeParam<int, int>
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1420,12 +1388,12 @@ Found 1 error.
       "3(3)",
       &builder.unit_type(),
       r#"
-Error ------------------------------------ DUMMY.sam:1:1-1:5
+Error ------------------------------------ DUMMY.sam:1:1-1:2
 
-Expected: `function`, actual: `int`.
+`int` is incompatible with `nominal type`.
 
   1| 3(3)
-     ^^^^
+     ^
 
 
 Found 1 error.
@@ -2933,7 +2901,7 @@ Function parameter arity of 1 is incompatible with function parameter arity of 0
 
 Error ---------------------------------- DUMMY.sam:6:32-6:51
 
-Incorrect data variables size. Expected: 1, actual: 2.
+Data variable arity of 2 is incompatible with data variable arity of 1.
 
   6|     match (Test2.Foo(false)) { Foo(_, _) -> false, Bar(_) -> false, }
                                     ^^^^^^^^^^^^^^^^^^^
@@ -3156,7 +3124,7 @@ Name `Int` collides with a previously defined name at [1].
 
 Error -------------------------------------- C.sam:2:36-2:37
 
-Incorrect type arguments size. Expected: 2, actual: 0.
+Type argument arity of 0 is incompatible with type argument arity of 2.
 
   2|   class C(Int(int), Int(bool), Boo(B)) {
                                         ^
@@ -3195,7 +3163,7 @@ Name `T` collides with a previously defined name at [1].
 
 Error -------------------------------------- C.sam:4:30-4:31
 
-Incorrect type arguments size. Expected: 2, actual: 0.
+Type argument arity of 0 is incompatible with type argument arity of 2.
 
   4|     function <T, F, T>ofB(b: B): C = C.Boo(b)
                                   ^
@@ -3335,10 +3303,20 @@ The following members must be implemented for the class:
 
 Error ------------------------------------ A.sam:11:11-11:19
 
-Expected: `() -> Str`, actual: `() -> unit`.
+`() -> unit` [1] is incompatible with `() -> Str` [2].
 
   11|   method b(): unit = {} // error
                 ^^^^^^^^
+
+  [1] A.sam:11:11-11:19
+  ---------------------
+  11|   method b(): unit = {} // error
+                ^^^^^^^^
+
+  [2] A.sam:6:11-6:18
+  -------------------
+  6|   method b(): Str
+               ^^^^^^^
 
 
 Error -------------------------------------- A.sam:13:7-13:8
@@ -3352,7 +3330,7 @@ The following members must be implemented for the class:
 
 Error ------------------------------------ A.sam:32:11-32:65
 
-Expected: `public class member`, actual: `private class member`.
+`private member` is incompatible with `public member`.
 
   32|   private method <TC> m1(a: Str, b: Str): TC = Process.panic("") // error
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -3360,26 +3338,56 @@ Expected: `public class member`, actual: `private class member`.
 
 Error ------------------------------------ A.sam:32:25-32:45
 
-Expected: `(int, int) -> TC`, actual: `(Str, Str) -> TC`.
+`(Str, Str) -> TC` [1] is incompatible with `(int, int) -> TC` [2].
 
   32|   private method <TC> m1(a: Str, b: Str): TC = Process.panic("") // error
                               ^^^^^^^^^^^^^^^^^^^^
 
+  [1] A.sam:32:25-32:45
+  ---------------------
+  32|   private method <TC> m1(a: Str, b: Str): TC = Process.panic("") // error
+                              ^^^^^^^^^^^^^^^^^^^^
+
+  [2] A.sam:18:17-18:35
+  ---------------------
+  18|   method <TC> m1(a: TA, b: TB): TC
+                      ^^^^^^^^^^^^^^^^^^
+
 
 Error ------------------------------------ A.sam:33:27-33:47
 
-Expected: `(TA1, TB1) -> TC`, actual: `(Str, Str) -> TC`.
+`(Str, Str) -> TC` [1] is incompatible with `(TA1, TB1) -> TC` [2].
 
   33|   method <TA1, TB1, TC> f1(a: Str, b: Str): TC = Process.panic("") // error
+                                ^^^^^^^^^^^^^^^^^^^^
+
+  [1] A.sam:33:27-33:47
+  ---------------------
+  33|   method <TA1, TB1, TC> f1(a: Str, b: Str): TC = Process.panic("") // error
+                                ^^^^^^^^^^^^^^^^^^^^
+
+  [2] A.sam:21:27-21:47
+  ---------------------
+  21|   method <TA1, TB1, TC> f1(a: TA1, b: TB1): TC
                                 ^^^^^^^^^^^^^^^^^^^^
 
 
 Error ------------------------------------ A.sam:34:17-34:37
 
-Expected: `(Str, bool) -> TC`, actual: `(Str, Str) -> TC`.
+`(Str, Str) -> TC` [1] is incompatible with `(Str, bool) -> TC` [2].
 
   34|   method <TC> m2(a: Str, b: Str): TC = Process.panic("") // error
                       ^^^^^^^^^^^^^^^^^^^^
+
+  [1] A.sam:34:17-34:37
+  ---------------------
+  34|   method <TC> m2(a: Str, b: Str): TC = Process.panic("") // error
+                      ^^^^^^^^^^^^^^^^^^^^
+
+  [2] A.sam:24:17-24:35
+  ---------------------
+  24|   method <TC> m2(a: TA, b: TB): TC
+                      ^^^^^^^^^^^^^^^^^^
 
 
 Error ------------------------------------ A.sam:37:17-37:37
@@ -3416,7 +3424,7 @@ Type parameter name mismatch. Expected exact match of `<TE : Foo>`.
 
 Error ------------------------------------ A.sam:45:19-45:27
 
-Incorrect type parameters size. Expected: 1, actual: 0.
+Type parameter arity of 0 is incompatible with type parameter arity of 1.
 
   45|   method unrelated(): unit
                         ^^^^^^^^
@@ -3529,7 +3537,7 @@ class NoBoundMethodCall {
     let expected_errors = r#"
 Error --------------------- bounded-generics.sam:15:52-15:55
 
-Expected: subtype of `Comparable<int>`, actual: `int`.
+`int` is not a subtype of `Comparable<int>`.
 
   15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
                                                          ^^^
@@ -3573,7 +3581,7 @@ Error --------------------- bounded-generics.sam:15:66-15:73
 
 Error --------------------- bounded-generics.sam:18:20-18:40
 
-Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.
+`Comparable<BoxedInt>` is incompatible with `non-abstract type`.
 
   18|   function test(v: Comparable<BoxedInt>): unit = {} // error signature validation
                          ^^^^^^^^^^^^^^^^^^^^
@@ -3607,7 +3615,7 @@ Type `ImplItself` has a cyclic definition.
 
 Error --------------------- bounded-generics.sam:28:20-28:30
 
-Expected: `interface type`, actual: `class type`.
+`class type` is incompatible with `interface type`.
 
   28| class ImplItself : ImplItself {} // error: expect interface type
                          ^^^^^^^^^^
@@ -3623,7 +3631,7 @@ Name `T` is not resolved.
 
 Error --------------------- bounded-generics.sam:31:34-31:35
 
-Expected: `nominal type`, actual: `T`.
+`T` is incompatible with `nominal type`.
 
   31|   function <T> foo(t: T): unit = t.bar()
                                        ^

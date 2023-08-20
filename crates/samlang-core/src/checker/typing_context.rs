@@ -7,9 +7,9 @@ use super::{
   type_system,
 };
 use crate::{
-  ast::{Location, Position, Reason},
+  ast::{Description, Location, Position, Reason},
   common::{Heap, ModuleReference, PStr},
-  errors::ErrorSet,
+  errors::{ErrorSet, StackableError},
 };
 use std::{collections::HashMap, rc::Rc};
 
@@ -171,33 +171,28 @@ impl<'a> TypingContext<'a> {
     upper.as_nominal().map(|u| self.is_subtype_with_id_upper(lower, u)).unwrap_or(false)
   }
 
-  pub(super) fn validate_type_instantiation_allow_abstract_types(&mut self, heap: &Heap, t: &Type) {
-    self.validate_type_instantiation_customized(heap, t, false)
+  pub(super) fn validate_type_instantiation_allow_abstract_types(&mut self, t: &Type) {
+    self.validate_type_instantiation_customized(t, false)
   }
 
-  pub(super) fn validate_type_instantiation_strictly(&mut self, heap: &Heap, t: &Type) {
-    self.validate_type_instantiation_customized(heap, t, true)
+  pub(super) fn validate_type_instantiation_strictly(&mut self, t: &Type) {
+    self.validate_type_instantiation_customized(t, true)
   }
 
-  fn validate_type_instantiation_customized(
-    &mut self,
-    heap: &Heap,
-    t: &Type,
-    enforce_concrete_types: bool,
-  ) {
+  fn validate_type_instantiation_customized(&mut self, t: &Type, enforce_concrete_types: bool) {
     let nominal_type = match t {
       Type::Any(_, _) | Type::Primitive(_, _) | Type::Generic(_, _) => return,
       Type::Fn(f) => {
         for arg in &f.argument_types {
-          self.validate_type_instantiation_customized(heap, arg, true)
+          self.validate_type_instantiation_customized(arg, true)
         }
-        self.validate_type_instantiation_customized(heap, &f.return_type, true);
+        self.validate_type_instantiation_customized(&f.return_type, true);
         return;
       }
       Type::Nominal(t) => t,
     };
     for targ in &nominal_type.type_arguments {
-      self.validate_type_instantiation_customized(heap, targ, true)
+      self.validate_type_instantiation_customized(targ, true)
     }
     if let Some(interface_info) = global_signature::resolve_interface_cx(
       self.global_signature,
@@ -206,19 +201,19 @@ impl<'a> TypingContext<'a> {
     ) {
       let interface_type_parameters = interface_info.type_parameters.clone();
       if interface_info.type_definition.is_none() && enforce_concrete_types {
-        self.error_set.report_incompatible_type_error(
+        self.error_set.report_incompatible_type_kind_error(
           nominal_type.reason.use_loc,
-          "non-abstract type".to_string(),
-          nominal_type.pretty_print(heap),
+          nominal_type.to_description(),
+          Description::GeneralNonAbstractType,
         )
       }
       if interface_type_parameters.len() != nominal_type.type_arguments.len() {
-        self.error_set.report_invalid_arity_error(
-          nominal_type.reason.use_loc,
-          "type arguments",
-          interface_type_parameters.len(),
+        let mut error = StackableError::new();
+        error.add_type_args_arity_error(
           nominal_type.type_arguments.len(),
+          interface_type_parameters.len(),
         );
+        self.error_set.report_stackable_error(nominal_type.reason.use_loc, error);
         return;
       }
       for (tparam, targ) in interface_type_parameters.into_iter().zip(&nominal_type.type_arguments)
@@ -227,8 +222,8 @@ impl<'a> TypingContext<'a> {
           if !self.is_subtype_with_id_upper(targ, &bound) {
             self.error_set.report_incompatible_subtype_error(
               targ.get_reason().use_loc,
-              bound.pretty_print(heap),
-              targ.pretty_print(heap),
+              targ.to_description(),
+              bound.to_description(),
             )
           }
         }

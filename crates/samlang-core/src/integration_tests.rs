@@ -553,7 +553,7 @@ Error ------------------------- add-with-class.sam:7:30-7:40
 
 Error --------------------- bounded-generics.sam:15:52-15:55
 
-Expected: subtype of `Comparable<int>`, actual: `int`.
+`int` is not a subtype of `Comparable<int>`.
 
   15|   method relation3(): int = TwoItemCompare.compare<int>(this.v1, this.v2) // error typearg
                                                          ^^^
@@ -597,7 +597,7 @@ Error --------------------- bounded-generics.sam:15:66-15:73
 
 Error --------------------- bounded-generics.sam:18:20-18:40
 
-Expected: `non-abstract type`, actual: `Comparable<BoxedInt>`.
+`Comparable<BoxedInt>` is incompatible with `non-abstract type`.
 
   18|   function test(v: Comparable<BoxedInt>): unit = {} // error signature validation
                          ^^^^^^^^^^^^^^^^^^^^
@@ -631,7 +631,7 @@ Type `ImplItself` has a cyclic definition.
 
 Error --------------------- bounded-generics.sam:28:20-28:30
 
-Expected: `interface type`, actual: `class type`.
+`class type` is incompatible with `interface type`.
 
   28| class ImplItself : ImplItself {} // error: expect interface type
                          ^^^^^^^^^^
@@ -655,7 +655,7 @@ Function declarations are not allowed in interfaces.
 
 Error ---------------- call-interface-function.sam:3:33-3:36
 
-Expected: `non-abstract type`, actual: `Foo`.
+`Foo` is incompatible with `non-abstract type`.
 
   3| class Ouch { function call(foo: Foo): int = Foo.bar() }
                                      ^^^
