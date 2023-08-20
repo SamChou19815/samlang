@@ -544,7 +544,7 @@ pub(crate) enum ErrorDetail {
   NameAlreadyBound { name: PStr, old_loc: Location },
   NonExhausiveMatch { missing_tags: Vec<PStr> },
   Stacked(StackableError),
-  TypeParameterNameMismatch { expected: String },
+  TypeParameterNameMismatch { expected: Vec<Description> },
   Underconstrained,
 }
 
@@ -692,9 +692,19 @@ impl ErrorDetail {
         }
       }
       ErrorDetail::TypeParameterNameMismatch { expected } => {
-        printable_stream.push_text("Type parameter name mismatch. Expected exact match of `");
-        printable_stream.push_text(expected);
-        printable_stream.push_text("`.");
+        let mut iter = expected.iter();
+        if let Some(first) = iter.next() {
+          printable_stream.push_text("Type parameter name mismatch. Expected exact match of `<");
+          printable_stream.push_description(first);
+          for d in iter {
+            printable_stream.push_text(", ");
+            printable_stream.push_description(d);
+          }
+          printable_stream.push_text(">`.");
+        } else {
+          printable_stream
+            .push_text("Type parameter name mismatch. Expected empty type parameters.");
+        }
       }
       ErrorDetail::Underconstrained => {
         printable_stream.push_text(
@@ -936,7 +946,11 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::Stacked(stackable))
   }
 
-  pub(crate) fn report_type_parameter_mismatch_error(&mut self, loc: Location, expected: String) {
+  pub(crate) fn report_type_parameter_mismatch_error(
+    &mut self,
+    loc: Location,
+    expected: Vec<Description>,
+  ) {
     self.report_error(loc, ErrorDetail::TypeParameterNameMismatch { expected })
   }
   pub(crate) fn report_underconstrained_error(&mut self, loc: Location) {
@@ -1119,7 +1133,8 @@ Found 2 errors."#
       });
       stacked
     });
-    error_set.report_type_parameter_mismatch_error(Location::dummy(), "".to_string());
+    error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![]);
+    error_set.report_type_parameter_mismatch_error(Location::dummy(), vec![Description::IntType]);
     error_set.report_underconstrained_error(Location::dummy());
 
     let expected_errors = r#"
@@ -1192,7 +1207,12 @@ Error ------------------------------------ DUMMY.sam:0:0-0:0
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Type parameter name mismatch. Expected exact match of ``.
+Type parameter name mismatch. Expected empty type parameters.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Type parameter name mismatch. Expected exact match of `<int>`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1206,7 +1226,7 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Name `global` is not resolved.
 
 
-Found 15 errors.
+Found 16 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),

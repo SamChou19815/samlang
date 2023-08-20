@@ -303,13 +303,12 @@ impl TypeParameterSignature {
     tparam_sigs
   }
 
+  pub(crate) fn to_description(&self) -> Description {
+    Description::TypeParameter(self.name, self.bound.as_ref().map(|t| Box::new(t.to_description())))
+  }
+
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
-    match &self.bound {
-      Option::None => self.name.as_str(heap).to_string(),
-      Option::Some(t) => {
-        format!("{} : {}", self.name.as_str(heap), t.pretty_print(heap))
-      }
-    }
+    self.to_description().pretty_print(heap)
   }
 
   pub(crate) fn pretty_print_list(list: &Vec<TypeParameterSignature>, heap: &Heap) -> String {
@@ -408,6 +407,7 @@ pub(crate) struct MemberSignature {
 }
 
 impl MemberSignature {
+  #[cfg(test)]
   pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let access_str = if self.is_public { "public" } else { "private" };
     let tparam_str = TypeParameterSignature::pretty_print_list(&self.type_parameters, heap);
@@ -490,6 +490,7 @@ pub(crate) struct InterfaceSignature {
 }
 
 impl InterfaceSignature {
+  #[cfg(test)]
   pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     lines.push(format!(
@@ -570,6 +571,7 @@ pub(crate) struct ModuleSignature {
 }
 
 impl ModuleSignature {
+  #[cfg(test)]
   pub(crate) fn to_string(&self, heap: &Heap) -> String {
     let mut lines = vec![];
     lines.push("\ninterfaces:".to_string());

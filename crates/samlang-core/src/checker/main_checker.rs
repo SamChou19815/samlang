@@ -1153,7 +1153,6 @@ fn validate_tparams_signature_type_instantiation(
 }
 
 fn check_class_member_conformance_with_signature(
-  heap: &Heap,
   error_set: &mut ErrorSet,
   expected: &MemberSignature,
   actual: &ClassMemberDeclaration,
@@ -1183,7 +1182,7 @@ fn check_class_member_conformance_with_signature(
   if has_type_parameter_conformance_errors {
     error_set.report_type_parameter_mismatch_error(
       actual.type_.location,
-      TypeParameterSignature::pretty_print_list(&expected.type_parameters, heap),
+      expected.type_parameters.iter().map(TypeParameterSignature::to_description).collect(),
     );
   } else {
     let actual_fn_type = FunctionType::from_annotation(&actual.type_);
@@ -1304,7 +1303,7 @@ pub(crate) fn type_check_module(
           member.name.name,
         );
         for expected in &resolved {
-          check_class_member_conformance_with_signature(heap, error_set, expected, member);
+          check_class_member_conformance_with_signature(error_set, expected, member);
         }
         !resolved.is_empty()
       } else {
