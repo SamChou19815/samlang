@@ -460,8 +460,10 @@ pub(crate) struct TypeIncompatibilityNode {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum IncompatibilityNode {
   Type(Box<TypeIncompatibilityNode>),
+  DataVariablesArity(usize, usize),
   FunctionParametersArity(usize, usize),
   TypeArgumentsArity(usize, usize),
+  TypeParametersArity(usize, usize),
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -482,12 +484,20 @@ impl StackableError {
     self.rev_stack.push(IncompatibilityNode::Type(Box::new(node)));
   }
 
+  pub(crate) fn add_data_variables_arity_error(&mut self, lower: usize, upper: usize) {
+    self.rev_stack.push(IncompatibilityNode::DataVariablesArity(lower, upper));
+  }
+
   pub(crate) fn add_fn_param_arity_error(&mut self, lower: usize, upper: usize) {
     self.rev_stack.push(IncompatibilityNode::FunctionParametersArity(lower, upper));
   }
 
   pub(crate) fn add_type_args_arity_error(&mut self, lower: usize, upper: usize) {
     self.rev_stack.push(IncompatibilityNode::TypeArgumentsArity(lower, upper));
+  }
+
+  pub(crate) fn add_type_params_arity_error(&mut self, lower: usize, upper: usize) {
+    self.rev_stack.push(IncompatibilityNode::TypeParametersArity(lower, upper));
   }
 }
 
@@ -500,7 +510,10 @@ mod stackable_error_tests {
   fn boilterplate() {
     let mut stacked = super::StackableError::new();
     stacked.add_type_args_arity_error(0, 0);
+    stacked.add_data_variables_arity_error(0, 0);
     stacked.add_fn_param_arity_error(0, 0);
+    stacked.add_type_args_arity_error(0, 0);
+    stacked.add_type_params_arity_error(0, 0);
     stacked.add_type_error(super::TypeIncompatibilityNode {
       lower_reason: Reason::dummy(),
       lower_description: Description::AnyType,
@@ -520,12 +533,12 @@ pub(crate) enum ErrorDetail {
   CannotResolveClass { module_reference: ModuleReference, name: PStr },
   CannotResolveModule { module_reference: ModuleReference },
   CannotResolveName { name: PStr },
-  CyclicTypeDefinition { type_: String },
+  CyclicTypeDefinition { type_: Description },
   IllegalFunctionInInterface,
-  IncompatibleType { expected: String, actual: String, subtype: bool },
-  InvalidArity { kind: &'static str, expected: usize, actual: usize },
+  IncompatibleSubType { lower: Description, upper: Description },
+  IncompatibleTypeKind { lower: Description, upper: Description },
   InvalidSyntax(String),
-  MemberMissing { parent: String, member: PStr },
+  MemberMissing { parent: Description, member: PStr },
   MissingClassMemberDefinitions { missing_definitions: Vec<PStr> },
   MissingExport { module_reference: ModuleReference, name: PStr },
   NameAlreadyBound { name: PStr, old_loc: Location },
@@ -555,34 +568,27 @@ impl ErrorDetail {
       }
       ErrorDetail::CyclicTypeDefinition { type_ } => {
         printable_stream.push_text("Type `");
-        printable_stream.push_text(type_);
+        printable_stream.push_description(type_);
         printable_stream.push_text("` has a cyclic definition.");
       }
       ErrorDetail::IllegalFunctionInInterface => {
         printable_stream.push_text("Function declarations are not allowed in interfaces.");
       }
-      ErrorDetail::IncompatibleType { expected, actual, subtype: false } => {
-        printable_stream.push_text("Expected: `");
-        printable_stream.push_text(expected);
-        printable_stream.push_text("`, actual: `");
-        printable_stream.push_text(actual);
+      ErrorDetail::IncompatibleTypeKind { lower, upper } => {
+        printable_stream.push_text("`");
+        printable_stream.push_description(lower);
+        printable_stream.push_text("` ");
+        printable_stream.push_text("is incompatible with `");
+        printable_stream.push_description(upper);
         printable_stream.push_text("`.");
       }
-      ErrorDetail::IncompatibleType { expected, actual, subtype: true } => {
-        printable_stream.push_text("Expected: subtype of `");
-        printable_stream.push_text(expected);
-        printable_stream.push_text("`, actual: `");
-        printable_stream.push_text(actual);
+      ErrorDetail::IncompatibleSubType { lower, upper } => {
+        printable_stream.push_text("`");
+        printable_stream.push_description(lower);
+        printable_stream.push_text("` ");
+        printable_stream.push_text("is not a subtype of `");
+        printable_stream.push_description(upper);
         printable_stream.push_text("`.");
-      }
-      ErrorDetail::InvalidArity { kind, expected, actual } => {
-        printable_stream.push_text("Incorrect ");
-        printable_stream.push_text(kind);
-        printable_stream.push_text(" size. Expected: ");
-        printable_stream.push_size(*expected);
-        printable_stream.push_text(", actual: ");
-        printable_stream.push_size(*actual);
-        printable_stream.push_text(".");
       }
       ErrorDetail::InvalidSyntax(reason) => {
         printable_stream.push_text(reason);
@@ -591,7 +597,7 @@ impl ErrorDetail {
         printable_stream.push_text("Cannot find member `");
         printable_stream.push_pstr(member);
         printable_stream.push_text("` on `");
-        printable_stream.push_text(parent.as_str());
+        printable_stream.push_description(parent);
         printable_stream.push_text("`.");
       }
       ErrorDetail::MissingClassMemberDefinitions { missing_definitions } => {
@@ -654,6 +660,13 @@ impl ErrorDetail {
                 printable_stream.push_text("`.");
               }
             }
+            IncompatibilityNode::DataVariablesArity(l, u) => {
+              printable_stream.push_text("Data variable arity of ");
+              printable_stream.push_size(*l);
+              printable_stream.push_text(" is incompatible with data variable arity of ");
+              printable_stream.push_size(*u);
+              printable_stream.push_text(".");
+            }
             IncompatibilityNode::FunctionParametersArity(l, u) => {
               printable_stream.push_text("Function parameter arity of ");
               printable_stream.push_size(*l);
@@ -665,6 +678,13 @@ impl ErrorDetail {
               printable_stream.push_text("Type argument arity of ");
               printable_stream.push_size(*l);
               printable_stream.push_text(" is incompatible with type argument arity of ");
+              printable_stream.push_size(*u);
+              printable_stream.push_text(".");
+            }
+            IncompatibilityNode::TypeParametersArity(l, u) => {
+              printable_stream.push_text("Type parameter arity of ");
+              printable_stream.push_size(*l);
+              printable_stream.push_text(" is incompatible with type parameter arity of ");
               printable_stream.push_size(*u);
               printable_stream.push_text(".");
             }
@@ -835,7 +855,11 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::CannotResolveName { name })
   }
 
-  pub(crate) fn report_cyclic_type_definition_error(&mut self, type_loc: Location, type_: String) {
+  pub(crate) fn report_cyclic_type_definition_error(
+    &mut self,
+    type_loc: Location,
+    type_: Description,
+  ) {
     self.report_error(type_loc, ErrorDetail::CyclicTypeDefinition { type_ });
   }
 
@@ -843,35 +867,22 @@ impl ErrorSet {
     self.report_error(loc, ErrorDetail::IllegalFunctionInInterface);
   }
 
-  pub(crate) fn report_incompatible_type_error(
-    &mut self,
-    loc: Location,
-    expected: String,
-    actual: String,
-  ) {
-    self.report_error(loc, ErrorDetail::IncompatibleType { expected, actual, subtype: false })
-  }
-
   pub(crate) fn report_incompatible_subtype_error(
     &mut self,
     loc: Location,
-    expected: String,
-    actual: String,
+    lower: Description,
+    upper: Description,
   ) {
-    self.report_error(loc, ErrorDetail::IncompatibleType { expected, actual, subtype: true })
+    self.report_error(loc, ErrorDetail::IncompatibleSubType { lower, upper })
   }
 
-  pub(crate) fn report_invalid_arity_error(
+  pub(crate) fn report_incompatible_type_kind_error(
     &mut self,
     loc: Location,
-    kind: &'static str,
-    expected_size: usize,
-    actual_size: usize,
+    lower: Description,
+    upper: Description,
   ) {
-    self.report_error(
-      loc,
-      ErrorDetail::InvalidArity { kind, expected: expected_size, actual: actual_size },
-    )
+    self.report_error(loc, ErrorDetail::IncompatibleTypeKind { lower, upper })
   }
 
   pub(crate) fn report_invalid_syntax_error(&mut self, loc: Location, reason: String) {
@@ -881,7 +892,7 @@ impl ErrorSet {
   pub(crate) fn report_member_missing_error(
     &mut self,
     loc: Location,
-    parent: String,
+    parent: Description,
     member: PStr,
   ) {
     self.report_error(loc, ErrorDetail::MemberMissing { parent, member })
@@ -1054,23 +1065,22 @@ Found 2 errors."#
     );
     error_set.report_cyclic_type_definition_error(
       builder.int_type().get_reason().use_loc,
-      builder.int_type().pretty_print(&heap),
+      builder.int_type().to_description(),
     );
-    error_set.report_incompatible_type_error(
+    error_set.report_incompatible_type_kind_error(
       Location::dummy(),
-      builder.int_type().pretty_print(&heap),
-      builder.bool_type().pretty_print(&heap),
+      Description::GeneralClassType,
+      Description::GeneralInterfaceType,
     );
-    error_set.report_invalid_arity_error(Location::dummy(), "pair", 1, 2);
     error_set.report_incompatible_subtype_error(
       Location::dummy(),
-      builder.int_type().pretty_print(&heap),
-      builder.bool_type().pretty_print(&heap),
+      builder.int_type().to_description(),
+      builder.bool_type().to_description(),
     );
     error_set.report_invalid_syntax_error(Location::dummy(), "bad code".to_string());
     error_set.report_member_missing_error(
       Location::dummy(),
-      "Foo".to_string(),
+      Description::NominalType { name: heap.alloc_str_for_test("Foo"), type_args: vec![] },
       heap.alloc_str_for_test("bar"),
     );
     error_set.report_missing_class_member_definition_error(
@@ -1130,17 +1140,12 @@ Type `int` has a cyclic definition.
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Expected: `int`, actual: `bool`.
+`int` is not a subtype of `bool`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Expected: subtype of `int`, actual: `bool`.
-
-
-Error ------------------------------------ DUMMY.sam:0:0-0:0
-
-Incorrect pair size. Expected: 1, actual: 2.
+`class type` is incompatible with `interface type`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1201,7 +1206,7 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Name `global` is not resolved.
 
 
-Found 16 errors.
+Found 15 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),

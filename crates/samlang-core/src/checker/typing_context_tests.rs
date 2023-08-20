@@ -239,47 +239,40 @@ mod tests {
     let str_t = heap.alloc_str_for_test("T");
     let str_a = well_known_pstrs::UPPER_A;
     let str_b = well_known_pstrs::UPPER_B;
-    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.int_type());
+    cx.validate_type_instantiation_allow_abstract_types(&builder.int_type());
     cx.validate_type_instantiation_allow_abstract_types(
-      &heap,
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
     );
-    cx.validate_type_instantiation_allow_abstract_types(&heap, &Type::Any(Reason::dummy(), false));
+    cx.validate_type_instantiation_allow_abstract_types(&Type::Any(Reason::dummy(), false));
+    cx.validate_type_instantiation_allow_abstract_types(&builder.simple_nominal_type(str_tparam));
     cx.validate_type_instantiation_allow_abstract_types(
-      &heap,
-      &builder.simple_nominal_type(str_tparam),
-    );
-    cx.validate_type_instantiation_allow_abstract_types(
-      &heap,
       &builder.general_nominal_type(str_tparam, vec![builder.int_type()]),
     );
-    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.generic_type(str_t));
-    cx.validate_type_instantiation_allow_abstract_types(&heap, &builder.simple_nominal_type(str_a));
+    cx.validate_type_instantiation_allow_abstract_types(&builder.generic_type(str_t));
+    cx.validate_type_instantiation_allow_abstract_types(&builder.simple_nominal_type(str_a));
     cx.validate_type_instantiation_allow_abstract_types(
-      &heap,
       &builder.general_nominal_type(str_a, vec![builder.int_type(), builder.int_type()]),
     );
     cx.validate_type_instantiation_allow_abstract_types(
-      &heap,
       &builder
         .general_nominal_type(str_a, vec![builder.int_type(), builder.simple_nominal_type(str_b)]),
     );
-    cx.validate_type_instantiation_strictly(&heap, &builder.simple_nominal_type(str_b));
+    cx.validate_type_instantiation_strictly(&builder.simple_nominal_type(str_b));
 
     let expected_errors = r#"
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Expected: subtype of `B`, actual: `int`.
+`int` is not a subtype of `B`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Expected: `non-abstract type`, actual: `B`.
+`B` is incompatible with `non-abstract type`.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
-Incorrect type arguments size. Expected: 2, actual: 0.
+Type argument arity of 0 is incompatible with type argument arity of 2.
 
 
 Found 3 errors.
