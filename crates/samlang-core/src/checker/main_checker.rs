@@ -1023,7 +1023,7 @@ fn check_lambda(
   } else {
     type_check_expression(cx, heap, &expression.body, hint.transform_to_return_type())
   };
-  let captured = cx.local_typing_context.get_captured(heap, &expression.common.loc);
+  let captured = cx.local_typing_context.get_captured(&expression.common.loc);
   let type_ = Type::Fn(FunctionType {
     reason: Reason::new(expression.common.loc, None),
     argument_types,

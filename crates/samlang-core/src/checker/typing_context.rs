@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
   ast::{Description, Location, Position, Reason},
-  common::{Heap, ModuleReference, PStr},
+  common::{ModuleReference, PStr},
   errors::{ErrorSet, StackableError},
 };
 use std::{collections::HashMap, rc::Rc};
@@ -58,14 +58,9 @@ impl LocalTypingContext {
     self.type_map.insert(loc, t);
   }
 
-  pub(super) fn get_captured(&self, heap: &Heap, lambda_loc: &Location) -> HashMap<PStr, Rc<Type>> {
+  pub(super) fn get_captured(&self, lambda_loc: &Location) -> HashMap<PStr, Rc<Type>> {
     let mut map = HashMap::new();
     for (name, loc) in self.ssa_analysis_result.lambda_captures.get(lambda_loc).unwrap() {
-      let first_letter = name.as_str(heap).chars().next().unwrap();
-      if first_letter.is_ascii_uppercase() {
-        // We captured a type id, which we don't care.
-        continue;
-      }
       map.insert(*name, self.type_map.get(loc).unwrap().clone());
     }
     map
