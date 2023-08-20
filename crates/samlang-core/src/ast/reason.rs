@@ -20,40 +20,45 @@ pub(crate) enum Description {
   Class(PStr),
   NominalType { name: PStr, type_args: Vec<Description> },
   FunctionType(Vec<Description>, Box<Description>),
+  TypeParameter(PStr, Option<Box<Description>>),
 }
 
 impl Description {
   pub(crate) fn pretty_print(&self, heap: &Heap) -> String {
     match self {
-      Description::UnitType => "unit".to_string(),
-      Description::BoolType => "bool".to_string(),
-      Description::IntType => "int".to_string(),
-      Description::AnyType => "any".to_string(),
-      Description::PrivateMember => "private member".to_string(),
-      Description::PublicMember => "public member".to_string(),
-      Description::GeneralFunctionType => "function type".to_string(),
-      Description::GeneralNominalType => "nominal type".to_string(),
-      Description::GeneralInterfaceType => "interface type".to_string(),
-      Description::GeneralClassType => "class type".to_string(),
-      Description::GeneralNonAbstractType => "non-abstract type".to_string(),
-      Description::GenericType(n) => n.as_str(heap).to_string(),
-      Description::Class(n) => format!("class {}", n.as_str(heap)),
-      Description::NominalType { name, type_args } if type_args.is_empty() => {
+      Self::UnitType => "unit".to_string(),
+      Self::BoolType => "bool".to_string(),
+      Self::IntType => "int".to_string(),
+      Self::AnyType => "any".to_string(),
+      Self::PrivateMember => "private member".to_string(),
+      Self::PublicMember => "public member".to_string(),
+      Self::GeneralFunctionType => "function type".to_string(),
+      Self::GeneralNominalType => "nominal type".to_string(),
+      Self::GeneralInterfaceType => "interface type".to_string(),
+      Self::GeneralClassType => "class type".to_string(),
+      Self::GeneralNonAbstractType => "non-abstract type".to_string(),
+      Self::GenericType(n) => n.as_str(heap).to_string(),
+      Self::Class(n) => format!("class {}", n.as_str(heap)),
+      Self::NominalType { name, type_args } if type_args.is_empty() => {
         name.as_str(heap).to_string()
       }
-      Description::NominalType { name, type_args } => {
+      Self::NominalType { name, type_args } => {
         format!(
           "{}<{}>",
           name.as_str(heap),
           type_args.iter().map(|t| t.pretty_print(heap)).join(", ")
         )
       }
-      Description::FunctionType(param_types, return_type) => {
+      Self::FunctionType(param_types, return_type) => {
         format!(
           "({}) -> {}",
           param_types.iter().map(|t| t.pretty_print(heap)).join(", "),
           return_type.pretty_print(heap)
         )
+      }
+      Self::TypeParameter(name, None) => name.as_str(heap).to_string(),
+      Self::TypeParameter(name, Some(bound)) => {
+        format!("{} : {}", name.as_str(heap), bound.pretty_print(heap))
       }
     }
   }
@@ -137,6 +142,12 @@ mod tests {
     assert_eq!(
       "(int) -> int",
       Description::FunctionType(vec![Description::IntType], Box::new(Description::IntType))
+        .pretty_print(heap)
+    );
+    assert_eq!("A", Description::TypeParameter(well_known_pstrs::UPPER_A, None).pretty_print(heap));
+    assert_eq!(
+      "A : int",
+      Description::TypeParameter(well_known_pstrs::UPPER_A, Some(Box::new(Description::IntType)))
         .pretty_print(heap)
     );
   }
