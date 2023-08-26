@@ -68,7 +68,8 @@ pub(super) fn optimize(
     increment_amount: PotentialLoopInvariantExpression::Int(guard_increment_amount),
     guard_operator,
     guard_expression: PotentialLoopInvariantExpression::Int(guarded_value),
-  } = &optimizable_while_loop.basic_induction_variable_with_loop_guard else {
+  } = &optimizable_while_loop.basic_induction_variable_with_loop_guard
+  else {
     return None;
   };
   if !optimizable_while_loop.loop_variables_that_are_not_basic_induction_variables.is_empty()

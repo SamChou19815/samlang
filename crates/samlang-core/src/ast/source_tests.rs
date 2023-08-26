@@ -40,7 +40,7 @@ mod tests {
     assert_eq!("!", expr::UnaryOperator::NOT.clone().to_string());
     assert_eq!("-", expr::UnaryOperator::NEG.clone().to_string());
 
-    let list = vec![
+    let list = [
       expr::BinaryOperator::MUL,
       expr::BinaryOperator::DIV,
       expr::BinaryOperator::MOD,
