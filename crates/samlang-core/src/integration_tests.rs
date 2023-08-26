@@ -1161,7 +1161,7 @@ Found 51 errors.
         parse_source_module_from_text(t.source_code, mod_ref, heap, &mut error_set),
       );
     }
-    type_check_sources(&parsed_sources, heap, &mut error_set);
+    type_check_sources(&parsed_sources, &mut error_set);
     assert_eq!(
       expected_errors.trim(),
       error_set.pretty_print_error_messages(heap, &string_sources).trim()
@@ -2331,7 +2331,7 @@ class Main {
       let parsed_module =
         parse_source_module_from_text(source_code, mod_ref, &mut heap, &mut error_set);
       let (checked_sources, _) =
-        type_check_sources(&HashMap::from([(mod_ref, parsed_module)]), &mut heap, &mut error_set);
+        type_check_sources(&HashMap::from([(mod_ref, parsed_module)]), &mut error_set);
       let actual_std =
         interpreter::run_source_module(&mut heap, checked_sources.get(&mod_ref).unwrap());
       assert_eq!(expected_std, actual_std);
@@ -2359,7 +2359,6 @@ class Main {
           mod_ref,
           parse_source_module_from_text(&raw, mod_ref, heap, &mut error_set),
         )]),
-        heap,
         &mut error_set,
       );
       assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
@@ -2381,7 +2380,7 @@ class Main {
         (mod_ref, parse_source_module_from_text(it.source_code, mod_ref, heap, &mut error_set))
       })
       .collect::<HashMap<_, _>>();
-    let (checked_sources, _) = type_check_sources(&sources, heap, &mut error_set);
+    let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     let unoptimized_mir_sources = compiler::compile_sources_to_mir(heap, &checked_sources);
     let optimized_mir_sources = optimization::optimize_sources(

@@ -50,7 +50,6 @@ mod tests {
 
     type_check_expression_for_tests(
       &mut cx,
-      &heap,
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon {
           loc: Location::dummy(),
@@ -516,7 +515,7 @@ mod tests {
       /* availableTypeParameters */ vec![],
     );
 
-    let expr = type_check_expression_for_tests(&mut cx, heap, &parsed, Some(expected_type));
+    let expr = type_check_expression_for_tests(&mut cx, &parsed, Some(expected_type));
     if let Some(err) = type_system::assignability_check(expr.type_(), expected_type) {
       cx.error_set.report_stackable_error(expr.loc(), err);
     }
@@ -2966,7 +2965,7 @@ Found 5 errors.
       string_sources.insert(mod_ref, source.to_string());
       unchecked_sources.insert(mod_ref, parsed);
     }
-    type_check_sources(&unchecked_sources, &mut heap, &mut error_set);
+    type_check_sources(&unchecked_sources, &mut error_set);
     assert_eq!(
       expected_errors.trim(),
       error_set.pretty_print_error_messages(&heap, &string_sources).trim()

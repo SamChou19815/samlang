@@ -42,8 +42,7 @@ impl ServerState {
         })
         .collect::<HashMap<_, _>>();
       let dep_graph = DependencyGraph::new(&parsed_modules);
-      let (checked_modules, global_cx) =
-        type_check_sources(&parsed_modules, &mut heap, &mut error_set);
+      let (checked_modules, global_cx) = type_check_sources(&parsed_modules, &mut error_set);
       let errors = error_set.group_errors();
       ServerState {
         heap,
@@ -68,7 +67,7 @@ impl ServerState {
     for recheck_mod_ref in recheck_set {
       if let Some(parsed) = self.parsed_modules.get(recheck_mod_ref) {
         let (checked, _) =
-          type_check_module(*recheck_mod_ref, parsed, &self.global_cx, &self.heap, &mut error_set);
+          type_check_module(*recheck_mod_ref, parsed, &self.global_cx, &mut error_set);
         self.checked_modules.insert(*recheck_mod_ref, checked);
       }
     }
