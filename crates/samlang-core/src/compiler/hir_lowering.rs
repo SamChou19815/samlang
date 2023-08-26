@@ -466,10 +466,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           self.lower_binary(&expression.e2, None);
         if let hir::Expression::IntLiteral(v) = &e1 {
           return if *v != 0 {
-            LoweringResult {
-              statements: s1.into_iter().chain(s2.into_iter()).collect_vec(),
-              expression: e2,
-            }
+            LoweringResult { statements: s1.into_iter().chain(s2).collect_vec(), expression: e2 }
           } else {
             LoweringResult { statements: s1, expression: hir::ZERO }
           };
@@ -496,10 +493,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           return if *v != 0 {
             LoweringResult { statements: s1, expression: hir::ONE }
           } else {
-            LoweringResult {
-              statements: s1.into_iter().chain(s2.into_iter()).collect_vec(),
-              expression: e2,
-            }
+            LoweringResult { statements: s1.into_iter().chain(s2).collect_vec(), expression: e2 }
           };
         }
         let mut statements = s1;
@@ -745,7 +739,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       type_: hir::FunctionType {
         argument_types: vec![context_type.clone()]
           .into_iter()
-          .chain(fun_type_without_cx_argument_types.into_iter())
+          .chain(fun_type_without_cx_argument_types)
           .collect_vec(),
         return_type: fun_type_without_cx_return_type,
       },
