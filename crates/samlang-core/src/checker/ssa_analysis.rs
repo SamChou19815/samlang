@@ -26,7 +26,7 @@ impl SsaLocalStackedContext {
     }
   }
 
-  fn get(&mut self, name: &PStr) -> Option<&Location> {
+  fn get(&mut self, name: &PStr, for_type: bool) -> Option<&Location> {
     let closest_stack_value = self.local_values_stack.last().unwrap().get(name);
     if closest_stack_value.is_some() {
       return closest_stack_value;
@@ -34,8 +34,10 @@ impl SsaLocalStackedContext {
     for level in (0..(self.local_values_stack.len() - 1)).rev() {
       let value = self.local_values_stack[level].get(name);
       if let Some(v) = value {
-        for captured_level in (level + 1)..(self.captured_values_stack.len()) {
-          self.captured_values_stack[captured_level].insert(*name, *v);
+        if !for_type {
+          for captured_level in (level + 1)..(self.captured_values_stack.len()) {
+            self.captured_values_stack[captured_level].insert(*name, *v);
+          }
         }
         return Some(v);
       }
@@ -106,7 +108,7 @@ impl<'a> SsaAnalysisState<'a> {
       let type_definition = toplevel.type_definition();
 
       for t in toplevel.extends_or_implements_nodes() {
-        self.use_id(&t.id.name, t.id.loc);
+        self.use_id(&t.id.name, t.id.loc, true);
       }
 
       self.context.push_scope();
@@ -222,7 +224,7 @@ impl<'a> SsaAnalysisState<'a> {
   fn visit_type_parameters_with_bounds(&mut self, type_parameters: &[TypeParameter]) {
     for tparam in type_parameters {
       if let Some(bound) = &tparam.bound {
-        self.use_id(&bound.id.name, bound.id.loc)
+        self.use_id(&bound.id.name, bound.id.loc, true)
       }
     }
     for tparam in type_parameters {
@@ -241,7 +243,7 @@ impl<'a> SsaAnalysisState<'a> {
   fn visit_expression(&mut self, expression: &expr::E<()>) {
     match expression {
       expr::E::Literal(_, _) | expr::E::ClassId(_, _, _) => {}
-      expr::E::LocalId(_, id) => self.use_id(&id.name, id.loc),
+      expr::E::LocalId(_, id) => self.use_id(&id.name, id.loc, false),
       expr::E::FieldAccess(e) => {
         self.visit_expression(&e.object);
         for targ in &e.explicit_type_arguments {
@@ -334,7 +336,7 @@ impl<'a> SsaAnalysisState<'a> {
     annotation::Id { location, module_reference, id, type_arguments }: &annotation::Id,
   ) {
     if self.module_reference.eq(module_reference) {
-      self.use_id(&id.name, *location);
+      self.use_id(&id.name, *location, true);
     }
     for targ in type_arguments {
       self.visit_annot(targ);
@@ -345,7 +347,7 @@ impl<'a> SsaAnalysisState<'a> {
     match annot {
       annotation::T::Primitive(_, _, _) => {}
       annotation::T::Id(annot) => self.visit_id_annot(annot),
-      annotation::T::Generic(_, id) => self.use_id(&id.name, id.loc),
+      annotation::T::Generic(_, id) => self.use_id(&id.name, id.loc, true),
       annotation::T::Fn(annotation::Function {
         location: _,
         associated_comments: _,
@@ -371,8 +373,8 @@ impl<'a> SsaAnalysisState<'a> {
     self.def_locs.insert(loc);
   }
 
-  fn use_id(&mut self, name: &PStr, loc: Location) {
-    if let Some(definition) = self.context.get(name) {
+  fn use_id(&mut self, name: &PStr, loc: Location, for_type: bool) {
+    if let Some(definition) = self.context.get(name, for_type) {
       self.use_define_map.insert(loc, *definition);
     } else {
       self.unbound_names.insert(*name);

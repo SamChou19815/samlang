@@ -100,7 +100,7 @@ def_to_use_map:
     assert_eq!("any", cx.read(&Location::from_pos(3, 10, 3, 12)).pretty_print(&heap));
     assert_eq!(
       vec!["a"],
-      cx.get_captured(&heap, &Location::from_pos(10, 4, 10, 56))
+      cx.get_captured(&Location::from_pos(10, 4, 10, 56))
         .keys()
         .map(|l| l.as_str(&heap))
         .collect::<Vec<_>>()
@@ -207,6 +207,6 @@ def_to_use_map:
     let builder = test_type_builder::create();
     let mut cx = LocalTypingContext::new(analysis_result);
     cx.write(Location::from_pos(13, 6, 13, 10), builder.bool_type());
-    assert!(cx.get_captured(&heap, &Location::from_pos(17, 39, 17, 54)).is_empty());
+    assert!(cx.get_captured(&Location::from_pos(17, 39, 17, 54)).is_empty());
   }
 }
