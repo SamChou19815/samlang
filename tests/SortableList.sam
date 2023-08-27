@@ -21,7 +21,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
     match this {
       Nil(_) -> {  }
       Cons(pair) -> {
-        val { a as v, b as rest } = pair;
+        val { e0 as v, e1 as rest } = pair;
         val _ = f(v);
         rest.iter(f)
       }
@@ -30,10 +30,10 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
   method sort(): List<T> =
     match this {
       Nil(_) -> this,
-      Cons(pair) -> match pair.b {
+      Cons(pair) -> match pair.e1 {
         Nil(_) -> this,
         Cons(_) -> {
-          val { a as l1, b as l2 } = this.split(List.nil<T>(), List.nil<T>());
+          val { e0 as l1, e1 as l2 } = this.split(List.nil<T>(), List.nil<T>());
           l1.sort().merge(l2.sort())
         }
       }
@@ -45,8 +45,8 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
       Cons(pair1) -> match other {
         Nil(_) -> this,
         Cons(pair2) -> {
-          val { a as h1, b as t1 } = pair1;
-          val { a as h2, b as t2 } = pair2;
+          val { e0 as h1, e1 as t1 } = pair1;
+          val { e0 as h2, e1 as t2 } = pair2;
           if h1.compare(h2) < 0 then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
         }
       }
@@ -56,7 +56,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
     match this {
       Nil(_) -> Pair.init(y, z),
       Cons(pair) -> {
-        val { a as x, b as rest } = pair;
+        val { e0 as x, e1 as rest } = pair;
         rest.split(z, y.cons(x))
       }
     }

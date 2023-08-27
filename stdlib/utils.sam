@@ -1,10 +1,145 @@
-import { Obj } from tests.DifferentExpressionDemo;
+class Pair<E0, E1>(val e0: E0, val e1: E1)
 
-class Pair<A, B>(val a: A, val b: B) {
-  method first(): A = this.a
+class Triple<E0, E1, E2>(val e0: E0, val e1: E1, val e2: E2)
 
-  method second(): B = this.b
-}
+class Tuple4<E0, E1, E2, E3>(val e0: E0, val e1: E1, val e2: E2, val e3: E3)
+
+class Tuple5<E0, E1, E2, E3, E4>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4)
+
+class Tuple6<E0, E1, E2, E3, E4, E5>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5
+)
+
+class Tuple7<E0, E1, E2, E3, E4, E5, E6>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6
+)
+
+class Tuple8<E0, E1, E2, E3, E4, E5, E6, E7>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7
+)
+
+class Tuple9<E0, E1, E2, E3, E4, E5, E6, E7, E8>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8
+)
+
+class Tuple10<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9
+)
+
+class Tuple11<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10
+)
+
+class Tuple12<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11
+)
+
+class Tuple13<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11,
+  val e12: E12
+)
+
+class Tuple14<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11,
+  val e12: E12,
+  val e13: E13
+)
+
+class Tuple15<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13, E14>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11,
+  val e12: E12,
+  val e13: E13,
+  val e14: E14
+)
 
 class Result<T, E>(Ok(T), Error(E)) {
   method ignore(): Result<unit, E> =
@@ -178,10 +313,16 @@ class List<T>(Nil, Cons(T, List<T>)) {
       Cons(v, rest) -> if equal(element, v) then true else rest.contains(element, equal),
     }
 
+  method forAll(f: (T) -> bool): bool =
+    match this {
+      Nil -> true,
+      Cons(v, rest) -> f(v) && rest.forAll(f),
+    }
+
   method exists(f: (T) -> bool): bool =
     match this {
       Nil -> false,
-      Cons(v, rest) -> if f(v) then true else rest.exists(f),
+      Cons(v, rest) -> f(v) || rest.exists(f),
     }
 
   method find(f: (T) -> bool): Option<T> =
@@ -223,11 +364,11 @@ class List<T>(Nil, Cons(T, List<T>)) {
   function <T> flatten(l: List<List<T>>): List<T> =
     l.foldRight((innerList, acc) -> innerList.append(acc), List.Nil())
 
+  method reverse(): List<T> = this.reverseWithAccumulator(List.Nil<T>())
+
   private method reverseWithAccumulator(acc: List<T>): List<T> =
     match this {
       Nil -> acc,
       Cons(v, rest) -> { rest.reverseWithAccumulator(List.Cons(v, acc)) }
     }
-
-  method reverse(): List<T> = this.reverseWithAccumulator(List.Nil<T>())
 }
