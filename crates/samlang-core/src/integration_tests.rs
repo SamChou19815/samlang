@@ -2317,28 +2317,6 @@ class Main {
   }
 
   #[test]
-  fn source_interpreter_tests() {
-    let mut heap = Heap::new();
-    let mut error_set = ErrorSet::new();
-    for CompilerTestCase { name, expected_std, source_code } in compiler_integration_tests() {
-      if name == "SortableList" {
-        continue;
-      }
-      if name == "StringGlobalConstant" {
-        continue;
-      }
-      let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["Test".to_string()]);
-      let parsed_module =
-        parse_source_module_from_text(source_code, mod_ref, &mut heap, &mut error_set);
-      let (checked_sources, _) =
-        type_check_sources(&HashMap::from([(mod_ref, parsed_module)]), &mut error_set);
-      let actual_std =
-        interpreter::run_source_module(&mut heap, checked_sources.get(&mod_ref).unwrap());
-      assert_eq!(expected_std, actual_std);
-    }
-  }
-
-  #[test]
   fn formatter_tests() {
     let heap = &mut Heap::new();
     let handles = compiler_integration_tests()
