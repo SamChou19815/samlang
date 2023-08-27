@@ -124,6 +124,12 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
         mark_expression(heap, &stmt.assigned_expression);
         mark_annot_opt(heap, &stmt.annotation);
         match &stmt.pattern {
+          pattern::DestructuringPattern::Tuple(_, names) => {
+            for n in names.iter().flatten() {
+              mark_id(heap, &n.name);
+              mark_type(heap, &n.type_);
+            }
+          }
           pattern::DestructuringPattern::Object(_, names) => {
             for n in names {
               mark_type(heap, &n.type_);
@@ -277,6 +283,7 @@ mod tests {
           val b = 2;
           val c = 3; // c = 3
           val { d } = Obj.init(5, 4);
+          val [_, d1] = Obj.init(5, 4);
           val { e as d2 } = Obj.init(5, 4); // d = 4
           val f = Obj.init(5, 4); // d = 4
           val g = Obj.init(d, 4); // d = 4

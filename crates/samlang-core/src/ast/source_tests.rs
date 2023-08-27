@@ -211,6 +211,26 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
+          pattern: pattern::DestructuringPattern::Tuple(
+            Location::dummy(),
+            vec![
+              Some(pattern::TuplePatternDestructuredName {
+                name: Id::from(heap.alloc_str_for_test("name")),
+                type_: (),
+              }),
+              None,
+            ],
+          ),
+          annotation: Some(annotation::T::Primitive(
+            Location::dummy(),
+            NO_COMMENT_REFERENCE,
+            annotation::PrimitiveTypeKind::Int,
+          )),
+          assigned_expression: Box::new(zero_expr.clone()),
+        },
+        expr::DeclarationStatement {
+          loc: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
           pattern: pattern::DestructuringPattern::Wildcard(Location::dummy()),
           annotation: Some(annotation::T::Primitive(
             Location::dummy(),

@@ -1297,6 +1297,24 @@ impl<'a> SourceParser<'a> {
 
   pub(super) fn parse_destructuring_pattern(&mut self) -> pattern::DestructuringPattern<()> {
     let peeked = self.peek();
+    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACKET)) = peeked {
+      self.consume();
+      let destructured_names =
+        self.parse_comma_separated_list(Some(TokenOp::RBRACKET), &mut |s: &mut Self| {
+          if let Token(_, TokenContent::Operator(TokenOp::UNDERSCORE)) = s.peek() {
+            s.consume();
+            None
+          } else {
+            let name = s.parse_lower_id();
+            Some(pattern::TuplePatternDestructuredName { name, type_: () })
+          }
+        });
+      let end_location = self.assert_and_consume_operator(TokenOp::RBRACKET);
+      return pattern::DestructuringPattern::Tuple(
+        peeked_loc.union(&end_location),
+        destructured_names,
+      );
+    }
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
       self.consume();
       let destructured_names =

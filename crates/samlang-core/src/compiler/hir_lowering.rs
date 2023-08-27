@@ -831,13 +831,34 @@ impl<'a> ExpressionLoweringManager<'a> {
     self.variable_cx.push_scope();
     for s in &expression.statements {
       match &s.pattern {
+        source::pattern::DestructuringPattern::Tuple(_, destructured_names) => {
+          let assigned_expr =
+            self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
+          let id_type = assigned_expr.type_().as_id().unwrap();
+          let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
+          for (index, name_opt) in destructured_names.iter().enumerate() {
+            if let Some(name) = name_opt {
+              let field_type = &resolved_struct_mappings[index];
+              let mangled_name = self.get_renamed_variable_for_nesting(name.name.name, field_type);
+              self
+                .variable_cx
+                .bind(mangled_name, hir::Expression::var_name(mangled_name, field_type.clone()));
+              lowered_stmts.push(hir::Statement::IndexedAccess {
+                name: mangled_name,
+                type_: field_type.clone(),
+                pointer_expression: assigned_expr.clone(),
+                index,
+              });
+            }
+          }
+        }
         source::pattern::DestructuringPattern::Object(_, destructured_names) => {
           let assigned_expr =
             self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
           let id_type = assigned_expr.type_().as_id().unwrap();
+          let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
           for destructured_name in destructured_names {
-            let field_type =
-              &self.resolve_struct_mapping_of_id_type(id_type)[destructured_name.field_order];
+            let field_type = &resolved_struct_mappings[destructured_name.field_order];
             let mangled_name = self.get_renamed_variable_for_nesting(
               if let Some(n) = &destructured_name.alias {
                 n.name
@@ -2161,6 +2182,22 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
+            pattern: source::pattern::DestructuringPattern::Tuple(
+              Location::dummy(),
+              vec![
+                Some(source::pattern::TuplePatternDestructuredName {
+                  name: source::Id::from(well_known_pstrs::LOWER_D),
+                  type_: builder.int_type(),
+                }),
+                None,
+              ],
+            ),
+            annotation: Some(dummy_source_id_annot(heap)),
+            assigned_expression: Box::new(dummy_source_this(heap)),
+          },
+          source::expr::DeclarationStatement {
+            loc: Location::dummy(),
+            associated_comments: NO_COMMENT_REFERENCE,
             pattern: source::pattern::DestructuringPattern::Wildcard(Location::dummy()),
             annotation: Some(dummy_source_id_annot(heap)),
             assigned_expression: Box::new(dummy_source_this(heap)),
@@ -2171,6 +2208,7 @@ return 0;"#,
       heap,
       r#"let a: int = (_this: DUMMY_Dummy)[0];
 let c: int = (_this: DUMMY_Dummy)[1];
+let d: int = (_this: DUMMY_Dummy)[0];
 return 0;"#,
     );
 
