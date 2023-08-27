@@ -2077,7 +2077,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
     match (this) {
       Nil(_) -> {  }
       Cons(pair) -> {
-        val { a as v, b as rest } = pair;
+        val [v, rest] = pair;
         val _ = f(v);
         rest.iter(f)
       }

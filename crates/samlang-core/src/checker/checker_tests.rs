@@ -2787,6 +2787,30 @@ Found 2 errors.
 
     assert_errors(
       heap,
+      "{val [a, b, c] = A.init();}",
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:10-1:11
+
+Cannot access member of `A` at index 1.
+
+  1| {val [a, b, c] = A.init();}
+              ^
+
+
+Error ---------------------------------- DUMMY.sam:1:13-1:14
+
+Cannot access member of `A` at index 2.
+
+  1| {val [a, b, c] = A.init();}
+                 ^
+
+
+Found 2 errors.
+"#,
+    );
+    assert_errors(
+      heap,
       "{val {a, b as c} = A.init();}",
       &builder.unit_type(),
       r#"

@@ -21,8 +21,10 @@ class Clazz(val t: int) {
 
   method thisTest(): int = {
     val i: int = this.t;
-    val { t as j }: Clazz = this;
-    i + j
+    val { t as j } = this;
+    val [_] = this;
+    val [k] = this;
+    i + j + k - k
   }
 }
 

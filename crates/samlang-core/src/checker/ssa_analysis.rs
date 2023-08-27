@@ -312,6 +312,12 @@ impl<'a> SsaAnalysisState<'a> {
             self.visit_annot(annot);
           }
           match pattern {
+            pattern::DestructuringPattern::Tuple(_, names) => {
+              for pattern::TuplePatternDestructuredName { name, type_: _ } in names.iter().flatten()
+              {
+                self.define_id(name.name, name.loc)
+              }
+            }
             pattern::DestructuringPattern::Object(_, names) => {
               for name in names {
                 let id = name.alias.unwrap_or(name.field_name);

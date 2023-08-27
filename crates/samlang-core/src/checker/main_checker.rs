@@ -1035,6 +1035,34 @@ fn check_statement(
     assignability_check(cx, *loc, checked_assigned_expr_type, hint);
   }
   let checked_pattern = match pattern {
+    pattern::DestructuringPattern::Tuple(pattern_loc, destructured_names) => {
+      let fields = cx.resolve_struct_definitions(checked_assigned_expr_type);
+      let mut checked_destructured_names = vec![];
+      for (index, name_opt) in destructured_names.iter().enumerate() {
+        if let Some(pattern::TuplePatternDestructuredName { name, type_: _ }) = name_opt {
+          if let Some(field_sig) = fields.get(index).filter(|it| it.is_public) {
+            cx.local_typing_context.write(name.loc, field_sig.type_.clone());
+            checked_destructured_names.push(Some(pattern::TuplePatternDestructuredName {
+              name: *name,
+              type_: Rc::new(field_sig.type_.reposition(*loc)),
+            }));
+            continue;
+          }
+          cx.error_set.report_element_missing_error(
+            name.loc,
+            checked_assigned_expr_type.to_description(),
+            index,
+          );
+          checked_destructured_names.push(Some(pattern::TuplePatternDestructuredName {
+            name: *name,
+            type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+          }));
+        } else {
+          checked_destructured_names.push(None);
+        }
+      }
+      pattern::DestructuringPattern::Tuple(*pattern_loc, checked_destructured_names)
+    }
     pattern::DestructuringPattern::Object(pattern_loc, destructed_names) => {
       let fields = cx.resolve_struct_definitions(checked_assigned_expr_type);
       let mut field_order_mapping = HashMap::new();

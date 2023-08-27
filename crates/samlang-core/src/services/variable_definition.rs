@@ -186,6 +186,24 @@ fn apply_expr_renaming(
             loc: *loc,
             associated_comments: *associated_comments,
             pattern: match pattern {
+              pattern::DestructuringPattern::Tuple(l, names) => {
+                pattern::DestructuringPattern::Tuple(
+                  *l,
+                  names
+                    .iter()
+                    .map(|name_opt| {
+                      name_opt.as_ref().map(
+                        |pattern::TuplePatternDestructuredName { name, type_ }| {
+                          pattern::TuplePatternDestructuredName {
+                            name: mod_def_id(name, definition_and_uses, new_name),
+                            type_: *type_,
+                          }
+                        },
+                      )
+                    })
+                    .collect(),
+                )
+              }
               pattern::DestructuringPattern::Object(l, names) => {
                 pattern::DestructuringPattern::Object(
                   *l,
@@ -524,9 +542,10 @@ class Main {
     val c = a;
     val g = 3;
     val {f, g as h} = Main.init(3, g);
+    val [i, j] = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if x + y * 3 > h then panic(f) else println(h);
+    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then panic(f) else println(h);
     match lambda1(3, !h) {
       None(_) -> 1.d,
       Some(dd) -> dd,
@@ -559,9 +578,10 @@ class Main {
     val renAmeD = a;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
+    val [i, j] = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if x + y * 3 > h then {
+    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)
@@ -583,9 +603,10 @@ class Main {
     val c = renAmeD;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
+    val [i, j] = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if x + y * 3 > h then {
+    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)
@@ -607,9 +628,10 @@ class Main {
     val c = a;
     val renAmeD = 3;
     val { f, g as h } = Main.init(3, renAmeD);
+    val [i, j] = Main.init(3, renAmeD);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if x + y * 3 > h then {
+    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)
@@ -625,15 +647,16 @@ class Main {
     assert_correctly_rewritten(
       source,
       &lookup,
-      Location::from_pos(7, 12, 7, 13),
+      Location::from_pos(8, 12, 8, 13),
       r#"class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
     val g = 3;
     val { f as renAmeD, g as h } = Main.init(3, g);
+    val [i, j] = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = renAmeD + h;
-    val lambda1 = (x, y) -> if x + y * 3 > h then {
+    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(renAmeD)
     } else {
       println(h)
@@ -649,15 +672,19 @@ class Main {
     assert_correctly_rewritten(
       source,
       &lookup,
-      Location::from_pos(7, 16, 7, 17),
+      Location::from_pos(8, 16, 8, 17),
       r#"class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
     val g = 3;
     val { f, g as renAmeD } = Main.init(3, g);
+    val [i, j] = Main.init(3, g);
     val _ = Obj.Tagged(renAmeD);
     val _ = f + renAmeD;
-    val lambda1 = (x, y) -> if x + y * 3 > renAmeD then {
+    val lambda1 = (
+      x,
+      y
+    ) -> if x + y + i + j * 3 > renAmeD then {
       panic(f)
     } else {
       println(renAmeD)
@@ -673,18 +700,19 @@ class Main {
     assert_correctly_rewritten(
       source,
       &lookup,
-      Location::from_pos(8, 22, 8, 23),
+      Location::from_pos(9, 22, 9, 23),
       r#"class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
+    val [i, j] = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (
       x,
       renAmeD
-    ) -> if x + renAmeD * 3 > h then {
+    ) -> if x + renAmeD + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)
@@ -700,15 +728,44 @@ class Main {
     assert_correctly_rewritten(
       source,
       &lookup,
-      Location::from_pos(11, 18, 11, 20),
+      Location::from_pos(9, 39, 9, 40),
       r#"class Main {
   function test(a: int, b: bool): unit = {
     val c = a;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
+    val [renAmeD, j] = Main.init(3, g);
     val _ = Obj.Tagged(h);
     val _ = f + h;
-    val lambda1 = (x, y) -> if x + y * 3 > h then {
+    val lambda1 = (
+      x,
+      y
+    ) -> if x + y + renAmeD + j * 3 > h then {
+      panic(f)
+    } else {
+      println(h)
+    };
+    match lambda1(3, !h) {
+      None(_) -> 1.d,
+      Some(dd) -> dd,
+    }
+  }
+}
+"#,
+    );
+    assert_correctly_rewritten(
+      source,
+      &lookup,
+      Location::from_pos(12, 18, 12, 20),
+      r#"class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a;
+    val g = 3;
+    val { f, g as h } = Main.init(3, g);
+    val [i, j] = Main.init(3, g);
+    val _ = Obj.Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)

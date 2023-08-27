@@ -534,6 +534,7 @@ pub(crate) enum ErrorDetail {
   CannotResolveModule { module_reference: ModuleReference },
   CannotResolveName { name: PStr },
   CyclicTypeDefinition { type_: Description },
+  ElementMissing { parent: Description, index: usize },
   IllegalFunctionInInterface,
   IncompatibleSubType { lower: Description, upper: Description },
   IncompatibleTypeKind { lower: Description, upper: Description },
@@ -570,6 +571,13 @@ impl ErrorDetail {
         printable_stream.push_text("Type `");
         printable_stream.push_description(type_);
         printable_stream.push_text("` has a cyclic definition.");
+      }
+      ErrorDetail::ElementMissing { parent, index } => {
+        printable_stream.push_text("Cannot access member of `");
+        printable_stream.push_description(parent);
+        printable_stream.push_text("` at index ");
+        printable_stream.push_size(*index);
+        printable_stream.push_text(".");
       }
       ErrorDetail::IllegalFunctionInInterface => {
         printable_stream.push_text("Function declarations are not allowed in interfaces.");
@@ -873,6 +881,15 @@ impl ErrorSet {
     self.report_error(type_loc, ErrorDetail::CyclicTypeDefinition { type_ });
   }
 
+  pub(crate) fn report_element_missing_error(
+    &mut self,
+    loc: Location,
+    parent: Description,
+    index: usize,
+  ) {
+    self.report_error(loc, ErrorDetail::ElementMissing { parent, index })
+  }
+
   pub(crate) fn report_illegal_function_in_interface(&mut self, loc: Location) {
     self.report_error(loc, ErrorDetail::IllegalFunctionInInterface);
   }
@@ -1081,6 +1098,7 @@ Found 2 errors."#
       builder.int_type().get_reason().use_loc,
       builder.int_type().to_description(),
     );
+    error_set.report_element_missing_error(Location::dummy(), Description::GeneralNominalType, 1);
     error_set.report_incompatible_type_kind_error(
       Location::dummy(),
       Description::GeneralClassType,
@@ -1151,6 +1169,11 @@ Module `DUMMY` is not resolved.
 Error ------------------------------------ DUMMY.sam:0:0-0:0
 
 Type `int` has a cyclic definition.
+
+
+Error ------------------------------------ DUMMY.sam:0:0-0:0
+
+Cannot access member of `nominal type` at index 1.
 
 
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -1226,7 +1249,7 @@ Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Very/Long.
 Name `global` is not resolved.
 
 
-Found 16 errors.
+Found 17 errors.
 "#;
     assert_eq!(
       expected_errors.trim(),

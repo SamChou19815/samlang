@@ -5,7 +5,7 @@ use crate::{
     CommentReference, CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition,
     TypeParameter,
   },
-  common::{rc_pstr, rc_string, rcs, Heap},
+  common::{rc_pstr, rc_string, rcs, well_known_pstrs, Heap},
   ModuleReference,
 };
 use itertools::Itertools;
@@ -30,6 +30,10 @@ fn parenthesis_surrounded_doc(doc: Document) -> Document {
 
 fn braces_surrounded_doc(doc: Document) -> Document {
   Document::spaced_bracket(rcs("{"), doc, rcs("}"))
+}
+
+fn square_brackets_surrounded_doc(doc: Document) -> Document {
+  Document::no_space_bracket(rcs("["), doc, rcs("]"))
 }
 
 fn angle_bracket_surrounded_doc(doc: Document) -> Document {
@@ -646,6 +650,15 @@ pub(super) fn statement_to_document(
 ) -> Document {
   let mut segments = vec![];
   let pattern_doc = match &stmt.pattern {
+    pattern::DestructuringPattern::Tuple(_, names) => {
+      square_brackets_surrounded_doc(comma_sep_list(names, |it| {
+        Document::Text(if let Some(name) = it {
+          rc_pstr(heap, name.name.name)
+        } else {
+          rc_pstr(heap, well_known_pstrs::UNDERSCORE)
+        })
+      }))
+    }
     pattern::DestructuringPattern::Object(_, names) => {
       braces_surrounded_doc(comma_sep_list(names, |it| {
         Document::Text(if let Some(alias) = &it.alias {
@@ -1256,6 +1269,31 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       "{ val {a, b as c}: int = 3; }",
       r#"{
   val { a, b as c }: int = 3;
+}"#,
+    );
+
+    assert_reprint_expr(
+      "{ val [a, _]: int = 3; }",
+      r#"{
+  val [a, _]: int = 3;
+}"#,
+    );
+    assert_reprint_expr(
+      "{ val [aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa]: int = 3; }",
+      r#"{
+  val [
+    aaaaa,
+    aaaaa,
+    aaaaa,
+    aaaaa,
+    _,
+    aaaaa,
+    aaaaa,
+    aaaaa,
+    aaaaa,
+    _,
+    aaaaa
+  ]: int = 3;
 }"#,
     );
 
