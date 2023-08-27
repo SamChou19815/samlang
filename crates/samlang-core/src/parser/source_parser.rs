@@ -1276,7 +1276,7 @@ impl<'a> SourceParser<'a> {
     let concrete_comments = self.collect_preceding_comments();
     let associated_comments = self.comments_store.create_comment_reference(concrete_comments);
     let start_loc = self.assert_and_consume_keyword(Keyword::VAL);
-    let pattern = self.parse_pattern();
+    let pattern = self.parse_destructuring_pattern();
     let annotation = if let Token(_, TokenContent::Operator(TokenOp::COLON)) = self.peek() {
       self.consume();
       Some(self.parse_annotation())
@@ -1295,7 +1295,7 @@ impl<'a> SourceParser<'a> {
     }
   }
 
-  pub(super) fn parse_pattern(&mut self) -> expr::Pattern<()> {
+  pub(super) fn parse_destructuring_pattern(&mut self) -> pattern::DestructuringPattern<()> {
     let peeked = self.peek();
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
       self.consume();
@@ -1310,16 +1310,25 @@ impl<'a> SourceParser<'a> {
           } else {
             (None, field_name.loc)
           };
-          expr::ObjectPatternDestucturedName { loc, field_name, field_order: 0, alias, type_: () }
+          pattern::ObjectPatternDestucturedName {
+            loc,
+            field_name,
+            field_order: 0,
+            alias,
+            type_: (),
+          }
         });
       let end_location = self.assert_and_consume_operator(TokenOp::RBRACE);
-      return expr::Pattern::Object(peeked_loc.union(&end_location), destructured_names);
+      return pattern::DestructuringPattern::Object(
+        peeked_loc.union(&end_location),
+        destructured_names,
+      );
     }
     if let Token(peeked_loc, TokenContent::Operator(TokenOp::UNDERSCORE)) = peeked {
       self.consume();
-      return expr::Pattern::Wildcard(peeked_loc);
+      return pattern::DestructuringPattern::Wildcard(peeked_loc);
     }
-    expr::Pattern::Id(peeked.0, self.assert_and_peek_lower_id().1)
+    pattern::DestructuringPattern::Id(peeked.0, self.assert_and_peek_lower_id().1)
   }
 
   fn parse_upper_id(&mut self) -> Id {
@@ -1560,7 +1569,7 @@ mod tests {
     parser.parse_class_member_definition();
     parser.parse_class_member_declaration();
     parser.parse_expression();
-    parser.parse_pattern();
+    parser.parse_destructuring_pattern();
     parser.parse_statement();
     parser.parse_annotation();
     parser.parse_module();

@@ -1,6 +1,6 @@
 use crate::{
   ast::{
-    source::{expr, Module, Toplevel},
+    source::{expr, pattern, Module, Toplevel},
     Location, Position,
   },
   checker::type_::Type,
@@ -108,7 +108,7 @@ fn search_expression(
           return Some(found);
         }
         match &stmt.pattern {
-          expr::Pattern::Id(pat_loc, n) if pat_loc.contains_position(position) => {
+          pattern::DestructuringPattern::Id(pat_loc, n) if pat_loc.contains_position(position) => {
             return Some(LocationCoverSearchResult::TypedName(
               *pat_loc,
               *n,

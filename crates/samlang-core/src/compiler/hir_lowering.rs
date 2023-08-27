@@ -831,7 +831,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     self.variable_cx.push_scope();
     for s in &expression.statements {
       match &s.pattern {
-        source::expr::Pattern::Object(_, destructured_names) => {
+        source::pattern::DestructuringPattern::Object(_, destructured_names) => {
           let assigned_expr =
             self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
           let id_type = assigned_expr.type_().as_id().unwrap();
@@ -857,12 +857,12 @@ impl<'a> ExpressionLoweringManager<'a> {
             });
           }
         }
-        source::expr::Pattern::Id(_, id) => {
+        source::pattern::DestructuringPattern::Id(_, id) => {
           let e =
             self.lowered_and_add_statements(&s.assigned_expression, Some(*id), &mut lowered_stmts);
           self.variable_cx.bind(*id, e);
         }
-        source::expr::Pattern::Wildcard(_) => {
+        source::pattern::DestructuringPattern::Wildcard(_) => {
           self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
         }
       }
@@ -2076,7 +2076,10 @@ return (_t7: DUMMY_Dummy);"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
+          pattern: source::pattern::DestructuringPattern::Id(
+            Location::dummy(),
+            well_known_pstrs::LOWER_A,
+          ),
           annotation: Some(annot_builder.unit_annot()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
@@ -2084,17 +2087,17 @@ return (_t7: DUMMY_Dummy);"#,
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
                 associated_comments: NO_COMMENT_REFERENCE,
-                pattern: source::expr::Pattern::Object(
+                pattern: source::pattern::DestructuringPattern::Object(
                   Location::dummy(),
                   vec![
-                    source::expr::ObjectPatternDestucturedName {
+                    source::pattern::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 0,
                       field_name: source::Id::from(well_known_pstrs::LOWER_A),
                       alias: None,
                       type_: builder.int_type(),
                     },
-                    source::expr::ObjectPatternDestucturedName {
+                    source::pattern::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 1,
                       field_name: source::Id::from(well_known_pstrs::LOWER_B),
@@ -2109,7 +2112,7 @@ return (_t7: DUMMY_Dummy);"#,
               source::expr::DeclarationStatement {
                 loc: Location::dummy(),
                 associated_comments: NO_COMMENT_REFERENCE,
-                pattern: source::expr::Pattern::Wildcard(Location::dummy()),
+                pattern: source::pattern::DestructuringPattern::Wildcard(Location::dummy()),
                 annotation: Some(dummy_source_id_annot(heap)),
                 assigned_expression: Box::new(dummy_source_this(heap)),
               },
@@ -2133,17 +2136,17 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::expr::Pattern::Object(
+            pattern: source::pattern::DestructuringPattern::Object(
               Location::dummy(),
               vec![
-                source::expr::ObjectPatternDestucturedName {
+                source::pattern::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 0,
                   field_name: source::Id::from(well_known_pstrs::LOWER_A),
                   alias: None,
                   type_: builder.int_type(),
                 },
-                source::expr::ObjectPatternDestucturedName {
+                source::pattern::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 1,
                   field_name: source::Id::from(well_known_pstrs::LOWER_B),
@@ -2158,7 +2161,7 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::expr::Pattern::Wildcard(Location::dummy()),
+            pattern: source::pattern::DestructuringPattern::Wildcard(Location::dummy()),
             annotation: Some(dummy_source_id_annot(heap)),
             assigned_expression: Box::new(dummy_source_this(heap)),
           },
@@ -2178,7 +2181,7 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
+          pattern: source::pattern::DestructuringPattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
           annotation: Some(annot_builder.int_annot()),
           assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
             common: source::expr::ExpressionCommon::dummy(builder.int_type()),
@@ -2218,7 +2221,10 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
+            pattern: source::pattern::DestructuringPattern::Id(
+              Location::dummy(),
+              well_known_pstrs::LOWER_A,
+            ),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(source::expr::E::Literal(
               source::expr::ExpressionCommon::dummy(builder.string_type()),
@@ -2228,7 +2234,10 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_B),
+            pattern: source::pattern::DestructuringPattern::Id(
+              Location::dummy(),
+              well_known_pstrs::LOWER_B,
+            ),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(id_expr(
               well_known_pstrs::LOWER_A,
@@ -2249,14 +2258,20 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
+          pattern: source::pattern::DestructuringPattern::Id(
+            Location::dummy(),
+            well_known_pstrs::LOWER_A,
+          ),
           annotation: Some(annot_builder.unit_annot()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
             statements: vec![source::expr::DeclarationStatement {
               loc: Location::dummy(),
               associated_comments: NO_COMMENT_REFERENCE,
-              pattern: source::expr::Pattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
+              pattern: source::pattern::DestructuringPattern::Id(
+                Location::dummy(),
+                well_known_pstrs::LOWER_A,
+              ),
               annotation: Some(annot_builder.int_annot()),
               assigned_expression: Box::new(dummy_source_this(heap)),
             }],

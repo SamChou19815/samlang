@@ -1,5 +1,7 @@
 use crate::{
-  ast::source::{annotation, expr, Id, Literal, Module, Toplevel, TypeDefinition, TypeParameter},
+  ast::source::{
+    annotation, expr, pattern, Id, Literal, Module, Toplevel, TypeDefinition, TypeParameter,
+  },
   checker::type_::{FunctionType, NominalType, Type},
   Heap, ModuleReference,
 };
@@ -122,7 +124,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
         mark_expression(heap, &stmt.assigned_expression);
         mark_annot_opt(heap, &stmt.annotation);
         match &stmt.pattern {
-          expr::Pattern::Object(_, names) => {
+          pattern::DestructuringPattern::Object(_, names) => {
             for n in names {
               mark_type(heap, &n.type_);
               mark_id(heap, &n.field_name);
@@ -131,8 +133,8 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
               }
             }
           }
-          expr::Pattern::Id(_, n) => heap.mark(*n),
-          expr::Pattern::Wildcard(_) => {}
+          pattern::DestructuringPattern::Id(_, n) => heap.mark(*n),
+          pattern::DestructuringPattern::Wildcard(_) => {}
         };
       }
       if let Some(e) = &e.expression {

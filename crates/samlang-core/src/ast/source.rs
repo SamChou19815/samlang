@@ -197,6 +197,26 @@ impl Id {
   }
 }
 
+pub(crate) mod pattern {
+  use super::{Id, Location, PStr};
+
+  #[derive(Clone, PartialEq, Eq)]
+  pub(crate) struct ObjectPatternDestucturedName<T: Clone> {
+    pub(crate) loc: Location,
+    pub(crate) field_order: usize,
+    pub(crate) field_name: Id,
+    pub(crate) alias: Option<Id>,
+    pub(crate) type_: T,
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
+  pub(crate) enum DestructuringPattern<T: Clone> {
+    Object(Location, Vec<ObjectPatternDestucturedName<T>>),
+    Id(Location, PStr),
+    Wildcard(Location),
+  }
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct OptionallyAnnotatedId<T: Clone> {
   pub(crate) name: Id,
@@ -389,26 +409,10 @@ pub(crate) mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct ObjectPatternDestucturedName<T: Clone> {
-    pub(crate) loc: Location,
-    pub(crate) field_order: usize,
-    pub(crate) field_name: Id,
-    pub(crate) alias: Option<Id>,
-    pub(crate) type_: T,
-  }
-
-  #[derive(Clone, PartialEq, Eq)]
-  pub(crate) enum Pattern<T: Clone> {
-    Object(Location, Vec<ObjectPatternDestucturedName<T>>),
-    Id(Location, PStr),
-    Wildcard(Location),
-  }
-
-  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct DeclarationStatement<T: Clone> {
     pub(crate) loc: Location,
     pub(crate) associated_comments: CommentReference,
-    pub(crate) pattern: Pattern<T>,
+    pub(crate) pattern: super::pattern::DestructuringPattern<T>,
     pub(crate) annotation: Option<annotation::T>,
     pub(crate) assigned_expression: Box<E<T>>,
   }
