@@ -182,6 +182,7 @@ pub(crate) mod well_known_pstrs {
   pub(crate) const DEC_REF_FN: PStr = const_inline_pstr!(*b"dec_ref", 0);
   pub(crate) const INIT: PStr = const_inline_pstr!(*b"init", 3);
   pub(crate) const THIS: PStr = const_inline_pstr!(*b"this", 3);
+  pub(crate) const STD: PStr = const_inline_pstr!(*b"std", 4);
 
   pub(crate) const UNDERSCORE: PStr = const_inline_pstr!(*b"_", 6);
   pub(crate) const UNDERSCORE_THIS: PStr = const_inline_pstr!(*b"_this", 2);
@@ -236,6 +237,10 @@ impl ModuleReference {
 
   pub(crate) fn get_parts<'a>(&self, heap: &'a Heap) -> &'a [PStr] {
     heap.module_reference_pointer_table[self.0]
+  }
+
+  pub fn is_std(&self, heap: &Heap) -> bool {
+    self.get_parts(heap).get(0) == Some(&well_known_pstrs::STD)
   }
 
   pub fn pretty_print(&self, heap: &Heap) -> String {
@@ -691,9 +696,13 @@ mod tests {
     let ma1 = heap.alloc_module_reference_from_string_vec(vec!["a".to_string()]);
     let mb = heap.alloc_module_reference_from_string_vec(vec!["b".to_string(), "d-c".to_string()]);
     let ma2 = heap.alloc_module_reference_from_string_vec(vec!["a".to_string()]);
+    let std_a =
+      heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "a".to_string()]);
     let m_dummy = heap.alloc_dummy_module_reference();
     assert!(heap.get_allocated_module_reference_opt(vec!["a".to_string()]).is_some());
     assert!(heap.get_allocated_module_reference_opt(vec!["d-c".to_string()]).is_none());
+    assert!(std_a.is_std(&heap));
+    assert!(!ma2.is_std(&heap));
     assert!(heap
       .get_allocated_module_reference_opt(vec!["ddasdasdassdfasdfasdfasdfasdf".to_string()])
       .is_none());
