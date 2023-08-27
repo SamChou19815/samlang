@@ -1,8 +1,9 @@
 use super::prettier::Document;
 use crate::{
   ast::source::{
-    annotation, expr, ClassDefinition, ClassMemberDeclaration, CommentKind, CommentReference,
-    CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition, TypeParameter,
+    annotation, expr, pattern, ClassDefinition, ClassMemberDeclaration, CommentKind,
+    CommentReference, CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition,
+    TypeParameter,
   },
   common::{rc_pstr, rc_string, rcs, Heap},
   ModuleReference,
@@ -645,15 +646,17 @@ pub(super) fn statement_to_document(
 ) -> Document {
   let mut segments = vec![];
   let pattern_doc = match &stmt.pattern {
-    expr::Pattern::Object(_, names) => braces_surrounded_doc(comma_sep_list(names, |it| {
-      Document::Text(if let Some(alias) = &it.alias {
-        rc_string(format!("{} as {}", it.field_name.name.as_str(heap), alias.name.as_str(heap)))
-      } else {
-        rc_pstr(heap, it.field_name.name)
-      })
-    })),
-    expr::Pattern::Id(_, n) => Document::Text(rc_pstr(heap, *n)),
-    expr::Pattern::Wildcard(_) => Document::Text(rcs("_")),
+    pattern::DestructuringPattern::Object(_, names) => {
+      braces_surrounded_doc(comma_sep_list(names, |it| {
+        Document::Text(if let Some(alias) = &it.alias {
+          rc_string(format!("{} as {}", it.field_name.name.as_str(heap), alias.name.as_str(heap)))
+        } else {
+          rc_pstr(heap, it.field_name.name)
+        })
+      }))
+    }
+    pattern::DestructuringPattern::Id(_, n) => Document::Text(rc_pstr(heap, *n)),
+    pattern::DestructuringPattern::Wildcard(_) => Document::Text(rcs("_")),
   };
   segments.push(
     associated_comments_doc(

@@ -2,7 +2,7 @@
 // @origin https://github.com/SamChou19815/samlang/pull/35
 
 use crate::{
-  ast::source::{expr, Literal, Module, Toplevel},
+  ast::source::{expr, pattern, Literal, Module, Toplevel},
   checker::type_::Type,
   common::{well_known_pstrs, Heap, LocalStackedContext, PStr},
 };
@@ -342,7 +342,7 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
       for stmt in &e.statements {
         let assigned_value = eval_expr(cx, heap, &stmt.assigned_expression);
         match &stmt.pattern {
-          expr::Pattern::Object(_, destructured_names) => {
+          pattern::DestructuringPattern::Object(_, destructured_names) => {
             for destructured_name in destructured_names {
               let k = if let Some(n) = &destructured_name.alias {
                 &n.name
@@ -356,10 +356,10 @@ fn eval_expr(cx: &mut InterpretationContext, heap: &mut Heap, expr: &expr::E<Rc<
               cx.local_values.insert(*k, *v);
             }
           }
-          expr::Pattern::Id(_, n) => {
+          pattern::DestructuringPattern::Id(_, n) => {
             cx.local_values.insert(*n, assigned_value);
           }
-          expr::Pattern::Wildcard(_) => {}
+          pattern::DestructuringPattern::Wildcard(_) => {}
         }
       }
       let v = if let Some(final_expr) = &e.expression {

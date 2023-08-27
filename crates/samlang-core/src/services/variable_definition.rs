@@ -1,8 +1,8 @@
 use crate::{
   ast::{
     source::{
-      expr, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition, Id,
-      Module, OptionallyAnnotatedId, Toplevel,
+      expr, pattern, AnnotatedId, ClassDefinition, ClassMemberDeclaration, ClassMemberDefinition,
+      Id, Module, OptionallyAnnotatedId, Toplevel,
     },
     Location,
   },
@@ -186,49 +186,51 @@ fn apply_expr_renaming(
             loc: *loc,
             associated_comments: *associated_comments,
             pattern: match pattern {
-              expr::Pattern::Object(l, names) => expr::Pattern::Object(
-                *l,
-                names
-                  .iter()
-                  .map(
-                    |expr::ObjectPatternDestucturedName {
-                       loc,
-                       field_order,
-                       field_name,
-                       alias,
-                       type_,
-                     }| {
-                      if let Some(alias) = alias {
-                        expr::ObjectPatternDestucturedName {
-                          loc: *loc,
-                          field_order: *field_order,
-                          field_name: *field_name,
-                          alias: Some(mod_def_id(alias, definition_and_uses, new_name)),
-                          type_: *type_,
+              pattern::DestructuringPattern::Object(l, names) => {
+                pattern::DestructuringPattern::Object(
+                  *l,
+                  names
+                    .iter()
+                    .map(
+                      |pattern::ObjectPatternDestucturedName {
+                         loc,
+                         field_order,
+                         field_name,
+                         alias,
+                         type_,
+                       }| {
+                        if let Some(alias) = alias {
+                          pattern::ObjectPatternDestucturedName {
+                            loc: *loc,
+                            field_order: *field_order,
+                            field_name: *field_name,
+                            alias: Some(mod_def_id(alias, definition_and_uses, new_name)),
+                            type_: *type_,
+                          }
+                        } else {
+                          let name_to_mod = alias.as_ref().unwrap_or(field_name);
+                          let alias = mod_def_id(name_to_mod, definition_and_uses, new_name);
+                          let alias_opt =
+                            if alias.name.eq(&field_name.name) { None } else { Some(alias) };
+                          pattern::ObjectPatternDestucturedName {
+                            loc: *loc,
+                            field_order: *field_order,
+                            field_name: *field_name,
+                            alias: alias_opt,
+                            type_: *type_,
+                          }
                         }
-                      } else {
-                        let name_to_mod = alias.as_ref().unwrap_or(field_name);
-                        let alias = mod_def_id(name_to_mod, definition_and_uses, new_name);
-                        let alias_opt =
-                          if alias.name.eq(&field_name.name) { None } else { Some(alias) };
-                        expr::ObjectPatternDestucturedName {
-                          loc: *loc,
-                          field_order: *field_order,
-                          field_name: *field_name,
-                          alias: alias_opt,
-                          type_: *type_,
-                        }
-                      }
-                    },
-                  )
-                  .collect(),
-              ),
-              expr::Pattern::Id(l, name) => {
+                      },
+                    )
+                    .collect(),
+                )
+              }
+              pattern::DestructuringPattern::Id(l, name) => {
                 let name =
                   if l.eq(&definition_and_uses.definition_location) { new_name } else { *name };
-                expr::Pattern::Id(*l, name)
+                pattern::DestructuringPattern::Id(*l, name)
               }
-              expr::Pattern::Wildcard(_) => pattern.clone(),
+              pattern::DestructuringPattern::Wildcard(_) => pattern.clone(),
             },
             annotation: annotation.clone(),
             assigned_expression: Box::new(apply_expr_renaming(

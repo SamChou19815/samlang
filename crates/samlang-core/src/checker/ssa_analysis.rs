@@ -1,7 +1,7 @@
 use crate::{
   ast::{
     source::{
-      annotation, expr, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
+      annotation, expr, pattern, ClassMemberDeclaration, Module, OptionallyAnnotatedId, Toplevel,
       TypeDefinition, TypeParameter,
     },
     Location,
@@ -312,14 +312,14 @@ impl<'a> SsaAnalysisState<'a> {
             self.visit_annot(annot);
           }
           match pattern {
-            expr::Pattern::Object(_, names) => {
+            pattern::DestructuringPattern::Object(_, names) => {
               for name in names {
                 let id = name.alias.unwrap_or(name.field_name);
                 self.define_id(id.name, id.loc);
               }
             }
-            expr::Pattern::Id(loc, id) => self.define_id(*id, *loc),
-            expr::Pattern::Wildcard(_) => {}
+            pattern::DestructuringPattern::Id(loc, id) => self.define_id(*id, *loc),
+            pattern::DestructuringPattern::Wildcard(_) => {}
           }
         }
         if let Some(final_expr) = &e.expression {

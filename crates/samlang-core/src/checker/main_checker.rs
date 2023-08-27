@@ -12,9 +12,8 @@ use super::{
 use crate::{
   ast::{
     source::{
-      expr::{self, ObjectPatternDestucturedName},
-      ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon, Literal,
-      Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
+      expr, pattern, ClassMemberDeclaration, ClassMemberDefinition, Id, InterfaceDeclarationCommon,
+      Literal, Module, OptionallyAnnotatedId, Toplevel, TypeDefinition,
     },
     Description, Location, Reason,
   },
@@ -1036,7 +1035,7 @@ fn check_statement(
     assignability_check(cx, *loc, checked_assigned_expr_type, hint);
   }
   let checked_pattern = match pattern {
-    expr::Pattern::Object(pattern_loc, destructed_names) => {
+    pattern::DestructuringPattern::Object(pattern_loc, destructed_names) => {
       let fields = cx.resolve_struct_definitions(checked_assigned_expr_type);
       let mut field_order_mapping = HashMap::new();
       let mut field_mappings = HashMap::new();
@@ -1045,7 +1044,7 @@ fn check_statement(
         field_mappings.insert(field.name, (field.type_, field.is_public));
       }
       let mut checked_destructured_names = vec![];
-      for ObjectPatternDestucturedName { loc, field_order, field_name, alias, type_: _ } in
+      for pattern::ObjectPatternDestucturedName { loc, field_order, field_name, alias, type_: _ } in
         destructed_names
       {
         if let Some((field_type, _)) =
@@ -1054,7 +1053,7 @@ fn check_statement(
           let write_loc = if let Some(alias) = &alias { alias.loc } else { field_name.loc };
           cx.local_typing_context.write(write_loc, field_type.clone());
           let field_order = field_order_mapping.get(&field_name.name).unwrap();
-          checked_destructured_names.push(ObjectPatternDestucturedName {
+          checked_destructured_names.push(pattern::ObjectPatternDestucturedName {
             loc: *loc,
             field_order: *field_order,
             field_name: *field_name,
@@ -1068,7 +1067,7 @@ fn check_statement(
           checked_assigned_expr_type.to_description(),
           field_name.name,
         );
-        checked_destructured_names.push(ObjectPatternDestucturedName {
+        checked_destructured_names.push(pattern::ObjectPatternDestucturedName {
           loc: *loc,
           field_order: *field_order,
           field_name: *field_name,
@@ -1076,13 +1075,13 @@ fn check_statement(
           type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
         });
       }
-      expr::Pattern::Object(*pattern_loc, checked_destructured_names)
+      pattern::DestructuringPattern::Object(*pattern_loc, checked_destructured_names)
     }
-    expr::Pattern::Id(loc, name) => {
+    pattern::DestructuringPattern::Id(loc, name) => {
       cx.local_typing_context.write(*loc, checked_assigned_expr_type.clone());
-      expr::Pattern::Id(*loc, *name)
+      pattern::DestructuringPattern::Id(*loc, *name)
     }
-    expr::Pattern::Wildcard(loc) => expr::Pattern::Wildcard(*loc),
+    pattern::DestructuringPattern::Wildcard(loc) => pattern::DestructuringPattern::Wildcard(*loc),
   };
   expr::DeclarationStatement {
     loc: *loc,

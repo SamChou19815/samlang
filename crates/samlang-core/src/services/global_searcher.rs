@@ -1,6 +1,6 @@
 use crate::{
   ast::{
-    source::{annotation, expr, Module, Toplevel, TypeDefinition},
+    source::{annotation, expr, pattern, Module, Toplevel, TypeDefinition},
     Location,
   },
   checker::type_::Type,
@@ -144,7 +144,7 @@ fn search_expression(
         }
         match (&stmt.pattern, request, stmt.assigned_expression.type_().as_nominal()) {
           (
-            expr::Pattern::Object(_, destructured_names),
+            pattern::DestructuringPattern::Object(_, destructured_names),
             GlobalNameSearchRequest::Property(mod_ref, toplevel_name, field_name),
             Some(nominal_type),
           ) if mod_ref.eq(&nominal_type.module_reference) && toplevel_name.eq(&nominal_type.id) => {

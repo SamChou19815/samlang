@@ -191,9 +191,9 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: expr::Pattern::Object(
+          pattern: pattern::DestructuringPattern::Object(
             Location::dummy(),
-            vec![expr::ObjectPatternDestucturedName {
+            vec![pattern::ObjectPatternDestucturedName {
               loc: Location::dummy(),
               field_order: 1,
               field_name: Id::from(heap.alloc_str_for_test("name")),
@@ -211,7 +211,7 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: expr::Pattern::Wildcard(Location::dummy()),
+          pattern: pattern::DestructuringPattern::Wildcard(Location::dummy()),
           annotation: Some(annotation::T::Primitive(
             Location::dummy(),
             NO_COMMENT_REFERENCE,
@@ -222,7 +222,10 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: expr::Pattern::Id(Location::dummy(), heap.alloc_str_for_test("s")),
+          pattern: pattern::DestructuringPattern::Id(
+            Location::dummy(),
+            heap.alloc_str_for_test("s"),
+          ),
           annotation: Some(annotation::T::Fn(annotation::Function {
             location: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
