@@ -63,12 +63,12 @@ mod utils {
 
   fn walk(
     heap: &mut samlang_core::Heap,
-    ignores: &Vec<String>,
+    configuration: &configuration::ProjectConfiguration,
     absolute_source_path: &Path,
     start_path: &Path,
     sources: &mut HashMap<samlang_core::ModuleReference, String>,
   ) {
-    for ignore in ignores {
+    for ignore in &configuration.ignores {
       if start_path
         .strip_prefix(absolute_source_path)
         .ok()
@@ -84,12 +84,18 @@ mod utils {
         file_path_to_module_reference_alloc(heap, absolute_source_path, start_path),
         fs::read_to_string(start_path),
       ) {
-        sources.insert(mod_ref, src);
+        if !configuration.dangerously_allow_libdef_shadowing && mod_ref.is_std(heap) {
+          eprintln!("Modules under std namespace cannot be included.");
+          eprintln!("They are reserved for builtin standard library.");
+          std::process::exit(1)
+        } else {
+          sources.insert(mod_ref, src);
+        }
       }
     } else if start_path.is_dir() {
       if let Ok(read_dir_result) = fs::read_dir(start_path) {
         for entry in read_dir_result.into_iter().flatten() {
-          walk(heap, ignores, absolute_source_path, entry.path().as_path(), sources);
+          walk(heap, configuration, absolute_source_path, entry.path().as_path(), sources);
         }
       }
     }
@@ -100,11 +106,33 @@ mod utils {
     heap: &mut samlang_core::Heap,
   ) -> HashMap<samlang_core::ModuleReference, String> {
     let mut sources = HashMap::new();
+    if !configuration.dangerously_allow_libdef_shadowing {
+      sources.insert(
+        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "list".to_string()]),
+        include_str!("../../../std/list.sam").to_string(),
+      );
+      sources.insert(
+        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "map".to_string()]),
+        include_str!("../../../std/map.sam").to_string(),
+      );
+      sources.insert(
+        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "option".to_string()]),
+        include_str!("../../../std/option.sam").to_string(),
+      );
+      sources.insert(
+        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "result".to_string()]),
+        include_str!("../../../std/result.sam").to_string(),
+      );
+      sources.insert(
+        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "tuples".to_string()]),
+        include_str!("../../../std/tuples.sam").to_string(),
+      );
+    }
     if let Ok(absolute_source_path) =
       fs::canonicalize(PathBuf::from(&configuration.source_directory))
     {
       let start_path = absolute_source_path.as_path();
-      walk(heap, &configuration.ignores, start_path, start_path, &mut sources);
+      walk(heap, configuration, start_path, start_path, &mut sources);
     }
     sources
   }

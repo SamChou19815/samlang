@@ -7,6 +7,7 @@ pub(super) struct ProjectConfiguration {
   pub(super) output_directory: String,
   pub(super) entry_points: Vec<String>,
   pub(super) ignores: Vec<String>,
+  pub(super) dangerously_allow_libdef_shadowing: bool,
 }
 
 pub(super) enum ConfigurationLoadingFailure {
@@ -46,7 +47,15 @@ fn parse_configuration(configuration_string: &str) -> Option<ProjectConfiguratio
   let output_directory = parse_string_field(&parsed, "outputDirectory", "out")?;
   let entry_points = parse_string_array_field(&parsed, "entryPoints")?;
   let ignores = parse_string_array_field(&parsed, "ignores")?;
-  Some(ProjectConfiguration { source_directory, output_directory, entry_points, ignores })
+  let dangerously_allow_libdef_shadowing =
+    parsed.get("__dangerously_allow_libdef_shadowing__").and_then(|v| v.as_bool()).unwrap_or(false);
+  Some(ProjectConfiguration {
+    source_directory,
+    output_directory,
+    entry_points,
+    ignores,
+    dangerously_allow_libdef_shadowing,
+  })
 }
 
 fn load_project_configuration_custom_start_path(
@@ -96,6 +105,7 @@ mod tests {
         output_directory: "out".to_string(),
         entry_points: vec![],
         ignores: vec![],
+        dangerously_allow_libdef_shadowing: false,
       }
     )
     .is_empty());
@@ -105,6 +115,7 @@ mod tests {
         output_directory: "out".to_string(),
         entry_points: vec![],
         ignores: vec![],
+        dangerously_allow_libdef_shadowing: false,
       },
       parse_configuration("{}").unwrap()
     );
@@ -114,6 +125,7 @@ mod tests {
         output_directory: "out".to_string(),
         entry_points: vec![],
         ignores: vec![],
+        dangerously_allow_libdef_shadowing: false,
       },
       parse_configuration("{\"sourceDirectory\": \"source\"}").unwrap()
     );
@@ -123,6 +135,7 @@ mod tests {
         output_directory: "out-out".to_string(),
         entry_points: vec![],
         ignores: vec![],
+        dangerously_allow_libdef_shadowing: false,
       },
       parse_configuration("{\"outputDirectory\": \"out-out\"}").unwrap()
     );
@@ -132,13 +145,15 @@ mod tests {
         output_directory: "output".to_string(),
         entry_points: vec!["a".to_string(), "b".to_string()],
         ignores: vec!["c".to_string(), "d".to_string()],
+        dangerously_allow_libdef_shadowing: true,
       },
       parse_configuration(
         r#"{
           "sourceDirectory": "source",
           "outputDirectory": "output",
           "entryPoints": ["a", "b"],
-          "ignores": ["c", "d"]
+          "ignores": ["c", "d"],
+          "__dangerously_allow_libdef_shadowing__": true
         }"#
       )
       .unwrap()

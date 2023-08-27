@@ -1,4 +1,5 @@
 {
   "entryPoints": ["tests.AllTests"],
-  "ignores": [".git", ".sl", "crates", "packages", "runtime", "target", "out", "node_modules"]
+  "ignores": [".git", ".sl", "crates", "packages", "runtime", "target", "out", "node_modules"],
+  "__dangerously_allow_libdef_shadowing__": true
 }
