@@ -2372,7 +2372,7 @@ class Main {
     for test in &tests {
       let mod_ref = heap.alloc_module_reference_from_string_vec(vec![test.name.to_string()]);
       let main_type_name = lir_sources.symbol_table.create_main_type_name(mod_ref);
-      let actual = interpreter::run_lir_sources(
+      let actual = interpreter::run(
         heap,
         &lir_sources,
         ast::mir::FunctionName { type_name: main_type_name, fn_name: well_known_pstrs::MAIN_FN },
