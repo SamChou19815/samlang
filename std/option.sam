@@ -1,0 +1,60 @@
+import { Pair } from std.tuples;
+
+class Option<T>(None, Some(T)) {
+  function <A, B> both(optionA: Option<A>, optionB: Option<B>): Option<Pair<A, B>> =
+    match optionA {
+      None -> Option.None(),
+      Some(a) -> match optionB {
+        None -> Option.None(),
+        Some(b) -> Option.Some(Pair.init(a, b)),
+      }
+    }
+
+  method isSome(): bool =
+    match this {
+      None -> false,
+      Some(_) -> true,
+    }
+
+  method isNone(): bool =
+    match this {
+      None -> true,
+      Some(_) -> false,
+    }
+
+  method <R> map(f: (T) -> R): Option<R> =
+    match this {
+      None -> Option.None(),
+      Some(v) -> Option.Some(f(v)),
+    }
+
+  method filter(f: (T) -> bool): Option<T> =
+    match this {
+      None -> Option.None(),
+      Some(v) -> if f(v) then Option.Some(v) else Option.None(),
+    }
+
+  method <R> valueMap(default: R, f: (T) -> R): R =
+    match this {
+      None -> default,
+      Some(v) -> f(v),
+    }
+
+  method iter(f: (T) -> unit): unit =
+    match this {
+      None -> {  }
+      Some(v) -> f(v),
+    }
+
+  method <R> bind(f: (T) -> Option<R>): Option<R> =
+    match this {
+      None -> Option.None(),
+      Some(v) -> f(v),
+    }
+
+  method unwrap(): T =
+    match this {
+      Some(v) -> v,
+      None -> Process.panic("Unwrapping Option.None"),
+    }
+}
