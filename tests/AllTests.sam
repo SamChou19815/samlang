@@ -1,4 +1,4 @@
-import { List } from stdlib.utils;
+import { List } from std.list;
 import { AndOrInsideIf } from tests.AndOrInsideIf;
 import { Benchmark } from tests.Benchmark;
 import { BlockInIfElse } from tests.BlockInIfElse;

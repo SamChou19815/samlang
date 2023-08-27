@@ -1,0 +1,206 @@
+interface GeneralTuple<E0, E1> {
+  method first(): E0
+
+  method second(): E1
+}
+
+class Pair<E0, E1>(val e0: E0, val e1: E1) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Triple<E0, E1, E2>(val e0: E0, val e1: E1, val e2: E2) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple4<E0, E1, E2, E3>(val e0: E0, val e1: E1, val e2: E2, val e3: E3) :
+  GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple5<E0, E1, E2, E3, E4>(val e0: E0, val e1: E1, val e2: E2, val e3: E3, val e4: E4) :
+  GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple6<E0, E1, E2, E3, E4, E5>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple7<E0, E1, E2, E3, E4, E5, E6>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple8<E0, E1, E2, E3, E4, E5, E6, E7>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple9<E0, E1, E2, E3, E4, E5, E6, E7, E8>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple10<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple11<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple12<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple13<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11,
+  val e12: E12
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple14<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11,
+  val e12: E12,
+  val e13: E13
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}
+
+class Tuple15<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13, E14>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11,
+  val e12: E12,
+  val e13: E13,
+  val e14: E14
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}

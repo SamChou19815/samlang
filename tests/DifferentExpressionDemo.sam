@@ -1,4 +1,5 @@
-import { List, Option } from stdlib.utils;
+import { List } from std.list;
+import { Option } from std.option;
 import { ForTests } from tests.StdLib;
 
 class Foo(val a: int) {

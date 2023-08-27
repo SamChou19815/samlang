@@ -1,0 +1,119 @@
+import { Option } from std.option;
+import { Pair } from std.tuples;
+
+class List<T>(Nil, Cons(T, List<T>)) {
+  function <T> nil(): List<T> = List.Nil()
+
+  function <T> of(t: T): List<T> = List.Cons(t, List.Nil<T>())
+
+  method cons(t: T): List<T> = List.Cons(t, this)
+
+  method length(): int = this.fold((acc, elem) -> acc + 1, 0)
+
+  method isEmpty(): bool =
+    match this {
+      Nil -> true,
+      Cons(_, _) -> false,
+    }
+
+  method filter(f: (T) -> bool): List<T> =
+    match this {
+      Nil -> this,
+      Cons(v, rest) -> {
+        val filteredRest = rest.filter(f);
+        if f(v) then List.Cons(v, filteredRest) else filteredRest
+      }
+    }
+
+  method <R> map(f: (T) -> R): List<R> =
+    match this {
+      Nil -> List.Nil(),
+      Cons(v, rest) -> { List.Cons(f(v), rest.map(f)) }
+    }
+
+  method <R> filterMap(f: (T) -> Option<R>): List<R> =
+    match this {
+      Nil -> List.Nil(),
+      Cons(v, rest) -> {
+        val mappedRest = rest.filterMap(f);
+        match f(v) {
+          None -> mappedRest,
+          Some(mapped) -> List.Cons(mapped, mappedRest),
+        }
+      }
+    }
+
+  method iter(f: (T) -> unit): unit =
+    match this {
+      Nil -> {  }
+      Cons(v, rest) -> {
+        val _ = f(v);
+        rest.iter(f)
+      }
+    }
+
+  method contains(element: T, equal: (T, T) -> bool): bool =
+    match this {
+      Nil -> false,
+      Cons(v, rest) -> if equal(element, v) then true else rest.contains(element, equal),
+    }
+
+  method forAll(f: (T) -> bool): bool =
+    match this {
+      Nil -> true,
+      Cons(v, rest) -> f(v) && rest.forAll(f),
+    }
+
+  method exists(f: (T) -> bool): bool =
+    match this {
+      Nil -> false,
+      Cons(v, rest) -> f(v) || rest.exists(f),
+    }
+
+  method find(f: (T) -> bool): Option<T> =
+    match this {
+      Nil -> Option.None(),
+      Cons(v, rest) -> if f(v) then Option.Some(v) else rest.find(f),
+    }
+
+  method <R> findMap(f: (T) -> Option<R>): Option<R> =
+    match this {
+      Nil -> Option.None(),
+      Cons(v, rest) -> match f(v) {
+        Some(r) -> Option.Some(r),
+        None -> rest.findMap(f),
+      }
+    }
+
+  method append(other: List<T>): List<T> =
+    this.foldRight((elem, acc) -> List.Cons(elem, acc), other)
+
+  method reverseAndAppend(other: List<T>): List<T> =
+    this.fold((acc, elem) -> List.Cons(elem, acc), other)
+
+  method <A> fold(f: (A, T) -> A, acc: A): A =
+    match this {
+      Nil -> acc,
+      Cons(v, rest) -> { rest.fold(f, f(acc, v)) }
+    }
+
+  method <A> foldRight(f: (T, A) -> A, init: A): A =
+    match this {
+      Nil -> init,
+      Cons(v, rest) -> { rest.foldRight(f, f(v, init)) }
+    }
+
+  method <R> bind(f: (T) -> List<R>): List<R> =
+    this.foldRight((elem, acc) -> f(elem).append(acc), List.Nil())
+
+  function <T> flatten(l: List<List<T>>): List<T> =
+    l.foldRight((innerList, acc) -> innerList.append(acc), List.Nil())
+
+  method reverse(): List<T> = this.reverseWithAccumulator(List.Nil<T>())
+
+  private method reverseWithAccumulator(acc: List<T>): List<T> =
+    match this {
+      Nil -> acc,
+      Cons(v, rest) -> { rest.reverseWithAccumulator(List.Cons(v, acc)) }
+    }
+}

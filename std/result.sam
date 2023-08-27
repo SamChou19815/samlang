@@ -1,0 +1,57 @@
+import { Option } from std.option;
+
+class Result<T, E>(Ok(T), Error(E)) {
+  method ignore(): Result<unit, E> =
+    match this {
+      Ok(_) -> Result.Ok({  }),
+      Error(e) -> Result.Error(e),
+    }
+
+  method isOk(): bool =
+    match this {
+      Ok(_) -> true,
+      Error(_) -> false,
+    }
+
+  method isError(): bool =
+    match this {
+      Ok(_) -> false,
+      Error(_) -> true,
+    }
+
+  method ok(): Option<T> =
+    match this {
+      Ok(v) -> Option.Some(v),
+      Error(_) -> Option.None(),
+    }
+
+  function <T, E> fromOption(option: Option<T>, error: E): Result<T, E> =
+    match option {
+      Some(v) -> Result.Ok(v),
+      None -> Result.Error(error),
+    }
+
+  method iter(f: (T) -> unit): unit =
+    match this {
+      Ok(v) -> f(v),
+      Error(_) -> {  }
+    }
+
+  method iterError(f: (E) -> unit): unit =
+    match this {
+      Ok(_) -> {  }
+      Error(e) -> f(e),
+    }
+
+  method <R> map(f: (T) -> R): Result<R, E> =
+    match this {
+      Ok(v) -> Result.Ok(f(v)),
+      Error(e) -> Result.Error(e),
+    }
+
+  method <R> mapError(f: (E) -> R): Result<T, R> =
+    match this {
+      Ok(v) -> Result.Ok(v),
+      Error(e) -> Result.Error(f(e)),
+    }
+}

@@ -1,0 +1,196 @@
+import { List } from std.list;
+import { Option } from std.option;
+import { Pair, Tuple4 } from std.tuples;
+
+interface Comparable<T> {
+  method compare(other: T): int
+}
+
+// Adapted from https://github.com/facebook/flow/
+// See src/hack_forked/utils/collections/third-party/flow_map.ml
+class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map<K, V>)) {
+  function <K: Comparable<K>, V> empty(): Map<K, V> = Map.empty()
+
+  function <K: Comparable<K>, V> singleton(key: K, value: V): Map<K, V> = Map.Leaf(key, value)
+
+  method isEmpty(): bool =
+    match this {
+      Empty -> true,
+      Leaf(_, _) -> false,
+      Node(_, _, _, _, _) -> false,
+    }
+
+  method get(key: K): Option<V> = Process.panic("TODO")
+
+  method containsKey(key: K): bool = Process.panic("TODO")
+
+  method insert(key: K, value: V): Map<K, V> = Process.panic("TODO")
+
+  method <V2, V3> merge(other: Map<K, V>, f: (K, Option<V>, Option<V2>) -> Option<V3>): Map<K, V3> =
+    Process.panic("TODO")
+
+  method union(other: Map<K, V>, f: (K, V, V) -> V): Map<K, V> = Process.panic("TODO")
+
+  /** When failed to remove, the original map is returned */
+  method remove(key: K): Map<K, V> = Process.panic("TODO")
+
+  method compare(f: (V, V) -> int): (Map<K, V>, Map<K, V>) -> int = Process.panic("TODO")
+
+  method equal(f: (V, V) -> bool): (Map<K, V>, Map<K, V>) -> bool = Process.panic("TODO")
+
+  method iter(f: (K, V) -> unit): unit = Process.panic("TODO")
+
+  method <A> fold(f: (A, K, V) -> A, acc: A): A = Process.panic("TODO")
+
+  method forAll(f: (K, V) -> bool): bool = Process.panic("TODO")
+
+  method exists(f: (K, V) -> bool): bool = Process.panic("TODO")
+
+  method filter(f: (K, V) -> bool): Map<K, V> = Process.panic("TODO")
+
+  method partition(f: (K, V) -> bool): Pair<Map<K, V>, Map<K, V>> = Process.panic("TODO")
+
+  method size(): int =
+    match this {
+      Empty -> 0,
+      Leaf(_, _) -> 1,
+      Node(_, _, _, l, r) -> l.size() + 1 + r.size(),
+    }
+
+  method entries(): List<Pair<K, V>> = Process.panic("TODO")
+
+  method min(): Option<Pair<K, V>> =
+    match this {
+      Empty -> Option.None(),
+      Leaf(k, v) -> Option.Some(Pair.init(k, v)),
+      Node(_, k, v, child, _) -> if child.isEmpty() then { Option.Some(Pair.init(k, v)) } else {
+        child.min()
+      },
+    }
+
+  method max(): Option<Pair<K, V>> =
+    match this {
+      Empty -> Option.None(),
+      Leaf(k, v) -> Option.Some(Pair.init(k, v)),
+      Node(_, k, v, _, child) -> if child.isEmpty() then { Option.Some(Pair.init(k, v)) } else {
+        child.min()
+      },
+    }
+
+  method minKey(): Option<K> = this.min().map((it) -> it.e0)
+
+  method maxKey(): Option<K> = this.max().map((it) -> it.e0)
+
+  /** Return ordered keys */
+  method keys(): List<K> = Process.panic("TODO")
+
+  method <V2> map(f: (K, V) -> V2): Map<K, V2> = Process.panic("TODO")
+
+  private method height(): int =
+    match this {
+      Empty -> 0,
+      Leaf(_, _) -> 1,
+      Node(h, _, _, _, _) -> h,
+    }
+
+  private method sortedTwoNodesLarger(k: K, v: V): Map<K, V> =
+    Map.Node(2, k, v, this, Map.Empty<K, V>())
+
+  private method sortedTwoNodesSmaller(k: K, v: V): Map<K, V> =
+    Map.Node(2, k, v, Map.Empty<K, V>(), this)
+
+  private function <K: Comparable<K>, V> create(
+    left: Map<K, V>,
+    key: K,
+    value: V,
+    right: Map<K, V>
+  ): Map<K, V> = {
+    val lh = left.height();
+    val rh = right.height();
+    val h = if lh >= rh then lh + 1 else rh + 1;
+    if h == 1 then Map.singleton(key, value) else Map.Node(h, key, value, left, right)
+  }
+
+  /* The result can not be leaf */
+  private function <K: Comparable<K>, V> node(
+    left: Map<K, V>,
+    key: K,
+    value: V,
+    right: Map<K, V>
+  ): Map<K, V> = {
+    val lh = left.height();
+    val rh = right.height();
+    val h = if lh >= rh then lh + 1 else rh + 1;
+    Map.Node(h, key, value, left, right)
+  }
+
+  private method forcedNodeWithoutHeight(): Tuple4<K, V, Map<K, V>, Map<K, V>> =
+    match this {
+      Empty -> Process.panic("Bad tree"),
+      Leaf(_, _) -> Process.panic("Bad tree"),
+      Node(_, k, v, l, r) -> { Tuple4.init(k, v, l, r) }
+    }
+
+  private function <K: Comparable<K>, V> balanced(l: Map<K, V>, k: K, v: V, r: Map<K, V>): Map<
+    K,
+    V
+  > = {
+    val lh = l.height();
+    val rh = r.height();
+    if lh > rh + 2 then {
+      val [lk, lv, ll, lr] = l.forcedNodeWithoutHeight();
+      if ll.height() >= lr.height() then { Map.node(ll, lk, lv, Map.create(lr, k, v, r)) } else {
+        val [lrk, lrv, lrl, lrr] = lr.forcedNodeWithoutHeight();
+        Map.node(Map.create(ll, lk, lv, lrl), lrk, lrv, Map.create(lrr, k, v, r))
+      }
+    } else if rh > lh + 2 then {
+      val [rk, rv, rl, rr] = r.forcedNodeWithoutHeight();
+      if rr.height() >= rl.height() then { Map.node(Map.create(l, k, v, rl), rk, rv, rr) } else {
+        val [rlk, rlv, rll, rlr] = rl.forcedNodeWithoutHeight();
+        Map.node(Map.create(l, k, v, rll), rlk, rlv, Map.create(rlr, rk, rv, rr))
+      }
+    } else { Map.create(l, k, v, r) }
+  }
+
+  private method removeMinBindingFromNodeUnsafe(): Map<K, V> = {
+    val { e0 as k, e1 as v, e2 as l, e3 as r } = this.forcedNodeWithoutHeight();
+    match l {
+      Empty -> r,
+      Leaf(_, _) -> Map.balanced(Map.empty<K, V>(), k, v, r),
+      Node(_, _, _, _, _) -> Map.balanced(l.removeMinBindingFromNodeUnsafe(), k, v, r),
+    }
+  }
+
+  /*
+   * Beware: those 4 functions assume that the added k is *strictly* smaller (or bigger) than all
+   * the present keys in the tree; it does not test for equality with the current min (or max) key.
+   * Indeed, they are only used during the "join" operation which respects this precondition.
+   */
+  private method addMinNode(node: Map<K, V>): Map<K, V> =
+    match this {
+      Empty -> node,
+      Leaf(k, v) -> node.sortedTwoNodesLarger(k, v),
+      Node(_, k, v, l, r) -> Map.balanced(l.addMinNode(node), k, v, r),
+    }
+
+  private method addMinBinding(newK: K, newV: V): Map<K, V> =
+    match this {
+      Empty -> Map.singleton(newK, newV),
+      Leaf(_, _) -> this.sortedTwoNodesSmaller(newK, newV),
+      Node(_, k, v, l, r) -> Map.balanced(l.addMinBinding(newK, newV), k, v, r),
+    }
+
+  private method addMaxNode(node: Map<K, V>): Map<K, V> =
+    match this {
+      Empty -> node,
+      Leaf(k, v) -> node.sortedTwoNodesSmaller(k, v),
+      Node(_, k, v, l, r) -> Map.balanced(l, k, v, r.addMaxNode(node)),
+    }
+
+  private method addMaxBinding(newK: K, newV: V): Map<K, V> =
+    match this {
+      Empty -> Map.singleton(newK, newV),
+      Leaf(_, _) -> this.sortedTwoNodesLarger(newK, newV),
+      Node(_, k, v, l, r) -> Map.balanced(l, k, v, r.addMaxBinding(newK, newV)),
+    }
+}
