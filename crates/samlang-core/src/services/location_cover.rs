@@ -303,7 +303,7 @@ mod tests {
       &mut error_set,
     );
     let (checked_sources, _) =
-      type_check_sources(&HashMap::from([(mod_ref, parsed)]), heap, &mut error_set);
+      type_check_sources(&HashMap::from([(mod_ref, parsed)]), &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     for m in checked_sources.values() {
       for i in 0..80 {

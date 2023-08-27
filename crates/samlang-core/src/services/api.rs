@@ -645,13 +645,8 @@ pub mod completion {
         }
         LocationCoverSearchResult::Expression(expr::E::LocalId(_, Id { .. })) => {
           let parsed = state.parsed_modules.get(module_reference).unwrap();
-          let (_, local_cx) = type_check_module(
-            *module_reference,
-            parsed,
-            &state.global_cx,
-            &state.heap,
-            &mut ErrorSet::new(),
-          );
+          let (_, local_cx) =
+            type_check_module(*module_reference, parsed, &state.global_cx, &mut ErrorSet::new());
           return Some(
             local_cx
               .possibly_in_scope_local_variables(position)

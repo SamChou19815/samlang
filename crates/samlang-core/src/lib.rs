@@ -65,7 +65,7 @@ pub fn compile_sources(
     }
   }
   let checked_sources = measure_time(enable_profiling, "Type checking", || {
-    checker::type_check_sources(&parsed_sources, heap, &mut error_set).0
+    checker::type_check_sources(&parsed_sources, &mut error_set).0
   });
   let errors = error_set.pretty_print_error_messages(heap, &source_handles);
   if error_set.has_errors() {
