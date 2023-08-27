@@ -244,6 +244,11 @@ impl<'a> SsaAnalysisState<'a> {
     match expression {
       expr::E::Literal(_, _) | expr::E::ClassId(_, _, _) => {}
       expr::E::LocalId(_, id) => self.use_id(&id.name, id.loc, false),
+      expr::E::Tuple(_, expressions) => {
+        for e in expressions {
+          self.visit_expression(e);
+        }
+      }
       expr::E::FieldAccess(e) => {
         self.visit_expression(&e.object);
         for targ in &e.explicit_type_arguments {

@@ -476,48 +476,52 @@ impl<'a> SourceParser<'a> {
 
   fn parse_type_definition_inner(&mut self) -> TypeDefinition {
     if let Token(_, TokenContent::UpperId(_)) = self.peek() {
-      let variants = self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-        let name = s.parse_upper_id();
-        if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = s.peek() {
-          s.consume();
-          let associated_data_types = s
-            .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-              s.parse_annotation()
-            });
+      let mut variants =
+        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+          let name = s.parse_upper_id();
+          if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = s.peek() {
+            s.consume();
+            let associated_data_types = s
+              .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+                s.parse_annotation()
+              });
 
-          if let Some(node) = associated_data_types.get(MAX_STRUCT_SIZE) {
-            s.error_set.report_invalid_syntax_error(
-              node.location(),
-              format!("Maximum allowed field size is {MAX_STRUCT_SIZE}"),
-            );
+            if let Some(node) = associated_data_types.get(MAX_VARIANT_SIZE) {
+              s.error_set.report_invalid_syntax_error(
+                node.location(),
+                format!("Maximum allowed field size is {MAX_VARIANT_SIZE}"),
+              );
+            }
+            s.assert_and_consume_operator(TokenOp::RPAREN);
+            VariantDefinition { name, associated_data_types }
+          } else {
+            VariantDefinition { name, associated_data_types: vec![] }
           }
-          s.assert_and_consume_operator(TokenOp::RPAREN);
-          VariantDefinition { name, associated_data_types }
-        } else {
-          VariantDefinition { name, associated_data_types: vec![] }
-        }
-      });
+        });
+      variants.truncate(MAX_VARIANT_SIZE);
       // Location is later patched by the caller
       TypeDefinition::Enum { loc: Location::dummy(), variants }
     } else {
-      let fields = self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
-        let mut is_public = true;
-        if let TokenContent::Keyword(Keyword::PRIVATE) = s.peek().1 {
-          is_public = false;
-          s.consume();
-        }
-        s.assert_and_consume_keyword(Keyword::VAL);
-        let name = s.parse_lower_id();
-        s.assert_and_consume_operator(TokenOp::COLON);
-        let annotation = s.parse_annotation();
-        FieldDefinition { name, annotation, is_public }
-      });
-      if let Some(node) = fields.get(MAX_VARIANT_SIZE) {
+      let mut fields =
+        self.parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+          let mut is_public = true;
+          if let TokenContent::Keyword(Keyword::PRIVATE) = s.peek().1 {
+            is_public = false;
+            s.consume();
+          }
+          s.assert_and_consume_keyword(Keyword::VAL);
+          let name = s.parse_lower_id();
+          s.assert_and_consume_operator(TokenOp::COLON);
+          let annotation = s.parse_annotation();
+          FieldDefinition { name, annotation, is_public }
+        });
+      if let Some(node) = fields.get(MAX_STRUCT_SIZE) {
         self.error_set.report_invalid_syntax_error(
           node.name.loc,
-          format!("Maximum allowed field size is {MAX_VARIANT_SIZE}"),
+          format!("Maximum allowed field size is {MAX_STRUCT_SIZE}"),
         );
       }
+      fields.truncate(MAX_STRUCT_SIZE);
       // Location is later patched by the caller
       TypeDefinition::Struct { loc: Location::dummy(), fields }
     }
@@ -1118,6 +1122,35 @@ impl<'a> SourceParser<'a> {
             name,
           },
         );
+      }
+      Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACKET)) => {
+        self.consume();
+        let mut expressions = self
+          .parse_comma_separated_list(Some(TokenOp::RBRACKET), &mut |s: &mut Self| {
+            s.parse_expression()
+          });
+        if let Some(node) = expressions.get(MAX_STRUCT_SIZE) {
+          self.error_set.report_invalid_syntax_error(
+            node.loc(),
+            format!("Maximum allowed tuple size is {MAX_STRUCT_SIZE}"),
+          );
+        }
+        expressions.truncate(MAX_STRUCT_SIZE);
+        let end_loc = self.assert_and_consume_operator(TokenOp::RBRACKET);
+        let loc = peeked_loc.union(&end_loc);
+        let common = expr::ExpressionCommon {
+          loc,
+          associated_comments: self.comments_store.create_comment_reference(associated_comments),
+          type_: (),
+        };
+        if expressions.len() < 2 {
+          self.error_set.report_invalid_syntax_error(
+            loc,
+            "Tuple needs to include at least 2 elements.".to_string(),
+          );
+          return expr::E::Literal(common, Literal::Int(0));
+        }
+        return expr::E::Tuple(common, expressions);
       }
       _ => {}
     }

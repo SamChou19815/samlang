@@ -204,3 +204,26 @@ class Tuple15<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13, E14>(
 
   method second(): E1 = this.e1
 }
+
+class Tuple16<E0, E1, E2, E3, E4, E5, E6, E7, E8, E9, E10, E11, E12, E13, E14, E15>(
+  val e0: E0,
+  val e1: E1,
+  val e2: E2,
+  val e3: E3,
+  val e4: E4,
+  val e5: E5,
+  val e6: E6,
+  val e7: E7,
+  val e8: E8,
+  val e9: E9,
+  val e10: E10,
+  val e11: E11,
+  val e12: E12,
+  val e13: E13,
+  val e14: E14,
+  val e15: E15
+) : GeneralTuple<E0, E1> {
+  method first(): E0 = this.e0
+
+  method second(): E1 = this.e1
+}

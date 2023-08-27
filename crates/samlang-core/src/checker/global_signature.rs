@@ -139,6 +139,14 @@ pub(crate) fn build_module_signature(
   ModuleSignature { interfaces }
 }
 
+#[cfg(test)]
+pub(crate) fn create_std_signatures(heap: &mut Heap) -> HashMap<ModuleReference, ModuleSignature> {
+  crate::builtin_parsed_std_sources(heap)
+    .into_iter()
+    .map(|(mod_ref, parsed)| (mod_ref, build_module_signature(mod_ref, &parsed)))
+    .collect()
+}
+
 pub(crate) fn build_global_signature(
   sources: &HashMap<ModuleReference, Module<()>>,
   builtin_module_types: ModuleSignature,

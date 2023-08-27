@@ -105,29 +105,11 @@ mod utils {
     configuration: &configuration::ProjectConfiguration,
     heap: &mut samlang_core::Heap,
   ) -> HashMap<samlang_core::ModuleReference, String> {
-    let mut sources = HashMap::new();
-    if !configuration.dangerously_allow_libdef_shadowing {
-      sources.insert(
-        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "list".to_string()]),
-        include_str!("../../../std/list.sam").to_string(),
-      );
-      sources.insert(
-        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "map".to_string()]),
-        include_str!("../../../std/map.sam").to_string(),
-      );
-      sources.insert(
-        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "option".to_string()]),
-        include_str!("../../../std/option.sam").to_string(),
-      );
-      sources.insert(
-        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "result".to_string()]),
-        include_str!("../../../std/result.sam").to_string(),
-      );
-      sources.insert(
-        heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "tuples".to_string()]),
-        include_str!("../../../std/tuples.sam").to_string(),
-      );
-    }
+    let mut sources = if configuration.dangerously_allow_libdef_shadowing {
+      HashMap::new()
+    } else {
+      samlang_core::builtin_std_raw_sources(heap)
+    };
     if let Ok(absolute_source_path) =
       fs::canonicalize(PathBuf::from(&configuration.source_directory))
     {

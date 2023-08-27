@@ -1161,6 +1161,9 @@ Found 51 errors.
         parse_source_module_from_text(t.source_code, mod_ref, heap, &mut error_set),
       );
     }
+    for (mod_ref, parsed) in crate::builtin_parsed_std_sources(heap) {
+      parsed_sources.insert(mod_ref, parsed);
+    }
     type_check_sources(&parsed_sources, &mut error_set);
     assert_eq!(
       expected_errors.trim(),
@@ -1364,9 +1367,14 @@ class Main {
         name: "CreateVariants",
         expected_std: "hello\n",
         source_code: r#"
-class Pair<A, B>(val a: A, val b: B) {}
+import {Pair} from std.tuples;
 
-class List(Nil(unit), Cons(Pair<int, List>)) { function of(i: int): List = List.Cons(Pair.init(i, List.Nil({  })))  }
+class List(Nil(unit), Cons(Pair<int, List>)) {
+  function of(i: int): List = List.Cons([
+    i,
+    List.Nil({  })
+  ])
+}
 
 class Main { function main(): unit = { val _: List = List.of(1); Process.println("hello") }  }
 "#,
@@ -2056,7 +2064,7 @@ class Main {
         name: "SortableList",
         expected_std: "1\n2\n3\n4\n",
         source_code: r#"
-class Pair<A, B>(val a: A, val b: B)
+import {Pair} from std.tuples;
 
 interface Comparable<T> {
   method compare(other: T): int
@@ -2069,9 +2077,9 @@ class BoxedInt(val i: int): Comparable<BoxedInt> {
 class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
   function <T: Comparable<T>> nil(): List<T> = List.Nil<T>({  })
 
-  function <T: Comparable<T>> of(t: T): List<T> = List.Cons(Pair.init(t, List.Nil<T>({  })))
+  function <T: Comparable<T>> of(t: T): List<T> = List.Cons([t, List.Nil<T>({  })])
 
-  method cons(t: T): List<T> = List.Cons(Pair.init(t, this))
+  method cons(t: T): List<T> = List.Cons([t, this])
 
   method iter(f: (T) -> unit): unit =
     match (this) {
@@ -2086,10 +2094,10 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
   method sort(): List<T> =
     match (this) {
       Nil(_) -> this,
-      Cons(pair) -> match (pair.b) {
+      Cons(pair) -> match (pair.e1) {
         Nil(_) -> this,
         Cons(_) -> {
-          val { a as l1, b as l2 } = this.split(List.nil<T>(), List.nil<T>());
+          val [l1, l2] = this.split(List.nil<T>(), List.nil<T>());
           l1.sort().merge(l2.sort())
         }
       }
@@ -2101,8 +2109,8 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
       Cons(pair1) -> match (other) {
         Nil(_) -> this,
         Cons(pair2) -> {
-          val { a as h1, b as t1 } = pair1;
-          val { a as h2, b as t2 } = pair2;
+          val [h1, t1] = pair1;
+          val [h2, t2] = pair2;
           if (h1.compare(h2) < 0) then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
         }
       }
@@ -2112,7 +2120,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
     match (this) {
       Nil(_) -> Pair.init(y, z),
       Cons(pair) -> {
-        val { a as x, b as rest } = pair;
+        val [x, rest] = pair;
         rest.split(z, y.cons(x))
       }
     }
@@ -2332,15 +2340,12 @@ class Main {
       let module = parse_source_module_from_text(&text, mod_ref, heap, &mut ErrorSet::new());
       let raw = printer::pretty_print_source_module(heap, 100, &module);
       let mut error_set = ErrorSet::new();
-      let (checked_sources, _) = type_check_sources(
-        &HashMap::from([(
-          mod_ref,
-          parse_source_module_from_text(&raw, mod_ref, heap, &mut error_set),
-        )]),
-        &mut error_set,
-      );
+      let mut sources = crate::builtin_parsed_std_sources(heap);
+      let builtin_sources_size = sources.len();
+      sources.insert(mod_ref, parse_source_module_from_text(&raw, mod_ref, heap, &mut error_set));
+      let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
       assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
-      assert!(checked_sources.len() == 1);
+      assert!(checked_sources.len() == builtin_sources_size + 1);
     }
   }
 
@@ -2351,13 +2356,16 @@ class Main {
     let tests = compiler_integration_tests();
     let heap = &mut Heap::new();
     let mut error_set = ErrorSet::new();
-    let sources = tests
+    let mut sources = tests
       .iter()
       .map(|it| {
         let mod_ref = heap.alloc_module_reference_from_string_vec(vec![it.name.to_string()]);
         (mod_ref, parse_source_module_from_text(it.source_code, mod_ref, heap, &mut error_set))
       })
       .collect::<HashMap<_, _>>();
+    for (mod_ref, parsed) in crate::builtin_parsed_std_sources(heap) {
+      sources.insert(mod_ref, parsed);
+    }
     let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     let unoptimized_mir_sources = compiler::compile_sources_to_mir(heap, &checked_sources);

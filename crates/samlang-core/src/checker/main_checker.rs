@@ -82,6 +82,7 @@ fn arguments_should_be_checked_without_hint(e: &expr::E<()>) -> bool {
     expr::E::Literal(_, _)
     | expr::E::LocalId(_, _)
     | expr::E::ClassId(_, _, _)
+    | expr::E::Tuple(_, _)
     | expr::E::FieldAccess(_)
     | expr::E::MethodAccess(_)
     | expr::E::Unary(_)
@@ -202,6 +203,7 @@ fn type_check_expression(
     expr::E::Literal(common, literal) => check_literal(common, literal),
     expr::E::LocalId(common, id) => check_local_variable(cx, common, id),
     expr::E::ClassId(common, mod_ref, id) => check_class_id(cx, common, *mod_ref, id),
+    expr::E::Tuple(common, expressions) => check_tuple(cx, common, expressions),
     expr::E::FieldAccess(e) => check_field_access(cx, e, hint),
     expr::E::MethodAccess(_) => panic!("Raw parsed expression does not contain MethodAccess!"),
     expr::E::Unary(e) => check_unary(cx, e),
@@ -268,6 +270,46 @@ fn check_class_id(
     cx.error_set.report_cannot_resolve_class_error(common.loc, module_reference, id.name);
     expr::E::ClassId(common.with_new_type(Rc::new(Type::Any(reason, false))), module_reference, *id)
   }
+}
+
+fn check_tuple(
+  cx: &mut TypingContext,
+  common: &expr::ExpressionCommon<()>,
+  expressions: &[expr::E<()>],
+) -> expr::E<Rc<Type>> {
+  let mut type_arguments = Vec::with_capacity(expressions.len());
+  let mut checked_expressions = Vec::with_capacity(expressions.len());
+  for e in expressions {
+    let checked = type_check_expression(cx, e, type_hint::MISSING);
+    type_arguments.push(checked.type_().clone());
+    checked_expressions.push(checked);
+  }
+  let id = match expressions.len() {
+    2 => well_known_pstrs::PAIR,
+    3 => well_known_pstrs::TRIPLE,
+    4 => well_known_pstrs::TUPLE_4,
+    5 => well_known_pstrs::TUPLE_5,
+    6 => well_known_pstrs::TUPLE_6,
+    7 => well_known_pstrs::TUPLE_7,
+    8 => well_known_pstrs::TUPLE_8,
+    9 => well_known_pstrs::TUPLE_9,
+    10 => well_known_pstrs::TUPLE_10,
+    11 => well_known_pstrs::TUPLE_11,
+    12 => well_known_pstrs::TUPLE_12,
+    13 => well_known_pstrs::TUPLE_13,
+    14 => well_known_pstrs::TUPLE_14,
+    15 => well_known_pstrs::TUPLE_15,
+    16 => well_known_pstrs::TUPLE_16,
+    _ => panic!("Invalid tuple length"),
+  };
+  let type_ = Rc::new(Type::Nominal(NominalType {
+    reason: Reason::new(common.loc, None),
+    is_class_statics: false,
+    module_reference: ModuleReference::std_tuples(),
+    id,
+    type_arguments,
+  }));
+  expr::E::Tuple(common.with_new_type(type_), checked_expressions)
 }
 
 fn replace_undecided_tparam_with_unknown_and_update_type(

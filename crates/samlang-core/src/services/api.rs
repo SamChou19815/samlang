@@ -306,6 +306,7 @@ pub mod query {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
         | expr::E::ClassId(_, _, _)
+        | expr::E::Tuple(_, _)
         | expr::E::FieldAccess(_)
         | expr::E::MethodAccess(_)
         | expr::E::Unary(_)
@@ -372,6 +373,7 @@ pub mod query {
       LocationCoverSearchResult::Expression(
         expr::E::Literal(_, _)
         | expr::E::ClassId(_, _, _)
+        | expr::E::Tuple(_, _)
         | expr::E::FieldAccess(_)
         | expr::E::MethodAccess(_)
         | expr::E::Unary(_)

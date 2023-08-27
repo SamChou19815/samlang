@@ -92,6 +92,10 @@ fn apply_expr_renaming(
   match expr {
     expr::E::Literal(_, _) | expr::E::ClassId(_, _, _) => panic!(),
     expr::E::LocalId(common, old_id) => expr::E::LocalId(common.clone(), mod_id(old_id, new_name)),
+    expr::E::Tuple(common, expressions) => expr::E::Tuple(
+      common.clone(),
+      expressions.iter().map(|e| apply_expr_renaming(e, definition_and_uses, new_name)).collect(),
+    ),
     expr::E::FieldAccess(e) => expr::E::FieldAccess(expr::FieldAccess {
       common: e.common.clone(),
       explicit_type_arguments: e.explicit_type_arguments.clone(),
@@ -542,7 +546,7 @@ class Main {
     val c = a;
     val g = 3;
     val {f, g as h} = Main.init(3, g);
-    val [i, j] = Main.init(3, g);
+    val [i, j] = [3, g];
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if x + y + i + j * 3 > h then panic(f) else println(h);
@@ -578,7 +582,7 @@ class Main {
     val renAmeD = a;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
-    val [i, j] = Main.init(3, g);
+    val [i, j] = [3, g];
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
@@ -603,7 +607,7 @@ class Main {
     val c = renAmeD;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
-    val [i, j] = Main.init(3, g);
+    val [i, j] = [3, g];
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
@@ -628,7 +632,7 @@ class Main {
     val c = a;
     val renAmeD = 3;
     val { f, g as h } = Main.init(3, renAmeD);
-    val [i, j] = Main.init(3, renAmeD);
+    val [i, j] = [3, renAmeD];
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
@@ -653,7 +657,7 @@ class Main {
     val c = a;
     val g = 3;
     val { f as renAmeD, g as h } = Main.init(3, g);
-    val [i, j] = Main.init(3, g);
+    val [i, j] = [3, g];
     val _ = Obj.Tagged(h);
     val _ = renAmeD + h;
     val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
@@ -678,7 +682,7 @@ class Main {
     val c = a;
     val g = 3;
     val { f, g as renAmeD } = Main.init(3, g);
-    val [i, j] = Main.init(3, g);
+    val [i, j] = [3, g];
     val _ = Obj.Tagged(renAmeD);
     val _ = f + renAmeD;
     val lambda1 = (
@@ -706,7 +710,7 @@ class Main {
     val c = a;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
-    val [i, j] = Main.init(3, g);
+    val [i, j] = [3, g];
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (
@@ -734,7 +738,7 @@ class Main {
     val c = a;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
-    val [renAmeD, j] = Main.init(3, g);
+    val [renAmeD, j] = [3, g];
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (
@@ -762,7 +766,7 @@ class Main {
     val c = a;
     val g = 3;
     val { f, g as h } = Main.init(3, g);
-    val [i, j] = Main.init(3, g);
+    val [i, j] = [3, g];
     val _ = Obj.Tagged(h);
     val _ = f + h;
     val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {

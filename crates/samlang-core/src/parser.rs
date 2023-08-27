@@ -119,7 +119,7 @@ mod tests {
     expect_good_expr("{ val a = 3; a }");
     expect_good_expr("{ val a: int = 3; }");
     expect_good_expr("{ val a: unit = {}; }");
-    expect_good_expr("{ val [foo, _]: Type = 3; }");
+    expect_good_expr("{ val [foo, _]: Type = [1, 2]; }");
     expect_good_expr("{ val {foo, bar as baz}: Type = 3; }");
     expect_good_expr("{ val _: Int<bool> = 3; }");
     expect_good_expr("{ val _: HAHAHA = 3; }");
@@ -150,6 +150,8 @@ mod tests {
     expect_bad_expr(".");
     expect_bad_expr(",");
     expect_bad_expr("[]");
+    expect_bad_expr("[1]");
+    expect_bad_expr("[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]");
     expect_bad_expr("{: }");
     expect_bad_expr("{ hello / }");
     expect_bad_expr("{: bar}");
