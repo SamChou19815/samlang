@@ -80,6 +80,75 @@ fn mod_def_id(id: &Id, definition_and_uses: &DefinitionAndUses, new_name: PStr) 
   }
 }
 
+fn apply_destructuring_pattern_renaming(
+  pattern: &pattern::DestructuringPattern<()>,
+  definition_and_uses: &DefinitionAndUses,
+  new_name: PStr,
+) -> pattern::DestructuringPattern<()> {
+  match pattern {
+    pattern::DestructuringPattern::Tuple(l, names) => pattern::DestructuringPattern::Tuple(
+      *l,
+      names
+        .iter()
+        .map(|pattern::TuplePatternDestructuredName { pattern, type_ }| {
+          pattern::TuplePatternDestructuredName {
+            pattern: Box::new(apply_destructuring_pattern_renaming(
+              pattern,
+              definition_and_uses,
+              new_name,
+            )),
+            type_: *type_,
+          }
+        })
+        .collect(),
+    ),
+    pattern::DestructuringPattern::Object(l, names) => pattern::DestructuringPattern::Object(
+      *l,
+      names
+        .iter()
+        .map(
+          |pattern::ObjectPatternDestucturedName {
+             loc,
+             field_order,
+             field_name,
+             pattern,
+             shorthand: _,
+             type_,
+           }| {
+            let pattern = Box::new(apply_destructuring_pattern_renaming(
+              pattern,
+              definition_and_uses,
+              new_name,
+            ));
+            let shorthand = matches!(
+              pattern.as_ref(),
+              pattern::DestructuringPattern::Id(id) if id.name.eq(&field_name.name),
+            );
+            pattern::ObjectPatternDestucturedName {
+              loc: *loc,
+              field_order: *field_order,
+              field_name: *field_name,
+              pattern,
+              shorthand,
+              type_: *type_,
+            }
+          },
+        )
+        .collect(),
+    ),
+    pattern::DestructuringPattern::Id(id) => {
+      let name =
+        if id.loc.eq(&definition_and_uses.definition_location) { new_name } else { id.name };
+      pattern::DestructuringPattern::Id(Id {
+        loc: id.loc,
+        associated_comments: id.associated_comments,
+        name,
+      })
+    }
+    pattern::DestructuringPattern::Wildcard(_) => pattern.clone(),
+  }
+}
+
 fn apply_expr_renaming(
   expr: &expr::E<()>,
   definition_and_uses: &DefinitionAndUses,
@@ -189,71 +258,7 @@ fn apply_expr_renaming(
            }| expr::DeclarationStatement {
             loc: *loc,
             associated_comments: *associated_comments,
-            pattern: match pattern {
-              pattern::DestructuringPattern::Tuple(l, names) => {
-                pattern::DestructuringPattern::Tuple(
-                  *l,
-                  names
-                    .iter()
-                    .map(|name_opt| {
-                      name_opt.as_ref().map(
-                        |pattern::TuplePatternDestructuredName { name, type_ }| {
-                          pattern::TuplePatternDestructuredName {
-                            name: mod_def_id(name, definition_and_uses, new_name),
-                            type_: *type_,
-                          }
-                        },
-                      )
-                    })
-                    .collect(),
-                )
-              }
-              pattern::DestructuringPattern::Object(l, names) => {
-                pattern::DestructuringPattern::Object(
-                  *l,
-                  names
-                    .iter()
-                    .map(
-                      |pattern::ObjectPatternDestucturedName {
-                         loc,
-                         field_order,
-                         field_name,
-                         alias,
-                         type_,
-                       }| {
-                        if let Some(alias) = alias {
-                          pattern::ObjectPatternDestucturedName {
-                            loc: *loc,
-                            field_order: *field_order,
-                            field_name: *field_name,
-                            alias: Some(mod_def_id(alias, definition_and_uses, new_name)),
-                            type_: *type_,
-                          }
-                        } else {
-                          let name_to_mod = alias.as_ref().unwrap_or(field_name);
-                          let alias = mod_def_id(name_to_mod, definition_and_uses, new_name);
-                          let alias_opt =
-                            if alias.name.eq(&field_name.name) { None } else { Some(alias) };
-                          pattern::ObjectPatternDestucturedName {
-                            loc: *loc,
-                            field_order: *field_order,
-                            field_name: *field_name,
-                            alias: alias_opt,
-                            type_: *type_,
-                          }
-                        }
-                      },
-                    )
-                    .collect(),
-                )
-              }
-              pattern::DestructuringPattern::Id(l, name) => {
-                let name =
-                  if l.eq(&definition_and_uses.definition_location) { new_name } else { *name };
-                pattern::DestructuringPattern::Id(*l, name)
-              }
-              pattern::DestructuringPattern::Wildcard(_) => pattern.clone(),
-            },
+            pattern: apply_destructuring_pattern_renaming(pattern, definition_and_uses, new_name),
             annotation: annotation.clone(),
             assigned_expression: Box::new(apply_expr_renaming(
               assigned_expression,
@@ -270,7 +275,6 @@ fn apply_expr_renaming(
     }),
   }
 }
-
 pub(super) fn apply_renaming(
   Module { comment_store, imports, toplevels, trailing_comments }: &Module<()>,
   definition_and_uses: &DefinitionAndUses,

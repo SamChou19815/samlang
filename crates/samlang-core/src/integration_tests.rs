@@ -2226,12 +2226,14 @@ class Main {
         name: "VariousSyntaxForms",
         expected_std: "84\n",
         source_code: r#"
-class Clazz(val t: int) {
-    function of(): Clazz = Clazz.init(42)
+import {Pair, Triple} from std.tuples;
+
+class Clazz(val t: Pair<Triple<int, int, bool>, Str>) {
+    function of(): Clazz = Clazz.init([[42, 2, false], ""])
 
     method thisTest(): int = {
-      val i: int = this.t;
-      val { t as j } = this;
+      val [[i, _, _], _] = this.t;
+      val {t as {e0 as [j, _, _], e1}} = this;
       i + j
     }
 }
@@ -2255,8 +2257,6 @@ class Option<T>(Some(T), None) {
     };
   }
 }
-
-class Pair<A, B>(val a: A, val b: B) {}
 
 class List<T>(Nil, Cons(T, List<T>)) {
   function <T> of(t: T): List<T> =

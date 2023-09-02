@@ -74,8 +74,6 @@ struct ExpressionLoweringManager<'a> {
   // Mutable states
   next_temp_var_id: i32,
   next_synthetic_fn_id_manager: &'a mut NextSyntheticFnIdManager,
-  depth: i32,
-  block_id: i32,
   variable_cx: LoweringContext,
   synthetic_functions: Vec<hir::Function>,
 }
@@ -106,19 +104,13 @@ impl<'a> ExpressionLoweringManager<'a> {
       string_manager,
       next_temp_var_id: 0,
       next_synthetic_fn_id_manager,
-      depth: 0,
-      block_id: 0,
       variable_cx,
       synthetic_functions: vec![],
     }
   }
 
-  fn allocate_temp_variable(&mut self, favored_temp_variable: Option<PStr>) -> PStr {
-    if let Some(v) = favored_temp_variable {
-      v
-    } else {
-      self.heap.alloc_temp_str()
-    }
+  fn allocate_temp_variable(&mut self) -> PStr {
+    self.heap.alloc_temp_str()
   }
 
   fn allocate_synthetic_fn_name(&mut self) -> hir::FunctionName {
@@ -136,11 +128,10 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lowered_and_add_statements(
     &mut self,
     expression: &source::expr::E<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
     statements: &mut Vec<hir::Statement>,
   ) -> hir::Expression {
     let LoweringResult { statements: mut lowered_statements, expression: e } =
-      self.lower(expression, favored_temp_variable);
+      self.lower(expression);
     statements.append(&mut lowered_statements);
     e
   }
@@ -210,11 +201,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     t
   }
 
-  fn lower(
-    &mut self,
-    expression: &source::expr::E<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
-  ) -> LoweringResult {
+  fn lower(&mut self, expression: &source::expr::E<Rc<type_::Type>>) -> LoweringResult {
     match expression {
       source::expr::E::Literal(_, source::Literal::Bool(b)) => {
         LoweringResult { statements: vec![], expression: if *b { hir::ONE } else { hir::ZERO } }
@@ -237,16 +224,16 @@ impl<'a> ExpressionLoweringManager<'a> {
       source::expr::E::ClassId(_, _, _) => {
         LoweringResult { statements: vec![], expression: hir::ZERO }
       }
-      source::expr::E::Tuple(common, es) => self.lower_tuple(common, es, favored_temp_variable),
-      source::expr::E::FieldAccess(e) => self.lower_field_access(e, favored_temp_variable),
-      source::expr::E::MethodAccess(e) => self.lower_method_access(e, favored_temp_variable),
-      source::expr::E::Unary(e) => self.lower_unary(e, favored_temp_variable),
-      source::expr::E::Call(e) => self.lower_fn_call(e, favored_temp_variable),
-      source::expr::E::Binary(_) => self.lower_binary(expression, favored_temp_variable),
-      source::expr::E::IfElse(e) => self.lower_if_else(e, favored_temp_variable),
+      source::expr::E::Tuple(common, es) => self.lower_tuple(common, es),
+      source::expr::E::FieldAccess(e) => self.lower_field_access(e),
+      source::expr::E::MethodAccess(e) => self.lower_method_access(e),
+      source::expr::E::Unary(e) => self.lower_unary(e),
+      source::expr::E::Call(e) => self.lower_fn_call(e),
+      source::expr::E::Binary(_) => self.lower_binary(expression),
+      source::expr::E::IfElse(e) => self.lower_if_else(e),
       source::expr::E::Match(e) => self.lower_match(e),
-      source::expr::E::Lambda(e) => self.lower_lambda(e, favored_temp_variable),
-      source::expr::E::Block(e) => self.lower_block(e, favored_temp_variable),
+      source::expr::E::Lambda(e) => self.lower_lambda(e),
+      source::expr::E::Block(e) => self.lower_block(e),
     }
   }
 
@@ -262,15 +249,13 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower_field_access(
     &mut self,
     expression: &source::expr::FieldAccess<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
-    let LoweringResult { mut statements, expression: result_expr } =
-      self.lower(&expression.object, None);
+    let LoweringResult { mut statements, expression: result_expr } = self.lower(&expression.object);
     let mappings_for_id_type =
       self.resolve_struct_mapping_of_id_type(result_expr.type_().as_id().unwrap());
     let index = usize::try_from(expression.field_order).unwrap();
     let extracted_field_type = &mappings_for_id_type[index];
-    let value_name = self.allocate_temp_variable(favored_temp_variable);
+    let value_name = self.allocate_temp_variable();
     statements.push(hir::Statement::IndexedAccess {
       name: value_name,
       type_: extracted_field_type.clone(),
@@ -289,12 +274,10 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower_method_access(
     &mut self,
     expression: &source::expr::MethodAccess<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let source_obj_type = expression.object.type_();
     let function_name = self.create_hir_function_name(source_obj_type, expression.method_name.name);
-    let LoweringResult { mut statements, expression: result_expr } =
-      self.lower(&expression.object, None);
+    let LoweringResult { mut statements, expression: result_expr } = self.lower(&expression.object);
     let original_function_type = self.get_function_type_without_context(&expression.common.type_);
     let method_type = hir::FunctionType {
       argument_types: vec![result_expr.type_().clone()]
@@ -304,7 +287,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       return_type: original_function_type.return_type.clone(),
     };
     let closure_type = self.get_synthetic_identifier_type_from_closure(original_function_type);
-    let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
+    let closure_variable_name = self.allocate_temp_variable();
     self.variable_cx.bind(
       closure_variable_name,
       hir::Expression::var_name(closure_variable_name, hir::Type::Id(closure_type.clone())),
@@ -327,14 +310,10 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_unary(
-    &mut self,
-    expression: &source::expr::Unary<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
-  ) -> LoweringResult {
+  fn lower_unary(&mut self, expression: &source::expr::Unary<Rc<type_::Type>>) -> LoweringResult {
     let LoweringResult { mut statements, expression: result_expr } =
-      self.lower(&expression.argument, None);
-    let value_name = self.allocate_temp_variable(favored_temp_variable);
+      self.lower(&expression.argument);
+    let value_name = self.allocate_temp_variable();
     statements.push(match expression.operator {
       source::expr::UnaryOperator::NOT => hir::Statement::Binary {
         name: value_name,
@@ -356,10 +335,9 @@ impl<'a> ExpressionLoweringManager<'a> {
     &mut self,
     common: &source::expr::ExpressionCommon<Rc<type_::Type>>,
     expressions: &[source::expr::E<Rc<type_::Type>>],
-    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
-    let return_collector_name = self.allocate_temp_variable(favored_temp_variable);
+    let return_collector_name = self.allocate_temp_variable();
     let fn_name = self.create_hir_function_name(&common.type_, well_known_pstrs::INIT);
     let return_type = self.type_lowering_manager.lower_source_type(self.heap, &common.type_);
 
@@ -369,7 +347,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     lowered_arguments.push(hir::ZERO);
     parameter_types.push(hir::INT_TYPE);
     for e in expressions {
-      let lowered = self.lowered_and_add_statements(e, None, &mut lowered_stmts);
+      let lowered = self.lowered_and_add_statements(e, &mut lowered_stmts);
       parameter_types.push(lowered.type_().clone());
       type_arguments.push(lowered.type_().clone());
       lowered_arguments.push(lowered);
@@ -393,18 +371,14 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_fn_call(
-    &mut self,
-    expression: &source::expr::Call<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
-  ) -> LoweringResult {
+  fn lower_fn_call(&mut self, expression: &source::expr::Call<Rc<type_::Type>>) -> LoweringResult {
     let mut lowered_stmts = vec![];
     let is_void_return = if let Some((_, kind)) = expression.common.type_.as_primitive() {
       *kind == type_::PrimitiveTypeKind::Unit
     } else {
       false
     };
-    let return_collector_name = self.allocate_temp_variable(favored_temp_variable);
+    let return_collector_name = self.allocate_temp_variable();
     let (function_return_collector_type, fn_call) = match expression.callee.as_ref() {
       source::expr::E::MethodAccess(source_callee) => {
         let source_target_type = source_callee.object.type_();
@@ -412,8 +386,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           self.create_hir_function_name(source_target_type, source_callee.method_name.name);
         let fn_type_without_cx =
           self.get_function_type_without_context(&source_callee.common.type_);
-        let hir_target =
-          self.lowered_and_add_statements(&source_callee.object, None, &mut lowered_stmts);
+        let hir_target = self.lowered_and_add_statements(&source_callee.object, &mut lowered_stmts);
         let hir_target_type = hir_target.type_();
         let inferred_targs = self
           .type_lowering_manager
@@ -443,7 +416,7 @@ impl<'a> ExpressionLoweringManager<'a> {
                 expression
                   .arguments
                   .iter()
-                  .map(|a| self.lowered_and_add_statements(a, None, &mut lowered_stmts)),
+                  .map(|a| self.lowered_and_add_statements(a, &mut lowered_stmts)),
               )
               .collect_vec(),
             return_type: fn_type_without_cx.return_type.as_ref().clone(),
@@ -453,7 +426,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       }
       source_callee => {
         let lowered_fn_expr = self
-          .lowered_and_add_statements(source_callee, None, &mut lowered_stmts)
+          .lowered_and_add_statements(source_callee, &mut lowered_stmts)
           .as_variable()
           .cloned()
           .unwrap();
@@ -465,7 +438,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         let lowered_args = expression
           .arguments
           .iter()
-          .map(|a| self.lowered_and_add_statements(a, None, &mut lowered_stmts))
+          .map(|a| self.lowered_and_add_statements(a, &mut lowered_stmts))
           .collect_vec();
         (
           return_type.clone(),
@@ -490,22 +463,16 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_binary(
-    &mut self,
-    expression: &source::expr::E<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
-  ) -> LoweringResult {
+  fn lower_binary(&mut self, expression: &source::expr::E<Rc<type_::Type>>) -> LoweringResult {
     let expression = match expression {
       source::expr::E::Binary(e) => e,
-      _ => return self.lower(expression, favored_temp_variable),
+      _ => return self.lower(expression),
     };
     let operator = match expression.operator {
       source::expr::BinaryOperator::AND => {
-        let temp = self.allocate_temp_variable(favored_temp_variable);
-        let LoweringResult { statements: s1, expression: e1 } =
-          self.lower_binary(&expression.e1, None);
-        let LoweringResult { statements: s2, expression: e2 } =
-          self.lower_binary(&expression.e2, None);
+        let temp = self.allocate_temp_variable();
+        let LoweringResult { statements: s1, expression: e1 } = self.lower_binary(&expression.e1);
+        let LoweringResult { statements: s2, expression: e2 } = self.lower_binary(&expression.e2);
         if let hir::Expression::IntLiteral(v) = &e1 {
           return if *v != 0 {
             LoweringResult { statements: s1.into_iter().chain(s2).collect_vec(), expression: e2 }
@@ -526,11 +493,9 @@ impl<'a> ExpressionLoweringManager<'a> {
         };
       }
       source::expr::BinaryOperator::OR => {
-        let temp = self.allocate_temp_variable(favored_temp_variable);
-        let LoweringResult { statements: s1, expression: e1 } =
-          self.lower_binary(&expression.e1, None);
-        let LoweringResult { statements: s2, expression: e2 } =
-          self.lower_binary(&expression.e2, None);
+        let temp = self.allocate_temp_variable();
+        let LoweringResult { statements: s1, expression: e1 } = self.lower_binary(&expression.e1);
+        let LoweringResult { statements: s2, expression: e2 } = self.lower_binary(&expression.e2);
         if let hir::Expression::IntLiteral(v) = &e1 {
           return if *v != 0 {
             LoweringResult { statements: s1, expression: hir::ONE }
@@ -566,9 +531,9 @@ impl<'a> ExpressionLoweringManager<'a> {
           };
         }
         let mut lowered_stmts = vec![];
-        let e1 = self.lowered_and_add_statements(&expression.e1, None, &mut lowered_stmts);
-        let e2 = self.lowered_and_add_statements(&expression.e2, None, &mut lowered_stmts);
-        let return_collector_name = self.allocate_temp_variable(favored_temp_variable);
+        let e1 = self.lowered_and_add_statements(&expression.e1, &mut lowered_stmts);
+        let e2 = self.lowered_and_add_statements(&expression.e2, &mut lowered_stmts);
+        let return_collector_name = self.allocate_temp_variable();
         lowered_stmts.push(hir::Statement::Call {
           callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
             name: hir::FunctionName {
@@ -606,9 +571,9 @@ impl<'a> ExpressionLoweringManager<'a> {
       source::expr::BinaryOperator::NE => hir::Operator::NE,
     };
     let mut lowered_stmts = vec![];
-    let e1 = self.lowered_and_add_statements(&expression.e1, None, &mut lowered_stmts);
-    let e2 = self.lowered_and_add_statements(&expression.e2, None, &mut lowered_stmts);
-    let value_temp = self.allocate_temp_variable(favored_temp_variable);
+    let e1 = self.lowered_and_add_statements(&expression.e1, &mut lowered_stmts);
+    let e2 = self.lowered_and_add_statements(&expression.e2, &mut lowered_stmts);
+    let value_temp = self.allocate_temp_variable();
     lowered_stmts.push(hir::Statement::Binary { name: value_temp, operator, e1, e2 });
     LoweringResult {
       statements: lowered_stmts,
@@ -619,14 +584,12 @@ impl<'a> ExpressionLoweringManager<'a> {
   fn lower_if_else(
     &mut self,
     expression: &source::expr::IfElse<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
-    let condition =
-      self.lowered_and_add_statements(&expression.condition, None, &mut lowered_stmts);
-    let final_var_name = self.allocate_temp_variable(favored_temp_variable);
-    let LoweringResult { statements: s1, expression: e1 } = self.lower(&expression.e1, None);
-    let LoweringResult { statements: s2, expression: e2 } = self.lower(&expression.e2, None);
+    let condition = self.lowered_and_add_statements(&expression.condition, &mut lowered_stmts);
+    let final_var_name = self.allocate_temp_variable();
+    let LoweringResult { statements: s1, expression: e1 } = self.lower(&expression.e1);
+    let LoweringResult { statements: s2, expression: e2 } = self.lower(&expression.e2);
     let lowered_return_type = e1.type_().clone();
     lowered_stmts.push(hir::Statement::IfElse {
       condition,
@@ -645,10 +608,9 @@ impl<'a> ExpressionLoweringManager<'a> {
 
   fn lower_match(&mut self, expression: &source::expr::Match<Rc<type_::Type>>) -> LoweringResult {
     let mut lowered_stmts = vec![];
-    let matched_expr =
-      self.lowered_and_add_statements(&expression.matched, None, &mut lowered_stmts);
+    let matched_expr = self.lowered_and_add_statements(&expression.matched, &mut lowered_stmts);
 
-    let unreachable_branch_collector = self.allocate_temp_variable(None);
+    let unreachable_branch_collector = self.allocate_temp_variable();
     let final_return_type =
       self.type_lowering_manager.lower_source_type(self.heap, &expression.common.type_);
     let mut acc = (
@@ -681,7 +643,7 @@ impl<'a> ExpressionLoweringManager<'a> {
     for source::expr::VariantPatternToExpression { tag_order, data_variables, body, .. } in
       expression.cases.iter().rev()
     {
-      let final_assignment_temp = self.allocate_temp_variable(None);
+      let final_assignment_temp = self.allocate_temp_variable();
       let lowered_return_type = acc.1.type_().clone();
       let (acc_stmts, acc_e) = acc;
       let mut local_stmts = vec![];
@@ -697,7 +659,7 @@ impl<'a> ExpressionLoweringManager<'a> {
           bindings.push(None);
         }
       }
-      let final_expr = self.lowered_and_add_statements(body, None, &mut local_stmts);
+      let final_expr = self.lowered_and_add_statements(body, &mut local_stmts);
       self.variable_cx.pop_scope();
       let new_stmts = vec![hir::Statement::ConditionalDestructure {
         test_expr: matched_expr.clone(),
@@ -768,7 +730,7 @@ impl<'a> ExpressionLoweringManager<'a> {
         self.string_manager,
         self.next_synthetic_fn_id_manager,
       )
-      .lower(&expression.body, None);
+      .lower(&expression.body);
     lambda_stmts.append(&mut lowered_s);
 
     hir::Function {
@@ -790,19 +752,15 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn lower_lambda(
-    &mut self,
-    expression: &source::expr::Lambda<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
-  ) -> LoweringResult {
+  fn lower_lambda(&mut self, expression: &source::expr::Lambda<Rc<type_::Type>>) -> LoweringResult {
     let captured = expression.captured.keys().map(|k| (*k, self.resolve_variable(k))).collect_vec();
 
     let mut lowered_stmts = vec![];
-    let closure_variable_name = self.allocate_temp_variable(favored_temp_variable);
+    let closure_variable_name = self.allocate_temp_variable();
     let context = if captured.is_empty() {
       hir::ZERO
     } else {
-      let context_name = self.allocate_temp_variable(None);
+      let context_name = self.allocate_temp_variable();
       let context_type = self.get_synthetic_identifier_type_from_tuple(
         captured.iter().map(|(_, v)| v.type_().clone()).collect_vec(),
       );
@@ -849,95 +807,72 @@ impl<'a> ExpressionLoweringManager<'a> {
     }
   }
 
-  fn get_renamed_variable_for_nesting(&mut self, name: PStr, type_: &hir::Type) -> PStr {
-    if self.depth == 0 {
-      return name;
-    }
-    let renamed = self.heap.alloc_string(format!(
-      "{}__depth_{}__block_{}",
-      name.as_str(self.heap),
-      self.depth,
-      self.block_id
-    ));
-    self.variable_cx.bind(name, hir::Expression::var_name(renamed, type_.clone()));
-    renamed
-  }
-
-  fn lower_block(
+  fn lower_destructuring_pattern(
     &mut self,
-    expression: &source::expr::Block<Rc<type_::Type>>,
-    favored_temp_variable: Option<PStr>,
-  ) -> LoweringResult {
-    let mut lowered_stmts = vec![];
-    self.depth += 1;
-    self.variable_cx.push_scope();
-    for s in &expression.statements {
-      match &s.pattern {
-        source::pattern::DestructuringPattern::Tuple(_, destructured_names) => {
-          let assigned_expr =
-            self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
-          let id_type = assigned_expr.type_().as_id().unwrap();
-          let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
-          for (index, name_opt) in destructured_names.iter().enumerate() {
-            if let Some(name) = name_opt {
-              let field_type = &resolved_struct_mappings[index];
-              let mangled_name = self.get_renamed_variable_for_nesting(name.name.name, field_type);
-              self
-                .variable_cx
-                .bind(mangled_name, hir::Expression::var_name(mangled_name, field_type.clone()));
-              lowered_stmts.push(hir::Statement::IndexedAccess {
-                name: mangled_name,
-                type_: field_type.clone(),
-                pointer_expression: assigned_expr.clone(),
-                index,
-              });
-            }
-          }
-        }
-        source::pattern::DestructuringPattern::Object(_, destructured_names) => {
-          let assigned_expr =
-            self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
-          let id_type = assigned_expr.type_().as_id().unwrap();
-          let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
-          for destructured_name in destructured_names {
-            let field_type = &resolved_struct_mappings[destructured_name.field_order];
-            let mangled_name = self.get_renamed_variable_for_nesting(
-              if let Some(n) = &destructured_name.alias {
-                n.name
-              } else {
-                destructured_name.field_name.name
-              },
-              field_type,
-            );
-            self
-              .variable_cx
-              .bind(mangled_name, hir::Expression::var_name(mangled_name, field_type.clone()));
-            lowered_stmts.push(hir::Statement::IndexedAccess {
-              name: mangled_name,
-              type_: field_type.clone(),
-              pointer_expression: assigned_expr.clone(),
-              index: destructured_name.field_order,
-            });
-          }
-        }
-        source::pattern::DestructuringPattern::Id(_, id) => {
-          let e =
-            self.lowered_and_add_statements(&s.assigned_expression, Some(*id), &mut lowered_stmts);
-          self.variable_cx.bind(*id, e);
-        }
-        source::pattern::DestructuringPattern::Wildcard(_) => {
-          self.lowered_and_add_statements(&s.assigned_expression, None, &mut lowered_stmts);
+    pattern: &source::pattern::DestructuringPattern<Rc<type_::Type>>,
+    lowered_stmts: &mut Vec<hir::Statement>,
+    assigned_expr: hir::Expression,
+  ) {
+    match pattern {
+      source::pattern::DestructuringPattern::Tuple(_, destructured_names) => {
+        let id_type = assigned_expr.type_().as_id().unwrap();
+        let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
+        for (index, nested) in destructured_names.iter().enumerate() {
+          let field_type = &resolved_struct_mappings[index];
+          let name = self.allocate_temp_variable();
+          lowered_stmts.push(hir::Statement::IndexedAccess {
+            name,
+            type_: field_type.clone(),
+            pointer_expression: assigned_expr.clone(),
+            index,
+          });
+          self.lower_destructuring_pattern(
+            &nested.pattern,
+            lowered_stmts,
+            hir::Expression::var_name(name, field_type.clone()),
+          );
         }
       }
+      source::pattern::DestructuringPattern::Object(_, destructured_names) => {
+        let id_type = assigned_expr.type_().as_id().unwrap();
+        let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
+        for destructured_name in destructured_names {
+          let field_type = &resolved_struct_mappings[destructured_name.field_order];
+          let name = self.allocate_temp_variable();
+          lowered_stmts.push(hir::Statement::IndexedAccess {
+            name,
+            type_: field_type.clone(),
+            pointer_expression: assigned_expr.clone(),
+            index: destructured_name.field_order,
+          });
+          self.lower_destructuring_pattern(
+            &destructured_name.pattern,
+            lowered_stmts,
+            hir::Expression::var_name(name, field_type.clone()),
+          );
+        }
+      }
+      source::pattern::DestructuringPattern::Id(id) => {
+        self.variable_cx.bind(id.name, assigned_expr);
+      }
+      source::pattern::DestructuringPattern::Wildcard(_) => {}
+    }
+  }
+
+  fn lower_block(&mut self, expression: &source::expr::Block<Rc<type_::Type>>) -> LoweringResult {
+    let mut lowered_stmts = vec![];
+    self.variable_cx.push_scope();
+    for s in &expression.statements {
+      let assigned_expr =
+        self.lowered_and_add_statements(&s.assigned_expression, &mut lowered_stmts);
+      self.lower_destructuring_pattern(&s.pattern, &mut lowered_stmts, assigned_expr);
     }
     let final_expr = if let Some(e) = &expression.expression {
-      self.lowered_and_add_statements(e, favored_temp_variable, &mut lowered_stmts)
+      self.lowered_and_add_statements(e, &mut lowered_stmts)
     } else {
       hir::ZERO
     };
     self.variable_cx.pop_scope();
-    self.block_id += 1;
-    self.depth -= 1;
     LoweringResult { statements: lowered_stmts, expression: final_expr }
   }
 }
@@ -946,10 +881,7 @@ fn lower_source_expression(
   mut manager: ExpressionLoweringManager,
   expression: &source::expr::E<Rc<type_::Type>>,
 ) -> LoweringResultWithSyntheticFunctions {
-  if let source::expr::E::Block(_) = expression {
-    manager.depth -= 1;
-  }
-  let LoweringResult { statements, expression } = manager.lower(expression, None);
+  let LoweringResult { statements, expression } = manager.lower(expression);
   LoweringResultWithSyntheticFunctions {
     synthetic_functions: manager.synthetic_functions,
     statements,
@@ -2164,10 +2096,9 @@ return (_t7: DUMMY_Dummy);"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::pattern::DestructuringPattern::Id(
-            Location::dummy(),
+          pattern: source::pattern::DestructuringPattern::Id(source::Id::from(
             well_known_pstrs::LOWER_A,
-          ),
+          )),
           annotation: Some(annot_builder.unit_annot()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
@@ -2182,14 +2113,20 @@ return (_t7: DUMMY_Dummy);"#,
                       loc: Location::dummy(),
                       field_order: 0,
                       field_name: source::Id::from(well_known_pstrs::LOWER_A),
-                      alias: None,
+                      pattern: Box::new(source::pattern::DestructuringPattern::Id(
+                        source::Id::from(well_known_pstrs::LOWER_A),
+                      )),
+                      shorthand: true,
                       type_: builder.int_type(),
                     },
                     source::pattern::ObjectPatternDestucturedName {
                       loc: Location::dummy(),
                       field_order: 1,
                       field_name: source::Id::from(well_known_pstrs::LOWER_B),
-                      alias: Some(source::Id::from(well_known_pstrs::LOWER_C)),
+                      pattern: Box::new(source::pattern::DestructuringPattern::Id(
+                        source::Id::from(well_known_pstrs::LOWER_C),
+                      )),
+                      shorthand: false,
                       type_: builder.int_type(),
                     },
                   ],
@@ -2211,8 +2148,8 @@ return (_t7: DUMMY_Dummy);"#,
         expression: None,
       }),
       heap,
-      r#"let a__depth_1__block_0: int = (_this: DUMMY_Dummy)[0];
-let c__depth_1__block_0: int = (_this: DUMMY_Dummy)[1];
+      r#"let _t3: int = (_this: DUMMY_Dummy)[0];
+let _t4: int = (_this: DUMMY_Dummy)[1];
 return 0;"#,
     );
 
@@ -2231,14 +2168,20 @@ return 0;"#,
                   loc: Location::dummy(),
                   field_order: 0,
                   field_name: source::Id::from(well_known_pstrs::LOWER_A),
-                  alias: None,
+                  pattern: Box::new(source::pattern::DestructuringPattern::Id(source::Id::from(
+                    well_known_pstrs::LOWER_A,
+                  ))),
+                  shorthand: true,
                   type_: builder.int_type(),
                 },
                 source::pattern::ObjectPatternDestucturedName {
                   loc: Location::dummy(),
                   field_order: 1,
                   field_name: source::Id::from(well_known_pstrs::LOWER_B),
-                  alias: Some(source::Id::from(well_known_pstrs::LOWER_C)),
+                  pattern: Box::new(source::pattern::DestructuringPattern::Id(source::Id::from(
+                    well_known_pstrs::LOWER_C,
+                  ))),
+                  shorthand: false,
                   type_: builder.int_type(),
                 },
               ],
@@ -2252,11 +2195,18 @@ return 0;"#,
             pattern: source::pattern::DestructuringPattern::Tuple(
               Location::dummy(),
               vec![
-                Some(source::pattern::TuplePatternDestructuredName {
-                  name: source::Id::from(well_known_pstrs::LOWER_D),
+                source::pattern::TuplePatternDestructuredName {
+                  pattern: Box::new(source::pattern::DestructuringPattern::Id(source::Id::from(
+                    well_known_pstrs::LOWER_D,
+                  ))),
                   type_: builder.int_type(),
-                }),
-                None,
+                },
+                source::pattern::TuplePatternDestructuredName {
+                  pattern: Box::new(source::pattern::DestructuringPattern::Wildcard(
+                    Location::dummy(),
+                  )),
+                  type_: builder.int_type(),
+                },
               ],
             ),
             annotation: Some(dummy_source_id_annot(heap)),
@@ -2273,9 +2223,10 @@ return 0;"#,
         expression: None,
       }),
       heap,
-      r#"let a: int = (_this: DUMMY_Dummy)[0];
-let c: int = (_this: DUMMY_Dummy)[1];
-let d: int = (_this: DUMMY_Dummy)[0];
+      r#"let _t3: int = (_this: DUMMY_Dummy)[0];
+let _t4: int = (_this: DUMMY_Dummy)[1];
+let _t5: int = (_this: DUMMY_Dummy)[0];
+let _t6: int = (_this: DUMMY_Dummy)[1];
 return 0;"#,
     );
 
@@ -2286,7 +2237,7 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::pattern::DestructuringPattern::Id(Location::dummy(), well_known_pstrs::LOWER_A),
+          pattern: source::pattern::DestructuringPattern::Id(source::Id::from( well_known_pstrs::LOWER_A)),
           annotation: Some(annot_builder.int_annot()),
           assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
             common: source::expr::ExpressionCommon::dummy(builder.int_type()),
@@ -2315,7 +2266,7 @@ return 0;"#,
         expression: Some(Box::new( id_expr(well_known_pstrs::LOWER_A, builder.string_type()))),
       }),
       heap,
-      "let a: int = ModuleModule_ImportedClass$bar(0, (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));\nreturn (a: int);",
+      "let _t5: int = ModuleModule_ImportedClass$bar(0, (_this: DUMMY_Dummy), (_this: DUMMY_Dummy));\nreturn (_t5: int);",
     );
 
     let heap = &mut Heap::new();
@@ -2326,10 +2277,9 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::pattern::DestructuringPattern::Id(
-              Location::dummy(),
+            pattern: source::pattern::DestructuringPattern::Id(source::Id::from(
               well_known_pstrs::LOWER_A,
-            ),
+            )),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(source::expr::E::Literal(
               source::expr::ExpressionCommon::dummy(builder.string_type()),
@@ -2339,10 +2289,9 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::pattern::DestructuringPattern::Id(
-              Location::dummy(),
+            pattern: source::pattern::DestructuringPattern::Id(source::Id::from(
               well_known_pstrs::LOWER_B,
-            ),
+            )),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(id_expr(
               well_known_pstrs::LOWER_A,
@@ -2363,20 +2312,18 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::pattern::DestructuringPattern::Id(
-            Location::dummy(),
+          pattern: source::pattern::DestructuringPattern::Id(source::Id::from(
             well_known_pstrs::LOWER_A,
-          ),
+          )),
           annotation: Some(annot_builder.unit_annot()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
             statements: vec![source::expr::DeclarationStatement {
               loc: Location::dummy(),
               associated_comments: NO_COMMENT_REFERENCE,
-              pattern: source::pattern::DestructuringPattern::Id(
-                Location::dummy(),
+              pattern: source::pattern::DestructuringPattern::Id(source::Id::from(
                 well_known_pstrs::LOWER_A,
-              ),
+              )),
               annotation: Some(annot_builder.int_annot()),
               assigned_expression: Box::new(dummy_source_this(heap)),
             }],

@@ -198,11 +198,11 @@ impl Id {
 }
 
 pub(crate) mod pattern {
-  use super::{Id, Location, PStr};
+  use super::{Id, Location};
 
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct TuplePatternDestructuredName<T: Clone> {
-    pub(crate) name: Id,
+    pub(crate) pattern: Box<DestructuringPattern<T>>,
     pub(crate) type_: T,
   }
 
@@ -211,16 +211,28 @@ pub(crate) mod pattern {
     pub(crate) loc: Location,
     pub(crate) field_order: usize,
     pub(crate) field_name: Id,
-    pub(crate) alias: Option<Id>,
+    pub(crate) pattern: Box<DestructuringPattern<T>>,
+    pub(crate) shorthand: bool,
     pub(crate) type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) enum DestructuringPattern<T: Clone> {
-    Tuple(Location, Vec<Option<TuplePatternDestructuredName<T>>>),
+    Tuple(Location, Vec<TuplePatternDestructuredName<T>>),
     Object(Location, Vec<ObjectPatternDestucturedName<T>>),
-    Id(Location, PStr),
+    Id(Id),
     Wildcard(Location),
+  }
+
+  impl<T: Clone> DestructuringPattern<T> {
+    pub(crate) fn loc(&self) -> &Location {
+      match self {
+        Self::Tuple(loc, _)
+        | Self::Object(loc, _)
+        | Self::Id(Id { loc, .. })
+        | Self::Wildcard(loc) => loc,
+      }
+    }
   }
 }
 

@@ -1334,12 +1334,9 @@ impl<'a> SourceParser<'a> {
       self.consume();
       let destructured_names =
         self.parse_comma_separated_list(Some(TokenOp::RBRACKET), &mut |s: &mut Self| {
-          if let Token(_, TokenContent::Operator(TokenOp::UNDERSCORE)) = s.peek() {
-            s.consume();
-            None
-          } else {
-            let name = s.parse_lower_id();
-            Some(pattern::TuplePatternDestructuredName { name, type_: () })
+          pattern::TuplePatternDestructuredName {
+            pattern: Box::new(s.parse_destructuring_pattern()),
+            type_: (),
           }
         });
       let end_location = self.assert_and_consume_operator(TokenOp::RBRACKET);
@@ -1353,19 +1350,21 @@ impl<'a> SourceParser<'a> {
       let destructured_names =
         self.parse_comma_separated_list(Some(TokenOp::RBRACE), &mut |s: &mut Self| {
           let field_name = s.parse_lower_id();
-          let (alias, loc) = if let Token(_, TokenContent::Keyword(Keyword::AS)) = s.peek() {
-            s.consume();
-            let alias = s.parse_lower_id();
-            let loc = field_name.loc.union(&alias.loc);
-            (Some(alias), loc)
-          } else {
-            (None, field_name.loc)
-          };
+          let (pattern, loc, shorthand) =
+            if let Token(_, TokenContent::Keyword(Keyword::AS)) = s.peek() {
+              s.consume();
+              let nested = Box::new(s.parse_destructuring_pattern());
+              let loc = field_name.loc.union(nested.loc());
+              (nested, loc, false)
+            } else {
+              (Box::new(pattern::DestructuringPattern::Id(field_name)), field_name.loc, true)
+            };
           pattern::ObjectPatternDestucturedName {
             loc,
             field_name,
             field_order: 0,
-            alias,
+            pattern,
+            shorthand,
             type_: (),
           }
         });
@@ -1379,7 +1378,11 @@ impl<'a> SourceParser<'a> {
       self.consume();
       return pattern::DestructuringPattern::Wildcard(peeked_loc);
     }
-    pattern::DestructuringPattern::Id(peeked.0, self.assert_and_peek_lower_id().1)
+    pattern::DestructuringPattern::Id(Id {
+      loc: peeked.0,
+      associated_comments: NO_COMMENT_REFERENCE,
+      name: self.assert_and_peek_lower_id().1,
+    })
   }
 
   fn parse_upper_id(&mut self) -> Id {
