@@ -1,7 +1,44 @@
-use crate::common::{rc_string, rcs, Str};
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
-use std::rc::Rc;
+use std::{ops::Deref, rc::Rc};
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(super) struct Str(Rc<str>);
+
+impl Deref for Str {
+  type Target = str;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
+pub(super) fn rcs(s: &'static str) -> Str {
+  Str(Rc::from(s))
+}
+
+pub(super) fn rc_string(s: String) -> Str {
+  Str(Rc::from(s))
+}
+
+#[cfg(test)]
+mod rc_string_tests {
+  use super::rcs;
+  use std::collections::HashSet;
+
+  #[test]
+  fn tests() {
+    assert!(rcs("foo") < rcs("zuck"));
+    assert!(rcs("foo").cmp(&rcs("zuck")).is_lt());
+    assert!(rcs("foo").partial_cmp(&rcs("zuck")).is_some());
+    assert!(rcs("foo") == rcs("foo"));
+    assert!(!format!("{:?}", rcs("debug")).is_empty());
+    assert_eq!(rcs("zuck"), rcs("zuck"));
+    assert_eq!(Some('h'), rcs("hiya").chars().next());
+    let mut set = HashSet::new();
+    set.insert(rcs("sam"));
+  }
+}
 
 /// This document type is a little clumsy at the stage of pretty printing.
 /// However, it is very useful for doing optimization on whether to start a new line.
@@ -241,8 +278,7 @@ pub(super) fn pretty_print(available_width: usize, document: Document) -> String
 
 #[cfg(test)]
 mod tests {
-  use super::{pretty_print, Document};
-  use crate::common::rcs;
+  use super::{pretty_print, rcs, Document};
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
   use std::rc::Rc;

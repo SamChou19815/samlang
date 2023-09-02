@@ -4,7 +4,6 @@ use std::{
   convert::TryInto,
   hash::Hash,
   ops::Deref,
-  rc::Rc,
   time::Instant,
 };
 
@@ -589,17 +588,6 @@ impl Default for Heap {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct Str(Rc<String>);
-
-impl Deref for Str {
-  type Target = String;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
 pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F) -> R {
   if enabled {
     let now = Instant::now();
@@ -610,18 +598,6 @@ pub fn measure_time<R, F: FnOnce() -> R>(enabled: bool, name: &'static str, f: F
   } else {
     f()
   }
-}
-
-pub(crate) fn rcs(s: &'static str) -> Str {
-  Str(Rc::new(String::from(s)))
-}
-
-pub(crate) fn rc_string(s: String) -> Str {
-  Str(Rc::new(s))
-}
-
-pub(crate) fn rc_pstr(heap: &Heap, s: PStr) -> Str {
-  Str(Rc::new(String::from(s.as_str(heap))))
 }
 
 pub(crate) struct LocalStackedContext<K: Clone + Eq + Hash, V: Clone> {
@@ -669,33 +645,22 @@ mod tests {
   use crate::common::well_known_pstrs;
 
   use super::{
-    measure_time, rcs, Heap, LocalStackedContext, ModuleReference, PStr, PStrPrivateRepr,
+    measure_time, Heap, LocalStackedContext, ModuleReference, PStr, PStrPrivateRepr,
     PStrPrivateReprInline, StringStoredInHeap,
   };
   use pretty_assertions::assert_eq;
-  use std::{cmp::Ordering, collections::HashSet, ops::Deref};
+  use std::{cmp::Ordering, ops::Deref};
 
   fn test_closure() {}
 
   #[test]
   fn boilterplate() {
-    assert!(rcs("foo") < rcs("zuck"));
-    assert!(rcs("foo").cmp(&rcs("zuck")).is_lt());
-    assert!(rcs("foo").partial_cmp(&rcs("zuck")).is_some());
-    assert!(rcs("foo") == rcs("foo"));
-    assert!(!format!("{:?}", rcs("debug")).is_empty());
-    assert_eq!(rcs("zuck"), rcs("zuck"));
-    assert_eq!(Some('h'), rcs("hiya").chars().next());
-
     assert!(PStrPrivateReprInline { size: 0, storage: [0; 7] }.clone().storage.contains(&0));
     measure_time(true, "", test_closure);
     measure_time(false, "", test_closure);
 
     StringStoredInHeap::deallocated(true, "");
     StringStoredInHeap::deallocated(false, "");
-
-    let mut set = HashSet::new();
-    set.insert(rcs("sam"));
   }
 
   #[test]
@@ -845,8 +810,8 @@ mod tests {
   }
 
   fn insert_crash_on_error(
-    cx: &mut LocalStackedContext<super::Str, i32>,
-    name: super::Str,
+    cx: &mut LocalStackedContext<super::PStr, i32>,
+    name: super::PStr,
     value: i32,
   ) {
     if cx.insert(name, value).is_some() {
@@ -857,9 +822,9 @@ mod tests {
   #[test]
   fn local_stacked_context_basic_methods_tests() {
     let mut context = LocalStackedContext::new();
-    assert!(context.get(&rcs("b")).is_none());
-    insert_crash_on_error(&mut context, rcs("a"), 3);
-    assert_eq!(3, *context.get(&rcs("a")).unwrap());
+    assert!(context.get(&well_known_pstrs::LOWER_B).is_none());
+    insert_crash_on_error(&mut context, well_known_pstrs::LOWER_A, 3);
+    assert_eq!(3, *context.get(&well_known_pstrs::LOWER_A).unwrap());
     context.push_scope();
     context.pop_scope();
   }
@@ -868,7 +833,7 @@ mod tests {
   #[test]
   fn local_stacked_context_conflict_detection_tests() {
     let mut context = LocalStackedContext::new();
-    let a = rcs("a");
+    let a = well_known_pstrs::LOWER_A;
     context.insert(a.clone(), 3);
     context.insert(a.clone(), 3);
     insert_crash_on_error(&mut context, a, 3);
@@ -877,16 +842,16 @@ mod tests {
   #[test]
   fn local_stacked_context_captured_values_tests() {
     let mut context = LocalStackedContext::new();
-    insert_crash_on_error(&mut context, rcs("a"), 3);
-    insert_crash_on_error(&mut context, rcs("b"), 3);
+    insert_crash_on_error(&mut context, well_known_pstrs::LOWER_A, 3);
+    insert_crash_on_error(&mut context, well_known_pstrs::LOWER_B, 3);
     context.push_scope();
-    insert_crash_on_error(&mut context, rcs("c"), 3);
-    insert_crash_on_error(&mut context, rcs("d"), 3);
-    context.get(&rcs("a"));
+    insert_crash_on_error(&mut context, well_known_pstrs::LOWER_C, 3);
+    insert_crash_on_error(&mut context, well_known_pstrs::LOWER_D, 3);
+    context.get(&well_known_pstrs::LOWER_A);
     context.push_scope();
-    context.get(&rcs("a"));
-    context.get(&rcs("b"));
-    context.get(&rcs("d"));
+    context.get(&well_known_pstrs::LOWER_A);
+    context.get(&well_known_pstrs::LOWER_B);
+    context.get(&well_known_pstrs::LOWER_D);
   }
 
   #[test]
