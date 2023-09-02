@@ -73,6 +73,11 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
     expr::E::Literal(_, Literal::String(s)) => heap.mark(*s),
     expr::E::Literal(_, _) => {}
     expr::E::LocalId(_, id) | expr::E::ClassId(_, _, id) => mark_id(heap, id),
+    expr::E::Tuple(_, expressions) => {
+      for e in expressions {
+        mark_expression(heap, e);
+      }
+    }
     expr::E::FieldAccess(e) => {
       mark_expression(heap, &e.object);
       mark_id(heap, &e.field_name);
@@ -283,7 +288,7 @@ mod tests {
           val b = 2;
           val c = 3; // c = 3
           val { d } = Obj.init(5, 4);
-          val [_, d1] = Obj.init(5, 4);
+          val [_, d1] = [1, 2];
           val { e as d2 } = Obj.init(5, 4); // d = 4
           val f = Obj.init(5, 4); // d = 4
           val g = Obj.init(d, 4); // d = 4

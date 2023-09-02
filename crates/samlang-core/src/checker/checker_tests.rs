@@ -25,7 +25,7 @@ mod tests {
 
   #[test]
   #[should_panic]
-  fn boilterplate() {
+  fn boilterplate_1() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
 
@@ -37,7 +37,46 @@ mod tests {
       local_scoped_def_locs: HashMap::new(),
       lambda_captures: HashMap::new(),
     });
-    let global_cx = sandbox_global_cx(&mut heap);
+    let global_cx = sandbox_global_cx(&mut heap, false);
+    let test_str = heap.alloc_str_for_test("Test");
+    let mut cx = TypingContext::new(
+      &global_cx,
+      &mut local_cx,
+      &mut error_set,
+      ModuleReference::dummy(),
+      test_str,
+      /* availableTypeParameters */ vec![],
+    );
+
+    type_check_expression_for_tests(
+      &mut cx,
+      &expr::E::Tuple(
+        expr::ExpressionCommon {
+          loc: Location::dummy(),
+          associated_comments: NO_COMMENT_REFERENCE,
+          type_: (),
+        },
+        vec![],
+      ),
+      None,
+    );
+  }
+
+  #[test]
+  #[should_panic]
+  fn boilterplate_2() {
+    let mut heap = Heap::new();
+    let mut error_set = ErrorSet::new();
+
+    let mut local_cx = LocalTypingContext::new(SsaAnalysisResult {
+      unbound_names: HashSet::new(),
+      invalid_defines: HashSet::new(),
+      use_define_map: HashMap::new(),
+      def_to_use_map: HashMap::new(),
+      local_scoped_def_locs: HashMap::new(),
+      lambda_captures: HashMap::new(),
+    });
+    let global_cx = sandbox_global_cx(&mut heap, false);
     let test_str = heap.alloc_str_for_test("Test");
     let mut cx = TypingContext::new(
       &global_cx,
@@ -69,10 +108,10 @@ mod tests {
     );
   }
 
-  fn sandbox_global_cx(heap: &mut Heap) -> GlobalSignature {
+  fn sandbox_global_cx(heap: &mut Heap, include_std: bool) -> GlobalSignature {
     let builder = test_type_builder::create();
 
-    HashMap::from([
+    let mut sigs = HashMap::from([
       (ModuleReference::root(), create_builtin_module_signature()),
       (
         ModuleReference::dummy(),
@@ -483,7 +522,13 @@ mod tests {
           ]),
         },
       ),
-    ])
+    ]);
+    if include_std {
+      for (mod_ref, sig) in super::super::global_signature::create_std_signatures(heap) {
+        sigs.insert(mod_ref, sig);
+      }
+    }
+    sigs
   }
 
   fn type_check_expr_in_sandbox(
@@ -491,6 +536,7 @@ mod tests {
     source: &str,
     expected_type: &Type,
     current_class: &'static str,
+    include_std: bool,
   ) -> String {
     let mut error_set = ErrorSet::new();
 
@@ -499,7 +545,7 @@ mod tests {
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
 
     let mut temp_ssa_error_set = ErrorSet::new();
-    let global_cx = sandbox_global_cx(heap);
+    let global_cx = sandbox_global_cx(heap, include_std);
     let mut local_cx = LocalTypingContext::new(perform_ssa_analysis_on_expression(
       ModuleReference::dummy(),
       &parsed,
@@ -525,25 +571,26 @@ mod tests {
     )
   }
 
-  fn assert_errors_with_class(
+  fn assert_errors_full_customization(
     heap: &mut Heap,
     source: &str,
     expected_type: &Type,
     expected_errors: &str,
     current_class: &'static str,
+    include_std: bool,
   ) {
     assert_eq!(
       expected_errors.trim(),
-      type_check_expr_in_sandbox(heap, source, expected_type, current_class).trim()
+      type_check_expr_in_sandbox(heap, source, expected_type, current_class, include_std).trim()
     );
   }
 
   fn assert_errors(heap: &mut Heap, source: &str, expected_type: &Type, expected_errors: &str) {
-    assert_errors_with_class(heap, source, expected_type, expected_errors, "Test");
+    assert_errors_full_customization(heap, source, expected_type, expected_errors, "Test", false);
   }
 
   fn assert_checks(heap: &mut Heap, source: &str, expected_type: &Type) {
-    assert_errors_with_class(heap, source, expected_type, "", "Test");
+    assert_errors_full_customization(heap, source, expected_type, "", "Test", false);
   }
 
   #[test]
@@ -662,6 +709,57 @@ Error ----------------------------------- DUMMY.sam:1:1-1:24
 
 Found 1 error.
 "#,
+    );
+  }
+
+  #[test]
+  fn tuple_checker_test() {
+    let heap = &mut Heap::new();
+    let builder = test_type_builder::create();
+
+    assert_errors_full_customization(
+      heap,
+      r#"{
+  val _: int = [1, 1].e1;
+  val _: int = [1, 1, 1].e2;
+  val _: int = [1, 1, 1, 1].e3;
+  val _: int = [1, 1, 1, 1, 1].e4;
+  val _: int = [1, 1, 1, 1, 1, 1].e5;
+  val _: int = [1, 1, 1, 1, 1, 1, 1].e6;
+  val _: int = [1, 1, 1, 1, 1, 1, 1, 1].e7;
+  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1].e8;
+  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e9;
+  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e10;
+  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e11;
+  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e12;
+  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e13;
+  val _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e15;
+}"#,
+      &builder.unit_type(),
+      r#"
+Error --------------------------------- DUMMY.sam:15:3-15:67
+
+`int` [1] is incompatible with `bool` [2].
+
+  15|   val _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [1] DUMMY.sam:15:17-15:66
+  -------------------------
+  15|   val _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  [2] DUMMY.sam:15:10-15:14
+  -------------------------
+  15|   val _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+               ^^^^
+
+
+Found 1 error.
+"#,
+      "Test",
+      true,
     );
   }
 
@@ -817,33 +915,37 @@ Found 1 error.
       "{ val foo=true; Test.init(foo, 3) }",
       &builder.simple_nominal_type(test_str),
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "Test2.Foo(true)",
       &builder.simple_nominal_type(test2_str),
       "",
       "Test2",
+      false,
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "Test2.Bar(42)",
       &builder.simple_nominal_type(test2_str),
       "",
       "Test2",
+      false,
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "Test4.Foo(true)",
       &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
       "",
       "Test4",
+      false,
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "Test4.Foo<bool>(true)",
       &builder.general_nominal_type(test4_str, vec![builder.bool_type()]),
       "",
       "Test4",
+      false,
     );
 
     assert_errors(
@@ -976,7 +1078,7 @@ Class `Test44` is not resolved.
 Found 1 error.
 "#,
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "Test2.Tars(42)",
       &builder.simple_nominal_type(test2_str),
@@ -992,6 +1094,7 @@ Cannot find member `Tars` on `Test2`.
 Found 1 error.
 "#,
       "Test2",
+      false,
     );
   }
 
@@ -1071,7 +1174,7 @@ Cannot find member `bar` on `Test3`.
 Found 1 error.
 "#,
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "Test2.Foo(true).foo",
       &builder.int_type(),
@@ -1087,6 +1190,7 @@ Cannot find member `foo` on `Test2`.
 Found 1 error.
 "#,
       "Test2",
+      false,
     );
     assert_errors(
       heap,
@@ -2493,19 +2597,21 @@ Found 1 error.
       "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
       &builder.unit_type(),
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
       &builder.unit_type(),
       "",
       "Test2",
+      false,
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(d) -> 2 }; }",
       &builder.unit_type(),
       "",
       "Test2",
+      false,
     );
 
     assert_errors(
@@ -2664,7 +2770,7 @@ Cannot find member `Bar` on `Test`.
 Found 2 errors.
 "#,
     );
-    assert_errors_with_class(
+    assert_errors_full_customization(
       heap,
       "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }",
       &builder.unit_type(),
@@ -2689,6 +2795,7 @@ Cannot find member `Baz` on `Test2`.
 Found 2 errors.
 "#,
       "Test2",
+      false,
     );
   }
 
@@ -2777,7 +2884,14 @@ Found 2 errors.
     let heap = &mut Heap::new();
     let builder = test_type_builder::create();
 
-    assert_errors_with_class(heap, "{val {a, b as c} = A.init();}", &builder.unit_type(), "", "A");
+    assert_errors_full_customization(
+      heap,
+      "{val {a, b as c} = A.init();}",
+      &builder.unit_type(),
+      "",
+      "A",
+      false,
+    );
     assert_checks(heap, "{val a = 1;}", &builder.unit_type());
     assert_checks(heap, "{val a = 1; val b = true;}", &builder.unit_type());
     assert_checks(heap, "{val a = 1; a}", &builder.int_type());

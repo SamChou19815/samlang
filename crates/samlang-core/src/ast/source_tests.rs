@@ -110,6 +110,7 @@ mod tests {
   fn coverage_hack_for_expr(expr: expr::E<()>) {
     expr.precedence();
     expr.clone().common_mut();
+    assert_eq!(expr.common().loc, expr.common().loc);
     assert!(expr.eq(&expr));
   }
 
@@ -126,6 +127,7 @@ mod tests {
       ModuleReference::dummy(),
       Id::from(heap.alloc_str_for_test("s")),
     ));
+    coverage_hack_for_expr(E::Tuple(common.clone(), vec![zero_expr.clone(), zero_expr.clone()]));
     coverage_hack_for_expr(E::FieldAccess(FieldAccess {
       common: common.clone(),
       explicit_type_arguments: vec![],

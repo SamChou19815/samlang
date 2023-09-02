@@ -436,6 +436,7 @@ pub(crate) mod expr {
     Literal(ExpressionCommon<T>, Literal),
     LocalId(ExpressionCommon<T>, Id),
     ClassId(ExpressionCommon<T>, ModuleReference, Id),
+    Tuple(ExpressionCommon<T>, Vec<E<T>>),
     FieldAccess(FieldAccess<T>),
     MethodAccess(MethodAccess<T>),
     Unary(Unary<T>),
@@ -453,6 +454,7 @@ pub(crate) mod expr {
         E::Literal(common, _)
         | E::LocalId(common, _)
         | E::ClassId(common, _, _)
+        | E::Tuple(common, _)
         | E::FieldAccess(FieldAccess { common, .. })
         | E::MethodAccess(MethodAccess { common, .. })
         | E::Unary(Unary { common, .. })
@@ -470,6 +472,7 @@ pub(crate) mod expr {
         E::Literal(common, _)
         | E::LocalId(common, _)
         | E::ClassId(common, _, _)
+        | E::Tuple(common, _)
         | E::FieldAccess(FieldAccess { common, .. })
         | E::MethodAccess(MethodAccess { common, .. })
         | E::Unary(Unary { common, .. })
@@ -492,7 +495,7 @@ pub(crate) mod expr {
 
     pub(crate) fn precedence(&self) -> i32 {
       match self {
-        E::Literal(_, _) | E::LocalId(_, _) | E::ClassId(_, _, _) => 0,
+        E::Literal(_, _) | E::LocalId(_, _) | E::ClassId(_, _, _) | E::Tuple(_, _) => 0,
         E::FieldAccess(_) | E::MethodAccess(_) | E::Call(_) | E::Block(_) => 1,
         E::Unary(_) => 2,
         E::Binary(b) => 4 + b.operator.precedence(),

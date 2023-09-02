@@ -20,9 +20,9 @@ const __Str$fromInt = (_: number, v: number): _Str => [1, String(v) as unknown a
 const __Process$panic = (_: number, [, v]: _Str): never => { throw Error(v as unknown as string); };
 // empty the array to mess up program code that uses after free.
 const __$free = (v: any): number => { v.length = 0; return 0 };
-const GLOBAL_STRING_0: _Str = [0, \`Hi\` as unknown as number];
+const GLOBAL_STRING_4: _Str = [0, \`Hi\` as unknown as number];
 function _Demo_Main$main(): number {
-  __Process$println(0, GLOBAL_STRING_0);
+  __Process$println(0, GLOBAL_STRING_4);
   return 0;
 }
 
@@ -32,7 +32,7 @@ _Demo_Main$main();
 
 assertEqual(
   JSON.stringify(await samlang.typeCheck('class Foo { function main(): int = true }')),
-  '[{"startLineNumber":1,"startColumn":36,"endLineNumber":1,"endColumn":40,"message":"Expected: `int`, actual: `bool`.","severity":8}]'
+  '[{"startLineNumber":1,"startColumn":36,"endLineNumber":1,"endColumn":40,"message":"`bool` [0] is incompatible with `int` [1].","severity":8}]'
 );
 assertEqual(JSON.stringify(await samlang.typeCheck('class Foo {}')), '[]');
 

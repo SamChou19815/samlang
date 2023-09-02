@@ -83,28 +83,28 @@ mod tests {
     let graph = super::DependencyGraph::new(&sources);
 
     assert_eq!(
-      "{ModuleReference(2), ModuleReference(3), ModuleReference(4), ModuleReference(5)}",
+      "{ModuleReference(3), ModuleReference(4), ModuleReference(5), ModuleReference(6)}",
       format!(
         "{:?}",
         graph.affected_set(HashSet::from([mod_ref_a])).into_iter().collect::<BTreeSet<_>>()
       )
     );
     assert_eq!(
-      "{ModuleReference(2), ModuleReference(3), ModuleReference(4), ModuleReference(5)}",
+      "{ModuleReference(3), ModuleReference(4), ModuleReference(5), ModuleReference(6)}",
       format!(
         "{:?}",
         graph.affected_set(HashSet::from([mod_ref_b])).into_iter().collect::<BTreeSet<_>>()
       )
     );
     assert_eq!(
-      "{ModuleReference(2), ModuleReference(3), ModuleReference(4), ModuleReference(5)}",
+      "{ModuleReference(3), ModuleReference(4), ModuleReference(5), ModuleReference(6)}",
       format!(
         "{:?}",
         graph.affected_set(HashSet::from([mod_ref_c])).into_iter().collect::<BTreeSet<_>>()
       )
     );
     assert_eq!(
-      "{ModuleReference(2), ModuleReference(3), ModuleReference(4), ModuleReference(5)}",
+      "{ModuleReference(3), ModuleReference(4), ModuleReference(5), ModuleReference(6)}",
       format!(
         "{:?}",
         graph.affected_set(HashSet::from([mod_ref_d])).into_iter().collect::<BTreeSet<_>>()
@@ -122,11 +122,11 @@ mod tests {
       .map(|(mod_ref, set)| (mod_ref, set.into_iter().collect::<BTreeSet<_>>()))
       .collect::<BTreeMap<_, _>>();
 
-    assert_eq!("ModuleReference(2)", format!("{mod_ref_a:?}"));
-    assert_eq!("ModuleReference(3)", format!("{mod_ref_b:?}"));
-    assert_eq!("ModuleReference(4)", format!("{mod_ref_c:?}"));
-    assert_eq!("ModuleReference(5)", format!("{mod_ref_d:?}"));
-    assert_eq!("{ModuleReference(2): {}, ModuleReference(3): {ModuleReference(2)}, ModuleReference(4): {ModuleReference(3)}, ModuleReference(5): {ModuleReference(2), ModuleReference(3), ModuleReference(4)}}", format!("{forward:?}"));
-    assert_eq!("{ModuleReference(2): {ModuleReference(3), ModuleReference(5)}, ModuleReference(3): {ModuleReference(4), ModuleReference(5)}, ModuleReference(4): {ModuleReference(5)}}", format!("{reverse:?}"));
+    assert_eq!("ModuleReference(3)", format!("{mod_ref_a:?}"));
+    assert_eq!("ModuleReference(4)", format!("{mod_ref_b:?}"));
+    assert_eq!("ModuleReference(5)", format!("{mod_ref_c:?}"));
+    assert_eq!("ModuleReference(6)", format!("{mod_ref_d:?}"));
+    assert_eq!("{ModuleReference(3): {}, ModuleReference(4): {ModuleReference(3)}, ModuleReference(5): {ModuleReference(4)}, ModuleReference(6): {ModuleReference(3), ModuleReference(4), ModuleReference(5)}}", format!("{forward:?}"));
+    assert_eq!("{ModuleReference(3): {ModuleReference(4), ModuleReference(6)}, ModuleReference(4): {ModuleReference(5), ModuleReference(6)}, ModuleReference(5): {ModuleReference(6)}}", format!("{reverse:?}"));
   }
 }

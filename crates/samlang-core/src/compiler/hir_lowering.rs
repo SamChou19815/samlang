@@ -237,6 +237,7 @@ impl<'a> ExpressionLoweringManager<'a> {
       source::expr::E::ClassId(_, _, _) => {
         LoweringResult { statements: vec![], expression: hir::ZERO }
       }
+      source::expr::E::Tuple(common, es) => self.lower_tuple(common, es, favored_temp_variable),
       source::expr::E::FieldAccess(e) => self.lower_field_access(e, favored_temp_variable),
       source::expr::E::MethodAccess(e) => self.lower_method_access(e, favored_temp_variable),
       source::expr::E::Unary(e) => self.lower_unary(e, favored_temp_variable),
@@ -349,6 +350,47 @@ impl<'a> ExpressionLoweringManager<'a> {
       },
     });
     LoweringResult { statements, expression: hir::Expression::var_name(value_name, hir::INT_TYPE) }
+  }
+
+  fn lower_tuple(
+    &mut self,
+    common: &source::expr::ExpressionCommon<Rc<type_::Type>>,
+    expressions: &[source::expr::E<Rc<type_::Type>>],
+    favored_temp_variable: Option<PStr>,
+  ) -> LoweringResult {
+    let mut lowered_stmts = vec![];
+    let return_collector_name = self.allocate_temp_variable(favored_temp_variable);
+    let fn_name = self.create_hir_function_name(&common.type_, well_known_pstrs::INIT);
+    let return_type = self.type_lowering_manager.lower_source_type(self.heap, &common.type_);
+
+    let mut lowered_arguments = Vec::with_capacity(1 + expressions.len());
+    let mut parameter_types = Vec::with_capacity(1 + expressions.len());
+    let mut type_arguments = Vec::with_capacity(expressions.len());
+    lowered_arguments.push(hir::ZERO);
+    parameter_types.push(hir::INT_TYPE);
+    for e in expressions {
+      let lowered = self.lowered_and_add_statements(e, None, &mut lowered_stmts);
+      parameter_types.push(lowered.type_().clone());
+      type_arguments.push(lowered.type_().clone());
+      lowered_arguments.push(lowered);
+    }
+    lowered_stmts.push(hir::Statement::Call {
+      callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
+        name: fn_name,
+        type_: hir::FunctionType {
+          argument_types: parameter_types,
+          return_type: Box::new(return_type.clone()),
+        },
+        type_arguments,
+      }),
+      arguments: lowered_arguments,
+      return_type: return_type.clone(),
+      return_collector: Some(return_collector_name),
+    });
+    LoweringResult {
+      statements: lowered_stmts,
+      expression: hir::Expression::var_name(return_collector_name, return_type),
+    }
   }
 
   fn lower_fn_call(
@@ -1451,6 +1493,31 @@ mod tests {
       &id_expr(heap.alloc_str_for_test("foo"), builder.unit_type()),
       heap,
       "return (foo: int);",
+    );
+  }
+
+  #[test]
+  fn tuple_expressions_lowering_tests() {
+    let builder = test_type_builder::create();
+
+    // Literal lowering works.
+    let heap = &mut Heap::new();
+    assert_expr_correctly_lowered(
+      &source::expr::E::Tuple(
+        source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        vec![
+          source::expr::E::Literal(
+            source::expr::ExpressionCommon::dummy(builder.int_type()),
+            source::Literal::Int(0),
+          ),
+          source::expr::E::Literal(
+            source::expr::ExpressionCommon::dummy(builder.int_type()),
+            source::Literal::Int(0),
+          ),
+        ],
+      ),
+      heap,
+      "let _t3: DUMMY_Dummy = DUMMY_Dummy$init<int, int>(0, 0, 0);\nreturn (_t3: DUMMY_Dummy);",
     );
   }
 

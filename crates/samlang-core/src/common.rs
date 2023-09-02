@@ -182,7 +182,24 @@ pub(crate) mod well_known_pstrs {
   pub(crate) const DEC_REF_FN: PStr = const_inline_pstr!(*b"dec_ref", 0);
   pub(crate) const INIT: PStr = const_inline_pstr!(*b"init", 3);
   pub(crate) const THIS: PStr = const_inline_pstr!(*b"this", 3);
+
   pub(crate) const STD: PStr = const_inline_pstr!(*b"std", 4);
+  pub(crate) const TUPLES: PStr = const_inline_pstr!(*b"tuples", 1);
+  pub(crate) const PAIR: PStr = const_inline_pstr!(*b"Pair", 3);
+  pub(crate) const TRIPLE: PStr = const_inline_pstr!(*b"Triple", 1);
+  pub(crate) const TUPLE_4: PStr = const_inline_pstr!(*b"Tuple4", 1);
+  pub(crate) const TUPLE_5: PStr = const_inline_pstr!(*b"Tuple5", 1);
+  pub(crate) const TUPLE_6: PStr = const_inline_pstr!(*b"Tuple6", 1);
+  pub(crate) const TUPLE_7: PStr = const_inline_pstr!(*b"Tuple7", 1);
+  pub(crate) const TUPLE_8: PStr = const_inline_pstr!(*b"Tuple8", 1);
+  pub(crate) const TUPLE_9: PStr = const_inline_pstr!(*b"Tuple9", 1);
+  pub(crate) const TUPLE_10: PStr = const_inline_pstr!(*b"Tuple10", 0);
+  pub(crate) const TUPLE_11: PStr = const_inline_pstr!(*b"Tuple11", 0);
+  pub(crate) const TUPLE_12: PStr = const_inline_pstr!(*b"Tuple12", 0);
+  pub(crate) const TUPLE_13: PStr = const_inline_pstr!(*b"Tuple13", 0);
+  pub(crate) const TUPLE_14: PStr = const_inline_pstr!(*b"Tuple14", 0);
+  pub(crate) const TUPLE_15: PStr = const_inline_pstr!(*b"Tuple15", 0);
+  pub(crate) const TUPLE_16: PStr = const_inline_pstr!(*b"Tuple16", 0);
 
   pub(crate) const UNDERSCORE: PStr = const_inline_pstr!(*b"_", 6);
   pub(crate) const UNDERSCORE_THIS: PStr = const_inline_pstr!(*b"_this", 2);
@@ -233,6 +250,10 @@ impl ModuleReference {
 
   pub(crate) const fn dummy() -> ModuleReference {
     ModuleReference(1)
+  }
+
+  pub(crate) const fn std_tuples() -> ModuleReference {
+    ModuleReference(2)
   }
 
   pub(crate) fn get_parts<'a>(&self, heap: &'a Heap) -> &'a [PStr] {
@@ -317,7 +338,10 @@ impl Heap {
     heap.alloc_module_reference(vec![]); // Root
     let dummy_parts = vec![well_known_pstrs::DUMMY_MODULE];
     let allocated_dummy = heap.alloc_module_reference(dummy_parts);
+    let allocated_std_tuples =
+      heap.alloc_module_reference(vec![well_known_pstrs::STD, well_known_pstrs::TUPLES]);
     debug_assert!(ModuleReference::dummy() == allocated_dummy); // Dummy
+    debug_assert!(ModuleReference::std_tuples() == allocated_std_tuples); // Dummy
     heap
   }
 

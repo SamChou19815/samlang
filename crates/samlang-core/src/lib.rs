@@ -17,6 +17,45 @@ mod parser;
 mod printer;
 pub mod services;
 
+pub fn builtin_std_raw_sources(heap: &mut Heap) -> HashMap<ModuleReference, String> {
+  let mut sources = HashMap::new();
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "list".to_string()]),
+    include_str!("../../../std/list.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "map".to_string()]),
+    include_str!("../../../std/map.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "option".to_string()]),
+    include_str!("../../../std/option.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "result".to_string()]),
+    include_str!("../../../std/result.sam").to_string(),
+  );
+  sources.insert(
+    heap.alloc_module_reference_from_string_vec(vec!["std".to_string(), "tuples".to_string()]),
+    include_str!("../../../std/tuples.sam").to_string(),
+  );
+  sources
+}
+
+#[cfg(test)]
+pub(crate) fn builtin_parsed_std_sources(
+  heap: &mut Heap,
+) -> HashMap<ModuleReference, ast::source::Module<()>> {
+  let mut error_set = errors::ErrorSet::new();
+  let mut parsed_sources = HashMap::new();
+  for (mod_ref, source) in builtin_std_raw_sources(heap) {
+    let parsed = parser::parse_source_module_from_text(&source, mod_ref, heap, &mut error_set);
+    parsed_sources.insert(mod_ref, parsed);
+  }
+  assert!(!error_set.has_errors());
+  parsed_sources
+}
+
 pub fn reformat_source(source: &str) -> String {
   let mut heap = Heap::new();
   let mut error_set = errors::ErrorSet::new();

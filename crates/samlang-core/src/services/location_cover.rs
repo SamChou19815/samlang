@@ -31,6 +31,9 @@ fn search_expression(
         None
       }
     }
+    expr::E::Tuple(_, expressions) => {
+      expressions.iter().find_map(|e| search_expression(e, position, stop_at_call))
+    }
     expr::E::FieldAccess(e) => {
       if e.field_name.loc.contains_position(position) {
         if let Some(nominal_type) = e.object.common().type_.as_nominal() {
@@ -182,12 +185,13 @@ mod tests {
       source::{expr, Id, NO_COMMENT_REFERENCE},
       Location, Position, Reason,
     },
+    builtin_parsed_std_sources,
     checker::{type_::Type, type_check_sources},
     errors::ErrorSet,
     parser::parse_source_module_from_text,
     Heap, ModuleReference,
   };
-  use std::{collections::HashMap, rc::Rc};
+  use std::rc::Rc;
 
   #[test]
   fn method_search_coverage_test() {
@@ -258,6 +262,7 @@ mod tests {
         val f = Obj.init(5, 4); // d = 4
         val g = Obj.init(d, 4); // d = 4
         val _ = f.d;
+        val [h, i] = [111, 122];
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
         a + b * c / d
       }
@@ -302,8 +307,9 @@ mod tests {
       heap,
       &mut error_set,
     );
-    let (checked_sources, _) =
-      type_check_sources(&HashMap::from([(mod_ref, parsed)]), &mut error_set);
+    let mut sources = builtin_parsed_std_sources(heap);
+    sources.insert(mod_ref, parsed);
+    let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     for m in checked_sources.values() {
       for i in 0..80 {

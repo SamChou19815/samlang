@@ -467,6 +467,11 @@ impl expr::E<()> {
       expr::E::LocalId(_, id) | expr::E::ClassId(_, _, id) => {
         Document::Text(rc_pstr(heap, id.name))
       }
+      expr::E::Tuple(_, expressions) => {
+        square_brackets_surrounded_doc(comma_sep_list(expressions, |e| {
+          e.create_doc(heap, comment_store)
+        }))
+      }
       expr::E::FieldAccess(_) | expr::E::MethodAccess(_) | expr::E::Call(_) => {
         Self::create_doc_for_dotted_chain(
           heap,
@@ -1273,9 +1278,9 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
     );
 
     assert_reprint_expr(
-      "{ val [a, _]: int = 3; }",
+      "{ val [a, _]: int = [1, 4]; }",
       r#"{
-  val [a, _]: int = 3;
+  val [a, _]: int = [1, 4];
 }"#,
     );
     assert_reprint_expr(

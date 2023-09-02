@@ -64,6 +64,11 @@ fn search_expression(
       }
       _ => {}
     },
+    expr::E::Tuple(_, expressions) => {
+      for e in expressions {
+        search_expression(e, request, collector);
+      }
+    }
     expr::E::FieldAccess(e) => {
       match (request, e.object.type_().as_nominal()) {
         (
@@ -228,10 +233,9 @@ pub(super) fn search_modules_globally(
 #[cfg(test)]
 mod tests {
   use crate::{
-    checker::type_check_sources, common::well_known_pstrs, errors::ErrorSet,
-    parser::parse_source_module_from_text, Heap,
+    builtin_parsed_std_sources, checker::type_check_sources, common::well_known_pstrs,
+    errors::ErrorSet, parser::parse_source_module_from_text, Heap,
   };
-  use std::collections::HashMap;
 
   #[test]
   fn searcher_coverage_test() {
@@ -245,6 +249,7 @@ mod tests {
       method foo(): unit = {
         val _ = (f: Foo, b: Option<Foo>, a: (Foo)->Foo) -> this.a;
         val {a, b} = this;
+        val [c, d] = [1, 2];
       }
     }
 
@@ -318,8 +323,9 @@ mod tests {
       heap,
       &mut error_set,
     );
-    let (checked_sources, _) =
-      type_check_sources(&HashMap::from([(mod_ref, parsed)]), &mut error_set);
+    let mut modules = builtin_parsed_std_sources(heap);
+    modules.insert(mod_ref, parsed);
+    let (checked_sources, _) = type_check_sources(&modules, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     super::search_modules_globally(
       &checked_sources,

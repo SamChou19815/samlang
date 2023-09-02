@@ -10,6 +10,15 @@ fn demo_mod_ref(heap: &mut samlang_core::Heap) -> samlang_core::ModuleReference 
   heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()])
 }
 
+fn demo_sources(
+  heap: &mut samlang_core::Heap,
+  text: String,
+) -> HashMap<samlang_core::ModuleReference, String> {
+  let mut sources = samlang_core::builtin_std_raw_sources(heap);
+  sources.insert(demo_mod_ref(heap), text);
+  sources
+}
+
 #[wasm_bindgen]
 pub struct SourcesCompilationResult {
   #[wasm_bindgen(getter_with_clone)]
@@ -22,12 +31,8 @@ pub struct SourcesCompilationResult {
 pub fn compile(source: String) -> Result<SourcesCompilationResult, String> {
   let heap = &mut samlang_core::Heap::new();
   let mod_ref = demo_mod_ref(heap);
-  match samlang_core::compile_sources(
-    heap,
-    HashMap::from([(mod_ref, source)]),
-    vec![mod_ref],
-    false,
-  ) {
+  let sources = demo_sources(heap, source);
+  match samlang_core::compile_sources(heap, sources, vec![mod_ref], false) {
     Ok(samlang_core::SourcesCompilationResult { mut text_code_results, wasm_file }) => {
       let ts_code = text_code_results.remove("Demo.ts").unwrap();
       let wasm_bytes = Uint8Array::from(&wasm_file as &[u8]);
@@ -98,12 +103,8 @@ impl Range {
 
 fn new_state(source: String) -> samlang_core::services::server_state::ServerState {
   let mut heap = samlang_core::Heap::new();
-  let mod_ref = demo_mod_ref(&mut heap);
-  samlang_core::services::server_state::ServerState::new(
-    heap,
-    false,
-    HashMap::from([(mod_ref, source)]),
-  )
+  let sources = demo_sources(&mut heap, source);
+  samlang_core::services::server_state::ServerState::new(heap, false, sources)
 }
 
 #[wasm_bindgen(js_name=typeCheck)]
