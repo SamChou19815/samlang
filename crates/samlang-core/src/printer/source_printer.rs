@@ -1,15 +1,19 @@
-use super::prettier::Document;
+use super::prettier::{rc_string, rcs, Document, Str};
 use crate::{
   ast::source::{
     annotation, expr, pattern, ClassDefinition, ClassMemberDeclaration, CommentKind,
     CommentReference, CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition,
     TypeParameter,
   },
-  common::{rc_pstr, rc_string, rcs, well_known_pstrs, Heap},
+  common::{well_known_pstrs, Heap, PStr},
   ModuleReference,
 };
 use itertools::Itertools;
 use std::{collections::HashMap, ops::Deref, rc::Rc};
+
+fn rc_pstr(heap: &Heap, s: PStr) -> Str {
+  rc_string(String::from(s.as_str(heap)))
+}
 
 fn comma_sep_list<E, F: Fn(&E) -> Document>(elements: &[E], doc_creator: F) -> Document {
   let mut iter = elements.iter().rev();
@@ -755,7 +759,7 @@ fn create_doc_for_interface_member(
   // Special case for statement block as body for prettier result.
   // We want to lift the leading `{` to the same line as `=`.
   let body_doc_with_potential_indentation = match body_doc {
-    Document::Concat(d1, d2) if d1.as_text().map(|s| s.as_str().eq("{")).unwrap_or(false) => {
+    Document::Concat(d1, d2) if d1.as_text().map(|s| s.deref().eq("{")).unwrap_or(false) => {
       Document::Concat(Rc::new(Document::Text(rcs(" {"))), d2)
     }
     _ => Document::group(Document::Nest(
