@@ -2331,17 +2331,19 @@ class Main {
         )
       })
       .collect_vec();
+    let mut sources = crate::builtin_parsed_std_sources(heap);
+    let expected_sources_size = sources.len() + handles.len();
     for (mod_ref, text) in handles {
       let module = parse_source_module_from_text(&text, mod_ref, heap, &mut ErrorSet::new());
       let raw = printer::pretty_print_source_module(heap, 100, &module);
       let mut error_set = ErrorSet::new();
-      let mut sources = crate::builtin_parsed_std_sources(heap);
-      let builtin_sources_size = sources.len();
       sources.insert(mod_ref, parse_source_module_from_text(&raw, mod_ref, heap, &mut error_set));
-      let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
       assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
-      assert!(checked_sources.len() == builtin_sources_size + 1);
     }
+    let mut error_set = ErrorSet::new();
+    let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
+    assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
+    assert!(checked_sources.len() == expected_sources_size);
   }
 
   type HostState = Vec<String>;
