@@ -22,42 +22,56 @@ fn search_expression(
   position: Position,
   stop_at_call: bool,
 ) -> Option<LocationCoverSearchResult> {
+  if !expr.loc().contains_position(position) {
+    return None;
+  }
   let found_from_children = match expr {
     expr::E::Literal(_, _) | expr::E::LocalId(_, _) => None,
-    expr::E::ClassId(common, mod_ref, id) => {
-      if common.loc.contains_position(position) {
-        Some(LocationCoverSearchResult::ToplevelName(id.loc, *mod_ref, id.name))
-      } else {
-        None
-      }
+    expr::E::ClassId(_, mod_ref, id) => {
+      // We already checked at the start whether the expression contains the target.
+      Some(LocationCoverSearchResult::ToplevelName(id.loc, *mod_ref, id.name))
     }
     expr::E::Tuple(_, expressions) => {
       expressions.iter().find_map(|e| search_expression(e, position, stop_at_call))
     }
     expr::E::FieldAccess(e) => {
-      if e.field_name.loc.contains_position(position) {
-        if let Some(nominal_type) = e.object.common().type_.as_nominal() {
-          return Some(LocationCoverSearchResult::PropertyName(
+      let found = e
+        .object
+        .common()
+        .type_
+        .as_nominal()
+        .filter(|_| e.field_name.loc.contains_position(position))
+        .map(|nominal_type| {
+          LocationCoverSearchResult::PropertyName(
             e.field_name.loc,
             nominal_type.module_reference,
             nominal_type.id,
             e.field_name.name,
-          ));
-        }
+          )
+        });
+      if found.is_some() {
+        return found;
       }
       search_expression(&e.object, position, stop_at_call)
     }
     expr::E::MethodAccess(e) => {
-      if e.method_name.loc.contains_position(position) {
-        if let Some(nominal_type) = e.object.common().type_.as_nominal() {
-          return Some(LocationCoverSearchResult::InterfaceMemberName(
+      let found = e
+        .object
+        .common()
+        .type_
+        .as_nominal()
+        .filter(|_| e.method_name.loc.contains_position(position))
+        .map(|nominal_type| {
+          LocationCoverSearchResult::InterfaceMemberName(
             e.method_name.loc,
             nominal_type.module_reference,
             nominal_type.id,
             e.method_name.name,
             !nominal_type.is_class_statics,
-          ));
-        }
+          )
+        });
+      if found.is_some() {
+        return found;
       }
       search_expression(&e.object, position, stop_at_call)
     }
@@ -129,10 +143,9 @@ fn search_expression(
   };
   if let Some(e) = found_from_children {
     Some(e)
-  } else if expr.loc().contains_position(position) {
-    Some(LocationCoverSearchResult::Expression(expr))
   } else {
-    None
+    // We already checked at the start whether the expression contains the target.
+    Some(LocationCoverSearchResult::Expression(expr))
   }
 }
 
@@ -144,10 +157,16 @@ pub(super) fn search_module_locally(
 ) -> Option<LocationCoverSearchResult> {
   for toplevel in &module.toplevels {
     let name = toplevel.name();
+    if !toplevel.loc().contains_position(position) {
+      continue;
+    }
     if name.loc.contains_position(position) {
       return Some(LocationCoverSearchResult::ToplevelName(name.loc, module_reference, name.name));
     }
     for member in toplevel.members_iter() {
+      if !member.loc.contains_position(position) {
+        continue;
+      }
       if member.name.loc.contains_position(position) {
         return Some(LocationCoverSearchResult::InterfaceMemberName(
           member.name.loc,
@@ -169,6 +188,9 @@ pub(super) fn search_module_locally(
     }
     if let Toplevel::Class(c) = toplevel {
       for member in &c.members {
+        if !member.decl.loc.contains_position(position) {
+          continue;
+        }
         if let Some(found) = search_expression(&member.body, position, stop_at_call) {
           return Some(found);
         }
@@ -234,8 +256,7 @@ mod tests {
     let heap = &mut Heap::new();
     let mut error_set = ErrorSet::new();
     let mod_ref = heap.alloc_module_reference_from_string_vec(vec!["foo".to_string()]);
-    let parsed = parse_source_module_from_text(
-      r#"class Foo(val a: int) {
+    let source_code = r#"class Foo(val a: int) {
       function bar(): int = 3
     }
 
@@ -302,21 +323,24 @@ mod tests {
       function main(): unit = Process.println(Str.fromInt(Main.identity(
         Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
       )))
-    }"#,
-      mod_ref,
-      heap,
-      &mut error_set,
-    );
+    }"#;
+    let parsed = parse_source_module_from_text(source_code, mod_ref, heap, &mut error_set);
     let mut sources = builtin_parsed_std_sources(heap);
     sources.insert(mod_ref, parsed);
     let (checked_sources, _) = type_check_sources(&sources, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     for m in checked_sources.values() {
-      for i in 0..80 {
-        for j in 0..80 {
+      for (i, line) in source_code.lines().enumerate() {
+        let i = i as i32;
+        let mut l = 0;
+        for (j, _) in line.char_indices() {
+          let j = j as i32;
+          l += 1;
           super::search_module_locally(mod_ref, m, Position(i, j), true);
           super::search_module_locally(mod_ref, m, Position(i, j), false);
         }
+        super::search_module_locally(mod_ref, m, Position(i, l), true);
+        super::search_module_locally(mod_ref, m, Position(i, l), false);
       }
     }
   }
