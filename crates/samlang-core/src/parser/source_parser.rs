@@ -179,7 +179,7 @@ impl<'a> SourceParser<'a> {
         start: location.start,
         end: location.start,
       },
-      self.heap.alloc_str_permanent("MISSING"),
+      PStr::MISSING,
     )
   }
 
@@ -197,7 +197,7 @@ impl<'a> SourceParser<'a> {
         start: location.start,
         end: location.start,
       },
-      self.heap.alloc_str_permanent("MISSING"),
+      PStr::MISSING,
     )
   }
 
@@ -214,7 +214,7 @@ impl<'a> SourceParser<'a> {
       location,
       format!("Expected: identifier, actual: {}.", content.pretty_print(self.heap)),
     );
-    (location, self.heap.alloc_str_permanent("MISSING"))
+    (location, PStr::MISSING)
   }
 
   fn report(&mut self, loc: Location, reason: String) {
@@ -962,7 +962,7 @@ impl<'a> SourceParser<'a> {
               self.report(l, format!("Expected identifier, but get {}", t.pretty_print(self.heap)));
               (
                 Location { module_reference: self.module_reference, start: l.start, end: l.start },
-                self.heap.alloc_str_permanent("MISSING"),
+                PStr::MISSING,
               )
             }
           };

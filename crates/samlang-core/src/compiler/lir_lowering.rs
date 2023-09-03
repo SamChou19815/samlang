@@ -362,95 +362,95 @@ impl<'a> LoweringManager<'a> {
   }
 }
 
-fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
+fn generate_inc_ref_fn() -> lir::Function {
+  let ptr = PStr::three_letter_literal(b"ptr");
+  let not_ptr = PStr::six_letter_literal(b"notPtr");
+  let tiny_int = PStr::seven_letter_literal(b"tinyInt");
+  let is_zero = PStr::six_letter_literal(b"isZero");
+  let is_odd = PStr::five_letter_literal(b"isOdd");
+  let ref_count = PStr::two_letter_literal(b"rc");
+  let old_ref_count = PStr::five_letter_literal(b"oldRC");
+  let lower = PStr::five_letter_literal(b"lower");
+  let upper = PStr::five_letter_literal(b"upper");
+  let header = PStr::six_letter_literal(b"header");
+  let new_header = PStr::six_letter_literal(b"newHdr");
+
   lir::Function {
     name: mir::FunctionName::BUILTIN_INC_REF,
-    parameters: vec![heap.alloc_str_permanent("ptr")],
+    parameters: vec![ptr],
     type_: unknown_member_destructor_type(),
     body: vec![
       lir::Statement::binary(
-        heap.alloc_str_permanent("tinyInt"),
+        tiny_int,
         hir::Operator::LT,
-        lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
+        lir::Expression::Variable(ptr, lir::ANY_TYPE),
         lir::Expression::int(1024),
       ),
       lir::Statement::binary(
-        heap.alloc_str_permanent("isOdd"),
+        is_odd,
         hir::Operator::LAND,
-        lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
+        lir::Expression::Variable(ptr, lir::ANY_TYPE),
         lir::ONE,
       ),
       lir::Statement::binary(
-        heap.alloc_str_permanent("notPtr"),
+        not_ptr,
         hir::Operator::LOR,
-        lir::Expression::Variable(heap.alloc_str_permanent("tinyInt"), lir::INT_TYPE),
-        lir::Expression::Variable(heap.alloc_str_permanent("isOdd"), lir::INT_TYPE),
+        lir::Expression::Variable(tiny_int, lir::INT_TYPE),
+        lir::Expression::Variable(is_odd, lir::INT_TYPE),
       ),
       lir::Statement::SingleIf {
-        condition: lir::Expression::Variable(heap.alloc_str_permanent("notPtr"), lir::INT_TYPE),
+        condition: lir::Expression::Variable(not_ptr, lir::INT_TYPE),
         invert_condition: true,
         statements: vec![
           lir::Statement::IndexedAccess {
-            name: heap.alloc_str_permanent("header"),
+            name: header,
             type_: lir::INT_TYPE,
-            pointer_expression: lir::Expression::Variable(
-              heap.alloc_str_permanent("ptr"),
-              lir::ANY_TYPE,
-            ),
+            pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
             index: 0,
           },
           lir::Statement::binary(
-            heap.alloc_str_permanent("originalRefCount"),
+            old_ref_count,
             hir::Operator::LAND,
-            lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
+            lir::Expression::Variable(header, lir::INT_TYPE),
             lir::Expression::int(65535),
           ),
           lir::Statement::binary(
-            heap.alloc_str_permanent("isZero"),
+            is_zero,
             hir::Operator::EQ,
-            lir::Expression::Variable(heap.alloc_str_permanent("originalRefCount"), lir::INT_TYPE),
+            lir::Expression::Variable(old_ref_count, lir::INT_TYPE),
             lir::ZERO,
           ),
           lir::Statement::SingleIf {
-            condition: lir::Expression::Variable(heap.alloc_str_permanent("isZero"), lir::INT_TYPE),
+            condition: lir::Expression::Variable(is_zero, lir::INT_TYPE),
             invert_condition: true,
             statements: vec![
               lir::Statement::binary(
-                heap.alloc_str_permanent("refCount"),
+                ref_count,
                 hir::Operator::PLUS,
-                lir::Expression::Variable(
-                  heap.alloc_str_permanent("originalRefCount"),
-                  lir::INT_TYPE,
-                ),
+                lir::Expression::Variable(old_ref_count, lir::INT_TYPE),
                 lir::ONE,
               ),
               lir::Statement::binary(
-                heap.alloc_str_permanent("lower"),
+                lower,
                 hir::Operator::LAND,
-                lir::Expression::Variable(heap.alloc_str_permanent("refCount"), lir::INT_TYPE),
+                lir::Expression::Variable(ref_count, lir::INT_TYPE),
                 lir::Expression::int(65535),
               ),
               lir::Statement::binary(
-                heap.alloc_str_permanent("upper"),
+                upper,
                 hir::Operator::LAND,
-                lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
+                lir::Expression::Variable(header, lir::INT_TYPE),
                 lir::Expression::int(!65535),
               ),
               lir::Statement::binary(
-                heap.alloc_str_permanent("newHeader"),
+                new_header,
                 hir::Operator::LOR,
-                lir::Expression::Variable(heap.alloc_str_permanent("upper"), lir::INT_TYPE),
-                lir::Expression::Variable(heap.alloc_str_permanent("lower"), lir::INT_TYPE),
+                lir::Expression::Variable(upper, lir::INT_TYPE),
+                lir::Expression::Variable(lower, lir::INT_TYPE),
               ),
               lir::Statement::IndexedAssign {
-                assigned_expression: lir::Expression::Variable(
-                  heap.alloc_str_permanent("newHeader"),
-                  lir::INT_TYPE,
-                ),
-                pointer_expression: lir::Expression::Variable(
-                  heap.alloc_str_permanent("ptr"),
-                  lir::ANY_TYPE,
-                ),
+                assigned_expression: lir::Expression::Variable(new_header, lir::INT_TYPE),
+                pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
                 index: 0,
               },
             ],
@@ -462,203 +462,177 @@ fn generate_inc_ref_fn(heap: &mut Heap) -> lir::Function {
   }
 }
 
-fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
+fn generate_dec_ref_fn() -> lir::Function {
+  let ptr = PStr::three_letter_literal(b"ptr");
+  let field_ptr = PStr::four_letter_literal(b"fPtr");
+  let not_ptr = PStr::six_letter_literal(b"notPtr");
+  let tiny_int = PStr::seven_letter_literal(b"tinyInt");
+  let gt_one = PStr::five_letter_literal(b"gtOne");
+  let is_zero = PStr::six_letter_literal(b"isZero");
+  let is_odd = PStr::five_letter_literal(b"isOdd");
+  let is_ref = PStr::five_letter_literal(b"isRef");
+  let should_stop = PStr::four_letter_literal(b"stop");
+  let ref_count = PStr::two_letter_literal(b"rc");
+  let header = PStr::six_letter_literal(b"header");
+  let new_header = PStr::six_letter_literal(b"newHdr");
+  let new_i = PStr::four_letter_literal(b"newI");
+  let bitset = PStr::six_letter_literal(b"bitSet");
+  let is_ref_bit_set = PStr::six_letter_literal(b"isRefB");
+  let new_is_ref_bit_set = PStr::seven_letter_literal(b"isRefB2");
+  let header_offset = PStr::seven_letter_literal(b"hdrOfst");
+  let byte_offset = PStr::seven_letter_literal(b"bytOfst");
+
   lir::Function {
     name: mir::FunctionName::BUILTIN_DEC_REF,
-    parameters: vec![heap.alloc_str_permanent("ptr")],
+    parameters: vec![ptr],
     type_: unknown_member_destructor_type(),
     body: vec![
       lir::Statement::binary(
-        heap.alloc_str_permanent("tinyInt"),
+        tiny_int,
         hir::Operator::LT,
-        lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
+        lir::Expression::Variable(ptr, lir::ANY_TYPE),
         lir::Expression::int(1024),
       ),
       lir::Statement::binary(
-        heap.alloc_str_permanent("isOdd"),
+        is_odd,
         hir::Operator::LAND,
-        lir::Expression::Variable(heap.alloc_str_permanent("ptr"), lir::ANY_TYPE),
+        lir::Expression::Variable(ptr, lir::ANY_TYPE),
         lir::ONE,
       ),
       lir::Statement::binary(
-        heap.alloc_str_permanent("notPtr"),
+        not_ptr,
         hir::Operator::LOR,
-        lir::Expression::Variable(heap.alloc_str_permanent("tinyInt"), lir::INT_TYPE),
-        lir::Expression::Variable(heap.alloc_str_permanent("isOdd"), lir::INT_TYPE),
+        lir::Expression::Variable(tiny_int, lir::INT_TYPE),
+        lir::Expression::Variable(is_odd, lir::INT_TYPE),
       ),
       lir::Statement::SingleIf {
-        condition: lir::Expression::Variable(heap.alloc_str_permanent("notPtr"), lir::INT_TYPE),
+        condition: lir::Expression::Variable(not_ptr, lir::INT_TYPE),
         invert_condition: true,
         statements: vec![
           lir::Statement::IndexedAccess {
-            name: heap.alloc_str_permanent("header"),
+            name: header,
             type_: lir::INT_TYPE,
-            pointer_expression: lir::Expression::Variable(
-              heap.alloc_str_permanent("ptr"),
-              lir::ANY_TYPE,
-            ),
+            pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
             index: 0,
           },
           lir::Statement::binary(
-            heap.alloc_str_permanent("refCount"),
+            ref_count,
             hir::Operator::LAND,
-            lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
+            lir::Expression::Variable(header, lir::INT_TYPE),
             lir::Expression::int(65535),
           ),
           lir::Statement::binary(
-            heap.alloc_str_permanent("isZero"),
+            is_zero,
             hir::Operator::EQ,
-            lir::Expression::Variable(heap.alloc_str_permanent("refCount"), lir::INT_TYPE),
+            lir::Expression::Variable(ref_count, lir::INT_TYPE),
             lir::ZERO,
           ),
           lir::Statement::SingleIf {
-            condition: lir::Expression::Variable(heap.alloc_str_permanent("isZero"), lir::INT_TYPE),
+            condition: lir::Expression::Variable(is_zero, lir::INT_TYPE),
             invert_condition: true,
             statements: vec![
               lir::Statement::binary(
-                heap.alloc_str_permanent("gtOne"),
+                gt_one,
                 hir::Operator::GT,
-                lir::Expression::Variable(heap.alloc_str_permanent("refCount"), lir::INT_TYPE),
+                lir::Expression::Variable(ref_count, lir::INT_TYPE),
                 lir::ONE,
               ),
               lir::Statement::IfElse {
-                condition: lir::Expression::Variable(
-                  heap.alloc_str_permanent("gtOne"),
-                  lir::INT_TYPE,
-                ),
+                condition: lir::Expression::Variable(gt_one, lir::INT_TYPE),
                 s1: vec![
                   lir::Statement::binary(
-                    heap.alloc_str_permanent("newHeader"),
+                    new_header,
                     hir::Operator::MINUS,
-                    lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
+                    lir::Expression::Variable(header, lir::INT_TYPE),
                     lir::Expression::int(1),
                   ),
                   lir::Statement::IndexedAssign {
-                    assigned_expression: lir::Expression::Variable(
-                      heap.alloc_str_permanent("newHeader"),
-                      lir::INT_TYPE,
-                    ),
-                    pointer_expression: lir::Expression::Variable(
-                      heap.alloc_str_permanent("ptr"),
-                      lir::ANY_TYPE,
-                    ),
+                    assigned_expression: lir::Expression::Variable(new_header, lir::INT_TYPE),
+                    pointer_expression: lir::Expression::Variable(ptr, lir::ANY_TYPE),
                     index: 0,
                   },
                 ],
                 s2: vec![
                   lir::Statement::binary(
-                    heap.alloc_str_permanent("isRefBitSet"),
+                    is_ref_bit_set,
                     hir::Operator::SHR,
-                    lir::Expression::Variable(heap.alloc_str_permanent("header"), lir::INT_TYPE),
+                    lir::Expression::Variable(header, lir::INT_TYPE),
                     lir::Expression::int(16),
                   ),
                   lir::Statement::While {
                     loop_variables: vec![
                       lir::GenenalLoopVariable {
-                        name: heap.alloc_str_permanent("bitSet"),
+                        name: bitset,
                         type_: lir::INT_TYPE,
-                        initial_value: lir::Expression::Variable(
-                          heap.alloc_str_permanent("isRefBitSet"),
-                          lir::INT_TYPE,
-                        ),
-                        loop_value: lir::Expression::Variable(
-                          heap.alloc_str_permanent("newIsRefBitSet"),
-                          lir::INT_TYPE,
-                        ),
+                        initial_value: lir::Expression::Variable(is_ref_bit_set, lir::INT_TYPE),
+                        loop_value: lir::Expression::Variable(new_is_ref_bit_set, lir::INT_TYPE),
                       },
                       lir::GenenalLoopVariable {
                         name: PStr::LOWER_I,
                         type_: lir::INT_TYPE,
                         initial_value: lir::ONE,
-                        loop_value: lir::Expression::Variable(
-                          heap.alloc_str_permanent("newI"),
-                          lir::INT_TYPE,
-                        ),
+                        loop_value: lir::Expression::Variable(new_i, lir::INT_TYPE),
                       },
                     ],
                     statements: vec![
                       lir::Statement::binary(
-                        heap.alloc_str_permanent("shouldStop"),
+                        should_stop,
                         hir::Operator::GT,
                         lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                         lir::Expression::int(16),
                       ),
                       lir::Statement::SingleIf {
-                        condition: lir::Expression::Variable(
-                          heap.alloc_str_permanent("shouldStop"),
-                          lir::INT_TYPE,
-                        ),
+                        condition: lir::Expression::Variable(should_stop, lir::INT_TYPE),
                         invert_condition: false,
                         statements: vec![lir::Statement::Break(lir::ZERO)],
                       },
                       lir::Statement::binary(
-                        heap.alloc_str_permanent("isRef"),
+                        is_ref,
                         hir::Operator::LAND,
-                        lir::Expression::Variable(
-                          heap.alloc_str_permanent("isRefBitSet"),
-                          lir::INT_TYPE,
-                        ),
+                        lir::Expression::Variable(is_ref_bit_set, lir::INT_TYPE),
                         lir::ONE,
                       ),
                       lir::Statement::SingleIf {
-                        condition: lir::Expression::Variable(
-                          heap.alloc_str_permanent("isRef"),
-                          lir::INT_TYPE,
-                        ),
+                        condition: lir::Expression::Variable(is_ref, lir::INT_TYPE),
                         invert_condition: false,
                         statements: vec![
                           lir::Statement::binary(
-                            heap.alloc_str_permanent("offsetToHeader"),
+                            header_offset,
                             hir::Operator::PLUS,
                             lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                             lir::ONE,
                           ),
                           lir::Statement::binary(
-                            heap.alloc_str_permanent("byteOffset"),
+                            byte_offset,
                             hir::Operator::SHL,
-                            lir::Expression::Variable(
-                              heap.alloc_str_permanent("offsetToHeader"),
-                              lir::INT_TYPE,
-                            ),
+                            lir::Expression::Variable(header_offset, lir::INT_TYPE),
                             lir::Expression::int(2),
                           ),
                           lir::Statement::binary(
-                            heap.alloc_str_permanent("fieldPtr"),
+                            field_ptr,
                             hir::Operator::PLUS,
-                            lir::Expression::Variable(
-                              heap.alloc_str_permanent("ptr"),
-                              lir::INT_TYPE,
-                            ),
-                            lir::Expression::Variable(
-                              heap.alloc_str_permanent("byteOffset"),
-                              lir::INT_TYPE,
-                            ),
+                            lir::Expression::Variable(ptr, lir::INT_TYPE),
+                            lir::Expression::Variable(byte_offset, lir::INT_TYPE),
                           ),
                           lir::Statement::Call {
                             callee: lir::Expression::FnName(
                               mir::FunctionName::BUILTIN_DEC_REF,
                               lir::Type::Fn(unknown_member_destructor_type()),
                             ),
-                            arguments: vec![lir::Expression::Variable(
-                              heap.alloc_str_permanent("fieldPtr"),
-                              lir::ANY_TYPE,
-                            )],
+                            arguments: vec![lir::Expression::Variable(field_ptr, lir::ANY_TYPE)],
                             return_type: lir::INT_TYPE,
                             return_collector: None,
                           },
                         ],
                       },
                       lir::Statement::binary(
-                        heap.alloc_str_permanent("newIsRefBitSet"),
+                        new_is_ref_bit_set,
                         hir::Operator::SHR,
-                        lir::Expression::Variable(
-                          heap.alloc_str_permanent("bitSet"),
-                          lir::INT_TYPE,
-                        ),
+                        lir::Expression::Variable(bitset, lir::INT_TYPE),
                         lir::ONE,
                       ),
                       lir::Statement::binary(
-                        heap.alloc_str_permanent("newI"),
+                        new_i,
                         hir::Operator::PLUS,
                         lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                         lir::ONE,
@@ -671,10 +645,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                       mir::FunctionName::BUILTIN_FREE,
                       lir::Type::Fn(unknown_member_destructor_type()),
                     ),
-                    arguments: vec![lir::Expression::Variable(
-                      heap.alloc_str_permanent("ptr"),
-                      lir::ANY_TYPE,
-                    )],
+                    arguments: vec![lir::Expression::Variable(ptr, lir::ANY_TYPE)],
                     return_type: lir::INT_TYPE,
                     return_collector: None,
                   },
@@ -751,8 +722,8 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
     .into_iter()
     .map(|f| LoweringManager::new(heap, &closure_def_map, &type_def_map).lower_function(f))
     .collect_vec();
-  functions.push(generate_inc_ref_fn(heap));
-  functions.push(generate_dec_ref_fn(heap));
+  functions.push(generate_inc_ref_fn());
+  functions.push(generate_dec_ref_fn());
   lir_unused_name_elimination::optimize_mir_sources_by_eliminating_unused_ones(lir::Sources {
     symbol_table,
     global_variables,
@@ -1147,14 +1118,14 @@ function __$inc_ref(ptr: any): number {{
   let notPtr = tinyInt | isOdd;
   if (!notPtr) {{
     let header: number = ptr[0];
-    let originalRefCount = header & 65535;
-    let isZero = Number(originalRefCount == 0);
+    let oldRC = header & 65535;
+    let isZero = Number(oldRC == 0);
     if (!isZero) {{
-      let refCount = originalRefCount + 1;
-      let lower = refCount & 65535;
+      let rc = oldRC + 1;
+      let lower = rc & 65535;
       let upper = header & -65536;
-      let newHeader = upper | lower;
-      ptr[0] = newHeader;
+      let newHdr = upper | lower;
+      ptr[0] = newHdr;
     }}
   }}
   return 0;
@@ -1165,32 +1136,32 @@ function __$dec_ref(ptr: any): number {{
   let notPtr = tinyInt | isOdd;
   if (!notPtr) {{
     let header: number = ptr[0];
-    let refCount = header & 65535;
-    let isZero = Number(refCount == 0);
+    let rc = header & 65535;
+    let isZero = Number(rc == 0);
     if (!isZero) {{
-      let gtOne = Number(refCount > 1);
+      let gtOne = Number(rc > 1);
       if (gtOne) {{
-        let newHeader = header + -1;
-        ptr[0] = newHeader;
+        let newHdr = header + -1;
+        ptr[0] = newHdr;
       }} else {{
-        let isRefBitSet = header >>> 16;
-        let bitSet: number = isRefBitSet;
+        let isRefB = header >>> 16;
+        let bitSet: number = isRefB;
         let i: number = 1;
         while (true) {{
-          let shouldStop = Number(i > 16);
-          if (shouldStop) {{
+          let stop = Number(i > 16);
+          if (stop) {{
             break;
           }}
-          let isRef = isRefBitSet & 1;
+          let isRef = isRefB & 1;
           if (isRef) {{
-            let offsetToHeader = i + 1;
-            let byteOffset = offsetToHeader << 2;
-            let fieldPtr = ptr + byteOffset;
-            __$dec_ref(fieldPtr);
+            let hdrOfst = i + 1;
+            let bytOfst = hdrOfst << 2;
+            let fPtr = ptr + bytOfst;
+            __$dec_ref(fPtr);
           }}
-          let newIsRefBitSet = bitSet >>> 1;
+          let isRefB2 = bitSet >>> 1;
           let newI = i + 1;
-          bitSet = newIsRefBitSet;
+          bitSet = isRefB2;
           i = newI;
         }}
         __$free(ptr);
