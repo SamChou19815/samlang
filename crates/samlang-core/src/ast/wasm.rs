@@ -1,5 +1,5 @@
 use super::{hir, mir};
-use crate::common::{Heap, PStr};
+use samlang_heap::{Heap, PStr};
 
 pub(crate) enum InlineInstruction {
   Const(i32),
@@ -319,8 +319,8 @@ impl Module {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::common::well_known_pstrs;
   use pretty_assertions::assert_eq;
+  use samlang_heap::PStr;
 
   #[test]
   fn int_vec_to_data_string_tests() {
@@ -342,20 +342,20 @@ mod tests {
         GlobalData { constant_pointer: 1024, bytes: vec![0, 0] },
         GlobalData { constant_pointer: 323, bytes: vec![3, 2] },
       ],
-      exported_functions: vec![mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN)],
+      exported_functions: vec![mir::FunctionName::new_for_test(PStr::MAIN_FN)],
       functions: vec![Function {
-        name: mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
-        parameters: vec![well_known_pstrs::LOWER_A, well_known_pstrs::LOWER_B],
-        local_variables: vec![well_known_pstrs::LOWER_C, well_known_pstrs::LOWER_D],
+        name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
+        parameters: vec![PStr::LOWER_A, PStr::LOWER_B],
+        local_variables: vec![PStr::LOWER_C, PStr::LOWER_D],
         instructions: vec![
           Instruction::IfElse {
             condition: InlineInstruction::Const(1),
             s1: vec![
               Instruction::Inline(InlineInstruction::Const(1)),
               Instruction::Inline(InlineInstruction::Drop(Box::new(InlineInstruction::Const(0)))),
-              Instruction::Inline(InlineInstruction::LocalGet(well_known_pstrs::LOWER_A)),
+              Instruction::Inline(InlineInstruction::LocalGet(PStr::LOWER_A)),
               Instruction::Inline(InlineInstruction::LocalSet(
-                well_known_pstrs::LOWER_B,
+                PStr::LOWER_B,
                 Box::new(InlineInstruction::Const(0)),
               )),
             ],
@@ -466,7 +466,7 @@ mod tests {
                 assigned: Box::new(InlineInstruction::Const(0)),
               }),
               Instruction::Inline(InlineInstruction::DirectCall(
-                mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+                mir::FunctionName::new_for_test(PStr::MAIN_FN),
                 vec![InlineInstruction::Const(0)],
               )),
               Instruction::Inline(InlineInstruction::IndirectCall {

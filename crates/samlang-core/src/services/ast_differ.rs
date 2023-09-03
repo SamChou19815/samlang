@@ -3,10 +3,10 @@ use crate::{
     source::{annotation, expr, CommentStore, Module, ModuleMembersImport, Toplevel},
     Location,
   },
-  common::{Heap, ModuleReference},
   printer,
 };
 use itertools::Itertools;
+use samlang_heap::{Heap, ModuleReference};
 use std::{
   collections::{HashMap, HashSet, VecDeque},
   rc::Rc,
@@ -427,11 +427,11 @@ mod tests {
   use super::*;
   use crate::{
     ast::source::{test_builder, Id, InterfaceDeclarationCommon, NO_COMMENT_REFERENCE},
-    common::well_known_pstrs,
     errors::ErrorSet,
     parser,
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::PStr;
 
   #[test]
   fn change_to_edit_tests() {
@@ -512,8 +512,8 @@ mod tests {
 
     let import = ModuleMembersImport {
       loc: Location::dummy(),
-      imported_members: vec![Id::from(well_known_pstrs::UPPER_A)],
-      imported_module: ModuleReference::dummy(),
+      imported_members: vec![Id::from(PStr::UPPER_A)],
+      imported_module: ModuleReference::DUMMY,
       imported_module_loc: Location::dummy(),
     };
     assert_eq!(
@@ -526,7 +526,7 @@ mod tests {
     let toplevel = Toplevel::Interface(InterfaceDeclarationCommon {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      name: Id::from(well_known_pstrs::UPPER_A),
+      name: Id::from(PStr::UPPER_A),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -544,11 +544,11 @@ mod tests {
     let heap = &mut Heap::new();
     let error_set = &mut ErrorSet::new();
     let old =
-      parser::parse_source_module_from_text(old_source, ModuleReference::dummy(), heap, error_set);
+      parser::parse_source_module_from_text(old_source, ModuleReference::DUMMY, heap, error_set);
     let new =
-      parser::parse_source_module_from_text(new_source, ModuleReference::dummy(), heap, error_set);
+      parser::parse_source_module_from_text(new_source, ModuleReference::DUMMY, heap, error_set);
     assert!(!error_set.has_errors());
-    compute_module_diff_edits(heap, ModuleReference::dummy(), &old, &new)
+    compute_module_diff_edits(heap, ModuleReference::DUMMY, &old, &new)
       .into_iter()
       .map(|(loc, edit)| (loc.pretty_print_without_file(), edit))
       .collect()
@@ -558,14 +558,14 @@ mod tests {
   fn toplevel_module_diff_tests() {
     assert_eq!(
       vec![(
-        Location::full_document(ModuleReference::dummy()).pretty_print_without_file(),
+        Location::full_document(ModuleReference::DUMMY).pretty_print_without_file(),
         "".to_string()
       )],
       produce_module_diff("// a", "")
     );
     assert_eq!(
       vec![(
-        Location::full_document(ModuleReference::dummy()).pretty_print_without_file(),
+        Location::full_document(ModuleReference::DUMMY).pretty_print_without_file(),
         "/* B */\nclass A\n".to_string()
       )],
       produce_module_diff("/* A */ class A {}", "/* B */ class A {}")

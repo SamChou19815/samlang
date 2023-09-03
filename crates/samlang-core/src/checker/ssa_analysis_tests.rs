@@ -10,11 +10,11 @@ mod tests {
       type_::{test_type_builder, ISourceType},
       typing_context::LocalTypingContext,
     },
-    common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser,
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference};
 
   #[test]
   fn method_access_coverage_hack() {
@@ -22,7 +22,7 @@ mod tests {
     // method access can never be produced by the parser, but we need coverage anyways...
     let mut error_set = ErrorSet::new();
     ssa_analysis::perform_ssa_analysis_on_expression(
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       &expr::E::MethodAccess(expr::MethodAccess {
         common: expr::ExpressionCommon::dummy(()),
         explicit_type_arguments: vec![test_builder::create().bool_annot()],
@@ -57,7 +57,7 @@ mod tests {
 }"#;
     let (_, expr) = parser::parse_source_expression_from_text(
       expr_str,
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       &mut heap,
       &mut error_set,
     );
@@ -87,7 +87,7 @@ def_to_use_map:
 "#
     .trim();
     let analysis_result = ssa_analysis::perform_ssa_analysis_on_expression(
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       &expr,
       &mut error_set,
     );
@@ -137,7 +137,7 @@ class MultiInvalidDef<T, T> {}
 "#;
     let module = parser::parse_source_module_from_text(
       program_str,
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       &mut heap,
       &mut error_set,
     );
@@ -197,11 +197,8 @@ def_to_use_map:
 7:18-7:23 -> [7:18-7:23]
 "#
     .trim();
-    let analysis_result = ssa_analysis::perform_ssa_analysis_on_module(
-      ModuleReference::dummy(),
-      &module,
-      &mut error_set,
-    );
+    let analysis_result =
+      ssa_analysis::perform_ssa_analysis_on_module(ModuleReference::DUMMY, &module, &mut error_set);
     assert_eq!(expected, analysis_result.to_string(&heap).trim());
 
     let builder = test_type_builder::create();

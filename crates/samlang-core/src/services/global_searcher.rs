@@ -4,8 +4,8 @@ use crate::{
     Location,
   },
   checker::type_::Type,
-  common::{ModuleReference, PStr},
 };
+use samlang_heap::{ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
 pub(super) enum GlobalNameSearchRequest {
@@ -233,9 +233,10 @@ pub(super) fn search_modules_globally(
 #[cfg(test)]
 mod tests {
   use crate::{
-    builtin_parsed_std_sources, checker::type_check_sources, common::well_known_pstrs,
-    errors::ErrorSet, parser::parse_source_module_from_text, Heap,
+    builtin_parsed_std_sources, checker::type_check_sources, errors::ErrorSet,
+    parser::parse_source_module_from_text,
   };
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn searcher_coverage_test() {
@@ -345,14 +346,14 @@ mod tests {
     );
     super::search_modules_globally(
       &checked_sources,
-      &super::GlobalNameSearchRequest::Toplevel(mod_ref, well_known_pstrs::MAIN_FN),
+      &super::GlobalNameSearchRequest::Toplevel(mod_ref, PStr::MAIN_FN),
     );
     super::search_modules_globally(
       &checked_sources,
       &super::GlobalNameSearchRequest::InterfaceMember(
         mod_ref,
-        well_known_pstrs::MAIN_FN,
-        well_known_pstrs::MAIN_FN,
+        PStr::MAIN_FN,
+        PStr::MAIN_FN,
         false,
       ),
     );
@@ -379,7 +380,7 @@ mod tests {
       &super::GlobalNameSearchRequest::Property(
         mod_ref,
         heap.alloc_str_for_test("Foo"),
-        well_known_pstrs::LOWER_A,
+        PStr::LOWER_A,
       ),
     );
   }

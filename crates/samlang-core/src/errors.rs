@@ -1,8 +1,6 @@
-use crate::{
-  ast::{Description, Location, Reason},
-  common::{Heap, ModuleReference, PStr},
-};
+use crate::ast::{Description, Location, Reason};
 use itertools::Itertools;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{BTreeSet, HashMap};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,11 +75,9 @@ impl<'a> PrintableStream<'a> {
 }
 
 mod printer {
-  use crate::{
-    ast::Location,
-    common::{Heap, ModuleReference},
-  };
+  use crate::ast::Location;
   use itertools::Itertools;
+  use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashMap;
 
   fn find_code_frame_lines<'a>(
@@ -300,7 +296,7 @@ mod printer {
           start: Position(range.0, range.1),
           end: Position(range.2, range.3),
         },
-        &HashMap::from([(ModuleReference::dummy(), source.to_string())]),
+        &HashMap::from([(ModuleReference::DUMMY, source.to_string())]),
         ref_id,
         &mut collector,
       );
@@ -317,13 +313,13 @@ mod printer {
       let heap = &Heap::new();
 
       // No source
-      assert_eq!("", get_frame(heap, "", ModuleReference::root(), (0, 0, 0, 0), 0));
+      assert_eq!("", get_frame(heap, "", ModuleReference::ROOT, (0, 0, 0, 0), 0));
       // No source
-      assert_eq!("", get_frame(&Heap::new(), "", ModuleReference::dummy(), (-1, -1, -1, -1), 0));
+      assert_eq!("", get_frame(&Heap::new(), "", ModuleReference::DUMMY, (-1, -1, -1, -1), 0));
       // Bad location
-      assert_eq!("", get_frame(heap, "", ModuleReference::dummy(), (10, 10, 1, 1), 0));
+      assert_eq!("", get_frame(heap, "", ModuleReference::DUMMY, (10, 10, 1, 1), 0));
       // Source too short
-      assert_eq!("", get_frame(heap, "", ModuleReference::dummy(), (0, 0, 1, 0), 0));
+      assert_eq!("", get_frame(heap, "", ModuleReference::DUMMY, (0, 0, 1, 0), 0));
     }
 
     #[test]
@@ -336,7 +332,7 @@ mod printer {
           ^^^^^
 "#
         .trim(),
-        get_frame(heap, "abcdefghijklmn", ModuleReference::dummy(), (0, 5, 0, 10), 0).trim()
+        get_frame(heap, "abcdefghijklmn", ModuleReference::DUMMY, (0, 5, 0, 10), 0).trim()
       );
     }
 
@@ -352,7 +348,7 @@ mod printer {
           ^^^^^
   "#
         .trim(),
-        get_frame(heap, "abcdefghijklmn", ModuleReference::dummy(), (0, 5, 0, 10), 1).trim()
+        get_frame(heap, "abcdefghijklmn", ModuleReference::DUMMY, (0, 5, 0, 10), 1).trim()
       );
     }
 
@@ -390,7 +386,7 @@ Line 11
 Line 12
 Line 13
 "#,
-          ModuleReference::dummy(),
+          ModuleReference::DUMMY,
           (8, 3, 12, 2),
           1
         )
@@ -400,7 +396,7 @@ Line 13
 
     #[test]
     fn integration_test_text() {
-      let sources = HashMap::from([(ModuleReference::dummy(), "Hello sam hi!".to_string())]);
+      let sources = HashMap::from([(ModuleReference::DUMMY, "Hello sam hi!".to_string())]);
       let mut state = ErrorPrinterState::new(super::super::ErrorPrinterStyle::Text, &sources);
       let heap = &Heap::new();
 
@@ -432,7 +428,7 @@ hiya ouch [1].
 
     #[test]
     fn integration_test_ide() {
-      let sources = HashMap::from([(ModuleReference::dummy(), "Hello sam hi!".to_string())]);
+      let sources = HashMap::from([(ModuleReference::DUMMY, "Hello sam hi!".to_string())]);
       let mut state = ErrorPrinterState::new(super::super::ErrorPrinterStyle::IDE, &sources);
       let heap = &Heap::new();
 
@@ -978,11 +974,9 @@ impl ErrorSet {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    checker::type_::{test_type_builder, ISourceType},
-    common::{well_known_pstrs, Heap},
-  };
+  use crate::checker::type_::{test_type_builder, ISourceType};
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn boilterplate() {
@@ -1030,7 +1024,7 @@ mod tests {
 
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
 
-    error_set.report_cannot_resolve_module_error(Location::dummy(), ModuleReference::dummy());
+    error_set.report_cannot_resolve_module_error(Location::dummy(), ModuleReference::DUMMY);
     assert_eq!(
       r#"Error ------------------------------------ DUMMY.sam:0:0-0:0
 
@@ -1091,7 +1085,7 @@ Found 2 errors."#
 
     error_set.report_cannot_resolve_class_error(
       Location::dummy(),
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       heap.alloc_str_for_test("global"),
     );
     error_set.report_cyclic_type_definition_error(
@@ -1121,18 +1115,12 @@ Found 2 errors."#
     );
     error_set.report_missing_export_error(
       Location::dummy(),
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       heap.alloc_str_for_test("bar"),
     );
-    error_set.report_name_already_bound_error(
-      Location::dummy(),
-      well_known_pstrs::LOWER_A,
-      Location::dummy(),
-    );
-    error_set.report_non_exhausive_match_error(
-      Location::dummy(),
-      vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
-    );
+    error_set.report_name_already_bound_error(Location::dummy(), PStr::LOWER_A, Location::dummy());
+    error_set
+      .report_non_exhausive_match_error(Location::dummy(), vec![PStr::UPPER_A, PStr::UPPER_B]);
     error_set.report_stackable_error(Location::dummy(), {
       let mut stacked = StackableError::new();
       stacked.add_type_error(super::TypeIncompatibilityNode {

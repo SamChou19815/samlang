@@ -1,8 +1,5 @@
-use crate::{
-  ast::source,
-  common::{well_known_pstrs, Heap, ModuleReference, PStr},
-  errors::ErrorSet,
-};
+use crate::{ast::source, errors::ErrorSet};
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::HashSet;
 
 mod lexer;
@@ -10,7 +7,7 @@ mod lexer_test;
 mod source_parser;
 
 fn builtin_classes() -> HashSet<PStr> {
-  HashSet::from([well_known_pstrs::PROCESS_TYPE, well_known_pstrs::STR_TYPE])
+  HashSet::from([PStr::PROCESS_TYPE, PStr::STR_TYPE])
 }
 
 pub(crate) fn parse_source_module_from_text(
@@ -56,7 +53,7 @@ mod tests {
   fn expect_good_expr(text: &str) {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    parse_source_expression_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
+    parse_source_expression_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
   }
 
@@ -130,7 +127,7 @@ mod tests {
   fn expect_bad_expr(text: &str) {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    parse_source_expression_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
+    parse_source_expression_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert_ne!("", error_set.pretty_print_error_messages_no_frame(&heap));
   }
 
@@ -253,7 +250,7 @@ mod tests {
     }
 "#;
     let parsed =
-      &parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
+      &parse_source_module_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
     assert_eq!(1, parsed.imports.len());
     assert_eq!(
@@ -314,7 +311,7 @@ mod tests {
     }
 "#;
     let module =
-      parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
+      parse_source_module_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
 
     assert_eq!(1, module.imports.len());
     assert!(error_set.has_errors())
@@ -404,7 +401,7 @@ mod tests {
         int,int,int,int,int)
     ) {}
 "#;
-    parse_source_module_from_text(text, ModuleReference::dummy(), &mut heap, &mut error_set);
+    parse_source_module_from_text(text, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert!(error_set.has_errors())
   }
 
@@ -414,7 +411,7 @@ mod tests {
     let mut error_set = ErrorSet::new();
     parse_source_module_from_text(
       "This is not a program.",
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       &mut heap,
       &mut error_set,
     );

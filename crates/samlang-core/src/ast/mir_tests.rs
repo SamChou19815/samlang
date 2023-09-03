@@ -3,10 +3,10 @@ mod tests {
   use super::super::mir::*;
   use crate::{
     ast::hir::{GlobalVariable, Operator},
-    common::{well_known_pstrs, Heap},
     ModuleReference,
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
   #[test]
@@ -19,28 +19,22 @@ mod tests {
     assert!(ZERO.as_int_literal().is_some());
     assert!(!format!(
       "{:?}",
-      Expression::var_name(
-        well_known_pstrs::LOWER_A,
-        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
-      )
+      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
     )
     .is_empty());
     assert!(!format!(
       "{:?}",
-      Expression::var_name(
-        well_known_pstrs::LOWER_A,
-        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
-      )
+      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
     )
     .is_empty());
-    assert!(!format!("{:?}", Expression::StringName(well_known_pstrs::LOWER_A)).is_empty());
+    assert!(!format!("{:?}", Expression::StringName(PStr::LOWER_A)).is_empty());
     assert!(!format!("{:?}", INT_TYPE).is_empty());
     assert_eq!(
       "(s: int)",
       VariableName::new(heap.alloc_str_for_test("s"), INT_TYPE).debug_print(heap, table)
     );
     assert!(!GenenalLoopVariable {
-      name: well_known_pstrs::LOWER_A,
+      name: PStr::LOWER_A,
       type_: INT_TYPE,
       initial_value: ZERO,
       loop_value: ZERO
@@ -48,8 +42,8 @@ mod tests {
     .pretty_print(heap, table)
     .is_empty());
     assert!(!format!("{:?}", Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE)).is_empty());
-    Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).convert_to_callee();
-    Expression::StringName(well_known_pstrs::LOWER_A).convert_to_callee();
+    Expression::var_name(PStr::LOWER_A, INT_TYPE).convert_to_callee();
+    Expression::StringName(PStr::LOWER_A).convert_to_callee();
     ZERO.convert_to_callee();
     Statement::Break(ZERO).as_binary();
     assert!(Statement::Break(ZERO).into_break().is_ok());
@@ -58,7 +52,7 @@ mod tests {
       .as_binary();
     let call = Statement::Call {
       callee: Callee::FunctionName(FunctionNameExpression {
-        name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
+        name: FunctionName::new_for_test(PStr::LOWER_A),
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       }),
       arguments: vec![],
@@ -70,13 +64,11 @@ mod tests {
     assert!(call.into_break().is_err());
 
     assert!(
-      Expression::var_name(
-        well_known_pstrs::LOWER_A,
-        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
-      ) == Expression::var_name(
-        well_known_pstrs::LOWER_A,
-        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
-      )
+      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
+        == Expression::var_name(
+          PStr::LOWER_A,
+          Type::Id(table.create_type_name_for_test(PStr::UPPER_A))
+        )
     );
     assert!(
       FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) }
@@ -84,13 +76,10 @@ mod tests {
     );
     let mut hasher = DefaultHasher::new();
     ZERO.hash(&mut hasher);
-    Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).hash(&mut hasher);
-    Expression::var_name(
-      well_known_pstrs::LOWER_A,
-      Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A)),
-    )
-    .hash(&mut hasher);
-    Statement::binary_flexible_unwrapped(well_known_pstrs::LOWER_A, Operator::DIV, ZERO, ZERO);
+    Expression::var_name(PStr::LOWER_A, INT_TYPE).hash(&mut hasher);
+    Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
+      .hash(&mut hasher);
+    Statement::binary_flexible_unwrapped(PStr::LOWER_A, Operator::DIV, ZERO, ZERO);
     Callee::FunctionName(FunctionNameExpression {
       name: FunctionName::new_for_test(heap.alloc_str_for_test("s")),
       type_: FunctionType { argument_types: vec![], return_type: Box::new(INT_TYPE) },
@@ -99,11 +88,10 @@ mod tests {
     assert!(TypeDefinitionMappings::Struct(vec![]).as_struct().is_some());
 
     let mut table = SymbolTable::new();
-    let mut type_name_id = table.create_type_name_for_test(well_known_pstrs::UPPER_A);
+    let mut type_name_id = table.create_type_name_for_test(PStr::UPPER_A);
     assert!(!format!("{:?}", type_name_id).is_empty());
     assert!(!type_name_id.encoded_for_test(heap, &table).is_empty());
-    type_name_id =
-      table.create_simple_type_name(ModuleReference::root(), well_known_pstrs::UPPER_A);
+    type_name_id = table.create_simple_type_name(ModuleReference::ROOT, PStr::UPPER_A);
     type_name_id = table.derived_type_name_with_subtype_tag(type_name_id, 1);
     assert!(type_name_id <= type_name_id);
     assert_eq!(type_name_id.cmp(&type_name_id), std::cmp::Ordering::Equal);
@@ -116,22 +104,13 @@ mod tests {
 
     assert_eq!("int", INT_TYPE.pretty_print(heap, table));
     assert_eq!("0", ZERO.clone().debug_print(heap, table));
-    assert_eq!(
-      "(a: int)",
-      Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE).debug_print(heap, table)
-    );
+    assert_eq!("(a: int)", Expression::var_name(PStr::LOWER_A, INT_TYPE).debug_print(heap, table));
     assert_eq!(
       "(a: _A)",
-      Expression::var_name(
-        well_known_pstrs::LOWER_A,
-        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
-      )
-      .debug_print(heap, table)
+      Expression::var_name(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
+        .debug_print(heap, table)
     );
-    assert_eq!(
-      "a",
-      Expression::StringName(well_known_pstrs::LOWER_A).clone().debug_print(heap, table)
-    );
+    assert_eq!("a", Expression::StringName(PStr::LOWER_A).clone().debug_print(heap, table));
   }
 
   #[test]
@@ -140,19 +119,17 @@ mod tests {
     let table = &mut SymbolTable::new();
 
     let d1 = TypeDefinition {
-      name: table.create_type_name_for_test(well_known_pstrs::UPPER_A),
+      name: table.create_type_name_for_test(PStr::UPPER_A),
       mappings: TypeDefinitionMappings::Struct(vec![INT_TYPE, INT_TYPE]),
     };
-    let ed1 = EnumTypeDefinition::Unboxed(Type::Id(
-      table.create_type_name_for_test(well_known_pstrs::UPPER_D),
-    ));
+    let ed1 = EnumTypeDefinition::Unboxed(Type::Id(table.create_type_name_for_test(PStr::UPPER_D)));
     let ed2 = EnumTypeDefinition::Boxed(vec![INT_TYPE, INT_TYPE]);
     let ed3 = EnumTypeDefinition::Int;
     assert!(ed1.eq(&ed1));
     assert!(ed2.eq(&ed2));
     assert!(ed3.eq(&ed3));
     let d2 = TypeDefinition {
-      name: table.create_type_name_for_test(well_known_pstrs::UPPER_B),
+      name: table.create_type_name_for_test(PStr::UPPER_B),
       mappings: TypeDefinitionMappings::Enum(vec![ed1, ed2, ed3.clone()]),
     };
     assert_eq!("object type _A = [int, int]", d1.pretty_print(heap, table));
@@ -213,7 +190,7 @@ mod tests {
         },
         Statement::While {
           loop_variables: vec![GenenalLoopVariable {
-            name: well_known_pstrs::UNDERSCORE,
+            name: PStr::UNDERSCORE,
             type_: INT_TYPE,
             initial_value: ZERO,
             loop_value: ZERO,
@@ -223,10 +200,7 @@ mod tests {
             invert_condition: true,
             statements: vec![Statement::Break(ZERO)],
           }],
-          break_collector: Some(VariableName {
-            name: well_known_pstrs::UNDERSCORE,
-            type_: INT_TYPE,
-          }),
+          break_collector: Some(VariableName { name: PStr::UNDERSCORE, type_: INT_TYPE }),
         },
       ],
       s2: vec![
@@ -258,21 +232,18 @@ mod tests {
             name: FunctionName::new_for_test(heap.alloc_str_for_test("stresso")),
             type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           }),
-          arguments: vec![Expression::var_name(well_known_pstrs::LOWER_D, INT_TYPE)],
+          arguments: vec![Expression::var_name(PStr::LOWER_D, INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::Call {
-          callee: Callee::Variable(VariableName {
-            name: well_known_pstrs::LOWER_D,
-            type_: INT_TYPE,
-          }),
-          arguments: vec![Expression::var_name(well_known_pstrs::LOWER_D, INT_TYPE)],
+          callee: Callee::Variable(VariableName { name: PStr::LOWER_D, type_: INT_TYPE }),
+          arguments: vec![Expression::var_name(PStr::LOWER_D, INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         },
         Statement::IndexedAccess {
-          name: well_known_pstrs::LOWER_F,
+          name: PStr::LOWER_F,
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("big"),
@@ -350,7 +321,7 @@ if 0 {
       }
       .clone()],
       closure_types: vec![ClosureTypeDefinition {
-        name: table.create_type_name_for_test(well_known_pstrs::UPPER_A),
+        name: table.create_type_name_for_test(PStr::UPPER_A),
         function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
       }
       .clone()],
@@ -362,10 +333,10 @@ if 0 {
       main_function_names: vec![FunctionName::new_for_test(heap.alloc_str_for_test("ddd"))],
       functions: vec![Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
-        parameters: vec![well_known_pstrs::LOWER_F],
+        parameters: vec![PStr::LOWER_F],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IndexedAccess {
-          name: well_known_pstrs::LOWER_F,
+          name: PStr::LOWER_F,
           type_: INT_TYPE,
           pointer_expression: Expression::var_name(
             heap.alloc_str_for_test("big"),
@@ -399,7 +370,7 @@ sources.mains = [__$ddd]"#;
       main_function_names: vec![],
       functions: vec![Function {
         name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
-        parameters: vec![well_known_pstrs::LOWER_F],
+        parameters: vec![PStr::LOWER_F],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![],
         return_value: ZERO,
@@ -428,24 +399,20 @@ sources.mains = [__$ddd]"#;
       Statement::flexible_order_binary(Operator::PLUS, ONE, ZERO)
     );
     assert_eq!(
-      (Operator::PLUS, Expression::StringName(well_known_pstrs::LOWER_A), ZERO),
-      Statement::flexible_order_binary(
-        Operator::PLUS,
-        ZERO,
-        Expression::StringName(well_known_pstrs::LOWER_A)
-      ),
+      (Operator::PLUS, Expression::StringName(PStr::LOWER_A), ZERO),
+      Statement::flexible_order_binary(Operator::PLUS, ZERO, Expression::StringName(PStr::LOWER_A)),
     );
     assert_eq!(
-      (Operator::PLUS, Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE), ZERO),
+      (Operator::PLUS, Expression::var_name(PStr::LOWER_A, INT_TYPE), ZERO),
       Statement::flexible_order_binary(
         Operator::PLUS,
         ZERO,
-        Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE)
+        Expression::var_name(PStr::LOWER_A, INT_TYPE)
       ),
     );
 
-    let a = well_known_pstrs::LOWER_A;
-    let b = well_known_pstrs::LOWER_B;
+    let a = PStr::LOWER_A;
+    let b = PStr::LOWER_B;
     assert_eq!(
       (Operator::PLUS, Expression::StringName(b), Expression::StringName(a),),
       Statement::flexible_order_binary(
@@ -455,56 +422,52 @@ sources.mains = [__$ddd]"#;
       ),
     );
     assert_eq!(
-      (Operator::PLUS, Expression::StringName(well_known_pstrs::LOWER_B), ZERO),
-      Statement::flexible_order_binary(
-        Operator::PLUS,
-        Expression::StringName(well_known_pstrs::LOWER_B),
-        ZERO
-      ),
+      (Operator::PLUS, Expression::StringName(PStr::LOWER_B), ZERO),
+      Statement::flexible_order_binary(Operator::PLUS, Expression::StringName(PStr::LOWER_B), ZERO),
     );
     assert_eq!(
       (
         Operator::PLUS,
-        Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
-        Expression::StringName(well_known_pstrs::LOWER_A),
+        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::StringName(PStr::LOWER_A),
       ),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::StringName(well_known_pstrs::LOWER_A),
-        Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
+        Expression::StringName(PStr::LOWER_A),
+        Expression::var_name(PStr::LOWER_A, INT_TYPE),
       ),
     );
 
     assert_eq!(
-      (Operator::PLUS, Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE), ZERO),
+      (Operator::PLUS, Expression::var_name(PStr::LOWER_A, INT_TYPE), ZERO),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_TYPE),
         ZERO
       ),
     );
     assert_eq!(
       (
         Operator::PLUS,
-        Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
-        Expression::StringName(well_known_pstrs::LOWER_B),
+        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::StringName(PStr::LOWER_B),
       ),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
-        Expression::StringName(well_known_pstrs::LOWER_B),
+        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::StringName(PStr::LOWER_B),
       ),
     );
     assert_eq!(
       (
         Operator::PLUS,
-        Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
-        Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_B, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_TYPE),
       ),
       Statement::flexible_order_binary(
         Operator::PLUS,
-        Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
-        Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
+        Expression::var_name(PStr::LOWER_A, INT_TYPE),
+        Expression::var_name(PStr::LOWER_B, INT_TYPE),
       ),
     );
 

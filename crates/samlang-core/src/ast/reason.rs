@@ -1,7 +1,6 @@
-use itertools::Itertools;
-
 use super::loc::Location;
-use crate::common::{Heap, PStr};
+use itertools::Itertools;
+use samlang_heap::{Heap, PStr};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Description {
@@ -92,8 +91,8 @@ impl Reason {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::common::well_known_pstrs;
   use pretty_assertions::assert_eq;
+  use samlang_heap::PStr;
 
   #[test]
   fn boilterplate() {
@@ -123,31 +122,27 @@ mod tests {
     assert_eq!("interface type", Description::GeneralInterfaceType.pretty_print(heap));
     assert_eq!("class type", Description::GeneralClassType.pretty_print(heap));
     assert_eq!("non-abstract type", Description::GeneralNonAbstractType.pretty_print(heap));
-    assert_eq!("A", Description::GenericType(well_known_pstrs::UPPER_A).pretty_print(heap));
-    assert_eq!("class A", Description::Class(well_known_pstrs::UPPER_A).pretty_print(heap));
+    assert_eq!("A", Description::GenericType(PStr::UPPER_A).pretty_print(heap));
+    assert_eq!("class A", Description::Class(PStr::UPPER_A).pretty_print(heap));
     assert_eq!(
       "A",
-      Description::NominalType { name: well_known_pstrs::UPPER_A, type_args: vec![] }
-        .pretty_print(heap)
+      Description::NominalType { name: PStr::UPPER_A, type_args: vec![] }.pretty_print(heap)
     );
     assert_eq!(
       "A<int>",
-      Description::NominalType {
-        name: well_known_pstrs::UPPER_A,
-        type_args: vec![Description::IntType]
-      }
-      .clone()
-      .pretty_print(heap)
+      Description::NominalType { name: PStr::UPPER_A, type_args: vec![Description::IntType] }
+        .clone()
+        .pretty_print(heap)
     );
     assert_eq!(
       "(int) -> int",
       Description::FunctionType(vec![Description::IntType], Box::new(Description::IntType))
         .pretty_print(heap)
     );
-    assert_eq!("A", Description::TypeParameter(well_known_pstrs::UPPER_A, None).pretty_print(heap));
+    assert_eq!("A", Description::TypeParameter(PStr::UPPER_A, None).pretty_print(heap));
     assert_eq!(
       "A : int",
-      Description::TypeParameter(well_known_pstrs::UPPER_A, Some(Box::new(Description::IntType)))
+      Description::TypeParameter(PStr::UPPER_A, Some(Box::new(Description::IntType)))
         .pretty_print(heap)
     );
   }

@@ -8,9 +8,9 @@ use super::{
 };
 use crate::{
   ast::{Description, Location, Position, Reason},
-  common::{ModuleReference, PStr},
   errors::{ErrorSet, StackableError},
 };
+use samlang_heap::{ModuleReference, PStr};
 use std::{collections::HashMap, rc::Rc};
 
 pub(crate) struct LocalTypingContext {

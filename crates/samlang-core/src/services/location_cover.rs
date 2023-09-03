@@ -4,9 +4,9 @@ use crate::{
     Location, Position,
   },
   checker::type_::Type,
-  common::PStr,
   ModuleReference,
 };
+use samlang_heap::PStr;
 use std::{ops::Deref, rc::Rc};
 
 pub(super) enum LocationCoverSearchResult<'a> {
@@ -215,7 +215,7 @@ mod tests {
         )),
         method_name: Id {
           loc: Location {
-            module_reference: ModuleReference::dummy(),
+            module_reference: ModuleReference::DUMMY,
             start: Position(10, 10),
             end: Position(10, 20),
           },

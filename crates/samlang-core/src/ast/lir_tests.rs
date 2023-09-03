@@ -1,14 +1,12 @@
 #[cfg(test)]
 mod tests {
   use super::super::lir::*;
-  use crate::{
-    ast::{
-      hir::{GlobalVariable, Operator},
-      mir::{FunctionName, SymbolTable},
-    },
-    common::{well_known_pstrs, Heap},
+  use crate::ast::{
+    hir::{GlobalVariable, Operator},
+    mir::{FunctionName, SymbolTable},
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn boilterplate() {
@@ -19,14 +17,11 @@ mod tests {
     let table = &mut SymbolTable::new();
     assert!(!format!(
       "{:?}",
-      Expression::Variable(
-        well_known_pstrs::LOWER_A,
-        Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A))
-      )
-      .clone()
+      Expression::Variable(PStr::LOWER_A, Type::Id(table.create_type_name_for_test(PStr::UPPER_A)))
+        .clone()
     )
     .is_empty());
-    assert!(!format!("{:?}", Expression::StringName(well_known_pstrs::LOWER_A).clone()).is_empty());
+    assert!(!format!("{:?}", Expression::StringName(PStr::LOWER_A).clone()).is_empty());
     assert!(!format!("{:?}", Type::new_fn(vec![(INT_TYPE)], INT_TYPE).clone()).is_empty());
   }
 
@@ -34,10 +29,9 @@ mod tests {
   fn type_eq_test() {
     let table = &mut SymbolTable::new();
 
-    assert!(!Type::Id(table.create_type_name_for_test(well_known_pstrs::LOWER_A))
-      .is_the_same_type(&Type::Id(table.create_type_name_for_test(well_known_pstrs::LOWER_B))));
-    assert!(!Type::Id(table.create_type_name_for_test(well_known_pstrs::LOWER_A))
-      .is_the_same_type(&INT_TYPE));
+    assert!(!Type::Id(table.create_type_name_for_test(PStr::LOWER_A))
+      .is_the_same_type(&Type::Id(table.create_type_name_for_test(PStr::LOWER_B))));
+    assert!(!Type::Id(table.create_type_name_for_test(PStr::LOWER_A)).is_the_same_type(&INT_TYPE));
     assert!(Type::new_fn(vec![(INT_TYPE)], INT_TYPE)
       .is_the_same_type(&Type::new_fn(vec![(INT_TYPE)], INT_TYPE)));
   }
@@ -71,7 +65,7 @@ mod tests {
       main_function_names: vec![],
       functions: vec![
         Function {
-          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+          name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![],
@@ -79,10 +73,10 @@ mod tests {
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("Bar")),
-          parameters: vec![well_known_pstrs::LOWER_F, well_known_pstrs::LOWER_G],
+          parameters: vec![PStr::LOWER_F, PStr::LOWER_G],
           type_: Type::new_fn_unwrapped(vec![INT_TYPE, INT_TYPE], INT_TYPE),
           body: vec![Statement::IndexedAccess {
-            name: well_known_pstrs::LOWER_F,
+            name: PStr::LOWER_F,
             type_: INT_TYPE,
             pointer_expression: Expression::Variable(
               heap.alloc_str_for_test("big"),
@@ -93,7 +87,7 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+          name: FunctionName::new_for_test(PStr::LOWER_F),
           parameters: vec![heap.alloc_str_for_test("v1")],
           type_: Type::new_fn_unwrapped(
             vec![Type::Fn(Type::new_fn_unwrapped(vec![], INT_TYPE))],
@@ -125,7 +119,7 @@ mod tests {
               },
               Statement::While {
                 loop_variables: vec![GenenalLoopVariable {
-                  name: well_known_pstrs::UNDERSCORE,
+                  name: PStr::UNDERSCORE,
                   type_: INT_TYPE,
                   initial_value: ZERO,
                   loop_value: ZERO,
@@ -135,7 +129,7 @@ mod tests {
                   invert_condition: true,
                   statements: vec![Statement::Break(ZERO)],
                 }],
-                break_collector: Some((well_known_pstrs::UNDERSCORE, INT_TYPE)),
+                break_collector: Some((PStr::UNDERSCORE, INT_TYPE)),
               },
             ],
             s2: vec![
@@ -167,30 +161,30 @@ mod tests {
                   FunctionName::new_for_test(heap.alloc_str_for_test("stresso")),
                   Type::new_fn(vec![], INT_TYPE),
                 ),
-                arguments: vec![Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE)],
+                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               },
               Statement::Call {
-                callee: Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE),
-                arguments: vec![Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE)],
+                callee: Expression::Variable(PStr::LOWER_D, INT_TYPE),
+                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_TYPE)],
                 return_type: INT_TYPE,
                 return_collector: None,
               },
               Statement::Call {
-                callee: Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE),
-                arguments: vec![Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE), ZERO],
+                callee: Expression::Variable(PStr::LOWER_D, INT_TYPE),
+                arguments: vec![Expression::Variable(PStr::LOWER_D, INT_TYPE), ZERO],
                 return_type: INT_TYPE,
                 return_collector: None,
               },
               Statement::Call {
-                callee: Expression::Variable(well_known_pstrs::LOWER_D, INT_TYPE),
+                callee: Expression::Variable(PStr::LOWER_D, INT_TYPE),
                 arguments: vec![],
                 return_type: INT_TYPE,
                 return_collector: None,
               },
               Statement::IndexedAccess {
-                name: well_known_pstrs::LOWER_F,
+                name: PStr::LOWER_F,
                 type_: INT_TYPE,
                 pointer_expression: Expression::Variable(
                   heap.alloc_str_for_test("big"),
@@ -203,11 +197,7 @@ mod tests {
                 pointer_expression: ZERO,
                 index: 0,
               },
-              Statement::Cast {
-                name: well_known_pstrs::LOWER_C,
-                type_: INT_TYPE,
-                assigned_expression: ZERO,
-              },
+              Statement::Cast { name: PStr::LOWER_C, type_: INT_TYPE, assigned_expression: ZERO },
               Statement::Break(ZERO),
             ],
             final_assignments: vec![(

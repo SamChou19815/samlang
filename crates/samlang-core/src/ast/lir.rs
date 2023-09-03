@@ -2,8 +2,8 @@ use super::{
   hir::{GlobalVariable, Operator},
   mir::{FunctionName, SymbolTable, TypeNameId},
 };
-use crate::common::{Heap, PStr};
 use enum_as_inner::EnumAsInner;
+use samlang_heap::{Heap, PStr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PrimitiveType {

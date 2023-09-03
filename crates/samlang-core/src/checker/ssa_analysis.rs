@@ -6,11 +6,10 @@ use crate::{
     },
     Location,
   },
-  common::{well_known_pstrs, Heap, PStr},
   errors::ErrorSet,
-  ModuleReference,
 };
 use itertools::Itertools;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{HashMap, HashSet};
 
 struct SsaLocalStackedContext {
@@ -161,7 +160,7 @@ impl<'a> SsaAnalysisState<'a> {
         // Visit instance methods
         self.context.push_scope();
         if type_definition.is_some() {
-          self.define_id(well_known_pstrs::THIS, toplevel.loc());
+          self.define_id(PStr::THIS, toplevel.loc());
         }
         for tparam in type_parameters {
           let id = &tparam.name;

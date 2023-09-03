@@ -1,12 +1,9 @@
 #[cfg(test)]
 mod tests {
   use super::super::lexer::*;
-  use crate::{
-    ast::Location,
-    common::{Heap, ModuleReference},
-    errors::ErrorSet,
-  };
+  use crate::{ast::Location, errors::ErrorSet};
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference};
 
   #[test]
   fn boilterplate() {
@@ -24,7 +21,7 @@ mod tests {
 
   fn lex(source: &str) -> Vec<String> {
     let mut heap = Heap::new();
-    lex_source_program(source, ModuleReference::root(), &mut heap, &mut ErrorSet::new())
+    lex_source_program(source, ModuleReference::ROOT, &mut heap, &mut ErrorSet::new())
       .into_iter()
       .map(|t| t.pretty_print(&heap))
       .collect()

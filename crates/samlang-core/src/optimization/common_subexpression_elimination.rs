@@ -85,15 +85,14 @@ mod tests {
       Callee, Expression, Function, FunctionName, FunctionNameExpression, Statement, SymbolTable,
       Type, VariableName, INT_TYPE, ONE, ZERO,
     },
-    common::well_known_pstrs,
-    Heap,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   fn assert_correctly_optimized(stmts: Vec<Statement>, heap: &mut Heap, expected: &str) {
     let mut f = Function {
-      name: FunctionName::new_for_test(well_known_pstrs::LOWER_A),
+      name: FunctionName::new_for_test(PStr::LOWER_A),
       parameters: vec![],
       type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
       body: stmts,
@@ -114,10 +113,10 @@ mod tests {
 
     assert_correctly_optimized(
       vec![Statement::IfElse {
-        condition: Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
+        condition: Expression::var_name(PStr::LOWER_B, INT_TYPE),
         s1: vec![
           Statement::binary(heap.alloc_str_for_test("ddddd"), Operator::PLUS, ONE, ONE),
-          Statement::binary(well_known_pstrs::LOWER_A, Operator::PLUS, ONE, ZERO),
+          Statement::binary(PStr::LOWER_A, Operator::PLUS, ONE, ZERO),
           Statement::IndexedAccess {
             name: heap.alloc_str_for_test("ddd"),
             type_: INT_TYPE,
@@ -130,7 +129,7 @@ mod tests {
               type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
             }),
             arguments: vec![
-              Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
+              Expression::var_name(PStr::LOWER_A, INT_TYPE),
               Expression::var_name(heap.alloc_str_for_test("ddd"), INT_TYPE),
             ],
             return_type: INT_TYPE,

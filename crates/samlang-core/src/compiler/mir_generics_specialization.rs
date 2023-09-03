@@ -1,8 +1,6 @@
-use crate::{
-  ast::{hir, mir},
-  common::{Heap, PStr},
-};
+use crate::ast::{hir, mir};
 use itertools::Itertools;
+use samlang_heap::{Heap, PStr};
 use std::collections::{HashMap, HashSet};
 
 enum EnumSpecializationKind {
@@ -702,11 +700,9 @@ pub(super) fn perform_generics_specialization(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    ast::hir::{GlobalVariable, Operator},
-    common::{well_known_pstrs, ModuleReference},
-  };
+  use crate::ast::hir::{GlobalVariable, Operator};
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference, PStr};
 
   fn assert_specialized(sources: hir::Sources, heap: &mut Heap, expected: &str) {
     assert_eq!(expected.trim(), perform_generics_specialization(heap, sources).debug_print(heap));
@@ -737,14 +733,14 @@ mod tests {
         closure_types: vec![],
         type_definitions: vec![],
         main_function_names: vec![hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-          fn_name: well_known_pstrs::MAIN_FN,
+          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+          fn_name: PStr::MAIN_FN,
         }],
         functions: vec![
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-              fn_name: well_known_pstrs::MAIN_FN,
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+              fn_name: PStr::MAIN_FN,
             },
             parameters: vec![],
             type_parameters: vec![],
@@ -754,7 +750,7 @@ mod tests {
           },
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: heap.alloc_str_for_test("main2"),
             },
             parameters: vec![],
@@ -784,7 +780,7 @@ sources.mains = [_DUMMY_I$main]
       hir::Sources {
         global_variables: vec![GlobalVariable {
           name: heap.alloc_str_for_test("G1"),
-          content: well_known_pstrs::LOWER_A,
+          content: PStr::LOWER_A,
         }],
         closure_types: vec![],
         type_definitions: vec![hir::TypeDefinition {
@@ -793,13 +789,13 @@ sources.mains = [_DUMMY_I$main]
           mappings: hir::TypeDefinitionMappings::Enum(vec![]),
         }],
         main_function_names: vec![hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-          fn_name: well_known_pstrs::MAIN_FN,
+          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+          fn_name: PStr::MAIN_FN,
         }],
         functions: vec![hir::Function {
           name: hir::FunctionName {
-            type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-            fn_name: well_known_pstrs::MAIN_FN,
+            type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+            fn_name: PStr::MAIN_FN,
           },
           parameters: vec![],
           type_parameters: vec![],
@@ -808,10 +804,10 @@ sources.mains = [_DUMMY_I$main]
             callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
               name: hir::FunctionName {
                 type_name: hir::TypeName {
-                  module_reference: Some(ModuleReference::root()),
-                  type_name: well_known_pstrs::PROCESS_TYPE,
+                  module_reference: Some(ModuleReference::ROOT),
+                  type_name: PStr::PROCESS_TYPE,
                 },
-                fn_name: well_known_pstrs::PRINTLN,
+                fn_name: PStr::PRINTLN,
               },
               type_: hir::Type::new_fn_unwrapped(vec![hir::STRING_TYPE], hir::INT_TYPE),
               type_arguments: vec![],
@@ -851,13 +847,13 @@ sources.mains = [_DUMMY_I$main]
         mappings: hir::TypeDefinitionMappings::Enum(vec![]),
       }],
       main_function_names: vec![hir::FunctionName {
-        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-        fn_name: well_known_pstrs::MAIN_FN,
+        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+        fn_name: PStr::MAIN_FN,
       }],
       functions: vec![hir::Function {
         name: hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-          fn_name: well_known_pstrs::MAIN_FN,
+          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+          fn_name: PStr::MAIN_FN,
         },
         parameters: vec![],
         type_parameters: vec![],
@@ -883,13 +879,13 @@ sources.mains = [_DUMMY_I$main]
         mappings: hir::TypeDefinitionMappings::Enum(vec![]),
       }],
       main_function_names: vec![hir::FunctionName {
-        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-        fn_name: well_known_pstrs::MAIN_FN,
+        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+        fn_name: PStr::MAIN_FN,
       }],
       functions: vec![hir::Function {
         name: hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-          fn_name: well_known_pstrs::MAIN_FN,
+          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+          fn_name: PStr::MAIN_FN,
         },
         parameters: vec![],
         type_parameters: vec![],
@@ -919,13 +915,13 @@ sources.mains = [_DUMMY_I$main]
         mappings: hir::TypeDefinitionMappings::Enum(vec![]),
       }],
       main_function_names: vec![hir::FunctionName {
-        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-        fn_name: well_known_pstrs::MAIN_FN,
+        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+        fn_name: PStr::MAIN_FN,
       }],
       functions: vec![hir::Function {
         name: hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-          fn_name: well_known_pstrs::MAIN_FN,
+          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+          fn_name: PStr::MAIN_FN,
         },
         parameters: vec![],
         type_parameters: vec![],
@@ -945,59 +941,52 @@ sources.mains = [_DUMMY_I$main]
   fn comprehensive_test() {
     let heap = &mut Heap::new();
 
-    let type_j = hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J);
+    let type_j = hir::Type::new_id_no_targs(PStr::UPPER_J);
     let type_ia = hir::Type::new_id(
-      well_known_pstrs::UPPER_I,
-      vec![hir::Type::new_generic_type(well_known_pstrs::UPPER_A), hir::STRING_TYPE],
+      PStr::UPPER_I,
+      vec![hir::Type::new_generic_type(PStr::UPPER_A), hir::STRING_TYPE],
     );
     let type_ib = hir::Type::new_id(
-      well_known_pstrs::UPPER_I,
-      vec![hir::INT_TYPE, hir::Type::new_generic_type(well_known_pstrs::UPPER_B)],
+      PStr::UPPER_I,
+      vec![hir::INT_TYPE, hir::Type::new_generic_type(PStr::UPPER_B)],
     );
-    let type_i =
-      hir::Type::new_id(well_known_pstrs::UPPER_I, vec![hir::INT_TYPE, hir::STRING_TYPE]);
+    let type_i = hir::Type::new_id(PStr::UPPER_I, vec![hir::INT_TYPE, hir::STRING_TYPE]);
     let g1 = hir::Expression::StringName(heap.alloc_str_for_test("G1"));
     assert_specialized(
       hir::Sources {
         global_variables: vec![
-          GlobalVariable {
-            name: heap.alloc_str_for_test("G1"),
-            content: well_known_pstrs::LOWER_A,
-          },
-          GlobalVariable {
-            name: heap.alloc_str_for_test("G2"),
-            content: well_known_pstrs::LOWER_A,
-          },
+          GlobalVariable { name: heap.alloc_str_for_test("G1"), content: PStr::LOWER_A },
+          GlobalVariable { name: heap.alloc_str_for_test("G2"), content: PStr::LOWER_A },
         ],
         closure_types: vec![hir::ClosureTypeDefinition {
           name: hir::TypeName::new_for_test(heap.alloc_str_for_test("CC")),
-          type_parameters: vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
+          type_parameters: vec![PStr::UPPER_A, PStr::UPPER_B],
           function_type: hir::Type::new_fn_unwrapped(
-            vec![hir::Type::new_generic_type(well_known_pstrs::UPPER_A)],
-            hir::Type::new_generic_type(well_known_pstrs::UPPER_B),
+            vec![hir::Type::new_generic_type(PStr::UPPER_A)],
+            hir::Type::new_generic_type(PStr::UPPER_B),
           ),
         }],
         type_definitions: vec![
           hir::TypeDefinition {
-            name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_A),
+            name: hir::TypeName::new_for_test(PStr::UPPER_A),
             type_parameters: vec![],
             mappings: hir::TypeDefinitionMappings::Enum(vec![]),
           },
           hir::TypeDefinition {
-            name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_B),
+            name: hir::TypeName::new_for_test(PStr::UPPER_B),
             type_parameters: vec![],
             mappings: hir::TypeDefinitionMappings::Enum(vec![]),
           },
           hir::TypeDefinition {
-            name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-            type_parameters: vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
+            name: hir::TypeName::new_for_test(PStr::UPPER_I),
+            type_parameters: vec![PStr::UPPER_A, PStr::UPPER_B],
             mappings: hir::TypeDefinitionMappings::Enum(vec![
-              (well_known_pstrs::UPPER_A, vec![]),
-              (well_known_pstrs::UPPER_B, vec![]),
+              (PStr::UPPER_A, vec![]),
+              (PStr::UPPER_B, vec![]),
             ]),
           },
           hir::TypeDefinition {
-            name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_J),
+            name: hir::TypeName::new_for_test(PStr::UPPER_J),
             type_parameters: vec![],
             mappings: hir::TypeDefinitionMappings::Struct(vec![hir::INT_TYPE]),
           },
@@ -1010,64 +999,52 @@ sources.mains = [_DUMMY_I$main]
             name: hir::TypeName::new_for_test(heap.alloc_str_for_test("Enum")),
             type_parameters: vec![],
             mappings: hir::TypeDefinitionMappings::Enum(vec![
-              (
-                well_known_pstrs::UPPER_A,
-                vec![hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J)],
-              ),
-              (well_known_pstrs::UPPER_B, vec![]),
+              (PStr::UPPER_A, vec![hir::Type::new_id_no_targs(PStr::UPPER_J)]),
+              (PStr::UPPER_B, vec![]),
             ]),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(heap.alloc_str_for_test("Enum2")),
             type_parameters: vec![],
             mappings: hir::TypeDefinitionMappings::Enum(vec![
-              (well_known_pstrs::UPPER_A, vec![hir::INT_TYPE]),
-              (well_known_pstrs::UPPER_B, vec![]),
+              (PStr::UPPER_A, vec![hir::INT_TYPE]),
+              (PStr::UPPER_B, vec![]),
             ]),
           },
           hir::TypeDefinition {
             name: hir::TypeName::new_for_test(heap.alloc_str_for_test("Enum3")),
             type_parameters: vec![],
             mappings: hir::TypeDefinitionMappings::Enum(vec![
-              (
-                well_known_pstrs::UPPER_A,
-                vec![hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J)],
-              ),
-              (
-                well_known_pstrs::UPPER_B,
-                vec![hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J)],
-              ),
-              (well_known_pstrs::UPPER_C, vec![]),
+              (PStr::UPPER_A, vec![hir::Type::new_id_no_targs(PStr::UPPER_J)]),
+              (PStr::UPPER_B, vec![hir::Type::new_id_no_targs(PStr::UPPER_J)]),
+              (PStr::UPPER_C, vec![]),
             ]),
           },
         ],
         main_function_names: vec![hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-          fn_name: well_known_pstrs::MAIN_FN,
+          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+          fn_name: PStr::MAIN_FN,
         }],
         functions: vec![
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: heap.alloc_str_for_test("functor_fun"),
             },
-            parameters: vec![well_known_pstrs::LOWER_A],
-            type_parameters: vec![well_known_pstrs::UPPER_A],
+            parameters: vec![PStr::LOWER_A],
+            type_parameters: vec![PStr::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(
-              vec![hir::Type::new_generic_type(well_known_pstrs::UPPER_A)],
+              vec![hir::Type::new_generic_type(PStr::UPPER_A)],
               hir::INT_TYPE,
             ),
             body: vec![hir::Statement::Call {
               callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                 name: hir::FunctionName {
-                  type_name: hir::TypeName {
-                    module_reference: None,
-                    type_name: well_known_pstrs::UPPER_A,
-                  },
+                  type_name: hir::TypeName { module_reference: None, type_name: PStr::UPPER_A },
                   fn_name: heap.alloc_str_for_test("bar"),
                 },
                 type_: hir::Type::new_fn_unwrapped(
-                  vec![hir::Type::new_generic_type(well_known_pstrs::UPPER_A)],
+                  vec![hir::Type::new_generic_type(PStr::UPPER_A)],
                   hir::INT_TYPE,
                 ),
                 type_arguments: vec![],
@@ -1083,32 +1060,32 @@ sources.mains = [_DUMMY_I$main]
               type_name: hir::TypeName::new_for_test(heap.alloc_str_for_test("I_int__Str")),
               fn_name: heap.alloc_str_for_test("bar"),
             },
-            parameters: vec![well_known_pstrs::LOWER_A],
-            type_parameters: vec![well_known_pstrs::UPPER_A],
+            parameters: vec![PStr::LOWER_A],
+            type_parameters: vec![PStr::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
             body: vec![],
             return_value: hir::ZERO,
           },
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_J),
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_J),
               fn_name: heap.alloc_str_for_test("bar"),
             },
-            parameters: vec![well_known_pstrs::LOWER_A],
-            type_parameters: vec![well_known_pstrs::UPPER_A],
+            parameters: vec![PStr::LOWER_A],
+            type_parameters: vec![PStr::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], hir::INT_TYPE),
             body: vec![],
             return_value: hir::ZERO,
           },
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: heap.alloc_str_for_test("creatorIA"),
             },
-            parameters: vec![well_known_pstrs::LOWER_A],
-            type_parameters: vec![well_known_pstrs::UPPER_A],
+            parameters: vec![PStr::LOWER_A],
+            type_parameters: vec![PStr::UPPER_A],
             type_: hir::Type::new_fn_unwrapped(
-              vec![hir::Type::new_generic_type(well_known_pstrs::UPPER_A)],
+              vec![hir::Type::new_generic_type(PStr::UPPER_A)],
               type_ia.clone(),
             ),
             body: vec![hir::Statement::StructInit {
@@ -1117,8 +1094,8 @@ sources.mains = [_DUMMY_I$main]
               expression_list: vec![
                 hir::Expression::int(0),
                 hir::Expression::var_name(
-                  well_known_pstrs::LOWER_A,
-                  hir::Type::new_generic_type(well_known_pstrs::UPPER_A),
+                  PStr::LOWER_A,
+                  hir::Type::new_generic_type(PStr::UPPER_A),
                 ),
               ],
             }],
@@ -1126,13 +1103,13 @@ sources.mains = [_DUMMY_I$main]
           },
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: heap.alloc_str_for_test("creatorIB"),
             },
-            parameters: vec![well_known_pstrs::LOWER_B],
-            type_parameters: vec![well_known_pstrs::UPPER_B],
+            parameters: vec![PStr::LOWER_B],
+            type_parameters: vec![PStr::UPPER_B],
             type_: hir::Type::new_fn_unwrapped(
-              vec![hir::Type::new_generic_type(well_known_pstrs::UPPER_B)],
+              vec![hir::Type::new_generic_type(PStr::UPPER_B)],
               type_ib.clone(),
             ),
             body: vec![hir::Statement::StructInit {
@@ -1141,8 +1118,8 @@ sources.mains = [_DUMMY_I$main]
               expression_list: vec![
                 hir::Expression::int(1),
                 hir::Expression::var_name(
-                  well_known_pstrs::LOWER_B,
-                  hir::Type::new_generic_type(well_known_pstrs::UPPER_B),
+                  PStr::LOWER_B,
+                  hir::Type::new_generic_type(PStr::UPPER_B),
                 ),
               ],
             }],
@@ -1150,8 +1127,8 @@ sources.mains = [_DUMMY_I$main]
           },
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-              fn_name: well_known_pstrs::MAIN_FN,
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+              fn_name: PStr::MAIN_FN,
             },
             parameters: vec![],
             type_parameters: vec![],
@@ -1163,7 +1140,7 @@ sources.mains = [_DUMMY_I$main]
                   hir::Statement::Call {
                     callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                       name: hir::FunctionName {
-                        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+                        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("creatorIA"),
                       },
                       type_: hir::Type::new_fn_unwrapped(vec![hir::INT_TYPE], type_i.clone()),
@@ -1171,20 +1148,17 @@ sources.mains = [_DUMMY_I$main]
                     }),
                     arguments: vec![hir::ZERO],
                     return_type: type_i.clone(),
-                    return_collector: Some(well_known_pstrs::LOWER_A),
+                    return_collector: Some(PStr::LOWER_A),
                   },
                   hir::Statement::Call {
                     callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                       name: hir::FunctionName {
-                        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+                        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("creatorIA"),
                       },
                       type_: hir::Type::new_fn_unwrapped(
                         vec![hir::STRING_TYPE],
-                        hir::Type::new_id(
-                          well_known_pstrs::UPPER_I,
-                          vec![hir::STRING_TYPE, hir::STRING_TYPE],
-                        ),
+                        hir::Type::new_id(PStr::UPPER_I, vec![hir::STRING_TYPE, hir::STRING_TYPE]),
                       ),
                       type_arguments: vec![hir::STRING_TYPE],
                     }),
@@ -1195,7 +1169,7 @@ sources.mains = [_DUMMY_I$main]
                   hir::Statement::Call {
                     callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                       name: hir::FunctionName {
-                        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+                        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("creatorIB"),
                       },
                       type_: hir::Type::new_fn_unwrapped(vec![hir::STRING_TYPE], type_i.clone()),
@@ -1203,12 +1177,12 @@ sources.mains = [_DUMMY_I$main]
                     }),
                     arguments: vec![g1.clone()],
                     return_type: type_i.clone(),
-                    return_collector: Some(well_known_pstrs::LOWER_B),
+                    return_collector: Some(PStr::LOWER_B),
                   },
                   hir::Statement::Call {
                     callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                       name: hir::FunctionName {
-                        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+                        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("functor_fun"),
                       },
                       type_: hir::Type::new_fn_unwrapped(vec![type_i.clone()], hir::INT_TYPE),
@@ -1221,7 +1195,7 @@ sources.mains = [_DUMMY_I$main]
                   hir::Statement::Call {
                     callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                       name: hir::FunctionName {
-                        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+                        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("functor_fun"),
                       },
                       type_: hir::Type::new_fn_unwrapped(vec![type_j.clone()], hir::INT_TYPE),
@@ -1234,27 +1208,21 @@ sources.mains = [_DUMMY_I$main]
                   hir::Statement::IndexedAccess {
                     name: heap.alloc_str_for_test("v1"),
                     type_: hir::INT_TYPE,
-                    pointer_expression: hir::Expression::var_name(
-                      well_known_pstrs::LOWER_A,
-                      type_i,
-                    ),
+                    pointer_expression: hir::Expression::var_name(PStr::LOWER_A, type_i),
                     index: 0,
                   },
                   hir::Statement::Cast {
                     name: heap.alloc_str_for_test("cast"),
                     type_: hir::INT_TYPE,
-                    assigned_expression: hir::Expression::var_name(
-                      well_known_pstrs::LOWER_A,
-                      hir::INT_TYPE,
-                    ),
+                    assigned_expression: hir::Expression::var_name(PStr::LOWER_A, hir::INT_TYPE),
                   },
                 ],
                 s2: vec![
                   hir::Statement::Call {
                     callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                       name: hir::FunctionName {
-                        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-                        fn_name: well_known_pstrs::MAIN_FN,
+                        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+                        fn_name: PStr::MAIN_FN,
                       },
                       type_: hir::Type::new_fn_unwrapped(vec![], hir::INT_TYPE),
                       type_arguments: vec![],
@@ -1270,17 +1238,14 @@ sources.mains = [_DUMMY_I$main]
                     e2: hir::ZERO,
                   },
                   hir::Statement::StructInit {
-                    struct_variable_name: well_known_pstrs::LOWER_J,
+                    struct_variable_name: PStr::LOWER_J,
                     type_: type_j.clone().into_id().unwrap(),
                     expression_list: vec![hir::Expression::int(0)],
                   },
                   hir::Statement::IndexedAccess {
                     name: heap.alloc_str_for_test("v2"),
                     type_: hir::INT_TYPE,
-                    pointer_expression: hir::Expression::var_name(
-                      well_known_pstrs::LOWER_J,
-                      type_j,
-                    ),
+                    pointer_expression: hir::Expression::var_name(PStr::LOWER_J, type_j),
                     index: 0,
                   },
                   hir::Statement::ClosureInit {
@@ -1291,15 +1256,12 @@ sources.mains = [_DUMMY_I$main]
                     ),
                     function_name: hir::FunctionNameExpression {
                       name: hir::FunctionName {
-                        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+                        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("creatorIA"),
                       },
                       type_: hir::Type::new_fn_unwrapped(
                         vec![hir::STRING_TYPE],
-                        hir::Type::new_id(
-                          well_known_pstrs::UPPER_I,
-                          vec![hir::STRING_TYPE, hir::STRING_TYPE],
-                        ),
+                        hir::Type::new_id(PStr::UPPER_I, vec![hir::STRING_TYPE, hir::STRING_TYPE]),
                       ),
                       type_arguments: vec![hir::STRING_TYPE],
                     },
@@ -1313,15 +1275,12 @@ sources.mains = [_DUMMY_I$main]
                     ),
                     function_name: hir::FunctionNameExpression {
                       name: hir::FunctionName {
-                        type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+                        type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                         fn_name: heap.alloc_str_for_test("creatorIA"),
                       },
                       type_: hir::Type::new_fn_unwrapped(
                         vec![hir::STRING_TYPE],
-                        hir::Type::new_id(
-                          well_known_pstrs::UPPER_I,
-                          vec![hir::STRING_TYPE, hir::STRING_TYPE],
-                        ),
+                        hir::Type::new_id(PStr::UPPER_I, vec![hir::STRING_TYPE, hir::STRING_TYPE]),
                       ),
                       type_arguments: vec![hir::STRING_TYPE],
                     },
@@ -1336,25 +1295,25 @@ sources.mains = [_DUMMY_I$main]
                 )],
               },
               hir::Statement::EnumInit {
-                enum_variable_name: well_known_pstrs::LOWER_B,
+                enum_variable_name: PStr::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum")),
                 tag: 0,
                 associated_data_list: vec![hir::ZERO],
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
-                  well_known_pstrs::LOWER_B,
+                  PStr::LOWER_B,
                   hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum")),
                 ),
                 tag: 0,
-                bindings: vec![Some((well_known_pstrs::LOWER_A, hir::INT_TYPE))],
+                bindings: vec![Some((PStr::LOWER_A, hir::INT_TYPE))],
                 s1: vec![],
                 s2: vec![],
                 final_assignments: vec![],
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
-                  well_known_pstrs::LOWER_B,
+                  PStr::LOWER_B,
                   hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum")),
                 ),
                 tag: 1,
@@ -1364,20 +1323,20 @@ sources.mains = [_DUMMY_I$main]
                 final_assignments: vec![],
               },
               hir::Statement::EnumInit {
-                enum_variable_name: well_known_pstrs::LOWER_B,
+                enum_variable_name: PStr::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum2")),
                 tag: 0,
                 associated_data_list: vec![hir::ZERO],
               },
               hir::Statement::EnumInit {
-                enum_variable_name: well_known_pstrs::LOWER_B,
+                enum_variable_name: PStr::LOWER_B,
                 enum_type: hir::Type::new_id_no_targs_unwrapped(heap.alloc_str_for_test("Enum3")),
                 tag: 0,
                 associated_data_list: vec![hir::ZERO],
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
-                  well_known_pstrs::LOWER_B,
+                  PStr::LOWER_B,
                   hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum2")),
                 ),
                 tag: 0,
@@ -1388,7 +1347,7 @@ sources.mains = [_DUMMY_I$main]
               },
               hir::Statement::ConditionalDestructure {
                 test_expr: hir::Expression::var_name(
-                  well_known_pstrs::LOWER_B,
+                  PStr::LOWER_B,
                   hir::Type::new_id_no_targs(heap.alloc_str_for_test("Enum2")),
                 ),
                 tag: 1,
@@ -1511,62 +1470,59 @@ sources.mains = [_DUMMY_I$main]"#,
         closure_types: vec![],
         type_definitions: vec![
           hir::TypeDefinition {
-            name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-            type_parameters: vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
+            name: hir::TypeName::new_for_test(PStr::UPPER_I),
+            type_parameters: vec![PStr::UPPER_A, PStr::UPPER_B],
             mappings: hir::TypeDefinitionMappings::Enum(vec![
-              (well_known_pstrs::UPPER_A, vec![]),
-              (well_known_pstrs::UPPER_B, vec![]),
+              (PStr::UPPER_A, vec![]),
+              (PStr::UPPER_B, vec![]),
             ]),
           },
           hir::TypeDefinition {
-            name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_J),
+            name: hir::TypeName::new_for_test(PStr::UPPER_J),
             type_parameters: vec![],
             mappings: hir::TypeDefinitionMappings::Struct(vec![hir::Type::new_id(
-              well_known_pstrs::UPPER_I,
+              PStr::UPPER_I,
               vec![hir::INT_TYPE, hir::INT_TYPE],
             )]),
           },
         ],
         main_function_names: vec![hir::FunctionName {
-          type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-          fn_name: well_known_pstrs::MAIN_FN,
+          type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+          fn_name: PStr::MAIN_FN,
         }],
         functions: vec![
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
               fn_name: heap.alloc_str_for_test("creatorJ"),
             },
             parameters: vec![],
             type_parameters: vec![],
-            type_: hir::Type::new_fn_unwrapped(
-              vec![],
-              hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J),
-            ),
+            type_: hir::Type::new_fn_unwrapped(vec![], hir::Type::new_id_no_targs(PStr::UPPER_J)),
             body: vec![
               hir::Statement::StructInit {
                 struct_variable_name: heap.alloc_str_for_test("v1"),
                 type_: hir::Type::new_id_unwrapped(
-                  well_known_pstrs::UPPER_I,
+                  PStr::UPPER_I,
                   vec![hir::INT_TYPE, hir::INT_TYPE],
                 ),
                 expression_list: vec![],
               },
               hir::Statement::StructInit {
                 struct_variable_name: heap.alloc_str_for_test("v2"),
-                type_: hir::Type::new_id_no_targs_unwrapped(well_known_pstrs::UPPER_J),
+                type_: hir::Type::new_id_no_targs_unwrapped(PStr::UPPER_J),
                 expression_list: vec![hir::ZERO, hir::ZERO],
               },
             ],
             return_value: hir::Expression::var_name(
               heap.alloc_str_for_test("v2"),
-              hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J),
+              hir::Type::new_id_no_targs(PStr::UPPER_J),
             ),
           },
           hir::Function {
             name: hir::FunctionName {
-              type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
-              fn_name: well_known_pstrs::MAIN_FN,
+              type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
+              fn_name: PStr::MAIN_FN,
             },
             parameters: vec![],
             type_parameters: vec![],
@@ -1575,17 +1531,17 @@ sources.mains = [_DUMMY_I$main]"#,
               hir::Statement::Call {
                 callee: hir::Callee::FunctionName(hir::FunctionNameExpression {
                   name: hir::FunctionName {
-                    type_name: hir::TypeName::new_for_test(well_known_pstrs::UPPER_I),
+                    type_name: hir::TypeName::new_for_test(PStr::UPPER_I),
                     fn_name: heap.alloc_str_for_test("creatorJ"),
                   },
                   type_: hir::Type::new_fn_unwrapped(
                     vec![],
-                    hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J),
+                    hir::Type::new_id_no_targs(PStr::UPPER_J),
                   ),
                   type_arguments: vec![],
                 }),
                 arguments: vec![],
-                return_type: hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J),
+                return_type: hir::Type::new_id_no_targs(PStr::UPPER_J),
                 return_collector: None,
               },
               hir::Statement::Call {
@@ -1594,7 +1550,7 @@ sources.mains = [_DUMMY_I$main]"#,
                   type_: hir::INT_TYPE,
                 }),
                 arguments: vec![],
-                return_type: hir::Type::new_id_no_targs(well_known_pstrs::UPPER_J),
+                return_type: hir::Type::new_id_no_targs(PStr::UPPER_J),
                 return_collector: None,
               },
             ],

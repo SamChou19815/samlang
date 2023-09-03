@@ -6,14 +6,12 @@ use super::{
   },
   type_system,
 };
-use crate::{
-  ast::{
-    source::{Module, Toplevel, TypeDefinition},
-    Reason,
-  },
-  common::{well_known_pstrs, Heap, ModuleReference, PStr},
+use crate::ast::{
+  source::{Module, Toplevel, TypeDefinition},
+  Reason,
 };
 use itertools::Itertools;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   collections::{HashMap, HashSet},
   rc::Rc,
@@ -71,7 +69,7 @@ pub(crate) fn build_module_signature(
           };
           functions.insert(
             // init string should be pre-allocated during builtin_cx init
-            well_known_pstrs::INIT,
+            PStr::INIT,
             ctor_fn,
           );
           Some(TypeDefinitionSignature::Struct(
@@ -152,7 +150,7 @@ pub(crate) fn build_global_signature(
   builtin_module_types: ModuleSignature,
 ) -> GlobalSignature {
   let mut global_cx = HashMap::new();
-  global_cx.insert(ModuleReference::root(), builtin_module_types);
+  global_cx.insert(ModuleReference::ROOT, builtin_module_types);
   for (module_reference, module) in sources {
     global_cx.insert(*module_reference, build_module_signature(*module_reference, module));
   }
@@ -402,13 +400,12 @@ mod tests {
     checker::type_::{
       create_builtin_module_signature, test_type_builder, GlobalSignature, NominalType,
     },
-    common::well_known_pstrs,
     errors::ErrorSet,
     parser::parse_source_module_from_text,
-    Heap, ModuleReference,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::HashMap;
 
   #[test]
@@ -432,15 +429,13 @@ class Foo2(A(Str), B(int)): Bar {
 interface Hiya {}
 "#;
     let module =
-      parse_source_module_from_text(source_code, ModuleReference::dummy(), heap, &mut error_set);
+      parse_source_module_from_text(source_code, ModuleReference::DUMMY, heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     let builtin_cx = create_builtin_module_signature();
-    let global_cx = super::build_global_signature(
-      &HashMap::from([(ModuleReference::dummy(), module)]),
-      builtin_cx,
-    );
+    let global_cx =
+      super::build_global_signature(&HashMap::from([(ModuleReference::DUMMY, module)]), builtin_cx);
     assert_eq!(2, global_cx.len());
-    let module_cx = global_cx.get(&ModuleReference::dummy()).unwrap();
+    let module_cx = global_cx.get(&ModuleReference::DUMMY).unwrap();
     assert_eq!(
       r#"
 interfaces:
@@ -500,10 +495,10 @@ interface ConflictExtends2 {
 interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
 "#;
     let module =
-      parse_source_module_from_text(source_code, ModuleReference::dummy(), heap, &mut error_set);
+      parse_source_module_from_text(source_code, ModuleReference::DUMMY, heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
     let builtin_cx = create_builtin_module_signature();
-    super::build_global_signature(&HashMap::from([(ModuleReference::dummy(), module)]), builtin_cx)
+    super::build_global_signature(&HashMap::from([(ModuleReference::DUMMY, module)]), builtin_cx)
   }
 
   #[test]
@@ -519,8 +514,8 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_C,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_C,
           type_arguments: vec![]
         },
       )
@@ -533,7 +528,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("IUseNonExistent"),
           type_arguments: vec![]
         },
@@ -547,7 +542,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()]
         },
@@ -561,7 +556,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ICyclic1"),
           type_arguments: vec![]
         },
@@ -575,7 +570,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ICyclic2"),
           type_arguments: vec![]
         },
@@ -589,7 +584,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
         },
@@ -604,7 +599,7 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
         &[NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()],
         }],
@@ -624,41 +619,38 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
 
     assert!(resolve_function_signature(
       &global_cx,
-      (
-        heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-        well_known_pstrs::UPPER_C
-      ),
-      well_known_pstrs::LOWER_A,
+      (heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]), PStr::UPPER_C),
+      PStr::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::root(), well_known_pstrs::UPPER_C),
-      well_known_pstrs::LOWER_A,
+      (ModuleReference::ROOT, PStr::UPPER_C),
+      PStr::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), well_known_pstrs::UPPER_C),
-      well_known_pstrs::LOWER_A,
+      (ModuleReference::DUMMY, PStr::UPPER_C),
+      PStr::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), heap.alloc_str_for_test("IUseNonExistent")),
-      well_known_pstrs::LOWER_A,
+      (ModuleReference::DUMMY, heap.alloc_str_for_test("IUseNonExistent")),
+      PStr::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), heap.alloc_str_for_test("ICyclic1")),
-      well_known_pstrs::LOWER_A,
+      (ModuleReference::DUMMY, heap.alloc_str_for_test("ICyclic1")),
+      PStr::LOWER_A,
     )
     .is_empty());
     assert!(resolve_function_signature(
       &global_cx,
-      (ModuleReference::dummy(), heap.alloc_str_for_test("ICyclic2")),
-      well_known_pstrs::LOWER_A,
+      (ModuleReference::DUMMY, heap.alloc_str_for_test("ICyclic2")),
+      PStr::LOWER_A,
     )
     .is_empty());
   }
@@ -674,11 +666,11 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       &NominalType {
         reason: Reason::dummy(),
         is_class_statics: false,
-        module_reference: ModuleReference::dummy(),
-        id: well_known_pstrs::UPPER_C,
+        module_reference: ModuleReference::DUMMY,
+        id: PStr::UPPER_C,
         type_arguments: vec![]
       },
-      well_known_pstrs::LOWER_A,
+      PStr::LOWER_A,
     )
     .is_empty());
     assert!(resolve_method_signature(
@@ -686,11 +678,11 @@ interface UsingConflictingExtends : ConflictExtends1, ConflictExtends2 {}
       &NominalType {
         reason: Reason::dummy(),
         is_class_statics: false,
-        module_reference: ModuleReference::dummy(),
+        module_reference: ModuleReference::DUMMY,
         id: heap.alloc_str_for_test("IUseNonExistent"),
         type_arguments: vec![]
       },
-      well_known_pstrs::LOWER_A,
+      PStr::LOWER_A,
     )
     .is_empty());
     assert_eq!(
@@ -704,7 +696,7 @@ public <C : A>(int, int) -> C
         &[NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![]
         }],
@@ -721,7 +713,7 @@ public <C : A>(int, int) -> C
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("ILevel2"),
           type_arguments: vec![builder.bool_type(), builder.int_type()]
         },
@@ -736,11 +728,11 @@ public <C : A>(int, int) -> C
       &NominalType {
         reason: Reason::dummy(),
         is_class_statics: false,
-        module_reference: ModuleReference::dummy(),
+        module_reference: ModuleReference::DUMMY,
         id: heap.alloc_str_for_test("ICyclic1"),
         type_arguments: vec![]
       },
-      well_known_pstrs::LOWER_A,
+      PStr::LOWER_A,
     )
     .is_empty());
     assert!(resolve_method_signature(
@@ -748,11 +740,11 @@ public <C : A>(int, int) -> C
       &NominalType {
         reason: Reason::dummy(),
         is_class_statics: false,
-        module_reference: ModuleReference::dummy(),
+        module_reference: ModuleReference::DUMMY,
         id: heap.alloc_str_for_test("ICyclic2"),
         type_arguments: vec![]
       },
-      well_known_pstrs::LOWER_A,
+      PStr::LOWER_A,
     )
     .is_empty());
     assert_eq!(
@@ -765,7 +757,7 @@ public () -> bool"#
         &[NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
         }],
@@ -782,7 +774,7 @@ public () -> bool"#
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("UsingConflictingExtends"),
           type_arguments: vec![]
         },

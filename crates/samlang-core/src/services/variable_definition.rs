@@ -7,10 +7,9 @@ use crate::{
     Location,
   },
   checker::{perform_ssa_analysis_on_module, SsaAnalysisResult},
-  common::PStr,
   errors::ErrorSet,
-  ModuleReference,
 };
+use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
 
 pub(super) struct DefinitionAndUses {
@@ -352,12 +351,12 @@ mod tests {
       source::{expr, Id, Literal, Module},
       Location, Position,
     },
-    common::{well_known_pstrs, Heap, ModuleReference},
     errors::ErrorSet,
     parser::parse_source_module_from_text,
     printer,
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference, PStr};
 
   #[should_panic]
   #[test]
@@ -368,13 +367,13 @@ mod tests {
         explicit_type_arguments: vec![],
         inferred_type_arguments: vec![],
         object: Box::new(expr::E::Literal(expr::ExpressionCommon::dummy(()), Literal::Int(0))),
-        method_name: Id::from(well_known_pstrs::LOWER_A),
+        method_name: Id::from(PStr::LOWER_A),
       }),
       &DefinitionAndUses {
         definition_location: Location::dummy(),
         use_locations: vec![Location::dummy()],
       },
-      well_known_pstrs::LOWER_A,
+      PStr::LOWER_A,
     );
   }
 
@@ -382,13 +381,13 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let module =
-      parse_source_module_from_text(source, ModuleReference::dummy(), &mut heap, &mut error_set);
+      parse_source_module_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert!(!error_set.has_errors());
     (heap, module)
   }
 
   fn new_lookup(module: Module<()>) -> VariableDefinitionLookup {
-    VariableDefinitionLookup::new(ModuleReference::dummy(), &module)
+    VariableDefinitionLookup::new(ModuleReference::DUMMY, &module)
   }
 
   fn prepare_lookup(source: &str) -> (Heap, VariableDefinitionLookup) {
@@ -564,14 +563,14 @@ class Main {
 
     assert!(lookup
       .find_all_definition_and_uses(&Location {
-        module_reference: ModuleReference::root(),
+        module_reference: ModuleReference::ROOT,
         start: Position(0, 0),
         end: Position(0, 0)
       })
       .is_none());
     assert!(lookup
       .find_all_definition_and_uses(&Location {
-        module_reference: ModuleReference::dummy(),
+        module_reference: ModuleReference::DUMMY,
         start: Position(0, 0),
         end: Position(0, 0)
       })

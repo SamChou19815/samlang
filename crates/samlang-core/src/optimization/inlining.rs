@@ -6,9 +6,8 @@ use crate::ast::{
     GenenalLoopVariable, Statement, Type, VariableName, INT_TYPE, ZERO,
   },
 };
-use crate::common::PStr;
-use crate::Heap;
 use itertools::Itertools;
+use samlang_heap::{Heap, PStr};
 use std::collections::{HashMap, HashSet};
 
 mod estimator {
@@ -85,42 +84,42 @@ mod estimator {
         Callee, Function, FunctionName, FunctionNameExpression, GenenalLoopVariable, Statement,
         SymbolTable, Type, INT_TYPE, ZERO,
       },
-      common::well_known_pstrs,
     };
+    use samlang_heap::PStr;
 
     #[test]
     fn cost_estimator_test() {
       let mut table = SymbolTable::new();
 
       let actual = super::estimate_fn_inline_cost(&Function {
-        name: FunctionName::new_for_test(well_known_pstrs::EMPTY),
+        name: FunctionName::new_for_test(PStr::EMPTY),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
           Statement::IndexedAccess {
-            name: well_known_pstrs::EMPTY,
+            name: PStr::EMPTY,
             type_: INT_TYPE,
             pointer_expression: ZERO,
             index: 2,
           },
-          Statement::binary(well_known_pstrs::EMPTY, Operator::PLUS, ZERO, ZERO),
+          Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO),
           Statement::StructInit {
-            struct_variable_name: well_known_pstrs::EMPTY,
-            type_name: table.create_type_name_for_test(well_known_pstrs::EMPTY),
+            struct_variable_name: PStr::EMPTY,
+            type_name: table.create_type_name_for_test(PStr::EMPTY),
             expression_list: vec![ZERO, ZERO, ZERO],
           },
           Statement::ClosureInit {
-            closure_variable_name: well_known_pstrs::EMPTY,
-            closure_type_name: table.create_type_name_for_test(well_known_pstrs::EMPTY),
+            closure_variable_name: PStr::EMPTY,
+            closure_type_name: table.create_type_name_for_test(PStr::EMPTY),
             function_name: FunctionNameExpression {
-              name: FunctionName::new_for_test(well_known_pstrs::EMPTY),
+              name: FunctionName::new_for_test(PStr::EMPTY),
               type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
             },
             context: ZERO,
           },
           Statement::Call {
             callee: Callee::FunctionName(FunctionNameExpression {
-              name: FunctionName::new_for_test(well_known_pstrs::EMPTY),
+              name: FunctionName::new_for_test(PStr::EMPTY),
               type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
             }),
             arguments: vec![ZERO, ZERO],
@@ -131,37 +130,27 @@ mod estimator {
             condition: ZERO,
             s1: vec![],
             s2: vec![],
-            final_assignments: vec![(well_known_pstrs::EMPTY, INT_TYPE, ZERO, ZERO)],
+            final_assignments: vec![(PStr::EMPTY, INT_TYPE, ZERO, ZERO)],
           },
           Statement::IfElse {
             condition: ZERO,
-            s1: vec![Statement::binary(well_known_pstrs::EMPTY, Operator::PLUS, ZERO, ZERO)],
-            s2: vec![Statement::binary(well_known_pstrs::EMPTY, Operator::PLUS, ZERO, ZERO)],
+            s1: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
+            s2: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
             final_assignments: vec![],
           },
           Statement::SingleIf {
             condition: ZERO,
             invert_condition: false,
-            statements: vec![Statement::binary(
-              well_known_pstrs::EMPTY,
-              Operator::PLUS,
-              ZERO,
-              ZERO,
-            )],
+            statements: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
           },
           Statement::While {
             loop_variables: vec![GenenalLoopVariable {
-              name: well_known_pstrs::EMPTY,
+              name: PStr::EMPTY,
               type_: INT_TYPE,
               initial_value: ZERO,
               loop_value: ZERO,
             }],
-            statements: vec![Statement::binary(
-              well_known_pstrs::EMPTY,
-              Operator::PLUS,
-              ZERO,
-              ZERO,
-            )],
+            statements: vec![Statement::binary(PStr::EMPTY, Operator::PLUS, ZERO, ZERO)],
             break_collector: None,
           },
         ],

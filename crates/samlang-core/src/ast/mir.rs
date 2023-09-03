@@ -1,6 +1,6 @@
 use super::hir::{GlobalVariable, Operator};
-use crate::common::{well_known_pstrs, Heap, ModuleReference, PStr, INVALID_PSTR};
 use enum_as_inner::EnumAsInner;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -34,20 +34,20 @@ struct TypeName {
 
 impl TypeName {
   const EMPTY: TypeName = TypeName {
-    module_reference: ModuleReference::root(),
-    type_name: well_known_pstrs::EMPTY,
+    module_reference: ModuleReference::ROOT,
+    type_name: PStr::EMPTY,
     suffix: vec![],
     sub_type_tag: None,
   };
   const STR: TypeName = TypeName {
-    module_reference: ModuleReference::root(),
-    type_name: well_known_pstrs::STR_TYPE,
+    module_reference: ModuleReference::ROOT,
+    type_name: PStr::STR_TYPE,
     suffix: vec![],
     sub_type_tag: None,
   };
   const PROCESS: TypeName = TypeName {
-    module_reference: ModuleReference::root(),
-    type_name: well_known_pstrs::PROCESS_TYPE,
+    module_reference: ModuleReference::ROOT,
+    type_name: PStr::PROCESS_TYPE,
     suffix: vec![],
     sub_type_tag: None,
   };
@@ -74,7 +74,7 @@ impl TypeName {
 mod type_name_boilterplate_tests {
   #[test]
   fn test() {
-    assert_eq!(super::TypeName::EMPTY.clone().module_reference, super::ModuleReference::root());
+    assert_eq!(super::TypeName::EMPTY.clone().module_reference, super::ModuleReference::ROOT);
   }
 }
 
@@ -131,7 +131,7 @@ impl SymbolTable {
 
   #[cfg(test)]
   pub(crate) fn create_type_name_for_test(&mut self, name: PStr) -> TypeNameId {
-    self.create_simple_type_name(ModuleReference::root(), name)
+    self.create_simple_type_name(ModuleReference::ROOT, name)
   }
 
   pub(crate) fn create_simple_type_name(
@@ -162,7 +162,7 @@ impl SymbolTable {
   }
 
   pub(crate) fn create_main_type_name(&mut self, module_reference: ModuleReference) -> TypeNameId {
-    self.create_simple_type_name(module_reference, well_known_pstrs::MAIN_TYPE)
+    self.create_simple_type_name(module_reference, PStr::MAIN_TYPE)
   }
 
   pub(crate) fn derived_type_name_with_subtype_tag(
@@ -314,25 +314,25 @@ pub(crate) struct FunctionName {
 
 impl FunctionName {
   pub(crate) const PROCESS_PRINTLN: FunctionName =
-    FunctionName { type_name: TypeNameId::PROCESS, fn_name: well_known_pstrs::PRINTLN };
+    FunctionName { type_name: TypeNameId::PROCESS, fn_name: PStr::PRINTLN };
   pub(crate) const PROCESS_PANIC: FunctionName =
-    FunctionName { type_name: TypeNameId::PROCESS, fn_name: well_known_pstrs::PANIC };
+    FunctionName { type_name: TypeNameId::PROCESS, fn_name: PStr::PANIC };
 
   pub(crate) const STR_FROM_INT: FunctionName =
-    FunctionName { type_name: TypeNameId::STR, fn_name: well_known_pstrs::FROM_INT };
+    FunctionName { type_name: TypeNameId::STR, fn_name: PStr::FROM_INT };
   pub(crate) const STR_TO_INT: FunctionName =
-    FunctionName { type_name: TypeNameId::STR, fn_name: well_known_pstrs::TO_INT };
+    FunctionName { type_name: TypeNameId::STR, fn_name: PStr::TO_INT };
   pub(crate) const STR_CONCAT: FunctionName =
-    FunctionName { type_name: TypeNameId::STR, fn_name: well_known_pstrs::CONCAT };
+    FunctionName { type_name: TypeNameId::STR, fn_name: PStr::CONCAT };
 
   pub(crate) const BUILTIN_MALLOC: FunctionName =
-    FunctionName { type_name: TypeNameId::EMPTY, fn_name: well_known_pstrs::MALLOC_FN };
+    FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::MALLOC_FN };
   pub(crate) const BUILTIN_FREE: FunctionName =
-    FunctionName { type_name: TypeNameId::EMPTY, fn_name: well_known_pstrs::FREE_FN };
+    FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::FREE_FN };
   pub(crate) const BUILTIN_INC_REF: FunctionName =
-    FunctionName { type_name: TypeNameId::EMPTY, fn_name: well_known_pstrs::INC_REF_FN };
+    FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::INC_REF_FN };
   pub(crate) const BUILTIN_DEC_REF: FunctionName =
-    FunctionName { type_name: TypeNameId::EMPTY, fn_name: well_known_pstrs::DEC_REF_FN };
+    FunctionName { type_name: TypeNameId::EMPTY, fn_name: PStr::DEC_REF_FN };
 
   #[cfg(test)]
   pub(crate) fn new_for_test(name: PStr) -> FunctionName {
@@ -575,7 +575,7 @@ impl Statement {
     e2: Expression,
   ) -> (Operator, Expression, Expression) {
     let Binary { name: _, operator: op, e1: normalized_e1, e2: normalized_e2 } =
-      Self::binary_unwrapped(INVALID_PSTR, operator, e1, e2);
+      Self::binary_unwrapped(PStr::INVALID_PSTR, operator, e1, e2);
     match op {
       Operator::DIV | Operator::MOD | Operator::MINUS | Operator::SHL | Operator::SHR => {
         (op, normalized_e1, normalized_e2)

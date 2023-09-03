@@ -1,8 +1,8 @@
 use crate::{
   ast::hir::Operator,
   ast::mir::{Binary, Callee, Expression, Function, GenenalLoopVariable, Statement},
-  common::PStr,
 };
+use samlang_heap::PStr;
 use std::collections::HashSet;
 
 pub(super) fn collect_use_from_expression(expression: &Expression, set: &mut HashSet<PStr>) {

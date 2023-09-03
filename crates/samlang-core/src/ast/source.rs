@@ -1,7 +1,6 @@
-use enum_as_inner::EnumAsInner;
-
 use super::loc::Location;
-use crate::common::{Heap, ModuleReference, PStr};
+use enum_as_inner::EnumAsInner;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::rc::Rc;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -253,7 +252,7 @@ pub(crate) struct AnnotatedId<T: Clone> {
 pub(crate) mod expr {
   use super::super::loc::Location;
   use super::{annotation, CommentReference, Id, Literal};
-  use crate::common::{ModuleReference, PStr};
+  use samlang_heap::{ModuleReference, PStr};
   use std::collections::HashMap;
 
   #[derive(Clone, PartialEq, Eq)]
@@ -678,10 +677,9 @@ pub(crate) struct Module<T: Clone> {
 
 #[cfg(test)]
 pub(crate) mod test_builder {
-  use crate::common::well_known_pstrs;
-
   use super::super::loc::Location;
   use super::*;
+  use samlang_heap::{ModuleReference, PStr};
 
   pub(crate) struct CustomizedAstBuilder {}
 
@@ -721,8 +719,8 @@ pub(crate) mod test_builder {
     pub(crate) fn string_annot(&self) -> annotation::T {
       annotation::T::Id(annotation::Id {
         location: Location::dummy(),
-        module_reference: ModuleReference::root(),
-        id: Id::from(well_known_pstrs::STR_TYPE),
+        module_reference: ModuleReference::ROOT,
+        id: Id::from(PStr::STR_TYPE),
         type_arguments: vec![],
       })
     }
@@ -734,7 +732,7 @@ pub(crate) mod test_builder {
     ) -> annotation::Id {
       annotation::Id {
         location: Location::dummy(),
-        module_reference: ModuleReference::dummy(),
+        module_reference: ModuleReference::DUMMY,
         id: Id::from(id),
         type_arguments,
       }

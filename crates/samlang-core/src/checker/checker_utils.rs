@@ -2,9 +2,9 @@ use crate::{
   ast::Reason,
   checker::type_::{Type, TypeParameterSignature},
   checker::type_system,
-  common::PStr,
   errors::ErrorSet,
 };
+use samlang_heap::PStr;
 use std::{
   collections::{HashMap, HashSet},
   rc::Rc,

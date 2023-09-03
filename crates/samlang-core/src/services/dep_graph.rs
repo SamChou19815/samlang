@@ -1,5 +1,6 @@
-use crate::{ast::source::Module, common::ModuleReference};
+use crate::ast::source::Module;
 use itertools::Itertools;
+use samlang_heap::ModuleReference;
 use std::collections::{HashMap, HashSet};
 
 pub(super) struct DependencyGraph {

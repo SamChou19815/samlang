@@ -1,8 +1,6 @@
 use super::type_::{FunctionType, ISourceType, NominalType, Type};
-use crate::{
-  common::PStr,
-  errors::{StackableError, TypeIncompatibilityNode},
-};
+use crate::errors::{StackableError, TypeIncompatibilityNode};
+use samlang_heap::PStr;
 use std::{collections::HashMap, rc::Rc};
 
 pub(super) fn contains_placeholder(type_: &Type) -> bool {
@@ -220,10 +218,10 @@ mod tests {
   use crate::{
     ast::{Location, Reason},
     checker::type_::ISourceType,
-    common::{well_known_pstrs, Heap},
     errors::ErrorSet,
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
   use std::rc::Rc;
 
   #[test]
@@ -232,15 +230,15 @@ mod tests {
 
     assert!(super::contains_placeholder(&builder.fun_type(
       vec![
-        builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]),
-        builder.generic_type(well_known_pstrs::UPPER_B)
+        builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
+        builder.generic_type(PStr::UPPER_B)
       ],
       Rc::new(super::Type::Any(Reason::dummy(), true))
     )));
     assert!(!super::contains_placeholder(&builder.fun_type(
       vec![
-        builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]),
-        builder.generic_type(well_known_pstrs::UPPER_B)
+        builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
+        builder.generic_type(PStr::UPPER_B)
       ],
       builder.int_type()
     )));
@@ -292,15 +290,15 @@ mod tests {
     assert_successful_meet(
       &builder.fun_type(
         vec![builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![builder.generic_type(well_known_pstrs::UPPER_B)],
+          PStr::UPPER_A,
+          vec![builder.generic_type(PStr::UPPER_B)],
         )],
         builder.bool_type(),
       ),
       &builder.fun_type(
         vec![builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![builder.generic_type(well_known_pstrs::UPPER_B)],
+          PStr::UPPER_A,
+          vec![builder.generic_type(PStr::UPPER_B)],
         )],
         builder.bool_type(),
       ),
@@ -311,13 +309,13 @@ mod tests {
     assert_failed_meet(
       &builder.fun_type(
         vec![builder.general_nominal_type(
-          well_known_pstrs::UPPER_A,
-          vec![builder.generic_type(well_known_pstrs::UPPER_B)],
+          PStr::UPPER_A,
+          vec![builder.generic_type(PStr::UPPER_B)],
         )],
         builder.bool_type(),
       ),
       &builder.fun_type(
-        vec![builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])],
+        vec![builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])],
         builder.bool_type(),
       ),
       heap,
@@ -335,11 +333,11 @@ Found 1 error.
 
     assert_failed_meet(
       &builder.fun_type(
-        vec![builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])],
+        vec![builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])],
         builder.bool_type(),
       ),
       &builder.fun_type(
-        vec![builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])],
+        vec![builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])],
         builder.int_type(),
       ),
       heap,
@@ -369,11 +367,8 @@ Found 1 error.
 "#,
     );
     assert_failed_meet(
-      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()]),
-      &builder.general_nominal_type(
-        well_known_pstrs::UPPER_A,
-        vec![builder.bool_type(), builder.bool_type()],
-      ),
+      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()]),
+      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type(), builder.bool_type()]),
       heap,
       r#"
 Error ------------------------------------ DUMMY.sam:0:0-0:0
@@ -398,27 +393,27 @@ Found 1 error.
         &builder.fun_type(
           vec![
             builder.general_nominal_type(
-              well_known_pstrs::UPPER_A,
+              PStr::UPPER_A,
               vec![
-                builder.generic_type(well_known_pstrs::UPPER_B),
-                builder.general_nominal_type(well_known_pstrs::UPPER_C, vec![builder.int_type()])
+                builder.generic_type(PStr::UPPER_B),
+                builder.general_nominal_type(PStr::UPPER_C, vec![builder.int_type()])
               ]
             ),
-            builder.generic_type(well_known_pstrs::UPPER_D),
+            builder.generic_type(PStr::UPPER_D),
             builder.general_nominal_type(
-              well_known_pstrs::UPPER_E,
-              vec![builder.simple_nominal_type(well_known_pstrs::UPPER_F)]
+              PStr::UPPER_E,
+              vec![builder.simple_nominal_type(PStr::UPPER_F)]
             ),
             builder.int_type()
           ],
           builder.int_type()
         ),
         &super::HashMap::from([
-          (well_known_pstrs::UPPER_A, builder.int_type()),
-          (well_known_pstrs::UPPER_B, builder.int_type()),
-          (well_known_pstrs::UPPER_C, builder.int_type()),
-          (well_known_pstrs::UPPER_D, builder.int_type()),
-          (well_known_pstrs::UPPER_E, builder.int_type()),
+          (PStr::UPPER_A, builder.int_type()),
+          (PStr::UPPER_B, builder.int_type()),
+          (PStr::UPPER_C, builder.int_type()),
+          (PStr::UPPER_D, builder.int_type()),
+          (PStr::UPPER_E, builder.int_type()),
         ])
       )
       .pretty_print(&heap)
@@ -427,7 +422,7 @@ Found 1 error.
     assert_eq!(
       "A",
       super::subst_nominal_type(
-        &builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_A),
+        &builder.simple_nominal_type_unwrapped(PStr::UPPER_A),
         &super::HashMap::new()
       )
       .pretty_print(&heap)

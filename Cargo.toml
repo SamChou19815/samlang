@@ -1,7 +1,9 @@
 [workspace]
 members = [
   "crates/samlang-core",
+  "crates/samlang-collections",
   "crates/samlang-cli",
+  "crates/samlang-heap",
   "crates/samlang-wasm",
 ]
 resolver = "2"

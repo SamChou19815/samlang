@@ -1,4 +1,4 @@
-use crate::common::{Heap, ModuleReference};
+use samlang_heap::{Heap, ModuleReference};
 use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
@@ -18,7 +18,7 @@ pub struct Location {
 impl Location {
   pub(crate) fn dummy() -> Location {
     Location {
-      module_reference: ModuleReference::dummy(),
+      module_reference: ModuleReference::DUMMY,
       start: DUMMY_POSITION,
       end: DUMMY_POSITION,
     }
@@ -34,7 +34,7 @@ impl Location {
 
   pub(crate) fn from_pos(sl: i32, sc: i32, el: i32, ec: i32) -> Location {
     Location {
-      module_reference: ModuleReference::dummy(),
+      module_reference: ModuleReference::DUMMY,
       start: Position(sl, sc),
       end: Position(el, ec),
     }
@@ -72,11 +72,10 @@ mod tests {
   #[test]
   fn boilterplate() {
     assert!(!format!("{:?}", DUMMY_POSITION.clone()).is_empty());
-    assert!(!format!("{:?}", ModuleReference::dummy().clone()).is_empty());
     assert!(!format!("{:?}", Location::dummy().clone()).is_empty());
 
     HashSet::new().insert(DUMMY_POSITION);
-    HashSet::new().insert(ModuleReference::dummy());
+    HashSet::new().insert(ModuleReference::DUMMY);
     HashSet::new().insert(Location::dummy());
   }
 

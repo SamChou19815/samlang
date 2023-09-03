@@ -44,29 +44,29 @@ mod utils {
   }
 
   pub(super) fn file_path_to_module_reference_alloc(
-    heap: &mut samlang_core::Heap,
+    heap: &mut samlang_heap::Heap,
     absolute_source_path: &Path,
     absolute_file_path: &Path,
-  ) -> Option<samlang_core::ModuleReference> {
+  ) -> Option<samlang_heap::ModuleReference> {
     file_path_to_module_reference_parts(absolute_source_path, absolute_file_path)
       .map(|parts| heap.alloc_module_reference_from_string_vec(parts))
   }
 
   pub(super) fn file_path_to_module_reference_read(
-    heap: &mut samlang_core::Heap,
+    heap: &mut samlang_heap::Heap,
     absolute_source_path: &Path,
     absolute_file_path: &Path,
-  ) -> Option<samlang_core::ModuleReference> {
+  ) -> Option<samlang_heap::ModuleReference> {
     file_path_to_module_reference_parts(absolute_source_path, absolute_file_path)
       .and_then(|parts| heap.get_allocated_module_reference_opt(parts))
   }
 
   fn walk(
-    heap: &mut samlang_core::Heap,
+    heap: &mut samlang_heap::Heap,
     configuration: &configuration::ProjectConfiguration,
     absolute_source_path: &Path,
     start_path: &Path,
-    sources: &mut HashMap<samlang_core::ModuleReference, String>,
+    sources: &mut HashMap<samlang_heap::ModuleReference, String>,
   ) {
     for ignore in &configuration.ignores {
       if start_path
@@ -103,8 +103,8 @@ mod utils {
 
   pub(super) fn collect_sources(
     configuration: &configuration::ProjectConfiguration,
-    heap: &mut samlang_core::Heap,
-  ) -> HashMap<samlang_core::ModuleReference, String> {
+    heap: &mut samlang_heap::Heap,
+  ) -> HashMap<samlang_heap::ModuleReference, String> {
     let mut sources = if configuration.dangerously_allow_libdef_shadowing {
       HashMap::new()
     } else {
@@ -207,9 +207,9 @@ mod lsp {
   }
 
   fn convert_module_reference_to_url_helper(
-    heap: &samlang_core::Heap,
+    heap: &samlang_heap::Heap,
     absolute_source_path: &Path,
-    module_reference: &samlang_core::ModuleReference,
+    module_reference: &samlang_heap::ModuleReference,
   ) -> Option<Url> {
     let path = fs::canonicalize(
       absolute_source_path.join(PathBuf::from(module_reference.to_filename(heap))),
@@ -251,28 +251,26 @@ mod lsp {
 
     fn convert_url_to_module_reference_readonly(
       &self,
-      heap: &samlang_core::Heap,
+      heap: &samlang_heap::Heap,
       url: &Url,
-    ) -> samlang_core::ModuleReference {
+    ) -> samlang_heap::ModuleReference {
       let parts = convert_url_to_module_reference_helper(&self.absolute_source_path, url);
-      heap
-        .get_allocated_module_reference_opt(parts)
-        .unwrap_or(samlang_core::ModuleReference::root())
+      heap.get_allocated_module_reference_opt(parts).unwrap_or(samlang_heap::ModuleReference::ROOT)
     }
 
     fn convert_url_to_module_reference_add_if_absent(
       &self,
-      heap: &mut samlang_core::Heap,
+      heap: &mut samlang_heap::Heap,
       url: &Url,
-    ) -> samlang_core::ModuleReference {
+    ) -> samlang_heap::ModuleReference {
       let parts = convert_url_to_module_reference_helper(&self.absolute_source_path, url);
       heap.alloc_module_reference_from_string_vec(parts)
     }
 
     fn convert_module_reference_to_url(
       &self,
-      heap: &samlang_core::Heap,
-      module_reference: &samlang_core::ModuleReference,
+      heap: &samlang_heap::Heap,
+      module_reference: &samlang_heap::ModuleReference,
     ) -> Option<Url> {
       convert_module_reference_to_url_helper(heap, &self.absolute_source_path, module_reference)
     }
@@ -705,7 +703,7 @@ mod runners {
       println!("samlang format: Format your codebase according to sconfig.json.")
     } else {
       let configuration = utils::get_configuration();
-      let heap = &mut samlang_core::Heap::new();
+      let heap = &mut samlang_heap::Heap::new();
       for (module_reference, source) in utils::collect_sources(&configuration, heap) {
         let path =
           PathBuf::from(&configuration.source_directory).join(module_reference.to_filename(heap));
@@ -718,7 +716,7 @@ mod runners {
   fn compile_single(enable_profiling: bool) {
     samlang_core::measure_time(enable_profiling, "Full run", || {
       let configuration = utils::get_configuration();
-      let heap = &mut samlang_core::Heap::new();
+      let heap = &mut samlang_heap::Heap::new();
       let entry_module_references = configuration
         .entry_points
         .iter()
@@ -838,7 +836,7 @@ mod runners {
       if let Ok(absolute_source_path) =
         fs::canonicalize(PathBuf::from(&configuration.source_directory))
       {
-        let mut heap = samlang_core::Heap::new();
+        let mut heap = samlang_heap::Heap::new();
         let collected_sources = utils::collect_sources(&configuration, &mut heap);
         let state =
           samlang_core::services::server_state::ServerState::new(heap, true, collected_sources);

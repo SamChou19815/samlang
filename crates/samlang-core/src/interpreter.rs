@@ -1,11 +1,9 @@
-use crate::{
-  ast::{
-    hir::Operator,
-    lir::{Expression, Function, Sources, Statement, INT_TYPE},
-    mir::FunctionName,
-  },
-  common::{Heap, PStr},
+use crate::ast::{
+  hir::Operator,
+  lir::{Expression, Function, Sources, Statement, INT_TYPE},
+  mir::FunctionName,
 };
+use samlang_heap::{Heap, PStr};
 use std::collections::HashMap;
 
 struct Memory<'a> {
@@ -324,17 +322,15 @@ pub(super) fn run(heap: &mut Heap, sources: &Sources, main_function: FunctionNam
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::{
-      hir::{GlobalVariable, Operator},
-      lir::{
-        Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ONE, ZERO,
-      },
-      mir::{FunctionName, SymbolTable},
+  use crate::ast::{
+    hir::{GlobalVariable, Operator},
+    lir::{
+      Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ONE, ZERO,
     },
-    common::{well_known_pstrs, Heap},
+    mir::{FunctionName, SymbolTable},
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[should_panic]
   #[test]
@@ -344,18 +340,18 @@ mod tests {
     let sources = Sources {
       symbol_table: SymbolTable::new(),
       global_variables: vec![GlobalVariable {
-        name: well_known_pstrs::UPPER_A,
+        name: PStr::UPPER_A,
         content: heap.alloc_str_for_test("Ouch"),
       }],
       type_definitions: vec![],
       main_function_names: vec![],
       functions: vec![Function {
-        name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+        name: FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![Statement::Call {
           callee: Expression::FnName(FunctionName::PROCESS_PANIC, INT_TYPE),
-          arguments: vec![ZERO, Expression::Variable(well_known_pstrs::UPPER_A, INT_TYPE)],
+          arguments: vec![ZERO, Expression::Variable(PStr::UPPER_A, INT_TYPE)],
           return_type: INT_TYPE,
           return_collector: None,
         }],
@@ -363,7 +359,7 @@ mod tests {
       }],
     };
 
-    super::run(heap, &sources, FunctionName::new_for_test(well_known_pstrs::MAIN_FN));
+    super::run(heap, &sources, FunctionName::new_for_test(PStr::MAIN_FN));
   }
 
   fn assert_run_output(
@@ -381,7 +377,7 @@ mod tests {
         main_function_names: vec![],
         functions,
       },
-      FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+      FunctionName::new_for_test(PStr::MAIN_FN),
     );
     assert_eq!(expected, actual);
   }
@@ -414,7 +410,7 @@ mod tests {
           return_value: ZERO,
         },
         Function {
-          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+          name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
@@ -482,18 +478,12 @@ mod tests {
 
     assert_run_output(
       vec![
-        GlobalVariable {
-          name: well_known_pstrs::UPPER_A,
-          content: heap.alloc_str_for_test("Hello "),
-        },
-        GlobalVariable {
-          name: well_known_pstrs::UPPER_B,
-          content: heap.alloc_str_for_test("World!"),
-        },
+        GlobalVariable { name: PStr::UPPER_A, content: heap.alloc_str_for_test("Hello ") },
+        GlobalVariable { name: PStr::UPPER_B, content: heap.alloc_str_for_test("World!") },
       ],
       vec![
         Function {
-          name: FunctionName::new_for_test(well_known_pstrs::UNDERSCORE),
+          name: FunctionName::new_for_test(PStr::UNDERSCORE),
           parameters: vec![heap.alloc_str_for_test("n")],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![],
@@ -532,19 +522,19 @@ mod tests {
           return_value: Expression::Variable(heap.alloc_str_for_test("r"), INT_TYPE),
         },
         Function {
-          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+          name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
             Statement::StructInit {
-              struct_variable_name: well_known_pstrs::LOWER_A,
+              struct_variable_name: PStr::LOWER_A,
               type_: INT_TYPE,
               expression_list: vec![ZERO, ZERO],
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v"),
               type_: INT_TYPE,
-              pointer_expression: Expression::Variable(well_known_pstrs::LOWER_A, INT_TYPE),
+              pointer_expression: Expression::Variable(PStr::LOWER_A, INT_TYPE),
               index: 0,
             },
             Statement::Binary {
@@ -651,7 +641,7 @@ mod tests {
             },
             Statement::IndexedAssign {
               assigned_expression: Expression::Variable(heap.alloc_str_for_test("v"), INT_TYPE),
-              pointer_expression: Expression::Variable(well_known_pstrs::LOWER_A, INT_TYPE),
+              pointer_expression: Expression::Variable(PStr::LOWER_A, INT_TYPE),
               index: 1,
             },
             Statement::SingleIf {
@@ -659,7 +649,7 @@ mod tests {
               invert_condition: true,
               statements: vec![Statement::Call {
                 callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
-                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_B)],
+                arguments: vec![ZERO, Expression::StringName(PStr::UPPER_B)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -669,7 +659,7 @@ mod tests {
               invert_condition: false,
               statements: vec![Statement::Call {
                 callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
-                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_A)],
+                arguments: vec![ZERO, Expression::StringName(PStr::UPPER_A)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -678,13 +668,13 @@ mod tests {
               condition: ZERO,
               s1: vec![Statement::Call {
                 callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
-                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_A)],
+                arguments: vec![ZERO, Expression::StringName(PStr::UPPER_A)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
               s2: vec![Statement::Call {
                 callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
-                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_B)],
+                arguments: vec![ZERO, Expression::StringName(PStr::UPPER_B)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -694,13 +684,13 @@ mod tests {
               condition: ONE,
               s1: vec![Statement::Call {
                 callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
-                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_B)],
+                arguments: vec![ZERO, Expression::StringName(PStr::UPPER_B)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
               s2: vec![Statement::Call {
                 callee: Expression::FnName(FunctionName::PROCESS_PRINTLN, INT_TYPE),
-                arguments: vec![ZERO, Expression::StringName(well_known_pstrs::UPPER_A)],
+                arguments: vec![ZERO, Expression::StringName(PStr::UPPER_A)],
                 return_type: INT_TYPE,
                 return_collector: None,
               }],
@@ -777,8 +767,8 @@ mod tests {
             Statement::Call {
               callee: Expression::FnName(FunctionName::STR_CONCAT, INT_TYPE),
               arguments: vec![
-                Expression::StringName(well_known_pstrs::UPPER_A),
-                Expression::StringName(well_known_pstrs::UPPER_B),
+                Expression::StringName(PStr::UPPER_A),
+                Expression::StringName(PStr::UPPER_B),
               ],
               return_type: INT_TYPE,
               return_collector: Some(heap.alloc_str_for_test("hw_string")),

@@ -1,0 +1,10 @@
+[package]
+name = "samlang-heap"
+version = "0.8.0"
+edition = "2021"
+
+[dependencies]
+itertools = "0.11.0"
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"

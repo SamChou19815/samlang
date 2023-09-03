@@ -1,8 +1,6 @@
-use crate::{
-  ast::{hir, lir, mir, wasm},
-  common::{Heap, PStr},
-};
+use crate::ast::{hir, lir, mir, wasm};
 use itertools::Itertools;
+use samlang_heap::{Heap, PStr};
 use std::collections::{BTreeSet, HashMap};
 
 #[derive(Clone)]
@@ -272,15 +270,13 @@ pub(super) fn compile_mir_to_wasm(heap: &Heap, sources: &lir::Sources) -> wasm::
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::{
-      hir::{GlobalVariable, Operator},
-      lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
-      mir, wasm,
-    },
-    common::{well_known_pstrs, Heap},
+  use crate::ast::{
+    hir::{GlobalVariable, Operator},
+    lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type, INT_TYPE, ZERO},
+    mir, wasm,
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn boilterplate() {
@@ -307,9 +303,9 @@ mod tests {
         },
       ],
       type_definitions: vec![],
-      main_function_names: vec![mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN)],
+      main_function_names: vec![mir::FunctionName::new_for_test(PStr::MAIN_FN)],
       functions: vec![Function {
-        name: mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+        name: mir::FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![heap.alloc_str_for_test("bar")],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![
@@ -318,7 +314,7 @@ mod tests {
             condition: ZERO,
             s1: vec![],
             s2: vec![Statement::Cast {
-              name: well_known_pstrs::LOWER_C,
+              name: PStr::LOWER_C,
               type_: INT_TYPE,
               assigned_expression: ZERO,
             }],
@@ -328,13 +324,13 @@ mod tests {
             condition: ZERO,
             s1: vec![Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: well_known_pstrs::LOWER_I,
+                name: PStr::LOWER_I,
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![Statement::Cast {
-                name: well_known_pstrs::LOWER_C,
+                name: PStr::LOWER_C,
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               }],
@@ -348,7 +344,7 @@ mod tests {
                   invert_condition: false,
                   statements: vec![Statement::Break(ZERO)],
                 }],
-                break_collector: Some((well_known_pstrs::LOWER_B, INT_TYPE)),
+                break_collector: Some((PStr::LOWER_B, INT_TYPE)),
               },
               Statement::While {
                 loop_variables: vec![],
@@ -361,11 +357,11 @@ mod tests {
               },
             ],
             final_assignments: vec![(
-              well_known_pstrs::LOWER_F,
+              PStr::LOWER_F,
               INT_TYPE,
               Expression::StringName(heap.alloc_str_for_test("FOO")),
               Expression::FnName(
-                mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+                mir::FunctionName::new_for_test(PStr::MAIN_FN),
                 Type::new_fn(vec![], INT_TYPE),
               ),
             )],
@@ -373,12 +369,12 @@ mod tests {
           Statement::binary(
             heap.alloc_str_for_test("bin"),
             Operator::PLUS,
-            Expression::Variable(well_known_pstrs::LOWER_F, INT_TYPE),
+            Expression::Variable(PStr::LOWER_F, INT_TYPE),
             ZERO,
           ),
           Statement::Call {
             callee: Expression::FnName(
-              mir::FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+              mir::FunctionName::new_for_test(PStr::MAIN_FN),
               Type::new_fn(vec![], INT_TYPE),
             ),
             arguments: vec![ZERO],
@@ -386,7 +382,7 @@ mod tests {
             return_collector: None,
           },
           Statement::Call {
-            callee: Expression::Variable(well_known_pstrs::LOWER_F, INT_TYPE),
+            callee: Expression::Variable(PStr::LOWER_F, INT_TYPE),
             arguments: vec![ZERO],
             return_type: INT_TYPE,
             return_collector: Some(heap.alloc_str_for_test("rc")),

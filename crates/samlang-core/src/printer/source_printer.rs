@@ -5,10 +5,10 @@ use crate::{
     CommentReference, CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition,
     TypeParameter,
   },
-  common::{Heap, PStr},
   ModuleReference,
 };
 use itertools::Itertools;
+use samlang_heap::{Heap, PStr};
 use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 fn rc_pstr(heap: &Heap, s: PStr) -> Str {
@@ -1015,22 +1015,18 @@ pub(super) fn source_module_to_document(heap: &Heap, module: &Module<()>) -> Doc
 mod tests {
   use crate::{
     ast::source::{expr, test_builder, CommentStore, Id},
-    common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
     printer::{prettier, pretty_print_source_module},
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference};
 
   fn assert_reprint_expr(source: &str, expected: &str) {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let (comment_store, e) = parse_source_expression_from_text(
-      source,
-      ModuleReference::dummy(),
-      &mut heap,
-      &mut error_set,
-    );
+    let (comment_store, e) =
+      parse_source_expression_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
     assert_eq!(
       expected,
@@ -1042,7 +1038,7 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let m =
-      parse_source_module_from_text(source, ModuleReference::dummy(), &mut heap, &mut error_set);
+      parse_source_module_from_text(source, ModuleReference::DUMMY, &mut heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(&heap));
     assert_eq!(expected, format!("\n{}", pretty_print_source_module(&heap, 40, &m).trim_end()));
   }

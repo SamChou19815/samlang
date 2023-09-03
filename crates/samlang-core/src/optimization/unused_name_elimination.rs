@@ -1,12 +1,10 @@
-use crate::{
-  ast::mir::{
-    Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-    GenenalLoopVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
-    TypeNameId,
-  },
-  common::PStr,
+use crate::ast::mir::{
+  Binary, Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
+  GenenalLoopVariable, Sources, Statement, Type, TypeDefinition, TypeDefinitionMappings,
+  TypeNameId,
 };
 use itertools::Itertools;
+use samlang_heap::PStr;
 use std::collections::{HashMap, HashSet};
 
 fn collect_for_type_set(type_: &Type, type_set: &mut HashSet<TypeNameId>) {
@@ -252,11 +250,10 @@ mod tests {
       FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
       TypeDefinition, TypeDefinitionMappings, VariableName, INT_TYPE, ZERO,
     },
-    common::well_known_pstrs,
-    Heap,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn integration_test() {
@@ -312,10 +309,10 @@ mod tests {
           ]),
         },
       ],
-      main_function_names: vec![FunctionName::new_for_test(well_known_pstrs::MAIN_FN)],
+      main_function_names: vec![FunctionName::new_for_test(PStr::MAIN_FN)],
       functions: vec![
         Function {
-          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+          name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
@@ -335,12 +332,12 @@ mod tests {
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::StructInit {
-              struct_variable_name: well_known_pstrs::LOWER_A,
+              struct_variable_name: PStr::LOWER_A,
               type_name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
               expression_list: vec![Expression::StringName(heap.alloc_str_for_test("bar"))],
             },
             Statement::ClosureInit {
-              closure_variable_name: well_known_pstrs::LOWER_A,
+              closure_variable_name: PStr::LOWER_A,
               closure_type_name: table.create_type_name_for_test(heap.alloc_str_for_test("Foo")),
               function_name: (FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
@@ -349,13 +346,13 @@ mod tests {
               context: ZERO,
             },
             Statement::IndexedAccess {
-              name: well_known_pstrs::LOWER_A,
+              name: PStr::LOWER_A,
               type_: INT_TYPE,
               pointer_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
               index: 0,
             },
             Statement::Cast {
-              name: well_known_pstrs::LOWER_A,
+              name: PStr::LOWER_A,
               type_: INT_TYPE,
               assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
             },
@@ -377,13 +374,13 @@ mod tests {
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::binary(
-                well_known_pstrs::LOWER_A,
+                PStr::LOWER_A,
                 crate::ast::hir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
               )],
               s2: vec![Statement::binary(
-                well_known_pstrs::LOWER_A,
+                PStr::LOWER_A,
                 crate::ast::hir::Operator::GE,
                 Expression::StringName(heap.alloc_str_for_test("foo")),
                 Expression::StringName(heap.alloc_str_for_test("bar")),
@@ -397,15 +394,15 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: well_known_pstrs::LOWER_F,
+                name: PStr::LOWER_F,
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![],
               break_collector: Some(VariableName {
-                name: well_known_pstrs::LOWER_D,
-                type_: Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A)),
+                name: PStr::LOWER_D,
+                type_: Type::Id(table.create_type_name_for_test(PStr::UPPER_A)),
               }),
             },
             Statement::While { loop_variables: vec![], statements: vec![], break_collector: None },
