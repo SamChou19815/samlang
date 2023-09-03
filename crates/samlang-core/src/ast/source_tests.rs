@@ -40,6 +40,16 @@ mod tests {
     assert_eq!("!", expr::UnaryOperator::NOT.clone().to_string());
     assert_eq!("-", expr::UnaryOperator::NEG.clone().to_string());
 
+    let mut pattern: pattern::DestructuringPattern<()> =
+      pattern::DestructuringPattern::Object(Location::dummy(), vec![]);
+    assert_eq!(*pattern.loc(), Location::dummy());
+    pattern = pattern::DestructuringPattern::Tuple(Location::dummy(), vec![]);
+    assert_eq!(*pattern.loc(), Location::dummy());
+    pattern = pattern::DestructuringPattern::Id(Id::from(well_known_pstrs::LOWER_A));
+    assert_eq!(*pattern.loc(), Location::dummy());
+    pattern = pattern::DestructuringPattern::Wildcard(Location::dummy());
+    assert_eq!(*pattern.loc(), Location::dummy());
+
     let list = [
       expr::BinaryOperator::MUL,
       expr::BinaryOperator::DIV,
@@ -197,9 +207,12 @@ mod tests {
             Location::dummy(),
             vec![pattern::ObjectPatternDestucturedName {
               loc: Location::dummy(),
-              field_order: 1,
+              field_order: 0,
               field_name: Id::from(heap.alloc_str_for_test("name")),
-              alias: None,
+              pattern: Box::new(pattern::DestructuringPattern::Id(Id::from(
+                heap.alloc_str_for_test("name"),
+              ))),
+              shorthand: true,
               type_: (),
             }],
           ),
@@ -215,13 +228,12 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: pattern::DestructuringPattern::Tuple(
             Location::dummy(),
-            vec![
-              Some(pattern::TuplePatternDestructuredName {
-                name: Id::from(heap.alloc_str_for_test("name")),
-                type_: (),
-              }),
-              None,
-            ],
+            vec![pattern::TuplePatternDestructuredName {
+              pattern: Box::new(pattern::DestructuringPattern::Id(Id::from(
+                heap.alloc_str_for_test("name"),
+              ))),
+              type_: (),
+            }],
           ),
           annotation: Some(annotation::T::Primitive(
             Location::dummy(),
@@ -244,10 +256,7 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: pattern::DestructuringPattern::Id(
-            Location::dummy(),
-            heap.alloc_str_for_test("s"),
-          ),
+          pattern: pattern::DestructuringPattern::Id(Id::from(heap.alloc_str_for_test("s"))),
           annotation: Some(annotation::T::Fn(annotation::Function {
             location: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,

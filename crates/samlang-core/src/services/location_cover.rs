@@ -111,10 +111,10 @@ fn search_expression(
           return Some(found);
         }
         match &stmt.pattern {
-          pattern::DestructuringPattern::Id(pat_loc, n) if pat_loc.contains_position(position) => {
+          pattern::DestructuringPattern::Id(id) if id.loc.contains_position(position) => {
             return Some(LocationCoverSearchResult::TypedName(
-              *pat_loc,
-              *n,
+              id.loc,
+              id.name,
               stmt.assigned_expression.common().type_.deref().clone(),
             ))
           }

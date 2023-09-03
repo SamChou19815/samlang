@@ -5,7 +5,7 @@ use crate::{
     CommentReference, CommentStore, Id, InterfaceDeclaration, Module, Toplevel, TypeDefinition,
     TypeParameter,
   },
-  common::{well_known_pstrs, Heap, PStr},
+  common::{Heap, PStr},
   ModuleReference,
 };
 use itertools::Itertools;
@@ -652,34 +652,38 @@ impl expr::E<()> {
   }
 }
 
+fn pattern_to_document(heap: &Heap, pattern: &pattern::DestructuringPattern<()>) -> Document {
+  match pattern {
+    pattern::DestructuringPattern::Tuple(_, names) => {
+      square_brackets_surrounded_doc(comma_sep_list(names, |it| {
+        pattern_to_document(heap, &it.pattern)
+      }))
+    }
+    pattern::DestructuringPattern::Object(_, names) => {
+      braces_surrounded_doc(comma_sep_list(names, |it| {
+        if it.shorthand {
+          Document::Text(rc_pstr(heap, it.field_name.name))
+        } else {
+          Document::concat(vec![
+            Document::Text(rc_pstr(heap, it.field_name.name)),
+            Document::Text(rcs(" as ")),
+            pattern_to_document(heap, &it.pattern),
+          ])
+        }
+      }))
+    }
+    pattern::DestructuringPattern::Id(id) => Document::Text(rc_pstr(heap, id.name)),
+    pattern::DestructuringPattern::Wildcard(_) => Document::Text(rcs("_")),
+  }
+}
+
 pub(super) fn statement_to_document(
   heap: &Heap,
   comment_store: &CommentStore,
   stmt: &expr::DeclarationStatement<()>,
 ) -> Document {
   let mut segments = vec![];
-  let pattern_doc = match &stmt.pattern {
-    pattern::DestructuringPattern::Tuple(_, names) => {
-      square_brackets_surrounded_doc(comma_sep_list(names, |it| {
-        Document::Text(if let Some(name) = it {
-          rc_pstr(heap, name.name.name)
-        } else {
-          rc_pstr(heap, well_known_pstrs::UNDERSCORE)
-        })
-      }))
-    }
-    pattern::DestructuringPattern::Object(_, names) => {
-      braces_surrounded_doc(comma_sep_list(names, |it| {
-        Document::Text(if let Some(alias) = &it.alias {
-          rc_string(format!("{} as {}", it.field_name.name.as_str(heap), alias.name.as_str(heap)))
-        } else {
-          rc_pstr(heap, it.field_name.name)
-        })
-      }))
-    }
-    pattern::DestructuringPattern::Id(_, n) => Document::Text(rc_pstr(heap, *n)),
-    pattern::DestructuringPattern::Wildcard(_) => Document::Text(rcs("_")),
-  };
+  let pattern_doc = pattern_to_document(heap, &stmt.pattern);
   segments.push(
     associated_comments_doc(
       heap,

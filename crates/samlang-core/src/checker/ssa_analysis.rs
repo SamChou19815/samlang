@@ -316,22 +316,7 @@ impl<'a> SsaAnalysisState<'a> {
           if let Some(annot) = annotation {
             self.visit_annot(annot);
           }
-          match pattern {
-            pattern::DestructuringPattern::Tuple(_, names) => {
-              for pattern::TuplePatternDestructuredName { name, type_: _ } in names.iter().flatten()
-              {
-                self.define_id(name.name, name.loc)
-              }
-            }
-            pattern::DestructuringPattern::Object(_, names) => {
-              for name in names {
-                let id = name.alias.unwrap_or(name.field_name);
-                self.define_id(id.name, id.loc);
-              }
-            }
-            pattern::DestructuringPattern::Id(loc, id) => self.define_id(*id, *loc),
-            pattern::DestructuringPattern::Wildcard(_) => {}
-          }
+          self.visit_pattern(pattern);
         }
         if let Some(final_expr) = &e.expression {
           self.visit_expression(final_expr);
@@ -339,6 +324,23 @@ impl<'a> SsaAnalysisState<'a> {
         let (local_defs, _) = self.context.pop_scope();
         self.local_scoped_def_locs.insert(e.common.loc, local_defs);
       }
+    }
+  }
+
+  fn visit_pattern(&mut self, pattern: &pattern::DestructuringPattern<()>) {
+    match pattern {
+      pattern::DestructuringPattern::Tuple(_, names) => {
+        for pattern::TuplePatternDestructuredName { pattern, type_: _ } in names {
+          self.visit_pattern(pattern);
+        }
+      }
+      pattern::DestructuringPattern::Object(_, names) => {
+        for name in names {
+          self.visit_pattern(&name.pattern);
+        }
+      }
+      pattern::DestructuringPattern::Id(id) => self.define_id(id.name, id.loc),
+      pattern::DestructuringPattern::Wildcard(_) => {}
     }
   }
 

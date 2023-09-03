@@ -23,6 +23,7 @@ class Clazz(val t: int) {
   method thisTest(): int = {
     val i: int = this.t;
     val { t as j } = this;
+    val { t as _ } = this;
     val [_] = this;
     val [k] = this;
     i + j + k - k
@@ -33,7 +34,8 @@ class DifferentExpressionDemo {
   function identity(a: int): int = a
 
   function random(): int = {
-    val a: int = 42;
+    val { e0, e1, e2 as [e3, _] } = [1, 2, [1, 3]];
+    val a = 42;
     a
   }
 

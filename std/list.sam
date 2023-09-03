@@ -55,7 +55,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
   method contains(element: T, equal: (T, T) -> bool): bool =
     match this {
       Nil -> false,
-      Cons(v, rest) -> if equal(element, v) then true else rest.contains(element, equal),
+      Cons(v, rest) -> equal(element, v) || rest.contains(element, equal),
     }
 
   method forAll(f: (T) -> bool): bool =

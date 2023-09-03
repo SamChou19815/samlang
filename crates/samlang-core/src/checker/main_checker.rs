@@ -1052,6 +1052,102 @@ fn check_lambda(
   })
 }
 
+fn check_destructuring_pattern(
+  cx: &mut TypingContext,
+  pattern: &pattern::DestructuringPattern<()>,
+  pattern_type: &Rc<Type>,
+) -> pattern::DestructuringPattern<Rc<Type>> {
+  match pattern {
+    pattern::DestructuringPattern::Tuple(pattern_loc, destructured_names) => {
+      let fields = cx.resolve_struct_definitions(pattern_type);
+      let mut checked_destructured_names = vec![];
+      for (index, pattern::TuplePatternDestructuredName { pattern, type_: _ }) in
+        destructured_names.iter().enumerate()
+      {
+        let loc = pattern.loc();
+        if let Some(field_sig) = fields.get(index) {
+          if !field_sig.is_public {
+            cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
+          }
+          let checked = Box::new(check_destructuring_pattern(cx, pattern, &field_sig.type_));
+          checked_destructured_names.push(pattern::TuplePatternDestructuredName {
+            pattern: checked,
+            type_: Rc::new(field_sig.type_.reposition(*loc)),
+          });
+          continue;
+        }
+        cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
+        let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
+        let checked = Box::new(check_destructuring_pattern(cx, pattern, &type_));
+        checked_destructured_names
+          .push(pattern::TuplePatternDestructuredName { pattern: checked, type_ });
+      }
+      pattern::DestructuringPattern::Tuple(*pattern_loc, checked_destructured_names)
+    }
+    pattern::DestructuringPattern::Object(pattern_loc, destructed_names) => {
+      let fields = cx.resolve_struct_definitions(pattern_type);
+      let mut field_order_mapping = HashMap::new();
+      let mut field_mappings = HashMap::new();
+      for (i, field) in fields.into_iter().enumerate() {
+        field_order_mapping.insert(field.name, i);
+        field_mappings.insert(field.name, (field.type_, field.is_public));
+      }
+      let mut checked_destructured_names = vec![];
+      for pattern::ObjectPatternDestucturedName {
+        loc,
+        field_order,
+        field_name,
+        pattern,
+        shorthand,
+        type_: _,
+      } in destructed_names
+      {
+        if let Some((field_type, is_public)) = field_mappings.get(&field_name.name) {
+          if !is_public {
+            cx.error_set.report_member_missing_error(
+              field_name.loc,
+              pattern_type.to_description(),
+              field_name.name,
+            );
+          }
+          let checked = Box::new(check_destructuring_pattern(cx, pattern, field_type));
+          let field_order = field_order_mapping.get(&field_name.name).unwrap();
+          checked_destructured_names.push(pattern::ObjectPatternDestucturedName {
+            loc: *loc,
+            field_order: *field_order,
+            field_name: *field_name,
+            pattern: checked,
+            shorthand: *shorthand,
+            type_: Rc::new(field_type.reposition(*loc)),
+          });
+          continue;
+        }
+        cx.error_set.report_member_missing_error(
+          field_name.loc,
+          pattern_type.to_description(),
+          field_name.name,
+        );
+        let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
+        let checked = Box::new(check_destructuring_pattern(cx, pattern, &type_));
+        checked_destructured_names.push(pattern::ObjectPatternDestucturedName {
+          loc: *loc,
+          field_order: *field_order,
+          field_name: *field_name,
+          pattern: checked,
+          shorthand: *shorthand,
+          type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
+        });
+      }
+      pattern::DestructuringPattern::Object(*pattern_loc, checked_destructured_names)
+    }
+    pattern::DestructuringPattern::Id(id) => {
+      cx.local_typing_context.write(id.loc, pattern_type.clone());
+      pattern::DestructuringPattern::Id(*id)
+    }
+    pattern::DestructuringPattern::Wildcard(loc) => pattern::DestructuringPattern::Wildcard(*loc),
+  }
+}
+
 fn check_statement(
   cx: &mut TypingContext,
   statement: &expr::DeclarationStatement<()>,
@@ -1076,83 +1172,7 @@ fn check_statement(
   if let Some(hint) = &hint {
     assignability_check(cx, *loc, checked_assigned_expr_type, hint);
   }
-  let checked_pattern = match pattern {
-    pattern::DestructuringPattern::Tuple(pattern_loc, destructured_names) => {
-      let fields = cx.resolve_struct_definitions(checked_assigned_expr_type);
-      let mut checked_destructured_names = vec![];
-      for (index, name_opt) in destructured_names.iter().enumerate() {
-        if let Some(pattern::TuplePatternDestructuredName { name, type_: _ }) = name_opt {
-          if let Some(field_sig) = fields.get(index).filter(|it| it.is_public) {
-            cx.local_typing_context.write(name.loc, field_sig.type_.clone());
-            checked_destructured_names.push(Some(pattern::TuplePatternDestructuredName {
-              name: *name,
-              type_: Rc::new(field_sig.type_.reposition(*loc)),
-            }));
-            continue;
-          }
-          cx.error_set.report_element_missing_error(
-            name.loc,
-            checked_assigned_expr_type.to_description(),
-            index,
-          );
-          checked_destructured_names.push(Some(pattern::TuplePatternDestructuredName {
-            name: *name,
-            type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
-          }));
-        } else {
-          checked_destructured_names.push(None);
-        }
-      }
-      pattern::DestructuringPattern::Tuple(*pattern_loc, checked_destructured_names)
-    }
-    pattern::DestructuringPattern::Object(pattern_loc, destructed_names) => {
-      let fields = cx.resolve_struct_definitions(checked_assigned_expr_type);
-      let mut field_order_mapping = HashMap::new();
-      let mut field_mappings = HashMap::new();
-      for (i, field) in fields.into_iter().enumerate() {
-        field_order_mapping.insert(field.name, i);
-        field_mappings.insert(field.name, (field.type_, field.is_public));
-      }
-      let mut checked_destructured_names = vec![];
-      for pattern::ObjectPatternDestucturedName { loc, field_order, field_name, alias, type_: _ } in
-        destructed_names
-      {
-        if let Some((field_type, _)) =
-          field_mappings.get(&field_name.name).filter(|(_, is_public)| *is_public)
-        {
-          let write_loc = if let Some(alias) = &alias { alias.loc } else { field_name.loc };
-          cx.local_typing_context.write(write_loc, field_type.clone());
-          let field_order = field_order_mapping.get(&field_name.name).unwrap();
-          checked_destructured_names.push(pattern::ObjectPatternDestucturedName {
-            loc: *loc,
-            field_order: *field_order,
-            field_name: *field_name,
-            alias: *alias,
-            type_: Rc::new(field_type.reposition(*loc)),
-          });
-          continue;
-        }
-        cx.error_set.report_member_missing_error(
-          field_name.loc,
-          checked_assigned_expr_type.to_description(),
-          field_name.name,
-        );
-        checked_destructured_names.push(pattern::ObjectPatternDestucturedName {
-          loc: *loc,
-          field_order: *field_order,
-          field_name: *field_name,
-          alias: *alias,
-          type_: Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false)),
-        });
-      }
-      pattern::DestructuringPattern::Object(*pattern_loc, checked_destructured_names)
-    }
-    pattern::DestructuringPattern::Id(loc, name) => {
-      cx.local_typing_context.write(*loc, checked_assigned_expr_type.clone());
-      pattern::DestructuringPattern::Id(*loc, *name)
-    }
-    pattern::DestructuringPattern::Wildcard(loc) => pattern::DestructuringPattern::Wildcard(*loc),
-  };
+  let checked_pattern = check_destructuring_pattern(cx, pattern, checked_assigned_expr_type);
   expr::DeclarationStatement {
     loc: *loc,
     associated_comments: *associated_comments,
