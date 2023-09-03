@@ -1,25 +1,20 @@
 use super::optimization_common::{BinaryBindedValue, BindedValue, IndexAccessBindedValue};
-use crate::{
-  ast::mir::{Binary, Callee, Expression, Function, Statement, VariableName},
-  common::{LocalStackedContext, PStr},
-};
+use crate::ast::mir::{Binary, Callee, Expression, Function, Statement, VariableName};
+use samlang_collections::LocalStackedContext;
+use samlang_heap::PStr;
 
 type LocalContext = LocalStackedContext<PStr, PStr>;
 type LocalBindedValueContext = LocalStackedContext<BindedValue, PStr>;
 
-impl LocalContext {
-  fn lvn_bind_var(&mut self, name: PStr, value: PStr) {
-    let value = self.get(&name).cloned().unwrap_or(value);
-    let inserted = self.insert(name, value);
-    debug_assert!(inserted.is_none());
-  }
+fn lvn_bind_var(cx: &mut LocalContext, name: PStr, value: PStr) {
+  let value = cx.get(&name).cloned().unwrap_or(value);
+  let inserted = cx.insert(name, value);
+  debug_assert!(inserted.is_none());
 }
 
-impl LocalBindedValueContext {
-  fn lvn_bind_value(&mut self, value: &BindedValue, name: PStr) {
-    let inserted = self.insert(*value, name);
-    debug_assert!(inserted.is_none());
-  }
+fn lvn_bind_value(cx: &mut LocalBindedValueContext, value: &BindedValue, name: PStr) {
+  let inserted = cx.insert(*value, name);
+  debug_assert!(inserted.is_none());
 }
 
 fn optimize_variable(
@@ -46,10 +41,10 @@ fn optimize_stmt(
       optimize_expr(e2, variable_cx);
       let value = BindedValue::Binary(BinaryBindedValue { operator: *operator, e1: *e1, e2: *e2 });
       if let Some(binded) = binded_value_cx.get(&value) {
-        variable_cx.lvn_bind_var(*name, *binded);
+        lvn_bind_var(variable_cx, *name, *binded);
         false
       } else {
-        binded_value_cx.lvn_bind_value(&value, *name);
+        lvn_bind_value(binded_value_cx, &value, *name);
         true
       }
     }
@@ -61,10 +56,10 @@ fn optimize_stmt(
         index: *index,
       });
       if let Some(binded) = binded_value_cx.get(&value) {
-        variable_cx.lvn_bind_var(*name, *binded);
+        lvn_bind_var(variable_cx, *name, *binded);
         false
       } else {
-        binded_value_cx.lvn_bind_value(&value, *name);
+        lvn_bind_value(binded_value_cx, &value, *name);
         true
       }
     }

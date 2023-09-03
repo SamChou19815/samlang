@@ -1,8 +1,7 @@
-use crate::{
-  ast::hir::Operator,
-  ast::mir::*,
-  common::{LocalStackedContext, PStr},
-};
+use crate::{ast::hir::Operator, ast::mir::*};
+use samlang_collections::LocalStackedContext;
+use samlang_heap::PStr;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct IndexAccessBindedValue {
@@ -24,9 +23,27 @@ pub(super) enum BindedValue {
   Binary(BinaryBindedValue),
 }
 
-pub(super) type LocalValueContextForOptimization = LocalStackedContext<PStr, Expression>;
+pub(super) struct LocalValueContextForOptimization(LocalStackedContext<PStr, Expression>);
+
+impl Deref for LocalValueContextForOptimization {
+  type Target = LocalStackedContext<PStr, Expression>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
+impl DerefMut for LocalValueContextForOptimization {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.0
+  }
+}
 
 impl LocalValueContextForOptimization {
+  pub(super) fn new() -> LocalValueContextForOptimization {
+    LocalValueContextForOptimization(LocalStackedContext::new())
+  }
+
   pub(super) fn checked_bind(&mut self, name: PStr, expression: Expression) {
     if self.insert(name, expression).is_some() {
       panic!()
@@ -61,8 +78,6 @@ pub(super) fn single_if_or_null(
 
 #[cfg(test)]
 mod tests {
-  use crate::common::well_known_pstrs;
-
   use super::*;
   use std::{collections::hash_map::DefaultHasher, hash::Hash};
 
@@ -94,7 +109,9 @@ mod tests {
   #[test]
   fn local_value_context_for_optimization_panic() {
     let mut cx = LocalValueContextForOptimization::new();
-    cx.checked_bind(well_known_pstrs::LOWER_A, ZERO);
-    cx.checked_bind(well_known_pstrs::LOWER_A, ZERO);
+    cx.checked_bind(PStr::LOWER_A, ZERO);
+    let _ = cx.deref();
+    assert_eq!(ZERO, *cx.get(&PStr::LOWER_A).unwrap());
+    cx.checked_bind(PStr::LOWER_A, ZERO);
   }
 }

@@ -15,7 +15,7 @@ pub(crate) use hir_lowering::compile_sources_to_mir;
 pub(crate) use lir_lowering::compile_mir_to_lir;
 
 pub(crate) fn compile_lir_to_wasm(
-  heap: &mut crate::common::Heap,
+  heap: &mut samlang_heap::Heap,
   sources: &crate::ast::lir::Sources,
 ) -> (String, Vec<u8>) {
   let whole_module_string = format!(

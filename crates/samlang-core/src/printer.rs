@@ -2,7 +2,7 @@ mod prettier;
 mod source_printer;
 
 pub(crate) fn pretty_print_annotation(
-  heap: &crate::common::Heap,
+  heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &crate::ast::source::CommentStore,
   annotation: &crate::ast::source::annotation::T,
@@ -14,7 +14,7 @@ pub(crate) fn pretty_print_annotation(
 }
 
 pub(crate) fn pretty_print_expression(
-  heap: &crate::common::Heap,
+  heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &crate::ast::source::CommentStore,
   expression: &crate::ast::source::expr::E<()>,
@@ -26,7 +26,7 @@ pub(crate) fn pretty_print_expression(
 }
 
 pub(crate) fn pretty_print_statement(
-  heap: &crate::common::Heap,
+  heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &crate::ast::source::CommentStore,
   statement: &crate::ast::source::expr::DeclarationStatement<()>,
@@ -38,7 +38,7 @@ pub(crate) fn pretty_print_statement(
 }
 
 pub(crate) fn pretty_print_import(
-  heap: &crate::common::Heap,
+  heap: &samlang_heap::Heap,
   available_width: usize,
   import: &crate::ast::source::ModuleMembersImport,
 ) -> String {
@@ -49,7 +49,7 @@ pub(crate) fn pretty_print_import(
 }
 
 pub(crate) fn pretty_print_toplevel(
-  heap: &crate::common::Heap,
+  heap: &samlang_heap::Heap,
   available_width: usize,
   comment_store: &crate::ast::source::CommentStore,
   toplevel: &crate::ast::source::Toplevel<()>,
@@ -61,7 +61,7 @@ pub(crate) fn pretty_print_toplevel(
 }
 
 pub(crate) fn pretty_print_source_module(
-  heap: &crate::common::Heap,
+  heap: &samlang_heap::Heap,
   available_width: usize,
   module: &crate::ast::source::Module<()>,
 ) -> String {

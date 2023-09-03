@@ -40,7 +40,7 @@ pub(super) const ALL_DISABLED_CONFIGURATION: OptimizationConfiguration =
 
 fn optimize_function_for_one_round(
   function: &mut crate::ast::mir::Function,
-  heap: &mut crate::common::Heap,
+  heap: &mut samlang_heap::Heap,
   configuration: &OptimizationConfiguration,
 ) {
   conditional_constant_propagation::optimize_function(function, heap);
@@ -58,7 +58,7 @@ fn optimize_function_for_one_round(
 
 fn optimize_function_for_rounds(
   function: &mut crate::ast::mir::Function,
-  heap: &mut crate::common::Heap,
+  heap: &mut samlang_heap::Heap,
   configuration: &OptimizationConfiguration,
 ) {
   for _ in 0..2 {
@@ -71,7 +71,7 @@ fn optimize_function_for_rounds(
 
 fn optimize_functions_for_rounds(
   functions: &mut [crate::ast::mir::Function],
-  heap: &mut crate::common::Heap,
+  heap: &mut samlang_heap::Heap,
   configuration: &OptimizationConfiguration,
 ) {
   for f in functions {
@@ -80,7 +80,7 @@ fn optimize_functions_for_rounds(
 }
 
 pub(super) fn optimize_sources(
-  heap: &mut crate::common::Heap,
+  heap: &mut samlang_heap::Heap,
   mut sources: crate::ast::mir::Sources,
   configuration: &OptimizationConfiguration,
 ) -> crate::ast::mir::Sources {
@@ -113,11 +113,9 @@ pub(super) fn optimize_sources(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::mir::{Function, FunctionName, Sources, SymbolTable, Type, INT_TYPE, ZERO},
-    common::{well_known_pstrs, Heap},
-  };
+  use crate::ast::mir::{Function, FunctionName, Sources, SymbolTable, Type, INT_TYPE, ZERO};
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   fn sources() -> Sources {
     Sources {
@@ -125,9 +123,9 @@ mod tests {
       global_variables: vec![],
       closure_types: vec![],
       type_definitions: vec![],
-      main_function_names: vec![FunctionName::new_for_test(well_known_pstrs::MAIN_FN)],
+      main_function_names: vec![FunctionName::new_for_test(PStr::MAIN_FN)],
       functions: vec![Function {
-        name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+        name: FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
         body: vec![],

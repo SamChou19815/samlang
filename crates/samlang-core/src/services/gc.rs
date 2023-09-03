@@ -337,21 +337,21 @@ mod tests {
           Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
         )))
       }"#,
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       heap,
       &mut error_set,
     );
     let (checked_sources, _) =
-      type_check_sources(&HashMap::from([(ModuleReference::dummy(), parsed)]), &mut error_set);
-    super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::root()]);
-    super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::dummy()]);
+      type_check_sources(&HashMap::from([(ModuleReference::DUMMY, parsed)]), &mut error_set);
+    super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::ROOT]);
+    super::perform_gc_after_recheck(heap, &checked_sources, vec![ModuleReference::DUMMY]);
     assert_eq!("", heap.debug_unmarked_strings());
 
     super::perform_gc_after_recheck_internal(
       heap,
       1,
       &checked_sources,
-      vec![ModuleReference::dummy()],
+      vec![ModuleReference::DUMMY],
     );
   }
 }

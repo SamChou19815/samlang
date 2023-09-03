@@ -3,9 +3,9 @@ mod tests {
   use super::super::checker_utils::*;
   use super::super::type_::{ISourceType, Type, TypeParameterSignature};
   use crate::checker::type_::test_type_builder;
-  use crate::common::well_known_pstrs;
-  use crate::{ast::Reason, common::Heap, errors::ErrorSet};
+  use crate::{ast::Reason, errors::ErrorSet};
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
   use std::{collections::HashMap, rc::Rc};
 
   fn solver_test(
@@ -112,16 +112,16 @@ mod tests {
       ),
       &builder.fun_type(
         vec![
-          builder.generic_type(well_known_pstrs::UPPER_A),
-          builder.generic_type(well_known_pstrs::UPPER_B),
-          builder.generic_type(well_known_pstrs::UPPER_A),
+          builder.generic_type(PStr::UPPER_A),
+          builder.generic_type(PStr::UPPER_B),
+          builder.generic_type(PStr::UPPER_A),
         ],
-        builder.generic_type(well_known_pstrs::UPPER_C),
+        builder.generic_type(PStr::UPPER_C),
       ),
       vec![
-        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
-        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
-        TypeParameterSignature { name: well_known_pstrs::UPPER_C, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_C, bound: None },
       ],
       &HashMap::from([("has_error", "true"), ("A", "int"), ("B", "bool"), ("C", "unit")]),
       heap,
@@ -130,16 +130,16 @@ mod tests {
       &builder.int_type(),
       &builder.fun_type(
         vec![
-          builder.generic_type(well_known_pstrs::UPPER_A),
-          builder.generic_type(well_known_pstrs::UPPER_B),
-          builder.generic_type(well_known_pstrs::UPPER_A),
+          builder.generic_type(PStr::UPPER_A),
+          builder.generic_type(PStr::UPPER_B),
+          builder.generic_type(PStr::UPPER_A),
         ],
-        builder.generic_type(well_known_pstrs::UPPER_C),
+        builder.generic_type(PStr::UPPER_C),
       ),
       vec![
-        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
-        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
-        TypeParameterSignature { name: well_known_pstrs::UPPER_C, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_C, bound: None },
       ],
       &HashMap::from([
         ("has_error", "true"),
@@ -175,16 +175,16 @@ mod tests {
       &builder.fun_type(
         vec![
           builder.fun_type(
-            vec![builder.generic_type(well_known_pstrs::UPPER_A)],
-            builder.generic_type(well_known_pstrs::UPPER_A),
+            vec![builder.generic_type(PStr::UPPER_A)],
+            builder.generic_type(PStr::UPPER_A),
           ),
-          builder.generic_type(well_known_pstrs::UPPER_B),
+          builder.generic_type(PStr::UPPER_B),
         ],
         builder.unit_type(),
       ),
       &vec![
-        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
-        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
       ],
       &mut error_set,
     );
@@ -221,14 +221,14 @@ mod tests {
       &builder.fun_type(
         vec![
           builder.fun_type(
-            vec![builder.simple_nominal_type(well_known_pstrs::UPPER_A)],
-            builder.simple_nominal_type(well_known_pstrs::UPPER_A),
+            vec![builder.simple_nominal_type(PStr::UPPER_A)],
+            builder.simple_nominal_type(PStr::UPPER_A),
           ),
-          builder.generic_type(well_known_pstrs::UPPER_B),
+          builder.generic_type(PStr::UPPER_B),
         ],
         builder.unit_type(),
       ),
-      &vec![TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None }],
+      &vec![TypeParameterSignature { name: PStr::UPPER_B, bound: None }],
       &mut error_set,
     );
 

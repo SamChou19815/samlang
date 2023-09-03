@@ -1,9 +1,7 @@
 use super::lir_unused_name_elimination;
-use crate::{
-  ast::{hir, lir, mir},
-  common::{well_known_pstrs, Heap, PStr},
-};
+use crate::ast::{hir, lir, mir};
 use itertools::Itertools;
+use samlang_heap::{Heap, PStr};
 use std::collections::{BTreeMap, HashSet};
 
 fn lower_type(type_: mir::Type) -> lir::Type {
@@ -569,7 +567,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                         ),
                       },
                       lir::GenenalLoopVariable {
-                        name: well_known_pstrs::LOWER_I,
+                        name: PStr::LOWER_I,
                         type_: lir::INT_TYPE,
                         initial_value: lir::ONE,
                         loop_value: lir::Expression::Variable(
@@ -582,7 +580,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                       lir::Statement::binary(
                         heap.alloc_str_permanent("shouldStop"),
                         hir::Operator::GT,
-                        lir::Expression::Variable(well_known_pstrs::LOWER_I, lir::INT_TYPE),
+                        lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                         lir::Expression::int(16),
                       ),
                       lir::Statement::SingleIf {
@@ -612,7 +610,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                           lir::Statement::binary(
                             heap.alloc_str_permanent("offsetToHeader"),
                             hir::Operator::PLUS,
-                            lir::Expression::Variable(well_known_pstrs::LOWER_I, lir::INT_TYPE),
+                            lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                             lir::ONE,
                           ),
                           lir::Statement::binary(
@@ -662,7 +660,7 @@ fn generate_dec_ref_fn(heap: &mut Heap) -> lir::Function {
                       lir::Statement::binary(
                         heap.alloc_str_permanent("newI"),
                         hir::Operator::PLUS,
-                        lir::Expression::Variable(well_known_pstrs::LOWER_I, lir::INT_TYPE),
+                        lir::Expression::Variable(PStr::LOWER_I, lir::INT_TYPE),
                         lir::ONE,
                       ),
                     ],
@@ -766,19 +764,17 @@ pub(crate) fn compile_mir_to_lir(heap: &mut Heap, sources: mir::Sources) -> lir:
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::{
-      hir::Operator,
-      lir,
-      mir::{
-        Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
-        FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
-        TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_TYPE, ONE, ZERO,
-      },
+  use crate::ast::{
+    hir::Operator,
+    lir,
+    mir::{
+      Callee, ClosureTypeDefinition, EnumTypeDefinition, Expression, Function, FunctionName,
+      FunctionNameExpression, GenenalLoopVariable, Sources, Statement, SymbolTable, Type,
+      TypeDefinition, TypeDefinitionMappings, TypeNameId, VariableName, INT_TYPE, ONE, ZERO,
     },
-    common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn boilterplate() {
@@ -839,7 +835,7 @@ mod tests {
         TypeDefinition {
           name: table.create_type_name_for_test(heap.alloc_str_for_test("Object2")),
           mappings: TypeDefinitionMappings::Struct(vec![
-            Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE)),
+            Type::Id(table.create_type_name_for_test(PStr::STR_TYPE)),
             Type::Id(table.create_type_name_for_test(heap.alloc_str_for_test("Foo"))),
           ]),
         },
@@ -873,34 +869,25 @@ mod tests {
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v1"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, obj_type.clone()),
+              pointer_expression: Expression::var_name(PStr::LOWER_A, obj_type.clone()),
               index: 0,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v2"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(
-                well_known_pstrs::LOWER_B,
-                variant_type.clone(),
-              ),
+              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type.clone()),
               index: 0,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v3"),
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(
-                well_known_pstrs::LOWER_B,
-                variant_type.clone(),
-              ),
+              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type.clone()),
               index: 1,
             },
             Statement::IndexedAccess {
               name: heap.alloc_str_for_test("v4"),
-              type_: Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE)),
-              pointer_expression: Expression::var_name(
-                well_known_pstrs::LOWER_B,
-                variant_type.clone(),
-              ),
+              type_: Type::Id(table.create_type_name_for_test(PStr::STR_TYPE)),
+              pointer_expression: Expression::var_name(PStr::LOWER_B, variant_type.clone()),
               index: 1,
             },
             Statement::While {
@@ -914,7 +901,7 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: well_known_pstrs::UNDERSCORE,
+                name: PStr::UNDERSCORE,
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
@@ -925,15 +912,15 @@ mod tests {
                 statements: vec![Statement::Break(ZERO)],
               }],
               break_collector: Some(VariableName::new(
-                well_known_pstrs::UNDERSCORE,
-                Type::Id(table.create_type_name_for_test(well_known_pstrs::UNDERSCORE)),
+                PStr::UNDERSCORE,
+                Type::Id(table.create_type_name_for_test(PStr::UNDERSCORE)),
               )),
             },
           ],
           return_value: ZERO,
         },
         Function {
-          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+          name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![
@@ -965,7 +952,7 @@ mod tests {
               function_name: FunctionNameExpression {
                 name: FunctionName::new_for_test(heap.alloc_str_for_test("aaa")),
                 type_: Type::new_fn_unwrapped(
-                  vec![Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE))],
+                  vec![Type::Id(table.create_type_name_for_test(PStr::STR_TYPE))],
                   INT_TYPE,
                 ),
               },
@@ -993,7 +980,7 @@ mod tests {
               s1: vec![
                 Statement::Call {
                   callee: Callee::FunctionName(FunctionNameExpression {
-                    name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+                    name: FunctionName::new_for_test(PStr::MAIN_FN),
                     type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
                   }),
                   arguments: vec![ZERO],
@@ -1028,7 +1015,7 @@ mod tests {
                   function_name: FunctionNameExpression {
                     name: FunctionName::new_for_test(heap.alloc_str_for_test("aaa")),
                     type_: Type::new_fn_unwrapped(
-                      vec![Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE))],
+                      vec![Type::Id(table.create_type_name_for_test(PStr::STR_TYPE))],
                       INT_TYPE,
                     ),
                   },

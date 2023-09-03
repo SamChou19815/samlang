@@ -6,11 +6,11 @@ use crate::{
     type_::{GlobalSignature, Type},
     type_check_module, type_check_sources,
   },
-  common::{Heap, ModuleReference},
   errors::{CompileTimeError, ErrorSet},
   measure_time,
   parser::parse_source_module_from_text,
 };
+use samlang_heap::{Heap, ModuleReference};
 use std::{
   collections::{HashMap, HashSet},
   rc::Rc,
@@ -166,8 +166,8 @@ impl ServerState {
 #[cfg(test)]
 mod tests {
   use super::ServerState;
-  use crate::common::{Heap, ModuleReference};
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashMap;
 
   #[test]
@@ -187,7 +187,7 @@ interface I { method test(): int }
     )]);
 
     assert_eq!(1, service.all_modules().len());
-    assert!(service.get_errors(&ModuleReference::root()).is_empty());
+    assert!(service.get_errors(&ModuleReference::ROOT).is_empty());
     assert_eq!(
       r#"
 Error ----------------------------------- test.sam:3:26-3:32
@@ -550,7 +550,7 @@ Name `A` collides with a previously defined name at [1].
       service.get_error_dump().trim()
     );
 
-    service.rename_module(vec![(ModuleReference::dummy(), test_mod_ref)]);
+    service.rename_module(vec![(ModuleReference::DUMMY, test_mod_ref)]);
     assert_eq!(
       r#"
 Error ------------------------------------ Test.sam:1:1-1:18

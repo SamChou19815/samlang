@@ -1,8 +1,8 @@
 #![allow(dead_code, clippy::upper_case_acronyms, clippy::or_fun_call, clippy::expect_fun_call)]
 #![cfg_attr(test, allow(clippy::redundant_clone, clippy::clone_on_copy))]
-#![cfg_attr(coverage_nightly, feature(no_coverage))]
 
-pub use common::{measure_time, Heap, ModuleReference};
+pub use common::measure_time;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::collections::{BTreeMap, HashMap};
 
 pub mod ast;
@@ -61,7 +61,7 @@ pub fn reformat_source(source: &str) -> String {
   let mut error_set = errors::ErrorSet::new();
   let module = parser::parse_source_module_from_text(
     source,
-    ModuleReference::dummy(),
+    ModuleReference::DUMMY,
     &mut heap,
     &mut error_set,
   );
@@ -134,7 +134,7 @@ pub fn compile_sources(
     let mut main_fn_name = String::new();
     ast::mir::FunctionName {
       type_name: lir_sources.symbol_table.create_main_type_name(*module_reference),
-      fn_name: common::well_known_pstrs::MAIN_FN,
+      fn_name: PStr::MAIN_FN,
     }
     .write_encoded(&mut main_fn_name, heap, &lir_sources.symbol_table);
     let ts_code = format!("{common_ts_code}\n{main_fn_name}();\n");

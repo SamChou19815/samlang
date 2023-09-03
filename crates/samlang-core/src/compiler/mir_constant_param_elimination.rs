@@ -1,11 +1,9 @@
-use crate::{
-  ast::mir::{
-    Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
-    Sources, Statement, VariableName,
-  },
-  common::PStr,
+use crate::ast::mir::{
+  Binary, Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
+  Sources, Statement, VariableName,
 };
 use itertools::Itertools;
+use samlang_heap::PStr;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -395,9 +393,9 @@ mod tests {
       Callee, Expression, Function, FunctionName, FunctionNameExpression, FunctionType,
       GenenalLoopVariable, Sources, Statement, SymbolTable, Type, VariableName, INT_TYPE, ZERO,
     },
-    common::{well_known_pstrs, Heap},
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn boilerplate() {
@@ -415,7 +413,7 @@ mod tests {
   fn integration_test() {
     let heap = &mut Heap::new();
     let mut table = SymbolTable::new();
-    let dummy_name = well_known_pstrs::UNDERSCORE;
+    let dummy_name = PStr::UNDERSCORE;
 
     let input = Sources {
       global_variables: vec![],
@@ -425,7 +423,7 @@ mod tests {
       functions: vec![
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("otherwise_optimizable")),
-          parameters: vec![well_known_pstrs::LOWER_A, well_known_pstrs::LOWER_B],
+          parameters: vec![PStr::LOWER_A, PStr::LOWER_B],
           type_: FunctionType {
             argument_types: vec![INT_TYPE, INT_TYPE],
             return_type: Box::new(INT_TYPE),
@@ -435,27 +433,27 @@ mod tests {
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("str_const")),
-          parameters: vec![well_known_pstrs::LOWER_A],
+          parameters: vec![PStr::LOWER_A],
           type_: FunctionType { argument_types: vec![INT_TYPE], return_type: Box::new(INT_TYPE) },
-          body: vec![Statement::Break(Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE))],
+          body: vec![Statement::Break(Expression::var_name(PStr::LOWER_A, INT_TYPE))],
           return_value: ZERO,
         },
         Function {
           name: FunctionName::new_for_test(heap.alloc_str_for_test("func_with_consts")),
           parameters: vec![
-            well_known_pstrs::LOWER_A,
-            well_known_pstrs::LOWER_B,
-            well_known_pstrs::LOWER_C,
-            well_known_pstrs::LOWER_D,
-            well_known_pstrs::LOWER_E,
+            PStr::LOWER_A,
+            PStr::LOWER_B,
+            PStr::LOWER_C,
+            PStr::LOWER_D,
+            PStr::LOWER_E,
           ],
           type_: FunctionType {
             argument_types: vec![
-              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_A)),
-              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_B)),
-              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_C)),
-              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_D)),
-              Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_E)),
+              Type::Id(table.create_type_name_for_test(PStr::UPPER_A)),
+              Type::Id(table.create_type_name_for_test(PStr::UPPER_B)),
+              Type::Id(table.create_type_name_for_test(PStr::UPPER_C)),
+              Type::Id(table.create_type_name_for_test(PStr::UPPER_D)),
+              Type::Id(table.create_type_name_for_test(PStr::UPPER_E)),
             ],
             return_type: Box::new(INT_TYPE),
           },
@@ -463,13 +461,13 @@ mod tests {
             Statement::binary(
               dummy_name,
               Operator::PLUS,
-              Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
-              Expression::var_name(well_known_pstrs::LOWER_B, INT_TYPE),
+              Expression::var_name(PStr::LOWER_A, INT_TYPE),
+              Expression::var_name(PStr::LOWER_B, INT_TYPE),
             ),
             Statement::IndexedAccess {
               name: dummy_name,
               type_: INT_TYPE,
-              pointer_expression: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
+              pointer_expression: Expression::var_name(PStr::LOWER_A, INT_TYPE),
               index: 0,
             },
             Statement::ClosureInit {
@@ -504,8 +502,8 @@ mod tests {
                 ZERO,
                 Expression::int(1),
                 Expression::int(2),
-                Expression::var_name(well_known_pstrs::LOWER_D, INT_TYPE),
-                Expression::var_name(well_known_pstrs::LOWER_E, INT_TYPE),
+                Expression::var_name(PStr::LOWER_D, INT_TYPE),
+                Expression::var_name(PStr::LOWER_E, INT_TYPE),
               ],
               return_type: INT_TYPE,
               return_collector: None,
@@ -522,8 +520,8 @@ mod tests {
                 ZERO,
                 Expression::int(3),
                 Expression::int(3),
-                Expression::var_name(well_known_pstrs::LOWER_D, INT_TYPE),
-                Expression::var_name(well_known_pstrs::LOWER_E, INT_TYPE),
+                Expression::var_name(PStr::LOWER_D, INT_TYPE),
+                Expression::var_name(PStr::LOWER_E, INT_TYPE),
               ],
               return_type: INT_TYPE,
               return_collector: None,
@@ -553,7 +551,7 @@ mod tests {
               return_collector: None,
             },
             Statement::IfElse {
-              condition: Expression::var_name(well_known_pstrs::LOWER_E, INT_TYPE),
+              condition: Expression::var_name(PStr::LOWER_E, INT_TYPE),
               s1: vec![Statement::Break(ZERO)],
               s2: vec![Statement::Break(ZERO)],
               final_assignments: vec![(dummy_name, INT_TYPE, ZERO, ZERO)],

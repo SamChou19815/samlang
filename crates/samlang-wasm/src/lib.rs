@@ -6,14 +6,14 @@ use serde::Serialize;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
-fn demo_mod_ref(heap: &mut samlang_core::Heap) -> samlang_core::ModuleReference {
+fn demo_mod_ref(heap: &mut samlang_heap::Heap) -> samlang_heap::ModuleReference {
   heap.alloc_module_reference_from_string_vec(vec!["Demo".to_string()])
 }
 
 fn demo_sources(
-  heap: &mut samlang_core::Heap,
+  heap: &mut samlang_heap::Heap,
   text: String,
-) -> HashMap<samlang_core::ModuleReference, String> {
+) -> HashMap<samlang_heap::ModuleReference, String> {
   let mut sources = samlang_core::builtin_std_raw_sources(heap);
   sources.insert(demo_mod_ref(heap), text);
   sources
@@ -29,7 +29,7 @@ pub struct SourcesCompilationResult {
 
 #[wasm_bindgen]
 pub fn compile(source: String) -> Result<SourcesCompilationResult, String> {
-  let heap = &mut samlang_core::Heap::new();
+  let heap = &mut samlang_heap::Heap::new();
   let mod_ref = demo_mod_ref(heap);
   let sources = demo_sources(heap, source);
   match samlang_core::compile_sources(heap, sources, vec![mod_ref], false) {
@@ -102,7 +102,7 @@ impl Range {
 }
 
 fn new_state(source: String) -> samlang_core::services::server_state::ServerState {
-  let mut heap = samlang_core::Heap::new();
+  let mut heap = samlang_heap::Heap::new();
   let sources = demo_sources(&mut heap, source);
   samlang_core::services::server_state::ServerState::new(heap, false, sources)
 }

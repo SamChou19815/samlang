@@ -1,10 +1,10 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
 use crate::{
   ast::{source::*, Location, Position},
-  common::{well_known_pstrs, Heap, ModuleReference, PStr},
   errors::ErrorSet,
 };
 use itertools::Itertools;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   cmp,
   collections::{HashMap, HashSet},
@@ -1088,7 +1088,7 @@ impl<'a> SourceParser<'a> {
           Id {
             loc: peeked_loc,
             associated_comments: self.comments_store.create_comment_reference(vec![]),
-            name: well_known_pstrs::THIS,
+            name: PStr::THIS,
           },
         );
       }
@@ -1554,7 +1554,7 @@ impl<'a> SourceParser<'a> {
 
   fn resolve_class(&mut self, class_name: PStr) -> ModuleReference {
     if self.builtin_classes.contains(&class_name) {
-      ModuleReference::root()
+      ModuleReference::ROOT
     } else {
       *self.class_source_map.get(&class_name).unwrap_or(&self.module_reference)
     }
@@ -1566,10 +1566,10 @@ mod tests {
   use super::{post_process_block_comment, SourceParser};
   use crate::{
     ast::Location,
-    common::{Heap, ModuleReference},
     errors::ErrorSet,
     parser::lexer::{Token, TokenContent},
   };
+  use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashSet;
 
   #[test]
@@ -1582,13 +1582,8 @@ mod tests {
   fn base_tests_1() {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
-    let mut parser = SourceParser::new(
-      vec![],
-      &mut heap,
-      &mut error_set,
-      ModuleReference::dummy(),
-      HashSet::new(),
-    );
+    let mut parser =
+      SourceParser::new(vec![], &mut heap, &mut error_set, ModuleReference::DUMMY, HashSet::new());
 
     parser.consume();
     parser.peek();
@@ -1605,7 +1600,7 @@ mod tests {
       vec![Token(Location::dummy(), TokenContent::Error(heap.alloc_str_for_test("ouch")))],
       &mut heap,
       &mut error_set,
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       HashSet::new(),
     );
 
@@ -1616,7 +1611,7 @@ mod tests {
   fn with_tokens_robustness_tests(heap: &mut Heap, tokens: Vec<Token>) {
     let mut error_set = ErrorSet::new();
     let mut parser =
-      SourceParser::new(tokens, heap, &mut error_set, ModuleReference::dummy(), HashSet::new());
+      SourceParser::new(tokens, heap, &mut error_set, ModuleReference::DUMMY, HashSet::new());
 
     parser.parse_interface();
     parser.parse_class();

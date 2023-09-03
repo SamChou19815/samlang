@@ -1,9 +1,9 @@
 use crate::{
   ast::lir::{Expression, Function, GenenalLoopVariable, Sources, Statement, Type},
   ast::mir::{FunctionName, TypeNameId},
-  common::PStr,
 };
 use itertools::Itertools;
+use samlang_heap::PStr;
 use std::collections::{HashMap, HashSet};
 
 fn collect_for_type_set(type_: &Type, type_set: &mut HashSet<TypeNameId>) {
@@ -200,20 +200,17 @@ pub(super) fn optimize_mir_sources_by_eliminating_unused_ones(
 
 #[cfg(test)]
 mod tests {
-  use crate::{
-    ast::{
-      hir,
-      lir::{
-        Expression, Function, GenenalLoopVariable, Sources, Statement, Type, TypeDefinition,
-        INT_TYPE, ZERO,
-      },
-      mir::{FunctionName, SymbolTable},
+  use crate::ast::{
+    hir,
+    lir::{
+      Expression, Function, GenenalLoopVariable, Sources, Statement, Type, TypeDefinition,
+      INT_TYPE, ZERO,
     },
-    common::well_known_pstrs,
-    Heap,
+    mir::{FunctionName, SymbolTable},
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn integration_test() {
@@ -241,10 +238,10 @@ mod tests {
           mappings: vec![INT_TYPE],
         },
       ],
-      main_function_names: vec![FunctionName::new_for_test(well_known_pstrs::MAIN_FN)],
+      main_function_names: vec![FunctionName::new_for_test(PStr::MAIN_FN)],
       functions: vec![
         Function {
-          name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+          name: FunctionName::new_for_test(PStr::MAIN_FN),
           parameters: vec![],
           type_: Type::new_fn_unwrapped(vec![], INT_TYPE),
           body: vec![Statement::Call {
@@ -264,12 +261,12 @@ mod tests {
           type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
           body: vec![
             Statement::Cast {
-              name: well_known_pstrs::LOWER_A,
+              name: PStr::LOWER_A,
               type_: INT_TYPE,
               assigned_expression: Expression::StringName(heap.alloc_str_for_test("bar")),
             },
             Statement::StructInit {
-              struct_variable_name: well_known_pstrs::LOWER_A,
+              struct_variable_name: PStr::LOWER_A,
               type_: INT_TYPE,
               expression_list: vec![Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
@@ -277,7 +274,7 @@ mod tests {
               )],
             },
             Statement::IndexedAccess {
-              name: well_known_pstrs::LOWER_A,
+              name: PStr::LOWER_A,
               type_: INT_TYPE,
               pointer_expression: Expression::FnName(
                 FunctionName::new_for_test(heap.alloc_str_for_test("bar")),
@@ -308,7 +305,7 @@ mod tests {
             Statement::IfElse {
               condition: ZERO,
               s1: vec![Statement::binary(
-                well_known_pstrs::LOWER_A,
+                PStr::LOWER_A,
                 hir::Operator::GE,
                 Expression::FnName(
                   FunctionName::new_for_test(heap.alloc_str_for_test("foo")),
@@ -320,7 +317,7 @@ mod tests {
                 ),
               )],
               s2: vec![Statement::Cast {
-                name: well_known_pstrs::LOWER_A,
+                name: PStr::LOWER_A,
                 type_: INT_TYPE,
                 assigned_expression: ZERO,
               }],
@@ -333,13 +330,13 @@ mod tests {
             },
             Statement::While {
               loop_variables: vec![GenenalLoopVariable {
-                name: well_known_pstrs::LOWER_F,
+                name: PStr::LOWER_F,
                 type_: INT_TYPE,
                 initial_value: ZERO,
                 loop_value: ZERO,
               }],
               statements: vec![],
-              break_collector: Some((well_known_pstrs::LOWER_D, INT_TYPE)),
+              break_collector: Some((PStr::LOWER_D, INT_TYPE)),
             },
           ],
           return_value: Expression::FnName(

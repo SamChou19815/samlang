@@ -1,9 +1,6 @@
-use crate::{
-  ast::Location,
-  common::{Heap, ModuleReference, PStr},
-  errors::ErrorSet,
-};
+use crate::{ast::Location, errors::ErrorSet};
 use phf::phf_map;
+use samlang_heap::{Heap, ModuleReference, PStr};
 
 struct EOF();
 

@@ -1,4 +1,5 @@
-use crate::{ast::hir::GlobalVariable, common::PStr, Heap};
+use crate::ast::hir::GlobalVariable;
+use samlang_heap::{Heap, PStr};
 use std::collections::HashMap;
 
 // TODO: move this to global variable since heap allows us to provide a better API
@@ -37,16 +38,16 @@ impl StringManager {
 #[cfg(test)]
 mod tests {
   use super::StringManager;
-  use crate::{common::well_known_pstrs, Heap};
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn tests() {
     let heap = &mut Heap::new();
     let mut s = StringManager::new();
-    assert_eq!(well_known_pstrs::LOWER_A, s.allocate(heap, well_known_pstrs::LOWER_A).content);
-    assert_eq!(well_known_pstrs::LOWER_B, s.allocate(heap, well_known_pstrs::LOWER_B).content);
-    assert_eq!(well_known_pstrs::LOWER_A, s.allocate(heap, well_known_pstrs::LOWER_A).content);
+    assert_eq!(PStr::LOWER_A, s.allocate(heap, PStr::LOWER_A).content);
+    assert_eq!(PStr::LOWER_B, s.allocate(heap, PStr::LOWER_B).content);
+    assert_eq!(PStr::LOWER_A, s.allocate(heap, PStr::LOWER_A).content);
     assert_eq!(2, s.all_global_variables().len());
   }
 }

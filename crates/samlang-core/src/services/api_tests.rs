@@ -3,11 +3,11 @@ mod tests {
   use super::super::api::*;
   use crate::{
     ast::{Location, Position},
-    common::{Heap, ModuleReference},
     services::server_state::ServerState,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference};
   use std::collections::HashMap;
 
   #[test]
@@ -180,7 +180,7 @@ class Test2(val a: int) {
         .join("\n")
     );
     // Non-existent
-    assert!(query::all_references(&state, &ModuleReference::dummy(), Position(4, 100)).is_empty());
+    assert!(query::all_references(&state, &ModuleReference::DUMMY, Position(4, 100)).is_empty());
     assert!(query::all_references(&state, &test2_mod_ref, Position(4, 100)).is_empty());
   }
 
@@ -337,7 +337,7 @@ Name `c` is not resolved.
     );
 
     assert!(
-      query::definition_location(&state, &ModuleReference::dummy(), Position(100, 100)).is_none()
+      query::definition_location(&state, &ModuleReference::DUMMY, Position(100, 100)).is_none()
     );
     assert!(query::definition_location(&state, &test1_mod_ref, Position(100, 100)).is_none());
     assert!(query::definition_location(&state, &test1_mod_ref, Position(4, 46)).is_none());
@@ -517,13 +517,13 @@ class Main {
         .map(|l| l.pretty_print(&state.heap))
         .collect_vec()
     );
-    assert!(query::folding_ranges(&state, &ModuleReference::root()).is_none());
+    assert!(query::folding_ranges(&state, &ModuleReference::ROOT).is_none());
   }
 
   #[test]
   fn query_signature_help_tests() {
     let heap = Heap::new();
-    let mod_ref = ModuleReference::dummy();
+    let mod_ref = ModuleReference::DUMMY;
     let state = ServerState::new(
       heap,
       false,
@@ -608,7 +608,7 @@ class Main {
 "#,
       rewrite::format_entire_document(&state, &mod_ref).unwrap()
     );
-    assert!(rewrite::format_entire_document(&state, &ModuleReference::dummy()).is_none());
+    assert!(rewrite::format_entire_document(&state, &ModuleReference::DUMMY).is_none());
   }
 
   #[test]
@@ -716,11 +716,8 @@ class Test {
   fn error_quickfix_test1() {
     let heap = Heap::new();
     // Intentional syntax error
-    let state = ServerState::new(
-      heap,
-      false,
-      HashMap::from([(ModuleReference::dummy(), "dfsf".to_string())]),
-    );
+    let state =
+      ServerState::new(heap, false, HashMap::from([(ModuleReference::DUMMY, "dfsf".to_string())]));
     assert!(rewrite::code_actions(&state, Location::from_pos(0, 1, 0, 2)).is_empty());
   }
 
@@ -733,7 +730,7 @@ class Test {
       false,
       HashMap::from([
         (
-          ModuleReference::dummy(),
+          ModuleReference::DUMMY,
           r#"
 class Main {
   function main(): int = Foo.bar()
@@ -757,7 +754,7 @@ class Foo {
       vec![rewrite::CodeAction::Quickfix {
         title: "Import `Foo` from `A`".to_string(),
         edits: vec![(
-          Location::document_start(ModuleReference::dummy()),
+          Location::document_start(ModuleReference::DUMMY),
           "import { Foo } from A;".to_string()
         )]
       }],
@@ -774,7 +771,7 @@ class Foo {
       false,
       HashMap::from([
         (
-          ModuleReference::dummy(),
+          ModuleReference::DUMMY,
           r#"
 class Main {
   function main(): int = Foo
@@ -796,7 +793,7 @@ class Foo {}
       vec![rewrite::CodeAction::Quickfix {
         title: "Import `Foo` from `A`".to_string(),
         edits: vec![(
-          Location::document_start(ModuleReference::dummy()),
+          Location::document_start(ModuleReference::DUMMY),
           "import { Foo } from A;".to_string()
         )]
       }],
@@ -938,14 +935,14 @@ projects [kind=Field, detail=List<Str>]"#,
 
   #[test]
   fn autocomplete_test_3() {
-    let mod_ref = ModuleReference::dummy();
+    let mod_ref = ModuleReference::DUMMY;
     let state = ServerState::new(Heap::new(), false, HashMap::from([(mod_ref, ".".to_string())]));
     assert!(completion::auto_complete(&state, &mod_ref, Position(0, 1)).is_empty());
   }
 
   #[test]
   fn autocomplete_test_4() {
-    let mod_ref = ModuleReference::dummy();
+    let mod_ref = ModuleReference::DUMMY;
     let state = ServerState::new(
       Heap::new(),
       false,
@@ -964,7 +961,7 @@ class Main {
 
   #[test]
   fn autocomplete_test_5() {
-    let mod_ref = ModuleReference::dummy();
+    let mod_ref = ModuleReference::DUMMY;
     let state = ServerState::new(
       Heap::new(),
       false,
@@ -983,7 +980,7 @@ class Main {
 
   #[test]
   fn autocomplete_test_6() {
-    let mod_ref = ModuleReference::dummy();
+    let mod_ref = ModuleReference::DUMMY;
     let state = ServerState::new(
       Heap::new(),
       false,
@@ -1012,7 +1009,7 @@ class Developer {
 
   #[test]
   fn autocomplete_test_7() {
-    let mod_ref = ModuleReference::dummy();
+    let mod_ref = ModuleReference::DUMMY;
     let state = ServerState::new(
       Heap::new(),
       false,
@@ -1031,7 +1028,7 @@ class Main {
 
   #[test]
   fn autocomplete_test_8() {
-    let mod_ref = ModuleReference::dummy();
+    let mod_ref = ModuleReference::DUMMY;
     let state = ServerState::new(
       Heap::new(),
       false,

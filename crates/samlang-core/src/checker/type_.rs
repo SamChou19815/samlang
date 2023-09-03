@@ -3,11 +3,11 @@ use crate::{
     source::{annotation, TypeParameter},
     Description, Location, Reason,
   },
-  common::{well_known_pstrs, PStr},
   Heap, ModuleReference,
 };
 use enum_as_inner::EnumAsInner;
 use itertools::Itertools;
+use samlang_heap::PStr;
 use std::{collections::HashMap, rc::Rc};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -344,8 +344,8 @@ pub(crate) mod test_type_builder {
       Rc::new(Type::Nominal(NominalType {
         reason: self.reason,
         is_class_statics: false,
-        module_reference: ModuleReference::root(),
-        id: well_known_pstrs::STR_TYPE,
+        module_reference: ModuleReference::ROOT,
+        id: PStr::STR_TYPE,
         type_arguments: vec![],
       }))
     }
@@ -396,7 +396,7 @@ pub(crate) mod test_type_builder {
   }
 
   pub(crate) fn create() -> CustomizedTypeBuilder {
-    CustomizedTypeBuilder { reason: Reason::dummy(), module_reference: ModuleReference::dummy() }
+    CustomizedTypeBuilder { reason: Reason::dummy(), module_reference: ModuleReference::DUMMY }
   }
 }
 
@@ -586,7 +586,7 @@ pub(crate) fn create_builtin_module_signature() -> ModuleSignature {
   ModuleSignature {
     interfaces: HashMap::from([
       (
-        well_known_pstrs::PROCESS_TYPE,
+        PStr::PROCESS_TYPE,
         InterfaceSignature {
           type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
           type_parameters: vec![],
@@ -594,50 +594,50 @@ pub(crate) fn create_builtin_module_signature() -> ModuleSignature {
           methods: HashMap::new(),
           functions: HashMap::from([
             MemberSignature::create_builtin_function(
-              well_known_pstrs::PRINTLN,
+              PStr::PRINTLN,
               vec![Rc::new(Type::Nominal(NominalType {
                 reason: Reason::builtin(),
                 is_class_statics: false,
-                module_reference: ModuleReference::root(),
-                id: well_known_pstrs::STR_TYPE,
+                module_reference: ModuleReference::ROOT,
+                id: PStr::STR_TYPE,
                 type_arguments: vec![],
               }))],
               Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Unit)),
               vec![],
             ),
             MemberSignature::create_builtin_function(
-              well_known_pstrs::PANIC,
+              PStr::PANIC,
               vec![Rc::new(Type::Nominal(NominalType {
                 reason: Reason::builtin(),
                 is_class_statics: false,
-                module_reference: ModuleReference::root(),
-                id: well_known_pstrs::STR_TYPE,
+                module_reference: ModuleReference::ROOT,
+                id: PStr::STR_TYPE,
                 type_arguments: vec![],
               }))],
-              Rc::new(Type::Generic(Reason::builtin(), well_known_pstrs::UPPER_T)),
-              vec![well_known_pstrs::UPPER_T],
+              Rc::new(Type::Generic(Reason::builtin(), PStr::UPPER_T)),
+              vec![PStr::UPPER_T],
             ),
           ]),
         },
       ),
       (
-        well_known_pstrs::STR_TYPE,
+        PStr::STR_TYPE,
         InterfaceSignature {
           type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
           functions: HashMap::from([MemberSignature::create_builtin_function(
-            well_known_pstrs::FROM_INT,
+            PStr::FROM_INT,
             vec![Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int))],
             Rc::new(Type::Nominal(NominalType {
               reason: Reason::builtin(),
               is_class_statics: false,
-              module_reference: ModuleReference::root(),
-              id: well_known_pstrs::STR_TYPE,
+              module_reference: ModuleReference::ROOT,
+              id: PStr::STR_TYPE,
               type_arguments: vec![],
             })),
             vec![],
           )]),
           methods: HashMap::from([MemberSignature::create_builtin_function(
-            well_known_pstrs::TO_INT,
+            PStr::TO_INT,
             vec![],
             Rc::new(Type::Primitive(Reason::builtin(), PrimitiveTypeKind::Int)),
             vec![],
@@ -690,7 +690,7 @@ mod type_tests {
       NominalType {
         reason: Reason::dummy(),
         is_class_statics: true,
-        module_reference: ModuleReference::dummy(),
+        module_reference: ModuleReference::DUMMY,
         id: heap.alloc_str_for_test("I"),
         type_arguments: vec![]
       }
@@ -743,7 +743,7 @@ mod type_tests {
       "A",
       TypeParameterSignature::from_list(&[TypeParameter {
         loc: Location::dummy(),
-        name: Id::from(well_known_pstrs::UPPER_A),
+        name: Id::from(PStr::UPPER_A),
         bound: None
       }])[0]
         .pretty_print(&heap)
@@ -752,11 +752,11 @@ mod type_tests {
       "A : B",
       TypeParameterSignature::from_list(&[TypeParameter {
         loc: Location::dummy(),
-        name: Id::from(well_known_pstrs::UPPER_A),
+        name: Id::from(PStr::UPPER_A),
         bound: Some(annotation::Id {
           location: Location::dummy(),
-          module_reference: ModuleReference::dummy(),
-          id: Id::from(well_known_pstrs::UPPER_B),
+          module_reference: ModuleReference::DUMMY,
+          id: Id::from(PStr::UPPER_B),
           type_arguments: vec![]
         })
       }])[0]
@@ -769,10 +769,10 @@ mod type_tests {
       TypeParameterSignature::pretty_print_list(
         &vec![
           TypeParameterSignature {
-            name: well_known_pstrs::UPPER_A,
-            bound: Option::Some(builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_B))
+            name: PStr::UPPER_A,
+            bound: Option::Some(builder.simple_nominal_type_unwrapped(PStr::UPPER_B))
           },
-          TypeParameterSignature { name: well_known_pstrs::UPPER_C, bound: Option::None }
+          TypeParameterSignature { name: PStr::UPPER_C, bound: Option::None }
         ],
         &heap
       )
@@ -790,7 +790,7 @@ methods:
       .trim(),
       create_builtin_module_signature()
         .interfaces
-        .get(&well_known_pstrs::PROCESS_TYPE)
+        .get(&PStr::PROCESS_TYPE)
         .unwrap()
         .to_string(&heap)
     );
@@ -806,12 +806,12 @@ m2: public () -> any
       InterfaceSignature {
         type_definition: Some(TypeDefinitionSignature::Struct(vec![
           StructItemDefinitionSignature {
-            name: well_known_pstrs::LOWER_A,
+            name: PStr::LOWER_A,
             type_: builder.bool_type(),
             is_public: true
           },
           StructItemDefinitionSignature {
-            name: well_known_pstrs::LOWER_B,
+            name: PStr::LOWER_B,
             type_: builder.bool_type(),
             is_public: false
           },
@@ -853,7 +853,7 @@ m2: public () -> any
     assert_eq!(
       "A(bool)",
       TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
-        name: well_known_pstrs::UPPER_A,
+        name: PStr::UPPER_A,
         types: vec![builder.bool_type()]
       }])
       .to_string(&heap)
@@ -861,7 +861,7 @@ m2: public () -> any
     assert_eq!(
       "B(bool, bool)",
       TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
-        name: well_known_pstrs::UPPER_B,
+        name: PStr::UPPER_B,
         types: vec![builder.bool_type(), builder.bool_type()]
       }])
       .to_string(&heap)
@@ -869,7 +869,7 @@ m2: public () -> any
     assert_eq!(
       "C",
       TypeDefinitionSignature::Enum(vec![EnumVariantDefinitionSignature {
-        name: well_known_pstrs::UPPER_C,
+        name: PStr::UPPER_C,
         types: vec![]
       }])
       .to_string(&heap)
@@ -878,7 +878,7 @@ m2: public () -> any
     assert_eq!(
       "private a() -> bool",
       MemberSignature::create_private_builtin_function(
-        well_known_pstrs::LOWER_A,
+        PStr::LOWER_A,
         vec![],
         builder.bool_type(),
         vec![]
@@ -888,14 +888,9 @@ m2: public () -> any
     );
     assert_eq!(
       "public a() -> bool",
-      MemberSignature::create_builtin_function(
-        well_known_pstrs::LOWER_A,
-        vec![],
-        builder.bool_type(),
-        vec![]
-      )
-      .1
-      .pretty_print("a", &heap)
+      MemberSignature::create_builtin_function(PStr::LOWER_A, vec![], builder.bool_type(), vec![])
+        .1
+        .pretty_print("a", &heap)
     );
   }
 
@@ -914,7 +909,7 @@ m2: public () -> any
       NominalType {
         reason: Reason::dummy(),
         is_class_statics: true,
-        module_reference: ModuleReference::dummy(),
+        module_reference: ModuleReference::DUMMY,
         id: heap.alloc_str_for_test("I"),
         type_arguments: vec![]
       }
@@ -1013,7 +1008,7 @@ m2: public () -> any
         vec![builder.bool_annot()],
         builder.general_id_annot(
           heap.alloc_str_for_test("I"),
-          vec![builder.int_annot(), builder.generic_annot(well_known_pstrs::UPPER_A)]
+          vec![builder.int_annot(), builder.generic_annot(PStr::UPPER_A)]
         )
       ))
       .pretty_print(heap)
@@ -1024,33 +1019,27 @@ m2: public () -> any
   fn test_equality_test() {
     let builder = test_type_builder::create();
 
-    assert!(!builder
-      .unit_type()
-      .is_the_same_type(&builder.simple_nominal_type(well_known_pstrs::UPPER_A)));
+    assert!(!builder.unit_type().is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_A)));
 
     assert!(Type::Any(Reason::dummy(), true).is_the_same_type(&Type::Any(Reason::dummy(), false)));
     assert!(builder.unit_type().is_the_same_type(&builder.unit_type()));
     assert!(!builder.unit_type().is_the_same_type(&builder.int_type()));
 
     assert!(builder
-      .simple_nominal_type(well_known_pstrs::UPPER_A)
-      .is_the_same_type(&builder.simple_nominal_type(well_known_pstrs::UPPER_A)));
+      .simple_nominal_type(PStr::UPPER_A)
+      .is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_A)));
     assert!(!builder
-      .simple_nominal_type(well_known_pstrs::UPPER_A)
-      .is_the_same_type(&builder.simple_nominal_type(well_known_pstrs::UPPER_B)));
+      .simple_nominal_type(PStr::UPPER_A)
+      .is_the_same_type(&builder.simple_nominal_type(PStr::UPPER_B)));
     assert!(builder
-      .general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])
-      .is_the_same_type(
-        &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])
-      ));
+      .general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])
+      .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])));
     assert!(!builder
-      .general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])
-      .is_the_same_type(
-        &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()])
-      ));
-    assert!(!builder.simple_nominal_type(well_known_pstrs::UPPER_A).is_the_same_type(
-      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.bool_type()])
-    ));
+      .general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])
+      .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()])));
+    assert!(!builder
+      .simple_nominal_type(PStr::UPPER_A)
+      .is_the_same_type(&builder.general_nominal_type(PStr::UPPER_A, vec![builder.bool_type()])));
 
     assert!(builder
       .fun_type(vec![builder.unit_type()], builder.string_type())

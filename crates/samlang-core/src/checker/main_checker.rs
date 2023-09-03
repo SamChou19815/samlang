@@ -18,10 +18,10 @@ use crate::{
     Description, Location, Reason,
   },
   checker::checker_utils::solve_type_constraints,
-  common::{well_known_pstrs, ModuleReference, PStr},
   errors::{ErrorSet, StackableError, TypeIncompatibilityNode},
 };
 use itertools::Itertools;
+use samlang_heap::{ModuleReference, PStr};
 use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 mod type_hint {
@@ -233,8 +233,8 @@ fn check_literal(common: &expr::ExpressionCommon<()>, literal: &Literal) -> expr
     Literal::String(_) => Rc::new(Type::Nominal(NominalType {
       reason,
       is_class_statics: false,
-      module_reference: ModuleReference::root(),
-      id: well_known_pstrs::STR_TYPE,
+      module_reference: ModuleReference::ROOT,
+      id: PStr::STR_TYPE,
       type_arguments: vec![],
     })),
   };
@@ -285,27 +285,27 @@ fn check_tuple(
     checked_expressions.push(checked);
   }
   let id = match expressions.len() {
-    2 => well_known_pstrs::PAIR,
-    3 => well_known_pstrs::TRIPLE,
-    4 => well_known_pstrs::TUPLE_4,
-    5 => well_known_pstrs::TUPLE_5,
-    6 => well_known_pstrs::TUPLE_6,
-    7 => well_known_pstrs::TUPLE_7,
-    8 => well_known_pstrs::TUPLE_8,
-    9 => well_known_pstrs::TUPLE_9,
-    10 => well_known_pstrs::TUPLE_10,
-    11 => well_known_pstrs::TUPLE_11,
-    12 => well_known_pstrs::TUPLE_12,
-    13 => well_known_pstrs::TUPLE_13,
-    14 => well_known_pstrs::TUPLE_14,
-    15 => well_known_pstrs::TUPLE_15,
-    16 => well_known_pstrs::TUPLE_16,
+    2 => PStr::PAIR,
+    3 => PStr::TRIPLE,
+    4 => PStr::TUPLE_4,
+    5 => PStr::TUPLE_5,
+    6 => PStr::TUPLE_6,
+    7 => PStr::TUPLE_7,
+    8 => PStr::TUPLE_8,
+    9 => PStr::TUPLE_9,
+    10 => PStr::TUPLE_10,
+    11 => PStr::TUPLE_11,
+    12 => PStr::TUPLE_12,
+    13 => PStr::TUPLE_13,
+    14 => PStr::TUPLE_14,
+    15 => PStr::TUPLE_15,
+    16 => PStr::TUPLE_16,
     _ => panic!("Invalid tuple length"),
   };
   let type_ = Rc::new(Type::Nominal(NominalType {
     reason: Reason::new(common.loc, None),
     is_class_statics: false,
-    module_reference: ModuleReference::std_tuples(),
+    module_reference: ModuleReference::STD_TUPLES,
     id,
     type_arguments,
   }));
@@ -830,8 +830,8 @@ fn check_binary(cx: &mut TypingContext, expression: &expr::Binary<()>) -> expr::
     expr::BinaryOperator::CONCAT => Type::Nominal(NominalType {
       reason: Reason::new(expression.common.loc, Some(expression.common.loc)),
       is_class_statics: false,
-      module_reference: ModuleReference::root(),
-      id: well_known_pstrs::STR_TYPE,
+      module_reference: ModuleReference::ROOT,
+      id: PStr::STR_TYPE,
       type_arguments: vec![],
     }),
   });
@@ -1417,7 +1417,7 @@ pub(crate) fn type_check_module(
         }
         match &c.type_definition {
           TypeDefinition::Struct { .. } => {
-            missing_function_members.remove(&well_known_pstrs::INIT);
+            missing_function_members.remove(&PStr::INIT);
           }
           TypeDefinition::Enum { loc: _, variants } => {
             for variant in variants {

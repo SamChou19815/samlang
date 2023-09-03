@@ -1,13 +1,10 @@
 use super::optimization_common::{
   if_else_or_null, single_if_or_null, IndexAccessBindedValue, LocalValueContextForOptimization,
 };
-use crate::{
-  ast::hir::Operator,
-  ast::mir::*,
-  common::{LocalStackedContext, PStr},
-  Heap,
-};
+use crate::{ast::hir::Operator, ast::mir::*};
 use itertools::Itertools;
+use samlang_collections::LocalStackedContext;
+use samlang_heap::{Heap, PStr};
 
 fn evaluate_bin_op(operator: Operator, v1: i32, v2: i32) -> Option<i32> {
   match operator {
@@ -110,10 +107,7 @@ fn optimize_expr(value_cx: &mut LocalValueContextForOptimization, e: &Expression
   }
 }
 
-fn optimize_callee(
-  value_cx: &mut LocalStackedContext<PStr, Expression>,
-  callee: &Callee,
-) -> Callee {
+fn optimize_callee(value_cx: &mut LocalValueContextForOptimization, callee: &Callee) -> Callee {
   match callee {
     Callee::FunctionName(n) => Callee::FunctionName(n.clone()),
     Callee::Variable(v) => optimize_variable_name(value_cx, v).convert_to_callee().unwrap(),
@@ -550,12 +544,10 @@ pub(super) fn optimize_function(function: &mut Function, heap: &mut Heap) {
 mod boilterplate_tests {
   use super::{optimize_callee, BinaryExpression};
   use crate::{
-    ast::hir::Operator,
-    ast::mir::*,
-    common::{well_known_pstrs, INVALID_PSTR},
+    ast::hir::Operator, ast::mir::*,
     optimization::optimization_common::LocalValueContextForOptimization,
-    Heap,
   };
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn boilterplate() {
@@ -563,7 +555,7 @@ mod boilterplate_tests {
       1,
       BinaryExpression {
         operator: Operator::PLUS,
-        e1: VariableName { name: INVALID_PSTR, type_: INT_TYPE },
+        e1: VariableName { name: PStr::INVALID_PSTR, type_: INT_TYPE },
         e2: 1,
       }
       .clone()
@@ -576,27 +568,20 @@ mod boilterplate_tests {
   fn panic_test() {
     let mut value_cx = LocalValueContextForOptimization::new();
     let heap = &mut Heap::new();
-    value_cx.checked_bind(
-      well_known_pstrs::LOWER_A,
-      Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
-    );
-    value_cx.checked_bind(
-      well_known_pstrs::LOWER_B,
-      Expression::StringName(heap.alloc_str_for_test("1")),
-    );
-    value_cx
-      .checked_bind(well_known_pstrs::LOWER_C, Expression::StringName(well_known_pstrs::UPPER_A));
+    value_cx.checked_bind(PStr::LOWER_A, Expression::var_name(PStr::LOWER_A, INT_TYPE));
+    value_cx.checked_bind(PStr::LOWER_B, Expression::StringName(heap.alloc_str_for_test("1")));
+    value_cx.checked_bind(PStr::LOWER_C, Expression::StringName(PStr::UPPER_A));
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: well_known_pstrs::LOWER_A, type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: PStr::LOWER_A, type_: INT_TYPE }),
     );
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: well_known_pstrs::LOWER_B, type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: PStr::LOWER_B, type_: INT_TYPE }),
     );
     optimize_callee(
       &mut value_cx,
-      &Callee::Variable(VariableName { name: well_known_pstrs::LOWER_C, type_: INT_TYPE }),
+      &Callee::Variable(VariableName { name: PStr::LOWER_C, type_: INT_TYPE }),
     );
   }
 }

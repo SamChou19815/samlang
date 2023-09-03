@@ -1,4 +1,5 @@
-use crate::{ast::source::Module, common::ModuleReference, errors::ErrorSet};
+use crate::{ast::source::Module, errors::ErrorSet};
+use samlang_heap::ModuleReference;
 use std::collections::HashMap;
 
 mod checker_tests;

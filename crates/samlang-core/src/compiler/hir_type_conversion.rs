@@ -7,9 +7,9 @@ use crate::{
     source,
   },
   checker::type_,
-  common::{Heap, ModuleReference, PStr},
 };
 use itertools::Itertools;
+use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   collections::{BTreeMap, HashMap, HashSet},
   rc::Rc,
@@ -58,7 +58,7 @@ impl TypeSynthesizer {
       return self.synthesized_closure_types.get(existing_identifier).unwrap().clone();
     }
     let identifier = heap.alloc_string(format!("$SyntheticIDType{}", self.next_id));
-    let name = TypeName { module_reference: Some(ModuleReference::root()), type_name: identifier };
+    let name = TypeName { module_reference: Some(ModuleReference::ROOT), type_name: identifier };
     self.next_id += 1;
     self.reverse_function_map.insert(key, identifier);
     let definition = ClosureTypeDefinition { name, type_parameters, function_type };
@@ -77,7 +77,7 @@ impl TypeSynthesizer {
       return self.synthesized_tuple_types.get(existing_identifier).unwrap().clone();
     }
     let identifier = heap.alloc_string(format!("$SyntheticIDType{}", self.next_id));
-    let name = TypeName { module_reference: Some(ModuleReference::root()), type_name: identifier };
+    let name = TypeName { module_reference: Some(ModuleReference::ROOT), type_name: identifier };
     self.next_id += 1;
     self.reverse_tuple_map.insert(key, identifier);
     let definition =
@@ -279,17 +279,17 @@ mod tests {
   use crate::{
     ast::{hir::INT_TYPE, source::test_builder, Location, Reason},
     checker::type_::test_type_builder,
-    common::well_known_pstrs,
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::PStr;
 
   #[test]
   fn synthesizer_tests() {
     let heap = &mut Heap::new();
     let mut synthesizer = TypeSynthesizer::new();
-    let a = well_known_pstrs::UPPER_A;
-    let b = well_known_pstrs::UPPER_B;
-    let c = well_known_pstrs::UPPER_C;
+    let a = PStr::UPPER_A;
+    let b = PStr::UPPER_B;
+    let c = PStr::UPPER_C;
 
     assert_eq!(
       "_$SyntheticIDType0",
@@ -362,22 +362,21 @@ mod tests {
 
   #[test]
   fn collect_used_generic_types_works() {
-    let generic_types: HashSet<PStr> =
-      vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B].into_iter().collect();
+    let generic_types: HashSet<PStr> = vec![PStr::UPPER_A, PStr::UPPER_B].into_iter().collect();
 
     assert!(collect_used_generic_types(
       &Type::new_fn_unwrapped(
-        vec![INT_TYPE, Type::new_id(well_known_pstrs::UPPER_C, vec![INT_TYPE])],
-        Type::new_id_no_targs(well_known_pstrs::UPPER_C),
+        vec![INT_TYPE, Type::new_id(PStr::UPPER_C, vec![INT_TYPE])],
+        Type::new_id_no_targs(PStr::UPPER_C),
       ),
       &generic_types,
     )
     .is_empty());
 
     assert_eq!(
-      vec![well_known_pstrs::UPPER_A],
+      vec![PStr::UPPER_A],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_generic_type(well_known_pstrs::UPPER_A)),
+        &Type::new_fn_unwrapped(vec![], Type::new_generic_type(PStr::UPPER_A)),
         &generic_types,
       )
       .into_iter()
@@ -385,9 +384,9 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![well_known_pstrs::UPPER_B],
+      vec![PStr::UPPER_B],
       collect_used_generic_types(
-        &Type::new_fn_unwrapped(vec![], Type::new_generic_type(well_known_pstrs::UPPER_B)),
+        &Type::new_fn_unwrapped(vec![], Type::new_generic_type(PStr::UPPER_B)),
         &generic_types,
       )
       .into_iter()
@@ -395,11 +394,11 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![well_known_pstrs::UPPER_A, well_known_pstrs::UPPER_B],
+      vec![PStr::UPPER_A, PStr::UPPER_B],
       collect_used_generic_types(
         &Type::new_fn_unwrapped(
-          vec![Type::new_generic_type(well_known_pstrs::UPPER_B)],
-          Type::new_generic_type(well_known_pstrs::UPPER_A)
+          vec![Type::new_generic_type(PStr::UPPER_B)],
+          Type::new_generic_type(PStr::UPPER_A)
         ),
         &generic_types,
       )
@@ -408,14 +407,11 @@ mod tests {
       .collect_vec()
     );
     assert_eq!(
-      vec![well_known_pstrs::UPPER_B],
+      vec![PStr::UPPER_B],
       collect_used_generic_types(
         &Type::new_fn_unwrapped(
           vec![],
-          Type::new_id(
-            well_known_pstrs::UPPER_A,
-            vec![Type::new_generic_type(well_known_pstrs::UPPER_B)]
-          )
+          Type::new_id(PStr::UPPER_A, vec![Type::new_generic_type(PStr::UPPER_B)])
         ),
         &generic_types,
       )
@@ -434,24 +430,24 @@ mod tests {
     assert_eq!(
       "DUMMY_A<int>",
       type_application(
-        &Type::new_id(well_known_pstrs::UPPER_A, vec![INT_TYPE]),
-        &HashMap::from([(well_known_pstrs::UPPER_A, INT_TYPE)])
+        &Type::new_id(PStr::UPPER_A, vec![INT_TYPE]),
+        &HashMap::from([(PStr::UPPER_A, INT_TYPE)])
       )
       .pretty_print(heap)
     );
     assert_eq!(
       "DUMMY_A",
       type_application(
-        &Type::new_id_no_targs(well_known_pstrs::UPPER_A),
-        &HashMap::from([(well_known_pstrs::UPPER_B, INT_TYPE)])
+        &Type::new_id_no_targs(PStr::UPPER_A),
+        &HashMap::from([(PStr::UPPER_B, INT_TYPE)])
       )
       .pretty_print(heap)
     );
     assert_eq!(
       "int",
       type_application(
-        &Type::new_generic_type(well_known_pstrs::UPPER_A),
-        &HashMap::from([(well_known_pstrs::UPPER_A, INT_TYPE)])
+        &Type::new_generic_type(PStr::UPPER_A),
+        &HashMap::from([(PStr::UPPER_A, INT_TYPE)])
       )
       .pretty_print(heap)
     );
@@ -460,13 +456,10 @@ mod tests {
       "(int) -> int",
       fn_type_application(
         &Type::new_fn_unwrapped(
-          vec![Type::new_generic_type(well_known_pstrs::UPPER_A)],
-          Type::new_generic_type(well_known_pstrs::UPPER_B)
+          vec![Type::new_generic_type(PStr::UPPER_A)],
+          Type::new_generic_type(PStr::UPPER_B)
         ),
-        &HashMap::from([
-          (well_known_pstrs::UPPER_A, INT_TYPE),
-          (well_known_pstrs::UPPER_B, INT_TYPE)
-        ])
+        &HashMap::from([(PStr::UPPER_A, INT_TYPE), (PStr::UPPER_B, INT_TYPE)])
       )
       .pretty_print(heap)
     );
@@ -503,7 +496,7 @@ mod tests {
     );
 
     assert_eq!("DUMMY_A<int>", {
-      let t = builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]);
+      let t = builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]);
       manager.lower_source_type(heap, &t).pretty_print(heap)
     });
 
@@ -532,7 +525,7 @@ mod tests {
   fn type_lowering_manager_lower_type_definition_tests() {
     let heap = &mut Heap::new();
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::from([well_known_pstrs::UPPER_A]),
+      generic_types: HashSet::from([PStr::UPPER_A]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let annot_builder = test_builder::create();
@@ -541,10 +534,10 @@ mod tests {
       loc: Location::dummy(),
       fields: vec![
         source::FieldDefinition {
-          name: source::Id::from(well_known_pstrs::LOWER_A),
+          name: source::Id::from(PStr::LOWER_A),
           annotation: annot_builder.fn_annot(
             vec![annot_builder.fn_annot(
-              vec![annot_builder.generic_annot(well_known_pstrs::UPPER_A)],
+              vec![annot_builder.generic_annot(PStr::UPPER_A)],
               annot_builder.bool_annot(),
             )],
             annot_builder.bool_annot(),
@@ -552,10 +545,10 @@ mod tests {
           is_public: true,
         },
         source::FieldDefinition {
-          name: source::Id::from(well_known_pstrs::LOWER_B),
+          name: source::Id::from(PStr::LOWER_B),
           annotation: annot_builder.fn_annot(
             vec![annot_builder.fn_annot(
-              vec![annot_builder.generic_annot(well_known_pstrs::UPPER_A)],
+              vec![annot_builder.generic_annot(PStr::UPPER_A)],
               annot_builder.bool_annot(),
             )],
             annot_builder.bool_annot(),
@@ -566,7 +559,7 @@ mod tests {
     };
     let foo_str = heap.alloc_str_for_test("Foo");
     let type_def =
-      manager.lower_source_type_definition(heap, &ModuleReference::root(), foo_str, &type_def);
+      manager.lower_source_type_definition(heap, &ModuleReference::ROOT, foo_str, &type_def);
     let SynthesizedTypes { closure_types, mut tuple_types } =
       manager.type_synthesizer.synthesized_types();
     assert_eq!(
@@ -589,7 +582,7 @@ mod tests {
     let heap = &mut Heap::new();
 
     let mut manager = TypeLoweringManager {
-      generic_types: HashSet::from([well_known_pstrs::UPPER_A]),
+      generic_types: HashSet::from([PStr::UPPER_A]),
       type_synthesizer: TypeSynthesizer::new(),
     };
     let builder = test_type_builder::create();

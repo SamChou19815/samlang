@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
+  use super::super::loc::Location;
   use super::super::source::expr::*;
   use super::super::source::*;
-  use crate::common::well_known_pstrs;
-  use crate::{ast::loc::Location, common::Heap, common::ModuleReference};
   use itertools::Itertools;
+  use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::HashMap;
   use std::rc::Rc;
 
@@ -45,7 +45,7 @@ mod tests {
     assert_eq!(*pattern.loc(), Location::dummy());
     pattern = pattern::DestructuringPattern::Tuple(Location::dummy(), vec![]);
     assert_eq!(*pattern.loc(), Location::dummy());
-    pattern = pattern::DestructuringPattern::Id(Id::from(well_known_pstrs::LOWER_A));
+    pattern = pattern::DestructuringPattern::Id(Id::from(PStr::LOWER_A));
     assert_eq!(*pattern.loc(), Location::dummy());
     pattern = pattern::DestructuringPattern::Wildcard(Location::dummy());
     assert_eq!(*pattern.loc(), Location::dummy());
@@ -134,7 +134,7 @@ mod tests {
     coverage_hack_for_expr(E::LocalId(common.clone(), Id::from(heap.alloc_str_for_test("s"))));
     coverage_hack_for_expr(E::ClassId(
       common.clone(),
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       Id::from(heap.alloc_str_for_test("s")),
     ));
     coverage_hack_for_expr(E::Tuple(common.clone(), vec![zero_expr.clone(), zero_expr.clone()]));
@@ -262,7 +262,7 @@ mod tests {
             associated_comments: NO_COMMENT_REFERENCE,
             argument_types: vec![annotation::T::Id(annotation::Id {
               location: Location::dummy(),
-              module_reference: ModuleReference::dummy(),
+              module_reference: ModuleReference::DUMMY,
               id: Id::from(heap.alloc_str_for_test("name")),
               type_arguments: vec![],
             })],
@@ -316,7 +316,7 @@ mod tests {
     assert!(InterfaceDeclaration {
       loc: Location::dummy(),
       associated_comments: NO_COMMENT_REFERENCE,
-      name: Id::from(well_known_pstrs::LOWER_A),
+      name: Id::from(PStr::LOWER_A),
       type_parameters: vec![],
       extends_or_implements_nodes: vec![],
       type_definition: (),
@@ -325,11 +325,11 @@ mod tests {
         associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
-        name: Id::from(well_known_pstrs::LOWER_A),
+        name: Id::from(PStr::LOWER_A),
         type_parameters: Rc::new(vec![]),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![AnnotatedId {
-          name: Id::from(well_known_pstrs::LOWER_A),
+          name: Id::from(PStr::LOWER_A),
           type_: (),
           annotation: builder.int_annot()
         }])
@@ -341,7 +341,7 @@ mod tests {
     assert!(ModuleMembersImport {
       loc: Location::dummy(),
       imported_members: vec![],
-      imported_module: ModuleReference::dummy(),
+      imported_module: ModuleReference::DUMMY,
       imported_module_loc: Location::dummy(),
     }
     .clone()
@@ -366,25 +366,17 @@ mod tests {
     assert!(enum_type_def.clone().eq(&enum_type_def));
 
     assert!(AnnotatedId {
-      name: Id::from(well_known_pstrs::LOWER_A),
+      name: Id::from(PStr::LOWER_A),
       type_: (),
       annotation: builder.int_annot(),
     }
     .eq(&AnnotatedId {
-      name: Id::from(well_known_pstrs::LOWER_A),
+      name: Id::from(PStr::LOWER_A),
       type_: (),
       annotation: builder.int_annot(),
     }));
-    assert!(TypeParameter {
-      loc: Location::dummy(),
-      name: Id::from(well_known_pstrs::LOWER_A),
-      bound: None,
-    }
-    .eq(&TypeParameter {
-      loc: Location::dummy(),
-      name: Id::from(well_known_pstrs::LOWER_A),
-      bound: None,
-    }));
+    assert!(TypeParameter { loc: Location::dummy(), name: Id::from(PStr::LOWER_A), bound: None }
+      .eq(&TypeParameter { loc: Location::dummy(), name: Id::from(PStr::LOWER_A), bound: None }));
 
     let class = Toplevel::Class(InterfaceDeclarationCommon {
       loc: Location::dummy(),
@@ -406,7 +398,7 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           is_public: true,
           is_method: true,
-          name: Id::from(well_known_pstrs::LOWER_A),
+          name: Id::from(PStr::LOWER_A),
           type_parameters: Rc::new(vec![]),
           type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
           parameters: Rc::new(vec![]),
@@ -431,7 +423,7 @@ mod tests {
         associated_comments: NO_COMMENT_REFERENCE,
         is_public: true,
         is_method: true,
-        name: Id::from(well_known_pstrs::LOWER_A),
+        name: Id::from(PStr::LOWER_A),
         type_parameters: Rc::new(vec![]),
         type_: builder.fn_annot_unwrapped(vec![], builder.int_annot()),
         parameters: Rc::new(vec![]),
@@ -446,7 +438,7 @@ mod tests {
     let one_import = ModuleMembersImport {
       loc: Location::dummy(),
       imported_members: vec![],
-      imported_module: ModuleReference::dummy(),
+      imported_module: ModuleReference::DUMMY,
       imported_module_loc: Location::dummy(),
     };
     assert!(one_import.clone().eq(&one_import));

@@ -16,11 +16,11 @@ use crate::{
     type_::{FunctionType, ISourceType, InterfaceSignature, MemberSignature, Type},
     type_check_module,
   },
-  common::{ModuleReference, PStr},
   errors::{ErrorDetail, ErrorSet},
   printer,
 };
 use itertools::Itertools;
+use samlang_heap::{ModuleReference, PStr};
 use std::rc::Rc;
 
 mod state_searcher_utils {

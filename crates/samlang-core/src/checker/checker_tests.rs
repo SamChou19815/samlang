@@ -16,11 +16,11 @@ mod tests {
       type_check_sources, type_system,
       typing_context::{LocalTypingContext, TypingContext},
     },
-    common::{well_known_pstrs, Heap, ModuleReference},
     errors::ErrorSet,
     parser::{parse_source_expression_from_text, parse_source_module_from_text},
   };
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::{HashMap, HashSet};
 
   #[test]
@@ -43,7 +43,7 @@ mod tests {
       &global_cx,
       &mut local_cx,
       &mut error_set,
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       test_str,
       /* availableTypeParameters */ vec![],
     );
@@ -82,7 +82,7 @@ mod tests {
       &global_cx,
       &mut local_cx,
       &mut error_set,
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       test_str,
       /* availableTypeParameters */ vec![],
     );
@@ -112,9 +112,9 @@ mod tests {
     let builder = test_type_builder::create();
 
     let mut sigs = HashMap::from([
-      (ModuleReference::root(), create_builtin_module_signature()),
+      (ModuleReference::ROOT, create_builtin_module_signature()),
       (
-        ModuleReference::dummy(),
+        ModuleReference::DUMMY,
         ModuleSignature {
           interfaces: HashMap::from([
             (
@@ -139,7 +139,7 @@ mod tests {
                 ])),
                 functions: HashMap::from([
                   (
-                    well_known_pstrs::INIT,
+                    PStr::INIT,
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![],
@@ -167,12 +167,12 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: well_known_pstrs::UPPER_A,
+                        name: PStr::UPPER_A,
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.generic_type(well_known_pstrs::UPPER_A)],
+                        argument_types: vec![builder.generic_type(PStr::UPPER_A)],
                         return_type: builder.unit_type(),
                       },
                     },
@@ -182,19 +182,19 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![
-                        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
-                        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
-                        TypeParameterSignature { name: well_known_pstrs::UPPER_C, bound: None },
-                        TypeParameterSignature { name: well_known_pstrs::UPPER_D, bound: None },
+                        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+                        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
+                        TypeParameterSignature { name: PStr::UPPER_C, bound: None },
+                        TypeParameterSignature { name: PStr::UPPER_D, bound: None },
                       ],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![
-                          builder.generic_type(well_known_pstrs::UPPER_A),
-                          builder.generic_type(well_known_pstrs::UPPER_B),
-                          builder.generic_type(well_known_pstrs::UPPER_C),
+                          builder.generic_type(PStr::UPPER_A),
+                          builder.generic_type(PStr::UPPER_B),
+                          builder.generic_type(PStr::UPPER_C),
                         ],
-                        return_type: builder.generic_type(well_known_pstrs::UPPER_D),
+                        return_type: builder.generic_type(PStr::UPPER_D),
                       },
                     },
                   ),
@@ -221,14 +221,14 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![
-                        TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
-                        TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
+                        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+                        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
                       ],
                       type_: FunctionType {
                         reason: Reason::dummy(),
                         argument_types: vec![builder.fun_type(
-                          vec![builder.generic_type(well_known_pstrs::UPPER_A)],
-                          builder.generic_type(well_known_pstrs::UPPER_B),
+                          vec![builder.generic_type(PStr::UPPER_A)],
+                          builder.generic_type(PStr::UPPER_B),
                         )],
                         return_type: builder.bool_type(),
                       },
@@ -268,7 +268,7 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: well_known_pstrs::UPPER_A,
+                        name: PStr::UPPER_A,
                         bound: None,
                       }],
                       type_: FunctionType {
@@ -283,12 +283,12 @@ mod tests {
                     MemberSignature {
                       is_public: false,
                       type_parameters: vec![TypeParameterSignature {
-                        name: well_known_pstrs::UPPER_A,
+                        name: PStr::UPPER_A,
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.generic_type(well_known_pstrs::UPPER_A)],
+                        argument_types: vec![builder.generic_type(PStr::UPPER_A)],
                         return_type: builder.bool_type(),
                       },
                     },
@@ -345,14 +345,11 @@ mod tests {
             (
               heap.alloc_str_for_test("Test3"),
               InterfaceSignature {
-                type_parameters: vec![TypeParameterSignature {
-                  name: well_known_pstrs::UPPER_E,
-                  bound: None,
-                }],
+                type_parameters: vec![TypeParameterSignature { name: PStr::UPPER_E, bound: None }],
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
                     name: heap.alloc_str_for_test("foo"),
-                    type_: builder.generic_type(well_known_pstrs::UPPER_E),
+                    type_: builder.generic_type(PStr::UPPER_E),
                     is_public: true,
                   },
                   StructItemDefinitionSignature {
@@ -369,14 +366,11 @@ mod tests {
             (
               heap.alloc_str_for_test("Test4"),
               InterfaceSignature {
-                type_parameters: vec![TypeParameterSignature {
-                  name: well_known_pstrs::UPPER_E,
-                  bound: None,
-                }],
+                type_parameters: vec![TypeParameterSignature { name: PStr::UPPER_E, bound: None }],
                 type_definition: Some(TypeDefinitionSignature::Enum(vec![
                   EnumVariantDefinitionSignature {
                     name: heap.alloc_str_for_test("Foo"),
-                    types: vec![builder.generic_type(well_known_pstrs::UPPER_E)],
+                    types: vec![builder.generic_type(PStr::UPPER_E)],
                   },
                   EnumVariantDefinitionSignature {
                     name: heap.alloc_str_for_test("Bar"),
@@ -389,15 +383,15 @@ mod tests {
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature {
-                        name: well_known_pstrs::UPPER_E,
+                        name: PStr::UPPER_E,
                         bound: None,
                       }],
                       type_: FunctionType {
                         reason: Reason::dummy(),
-                        argument_types: vec![builder.generic_type(well_known_pstrs::UPPER_E)],
+                        argument_types: vec![builder.generic_type(PStr::UPPER_E)],
                         return_type: builder.general_nominal_type(
                           heap.alloc_str_for_test("Test4"),
-                          vec![builder.generic_type(well_known_pstrs::UPPER_E)],
+                          vec![builder.generic_type(PStr::UPPER_E)],
                         ),
                       },
                     },
@@ -407,7 +401,7 @@ mod tests {
                     MemberSignature {
                       is_public: true,
                       type_parameters: vec![TypeParameterSignature {
-                        name: well_known_pstrs::UPPER_E,
+                        name: PStr::UPPER_E,
                         bound: None,
                       }],
                       type_: FunctionType {
@@ -415,7 +409,7 @@ mod tests {
                         argument_types: vec![builder.int_type()],
                         return_type: builder.general_nominal_type(
                           heap.alloc_str_for_test("Test4"),
-                          vec![builder.generic_type(well_known_pstrs::UPPER_E)],
+                          vec![builder.generic_type(PStr::UPPER_E)],
                         ),
                       },
                     },
@@ -426,29 +420,29 @@ mod tests {
               },
             ),
             (
-              well_known_pstrs::UPPER_A,
+              PStr::UPPER_A,
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
-                    name: well_known_pstrs::LOWER_A,
+                    name: PStr::LOWER_A,
                     type_: builder.int_type(),
                     is_public: true,
                   },
                   StructItemDefinitionSignature {
-                    name: well_known_pstrs::LOWER_B,
+                    name: PStr::LOWER_B,
                     type_: builder.bool_type(),
                     is_public: false,
                   },
                 ])),
                 functions: HashMap::from([(
-                  well_known_pstrs::INIT,
+                  PStr::INIT,
                   MemberSignature {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_nominal_type(well_known_pstrs::UPPER_A),
+                      return_type: builder.simple_nominal_type(PStr::UPPER_A),
                     },
                   },
                 )]),
@@ -458,29 +452,29 @@ mod tests {
               },
             ),
             (
-              well_known_pstrs::UPPER_B,
+              PStr::UPPER_B,
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature::Struct(vec![
                   StructItemDefinitionSignature {
-                    name: well_known_pstrs::LOWER_A,
+                    name: PStr::LOWER_A,
                     type_: builder.int_type(),
                     is_public: true,
                   },
                   StructItemDefinitionSignature {
-                    name: well_known_pstrs::LOWER_B,
+                    name: PStr::LOWER_B,
                     type_: builder.bool_type(),
                     is_public: false,
                   },
                 ])),
                 functions: HashMap::from([(
-                  well_known_pstrs::INIT,
+                  PStr::INIT,
                   MemberSignature {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_nominal_type(well_known_pstrs::UPPER_B),
+                      return_type: builder.simple_nominal_type(PStr::UPPER_B),
                     },
                   },
                 )]),
@@ -490,27 +484,27 @@ mod tests {
               },
             ),
             (
-              well_known_pstrs::UPPER_C,
+              PStr::UPPER_C,
               InterfaceSignature {
                 type_definition: Some(TypeDefinitionSignature::Enum(vec![
                   EnumVariantDefinitionSignature {
-                    name: well_known_pstrs::LOWER_A,
+                    name: PStr::LOWER_A,
                     types: vec![builder.int_type()],
                   },
                   EnumVariantDefinitionSignature {
-                    name: well_known_pstrs::LOWER_B,
+                    name: PStr::LOWER_B,
                     types: vec![builder.bool_type()],
                   },
                 ])),
                 functions: HashMap::from([(
-                  well_known_pstrs::INIT,
+                  PStr::INIT,
                   MemberSignature {
                     is_public: true,
                     type_parameters: vec![],
                     type_: FunctionType {
                       reason: Reason::dummy(),
                       argument_types: vec![],
-                      return_type: builder.simple_nominal_type(well_known_pstrs::UPPER_C),
+                      return_type: builder.simple_nominal_type(PStr::UPPER_C),
                     },
                   },
                 )]),
@@ -541,13 +535,13 @@ mod tests {
     let mut error_set = ErrorSet::new();
 
     let (_, parsed) =
-      parse_source_expression_from_text(source, ModuleReference::dummy(), heap, &mut error_set);
+      parse_source_expression_from_text(source, ModuleReference::DUMMY, heap, &mut error_set);
     assert_eq!("", error_set.pretty_print_error_messages_no_frame(heap));
 
     let mut temp_ssa_error_set = ErrorSet::new();
     let global_cx = sandbox_global_cx(heap, include_std);
     let mut local_cx = LocalTypingContext::new(perform_ssa_analysis_on_expression(
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       &parsed,
       &mut temp_ssa_error_set,
     ));
@@ -556,7 +550,7 @@ mod tests {
       &global_cx,
       &mut local_cx,
       &mut error_set,
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       current_class,
       /* availableTypeParameters */ vec![],
     );
@@ -567,7 +561,7 @@ mod tests {
     }
     error_set.pretty_print_error_messages(
       heap,
-      &HashMap::from([(ModuleReference::dummy(), source.to_string())]),
+      &HashMap::from([(ModuleReference::DUMMY, source.to_string())]),
     )
   }
 

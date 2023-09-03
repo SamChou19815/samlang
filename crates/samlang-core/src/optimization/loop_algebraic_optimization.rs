@@ -149,7 +149,6 @@ pub(super) fn optimize(
 mod tests {
   use crate::{
     ast::mir::{Expression, Statement, SymbolTable, VariableName, INT_TYPE, ZERO},
-    common::{well_known_pstrs, Heap},
     optimization::loop_induction_analysis::{
       BasicInductionVariableWithLoopGuard, GeneralBasicInductionVariable, GuardOperator,
       OptimizableWhileLoop, PotentialLoopInvariantExpression,
@@ -157,6 +156,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[test]
   fn analyze_number_of_iterations_to_break_guard_tests() {
@@ -239,8 +239,8 @@ mod tests {
     assert_rejected(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: well_known_pstrs::LOWER_I,
-          initial_value: Expression::var_name(well_known_pstrs::LOWER_A, INT_TYPE),
+          name: PStr::LOWER_I,
+          initial_value: Expression::var_name(PStr::LOWER_A, INT_TYPE),
           increment_amount: PotentialLoopInvariantExpression::Int(0),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(0),
@@ -257,7 +257,7 @@ mod tests {
     assert_rejected(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: well_known_pstrs::LOWER_I,
+          name: PStr::LOWER_I,
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(0),
           guard_operator: GuardOperator::LT,
@@ -279,7 +279,7 @@ mod tests {
     assert_rejected(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: well_known_pstrs::LOWER_I,
+          name: PStr::LOWER_I,
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(0),
           guard_operator: GuardOperator::LT,
@@ -317,7 +317,7 @@ mod tests {
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: well_known_pstrs::LOWER_I,
+          name: PStr::LOWER_I,
           initial_value: ZERO,
           increment_amount: PotentialLoopInvariantExpression::Int(0),
           guard_operator: GuardOperator::LT,
@@ -336,7 +336,7 @@ mod tests {
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: well_known_pstrs::LOWER_I,
+          name: PStr::LOWER_I,
           initial_value: Expression::int(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
@@ -355,7 +355,7 @@ mod tests {
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: well_known_pstrs::LOWER_I,
+          name: PStr::LOWER_I,
           initial_value: Expression::int(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
@@ -368,7 +368,7 @@ mod tests {
         break_collector: Some((
           heap.alloc_str_for_test("bc"),
           INT_TYPE,
-          Expression::var_name(well_known_pstrs::LOWER_I, INT_TYPE),
+          Expression::var_name(PStr::LOWER_I, INT_TYPE),
         )),
       },
       heap,
@@ -378,14 +378,14 @@ mod tests {
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: well_known_pstrs::LOWER_I,
+          name: PStr::LOWER_I,
           initial_value: Expression::int(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(20),
         },
         general_induction_variables: vec![GeneralBasicInductionVariable {
-          name: well_known_pstrs::LOWER_J,
+          name: PStr::LOWER_J,
           initial_value: Expression::var_name(heap.alloc_str_for_test("j_init"), INT_TYPE),
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             heap.alloc_str_for_test("outside"),
@@ -398,7 +398,7 @@ mod tests {
         break_collector: Some((
           heap.alloc_str_for_test("bc"),
           INT_TYPE,
-          Expression::var_name(well_known_pstrs::LOWER_J, INT_TYPE),
+          Expression::var_name(PStr::LOWER_J, INT_TYPE),
         )),
       },
       heap,
@@ -408,14 +408,14 @@ mod tests {
     assert_optimized(
       OptimizableWhileLoop {
         basic_induction_variable_with_loop_guard: BasicInductionVariableWithLoopGuard {
-          name: well_known_pstrs::LOWER_I,
+          name: PStr::LOWER_I,
           initial_value: Expression::int(5),
           increment_amount: PotentialLoopInvariantExpression::Int(1),
           guard_operator: GuardOperator::LT,
           guard_expression: PotentialLoopInvariantExpression::Int(20),
         },
         general_induction_variables: vec![GeneralBasicInductionVariable {
-          name: well_known_pstrs::LOWER_J,
+          name: PStr::LOWER_J,
           initial_value: Expression::var_name(heap.alloc_str_for_test("j_init"), INT_TYPE),
           increment_amount: PotentialLoopInvariantExpression::Var(VariableName::new(
             heap.alloc_str_for_test("outside"),

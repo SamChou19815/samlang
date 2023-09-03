@@ -230,12 +230,9 @@ pub(super) fn deduplicate(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{
-    ast::mir::{FunctionName, SymbolTable, INT_TYPE, ONE, ZERO},
-    common::well_known_pstrs,
-    Heap,
-  };
+  use crate::ast::mir::{FunctionName, SymbolTable, INT_TYPE, ONE, ZERO};
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, PStr};
 
   #[should_panic]
   #[test]
@@ -282,31 +279,31 @@ mod tests {
       global_variables: vec![],
       closure_types: vec![
         ClosureTypeDefinition {
-          name: table.create_type_name_for_test(well_known_pstrs::UPPER_A),
+          name: table.create_type_name_for_test(PStr::UPPER_A),
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
         ClosureTypeDefinition {
-          name: table.create_type_name_for_test(well_known_pstrs::UPPER_B),
+          name: table.create_type_name_for_test(PStr::UPPER_B),
           function_type: Type::new_fn_unwrapped(vec![], INT_TYPE),
         },
       ],
       type_definitions: vec![
         TypeDefinition {
-          name: table.create_type_name_for_test(well_known_pstrs::UPPER_C),
+          name: table.create_type_name_for_test(PStr::UPPER_C),
           mappings: TypeDefinitionMappings::Struct(vec![
             INT_TYPE,
-            Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE)),
+            Type::Id(table.create_type_name_for_test(PStr::STR_TYPE)),
           ]),
         },
         TypeDefinition {
-          name: table.create_type_name_for_test(well_known_pstrs::UPPER_D),
+          name: table.create_type_name_for_test(PStr::UPPER_D),
           mappings: TypeDefinitionMappings::Struct(vec![
             INT_TYPE,
-            Type::Id(table.create_type_name_for_test(well_known_pstrs::STR_TYPE)),
+            Type::Id(table.create_type_name_for_test(PStr::STR_TYPE)),
           ]),
         },
         TypeDefinition {
-          name: table.create_type_name_for_test(well_known_pstrs::UPPER_E),
+          name: table.create_type_name_for_test(PStr::UPPER_E),
           mappings: TypeDefinitionMappings::Enum(vec![
             EnumTypeDefinition::Boxed(vec![INT_TYPE]),
             EnumTypeDefinition::Unboxed(INT_TYPE),
@@ -316,21 +313,16 @@ mod tests {
       ],
       main_function_names: vec![],
       functions: vec![Function {
-        name: FunctionName::new_for_test(well_known_pstrs::MAIN_FN),
+        name: FunctionName::new_for_test(PStr::MAIN_FN),
         parameters: vec![],
         type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
         body: vec![Statement::IfElse {
           condition: ONE,
           s1: vec![
-            Statement::binary(
-              well_known_pstrs::UNDERSCORE,
-              crate::ast::hir::Operator::PLUS,
-              ZERO,
-              ZERO,
-            ),
+            Statement::binary(PStr::UNDERSCORE, crate::ast::hir::Operator::PLUS, ZERO, ZERO),
             Statement::Call {
               callee: Callee::FunctionName(FunctionNameExpression {
-                name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+                name: FunctionName::new_for_test(PStr::LOWER_F),
                 type_: Type::new_fn_unwrapped(vec![INT_TYPE], INT_TYPE),
               }),
               arguments: vec![ZERO],
@@ -338,46 +330,39 @@ mod tests {
               return_collector: None,
             },
             Statement::Call {
-              callee: Callee::Variable(VariableName {
-                name: well_known_pstrs::LOWER_F,
-                type_: INT_TYPE,
-              }),
+              callee: Callee::Variable(VariableName { name: PStr::LOWER_F, type_: INT_TYPE }),
               arguments: vec![],
               return_type: INT_TYPE,
               return_collector: None,
             },
             Statement::IndexedAccess {
-              name: well_known_pstrs::UNDERSCORE,
-              type_: Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_B)),
+              name: PStr::UNDERSCORE,
+              type_: Type::Id(table.create_type_name_for_test(PStr::UPPER_B)),
               pointer_expression: ZERO,
               index: 0,
             },
           ],
           s2: vec![
-            Statement::Cast {
-              name: well_known_pstrs::UNDERSCORE,
-              type_: INT_TYPE,
-              assigned_expression: ZERO,
-            },
+            Statement::Cast { name: PStr::UNDERSCORE, type_: INT_TYPE, assigned_expression: ZERO },
             Statement::StructInit {
-              struct_variable_name: well_known_pstrs::UNDERSCORE,
-              type_name: table.create_type_name_for_test(well_known_pstrs::UPPER_D),
+              struct_variable_name: PStr::UNDERSCORE,
+              type_name: table.create_type_name_for_test(PStr::UPPER_D),
               expression_list: vec![ZERO],
             },
             Statement::ClosureInit {
-              closure_variable_name: well_known_pstrs::UNDERSCORE,
-              closure_type_name: table.create_type_name_for_test(well_known_pstrs::UPPER_C),
+              closure_variable_name: PStr::UNDERSCORE,
+              closure_type_name: table.create_type_name_for_test(PStr::UPPER_C),
               function_name: FunctionNameExpression {
-                name: FunctionName::new_for_test(well_known_pstrs::LOWER_F),
+                name: FunctionName::new_for_test(PStr::LOWER_F),
                 type_: Type::new_fn_unwrapped(
-                  vec![Type::Id(table.create_type_name_for_test(well_known_pstrs::UPPER_E))],
+                  vec![Type::Id(table.create_type_name_for_test(PStr::UPPER_E))],
                   INT_TYPE,
                 ),
               },
               context: Expression::var_name(heap.alloc_str_for_test("v"), INT_TYPE),
             },
           ],
-          final_assignments: vec![(well_known_pstrs::UNDERSCORE, INT_TYPE, ZERO, ZERO)],
+          final_assignments: vec![(PStr::UNDERSCORE, INT_TYPE, ZERO, ZERO)],
         }],
         return_value: ZERO,
       }],

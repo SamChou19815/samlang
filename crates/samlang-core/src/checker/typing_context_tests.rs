@@ -11,11 +11,11 @@ mod tests {
       },
       typing_context::{LocalTypingContext, TypingContext},
     },
-    common::{well_known_pstrs, Heap, ModuleReference},
     errors::ErrorSet,
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
+  use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::{HashMap, HashSet};
 
   fn empty_local_typing_context() -> LocalTypingContext {
@@ -60,14 +60,14 @@ mod tests {
       local_scoped_def_locs: HashMap::from([
         (
           Location::from_pos(1, 1, 100, 100),
-          HashMap::from([(well_known_pstrs::LOWER_A, Location::from_pos(1, 2, 3, 4))]),
+          HashMap::from([(PStr::LOWER_A, Location::from_pos(1, 2, 3, 4))]),
         ),
         (Location::from_pos(300, 1, 1000, 1000), HashMap::new()),
         (
           Location::from_pos(10, 10, 50, 50),
           HashMap::from([
-            (well_known_pstrs::LOWER_B, Location::from_pos(5, 6, 7, 8)),
-            (well_known_pstrs::LOWER_C, Location::from_pos(9, 10, 11, 12)),
+            (PStr::LOWER_B, Location::from_pos(5, 6, 7, 8)),
+            (PStr::LOWER_C, Location::from_pos(9, 10, 11, 12)),
           ]),
         ),
       ]),
@@ -93,8 +93,8 @@ mod tests {
       &global_cx,
       &mut local_cx,
       &mut error_set,
-      ModuleReference::dummy(),
-      well_known_pstrs::UPPER_A,
+      ModuleReference::DUMMY,
+      PStr::UPPER_A,
       vec![],
     );
 
@@ -113,10 +113,10 @@ mod tests {
     let mut local_cx = empty_local_typing_context();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       ModuleSignature {
         interfaces: HashMap::from([(
-          well_known_pstrs::UPPER_A,
+          PStr::UPPER_A,
           InterfaceSignature {
             type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
             type_parameters: vec![TypeParameterSignature {
@@ -124,7 +124,7 @@ mod tests {
               bound: None,
             }],
             super_types: vec![builder.general_nominal_type_unwrapped(
-              well_known_pstrs::UPPER_B,
+              PStr::UPPER_B,
               vec![builder.generic_type(heap.alloc_str_for_test("T")), builder.int_type()],
             )],
             functions: HashMap::new(),
@@ -137,47 +137,37 @@ mod tests {
       &global_cx,
       &mut local_cx,
       &mut error_set,
-      ModuleReference::dummy(),
-      well_known_pstrs::UPPER_A,
+      ModuleReference::DUMMY,
+      PStr::UPPER_A,
       vec![],
     );
 
     // Non-id lower type
-    assert!(
-      !cx.is_subtype(&builder.int_type(), &builder.simple_nominal_type(well_known_pstrs::UPPER_B))
-    );
+    assert!(!cx.is_subtype(&builder.int_type(), &builder.simple_nominal_type(PStr::UPPER_B)));
     // Non-existent type
     assert!(!cx.is_subtype(
-      &builder.simple_nominal_type(well_known_pstrs::UPPER_B),
-      &builder.simple_nominal_type(well_known_pstrs::UPPER_C)
+      &builder.simple_nominal_type(PStr::UPPER_B),
+      &builder.simple_nominal_type(PStr::UPPER_C)
     ));
     // Type-args length mismatch
     assert!(!cx.is_subtype(
-      &builder.simple_nominal_type(well_known_pstrs::UPPER_A),
-      &builder.simple_nominal_type(well_known_pstrs::UPPER_B)
+      &builder.simple_nominal_type(PStr::UPPER_A),
+      &builder.simple_nominal_type(PStr::UPPER_B)
     ));
     // Type-args mismatch
     assert!(!cx.is_subtype(
-      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]),
-      &builder.general_nominal_type(
-        well_known_pstrs::UPPER_B,
-        vec![builder.string_type(), builder.int_type()]
-      )
+      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
+      &builder.general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.int_type()])
     ));
     assert!(!cx.is_subtype(
-      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.int_type()]),
-      &builder.general_nominal_type(
-        well_known_pstrs::UPPER_B,
-        vec![builder.string_type(), builder.string_type()]
-      )
+      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type()]),
+      &builder
+        .general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.string_type()])
     ));
     // Good
     assert!(cx.is_subtype(
-      &builder.general_nominal_type(well_known_pstrs::UPPER_A, vec![builder.string_type()]),
-      &builder.general_nominal_type(
-        well_known_pstrs::UPPER_B,
-        vec![builder.string_type(), builder.int_type()]
-      )
+      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.string_type()]),
+      &builder.general_nominal_type(PStr::UPPER_B, vec![builder.string_type(), builder.int_type()])
     ));
   }
 
@@ -188,18 +178,18 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            well_known_pstrs::UPPER_A,
+            PStr::UPPER_A,
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
               type_parameters: vec![
                 TypeParameterSignature { name: heap.alloc_str_for_test("T1"), bound: None },
                 TypeParameterSignature {
                   name: heap.alloc_str_for_test("T2"),
-                  bound: Some(builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_B)),
+                  bound: Some(builder.simple_nominal_type_unwrapped(PStr::UPPER_B)),
                 },
               ],
               super_types: vec![],
@@ -208,11 +198,11 @@ mod tests {
             },
           ),
           (
-            well_known_pstrs::UPPER_B,
+            PStr::UPPER_B,
             InterfaceSignature {
               type_definition: None,
               type_parameters: vec![],
-              super_types: vec![builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_B)],
+              super_types: vec![builder.simple_nominal_type_unwrapped(PStr::UPPER_B)],
               functions: HashMap::new(),
               methods: HashMap::new(),
             },
@@ -224,21 +214,21 @@ mod tests {
       &global_cx,
       &mut local_cx,
       &mut error_set,
-      ModuleReference::dummy(),
-      well_known_pstrs::UPPER_A,
+      ModuleReference::DUMMY,
+      PStr::UPPER_A,
       vec![
         TypeParameterSignature { name: heap.alloc_str_for_test("TPARAM"), bound: None },
         TypeParameterSignature {
           name: heap.alloc_str_for_test("T2"),
-          bound: Some(builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_A)),
+          bound: Some(builder.simple_nominal_type_unwrapped(PStr::UPPER_A)),
         },
       ],
     );
 
     let str_tparam = heap.alloc_str_for_test("TPARAM");
     let str_t = heap.alloc_str_for_test("T");
-    let str_a = well_known_pstrs::UPPER_A;
-    let str_b = well_known_pstrs::UPPER_B;
+    let str_a = PStr::UPPER_A;
+    let str_b = PStr::UPPER_B;
     cx.validate_type_instantiation_allow_abstract_types(&builder.int_type());
     cx.validate_type_instantiation_allow_abstract_types(
       &builder.fun_type(vec![builder.int_type()], builder.bool_type()),
@@ -290,16 +280,16 @@ Found 3 errors.
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            well_known_pstrs::UPPER_A,
+            PStr::UPPER_A,
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature::Enum(vec![])),
               type_parameters: vec![
-                TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
-                TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
+                TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+                TypeParameterSignature { name: PStr::UPPER_B, bound: None },
               ],
               super_types: vec![],
               functions: HashMap::from([
@@ -307,41 +297,38 @@ Found 3 errors.
                   heap.alloc_str_for_test("f1"),
                   vec![],
                   builder.int_type(),
-                  vec![well_known_pstrs::UPPER_C],
+                  vec![PStr::UPPER_C],
                 ),
                 MemberSignature::create_private_builtin_function(
                   heap.alloc_str_for_test("f2"),
                   vec![],
                   builder.int_type(),
-                  vec![well_known_pstrs::UPPER_C],
+                  vec![PStr::UPPER_C],
                 ),
               ]),
               methods: HashMap::from([
                 MemberSignature::create_builtin_function(
                   heap.alloc_str_for_test("m1"),
-                  vec![
-                    builder.generic_type(well_known_pstrs::UPPER_A),
-                    builder.generic_type(well_known_pstrs::UPPER_B),
-                  ],
+                  vec![builder.generic_type(PStr::UPPER_A), builder.generic_type(PStr::UPPER_B)],
                   builder.int_type(),
-                  vec![well_known_pstrs::UPPER_C],
+                  vec![PStr::UPPER_C],
                 ),
                 MemberSignature::create_builtin_function(
                   heap.alloc_str_for_test("m2"),
                   vec![],
                   builder.int_type(),
-                  vec![well_known_pstrs::UPPER_C],
+                  vec![PStr::UPPER_C],
                 ),
               ]),
             },
           ),
           (
-            well_known_pstrs::UPPER_B,
+            PStr::UPPER_B,
             InterfaceSignature {
               type_definition: None,
               type_parameters: vec![
-                TypeParameterSignature { name: well_known_pstrs::UPPER_E, bound: None },
-                TypeParameterSignature { name: well_known_pstrs::UPPER_F, bound: None },
+                TypeParameterSignature { name: PStr::UPPER_E, bound: None },
+                TypeParameterSignature { name: PStr::UPPER_F, bound: None },
               ],
               super_types: vec![],
               functions: HashMap::from([
@@ -349,13 +336,13 @@ Found 3 errors.
                   heap.alloc_str_for_test("f1"),
                   vec![],
                   builder.int_type(),
-                  vec![well_known_pstrs::UPPER_C],
+                  vec![PStr::UPPER_C],
                 ),
                 MemberSignature::create_private_builtin_function(
                   heap.alloc_str_for_test("f2"),
                   vec![],
                   builder.int_type(),
-                  vec![well_known_pstrs::UPPER_C],
+                  vec![PStr::UPPER_C],
                 ),
               ]),
               methods: HashMap::from([
@@ -363,13 +350,13 @@ Found 3 errors.
                   heap.alloc_str_for_test("m1"),
                   vec![],
                   builder.int_type(),
-                  vec![well_known_pstrs::UPPER_C],
+                  vec![PStr::UPPER_C],
                 ),
                 MemberSignature::create_private_builtin_function(
                   heap.alloc_str_for_test("m2"),
                   vec![],
                   builder.int_type(),
-                  vec![well_known_pstrs::UPPER_C],
+                  vec![PStr::UPPER_C],
                 ),
               ]),
             },
@@ -381,12 +368,12 @@ Found 3 errors.
       &global_cx,
       &mut local_cx,
       &mut error_set,
-      ModuleReference::dummy(),
-      well_known_pstrs::UPPER_A,
+      ModuleReference::DUMMY,
+      PStr::UPPER_A,
       vec![
         TypeParameterSignature {
           name: heap.alloc_str_for_test("TT1"),
-          bound: Some(builder.simple_nominal_type_unwrapped(well_known_pstrs::UPPER_A)),
+          bound: Some(builder.simple_nominal_type_unwrapped(PStr::UPPER_A)),
         },
         TypeParameterSignature { name: heap.alloc_str_for_test("TT2"), bound: None },
         TypeParameterSignature {
@@ -398,10 +385,10 @@ Found 3 errors.
       ],
     );
 
-    assert!(!cx.class_exists(ModuleReference::dummy(), heap.alloc_str_for_test("s")));
+    assert!(!cx.class_exists(ModuleReference::DUMMY, heap.alloc_str_for_test("s")));
     assert!(!cx.class_exists(
       heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-      well_known_pstrs::UPPER_A
+      PStr::UPPER_A
     ));
     assert!(cx
       .get_method_type(
@@ -409,7 +396,7 @@ Found 3 errors.
           reason: Reason::dummy(),
           is_class_statics: true,
           module_reference: heap.alloc_module_reference_from_string_vec(vec!["A".to_string()]),
-          id: well_known_pstrs::UPPER_A,
+          id: PStr::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f1"),
@@ -421,8 +408,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_A,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f1"),
@@ -434,8 +421,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_A,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f2"),
@@ -447,8 +434,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_A,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f3"),
@@ -460,8 +447,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_A,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m1"),
@@ -473,8 +460,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_A,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m2"),
@@ -486,8 +473,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_A,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m3"),
@@ -499,8 +486,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_B,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f1"),
@@ -512,8 +499,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_B,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f2"),
@@ -525,8 +512,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_B,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f3"),
@@ -538,8 +525,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_B,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m1"),
@@ -551,8 +538,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_B,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m2"),
@@ -564,8 +551,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_B,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m3"),
@@ -577,8 +564,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_B,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m2"),
@@ -590,8 +577,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_B,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_B,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m3"),
@@ -603,8 +590,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_C,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_C,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("m3"),
@@ -618,8 +605,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: false,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_A,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_A,
           type_arguments: vec![builder.int_type(), builder.int_type()]
         },
         heap.alloc_str_for_test("m1"),
@@ -634,8 +621,8 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
-          id: well_known_pstrs::UPPER_A,
+          module_reference: ModuleReference::DUMMY,
+          id: PStr::UPPER_A,
           type_arguments: vec![]
         },
         heap.alloc_str_for_test("f2"),
@@ -650,7 +637,7 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("TT2"),
           type_arguments: vec![]
         },
@@ -663,7 +650,7 @@ Found 3 errors.
         &NominalType {
           reason: Reason::dummy(),
           is_class_statics: true,
-          module_reference: ModuleReference::dummy(),
+          module_reference: ModuleReference::DUMMY,
           id: heap.alloc_str_for_test("TT3"),
           type_arguments: vec![]
         },
@@ -680,25 +667,25 @@ Found 3 errors.
     let heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let global_cx = HashMap::from([(
-      ModuleReference::dummy(),
+      ModuleReference::DUMMY,
       ModuleSignature {
         interfaces: HashMap::from([
           (
-            well_known_pstrs::UPPER_A,
+            PStr::UPPER_A,
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature::Enum(vec![
                 EnumVariantDefinitionSignature {
-                  name: well_known_pstrs::LOWER_A,
-                  types: vec![builder.generic_type(well_known_pstrs::UPPER_A)],
+                  name: PStr::LOWER_A,
+                  types: vec![builder.generic_type(PStr::UPPER_A)],
                 },
                 EnumVariantDefinitionSignature {
-                  name: well_known_pstrs::LOWER_B,
-                  types: vec![builder.generic_type(well_known_pstrs::UPPER_B)],
+                  name: PStr::LOWER_B,
+                  types: vec![builder.generic_type(PStr::UPPER_B)],
                 },
               ])),
               type_parameters: vec![
-                TypeParameterSignature { name: well_known_pstrs::UPPER_A, bound: None },
-                TypeParameterSignature { name: well_known_pstrs::UPPER_B, bound: None },
+                TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+                TypeParameterSignature { name: PStr::UPPER_B, bound: None },
               ],
               super_types: vec![],
               functions: HashMap::new(),
@@ -706,12 +693,12 @@ Found 3 errors.
             },
           ),
           (
-            well_known_pstrs::UPPER_B,
+            PStr::UPPER_B,
             InterfaceSignature {
               type_definition: Some(TypeDefinitionSignature::Struct(vec![])),
               type_parameters: vec![
-                TypeParameterSignature { name: well_known_pstrs::UPPER_E, bound: None },
-                TypeParameterSignature { name: well_known_pstrs::UPPER_F, bound: None },
+                TypeParameterSignature { name: PStr::UPPER_E, bound: None },
+                TypeParameterSignature { name: PStr::UPPER_F, bound: None },
               ],
               super_types: vec![],
               functions: HashMap::new(),
@@ -725,35 +712,31 @@ Found 3 errors.
       &global_cx,
       &mut local_cx,
       &mut error_set,
-      ModuleReference::dummy(),
-      well_known_pstrs::UPPER_A,
+      ModuleReference::DUMMY,
+      PStr::UPPER_A,
       vec![],
     );
 
     assert!(cx.resolve_struct_definitions(&builder.bool_type()).is_empty());
     assert!(cx
-      .resolve_struct_definitions(&builder.general_nominal_type(
-        well_known_pstrs::UPPER_A,
-        vec![builder.int_type(), builder.int_type()]
-      ))
+      .resolve_struct_definitions(
+        &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type(), builder.int_type()])
+      )
       .is_empty());
     assert!(cx
-      .resolve_struct_definitions(&builder.general_nominal_type(
-        well_known_pstrs::UPPER_A,
-        vec![builder.int_type(), builder.int_type()]
-      ))
+      .resolve_struct_definitions(
+        &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type(), builder.int_type()])
+      )
       .is_empty());
     assert!(cx
-      .resolve_struct_definitions(&builder.general_nominal_type(
-        well_known_pstrs::UPPER_C,
-        vec![builder.int_type(), builder.int_type()]
-      ))
+      .resolve_struct_definitions(
+        &builder.general_nominal_type(PStr::UPPER_C, vec![builder.int_type(), builder.int_type()])
+      )
       .is_empty());
 
-    let resolved = cx.resolve_enum_definitions(&builder.general_nominal_type(
-      well_known_pstrs::UPPER_A,
-      vec![builder.int_type(), builder.int_type()],
-    ));
+    let resolved = cx.resolve_enum_definitions(
+      &builder.general_nominal_type(PStr::UPPER_A, vec![builder.int_type(), builder.int_type()]),
+    );
     assert_eq!(2, resolved.len());
     let resolved_a = &resolved[0];
     let resolved_b = &resolved[1];
