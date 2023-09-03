@@ -1,5 +1,4 @@
 use super::{
-  checker_utils::{solve_multiple_type_constrains, TypeConstraint, TypeConstraintSolution},
   global_signature,
   ssa_analysis::perform_ssa_analysis_on_module,
   type_::{
@@ -17,7 +16,6 @@ use crate::{
     },
     Description, Location, Reason,
   },
-  checker::checker_utils::solve_type_constraints,
   errors::{ErrorSet, StackableError, TypeIncompatibilityNode},
 };
 use itertools::Itertools;
@@ -129,16 +127,16 @@ fn solve_type_arguments(
   for (generic_type, concrete_type) in
     generic_function_type.argument_types.iter().zip(argument_types)
   {
-    constraints.push(TypeConstraint { concrete_type, generic_type });
+    constraints.push(type_system::TypeConstraint { concrete_type, generic_type });
   }
   if let Some(return_hint) = valid_return_type_hint {
-    constraints.push(TypeConstraint {
+    constraints.push(type_system::TypeConstraint {
       concrete_type: return_hint,
       generic_type: &generic_function_type.return_type,
     })
   }
   let mut partially_solved_substitution =
-    solve_multiple_type_constrains(&constraints, type_parameter_signatures);
+    type_system::solve_multiple_type_constrains(&constraints, type_parameter_signatures);
   for type_parameter in type_parameter_signatures {
     partially_solved_substitution
       .entry(type_parameter.name)
@@ -436,11 +434,11 @@ fn check_member_with_unresolved_tparams(
       if let Type::Fn(fun_hint) = hint {
         if fun_hint.argument_types.len() == method_type_info.type_.argument_types.len() {
           // Hint matches the shape and can be useful.
-          let TypeConstraintSolution {
+          let type_system::TypeConstraintSolution {
             solved_generic_type,
             solved_substitution,
             solved_contextually_typed_concrete_type: _,
-          } = solve_type_constraints(
+          } = type_system::solve_type_constraints(
             hint,
             &Type::Fn(method_type_info.type_.clone()),
             &method_type_info.type_parameters,
@@ -654,16 +652,19 @@ fn check_function_call_implicit_instantiation(
   for (generic_type, concrete_type) in
     generic_function_type.argument_types.iter().zip(&checked_argument_types)
   {
-    final_phase_arguments_constraints.push(TypeConstraint { generic_type, concrete_type });
+    final_phase_arguments_constraints
+      .push(type_system::TypeConstraint { generic_type, concrete_type });
   }
   if let Some(return_hint) = valid_return_type_hint {
-    final_phase_arguments_constraints.push(TypeConstraint {
+    final_phase_arguments_constraints.push(type_system::TypeConstraint {
       concrete_type: return_hint,
       generic_type: &generic_function_type.return_type,
     })
   }
-  let mut fully_solved_substitution =
-    solve_multiple_type_constrains(&final_phase_arguments_constraints, type_parameters);
+  let mut fully_solved_substitution = type_system::solve_multiple_type_constrains(
+    &final_phase_arguments_constraints,
+    type_parameters,
+  );
   let still_unresolved_type_parameters = type_parameters
     .iter()
     .filter(|it| !fully_solved_substitution.contains_key(&it.name))
