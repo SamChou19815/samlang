@@ -117,38 +117,6 @@ impl PartialOrd for PStrPrivateRepr {
 /// A string pointer free to be copied. However, we have to do GC manually.
 pub struct PStr(PStrPrivateRepr);
 
-macro_rules! concat_arrays {
-  ($( $array:expr ),*) => ({
-      const __ARRAY_SIZE__: usize = 0 $(+ $array.len())*;
-
-      #[repr(C)]
-      struct ArrayConcatDecomposed<T>($([T; $array.len()]),*);
-
-      #[repr(C)]
-      union ArrayConcatComposed<T, const N: usize> {
-          full: core::mem::ManuallyDrop<[T; N]>,
-          decomposed: core::mem::ManuallyDrop<ArrayConcatDecomposed<T>>,
-      }
-
-      let composed = ArrayConcatComposed { decomposed: core::mem::ManuallyDrop::new(ArrayConcatDecomposed ( $($array),* ))};
-
-      // SAFETY: Sizes of both fields in composed are the same so this assignment should be sound
-      core::mem::ManuallyDrop::into_inner(unsafe { composed.full })
-  });
-}
-
-macro_rules! const_inline_pstr {
-  ($array:expr, $pad: expr) => {{
-    const __PAD_ARRAY_SIZE__: usize = 7 - $array.len();
-    PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline {
-        size: $array.len() as u8,
-        storage: concat_arrays!($array, [0; $pad]),
-      },
-    })
-  }};
-}
-
 impl PStr {
   pub fn as_str<'a>(&'a self, heap: &'a Heap) -> &'a str {
     self.0.as_inline_str().unwrap_or_else(|id| &heap.str_pointer_table[id as usize])
@@ -158,81 +126,158 @@ impl PStr {
     PStrPrivateRepr::from_str_opt(s).map(PStr)
   }
 
+  pub const fn one_letter_literal(c: char) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline { size: 1, storage: [c as u8, 0, 0, 0, 0, 0, 0] },
+    })
+  }
+
+  pub const fn two_letter_literal(bytes: &[u8; 2]) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline { size: 2, storage: [bytes[0], bytes[1], 0, 0, 0, 0, 0] },
+    })
+  }
+
+  pub const fn three_letter_literal(bytes: &[u8; 3]) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline {
+        size: 3,
+        storage: [bytes[0], bytes[1], bytes[2], 0, 0, 0, 0],
+      },
+    })
+  }
+
+  pub const fn four_letter_literal(bytes: &[u8; 4]) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline {
+        size: 4,
+        storage: [bytes[0], bytes[1], bytes[2], bytes[3], 0, 0, 0],
+      },
+    })
+  }
+
+  pub const fn five_letter_literal(bytes: &[u8; 5]) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline {
+        size: 5,
+        storage: [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], 0, 0],
+      },
+    })
+  }
+
+  pub const fn six_letter_literal(bytes: &[u8; 6]) -> PStr {
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline {
+        size: 6,
+        storage: [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], 0],
+      },
+    })
+  }
+
+  pub const fn seven_letter_literal(bytes: &[u8; 7]) -> PStr {
+    PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 7, storage: *bytes } })
+  }
+
   pub const INVALID_PSTR: PStr = PStr(PStrPrivateRepr { heap_id: u64::MAX });
-  pub const EMPTY: PStr = const_inline_pstr!(*b"", 7);
+  pub const EMPTY: PStr =
+    PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 7] } });
 
-  pub const DUMMY_MODULE: PStr = const_inline_pstr!(*b"DUMMY", 2);
-  pub const STR_TYPE: PStr = const_inline_pstr!(*b"Str", 4);
-  pub const MAIN_TYPE: PStr = const_inline_pstr!(*b"Main", 3);
-  pub const MAIN_FN: PStr = const_inline_pstr!(*b"main", 3);
-  pub const PROCESS_TYPE: PStr = const_inline_pstr!(*b"Process", 0);
-  pub const CONCAT: PStr = const_inline_pstr!(*b"concat", 1);
-  pub const TO_INT: PStr = const_inline_pstr!(*b"toInt", 2);
-  pub const FROM_INT: PStr = const_inline_pstr!(*b"fromInt", 0);
-  pub const PRINTLN: PStr = const_inline_pstr!(*b"println", 0);
-  pub const PANIC: PStr = const_inline_pstr!(*b"panic", 2);
-  pub const MALLOC_FN: PStr = const_inline_pstr!(*b"malloc", 1);
-  pub const FREE_FN: PStr = const_inline_pstr!(*b"free", 3);
-  pub const INC_REF_FN: PStr = const_inline_pstr!(*b"inc_ref", 0);
-  pub const DEC_REF_FN: PStr = const_inline_pstr!(*b"dec_ref", 0);
-  pub const INIT: PStr = const_inline_pstr!(*b"init", 3);
-  pub const THIS: PStr = const_inline_pstr!(*b"this", 3);
+  pub const DUMMY_MODULE: PStr = Self::five_letter_literal(b"DUMMY");
+  pub const MISSING: PStr = Self::seven_letter_literal(b"MISSING");
+  pub const STR_TYPE: PStr = Self::three_letter_literal(b"Str");
+  pub const MAIN_TYPE: PStr = Self::four_letter_literal(b"Main");
+  pub const MAIN_FN: PStr = Self::four_letter_literal(b"main");
+  pub const PROCESS_TYPE: PStr = Self::seven_letter_literal(b"Process");
+  pub const CONCAT: PStr = Self::six_letter_literal(b"concat");
+  pub const TO_INT: PStr = Self::five_letter_literal(b"toInt");
+  pub const FROM_INT: PStr = Self::seven_letter_literal(b"fromInt");
+  pub const PRINTLN: PStr = Self::seven_letter_literal(b"println");
+  pub const PANIC: PStr = Self::five_letter_literal(b"panic");
+  pub const MALLOC_FN: PStr = Self::six_letter_literal(b"malloc");
+  pub const FREE_FN: PStr = Self::four_letter_literal(b"free");
+  pub const INC_REF_FN: PStr = Self::seven_letter_literal(b"inc_ref");
+  pub const DEC_REF_FN: PStr = Self::seven_letter_literal(b"dec_ref");
+  pub const INIT: PStr = Self::four_letter_literal(b"init");
+  pub const THIS: PStr = Self::four_letter_literal(b"this");
 
-  pub const STD: PStr = const_inline_pstr!(*b"std", 4);
-  pub const TUPLES: PStr = const_inline_pstr!(*b"tuples", 1);
-  pub const PAIR: PStr = const_inline_pstr!(*b"Pair", 3);
-  pub const TRIPLE: PStr = const_inline_pstr!(*b"Triple", 1);
-  pub const TUPLE_4: PStr = const_inline_pstr!(*b"Tuple4", 1);
-  pub const TUPLE_5: PStr = const_inline_pstr!(*b"Tuple5", 1);
-  pub const TUPLE_6: PStr = const_inline_pstr!(*b"Tuple6", 1);
-  pub const TUPLE_7: PStr = const_inline_pstr!(*b"Tuple7", 1);
-  pub const TUPLE_8: PStr = const_inline_pstr!(*b"Tuple8", 1);
-  pub const TUPLE_9: PStr = const_inline_pstr!(*b"Tuple9", 1);
-  pub const TUPLE_10: PStr = const_inline_pstr!(*b"Tuple10", 0);
-  pub const TUPLE_11: PStr = const_inline_pstr!(*b"Tuple11", 0);
-  pub const TUPLE_12: PStr = const_inline_pstr!(*b"Tuple12", 0);
-  pub const TUPLE_13: PStr = const_inline_pstr!(*b"Tuple13", 0);
-  pub const TUPLE_14: PStr = const_inline_pstr!(*b"Tuple14", 0);
-  pub const TUPLE_15: PStr = const_inline_pstr!(*b"Tuple15", 0);
-  pub const TUPLE_16: PStr = const_inline_pstr!(*b"Tuple16", 0);
+  pub const STD: PStr = Self::three_letter_literal(b"std");
+  pub const TUPLES: PStr = Self::six_letter_literal(b"tuples");
+  pub const PAIR: PStr = Self::four_letter_literal(b"Pair");
+  pub const TRIPLE: PStr = Self::six_letter_literal(b"Triple");
+  pub const TUPLE_4: PStr = Self::six_letter_literal(b"Tuple4");
+  pub const TUPLE_5: PStr = Self::six_letter_literal(b"Tuple5");
+  pub const TUPLE_6: PStr = Self::six_letter_literal(b"Tuple6");
+  pub const TUPLE_7: PStr = Self::six_letter_literal(b"Tuple7");
+  pub const TUPLE_8: PStr = Self::six_letter_literal(b"Tuple8");
+  pub const TUPLE_9: PStr = Self::six_letter_literal(b"Tuple9");
+  pub const TUPLE_10: PStr = Self::seven_letter_literal(b"Tuple10");
+  pub const TUPLE_11: PStr = Self::seven_letter_literal(b"Tuple11");
+  pub const TUPLE_12: PStr = Self::seven_letter_literal(b"Tuple12");
+  pub const TUPLE_13: PStr = Self::seven_letter_literal(b"Tuple13");
+  pub const TUPLE_14: PStr = Self::seven_letter_literal(b"Tuple14");
+  pub const TUPLE_15: PStr = Self::seven_letter_literal(b"Tuple15");
+  pub const TUPLE_16: PStr = Self::seven_letter_literal(b"Tuple16");
 
-  pub const UNDERSCORE: PStr = const_inline_pstr!(*b"_", 6);
-  pub const UNDERSCORE_THIS: PStr = const_inline_pstr!(*b"_this", 2);
-  pub const UNDERSCORE_TMP: PStr = const_inline_pstr!(*b"_tmp", 3);
-  pub const UNDERSCORE_STR: PStr = const_inline_pstr!(*b"_Str", 3);
-  pub const UNDERSCORE_GENERATED_FN: PStr = const_inline_pstr!(*b"_GenFn", 1);
-  pub const UNDERSCORE_GENERATED_TYPE: PStr = const_inline_pstr!(*b"_GenT", 2);
+  pub const UNDERSCORE: PStr = Self::one_letter_literal('_');
+  pub const UNDERSCORE_THIS: PStr = Self::five_letter_literal(b"_this");
+  pub const UNDERSCORE_TMP: PStr = Self::four_letter_literal(b"_tmp");
+  pub const UNDERSCORE_STR: PStr = Self::four_letter_literal(b"_Str");
+  pub const UNDERSCORE_GENERATED_FN: PStr = Self::six_letter_literal(b"_GenFn");
+  pub const UNDERSCORE_GENERATED_TYPE: PStr = Self::five_letter_literal(b"_GenT");
 
-  pub const UPPER_A: PStr = const_inline_pstr!(*b"A", 6);
-  pub const UPPER_B: PStr = const_inline_pstr!(*b"B", 6);
-  pub const UPPER_C: PStr = const_inline_pstr!(*b"C", 6);
-  pub const UPPER_D: PStr = const_inline_pstr!(*b"D", 6);
-  pub const UPPER_E: PStr = const_inline_pstr!(*b"E", 6);
-  pub const UPPER_F: PStr = const_inline_pstr!(*b"F", 6);
-  pub const UPPER_G: PStr = const_inline_pstr!(*b"G", 6);
-  pub const UPPER_H: PStr = const_inline_pstr!(*b"H", 6);
-  pub const UPPER_I: PStr = const_inline_pstr!(*b"I", 6);
-  pub const UPPER_J: PStr = const_inline_pstr!(*b"J", 6);
-  pub const UPPER_T: PStr = const_inline_pstr!(*b"T", 6);
+  pub const UPPER_A: PStr = Self::one_letter_literal('A');
+  pub const UPPER_B: PStr = Self::one_letter_literal('B');
+  pub const UPPER_C: PStr = Self::one_letter_literal('C');
+  pub const UPPER_D: PStr = Self::one_letter_literal('D');
+  pub const UPPER_E: PStr = Self::one_letter_literal('E');
+  pub const UPPER_F: PStr = Self::one_letter_literal('F');
+  pub const UPPER_G: PStr = Self::one_letter_literal('G');
+  pub const UPPER_H: PStr = Self::one_letter_literal('H');
+  pub const UPPER_I: PStr = Self::one_letter_literal('I');
+  pub const UPPER_J: PStr = Self::one_letter_literal('J');
+  pub const UPPER_K: PStr = Self::one_letter_literal('K');
+  pub const UPPER_L: PStr = Self::one_letter_literal('L');
+  pub const UPPER_M: PStr = Self::one_letter_literal('M');
+  pub const UPPER_N: PStr = Self::one_letter_literal('N');
+  pub const UPPER_O: PStr = Self::one_letter_literal('O');
+  pub const UPPER_P: PStr = Self::one_letter_literal('P');
+  pub const UPPER_Q: PStr = Self::one_letter_literal('Q');
+  pub const UPPER_R: PStr = Self::one_letter_literal('R');
+  pub const UPPER_S: PStr = Self::one_letter_literal('S');
+  pub const UPPER_T: PStr = Self::one_letter_literal('T');
+  pub const UPPER_U: PStr = Self::one_letter_literal('U');
+  pub const UPPER_V: PStr = Self::one_letter_literal('V');
+  pub const UPPER_W: PStr = Self::one_letter_literal('W');
+  pub const UPPER_X: PStr = Self::one_letter_literal('X');
+  pub const UPPER_Y: PStr = Self::one_letter_literal('Y');
+  pub const UPPER_Z: PStr = Self::one_letter_literal('Z');
 
-  pub const LOWER_A: PStr = const_inline_pstr!(*b"a", 6);
-  pub const LOWER_B: PStr = const_inline_pstr!(*b"b", 6);
-  pub const LOWER_C: PStr = const_inline_pstr!(*b"c", 6);
-  pub const LOWER_D: PStr = const_inline_pstr!(*b"d", 6);
-  pub const LOWER_E: PStr = const_inline_pstr!(*b"e", 6);
-  pub const LOWER_F: PStr = const_inline_pstr!(*b"f", 6);
-  pub const LOWER_G: PStr = const_inline_pstr!(*b"g", 6);
-  pub const LOWER_H: PStr = const_inline_pstr!(*b"h", 6);
-  pub const LOWER_I: PStr = const_inline_pstr!(*b"i", 6);
-  pub const LOWER_J: PStr = const_inline_pstr!(*b"j", 6);
-  pub const LOWER_K: PStr = const_inline_pstr!(*b"k", 6);
-  pub const LOWER_L: PStr = const_inline_pstr!(*b"l", 6);
-  pub const LOWER_M: PStr = const_inline_pstr!(*b"m", 6);
-  pub const LOWER_N: PStr = const_inline_pstr!(*b"n", 6);
-  pub const LOWER_O: PStr = const_inline_pstr!(*b"o", 6);
-  pub const LOWER_P: PStr = const_inline_pstr!(*b"p", 6);
-  pub const LOWER_Q: PStr = const_inline_pstr!(*b"q", 6);
-  pub const LOWER_V: PStr = const_inline_pstr!(*b"v", 6);
+  pub const LOWER_A: PStr = Self::one_letter_literal('a');
+  pub const LOWER_B: PStr = Self::one_letter_literal('b');
+  pub const LOWER_C: PStr = Self::one_letter_literal('c');
+  pub const LOWER_D: PStr = Self::one_letter_literal('d');
+  pub const LOWER_E: PStr = Self::one_letter_literal('e');
+  pub const LOWER_F: PStr = Self::one_letter_literal('f');
+  pub const LOWER_G: PStr = Self::one_letter_literal('g');
+  pub const LOWER_H: PStr = Self::one_letter_literal('h');
+  pub const LOWER_I: PStr = Self::one_letter_literal('i');
+  pub const LOWER_J: PStr = Self::one_letter_literal('j');
+  pub const LOWER_K: PStr = Self::one_letter_literal('k');
+  pub const LOWER_L: PStr = Self::one_letter_literal('l');
+  pub const LOWER_M: PStr = Self::one_letter_literal('m');
+  pub const LOWER_N: PStr = Self::one_letter_literal('n');
+  pub const LOWER_O: PStr = Self::one_letter_literal('o');
+  pub const LOWER_P: PStr = Self::one_letter_literal('p');
+  pub const LOWER_Q: PStr = Self::one_letter_literal('q');
+  pub const LOWER_R: PStr = Self::one_letter_literal('r');
+  pub const LOWER_S: PStr = Self::one_letter_literal('s');
+  pub const LOWER_T: PStr = Self::one_letter_literal('t');
+  pub const LOWER_U: PStr = Self::one_letter_literal('u');
+  pub const LOWER_V: PStr = Self::one_letter_literal('v');
+  pub const LOWER_W: PStr = Self::one_letter_literal('w');
+  pub const LOWER_X: PStr = Self::one_letter_literal('x');
+  pub const LOWER_Y: PStr = Self::one_letter_literal('y');
+  pub const LOWER_Z: PStr = Self::one_letter_literal('z');
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -345,12 +390,6 @@ impl Heap {
     }
   }
 
-  pub fn alloc_str_permanent(&mut self, s: &'static str) -> PStr {
-    self.alloc_str_internal(s)
-  }
-
-  // TODO
-  // #[cfg(test)]
   pub fn alloc_str_for_test(&mut self, s: &'static str) -> PStr {
     self.alloc_str_internal(s)
   }
@@ -455,10 +494,8 @@ impl Heap {
   }
 
   pub fn alloc_module_reference_from_string_vec(&mut self, parts: Vec<String>) -> ModuleReference {
-    let parts = parts
-      .into_iter()
-      .map(|p| self.alloc_str_permanent(Self::make_string_static(p)))
-      .collect_vec();
+    let parts =
+      parts.into_iter().map(|p| self.alloc_str_internal(Self::make_string_static(p))).collect_vec();
     self.alloc_module_reference(parts)
   }
 
@@ -651,12 +688,24 @@ mod tests {
   fn pstr_comparison() {
     let heap = &mut Heap::new();
     let s1 = PStr::LOWER_A;
-    let s2 = heap.alloc_str_permanent("dfsdadasdasdasdasdasdasdasd");
+    let s2 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdasd");
 
     assert!(s1 <= s1);
     assert!(s1 <= s2);
     assert!(s2 >= s2);
     assert!(s2 >= s1);
+  }
+
+  #[test]
+  fn pstr_const_ctor_fns() {
+    let heap = &Heap::new();
+    assert_eq!("a", PStr::one_letter_literal('a').as_str(heap));
+    assert_eq!("aa", PStr::two_letter_literal(b"aa").as_str(heap));
+    assert_eq!("aaa", PStr::three_letter_literal(b"aaa").as_str(heap));
+    assert_eq!("aaaa", PStr::four_letter_literal(b"aaaa").as_str(heap));
+    assert_eq!("aaaaa", PStr::five_letter_literal(b"aaaaa").as_str(heap));
+    assert_eq!("aaaaaa", PStr::six_letter_literal(b"aaaaaa").as_str(heap));
+    assert_eq!("aaaaaaa", PStr::seven_letter_literal(b"aaaaaaa").as_str(heap));
   }
 
   #[test]
@@ -680,15 +729,15 @@ mod tests {
     let heap = &mut Heap::new();
     let s1 = heap.alloc_string("dfsdadasdasdasdasdasdasdasd".to_string());
     assert_eq!("dfsdadasdasdasdasdasdasdasd", s1.as_str(heap));
-    let s2 = heap.alloc_str_permanent("dfsdadasdasdasdasdasdasdasd");
+    let s2 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdasd");
     assert_eq!(s1, s2);
   }
 
   #[test]
   fn heap_alloc_permanent_before_regular_string() {
     let heap = &mut Heap::new();
-    let s1 = heap.alloc_str_permanent("dfsdadasdasdasdasdasdasdasd");
-    let s2 = heap.alloc_str_permanent("dfsdadasdasdasdasdasdasdasd");
+    let s1 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdasd");
+    let s2 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdasd");
     let s3 = heap.alloc_string("dfsdadasdasdasdasdasdasdasd".to_string());
     assert_eq!(s1, s2);
     assert_eq!(s1, s3);
