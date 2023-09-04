@@ -1,5 +1,5 @@
 use crate::{ast::hir::Operator, ast::mir::*};
-use samlang_collections::LocalStackedContext;
+use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::PStr;
 use std::ops::{Deref, DerefMut};
 

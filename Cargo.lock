@@ -128,6 +128,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fplist"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cadb436ce55a7716dd5b977b93a79a819a9b9bbc5746ba9e607cd389836aa8f"
+
+[[package]]
 name = "futures"
 version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -552,7 +558,7 @@ dependencies = [
 name = "samlang-collections"
 version = "0.8.0"
 dependencies = [
- "itertools",
+ "fplist",
  "pretty_assertions",
 ]
 

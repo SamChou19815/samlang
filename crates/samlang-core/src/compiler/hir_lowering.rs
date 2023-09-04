@@ -12,7 +12,7 @@ use crate::{
   checker::type_,
 };
 use itertools::Itertools;
-use samlang_collections::LocalStackedContext;
+use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, ModuleReference, PStr};
 use std::{
   collections::{HashMap, HashSet},
