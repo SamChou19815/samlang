@@ -1,7 +1,13 @@
-use super::type_::{FunctionType, ISourceType, NominalType, Type};
-use crate::errors::{StackableError, TypeIncompatibilityNode};
+use super::type_::{FunctionType, ISourceType, NominalType, Type, TypeParameterSignature};
+use crate::{
+  ast::Reason,
+  errors::{ErrorSet, StackableError, TypeIncompatibilityNode},
+};
 use samlang_heap::PStr;
-use std::{collections::HashMap, rc::Rc};
+use std::{
+  collections::{HashMap, HashSet},
+  rc::Rc,
+};
 
 pub(super) fn contains_placeholder(type_: &Type) -> bool {
   match type_ {
@@ -182,6 +188,113 @@ pub(super) fn subst_fn_type(t: &FunctionType, mapping: &HashMap<PStr, Rc<Type>>)
   }
 }
 
+fn solve_type_constraints_internal(
+  concrete: &Type,
+  generic: &Type,
+  type_parameters: &HashSet<PStr>,
+  partially_solved: &mut HashMap<PStr, Rc<Type>>,
+) {
+  match generic {
+    Type::Any(_, _) | Type::Primitive(_, _) => {}
+    Type::Nominal(g) => {
+      if let Type::Nominal(c) = concrete {
+        if g.module_reference == c.module_reference
+          && g.id == c.id
+          && g.type_arguments.len() == c.type_arguments.len()
+        {
+          for (g_targ, c_targ) in g.type_arguments.iter().zip(&c.type_arguments) {
+            solve_type_constraints_internal(c_targ, g_targ, type_parameters, partially_solved);
+          }
+        }
+      }
+    }
+    Type::Generic(_, id) => {
+      if type_parameters.contains(id) && !partially_solved.contains_key(id) {
+        // Placeholder types, which might come from expressions that need to be contextually typed (e.g. lambda),
+        // do not participate in constraint solving.
+        if !contains_placeholder(concrete) {
+          partially_solved.insert(*id, Rc::new(concrete.clone()));
+        }
+      }
+    }
+    Type::Fn(g) => {
+      if let Type::Fn(c) = concrete {
+        for (g_arg, c_arg) in g.argument_types.iter().zip(&c.argument_types) {
+          solve_type_constraints_internal(c_arg, g_arg, type_parameters, partially_solved);
+        }
+        solve_type_constraints_internal(
+          &c.return_type,
+          &g.return_type,
+          type_parameters,
+          partially_solved,
+        )
+      }
+    }
+  }
+}
+
+pub(super) struct TypeConstraint<'a> {
+  pub(super) concrete_type: &'a Type,
+  pub(super) generic_type: &'a Type,
+}
+
+pub(super) fn solve_multiple_type_constrains(
+  constraints: &Vec<TypeConstraint>,
+  type_parameter_signatures: &Vec<TypeParameterSignature>,
+) -> HashMap<PStr, Rc<Type>> {
+  let mut partially_solved = HashMap::new();
+  let mut type_parameters = HashSet::new();
+  for sig in type_parameter_signatures {
+    type_parameters.insert(sig.name);
+  }
+  for TypeConstraint { concrete_type, generic_type } in constraints {
+    solve_type_constraints_internal(
+      concrete_type,
+      generic_type,
+      &type_parameters,
+      &mut partially_solved,
+    )
+  }
+  partially_solved
+}
+
+pub(super) struct TypeConstraintSolution {
+  pub(super) solved_substitution: HashMap<PStr, Rc<Type>>,
+  pub(super) solved_generic_type: Rc<Type>,
+  pub(super) solved_contextually_typed_concrete_type: Rc<Type>,
+}
+
+pub(super) fn solve_type_constraints(
+  concrete: &Type,
+  generic: &Type,
+  type_parameter_signatures: &Vec<TypeParameterSignature>,
+  error_set: &mut ErrorSet,
+) -> TypeConstraintSolution {
+  let mut solved_substitution = solve_multiple_type_constrains(
+    &vec![TypeConstraint { concrete_type: concrete, generic_type: generic }],
+    type_parameter_signatures,
+  );
+  for type_param in type_parameter_signatures {
+    solved_substitution.entry(type_param.name).or_insert_with(|| {
+      // Fill in placeholder for unsolved types.
+      Rc::new(Type::Any(Reason::new(concrete.get_reason().use_loc, None), true))
+    });
+  }
+  let solved_generic_type = subst_type(generic, &solved_substitution);
+  let solved_contextually_typed_concrete_type = match type_meet(concrete, &solved_generic_type) {
+    Ok(t) => Rc::new(t),
+    Err(stackable) => {
+      error_set.report_stackable_error(concrete.get_reason().use_loc, stackable);
+      Rc::new(concrete.clone())
+    }
+  };
+  TypeConstraintSolution {
+    solved_substitution,
+    solved_generic_type,
+    solved_contextually_typed_concrete_type,
+  }
+}
+
 pub(super) fn subst_nominal_type(
   type_: &NominalType,
   mapping: &HashMap<PStr, Rc<Type>>,
@@ -214,7 +327,7 @@ pub(super) fn subst_type(t: &Type, mapping: &HashMap<PStr, Rc<Type>>) -> Rc<Type
 
 #[cfg(test)]
 mod tests {
-  use super::super::type_::{test_type_builder, Type};
+  use super::super::type_::{test_type_builder, Type, TypeParameterSignature};
   use crate::{
     ast::{Location, Reason},
     checker::type_::ISourceType,
@@ -222,7 +335,7 @@ mod tests {
   };
   use pretty_assertions::assert_eq;
   use samlang_heap::{Heap, PStr};
-  use std::rc::Rc;
+  use std::{collections::HashMap, rc::Rc};
 
   #[test]
   fn contains_placeholder_test() {
@@ -427,5 +540,237 @@ Found 1 error.
       )
       .pretty_print(&heap)
     );
+  }
+
+  fn solver_test(
+    concrete: &Type,
+    generic: &Type,
+    type_parameter_signatures: Vec<TypeParameterSignature>,
+    expected: &HashMap<&str, &str>,
+    heap: &mut Heap,
+  ) {
+    let mut error_set = ErrorSet::new();
+    let super::TypeConstraintSolution { solved_substitution, .. } =
+      super::solve_type_constraints(concrete, generic, &type_parameter_signatures, &mut error_set);
+    let mut result = HashMap::new();
+    for (s, t) in solved_substitution {
+      result.insert(s.as_str(heap).to_string(), t.pretty_print(heap));
+    }
+    if error_set.has_errors() {
+      result.insert("has_error".to_string(), "true".to_string());
+    }
+    let mut transformed_expected = HashMap::new();
+    for (k, v) in expected {
+      transformed_expected.insert(k.to_string(), v.to_string());
+    }
+    assert_eq!(transformed_expected, result);
+  }
+
+  #[test]
+  fn type_constrain_solver_tests() {
+    let heap = &mut Heap::new();
+    let builder = test_type_builder::create();
+
+    // primitive types
+    solver_test(
+      &builder.int_type(),
+      &builder.unit_type(),
+      vec![],
+      &HashMap::from([("has_error", "true")]),
+      heap,
+    );
+    solver_test(
+      &builder.int_type(),
+      &builder.unit_type(),
+      vec![TypeParameterSignature { name: heap.alloc_str_for_test("T"), bound: None }],
+      &HashMap::from([("has_error", "true"), ("T", "placeholder")]),
+      heap,
+    );
+
+    // identifier type
+    solver_test(
+      &builder.int_type(),
+      &builder.simple_nominal_type(heap.alloc_str_for_test("T")),
+      vec![],
+      &HashMap::from([("has_error", "true")]),
+      heap,
+    );
+    solver_test(
+      &builder.int_type(),
+      &builder.general_nominal_type(heap.alloc_str_for_test("T"), vec![builder.int_type()]),
+      vec![],
+      &HashMap::from([("has_error", "true")]),
+      heap,
+    );
+    solver_test(
+      &builder.simple_nominal_type(heap.alloc_str_for_test("T")),
+      &builder.general_nominal_type(heap.alloc_str_for_test("T"), vec![builder.int_type()]),
+      vec![],
+      &HashMap::from([("has_error", "true")]),
+      heap,
+    );
+    solver_test(
+      &builder.int_type(),
+      &builder.generic_type(heap.alloc_str_for_test("T")),
+      vec![TypeParameterSignature { name: heap.alloc_str_for_test("T"), bound: None }],
+      &HashMap::from([("T", "int")]),
+      heap,
+    );
+    solver_test(
+      &builder.int_type(),
+      &builder.general_nominal_type(heap.alloc_str_for_test("Bar"), vec![builder.int_type()]),
+      vec![TypeParameterSignature { name: heap.alloc_str_for_test("Foo"), bound: None }],
+      &HashMap::from([("has_error", "true"), ("Foo", "placeholder")]),
+      heap,
+    );
+    solver_test(
+      &builder.general_nominal_type(
+        heap.alloc_str_for_test("Bar"),
+        vec![builder.simple_nominal_type(heap.alloc_str_for_test("Baz"))],
+      ),
+      &builder.general_nominal_type(
+        heap.alloc_str_for_test("Bar"),
+        vec![builder.generic_type(heap.alloc_str_for_test("T"))],
+      ),
+      vec![TypeParameterSignature { name: heap.alloc_str_for_test("T"), bound: None }],
+      &HashMap::from([("T", "Baz")]),
+      heap,
+    );
+
+    // function type
+
+    solver_test(
+      &builder.fun_type(
+        vec![builder.int_type(), builder.bool_type(), builder.string_type()],
+        builder.unit_type(),
+      ),
+      &builder.fun_type(
+        vec![
+          builder.generic_type(PStr::UPPER_A),
+          builder.generic_type(PStr::UPPER_B),
+          builder.generic_type(PStr::UPPER_A),
+        ],
+        builder.generic_type(PStr::UPPER_C),
+      ),
+      vec![
+        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_C, bound: None },
+      ],
+      &HashMap::from([("has_error", "true"), ("A", "int"), ("B", "bool"), ("C", "unit")]),
+      heap,
+    );
+    solver_test(
+      &builder.int_type(),
+      &builder.fun_type(
+        vec![
+          builder.generic_type(PStr::UPPER_A),
+          builder.generic_type(PStr::UPPER_B),
+          builder.generic_type(PStr::UPPER_A),
+        ],
+        builder.generic_type(PStr::UPPER_C),
+      ),
+      vec![
+        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_C, bound: None },
+      ],
+      &HashMap::from([
+        ("has_error", "true"),
+        ("A", "placeholder"),
+        ("B", "placeholder"),
+        ("C", "placeholder"),
+      ]),
+      heap,
+    );
+  }
+
+  #[test]
+  fn type_constrain_solver_integration_test_1() {
+    let heap = Heap::new();
+    let mut error_set = ErrorSet::new();
+    let builder = test_type_builder::create();
+
+    let super::TypeConstraintSolution {
+      solved_substitution: _,
+      solved_generic_type,
+      solved_contextually_typed_concrete_type,
+    } = super::solve_type_constraints(
+      &builder.fun_type(
+        vec![
+          builder.fun_type(
+            vec![Rc::new(Type::Any(Reason::dummy(), true))],
+            Rc::new(Type::Any(Reason::dummy(), false)),
+          ),
+          builder.int_type(),
+        ],
+        builder.unit_type(),
+      ),
+      &builder.fun_type(
+        vec![
+          builder.fun_type(
+            vec![builder.generic_type(PStr::UPPER_A)],
+            builder.generic_type(PStr::UPPER_A),
+          ),
+          builder.generic_type(PStr::UPPER_B),
+        ],
+        builder.unit_type(),
+      ),
+      &vec![
+        TypeParameterSignature { name: PStr::UPPER_A, bound: None },
+        TypeParameterSignature { name: PStr::UPPER_B, bound: None },
+      ],
+      &mut error_set,
+    );
+
+    assert_eq!("((any) -> any, int) -> unit", solved_generic_type.pretty_print(&heap));
+    assert_eq!(
+      "((any) -> any, int) -> unit",
+      solved_contextually_typed_concrete_type.pretty_print(&heap)
+    );
+    assert!(!error_set.has_errors());
+  }
+
+  #[test]
+  fn type_constrain_solver_integration_test_2() {
+    let heap = Heap::new();
+    let mut error_set = ErrorSet::new();
+    let builder = test_type_builder::create();
+
+    let super::TypeConstraintSolution {
+      solved_substitution: _,
+      solved_generic_type,
+      solved_contextually_typed_concrete_type,
+    } = super::solve_type_constraints(
+      &builder.fun_type(
+        vec![
+          builder.fun_type(
+            vec![Rc::new(Type::Any(Reason::dummy(), false))],
+            Rc::new(Type::Any(Reason::dummy(), true)),
+          ),
+          builder.int_type(),
+        ],
+        builder.unit_type(),
+      ),
+      &builder.fun_type(
+        vec![
+          builder.fun_type(
+            vec![builder.simple_nominal_type(PStr::UPPER_A)],
+            builder.simple_nominal_type(PStr::UPPER_A),
+          ),
+          builder.generic_type(PStr::UPPER_B),
+        ],
+        builder.unit_type(),
+      ),
+      &vec![TypeParameterSignature { name: PStr::UPPER_B, bound: None }],
+      &mut error_set,
+    );
+
+    assert_eq!("((A) -> A, int) -> unit", solved_generic_type.pretty_print(&heap));
+    assert_eq!(
+      "((A) -> A, int) -> unit",
+      solved_contextually_typed_concrete_type.pretty_print(&heap)
+    );
+    assert!(!error_set.has_errors());
   }
 }

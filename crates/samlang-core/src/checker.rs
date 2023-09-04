@@ -3,9 +3,6 @@ use samlang_heap::ModuleReference;
 use std::collections::HashMap;
 
 mod checker_tests;
-/// Utilities operating on types
-mod checker_utils;
-mod checker_utils_tests;
 /// Responsible for building and querying the global signature environment.
 mod global_signature;
 /// The main checker that connects everything together.
