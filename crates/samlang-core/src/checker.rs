@@ -7,6 +7,8 @@ mod checker_tests;
 mod global_signature;
 /// The main checker that connects everything together.
 mod main_checker;
+/// The module that verify the usefulness and exhausiveness of patterns.
+mod pattern_matching;
 /// Computing the SSA graph.
 mod ssa_analysis;
 mod ssa_analysis_tests;
