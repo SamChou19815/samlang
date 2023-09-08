@@ -1062,7 +1062,7 @@ fn check_destructuring_pattern(
     pattern::DestructuringPattern::Tuple(pattern_loc, destructured_names) => {
       let fields = cx.resolve_struct_definitions(pattern_type);
       let mut checked_destructured_names = vec![];
-      for (index, pattern::TuplePatternDestructuredName { pattern, type_: _ }) in
+      for (index, pattern::TuplePatternElement { pattern, type_: _ }) in
         destructured_names.iter().enumerate()
       {
         let loc = pattern.loc();
@@ -1071,7 +1071,7 @@ fn check_destructuring_pattern(
             cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
           }
           let checked = Box::new(check_destructuring_pattern(cx, pattern, &field_sig.type_));
-          checked_destructured_names.push(pattern::TuplePatternDestructuredName {
+          checked_destructured_names.push(pattern::TuplePatternElement {
             pattern: checked,
             type_: Rc::new(field_sig.type_.reposition(*loc)),
           });
@@ -1080,8 +1080,7 @@ fn check_destructuring_pattern(
         cx.error_set.report_element_missing_error(*loc, pattern_type.to_description(), index);
         let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
         let checked = Box::new(check_destructuring_pattern(cx, pattern, &type_));
-        checked_destructured_names
-          .push(pattern::TuplePatternDestructuredName { pattern: checked, type_ });
+        checked_destructured_names.push(pattern::TuplePatternElement { pattern: checked, type_ });
       }
       pattern::DestructuringPattern::Tuple(*pattern_loc, checked_destructured_names)
     }
@@ -1094,7 +1093,7 @@ fn check_destructuring_pattern(
         field_mappings.insert(field.name, (field.type_, field.is_public));
       }
       let mut checked_destructured_names = vec![];
-      for pattern::ObjectPatternDestucturedName {
+      for pattern::ObjectPatternElement {
         loc,
         field_order,
         field_name,
@@ -1113,7 +1112,7 @@ fn check_destructuring_pattern(
           }
           let checked = Box::new(check_destructuring_pattern(cx, pattern, field_type));
           let field_order = field_order_mapping.get(&field_name.name).unwrap();
-          checked_destructured_names.push(pattern::ObjectPatternDestucturedName {
+          checked_destructured_names.push(pattern::ObjectPatternElement {
             loc: *loc,
             field_order: *field_order,
             field_name: *field_name,
@@ -1130,7 +1129,7 @@ fn check_destructuring_pattern(
         );
         let type_ = Rc::new(Type::Any(Reason::new(*loc, Some(*loc)), false));
         let checked = Box::new(check_destructuring_pattern(cx, pattern, &type_));
-        checked_destructured_names.push(pattern::ObjectPatternDestucturedName {
+        checked_destructured_names.push(pattern::ObjectPatternElement {
           loc: *loc,
           field_order: *field_order,
           field_name: *field_name,

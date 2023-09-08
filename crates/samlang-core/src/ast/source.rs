@@ -200,25 +200,25 @@ pub(crate) mod pattern {
   use super::{Id, Location};
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct TuplePatternDestructuredName<T: Clone> {
-    pub(crate) pattern: Box<DestructuringPattern<T>>,
+  pub(crate) struct TuplePatternElement<Base: Clone, T: Clone> {
+    pub(crate) pattern: Box<Base>,
     pub(crate) type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
-  pub(crate) struct ObjectPatternDestucturedName<T: Clone> {
+  pub(crate) struct ObjectPatternElement<Base: Clone, T: Clone> {
     pub(crate) loc: Location,
     pub(crate) field_order: usize,
     pub(crate) field_name: Id,
-    pub(crate) pattern: Box<DestructuringPattern<T>>,
+    pub(crate) pattern: Box<Base>,
     pub(crate) shorthand: bool,
     pub(crate) type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) enum DestructuringPattern<T: Clone> {
-    Tuple(Location, Vec<TuplePatternDestructuredName<T>>),
-    Object(Location, Vec<ObjectPatternDestucturedName<T>>),
+    Tuple(Location, Vec<TuplePatternElement<DestructuringPattern<T>, T>>),
+    Object(Location, Vec<ObjectPatternElement<DestructuringPattern<T>, T>>),
     Id(Id),
     Wildcard(Location),
   }

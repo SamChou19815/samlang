@@ -1334,7 +1334,7 @@ impl<'a> SourceParser<'a> {
       self.consume();
       let destructured_names =
         self.parse_comma_separated_list(Some(TokenOp::RBRACKET), &mut |s: &mut Self| {
-          pattern::TuplePatternDestructuredName {
+          pattern::TuplePatternElement {
             pattern: Box::new(s.parse_destructuring_pattern()),
             type_: (),
           }
@@ -1359,7 +1359,7 @@ impl<'a> SourceParser<'a> {
             } else {
               (Box::new(pattern::DestructuringPattern::Id(field_name)), field_name.loc, true)
             };
-          pattern::ObjectPatternDestucturedName {
+          pattern::ObjectPatternElement {
             loc,
             field_name,
             field_order: 0,
