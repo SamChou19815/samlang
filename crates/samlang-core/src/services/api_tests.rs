@@ -238,7 +238,7 @@ class Test2(val a: int) {
         test_mod_ref,
         r#"class Test1(val a: int) {
   function test(): int = {
-    val {c, b} = 1 + 2;
+    let {c, b} = 1 + 2;
 
     a + b + c
   }
@@ -254,7 +254,7 @@ Error ---------------------------------- Test1.sam:3:10-3:11
 
 Cannot find member `c` on `int`.
 
-  3|     val {c, b} = 1 + 2;
+  3|     let {c, b} = 1 + 2;
               ^
 
 
@@ -262,7 +262,7 @@ Error ---------------------------------- Test1.sam:3:13-3:14
 
 Cannot find member `b` on `int`.
 
-  3|     val {c, b} = 1 + 2;
+  3|     let {c, b} = 1 + 2;
                  ^
 
 
@@ -298,7 +298,7 @@ Name `a` is not resolved.
       heap,
       false,
       HashMap::from([
-        (test3_mod_ref, "class ABC { function a(): unit = { val _ = 1; } }".to_string()),
+        (test3_mod_ref, "class ABC { function a(): unit = { let _ = 1; } }".to_string()),
         (test2_mod_ref, "class TTT { method test(): int = this.test() }".to_string()),
         (
           test1_mod_ref,
@@ -310,10 +310,10 @@ class Test1(val a: int) {
   function test2(): unit = ABC.a()
   function test3(): int = Test1.init(3).a
   function test4(): unit = {
-    val _ = {
-      val b = 3;
-      val _ = b + 2;
-      val _ = c;
+    let _ = {
+      let b = 3;
+      let _ = b + 2;
+      let _ = c;
     };
   }
 }
@@ -329,7 +329,7 @@ Error -------------------------------- Test1.sam:12:15-12:16
 
 Name `c` is not resolved.
 
-  12|       val _ = c;
+  12|       let _ = c;
                     ^
 "#
       .trim(),
@@ -487,8 +487,8 @@ class Developer(
   val projects: List<Str>
 ) {
   function sam(): Developer = {
-    val l = List.of("SAMLANG").cons("...")
-    val github = "SamChou19815"
+    let l = List.of("SAMLANG").cons("...")
+    let github = "SamChou19815"
     Developer.init("Sam Zhou", github, l)
   }
 }
@@ -684,7 +684,7 @@ class Test1 {
         mod_ref,
         r#"
 class Test {
-  function main(): unit = { val a = b; }
+  function main(): unit = { let a = b; }
 }
 "#
         .to_string(),
@@ -695,7 +695,7 @@ class Test {
     assert_eq!(
       r#"class Test {
   function main(): unit = {
-    val a = b;
+    let a = b;
   }
 }
 "#,
@@ -704,7 +704,7 @@ class Test {
     assert_eq!(
       r#"class Test {
   function main(): unit = {
-    val c = b;
+    let c = b;
   }
 }
 "#,
@@ -823,8 +823,8 @@ class Developer(
   val projects: List<Str>
 ) {
   function sam(): Developer = {
-    val l = List.of("SAMLANG").cons("...");
-    val github = "SamChou19815";
+    let l = List.of("SAMLANG").cons("...");
+    let github = "SamChou19815";
     Developer.init("Sam Zhou", github, l).
   }
 }
@@ -909,8 +909,8 @@ class Developer(
   val projects: List<Str>
 ) {
   function sam(): Developer = {
-    val l = List.of("SAMLANG").cons("...")
-    val github = "SamChou19815"
+    let l = List.of("SAMLANG").cons("...")
+    let github = "SamChou19815"
     Developer.init("Sam Zhou", github, l).
   }
 }
@@ -1037,9 +1037,9 @@ class Main {
         r#"
 class Main {
   function main(): unit = {
-    val foo = "";
-    val bar = 3;
-    val baz = true;
+    let foo = "";
+    let bar = 3;
+    let baz = true;
     a
   }
 }

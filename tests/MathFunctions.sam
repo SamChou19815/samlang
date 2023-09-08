@@ -10,8 +10,8 @@ class MathFunctions {
     if n == 0 then {  } else MathFunctions.uselessRecursion(n - 1)
 
   function run(): unit = {
-    val _ = ForTests.assertIntEquals(24, MathFunctions.factorial(4));
-    val _ = ForTests.assertIntEquals(55, MathFunctions.fib(10));
-    val _ = MathFunctions.uselessRecursion(20);
+    let _ = ForTests.assertIntEquals(24, MathFunctions.factorial(4));
+    let _ = ForTests.assertIntEquals(55, MathFunctions.fib(10));
+    let _ = MathFunctions.uselessRecursion(20);
   }
 }

@@ -105,9 +105,9 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
     value: V,
     right: Map<K, V>
   ): Map<K, V> = {
-    val lh = left.height();
-    val rh = right.height();
-    val h = if lh >= rh then lh + 1 else rh + 1;
+    let lh = left.height();
+    let rh = right.height();
+    let h = if lh >= rh then lh + 1 else rh + 1;
     if h == 1 then Map.singleton(key, value) else Map.Node(h, key, value, left, right)
   }
 
@@ -118,9 +118,9 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
     value: V,
     right: Map<K, V>
   ): Map<K, V> = {
-    val lh = left.height();
-    val rh = right.height();
-    val h = if lh >= rh then lh + 1 else rh + 1;
+    let lh = left.height();
+    let rh = right.height();
+    let h = if lh >= rh then lh + 1 else rh + 1;
     Map.Node(h, key, value, left, right)
   }
 
@@ -135,25 +135,25 @@ class Map<K: Comparable<K>, V>(Empty, Leaf(K, V), Node(int, K, V, Map<K, V>, Map
     K,
     V
   > = {
-    val lh = l.height();
-    val rh = r.height();
+    let lh = l.height();
+    let rh = r.height();
     if lh > rh + 2 then {
-      val [lk, lv, ll, lr] = l.forcedNodeWithoutHeight();
+      let [lk, lv, ll, lr] = l.forcedNodeWithoutHeight();
       if ll.height() >= lr.height() then { Map.node(ll, lk, lv, Map.create(lr, k, v, r)) } else {
-        val [lrk, lrv, lrl, lrr] = lr.forcedNodeWithoutHeight();
+        let [lrk, lrv, lrl, lrr] = lr.forcedNodeWithoutHeight();
         Map.node(Map.create(ll, lk, lv, lrl), lrk, lrv, Map.create(lrr, k, v, r))
       }
     } else if rh > lh + 2 then {
-      val [rk, rv, rl, rr] = r.forcedNodeWithoutHeight();
+      let [rk, rv, rl, rr] = r.forcedNodeWithoutHeight();
       if rr.height() >= rl.height() then { Map.node(Map.create(l, k, v, rl), rk, rv, rr) } else {
-        val [rlk, rlv, rll, rlr] = rl.forcedNodeWithoutHeight();
+        let [rlk, rlv, rll, rlr] = rl.forcedNodeWithoutHeight();
         Map.node(Map.create(l, k, v, rll), rlk, rlv, Map.create(rlr, rk, rv, rr))
       }
     } else { Map.create(l, k, v, r) }
   }
 
   private method removeMinBindingFromNodeUnsafe(): Map<K, V> = {
-    val { e0 as k, e1 as v, e2 as l, e3 as r } = this.forcedNodeWithoutHeight();
+    let [k, v, l, r] = this.forcedNodeWithoutHeight();
     match l {
       Empty -> r,
       Leaf(_, _) -> Map.balanced(Map.empty<K, V>(), k, v, r),

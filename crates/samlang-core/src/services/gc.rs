@@ -286,15 +286,15 @@ mod tests {
 
       class Obj(val d: int, val e: int) {
         function valExample(): int = {
-          val a: int = 1;
-          val b = 2;
-          val c = 3; // c = 3
-          val { d } = Obj.init(5, 4);
-          val [_, d1] = [1, 2];
-          val { e as d2 } = Obj.init(5, 4); // d = 4
-          val f = Obj.init(5, 4); // d = 4
-          val g = Obj.init(d, 4); // d = 4
-          val _ = f.d;
+          let a: int = 1;
+          let b = 2;
+          let c = 3; // c = 3
+          let { d } = Obj.init(5, 4);
+          let [_, d1] = [1, 2];
+          let { e as d2 } = Obj.init(5, 4); // d = 4
+          let f = Obj.init(5, 4); // d = 4
+          let g = Obj.init(d, 4); // d = 4
+          let _ = f.d;
           // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
           a + b * c / d
         }
@@ -308,7 +308,7 @@ mod tests {
         function identity(a: int): int = a
 
         function random(): int = {
-          val a = 42; // very random
+          let a = 42; // very random
           a
         }
 
@@ -322,10 +322,10 @@ mod tests {
           )
 
         function nestedVal(): int = {
-          val a = {
-            val b = 4;
-            val c = {
-              val c = b;
+          let a = {
+            let b = 4;
+            let c = {
+              let c = b;
               b
             };
             c

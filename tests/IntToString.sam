@@ -2,14 +2,14 @@ import { ForTests } from tests.StdLib;
 
 class IntToString {
   function run(): unit = {
-    val _ = ForTests.printlnInt(0);
-    val _ = ForTests.printlnInt(1);
-    val _ = ForTests.printlnInt(123);
-    val _ = ForTests.printlnInt(1234567);
-    val _ = ForTests.printlnInt(2147483647);
-    val _ = ForTests.printlnInt(-1);
-    val _ = ForTests.printlnInt(-123);
-    val _ = ForTests.printlnInt(-1234567);
-    val _ = ForTests.printlnInt(-2147483648);
+    let _ = ForTests.printlnInt(0);
+    let _ = ForTests.printlnInt(1);
+    let _ = ForTests.printlnInt(123);
+    let _ = ForTests.printlnInt(1234567);
+    let _ = ForTests.printlnInt(2147483647);
+    let _ = ForTests.printlnInt(-1);
+    let _ = ForTests.printlnInt(-123);
+    let _ = ForTests.printlnInt(-1234567);
+    let _ = ForTests.printlnInt(-2147483648);
   }
 }

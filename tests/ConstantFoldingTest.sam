@@ -18,7 +18,7 @@ class ConstantFoldingTest {
 
   function test2(acc: int, i: int): int =
     if i >= 10 * 10 * 2 then { acc } else {
-      val increase: int = 1 + 2 * 3 - 4 / 5 % 10000000 / 12334 + (
+      let increase: int = 1 + 2 * 3 - 4 / 5 % 10000000 / 12334 + (
         1 + 2 * 3 - 4 / 5 % 10000000 / 12334
       ) + (1 + 2 * 3 - 4 / 5 % 10000000 / 12334) + (1 + 2 * 3 - 4 / 5 % 10000000 / 12334) + (
         1 + 2 * 3 - 4 / 5 % 10000000 / 12334
@@ -32,14 +32,14 @@ class ConstantFoldingTest {
     }
 
   function run(): unit = {
-    val _ = ForTests.assertIntEquals(
+    let _ = ForTests.assertIntEquals(
       /* expected */ 361200,
       ConstantFoldingTest /* a */
       /* b */
       // c
       .testI(0, 0)
     );
-    val _ = ForTests.assertIntEquals(7000, ConstantFoldingTest.test2(0, 0));
-    val _ = ForTests.assertIntEquals(1400, ConstantFoldingTest.test3(0, 0));
+    let _ = ForTests.assertIntEquals(7000, ConstantFoldingTest.test2(0, 0));
+    let _ = ForTests.assertIntEquals(1400, ConstantFoldingTest.test3(0, 0));
   }
 }

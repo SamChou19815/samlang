@@ -29,10 +29,10 @@ mod tests {
         source_code: r#"
 class Main {
   function main(): unit = {
-    val a: int = "3".toInt();
-    val b: Str = Str.fromInt(3);
-    val c: unit = Process.println("3");
-    val d: Main = Process.panic("3");
+    let a: int = "3".toInt();
+    let b: Str = Str.fromInt(3);
+    let c: unit = Process.println("3");
+    let d: Main = Process.panic("3");
   }
 }
 "#,
@@ -50,8 +50,8 @@ class C(val v: bool) {
 
 class Main {
   function main(): unit = {
-    val _ = A.b();
-    val _ = C.create();
+    let _ = A.b();
+    let _ = C.create();
   }
 }
 "#,
@@ -192,20 +192,20 @@ class Main {
         source_code: r#"
 class Fields(val a: int, private val b: bool) {
   function get(): Fields = {
-    val f = Fields.init(3, true);
-    val {a, b} = f;
-    val _ = f.a;
-    val _ = f.b;
+    let f = Fields.init(3, true);
+    let {a, b} = f;
+    let _ = f.a;
+    let _ = f.b;
     f
   }
 }
 
 class Main {
   function main(): unit = {
-    val f = Fields.get();
-    val {a, b} = f;
-    val _ = f.a;
-    val _ = f.b;
+    let f = Fields.get();
+    let {a, b} = f;
+    let _ = f.a;
+    let _ = f.b;
   }
 }
 "#,
@@ -232,8 +232,8 @@ class FunctionParametersConflict {
 
 class Main {
   function main(): unit = {
-    val a = 42;
-    val a = 42;
+    let a = 42;
+    let a = 42;
   }
 }
 "#,
@@ -244,7 +244,7 @@ class Main {
 
 class Main {
   function main(): unit = {
-    val _ = this;
+    let _ = this;
   }
 }
 "#,
@@ -255,7 +255,7 @@ class Main {
 class NotEnoughTypeInfo {
   function <T> randomFunction(): T = Process.panic("I can be any type!")
   function main(): unit = {
-    val _ = NotEnoughTypeInfo.randomFunction();
+    let _ = NotEnoughTypeInfo.randomFunction();
   }
 }
 class Main {
@@ -272,7 +272,7 @@ class Option<T>(Some(T), None(bool)) {
 }
 class Main {
   function main(): unit = {
-    val a = Option.none();
+    let a = Option.none();
   }
 }
 "#,
@@ -299,9 +299,9 @@ class SamObject<T>(val sam: T, val good: bool, val linesOfCode: int) {
 
 class Main {
   function main(): unit = {
-    val sam = SamObject.create("sam zhou").withDifferentLOC(100001);
-    val s = sam.getSam();
-    val linesOfCode = if (sam.isGood()) then sam.getLinesOfCode() else 0;
+    let sam = SamObject.create("sam zhou").withDifferentLOC(100001);
+    let s = sam.getSam();
+    let linesOfCode = if (sam.isGood()) then sam.getLinesOfCode() else 0;
   }
 }
 "#,
@@ -327,12 +327,12 @@ class Main {
         source_code: r#"
 class HelloWorld(val message: Str) {
   private method getMessage(): Str = {
-    val { message } = this;
+    let { message } = this;
     message
   }
 
   function getGlobalMessage(): Str = {
-    val hw = HelloWorld.init("Hello World!");
+    let hw = HelloWorld.init("Hello World!");
     hw.getMessage()
   }
 }
@@ -348,7 +348,7 @@ class Main {
 class NewYear2019<T>(val message: T) {
   function create(): NewYear2019<Str> = NewYear2019.init("Hello World!")
   method getMessage(): T = {
-    val { message as msg } = this; msg
+    let { message as msg } = this; msg
   }
 }
 
@@ -372,7 +372,7 @@ class Main {
   function <A, B, C> pipe(a: A, f1: (A)->B, f2: (B)->C): C = f2(f1(a))
 
   function main(): unit = {
-    val _ = Main.pipe(1, (n) -> Str.fromInt(n), (s) -> s.toInt());
+    let _ = Main.pipe(1, (n) -> Str.fromInt(n), (s) -> s.toInt());
   }
 }
 "#,
@@ -388,12 +388,12 @@ class Option<T>(Some(T), None) {
 class Main {
   function main(): Option<Str> = Option.none<Str>().toSome("hi")
   function main2(): Option<Str> = {
-    val a = Option.none<Str>();
+    let a = Option.none<Str>();
     a.toSome("hi")
   }
 
   function main3(): Option<Str> = {
-    val a: Option<Str> = Option.none();
+    let a: Option<Str> = Option.none();
     a.toSome("hi")
   }
 }
@@ -414,8 +414,8 @@ class Developer(
   val projects: List<Str>,
 ) {
   function sam(): Developer = {
-    val l = List.of("SAMLANG").cons("...");
-    val github = "SamChou19815";
+    let l = List.of("SAMLANG").cons("...");
+    let github = "SamChou19815";
     Developer.init("Sam Zhou", github, l)
   }
 }
@@ -442,7 +442,7 @@ class Main {
  */
 class Main {
   function main(): unit = {
-    val _: ((int) -> bool, int, int) -> int = (a, b, c) -> if a(b + 1) then b else c;
+    let _: ((int) -> bool, int, int) -> int = (a, b, c) -> if a(b + 1) then b else c;
   }
 }
 "#,
@@ -457,10 +457,10 @@ class Main {
   function <T> id(v: T): T = v
 
   function main(): unit = {
-    val _ = Main.reduce((acc, n) -> acc + n, Main.getInt());
-    val _: (int) -> int = Main.id((x) -> x);
-    val _: (int) -> int = Main.id(Main.id((x) -> x));
-    val _: (int) -> int = Main.id(Main.id(Main.id((x) -> x)));
+    let _ = Main.reduce((acc, n) -> acc + n, Main.getInt());
+    let _: (int) -> int = Main.id((x) -> x);
+    let _: (int) -> int = Main.id(Main.id((x) -> x));
+    let _: (int) -> int = Main.id(Main.id(Main.id((x) -> x)));
   }
 }
 "#,
@@ -488,7 +488,7 @@ Error ---------------- access-private-member.sam:12:15-12:16
 
 Cannot find member `b` on `A`.
 
-  12|     val _ = A.b();
+  12|     let _ = A.b();
                     ^
 
 
@@ -936,7 +936,7 @@ Error --------- illegal-private-field-access.sam:15:13-15:14
 
 Cannot find member `b` on `Fields`.
 
-  15|     val {a, b} = f;
+  15|     let {a, b} = f;
                   ^
 
 
@@ -944,7 +944,7 @@ Error --------- illegal-private-field-access.sam:17:15-17:16
 
 Cannot find member `b` on `Fields`.
 
-  17|     val _ = f.b;
+  17|     let _ = f.b;
                     ^
 
 
@@ -1004,12 +1004,12 @@ Error ------------------------ illegal-shadow.sam:22:9-22:10
 
 Name `a` collides with a previously defined name at [1].
 
-  22|     val a = 42;
+  22|     let a = 42;
               ^
 
   [1] illegal-shadow.sam:21:9-21:10
   ---------------------------------
-  21|     val a = 42;
+  21|     let a = 42;
               ^
 
 
@@ -1017,7 +1017,7 @@ Error --------------------------- illegal-this.sam:5:13-5:17
 
 Name `this` is not resolved.
 
-  5|     val _ = this;
+  5|     let _ = this;
                  ^^^^
 
 
@@ -1025,7 +1025,7 @@ Error ----------------- insufficient-type-info.sam:5:13-5:47
 
 There is not enough context information to decide the type of this expression.
 
-  5|     val _ = NotEnoughTypeInfo.randomFunction();
+  5|     let _ = NotEnoughTypeInfo.randomFunction();
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -1033,7 +1033,7 @@ Error ------------ insufficient-type-info-none.sam:8:13-8:26
 
 There is not enough context information to decide the type of this expression.
 
-  8|     val a = Option.none();
+  8|     let a = Option.none();
                  ^^^^^^^^^^^^^
 
 
@@ -1174,15 +1174,15 @@ Found 51 errors.
         source_code: r#"
 class Main {
   function main(): unit = {
-    val i = 1;
-    val j = 2;
+    let i = 1;
+    let j = 2;
     if (i < j && i > 0 && j > 0) then {
-      val a = 3;
-      val b = 4;
+      let a = 3;
+      let b = 4;
       if (a > b || a + b > 0 && true) then Process.println("one") else Process.println("two")
     } else {
-      val a = 3;
-      val b = 4;
+      let a = 3;
+      let b = 4;
       if (a == 2 || b == 4) then {
         Process.println("three")
       } else {
@@ -1200,9 +1200,9 @@ class Main {
 class Main {
   function main(): unit =
     if (true) then {
-      val _ = Main.main2();
-      val _ = Main.main3();
-      val _ = 3;
+      let _ = Main.main2();
+      let _ = Main.main3();
+      let _ = 3;
       {}
     } else {
       {}
@@ -1210,7 +1210,7 @@ class Main {
 
   function main2(): int =
     if (true) then {
-      val _ = 3;
+      let _ = 3;
       3
     } else {
       2
@@ -1218,7 +1218,7 @@ class Main {
 
   function main3(): unit =
     if (true) then {
-      val _ = 3;
+      let _ = 3;
     } else {
       // Do nothing...
     }
@@ -1231,8 +1231,8 @@ class Main {
         source_code: r#"
 class Main {
   function main(): unit = {
-    val value = Str.fromInt("42".toInt())::"!";
-    val _ = Process.println(value);
+    let value = Str.fromInt("42".toInt())::"!";
+    let _ = Process.println(value);
   }
 }
 "#,
@@ -1255,7 +1255,7 @@ class Main {
 class Main {
   function main(): unit = {
     // 35
-    val increase = (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
+    let increase = (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
                    (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
                    (1+2*3-4/5%10000000/12334);
     Process.println(Str.fromInt(2 + increase))
@@ -1287,12 +1287,12 @@ class Main {
         source_code: r#"
 class Main {
   function crash(a: Str, b: Str): unit = {
-    val _ = Process.println("different:");
-    val _ = Process.println("a:");
-    val _ = Process.println(a);
-    val _ = Process.println("b:");
-    val _ = Process.println(b);
-    val _ = Process.panic<unit>("crash!");
+    let _ = Process.println("different:");
+    let _ = Process.println("a:");
+    let _ = Process.println(a);
+    let _ = Process.println("b:");
+    let _ = Process.println(b);
+    let _ = Process.panic<unit>("crash!");
   }
 
   function checkInt(a: int, b: int): unit =
@@ -1305,54 +1305,54 @@ class Main {
     if (a == b) then {} else Main.crash(Main.boolToString(a), Main.boolToString(b))
 
   function checkAll(): unit = {
-    val _ = Main.checkInt(42, 21 * 2);
-    val _ = Main.checkInt(42, 84 / 2);
-    val _ = Main.checkInt(42, 91 % 49);
-    val _ = Main.checkInt(42, 20 + 22);
-    val _ = Main.checkInt(42, 50 - 8);
+    let _ = Main.checkInt(42, 21 * 2);
+    let _ = Main.checkInt(42, 84 / 2);
+    let _ = Main.checkInt(42, 91 % 49);
+    let _ = Main.checkInt(42, 20 + 22);
+    let _ = Main.checkInt(42, 50 - 8);
 
-    val _ = Main.checkBool(false, false);
-    val _ = Main.checkBool(true, true);
+    let _ = Main.checkBool(false, false);
+    let _ = Main.checkBool(true, true);
 
-    val _ = Main.checkBool(false, false && false);
-    val _ = Main.checkBool(false, true && false);
-    val _ = Main.checkBool(false, false && true);
-    val _ = Main.checkBool(true, true && true);
-    val _ = Main.checkBool(false, false || false);
-    val _ = Main.checkBool(true, true || false);
-    val _ = Main.checkBool(true, false || true);
-    val _ = Main.checkBool(true, true || true);
+    let _ = Main.checkBool(false, false && false);
+    let _ = Main.checkBool(false, true && false);
+    let _ = Main.checkBool(false, false && true);
+    let _ = Main.checkBool(true, true && true);
+    let _ = Main.checkBool(false, false || false);
+    let _ = Main.checkBool(true, true || false);
+    let _ = Main.checkBool(true, false || true);
+    let _ = Main.checkBool(true, true || true);
 
-    val _ = Main.checkBool(true, 42 < 50);
-    val _ = Main.checkBool(false, 42 > 42);
-    val _ = Main.checkBool(false, 42 > 50);
-    val _ = Main.checkBool(true, 42 <= 42);
-    val _ = Main.checkBool(true, 42 <= 43);
-    val _ = Main.checkBool(false, 42 <= 41);
-    val _ = Main.checkBool(true, 50 > 42);
-    val _ = Main.checkBool(false, 42 < 42);
-    val _ = Main.checkBool(false, 50 < 42);
-    val _ = Main.checkBool(true, 42 >= 42);
-    val _ = Main.checkBool(true, 43 >= 42);
-    val _ = Main.checkBool(false, 41 >= 42);
+    let _ = Main.checkBool(true, 42 < 50);
+    let _ = Main.checkBool(false, 42 > 42);
+    let _ = Main.checkBool(false, 42 > 50);
+    let _ = Main.checkBool(true, 42 <= 42);
+    let _ = Main.checkBool(true, 42 <= 43);
+    let _ = Main.checkBool(false, 42 <= 41);
+    let _ = Main.checkBool(true, 50 > 42);
+    let _ = Main.checkBool(false, 42 < 42);
+    let _ = Main.checkBool(false, 50 < 42);
+    let _ = Main.checkBool(true, 42 >= 42);
+    let _ = Main.checkBool(true, 43 >= 42);
+    let _ = Main.checkBool(false, 41 >= 42);
 
-    val _ = Main.checkBool(true, 1 == 1);
-    val _ = Main.checkBool(false, 1 == 2);
-    val _ = Main.checkBool(false, 1 != 1);
-    val _ = Main.checkBool(true, 1 != 2);
-    val _ = Main.checkBool(true, true == true);
-    val _ = Main.checkBool(false, true == false);
-    val _ = Main.checkBool(false, true != true);
-    val _ = Main.checkBool(true, true != false);
+    let _ = Main.checkBool(true, 1 == 1);
+    let _ = Main.checkBool(false, 1 == 2);
+    let _ = Main.checkBool(false, 1 != 1);
+    let _ = Main.checkBool(true, 1 != 2);
+    let _ = Main.checkBool(true, true == true);
+    let _ = Main.checkBool(false, true == false);
+    let _ = Main.checkBool(false, true != true);
+    let _ = Main.checkBool(true, true != false);
 
-    val c = 21;
-    val _ = Main.checkInt(-42, -(c * 2)); // prevent constant folding!
-    val _ = Main.checkBool(true, !false);
-    val _ = Main.checkBool(false, !true);
+    let c = 21;
+    let _ = Main.checkInt(-42, -(c * 2)); // prevent constant folding!
+    let _ = Main.checkBool(true, !false);
+    let _ = Main.checkBool(false, !true);
   }
 
   function main(): unit = {
-    val _ = Main.checkAll();
+    let _ = Main.checkAll();
     Process.println("OK")
   }
 }
@@ -1371,7 +1371,7 @@ class List(Nil(unit), Cons(Pair<int, List>)) {
   ])
 }
 
-class Main { function main(): unit = { val _: List = List.of(1); Process.println("hello") }  }
+class Main { function main(): unit = { let _: List = List.of(1); Process.println("hello") }  }
 "#,
       },
       CompilerTestCase {
@@ -1382,9 +1382,9 @@ class Main {
   function printInt(i: int): unit = Process.println(Str.fromInt(i))
 
   function test(a: int, b: int): unit = {
-    val _ = Main.printInt((a * b + a) + (a * b + a));
-    val _ = Main.printInt(a * b);
-    val _ = Main.printInt(a * b + a);
+    let _ = Main.printInt((a * b + a) + (a * b + a));
+    let _ = Main.printInt(a * b);
+    let _ = Main.printInt(a * b + a);
   }
 
   function main(): unit = Main.test(3, 4)
@@ -1404,13 +1404,13 @@ class Main {
     else {}
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {
-    val t = if (first) then a * b else a * b;
-    val _ = Main.check(a * b, aTimesB);
+    let t = if (first) then a * b else a * b;
+    let _ = Main.check(a * b, aTimesB);
   }
 
   function main(): unit = {
-    val _ = Main.test(true, 3, 4, 12);
-    val _ = Main.test(false, 3, 4, 12);
+    let _ = Main.test(true, 3, 4, 12);
+    let _ = Main.test(false, 3, 4, 12);
     Process.println("OK")
   }
 }
@@ -1453,9 +1453,9 @@ class Main {
         source_code: r#"
 class Main {
   function main(): unit = {
-    val megagrams: int = 141332443;
-    val kilograms: int = megagrams / 1000;
-    val grams: int = (megagrams / 1000) / 1000;
+    let megagrams: int = 141332443;
+    let kilograms: int = megagrams / 1000;
+    let grams: int = (megagrams / 1000) / 1000;
     Process.println(Str.fromInt(grams))
   }
 }
@@ -1470,12 +1470,12 @@ class Main {
     if (i >= 4) then
       totalOddNumbers
     else {
-      val iMod64 = i % 64;
-      val iMod32 = (i % 64) % 32;
-      val iMod16 = ((i % 64) % 32) % 16;
-      val iMod8 = (((i % 64) % 32) % 16) % 8;
-      val iMod4 = ((((i % 64) % 32) % 16) % 8) % 4;
-      val iMod2 = (((((i % 64) % 32) % 16) % 8) % 4) % 2;
+      let iMod64 = i % 64;
+      let iMod32 = (i % 64) % 32;
+      let iMod16 = ((i % 64) % 32) % 16;
+      let iMod8 = (((i % 64) % 32) % 16) % 8;
+      let iMod4 = ((((i % 64) % 32) % 16) % 8) % 4;
+      let iMod2 = (((((i % 64) % 32) % 16) % 8) % 4) % 2;
       Main.test(totalOddNumbers + iMod2, i + 1)
     }
   }
@@ -1497,15 +1497,15 @@ class Main {
     else {}
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {
-    val _ = if (first) then {
-      val _ = a * b;
+    let _ = if (first) then {
+      let _ = a * b;
     } else {};
-    val _ = Main.check(a * b, aTimesB);
+    let _ = Main.check(a * b, aTimesB);
   }
 
   function main(): unit = {
-    val _ = Main.test(true, 3, 4, 12);
-    val _ = Main.test(false, 3, 4, 12);
+    let _ = Main.test(true, 3, 4, 12);
+    let _ = Main.test(false, 3, 4, 12);
     Process.println("OK")
   }
 }
@@ -1555,7 +1555,7 @@ class FunctionExample {
 class Box<T>(val content: T) {
   function <T> create(content: T): Box<T> = Box.init(content)
   method getContent(): T = {
-    val { content } = this; content
+    let { content } = this; content
   }
 }
 
@@ -1586,19 +1586,19 @@ class Main {
     if (e1 == e2) then {} else Process.panic(Str.fromInt(e1)::" "::Str.fromInt(e2)::" "::message)
 
   private function consistencyTest(): unit = {
-    val _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");
-    val _ = Main.assertEquals(Box.create(42).getContent(), 42, "Ah2");
-    val _ = Main.assertEquals(FunctionExample.getIdentityFunction<int>()(42), 42, "Ah3");
-    val _ = Main.assertEquals(Student.dummyStudent().getAge(), 0, "Ah4");
-    val _ = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");
-    val _ = Main.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
-    val _ = Main.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah7");
-    val _ = Main.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
-    val _ = Main.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
+    let _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");
+    let _ = Main.assertEquals(Box.create(42).getContent(), 42, "Ah2");
+    let _ = Main.assertEquals(FunctionExample.getIdentityFunction<int>()(42), 42, "Ah3");
+    let _ = Main.assertEquals(Student.dummyStudent().getAge(), 0, "Ah4");
+    let _ = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");
+    let _ = Main.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
+    let _ = Main.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah7");
+    let _ = Main.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
+    let _ = Main.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
   }
 
   function main(): unit = {
-    val _ = Main.consistencyTest();
+    let _ = Main.consistencyTest();
     Process.println("OK")
   }
 }
@@ -1622,11 +1622,11 @@ class Option<T>(None(unit), Some(T)) {
 
 class Obj(private val d: int, val e: int) {
   function valExample(): int = {
-    val a: int = 1;
-    val b = 2;
-    val c = 3;
-    val { e as d } = Obj.init(5, 4); // d = 4
-    val _ = 42;
+    let a: int = 1;
+    let b = 2;
+    let c = 3;
+    let { e as d } = Obj.init(5, 4); // d = 4
+    let _ = 42;
     // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
     a + b * c / d
   }
@@ -1636,7 +1636,7 @@ class Main {
   function identity(a: int): int = a
 
   function random(): int = {
-    val a = 42; // very random
+    let a = 42; // very random
     a
   }
 
@@ -1650,10 +1650,10 @@ class Main {
     )
 
   function nestedVal(): int = {
-    val a = {
-      val b = 4;
-      val c = {
-        val c = b;
+    let a = {
+      let b = 4;
+      let c = {
+        let c = b;
         b
       }; // c = 4
       c
@@ -1711,36 +1711,36 @@ class Main {
 class Main {
   // return a random number, print order
   function intIdentity(order: int): int = {
-    val _ = Process.println(Str.fromInt(order));
+    let _ = Process.println(Str.fromInt(order));
     2
   }
 
   // return a random bool, print order
   function boolIdentity(item: bool, order: int): bool = {
-    val _ = Process.println(Str.fromInt(order));
+    let _ = Process.println(Str.fromInt(order));
     item
   }
 
   // return the string back, print str
   function stringIdentity(str: Str): Str = {
-    val _ = Process.println("surprise!");
+    let _ = Process.println("surprise!");
     str
   }
 
   function binaryExpressionTest(): unit = {
-    val _ = Main.intIdentity(0) + Main.intIdentity(1);
-    val _ = Main.intIdentity(2) - Main.intIdentity(3);
-    val _ = Main.intIdentity(4) * Main.intIdentity(5);
-    val _ = Main.intIdentity(6) / Main.intIdentity(7);
-    val _ = Main.intIdentity(8) % Main.intIdentity(9);
-    val _ = Main.intIdentity(10) < Main.intIdentity(11);
-    val _ = Main.intIdentity(12) <= Main.intIdentity(13);
-    val _ = Main.intIdentity(14) > Main.intIdentity(15);
-    val _ = Main.intIdentity(16) >= Main.intIdentity(17);
-    val _ = Main.intIdentity(18) == Main.intIdentity(19);
-    val _ = Main.intIdentity(20) != Main.intIdentity(21);
-    val _ = Main.boolIdentity(false, 22) || Main.boolIdentity(false, 23);
-    val _ = Main.boolIdentity(true, 24) && Main.boolIdentity(true, 25);
+    let _ = Main.intIdentity(0) + Main.intIdentity(1);
+    let _ = Main.intIdentity(2) - Main.intIdentity(3);
+    let _ = Main.intIdentity(4) * Main.intIdentity(5);
+    let _ = Main.intIdentity(6) / Main.intIdentity(7);
+    let _ = Main.intIdentity(8) % Main.intIdentity(9);
+    let _ = Main.intIdentity(10) < Main.intIdentity(11);
+    let _ = Main.intIdentity(12) <= Main.intIdentity(13);
+    let _ = Main.intIdentity(14) > Main.intIdentity(15);
+    let _ = Main.intIdentity(16) >= Main.intIdentity(17);
+    let _ = Main.intIdentity(18) == Main.intIdentity(19);
+    let _ = Main.intIdentity(20) != Main.intIdentity(21);
+    let _ = Main.boolIdentity(false, 22) || Main.boolIdentity(false, 23);
+    let _ = Main.boolIdentity(true, 24) && Main.boolIdentity(true, 25);
   }
 
   function main(): unit = Main.binaryExpressionTest()
@@ -1753,12 +1753,12 @@ class Main {
         source_code: r#"
 class Main {
   function hi(): int = {
-    val _ = Process.println("hi");
+    let _ = Process.println("hi");
     5
   }
 
   function main(): unit = {
-    val _ = Main.hi();
+    let _ = Main.hi();
   }
 }
 "#,
@@ -1769,14 +1769,14 @@ class Main {
         source_code: r#"
 class GenericObject<T1, T2>(val v1: T1, val v2: T2) {
   function main(): unit = {
-    val f = (v2: int) -> (
+    let f = (v2: int) -> (
       if (v2 + 1 == 3) then
         GenericObject.init(3, v2)
       else
         GenericObject.init(3, 42)
     );
-    val _ = Process.println(Str.fromInt(f(2).v2)); // print 2
-    val _ = Process.println(Str.fromInt(f(3).v2)); // print 42
+    let _ = Process.println(Str.fromInt(f(2).v2)); // print 2
+    let _ = Process.println(Str.fromInt(f(3).v2)); // print 42
   }
 }
 
@@ -1791,14 +1791,14 @@ class Main {
         source_code: r#"
 class Main {
   function main(): unit = {
-    val a = if (true) then
+    let a = if (true) then
       (if (false) then 10000 else 3)
     else
       4
     ;
-    val b = if (false) then 4 else if (true) then 3 else 20000;
-    val _ = Process.println(Str.fromInt(a));
-    val _ = Process.println(Str.fromInt(b));
+    let b = if (false) then 4 else if (true) then 3 else 20000;
+    let _ = Process.println(Str.fromInt(a));
+    let _ = Process.println(Str.fromInt(b));
     if (a != b) then Process.panic("Not OK") else Process.println("OK")
   }
 }
@@ -1810,8 +1810,8 @@ class Main {
         source_code: r#"
 class Main {
   function main(): unit = {
-    val i = 2;
-    val j = 3;
+    let i = 2;
+    let j = 3;
     if (i > j) then
       Process.println("shouldn't reach here")
     else if (j < i) then
@@ -1830,8 +1830,8 @@ class Main {
         source_code: r#"
 class Main {
   function main(): unit = {
-    val i = 3;
-    val j = 2;
+    let i = 3;
+    let j = 2;
     if (i > j) then
       Process.println("success")
     else if (j < i) then
@@ -1855,7 +1855,7 @@ class Option<T>(Some(T), None(bool)) {
 
 class Main {
   function main(): unit = {
-    val c = Option.Some(3).map((x: int) -> "empty");
+    let c = Option.Some(3).map((x: int) -> "empty");
   }
 }
 "#,
@@ -1869,13 +1869,13 @@ class Main {
 
   function loopy(i: int): int =
     if (i >= 10) then 0 else {
-      val j: int = i * 3 + 100;
-      val _: unit = Main.printInt(j);
+      let j: int = i * 3 + 100;
+      let _: unit = Main.printInt(j);
       Main.loopy(i + 2)
     }
 
   function main(): unit = {
-    val _: int = Main.loopy(0);
+    let _: int = Main.loopy(0);
   }
 
 }
@@ -1887,16 +1887,16 @@ class Main {
         source_code: r#"
 class Option<T>(None(unit), Some(T)) {
   method <R> mapButIgnore(f: (T) -> R): unit = {
-    val _ = match (this) {
+    let _ = match (this) {
       None(_) -> Option.None<R>({}),
       Some(d) -> Option.Some(f(d)),
     };
   }
 
   function main(): unit = {
-    val none = Option.None<int>({});
-    val noneMapped = none.mapButIgnore((it) -> it);
-    val _ = Option.Some(noneMapped).mapButIgnore((it) -> it);
+    let none = Option.None<int>({});
+    let noneMapped = none.mapButIgnore((it) -> it);
+    let _ = Option.Some(noneMapped).mapButIgnore((it) -> it);
   }
 }
 
@@ -1919,9 +1919,9 @@ class Main {
   function uselessRecursion(n: int): unit = if (n == 0) then {} else Main.uselessRecursion(n - 1)
 
   function main(): unit = {
-    val _ = Process.println(Str.fromInt(Main.factorial(4)));
-    val _ = Process.println(Str.fromInt(Main.fib(10)));
-    val _ = Main.uselessRecursion(3);
+    let _ = Process.println(Str.fromInt(Main.factorial(4)));
+    let _ = Process.println(Str.fromInt(Main.fib(10)));
+    let _ = Main.uselessRecursion(3);
   }
 }
 "#,
@@ -1945,14 +1945,14 @@ class Main {
         source_code: r#"
 class Main(val a: int, val b: bool) {
   function main(): unit = {
-    val _ = 3;
-    val a = 2;
-    val c = a - 3;
-    val d = c * 7;
-    val b = true;
-    val e = c;
-    val _ = Main.init(e, b);
-    val finalValue = a + c + d + (if (b) then 0 else Process.panic("")) + e; // 2 + (-1) + (-7) + (-1) = -7;
+    let _ = 3;
+    let a = 2;
+    let c = a - 3;
+    let d = c * 7;
+    let b = true;
+    let e = c;
+    let _ = Main.init(e, b);
+    let finalValue = a + c + d + (if (b) then 0 else Process.panic("")) + e; // 2 + (-1) + (-7) + (-1) = -7;
     Process.println(Str.fromInt(finalValue))
   }
 }
@@ -1996,61 +1996,61 @@ true
         source_code: r#"
 class Main {
   function printAndReturn(b: bool, i: int): bool = {
-    val _ = Process.println(Str.fromInt(i));
+    let _ = Process.println(Str.fromInt(i));
     b
   }
 
   function printlnBool(b: bool): unit = if (b) then Process.println("true") else Process.println("false")
 
   function testAndShortCircuitInExpression(): unit = {
-    val b1 = Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1); // [0] [1]
-    val _ = Main.printlnBool(b1); // false
-    val b2 = Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1); // [0] [1]
-    val _ = Main.printlnBool(b2); // true
-    val b3 = Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1); // [0]
-    val _ = Main.printlnBool(b3); // false
-    val b4 = Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1); // [0]
-    val _ = Main.printlnBool(b4); // false
+    let b1 = Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1); // [0] [1]
+    let _ = Main.printlnBool(b1); // false
+    let b2 = Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1); // [0] [1]
+    let _ = Main.printlnBool(b2); // true
+    let b3 = Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1); // [0]
+    let _ = Main.printlnBool(b3); // false
+    let b4 = Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1); // [0]
+    let _ = Main.printlnBool(b4); // false
   }
 
   function testOrShortCircuitInExpression(): unit = {
-    val b1 = Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1); // [0]
-    val _ = Main.printlnBool(b1); // true
-    val b2 = Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1); // [0]
-    val _ = Main.printlnBool(b2); // true
-    val b3 = Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1); // [0] [1]
-    val _ = Main.printlnBool(b3); // false
-    val b4 = Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1); // [0] [1]
-    val _ = Main.printlnBool(b4); // true
+    let b1 = Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1); // [0]
+    let _ = Main.printlnBool(b1); // true
+    let b2 = Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1); // [0]
+    let _ = Main.printlnBool(b2); // true
+    let b3 = Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1); // [0] [1]
+    let _ = Main.printlnBool(b3); // false
+    let b4 = Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1); // [0] [1]
+    let _ = Main.printlnBool(b4); // true
   }
 
   function testAndShortCircuitInIf(): unit = {
     // [0] [1]
-    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then Process.panic<unit>("Ah") else {};
+    let _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then Process.panic<unit>("Ah") else {};
     // [0] [1]
-    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1)) then {} else Process.panic("Ah");
+    let _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1)) then {} else Process.panic("Ah");
     // [0]
-    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then Process.panic<unit>("Ah") else {};
+    let _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then Process.panic<unit>("Ah") else {};
     // [0]
-    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then Process.panic<unit>("Ah") else {};
+    let _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then Process.panic<unit>("Ah") else {};
   }
 
   function testOrShortCircuitInIf(): unit = {
     // [0]
-    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1)) then {} else Process.panic("Ah");
+    let _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1)) then {} else Process.panic("Ah");
     // [0]
-    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {} else Process.panic("Ah");
+    let _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {} else Process.panic("Ah");
     // [0] [1]
-    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)) then Process.panic<unit>("Ah") else {};
+    let _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)) then Process.panic<unit>("Ah") else {};
     // [0] [1]
-    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1)) then {} else Process.panic("Ah");
+    let _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1)) then {} else Process.panic("Ah");
   }
 
   function main(): unit = {
-    val _ = Main.testAndShortCircuitInExpression();
-    val _ = Main.testOrShortCircuitInExpression();
-    val _ = Main.testAndShortCircuitInIf();
-    val _ = Main.testOrShortCircuitInIf();
+    let _ = Main.testAndShortCircuitInExpression();
+    let _ = Main.testOrShortCircuitInExpression();
+    let _ = Main.testAndShortCircuitInIf();
+    let _ = Main.testOrShortCircuitInIf();
   }
 }
 "#,
@@ -2080,8 +2080,8 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
     match (this) {
       Nil(_) -> {  }
       Cons(pair) -> {
-        val [v, rest] = pair;
-        val _ = f(v);
+        let [v, rest] = pair;
+        let _ = f(v);
         rest.iter(f)
       }
     }
@@ -2092,7 +2092,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
       Cons(pair) -> match (pair.e1) {
         Nil(_) -> this,
         Cons(_) -> {
-          val [l1, l2] = this.split(List.nil<T>(), List.nil<T>());
+          let [l1, l2] = this.split(List.nil<T>(), List.nil<T>());
           l1.sort().merge(l2.sort())
         }
       }
@@ -2104,8 +2104,8 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
       Cons(pair1) -> match (other) {
         Nil(_) -> this,
         Cons(pair2) -> {
-          val [h1, t1] = pair1;
-          val [h2, t2] = pair2;
+          let [h1, t1] = pair1;
+          let [h2, t2] = pair2;
           if (h1.compare(h2) < 0) then t1.merge(other).cons(h1) else t2.merge(this).cons(h2)
         }
       }
@@ -2115,7 +2115,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
     match (this) {
       Nil(_) -> Pair.init(y, z),
       Cons(pair) -> {
-        val [x, rest] = pair;
+        let [x, rest] = pair;
         rest.split(z, y.cons(x))
       }
     }
@@ -2123,7 +2123,7 @@ class List<T: Comparable<T>>(Nil(unit), Cons(Pair<T, List<T>>)) {
 
 class Main {
   function main(): unit = {
-    val list = List.of(BoxedInt.init(4)).cons(BoxedInt.init(2)).cons(BoxedInt.init(1)).cons(
+    let list = List.of(BoxedInt.init(4)).cons(BoxedInt.init(2)).cons(BoxedInt.init(1)).cons(
       BoxedInt.init(3)
     );
     list.sort().iter((n) -> Process.println(Str.fromInt(n.i)))
@@ -2137,8 +2137,8 @@ class Main {
         source_code: r#"
 class Main {
   function main(): unit = {
-    val a1 = "a";
-    val a2 = "a";
+    let a1 = "a";
+    let a2 = "a";
     if a1 == a2 then
       Process.println("OK")
     else {
@@ -2155,57 +2155,57 @@ class Main {
 class Main {
   function main(): unit = {
     // without constant propagation, this program will spill a lot!
-    val v0 = 0;
-    val v1 = 0;
-    val v2 = 0;
-    val v3 = 0;
-    val v4 = 0;
-    val v5 = 0;
-    val v6 = 0;
-    val v7 = 0;
-    val v8 = 0;
-    val v9 = 0;
-    val v10 = 0;
-    val v11 = 0;
-    val v12 = 0;
-    val v13 = 0;
-    val v14 = 0;
-    val v15 = 0;
-    val v16 = 0;
-    val v17 = 0;
-    val v18 = 0;
-    val v19 = 0;
-    val v20 = 0;
-    val v21 = 0;
-    val v22 = 0;
-    val v23 = 0;
-    val v24 = 0;
-    val v25 = 0;
-    val v26 = 0;
-    val v27 = 0;
-    val v28 = 0;
-    val v29 = 0;
-    val v30 = 0;
-    val v31 = 0;
-    val v32 = 0;
-    val v33 = 0;
-    val v34 = 0;
-    val v35 = 0;
-    val v36 = 0;
-    val v37 = 0;
-    val v38 = 0;
-    val v39 = 0;
-    val v40 = 0;
-    val v41 = 0;
-    val v42 = 0;
-    val v43 = 0;
-    val v44 = 0;
-    val v45 = 0;
-    val v46 = 0;
-    val v47 = 0;
-    val v48 = 0;
-    val v49 = 0;
-    val result =
+    let v0 = 0;
+    let v1 = 0;
+    let v2 = 0;
+    let v3 = 0;
+    let v4 = 0;
+    let v5 = 0;
+    let v6 = 0;
+    let v7 = 0;
+    let v8 = 0;
+    let v9 = 0;
+    let v10 = 0;
+    let v11 = 0;
+    let v12 = 0;
+    let v13 = 0;
+    let v14 = 0;
+    let v15 = 0;
+    let v16 = 0;
+    let v17 = 0;
+    let v18 = 0;
+    let v19 = 0;
+    let v20 = 0;
+    let v21 = 0;
+    let v22 = 0;
+    let v23 = 0;
+    let v24 = 0;
+    let v25 = 0;
+    let v26 = 0;
+    let v27 = 0;
+    let v28 = 0;
+    let v29 = 0;
+    let v30 = 0;
+    let v31 = 0;
+    let v32 = 0;
+    let v33 = 0;
+    let v34 = 0;
+    let v35 = 0;
+    let v36 = 0;
+    let v37 = 0;
+    let v38 = 0;
+    let v39 = 0;
+    let v40 = 0;
+    let v41 = 0;
+    let v42 = 0;
+    let v43 = 0;
+    let v44 = 0;
+    let v45 = 0;
+    let v46 = 0;
+    let v47 = 0;
+    let v48 = 0;
+    let v49 = 0;
+    let result =
     v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 +
     v10 + v11 + v12 + v13 + v14 + v15 + v16 + v17 + v18 + v19 +
     v20 + v21 + v22 + v23 + v24 + v25 + v26 + v27 + v28 + v29 +
@@ -2227,8 +2227,8 @@ class Clazz(val t: Pair<Triple<int, int, bool>, Str>) {
     function of(): Clazz = Clazz.init([[42, 2, false], ""])
 
     method thisTest(): int = {
-      val [[i, _, _], _] = this.t;
-      val {t as {e0 as [j, _, _], e1}} = this;
+      let [[i, _, _], _] = this.t;
+      let {t as {e0 as [j, _, _], e1}} = this;
       i + j
     }
 }
@@ -2246,7 +2246,7 @@ class Option<T>(Some(T), None) {
       Some(t) -> Option.Some(f(t)),
     }
   function test(): unit = {
-    val _ = match (Option.None<(Str) -> int>()) {
+    let _ = match (Option.None<(Str) -> int>()) {
       None -> "",
       Some(f) -> Str.fromInt(f("")),
     };
@@ -2262,20 +2262,20 @@ class List<T>(Nil, Cons(T, List<T>)) {
 
 class Main {
   function literalsAndSimpleExpressions(): unit = {
-    val _ = 42;
-    val _ = -65536;
-    val _ = true;
-    val _ = false;
-    val _ = !true;
-    val _ = !false;
-    val _ = "aaa";
-    val _ = {};
+    let _ = 42;
+    let _ = -65536;
+    let _ = true;
+    let _ = false;
+    let _ = !true;
+    let _ = !false;
+    let _ = "aaa";
+    let _ = {};
   }
 
   function variables(a: int, b: Str): unit = {
-    val c = 3 + a;
-    val d = b == b;
-    val e = c % c;
+    let c = 3 + a;
+    let d = b == b;
+    let e = c % c;
   }
 
   function methodAndFunctionReference(): int =
@@ -2284,33 +2284,33 @@ class Main {
   function panicTest(reason: Str): Clazz = Process.panic(reason)
 
   function functionsTest(): unit = {
-    val _ = Main.literalsAndSimpleExpressions();
-    val _ = Main.variables(3, "hi");
-    val _ = Main.methodAndFunctionReference();
-    val _ = Main.panicTest("Ah!").thisTest();
-    val _ = Main.binaryExpressions();
-    val _ = Main.lambdaTest(3);
+    let _ = Main.literalsAndSimpleExpressions();
+    let _ = Main.variables(3, "hi");
+    let _ = Main.methodAndFunctionReference();
+    let _ = Main.panicTest("Ah!").thisTest();
+    let _ = Main.binaryExpressions();
+    let _ = Main.lambdaTest(3);
     Main.functionsTest()
   }
 
   function binaryExpressions(): unit = {
-    val a: int = 1 * 2 + 3 / 4 % 5 - 6;
-    val b: bool = a < a && 1 > 3 || 2 <= 4 && 5 >= 6;
-    val c: bool = a == 2;
-    val d: bool = Main.panicTest("ha") != Clazz.of();
-    val e: bool = List.of(3) == List.of(a * 3);
+    let a: int = 1 * 2 + 3 / 4 % 5 - 6;
+    let b: bool = a < a && 1 > 3 || 2 <= 4 && 5 >= 6;
+    let c: bool = a == 2;
+    let d: bool = Main.panicTest("ha") != Clazz.of();
+    let e: bool = List.of(3) == List.of(a * 3);
   }
 
   function lambdaTest(a: int): Str = {
-    val b = Option.none<int>().toSome(3).map(Main.lambdaTest);
-    val c = Option.none<int>().toSome(3).map((x) -> "empty");
+    let b = Option.none<int>().toSome(3).map(Main.lambdaTest);
+    let c = Option.none<int>().toSome(3).map((x) -> "empty");
     "hello world"
   }
 
   function main(): unit = {
-    val _ = Main.literalsAndSimpleExpressions();
-    val _ = Main.variables(3, "sss");
-    val v = Main.methodAndFunctionReference(); // 42 + 42 == 84
+    let _ = Main.literalsAndSimpleExpressions();
+    let _ = Main.variables(3, "sss");
+    let v = Main.methodAndFunctionReference(); // 42 + 42 == 84
     Process.println(Str.fromInt(v))
   }
 }

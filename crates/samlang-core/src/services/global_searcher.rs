@@ -248,9 +248,9 @@ mod tests {
       function bar(): int = 3
 
       method foo(): unit = {
-        val _ = (f: Foo, b: Option<Foo>, a: (Foo)->Foo) -> this.a;
-        val {a, b} = this;
-        val [c, d] = [1, 2];
+        let _ = (f: Foo, b: Option<Foo>, a: (Foo)->Foo) -> this.a;
+        let {a, b} = this;
+        let [c, d] = [1, 2];
       }
     }
 
@@ -270,13 +270,13 @@ mod tests {
 
     class Obj(val d: int, val e: int) {
       function valExample(): int = {
-        val a: int = 1;
-        val b = 2;
-        val c = 3; // c = 3
-        val { e as d } = Obj.init(5, 4); // d = 4
-        val f = Obj.init(5, 4); // d = 4
-        val g = Obj.init(d, 4); // d = 4
-        val _ = f.d;
+        let a: int = 1;
+        let b = 2;
+        let c = 3; // c = 3
+        let { e as d } = Obj.init(5, 4); // d = 4
+        let f = Obj.init(5, 4); // d = 4
+        let g = Obj.init(d, 4); // d = 4
+        let _ = f.d;
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
         a + b * c / d
       }
@@ -288,7 +288,7 @@ mod tests {
       function identity(a: int): int = a
 
       function random(): int = {
-        val a = 42; // very random
+        let a = 42; // very random
         a
       }
 
@@ -302,10 +302,10 @@ mod tests {
         )
 
       function nestedVal(): int = {
-        val a = {
-          val b = 4;
-          val c = {
-            val c = b;
+        let a = {
+          let b = 4;
+          let c = {
+            let c = b;
             b
           };
           c
@@ -314,7 +314,7 @@ mod tests {
       }
 
       function main(): unit = {
-        val _ = Process.println(Str.fromInt(Main.identity(
+        let _ = Process.println(Str.fromInt(Main.identity(
           Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
         )));
         Main.main()

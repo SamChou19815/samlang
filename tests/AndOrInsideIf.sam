@@ -2,15 +2,15 @@ import { ForTests } from tests.StdLib;
 
 class AndOrInsideIf {
   private function test(): int = {
-    val i = 1;
-    val j = 2;
+    let i = 1;
+    let j = 2;
     if i < j /*  */ && i > 0 && /* f */ j > 0 then {
-      val a = 3;
-      val b = 4;
+      let a = 3;
+      let b = 4;
       if a > b || a + b > 0 && true then 1 else 2
     } else {
-      val a = 3;
-      val b = 4;
+      let a = 3;
+      let b = 4;
       if a == 2 || b == 4 then { 3 } else { 4 }
     }
   }
