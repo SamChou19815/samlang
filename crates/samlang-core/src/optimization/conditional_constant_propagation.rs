@@ -3,7 +3,7 @@ use super::optimization_common::{
 };
 use crate::{ast::hir::Operator, ast::mir::*};
 use itertools::Itertools;
-use samlang_collections::LocalStackedContext;
+use samlang_collections::local_stacked_context::LocalStackedContext;
 use samlang_heap::{Heap, PStr};
 
 fn evaluate_bin_op(operator: Operator, v1: i32, v2: i32) -> Option<i32> {
