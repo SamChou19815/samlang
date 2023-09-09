@@ -442,12 +442,12 @@ interface Foo {}
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {
-    val c = a;
-    val g = 3;
-    val {f, g as h} = Main.init(3, g);
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (x, y) -> if x + y * 3 > h then panic(f) else println(h);
+    let c = a;
+    let g = 3;
+    let {f, g as h} = Main.init(3, g);
+    let _ = Obj.Tagged(h);
+    let _ = f + h;
+    let lambda1 = (x, y) -> if x + y * 3 > h then panic(f) else println(h);
     match lambda1(3, !h) {
       None(_) -> 1.d,
       Some(dd) -> dd,
@@ -498,7 +498,7 @@ class Main {
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {
-    val c = a.foo;
+    let c = a.foo;
   }
 }
 
@@ -514,7 +514,7 @@ interface Foo {}
     assert_eq!(
       r#"class Main {
   function test(renAmeD: int, b: bool): unit = {
-    val c = renAmeD.foo;
+    let c = renAmeD.foo;
   }
 }
 
@@ -544,13 +544,13 @@ interface Foo
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {
-    val c = a;
-    val g = 3;
-    val {f, g as h} = Main.init(3, g);
-    val [i, j] = [3, g];
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then panic(f) else println(h);
+    let c = a;
+    let g = 3;
+    let {f, g as h} = Main.init(3, g);
+    let [i, j] = [3, g];
+    let _ = Obj.Tagged(h);
+    let _ = f + h;
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then panic(f) else println(h);
     match lambda1(3, !h) {
       None(_) -> 1.d,
       Some(dd) -> dd,
@@ -580,13 +580,13 @@ class Main {
       Location::from_pos(3, 8, 3, 9),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    val renAmeD = a;
-    val g = 3;
-    val { f, g as h } = Main.init(3, g);
-    val [i, j] = [3, g];
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let renAmeD = a;
+    let g = 3;
+    let { f, g as h } = Main.init(3, g);
+    let [i, j] = [3, g];
+    let _ = Obj.Tagged(h);
+    let _ = f + h;
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)
@@ -605,13 +605,13 @@ class Main {
       Location::from_pos(3, 12, 3, 13),
       r#"class Main {
   function test(renAmeD: int, b: bool): unit = {
-    val c = renAmeD;
-    val g = 3;
-    val { f, g as h } = Main.init(3, g);
-    val [i, j] = [3, g];
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let c = renAmeD;
+    let g = 3;
+    let { f, g as h } = Main.init(3, g);
+    let [i, j] = [3, g];
+    let _ = Obj.Tagged(h);
+    let _ = f + h;
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)
@@ -630,13 +630,13 @@ class Main {
       Location::from_pos(5, 35, 5, 36),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    val c = a;
-    val renAmeD = 3;
-    val { f, g as h } = Main.init(3, renAmeD);
-    val [i, j] = [3, renAmeD];
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let c = a;
+    let renAmeD = 3;
+    let { f, g as h } = Main.init(3, renAmeD);
+    let [i, j] = [3, renAmeD];
+    let _ = Obj.Tagged(h);
+    let _ = f + h;
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)
@@ -655,13 +655,13 @@ class Main {
       Location::from_pos(8, 12, 8, 13),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    val c = a;
-    val g = 3;
-    val { f as renAmeD, g as h } = Main.init(3, g);
-    val [i, j] = [3, g];
-    val _ = Obj.Tagged(h);
-    val _ = renAmeD + h;
-    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let c = a;
+    let g = 3;
+    let { f as renAmeD, g as h } = Main.init(3, g);
+    let [i, j] = [3, g];
+    let _ = Obj.Tagged(h);
+    let _ = renAmeD + h;
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(renAmeD)
     } else {
       println(h)
@@ -680,13 +680,13 @@ class Main {
       Location::from_pos(8, 16, 8, 17),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    val c = a;
-    val g = 3;
-    val { f, g as renAmeD } = Main.init(3, g);
-    val [i, j] = [3, g];
-    val _ = Obj.Tagged(renAmeD);
-    val _ = f + renAmeD;
-    val lambda1 = (
+    let c = a;
+    let g = 3;
+    let { f, g as renAmeD } = Main.init(3, g);
+    let [i, j] = [3, g];
+    let _ = Obj.Tagged(renAmeD);
+    let _ = f + renAmeD;
+    let lambda1 = (
       x,
       y
     ) -> if x + y + i + j * 3 > renAmeD then {
@@ -708,13 +708,13 @@ class Main {
       Location::from_pos(9, 22, 9, 23),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    val c = a;
-    val g = 3;
-    val { f, g as h } = Main.init(3, g);
-    val [i, j] = [3, g];
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (
+    let c = a;
+    let g = 3;
+    let { f, g as h } = Main.init(3, g);
+    let [i, j] = [3, g];
+    let _ = Obj.Tagged(h);
+    let _ = f + h;
+    let lambda1 = (
       x,
       renAmeD
     ) -> if x + renAmeD + i + j * 3 > h then {
@@ -736,13 +736,13 @@ class Main {
       Location::from_pos(9, 39, 9, 40),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    val c = a;
-    val g = 3;
-    val { f, g as h } = Main.init(3, g);
-    val [renAmeD, j] = [3, g];
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (
+    let c = a;
+    let g = 3;
+    let { f, g as h } = Main.init(3, g);
+    let [renAmeD, j] = [3, g];
+    let _ = Obj.Tagged(h);
+    let _ = f + h;
+    let lambda1 = (
       x,
       y
     ) -> if x + y + renAmeD + j * 3 > h then {
@@ -764,13 +764,13 @@ class Main {
       Location::from_pos(12, 18, 12, 20),
       r#"class Main {
   function test(a: int, b: bool): unit = {
-    val c = a;
-    val g = 3;
-    val { f, g as h } = Main.init(3, g);
-    val [i, j] = [3, g];
-    val _ = Obj.Tagged(h);
-    val _ = f + h;
-    val lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
+    let c = a;
+    let g = 3;
+    let { f, g as h } = Main.init(3, g);
+    let [i, j] = [3, g];
+    let _ = Obj.Tagged(h);
+    let _ = f + h;
+    let lambda1 = (x, y) -> if x + y + i + j * 3 > h then {
       panic(f)
     } else {
       println(h)

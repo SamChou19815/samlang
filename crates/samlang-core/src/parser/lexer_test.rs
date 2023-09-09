@@ -30,7 +30,7 @@ mod tests {
   #[test]
   fn good_test_0() {
     let expected = vec![
-      ".sam:1:1-1:4: val",
+      ".sam:1:1-1:4: let",
       ".sam:1:5-1:6: l",
       ".sam:1:7-1:8: =",
       ".sam:1:9-1:13: List",
@@ -45,7 +45,7 @@ mod tests {
       ".sam:1:33-1:38: \"...\"",
       ".sam:1:38-1:39: )",
     ];
-    assert_eq!(expected, lex(r#"val l = List.of("SAMLANG").cons("...")"#));
+    assert_eq!(expected, lex(r#"let l = List.of("SAMLANG").cons("...")"#));
   }
 
   #[test]
@@ -53,15 +53,15 @@ mod tests {
     let program = r#"
 class Main {
   function main(): unit = {
-    val i: int = 1;
-    val j: int = 2;
+    let i: int = 1;
+    let j: int = 2;
     if ((i < j && i > 0) && j > 0) then {
-      val a: int = 3;
-      val b: int = 4;
+      let a: int = 3;
+      let b: int = 4;
       if (a > b || a + b > 0 && true) then Process.println("one") else Process.println("two")
     } else {
-      val a: int = 3;
-      val b: int = 4;
+      let a: int = 3;
+      let b: int = 4;
       if (a == 2 || b == 4) then { Process.println("three") } else { Process.println("four") }
     }
   }
@@ -80,14 +80,14 @@ class Main {
       ".sam:3:20-3:24: unit",
       ".sam:3:25-3:26: =",
       ".sam:3:27-3:28: {",
-      ".sam:4:5-4:8: val",
+      ".sam:4:5-4:8: let",
       ".sam:4:9-4:10: i",
       ".sam:4:10-4:11: :",
       ".sam:4:12-4:15: int",
       ".sam:4:16-4:17: =",
       ".sam:4:18-4:19: 1",
       ".sam:4:19-4:20: ;",
-      ".sam:5:5-5:8: val",
+      ".sam:5:5-5:8: let",
       ".sam:5:9-5:10: j",
       ".sam:5:10-5:11: :",
       ".sam:5:12-5:15: int",
@@ -112,14 +112,14 @@ class Main {
       ".sam:6:34-6:35: )",
       ".sam:6:36-6:40: then",
       ".sam:6:41-6:42: {",
-      ".sam:7:7-7:10: val",
+      ".sam:7:7-7:10: let",
       ".sam:7:11-7:12: a",
       ".sam:7:12-7:13: :",
       ".sam:7:14-7:17: int",
       ".sam:7:18-7:19: =",
       ".sam:7:20-7:21: 3",
       ".sam:7:21-7:22: ;",
-      ".sam:8:7-8:10: val",
+      ".sam:8:7-8:10: let",
       ".sam:8:11-8:12: b",
       ".sam:8:12-8:13: :",
       ".sam:8:14-8:17: int",
@@ -157,14 +157,14 @@ class Main {
       ".sam:10:5-10:6: }",
       ".sam:10:7-10:11: else",
       ".sam:10:12-10:13: {",
-      ".sam:11:7-11:10: val",
+      ".sam:11:7-11:10: let",
       ".sam:11:11-11:12: a",
       ".sam:11:12-11:13: :",
       ".sam:11:14-11:17: int",
       ".sam:11:18-11:19: =",
       ".sam:11:20-11:21: 3",
       ".sam:11:21-11:22: ;",
-      ".sam:12:7-12:10: val",
+      ".sam:12:7-12:10: let",
       ".sam:12:11-12:12: b",
       ".sam:12:12-12:13: :",
       ".sam:12:14-12:17: int",
@@ -218,11 +218,11 @@ class Option<T>(None(unit), Some(T)) {
 
 class Obj(val d: int, val e: int) {
   function valExample(): int = {
-    val a: int = 1;
-    val b: int = 2;
-    val [_, c]: [Str * int] = ["dd", 3];
-    val { e as d }: Obj = { d: 5, e: 4 };
-    val _: int = 42;
+    let a: int = 1;
+    let b: int = 2;
+    let [_, c]: [Str * int] = ["dd", 3];
+    let { e as d }: Obj = { d: 5, e: 4 };
+    let _: int = 42;
     a + (b * c) / d
   }
 
@@ -232,7 +232,7 @@ class Main {
   function identity(a: int): int = a
 
   function random(): int = {
-    val a: int = 42;
+    let a: int = 42;
     a
   }
 
@@ -242,15 +242,15 @@ class Main {
     if (b == 0) then Process.panic("Division by zero is illegal!") else a / b
 
   function nestedVal(): int = {
-    val a: int = {
-      val b: int = 4;
-      val c: int = {
-        val c: int = b;
+    let a: int = {
+      let b: int = 4;
+      let c: int = {
+        let c: int = b;
         b
       };
       c
     };
-    val [e, b, _]: [int * Str * bool] = [1, "bool", true];
+    let [e, b, _]: [int * Str * bool] = [1, "bool", true];
     a + 1
   }
 
@@ -353,21 +353,21 @@ class Main {
       ".sam:10:26-10:29: int",
       ".sam:10:30-10:31: =",
       ".sam:10:32-10:33: {",
-      ".sam:11:5-11:8: val",
+      ".sam:11:5-11:8: let",
       ".sam:11:9-11:10: a",
       ".sam:11:10-11:11: :",
       ".sam:11:12-11:15: int",
       ".sam:11:16-11:17: =",
       ".sam:11:18-11:19: 1",
       ".sam:11:19-11:20: ;",
-      ".sam:12:5-12:8: val",
+      ".sam:12:5-12:8: let",
       ".sam:12:9-12:10: b",
       ".sam:12:10-12:11: :",
       ".sam:12:12-12:15: int",
       ".sam:12:16-12:17: =",
       ".sam:12:18-12:19: 2",
       ".sam:12:19-12:20: ;",
-      ".sam:13:5-13:8: val",
+      ".sam:13:5-13:8: let",
       ".sam:13:9-13:10: [",
       ".sam:13:10-13:11: _",
       ".sam:13:11-13:12: ,",
@@ -386,7 +386,7 @@ class Main {
       ".sam:13:38-13:39: 3",
       ".sam:13:39-13:40: ]",
       ".sam:13:40-13:41: ;",
-      ".sam:14:5-14:8: val",
+      ".sam:14:5-14:8: let",
       ".sam:14:9-14:10: {",
       ".sam:14:11-14:12: e",
       ".sam:14:13-14:15: as",
@@ -405,7 +405,7 @@ class Main {
       ".sam:14:38-14:39: 4",
       ".sam:14:40-14:41: }",
       ".sam:14:41-14:42: ;",
-      ".sam:15:5-15:8: val",
+      ".sam:15:5-15:8: let",
       ".sam:15:9-15:10: _",
       ".sam:15:10-15:11: :",
       ".sam:15:12-15:15: int",
@@ -445,7 +445,7 @@ class Main {
       ".sam:24:22-24:25: int",
       ".sam:24:26-24:27: =",
       ".sam:24:28-24:29: {",
-      ".sam:25:5-25:8: val",
+      ".sam:25:5-25:8: let",
       ".sam:25:9-25:10: a",
       ".sam:25:10-25:11: :",
       ".sam:25:12-25:15: int",
@@ -501,26 +501,26 @@ class Main {
       ".sam:34:25-34:28: int",
       ".sam:34:29-34:30: =",
       ".sam:34:31-34:32: {",
-      ".sam:35:5-35:8: val",
+      ".sam:35:5-35:8: let",
       ".sam:35:9-35:10: a",
       ".sam:35:10-35:11: :",
       ".sam:35:12-35:15: int",
       ".sam:35:16-35:17: =",
       ".sam:35:18-35:19: {",
-      ".sam:36:7-36:10: val",
+      ".sam:36:7-36:10: let",
       ".sam:36:11-36:12: b",
       ".sam:36:12-36:13: :",
       ".sam:36:14-36:17: int",
       ".sam:36:18-36:19: =",
       ".sam:36:20-36:21: 4",
       ".sam:36:21-36:22: ;",
-      ".sam:37:7-37:10: val",
+      ".sam:37:7-37:10: let",
       ".sam:37:11-37:12: c",
       ".sam:37:12-37:13: :",
       ".sam:37:14-37:17: int",
       ".sam:37:18-37:19: =",
       ".sam:37:20-37:21: {",
-      ".sam:38:9-38:12: val",
+      ".sam:38:9-38:12: let",
       ".sam:38:13-38:14: c",
       ".sam:38:14-38:15: :",
       ".sam:38:16-38:19: int",
@@ -533,7 +533,7 @@ class Main {
       ".sam:41:7-41:8: c",
       ".sam:42:5-42:6: }",
       ".sam:42:6-42:7: ;",
-      ".sam:43:5-43:8: val",
+      ".sam:43:5-43:8: let",
       ".sam:43:9-43:10: [",
       ".sam:43:10-43:11: e",
       ".sam:43:11-43:12: ,",
@@ -641,8 +641,8 @@ class Main {
     let program = r#"
 class Main {
   function main(): unit = {
-    val i: int = 1;
-    val j: int = 2;
+    let i: int = 1;
+    let j: int = 2;
     /* block comment lol
     ol ol
     0000l */
@@ -665,14 +665,14 @@ class Main {
       ".sam:3:20-3:24: unit",
       ".sam:3:25-3:26: =",
       ".sam:3:27-3:28: {",
-      ".sam:4:5-4:8: val",
+      ".sam:4:5-4:8: let",
       ".sam:4:9-4:10: i",
       ".sam:4:10-4:11: :",
       ".sam:4:12-4:15: int",
       ".sam:4:16-4:17: =",
       ".sam:4:18-4:19: 1",
       ".sam:4:19-4:20: ;",
-      ".sam:5:5-5:8: val",
+      ".sam:5:5-5:8: let",
       ".sam:5:9-5:10: j",
       ".sam:5:10-5:11: :",
       ".sam:5:12-5:15: int",

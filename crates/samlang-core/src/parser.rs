@@ -110,17 +110,17 @@ mod tests {
     expect_good_expr("() -> 3");
     expect_good_expr("(foo) -> 3");
     expect_good_expr("(foo: bool) -> 3");
-    expect_good_expr("{ val a = 3; }");
-    expect_good_expr("{ val a: () -> int = () -> 3; }");
-    expect_good_expr("{ val a = 3; val b = 3; }");
-    expect_good_expr("{ val a = 3; a }");
-    expect_good_expr("{ val a: int = 3; }");
-    expect_good_expr("{ val a: unit = {}; }");
-    expect_good_expr("{ val [foo, _]: Type = [1, 2]; }");
-    expect_good_expr("{ val {foo, bar as baz}: Type = 3; }");
-    expect_good_expr("{ val _: Int<bool> = 3; }");
-    expect_good_expr("{ val _: HAHAHA = 3; }");
-    expect_good_expr("{ val _: (int, bool) -> Str = 3; }");
+    expect_good_expr("{ let a = 3; }");
+    expect_good_expr("{ let a: () -> int = () -> 3; }");
+    expect_good_expr("{ let a = 3; let b = 3; }");
+    expect_good_expr("{ let a = 3; a }");
+    expect_good_expr("{ let a: int = 3; }");
+    expect_good_expr("{ let a: unit = {}; }");
+    expect_good_expr("{ let [foo, _]: Type = [1, 2]; }");
+    expect_good_expr("{ let {foo, bar as baz}: Type = 3; }");
+    expect_good_expr("{ let _: Int<bool> = 3; }");
+    expect_good_expr("{ let _: HAHAHA = 3; }");
+    expect_good_expr("{ let _: (int, bool) -> Str = 3; }");
     expect_good_expr("{ }");
   }
 
@@ -163,15 +163,15 @@ mod tests {
     expect_bad_expr("(: int) -> 3");
     expect_bad_expr("(:) -> 3");
     expect_bad_expr("(a:) -> 3");
-    expect_bad_expr("{ val a = /* empty */");
-    expect_bad_expr("{ val a = /* empty */ }");
-    expect_bad_expr("{ val  = 3 }");
-    expect_bad_expr("{ val a = int }");
-    expect_bad_expr("{ val a:  = 3; a }");
-    expect_bad_expr("{ val a: <int> = 3; a }");
-    expect_bad_expr("{ val {foo, as baz}: Type = 3; }");
-    expect_bad_expr("{ val {foo, bar as }: Type = 3; }");
-    expect_bad_expr("{ val a: () ->  = 3; a }");
+    expect_bad_expr("{ let a = /* empty */");
+    expect_bad_expr("{ let a = /* empty */ }");
+    expect_bad_expr("{ let  = 3 }");
+    expect_bad_expr("{ let a = int }");
+    expect_bad_expr("{ let a:  = 3; a }");
+    expect_bad_expr("{ let a: <int> = 3; a }");
+    expect_bad_expr("{ let {foo, as baz}: Type = 3; }");
+    expect_bad_expr("{ let {foo, bar as }: Type = 3; }");
+    expect_bad_expr("{ let a: () ->  = 3; a }");
   }
 
   #[test]
@@ -227,11 +227,11 @@ mod tests {
 
     class TypeInference {
       private function <T: Int> notAnnotated(): unit = {
-        val _ = (a, b, c) -> if a(b + 1) then b else c;
+        let _ = (a, b, c) -> if a(b + 1) then b else c;
       }
       // Read the docs to see how we do the type inference.
       function annotated(): unit = {
-        val _: ((int) -> bool, int, int) -> int =
+        let _: ((int) -> bool, int, int) -> int =
           (a: (int) -> bool, b: int, c: int) -> (
             if a(b + 1) then b else c
           );
@@ -243,8 +243,8 @@ mod tests {
       private val projects: List<Str>
     ) {
       function sam(): Developer = {
-        val l = List.of("SAMLANG").cons("...");
-        val github = "SamChou19815";
+        let l = List.of("SAMLANG").cons("...");
+        let github = "SamChou19815";
         Developer.init("Sam Zhou", github, l)
       }
     }
@@ -306,7 +306,7 @@ mod tests {
 
     class TypeInference(val : Str, val foo: ) {
       function notAnnotated(bad: ):  = {
-        val _ = (a, b, c) -> if a(b + 1) then b else c;
+        let _ = (a, b, c) -> if a(b + 1) then b else c;
       }
     }
 "#;
@@ -337,7 +337,7 @@ mod tests {
 
     class TypeInference(vafl : Str, val foo: ) {
       function notAnnotated(bad: , : int):  = {
-        val _ = (a, b, c) -> if a(b + 1) then b else c;
+        let _ = (a, b, c) -> if a(b + 1) then b else c;
       }
     }
 

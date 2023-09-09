@@ -17,10 +17,10 @@ import { SortableListTest } from tests.SortableList;
 
 class TestCase(val name: Str, val runner: () -> unit) {
   method run(): unit = {
-    val { name, runner } = this;
-    val _ = Process.println("========================================");
-    val _ = Process.println("Test Name: " :: name);
-    val _ = runner();
+    let { name, runner } = this;
+    let _ = Process.println("========================================");
+    let _ = Process.println("Test Name: " :: name);
+    let _ = runner();
   }
 }
 
@@ -45,7 +45,7 @@ class Main {
       .reverse()
 
   function main(): unit = {
-    val _ = Main.getTests().iter((test) -> test.run());
+    let _ = Main.getTests().iter((test) -> test.run());
     Process.println("========================================")
   }
 }

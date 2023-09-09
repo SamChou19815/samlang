@@ -5,9 +5,9 @@ class Benchmark {
     if n == 0 then acc else Benchmark.mathTailRec(n - 1, (acc % 10007 + n % 10007) % 10007)
 
   function run(): unit = {
-    val bigNum = 20000000;
-    val actual = Benchmark.mathTailRec(bigNum, 0);
-    val expected = (1 + bigNum) % 10007 * (bigNum % 10007 / 2) % 10007;
+    let bigNum = 20000000;
+    let actual = Benchmark.mathTailRec(bigNum, 0);
+    let expected = (1 + bigNum) % 10007 * (bigNum % 10007 / 2) % 10007;
     ForTests.assertIntEquals(expected, actual)
   }
 }

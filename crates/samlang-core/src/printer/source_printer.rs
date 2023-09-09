@@ -694,7 +694,7 @@ pub(super) fn statement_to_document(
     )
     .unwrap_or(Document::Nil),
   );
-  segments.push(Document::Text(rcs("val ")));
+  segments.push(Document::Text(rcs("let ")));
   segments.push(pattern_doc);
   segments.push(if let Some(annot) = &stmt.annotation {
     Document::Concat(
@@ -1207,39 +1207,39 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
       r#"
       if (b) then {
         // fff
-        val _ = println("");
-        val _ = println("");
-        val _ = println("");
+        let _ = println("");
+        let _ = println("");
+        let _ = println("");
         /* f */
-        val _ = println("");
+        let _ = println("");
       } else if (b) then {
-        val _ = println("");
-        val _ = println("");
-        val _ = println("");
-        val _ = println("");
+        let _ = println("");
+        let _ = println("");
+        let _ = println("");
+        let _ = println("");
       } else {
-        val _ = println("");
-        val _ = println("");
-        val _ = println("");
-        val _ = println("");
+        let _ = println("");
+        let _ = println("");
+        let _ = println("");
+        let _ = println("");
       }"#,
       r#"if b then {
   // fff
-  val _ = println("");
-  val _ = println("");
-  val _ = println("");
+  let _ = println("");
+  let _ = println("");
+  let _ = println("");
   /* f */
-  val _ = println("");
+  let _ = println("");
 } else if b then {
-  val _ = println("");
-  val _ = println("");
-  val _ = println("");
-  val _ = println("");
+  let _ = println("");
+  let _ = println("");
+  let _ = println("");
+  let _ = println("");
 } else {
-  val _ = println("");
-  val _ = println("");
-  val _ = println("");
-  val _ = println("");
+  let _ = println("");
+  let _ = println("");
+  let _ = println("");
+  let _ = println("");
 }"#,
     );
 
@@ -1261,36 +1261,36 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
     assert_reprint_expr("{}", "{  }");
     assert_reprint_expr("{3}", "{ 3 }");
     assert_reprint_expr(
-      "{ val _:int=0;val _=0; }",
+      "{ let _:int=0;let _=0; }",
       r#"{
-  val _: int = 0;
-  val _ = 0;
+  let _: int = 0;
+  let _ = 0;
 }"#,
     );
     assert_reprint_expr(
-      "{ val a:int=1; 3 }",
+      "{ let a:int=1; 3 }",
       r#"{
-  val a: int = 1;
+  let a: int = 1;
   3
 }"#,
     );
     assert_reprint_expr(
-      "{ val {a, b as c}: int = 3; }",
+      "{ let {a, b as c}: int = 3; }",
       r#"{
-  val { a, b as c }: int = 3;
+  let { a, b as c }: int = 3;
 }"#,
     );
 
     assert_reprint_expr(
-      "{ val [a, _]: int = [1, 4]; }",
+      "{ let [a, _]: int = [1, 4]; }",
       r#"{
-  val [a, _]: int = [1, 4];
+  let [a, _]: int = [1, 4];
 }"#,
     );
     assert_reprint_expr(
-      "{ val [aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa]: int = 3; }",
+      "{ let [aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa,aaaaa,aaaaa,aaaaa,_,aaaaa]: int = 3; }",
       r#"{
-  val [
+  let [
     aaaaa,
     aaaaa,
     aaaaa,
@@ -1307,23 +1307,23 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
     );
 
     assert_reprint_expr(
-      "{ val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong; }; }; }; }",
+      "{ let a: unit = { let b: unit = { let c: unit = { let d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong; }; }; }; }",
       r#"{
-  val a: unit = {
-    val b: unit = {
-      val c: unit = {
-        val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong;
+  let a: unit = {
+    let b: unit = {
+      let c: unit = {
+        let d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong;
       };
     };
   };
 }"#);
     assert_reprint_expr(
-      "() -> () -> () -> { val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong; }; }; }; }",
+      "() -> () -> () -> { let a: unit = { let b: unit = { let c: unit = { let d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong; }; }; }; }",
       r#"() -> () -> () -> {
-  val a: unit = {
-    val b: unit = {
-      val c: unit = {
-        val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong;
+  let a: unit = {
+    let b: unit = {
+      let c: unit = {
+        let d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong;
       };
     };
   };
@@ -1383,14 +1383,14 @@ class Option<T>(None, Some(T)): F1,F2,F3,F4,F5,F6,/** fff */ F7, F8, F9,F10 {
   function b(): (int,int,int,int,int,int,int,int,int,int,int,int,int,int,int,int,int)->int = {}
 
   /** foo bar c */
-  function c(): Foo<Foo<Foo<Foo<Foo<Foo<Foo<Foo<Foo<Foo<int>>>>>>>>>> = { val a: int = 3; }
+  function c(): Foo<Foo<Foo<Foo<Foo<Foo<Foo<Foo<Foo<Foo<int>>>>>>>>>> = { let a: int = 3; }
 }
 
 class Obj(private val d: int, val e: int) {
   /** foo bar */
   function valExample(): unit = {
-    val a: int = 1;
-    val b: int = 2;
+    let a: int = 1;
+    let b: int = 2;
   }
 }
 
@@ -1472,7 +1472,7 @@ class Option<T>(None, Some(T)) :
       >
     >
   > = {
-    val a: int = 3;
+    let a: int = 3;
   }
 }
 
@@ -1482,8 +1482,8 @@ class Obj(
 ) {
   /** foo bar */
   function valExample(): unit = {
-    val a: int = 1;
-    val b: int = 2;
+    let a: int = 1;
+    let b: int = 2;
   }
 }
 

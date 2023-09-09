@@ -20,7 +20,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
     match this {
       Nil -> this,
       Cons(v, rest) -> {
-        val filteredRest = rest.filter(f);
+        let filteredRest = rest.filter(f);
         if f(v) then List.Cons(v, filteredRest) else filteredRest
       }
     }
@@ -35,7 +35,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
     match this {
       Nil -> List.Nil(),
       Cons(v, rest) -> {
-        val mappedRest = rest.filterMap(f);
+        let mappedRest = rest.filterMap(f);
         match f(v) {
           None -> mappedRest,
           Some(mapped) -> List.Cons(mapped, mappedRest),
@@ -47,7 +47,7 @@ class List<T>(Nil, Cons(T, List<T>)) {
     match this {
       Nil -> {  }
       Cons(v, rest) -> {
-        val _ = f(v);
+        let _ = f(v);
         rest.iter(f)
       }
     }

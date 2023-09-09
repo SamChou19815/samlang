@@ -682,22 +682,22 @@ Found 1 error.
     );
 
     assert_checks(heap, "this", &builder.int_type());
-    assert_checks(heap, "{ val foo = 3; foo }", &builder.int_type());
+    assert_checks(heap, "{ let foo = 3; foo }", &builder.int_type());
     assert_errors(
       heap,
-      "{ val foo = true; foo }",
+      "{ let foo = true; foo }",
       &builder.int_type(),
       r#"
 Error ----------------------------------- DUMMY.sam:1:1-1:24
 
 `bool` [1] is incompatible with `int` .
 
-  1| { val foo = true; foo }
+  1| { let foo = true; foo }
      ^^^^^^^^^^^^^^^^^^^^^^^
 
   [1] DUMMY.sam:1:1-1:24
   ----------------------
-  1| { val foo = true; foo }
+  1| { let foo = true; foo }
      ^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -714,21 +714,21 @@ Found 1 error.
     assert_errors_full_customization(
       heap,
       r#"{
-  val _: int = [1, 1].e1;
-  val _: int = [1, 1, 1].e2;
-  val _: int = [1, 1, 1, 1].e3;
-  val _: int = [1, 1, 1, 1, 1].e4;
-  val _: int = [1, 1, 1, 1, 1, 1].e5;
-  val _: int = [1, 1, 1, 1, 1, 1, 1].e6;
-  val _: int = [1, 1, 1, 1, 1, 1, 1, 1].e7;
-  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1].e8;
-  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e9;
-  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e10;
-  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e11;
-  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e12;
-  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e13;
-  val _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
-  val _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e15;
+  let _: int = [1, 1].e1;
+  let _: int = [1, 1, 1].e2;
+  let _: int = [1, 1, 1, 1].e3;
+  let _: int = [1, 1, 1, 1, 1].e4;
+  let _: int = [1, 1, 1, 1, 1, 1].e5;
+  let _: int = [1, 1, 1, 1, 1, 1, 1].e6;
+  let _: int = [1, 1, 1, 1, 1, 1, 1, 1].e7;
+  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1].e8;
+  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e9;
+  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e10;
+  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e11;
+  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e12;
+  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e13;
+  let _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+  let _: int = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e15;
 }"#,
       &builder.unit_type(),
       r#"
@@ -736,17 +736,17 @@ Error --------------------------------- DUMMY.sam:15:3-15:67
 
 `int` [1] is incompatible with `bool` [2].
 
-  15|   val _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+  15|   let _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   [1] DUMMY.sam:15:17-15:66
   -------------------------
-  15|   val _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+  15|   let _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   [2] DUMMY.sam:15:10-15:14
   -------------------------
-  15|   val _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
+  15|   let _: bool = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].e14;
                ^^^^
 
 
@@ -906,7 +906,7 @@ Found 1 error.
     assert_checks(heap, "Test.init(true, 3)", &builder.simple_nominal_type(test_str));
     assert_checks(
       heap,
-      "{ val foo=true; Test.init(foo, 3) }",
+      "{ let foo=true; Test.init(foo, 3) }",
       &builder.simple_nominal_type(test_str),
     );
     assert_errors_full_customization(
@@ -1154,14 +1154,14 @@ Found 1 error.
     );
     assert_errors(
       heap,
-      "{ val _ = (t3: Test3<bool>) -> t3.bar; }",
+      "{ let _ = (t3: Test3<bool>) -> t3.bar; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:35-1:38
 
 Cannot find member `bar` on `Test3`.
 
-  1| { val _ = (t3: Test3<bool>) -> t3.bar; }
+  1| { let _ = (t3: Test3<bool>) -> t3.bar; }
                                        ^^^
 
 
@@ -1393,14 +1393,14 @@ Found 1 error.
 
     assert_errors(
       heap,
-      "{ val _ = (t) -> t.foo; }",
+      "{ let _ = (t) -> t.foo; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:12-1:13
 
 There is not enough context information to decide the type of this expression.
 
-  1| { val _ = (t) -> t.foo; }
+  1| { let _ = (t) -> t.foo; }
                 ^
 
 
@@ -1409,14 +1409,14 @@ Found 1 error.
     );
     assert_errors(
       heap,
-      "{ val _ = (t) -> t.bar; }",
+      "{ let _ = (t) -> t.bar; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:12-1:13
 
 There is not enough context information to decide the type of this expression.
 
-  1| { val _ = (t) -> t.bar; }
+  1| { let _ = (t) -> t.bar; }
                 ^
 
 
@@ -1425,14 +1425,14 @@ Found 1 error.
     );
     assert_errors(
       heap,
-      "{ val _ = (t) -> t.baz; }",
+      "{ let _ = (t) -> t.baz; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:12-1:13
 
 There is not enough context information to decide the type of this expression.
 
-  1| { val _ = (t) -> t.baz; }
+  1| { let _ = (t) -> t.baz; }
                 ^
 
 
@@ -1669,7 +1669,7 @@ Found 1 error.
     assert_checks(heap, "true == false", &builder.bool_type());
     assert_checks(heap, "false != true", &builder.bool_type());
     assert_checks(heap, "\"\" != \"3\"", &builder.bool_type());
-    assert_checks(heap, "{ val _ = (t: Str, f: Str) -> t == f; }", &builder.unit_type());
+    assert_checks(heap, "{ let _ = (t: Str, f: Str) -> t == f; }", &builder.unit_type());
 
     assert_errors(
       heap,
@@ -2232,24 +2232,24 @@ Found 1 error.
     );
     assert_errors(
       heap,
-      "{ val _ = (t: int, f: bool) -> t == f; }",
+      "{ let _ = (t: int, f: bool) -> t == f; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:37-1:38
 
 `bool` [1] is incompatible with `int` [2].
 
-  1| { val _ = (t: int, f: bool) -> t == f; }
+  1| { let _ = (t: int, f: bool) -> t == f; }
                                          ^
 
   [1] DUMMY.sam:1:37-1:38
   -----------------------
-  1| { val _ = (t: int, f: bool) -> t == f; }
+  1| { let _ = (t: int, f: bool) -> t == f; }
                                          ^
 
   [2] DUMMY.sam:1:32-1:33
   -----------------------
-  1| { val _ = (t: int, f: bool) -> t == f; }
+  1| { let _ = (t: int, f: bool) -> t == f; }
                                     ^
 
 
@@ -2583,17 +2583,17 @@ Found 1 error.
     assert_checks(heap, "if false then \"\" else \"\"", &builder.string_type());
     assert_checks(
       heap,
-      "{ val _ = (b: bool, t: int, f: int) -> if b then t else f; }",
+      "{ let _ = (b: bool, t: int, f: int) -> if b then t else f; }",
       &builder.unit_type(),
     );
     assert_checks(
       heap,
-      "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
+      "{ let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
       &builder.unit_type(),
     );
     assert_errors_full_customization(
       heap,
-      "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
+      "{ let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
       &builder.unit_type(),
       "",
       "Test2",
@@ -2601,7 +2601,7 @@ Found 1 error.
     );
     assert_errors_full_customization(
       heap,
-      "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(d) -> 2 }; }",
+      "{ let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(d) -> 2 }; }",
       &builder.unit_type(),
       "",
       "Test2",
@@ -2689,7 +2689,7 @@ Found 1 error.
     assert_errors(
       heap,
       r#"{
-  val _ = (b: bool, t: bool, f: int) -> (
+  let _ = (b: bool, t: bool, f: int) -> (
     if b then t else f
   );
 }"#,
@@ -2766,7 +2766,7 @@ Found 2 errors.
     );
     assert_errors_full_customization(
       heap,
-      "{ val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }",
+      "{ let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:25-1:64
@@ -2774,7 +2774,7 @@ Error ---------------------------------- DUMMY.sam:1:25-1:64
 The match is not exhausive. The following variants have not been handled:
 - `Bar`
 
-  1| { val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
+  1| { let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -2782,7 +2782,7 @@ Error ---------------------------------- DUMMY.sam:1:50-1:53
 
 Cannot find member `Baz` on `Test2`.
 
-  1| { val _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
+  1| { let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Baz(s) -> 2, }; }
                                                       ^^^
 
 
@@ -2800,7 +2800,7 @@ Found 2 errors.
 
     assert_checks(
       heap,
-      "{val _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) then b else c;}",
+      "{let _ = (a: (int) -> bool, b: int, c: int) -> if a(b + 1) then b else c;}",
       &builder.unit_type(),
     );
     assert_checks(
@@ -2880,29 +2880,29 @@ Found 2 errors.
 
     assert_errors_full_customization(
       heap,
-      "{val {a, b as c} = A.init();}",
+      "{let {a, b as c} = A.init();}",
       &builder.unit_type(),
       "",
       "A",
       false,
     );
-    assert_checks(heap, "{val a = 1;}", &builder.unit_type());
-    assert_checks(heap, "{val a = 1; val b = true;}", &builder.unit_type());
-    assert_checks(heap, "{val a = 1; a}", &builder.int_type());
+    assert_checks(heap, "{let a = 1;}", &builder.unit_type());
+    assert_checks(heap, "{let a = 1; let b = true;}", &builder.unit_type());
+    assert_checks(heap, "{let a = 1; a}", &builder.int_type());
     assert_checks(heap, "{1}", &builder.int_type());
     assert_checks(heap, "{}", &builder.unit_type());
     assert_checks(heap, "{{{{}}}}", &builder.unit_type());
 
     assert_errors(
       heap,
-      "{val [a, b, c] = A.init();}",
+      "{let [a, b, c] = A.init();}",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
 Cannot access member of `A` at index 1.
 
-  1| {val [a, b, c] = A.init();}
+  1| {let [a, b, c] = A.init();}
               ^
 
 
@@ -2910,7 +2910,7 @@ Error ---------------------------------- DUMMY.sam:1:13-1:14
 
 Cannot access member of `A` at index 2.
 
-  1| {val [a, b, c] = A.init();}
+  1| {let [a, b, c] = A.init();}
                  ^
 
 
@@ -2919,14 +2919,14 @@ Found 2 errors.
     );
     assert_errors(
       heap,
-      "{val {a, b as c} = A.init();}",
+      "{let {a, b as c} = A.init();}",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
 Cannot find member `b` on `A`.
 
-  1| {val {a, b as c} = A.init();}
+  1| {let {a, b as c} = A.init();}
               ^
 
 
@@ -2935,14 +2935,14 @@ Found 1 error.
     );
     assert_errors(
       heap,
-      "{val {a, b as c} = C.init();}",
+      "{let {a, b as c} = C.init();}",
       &builder.unit_type(),
       r#"
 Error ------------------------------------ DUMMY.sam:1:7-1:8
 
 Cannot find member `a` on `C`.
 
-  1| {val {a, b as c} = C.init();}
+  1| {let {a, b as c} = C.init();}
            ^
 
 
@@ -2950,7 +2950,7 @@ Error ---------------------------------- DUMMY.sam:1:10-1:11
 
 Cannot find member `b` on `C`.
 
-  1| {val {a, b as c} = C.init();}
+  1| {let {a, b as c} = C.init();}
               ^
 
 
@@ -2959,14 +2959,14 @@ Found 2 errors.
     );
     assert_errors(
       heap,
-      "{val {a, b as c} = 1;}",
+      "{let {a, b as c} = 1;}",
       &builder.unit_type(),
       r#"
 Error ------------------------------------ DUMMY.sam:1:7-1:8
 
 Cannot find member `a` on `int`.
 
-  1| {val {a, b as c} = 1;}
+  1| {let {a, b as c} = 1;}
            ^
 
 
@@ -2974,7 +2974,7 @@ Error ---------------------------------- DUMMY.sam:1:10-1:11
 
 Cannot find member `b` on `int`.
 
-  1| {val {a, b as c} = 1;}
+  1| {let {a, b as c} = 1;}
               ^
 
 
@@ -2983,14 +2983,14 @@ Found 2 errors.
     );
     assert_errors(
       heap,
-      "{val {a, d as c} = A.init();}",
+      "{let {a, d as c} = A.init();}",
       &builder.unit_type(),
       r#"
 Error ---------------------------------- DUMMY.sam:1:10-1:11
 
 Cannot find member `d` on `A`.
 
-  1| {val {a, d as c} = A.init();}
+  1| {let {a, d as c} = A.init();}
               ^
 
 
@@ -3006,18 +3006,18 @@ Found 1 error.
     assert_errors(
       &mut Heap::new(),
       r#"{
-  val _ = (() -> true)(1);
-  val _: Str = Test.generic1(
+  let _ = (() -> true)(1);
+  let _: Str = Test.generic1(
     (() -> 0)(),
     {true},
     match (Test2.Foo(false)) { Foo(_, _) -> false, Bar(_) -> false, }
   );
-  val _ = Test.generic1(0, if true then true else false, false);
-  val _ = Test.generic2((a: int) -> 1, 1);
-  val _ = Test.generic2((a) -> 1, 1);
-  val _ = Test.generic3((a: int) -> 1);
-  val _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
-  val _ = Test.generic4((a: int, b) -> 1);
+  let _ = Test.generic1(0, if true then true else false, false);
+  let _ = Test.generic2((a: int) -> 1, 1);
+  let _ = Test.generic2((a) -> 1, 1);
+  let _ = Test.generic3((a: int) -> 1);
+  let _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
+  let _ = Test.generic4((a: int, b) -> 1);
 }
 "#,
       &builder.unit_type(),
@@ -3026,7 +3026,7 @@ Error ---------------------------------- DUMMY.sam:2:12-2:26
 
 Function parameter arity of 1 is incompatible with function parameter arity of 0.
 
-  2|   val _ = (() -> true)(1);
+  2|   let _ = (() -> true)(1);
                 ^^^^^^^^^^^^^^
 
 
@@ -3042,7 +3042,7 @@ Error ---------------------------------- DUMMY.sam:8:11-8:64
 
 There is not enough context information to decide the type of this expression.
 
-  8|   val _ = Test.generic1(0, if true then true else false, false);
+  8|   let _ = Test.generic1(0, if true then true else false, false);
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -3050,7 +3050,7 @@ Error -------------------------------- DUMMY.sam:12:63-12:64
 
 There is not enough context information to decide the type of this expression.
 
-  12|   val _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
+  12|   let _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
                                                                     ^
 
 
@@ -3058,7 +3058,7 @@ Error -------------------------------- DUMMY.sam:12:83-12:84
 
 There is not enough context information to decide the type of this expression.
 
-  12|   val _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
+  12|   let _ = Test.generic3(match (Test2.Foo(false)) { Foo(_) -> (a) -> 1, Bar(_) -> (a) -> 1, });
                                                                                         ^
 
 
@@ -3074,11 +3074,11 @@ Found 5 errors.
     assert_checks(
       &mut Heap::new(),
       r#"{
-  val f = (a: int, b: int, c: int) -> {
-    val f = (d: int, e: int) -> a + b + c + d + e;
+  let f = (a: int, b: int, c: int) -> {
+    let f = (d: int, e: int) -> a + b + c + d + e;
     f(1, 2)
   };
-  val _ = (b: bool, t: int, f: int) -> if b then t else f;
+  let _ = (b: bool, t: int, f: int) -> if b then t else f;
   f(3, 4, 5)
 }
 "#,
@@ -3157,7 +3157,7 @@ Found 5 errors.
   class Main { function main(): bool = true }
   class Useless {
     function main(): unit = {
-      val _ = (foo: Useless) -> {};
+      let _ = (foo: Useless) -> {};
     }
   }
   interface Bar {}

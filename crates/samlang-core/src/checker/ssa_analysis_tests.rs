@@ -40,10 +40,10 @@ mod tests {
     let mut heap = Heap::new();
     let mut error_set = ErrorSet::new();
     let expr_str = r#"{
-  val a: int = 3;
-  val b = true;
-  val c = a;
-  val _ = if a && b then {
+  let a: int = 3;
+  let b = true;
+  let c = a;
+  let _ = if a && b then {
     match (!c) {
       Foo(d) -> d + a,
       Bar(_) -> b
@@ -51,8 +51,8 @@ mod tests {
   } else {
     (p1: Foo, p2) -> Baz.ouch<Foo>(p2).ahha<Foo>(p1) + a
   };
-  val a = 3;
-  val {o1, o2 as o3} = {};
+  let a = 3;
+  let {o1, o2 as o3} = {};
   o1 + o3
 }"#;
     let (_, expr) = parser::parse_source_expression_from_text(

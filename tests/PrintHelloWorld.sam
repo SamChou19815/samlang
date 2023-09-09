@@ -1,18 +1,18 @@
 class PrintHelloWorld {
   private function globalConstantTest(): unit = {
-    val a1 = "a";
-    val a2 = "a";
+    let a1 = "a";
+    let a2 = "a";
     if a1 == a2 then {  } else Process.panic("")
   }
 
   private function printTest(): unit = {
-    val h = "Hello";
-    val w = " World!";
+    let h = "Hello";
+    let w = " World!";
     Process.println(h :: w)
   }
 
   function run(): unit = {
-    val _ = PrintHelloWorld.globalConstantTest();
-    val _ = PrintHelloWorld.printTest();
+    let _ = PrintHelloWorld.globalConstantTest();
+    let _ = PrintHelloWorld.printTest();
   }
 }

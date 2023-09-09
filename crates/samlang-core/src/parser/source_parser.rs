@@ -1257,7 +1257,7 @@ impl<'a> SourceParser<'a> {
       self.consume();
 
       let mut statements = vec![];
-      while let Token(_, TokenContent::Keyword(Keyword::VAL)) = self.peek() {
+      while let Token(_, TokenContent::Keyword(Keyword::LET)) = self.peek() {
         statements.push(self.parse_statement());
       }
 
@@ -1308,7 +1308,7 @@ impl<'a> SourceParser<'a> {
   pub(super) fn parse_statement(&mut self) -> expr::DeclarationStatement<()> {
     let concrete_comments = self.collect_preceding_comments();
     let associated_comments = self.comments_store.create_comment_reference(concrete_comments);
-    let start_loc = self.assert_and_consume_keyword(Keyword::VAL);
+    let start_loc = self.assert_and_consume_keyword(Keyword::LET);
     let pattern = self.parse_destructuring_pattern();
     let annotation = if let Token(_, TokenContent::Operator(TokenOp::COLON)) = self.peek() {
       self.consume();

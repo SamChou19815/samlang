@@ -2,13 +2,13 @@ import { ForTests } from tests.StdLib;
 
 class CSETest {
   private function test1(a: int, b: int, c: int, d: int, e: int): unit = {
-    val _ = ForTests.assertIntEquals(c, a * b + a + (a * b + a));
-    val _ = ForTests.assertIntEquals(d, a * b);
-    val _ = ForTests.assertIntEquals(e, a * b + a);
+    let _ = ForTests.assertIntEquals(c, a * b + a + (a * b + a));
+    let _ = ForTests.assertIntEquals(d, a * b);
+    let _ = ForTests.assertIntEquals(e, a * b + a);
   }
 
   private function test2(first: bool, a: int, b: int, aTimesB: int): unit = {
-    val t = if first then a * b else a * b;
+    let t = if first then a * b else a * b;
     ForTests.assertIntEquals(aTimesB, a * b)
   }
 
@@ -35,41 +35,41 @@ class CSETest {
     if i >= 300 then acc else CSETest.test3(acc + CSETest.log(i, 2), i + 1)
 
   private function test4(totalPicograms: int, i: int): int = {
-    val maxLong = 92233720;
+    let maxLong = 92233720;
     if i >= 300 then { totalPicograms } else {
-      val megagrams = maxLong - i;
-      val kilograms = megagrams / 1000;
-      val grams = megagrams / 1000 / 1000;
-      val milligrams = megagrams / 1000 / 1000 / 1000;
+      let megagrams = maxLong - i;
+      let kilograms = megagrams / 1000;
+      let grams = megagrams / 1000 / 1000;
+      let milligrams = megagrams / 1000 / 1000 / 1000;
       CSETest.test4(kilograms + grams + milligrams, i + 1)
     }
   }
 
   private function test5(totalOddNumbers: int, i: int): int = {
     if i >= 300 then { totalOddNumbers } else {
-      val iMod64: int = i % 64;
-      val iMod32: int = i % 64 % 32;
-      val iMod16: int = i % 64 % 32 % 16;
-      val iMod8: int = i % 64 % 32 % 16 % 8;
-      val iMod4: int = i % 64 % 32 % 16 % 8 % 4;
-      val iMod2: int = i % 64 % 32 % 16 % 8 % 4 % 2;
+      let iMod64: int = i % 64;
+      let iMod32: int = i % 64 % 32;
+      let iMod16: int = i % 64 % 32 % 16;
+      let iMod8: int = i % 64 % 32 % 16 % 8;
+      let iMod4: int = i % 64 % 32 % 16 % 8 % 4;
+      let iMod2: int = i % 64 % 32 % 16 % 8 % 4 % 2;
       CSETest.test5(totalOddNumbers + iMod2, i + 1)
     }
   }
 
   private function test6(first: bool, a: int, b: int, aTimesB: int): unit = {
-    val _ = if first then { val _ = a * b; } else {  };
-    val _ = ForTests.assertIntEquals(aTimesB, a * b);
+    let _ = if first then { let _ = a * b; } else {  };
+    let _ = ForTests.assertIntEquals(aTimesB, a * b);
   }
 
   function run(): unit = {
-    val _ = CSETest.test1(3, 4, 30, 12, 15);
-    val _ = CSETest.test2(true, 3, 4, 12);
-    val _ = CSETest.test2(false, 3, 4, 12);
-    val _ = ForTests.assertIntEquals(2181, CSETest.test3(0, 0));
-    val _ = ForTests.assertIntEquals(92325, CSETest.test4(0, 0));
-    val _ = ForTests.assertIntEquals(150, CSETest.test5(0, 0));
-    val _ = CSETest.test6(true, 3, 4, 12);
-    val _ = CSETest.test6(false, 3, 4, 12);
+    let _ = CSETest.test1(3, 4, 30, 12, 15);
+    let _ = CSETest.test2(true, 3, 4, 12);
+    let _ = CSETest.test2(false, 3, 4, 12);
+    let _ = ForTests.assertIntEquals(2181, CSETest.test3(0, 0));
+    let _ = ForTests.assertIntEquals(92325, CSETest.test4(0, 0));
+    let _ = ForTests.assertIntEquals(150, CSETest.test5(0, 0));
+    let _ = CSETest.test6(true, 3, 4, 12);
+    let _ = CSETest.test6(false, 3, 4, 12);
   }
 }

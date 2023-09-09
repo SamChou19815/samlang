@@ -504,7 +504,7 @@ mod tests {
       )),
     };
     assert_eq!(
-      "val v: bool = s;",
+      "let v: bool = s;",
       Change::Replace(DiffNode::Statement(&stmt), DiffNode::Statement(&stmt))
         .to_edit(heap, &CommentStore::new())
         .1

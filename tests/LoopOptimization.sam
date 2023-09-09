@@ -3,11 +3,11 @@ import { ForTests } from tests.StdLib;
 class LoopOptimization {
   private function loopy(i: int): int =
     if i >= 10 then { 0 } else {
-      val _ = ForTests.printlnInt(i * 3 + 100);
+      let _ = ForTests.printlnInt(i * 3 + 100);
       LoopOptimization.loopy(i + 2)
     }
 
   function run(): unit = {
-    val _ = LoopOptimization.loopy(0);
+    let _ = LoopOptimization.loopy(0);
   }
 }
