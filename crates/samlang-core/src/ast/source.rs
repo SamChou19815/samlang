@@ -233,6 +233,36 @@ pub(crate) mod pattern {
       }
     }
   }
+
+  #[derive(Clone, PartialEq, Eq)]
+  pub(crate) struct VariantPattern<T: Clone> {
+    pub(crate) loc: Location,
+    pub(crate) tag_order: usize,
+    pub(crate) tag: Id,
+    pub(crate) data_variables: Vec<MatchingPattern<T>>,
+    pub(crate) type_: T,
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
+  pub(crate) enum MatchingPattern<T: Clone> {
+    Tuple(Location, Vec<TuplePatternElement<DestructuringPattern<T>, T>>),
+    Object(Location, Vec<ObjectPatternElement<DestructuringPattern<T>, T>>),
+    Variant(VariantPattern<T>),
+    Id(Id),
+    Wildcard(Location),
+  }
+
+  impl<T: Clone> MatchingPattern<T> {
+    pub(crate) fn loc(&self) -> &Location {
+      match self {
+        Self::Tuple(loc, _)
+        | Self::Object(loc, _)
+        | Self::Variant(VariantPattern { loc, .. })
+        | Self::Id(Id { loc, .. })
+        | Self::Wildcard(loc) => loc,
+      }
+    }
+  }
 }
 
 #[derive(Clone, PartialEq, Eq)]

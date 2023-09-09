@@ -40,15 +40,48 @@ mod tests {
     assert_eq!("!", expr::UnaryOperator::NOT.clone().to_string());
     assert_eq!("-", expr::UnaryOperator::NEG.clone().to_string());
 
-    let mut pattern: pattern::DestructuringPattern<()> =
+    let mut destructuring_pattern: pattern::DestructuringPattern<()> =
       pattern::DestructuringPattern::Object(Location::dummy(), vec![]);
-    assert_eq!(*pattern.loc(), Location::dummy());
-    pattern = pattern::DestructuringPattern::Tuple(Location::dummy(), vec![]);
-    assert_eq!(*pattern.loc(), Location::dummy());
-    pattern = pattern::DestructuringPattern::Id(Id::from(PStr::LOWER_A));
-    assert_eq!(*pattern.loc(), Location::dummy());
-    pattern = pattern::DestructuringPattern::Wildcard(Location::dummy());
-    assert_eq!(*pattern.loc(), Location::dummy());
+    assert_eq!(*destructuring_pattern.loc(), Location::dummy());
+    destructuring_pattern = pattern::DestructuringPattern::Tuple(Location::dummy(), vec![]);
+    assert_eq!(*destructuring_pattern.loc(), Location::dummy());
+    destructuring_pattern = pattern::DestructuringPattern::Id(Id::from(PStr::LOWER_A));
+    assert_eq!(*destructuring_pattern.loc(), Location::dummy());
+    destructuring_pattern = pattern::DestructuringPattern::Wildcard(Location::dummy());
+    assert_eq!(*destructuring_pattern.loc(), Location::dummy());
+
+    let mut matching_pattern: pattern::MatchingPattern<()> =
+      pattern::MatchingPattern::Object(Location::dummy(), vec![]);
+    assert_eq!(*matching_pattern.loc(), Location::dummy());
+    matching_pattern = pattern::MatchingPattern::Tuple(Location::dummy(), vec![]);
+    assert_eq!(*matching_pattern.loc(), Location::dummy());
+    matching_pattern = pattern::MatchingPattern::Variant(pattern::VariantPattern {
+      loc: Location::dummy(),
+      tag_order: 0,
+      tag: Id::from(PStr::UPPER_A),
+      data_variables: vec![],
+      type_: (),
+    });
+    assert_eq!(*matching_pattern.clone().loc(), Location::dummy());
+    matching_pattern = pattern::MatchingPattern::Id(Id::from(PStr::LOWER_A));
+    assert_eq!(*matching_pattern.loc(), Location::dummy());
+    matching_pattern = pattern::MatchingPattern::Wildcard(Location::dummy());
+    assert_eq!(*matching_pattern.loc(), Location::dummy());
+    assert!(
+      pattern::MatchingPattern::Variant(pattern::VariantPattern {
+        loc: Location::dummy(),
+        tag_order: 0,
+        tag: Id::from(PStr::UPPER_A),
+        data_variables: vec![],
+        type_: (),
+      }) == pattern::MatchingPattern::Variant(pattern::VariantPattern {
+        loc: Location::dummy(),
+        tag_order: 0,
+        tag: Id::from(PStr::UPPER_A),
+        data_variables: vec![],
+        type_: (),
+      })
+    );
 
     let list = [
       expr::BinaryOperator::MUL,
