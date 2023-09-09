@@ -791,17 +791,11 @@ mod runners {
 
     eprintln!("==================== Step 2 ====================");
     eprintln!("Checking generated TS code...");
-    Command::new("corepack").args(["enable"]).output().expect("corepack failure");
-    Command::new("pnpm").args(["install"]).output().expect("pnpm install failure");
-    Command::new("pnpm")
-      .args(["esbuild", "out/tests.AllTests.ts", "--outfile=out/tests.AllTests.js"])
-      .output()
-      .expect("esbuild transpilation failure");
     pretty_assertions::assert_eq!(
       expected,
       String::from_utf8(
-        Command::new("node")
-          .args(["out/tests.AllTests.js"])
+        Command::new("bun")
+          .args(["out/tests.AllTests.ts"])
           .output()
           .expect("JS execution failure")
           .stdout,

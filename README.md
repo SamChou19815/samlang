@@ -11,8 +11,8 @@ Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.
 ## Getting Started
 
 If you want to use samlang as a user, it is better to read
-[the official documentation](https://samlang.io). If you want to develop on samlang, clone this
-repository and run `pnpm install`.
+[the official documentation](https://samlang.io). If you want to develop on samlang, follow the CI
+config to setup your dev environment.
 
 ## Features
 

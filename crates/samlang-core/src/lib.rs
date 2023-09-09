@@ -141,11 +141,13 @@ pub fn compile_sources(
     let wasm_js_code = format!(
       r#"// @{}
 const binary = require('fs').readFileSync(require('path').join(__dirname, '{}'));
-require('@dev-sam/samlang-cli/loader')(binary).{}();
+require('./__samlang_loader__.js')(binary).{}();
 "#,
       "generated", EMITTED_WASM_FILE, main_fn_name
     );
     text_code_results.insert(format!("{}.ts", module_reference.pretty_print(heap)), ts_code);
+    text_code_results
+      .insert("__samlang_loader__.js".to_string(), include_str!("loader.js").to_string());
     text_code_results
       .insert(format!("{}.wasm.js", module_reference.pretty_print(heap)), wasm_js_code);
   }

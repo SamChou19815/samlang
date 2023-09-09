@@ -25,10 +25,8 @@ jobs:
           key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
       - name: Build samlang and compile samlang source code
         run: |
-          corepack enable
-          pnpm install
           node platform-independent-build.js
-          pnpm samlang
+          node packages/samlang-cli/bin/index.js
       - uses: actions/upload-artifact@v3
         with:
           name: samlang-cli-${{ matrix.os }}
@@ -51,9 +49,7 @@ jobs:
       - name: Build and Validate
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-          corepack enable
-          pnpm install
-          pnpm build:wasm
+          cd crates/samlang-wasm && ./setup-generated-package.sh
   build:
     needs:
       - build-per-os
