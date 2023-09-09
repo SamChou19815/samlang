@@ -14,7 +14,7 @@
       "patterns": [
         {
           "name": "keyword.control.samlang",
-          "match": "\\b(val|as|if|then|else|match|class|interface|public|private|function|method|import|from)\\b"
+          "match": "\\b(val|mut|let|const|as|if|then|else|match|class|interface|public|private|function|method|import|from)\\b"
         },
         { "name": "support.function.builtin", "match": "\\b(panic)\\b" },
         { "name": "keyword.operator.comparison", "match": "(==|!=|<=|>=|<>|<|>)" },
