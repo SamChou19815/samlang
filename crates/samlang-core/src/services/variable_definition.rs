@@ -89,15 +89,13 @@ fn apply_destructuring_pattern_renaming(
       *l,
       names
         .iter()
-        .map(|pattern::TuplePatternDestructuredName { pattern, type_ }| {
-          pattern::TuplePatternDestructuredName {
-            pattern: Box::new(apply_destructuring_pattern_renaming(
-              pattern,
-              definition_and_uses,
-              new_name,
-            )),
-            type_: *type_,
-          }
+        .map(|pattern::TuplePatternElement { pattern, type_ }| pattern::TuplePatternElement {
+          pattern: Box::new(apply_destructuring_pattern_renaming(
+            pattern,
+            definition_and_uses,
+            new_name,
+          )),
+          type_: *type_,
         })
         .collect(),
     ),
@@ -106,7 +104,7 @@ fn apply_destructuring_pattern_renaming(
       names
         .iter()
         .map(
-          |pattern::ObjectPatternDestucturedName {
+          |pattern::ObjectPatternElement {
              loc,
              field_order,
              field_name,
@@ -123,7 +121,7 @@ fn apply_destructuring_pattern_renaming(
               pattern.as_ref(),
               pattern::DestructuringPattern::Id(id) if id.name.eq(&field_name.name),
             );
-            pattern::ObjectPatternDestucturedName {
+            pattern::ObjectPatternElement {
               loc: *loc,
               field_order: *field_order,
               field_name: *field_name,

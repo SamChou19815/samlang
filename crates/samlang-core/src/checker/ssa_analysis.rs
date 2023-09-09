@@ -329,7 +329,7 @@ impl<'a> SsaAnalysisState<'a> {
   fn visit_pattern(&mut self, pattern: &pattern::DestructuringPattern<()>) {
     match pattern {
       pattern::DestructuringPattern::Tuple(_, names) => {
-        for pattern::TuplePatternDestructuredName { pattern, type_: _ } in names {
+        for pattern::TuplePatternElement { pattern, type_: _ } in names {
           self.visit_pattern(pattern);
         }
       }

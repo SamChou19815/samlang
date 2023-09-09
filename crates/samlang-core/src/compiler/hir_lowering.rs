@@ -2113,7 +2113,7 @@ return (_t7: DUMMY_Dummy);"#,
                 pattern: source::pattern::DestructuringPattern::Object(
                   Location::dummy(),
                   vec![
-                    source::pattern::ObjectPatternDestucturedName {
+                    source::pattern::ObjectPatternElement {
                       loc: Location::dummy(),
                       field_order: 0,
                       field_name: source::Id::from(PStr::LOWER_A),
@@ -2123,7 +2123,7 @@ return (_t7: DUMMY_Dummy);"#,
                       shorthand: true,
                       type_: builder.int_type(),
                     },
-                    source::pattern::ObjectPatternDestucturedName {
+                    source::pattern::ObjectPatternElement {
                       loc: Location::dummy(),
                       field_order: 1,
                       field_name: source::Id::from(PStr::LOWER_B),
@@ -2168,7 +2168,7 @@ return 0;"#,
             pattern: source::pattern::DestructuringPattern::Object(
               Location::dummy(),
               vec![
-                source::pattern::ObjectPatternDestucturedName {
+                source::pattern::ObjectPatternElement {
                   loc: Location::dummy(),
                   field_order: 0,
                   field_name: source::Id::from(PStr::LOWER_A),
@@ -2178,7 +2178,7 @@ return 0;"#,
                   shorthand: true,
                   type_: builder.int_type(),
                 },
-                source::pattern::ObjectPatternDestucturedName {
+                source::pattern::ObjectPatternElement {
                   loc: Location::dummy(),
                   field_order: 1,
                   field_name: source::Id::from(PStr::LOWER_B),
@@ -2199,13 +2199,13 @@ return 0;"#,
             pattern: source::pattern::DestructuringPattern::Tuple(
               Location::dummy(),
               vec![
-                source::pattern::TuplePatternDestructuredName {
+                source::pattern::TuplePatternElement {
                   pattern: Box::new(source::pattern::DestructuringPattern::Id(source::Id::from(
                     PStr::LOWER_D,
                   ))),
                   type_: builder.int_type(),
                 },
-                source::pattern::TuplePatternDestructuredName {
+                source::pattern::TuplePatternElement {
                   pattern: Box::new(source::pattern::DestructuringPattern::Wildcard(
                     Location::dummy(),
                   )),

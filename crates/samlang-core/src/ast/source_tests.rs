@@ -205,7 +205,7 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: pattern::DestructuringPattern::Object(
             Location::dummy(),
-            vec![pattern::ObjectPatternDestucturedName {
+            vec![pattern::ObjectPatternElement {
               loc: Location::dummy(),
               field_order: 0,
               field_name: Id::from(heap.alloc_str_for_test("name")),
@@ -228,7 +228,7 @@ mod tests {
           associated_comments: NO_COMMENT_REFERENCE,
           pattern: pattern::DestructuringPattern::Tuple(
             Location::dummy(),
-            vec![pattern::TuplePatternDestructuredName {
+            vec![pattern::TuplePatternElement {
               pattern: Box::new(pattern::DestructuringPattern::Id(Id::from(
                 heap.alloc_str_for_test("name"),
               ))),
