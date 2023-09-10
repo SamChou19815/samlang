@@ -20,9 +20,9 @@ const __Str$fromInt = (_: number, v: number): _Str => [1, String(v) as unknown a
 const __Process$panic = (_: number, [, v]: _Str): never => { throw Error(v as unknown as string); };
 // empty the array to mess up program code that uses after free.
 const __$free = (v: any): number => { v.length = 0; return 0 };
-const GLOBAL_STRING_4: _Str = [0, \`Hi\` as unknown as number];
+const GLOBAL_STRING_3: _Str = [0, \`Hi\` as unknown as number];
 function _Demo_Main$main(): number {
-  __Process$println(0, GLOBAL_STRING_4);
+  __Process$println(0, GLOBAL_STRING_3);
   return 0;
 }
 
