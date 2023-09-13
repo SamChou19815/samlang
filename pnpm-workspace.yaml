@@ -1,4 +1,3 @@
 packages:
-  - packages/samlang-cli
   - packages/samlang-vscode
   - packages/samlang-website

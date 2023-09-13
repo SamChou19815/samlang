@@ -24,13 +24,7 @@ jobs:
             target/
           key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
       - name: Build samlang and compile samlang source code
-        run: |
-          node platform-independent-build.js
-          node packages/samlang-cli/bin/index.js
-      - uses: actions/upload-artifact@v3
-        with:
-          name: samlang-cli-${{ matrix.os }}
-          path: packages/samlang-cli/bin
+        run: cargo run -p samlang-cli --release
   build-wasm:
     runs-on: ubuntu-latest
     steps:
@@ -52,33 +46,3 @@ jobs:
           corepack enable
           pnpm install
           pnpm build:wasm
-  build:
-    needs:
-      - build-per-os
-      - build-wasm
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: samlang-cli-ubuntu-latest
-          path: packages/samlang-cli/linux/
-      - uses: actions/download-artifact@v3
-        with:
-          name: samlang-cli-macos-12
-          path: packages/samlang-cli/macos/
-      - uses: actions/download-artifact@v3
-        with:
-          name: samlang-cli-windows-latest
-          path: packages/samlang-cli/windows/
-      - name: Move artifacts
-        run: |
-          cd packages/samlang-cli
-          mv linux/* bin
-          mv macos/* bin
-          mv windows/* bin
-          rm -rf linux macos windows
-      - uses: actions/upload-artifact@v3
-        with:
-          name: samlang-cli
-          path: ./packages/samlang-cli
