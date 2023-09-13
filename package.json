@@ -1,5 +1,5 @@
 {
-  "packageManager": "pnpm@8.3.1",
+  "packageManager": "pnpm@8.7.4",
   "private": true,
   "scripts": {
     "test": "rm -f target/llvm-cov-target/*.profraw && cargo th",
@@ -8,6 +8,7 @@
   "devDependencies": {
     "@dev-sam/samlang-cli": "workspace:0.8.0",
     "@types/node": "^20.3.0",
+    "bun-types": "^1.0.1",
     "esbuild": "^0.18.0",
     "esbuild-plugin-wasm": "^1.1.0"
   }

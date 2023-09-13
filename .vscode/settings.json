@@ -6,5 +6,7 @@
     "**/node_modules": true,
     "**/target": true,
     "**/*.code-search": true
-  }
+  },
+  "css.validate": false,
+  "tailwindCSS.experimental.configFile": "./packages/samlang-website/tailwind.config.ts"
 }

@@ -17,6 +17,7 @@ node_modules
 *.vsix
 out
 build
+.next
 **/dist/index.js
 **/dist/index.js.map
 bundles
