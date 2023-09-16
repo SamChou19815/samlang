@@ -91,7 +91,7 @@ export default function LanguageDemo(): JSX.Element {
             {typeof response === 'string' || response == null ? (
               <Editor
                 width="100vw"
-                height="calc(40vh - 5em)"
+                height="calc(40vh - 7em)"
                 theme="sam-theme"
                 path="result.txt"
                 value={response ?? 'Loading response...'}
@@ -102,7 +102,7 @@ export default function LanguageDemo(): JSX.Element {
                 defaultLanguage="typescript"
                 theme="sam-theme"
                 width="100vw"
-                height="calc(40vh - 5em)"
+                height="calc(40vh - 7em)"
                 path="Demo.ts"
                 value={`// Standard out:
 // ${response.interpreterResult}
