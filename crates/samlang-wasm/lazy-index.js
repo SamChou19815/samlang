@@ -1,12 +1,14 @@
 import interpret from './loader.js';
 
-const singleton = import('./samlang-demo/samlang_wasm.js');
+import * as compiled from './samlang-demo/samlang_wasm.js';
 
-// Use the indirection to avoid the need of toplevel await
+export async function init(url) {
+  await compiled.default(url);
+}
 
 export async function compile(source) {
   try {
-    const compilationResult = (await singleton).compile(source);
+    const compilationResult = compiled.compile(source);
     const result = {
       tsCode: compilationResult.ts_code,
       interpreterResult: await interpret(compilationResult.wasm_bytes),
@@ -18,18 +20,18 @@ export async function compile(source) {
   }
 }
 
-export async function typeCheck(source) {
-  return (await singleton).typeCheck(source) || [];
+export function typeCheck(source) {
+  return compiled.typeCheck(source) || [];
 }
 
-export async function queryType(source, line, number) {
-  return (await singleton).queryType(source, line, number);
+export function queryType(source, line, number) {
+  return compiled.queryType(source, line, number);
 }
 
-export async function queryDefinitionLocation(source, line, number) {
-  return (await singleton).queryDefinitionLocation(source, line, number);
+export function queryDefinitionLocation(source, line, number) {
+  return compiled.queryDefinitionLocation(source, line, number);
 }
 
-export async function autoComplete(source, line, number) {
-  return (await singleton).autoComplete(source, line, number);
+export function autoComplete(source, line, number) {
+  return compiled.autoComplete(source, line, number);
 }
