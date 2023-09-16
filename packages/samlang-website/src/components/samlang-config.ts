@@ -1,10 +1,16 @@
 import type * as monaco from 'monaco-editor';
-import type * as SamlangTypes from 'samlang-demo';
 import type { editor, languages } from 'monaco-editor/esm/vs/editor/editor.api';
+import type * as SamlangTypes from './samlang-wasm-glue';
 
 export type MonacoEditor = typeof monaco;
 
-const samlangPromise = import('samlang-demo');
+const samlangPromise: Promise<typeof SamlangTypes> =
+  typeof window !== 'undefined'
+    ? import('./samlang-wasm-glue').then(async (mod) => {
+        await mod.init();
+        return mod;
+      })
+    : new Promise((_resolve) => {});
 
 export const monacoEditorOptions: editor.IEditorConstructionOptions = {
   minimap: { enabled: false },
@@ -64,6 +70,8 @@ export const languageConfiguration: languages.LanguageConfiguration = {
 const languageDefinition: languages.IMonarchLanguage = {
   keywords: [
     'val',
+    'let',
+    'const',
     'as',
     'if',
     'then',
@@ -239,26 +247,6 @@ ${interpreterError instanceof Error ? interpreterError.message : 'Unknown Error'
   }
 }
 
-function parseToMarkers(response: string): monaco.editor.IMarkerData[] {
-  return response.split('\n').flatMap((line) => {
-    const [p1, p2] = line.substring('Demo.sam:'.length).split('-');
-    if (p1 == null || p2 == null) return [];
-    const [lineStart, colStart] = p1.split(':');
-    const [lineEnd, colEnd, ...rest] = p2.split(':');
-    if (lineStart == null || colStart == null || lineEnd == null || colEnd == null) {
-      return [];
-    }
-    return {
-      startLineNumber: parseInt(lineStart, 10),
-      startColumn: parseInt(colStart, 10),
-      endLineNumber: parseInt(lineEnd, 10),
-      endColumn: parseInt(colEnd, 10),
-      message: rest.join(':').trim(),
-      severity: 8,
-    };
-  });
-}
-
 export function onMonacoModelMount(
   editor: monaco.editor.IStandaloneCodeEditor,
   monaco: MonacoEditor,
@@ -275,7 +263,7 @@ export function onMonacoModelMount(
     samlangPromise
       .then((s) => s.typeCheck(value))
       .then((response) => {
-        monaco.editor.setModelMarkers(model, 'samlang', parseToMarkers(response));
+        monaco.editor.setModelMarkers(model, 'samlang', response);
       });
   };
 

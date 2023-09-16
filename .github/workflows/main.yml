@@ -30,6 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+      - uses: oven-sh/setup-bun@v1
       - name: Cache Cargo
         uses: actions/cache@v3
         with:
@@ -43,6 +44,4 @@ jobs:
       - name: Build and Validate
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-          corepack enable
-          pnpm install
-          pnpm build:wasm
+          cd crates/samlang-wasm && ./setup-generated-package.sh

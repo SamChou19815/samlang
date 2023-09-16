@@ -1,13 +1,4 @@
-#!/bin/bash
-
-set -e
-
-GENERATED=generated
-
-# Build
-wasm-pack build --out-dir samlang-demo -t web --no-typescript
-
-echo "// @$GENERATED
+// @generated
 
 export function init(url?: string): Promise<void>;
 
@@ -52,16 +43,4 @@ export function autoComplete(
   detail: string;
   insertTextFormat: number;
   kind: number;
-}>;" > samlang-demo/index.d.ts
-
-bun build --outfile samlang-demo/index.js --format esm lazy-index.js
-bun test
-
-# Cleanup outputs
-# rm samlang-demo/.gitignore samlang-demo/*.wasm samlang-demo/*.js
-if [[ ! -z "${RELEASE}" ]]
-then
-  cp samlang-demo/samlang_wasm_bg.wasm ../../packages/samlang-website/src/components/samlang_wasm_bg.wasm
-  cp samlang-demo/index.js ../../packages/samlang-website/src/components/samlang-wasm-glue.js
-  cp samlang-demo/index.d.ts ../../packages/samlang-website/src/components/samlang-wasm-glue.d.ts
-fi
+}>;
