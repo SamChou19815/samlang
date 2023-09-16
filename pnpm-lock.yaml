@@ -8,9 +8,6 @@ importers:
 
   .:
     devDependencies:
-      '@dev-sam/samlang-cli':
-        specifier: workspace:0.8.0
-        version: link:packages/samlang-cli
       '@types/node':
         specifier: ^20.3.0
         version: 20.3.0
@@ -23,8 +20,6 @@ importers:
       esbuild-plugin-wasm:
         specifier: ^1.1.0
         version: 1.1.0
-
-  packages/samlang-cli: {}
 
   packages/samlang-vscode:
     devDependencies:

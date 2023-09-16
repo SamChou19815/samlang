@@ -1,8 +1,0 @@
-{
-  "name": "@dev-sam/samlang-cli",
-  "version": "0.8.0",
-  "license": "AGPLv3",
-  "bin": {
-    "samlang": "./bin/index.js"
-  }
-}

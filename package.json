@@ -6,7 +6,6 @@
     "build:wasm": "cd crates/samlang-wasm && ./setup-generated-package.sh"
   },
   "devDependencies": {
-    "@dev-sam/samlang-cli": "workspace:0.8.0",
     "@types/node": "^20.3.0",
     "bun-types": "^1.0.1",
     "esbuild": "^0.18.0",
