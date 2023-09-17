@@ -4,13 +4,13 @@ import type * as SamlangTypes from './samlang-wasm-glue';
 
 export type MonacoEditor = typeof monaco;
 
-const samlangPromise: Promise<typeof SamlangTypes> =
-  typeof window !== 'undefined'
-    ? import('./samlang-wasm-glue').then(async (mod) => {
-        await mod.init();
-        return mod;
-      })
-    : new Promise((_resolve) => {});
+const samlangUninitializedPromise: Promise<typeof SamlangTypes> =
+  typeof window !== 'undefined' ? import('./samlang-wasm-glue') : new Promise((_resolve) => {});
+
+const samlangPromise = samlangUninitializedPromise.then(async (mod) => {
+  await mod.init();
+  return mod;
+});
 
 export const monacoEditorOptions: editor.IEditorConstructionOptions = {
   minimap: { enabled: false },
@@ -87,7 +87,6 @@ const languageDefinition: languages.IMonarchLanguage = {
     'from',
     'unit',
     'int',
-    'string',
     'bool',
     'true',
     'false',

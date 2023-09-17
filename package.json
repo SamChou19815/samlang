@@ -1,13 +1,14 @@
 {
-  "packageManager": "pnpm@8.7.4",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "test": "rm -f target/llvm-cov-target/*.profraw && cargo th",
-    "build:wasm": "cd crates/samlang-wasm && ./setup-generated-package.sh"
+    "rt": "rm -f target/llvm-cov-target/*.profraw && cargo th",
+    "bw": "cd crates/samlang-wasm && ./setup-generated-package.sh",
+    "ssg": "bun run --cwd packages/samlang-website ssg"
   },
   "devDependencies": {
-    "@types/node": "^20.3.0",
-    "bun-types": "^1.0.1",
-    "esbuild": "^0.18.0"
+    "bun-types": "^1.0.2"
   }
 }

@@ -1,5 +1,5 @@
 export const HELLO_WORLD_STRING: string = `class HelloWorld {
-  function getString(): string =
+  function getString(): Str =
     "Hello World"
 }`;
 
@@ -9,18 +9,18 @@ export const FOURTY_TWO: string = `class Math {
 }`;
 
 export const PATTERN_MATCHING: string = `class Opt<T>(
-  None(unit), Some(T)
+  None, Some(T)
 ) {
   method isEmpty(): bool =
     match (this) {
-      | None _ -> true
-      | Some _ -> false
+      None -> true,
+      Some(_) -> false,
     }
 
   method <R> map(f: (T) -> R): Opt<R> =
     match (this) {
-      | None _ -> Opt.None({})
-      | Some v -> Opt.Some(f(v))
+      None -> Opt.None(),
+      Some(v) -> Opt.Some(f(v)),
     }
 }`;
 
@@ -32,10 +32,10 @@ export const TYPE_INFERENCE: string = `class TypeInference {
   function main(): unit = {
     // n: int
     // s: string
-    val _ = TypeInference.pipe(
+    let _ = TypeInference.pipe(
       1,
-      (n) -> Builtins.intToString(n),
-      (s) -> Builtins.stringToInt(s)
+      (n) -> Str.fromInt(n),
+      (s) -> s.toInt()
     );
   }
 }`;
@@ -52,7 +52,7 @@ export const PRINT_HELLO_WORLD: string = `/**
 class Main {
   /** This main function serves as an entry point. */
   function main(): unit =
-    Builtins.println("Hello World!")
+    Process.println("Hello World!")
 }
 `;
 
@@ -66,22 +66,19 @@ export const MODULES: string = `// This is an example module.
 
 /** A module can define interfaces. */
 interface GlobalMessageProducer {
-  function getGlobalMessage(): string
+  method getGlobalMessage(): Str
+}
+
+/** A module can define interfaces. */
+interface MessageProducer {
+  method produce(): Str
 }
 
 /** A module can also define interfaces. */
 class HelloWorld(
-  val message: string,
-): GlobalMessageProducer {
-  private method getMessage(): string = {
-    val { message } = this;
-    message
-  }
-
-  function getGlobalMessage(): string = {
-    val hw = HelloWorld.init("Hello World");
-    hw.getMessage()
-  }
+  val message: Str,
+): MessageProducer {
+  method produce(): Str = this.message
 }
 
 /** Interfaces and classes can be mixed in any order. */
@@ -92,8 +89,8 @@ interface RandomInterface {}
  * defines an entry point that can be called in WASM later.
  */
 class Main {
-  function main(): string =
-    HelloWorld.getGlobalMessage()
+  function main(): Str =
+    HelloWorld.init("hi").produce()
 }
 `;
 
@@ -107,24 +104,24 @@ class AllAboutPrimitiveTypes {
 
   // This helper function introduces you to some primitive types
   function values(): unit = {
-    val _: int = 1; // 32-bit integers
-    val _: bool = true; // true and false
-    val _: string = "";
+    let _: int = 1; // 32-bit integers
+    let _: bool = true; // true and false
+    let _: Str = "";
     // When we return nothing at the end of the block,
     // it has type unit.
   }
 
   // We can build on primitive types to form complex types.
   // e.g. This function returns a function type.
-  function functionTypes(): (bool) -> string =
+  function functionTypes(): (bool) -> Str =
     AllAboutPrimitiveTypes.boolToString
 
   // We can convert between different primitive types.
-  function boolToString(b: bool): string =
+  function boolToString(b: bool): Str =
     if b then "true" else "false"
 
   // Some builtin functions also exist:
-  // - Builtins.stringToInt
+  // - Builtins.StrToInt
   // - Builtins.intToString
   // - Builtins.panic
   // - Builtins.println
@@ -140,7 +137,7 @@ class AllAboutPrimitiveTypes {
 class Student(
   // In the constructor of the object class,
   // you can define its fields.
-  private val name: string,
+  private val name: Str,
   // The above private field won't be visible outside of the class,
   // but the following field will be.
   val age: int
@@ -150,7 +147,7 @@ class Student(
    * They are a special kind of functions,
    * with an implicit this parameter.
    */
-  method getName(): string = this.name
+  method getName(): Str = this.name
   private method getAge(): int = this.age
 
   /**
@@ -166,7 +163,7 @@ class Student(
  * With variant classes, you can define a type that can be either A or B or C.
  * Here is an example:
  */
-class Type(U(unit), I(int), S(string), B(bool)) {
+class Type(U(unit), I(int), S(Str), B(bool)) {
   /**
    * You can construct a variant by \`VariantClass.VariantName()\`
    */
@@ -183,10 +180,10 @@ class Type(U(unit), I(int), S(string), B(bool)) {
    */
   method isTruthy(): bool =
     match (this) {
-      | U _ -> false
-      | I i -> i != 0
-      | S s -> s != ""
-      | B b -> b
+      U(_) -> false,
+      I(i) -> i != 0,
+      S(s) -> s != "",
+      B(b) -> b,
     }
 }
 
@@ -196,24 +193,24 @@ class Type(U(unit), I(int), S(string), B(bool)) {
  * An interface defines a set of functions and methods that
  * must be implemented by classes that claim to implement it.
  */
-interface IA { function f1(): int }
+interface IA { method f1(): int }
 
 interface IB {
-  function f1(): int
+  method f1(): int
   method m2(): bool
 }
 
 /** An interface can extends multiple interfaces. */
 interface IC : IA, IB {
   // f1 exists in both A and B. Since their signatures are the same, it's OK.
-  function f3(): string
+  method f3(): Str
 }
 
 /** A class can implement multiple interfaces. */
 class D : IA, IC {
-  function f1(): int = 3
+  method f1(): int = 3
   method m2(): bool = true
-  function f3(): string = "samlang"
+  method f3(): Str = "samlang"
 }
 
 
@@ -228,18 +225,18 @@ interface IAmAGenericInterface<T> {}
 
 class Box<T>(val content: T) {
   method getContent(): T = {
-    val { content } = this; content
+    let { content } = this; content
   }
 }
 
-class Option<T>(None(unit), Some(T)) {
-  function <T> getNone(): Option<T> = Option.None({})
+class Option<T>(None, Some(T)) {
+  function <T> getNone(): Option<T> = Option.None()
   function <T> getSome(d: T): Option<T> = Option.Some(d)
 
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
-      | None _ -> Option.None({})
-      | Some d -> Option.Some(f(d))
+      None -> Option.None(),
+      Some(d) -> Option.Some(f(d)),
     }
 }
 
@@ -265,8 +262,7 @@ interface Comparable<T> {
 class BoxedInt(val i: int): Comparable<BoxedInt> {
   method compare(other: BoxedInt): int =
     this.i - other.i
-}
-`;
+}`;
 
 export const ALL_EXPRESSIONS: string = `/**
 * The expressions are listed in decreasing precedence order, so you know where to add parentheses.
@@ -274,10 +270,10 @@ export const ALL_EXPRESSIONS: string = `/**
 class Expressions {
   /** samlang supports a limited set of literals. */
   function literals(): unit = {
-    val validLiteral1 = 42;
-    val validLiteral2 = true;
-    val validLiteral3 = false;
-    val validLiteral4 = "aaa";
+    let validLiteral1 = 42;
+    let validLiteral2 = true;
+    let validLiteral3 = false;
+    let validLiteral4 = "aaa";
     // Invalid ones: 3.14, 'c'
   }
 
@@ -286,7 +282,7 @@ class Expressions {
 
   /** You can refer to local variables by name. */
   function variables(a: int): int = {
-    val b = 42;
+    let b = 42;
     a + b
   }
 
@@ -297,19 +293,19 @@ class Expressions {
    * and ignore the output by using wildcard.
    */
   function blocks(): int = {
-    val a: int = 1;
-    val b = 2;
-    val { a as c } = Box.init(b);
-    val _ = 42;
+    let a: int = 1;
+    let b = 2;
+    let { a as c } = Box.init(b);
+    let _ = 42;
     a + b * c
   }
 
   /** Blocks can be nested */
   function nestedBlocks(): int = {
-    val a = {
-      val b = 4;
-      val c = {
-        val d = b;
+    let a = {
+      let b = 4;
+      let c = {
+        let d = b;
         b
       };
       b
@@ -331,19 +327,19 @@ class Expressions {
 
   /** Fields and methods can be accessed by dot syntax. */
   function dot(): unit = {
-    val _ = Box.init(1).a;
-    val _ = Expressions.init().oneMethod;
+    let _ = Box.init(1).a;
+    let _ = Expressions.init().oneMethod;
   }
 
   /** There are two kinds of unary expressions */
   function unary(): unit = {
-    val b: bool = !true; // Not
-    val n: int = -42; // Negation
+    let b: bool = !true; // Not
+    let n: int = -42; // Negation
   }
 
   /** You can call a function as you would expect. */
   function functionCall(): unit = {
-    val box = Box.init(1);
+    let box = Box.init(1);
     // Functions don't have to be named.
     ((n: int) -> {})(3)
   }
@@ -351,36 +347,36 @@ class Expressions {
   /** Supported binary expressions are listed in decreasing precedence order. */
   function binary(
     a: int, b: int,
-    s1: string, s2: string,
+    s1: Str, s2: Str,
   ): unit = {
     // Both s1 and s2 must be strings
-    val _: string = s1 :: s2; // string concat
+    let _: Str = s1 :: s2; // string concat
     // Both a and b must be ints
-    val _: int = a * b;
-    val _: int = a / b;
-    val _: int = a % b;
-    val _: int = a + b;
-    val _: int = a - b;
-    val _: bool = a < b;
-    val _: bool = a > b;
-    val _: bool = a <= b;
-    val _: bool = a >= b;
+    let _: int = a * b;
+    let _: int = a / b;
+    let _: int = a % b;
+    let _: int = a + b;
+    let _: int = a - b;
+    let _: bool = a < b;
+    let _: bool = a > b;
+    let _: bool = a <= b;
+    let _: bool = a >= b;
     // a and b must have the same type
-    val c: bool = a == b;
-    val d: bool = a != b;
+    let c: bool = a == b;
+    let d: bool = a != b;
     // Both c and d must be bool
-    val _: bool = c && d;
-    val _: bool = c || d;
+    let _: bool = c && d;
+    let _: bool = c || d;
   }
 
   /** In samlang, we do not have ternary expression, because if-else blocks are expressions. */
-  function conditionals(): string =
+  function conditionals(): Str =
     if 1 == 2 then
       "Hello"
     else if true then
       "World"
     else {
-      Builtins.panic("Logic is broken")
+      Process.panic("Logic is broken")
     }
 
   /**
@@ -389,24 +385,24 @@ class Expressions {
   function patternMatching(opt: Option<int>): int =
     match (opt) {
       // Commenting the following line to get an error
-      | None _ -> 42
-      | Some a -> a
+      None -> 42,
+      Some(a) -> a,
     }
 
   /** You can easily define an anonymous function as a lambda. */
   function lambdas(): int = {
     // Here is a simple example.
-    val _ = () -> 0;
+    let _ = () -> 0;
     // Here is an identity function.
-    val _ = (x: int) -> x;
+    let _ = (x: int) -> x;
     // Parameters can omit annotations, but they must be
     // contextually-typed.
-    val _: (int) -> int = (x) -> x;
-    val f: (int, bool) -> int = (x: int, b) -> x;
+    let _: (int) -> int = (x) -> x;
+    let f: (int, bool) -> int = (x: int, b) -> x;
     f(1, false)
   }
 }
 
 class Box(val a: int) {}
-class Option<T>(None(unit), Some(T)) {}
+class Option<T>(None, Some(T)) {}
 `;

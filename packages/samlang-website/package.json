@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "next dev",
-    "build": "next build"
+    "dev": "next dev --turbo",
+    "ssg": "next build --no-lint"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.4.6",
@@ -17,7 +17,6 @@
     "postcss": "8.4.29",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "samlang-demo": "file:samlang-demo-0.0.1.tgz",
     "tailwindcss": "3.3.3",
     "typescript": "5.2.2"
   }
