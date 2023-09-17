@@ -1,0 +1,7 @@
+{
+  "buildCommand": "bun ssg",
+  "cleanUrls": true,
+  "framework": "nextjs",
+  "public": true,
+  "outputDirectory": "packages/samlang-website/out"
+}

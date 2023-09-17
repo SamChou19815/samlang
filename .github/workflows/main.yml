@@ -4,24 +4,23 @@ on:
     branches:
       - main
 
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
 jobs:
-  build-per-os:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-12, windows-latest]
-    runs-on: ${{ matrix.os }}
+  deploy-website:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build samlang and compile samlang source code
-        run: cargo run -p samlang-cli
+      - uses: oven-sh/setup-bun@v1
+      - name: Bun Install
+        run: bun install --frozen-lockfile
+      - name: Generate Static Site
+        run: bun ssg
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
