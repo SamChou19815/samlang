@@ -25,24 +25,3 @@ jobs:
           key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
       - name: Build samlang and compile samlang source code
         run: cargo run -p samlang-cli
-
-  build-wasm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: oven-sh/setup-bun@v1
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: cargo-build-wasm-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build and Validate
-        run: |
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-          bun bw
