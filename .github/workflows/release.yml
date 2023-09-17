@@ -55,17 +55,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-pc-windows-msvc,x86_64-pc-windows-msvc
-      - name: Install Additional Linkers
-        run: |
-          sudo apt update
-          sudo apt install gcc-aarch64-linux-gnu
       - name: Build
         run: |
           cargo b -p samlang-cli --release --target aarch64-pc-windows-msvc
           cargo b -p samlang-cli --release --target x86_64-pc-windows-msvc
           mkdir bin
-          cp target/aarch64-pc-windows-msvc/release/samlang-cli bin/samlang-aarch64-pc-windows-msvc
-          cp target/x86_64-pc-windows-msvc/release/samlang-cli bin/samlang-x86_64-pc-windows-msvc
+          cp target/aarch64-pc-windows-msvc/release/samlang-cli.exe bin/samlang-aarch64-pc-windows-msvc.exe
+          cp target/x86_64-pc-windows-msvc/release/samlang-cli.exe bin/samlang-x86_64-pc-windows-msvc.exe
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
