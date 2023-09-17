@@ -2,6 +2,7 @@
   "buildCommand": "bun ssg",
   "cleanUrls": true,
   "framework": null,
+  "installCommand": "bun install -y --frozen-lockfile",
   "public": true,
   "outputDirectory": "packages/samlang-website/out"
 }
