@@ -9,10 +9,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - name: Add Targets
+        with:
+          targets: aarch64-unknown-linux-gnu,x86_64-unknown-linux-gnu
+      - name: Install Additional Linkers
         run: |
-          rustup target add aarch64-unknown-linux-gnu
-          rustup target add x86_64-unknown-linux-gnu
+          sudo apt update
+          sudo apt install gcc-aarch64-linux-gnu
       - name: Build
         run: |
           cargo b -p samlang-cli --release --target aarch64-unknown-linux-gnu
@@ -31,16 +33,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - name: Add Targets
-        run: |
-          rustup target add aarch64-apple-darwin
-          rustup target add x86_64-apple-darwin
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
       - name: Build
         run: |
           cargo b -p samlang-cli --release --target aarch64-apple-darwin
           cargo b -p samlang-cli --release --target x86_64-apple-darwin
           mkdir bin
-          cp target/aarch64-apple-darwin/release/samlang-cli bin/samlang-x86_64-apple-darwin
+          cp target/aarch64-apple-darwin/release/samlang-cli bin/samlang-aarch64-apple-darwin
           cp target/x86_64-apple-darwin/release/samlang-cli bin/samlang-x86_64-apple-darwin
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
@@ -53,10 +53,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - name: Add Targets
+        with:
+          targets: aarch64-pc-windows-msvc,x86_64-pc-windows-msvc
+      - name: Install Additional Linkers
         run: |
-          rustup target add aarch64-pc-windows-msvc
-          rustup target add x86_64-pc-windows-msvc
+          sudo apt update
+          sudo apt install gcc-aarch64-linux-gnu
       - name: Build
         run: |
           cargo b -p samlang-cli --release --target aarch64-pc-windows-msvc
