@@ -21,7 +21,7 @@ jobs:
           cargo b -p samlang-cli --release --target x86_64-unknown-linux-gnu
           mkdir bin
           cp target/aarch64-unknown-linux-gnu/release/samlang-cli bin/samlang-aarch64-unknown-linux-gnu
-          cp target/x86_64-unknown-linux-gnurelease/samlang-cli bin/samlang-x86_64-unknown-linux-gnu
+          cp target/x86_64-unknown-linux-gnu/release/samlang-cli bin/samlang-x86_64-unknown-linux-gnu
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
