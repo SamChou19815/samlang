@@ -58,79 +58,74 @@ export default function Home(): JSX.Element {
             The language can be compiled down to WebAssembly with reference counting based garbage
             collection.
           </p>
-          <div>
-            <h3>Getting Started</h3>
-            <EditorCodeBlock language="bash">
-              {'yarn add @dev-sam/samlang-cli\nyarn samlang --help'}
-            </EditorCodeBlock>
-            <div>
-              <h2 id="example-programs">Notable Examples</h2>
-              <section className="flex flex-wrap items-center">
-                <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
-                  <h4>Hello World</h4>
-                  <div className="pr-2">
-                    <EditorCodeBlock>{HELLO_WORLD_STRING}</EditorCodeBlock>
-                  </div>
-                </div>
-                <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
-                  <h4>42</h4>
-                  <div className="pr-2">
-                    <EditorCodeBlock>{FOURTY_TWO}</EditorCodeBlock>
-                  </div>
-                </div>
-                <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
-                  <h4>Pattern Matching</h4>
-                  <div className="pr-2">
-                    <EditorCodeBlock>{PATTERN_MATCHING}</EditorCodeBlock>
-                  </div>
-                </div>
-                <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
-                  <h4>Type Inference</h4>
-                  <div className="pr-2">
-                    <EditorCodeBlock>{TYPE_INFERENCE}</EditorCodeBlock>
-                  </div>
-                </div>
-              </section>
+          <h2>Getting Started</h2>
+          <p>
+            Download the latest release from{' '}
+            <a href="https://github.com/SamChou19815/samlang/releases/latest">GitHub Releases</a>.
+            To start a new project, create a json file <code>sconfig.json</code> with content{' '}
+            <code>{'{}'}</code>.
+          </p>
+          <h2 id="example-programs">Notable Examples</h2>
+          <section className="flex flex-wrap items-center">
+            <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
+              <h3>Hello World</h3>
+              <div className="pr-2">
+                <EditorCodeBlock>{HELLO_WORLD_STRING}</EditorCodeBlock>
+              </div>
             </div>
-          </div>
-          <div>
-            <h3>About the Documentation Site</h3>
-            <p>
-              This is an interactive documentation site where all the code snippets of samlang are
-              editable. These snippets, available after the introduction section, contain inline
-              comments to illustrate the power of the language.
-            </p>
-            <p>
-              You can click the Demo button at the top of the page or follow{' '}
-              <Link href="/demo">this link</Link>.
-            </p>
-          </div>
-          <div>
-            <h3>Power and Limits of Type Inference</h3>
-            <p className="my-2">
-              The only absolutely required type annotated happens at the top-level class function
-              and method level. Most other types can be correctly inferred by the compiler and can
-              be omitted from your program.
-            </p>
-            <p className="my-2">
-              The type checker uses local type inference to infer types of most expressions.
-              Therefore, it cannot infer types from the whole program like OCaml does. Instead, it
-              will push down type hints from local, nearby contexts.
-            </p>
-            <p className="my-2">
-              Despite the fundamental limitation, the compiler can correctly infer most of the local
-              expression types. If your code does not use generics or unannotated lambda parameters,
-              then all types can be inferred correctly. Most of the type arguments can be inferred,
-              so they do not need to be explicitly supplied. Unannotated lambda parameters with
-              local context but without parametric polymorphism can also be inferred perfectly.
-            </p>
-            <p>
-              Even when you combine polymorphic function call and unannotated lambda parameters, the
-              type checker still attempts to infer the types from left to right. It will work in
-              most of the code. An illustratin type inference example is available near the top of
-              the page.
-            </p>
-          </div>
+            <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
+              <h3>42</h3>
+              <div className="pr-2">
+                <EditorCodeBlock>{FOURTY_TWO}</EditorCodeBlock>
+              </div>
+            </div>
+            <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
+              <h3>Pattern Matching</h3>
+              <div className="pr-2">
+                <EditorCodeBlock>{PATTERN_MATCHING}</EditorCodeBlock>
+              </div>
+            </div>
+            <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
+              <h3>Type Inference</h3>
+              <div className="pr-2">
+                <EditorCodeBlock>{TYPE_INFERENCE}</EditorCodeBlock>
+              </div>
+            </div>
+          </section>
+          <h2>About the Documentation Site</h2>
+          <p>
+            This is an interactive documentation site where all the code snippets of samlang are
+            editable. These snippets, available after the introduction section, contain inline
+            comments to illustrate the power of the language.
+          </p>
+          <p>
+            You can click the Demo button at the top of the page or follow{' '}
+            <Link href="/demo">this link</Link>.
+          </p>
+          <h2>Power and Limits of Type Inference</h2>
+          <p className="my-2">
+            The only absolutely required type annotated happens at the top-level class function and
+            method level. Most other types can be correctly inferred by the compiler and can be
+            omitted from your program.
+          </p>
+          <p className="my-2">
+            The type checker uses local type inference to infer types of most expressions.
+            Therefore, it cannot infer types from the whole program like OCaml does. Instead, it
+            will push down type hints from local, nearby contexts.
+          </p>
+          <p className="my-2">
+            Despite the fundamental limitation, the compiler can correctly infer most of the local
+            expression types. If your code does not use generics or unannotated lambda parameters,
+            then all types can be inferred correctly. Most of the type arguments can be inferred, so
+            they do not need to be explicitly supplied. Unannotated lambda parameters with local
+            context but without parametric polymorphism can also be inferred perfectly.
+          </p>
+          <p>
+            Even when you combine polymorphic function call and unannotated lambda parameters, the
+            type checker still attempts to infer the types from left to right. It will work in most
+            of the code. An illustratin type inference example is available near the top of the
+            page.
+          </p>
         </section>
       </main>
     </div>
