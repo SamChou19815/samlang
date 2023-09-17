@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.0.15
+
+- Stop treating `string` as a keyword.
+- Target VSCode 1.75+.
+
 ## 0.0.14
 
 Support syntax highlight for new syntax.

@@ -50,9 +50,7 @@
       ]
     },
     "types": {
-      "patterns": [
-        { "name": "support.type", "match": "\\b(unit|int|bool|string|[A-Z][A-za-z0-9]*)\\b" }
-      ]
+      "patterns": [{ "name": "support.type", "match": "\\b(unit|int|bool|[A-Z][A-za-z0-9]*)\\b" }]
     },
     "functions": {
       "patterns": [
