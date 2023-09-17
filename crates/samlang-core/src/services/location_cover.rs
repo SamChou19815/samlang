@@ -3,7 +3,7 @@ use crate::{
     source::{expr, pattern, Module, Toplevel},
     Location, Position,
   },
-  checker::type_::Type,
+  checker::type_::{FunctionType, Type},
   ModuleReference,
 };
 use samlang_heap::PStr;
@@ -13,7 +13,14 @@ pub(super) enum LocationCoverSearchResult<'a> {
   Expression(&'a expr::E<Rc<Type>>),
   ToplevelName(Location, ModuleReference, PStr),
   PropertyName(Location, ModuleReference, PStr, PStr),
-  InterfaceMemberName(Location, ModuleReference, PStr, PStr, bool /* is method */),
+  InterfaceMemberName {
+    loc: Location,
+    module_reference: ModuleReference,
+    class_name: PStr,
+    fn_name: PStr,
+    is_method: bool,
+    type_: Rc<Type>,
+  },
   TypedName(Location, PStr, Type),
 }
 
@@ -61,14 +68,13 @@ fn search_expression(
         .type_
         .as_nominal()
         .filter(|_| e.method_name.loc.contains_position(position))
-        .map(|nominal_type| {
-          LocationCoverSearchResult::InterfaceMemberName(
-            e.method_name.loc,
-            nominal_type.module_reference,
-            nominal_type.id,
-            e.method_name.name,
-            !nominal_type.is_class_statics,
-          )
+        .map(|nominal_type| LocationCoverSearchResult::InterfaceMemberName {
+          loc: e.method_name.loc,
+          module_reference: nominal_type.module_reference,
+          class_name: nominal_type.id,
+          fn_name: e.method_name.name,
+          is_method: !nominal_type.is_class_statics,
+          type_: e.common.type_.clone(),
         });
       if found.is_some() {
         return found;
@@ -168,13 +174,14 @@ pub(super) fn search_module_locally(
         continue;
       }
       if member.name.loc.contains_position(position) {
-        return Some(LocationCoverSearchResult::InterfaceMemberName(
-          member.name.loc,
+        return Some(LocationCoverSearchResult::InterfaceMemberName {
+          loc: member.name.loc,
           module_reference,
-          name.name,
-          member.name.name,
-          member.is_method,
-        ));
+          class_name: name.name,
+          fn_name: member.name.name,
+          is_method: member.is_method,
+          type_: Rc::new(Type::Fn(FunctionType::from_annotation(&member.type_))),
+        });
       }
       for param in member.parameters.iter() {
         if param.name.loc.contains_position(position) {
