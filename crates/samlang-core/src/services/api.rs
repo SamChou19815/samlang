@@ -175,33 +175,38 @@ pub mod query {
           ),
         ))
       }
-      LocationCoverSearchResult::InterfaceMemberName(
+      LocationCoverSearchResult::InterfaceMemberName {
         loc,
-        fetched_function_module_reference,
+        module_reference: fetched_function_module_reference,
         class_name,
         fn_name,
-        _,
-      ) => {
-        let relevant_fn = state_searcher_utils::find_class_member(
+        is_method: _,
+        type_,
+      } => {
+        if let Some(relevant_fn) = state_searcher_utils::find_class_member(
           state,
           &fetched_function_module_reference,
           &class_name,
           &fn_name,
-        )
-        .unwrap();
-        let type_content = TypeQueryContent {
-          language: "samlang",
-          value: FunctionType::from_annotation(&relevant_fn.type_).pretty_print(&state.heap),
-        };
-        Some(query_result_with_optional_document(
-          state,
-          loc,
-          type_content,
-          get_last_doc_comment(
-            &state.checked_modules.get(&fetched_function_module_reference).unwrap().comment_store,
-            relevant_fn.associated_comments,
-          ),
-        ))
+        ) {
+          let type_content = TypeQueryContent {
+            language: "samlang",
+            value: FunctionType::from_annotation(&relevant_fn.type_).pretty_print(&state.heap),
+          };
+          Some(query_result_with_optional_document(
+            state,
+            loc,
+            type_content,
+            get_last_doc_comment(
+              &state.checked_modules.get(&fetched_function_module_reference).unwrap().comment_store,
+              relevant_fn.associated_comments,
+            ),
+          ))
+        } else {
+          let type_content =
+            TypeQueryContent { language: "samlang", value: type_.pretty_print(&state.heap) };
+          Some(query_result_with_optional_document(state, loc, type_content, None))
+        }
       }
       LocationCoverSearchResult::ToplevelName(loc, module_reference, class_name) => {
         let type_content = TypeQueryContent {
@@ -325,13 +330,14 @@ pub mod query {
           ),
         ))
       }
-      LocationCoverSearchResult::InterfaceMemberName(
-        _,
-        mod_ref,
+      LocationCoverSearchResult::InterfaceMemberName {
+        loc: _,
+        module_reference: mod_ref,
         class_name,
-        member_name,
+        fn_name: member_name,
         is_method,
-      ) => Some(search_modules_globally(
+        type_: _,
+      } => Some(search_modules_globally(
         &state.checked_modules,
         &super::super::global_searcher::GlobalNameSearchRequest::InterfaceMember(
           mod_ref,
@@ -387,11 +393,16 @@ pub mod query {
       LocationCoverSearchResult::PropertyName(_, mod_ref, class_name, field_name) => Some(
         state_searcher_utils::find_field_def(state, &mod_ref, &class_name, &field_name)?.name.loc,
       ),
-      LocationCoverSearchResult::InterfaceMemberName(_, mod_ref, class_name, member_name, _) => {
-        Some(
-          state_searcher_utils::find_class_member(state, &mod_ref, &class_name, &member_name)?.loc,
-        )
-      }
+      LocationCoverSearchResult::InterfaceMemberName {
+        loc: _,
+        module_reference: mod_ref,
+        class_name,
+        fn_name: member_name,
+        is_method: _,
+        type_: _,
+      } => Some(
+        state_searcher_utils::find_class_member(state, &mod_ref, &class_name, &member_name)?.loc,
+      ),
       LocationCoverSearchResult::ToplevelName(_, mod_ref, class_name) => {
         Some(state_searcher_utils::find_toplevel(state, &mod_ref, &class_name)?.loc())
       }
@@ -627,7 +638,14 @@ pub mod completion {
   ) -> Option<Vec<AutoCompletionItem>> {
     let (instance_mod_ref, instance_class_name) =
       match state_searcher_utils::search_at_pos(state, module_reference, position, false)? {
-        LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, false) => {
+        LocationCoverSearchResult::InterfaceMemberName {
+          loc: _,
+          module_reference: module_ref,
+          class_name,
+          fn_name: _,
+          is_method: false,
+          type_: _,
+        } => {
           return state_searcher_utils::find_interface_type(state, &module_ref, &class_name).map(
             |cx| {
               cx.functions
@@ -711,9 +729,14 @@ pub mod completion {
             items.into_iter().sorted_by_key(|(n, _)| *n).map(|(_, item)| item).collect(),
           );
         }
-        LocationCoverSearchResult::InterfaceMemberName(_, module_ref, class_name, _, true) => {
-          (module_ref, class_name)
-        }
+        LocationCoverSearchResult::InterfaceMemberName {
+          loc: _,
+          module_reference: module_ref,
+          class_name,
+          fn_name: _,
+          is_method: true,
+          type_: _,
+        } => (module_ref, class_name),
         LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
           e.object.type_().as_nominal().map(|t| (t.module_reference, t.id))?
         }

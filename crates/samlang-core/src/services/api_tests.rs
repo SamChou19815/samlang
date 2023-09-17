@@ -93,6 +93,7 @@ class Test1(val a: int) {
         .map(query::TypeQueryContent::to_string)
         .join("\n")
     );
+    // On a
     assert_eq!(
       "int [lang=samlang]",
       query::hover(&state, &test2_mod_ref, Position(3, 28))
@@ -102,6 +103,17 @@ class Test1(val a: int) {
         .map(query::TypeQueryContent::to_string)
         .join("\n")
     );
+    // On init
+    assert_eq!(
+      "(int) -> Test1 [lang=samlang]",
+      query::hover(&state, &test2_mod_ref, Position(4, 36))
+        .unwrap()
+        .contents
+        .iter()
+        .map(query::TypeQueryContent::to_string)
+        .join("\n")
+    );
+    // On test
     assert_eq!(
       "() -> int [lang=samlang]",
       query::hover(&state, &test2_mod_ref, Position(4, 44))

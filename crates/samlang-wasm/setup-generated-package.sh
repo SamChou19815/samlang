@@ -61,7 +61,7 @@ bun test
 # rm samlang-demo/.gitignore samlang-demo/*.wasm samlang-demo/*.js
 if [[ ! -z "${RELEASE}" ]]
 then
-  cp samlang-demo/samlang_wasm_bg.wasm ../../website/src/components/samlang_wasm_bg.wasm
-  cp samlang-demo/index.js ../../website/src/components/samlang-wasm-glue.js
-  cp samlang-demo/index.d.ts ../../website/src/components/samlang-wasm-glue.d.ts
+  cp samlang-demo/samlang_wasm_bg.wasm ../../packages/samlang-website/src/components/samlang_wasm_bg.wasm
+  cp samlang-demo/index.js ../../packages/samlang-website/src/components/samlang-wasm-glue.js
+  cp samlang-demo/index.d.ts ../../packages/samlang-website/src/components/samlang-wasm-glue.d.ts
 fi
