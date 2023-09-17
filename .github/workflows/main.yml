@@ -24,7 +24,7 @@ jobs:
             target/
           key: ${{ matrix.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
       - name: Build samlang and compile samlang source code
-        run: cargo run -p samlang-cli --release
+        run: cargo run -p samlang-cli
 
   build-wasm:
     runs-on: ubuntu-latest
