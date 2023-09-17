@@ -1,4 +1,4 @@
-import Link from 'next/Link';
+import Link from 'next/link';
 import EditorCodeBlock from '../components/EditorCodeBlock';
 import {
   FOURTY_TWO,

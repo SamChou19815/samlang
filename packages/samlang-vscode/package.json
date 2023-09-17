@@ -69,7 +69,9 @@
     "bundle": "node bundle.js"
   },
   "devDependencies": {
+    "@types/node": "^20.3.0",
     "@types/vscode": "1.62.0",
+    "esbuild": "^0.19.3",
     "vscode-languageclient": "^8.1.0"
   }
 }

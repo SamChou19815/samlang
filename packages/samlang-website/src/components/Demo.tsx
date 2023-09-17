@@ -2,8 +2,8 @@
 
 import Editor from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
-import Link from 'next/Link';
-import type { CompilationResult } from 'samlang-demo';
+import Link from 'next/link';
+import type { CompilationResult } from './samlang-wasm-glue';
 
 import { useRef, useState } from 'react';
 import { initializeMonacoEditor, monacoEditorOptions, onMonacoModelMount } from './samlang-config';
