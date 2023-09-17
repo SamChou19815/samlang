@@ -16,8 +16,6 @@ jobs:
       - uses: oven-sh/setup-bun@v1
       - name: Bun Install
         run: bun install --frozen-lockfile
-      - name: Generate Static Site
-        run: bun ssg
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy
