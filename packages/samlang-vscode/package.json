@@ -2,13 +2,13 @@
   "name": "vscode-samlang",
   "displayName": "vscode-samlang",
   "description": "samlang for VSCode",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "publisher": "dev-sam",
   "repository": {
     "url": "https://github.com/SamChou19815/samlang"
   },
   "engines": {
-    "vscode": "^1.62.0"
+    "vscode": "^1.75.0"
   },
   "categories": [
     "Programming Languages",
@@ -16,9 +16,7 @@
   ],
   "icon": "images/samlang.png",
   "main": "./out/extension.js",
-  "activationEvents": [
-    "onLanguage:samlang"
-  ],
+  "activationEvents": [],
   "contributes": {
     "languages": [
       {
@@ -66,11 +64,13 @@
   },
   "scripts": {
     "check": "tsc --incremental --noEmit",
-    "bundle": "node bundle.js"
+    "bundle": "node bundle.js",
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.3.0",
-    "@types/vscode": "1.62.0",
+    "@types/vscode": "1.75.0",
     "esbuild": "^0.19.3",
     "vscode-languageclient": "^8.1.0"
   }
