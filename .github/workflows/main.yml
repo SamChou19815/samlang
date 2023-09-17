@@ -46,13 +46,3 @@ jobs:
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           bun bw
-
-  build-website:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: oven-sh/setup-bun@v1
-      - name: Bun Install
-        run: bun install --frozen-lockfile
-      - name: Generate Static Site
-        run: bun ssg
