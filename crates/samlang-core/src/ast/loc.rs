@@ -98,6 +98,8 @@ mod tests {
   #[test]
   fn location_contains_position_tests() {
     assert!(Location::from_pos(1, 3, 3, 1).contains_position(Position(2, 2)));
+    assert!(Location::from_pos(1, 3, 3, 1).contains_position(Position(1, 3)));
+    assert!(Location::from_pos(1, 3, 3, 1).contains_position(Position(3, 1)));
     assert!(!Location::from_pos(1, 3, 3, 1).contains_position(Position(1, 2)));
     assert!(!Location::from_pos(1, 3, 3, 1).contains_position(Position(3, 2)));
   }

@@ -7,7 +7,7 @@ mod tests {
   };
   use itertools::Itertools;
   use pretty_assertions::assert_eq;
-  use samlang_heap::{Heap, ModuleReference};
+  use samlang_heap::{Heap, ModuleReference, PStr};
   use std::collections::HashMap;
 
   #[test]
@@ -992,27 +992,65 @@ class Main {
 
   #[test]
   fn autocomplete_test_6() {
-    let mod_ref = ModuleReference::DUMMY;
+    let heap = &mut Heap::new();
+    let mod_ref = heap.alloc_module_reference(vec![PStr::UPPER_A]);
     let state = ServerState::new(
       Heap::new(),
       false,
-      HashMap::from([(
-        mod_ref,
-        r#"
+      HashMap::from([
+        (
+          mod_ref,
+          r#"
 class Main {
-  function main(a: Developer): Developer = a.
+  function main1(a: Developer): Developer = a.
+  function main2(): Developer = Developer.
+  function main3(): Developer = Process.
 }
 class Developer {
   private method f(): unit = {}
   method b(): unit = {}
 }
 "#
-        .to_string(),
-      )]),
+          .to_string(),
+        ),
+        (ModuleReference::DUMMY, "class Other {}".to_string()),
+      ]),
     );
     assert_eq!(
       "b [kind=Method, detail=b(): unit]",
-      completion::auto_complete(&state, &mod_ref, Position(2, 45))
+      completion::auto_complete(&state, &mod_ref, Position(2, 46))
+        .iter()
+        .map(completion::AutoCompletionItem::to_string)
+        .join("\n")
+    );
+    assert_eq!(
+      r#"
+Main [kind=Class, detail=class Main]
+Other [kind=Class, detail=class Other]
+Process [kind=Class, detail=class Process]
+Str [kind=Class, detail=class Str]
+Developer [kind=Class, detail=class Developer]
+"#
+      .trim(),
+      completion::auto_complete(&state, &mod_ref, Position(3, 39))
+        .iter()
+        .map(completion::AutoCompletionItem::to_string)
+        .join("\n")
+    );
+    assert_eq!(
+      "init [kind=Function, detail=init(): Developer]",
+      completion::auto_complete(&state, &mod_ref, Position(3, 42))
+        .iter()
+        .map(completion::AutoCompletionItem::to_string)
+        .join("\n")
+    );
+    assert_eq!(
+      r#"
+panic [kind=Function, detail=panic(a0: Str): T]
+println [kind=Function, detail=println(a0: Str): unit]
+"#
+      .trim(),
+      completion::auto_complete(&state, &mod_ref, Position(4, 40))
         .iter()
         .map(completion::AutoCompletionItem::to_string)
         .join("\n")

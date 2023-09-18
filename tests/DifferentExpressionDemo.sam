@@ -21,7 +21,7 @@ class Clazz(val t: int) {
   function of(): Clazz = Clazz.init(42)
 
   method thisTest(): int = {
-    let i: int = this.t;
+    let i = this.t;
     let { t as j } = this;
     let { t as _ } = this;
     let [_] = this;
