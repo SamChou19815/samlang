@@ -950,7 +950,7 @@ impl<'a> SourceParser<'a> {
     let mut function_expression = self.parse_base_expression();
     loop {
       match self.peek() {
-        Token(_, TokenContent::Operator(TokenOp::DOT)) => {
+        Token(dot_loc, TokenContent::Operator(TokenOp::DOT)) => {
           let mut field_preceding_comments = self.collect_preceding_comments();
           self.consume();
           field_preceding_comments.append(&mut self.collect_preceding_comments());
@@ -960,10 +960,7 @@ impl<'a> SourceParser<'a> {
             }
             Token(l, t) => {
               self.report(l, format!("Expected identifier, but get {}", t.pretty_print(self.heap)));
-              (
-                Location { module_reference: self.module_reference, start: l.start, end: l.start },
-                PStr::MISSING,
-              )
+              (Location { end: l.start, ..dot_loc }, PStr::MISSING)
             }
           };
           let mut loc = function_expression.loc().union(&field_loc);

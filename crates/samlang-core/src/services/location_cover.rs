@@ -49,12 +49,23 @@ fn search_expression(
         .as_nominal()
         .filter(|_| e.field_name.loc.contains_position(position))
         .map(|nominal_type| {
-          LocationCoverSearchResult::PropertyName(
-            e.field_name.loc,
-            nominal_type.module_reference,
-            nominal_type.id,
-            e.field_name.name,
-          )
+          if nominal_type.is_class_statics {
+            LocationCoverSearchResult::InterfaceMemberName {
+              loc: e.field_name.loc,
+              module_reference: nominal_type.module_reference,
+              class_name: nominal_type.id,
+              fn_name: e.field_name.name,
+              is_method: false,
+              type_: e.common.type_.clone(),
+            }
+          } else {
+            LocationCoverSearchResult::PropertyName(
+              e.field_name.loc,
+              nominal_type.module_reference,
+              nominal_type.id,
+              e.field_name.name,
+            )
+          }
         });
       if found.is_some() {
         return found;

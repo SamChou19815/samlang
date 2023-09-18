@@ -175,7 +175,7 @@ pub fn autocomplete(source: String, line: i32, column: i32) -> JsValue {
     &(samlang_core::services::api::completion::auto_complete(
       state,
       &mod_ref,
-      samlang_core::ast::Position(line - 1, column),
+      samlang_core::ast::Position(line - 1, column - 1),
     )
     .into_iter()
     .map(|item| AutoCompletionItem {

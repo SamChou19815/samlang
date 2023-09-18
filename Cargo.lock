@@ -544,7 +544,7 @@ checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 
 [[package]]
 name = "samlang-cli"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "pretty_assertions",
  "samlang-core",
@@ -556,7 +556,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-collections"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "fplist",
  "pretty_assertions",
@@ -564,7 +564,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-core"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "enum-as-inner",
  "enum-iterator",
@@ -579,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-heap"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "itertools",
  "pretty_assertions",
@@ -587,7 +587,7 @@ dependencies = [
 
 [[package]]
 name = "samlang-wasm"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "js-sys",
  "samlang-core",

@@ -702,7 +702,9 @@ pub mod completion {
               } else {
                 (CompletionItemKind::Interface, format!("interface {}", name))
               };
-              let additional_edits = if available_names.contains(n) {
+              let additional_edits = if available_names.contains(n)
+                || ModuleReference::ROOT.eq(import_mod_ref)
+              {
                 vec![]
               } else {
                 rewrite::generate_auto_import_edits(
@@ -736,9 +738,9 @@ pub mod completion {
           fn_name: _,
           is_method: true,
           type_: _,
-        } => (module_ref, class_name),
-        LocationCoverSearchResult::Expression(expr::E::FieldAccess(e)) => {
-          e.object.type_().as_nominal().map(|t| (t.module_reference, t.id))?
+        }
+        | LocationCoverSearchResult::PropertyName(_, module_ref, class_name, _) => {
+          (module_ref, class_name)
         }
         _ => return None,
       };
