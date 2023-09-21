@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import EditorCodeBlock from '../components/EditorCodeBlock';
+import StaticSamlangCodeBlock from '../components/StaticSamlangCodeBlock';
 import {
   FOURTY_TWO,
   HELLO_WORLD_STRING,
@@ -70,25 +70,25 @@ export default function Home(): JSX.Element {
             <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
               <h3>Hello World</h3>
               <div className="pr-2">
-                <EditorCodeBlock>{HELLO_WORLD_STRING}</EditorCodeBlock>
+                <StaticSamlangCodeBlock>{HELLO_WORLD_STRING}</StaticSamlangCodeBlock>
               </div>
             </div>
             <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
               <h3>42</h3>
               <div className="pr-2">
-                <EditorCodeBlock>{FOURTY_TWO}</EditorCodeBlock>
+                <StaticSamlangCodeBlock>{FOURTY_TWO}</StaticSamlangCodeBlock>
               </div>
             </div>
             <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
               <h3>Pattern Matching</h3>
               <div className="pr-2">
-                <EditorCodeBlock>{PATTERN_MATCHING}</EditorCodeBlock>
+                <StaticSamlangCodeBlock>{PATTERN_MATCHING}</StaticSamlangCodeBlock>
               </div>
             </div>
             <div className="flex-grow-0 flex-shrink-0 flex-[50%] max-w-[50%]">
               <h3>Type Inference</h3>
               <div className="pr-2">
-                <EditorCodeBlock>{TYPE_INFERENCE}</EditorCodeBlock>
+                <StaticSamlangCodeBlock>{TYPE_INFERENCE}</StaticSamlangCodeBlock>
               </div>
             </div>
           </section>

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "ssg": "next build --no-lint"
   },
   "dependencies": {
@@ -12,12 +12,15 @@
     "@types/react": "18.2.21",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.15",
+    "dev-sam-theme": "^0.0.1",
     "monaco-editor": "^0.34.1",
-    "next": "13.4.19",
+    "next": "13.5.2",
     "postcss": "8.4.29",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "shiki": "^0.14.4",
     "tailwindcss": "3.3.3",
-    "typescript": "5.2.2"
+    "typescript": "5.2.2",
+    "vscode-oniguruma": "^2.0.1"
   }
 }
