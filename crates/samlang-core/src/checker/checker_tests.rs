@@ -2588,7 +2588,17 @@ Found 1 error.
     );
     assert_checks(
       heap,
+      "{ let _ = (t: Test) -> if let {foo, bar as _} = t then 1 else 2; }",
+      &builder.unit_type(),
+    );
+    assert_checks(
+      heap,
       "{ let _ = (t: Test2) -> match (t) { Foo(_) -> 1, Bar(s) -> 2 }; }",
+      &builder.unit_type(),
+    );
+    assert_checks(
+      heap,
+      "{ let _ = (t: Test2) -> if let Foo(_) = t then 1 else 2; }",
       &builder.unit_type(),
     );
     assert_errors_full_customization(
@@ -2715,6 +2725,79 @@ Error ---------------------------------- DUMMY.sam:3:22-3:23
 
 Found 1 error.
 "#,
+    );
+    assert_errors_full_customization(
+      heap,
+      "{ let _ = (t: Test) -> if let [a, b, _] = [1, 2] then 1 else 2; }",
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:38-1:39
+
+Cannot access member of `Pair<int, int>` at index 2.
+
+  1| { let _ = (t: Test) -> if let [a, b, _] = [1, 2] then 1 else 2; }
+                                          ^
+
+
+Found 1 error.
+"#,
+      "Test",
+      true,
+    );
+    assert_errors_full_customization(
+      heap,
+      r#"{ let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
+let _ = (t: Test2) -> if let Foo(_) = t then 1 else 2;
+let _ = (t: Test2) -> if let Foo(_, _) = t then 1 else 2;
+let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
+}"#,
+      &builder.unit_type(),
+      r#"
+Error ---------------------------------- DUMMY.sam:1:32-1:35
+
+Cannot find member `bar` on `Test`.
+
+  1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+                                    ^^^
+
+
+Error ---------------------------------- DUMMY.sam:1:37-1:40
+
+Cannot find member `boo` on `Test`.
+
+  1| { let _ = (t: Test) -> if let {bar, boo} = t then 1 else 2;
+                                         ^^^
+
+
+Error ---------------------------------- DUMMY.sam:2:33-2:36
+
+Cannot access member of `Test` at index 1.
+
+  2| let _ = (t: Test) -> if let [_, bar] = t then 1 else 2;
+                                     ^^^
+
+
+Error ---------------------------------- DUMMY.sam:4:37-4:38
+
+Cannot access member of `Test2` at index 1.
+
+  4| let _ = (t: Test2) -> if let Foo(_, _) = t then 1 else 2;
+                                         ^
+
+
+Error ---------------------------------- DUMMY.sam:5:30-5:36
+
+Cannot find member `Foo111` on `Test2`.
+
+  5| let _ = (t: Test2) -> if let Foo111(_) = t then 1 else 2;
+                                  ^^^^^^
+
+
+Found 5 errors.
+"#,
+      "Test2",
+      false,
     );
     assert_errors(
       heap,

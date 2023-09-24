@@ -274,7 +274,15 @@ impl expr::E<()> {
     documents: &mut Vec<Document>,
   ) {
     documents.push(Document::Text(rcs("if ")));
-    documents.push(if_else.condition.create_doc(heap, comment_store));
+    match if_else.condition.as_ref() {
+      expr::IfElseCondition::Expression(e) => documents.push(e.create_doc(heap, comment_store)),
+      expr::IfElseCondition::Guard(p, e) => {
+        documents.push(Document::Text(rcs("let ")));
+        documents.push(matching_pattern_to_document(heap, p));
+        documents.push(Document::Text(rcs(" = ")));
+        documents.push(e.create_doc(heap, comment_store));
+      }
+    };
     documents.push(Document::Text(rcs(" then ")));
     documents.push(self.expr_wrapped_with_braces_expanded_in_if_else(
       heap,
@@ -652,11 +660,14 @@ impl expr::E<()> {
   }
 }
 
-fn pattern_to_document(heap: &Heap, pattern: &pattern::DestructuringPattern<()>) -> Document {
+fn destructuring_pattern_to_document(
+  heap: &Heap,
+  pattern: &pattern::DestructuringPattern<()>,
+) -> Document {
   match pattern {
     pattern::DestructuringPattern::Tuple(_, names) => {
       square_brackets_surrounded_doc(comma_sep_list(names, |it| {
-        pattern_to_document(heap, &it.pattern)
+        destructuring_pattern_to_document(heap, &it.pattern)
       }))
     }
     pattern::DestructuringPattern::Object(_, names) => {
@@ -667,13 +678,50 @@ fn pattern_to_document(heap: &Heap, pattern: &pattern::DestructuringPattern<()>)
           Document::concat(vec![
             Document::Text(rc_pstr(heap, it.field_name.name)),
             Document::Text(rcs(" as ")),
-            pattern_to_document(heap, &it.pattern),
+            destructuring_pattern_to_document(heap, &it.pattern),
           ])
         }
       }))
     }
-    pattern::DestructuringPattern::Id(id) => Document::Text(rc_pstr(heap, id.name)),
+    pattern::DestructuringPattern::Id(id, _) => Document::Text(rc_pstr(heap, id.name)),
     pattern::DestructuringPattern::Wildcard(_) => Document::Text(rcs("_")),
+  }
+}
+
+fn matching_pattern_to_document(heap: &Heap, pattern: &pattern::MatchingPattern<()>) -> Document {
+  match pattern {
+    pattern::MatchingPattern::Tuple(_, names) => {
+      square_brackets_surrounded_doc(comma_sep_list(names, |it| {
+        matching_pattern_to_document(heap, &it.pattern)
+      }))
+    }
+    pattern::MatchingPattern::Object(_, names) => {
+      braces_surrounded_doc(comma_sep_list(names, |it| {
+        if it.shorthand {
+          Document::Text(rc_pstr(heap, it.field_name.name))
+        } else {
+          Document::concat(vec![
+            Document::Text(rc_pstr(heap, it.field_name.name)),
+            Document::Text(rcs(" as ")),
+            matching_pattern_to_document(heap, &it.pattern),
+          ])
+        }
+      }))
+    }
+    pattern::MatchingPattern::Variant(pattern::VariantPattern {
+      loc: _,
+      tag_order: _,
+      tag,
+      data_variables,
+      type_: (),
+    }) => Document::concat(vec![
+      Document::Text(rc_pstr(heap, tag.name)),
+      parenthesis_surrounded_doc(comma_sep_list(data_variables, |(p, _)| {
+        matching_pattern_to_document(heap, p)
+      })),
+    ]),
+    pattern::MatchingPattern::Id(id, _) => Document::Text(rc_pstr(heap, id.name)),
+    pattern::MatchingPattern::Wildcard(_) => Document::Text(rcs("_")),
   }
 }
 
@@ -683,7 +731,7 @@ pub(super) fn statement_to_document(
   stmt: &expr::DeclarationStatement<()>,
 ) -> Document {
   let mut segments = vec![];
-  let pattern_doc = pattern_to_document(heap, &stmt.pattern);
+  let pattern_doc = destructuring_pattern_to_document(heap, &stmt.pattern);
   segments.push(
     associated_comments_doc(
       heap,
@@ -1303,6 +1351,21 @@ Test /* b */ /* c */.VariantName<T>(42)"#,
     _,
     aaaaa
   ]: int = 3;
+}"#,
+    );
+    assert_reprint_expr(
+      "{let_=if let {foo as {bar as [Fizz(baz), Buzz, _], boo}} = true then 3 else bar;}",
+      r#"{
+  let _ = if let {
+    foo as {
+      bar as [Fizz(baz), Buzz(), _],
+      boo
+    }
+  } = true then {
+    3
+  } else {
+    bar
+  };
 }"#,
     );
 

@@ -271,11 +271,21 @@ impl<'a> SsaAnalysisState<'a> {
         self.visit_expression(&e.e1);
         self.visit_expression(&e.e2);
       }
-      expr::E::IfElse(e) => {
-        self.visit_expression(&e.condition);
-        self.visit_expression(&e.e1);
-        self.visit_expression(&e.e2);
-      }
+      expr::E::IfElse(e) => match e.condition.as_ref() {
+        expr::IfElseCondition::Expression(guard) => {
+          self.visit_expression(guard);
+          self.visit_expression(&e.e1);
+          self.visit_expression(&e.e2);
+        }
+        expr::IfElseCondition::Guard(p, guard) => {
+          self.visit_expression(guard);
+          self.context.push_scope();
+          self.visit_matching_pattern(p);
+          self.visit_expression(&e.e1);
+          self.context.pop_scope();
+          self.visit_expression(&e.e2);
+        }
+      },
       expr::E::Match(e) => {
         self.visit_expression(&e.matched);
         for case in &e.cases {
@@ -315,7 +325,7 @@ impl<'a> SsaAnalysisState<'a> {
           if let Some(annot) = annotation {
             self.visit_annot(annot);
           }
-          self.visit_pattern(pattern);
+          self.visit_destructuring_pattern(pattern);
         }
         if let Some(final_expr) = &e.expression {
           self.visit_expression(final_expr);
@@ -326,20 +336,48 @@ impl<'a> SsaAnalysisState<'a> {
     }
   }
 
-  fn visit_pattern(&mut self, pattern: &pattern::DestructuringPattern<()>) {
+  fn visit_destructuring_pattern(&mut self, pattern: &pattern::DestructuringPattern<()>) {
     match pattern {
       pattern::DestructuringPattern::Tuple(_, names) => {
         for pattern::TuplePatternElement { pattern, type_: _ } in names {
-          self.visit_pattern(pattern);
+          self.visit_destructuring_pattern(pattern);
         }
       }
       pattern::DestructuringPattern::Object(_, names) => {
         for name in names {
-          self.visit_pattern(&name.pattern);
+          self.visit_destructuring_pattern(&name.pattern);
         }
       }
-      pattern::DestructuringPattern::Id(id) => self.define_id(id.name, id.loc),
+      pattern::DestructuringPattern::Id(id, ()) => self.define_id(id.name, id.loc),
       pattern::DestructuringPattern::Wildcard(_) => {}
+    }
+  }
+
+  fn visit_matching_pattern(&mut self, pattern: &pattern::MatchingPattern<()>) {
+    match pattern {
+      pattern::MatchingPattern::Tuple(_, names) => {
+        for pattern::TuplePatternElement { pattern, type_: _ } in names {
+          self.visit_matching_pattern(pattern);
+        }
+      }
+      pattern::MatchingPattern::Object(_, names) => {
+        for name in names {
+          self.visit_matching_pattern(&name.pattern);
+        }
+      }
+      pattern::MatchingPattern::Variant(pattern::VariantPattern {
+        loc: _,
+        tag_order: _,
+        tag: _,
+        data_variables,
+        type_: _,
+      }) => {
+        for (p, _) in data_variables {
+          self.visit_matching_pattern(p);
+        }
+      }
+      pattern::MatchingPattern::Id(id, ()) => self.define_id(id.name, id.loc),
+      pattern::MatchingPattern::Wildcard(_) => {}
     }
   }
 

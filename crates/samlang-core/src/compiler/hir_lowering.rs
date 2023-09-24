@@ -590,7 +590,13 @@ impl<'a> ExpressionLoweringManager<'a> {
     expression: &source::expr::IfElse<Rc<type_::Type>>,
   ) -> LoweringResult {
     let mut lowered_stmts = vec![];
-    let condition = self.lowered_and_add_statements(&expression.condition, &mut lowered_stmts);
+    let condition = self.lowered_and_add_statements(
+      match expression.condition.as_ref() {
+        source::expr::IfElseCondition::Expression(e) => e,
+        source::expr::IfElseCondition::Guard(_, _) => panic!("TODO IF_LET"),
+      },
+      &mut lowered_stmts,
+    );
     let final_var_name = self.allocate_temp_variable();
     let LoweringResult { statements: s1, expression: e1 } = self.lower(&expression.e1);
     let LoweringResult { statements: s2, expression: e2 } = self.lower(&expression.e2);
@@ -859,12 +865,81 @@ impl<'a> ExpressionLoweringManager<'a> {
           );
         }
       }
-      source::pattern::DestructuringPattern::Id(id) => {
+      source::pattern::DestructuringPattern::Id(id, _) => {
         bind_value(&mut self.variable_cx, id.name, assigned_expr);
       }
       source::pattern::DestructuringPattern::Wildcard(_) => {}
     }
   }
+
+  /*
+  fn lower_matching_pattern(
+    &mut self,
+    pattern: &source::pattern::MatchingPattern<Rc<type_::Type>>,
+    lowered_stmts: &mut Vec<hir::Statement>,
+    assigned_expr: hir::Expression,
+    e1: hir::Expression,
+    e2: hir::Expression,
+  ) {
+    match pattern {
+      source::pattern::MatchingPattern::Tuple(_, destructured_names) => {
+        let id_type = assigned_expr.type_().as_id().unwrap();
+        let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
+        for (index, nested) in destructured_names.iter().enumerate() {
+          let field_type = &resolved_struct_mappings[index];
+          let name = self.allocate_temp_variable();
+          lowered_stmts.push(hir::Statement::IndexedAccess {
+            name,
+            type_: field_type.clone(),
+            pointer_expression: assigned_expr.clone(),
+            index,
+          });
+          self.lower_matching_pattern(
+            &nested.pattern,
+            lowered_stmts,
+            hir::Expression::var_name(name, field_type.clone()),
+            e1,
+            e2,
+          );
+        }
+      }
+      source::pattern::MatchingPattern::Object(_, destructured_names) => {
+        let id_type = assigned_expr.type_().as_id().unwrap();
+        let resolved_struct_mappings = self.resolve_struct_mapping_of_id_type(id_type);
+        for destructured_name in destructured_names {
+          let field_type = &resolved_struct_mappings[destructured_name.field_order];
+          let name = self.allocate_temp_variable();
+          lowered_stmts.push(hir::Statement::IndexedAccess {
+            name,
+            type_: field_type.clone(),
+            pointer_expression: assigned_expr.clone(),
+            index: destructured_name.field_order,
+          });
+          self.lower_matching_pattern(
+            &destructured_name.pattern,
+            lowered_stmts,
+            hir::Expression::var_name(name, field_type.clone()),
+            e1,
+            e2,
+          );
+        }
+      }
+      source::pattern::MatchingPattern::Variant(source::pattern::VariantPattern {
+        loc: _,
+        tag_order,
+        tag,
+        data_variables,
+        type_,
+      }) => {
+        let id_type = assigned_expr.type_().as_id().unwrap();
+      }
+      source::pattern::MatchingPattern::Id(id, _) => {
+        bind_value(&mut self.variable_cx, id.name, assigned_expr);
+      }
+      source::pattern::MatchingPattern::Wildcard(_) => {}
+    }
+  }
+  */
 
   fn lower_block(&mut self, expression: &source::expr::Block<Rc<type_::Type>>) -> LoweringResult {
     let mut lowered_stmts = vec![];
@@ -1968,6 +2043,25 @@ return (_t3: _$SyntheticIDType0);"#,
     );
   }
 
+  #[should_panic]
+  #[test]
+  fn if_let_unsupported_test() {
+    let heap = &mut Heap::new();
+    assert_expr_correctly_lowered(
+      &source::expr::E::IfElse(source::expr::IfElse {
+        common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
+        condition: Box::new(source::expr::IfElseCondition::Guard(
+          source::pattern::MatchingPattern::Wildcard(Location::dummy()),
+          dummy_source_this(heap),
+        )),
+        e1: Box::new(dummy_source_this(heap)),
+        e2: Box::new(dummy_source_this(heap)),
+      }),
+      heap,
+      "",
+    );
+  }
+
   #[test]
   fn control_flow_lowering_tests() {
     let builder = test_type_builder::create();
@@ -1976,7 +2070,7 @@ return (_t3: _$SyntheticIDType0);"#,
     assert_expr_correctly_lowered(
       &source::expr::E::IfElse(source::expr::IfElse {
         common: source::expr::ExpressionCommon::dummy(Rc::new(dummy_source_id_type(heap))),
-        condition: Box::new(dummy_source_this(heap)),
+        condition: Box::new(source::expr::IfElseCondition::Expression(dummy_source_this(heap))),
         e1: Box::new(dummy_source_this(heap)),
         e2: Box::new(dummy_source_this(heap)),
       }),
@@ -2102,7 +2196,10 @@ return (_t7: DUMMY_Dummy);"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::pattern::DestructuringPattern::Id(source::Id::from(PStr::LOWER_A)),
+          pattern: source::pattern::DestructuringPattern::Id(
+            source::Id::from(PStr::LOWER_A),
+            builder.unit_type(),
+          ),
           annotation: Some(annot_builder.unit_annot()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
@@ -2119,6 +2216,7 @@ return (_t7: DUMMY_Dummy);"#,
                       field_name: source::Id::from(PStr::LOWER_A),
                       pattern: Box::new(source::pattern::DestructuringPattern::Id(
                         source::Id::from(PStr::LOWER_A),
+                        builder.int_type(),
                       )),
                       shorthand: true,
                       type_: builder.int_type(),
@@ -2129,6 +2227,7 @@ return (_t7: DUMMY_Dummy);"#,
                       field_name: source::Id::from(PStr::LOWER_B),
                       pattern: Box::new(source::pattern::DestructuringPattern::Id(
                         source::Id::from(PStr::LOWER_C),
+                        builder.int_type(),
                       )),
                       shorthand: false,
                       type_: builder.int_type(),
@@ -2172,9 +2271,10 @@ return 0;"#,
                   loc: Location::dummy(),
                   field_order: 0,
                   field_name: source::Id::from(PStr::LOWER_A),
-                  pattern: Box::new(source::pattern::DestructuringPattern::Id(source::Id::from(
-                    PStr::LOWER_A,
-                  ))),
+                  pattern: Box::new(source::pattern::DestructuringPattern::Id(
+                    source::Id::from(PStr::LOWER_A),
+                    builder.int_type(),
+                  )),
                   shorthand: true,
                   type_: builder.int_type(),
                 },
@@ -2182,9 +2282,10 @@ return 0;"#,
                   loc: Location::dummy(),
                   field_order: 1,
                   field_name: source::Id::from(PStr::LOWER_B),
-                  pattern: Box::new(source::pattern::DestructuringPattern::Id(source::Id::from(
-                    PStr::LOWER_C,
-                  ))),
+                  pattern: Box::new(source::pattern::DestructuringPattern::Id(
+                    source::Id::from(PStr::LOWER_C),
+                    builder.int_type(),
+                  )),
                   shorthand: false,
                   type_: builder.int_type(),
                 },
@@ -2200,9 +2301,10 @@ return 0;"#,
               Location::dummy(),
               vec![
                 source::pattern::TuplePatternElement {
-                  pattern: Box::new(source::pattern::DestructuringPattern::Id(source::Id::from(
-                    PStr::LOWER_D,
-                  ))),
+                  pattern: Box::new(source::pattern::DestructuringPattern::Id(
+                    source::Id::from(PStr::LOWER_D),
+                    builder.int_type(),
+                  )),
                   type_: builder.int_type(),
                 },
                 source::pattern::TuplePatternElement {
@@ -2241,7 +2343,10 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::pattern::DestructuringPattern::Id(source::Id::from( PStr::LOWER_A)),
+          pattern: source::pattern::DestructuringPattern::Id(
+            source::Id::from(PStr::LOWER_A),
+            builder.int_type(),
+          ),
           annotation: Some(annot_builder.int_annot()),
           assigned_expression: Box::new(source::expr::E::Call(source::expr::Call {
             common: source::expr::ExpressionCommon::dummy(builder.int_type()),
@@ -2281,7 +2386,10 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::pattern::DestructuringPattern::Id(source::Id::from(PStr::LOWER_A)),
+            pattern: source::pattern::DestructuringPattern::Id(
+              source::Id::from(PStr::LOWER_A),
+              builder.unit_type(),
+            ),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(source::expr::E::Literal(
               source::expr::ExpressionCommon::dummy(builder.string_type()),
@@ -2291,7 +2399,10 @@ return 0;"#,
           source::expr::DeclarationStatement {
             loc: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
-            pattern: source::pattern::DestructuringPattern::Id(source::Id::from(PStr::LOWER_B)),
+            pattern: source::pattern::DestructuringPattern::Id(
+              source::Id::from(PStr::LOWER_B),
+              builder.unit_type(),
+            ),
             annotation: Some(annot_builder.unit_annot()),
             assigned_expression: Box::new(id_expr(PStr::LOWER_A, builder.string_type())),
           },
@@ -2309,14 +2420,20 @@ return 0;"#,
         statements: vec![source::expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: source::pattern::DestructuringPattern::Id(source::Id::from(PStr::LOWER_A)),
+          pattern: source::pattern::DestructuringPattern::Id(
+            source::Id::from(PStr::LOWER_A),
+            builder.unit_type(),
+          ),
           annotation: Some(annot_builder.unit_annot()),
           assigned_expression: Box::new(source::expr::E::Block(source::expr::Block {
             common: source::expr::ExpressionCommon::dummy(builder.unit_type()),
             statements: vec![source::expr::DeclarationStatement {
               loc: Location::dummy(),
               associated_comments: NO_COMMENT_REFERENCE,
-              pattern: source::pattern::DestructuringPattern::Id(source::Id::from(PStr::LOWER_A)),
+              pattern: source::pattern::DestructuringPattern::Id(
+                source::Id::from(PStr::LOWER_A),
+                builder.unit_type(),
+              ),
               annotation: Some(annot_builder.int_annot()),
               assigned_expression: Box::new(dummy_source_this(heap)),
             }],
@@ -2544,16 +2661,18 @@ return 0;"#,
               },
               body: source::expr::E::IfElse(source::expr::IfElse {
                 common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                condition: Box::new(source::expr::E::Binary(source::expr::Binary {
-                  common: source::expr::ExpressionCommon::dummy(builder.int_type()),
-                  operator_preceding_comments: NO_COMMENT_REFERENCE,
-                  operator: source::expr::BinaryOperator::EQ,
-                  e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
-                  e2: Box::new(source::expr::E::Literal(
-                    source::expr::ExpressionCommon::dummy(builder.int_type()),
-                    source::Literal::Int(0),
-                  )),
-                })),
+                condition: Box::new(source::expr::IfElseCondition::Expression(
+                  source::expr::E::Binary(source::expr::Binary {
+                    common: source::expr::ExpressionCommon::dummy(builder.int_type()),
+                    operator_preceding_comments: NO_COMMENT_REFERENCE,
+                    operator: source::expr::BinaryOperator::EQ,
+                    e1: Box::new(id_expr(heap.alloc_str_for_test("n"), builder.int_type())),
+                    e2: Box::new(source::expr::E::Literal(
+                      source::expr::ExpressionCommon::dummy(builder.int_type()),
+                      source::Literal::Int(0),
+                    )),
+                  }),
+                )),
                 e1: Box::new(source::expr::E::Literal(
                   source::expr::ExpressionCommon::dummy(builder.int_type()),
                   source::Literal::Int(1),
