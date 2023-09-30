@@ -119,7 +119,7 @@ fn apply_destructuring_pattern_renaming(
             ));
             let shorthand = matches!(
               pattern.as_ref(),
-              pattern::DestructuringPattern::Id(id) if id.name.eq(&field_name.name),
+              pattern::DestructuringPattern::Id(id, _) if id.name.eq(&field_name.name),
             );
             pattern::ObjectPatternElement {
               loc: *loc,
@@ -133,16 +133,94 @@ fn apply_destructuring_pattern_renaming(
         )
         .collect(),
     ),
-    pattern::DestructuringPattern::Id(id) => {
+    pattern::DestructuringPattern::Id(id, ()) => {
       let name =
         if id.loc.eq(&definition_and_uses.definition_location) { new_name } else { id.name };
-      pattern::DestructuringPattern::Id(Id {
-        loc: id.loc,
-        associated_comments: id.associated_comments,
-        name,
-      })
+      pattern::DestructuringPattern::Id(
+        Id { loc: id.loc, associated_comments: id.associated_comments, name },
+        (),
+      )
     }
     pattern::DestructuringPattern::Wildcard(_) => pattern.clone(),
+  }
+}
+
+fn apply_matching_pattern_renaming(
+  pattern: &pattern::MatchingPattern<()>,
+  definition_and_uses: &DefinitionAndUses,
+  new_name: PStr,
+) -> pattern::MatchingPattern<()> {
+  match pattern {
+    pattern::MatchingPattern::Tuple(l, names) => pattern::MatchingPattern::Tuple(
+      *l,
+      names
+        .iter()
+        .map(|pattern::TuplePatternElement { pattern, type_ }| pattern::TuplePatternElement {
+          pattern: Box::new(apply_matching_pattern_renaming(
+            pattern,
+            definition_and_uses,
+            new_name,
+          )),
+          type_: *type_,
+        })
+        .collect(),
+    ),
+    pattern::MatchingPattern::Object(l, names) => pattern::MatchingPattern::Object(
+      *l,
+      names
+        .iter()
+        .map(
+          |pattern::ObjectPatternElement {
+             loc,
+             field_order,
+             field_name,
+             pattern,
+             shorthand: _,
+             type_,
+           }| {
+            let pattern =
+              Box::new(apply_matching_pattern_renaming(pattern, definition_and_uses, new_name));
+            let shorthand = matches!(
+              pattern.as_ref(),
+              pattern::MatchingPattern::Id(id, _) if id.name.eq(&field_name.name),
+            );
+            pattern::ObjectPatternElement {
+              loc: *loc,
+              field_order: *field_order,
+              field_name: *field_name,
+              pattern,
+              shorthand,
+              type_: *type_,
+            }
+          },
+        )
+        .collect(),
+    ),
+    pattern::MatchingPattern::Variant(pattern::VariantPattern {
+      loc,
+      tag_order,
+      tag,
+      data_variables,
+      type_: (),
+    }) => pattern::MatchingPattern::Variant(pattern::VariantPattern {
+      loc: *loc,
+      tag_order: *tag_order,
+      tag: *tag,
+      data_variables: data_variables
+        .iter()
+        .map(|(p, ())| (apply_matching_pattern_renaming(p, definition_and_uses, new_name), ()))
+        .collect(),
+      type_: (),
+    }),
+    pattern::MatchingPattern::Id(id, ()) => {
+      let name =
+        if id.loc.eq(&definition_and_uses.definition_location) { new_name } else { id.name };
+      pattern::MatchingPattern::Id(
+        Id { loc: id.loc, associated_comments: id.associated_comments, name },
+        (),
+      )
+    }
+    pattern::MatchingPattern::Wildcard(_) => pattern.clone(),
   }
 }
 
@@ -200,7 +278,15 @@ fn apply_expr_renaming(
     }),
     expr::E::IfElse(e) => expr::E::IfElse(expr::IfElse {
       common: e.common.clone(),
-      condition: Box::new(apply_expr_renaming(&e.condition, definition_and_uses, new_name)),
+      condition: Box::new(match e.condition.as_ref() {
+        expr::IfElseCondition::Expression(e) => {
+          expr::IfElseCondition::Expression(apply_expr_renaming(e, definition_and_uses, new_name))
+        }
+        expr::IfElseCondition::Guard(p, e) => expr::IfElseCondition::Guard(
+          apply_matching_pattern_renaming(p, definition_and_uses, new_name),
+          apply_expr_renaming(e, definition_and_uses, new_name),
+        ),
+      }),
       e1: Box::new(apply_expr_renaming(&e.e1, definition_and_uses, new_name)),
       e2: Box::new(apply_expr_renaming(&e.e2, definition_and_uses, new_name)),
     }),
@@ -541,6 +627,100 @@ interface Foo
 
   #[test]
   fn rename_test_2() {
+    let source = r#"
+class Main {
+  function test(a: int, b: bool): unit = {
+    let _ = if let { e as d3, f } = Obj.init(5, 4) then 1 else 2;
+  }
+}"#;
+    let (_, lookup) = prepare_lookup(source);
+    assert_correctly_rewritten(
+      source,
+      &lookup,
+      Location::from_pos(3, 26, 3, 28),
+      r#"class Main {
+  function test(a: int, b: bool): unit = {
+    let _ = if let { e as renAmeD, f } = Obj.init(
+      5,
+      4
+    ) then {
+      1
+    } else {
+      2
+    };
+  }
+}
+"#,
+    );
+
+    let source = r#"
+class Main {
+  function test(a: int, b: bool): unit = {
+    let _ = if let { renAmeD as d3 } = Obj.init(5, 4) then 1 else 2;
+  }
+}"#;
+    let (_, lookup) = prepare_lookup(source);
+    assert_correctly_rewritten(
+      source,
+      &lookup,
+      Location::from_pos(3, 32, 3, 34),
+      r#"class Main {
+  function test(a: int, b: bool): unit = {
+    let _ = if let { renAmeD } = Obj.init(5, 4) then {
+      1
+    } else {
+      2
+    };
+  }
+}
+"#,
+    );
+
+    let source = r#"
+class Main {
+  function test(a: int, b: bool): unit = {
+    let _ = if let Some(v) = Option.Some(1) then 1 else 2;
+  }
+}"#;
+    let (_, lookup) = prepare_lookup(source);
+    assert_correctly_rewritten(
+      source,
+      &lookup,
+      Location::from_pos(3, 24, 3, 25),
+      r#"class Main {
+  function test(a: int, b: bool): unit = {
+    let _ = if let Some(renAmeD) = Option.Some(1) then {
+      1
+    } else {
+      2
+    };
+  }
+}
+"#,
+    );
+
+    let source = r#"
+class Main {
+  function test(a: int, b: bool): unit = {
+    let _ = if let [v, _] = [1, 2] then 1 else 2;
+  }
+}"#;
+    let (_, lookup) = prepare_lookup(source);
+    assert_correctly_rewritten(
+      source,
+      &lookup,
+      Location::from_pos(3, 20, 3, 21),
+      r#"class Main {
+  function test(a: int, b: bool): unit = {
+    let _ = if let [renAmeD, _] = [1, 2] then 1 else 2;
+  }
+}
+"#,
+    );
+  }
+
+  #[test]
+  fn rename_test_3() {
     let source = r#"
 class Main {
   function test(a: int, b: bool): unit = {

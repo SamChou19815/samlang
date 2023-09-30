@@ -7,7 +7,7 @@ use crate::{
   ModuleReference,
 };
 use samlang_heap::PStr;
-use std::{ops::Deref, rc::Rc};
+use std::rc::Rc;
 
 pub(super) enum LocationCoverSearchResult<'a> {
   Expression(&'a expr::E<Rc<Type>>),
@@ -22,6 +22,45 @@ pub(super) enum LocationCoverSearchResult<'a> {
     type_: Rc<Type>,
   },
   TypedName(Location, PStr, Type),
+}
+
+fn search_destructuring_pattern(
+  pattern: &pattern::DestructuringPattern<Rc<Type>>,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
+  match pattern {
+    pattern::DestructuringPattern::Tuple(_, patterns) => {
+      patterns.iter().find_map(|p| search_destructuring_pattern(&p.pattern, position))
+    }
+    pattern::DestructuringPattern::Object(_, patterns) => {
+      patterns.iter().find_map(|p| search_destructuring_pattern(&p.pattern, position))
+    }
+    pattern::DestructuringPattern::Id(id, type_) if id.loc.contains_position(position) => {
+      Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone()))
+    }
+    pattern::DestructuringPattern::Id(_, _) | pattern::DestructuringPattern::Wildcard(_) => None,
+  }
+}
+
+fn search_matching_pattern(
+  pattern: &pattern::MatchingPattern<Rc<Type>>,
+  position: Position,
+) -> Option<LocationCoverSearchResult> {
+  match pattern {
+    pattern::MatchingPattern::Tuple(_, patterns) => {
+      patterns.iter().find_map(|p| search_matching_pattern(&p.pattern, position))
+    }
+    pattern::MatchingPattern::Object(_, patterns) => {
+      patterns.iter().find_map(|p| search_matching_pattern(&p.pattern, position))
+    }
+    pattern::MatchingPattern::Variant(variant_pattern) => {
+      variant_pattern.data_variables.iter().find_map(|(p, _)| search_matching_pattern(p, position))
+    }
+    pattern::MatchingPattern::Id(id, type_) if id.loc.contains_position(position) => {
+      Some(LocationCoverSearchResult::TypedName(id.loc, id.name, type_.as_ref().clone()))
+    }
+    pattern::MatchingPattern::Id(_, _) | pattern::MatchingPattern::Wildcard(_) => None,
+  }
 }
 
 fn search_expression(
@@ -109,9 +148,13 @@ fn search_expression(
     }
     expr::E::Binary(e) => search_expression(&e.e1, position, stop_at_call)
       .or_else(|| search_expression(&e.e2, position, stop_at_call)),
-    expr::E::IfElse(e) => search_expression(&e.condition, position, stop_at_call)
-      .or_else(|| search_expression(&e.e1, position, stop_at_call))
-      .or_else(|| search_expression(&e.e2, position, stop_at_call)),
+    expr::E::IfElse(e) => (match e.condition.as_ref() {
+      expr::IfElseCondition::Expression(e) => search_expression(e, position, stop_at_call),
+      expr::IfElseCondition::Guard(p, e) => search_matching_pattern(p, position)
+        .or_else(|| search_expression(e, position, stop_at_call)),
+    })
+    .or_else(|| search_expression(&e.e1, position, stop_at_call))
+    .or_else(|| search_expression(&e.e2, position, stop_at_call)),
     expr::E::Match(e) => {
       let mut found = search_expression(&e.matched, position, stop_at_call);
       for case in &e.cases {
@@ -141,16 +184,9 @@ fn search_expression(
         if let Some(found) = search_expression(&stmt.assigned_expression, position, stop_at_call) {
           return Some(found);
         }
-        match &stmt.pattern {
-          pattern::DestructuringPattern::Id(id) if id.loc.contains_position(position) => {
-            return Some(LocationCoverSearchResult::TypedName(
-              id.loc,
-              id.name,
-              stmt.assigned_expression.common().type_.deref().clone(),
-            ))
-          }
-          _ => {}
-        };
+        if let Some(found) = search_destructuring_pattern(&stmt.pattern, position) {
+          return Some(found);
+        }
       }
       if let Some(e) = &e.expression {
         return search_expression(e, position, stop_at_call);
@@ -300,6 +336,9 @@ mod tests {
         let { e as d } = Obj.init(5, 4); // d = 4
         let f = Obj.init(5, 4); // d = 4
         let g = Obj.init(d, 4); // d = 4
+        let _ = if let { a as d3 } = Foo.init(5) then {} else {};
+        let _ = if let Some(_) = Option.Some(1) then {} else {};
+        let _ = if let [_, _] = [1,2] then {} else {};
         let _ = f.d;
         let [h, i] = [111, 122];
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2

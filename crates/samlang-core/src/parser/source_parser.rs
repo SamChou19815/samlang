@@ -1,6 +1,9 @@
 use super::lexer::{Keyword, Token, TokenContent, TokenOp};
 use crate::{
-  ast::{source::*, Location, Position},
+  ast::{
+    source::{expr::IfElseCondition, *},
+    Location, Position,
+  },
   errors::ErrorSet,
 };
 use itertools::Itertools;
@@ -724,7 +727,16 @@ impl<'a> SourceParser<'a> {
     let associated_comments = self.collect_preceding_comments();
     if let Token(peeked_loc, TokenContent::Keyword(Keyword::IF)) = self.peek() {
       self.consume();
-      let condition = self.parse_expression();
+      let condition =
+        if let Token(_peeked_let_loc, TokenContent::Keyword(Keyword::LET)) = self.peek() {
+          self.consume();
+          let pattern = self.parse_matching_pattern();
+          self.assert_and_consume_operator(TokenOp::ASSIGN);
+          let expr = self.parse_expression();
+          IfElseCondition::Guard(pattern, expr)
+        } else {
+          IfElseCondition::Expression(self.parse_expression())
+        };
       self.assert_and_consume_keyword(Keyword::THEN);
       let e1 = self.parse_expression();
       self.assert_and_consume_keyword(Keyword::ELSE);
@@ -1354,7 +1366,7 @@ impl<'a> SourceParser<'a> {
               let loc = field_name.loc.union(nested.loc());
               (nested, loc, false)
             } else {
-              (Box::new(pattern::DestructuringPattern::Id(field_name)), field_name.loc, true)
+              (Box::new(pattern::DestructuringPattern::Id(field_name, ())), field_name.loc, true)
             };
           pattern::ObjectPatternElement {
             loc,
@@ -1375,11 +1387,88 @@ impl<'a> SourceParser<'a> {
       self.consume();
       return pattern::DestructuringPattern::Wildcard(peeked_loc);
     }
-    pattern::DestructuringPattern::Id(Id {
-      loc: peeked.0,
-      associated_comments: NO_COMMENT_REFERENCE,
-      name: self.assert_and_peek_lower_id().1,
-    })
+    pattern::DestructuringPattern::Id(
+      Id {
+        loc: peeked.0,
+        associated_comments: NO_COMMENT_REFERENCE,
+        name: self.assert_and_peek_lower_id().1,
+      },
+      (),
+    )
+  }
+
+  pub(super) fn parse_matching_pattern(&mut self) -> pattern::MatchingPattern<()> {
+    let peeked = self.peek();
+    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACKET)) = peeked {
+      self.consume();
+      let destructured_names =
+        self.parse_comma_separated_list(Some(TokenOp::RBRACKET), &mut |s: &mut Self| {
+          pattern::TuplePatternElement { pattern: Box::new(s.parse_matching_pattern()), type_: () }
+        });
+      let end_location = self.assert_and_consume_operator(TokenOp::RBRACKET);
+      return pattern::MatchingPattern::Tuple(peeked_loc.union(&end_location), destructured_names);
+    }
+    if let Token(peeked_loc, TokenContent::Operator(TokenOp::LBRACE)) = peeked {
+      self.consume();
+      let destructured_names =
+        self.parse_comma_separated_list(Some(TokenOp::RBRACE), &mut |s: &mut Self| {
+          let field_name = s.parse_lower_id();
+          let (pattern, loc, shorthand) =
+            if let Token(_, TokenContent::Keyword(Keyword::AS)) = s.peek() {
+              s.consume();
+              let nested = Box::new(s.parse_matching_pattern());
+              let loc = field_name.loc.union(nested.loc());
+              (nested, loc, false)
+            } else {
+              (Box::new(pattern::MatchingPattern::Id(field_name, ())), field_name.loc, true)
+            };
+          pattern::ObjectPatternElement {
+            loc,
+            field_name,
+            field_order: 0,
+            pattern,
+            shorthand,
+            type_: (),
+          }
+        });
+      let end_location = self.assert_and_consume_operator(TokenOp::RBRACE);
+      return pattern::MatchingPattern::Object(peeked_loc.union(&end_location), destructured_names);
+    }
+    if let Token(peeked_loc, TokenContent::UpperId(id)) = peeked {
+      self.consume();
+      let tag = Id { loc: peeked_loc, associated_comments: NO_COMMENT_REFERENCE, name: id };
+      let (data_variables, loc) =
+        if let Token(_, TokenContent::Operator(TokenOp::LPAREN)) = self.peek() {
+          self.assert_and_consume_operator(TokenOp::LPAREN);
+          let data_variables = self
+            .parse_comma_separated_list(Some(TokenOp::RPAREN), &mut |s: &mut Self| {
+              (s.parse_matching_pattern(), ())
+            });
+          let end_loc = self.assert_and_consume_operator(TokenOp::RPAREN);
+          (data_variables, peeked_loc.union(&end_loc))
+        } else {
+          (Vec::with_capacity(0), peeked_loc)
+        };
+      return pattern::MatchingPattern::Variant(pattern::VariantPattern {
+        loc,
+        tag_order: 0,
+        tag,
+        data_variables,
+        type_: (),
+      });
+    }
+    if let Token(peeked_loc, TokenContent::Operator(TokenOp::UNDERSCORE)) = peeked {
+      self.consume();
+      return pattern::MatchingPattern::Wildcard(peeked_loc);
+    }
+    pattern::MatchingPattern::Id(
+      Id {
+        loc: peeked.0,
+        associated_comments: NO_COMMENT_REFERENCE,
+        name: self.assert_and_peek_lower_id().1,
+      },
+      (),
+    )
   }
 
   fn parse_upper_id(&mut self) -> Id {

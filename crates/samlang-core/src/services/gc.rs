@@ -67,11 +67,11 @@ fn mark_id(heap: &mut Heap, id: &Id) {
   heap.mark(id.name);
 }
 
-fn mark_pattern(heap: &mut Heap, pattern: &pattern::DestructuringPattern<Rc<Type>>) {
+fn mark_destructuring_pattern(heap: &mut Heap, pattern: &pattern::DestructuringPattern<Rc<Type>>) {
   match pattern {
     pattern::DestructuringPattern::Tuple(_, names) => {
       for n in names {
-        mark_pattern(heap, &n.pattern);
+        mark_destructuring_pattern(heap, &n.pattern);
         mark_type(heap, &n.type_);
       }
     }
@@ -79,11 +79,51 @@ fn mark_pattern(heap: &mut Heap, pattern: &pattern::DestructuringPattern<Rc<Type
       for n in names {
         mark_type(heap, &n.type_);
         mark_id(heap, &n.field_name);
-        mark_pattern(heap, &n.pattern);
+        mark_destructuring_pattern(heap, &n.pattern);
       }
     }
-    pattern::DestructuringPattern::Id(id) => mark_id(heap, id),
+    pattern::DestructuringPattern::Id(id, type_) => {
+      mark_id(heap, id);
+      mark_type(heap, type_);
+    }
     pattern::DestructuringPattern::Wildcard(_) => {}
+  }
+}
+
+fn mark_matching_pattern(heap: &mut Heap, pattern: &pattern::MatchingPattern<Rc<Type>>) {
+  match pattern {
+    pattern::MatchingPattern::Tuple(_, names) => {
+      for n in names {
+        mark_matching_pattern(heap, &n.pattern);
+        mark_type(heap, &n.type_);
+      }
+    }
+    pattern::MatchingPattern::Object(_, names) => {
+      for n in names {
+        mark_type(heap, &n.type_);
+        mark_id(heap, &n.field_name);
+        mark_matching_pattern(heap, &n.pattern);
+      }
+    }
+    pattern::MatchingPattern::Variant(pattern::VariantPattern {
+      loc: _,
+      tag_order: _,
+      tag,
+      data_variables,
+      type_,
+    }) => {
+      mark_type(heap, type_);
+      mark_id(heap, tag);
+      for (p, type_) in data_variables {
+        mark_matching_pattern(heap, p);
+        mark_type(heap, type_);
+      }
+    }
+    pattern::MatchingPattern::Id(id, type_) => {
+      mark_id(heap, id);
+      mark_type(heap, type_);
+    }
+    pattern::MatchingPattern::Wildcard(_) => {}
   }
 }
 
@@ -122,7 +162,13 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
       mark_expression(heap, &e.e2);
     }
     expr::E::IfElse(e) => {
-      mark_expression(heap, &e.condition);
+      match e.condition.as_ref() {
+        expr::IfElseCondition::Expression(e) => mark_expression(heap, e),
+        expr::IfElseCondition::Guard(p, e) => {
+          mark_matching_pattern(heap, p);
+          mark_expression(heap, e);
+        }
+      }
       mark_expression(heap, &e.e1);
       mark_expression(heap, &e.e2);
     }
@@ -148,7 +194,7 @@ fn mark_expression(heap: &mut Heap, expr: &expr::E<Rc<Type>>) {
       for stmt in &e.statements {
         mark_expression(heap, &stmt.assigned_expression);
         mark_annot_opt(heap, &stmt.annotation);
-        mark_pattern(heap, &stmt.pattern);
+        mark_destructuring_pattern(heap, &stmt.pattern);
       }
       if let Some(e) = &e.expression {
         mark_expression(heap, e);
@@ -292,6 +338,9 @@ mod tests {
           let { d } = Obj.init(5, 4);
           let [_, d1] = [1, 2];
           let { e as d2 } = Obj.init(5, 4); // d = 4
+          let _ = if let { e as d3 } = Obj.init(5, 4) then {} else {};
+          let _ = if let Some(_) = Option.Some(1) then {} else {};
+          let _ = if let [_, _] = [1,2] then {} else {};
           let f = Obj.init(5, 4); // d = 4
           let g = Obj.init(d, 4); // d = 4
           let _ = f.d;

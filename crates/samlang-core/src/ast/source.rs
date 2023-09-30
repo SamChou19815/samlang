@@ -219,7 +219,7 @@ pub(crate) mod pattern {
   pub(crate) enum DestructuringPattern<T: Clone> {
     Tuple(Location, Vec<TuplePatternElement<DestructuringPattern<T>, T>>),
     Object(Location, Vec<ObjectPatternElement<DestructuringPattern<T>, T>>),
-    Id(Id),
+    Id(Id, T),
     Wildcard(Location),
   }
 
@@ -228,7 +228,7 @@ pub(crate) mod pattern {
       match self {
         Self::Tuple(loc, _)
         | Self::Object(loc, _)
-        | Self::Id(Id { loc, .. })
+        | Self::Id(Id { loc, .. }, _)
         | Self::Wildcard(loc) => loc,
       }
     }
@@ -239,16 +239,16 @@ pub(crate) mod pattern {
     pub(crate) loc: Location,
     pub(crate) tag_order: usize,
     pub(crate) tag: Id,
-    pub(crate) data_variables: Vec<MatchingPattern<T>>,
+    pub(crate) data_variables: Vec<(MatchingPattern<T>, T)>,
     pub(crate) type_: T,
   }
 
   #[derive(Clone, PartialEq, Eq)]
   pub(crate) enum MatchingPattern<T: Clone> {
-    Tuple(Location, Vec<TuplePatternElement<DestructuringPattern<T>, T>>),
-    Object(Location, Vec<ObjectPatternElement<DestructuringPattern<T>, T>>),
+    Tuple(Location, Vec<TuplePatternElement<MatchingPattern<T>, T>>),
+    Object(Location, Vec<ObjectPatternElement<MatchingPattern<T>, T>>),
     Variant(VariantPattern<T>),
-    Id(Id),
+    Id(Id, T),
     Wildcard(Location),
   }
 
@@ -258,7 +258,7 @@ pub(crate) mod pattern {
         Self::Tuple(loc, _)
         | Self::Object(loc, _)
         | Self::Variant(VariantPattern { loc, .. })
-        | Self::Id(Id { loc, .. })
+        | Self::Id(Id { loc, .. }, _)
         | Self::Wildcard(loc) => loc,
       }
     }
@@ -425,9 +425,15 @@ pub(crate) mod expr {
   }
 
   #[derive(Clone, PartialEq, Eq)]
+  pub(crate) enum IfElseCondition<T: Clone> {
+    Expression(E<T>),
+    Guard(super::pattern::MatchingPattern<T>, E<T>),
+  }
+
+  #[derive(Clone, PartialEq, Eq)]
   pub(crate) struct IfElse<T: Clone> {
     pub(crate) common: ExpressionCommon<T>,
-    pub(crate) condition: Box<E<T>>,
+    pub(crate) condition: Box<IfElseCondition<T>>,
     pub(crate) e1: Box<E<T>>,
     pub(crate) e2: Box<E<T>>,
   }

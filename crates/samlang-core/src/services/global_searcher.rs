@@ -49,6 +49,76 @@ fn search_id_annot(
   }
 }
 
+fn search_destructuring_pattern(
+  pattern: &pattern::DestructuringPattern<Rc<Type>>,
+  pattern_type: &Rc<Type>,
+  request: &GlobalNameSearchRequest,
+  collector: &mut Vec<Location>,
+) {
+  match pattern {
+    pattern::DestructuringPattern::Tuple(_, patterns) => {
+      for p in patterns {
+        search_destructuring_pattern(&p.pattern, &p.type_, request, collector)
+      }
+    }
+    pattern::DestructuringPattern::Object(_, patterns) => {
+      match (pattern_type.as_ref(), request) {
+        (
+          Type::Nominal(nominal_type),
+          GlobalNameSearchRequest::Property(mod_ref, toplevel_name, field_name),
+        ) if mod_ref.eq(&nominal_type.module_reference) && toplevel_name.eq(&nominal_type.id) => {
+          for n in patterns {
+            if field_name.eq(&n.field_name.name) {
+              collector.push(n.field_name.loc);
+            }
+          }
+        }
+        _ => {}
+      }
+      for p in patterns {
+        search_destructuring_pattern(&p.pattern, &p.type_, request, collector)
+      }
+    }
+    pattern::DestructuringPattern::Id(_, _) | pattern::DestructuringPattern::Wildcard(_) => {}
+  }
+}
+
+fn search_matching_pattern(
+  pattern: &pattern::MatchingPattern<Rc<Type>>,
+  pattern_type: &Rc<Type>,
+  request: &GlobalNameSearchRequest,
+  collector: &mut Vec<Location>,
+) {
+  match pattern {
+    pattern::MatchingPattern::Tuple(_, patterns) => {
+      for p in patterns {
+        search_matching_pattern(&p.pattern, &p.type_, request, collector)
+      }
+    }
+    pattern::MatchingPattern::Object(_, patterns) => {
+      match (pattern_type.as_ref(), request) {
+        (
+          Type::Nominal(nominal_type),
+          GlobalNameSearchRequest::Property(mod_ref, toplevel_name, field_name),
+        ) if mod_ref.eq(&nominal_type.module_reference) && toplevel_name.eq(&nominal_type.id) => {
+          for n in patterns {
+            if field_name.eq(&n.field_name.name) {
+              collector.push(n.field_name.loc);
+            }
+          }
+        }
+        _ => {}
+      }
+      for p in patterns {
+        search_matching_pattern(&p.pattern, &p.type_, request, collector)
+      }
+    }
+    pattern::MatchingPattern::Variant(_)
+    | pattern::MatchingPattern::Id(_, _)
+    | pattern::MatchingPattern::Wildcard(_) => {}
+  }
+}
+
 fn search_expression(
   expr: &expr::E<Rc<Type>>,
   request: &GlobalNameSearchRequest,
@@ -112,7 +182,13 @@ fn search_expression(
       search_expression(&e.e2, request, collector);
     }
     expr::E::IfElse(e) => {
-      search_expression(&e.condition, request, collector);
+      match e.condition.as_ref() {
+        expr::IfElseCondition::Expression(e) => search_expression(e, request, collector),
+        expr::IfElseCondition::Guard(p, e) => {
+          search_matching_pattern(p, e.type_(), request, collector);
+          search_expression(e, request, collector);
+        }
+      }
       search_expression(&e.e1, request, collector);
       search_expression(&e.e2, request, collector);
     }
@@ -147,20 +223,12 @@ fn search_expression(
         if let Some(annot) = &stmt.annotation {
           search_annot(annot, request, collector);
         }
-        match (&stmt.pattern, request, stmt.assigned_expression.type_().as_nominal()) {
-          (
-            pattern::DestructuringPattern::Object(_, destructured_names),
-            GlobalNameSearchRequest::Property(mod_ref, toplevel_name, field_name),
-            Some(nominal_type),
-          ) if mod_ref.eq(&nominal_type.module_reference) && toplevel_name.eq(&nominal_type.id) => {
-            for n in destructured_names {
-              if field_name.eq(&n.field_name.name) {
-                collector.push(n.field_name.loc);
-              }
-            }
-          }
-          _ => {}
-        }
+        search_destructuring_pattern(
+          &stmt.pattern,
+          stmt.assigned_expression.type_(),
+          request,
+          collector,
+        );
         search_expression(&stmt.assigned_expression, request, collector);
       }
       if let Some(e) = &e.expression {
@@ -276,6 +344,9 @@ mod tests {
         let { e as d } = Obj.init(5, 4); // d = 4
         let f = Obj.init(5, 4); // d = 4
         let g = Obj.init(d, 4); // d = 4
+        let _ = if let { a as d3, b as d4 } = Foo.init(5, false) then {} else {};
+        let _ = if let Some(_) = Option.Some(1) then {} else {};
+        let _ = if let [_, _] = [1,2] then {} else {};
         let _ = f.d;
         // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
         a + b * c / d

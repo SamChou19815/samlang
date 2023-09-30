@@ -45,7 +45,7 @@ mod tests {
     assert_eq!(*destructuring_pattern.loc(), Location::dummy());
     destructuring_pattern = pattern::DestructuringPattern::Tuple(Location::dummy(), vec![]);
     assert_eq!(*destructuring_pattern.loc(), Location::dummy());
-    destructuring_pattern = pattern::DestructuringPattern::Id(Id::from(PStr::LOWER_A));
+    destructuring_pattern = pattern::DestructuringPattern::Id(Id::from(PStr::LOWER_A), ());
     assert_eq!(*destructuring_pattern.loc(), Location::dummy());
     destructuring_pattern = pattern::DestructuringPattern::Wildcard(Location::dummy());
     assert_eq!(*destructuring_pattern.loc(), Location::dummy());
@@ -63,7 +63,7 @@ mod tests {
       type_: (),
     });
     assert_eq!(*matching_pattern.clone().loc(), Location::dummy());
-    matching_pattern = pattern::MatchingPattern::Id(Id::from(PStr::LOWER_A));
+    matching_pattern = pattern::MatchingPattern::Id(Id::from(PStr::LOWER_A), ());
     assert_eq!(*matching_pattern.loc(), Location::dummy());
     matching_pattern = pattern::MatchingPattern::Wildcard(Location::dummy());
     assert_eq!(*matching_pattern.loc(), Location::dummy());
@@ -205,7 +205,16 @@ mod tests {
     }));
     coverage_hack_for_expr(E::IfElse(IfElse {
       common: common.clone(),
-      condition: Box::new(zero_expr.clone()),
+      condition: Box::new(IfElseCondition::Expression(zero_expr.clone())),
+      e1: Box::new(zero_expr.clone()),
+      e2: Box::new(zero_expr.clone()),
+    }));
+    coverage_hack_for_expr(E::IfElse(IfElse {
+      common: common.clone(),
+      condition: Box::new(IfElseCondition::Guard(
+        pattern::MatchingPattern::Wildcard(Location::dummy()),
+        zero_expr.clone(),
+      )),
       e1: Box::new(zero_expr.clone()),
       e2: Box::new(zero_expr.clone()),
     }));
@@ -242,9 +251,10 @@ mod tests {
               loc: Location::dummy(),
               field_order: 0,
               field_name: Id::from(heap.alloc_str_for_test("name")),
-              pattern: Box::new(pattern::DestructuringPattern::Id(Id::from(
-                heap.alloc_str_for_test("name"),
-              ))),
+              pattern: Box::new(pattern::DestructuringPattern::Id(
+                Id::from(heap.alloc_str_for_test("name")),
+                (),
+              )),
               shorthand: true,
               type_: (),
             }],
@@ -262,9 +272,10 @@ mod tests {
           pattern: pattern::DestructuringPattern::Tuple(
             Location::dummy(),
             vec![pattern::TuplePatternElement {
-              pattern: Box::new(pattern::DestructuringPattern::Id(Id::from(
-                heap.alloc_str_for_test("name"),
-              ))),
+              pattern: Box::new(pattern::DestructuringPattern::Id(
+                Id::from(heap.alloc_str_for_test("name")),
+                (),
+              )),
               type_: (),
             }],
           ),
@@ -289,7 +300,7 @@ mod tests {
         expr::DeclarationStatement {
           loc: Location::dummy(),
           associated_comments: NO_COMMENT_REFERENCE,
-          pattern: pattern::DestructuringPattern::Id(Id::from(heap.alloc_str_for_test("s"))),
+          pattern: pattern::DestructuringPattern::Id(Id::from(heap.alloc_str_for_test("s")), ()),
           annotation: Some(annotation::T::Fn(annotation::Function {
             location: Location::dummy(),
             associated_comments: NO_COMMENT_REFERENCE,
