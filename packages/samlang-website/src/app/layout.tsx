@@ -21,7 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       {process.env.NODE_ENV === 'production' && (
-        <Script id="google-analytics" dangerouslySetInnerHTML={{ __html: GA_INLINE_SCRIPT }} />
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
+      )}
+      {process.env.NODE_ENV === 'production' && (
+        <Script id="google-analytics">{GA_INLINE_SCRIPT}</Script>
       )}
       <body className={inter.className}>{children}</body>
     </html>
