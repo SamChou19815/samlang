@@ -15,7 +15,7 @@
     "dev-sam-theme": "^0.0.1",
     "monaco-editor": "^0.34.1",
     "next": "13.5.2",
-    "postcss": "8.4.29",
+    "postcss": "8.4.31",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "shiki": "^0.14.4",
