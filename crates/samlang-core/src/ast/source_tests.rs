@@ -50,22 +50,42 @@ mod tests {
     destructuring_pattern = pattern::DestructuringPattern::Wildcard(Location::dummy());
     assert_eq!(*destructuring_pattern.loc(), Location::dummy());
 
-    let mut matching_pattern: pattern::MatchingPattern<()> =
-      pattern::MatchingPattern::Object(Location::dummy(), vec![]);
+    let mut matching_pattern: pattern::MatchingPattern<()> = pattern::MatchingPattern::Object(
+      Location::dummy(),
+      vec![pattern::ObjectPatternElement {
+        loc: Location::dummy(),
+        field_order: 0,
+        field_name: Id::from(PStr::UPPER_A),
+        pattern: Box::new(pattern::MatchingPattern::Wildcard(Location::dummy())),
+        shorthand: false,
+        type_: (),
+      }],
+    );
+    matching_pattern.bindings();
     assert_eq!(*matching_pattern.loc(), Location::dummy());
-    matching_pattern = pattern::MatchingPattern::Tuple(Location::dummy(), vec![]);
+    matching_pattern = pattern::MatchingPattern::Tuple(
+      Location::dummy(),
+      vec![pattern::TuplePatternElement {
+        pattern: Box::new(pattern::MatchingPattern::Wildcard(Location::dummy())),
+        type_: (),
+      }],
+    );
+    matching_pattern.bindings();
     assert_eq!(*matching_pattern.loc(), Location::dummy());
     matching_pattern = pattern::MatchingPattern::Variant(pattern::VariantPattern {
       loc: Location::dummy(),
       tag_order: 0,
       tag: Id::from(PStr::UPPER_A),
-      data_variables: vec![],
+      data_variables: vec![(pattern::MatchingPattern::Wildcard(Location::dummy()), ())],
       type_: (),
     });
+    matching_pattern.bindings();
     assert_eq!(*matching_pattern.clone().loc(), Location::dummy());
     matching_pattern = pattern::MatchingPattern::Id(Id::from(PStr::LOWER_A), ());
+    matching_pattern.bindings();
     assert_eq!(*matching_pattern.loc(), Location::dummy());
     matching_pattern = pattern::MatchingPattern::Wildcard(Location::dummy());
+    matching_pattern.bindings();
     assert_eq!(*matching_pattern.loc(), Location::dummy());
     assert!(
       pattern::MatchingPattern::Variant(pattern::VariantPattern {

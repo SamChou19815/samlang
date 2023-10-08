@@ -197,6 +197,10 @@ impl Id {
 }
 
 pub(crate) mod pattern {
+  use std::collections::HashSet;
+
+  use samlang_heap::PStr;
+
   use super::{Id, Location};
 
   #[derive(Clone, PartialEq, Eq)]
@@ -260,6 +264,36 @@ pub(crate) mod pattern {
         | Self::Variant(VariantPattern { loc, .. })
         | Self::Id(Id { loc, .. }, _)
         | Self::Wildcard(loc) => loc,
+      }
+    }
+
+    pub(crate) fn bindings(&self) -> HashSet<PStr> {
+      let mut set = HashSet::new();
+      self.collect_bindings(&mut set);
+      set
+    }
+
+    fn collect_bindings(&self, collector: &mut HashSet<PStr>) {
+      match self {
+        Self::Tuple(_, ps) => {
+          for nested in ps {
+            nested.pattern.collect_bindings(collector)
+          }
+        }
+        Self::Object(_, ps) => {
+          for nested in ps {
+            nested.pattern.collect_bindings(collector)
+          }
+        }
+        Self::Variant(VariantPattern { data_variables, .. }) => {
+          for (p, _) in data_variables {
+            p.collect_bindings(collector)
+          }
+        }
+        Self::Id(Id { name, .. }, _) => {
+          collector.insert(*name);
+        }
+        Self::Wildcard(_) => {}
       }
     }
   }
