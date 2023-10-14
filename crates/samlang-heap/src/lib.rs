@@ -11,16 +11,16 @@ use std::{
 #[derive(Clone, Copy)]
 struct PStrPrivateReprInline {
   size: u8,
-  storage: [u8; 7],
+  storage: [u8; 15],
 }
 
 #[derive(Clone, Copy)]
 union PStrPrivateRepr {
   inline: PStrPrivateReprInline,
-  heap_id: u64,
+  heap_id: u128,
 }
 
-const ALL_ZERO_SLICE: [u8; 7] = [0; 7];
+const ALL_ZERO_SLICE: [u8; 15] = [0; 15];
 
 impl std::fmt::Debug for PStrPrivateRepr {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -34,18 +34,18 @@ impl std::fmt::Debug for PStrPrivateRepr {
 impl PStrPrivateRepr {
   fn as_inline_str(&self) -> Result<&str, u32> {
     unsafe {
-      if (self.heap_id >> 56) != 255 {
+      if (self.heap_id >> 120) != 255 {
         Ok(std::str::from_utf8_unchecked(&self.inline.storage[..(self.inline.size as usize)]))
       } else {
-        Err((self.heap_id & (u32::MAX as u64)) as u32)
+        Err((self.heap_id & (u32::MAX as u128)) as u32)
       }
     }
   }
 
   fn as_heap_id(&self) -> Option<u32> {
     unsafe {
-      if (self.heap_id >> 56) as u8 == 255 {
-        Some((self.heap_id & (u32::MAX as u64)) as u32)
+      if (self.heap_id >> 120) as u8 == 255 {
+        Some((self.heap_id & (u32::MAX as u128)) as u32)
       } else {
         None
       }
@@ -55,8 +55,8 @@ impl PStrPrivateRepr {
   fn from_str_opt(s: &str) -> Option<PStrPrivateRepr> {
     let bytes = s.as_bytes();
     let size = bytes.len();
-    if size <= 7 {
-      let mut storage = [0; 7];
+    if size <= 15 {
+      let mut storage = [0; 15];
       storage[..size].copy_from_slice(bytes);
       Some(PStrPrivateRepr { inline: PStrPrivateReprInline { size: size as u8, storage } })
     } else {
@@ -66,9 +66,9 @@ impl PStrPrivateRepr {
 
   fn from_string(s: String) -> Result<PStrPrivateRepr, String> {
     let size = s.len();
-    if size <= 7 {
+    if size <= 15 {
       let mut bytes = s.into_bytes();
-      bytes.extend_from_slice(&ALL_ZERO_SLICE[size..7]);
+      bytes.extend_from_slice(&ALL_ZERO_SLICE[size..15]);
       Ok(PStrPrivateRepr {
         inline: PStrPrivateReprInline { size: size as u8, storage: bytes.try_into().unwrap() },
       })
@@ -78,7 +78,7 @@ impl PStrPrivateRepr {
   }
 
   fn from_id(id: u32) -> PStrPrivateRepr {
-    PStrPrivateRepr { heap_id: (id as u64) | (255_u64 << 56) }
+    PStrPrivateRepr { heap_id: (id as u128) | (255_u128 << 120) }
   }
 }
 
@@ -128,13 +128,19 @@ impl PStr {
 
   pub const fn one_letter_literal(c: char) -> PStr {
     PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline { size: 1, storage: [c as u8, 0, 0, 0, 0, 0, 0] },
+      inline: PStrPrivateReprInline {
+        size: 1,
+        storage: [c as u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      },
     })
   }
 
   pub const fn two_letter_literal(bytes: &[u8; 2]) -> PStr {
     PStr(PStrPrivateRepr {
-      inline: PStrPrivateReprInline { size: 2, storage: [bytes[0], bytes[1], 0, 0, 0, 0, 0] },
+      inline: PStrPrivateReprInline {
+        size: 2,
+        storage: [bytes[0], bytes[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      },
     })
   }
 
@@ -142,7 +148,7 @@ impl PStr {
     PStr(PStrPrivateRepr {
       inline: PStrPrivateReprInline {
         size: 3,
-        storage: [bytes[0], bytes[1], bytes[2], 0, 0, 0, 0],
+        storage: [bytes[0], bytes[1], bytes[2], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       },
     })
   }
@@ -151,7 +157,7 @@ impl PStr {
     PStr(PStrPrivateRepr {
       inline: PStrPrivateReprInline {
         size: 4,
-        storage: [bytes[0], bytes[1], bytes[2], bytes[3], 0, 0, 0],
+        storage: [bytes[0], bytes[1], bytes[2], bytes[3], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       },
     })
   }
@@ -160,7 +166,7 @@ impl PStr {
     PStr(PStrPrivateRepr {
       inline: PStrPrivateReprInline {
         size: 5,
-        storage: [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], 0, 0],
+        storage: [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       },
     })
   }
@@ -169,18 +175,28 @@ impl PStr {
     PStr(PStrPrivateRepr {
       inline: PStrPrivateReprInline {
         size: 6,
-        storage: [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], 0],
+        storage: [
+          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ],
       },
     })
   }
 
   pub const fn seven_letter_literal(bytes: &[u8; 7]) -> PStr {
-    PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 7, storage: *bytes } })
+    PStr(PStrPrivateRepr {
+      inline: PStrPrivateReprInline {
+        size: 7,
+        storage: [
+          bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], 0, 0, 0, 0, 0, 0,
+          0, 0,
+        ],
+      },
+    })
   }
 
-  pub const INVALID_PSTR: PStr = PStr(PStrPrivateRepr { heap_id: u64::MAX });
+  pub const INVALID_PSTR: PStr = PStr(PStrPrivateRepr { heap_id: u128::MAX });
   pub const EMPTY: PStr =
-    PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 7] } });
+    PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } });
 
   pub const DUMMY_MODULE: PStr = Self::five_letter_literal(b"DUMMY");
   pub const MISSING: PStr = Self::seven_letter_literal(b"MISSING");
@@ -419,13 +435,12 @@ impl Heap {
     // since the generated strings are guaranteed to be globally unique.
     let id = self.str_pointer_table.len() as u32;
     let string = format!("_t{id}");
-    if let Some(p) = PStr::create_inline_opt(&string) {
-      self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
-      p
-    } else {
-      self.str_pointer_table.push(StringStoredInHeap::Temporary(string, false));
-      PStr(PStrPrivateRepr::from_id(id))
-    }
+    // We are going to run out of memory before hitting the case when we cannot inline alloc the string
+    let p = PStr::create_inline_opt(&string).expect("Too many temporary strings");
+    // We will never read from here, but we just need the ID to increase,
+    // so we push some cheap value there.
+    self.str_pointer_table.push(StringStoredInHeap::Permanent(""));
+    p
   }
 
   pub fn alloc_string(&mut self, string: String) -> PStr {
@@ -622,10 +637,10 @@ mod tests {
 
   #[test]
   fn boilterplate() {
-    assert!(PStrPrivateReprInline { size: 0, storage: [0; 7] }.clone().storage.contains(&0));
+    assert!(PStrPrivateReprInline { size: 0, storage: [0; 15] }.clone().storage.contains(&0));
     assert!(!format!(
       "{:?}",
-      PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 7] } }).clone()
+      PStr(PStrPrivateRepr { inline: PStrPrivateReprInline { size: 0, storage: [0; 15] } }).clone()
     )
     .is_empty());
     assert!(!format!("{:?}", PStr::INVALID_PSTR).is_empty());
@@ -678,8 +693,12 @@ mod tests {
     assert_eq!("b$d_c", mb.encoded(&heap));
     assert_eq!("DUMMY", m_dummy.pretty_print(&heap));
     mb.clone().pretty_print(&heap);
+  }
 
-    for _ in 0..111111 {
+  #[test]
+  fn heap_create_temp_str_coverage_tests() {
+    let mut heap = Heap::default();
+    for _ in 0..11 {
       heap.alloc_temp_str();
     }
   }
@@ -727,18 +746,33 @@ mod tests {
   #[test]
   fn heap_alloc_regular_before_permanent_string() {
     let heap = &mut Heap::new();
-    let s1 = heap.alloc_string("dfsdadasdasdasdasdasdasdasd".to_string());
-    assert_eq!("dfsdadasdasdasdasdasdasdasd", s1.as_str(heap));
-    let s2 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdasd");
+    let s1 = heap.alloc_string(
+      "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew"
+        .to_string(),
+    );
+    assert_eq!(
+      "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew",
+      s1.as_str(heap)
+    );
+    let s2 = heap.alloc_str_for_test(
+      "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew",
+    );
     assert_eq!(s1, s2);
   }
 
   #[test]
   fn heap_alloc_permanent_before_regular_string() {
     let heap = &mut Heap::new();
-    let s1 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdasd");
-    let s2 = heap.alloc_str_for_test("dfsdadasdasdasdasdasdasdasd");
-    let s3 = heap.alloc_string("dfsdadasdasdasdasdasdasdasd".to_string());
+    let s1 = heap.alloc_str_for_test(
+      "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew",
+    );
+    let s2 = heap.alloc_str_for_test(
+      "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew",
+    );
+    let s3 = heap.alloc_string(
+      "dfsdadasdasdasdasdasdasdasdqwerwerqwerwerqwerqwereqwrqwereqwrqwerqwerqwerqwerqwerqwerqwerew"
+        .to_string(),
+    );
     assert_eq!(s1, s2);
     assert_eq!(s1, s3);
   }

@@ -290,7 +290,7 @@ pub mod query {
     position: Position,
   ) -> Vec<Location> {
     all_references_opt(state, module_reference, position)
-      .unwrap_or(vec![])
+      .unwrap_or_default()
       .into_iter()
       .sorted()
       .dedup()
@@ -628,7 +628,7 @@ pub mod completion {
     module_reference: &ModuleReference,
     position: Position,
   ) -> Vec<AutoCompletionItem> {
-    autocomplete_opt(state, module_reference, position).unwrap_or(vec![])
+    autocomplete_opt(state, module_reference, position).unwrap_or_default()
   }
 
   fn autocomplete_opt(

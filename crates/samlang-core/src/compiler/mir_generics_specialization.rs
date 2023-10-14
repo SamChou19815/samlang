@@ -1395,33 +1395,33 @@ function _DUMMY_I$main(): int {
     finalV = (v2: int);
   }
   let b = 0 as DUMMY_Enum;
-  let _t5 = (b: DUMMY_Enum) as int;
-  let _t6 = (_t5: int) < 1024;
-  let _t7 = (_t5: int) & 1;
-  let _t8 = (_t6: int) | (_t7: int);
-  let _t9 = (_t8: int) ^ 1;
-  if (_t9: int) {
+  let _t1 = (b: DUMMY_Enum) as int;
+  let _t2 = (_t1: int) < 1024;
+  let _t3 = (_t1: int) & 1;
+  let _t4 = (_t2: int) | (_t3: int);
+  let _t5 = (_t4: int) ^ 1;
+  if (_t5: int) {
     let a = (b: DUMMY_Enum) as DUMMY_J;
   } else {
   }
-  let _t10 = (b: DUMMY_Enum) as int;
-  let _t11 = (_t10: int) == 3;
+  let _t6 = (b: DUMMY_Enum) as int;
+  let _t7 = (_t6: int) == 3;
+  if (_t7: int) {
+  } else {
+  }
+  let _t8: DUMMY_Enum2$_Sub0 = [1, 0];
+  let b = (_t8: DUMMY_Enum2$_Sub0) as DUMMY_Enum2;
+  let _t9: DUMMY_Enum3$_Sub0 = [1, 0];
+  let b = (_t9: DUMMY_Enum3$_Sub0) as DUMMY_Enum3;
+  let _t10: int = (b: DUMMY_Enum2)[0];
+  let _t11 = (_t10: int) == 1;
   if (_t11: int) {
+    let _t12 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
   } else {
   }
-  let _t12: DUMMY_Enum2$_Sub0 = [1, 0];
-  let b = (_t12: DUMMY_Enum2$_Sub0) as DUMMY_Enum2;
-  let _t13: DUMMY_Enum3$_Sub0 = [1, 0];
-  let b = (_t13: DUMMY_Enum3$_Sub0) as DUMMY_Enum3;
-  let _t14: int = (b: DUMMY_Enum2)[0];
-  let _t15 = (_t14: int) == 1;
-  if (_t15: int) {
-    let _t16 = (b: DUMMY_Enum2) as DUMMY_Enum2$_Sub0;
-  } else {
-  }
-  let _t17 = (b: DUMMY_Enum2) as int;
-  let _t18 = (_t17: int) == 3;
-  if (_t18: int) {
+  let _t13 = (b: DUMMY_Enum2) as int;
+  let _t14 = (_t13: int) == 3;
+  if (_t14: int) {
   } else {
   }
   return 0;
@@ -1562,16 +1562,16 @@ sources.mains = [_DUMMY_I$main]"#,
       r#"
 object type DUMMY_J = [DUMMY_I_int_int]
 variant type DUMMY_I_int_int = [int, int]
-function _DUMMY_I$main(): int {
-  _DUMMY_I$creatorJ();
-  (v: int)();
-  return creatorJ;
-}
-
 function _DUMMY_I$creatorJ(): DUMMY_J {
   let v1: DUMMY_I_int_int = [];
   let v2: DUMMY_J = [0, 0];
   return (v2: DUMMY_J);
+}
+
+function _DUMMY_I$main(): int {
+  _DUMMY_I$creatorJ();
+  (v: int)();
+  return creatorJ;
 }
 
 sources.mains = [_DUMMY_I$main]"#,

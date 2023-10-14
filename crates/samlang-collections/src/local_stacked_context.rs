@@ -66,8 +66,8 @@ mod tests {
   fn local_stacked_context_conflict_detection_tests() {
     let mut context = LocalStackedContext::new();
     let a = "a";
-    context.insert(a.clone(), 3);
-    context.insert(a.clone(), 3);
+    context.insert(a, 3);
+    context.insert(a, 3);
     insert_crash_on_error(&mut context, a, 3);
   }
 
